@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 export type NeedId =
   | 'safety'
@@ -15,11 +16,6 @@ export interface Need {
 
 @Injectable()
 export class BotService {
-  // In-memory store keyed by `${userId}:${date}` storing partial ratings per need
-  // value is integer 0..10
-  private store = new Map<string, Partial<Record<NeedId, number>>>();
-
-  // Define needs
   private readonly needs: Need[] = [
     { id: 'safety', title: 'Безопасность' },
     { id: 'attachment', title: 'Привязанность' },
@@ -32,36 +28,36 @@ export class BotService {
     { id: 'play', title: 'Удовольствие / спонтанность / игра' },
   ];
 
+  constructor(private readonly prisma: PrismaService) {}
+
   getNeeds(): Need[] {
     return this.needs;
   }
 
   private todayDateString(date = new Date()): string {
-    // local server date YYYY-MM-DD
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }
 
-  private keyFor(userId: number, date?: string): string {
-    const dt = date ?? this.todayDateString();
-    return `${userId}:${dt}`;
-  }
-
-  saveRating(userId: number, needId: NeedId, value: number, date?: string) {
+  async saveRating(userId: number, needId: NeedId, value: number, date?: string) {
     if (!Number.isInteger(value) || value < 0 || value > 10) {
       throw new Error('Rating must be integer 0..10');
     }
-    const key = this.keyFor(userId, date);
-    const existing = this.store.get(key) ?? {};
-    existing[needId] = value;
-    this.store.set(key, existing);
+    const dt = date ?? this.todayDateString();
+    await this.prisma.rating.upsert({
+      where: { userId_date_needId: { userId, date: dt, needId } },
+      update: { value },
+      create: { userId, date: dt, needId, value },
+    });
   }
 
-  // For debugging / retrieval in the future
-  getRatings(userId: number, date?: string) {
-    return this.store.get(this.keyFor(userId, date ?? undefined)) ?? {};
+  async getRatings(userId: number, date?: string) {
+    const dt = date ?? this.todayDateString();
+    const rows = await this.prisma.rating.findMany({
+      where: { userId, date: dt },
+    });
+    return Object.fromEntries(rows.map((r) => [r.needId, r.value])) as Partial<Record<NeedId, number>>;
   }
 }
-

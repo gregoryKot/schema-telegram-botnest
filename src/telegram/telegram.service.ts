@@ -86,7 +86,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           return;
         }
         // save rating
-        this.botService.saveRating(userId, needId, raw);
+        await this.botService.saveRating(userId, needId, raw);
 
         const needTitle = this.botService.getNeeds().find((n) => n.id === needId)?.title ?? needId;
         await ctx.answerCbQuery();

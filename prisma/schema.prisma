@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Rating {
+  id     Int    @id @default(autoincrement())
+  userId Int
+  date   String
+  needId String
+  value  Int
+
+  @@unique([userId, date, needId])
+}
