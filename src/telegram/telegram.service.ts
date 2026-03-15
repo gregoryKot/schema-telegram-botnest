@@ -53,7 +53,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
       await this.bot!.telegram.sendMessage(
         '@SchemeHappens',
-        'Запись на сессию — прямо по кнопке',
+        '📅 Запись на сессию — прямо по кнопке',
         {
           reply_markup: Markup.inlineKeyboard([
             Markup.button.url('📝 Записаться', 'https://cal.com/kotlarewski'),
