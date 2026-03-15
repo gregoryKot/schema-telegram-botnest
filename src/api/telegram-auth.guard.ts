@@ -19,6 +19,7 @@ export class TelegramAuthGuard implements CanActivate {
     const hash = params.get('hash');
     if (!hash) throw new UnauthorizedException('Missing hash');
     params.delete('hash');
+    params.delete('signature');
 
     const dataCheckString = Array.from(params.entries())
       .sort(([a], [b]) => a.localeCompare(b))
