@@ -6,6 +6,72 @@ import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 const CHANNEL = '@SchemeHappens';
 const BOOKING_URL = 'https://cal.com/kotlarewski';
 
+const WELCOME_TEXT = `Привет!
+
+У каждого из нас есть 6 базовых групп эмоциональных потребностей. Когда они удовлетворены — нам хорошо. Когда нет — появляются тревога, усталость, раздражение.
+
+Раз в день отмечай, насколько каждая потребность закрыта по шкале 0–10. Это помогает замечать паттерны и лучше понимать своё состояние.`;
+
+const FAQ_MENU_TEXT = `📖 Подробнее — выбери тему:`;
+
+const FAQ: Record<string, string> = {
+  therapy: `🧠 Схематерапия
+
+Схематерапия — метод, разработанный Джеффри Янгом. Она помогает разобраться, почему мы снова и снова попадаем в одни и те же ситуации — в отношениях, на работе, с собой.
+
+В основе — идея о том, что в детстве у каждого из нас были базовые эмоциональные потребности. Если они не удовлетворялись, формируются схемы — устойчивые паттерны восприятия себя и мира, которые мешают жить так, как хочется.
+
+Колесо потребностей помогает отслеживать, какие потребности сейчас закрыты, а какие — нет.`,
+
+  safety: `🛡 Безопасность
+
+Потребность чувствовать себя в безопасности — физически и эмоционально. Ощущать, что мир предсказуем, что тебя не бросят, не обидят, не предадут.
+
+Когда эта потребность не закрыта, появляются тревога, гипербдительность, недоверие к людям.
+
+Вопрос для рефлексии: насколько сегодня я чувствую себя в безопасности — в теле, в отношениях, в ситуации?`,
+
+  attachment: `🤝 Привязанность
+
+Потребность быть любимым, нужным, принятым. Чувствовать близость с другими людьми, ощущать, что тебя видят и ценят.
+
+Когда эта потребность не закрыта — одиночество, ощущение что ты чужой, страх быть отвергнутым.
+
+Вопрос для рефлексии: чувствую ли я сегодня близость с кем-то? Ощущаю ли себя нужным?`,
+
+  autonomy: `🚀 Автономия
+
+Потребность действовать самостоятельно, принимать собственные решения, развиваться и достигать. Ощущать себя компетентным и иметь свою идентичность.
+
+Когда не закрыта — беспомощность, зависимость от чужого мнения, страх ошибиться.
+
+Вопрос для рефлексии: действовал ли я сегодня исходя из своих желаний? Есть ли у меня ощущение движения вперёд?`,
+
+  expression: `💬 Выражение чувств
+
+Потребность свободно выражать свои эмоции и потребности — без стыда и страха осуждения. Говорить о том, что важно, и быть услышанным.
+
+Когда не закрыта — подавленность, накопленное напряжение, ощущение что тебя не понимают.
+
+Вопрос для рефлексии: мог ли я сегодня говорить о том, что чувствую? Есть ли что-то, что осталось невысказанным?`,
+
+  limits: `⚖️ Самоконтроль
+
+Потребность в разумных границах — как внешних, так и внутренних. Умение сдерживать импульсы, соблюдать договорённости, уважать границы других.
+
+Когда не закрыта — хаос, импульсивность, ощущение что жизнь выходит из-под контроля.
+
+Вопрос для рефлексии: чувствую ли я сегодня, что управляю собой? Соблюдал ли я свои границы и чужие?`,
+
+  play: `🎉 Удовольствие
+
+Потребность в радости, игре, спонтанности. Позволять себе отдыхать, веселиться, делать что-то просто потому что нравится.
+
+Когда не закрыта — серость, усталость, ощущение что живёшь на автопилоте.
+
+Вопрос для рефлексии: было ли сегодня что-то, что принесло мне настоящую радость?`,
+};
+
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramService.name);
@@ -21,6 +87,23 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     } catch {
       await ctx.reply(text, extra);
     }
+  }
+
+  private buildWelcomeKeyboard() {
+    return Markup.inlineKeyboard([
+      [Markup.button.callback('✏️ Заполнить', 'back:needs')],
+      [Markup.button.callback('📖 Подробнее', 'faq')],
+    ]);
+  }
+
+  private buildFaqKeyboard() {
+    return Markup.inlineKeyboard([
+      [Markup.button.callback('🧠 Схематерапия', 'faq:therapy')],
+      [Markup.button.callback('🛡 Безопасность', 'faq:safety'), Markup.button.callback('🤝 Привязанность', 'faq:attachment')],
+      [Markup.button.callback('🚀 Автономия', 'faq:autonomy'), Markup.button.callback('💬 Выражение чувств', 'faq:expression')],
+      [Markup.button.callback('⚖️ Самоконтроль', 'faq:limits'), Markup.button.callback('🎉 Удовольствие', 'faq:play')],
+      [Markup.button.callback('⬅️ Назад', 'back:welcome')],
+    ]);
   }
 
   private buildNeedsKeyboard() {
@@ -48,10 +131,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.command('start', async (ctx) => {
       try {
-        await ctx.reply(
-          'Колесо потребностей',
-          Markup.inlineKeyboard([Markup.button.callback('✏️ Отметить сейчас', 'back:needs')]),
-        );
+        await ctx.reply(WELCOME_TEXT, this.buildWelcomeKeyboard());
       } catch (err) {
         this.logger.error('start command failed', err);
       }
@@ -98,6 +178,44 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    this.bot.action('back:welcome', async (ctx) => {
+      try {
+        await ctx.answerCbQuery();
+        await this.editOrReply(ctx, WELCOME_TEXT, this.buildWelcomeKeyboard());
+      } catch (err) {
+        this.logger.error('back:welcome action failed', err);
+      }
+    });
+
+    this.bot.action('faq', async (ctx) => {
+      try {
+        await ctx.answerCbQuery();
+        await this.editOrReply(ctx, FAQ_MENU_TEXT, this.buildFaqKeyboard());
+      } catch (err) {
+        this.logger.error('faq action failed', err);
+      }
+    });
+
+    this.bot.action(/^faq:([a-z_]+)$/, async (ctx) => {
+      try {
+        const topic = (ctx.match as RegExpMatchArray)[1];
+        const text = FAQ[topic];
+        if (!text) {
+          await ctx.answerCbQuery('Раздел не найден', { show_alert: true });
+          return;
+        }
+        await ctx.answerCbQuery();
+        await this.editOrReply(
+          ctx,
+          text,
+          Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'faq')]]),
+        );
+      } catch (err) {
+        this.logger.error('faq topic action failed', err);
+        await ctx.answerCbQuery('Что-то пошло не так').catch(() => null);
+      }
+    });
+
     this.bot.action('back:needs', async (ctx) => {
       try {
         await ctx.answerCbQuery();
@@ -128,7 +246,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       const needId = match[1];
       const raw = Number(match[2]);
 
-      // Validate before touching DB
       if (!NEED_IDS.includes(needId as NeedId) || !Number.isInteger(raw) || raw < 0 || raw > 10) {
         await ctx.answerCbQuery('Неверные данные', { show_alert: true }).catch(() => null);
         return;
