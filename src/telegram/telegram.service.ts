@@ -15,6 +15,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly botService: BotService,
   ) {}
 
+  private async editOrReply(ctx: Context, text: string, extra?: Parameters<Context['reply']>[1]) {
+    try {
+      await ctx.editMessageText(text, extra as any);
+    } catch {
+      await ctx.reply(text, extra);
+    }
+  }
+
   private buildNeedsKeyboard() {
     const needs = this.botService.getNeeds();
     const buttons = needs.map((n) => Markup.button.callback(n.title, `need:${n.id}`));
@@ -84,7 +92,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.action('back:needs', async (ctx) => {
       try {
         await ctx.answerCbQuery();
-        await ctx.editMessageText('Выберите потребность:', this.buildNeedsKeyboard());
+        await this.editOrReply(ctx, 'Выберите потребность:', this.buildNeedsKeyboard());
       } catch (err) {
         this.logger.error('back:needs action failed', err);
       }
@@ -99,7 +107,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
         const need = this.botService.getNeeds().find((n) => n.id === needId)!;
         await ctx.answerCbQuery();
-        await ctx.editMessageText(`Оцените: ${need.title}`, this.buildRatingKeyboard(needId as NeedId));
+        await this.editOrReply(ctx, `Оцените: ${need.title}`, this.buildRatingKeyboard(needId as NeedId));
       } catch (err) {
         this.logger.error('need action failed', err);
         await ctx.answerCbQuery('Что-то пошло не так').catch(() => null);
@@ -126,7 +134,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await this.botService.saveRating(userId, needId as NeedId, raw);
         const need = this.botService.getNeeds().find((n) => n.id === needId)!;
         await ctx.answerCbQuery();
-        await ctx.editMessageText(
+        await this.editOrReply(
+          ctx,
           `✅ Записал: ${need.title} — ${raw}/10`,
           Markup.inlineKeyboard([Markup.button.callback('✏️ Ещё', 'back:needs')]),
         );
