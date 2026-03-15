@@ -44,6 +44,25 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       await ctx.reply('OK');
     });
 
+    // Post signup button to @SchemeHappens channel (admin only)
+    this.bot.command('post', async (ctx) => {
+      const adminId = Number(process.env.ADMIN_ID);
+      if (!adminId || ctx.from?.id !== adminId) {
+        await ctx.reply('⛔ Нет доступа');
+        return;
+      }
+      await this.bot!.telegram.sendMessage(
+        '@SchemeHappens',
+        '📅 Хочешь поработать со мной лично? Запишись на сессию:',
+        {
+          reply_markup: Markup.inlineKeyboard([
+            Markup.button.url('📝 Записаться', 'https://cal.com/kotlarewski'),
+          ]).reply_markup,
+        },
+      );
+      await ctx.reply('✅ Пост отправлен в канал');
+    });
+
     this.bot.action('back:needs', async (ctx) => {
       try {
         await ctx.answerCbQuery();
