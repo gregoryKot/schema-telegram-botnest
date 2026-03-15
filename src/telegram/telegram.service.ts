@@ -174,12 +174,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       { command: 'settings', description: 'Настройки уведомлений' },
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
 
-    try {
-      await this.bot.launch({ dropPendingUpdates: true });
-      this.logger.log('Bot launched');
-    } catch (err) {
+    this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
       this.logger.error('Failed to launch bot', err);
-    }
+    });
+    this.logger.log('Bot launched');
   }
 
   async onModuleDestroy() {
