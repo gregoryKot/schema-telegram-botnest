@@ -103,9 +103,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     ]);
   }
 
-  private buildNeedsKeyboard() {
+  private async buildNeedsKeyboard(userId: number) {
     const needs = this.botService.getNeeds();
-    const buttons = needs.map((n) => Markup.button.callback(n.title, `need:${n.id}`));
+    const ratings = await this.botService.getRatings(userId);
+    const buttons = needs.map((n) => {
+      const value = ratings[n.id];
+      const label = value !== undefined ? `✅ ${n.title} · ${value}` : n.title;
+      return Markup.button.callback(label, `need:${n.id}`);
+    });
     const rows: ReturnType<typeof Markup.button.callback>[][] = [];
     for (let i = 0; i < buttons.length; i += 2) {
       rows.push(buttons.slice(i, i + 2));
@@ -227,10 +232,26 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    this.bot.action('show:chart', async (ctx) => {
+      try {
+        const userId = ctx.from?.id;
+        if (!userId) return;
+        await ctx.answerCbQuery();
+        const ratings = await this.botService.getRatings(userId);
+        const buffer = await this.chartService.generateRadarChart(this.botService.getNeeds(), ratings);
+        await ctx.replyWithPhoto({ source: buffer });
+      } catch (err) {
+        this.logger.error('show:chart action failed', err);
+        await ctx.answerCbQuery('Не удалось сгенерировать диаграмму', { show_alert: true }).catch(() => null);
+      }
+    });
+
     this.bot.action('back:needs', async (ctx) => {
       try {
+        const userId = ctx.from?.id;
+        if (!userId) return;
         await ctx.answerCbQuery();
-        await this.editOrReply(ctx, 'Выберите потребность:', this.buildNeedsKeyboard());
+        await this.editOrReply(ctx, 'Выберите потребность:', await this.buildNeedsKeyboard(userId));
       } catch (err) {
         this.logger.error('back:needs action failed', err);
       }
@@ -274,7 +295,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await this.editOrReply(
           ctx,
           `✅ Записал: ${need.fullTitle} — ${raw}/10`,
-          Markup.inlineKeyboard([Markup.button.callback('✏️ Ещё', 'back:needs')]),
+          Markup.inlineKeyboard([
+            [Markup.button.callback('✏️ Продолжить', 'back:needs')],
+            [Markup.button.callback('📊 Диаграмма', 'show:chart')],
+          ]),
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
