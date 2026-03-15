@@ -12,16 +12,18 @@ export class TelegramAuthGuard implements CanActivate {
     const initData = req.headers['x-telegram-init-data'] as string;
     if (!initData) throw new UnauthorizedException('Missing initData');
 
-    const botToken = this.config.get<string>('BOT_TOKEN');
+    const botToken = this.config.get<string>('BOT_TOKEN')?.trim();
     if (!botToken) throw new UnauthorizedException('BOT_TOKEN not configured');
 
-    const params = new URLSearchParams(initData);
-    const hash = params.get('hash');
+    const entries = initData.split('&').map((seg) => {
+      const eq = seg.indexOf('=');
+      return [seg.slice(0, eq), decodeURIComponent(seg.slice(eq + 1))] as [string, string];
+    });
+    const hash = entries.find(([k]) => k === 'hash')?.[1];
     if (!hash) throw new UnauthorizedException('Missing hash');
-    params.delete('hash');
-    params.delete('signature');
 
-    const dataCheckString = Array.from(params.entries())
+    const dataCheckString = entries
+      .filter(([k]) => k !== 'hash' && k !== 'signature')
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([k, v]) => `${k}=${v}`)
       .join('\n');
