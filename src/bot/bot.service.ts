@@ -1,23 +1,43 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-export const NEED_IDS = ['safety', 'attachment', 'autonomy', 'expression', 'limits', 'play'] as const;
+export const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'] as const;
 export type NeedId = typeof NEED_IDS[number];
 
 export interface Need {
   id: NeedId;
-  title: string;
+  title: string;       // короткое — для кнопок
+  fullTitle: string;   // полное — для экрана оценки и FAQ
 }
 
 @Injectable()
 export class BotService {
   private readonly needs: Need[] = [
-    { id: 'safety', title: '🛡 Безопасность' },
-    { id: 'attachment', title: '🤝 Привязанность' },
-    { id: 'autonomy', title: '🚀 Автономия' },
-    { id: 'expression', title: '💬 Выражение' },
-    { id: 'limits', title: '⚖️ Самоконтроль' },
-    { id: 'play', title: '🎉 Удовольствие' },
+    {
+      id: 'attachment',
+      title: '🤝 Привязанность',
+      fullTitle: 'Безопасная привязанность\n(безопасность, стабильность, забота, принятие)',
+    },
+    {
+      id: 'autonomy',
+      title: '🚀 Автономия',
+      fullTitle: 'Автономия, компетентность и чувство идентичности',
+    },
+    {
+      id: 'expression',
+      title: '💬 Выражение',
+      fullTitle: 'Свобода выражать потребности и эмоции',
+    },
+    {
+      id: 'play',
+      title: '🎉 Спонтанность',
+      fullTitle: 'Спонтанность и игра',
+    },
+    {
+      id: 'limits',
+      title: '⚖️ Границы',
+      fullTitle: 'Реалистичные границы и самоконтроль',
+    },
   ];
 
   constructor(private readonly prisma: PrismaService) {}
