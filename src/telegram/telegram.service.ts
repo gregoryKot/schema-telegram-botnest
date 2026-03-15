@@ -260,8 +260,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           Markup.inlineKeyboard([Markup.button.callback('✏️ Ещё', 'back:needs')]),
         );
       } catch (err) {
-        this.logger.error('rate action failed', err);
-        await ctx.answerCbQuery('Ошибка сохранения, попробуй ещё раз', { show_alert: true }).catch(() => null);
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.error(`rate action failed [needId=${needId} value=${raw} userId=${userId}]: ${message}`);
+        await ctx.reply('❌ Ошибка сохранения, попробуй ещё раз').catch(() => null);
       }
     });
 
