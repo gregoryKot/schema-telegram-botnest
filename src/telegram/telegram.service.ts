@@ -8,7 +8,7 @@ const BOOKING_URL = 'https://cal.com/kotlarewski';
 
 const WELCOME_TEXT = `Привет!
 
-У каждого из нас есть 6 базовых групп эмоциональных потребностей. Когда они удовлетворены — нам хорошо. Когда нет — появляются тревога, усталость, раздражение.
+У каждого из нас есть 5 базовых групп эмоциональных потребностей. Когда они удовлетворены — нам хорошо. Когда нет — появляются тревога, усталость, раздражение.
 
 Раз в день отмечай, насколько каждая потребность закрыта по шкале 0–10. Это помогает замечать паттерны и лучше понимать своё состояние.`;
 
@@ -251,9 +251,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
 
       try {
+        await ctx.answerCbQuery();
         await this.botService.saveRating(userId, needId as NeedId, raw);
         const need = this.botService.getNeeds().find((n) => n.id === needId)!;
-        await ctx.answerCbQuery();
         await this.editOrReply(
           ctx,
           `✅ Записал: ${need.fullTitle} — ${raw}/10`,
