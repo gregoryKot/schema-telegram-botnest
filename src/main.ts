@@ -7,6 +7,7 @@ async function bootstrap() {
   app.enableCors({
     origin: ['https://schema-miniapp.vercel.app', 'http://localhost:5173'],
     methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'x-telegram-init-data'],
   });
 
   const port = process.env.PORT ?? 3000;
