@@ -29,13 +29,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   }
 
   private buildWelcomeKeyboard() {
-    const miniAppUrl = process.env.MINI_APP_URL;
-    const rows = [
+    return Markup.inlineKeyboard([
       [Markup.button.callback('✏️ Заполнить', 'back:needs')],
       [Markup.button.callback('📖 Подробнее', 'faq'), Markup.button.callback('👤 Обо мне', 'about')],
-      ...(miniAppUrl ? [[Markup.button.webApp('📱 Открыть дневник', miniAppUrl)]] : []),
-    ];
-    return Markup.inlineKeyboard(rows);
+      [Markup.button.webApp('📱 Открыть дневник', 'https://schema-miniapp.vercel.app')],
+    ]);
   }
 
   private buildFaqKeyboard() {
