@@ -25,7 +25,7 @@ export class BotService {
     },
     {
       id: 'expression',
-      title: '💬 Выражение',
+      title: '💬 Выражение чувств',
       fullTitle: 'Свобода выражать потребности и эмоции',
     },
     {
