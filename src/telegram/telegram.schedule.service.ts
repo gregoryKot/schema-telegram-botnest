@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { Telegraf, Context } from 'telegraf';
-import { TELEGRAF_BOT } from './telegram.constants';
+import { Telegraf, Context, Markup } from 'telegraf';
+import { TELEGRAF_BOT, BOOKING_URL } from './telegram.constants';
 import { BotService, Need, NeedId } from '../bot/bot.service';
 
 const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -41,8 +41,21 @@ export class TelegramScheduleService {
         const ratings = await this.botService.getRatings(userId);
         if (Object.keys(ratings).length === 0) continue;
 
-        const text = buildSummaryText(this.botService.getNeeds(), ratings);
-        await this.bot.telegram.sendMessage(userId, text);
+        await this.bot.telegram.sendMessage(
+          userId,
+          buildSummaryText(this.botService.getNeeds(), ratings),
+        );
+
+        const lowNeeds = await this.botService.getLowStreakNeeds(userId, 5, 3);
+        if (lowNeeds.length > 0) {
+          const needs = this.botService.getNeeds();
+          const emojis = lowNeeds.map((id) => needs.find((n) => n.id === id)!.emoji).join(' ');
+          await this.bot.telegram.sendMessage(
+            userId,
+            `${emojis} — замечаю, что эти потребности уже несколько дней остаются невысокими.\n\nИногда за этим стоит что-то важное. Если хочется разобраться — я здесь.`,
+            { reply_markup: Markup.inlineKeyboard([[Markup.button.url('📝 Записаться на сессию', BOOKING_URL)]]).reply_markup },
+          );
+        }
       } catch (err) {
         this.logger.error(`Failed to send summary to userId=${userId}`, err);
       }

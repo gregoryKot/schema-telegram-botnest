@@ -1,12 +1,10 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT } from './telegram.constants';
+import { TELEGRAF_BOT, CHANNEL, BOOKING_URL } from './telegram.constants';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { FAQ, FAQ_MENU_TEXT } from './faq';
 import { buildSummaryText } from './telegram.schedule.service';
 
-const CHANNEL = '@SchemeHappens';
-const BOOKING_URL = 'https://cal.com/kotlarewski';
 const WELCOME_TEXT = `Привет!
 
 У каждого из нас есть 5 базовых групп эмоциональных потребностей. Когда они удовлетворены — нам хорошо. Когда нет — появляются тревога, усталость, раздражение.
@@ -33,7 +31,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private buildWelcomeKeyboard() {
     return Markup.inlineKeyboard([
       [Markup.button.callback('✏️ Заполнить', 'back:needs')],
-      [Markup.button.callback('📖 Подробнее', 'faq')],
+      [Markup.button.callback('📖 Подробнее', 'faq'), Markup.button.callback('👤 Обо мне', 'about')],
     ]);
   }
 
@@ -47,28 +45,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       needButtons.slice(4),
       [Markup.button.callback('⬅️ Назад', 'back:welcome')],
     ]);
-  }
-
-  private async buildNeedsKeyboard(userId: number) {
-    const needs = this.botService.getNeeds();
-    const ratings = await this.botService.getRatings(userId);
-    const buttons = needs.map((n) => {
-      const value = ratings[n.id];
-      const label = value !== undefined ? `✅ ${n.title} · ${value}` : n.title;
-      return Markup.button.callback(label, `need:${n.id}`);
-    });
-    const rows: ReturnType<typeof Markup.button.callback>[][] = [];
-    for (let i = 0; i < buttons.length; i += 2) {
-      rows.push(buttons.slice(i, i + 2));
-    }
-    rows.push([Markup.button.callback('❌ Отмена', 'cancel')]);
-    return Markup.inlineKeyboard(rows);
-  }
-
-  private buildRatingKeyboard(needId: NeedId) {
-    const row1 = [0, 1, 2, 3, 4, 5].map((v) => Markup.button.callback(String(v), `rate:${needId}:${v}`));
-    const row2 = [6, 7, 8, 9, 10].map((v) => Markup.button.callback(String(v), `rate:${needId}:${v}`));
-    return Markup.inlineKeyboard([row1, row2, [Markup.button.callback('⬅️ Назад', 'back:needs')]]);
   }
 
   async onModuleInit() {
@@ -91,8 +67,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const userId = ctx.from?.id;
         if (!userId) return;
         const ratings = await this.botService.getRatings(userId);
-        const text = buildSummaryText(this.botService.getNeeds(), ratings);
-        await ctx.reply(text);
+        await ctx.reply(buildSummaryText(this.botService.getNeeds(), ratings));
       } catch (err) {
         this.logger.error('chart command failed', err);
         await ctx.reply('❌ Не удалось получить данные').catch(() => null);
@@ -142,6 +117,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    this.bot.action('about', async (ctx) => {
+      try {
+        await ctx.answerCbQuery();
+        await this.editOrReply(ctx, FAQ['about'], Markup.inlineKeyboard([
+          [Markup.button.url('📝 Записаться на сессию', BOOKING_URL)],
+          [Markup.button.callback('⬅️ Назад', 'back:welcome')],
+        ]));
+      } catch (err) {
+        this.logger.error('about action failed', err);
+      }
+    });
+
     this.bot.action('faq', async (ctx) => {
       try {
         await ctx.answerCbQuery();
@@ -160,85 +147,22 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           return;
         }
         await ctx.answerCbQuery();
-        await this.editOrReply(ctx, text, Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'faq')]]));
+        let keyboard: ReturnType<typeof Markup.inlineKeyboard>;
+        if (topic.startsWith('tips_')) {
+          const needId = topic.slice(5);
+          keyboard = Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', `faq:${needId}`)]]);
+        } else if (NEED_IDS.includes(topic as NeedId)) {
+          keyboard = Markup.inlineKeyboard([
+            [Markup.button.callback('💡 Что помогает?', `faq:tips_${topic}`)],
+            [Markup.button.callback('⬅️ Назад', 'faq')],
+          ]);
+        } else {
+          keyboard = Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'faq')]]);
+        }
+        await this.editOrReply(ctx, text, keyboard);
       } catch (err) {
         this.logger.error('faq topic action failed', err);
         await ctx.answerCbQuery('Что-то пошло не так').catch(() => null);
-      }
-    });
-
-    this.bot.action('show:chart', async (ctx) => {
-      try {
-        const userId = ctx.from?.id;
-        await ctx.answerCbQuery();
-        if (!userId) return;
-        const ratings = await this.botService.getRatings(userId);
-        const text = buildSummaryText(this.botService.getNeeds(), ratings);
-        await ctx.reply(text);
-      } catch (err) {
-        this.logger.error('show:chart action failed', err);
-        await ctx.reply('❌ Не удалось получить данные').catch(() => null);
-      }
-    });
-
-    this.bot.action('back:needs', async (ctx) => {
-      try {
-        await ctx.answerCbQuery();
-        const userId = ctx.from?.id;
-        if (!userId) return;
-        await this.editOrReply(ctx, 'Выберите потребность:', await this.buildNeedsKeyboard(userId));
-      } catch (err) {
-        this.logger.error('back:needs action failed', err);
-      }
-    });
-
-    this.bot.action(/^need:([a-z_]+)$/, async (ctx) => {
-      try {
-        const needId = (ctx.match as RegExpMatchArray)[1];
-        if (!NEED_IDS.includes(needId as NeedId)) {
-          await ctx.answerCbQuery('Неизвестная потребность', { show_alert: true });
-          return;
-        }
-        const need = this.botService.getNeeds().find((n) => n.id === needId)!;
-        await ctx.answerCbQuery();
-        await this.editOrReply(ctx, `Оцените: ${need.fullTitle}`, this.buildRatingKeyboard(needId as NeedId));
-      } catch (err) {
-        this.logger.error('need action failed', err);
-        await ctx.answerCbQuery('Что-то пошло не так').catch(() => null);
-      }
-    });
-
-    this.bot.action(/^rate:([a-z_]+):(\d{1,2})$/, async (ctx) => {
-      const match = ctx.match as RegExpMatchArray;
-      const needId = match[1];
-      const raw = Number(match[2]);
-
-      if (!NEED_IDS.includes(needId as NeedId) || !Number.isInteger(raw) || raw < 0 || raw > 10) {
-        await ctx.answerCbQuery('Неверные данные', { show_alert: true }).catch(() => null);
-        return;
-      }
-      const userId = ctx.from?.id;
-      if (!userId) {
-        await ctx.answerCbQuery('Не удалось определить пользователя', { show_alert: true }).catch(() => null);
-        return;
-      }
-
-      try {
-        await ctx.answerCbQuery();
-        await this.botService.saveRating(userId, needId as NeedId, raw);
-        const need = this.botService.getNeeds().find((n) => n.id === needId)!;
-        await this.editOrReply(
-          ctx,
-          `✅ Записал: ${need.fullTitle} — ${raw}/10`,
-          Markup.inlineKeyboard([
-            [Markup.button.callback('✏️ Продолжить', 'back:needs')],
-            [Markup.button.callback('📊 Диаграмма', 'show:chart')],
-          ]),
-        );
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        this.logger.error(`rate action failed [needId=${needId} value=${raw} userId=${userId}]: ${message}`);
-        await ctx.reply('❌ Ошибка сохранения, попробуй ещё раз').catch(() => null);
       }
     });
 

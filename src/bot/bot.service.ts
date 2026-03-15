@@ -97,4 +97,36 @@ export class BotService {
     });
     return Object.fromEntries(rows.map((r) => [r.needId, r.value])) as Partial<Record<NeedId, number>>;
   }
+
+  async getHistoryRatings(userId: number, days: number): Promise<Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>> {
+    const dates = Array.from({ length: days }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return this.todayDateString(d);
+    });
+    const rows = await this.prisma.rating.findMany({
+      where: { userId, date: { in: dates } },
+    });
+    const byDate = new Map<string, Partial<Record<NeedId, number>>>();
+    for (const row of rows) {
+      if (!byDate.has(row.date)) byDate.set(row.date, {});
+      byDate.get(row.date)![row.needId as NeedId] = row.value;
+    }
+    return dates.filter((d) => byDate.has(d)).map((d) => ({ date: d, ratings: byDate.get(d)! }));
+  }
+
+  async getLowStreakNeeds(userId: number, threshold: number, days: number): Promise<NeedId[]> {
+    const dates = Array.from({ length: days }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return this.todayDateString(d);
+    });
+    const rows = await this.prisma.rating.findMany({
+      where: { userId, date: { in: dates } },
+    });
+    return NEED_IDS.filter((needId) => {
+      const needRows = rows.filter((r) => r.needId === needId);
+      return needRows.length === days && needRows.every((r) => r.value < threshold);
+    });
+  }
 }
