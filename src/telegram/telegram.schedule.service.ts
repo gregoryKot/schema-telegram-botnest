@@ -15,7 +15,8 @@ export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, 
     const v = ratings[n.id] ?? 0;
     return `${n.emoji} ${'🟩'.repeat(v)}${'⬜'.repeat(10 - v)} ${v}/10`;
   });
-  return `📊 Колесо потребностей · ${formatDate(new Date())}\n\n${lines.join('\n')}`;
+  const legend = needs.map((n) => `${n.emoji} ${n.chartLabel}`).join(' · ');
+  return `📊 Колесо потребностей · ${formatDate(new Date())}\n\n${lines.join('\n')}\n\n${legend}`;
 }
 
 @Injectable()
