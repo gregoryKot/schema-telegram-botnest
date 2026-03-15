@@ -58,11 +58,20 @@ export class BotService {
     return this.needs;
   }
 
-  private todayDateString(date = new Date()): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
+  private localDateString(tzOffsetHours = 0, base = new Date()): string {
+    const local = new Date(base.getTime() + tzOffsetHours * 3600_000);
+    const y = local.getUTCFullYear();
+    const m = String(local.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(local.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
+  }
+
+  private async userTzOffset(userId: number): Promise<number> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { notifyTzOffset: true },
+    });
+    return user?.notifyTzOffset ?? 0;
   }
 
   async registerUser(userId: number) {
@@ -101,7 +110,7 @@ export class BotService {
     if (!Number.isInteger(value) || value < 0 || value > 10) {
       throw new Error('Rating must be integer 0..10');
     }
-    const dt = date ?? this.todayDateString();
+    const dt = date ?? this.localDateString(await this.userTzOffset(userId));
     await this.prisma.rating.upsert({
       where: { userId_date_needId: { userId, date: dt, needId } },
       update: { value },
@@ -110,7 +119,7 @@ export class BotService {
   }
 
   async getRatings(userId: number, date?: string) {
-    const dt = date ?? this.todayDateString();
+    const dt = date ?? this.localDateString(await this.userTzOffset(userId));
     const rows = await this.prisma.rating.findMany({
       where: { userId, date: dt },
     });
@@ -121,7 +130,7 @@ export class BotService {
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return this.todayDateString(d);
+      return this.localDateString(0, d);
     });
     const rows = await this.prisma.rating.findMany({
       where: { userId, date: { in: dates } },
@@ -138,7 +147,7 @@ export class BotService {
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return this.todayDateString(d);
+      return this.localDateString(0, d);
     });
     const rows = await this.prisma.rating.findMany({
       where: { userId, date: { in: dates } },

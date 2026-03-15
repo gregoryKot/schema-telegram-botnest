@@ -10,13 +10,14 @@ function formatDate(date: Date): string {
   return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
 }
 
-export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, number>>): string {
+export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, number>>, tzOffset = 0): string {
   const lines = needs.map((n) => {
     const v = ratings[n.id] ?? 0;
     return `${n.emoji} ${'🟩'.repeat(v)}${'⬜'.repeat(10 - v)} ${v}/10`;
   });
   const legend = needs.map((n) => `${n.emoji} ${n.chartLabel}`).join(' · ');
-  return `📔 Дневник потребностей · ${formatDate(new Date())}\n\n${lines.join('\n')}\n\n${legend}`;
+  const localDate = new Date(Date.now() + tzOffset * 3600_000);
+  return `📔 Дневник потребностей · ${formatDate(localDate)}\n\n${lines.join('\n')}\n\n${legend}`;
 }
 
 @Injectable()
@@ -38,12 +39,14 @@ export class TelegramScheduleService {
 
     for (const userId of userIds) {
       try {
+        const settings = await this.botService.getUserSettings(userId);
+        const tzOffset = settings?.notifyTzOffset ?? 0;
         const ratings = await this.botService.getRatings(userId);
         if (Object.keys(ratings).length === 0) continue;
 
         await this.bot.telegram.sendMessage(
           userId,
-          buildSummaryText(this.botService.getNeeds(), ratings),
+          buildSummaryText(this.botService.getNeeds(), ratings, tzOffset),
         );
 
         const lowNeeds = await this.botService.getLowStreakNeeds(userId, 5, 3);
