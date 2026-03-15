@@ -24,14 +24,14 @@ export class TelegramAuthGuard implements CanActivate {
 
     const dataCheckString = entries
       .filter(([k]) => k !== 'hash' && k !== 'signature')
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
       .map(([k, v]) => `${k}=${v}`)
       .join('\n');
 
     const secretKey = createHmac('sha256', 'WebAppData').update(botToken).digest();
     const computed = createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
     if (computed !== hash) {
-      this.logger.warn(`HMAC mismatch.\nhash=${hash}\ncomputed=${computed}\ndataCheckString=\n${dataCheckString}`);
+      this.logger.warn(`HMAC mismatch.\nrawInitData=${initData.slice(0, 200)}\nhash=${hash}\ncomputed=${computed}\ndataCheckString=\n${dataCheckString}`);
       throw new UnauthorizedException('Invalid initData');
     }
 
