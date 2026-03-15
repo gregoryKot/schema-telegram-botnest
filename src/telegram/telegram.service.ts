@@ -30,7 +30,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     for (let i = 0; i < buttons.length; i += 2) {
       rows.push(buttons.slice(i, i + 2));
     }
-    rows.push([Markup.button.callback('❌ Отмена', 'back:needs')]);
+    rows.push([Markup.button.callback('❌ Отмена', 'cancel')]);
     return Markup.inlineKeyboard(rows);
   }
 
@@ -86,6 +86,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       } catch (err) {
         this.logger.error('post command failed', err);
         await ctx.reply('❌ Не удалось отправить пост. Убедись что бот — админ канала.').catch(() => null);
+      }
+    });
+
+    this.bot.action('cancel', async (ctx) => {
+      try {
+        await ctx.answerCbQuery();
+        await ctx.deleteMessage();
+      } catch (err) {
+        this.logger.error('cancel action failed', err);
       }
     });
 

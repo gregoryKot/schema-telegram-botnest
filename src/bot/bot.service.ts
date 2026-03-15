@@ -14,10 +14,10 @@ export class BotService {
   private readonly needs: Need[] = [
     { id: 'safety', title: '🛡 Безопасность' },
     { id: 'attachment', title: '🤝 Привязанность' },
-    { id: 'autonomy', title: '🚀 Автономия / компетентность / успех' },
-    { id: 'expression', title: '💬 Выражение потребностей и чувств' },
-    { id: 'limits', title: '⚖️ Разумные ограничения и самоконтроль' },
-    { id: 'play', title: '🎉 Удовольствие / спонтанность / игра' },
+    { id: 'autonomy', title: '🚀 Автономия' },
+    { id: 'expression', title: '💬 Выражение' },
+    { id: 'limits', title: '⚖️ Самоконтроль' },
+    { id: 'play', title: '🎉 Удовольствие' },
   ];
 
   constructor(private readonly prisma: PrismaService) {}
