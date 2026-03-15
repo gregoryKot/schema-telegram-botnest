@@ -28,13 +28,13 @@ export class TelegramScheduleService {
     private readonly botService: BotService,
   ) {}
 
-  // 21:00 GMT+2 = 19:00 UTC
-  @Cron('0 19 * * *')
+  @Cron('0 * * * *')
   async sendDailySummary() {
     if (!this.bot) return;
 
-    const userIds = await this.botService.getAllUserIds();
-    this.logger.log(`Sending daily summary to ${userIds.length} users`);
+    const utcHour = new Date().getUTCHours();
+    const userIds = await this.botService.getUsersToNotify(utcHour);
+    this.logger.log(`[${utcHour}:00 UTC] Sending daily summary to ${userIds.length} users`);
 
     for (const userId of userIds) {
       try {

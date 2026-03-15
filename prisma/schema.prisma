@@ -18,6 +18,9 @@ model Rating {
 }
 
 model User {
-  id        Int      @id
-  createdAt DateTime @default(now())
+  id              Int      @id
+  createdAt       DateTime @default(now())
+  notifyEnabled   Boolean  @default(true)
+  notifyUtcHour   Int      @default(19)   // UTC hour to send notification
+  notifyTzOffset  Int      @default(2)    // timezone offset in hours (for display)
 }

@@ -166,6 +166,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    await this.bot.telegram.setMyCommands([
+      { command: 'start', description: 'Главное меню' },
+      { command: 'chart', description: 'Сводка за сегодня' },
+      { command: 'history', description: 'История за 7 дней' },
+      { command: 'settings', description: 'Настройки уведомлений' },
+    ]).catch((err) => this.logger.error('setMyCommands failed', err));
+
     try {
       await this.bot.launch();
       this.logger.log('Bot launched');

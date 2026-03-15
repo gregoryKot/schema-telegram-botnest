@@ -73,6 +73,25 @@ export class BotService {
     });
   }
 
+  async getUserSettings(userId: number) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { notifyEnabled: true, notifyUtcHour: true, notifyTzOffset: true },
+    });
+  }
+
+  async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number }) {
+    await this.prisma.user.update({ where: { id: userId }, data });
+  }
+
+  async getUsersToNotify(utcHour: number): Promise<number[]> {
+    const users = await this.prisma.user.findMany({
+      where: { notifyEnabled: true, notifyUtcHour: utcHour },
+      select: { id: true },
+    });
+    return users.map((u) => u.id);
+  }
+
   async getAllUserIds(): Promise<number[]> {
     const users = await this.prisma.user.findMany({ select: { id: true } });
     return users.map((u) => u.id);
