@@ -2,8 +2,8 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } f
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
-import { ChartService } from '../chart/chart.service';
 import { FAQ, FAQ_MENU_TEXT } from './faq';
+import { buildSummaryText } from './telegram.schedule.service';
 
 const CHANNEL = '@SchemeHappens';
 const BOOKING_URL = 'https://cal.com/kotlarewski';
@@ -20,7 +20,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(TELEGRAF_BOT) @Optional() private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
-    private readonly chartService: ChartService,
   ) {}
 
   private async editOrReply(ctx: Context, text: string, extra?: Parameters<Context['reply']>[1]) {
@@ -92,11 +91,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const userId = ctx.from?.id;
         if (!userId) return;
         const ratings = await this.botService.getRatings(userId);
-        const buffer = await this.chartService.generateRadarChart(this.botService.getNeeds(), ratings);
-        await ctx.replyWithPhoto({ source: buffer }, { caption: '📊 Твоё колесо потребностей за сегодня' });
+        const text = buildSummaryText(this.botService.getNeeds(), ratings);
+        await ctx.reply(text);
       } catch (err) {
         this.logger.error('chart command failed', err);
-        await ctx.reply('❌ Не удалось сгенерировать диаграмму').catch(() => null);
+        await ctx.reply('❌ Не удалось получить данные').catch(() => null);
       }
     });
 
@@ -174,11 +173,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.answerCbQuery();
         if (!userId) return;
         const ratings = await this.botService.getRatings(userId);
-        const buffer = await this.chartService.generateRadarChart(this.botService.getNeeds(), ratings);
-        await ctx.replyWithPhoto({ source: buffer }, { caption: '📊 Твоё колесо потребностей за сегодня' });
+        const text = buildSummaryText(this.botService.getNeeds(), ratings);
+        await ctx.reply(text);
       } catch (err) {
         this.logger.error('show:chart action failed', err);
-        await ctx.reply('❌ Не удалось сгенерировать диаграмму').catch(() => null);
+        await ctx.reply('❌ Не удалось получить данные').catch(() => null);
       }
     });
 

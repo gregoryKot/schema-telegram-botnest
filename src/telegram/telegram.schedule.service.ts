@@ -2,10 +2,21 @@ import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
-import { BotService } from '../bot/bot.service';
-import { ChartService } from '../chart/chart.service';
+import { BotService, Need, NeedId } from '../bot/bot.service';
 
-const DAILY_CAPTION = '📊 Твоё колесо потребностей за сегодня';
+const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+function formatDate(date: Date): string {
+  return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+}
+
+export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, number>>): string {
+  const lines = needs.map((n) => {
+    const v = ratings[n.id] ?? 0;
+    return `${n.title}  ${'🟩'.repeat(v)}${'⬜'.repeat(10 - v)}  ${v}/10`;
+  });
+  return `📊 Колесо потребностей · ${formatDate(new Date())}\n\n${lines.join('\n')}`;
+}
 
 @Injectable()
 export class TelegramScheduleService {
@@ -14,29 +25,28 @@ export class TelegramScheduleService {
   constructor(
     @Inject(TELEGRAF_BOT) @Optional() private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
-    private readonly chartService: ChartService,
   ) {}
 
   // 21:00 GMT+2 = 19:00 UTC
   @Cron('0 19 * * *')
-  async sendDailyCharts() {
+  async sendDailySummary() {
     if (!this.bot) return;
 
     const userIds = await this.botService.getAllUserIds();
-    this.logger.log(`Sending daily charts to ${userIds.length} users`);
+    this.logger.log(`Sending daily summary to ${userIds.length} users`);
 
     for (const userId of userIds) {
       try {
         const ratings = await this.botService.getRatings(userId);
         if (Object.keys(ratings).length === 0) continue;
 
-        const buffer = await this.chartService.generateRadarChart(this.botService.getNeeds(), ratings);
-        await this.bot.telegram.sendPhoto(userId, { source: buffer }, { caption: DAILY_CAPTION });
+        const text = buildSummaryText(this.botService.getNeeds(), ratings);
+        await this.bot.telegram.sendMessage(userId, text);
       } catch (err) {
-        this.logger.error(`Failed to send chart to userId=${userId}`, err);
+        this.logger.error(`Failed to send summary to userId=${userId}`, err);
       }
     }
 
-    this.logger.log('Daily charts sent');
+    this.logger.log('Daily summaries sent');
   }
 }
