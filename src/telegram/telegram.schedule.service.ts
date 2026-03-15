@@ -13,7 +13,7 @@ function formatDate(date: Date): string {
 export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, number>>): string {
   const lines = needs.map((n) => {
     const v = ratings[n.id] ?? 0;
-    return `${n.title}  ${'🟩'.repeat(v)}${'⬜'.repeat(10 - v)}  ${v}/10`;
+    return `${n.emoji} ${'🟩'.repeat(v)}${'⬜'.repeat(10 - v)} ${v}/10`;
   });
   return `📊 Колесо потребностей · ${formatDate(new Date())}\n\n${lines.join('\n')}`;
 }

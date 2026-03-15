@@ -6,9 +6,10 @@ export type NeedId = typeof NEED_IDS[number];
 
 export interface Need {
   id: NeedId;
+  emoji: string;       // для сводки и идентификации
   title: string;       // короткое — для кнопок
   fullTitle: string;   // полное — для экрана оценки и FAQ
-  chartLabel: string;  // для диаграммы (без эмодзи, может быть многострочным через \n)
+  chartLabel: string;  // для диаграммы (без эмодзи)
 }
 
 @Injectable()
@@ -16,30 +17,35 @@ export class BotService {
   private readonly needs: Need[] = [
     {
       id: 'attachment',
+      emoji: '🤝',
       title: '🤝 Привязанность',
       fullTitle: 'Безопасная привязанность\n(безопасность, стабильность, забота, принятие)',
       chartLabel: 'Привязанность',
     },
     {
       id: 'autonomy',
+      emoji: '🚀',
       title: '🚀 Автономия',
       fullTitle: 'Автономия, компетентность и чувство идентичности',
       chartLabel: 'Автономия',
     },
     {
       id: 'expression',
+      emoji: '💬',
       title: '💬 Выражение чувств',
       fullTitle: 'Свобода выражать потребности и эмоции',
-      chartLabel: 'Выражение\nчувств',
+      chartLabel: 'Выражение чувств',
     },
     {
       id: 'play',
+      emoji: '🎉',
       title: '🎉 Спонтанность',
       fullTitle: 'Спонтанность и игра',
       chartLabel: 'Спонтанность',
     },
     {
       id: 'limits',
+      emoji: '⚖️',
       title: '⚖️ Границы',
       fullTitle: 'Реалистичные границы и самоконтроль',
       chartLabel: 'Границы',
