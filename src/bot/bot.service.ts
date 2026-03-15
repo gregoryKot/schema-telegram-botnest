@@ -8,6 +8,7 @@ export interface Need {
   id: NeedId;
   title: string;       // короткое — для кнопок
   fullTitle: string;   // полное — для экрана оценки и FAQ
+  chartLabel: string;  // для диаграммы (без эмодзи, может быть многострочным через \n)
 }
 
 @Injectable()
@@ -17,26 +18,31 @@ export class BotService {
       id: 'attachment',
       title: '🤝 Привязанность',
       fullTitle: 'Безопасная привязанность\n(безопасность, стабильность, забота, принятие)',
+      chartLabel: 'Привязанность',
     },
     {
       id: 'autonomy',
       title: '🚀 Автономия',
       fullTitle: 'Автономия, компетентность и чувство идентичности',
+      chartLabel: 'Автономия',
     },
     {
       id: 'expression',
       title: '💬 Выражение чувств',
       fullTitle: 'Свобода выражать потребности и эмоции',
+      chartLabel: 'Выражение\nчувств',
     },
     {
       id: 'play',
       title: '🎉 Спонтанность',
       fullTitle: 'Спонтанность и игра',
+      chartLabel: 'Спонтанность',
     },
     {
       id: 'limits',
       title: '⚖️ Границы',
       fullTitle: 'Реалистичные границы и самоконтроль',
+      chartLabel: 'Границы',
     },
   ];
 
@@ -51,6 +57,19 @@ export class BotService {
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
+  }
+
+  async registerUser(userId: number) {
+    await this.prisma.user.upsert({
+      where: { id: userId },
+      update: {},
+      create: { id: userId },
+    });
+  }
+
+  async getAllUserIds(): Promise<number[]> {
+    const users = await this.prisma.user.findMany({ select: { id: true } });
+    return users.map((u) => u.id);
   }
 
   async saveRating(userId: number, needId: NeedId, value: number, date?: string) {

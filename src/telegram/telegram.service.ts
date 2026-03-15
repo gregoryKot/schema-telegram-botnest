@@ -1,7 +1,9 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
+import { ChartService } from '../chart/chart.service';
 
 const CHANNEL = '@SchemeHappens';
 const BOOKING_URL = 'https://cal.com/kotlarewski';
@@ -71,6 +73,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(TELEGRAF_BOT) @Optional() private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
+    private readonly chartService: ChartService,
   ) {}
 
   private async editOrReply(ctx: Context, text: string, extra?: Parameters<Context['reply']>[1]) {
@@ -125,9 +128,23 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.command('start', async (ctx) => {
       try {
+        if (ctx.from?.id) await this.botService.registerUser(ctx.from.id);
         await ctx.reply(WELCOME_TEXT, this.buildWelcomeKeyboard());
       } catch (err) {
         this.logger.error('start command failed', err);
+      }
+    });
+
+    this.bot.command('chart', async (ctx) => {
+      try {
+        const userId = ctx.from?.id;
+        if (!userId) return;
+        const ratings = await this.botService.getRatings(userId);
+        const buffer = await this.chartService.generateRadarChart(this.botService.getNeeds(), ratings);
+        await ctx.replyWithPhoto({ source: buffer });
+      } catch (err) {
+        this.logger.error('chart command failed', err);
+        await ctx.reply('❌ Не удалось сгенерировать диаграмму').catch(() => null);
       }
     });
 
@@ -272,6 +289,23 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     } catch (err) {
       this.logger.error('Failed to launch bot', err);
       throw err;
+    }
+  }
+
+  // 21:00 GMT+2 = 19:00 UTC
+  @Cron('0 19 * * *')
+  async sendDailyCharts() {
+    if (!this.bot) return;
+    const userIds = await this.botService.getAllUserIds();
+    for (const userId of userIds) {
+      try {
+        const ratings = await this.botService.getRatings(userId);
+        if (Object.keys(ratings).length === 0) continue;
+        const buffer = await this.chartService.generateRadarChart(this.botService.getNeeds(), ratings);
+        await this.bot.telegram.sendPhoto(userId, { source: buffer });
+      } catch (err) {
+        this.logger.error(`Failed to send daily chart to ${userId}`, err);
+      }
     }
   }
 

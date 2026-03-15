@@ -16,3 +16,8 @@ model Rating {
 
   @@unique([userId, date, needId])
 }
+
+model User {
+  id        Int      @id
+  createdAt DateTime @default(now())
+}
