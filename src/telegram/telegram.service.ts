@@ -1,70 +1,17 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { ChartService } from '../chart/chart.service';
+import { FAQ, FAQ_MENU_TEXT } from './faq';
 
 const CHANNEL = '@SchemeHappens';
 const BOOKING_URL = 'https://cal.com/kotlarewski';
-
 const WELCOME_TEXT = `Привет!
 
 У каждого из нас есть 5 базовых групп эмоциональных потребностей. Когда они удовлетворены — нам хорошо. Когда нет — появляются тревога, усталость, раздражение.
 
 Раз в день отмечай, насколько каждая потребность закрыта по шкале 0–10. Это помогает замечать паттерны и лучше понимать своё состояние.`;
-
-const FAQ_MENU_TEXT = `📖 Подробнее — выбери тему:`;
-
-const FAQ: Record<string, string> = {
-  therapy: `🧠 Схематерапия
-
-Схематерапия — метод, разработанный Джеффри Янгом. Она помогает разобраться, почему мы снова и снова попадаем в одни и те же ситуации — в отношениях, на работе, с собой.
-
-В основе — идея о том, что в детстве у каждого из нас были базовые эмоциональные потребности. Если они не удовлетворялись, формируются схемы — устойчивые паттерны восприятия себя и мира, которые мешают жить так, как хочется.
-
-Колесо потребностей помогает отслеживать, какие потребности сейчас закрыты, а какие — нет.`,
-
-  attachment: `🤝 Безопасная привязанность
-
-Потребность в безопасности, стабильности, заботе и принятии. Чувствовать, что рядом есть надёжные люди, что тебя любят и не бросят.
-
-Когда не закрыта — тревога, недоверие, страх близости или, наоборот, цепляние за отношения.
-
-Вопрос для рефлексии: чувствую ли я сегодня, что нахожусь в безопасности — в отношениях, в своей жизни?`,
-
-  autonomy: `🚀 Автономия, компетентность и чувство идентичности
-
-Потребность действовать самостоятельно, принимать решения, развиваться и ощущать себя способным. Знать, кто ты есть.
-
-Когда не закрыта — беспомощность, зависимость от чужого мнения, потеря себя.
-
-Вопрос для рефлексии: действовал ли я сегодня исходя из своих желаний? Есть ли ощущение, что я — это я?`,
-
-  expression: `💬 Свобода выражать потребности и эмоции
-
-Потребность свободно говорить о том, что чувствуешь и чего хочешь — без стыда и страха осуждения.
-
-Когда не закрыта — подавленность, ощущение что тебя не слышат, накопленное напряжение.
-
-Вопрос для рефлексии: мог ли я сегодня выразить то, что чувствую? Есть ли что-то невысказанное?`,
-
-  play: `🎉 Спонтанность и игра
-
-Потребность в радости, лёгкости, игривости. Делать что-то просто так — без цели и результата.
-
-Когда не закрыта — серость, усталость, ощущение что живёшь на автопилоте.
-
-Вопрос для рефлексии: было ли сегодня что-то лёгкое и радостное? Позволил ли я себе просто побыть?`,
-
-  limits: `⚖️ Реалистичные границы и самоконтроль
-
-Потребность в разумных границах — своих и чужих. Умение сдерживать импульсы и уважать договорённости.
-
-Когда не закрыта — хаос, импульсивность, или наоборот — чрезмерная жёсткость к себе.
-
-Вопрос для рефлексии: соблюдал ли я сегодня свои границы? Не было ли перегибов в ту или другую сторону?`,
-};
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
@@ -146,7 +93,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         if (!userId) return;
         const ratings = await this.botService.getRatings(userId);
         const buffer = await this.chartService.generateRadarChart(this.botService.getNeeds(), ratings);
-        await ctx.replyWithPhoto({ source: buffer });
+        await ctx.replyWithPhoto({ source: buffer }, { caption: '📊 Твоё колесо потребностей за сегодня' });
       } catch (err) {
         this.logger.error('chart command failed', err);
         await ctx.reply('❌ Не удалось сгенерировать диаграмму').catch(() => null);
@@ -161,7 +108,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    // Admin-only: post signup button to channel
     this.bot.command('post', async (ctx) => {
       try {
         const adminId = Number(process.env.ADMIN_ID);
@@ -169,15 +115,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
-        await this.bot!.telegram.sendMessage(
-          CHANNEL,
-          '📅 Запись на сессию — прямо по кнопке',
-          {
-            reply_markup: Markup.inlineKeyboard([
-              Markup.button.url('📝 Записаться', BOOKING_URL),
-            ]).reply_markup,
-          },
-        );
+        await this.bot!.telegram.sendMessage(CHANNEL, '📅 Запись на сессию — прямо по кнопке', {
+          reply_markup: Markup.inlineKeyboard([Markup.button.url('📝 Записаться', BOOKING_URL)]).reply_markup,
+        });
         await ctx.reply('✅ Пост отправлен в канал');
       } catch (err) {
         this.logger.error('post command failed', err);
@@ -221,11 +161,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           return;
         }
         await ctx.answerCbQuery();
-        await this.editOrReply(
-          ctx,
-          text,
-          Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'faq')]]),
-        );
+        await this.editOrReply(ctx, text, Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'faq')]]));
       } catch (err) {
         this.logger.error('faq topic action failed', err);
         await ctx.answerCbQuery('Что-то пошло не так').catch(() => null);
@@ -235,22 +171,22 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.action('show:chart', async (ctx) => {
       try {
         const userId = ctx.from?.id;
-        if (!userId) return;
         await ctx.answerCbQuery();
+        if (!userId) return;
         const ratings = await this.botService.getRatings(userId);
         const buffer = await this.chartService.generateRadarChart(this.botService.getNeeds(), ratings);
-        await ctx.replyWithPhoto({ source: buffer });
+        await ctx.replyWithPhoto({ source: buffer }, { caption: '📊 Твоё колесо потребностей за сегодня' });
       } catch (err) {
         this.logger.error('show:chart action failed', err);
-        await ctx.answerCbQuery('Не удалось сгенерировать диаграмму', { show_alert: true }).catch(() => null);
+        await ctx.reply('❌ Не удалось сгенерировать диаграмму').catch(() => null);
       }
     });
 
     this.bot.action('back:needs', async (ctx) => {
       try {
+        await ctx.answerCbQuery();
         const userId = ctx.from?.id;
         if (!userId) return;
-        await ctx.answerCbQuery();
         await this.editOrReply(ctx, 'Выберите потребность:', await this.buildNeedsKeyboard(userId));
       } catch (err) {
         this.logger.error('back:needs action failed', err);
@@ -313,23 +249,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     } catch (err) {
       this.logger.error('Failed to launch bot', err);
       throw err;
-    }
-  }
-
-  // 21:00 GMT+2 = 19:00 UTC
-  @Cron('0 19 * * *')
-  async sendDailyCharts() {
-    if (!this.bot) return;
-    const userIds = await this.botService.getAllUserIds();
-    for (const userId of userIds) {
-      try {
-        const ratings = await this.botService.getRatings(userId);
-        if (Object.keys(ratings).length === 0) continue;
-        const buffer = await this.chartService.generateRadarChart(this.botService.getNeeds(), ratings);
-        await this.bot.telegram.sendPhoto(userId, { source: buffer });
-      } catch (err) {
-        this.logger.error(`Failed to send daily chart to ${userId}`, err);
-      }
     }
   }
 
