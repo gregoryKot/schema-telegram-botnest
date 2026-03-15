@@ -1,13 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-export type NeedId =
-  | 'safety'
-  | 'attachment'
-  | 'autonomy'
-  | 'expression'
-  | 'limits'
-  | 'play';
+export const NEED_IDS = ['safety', 'attachment', 'autonomy', 'expression', 'limits', 'play'] as const;
+export type NeedId = typeof NEED_IDS[number];
 
 export interface Need {
   id: NeedId;

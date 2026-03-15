@@ -1,2 +1,1 @@
-export const TELEGRAM_CLIENT = 'TELEGRAM_CLIENT';
 export const TELEGRAF_BOT = 'TELEGRAF_BOT';
