@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } f
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT, CHANNEL, BOOKING_URL, MINIAPP_URL } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
-import { buildSummaryText } from './telegram.schedule.service';
+import { buildSummaryText } from '../notification/notification.templates';
 
 const WELCOME_TEXT = `Привет!
 
@@ -39,6 +39,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
       } catch (err) {
         this.logger.error('start command failed', err);
+        await ctx.reply('Что-то пошло не так. Попробуй ещё раз — /start').catch(() => null);
       }
     });
 
@@ -60,6 +61,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       } catch (err) {
         this.logger.error('ping command failed', err);
       }
+    });
+
+    this.bot.command('testerror', async (ctx) => {
+      const adminId = Number(process.env.ADMIN_ID);
+      if (!adminId || ctx.from?.id !== adminId) return;
+      this.logger.error('test error alert — всё работает ✅');
+      await ctx.reply('Ошибка залогирована — проверяй личку от бота');
     });
 
     this.bot.command('post', async (ctx) => {

@@ -68,7 +68,7 @@ export class BotService {
 
   private async userTzOffset(userId: number): Promise<number> {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: BigInt(userId) },
       select: { notifyTzOffset: true },
     });
     return user?.notifyTzOffset ?? 0;
@@ -76,21 +76,21 @@ export class BotService {
 
   async registerUser(userId: number) {
     await this.prisma.user.upsert({
-      where: { id: userId },
+      where: { id: BigInt(userId) },
       update: {},
-      create: { id: userId },
+      create: { id: BigInt(userId) },
     });
   }
 
   async getUserSettings(userId: number) {
     return this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: BigInt(userId) },
       select: { notifyEnabled: true, notifyUtcHour: true, notifyTzOffset: true },
     });
   }
 
   async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number }) {
-    await this.prisma.user.update({ where: { id: userId }, data });
+    await this.prisma.user.update({ where: { id: BigInt(userId) }, data });
   }
 
   async getUsersToNotify(utcHour: number): Promise<number[]> {
@@ -98,65 +98,40 @@ export class BotService {
       where: { notifyEnabled: true, notifyUtcHour: utcHour },
       select: { id: true },
     });
-    return users.map((u) => u.id);
+    return users.map((u) => Number(u.id));
   }
 
   async getAllUserIds(): Promise<number[]> {
     const users = await this.prisma.user.findMany({ select: { id: true } });
-    return users.map((u) => u.id);
+    return users.map((u) => Number(u.id));
+  }
+
+  async getAllUsersWithSettings(): Promise<Array<{ id: number; notifyUtcHour: number; notifyTzOffset: number }>> {
+    const users = await this.prisma.user.findMany({
+      where: { notifyEnabled: true },
+      select: { id: true, notifyUtcHour: true, notifyTzOffset: true },
+    });
+    return users.map((u) => ({ ...u, id: Number(u.id) }));
   }
 
   async saveRating(userId: number, needId: NeedId, value: number, date?: string) {
     if (!Number.isInteger(value) || value < 0 || value > 10) {
       throw new Error('Rating must be integer 0..10');
     }
+    const uid = BigInt(userId);
     const dt = date ?? this.localDateString(await this.userTzOffset(userId));
     await this.prisma.rating.upsert({
-      where: { userId_date_needId: { userId, date: dt, needId } },
+      where: { userId_date_needId: { userId: uid, date: dt, needId } },
       update: { value },
-      create: { userId, date: dt, needId, value },
+      create: { userId: uid, date: dt, needId, value },
     });
   }
 
   async getRatings(userId: number, date?: string) {
     const dt = date ?? this.localDateString(await this.userTzOffset(userId));
     const rows = await this.prisma.rating.findMany({
-      where: { userId, date: dt },
+      where: { userId: BigInt(userId), date: dt },
     });
     return Object.fromEntries(rows.map((r) => [r.needId, r.value])) as Partial<Record<NeedId, number>>;
-  }
-
-  async getHistoryRatings(userId: number, days: number): Promise<Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>> {
-    const tzOffset = await this.userTzOffset(userId);
-    const dates = Array.from({ length: days }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return this.localDateString(tzOffset, d);
-    });
-    const rows = await this.prisma.rating.findMany({
-      where: { userId, date: { in: dates } },
-    });
-    const byDate = new Map<string, Partial<Record<NeedId, number>>>();
-    for (const row of rows) {
-      if (!byDate.has(row.date)) byDate.set(row.date, {});
-      byDate.get(row.date)![row.needId as NeedId] = row.value;
-    }
-    return dates.filter((d) => byDate.has(d)).map((d) => ({ date: d, ratings: byDate.get(d)! }));
-  }
-
-  async getLowStreakNeeds(userId: number, threshold: number, days: number): Promise<NeedId[]> {
-    const tzOffset = await this.userTzOffset(userId);
-    const dates = Array.from({ length: days }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return this.localDateString(tzOffset, d);
-    });
-    const rows = await this.prisma.rating.findMany({
-      where: { userId, date: { in: dates } },
-    });
-    return NEED_IDS.filter((needId) => {
-      const needRows = rows.filter((r) => r.needId === needId);
-      return needRows.length === days && needRows.every((r) => r.value < threshold);
-    });
   }
 }

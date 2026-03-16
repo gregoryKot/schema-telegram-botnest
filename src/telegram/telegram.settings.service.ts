@@ -71,6 +71,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.reply(text, buildSettingsKeyboard(s?.notifyEnabled ?? true));
       } catch (err) {
         this.logger.error('settings command failed', err);
+        await ctx.reply('Не удалось загрузить настройки. Попробуй ещё раз.').catch(() => null);
       }
     });
 

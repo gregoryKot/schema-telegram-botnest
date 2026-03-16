@@ -9,7 +9,7 @@ datasource db {
 
 model Rating {
   id     Int    @id @default(autoincrement())
-  userId Int
+  userId BigInt
   date   String
   needId String
   value  Int
@@ -18,9 +18,25 @@ model Rating {
 }
 
 model User {
-  id              Int      @id
+  id              BigInt   @id
   createdAt       DateTime @default(now())
   notifyEnabled   Boolean  @default(true)
-  notifyUtcHour   Int      @default(19)   // UTC hour to send notification
-  notifyTzOffset  Int      @default(2)    // timezone offset in hours (for display)
+  notifyUtcHour   Int      @default(19)
+  notifyTzOffset  Int      @default(2)
+
+  notifications   ScheduledNotification[]
+}
+
+model ScheduledNotification {
+  id          Int       @id @default(autoincrement())
+  userId      BigInt
+  user        User      @relation(fields: [userId], references: [id])
+  sendAt      DateTime  // UTC, рассчитано заранее
+  type        String    // reminder | summary | onboarding_1 | onboarding_3 | onboarding_7 | streak_7 | streak_14 | streak_30 | lapsing_2 | lapsing_4 | dormant_7 | reengagement_30 | weekly
+  payload     Json?
+  sentAt      DateTime?
+  cancelledAt DateTime?
+
+  @@index([sendAt, sentAt, cancelledAt])
+  @@index([userId, type, sentAt])
 }

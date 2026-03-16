@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
+import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 
 interface AuthRequest extends Request {
@@ -10,7 +11,10 @@ interface AuthRequest extends Request {
 @Controller('api')
 @UseGuards(TelegramAuthGuard)
 export class ApiController {
-  constructor(private readonly botService: BotService) {}
+  constructor(
+    private readonly botService: BotService,
+    private readonly analyticsService: BotAnalyticsService,
+  ) {}
 
   @Get('needs')
   getNeeds() {
@@ -34,6 +38,6 @@ export class ApiController {
   @Get('history')
   async getHistory(@Req() req: AuthRequest, @Query('days') days?: string) {
     const n = Math.min(Number(days) || 7, 30);
-    return this.botService.getHistoryRatings(req.telegramUserId, n);
+    return this.analyticsService.getHistoryRatings(req.telegramUserId, n);
   }
 }

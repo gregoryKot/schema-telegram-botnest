@@ -2,7 +2,9 @@ import { Injectable, OnModuleInit, Inject, Optional, Logger } from '@nestjs/comm
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
-import { buildSummaryText } from './telegram.schedule.service';
+import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { TelegramScheduleService } from './telegram.schedule.service';
+import { buildSummaryText } from '../notification/notification.templates';
 
 const SHORT_MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
 
@@ -18,6 +20,8 @@ export class TelegramRatingService implements OnModuleInit {
   constructor(
     @Inject(TELEGRAF_BOT) @Optional() private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
+    private readonly analyticsService: BotAnalyticsService,
+    private readonly scheduleService: TelegramScheduleService,
   ) {}
 
   async buildNeedsKeyboard(userId: number) {
@@ -47,7 +51,7 @@ export class TelegramRatingService implements OnModuleInit {
       try {
         const userId = ctx.from?.id;
         if (!userId) return;
-        const history = await this.botService.getHistoryRatings(userId, 7);
+        const history = await this.analyticsService.getHistoryRatings(userId, 7);
         if (history.length === 0) {
           await ctx.reply('Пока нет данных. Заполни дневник сегодня!');
           return;
@@ -129,6 +133,14 @@ export class TelegramRatingService implements OnModuleInit {
         }
         await ctx.answerCbQuery();
         await this.botService.saveRating(userId, needId as NeedId, raw);
+
+        const allRatings = await this.botService.getRatings(userId);
+        if (NEED_IDS.every((id) => allRatings[id] !== undefined)) {
+          this.scheduleService.onDiaryComplete(userId).catch((err) =>
+            this.logger.error(`onDiaryComplete failed for userId=${userId}`, err),
+          );
+        }
+
         const need = this.botService.getNeeds().find((n) => n.id === needId)!;
         const keyboard = Markup.inlineKeyboard([
           [Markup.button.callback('✏️ Продолжить', 'back:needs')],

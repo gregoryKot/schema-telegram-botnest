@@ -6,9 +6,10 @@ import { TelegramScheduleService } from './telegram.schedule.service';
 import { TelegramSettingsService } from './telegram.settings.service';
 import { TELEGRAM_PROVIDERS } from './telegram.providers';
 import { BotModule } from '../bot/bot.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [BotModule],
+  imports: [BotModule, NotificationModule],
   providers: [TelegramService, TelegramFaqService, TelegramRatingService, TelegramScheduleService, TelegramSettingsService, ...TELEGRAM_PROVIDERS],
   exports: [TelegramService],
 })
