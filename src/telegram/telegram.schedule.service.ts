@@ -12,7 +12,8 @@ function formatDate(date: Date): string {
 
 export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, number>>, tzOffset = 0): string {
   const lines = needs.map((n) => {
-    const v = ratings[n.id] ?? 0;
+    const v = ratings[n.id];
+    if (v === undefined) return `${n.emoji} ${'⬜'.repeat(10)} –`;
     return `${n.emoji} ${'🟩'.repeat(v)}${'⬜'.repeat(10 - v)} ${v}/10`;
   });
   const legend = needs.map((n) => `${n.emoji} ${n.chartLabel}`).join('\n');
@@ -46,7 +47,7 @@ export class TelegramScheduleService {
         if (Object.keys(ratings).length === 0) {
           await this.bot.telegram.sendMessage(
             userId,
-            '📔 Как ты сегодня?\n\nЕщё не отметил потребности — это займёт минуту.',
+            '📔 Как ты сегодня?\nЕщё не отметил потребности — это займёт минуту.',
             { reply_markup: Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]]).reply_markup },
           );
           continue;
