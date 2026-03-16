@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHmac } from 'crypto';
+import { validate } from '@telegram-apps/init-data-node';
 
 @Injectable()
 export class TelegramAuthGuard implements CanActivate {
@@ -15,32 +15,20 @@ export class TelegramAuthGuard implements CanActivate {
     const botToken = this.config.get<string>('BOT_TOKEN')?.trim();
     if (!botToken) throw new UnauthorizedException('BOT_TOKEN not configured');
 
-    const entries = initData.split('&').map((seg) => {
-      const eq = seg.indexOf('=');
-      return [seg.slice(0, eq), decodeURIComponent(seg.slice(eq + 1))] as [string, string];
-    });
-    const hash = entries.find(([k]) => k === 'hash')?.[1];
-    if (!hash) throw new UnauthorizedException('Missing hash');
-
-    const dataCheckString = entries
-      .filter(([k]) => k !== 'hash' && k !== 'signature')
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-      .map(([k, v]) => `${k}=${v}`)
-      .join('\n');
-
     const skipAuth = this.config.get<string>('SKIP_AUTH') === 'true';
-    if (!skipAuth) {
-      const secretKey = createHmac('sha256', 'WebAppData').update(botToken).digest();
-      const computed = createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-      if (computed !== hash) {
-        this.logger.warn(`HMAC mismatch. tokenLen=${botToken.length} tokenEnd=...${botToken.slice(-6)} hash=${hash.slice(0,8)} computed=${computed.slice(0,8)}`);
+    if (skipAuth) {
+      this.logger.warn('SKIP_AUTH=true — validation skipped');
+    } else {
+      try {
+        validate(initData, botToken, { expiresIn: 0 });
+      } catch (err) {
+        this.logger.warn(`initData invalid: ${(err as Error).message}`);
         throw new UnauthorizedException('Invalid initData');
       }
-    } else {
-      this.logger.warn('SKIP_AUTH=true — HMAC validation skipped');
     }
 
-    const userStr = entries.find(([k]) => k === 'user')?.[1];
+    const params = new URLSearchParams(initData);
+    const userStr = params.get('user');
     if (!userStr) throw new UnauthorizedException('Missing user');
     req.telegramUserId = JSON.parse(userStr).id as number;
 
