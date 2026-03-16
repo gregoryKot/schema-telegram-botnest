@@ -9,7 +9,7 @@ const WELCOME_TEXT = `Привет!
 
 Бывает, что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
 
-Дело почти всегда в потребностях. Дневник помогает это увидеть — раз в день, пять шкал, и через несколько дней паттерн становится различим.`;
+Дело почти всегда в потребностях. Дневник помогает это увидеть — раз в день, пять шкал, и через несколько дней паттерн становится различимым.`;
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
@@ -96,7 +96,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply('✅ Пост отправлен в канал');
       } catch (err) {
         this.logger.error('post command failed', err);
-        await ctx.reply('❌ Не удалось отправить пост. Убедись что бот — админ канала.').catch(() => null);
+        await ctx.reply('❌ Не удалось отправить пост. Убедись, что бот — админ канала.').catch(() => null);
       }
     });
 
