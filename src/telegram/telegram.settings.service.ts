@@ -87,6 +87,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText(text, buildSettingsKeyboard(newEnabled) as any);
       } catch (err) {
         this.logger.error('settings:toggle failed', err);
+        await ctx.answerCbQuery().catch(() => null);
       }
     });
 
@@ -102,6 +103,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText('Выбери время уведомления (в твоём часовом поясе):', Markup.inlineKeyboard(rows) as any);
       } catch (err) {
         this.logger.error('settings:pick_hour failed', err);
+        await ctx.answerCbQuery().catch(() => null);
       }
     });
 
@@ -119,6 +121,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText(text, buildSettingsKeyboard(updated?.notifyEnabled ?? true) as any);
       } catch (err) {
         this.logger.error('settings:hour failed', err);
+        await ctx.answerCbQuery().catch(() => null);
       }
     });
 
@@ -130,6 +133,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText('Выбери свой часовой пояс:', Markup.inlineKeyboard(buttons) as any);
       } catch (err) {
         this.logger.error('settings:pick_tz failed', err);
+        await ctx.answerCbQuery().catch(() => null);
       }
     });
 
@@ -147,6 +151,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText(text, buildSettingsKeyboard(updated?.notifyEnabled ?? true) as any);
       } catch (err) {
         this.logger.error('settings:tz failed', err);
+        await ctx.answerCbQuery().catch(() => null);
       }
     });
 
@@ -160,6 +165,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText(text, buildSettingsKeyboard(s?.notifyEnabled ?? true) as any);
       } catch (err) {
         this.logger.error('settings:back failed', err);
+        await ctx.answerCbQuery().catch(() => null);
       }
     });
   }

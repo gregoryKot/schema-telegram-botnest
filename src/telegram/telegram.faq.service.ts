@@ -47,6 +47,7 @@ export class TelegramFaqService implements OnModuleInit {
         ]));
       } catch (err) {
         this.logger.error('about action failed', err);
+        await ctx.answerCbQuery().catch(() => null);
       }
     });
 
@@ -58,6 +59,7 @@ export class TelegramFaqService implements OnModuleInit {
         ]));
       } catch (err) {
         this.logger.error('howto action failed', err);
+        await ctx.answerCbQuery().catch(() => null);
       }
     });
 
@@ -67,6 +69,7 @@ export class TelegramFaqService implements OnModuleInit {
         await editOrReply(ctx, FAQ_MENU_TEXT, this.buildFaqKeyboard());
       } catch (err) {
         this.logger.error('faq action failed', err);
+        await ctx.answerCbQuery().catch(() => null);
       }
     });
 
