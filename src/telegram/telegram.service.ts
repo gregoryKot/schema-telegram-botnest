@@ -109,7 +109,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       { command: 'settings', description: 'Настройки уведомлений' },
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
 
-    await (this.bot.telegram as any).setChatMenuButton({
+    await this.bot.telegram.callApi('setChatMenuButton' as any, {
       menu_button: { type: 'web_app', text: '📱 Дневник', web_app: { url: MINIAPP_URL } },
     }).catch((err: unknown) => this.logger.error('setChatMenuButton failed', err));
 
