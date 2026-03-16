@@ -63,13 +63,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    this.bot.command('testerror', async (ctx) => {
-      const adminId = Number(process.env.ADMIN_ID);
-      if (!adminId || ctx.from?.id !== adminId) return;
-      this.logger.error('test error alert — всё работает ✅');
-      await ctx.reply('Ошибка залогирована — проверяй личку от бота');
-    });
-
     this.bot.command('post', async (ctx) => {
       try {
         const adminId = Number(process.env.ADMIN_ID);
@@ -115,6 +108,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       { command: 'history', description: 'История за 7 дней' },
       { command: 'settings', description: 'Настройки уведомлений' },
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
+
+    await (this.bot.telegram as any).setChatMenuButton({
+      menu_button: { type: 'web_app', text: '📱 Дневник', web_app: { url: MINIAPP_URL } },
+    }).catch((err: unknown) => this.logger.error('setChatMenuButton failed', err));
 
     this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
       this.logger.error('Failed to launch bot', err);
