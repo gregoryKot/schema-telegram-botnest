@@ -7,9 +7,9 @@ import { buildSummaryText } from './telegram.schedule.service';
 
 const WELCOME_TEXT = `Привет!
 
-У каждого из нас есть 5 базовых групп эмоциональных потребностей. Когда они удовлетворены — нам хорошо. Когда нет — появляются тревога, усталость, раздражение.
+Бывает что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
 
-Раз в день отмечай, насколько каждая потребность закрыта по шкале 0–10. Это помогает замечать паттерны и лучше понимать своё состояние.`;
+Дело почти всегда в потребностях. Дневник помогает это увидеть — раз в день, пять шкал, и через несколько дней паттерн становится различим.`;
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
@@ -31,6 +31,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private buildWelcomeKeyboard() {
     return Markup.inlineKeyboard([
       [Markup.button.webApp('📱 Открыть дневник', 'https://schema-miniapp.vercel.app')],
+      [Markup.button.callback('🔍 Как это работает', 'howto')],
       [Markup.button.callback('📖 Подробнее', 'faq'), Markup.button.callback('👤 Обо мне', 'about')],
     ]);
   }
@@ -128,6 +129,17 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         ]));
       } catch (err) {
         this.logger.error('about action failed', err);
+      }
+    });
+
+    this.bot.action('howto', async (ctx) => {
+      try {
+        await ctx.answerCbQuery();
+        await this.editOrReply(ctx, FAQ['howto'], Markup.inlineKeyboard([
+          [Markup.button.callback('⬅️ Назад', 'back:welcome')],
+        ]));
+      } catch (err) {
+        this.logger.error('howto action failed', err);
       }
     });
 
