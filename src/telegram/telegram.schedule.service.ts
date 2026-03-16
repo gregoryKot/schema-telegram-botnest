@@ -17,7 +17,7 @@ export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, 
   });
   const legend = needs.map((n) => `${n.emoji} ${n.chartLabel}`).join('\n');
   const localDate = new Date(Date.now() + tzOffset * 3600_000);
-  return `📔 Дневник потребностей · ${formatDate(localDate)}\n\n${lines.join('\n')}\n\n${legend}`;
+  return `📔 Дневник потребностей · ${formatDate(localDate)}\nТвои оценки за сегодня 👇\n\n${lines.join('\n')}\n\n${legend}`;
 }
 
 @Injectable()
