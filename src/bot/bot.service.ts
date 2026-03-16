@@ -127,10 +127,11 @@ export class BotService {
   }
 
   async getHistoryRatings(userId: number, days: number): Promise<Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>> {
+    const tzOffset = await this.userTzOffset(userId);
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return this.localDateString(0, d);
+      return this.localDateString(tzOffset, d);
     });
     const rows = await this.prisma.rating.findMany({
       where: { userId, date: { in: dates } },
@@ -144,10 +145,11 @@ export class BotService {
   }
 
   async getLowStreakNeeds(userId: number, threshold: number, days: number): Promise<NeedId[]> {
+    const tzOffset = await this.userTzOffset(userId);
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return this.localDateString(0, d);
+      return this.localDateString(tzOffset, d);
     });
     const rows = await this.prisma.rating.findMany({
       where: { userId, date: { in: dates } },

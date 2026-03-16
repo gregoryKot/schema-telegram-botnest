@@ -2,6 +2,8 @@ import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT, BOOKING_URL } from './telegram.constants';
+
+const MINIAPP_URL = 'https://schema-miniapp.vercel.app';
 import { BotService, Need, NeedId } from '../bot/bot.service';
 
 const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -42,7 +44,15 @@ export class TelegramScheduleService {
         const settings = await this.botService.getUserSettings(userId);
         const tzOffset = settings?.notifyTzOffset ?? 0;
         const ratings = await this.botService.getRatings(userId);
-        if (Object.keys(ratings).length === 0) continue;
+
+        if (Object.keys(ratings).length === 0) {
+          await this.bot.telegram.sendMessage(
+            userId,
+            '📔 Как ты сегодня?\n\nЕщё не отметил потребности — это займёт минуту.',
+            { reply_markup: Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]]).reply_markup },
+          );
+          continue;
+        }
 
         await this.bot.telegram.sendMessage(
           userId,
