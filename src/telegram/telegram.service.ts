@@ -30,9 +30,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
   private buildWelcomeKeyboard() {
     return Markup.inlineKeyboard([
-      [Markup.button.callback('✏️ Заполнить', 'back:needs')],
-      [Markup.button.callback('📖 Подробнее', 'faq'), Markup.button.callback('👤 Обо мне', 'about')],
       [Markup.button.webApp('📱 Открыть дневник', 'https://schema-miniapp.vercel.app')],
+      [Markup.button.callback('📖 Подробнее', 'faq'), Markup.button.callback('👤 Обо мне', 'about')],
     ]);
   }
 
@@ -123,6 +122,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.answerCbQuery();
         await this.editOrReply(ctx, FAQ['about'], Markup.inlineKeyboard([
           [Markup.button.url('📝 Записаться на сессию', BOOKING_URL)],
+          [Markup.button.url('📣 Канал @SchemeHappens', 'https://t.me/SchemeHappens')],
+          [Markup.button.url('💬 Написать мне', 'https://t.me/kotlarewski')],
           [Markup.button.callback('⬅️ Назад', 'back:welcome')],
         ]));
       } catch (err) {
