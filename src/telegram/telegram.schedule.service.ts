@@ -15,7 +15,7 @@ export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, 
     const v = ratings[n.id] ?? 0;
     return `${n.emoji} ${'🟩'.repeat(v)}${'⬜'.repeat(10 - v)} ${v}/10`;
   });
-  const legend = needs.map((n) => `${n.emoji} ${n.chartLabel}`).join(' · ');
+  const legend = needs.map((n) => `${n.emoji} ${n.chartLabel}`).join('\n');
   const localDate = new Date(Date.now() + tzOffset * 3600_000);
   return `📔 Дневник потребностей · ${formatDate(localDate)}\n\n${lines.join('\n')}\n\n${legend}`;
 }
@@ -55,6 +55,7 @@ export class TelegramScheduleService {
         await this.bot.telegram.sendMessage(
           userId,
           buildSummaryText(this.botService.getNeeds(), ratings, tzOffset),
+          { reply_markup: Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]]).reply_markup },
         );
 
         const lowNeeds = await this.botService.getLowStreakNeeds(userId, 5, 3);
