@@ -40,4 +40,23 @@ export class ApiController {
     const n = Math.min(Number(days) || 7, 30);
     return this.analyticsService.getHistoryRatings(req.telegramUserId, n);
   }
+
+  @Get('settings')
+  async getSettings(@Req() req: AuthRequest) {
+    const s = await this.botService.getUserSettings(req.telegramUserId);
+    return {
+      notifyEnabled: s?.notifyEnabled ?? true,
+      notifyUtcHour: s?.notifyUtcHour ?? 19,
+      notifyTzOffset: s?.notifyTzOffset ?? 2,
+    };
+  }
+
+  @Post('settings')
+  async updateSettings(
+    @Req() req: AuthRequest,
+    @Body() body: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number },
+  ) {
+    await this.botService.updateUserSettings(req.telegramUserId, body);
+    return { ok: true };
+  }
 }
