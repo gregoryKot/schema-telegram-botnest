@@ -114,19 +114,19 @@ export class TelegramRatingService implements OnModuleInit {
     });
 
     this.bot.action(/^rate:([a-z_]+):(\d{1,2})$/, async (ctx) => {
-      const match = ctx.match as RegExpMatchArray;
-      const needId = match[1];
-      const raw = Number(match[2]);
-      if (!NEED_IDS.includes(needId as NeedId) || !Number.isInteger(raw) || raw < 0 || raw > 10) {
-        await ctx.answerCbQuery('Неверные данные', { show_alert: true }).catch(() => null);
-        return;
-      }
-      const userId = ctx.from?.id;
-      if (!userId) {
-        await ctx.answerCbQuery('Не удалось определить пользователя', { show_alert: true }).catch(() => null);
-        return;
-      }
       try {
+        const match = ctx.match as RegExpMatchArray;
+        const needId = match[1];
+        const raw = Number(match[2]);
+        if (!NEED_IDS.includes(needId as NeedId) || !Number.isInteger(raw) || raw < 0 || raw > 10) {
+          await ctx.answerCbQuery('Неверные данные', { show_alert: true }).catch(() => null);
+          return;
+        }
+        const userId = ctx.from?.id;
+        if (!userId) {
+          await ctx.answerCbQuery().catch(() => null);
+          return;
+        }
         await ctx.answerCbQuery();
         await this.botService.saveRating(userId, needId as NeedId, raw);
         const need = this.botService.getNeeds().find((n) => n.id === needId)!;
@@ -141,7 +141,7 @@ export class TelegramRatingService implements OnModuleInit {
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        this.logger.error(`rate action failed [needId=${needId} value=${raw} userId=${userId}]: ${message}`);
+        this.logger.error(`rate action failed: ${message}`);
         await ctx.reply('❌ Ошибка сохранения, попробуй ещё раз').catch(() => null);
       }
     });

@@ -1,9 +1,7 @@
 import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT, BOOKING_URL } from './telegram.constants';
-
-const MINIAPP_URL = 'https://schema-miniapp.vercel.app';
+import { TELEGRAF_BOT, BOOKING_URL, MINIAPP_URL } from './telegram.constants';
 import { BotService, Need, NeedId } from '../bot/bot.service';
 
 const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];

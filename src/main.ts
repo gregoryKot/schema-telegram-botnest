@@ -4,8 +4,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const origins = process.env.ALLOWED_ORIGINS?.split(',') ?? ['https://schema-miniapp.vercel.app', 'http://localhost:5173'];
   app.enableCors({
-    origin: ['https://schema-miniapp.vercel.app', 'http://localhost:5173'],
+    origin: origins,
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'x-telegram-init-data'],
   });

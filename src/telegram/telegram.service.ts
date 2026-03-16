@@ -1,8 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT, CHANNEL, BOOKING_URL } from './telegram.constants';
-import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
-import { FAQ, FAQ_MENU_TEXT } from './faq';
+import { TELEGRAF_BOT, CHANNEL, BOOKING_URL, MINIAPP_URL } from './telegram.constants';
+import { BotService } from '../bot/bot.service';
 import { buildSummaryText } from './telegram.schedule.service';
 
 const WELCOME_TEXT = `Привет!
@@ -10,6 +9,14 @@ const WELCOME_TEXT = `Привет!
 Бывает, что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
 
 Дело почти всегда в потребностях. Дневник помогает это увидеть — раз в день, пять шкал, и через несколько дней паттерн становится различимым.`;
+
+export function buildWelcomeKeyboard() {
+  return Markup.inlineKeyboard([
+    [Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)],
+    [Markup.button.callback('🔍 Как это работает', 'howto')],
+    [Markup.button.callback('📖 Подробнее', 'faq'), Markup.button.callback('👤 Обо мне', 'about')],
+  ]);
+}
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
@@ -20,34 +27,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly botService: BotService,
   ) {}
 
-  private async editOrReply(ctx: Context, text: string, extra?: Parameters<Context['reply']>[1]) {
-    try {
-      await ctx.editMessageText(text, extra as any);
-    } catch {
-      await ctx.reply(text, extra);
-    }
-  }
-
-  private buildWelcomeKeyboard() {
-    return Markup.inlineKeyboard([
-      [Markup.button.webApp('📱 Открыть дневник', 'https://schema-miniapp.vercel.app')],
-      [Markup.button.callback('🔍 Как это работает', 'howto')],
-      [Markup.button.callback('📖 Подробнее', 'faq'), Markup.button.callback('👤 Обо мне', 'about')],
-    ]);
-  }
-
-  private buildFaqKeyboard() {
-    const needs = this.botService.getNeeds();
-    const needButtons = needs.map((n) => Markup.button.callback(n.title, `faq:${n.id}`));
-    return Markup.inlineKeyboard([
-      [Markup.button.callback('🧠 Схематерапия', 'faq:therapy')],
-      needButtons.slice(0, 2),
-      needButtons.slice(2, 4),
-      needButtons.slice(4),
-      [Markup.button.callback('⬅️ Назад', 'back:welcome')],
-    ]);
-  }
-
   async onModuleInit() {
     if (!this.bot) {
       this.logger.warn('BOT_TOKEN not provided — bot will not start.');
@@ -57,7 +36,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.command('start', async (ctx) => {
       try {
         if (ctx.from?.id) await this.botService.registerUser(ctx.from.id);
-        await ctx.reply(WELCOME_TEXT, this.buildWelcomeKeyboard());
+        await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
       } catch (err) {
         this.logger.error('start command failed', err);
       }
@@ -112,71 +91,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.action('back:welcome', async (ctx) => {
       try {
         await ctx.answerCbQuery();
-        await this.editOrReply(ctx, WELCOME_TEXT, this.buildWelcomeKeyboard());
+        try {
+          await ctx.editMessageText(WELCOME_TEXT, buildWelcomeKeyboard() as any);
+        } catch {
+          await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
+        }
       } catch (err) {
         this.logger.error('back:welcome action failed', err);
-      }
-    });
-
-    this.bot.action('about', async (ctx) => {
-      try {
-        await ctx.answerCbQuery();
-        await this.editOrReply(ctx, FAQ['about'], Markup.inlineKeyboard([
-          [Markup.button.url('📝 Записаться на сессию', BOOKING_URL)],
-          [Markup.button.url('📣 Канал @SchemeHappens', 'https://t.me/SchemeHappens')],
-          [Markup.button.url('💬 Написать мне', 'https://t.me/kotlarewski')],
-          [Markup.button.callback('⬅️ Назад', 'back:welcome')],
-        ]));
-      } catch (err) {
-        this.logger.error('about action failed', err);
-      }
-    });
-
-    this.bot.action('howto', async (ctx) => {
-      try {
-        await ctx.answerCbQuery();
-        await this.editOrReply(ctx, FAQ['howto'], Markup.inlineKeyboard([
-          [Markup.button.callback('⬅️ Назад', 'back:welcome')],
-        ]));
-      } catch (err) {
-        this.logger.error('howto action failed', err);
-      }
-    });
-
-    this.bot.action('faq', async (ctx) => {
-      try {
-        await ctx.answerCbQuery();
-        await this.editOrReply(ctx, FAQ_MENU_TEXT, this.buildFaqKeyboard());
-      } catch (err) {
-        this.logger.error('faq action failed', err);
-      }
-    });
-
-    this.bot.action(/^faq:([a-z_]+)$/, async (ctx) => {
-      try {
-        const topic = (ctx.match as RegExpMatchArray)[1];
-        const text = FAQ[topic];
-        if (!text) {
-          await ctx.answerCbQuery('Раздел не найден', { show_alert: true });
-          return;
-        }
-        await ctx.answerCbQuery();
-        let keyboard: ReturnType<typeof Markup.inlineKeyboard>;
-        if (topic.startsWith('tips_')) {
-          const needId = topic.slice(5);
-          keyboard = Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', `faq:${needId}`)]]);
-        } else if (NEED_IDS.includes(topic as NeedId)) {
-          keyboard = Markup.inlineKeyboard([
-            [Markup.button.callback('💡 Что помогает?', `faq:tips_${topic}`)],
-            [Markup.button.callback('⬅️ Назад', 'faq')],
-          ]);
-        } else {
-          keyboard = Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'faq')]]);
-        }
-        await this.editOrReply(ctx, text, keyboard);
-      } catch (err) {
-        this.logger.error('faq topic action failed', err);
-        await ctx.answerCbQuery('Что-то пошло не так').catch(() => null);
       }
     });
 
