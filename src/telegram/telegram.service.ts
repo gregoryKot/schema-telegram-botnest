@@ -35,7 +35,19 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.command('start', async (ctx) => {
       try {
-        if (ctx.from?.id) await this.botService.registerUser(ctx.from.id);
+        const userId = ctx.from?.id;
+        if (userId) await this.botService.registerUser(userId);
+        const payload = (ctx as any).startPayload as string | undefined;
+        if (payload?.startsWith('pair_') && userId) {
+          const code = payload.slice(5).toUpperCase();
+          const ok = await this.botService.joinPair(userId, code);
+          if (ok) {
+            await ctx.reply('Вы присоединились! Открой дневник и найди партнёра в профиле.');
+          } else {
+            await ctx.reply('Ссылка недействительна.');
+          }
+          return;
+        }
         await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
       } catch (err) {
         this.logger.error('start command failed', err);

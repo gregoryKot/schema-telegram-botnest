@@ -93,18 +93,22 @@ export class BotService {
     await this.prisma.user.update({ where: { id: BigInt(userId) }, data });
   }
 
-  async getNote(userId: number, date: string): Promise<string | null> {
+  async getNote(userId: number, date: string): Promise<{ text: string | null; tags: string[] }> {
     const note = await this.prisma.note.findUnique({
       where: { userId_date: { userId: BigInt(userId), date } },
     });
-    return note?.text ?? null;
+    return {
+      text: note?.text ?? null,
+      tags: note?.tags ? note.tags.split(',').filter(Boolean) : [],
+    };
   }
 
-  async saveNote(userId: number, date: string, text: string) {
+  async saveNote(userId: number, date: string, text: string, tags?: string[]) {
+    const tagsStr = tags ? tags.join(',') : '';
     await this.prisma.note.upsert({
       where: { userId_date: { userId: BigInt(userId), date } },
-      update: { text },
-      create: { userId: BigInt(userId), date, text },
+      update: { text, tags: tagsStr },
+      create: { userId: BigInt(userId), date, text, tags: tagsStr },
     });
   }
 
@@ -148,5 +152,52 @@ export class BotService {
       where: { userId: BigInt(userId), date: dt },
     });
     return Object.fromEntries(rows.map((r) => [r.needId, r.value])) as Partial<Record<NeedId, number>>;
+  }
+
+  async getUserPair(userId: number): Promise<{ code: string; status: string; isCreator: boolean; partnerId: number | null } | null> {
+    const uid = BigInt(userId);
+    const pair = await this.prisma.pair.findFirst({
+      where: { OR: [{ userId1: uid }, { userId2: uid }] },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!pair) return null;
+    const isCreator = pair.userId1 === uid;
+    const partnerId = isCreator
+      ? (pair.userId2 ? Number(pair.userId2) : null)
+      : Number(pair.userId1);
+    return { code: pair.code, status: pair.status, isCreator, partnerId };
+  }
+
+  async createPairInvite(userId: number): Promise<string> {
+    const uid = BigInt(userId);
+    // Remove existing pending pair created by this user
+    await this.prisma.pair.deleteMany({ where: { userId1: uid, status: 'pending' } });
+    const code = Math.random().toString(36).slice(2, 9).toUpperCase();
+    await this.prisma.pair.create({ data: { code, userId1: uid } });
+    return code;
+  }
+
+  async joinPair(userId: number, code: string): Promise<boolean> {
+    const uid = BigInt(userId);
+    const pair = await this.prisma.pair.findUnique({ where: { code } });
+    if (!pair || pair.status !== 'pending' || pair.userId1 === uid) return false;
+    await this.prisma.pair.update({
+      where: { code },
+      data: { userId2: uid, status: 'active' },
+    });
+    return true;
+  }
+
+  async leavePair(userId: number): Promise<void> {
+    const uid = BigInt(userId);
+    const pair = await this.prisma.pair.findFirst({
+      where: { OR: [{ userId1: uid }, { userId2: uid }] },
+    });
+    if (!pair) return;
+    if (pair.userId1 === uid) {
+      await this.prisma.pair.delete({ where: { id: pair.id } });
+    } else {
+      await this.prisma.pair.update({ where: { id: pair.id }, data: { userId2: null, status: 'pending' } });
+    }
   }
 }

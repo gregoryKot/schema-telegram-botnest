@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
@@ -132,14 +132,51 @@ export class ApiController {
 
   @Get('note')
   async getNote(@Req() req: AuthRequest, @Query('date') date: string) {
-    const text = await this.botService.getNote(req.telegramUserId, date);
-    return { text };
+    return this.botService.getNote(req.telegramUserId, date);
   }
 
   @Post('note')
-  async saveNote(@Req() req: AuthRequest, @Body() body: { date: string; text: string }) {
+  async saveNote(@Req() req: AuthRequest, @Body() body: { date: string; text: string; tags?: string[] }) {
     if (!body.date || typeof body.text !== 'string') throw new BadRequestException();
-    await this.botService.saveNote(req.telegramUserId, body.date, body.text.slice(0, 500));
+    await this.botService.saveNote(req.telegramUserId, body.date, body.text.slice(0, 500), body.tags);
+    return { ok: true };
+  }
+
+  @Get('pair')
+  async getPair(@Req() req: AuthRequest) {
+    const pair = await this.botService.getUserPair(req.telegramUserId);
+    if (!pair || !pair.partnerId) {
+      return { paired: false, partnerIndex: null, partnerTodayDone: false, code: pair?.code ?? null };
+    }
+    const partnerRatings = await this.botService.getRatings(pair.partnerId);
+    const values = Object.values(partnerRatings);
+    const partnerIndex = values.length > 0 ? values.reduce((s, v) => s + v, 0) / values.length : null;
+    return {
+      paired: true,
+      partnerIndex: partnerIndex !== null ? Math.round(partnerIndex * 10) / 10 : null,
+      partnerTodayDone: values.length === 5,
+      code: pair.code,
+    };
+  }
+
+  @Post('pair/invite')
+  async createPairInvite(@Req() req: AuthRequest) {
+    const code = await this.botService.createPairInvite(req.telegramUserId);
+    const url = `https://t.me/Emotional_Needs_bot?start=pair_${code}`;
+    return { code, url };
+  }
+
+  @Post('pair/join')
+  async joinPair(@Req() req: AuthRequest, @Body() body: { code: string }) {
+    if (!body.code) throw new BadRequestException();
+    const ok = await this.botService.joinPair(req.telegramUserId, body.code.toUpperCase());
+    if (!ok) throw new BadRequestException('Invalid or expired code');
+    return { ok: true };
+  }
+
+  @Delete('pair')
+  async leavePair(@Req() req: AuthRequest) {
+    await this.botService.leavePair(req.telegramUserId);
     return { ok: true };
   }
 

@@ -27,6 +27,8 @@ model User {
 
   notifications   ScheduledNotification[]
   notes           Note[]
+  pairs1          Pair[]   @relation("PairUser1")
+  pairs2          Pair[]   @relation("PairUser2")
 }
 
 model Note {
@@ -34,10 +36,22 @@ model Note {
   userId    BigInt
   date      String
   text      String
+  tags      String   @default("")
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, date])
+}
+
+model Pair {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  userId1   BigInt
+  userId2   BigInt?
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  user1     User     @relation("PairUser1", fields: [userId1], references: [id])
+  user2     User?    @relation("PairUser2", fields: [userId2], references: [id])
 }
 
 model ScheduledNotification {
