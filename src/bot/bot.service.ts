@@ -85,12 +85,27 @@ export class BotService {
   async getUserSettings(userId: number) {
     return this.prisma.user.findUnique({
       where: { id: BigInt(userId) },
-      select: { notifyEnabled: true, notifyUtcHour: true, notifyTzOffset: true },
+      select: { notifyEnabled: true, notifyUtcHour: true, notifyTzOffset: true, notifyReminderEnabled: true },
     });
   }
 
-  async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number }) {
+  async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number; notifyReminderEnabled?: boolean }) {
     await this.prisma.user.update({ where: { id: BigInt(userId) }, data });
+  }
+
+  async getNote(userId: number, date: string): Promise<string | null> {
+    const note = await this.prisma.note.findUnique({
+      where: { userId_date: { userId: BigInt(userId), date } },
+    });
+    return note?.text ?? null;
+  }
+
+  async saveNote(userId: number, date: string, text: string) {
+    await this.prisma.note.upsert({
+      where: { userId_date: { userId: BigInt(userId), date } },
+      update: { text },
+      create: { userId: BigInt(userId), date, text },
+    });
   }
 
   async getUsersToNotify(utcHour: number): Promise<number[]> {

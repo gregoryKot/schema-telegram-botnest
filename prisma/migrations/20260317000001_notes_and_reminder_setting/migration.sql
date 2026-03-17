@@ -1,0 +1,15 @@
+ALTER TABLE "User" ADD COLUMN "notifyReminderEnabled" BOOLEAN NOT NULL DEFAULT true;
+
+CREATE TABLE "Note" (
+  "id" SERIAL NOT NULL,
+  "userId" BIGINT NOT NULL,
+  "date" TEXT NOT NULL,
+  "text" TEXT NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Note_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX "Note_userId_date_key" ON "Note"("userId", "date");
+
+ALTER TABLE "Note" ADD CONSTRAINT "Note_userId_fkey"
+  FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

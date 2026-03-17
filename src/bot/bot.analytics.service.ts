@@ -113,6 +113,70 @@ export class BotAnalyticsService {
     });
   }
 
+  async getAchievements(userId: number): Promise<Array<{ id: string; earned: boolean }>> {
+    const streak = await this.getStreakData(userId);
+    const total = streak.totalDays;
+    const longest = streak.longestStreak;
+
+    // Check for high index day or all-needs day
+    const rows = await this.prisma.rating.findMany({
+      where: { userId: BigInt(userId) },
+      select: { date: true, needId: true, value: true },
+    });
+    const byDate = new Map<string, Record<string, number>>();
+    for (const r of rows) {
+      if (!byDate.has(r.date)) byDate.set(r.date, {});
+      byDate.get(r.date)![r.needId] = r.value;
+    }
+    let hasHighDay = false, hasAllAbove7 = false, hasGrowth = false, hasComeBack = false;
+    for (const [, ratings] of byDate) {
+      const vals = Object.values(ratings);
+      if (vals.length === 5) {
+        const avg = vals.reduce((s, v) => s + v, 0) / 5;
+        if (avg >= 8) hasHighDay = true;
+        if (vals.every(v => v >= 7)) hasAllAbove7 = true;
+      }
+    }
+    // comeback: sorted dates, find gap >= 3 then resumption
+    const sorted = [...byDate.keys()].sort();
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = new Date(sorted[i - 1] + 'T12:00:00Z');
+      const cur  = new Date(sorted[i]     + 'T12:00:00Z');
+      if (Math.round((cur.getTime() - prev.getTime()) / 86_400_000) >= 3) { hasComeBack = true; break; }
+    }
+    // growth: compare last 7 days vs prev 7 days per need
+    const tzOffset = await this.userTzOffset(userId);
+    const last14 = Array.from({ length: 14 }, (_, i) =>
+      this.localDateString(tzOffset, new Date(Date.now() - i * 86_400_000)),
+    );
+    const recent = rows.filter(r => last14.slice(0, 7).includes(r.date));
+    const older  = rows.filter(r => last14.slice(7).includes(r.date));
+    for (const needId of NEED_IDS) {
+      const r = recent.filter(r => r.needId === needId);
+      const o = older.filter(r => r.needId === needId);
+      if (r.length && o.length) {
+        const rAvg = r.reduce((s, x) => s + x.value, 0) / r.length;
+        const oAvg = o.reduce((s, x) => s + x.value, 0) / o.length;
+        if (rAvg - oAvg >= 3) { hasGrowth = true; break; }
+      }
+    }
+
+    return [
+      { id: 'first_day',  earned: total >= 1 },
+      { id: 'streak_3',   earned: longest >= 3 },
+      { id: 'streak_7',   earned: longest >= 7 },
+      { id: 'streak_14',  earned: longest >= 14 },
+      { id: 'streak_30',  earned: longest >= 30 },
+      { id: 'streak_100', earned: longest >= 100 },
+      { id: 'total_10',   earned: total >= 10 },
+      { id: 'total_50',   earned: total >= 50 },
+      { id: 'high_day',   earned: hasHighDay },
+      { id: 'all_above7', earned: hasAllAbove7 },
+      { id: 'comeback',   earned: hasComeBack },
+      { id: 'growth',     earned: hasGrowth },
+    ];
+  }
+
   async getStreakData(userId: number): Promise<{
     currentStreak: number;
     longestStreak: number;

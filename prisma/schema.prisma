@@ -18,13 +18,26 @@ model Rating {
 }
 
 model User {
-  id              BigInt   @id
-  createdAt       DateTime @default(now())
-  notifyEnabled   Boolean  @default(true)
-  notifyUtcHour   Int      @default(19)
-  notifyTzOffset  Int      @default(2)
+  id                     BigInt   @id
+  createdAt              DateTime @default(now())
+  notifyEnabled          Boolean  @default(true)
+  notifyUtcHour          Int      @default(19)
+  notifyTzOffset         Int      @default(2)
+  notifyReminderEnabled  Boolean  @default(true)
 
   notifications   ScheduledNotification[]
+  notes           Note[]
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  date      String
+  text      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
 }
 
 model ScheduledNotification {

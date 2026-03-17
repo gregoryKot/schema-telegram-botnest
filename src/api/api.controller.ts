@@ -48,6 +48,24 @@ export class ApiController {
     return this.analyticsService.getStreakData(req.telegramUserId);
   }
 
+  @Get('achievements')
+  async getAchievements(@Req() req: AuthRequest) {
+    return this.analyticsService.getAchievements(req.telegramUserId);
+  }
+
+  @Get('note')
+  async getNote(@Req() req: AuthRequest, @Query('date') date: string) {
+    const text = await this.botService.getNote(req.telegramUserId, date);
+    return { text };
+  }
+
+  @Post('note')
+  async saveNote(@Req() req: AuthRequest, @Body() body: { date: string; text: string }) {
+    if (!body.date || typeof body.text !== 'string') throw new BadRequestException();
+    await this.botService.saveNote(req.telegramUserId, body.date, body.text.slice(0, 500));
+    return { ok: true };
+  }
+
   @Get('settings')
   async getSettings(@Req() req: AuthRequest) {
     const s = await this.botService.getUserSettings(req.telegramUserId);
@@ -55,6 +73,7 @@ export class ApiController {
       notifyEnabled: s?.notifyEnabled ?? true,
       notifyUtcHour: s?.notifyUtcHour ?? 19,
       notifyTzOffset: s?.notifyTzOffset ?? 2,
+      notifyReminderEnabled: s?.notifyReminderEnabled ?? true,
     };
   }
 
