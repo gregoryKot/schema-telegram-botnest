@@ -48,6 +48,16 @@ export class ApiController {
     return this.analyticsService.getStreakData(req.telegramUserId);
   }
 
+  @Get('insights')
+  async getInsights(@Req() req: AuthRequest) {
+    const [weeklyStats, bestDayOfWeek, streak] = await Promise.all([
+      this.analyticsService.getWeeklyStats(req.telegramUserId),
+      this.analyticsService.getBestDayOfWeek(req.telegramUserId),
+      this.analyticsService.getStreakData(req.telegramUserId),
+    ]);
+    return { weeklyStats, bestDayOfWeek, totalDays: streak.totalDays };
+  }
+
   @Get('achievements')
   async getAchievements(@Req() req: AuthRequest) {
     return this.analyticsService.getAchievements(req.telegramUserId);

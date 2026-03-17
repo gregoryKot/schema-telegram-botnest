@@ -33,9 +33,29 @@ export function renderTemplate(
   payload?: Record<string, unknown>,
 ): NotificationTemplate | null {
   switch (type) {
-    case 'reminder':
+    case 'reminder': {
+      const streak = payload?.streak as number | undefined;
+      const lowestNeed = payload?.lowestNeed as string | undefined;
+      const yesterdayAvg = payload?.yesterdayAvg as number | undefined;
+
+      let text = '📔 Как ты сегодня?';
+      if (yesterdayAvg !== undefined) {
+        text += `\nВчера было ${yesterdayAvg.toFixed(1)}.`;
+      }
+      if (lowestNeed) {
+        text += ` Как сегодня с ${lowestNeed}?`;
+      } else {
+        text += '\nЕщё не отметил потребности — займёт минуту.';
+      }
+      if (streak && streak >= 3) {
+        text += `\n\n🔥 Серия: ${streak} ${streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'} подряд.`;
+      }
+      return { text, keyboard: Markup.inlineKeyboard([[openDiaryButton]]) };
+    }
+
+    case 'pre_reminder':
       return {
-        text: '📔 Как ты сегодня?\nЕщё не отметил потребности — займёт минуту.',
+        text: '🕐 Ещё есть время заполнить дневник до конца дня.',
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
 

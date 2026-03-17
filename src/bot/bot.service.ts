@@ -121,10 +121,10 @@ export class BotService {
     return users.map((u) => Number(u.id));
   }
 
-  async getAllUsersWithSettings(): Promise<Array<{ id: number; notifyUtcHour: number; notifyTzOffset: number }>> {
+  async getAllUsersWithSettings(): Promise<Array<{ id: number; notifyUtcHour: number; notifyTzOffset: number; notifyReminderEnabled: boolean }>> {
     const users = await this.prisma.user.findMany({
       where: { notifyEnabled: true },
-      select: { id: true, notifyUtcHour: true, notifyTzOffset: true },
+      select: { id: true, notifyUtcHour: true, notifyTzOffset: true, notifyReminderEnabled: true },
     });
     return users.map((u) => ({ ...u, id: Number(u.id) }));
   }

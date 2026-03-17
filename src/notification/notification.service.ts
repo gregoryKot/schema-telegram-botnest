@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export type NotificationType =
   | 'reminder'
+  | 'pre_reminder'
   | 'summary'
   | 'onboarding_1'
   | 'onboarding_3'
