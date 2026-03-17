@@ -3,6 +3,7 @@ import { Request } from 'express';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
+import { NotificationService } from '../notification/notification.service';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -14,6 +15,7 @@ export class ApiController {
   constructor(
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   @Get('needs')
@@ -62,6 +64,22 @@ export class ApiController {
     @Body() body: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number },
   ) {
     await this.botService.updateUserSettings(req.telegramUserId, body);
+
+    // Reschedule today's reminder if notification time changed or toggled
+    if ('notifyEnabled' in body || 'notifyUtcHour' in body || 'notifyTzOffset' in body) {
+      const s = await this.botService.getUserSettings(req.telegramUserId);
+      if (s?.notifyEnabled) {
+        const now = new Date();
+        const sendAt = new Date(now);
+        sendAt.setUTCHours(s.notifyUtcHour, 0, 0, 0);
+        if (sendAt <= now) sendAt.setUTCDate(sendAt.getUTCDate() + 1); // already passed → tomorrow
+        await this.notificationService.cancel(req.telegramUserId, 'reminder');
+        await this.notificationService.schedule(req.telegramUserId, 'reminder', sendAt);
+      } else {
+        await this.notificationService.cancel(req.telegramUserId, 'reminder');
+      }
+    }
+
     return { ok: true };
   }
 }
