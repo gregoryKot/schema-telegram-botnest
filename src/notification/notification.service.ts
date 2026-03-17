@@ -15,7 +15,10 @@ export type NotificationType =
   | 'lapsing_4'
   | 'dormant_7'
   | 'reengagement_30'
-  | 'weekly';
+  | 'weekly'
+  | 'anniversary_30'
+  | 'anniversary_60'
+  | 'anniversary_90';
 
 export interface DueNotification {
   id: number;

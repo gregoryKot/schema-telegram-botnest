@@ -75,6 +75,12 @@ export class ApiController {
         await this.notificationService.schedule(userId, `onboarding_${days}`, new Date());
       }
     }
+
+    for (const days of [30, 60, 90] as const) {
+      if (total === days && !await this.notificationService.hasPending(userId, `anniversary_${days}`)) {
+        await this.notificationService.schedule(userId, `anniversary_${days}`, new Date());
+      }
+    }
   }
 
   @Get('history')
@@ -88,14 +94,35 @@ export class ApiController {
     return this.analyticsService.getStreakData(req.telegramUserId);
   }
 
-  @Get('insights')
-  async getInsights(@Req() req: AuthRequest) {
-    const [weeklyStats, bestDayOfWeek, streak] = await Promise.all([
-      this.analyticsService.getWeeklyStats(req.telegramUserId),
-      this.analyticsService.getBestDayOfWeek(req.telegramUserId),
+  @Get('export')
+  async getExport(@Req() req: AuthRequest) {
+    const [history, streak] = await Promise.all([
+      this.analyticsService.getHistoryRatings(req.telegramUserId, 30),
       this.analyticsService.getStreakData(req.telegramUserId),
     ]);
-    return { weeklyStats, bestDayOfWeek, totalDays: streak.totalDays };
+    const needs = this.botService.getNeeds();
+    const lines: string[] = [`📔 Дневник потребностей · последние ${history.length} дней`, ''];
+    for (const day of [...history].reverse()) {
+      const vals = needs.map(n => {
+        const v = day.ratings[n.id as import('../bot/bot.service').NeedId];
+        return v !== undefined ? `${n.emoji} ${v}/10` : `${n.emoji} –`;
+      });
+      lines.push(`${day.date}: ${vals.join('  ')}`);
+    }
+    lines.push('');
+    lines.push(`Серия: ${streak.currentStreak} дн. · Рекорд: ${streak.longestStreak} · Всего: ${streak.totalDays}`);
+    return { text: lines.join('\n') };
+  }
+
+  @Get('insights')
+  async getInsights(@Req() req: AuthRequest) {
+    const [weeklyStats, bestDayOfWeek, worstDayOfWeek, streak] = await Promise.all([
+      this.analyticsService.getWeeklyStats(req.telegramUserId),
+      this.analyticsService.getBestDayOfWeek(req.telegramUserId),
+      this.analyticsService.getWorstDayOfWeek(req.telegramUserId),
+      this.analyticsService.getStreakData(req.telegramUserId),
+    ]);
+    return { weeklyStats, bestDayOfWeek, worstDayOfWeek, totalDays: streak.totalDays };
   }
 
   @Get('achievements')

@@ -229,16 +229,42 @@ export class BotAnalyticsService {
   }
 
   async getBestDayOfWeek(userId: number): Promise<string | null> {
-    const tzOffset = await this.userTzOffset(userId);
-    const last7 = Array.from({ length: 7 }, (_, i) =>
-      this.localDateString(tzOffset, new Date(Date.now() - i * 86_400_000)),
-    );
-    const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId), date: { in: last7 } } });
+    const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId) } });
     if (rows.length === 0) return null;
+    const sumByDow = new Map<number, { sum: number; count: number }>();
+    const DAY_NAMES = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
     const sumByDate = new Map<string, number>();
     for (const r of rows) sumByDate.set(r.date, (sumByDate.get(r.date) ?? 0) + r.value);
-    const bestDate = [...sumByDate.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+    for (const [date, sum] of sumByDate) {
+      const dow = new Date(date + 'T12:00:00Z').getUTCDay();
+      const cur = sumByDow.get(dow) ?? { sum: 0, count: 0 };
+      sumByDow.set(dow, { sum: cur.sum + sum, count: cur.count + 1 });
+    }
+    if (sumByDow.size < 3) return null;
+    const bestDow = [...sumByDow.entries()]
+      .map(([dow, { sum, count }]) => ({ dow, avg: sum / count }))
+      .reduce((a, b) => (b.avg > a.avg ? b : a)).dow;
+    return DAY_NAMES[bestDow];
+  }
+
+  async getWorstDayOfWeek(userId: number): Promise<string | null> {
+    const tzOffset = await this.userTzOffset(userId);
+    const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId) } });
+    if (rows.length === 0) return null;
+    const sumByDow = new Map<number, { sum: number; count: number }>();
     const DAY_NAMES = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
-    return DAY_NAMES[new Date(bestDate + 'T12:00:00Z').getUTCDay()];
+    // Group by day of week using all historical data
+    const sumByDate = new Map<string, number>();
+    for (const r of rows) sumByDate.set(r.date, (sumByDate.get(r.date) ?? 0) + r.value);
+    for (const [date, sum] of sumByDate) {
+      const dow = new Date(date + 'T12:00:00Z').getUTCDay();
+      const cur = sumByDow.get(dow) ?? { sum: 0, count: 0 };
+      sumByDow.set(dow, { sum: cur.sum + sum, count: cur.count + 1 });
+    }
+    if (sumByDow.size < 3) return null; // need at least 3 different days of week
+    const worstDow = [...sumByDow.entries()]
+      .map(([dow, { sum, count }]) => ({ dow, avg: sum / count }))
+      .reduce((a, b) => (b.avg < a.avg ? b : a)).dow;
+    return DAY_NAMES[worstDow];
   }
 }

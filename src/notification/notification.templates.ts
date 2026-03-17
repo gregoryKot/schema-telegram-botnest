@@ -134,6 +134,15 @@ export function renderTemplate(
       };
     }
 
+    case 'anniversary_30':
+      return { text: '📅 Месяц наблюдений. Ты уже знаешь о себе больше, чем большинство людей знают за годы.' };
+
+    case 'anniversary_60':
+      return { text: '📅 Два месяца. Паттерн теперь устойчивый — ты видишь себя в динамике.' };
+
+    case 'anniversary_90':
+      return { text: '📅 Три месяца. Это серьёзная практика самопознания. Редкость.' };
+
     default:
       return null;
   }
