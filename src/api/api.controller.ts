@@ -4,6 +4,7 @@ import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { NotificationService } from '../notification/notification.service';
+import { buildSummaryText } from '../notification/notification.templates';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -34,7 +35,46 @@ export class ApiController {
       throw new BadRequestException('Invalid needId or value');
     }
     await this.botService.saveRating(req.telegramUserId, body.needId as NeedId, body.value);
+
+    // Check if all needs are now rated today → trigger diary-complete logic
+    const ratings = await this.botService.getRatings(req.telegramUserId);
+    const allDone = NEED_IDS.every(id => ratings[id] !== undefined);
+    if (allDone) {
+      await this.onDiaryComplete(req.telegramUserId, ratings);
+    }
+
     return { ok: true };
+  }
+
+  private async onDiaryComplete(userId: number, ratings: Partial<Record<NeedId, number>>) {
+    await this.notificationService.cancel(userId, 'reminder');
+    await this.notificationService.cancel(userId, 'pre_reminder');
+
+    const settings = await this.botService.getUserSettings(userId);
+    const tzOffset = settings?.notifyTzOffset ?? 0;
+    const notifyUtcHour = settings?.notifyUtcHour ?? 19;
+    const text = buildSummaryText(this.botService.getNeeds(), ratings, tzOffset);
+
+    if (!await this.notificationService.hasPending(userId, 'summary')) {
+      const sendAt = new Date();
+      sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
+      if (sendAt <= new Date()) sendAt.setUTCDate(sendAt.getUTCDate() + 1);
+      await this.notificationService.schedule(userId, 'summary', sendAt, { text });
+    }
+
+    const streak = await this.analyticsService.getConsecutiveDays(userId);
+    for (const days of [7, 14, 30] as const) {
+      if (streak === days && !await this.notificationService.hasPending(userId, `streak_${days}`)) {
+        await this.notificationService.schedule(userId, `streak_${days}`, new Date());
+      }
+    }
+
+    const total = await this.analyticsService.getTotalDaysFilled(userId);
+    for (const days of [1, 3, 7] as const) {
+      if (total === days && !await this.notificationService.hasPending(userId, `onboarding_${days}`)) {
+        await this.notificationService.schedule(userId, `onboarding_${days}`, new Date());
+      }
+    }
   }
 
   @Get('history')
