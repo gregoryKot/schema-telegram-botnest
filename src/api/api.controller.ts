@@ -41,6 +41,11 @@ export class ApiController {
     return this.analyticsService.getHistoryRatings(req.telegramUserId, n);
   }
 
+  @Get('streak')
+  async getStreak(@Req() req: AuthRequest) {
+    return this.analyticsService.getStreakData(req.telegramUserId);
+  }
+
   @Get('settings')
   async getSettings(@Req() req: AuthRequest) {
     const s = await this.botService.getUserSettings(req.telegramUserId);

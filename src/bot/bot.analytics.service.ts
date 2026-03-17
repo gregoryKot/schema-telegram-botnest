@@ -113,6 +113,57 @@ export class BotAnalyticsService {
     });
   }
 
+  async getStreakData(userId: number): Promise<{
+    currentStreak: number;
+    longestStreak: number;
+    totalDays: number;
+    todayDone: boolean;
+    weekDots: boolean[];
+  }> {
+    const tzOffset = await this.userTzOffset(userId);
+    const rows = await this.prisma.rating.findMany({
+      where: { userId: BigInt(userId) },
+      select: { date: true },
+      distinct: ['date'],
+    });
+    const dates = new Set(rows.map((r) => r.date));
+    const today = this.localDateString(tzOffset);
+
+    // current streak
+    let currentStreak = 0;
+    while (true) {
+      const d = this.localDateString(tzOffset, new Date(Date.now() - currentStreak * 86_400_000));
+      if (!dates.has(d)) break;
+      currentStreak++;
+    }
+
+    // longest streak — scan sorted distinct dates
+    const sorted = [...dates].sort();
+    let longest = 0, run = 0;
+    for (let i = 0; i < sorted.length; i++) {
+      if (i === 0) { run = 1; continue; }
+      const prev = new Date(sorted[i - 1] + 'T12:00:00Z');
+      const cur  = new Date(sorted[i]     + 'T12:00:00Z');
+      const diffDays = Math.round((cur.getTime() - prev.getTime()) / 86_400_000);
+      run = diffDays === 1 ? run + 1 : 1;
+      if (run > longest) longest = run;
+    }
+    if (currentStreak > longest) longest = currentStreak;
+
+    // week dots — last 7 days (today first)
+    const weekDots = Array.from({ length: 7 }, (_, i) =>
+      dates.has(this.localDateString(tzOffset, new Date(Date.now() - i * 86_400_000))),
+    ).reverse(); // Mon→Sun order (oldest first)
+
+    return {
+      currentStreak,
+      longestStreak: longest,
+      totalDays: dates.size,
+      todayDone: dates.has(today),
+      weekDots,
+    };
+  }
+
   async getBestDayOfWeek(userId: number): Promise<string | null> {
     const tzOffset = await this.userTzOffset(userId);
     const last7 = Array.from({ length: 7 }, (_, i) =>
