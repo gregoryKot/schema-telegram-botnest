@@ -143,8 +143,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
       const msg = String(err);
-      const isExpectedOnDeploy = msg.includes('409') || msg.includes('terminated by other') || msg.includes('restart');
-      if (!this.stopping && !isExpectedOnDeploy) this.logger.error('Failed to launch bot', err);
+      if (!msg.includes('409') && !msg.includes('terminated by other') && !this.stopping) {
+        this.logger.error('Failed to launch bot', err);
+      }
     });
     this.logger.log('Bot launched');
   }

@@ -253,36 +253,44 @@ export class BotAnalyticsService {
     const today = this.localDateString(0, now);
     const d7 = this.localDateString(0, new Date(now.getTime() - 7 * 86_400_000));
     const d30 = this.localDateString(0, new Date(now.getTime() - 30 * 86_400_000));
+    const ago7 = new Date(now.getTime() - 7 * 86_400_000);
+    const ago30 = new Date(now.getTime() - 30 * 86_400_000);
 
     const [
-      totalUsers,
-      newUsers7,
-      newUsers30,
+      totalUsers, newUsers7, newUsers30, notifyOff,
       activePairs,
-      notifsSentTotal,
-      notifsSent7,
-      todayRatings,
-      week7Ratings,
-      month30Ratings,
+      notifsSentTotal, notifsSent7,
+      notifsPerType,
+      pendingCount,
+      todayRatings, week7Ratings, month30Ratings,
     ] = await Promise.all([
       this.prisma.user.count(),
-      this.prisma.user.count({ where: { createdAt: { gte: new Date(now.getTime() - 7 * 86_400_000) } } }),
-      this.prisma.user.count({ where: { createdAt: { gte: new Date(now.getTime() - 30 * 86_400_000) } } }),
+      this.prisma.user.count({ where: { createdAt: { gte: ago7 } } }),
+      this.prisma.user.count({ where: { createdAt: { gte: ago30 } } }),
+      this.prisma.user.count({ where: { notifyEnabled: false } }),
       this.prisma.pair.count({ where: { status: 'active' } }),
       this.prisma.scheduledNotification.count({ where: { sentAt: { not: null } } }),
-      this.prisma.scheduledNotification.count({ where: { sentAt: { gte: new Date(now.getTime() - 7 * 86_400_000) } } }),
+      this.prisma.scheduledNotification.count({ where: { sentAt: { gte: ago7 } } }),
+      this.prisma.scheduledNotification.groupBy({
+        by: ['type'],
+        where: { sentAt: { gte: ago7 } },
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+      }),
+      this.prisma.scheduledNotification.count({ where: { sentAt: null, cancelledAt: null } }),
       this.prisma.rating.findMany({ where: { date: today }, select: { userId: true }, distinct: ['userId'] }),
       this.prisma.rating.findMany({ where: { date: { gte: d7 } }, select: { userId: true }, distinct: ['userId'] }),
       this.prisma.rating.findMany({ where: { date: { gte: d30 } }, select: { userId: true }, distinct: ['userId'] }),
     ]);
 
+    const typeBreakdown = notifsPerType.map(r => `  ${r.type}: ${r._count.id}`).join('\n');
+
     const lines = [
       `📊 *Статистика бота* · ${today}`,
       '',
       `👥 *Пользователи*`,
-      `Всего: ${totalUsers}`,
-      `Новых за 7 дней: ${newUsers7}`,
-      `Новых за 30 дней: ${newUsers30}`,
+      `Всего: ${totalUsers} (новых за 7д: ${newUsers7}, за 30д: ${newUsers30})`,
+      `Отключили уведомления: ${notifyOff}`,
       '',
       `📔 *Дневник*`,
       `Заполнили сегодня: ${todayRatings.length}`,
@@ -292,6 +300,8 @@ export class BotAnalyticsService {
       `🔔 *Уведомления*`,
       `Отправлено всего: ${notifsSentTotal}`,
       `Отправлено за 7 дней: ${notifsSent7}`,
+      `В очереди (pending): ${pendingCount}`,
+      ...(typeBreakdown ? [`\nЗа 7 дней по типам:\n${typeBreakdown}`] : []),
       '',
       `💑 *Пары*`,
       `Активных пар: ${activePairs}`,
