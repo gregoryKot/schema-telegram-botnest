@@ -52,7 +52,7 @@ export class TelegramScheduleService {
 
     for (const user of users) {
       try {
-        await this.scheduleReminder(user.id, user.notifyUtcHour, user.notifyReminderEnabled);
+        await this.scheduleReminder(user.id, user.notifyUtcHour);
         await this.checkLapsingState(user.id);
 
       } catch (err) {
@@ -63,7 +63,7 @@ export class TelegramScheduleService {
     await this.sendLowStreakInsights();
   }
 
-  private async scheduleReminder(userId: number, notifyUtcHour: number, notifyReminderEnabled: boolean) {
+  private async scheduleReminder(userId: number, notifyUtcHour: number) {
     // Smart payload: yesterday avg + lowest need + streak
     const [streak, weeklyStats, history] = await Promise.all([
       this.analyticsService.getConsecutiveDays(userId),
@@ -86,13 +86,6 @@ export class TelegramScheduleService {
       await this.notificationService.schedule(userId, 'reminder', sendAt, payload);
     }
 
-    // Pre-reminder: 1 hour before main notification
-    if (notifyReminderEnabled && !await this.notificationService.hasPending(userId, 'pre_reminder')) {
-      const preAt = new Date(sendAt);
-      preAt.setUTCHours(((notifyUtcHour - 1) + 24) % 24, 0, 0, 0);
-      if (preAt < sendAt) preAt.setUTCDate(preAt.getUTCDate() + 1); // wrap midnight
-      await this.notificationService.schedule(userId, 'pre_reminder', preAt);
-    }
   }
 
   private async checkLapsingState(userId: number) {
@@ -111,7 +104,6 @@ export class TelegramScheduleService {
 
   async onDiaryComplete(userId: number) {
     await this.notificationService.cancel(userId, 'reminder');
-    await this.notificationService.cancel(userId, 'pre_reminder');
 
     const settings = await this.botService.getUserSettings(userId);
     const tzOffset = settings?.notifyTzOffset ?? 0;

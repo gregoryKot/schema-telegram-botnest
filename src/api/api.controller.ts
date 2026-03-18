@@ -200,23 +200,16 @@ export class ApiController {
   ) {
     await this.botService.updateUserSettings(req.telegramUserId, body);
 
-    // Reschedule today's reminders if notification time/toggle changed
-    if ('notifyEnabled' in body || 'notifyUtcHour' in body || 'notifyTzOffset' in body || 'notifyReminderEnabled' in body) {
+    // Reschedule reminder if notification time/toggle changed
+    if ('notifyEnabled' in body || 'notifyUtcHour' in body || 'notifyTzOffset' in body) {
       const s = await this.botService.getUserSettings(req.telegramUserId);
       await this.notificationService.cancel(req.telegramUserId, 'reminder');
-      await this.notificationService.cancel(req.telegramUserId, 'pre_reminder');
       if (s?.notifyEnabled) {
         const now = new Date();
         const sendAt = new Date(now);
         sendAt.setUTCHours(s.notifyUtcHour, 0, 0, 0);
         if (sendAt <= now) sendAt.setUTCDate(sendAt.getUTCDate() + 1);
         await this.notificationService.schedule(req.telegramUserId, 'reminder', sendAt);
-        if (s.notifyReminderEnabled) {
-          const preAt = new Date(sendAt);
-          preAt.setUTCHours(((s.notifyUtcHour - 1) + 24) % 24, 0, 0, 0);
-          if (preAt < sendAt) preAt.setUTCDate(preAt.getUTCDate() + 1);
-          await this.notificationService.schedule(req.telegramUserId, 'pre_reminder', preAt);
-        }
       }
     }
 
