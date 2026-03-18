@@ -84,7 +84,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const adminId = Number(process.env.ADMIN_ID);
         if (!adminId || ctx.from?.id !== adminId) { await ctx.reply('⛔ Нет доступа'); return; }
         const text = await this.analyticsService.getAdminStats();
-        await ctx.reply(text, { parse_mode: 'Markdown' });
+        await ctx.reply(text, { parse_mode: 'HTML' });
       } catch (err) {
         this.logger.error('stats command failed', err);
         await ctx.reply('❌ Ошибка').catch(() => null);
@@ -152,6 +152,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     if (adminId) {
       this.bot.telegram.sendMessage(adminId, '🚀 Деплой завершён').catch(() => null);
     }
+
+    // One-time cleanup: cancel legacy pre_reminder notifications left in queue
+    this.botService.cancelAllPreReminders().then(n => {
+      if (n > 0) this.logger.log(`Cancelled ${n} legacy pre_reminder notifications`);
+    }).catch(() => null);
   }
 
   async onModuleDestroy() {

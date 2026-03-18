@@ -293,25 +293,25 @@ export class BotAnalyticsService {
     const typeBreakdown = notifsPerType.map(r => `  ${r.type}: ${r._count.id}`).join('\n');
 
     const lines = [
-      `📊 *Статистика бота* · ${today}`,
+      `📊 <b>Статистика бота</b> · ${today}`,
       '',
-      `👥 *Пользователи*`,
+      `👥 <b>Пользователи</b>`,
       `Всего: ${totalUsers} (новых за 7д: ${newUsers7}, за 30д: ${newUsers30})`,
       `Отключили уведомления: ${notifyOff}`,
       '',
-      `📔 *Дневник*`,
+      `📔 <b>Дневник</b>`,
       `Заполнили сегодня: ${todayRatings.length}`,
       `Активных за 7 дней: ${week7Ratings.length}`,
       `Активных за 30 дней: ${month30Ratings.length}`,
       '',
-      `🔔 *Уведомления*`,
+      `🔔 <b>Уведомления</b>`,
       `Отправлено всего: ${notifsSentTotal}`,
       `Отправлено за 7 дней: ${notifsSent7}`,
       `В очереди (pending): ${pendingCount} (из них просрочено: ${overdueCount})`,
       ...(pendingPerType.length ? [`Pending по типам: ${pendingPerType.map(r => `${r.type}:${r._count.id}`).join(', ')}`] : []),
       ...(typeBreakdown ? [`\nОтправлено за 7д по типам:\n${typeBreakdown}`] : []),
       '',
-      `💑 *Пары*`,
+      `💑 <b>Пары</b>`,
       `Активных пар: ${activePairs}`,
     ];
 

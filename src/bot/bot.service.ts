@@ -189,6 +189,14 @@ export class BotService {
     return true;
   }
 
+  async cancelAllPreReminders(): Promise<number> {
+    const result = await this.prisma.scheduledNotification.updateMany({
+      where: { type: 'pre_reminder', sentAt: null, cancelledAt: null },
+      data: { cancelledAt: new Date() },
+    });
+    return result.count;
+  }
+
   async leavePair(userId: number): Promise<void> {
     const uid = BigInt(userId);
     const pair = await this.prisma.pair.findFirst({
