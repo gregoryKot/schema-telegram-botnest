@@ -193,10 +193,11 @@ export class BotAnalyticsService {
     const dates = new Set(rows.map((r) => r.date));
     const today = this.localDateString(tzOffset);
 
-    // current streak
+    // current streak — if today not yet filled, count from yesterday
+    const startOffset = dates.has(today) ? 0 : 1;
     let currentStreak = 0;
     while (true) {
-      const d = this.localDateString(tzOffset, new Date(Date.now() - currentStreak * 86_400_000));
+      const d = this.localDateString(tzOffset, new Date(Date.now() - (startOffset + currentStreak) * 86_400_000));
       if (!dates.has(d)) break;
       currentStreak++;
     }

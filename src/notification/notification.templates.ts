@@ -55,7 +55,7 @@ export function renderTemplate(
 
     case 'pre_reminder':
       return {
-        text: '🕐 Ещё есть время заполнить дневник до конца дня.',
+        text: '🕐 Дневник ещё не заполнен. Как ты сегодня?',
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
 
