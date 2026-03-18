@@ -26,6 +26,7 @@ export class ApiController {
 
   @Get('ratings')
   async getRatings(@Req() req: AuthRequest, @Query('date') date?: string) {
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException('Invalid date format');
     return this.botService.getRatings(req.telegramUserId, date);
   }
 
@@ -132,12 +133,13 @@ export class ApiController {
 
   @Get('note')
   async getNote(@Req() req: AuthRequest, @Query('date') date: string) {
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException('Invalid date format');
     return this.botService.getNote(req.telegramUserId, date);
   }
 
   @Post('note')
   async saveNote(@Req() req: AuthRequest, @Body() body: { date: string; text: string; tags?: string[] }) {
-    if (!body.date || typeof body.text !== 'string') throw new BadRequestException();
+    if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date) || typeof body.text !== 'string') throw new BadRequestException();
     await this.botService.saveNote(req.telegramUserId, body.date, body.text.slice(0, 500), body.tags);
     return { ok: true };
   }
@@ -168,7 +170,7 @@ export class ApiController {
 
   @Post('pair/join')
   async joinPair(@Req() req: AuthRequest, @Body() body: { code: string }) {
-    if (!body.code) throw new BadRequestException();
+    if (!body.code || !/^[A-Z0-9]{5,12}$/i.test(body.code)) throw new BadRequestException('Invalid code format');
     const ok = await this.botService.joinPair(req.telegramUserId, body.code.toUpperCase());
     if (!ok) throw new BadRequestException('Invalid or expired code');
     return { ok: true };

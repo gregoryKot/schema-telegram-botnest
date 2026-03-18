@@ -170,10 +170,11 @@ export class BotService {
 
   async createPairInvite(userId: number): Promise<string> {
     const uid = BigInt(userId);
-    // Remove existing pending pair created by this user
-    await this.prisma.pair.deleteMany({ where: { userId1: uid, status: 'pending' } });
     const code = Math.random().toString(36).slice(2, 9).toUpperCase();
-    await this.prisma.pair.create({ data: { code, userId1: uid } });
+    await this.prisma.$transaction([
+      this.prisma.pair.deleteMany({ where: { userId1: uid, status: 'pending' } }),
+      this.prisma.pair.create({ data: { code, userId1: uid } }),
+    ]);
     return code;
   }
 

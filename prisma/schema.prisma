@@ -38,7 +38,7 @@ model Note {
   text      String
   tags      String   @default("")
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
 }
@@ -50,14 +50,14 @@ model Pair {
   userId2   BigInt?
   status    String   @default("pending")
   createdAt DateTime @default(now())
-  user1     User     @relation("PairUser1", fields: [userId1], references: [id])
-  user2     User?    @relation("PairUser2", fields: [userId2], references: [id])
+  user1     User     @relation("PairUser1", fields: [userId1], references: [id], onDelete: Cascade)
+  user2     User?    @relation("PairUser2", fields: [userId2], references: [id], onDelete: SetNull)
 }
 
 model ScheduledNotification {
   id          Int       @id @default(autoincrement())
   userId      BigInt
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   sendAt      DateTime  // UTC, рассчитано заранее
   type        String    // reminder | summary | onboarding_1 | onboarding_3 | onboarding_7 | streak_7 | streak_14 | streak_30 | lapsing_2 | lapsing_4 | dormant_7 | reengagement_30 | weekly
   payload     Json?
