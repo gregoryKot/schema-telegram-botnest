@@ -55,7 +55,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
       } catch (err) {
         this.logger.error('start command failed', err);
-        await ctx.reply('Что-то пошло не так. Попробуй ещё раз — /start').catch(() => null);
+        await ctx.reply('Что-то пошло не так. Попробуй открыть дневник через кнопку ниже.',
+          Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]])).catch(() => null);
       }
     });
 
@@ -67,7 +68,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply(buildSummaryText(this.botService.getNeeds(), ratings));
       } catch (err) {
         this.logger.error('chart command failed', err);
-        await ctx.reply('❌ Не удалось получить данные').catch(() => null);
+        await ctx.reply('Что-то пошло не так. Попробуй открыть дневник через кнопку ниже.',
+          Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]])).catch(() => null);
       }
     });
 
