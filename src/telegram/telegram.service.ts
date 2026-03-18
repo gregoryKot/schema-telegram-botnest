@@ -27,6 +27,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly botService: BotService,
   ) {}
 
+  private stopping = false;
+
   async onModuleInit() {
     if (!this.bot) {
       this.logger.warn('BOT_TOKEN not provided — bot will not start.');
@@ -126,17 +128,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     }).catch((err: unknown) => this.logger.error('setChatMenuButton failed', err));
 
     this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
-      this.logger.error('Failed to launch bot', err);
+      if (!this.stopping) this.logger.error('Failed to launch bot', err);
     });
     this.logger.log('Bot launched');
   }
 
   async onModuleDestroy() {
+    this.stopping = true;
     try {
       await this.bot?.stop();
-      this.logger.log('Bot stopped');
-    } catch (err) {
-      this.logger.error('Error stopping bot', err);
-    }
+    } catch { /* expected on graceful shutdown */ }
   }
 }
