@@ -87,7 +87,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply(text, { parse_mode: 'HTML' });
       } catch (err) {
         this.logger.error('stats command failed', err);
-        await ctx.reply('❌ Ошибка').catch(() => null);
+        await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);
       }
     });
 
