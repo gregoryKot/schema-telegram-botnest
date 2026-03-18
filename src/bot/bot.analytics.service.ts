@@ -248,6 +248,58 @@ export class BotAnalyticsService {
     return DAY_NAMES[bestDow];
   }
 
+  async getAdminStats(): Promise<string> {
+    const now = new Date();
+    const today = this.localDateString(0, now);
+    const d7 = this.localDateString(0, new Date(now.getTime() - 7 * 86_400_000));
+    const d30 = this.localDateString(0, new Date(now.getTime() - 30 * 86_400_000));
+
+    const [
+      totalUsers,
+      newUsers7,
+      newUsers30,
+      activePairs,
+      notifsSentTotal,
+      notifsSent7,
+      todayRatings,
+      week7Ratings,
+      month30Ratings,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { createdAt: { gte: new Date(now.getTime() - 7 * 86_400_000) } } }),
+      this.prisma.user.count({ where: { createdAt: { gte: new Date(now.getTime() - 30 * 86_400_000) } } }),
+      this.prisma.pair.count({ where: { status: 'active' } }),
+      this.prisma.scheduledNotification.count({ where: { sentAt: { not: null } } }),
+      this.prisma.scheduledNotification.count({ where: { sentAt: { gte: new Date(now.getTime() - 7 * 86_400_000) } } }),
+      this.prisma.rating.findMany({ where: { date: today }, select: { userId: true }, distinct: ['userId'] }),
+      this.prisma.rating.findMany({ where: { date: { gte: d7 } }, select: { userId: true }, distinct: ['userId'] }),
+      this.prisma.rating.findMany({ where: { date: { gte: d30 } }, select: { userId: true }, distinct: ['userId'] }),
+    ]);
+
+    const lines = [
+      `📊 *Статистика бота* · ${today}`,
+      '',
+      `👥 *Пользователи*`,
+      `Всего: ${totalUsers}`,
+      `Новых за 7 дней: ${newUsers7}`,
+      `Новых за 30 дней: ${newUsers30}`,
+      '',
+      `📔 *Дневник*`,
+      `Заполнили сегодня: ${todayRatings.length}`,
+      `Активных за 7 дней: ${week7Ratings.length}`,
+      `Активных за 30 дней: ${month30Ratings.length}`,
+      '',
+      `🔔 *Уведомления*`,
+      `Отправлено всего: ${notifsSentTotal}`,
+      `Отправлено за 7 дней: ${notifsSent7}`,
+      '',
+      `💑 *Пары*`,
+      `Активных пар: ${activePairs}`,
+    ];
+
+    return lines.join('\n');
+  }
+
   async getWorstDayOfWeek(userId: number): Promise<string | null> {
     const tzOffset = await this.userTzOffset(userId);
     const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId) } });

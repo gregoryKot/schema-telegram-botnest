@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } f
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT, CHANNEL, BOOKING_URL, MINIAPP_URL } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
+import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { buildSummaryText } from '../notification/notification.templates';
 
 const WELCOME_TEXT = `Привет!
@@ -25,6 +26,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(TELEGRAF_BOT) @Optional() private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
+    private readonly analyticsService: BotAnalyticsService,
   ) {}
 
   private stopping = false;
@@ -74,6 +76,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply('OK');
       } catch (err) {
         this.logger.error('ping command failed', err);
+      }
+    });
+
+    this.bot.command('stats', async (ctx) => {
+      try {
+        const adminId = Number(process.env.ADMIN_ID);
+        if (!adminId || ctx.from?.id !== adminId) { await ctx.reply('⛔ Нет доступа'); return; }
+        const text = await this.analyticsService.getAdminStats();
+        await ctx.reply(text, { parse_mode: 'Markdown' });
+      } catch (err) {
+        this.logger.error('stats command failed', err);
+        await ctx.reply('❌ Ошибка').catch(() => null);
       }
     });
 
