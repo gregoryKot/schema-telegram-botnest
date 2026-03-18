@@ -148,6 +148,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
     this.logger.log('Bot launched');
+    const adminId = process.env.ADMIN_ID;
+    if (adminId) {
+      this.bot.telegram.sendMessage(adminId, '🚀 Деплой завершён').catch(() => null);
+    }
   }
 
   async onModuleDestroy() {
