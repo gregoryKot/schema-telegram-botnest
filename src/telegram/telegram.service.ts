@@ -139,10 +139,12 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     await this.bot.telegram.callApi('setChatMenuButton' as any, {
       menu_button: { type: 'web_app', text: 'Дневник', web_app: { url: MINIAPP_URL } },
-    }).catch((err: unknown) => this.logger.error('setChatMenuButton failed', err));
+    }).catch((err: unknown) => this.logger.warn('setChatMenuButton failed', err));
 
     this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
-      if (!this.stopping) this.logger.error('Failed to launch bot', err);
+      const msg = String(err);
+      const isExpectedOnDeploy = msg.includes('409') || msg.includes('terminated by other') || msg.includes('restart');
+      if (!this.stopping && !isExpectedOnDeploy) this.logger.error('Failed to launch bot', err);
     });
     this.logger.log('Bot launched');
   }
