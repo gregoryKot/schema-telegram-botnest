@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, Inject, Optional, Logger } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT } from './telegram.constants';
+import { TELEGRAF_BOT, MINIAPP_URL } from './telegram.constants';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
@@ -64,7 +64,8 @@ export class TelegramRatingService implements OnModuleInit {
         await ctx.reply(`📔 История · последние 7 дней\n\n${lines.join('\n')}`);
       } catch (err) {
         this.logger.error('history command failed', err);
-        await ctx.reply('❌ Не удалось получить историю').catch(() => null);
+        await ctx.reply('Что-то пошло не так. Попробуй открыть дневник через кнопку ниже.',
+          Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]])).catch(() => null);
       }
     });
 
@@ -77,7 +78,8 @@ export class TelegramRatingService implements OnModuleInit {
         await ctx.reply(buildSummaryText(this.botService.getNeeds(), ratings));
       } catch (err) {
         this.logger.error('show:chart action failed', err);
-        await ctx.reply('❌ Не удалось получить данные').catch(() => null);
+        await ctx.reply('Что-то пошло не так. Попробуй открыть дневник через кнопку ниже.',
+          Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]])).catch(() => null);
       }
     });
 
@@ -101,7 +103,7 @@ export class TelegramRatingService implements OnModuleInit {
       try {
         const needId = (ctx.match as RegExpMatchArray)[1];
         if (!NEED_IDS.includes(needId as NeedId)) {
-          await ctx.answerCbQuery('Неизвестная потребность', { show_alert: true });
+          await ctx.answerCbQuery('Попробуй ещё раз', { show_alert: true });
           return;
         }
         const need = this.botService.getNeeds().find((n) => n.id === needId)!;
@@ -113,7 +115,7 @@ export class TelegramRatingService implements OnModuleInit {
         }
       } catch (err) {
         this.logger.error('need action failed', err);
-        await ctx.answerCbQuery('Что-то пошло не так').catch(() => null);
+        await ctx.answerCbQuery('Не удалось загрузить. Попробуй ещё раз.').catch(() => null);
       }
     });
 

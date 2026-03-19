@@ -47,7 +47,7 @@ export class TelegramFaqService implements OnModuleInit {
         ]));
       } catch (err) {
         this.logger.error('about action failed', err);
-        await ctx.answerCbQuery().catch(() => null);
+        await ctx.answerCbQuery('Не удалось загрузить. Попробуй ещё раз.').catch(() => null);
       }
     });
 
@@ -59,7 +59,7 @@ export class TelegramFaqService implements OnModuleInit {
         ]));
       } catch (err) {
         this.logger.error('howto action failed', err);
-        await ctx.answerCbQuery().catch(() => null);
+        await ctx.answerCbQuery('Не удалось загрузить. Попробуй ещё раз.').catch(() => null);
       }
     });
 
@@ -69,7 +69,7 @@ export class TelegramFaqService implements OnModuleInit {
         await editOrReply(ctx, FAQ_MENU_TEXT, this.buildFaqKeyboard());
       } catch (err) {
         this.logger.error('faq action failed', err);
-        await ctx.answerCbQuery().catch(() => null);
+        await ctx.answerCbQuery('Не удалось загрузить. Попробуй ещё раз.').catch(() => null);
       }
     });
 
@@ -78,7 +78,7 @@ export class TelegramFaqService implements OnModuleInit {
         const topic = (ctx.match as RegExpMatchArray)[1];
         const text = FAQ[topic];
         if (!text) {
-          await ctx.answerCbQuery('Раздел не найден', { show_alert: true });
+          await ctx.answerCbQuery('Не удалось открыть. Попробуй ещё раз.', { show_alert: true });
           return;
         }
         await ctx.answerCbQuery();
@@ -97,7 +97,7 @@ export class TelegramFaqService implements OnModuleInit {
         await editOrReply(ctx, text, keyboard);
       } catch (err) {
         this.logger.error('faq topic action failed', err);
-        await ctx.answerCbQuery('Что-то пошло не так').catch(() => null);
+        await ctx.answerCbQuery('Не удалось загрузить. Попробуй ещё раз.').catch(() => null);
       }
     });
   }
