@@ -143,6 +143,15 @@ export function renderTemplate(
     case 'anniversary_90':
       return { text: '📅 Три месяца. Это серьёзная практика самопознания. Редкость.' };
 
+    case 'practice_reminder': {
+      const text = payload?.practiceText as string | undefined;
+      if (!text) return null;
+      return {
+        text: `🎯 Сегодня ты планировал:\n\n${text}\n\nКак получится — отметь в дневнике.`,
+        keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
+      };
+    }
+
     default:
       return null;
   }

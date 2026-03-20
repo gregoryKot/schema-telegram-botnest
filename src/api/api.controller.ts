@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
@@ -214,5 +214,73 @@ export class ApiController {
     }
 
     return { ok: true };
+  }
+
+  // ─── Practices ────────────────────────────────────────────────────────────
+
+  @Get('practices')
+  async getPractices(@Req() req: AuthRequest, @Query('needId') needId: string) {
+    if (!NEED_IDS.includes(needId as NeedId)) throw new BadRequestException('Invalid needId');
+    const rows = await this.botService.getPractices(req.telegramUserId, needId);
+    return rows;
+  }
+
+  @Post('practices')
+  async addPractice(@Req() req: AuthRequest, @Body() body: { needId: string; text: string }) {
+    if (!NEED_IDS.includes(body.needId as NeedId) || !body.text?.trim()) throw new BadRequestException();
+    const row = await this.botService.addPractice(req.telegramUserId, body.needId, body.text.trim().slice(0, 200));
+    return row;
+  }
+
+  @Delete('practices/:id')
+  async deletePractice(@Req() req: AuthRequest, @Param('id') id: string) {
+    await this.botService.deletePractice(req.telegramUserId, Number(id));
+    return { ok: true };
+  }
+
+  // ─── Plans ────────────────────────────────────────────────────────────────
+
+  @Get('plan/pending')
+  async getPendingPlan(@Req() req: AuthRequest) {
+    const tzOffset = (await this.botService.getUserSettings(req.telegramUserId))?.notifyTzOffset ?? 0;
+    const today = this.localDate(tzOffset);
+    const plan = await this.botService.getPendingPlan(req.telegramUserId, today);
+    return plan ?? null;
+  }
+
+  @Post('plan')
+  async createPlan(
+    @Req() req: AuthRequest,
+    @Body() body: { needId: string; practiceText: string; reminderUtcHour?: number },
+  ) {
+    if (!NEED_IDS.includes(body.needId as NeedId) || !body.practiceText?.trim()) throw new BadRequestException();
+    const settings = await this.botService.getUserSettings(req.telegramUserId);
+    const tzOffset = settings?.notifyTzOffset ?? 0;
+    const tomorrow = this.localDate(tzOffset, 1);
+    const plan = await this.botService.createPlan(
+      req.telegramUserId, body.needId, body.practiceText.trim(), tomorrow, body.reminderUtcHour,
+    );
+    if (body.reminderUtcHour !== undefined) {
+      const sendAt = new Date();
+      sendAt.setUTCDate(sendAt.getUTCDate() + 1);
+      sendAt.setUTCHours(body.reminderUtcHour, 0, 0, 0);
+      await this.notificationService.schedule(req.telegramUserId, 'practice_reminder', sendAt, {
+        practiceText: body.practiceText.trim(),
+        needId: body.needId,
+        planId: plan.id,
+      });
+    }
+    return plan;
+  }
+
+  @Post('plan/:id/checkin')
+  async checkinPlan(@Req() req: AuthRequest, @Param('id') id: string, @Body() body: { done: boolean }) {
+    await this.botService.checkinPlan(req.telegramUserId, Number(id), body.done);
+    return { ok: true };
+  }
+
+  private localDate(tzOffsetHours: number, daysAhead = 0): string {
+    const d = new Date(Date.now() + tzOffsetHours * 3_600_000 + daysAhead * 86_400_000);
+    return d.toISOString().split('T')[0];
   }
 }

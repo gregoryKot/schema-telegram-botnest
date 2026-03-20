@@ -54,6 +54,30 @@ model Pair {
   user2     User?    @relation("PairUser2", fields: [userId2], references: [id], onDelete: SetNull)
 }
 
+model UserPractice {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  needId    String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([userId, needId])
+}
+
+model PracticePlan {
+  id              Int       @id @default(autoincrement())
+  userId          BigInt
+  needId          String
+  practiceText    String
+  scheduledDate   String    // YYYY-MM-DD — дата когда планируем выполнить
+  reminderUtcHour Int?      // null = без напоминания
+  done            Boolean?  // null = не ответил, true/false = результат
+  checkedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId, scheduledDate])
+}
+
 model ScheduledNotification {
   id          Int       @id @default(autoincrement())
   userId      BigInt

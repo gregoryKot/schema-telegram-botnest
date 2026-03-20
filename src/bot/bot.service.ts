@@ -209,4 +209,46 @@ export class BotService {
       await this.prisma.pair.update({ where: { id: pair.id }, data: { userId2: null, status: 'pending' } });
     }
   }
+
+  // ─── Practices ────────────────────────────────────────────────────────────
+
+  async getPractices(userId: number, needId: string) {
+    return this.prisma.userPractice.findMany({
+      where: { userId: BigInt(userId), needId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async addPractice(userId: number, needId: string, text: string) {
+    return this.prisma.userPractice.create({
+      data: { userId: BigInt(userId), needId, text },
+    });
+  }
+
+  async deletePractice(userId: number, id: number) {
+    await this.prisma.userPractice.deleteMany({
+      where: { id, userId: BigInt(userId) },
+    });
+  }
+
+  // ─── Plans ────────────────────────────────────────────────────────────────
+
+  async getPendingPlan(userId: number, date: string) {
+    return this.prisma.practicePlan.findFirst({
+      where: { userId: BigInt(userId), scheduledDate: date, done: null },
+    });
+  }
+
+  async createPlan(userId: number, needId: string, practiceText: string, scheduledDate: string, reminderUtcHour?: number) {
+    return this.prisma.practicePlan.create({
+      data: { userId: BigInt(userId), needId, practiceText, scheduledDate, reminderUtcHour },
+    });
+  }
+
+  async checkinPlan(userId: number, id: number, done: boolean) {
+    await this.prisma.practicePlan.updateMany({
+      where: { id, userId: BigInt(userId) },
+      data: { done, checkedAt: new Date() },
+    });
+  }
 }
