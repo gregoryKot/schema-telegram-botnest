@@ -78,6 +78,16 @@ model PracticePlan {
   @@index([userId, scheduledDate])
 }
 
+model ChildhoodRating {
+  id     Int    @id @default(autoincrement())
+  userId BigInt
+  needId String
+  value  Int
+
+  @@unique([userId, needId])
+  @@index([userId])
+}
+
 model ScheduledNotification {
   id          Int       @id @default(autoincrement())
   userId      BigInt

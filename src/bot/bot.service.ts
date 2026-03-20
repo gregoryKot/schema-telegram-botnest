@@ -273,4 +273,23 @@ export class BotService {
       where: { userId: BigInt(userId), scheduledDate: date, done: null },
     });
   }
+
+  async getChildhoodRatings(userId: number): Promise<Partial<Record<string, number>>> {
+    const rows = await this.prisma.childhoodRating.findMany({ where: { userId: BigInt(userId) } });
+    const result: Partial<Record<string, number>> = {};
+    for (const row of rows) result[row.needId] = row.value;
+    return result;
+  }
+
+  async saveChildhoodRatings(userId: number, ratings: Record<string, number>): Promise<void> {
+    await Promise.all(
+      Object.entries(ratings).map(([needId, value]) =>
+        this.prisma.childhoodRating.upsert({
+          where: { userId_needId: { userId: BigInt(userId), needId } },
+          create: { userId: BigInt(userId), needId, value },
+          update: { value },
+        })
+      )
+    );
+  }
 }

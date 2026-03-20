@@ -285,6 +285,26 @@ export class ApiController {
     return this.botService.getPlanHistory(req.telegramUserId, n);
   }
 
+  // ─── Childhood Wheel ────────────────────────────────────────────────────────
+
+  @Get('childhood-ratings')
+  async getChildhoodRatings(@Req() req: AuthRequest) {
+    return this.botService.getChildhoodRatings(req.telegramUserId);
+  }
+
+  @Post('childhood-ratings')
+  async saveChildhoodRatings(@Req() req: AuthRequest, @Body() body: Record<string, number>) {
+    const ratings: Record<string, number> = {};
+    for (const needId of NEED_IDS) {
+      if (typeof body[needId] === 'number' && Number.isInteger(body[needId]) && body[needId] >= 0 && body[needId] <= 10) {
+        ratings[needId] = body[needId];
+      }
+    }
+    if (Object.keys(ratings).length === 0) throw new BadRequestException('No valid ratings');
+    await this.botService.saveChildhoodRatings(req.telegramUserId, ratings);
+    return { ok: true };
+  }
+
   private localDate(tzOffsetHours: number, daysAhead = 0): string {
     const d = new Date(Date.now() + tzOffsetHours * 3_600_000 + daysAhead * 86_400_000);
     return d.toISOString().split('T')[0];
