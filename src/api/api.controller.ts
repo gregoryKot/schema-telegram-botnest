@@ -241,11 +241,11 @@ export class ApiController {
   // ─── Plans ────────────────────────────────────────────────────────────────
 
   @Get('plan/pending')
-  async getPendingPlan(@Req() req: AuthRequest) {
+  async getPendingPlans(@Req() req: AuthRequest) {
     const tzOffset = (await this.botService.getUserSettings(req.telegramUserId))?.notifyTzOffset ?? 0;
     const today = this.localDate(tzOffset);
-    const plan = await this.botService.getPendingPlan(req.telegramUserId, today);
-    return plan ?? null;
+    const plans = await this.botService.getPendingPlans(req.telegramUserId, today);
+    return plans;
   }
 
   @Post('plan')
@@ -277,6 +277,12 @@ export class ApiController {
   async checkinPlan(@Req() req: AuthRequest, @Param('id') id: string, @Body() body: { done: boolean }) {
     await this.botService.checkinPlan(req.telegramUserId, Number(id), body.done);
     return { ok: true };
+  }
+
+  @Get('plans/history')
+  async getPlanHistory(@Req() req: AuthRequest, @Query('days') days?: string) {
+    const n = Math.min(Number(days) || 30, 90);
+    return this.botService.getPlanHistory(req.telegramUserId, n);
   }
 
   private localDate(tzOffsetHours: number, daysAhead = 0): string {

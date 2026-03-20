@@ -152,6 +152,15 @@ export function renderTemplate(
       };
     }
 
+    case 'practice_missed': {
+      const text = payload?.practiceText as string | undefined;
+      if (!text) return null;
+      return {
+        text: `🎯 Вчера был план:\n\n${text}\n\nКак получилось? Отметь в дневнике.`,
+        keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
+      };
+    }
+
     default:
       return null;
   }

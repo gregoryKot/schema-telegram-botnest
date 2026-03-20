@@ -251,4 +251,26 @@ export class BotService {
       data: { done, checkedAt: new Date() },
     });
   }
+
+  async getPendingPlans(userId: number, date: string) {
+    return this.prisma.practicePlan.findMany({
+      where: { userId: BigInt(userId), scheduledDate: date, done: null },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async getPlanHistory(userId: number, days: number) {
+    const since = new Date(Date.now() - days * 86_400_000);
+    const sinceStr = since.toISOString().split('T')[0];
+    return this.prisma.practicePlan.findMany({
+      where: { userId: BigInt(userId), scheduledDate: { gte: sinceStr } },
+      orderBy: { scheduledDate: 'desc' },
+    });
+  }
+
+  async getMissedPlans(userId: number, date: string) {
+    return this.prisma.practicePlan.findMany({
+      where: { userId: BigInt(userId), scheduledDate: date, done: null },
+    });
+  }
 }

@@ -19,7 +19,8 @@ export type NotificationType =
   | 'anniversary_30'
   | 'anniversary_60'
   | 'anniversary_90'
-  | 'practice_reminder';
+  | 'practice_reminder'
+  | 'practice_missed';
 
 export interface DueNotification {
   id: number;

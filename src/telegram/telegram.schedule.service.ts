@@ -54,6 +54,7 @@ export class TelegramScheduleService {
       try {
         await this.scheduleReminder(user.id, user.notifyUtcHour);
         await this.checkLapsingState(user.id);
+        await this.checkMissedPlans(user.id);
 
       } catch (err) {
         this.logger.error(`Midnight scheduler failed for userId=${user.id}`, err);
@@ -99,6 +100,18 @@ export class TelegramScheduleService {
         if (!has) await this.notificationService.schedule(userId, type, new Date());
         break;
       }
+    }
+  }
+
+  private async checkMissedPlans(userId: number) {
+    const settings = await this.botService.getUserSettings(userId);
+    const tzOffset = settings?.notifyTzOffset ?? 0;
+    const d = new Date(Date.now() + tzOffset * 3_600_000 - 86_400_000);
+    const yesterday = d.toISOString().split('T')[0];
+    const missed = await this.botService.getMissedPlans(userId, yesterday);
+    if (missed.length > 0 && !await this.notificationService.hasPending(userId, 'practice_missed')) {
+      const text = missed.map(p => p.practiceText).join(', ');
+      await this.notificationService.schedule(userId, 'practice_missed', new Date(), { practiceText: text });
     }
   }
 
