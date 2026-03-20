@@ -59,7 +59,7 @@ export class ApiController {
     if (!await this.notificationService.hasPending(userId, 'summary')) {
       const sendAt = new Date();
       sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
-      if (sendAt <= new Date()) sendAt.setUTCDate(sendAt.getUTCDate() + 1);
+      if (sendAt <= new Date()) sendAt.setTime(Date.now());
       await this.notificationService.schedule(userId, 'summary', sendAt, { text });
     }
 
