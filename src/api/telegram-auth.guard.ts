@@ -20,7 +20,7 @@ export class TelegramAuthGuard implements CanActivate {
       this.logger.warn('SKIP_AUTH=true — validation skipped');
     } else {
       try {
-        validate(initData, botToken, { expiresIn: 0 });
+        validate(initData, botToken, { expiresIn: 86400 }); // 24h — Telegram initData lifetime
       } catch (err) {
         this.logger.warn(`initData invalid: ${(err as Error).message}`);
         throw new UnauthorizedException('Invalid initData');

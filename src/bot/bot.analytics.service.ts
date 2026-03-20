@@ -319,7 +319,6 @@ export class BotAnalyticsService {
   }
 
   async getWorstDayOfWeek(userId: number): Promise<string | null> {
-    const tzOffset = await this.userTzOffset(userId);
     const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId) } });
     if (rows.length === 0) return null;
     const sumByDow = new Map<number, { sum: number; count: number }>();
