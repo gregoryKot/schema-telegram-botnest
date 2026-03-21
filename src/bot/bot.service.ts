@@ -292,4 +292,18 @@ export class BotService {
       )
     );
   }
+
+  async deleteAllUserData(userId: number): Promise<void> {
+    const uid = BigInt(userId);
+    await this.prisma.$transaction([
+      this.prisma.rating.deleteMany({ where: { userId: uid } }),
+      this.prisma.note.deleteMany({ where: { userId: uid } }),
+      this.prisma.userPractice.deleteMany({ where: { userId: uid } }),
+      this.prisma.practicePlan.deleteMany({ where: { userId: uid } }),
+      this.prisma.childhoodRating.deleteMany({ where: { userId: uid } }),
+      this.prisma.scheduledNotification.deleteMany({ where: { userId: uid } }),
+      this.prisma.pair.deleteMany({ where: { userId1: uid } }),
+      this.prisma.user.delete({ where: { id: uid } }),
+    ]);
+  }
 }

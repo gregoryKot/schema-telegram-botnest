@@ -305,6 +305,12 @@ export class ApiController {
     return { ok: true };
   }
 
+  @Delete('user')
+  async deleteUser(@Req() req: AuthRequest) {
+    await this.botService.deleteAllUserData(req.telegramUserId);
+    return { ok: true };
+  }
+
   private localDate(tzOffsetHours: number, daysAhead = 0): string {
     const d = new Date(Date.now() + tzOffsetHours * 3_600_000 + daysAhead * 86_400_000);
     return d.toISOString().split('T')[0];
