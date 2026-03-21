@@ -164,7 +164,7 @@ export class ApiController {
   @Post('pair/invite')
   async createPairInvite(@Req() req: AuthRequest) {
     const code = await this.botService.createPairInvite(req.telegramUserId);
-    const url = `https://t.me/Emotional_Needs_bot?start=pair_${code}`;
+    const url = `https://t.me/Emotional_Needs_bot/diary?startapp=pair_${code}`;
     return { code, url };
   }
 
