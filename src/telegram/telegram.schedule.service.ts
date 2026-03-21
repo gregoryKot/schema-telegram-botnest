@@ -31,6 +31,7 @@ export class TelegramScheduleService {
         const payload = notif.payload as Record<string, unknown> | null;
         const template = renderTemplate(notif.type as any, payload ?? undefined);
         if (!template) {
+          this.logger.warn(`No template for type=${notif.type} id=${notif.id} — skipping`);
           await this.notificationService.markSent(notif.id);
           continue;
         }
@@ -105,7 +106,7 @@ export class TelegramScheduleService {
 
   private async checkMissedPlans(userId: number) {
     const settings = await this.botService.getUserSettings(userId);
-    const tzOffset = settings?.notifyTzOffset ?? 0;
+    const tzOffset = settings?.notifyTzOffset ?? 2;
     const d = new Date(Date.now() + tzOffset * 3_600_000 - 86_400_000);
     const yesterday = d.toISOString().split('T')[0];
     const missed = await this.botService.getMissedPlans(userId, yesterday);
@@ -117,34 +118,37 @@ export class TelegramScheduleService {
 
   async onDiaryComplete(userId: number) {
     await this.notificationService.cancel(userId, 'reminder');
+    await this.notificationService.cancel(userId, 'pre_reminder');
 
     const settings = await this.botService.getUserSettings(userId);
-    const tzOffset = settings?.notifyTzOffset ?? 0;
+    const tzOffset = settings?.notifyTzOffset ?? 2;
     const notifyUtcHour = settings?.notifyUtcHour ?? 19;
     const ratings = await this.botService.getRatings(userId);
     const text = buildSummaryText(this.botService.getNeeds(), ratings, tzOffset);
 
-    const hasSummary = await this.notificationService.hasPending(userId, 'summary');
-    if (!hasSummary) {
-      const todaySummary = new Date();
-      todaySummary.setUTCHours(notifyUtcHour, 0, 0, 0);
-      const sendAt = todaySummary > new Date() ? todaySummary : new Date();
+    if (!await this.notificationService.hasPending(userId, 'summary')) {
+      const sendAt = new Date();
+      sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
+      if (sendAt <= new Date()) sendAt.setTime(Date.now());
       await this.notificationService.schedule(userId, 'summary', sendAt, { text });
     }
 
     const streak = await this.analyticsService.getConsecutiveDays(userId);
     for (const days of [7, 14, 30] as const) {
-      if (streak === days) {
-        const has = await this.notificationService.hasEver(userId, `streak_${days}`);
-        if (!has) await this.notificationService.schedule(userId, `streak_${days}`, new Date());
+      if (streak === days && !await this.notificationService.hasEver(userId, `streak_${days}`)) {
+        await this.notificationService.schedule(userId, `streak_${days}`, new Date());
       }
     }
 
     const total = await this.analyticsService.getTotalDaysFilled(userId);
     for (const days of [1, 3, 7] as const) {
-      if (total === days) {
-        const has = await this.notificationService.hasEver(userId, `onboarding_${days}`);
-        if (!has) await this.notificationService.schedule(userId, `onboarding_${days}`, new Date());
+      if (total === days && !await this.notificationService.hasEver(userId, `onboarding_${days}`)) {
+        await this.notificationService.schedule(userId, `onboarding_${days}`, new Date());
+      }
+    }
+    for (const days of [30, 60, 90] as const) {
+      if (total === days && !await this.notificationService.hasEver(userId, `anniversary_${days}`)) {
+        await this.notificationService.schedule(userId, `anniversary_${days}`, new Date());
       }
     }
   }

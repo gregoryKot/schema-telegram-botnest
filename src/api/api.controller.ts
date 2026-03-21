@@ -68,20 +68,20 @@ export class ApiController {
 
     const streak = await this.analyticsService.getConsecutiveDays(userId);
     for (const days of [7, 14, 30] as const) {
-      if (streak === days && !await this.notificationService.hasPending(userId, `streak_${days}`)) {
+      if (streak === days && !await this.notificationService.hasEver(userId, `streak_${days}`)) {
         await this.notificationService.schedule(userId, `streak_${days}`, new Date());
       }
     }
 
     const total = await this.analyticsService.getTotalDaysFilled(userId);
     for (const days of [1, 3, 7] as const) {
-      if (total === days && !await this.notificationService.hasPending(userId, `onboarding_${days}`)) {
+      if (total === days && !await this.notificationService.hasEver(userId, `onboarding_${days}`)) {
         await this.notificationService.schedule(userId, `onboarding_${days}`, new Date());
       }
     }
 
     for (const days of [30, 60, 90] as const) {
-      if (total === days && !await this.notificationService.hasPending(userId, `anniversary_${days}`)) {
+      if (total === days && !await this.notificationService.hasEver(userId, `anniversary_${days}`)) {
         await this.notificationService.schedule(userId, `anniversary_${days}`, new Date());
       }
     }
