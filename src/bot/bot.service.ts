@@ -71,7 +71,7 @@ export class BotService {
       where: { id: BigInt(userId) },
       select: { notifyTzOffset: true },
     });
-    return user?.notifyTzOffset ?? 0;
+    return user?.notifyTzOffset ?? 2;
   }
 
   async registerUser(userId: number) {
