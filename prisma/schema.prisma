@@ -33,6 +33,7 @@ model User {
   notifyUtcHour          Int      @default(19)
   notifyTzOffset         Int      @default(2)
   notifyReminderEnabled  Boolean  @default(true)
+  pairCardDismissed      Boolean  @default(false)
 
   notifications   ScheduledNotification[]
   notes           Note[]

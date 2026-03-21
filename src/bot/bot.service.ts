@@ -118,11 +118,11 @@ export class BotService {
   async getUserSettings(userId: number) {
     return this.prisma.user.findUnique({
       where: { id: BigInt(userId) },
-      select: { notifyEnabled: true, notifyUtcHour: true, notifyTzOffset: true, notifyReminderEnabled: true },
+      select: { notifyEnabled: true, notifyUtcHour: true, notifyTzOffset: true, notifyReminderEnabled: true, pairCardDismissed: true },
     });
   }
 
-  async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number; notifyReminderEnabled?: boolean }) {
+  async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean }) {
     await this.prisma.user.update({ where: { id: BigInt(userId) }, data });
   }
 

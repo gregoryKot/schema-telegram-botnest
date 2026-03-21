@@ -85,10 +85,14 @@ export class ApiController {
     const ratings = await this.botService.getRatings(req.telegramUserId);
     const allDone = NEED_IDS.every(id => ratings[id] !== undefined);
     if (allDone) {
-      await this.onDiaryComplete(req.telegramUserId, ratings);
+      const [streak] = await Promise.all([
+        this.analyticsService.getStreakData(req.telegramUserId),
+        this.onDiaryComplete(req.telegramUserId, ratings),
+      ]);
+      return { ok: true, allDone: true, streak };
     }
 
-    return { ok: true };
+    return { ok: true, allDone: false };
   }
 
   private async onDiaryComplete(userId: number, ratings: Partial<Record<NeedId, number>>) {
@@ -242,13 +246,14 @@ export class ApiController {
       notifyUtcHour: s?.notifyUtcHour ?? 19,
       notifyTzOffset: s?.notifyTzOffset ?? 2,
       notifyReminderEnabled: s?.notifyReminderEnabled ?? true,
+      pairCardDismissed: s?.pairCardDismissed ?? false,
     };
   }
 
   @Post('settings')
   async updateSettings(
     @Req() req: AuthRequest,
-    @Body() body: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number; notifyReminderEnabled?: boolean },
+    @Body() body: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean },
   ) {
     await this.botService.updateUserSettings(req.telegramUserId, body);
 
