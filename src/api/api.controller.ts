@@ -23,8 +23,8 @@ export class ApiController {
   ) {}
 
   @Post('init')
-  async init(@Req() req: AuthRequest) {
-    await this.botService.registerUser(req.telegramUserId, req.telegramFirstName);
+  async init(@Req() req: AuthRequest, @Body() body: { tzOffset?: number }) {
+    await this.botService.registerUser(req.telegramUserId, req.telegramFirstName, body.tzOffset);
     return { ok: true };
   }
 

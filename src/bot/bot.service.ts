@@ -74,11 +74,12 @@ export class BotService {
     return user?.notifyTzOffset ?? 2;
   }
 
-  async registerUser(userId: number, firstName?: string) {
+  async registerUser(userId: number, firstName?: string, tzOffset?: number) {
+    const validTz = typeof tzOffset === 'number' && Number.isFinite(tzOffset) && tzOffset >= -12 && tzOffset <= 14;
     await this.prisma.user.upsert({
       where: { id: BigInt(userId) },
       update: firstName ? { firstName } : {},
-      create: { id: BigInt(userId), firstName },
+      create: { id: BigInt(userId), firstName, ...(validTz ? { notifyTzOffset: Math.round(tzOffset!) } : {}) },
     });
   }
 
@@ -203,11 +204,10 @@ export class BotService {
 
   async createPairInvite(userId: number): Promise<string> {
     const uid = BigInt(userId);
+    const existing = await this.prisma.pair.findFirst({ where: { userId1: uid, status: 'pending' } });
+    if (existing) return existing.code;
     const code = Math.random().toString(36).slice(2, 9).toUpperCase();
-    await this.prisma.$transaction([
-      this.prisma.pair.deleteMany({ where: { userId1: uid, status: 'pending' } }),
-      this.prisma.pair.create({ data: { code, userId1: uid } }),
-    ]);
+    await this.prisma.pair.create({ data: { code, userId1: uid } });
     return code;
   }
 
