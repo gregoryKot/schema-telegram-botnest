@@ -182,10 +182,10 @@ export class BotService {
     const uid = BigInt(userId);
     const pair = await this.prisma.pair.findUnique({ where: { code } });
     if (!pair || pair.status !== 'pending' || pair.userId1 === uid) return false;
-    await this.prisma.pair.update({
-      where: { code },
-      data: { userId2: uid, status: 'active' },
-    });
+    await this.prisma.$transaction([
+      this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
+      this.prisma.pair.update({ where: { code }, data: { userId2: uid, status: 'active' } }),
+    ]);
     return true;
   }
 

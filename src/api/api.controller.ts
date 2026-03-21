@@ -62,7 +62,7 @@ export class ApiController {
     if (!await this.notificationService.hasPending(userId, 'summary')) {
       const sendAt = new Date();
       sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
-      if (sendAt <= new Date()) sendAt.setUTCDate(sendAt.getUTCDate() + 1);
+      if (sendAt <= new Date()) sendAt.setTime(Date.now());
       await this.notificationService.schedule(userId, 'summary', sendAt, { text });
     }
 
@@ -162,7 +162,7 @@ export class ApiController {
     return {
       paired: true,
       partnerIndex: partnerIndex !== null ? Math.round(partnerIndex * 10) / 10 : null,
-      partnerTodayDone: values.length === 5,
+      partnerTodayDone: values.length === NEED_IDS.length,
       code: pair.code,
     };
   }
