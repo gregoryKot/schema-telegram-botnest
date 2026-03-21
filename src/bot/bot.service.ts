@@ -299,6 +299,10 @@ export class BotService {
     return { answers: r.answers as number[], completedAt: r.completedAt };
   }
 
+  async deleteYsqResult(userId: number): Promise<void> {
+    await this.prisma.ysqResult.deleteMany({ where: { userId: BigInt(userId) } });
+  }
+
   async saveYsqResult(userId: number, answers: number[]): Promise<void> {
     const uid = BigInt(userId);
     await this.prisma.ysqResult.upsert({

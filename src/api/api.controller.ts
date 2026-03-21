@@ -326,6 +326,12 @@ export class ApiController {
     return { ok: true };
   }
 
+  @Delete('ysq-result')
+  async deleteYsqResult(@Req() req: AuthRequest) {
+    await this.botService.deleteYsqResult(req.telegramUserId);
+    return { ok: true };
+  }
+
   @Delete('user')
   async deleteUser(@Req() req: AuthRequest) {
     await this.botService.deleteAllUserData(req.telegramUserId);
