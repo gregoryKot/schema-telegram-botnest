@@ -1,13 +1,14 @@
 import { CanActivate, ExecutionContext, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { validate } from '@telegram-apps/init-data-node';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class TelegramAuthGuard implements CanActivate {
   private readonly logger = new Logger(TelegramAuthGuard.name);
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService, private readonly prisma: PrismaService) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
     const initData = req.headers['x-telegram-init-data'] as string;
     if (!initData) throw new UnauthorizedException('Missing initData');
@@ -38,6 +39,13 @@ export class TelegramAuthGuard implements CanActivate {
     } catch {
       throw new UnauthorizedException('Invalid user data');
     }
+
+    // Ensure user exists in DB on every request (handles "delete data then reuse" case)
+    await (this.prisma.user as any).upsert({
+      where: { id: BigInt(req.telegramUserId) },
+      update: req.telegramFirstName ? { firstName: req.telegramFirstName } : {},
+      create: { id: BigInt(req.telegramUserId), firstName: req.telegramFirstName },
+    });
 
     return true;
   }
