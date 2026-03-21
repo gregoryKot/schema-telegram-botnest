@@ -46,9 +46,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           const code = payload.slice(5).toUpperCase();
           const ok = await this.botService.joinPair(userId, code);
           if (ok) {
-            await ctx.reply('Вы присоединились! Открой дневник и найди партнёра в профиле.');
+            await ctx.reply('Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.',
+              Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]]));
           } else {
-            await ctx.reply('Ссылка недействительна.');
+            await ctx.reply('Ссылка недействительна или уже использована.',
+              Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]]));
           }
           return;
         }
