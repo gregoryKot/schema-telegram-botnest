@@ -206,12 +206,13 @@ export class ApiController {
       this.botService.getRatings(pair.partnerId),
       this.botService.getUserFirstName(pair.partnerId),
     ]);
-    const values = Object.values(partnerRatings);
-    const partnerIndex = values.length > 0 ? values.reduce((s, v) => s + v, 0) / values.length : null;
+    // index = sum of all needs (unrated = 0) / total needs — same formula as client TodayView
+    const partnerRaw = NEED_IDS.reduce((s, id) => s + (partnerRatings[id] ?? 0), 0) / NEED_IDS.length;
+    const partnerTodayDone = NEED_IDS.every(id => partnerRatings[id] !== undefined);
     return {
       paired: true,
-      partnerIndex: partnerIndex !== null ? Math.round(partnerIndex * 10) / 10 : null,
-      partnerTodayDone: values.length === NEED_IDS.length,
+      partnerIndex: partnerTodayDone ? Math.round(partnerRaw * 10) / 10 : null,
+      partnerTodayDone,
       code: pair.code,
       partnerName: partnerUser,
     };
