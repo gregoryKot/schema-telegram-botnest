@@ -8,6 +8,7 @@ import { buildSummaryText } from '../notification/notification.templates';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
+  telegramFirstName?: string;
 }
 
 @Controller('api')
@@ -20,6 +21,47 @@ export class ApiController {
     private readonly analyticsService: BotAnalyticsService,
     private readonly notificationService: NotificationService,
   ) {}
+
+  @Post('init')
+  async init(@Req() req: AuthRequest) {
+    await this.botService.registerUser(req.telegramUserId, req.telegramFirstName);
+    return { ok: true };
+  }
+
+  // ─── Disclaimer ─────────────────────────────────────────────────────────────
+
+  @Get('disclaimer')
+  async getDisclaimer(@Req() req: AuthRequest) {
+    const accepted = await this.botService.hasAcceptedDisclaimer(req.telegramUserId);
+    return { accepted };
+  }
+
+  @Post('disclaimer')
+  async acceptDisclaimer(@Req() req: AuthRequest) {
+    await this.botService.acceptDisclaimer(req.telegramUserId);
+    return { ok: true };
+  }
+
+  // ─── YSQ Progress ────────────────────────────────────────────────────────────
+
+  @Get('ysq-progress')
+  async getYsqProgress(@Req() req: AuthRequest) {
+    return this.botService.getYsqProgress(req.telegramUserId);
+  }
+
+  @Post('ysq-progress')
+  async saveYsqProgress(@Req() req: AuthRequest, @Body() body: { answers: number[]; page: number }) {
+    if (!Array.isArray(body.answers) || body.answers.length !== 116) throw new BadRequestException('Invalid answers');
+    if (!Number.isInteger(body.page) || body.page < 0) throw new BadRequestException('Invalid page');
+    await this.botService.saveYsqProgress(req.telegramUserId, body.answers, body.page);
+    return { ok: true };
+  }
+
+  @Delete('ysq-progress')
+  async deleteYsqProgress(@Req() req: AuthRequest) {
+    await this.botService.deleteYsqProgress(req.telegramUserId);
+    return { ok: true };
+  }
 
   @Get('needs')
   getNeeds() {
@@ -154,9 +196,12 @@ export class ApiController {
   async getPair(@Req() req: AuthRequest) {
     const pair = await this.botService.getUserPair(req.telegramUserId);
     if (!pair || !pair.partnerId) {
-      return { paired: false, partnerIndex: null, partnerTodayDone: false, code: pair?.code ?? null };
+      return { paired: false, partnerIndex: null, partnerTodayDone: false, code: pair?.code ?? null, partnerName: null };
     }
-    const partnerRatings = await this.botService.getRatings(pair.partnerId);
+    const [partnerRatings, partnerUser] = await Promise.all([
+      this.botService.getRatings(pair.partnerId),
+      this.botService.getUserFirstName(pair.partnerId),
+    ]);
     const values = Object.values(partnerRatings);
     const partnerIndex = values.length > 0 ? values.reduce((s, v) => s + v, 0) / values.length : null;
     return {
@@ -164,6 +209,7 @@ export class ApiController {
       partnerIndex: partnerIndex !== null ? Math.round(partnerIndex * 10) / 10 : null,
       partnerTodayDone: values.length === NEED_IDS.length,
       code: pair.code,
+      partnerName: partnerUser,
     };
   }
 

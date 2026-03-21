@@ -17,9 +17,18 @@ model Rating {
   @@unique([userId, date, needId])
 }
 
+model YsqProgress {
+  userId    BigInt   @id
+  answers   Json
+  page      Int
+  updatedAt DateTime @default(now())
+}
+
 model User {
   id                     BigInt   @id
   createdAt              DateTime @default(now())
+  firstName              String?
+  disclaimerAccepted     Boolean  @default(false)
   notifyEnabled          Boolean  @default(true)
   notifyUtcHour          Int      @default(19)
   notifyTzOffset         Int      @default(2)

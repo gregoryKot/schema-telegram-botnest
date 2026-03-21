@@ -74,12 +74,45 @@ export class BotService {
     return user?.notifyTzOffset ?? 2;
   }
 
-  async registerUser(userId: number) {
+  async registerUser(userId: number, firstName?: string) {
     await this.prisma.user.upsert({
       where: { id: BigInt(userId) },
-      update: {},
-      create: { id: BigInt(userId) },
+      update: firstName ? { firstName } : {},
+      create: { id: BigInt(userId), firstName },
     });
+  }
+
+  async getUserFirstName(userId: number): Promise<string | null> {
+    const u = await this.prisma.user.findUnique({ where: { id: BigInt(userId) }, select: { firstName: true } });
+    return u?.firstName ?? null;
+  }
+
+  async acceptDisclaimer(userId: number): Promise<void> {
+    await this.prisma.user.update({ where: { id: BigInt(userId) }, data: { disclaimerAccepted: true } });
+  }
+
+  async hasAcceptedDisclaimer(userId: number): Promise<boolean> {
+    const u = await this.prisma.user.findUnique({ where: { id: BigInt(userId) }, select: { disclaimerAccepted: true } });
+    return u?.disclaimerAccepted ?? false;
+  }
+
+  async getYsqProgress(userId: number): Promise<{ answers: number[]; page: number } | null> {
+    const r = await this.prisma.ysqProgress.findUnique({ where: { userId: BigInt(userId) } });
+    if (!r) return null;
+    return { answers: r.answers as number[], page: r.page };
+  }
+
+  async saveYsqProgress(userId: number, answers: number[], page: number): Promise<void> {
+    const uid = BigInt(userId);
+    await this.prisma.ysqProgress.upsert({
+      where: { userId: uid },
+      update: { answers, page, updatedAt: new Date() },
+      create: { userId: uid, answers, page },
+    });
+  }
+
+  async deleteYsqProgress(userId: number): Promise<void> {
+    await this.prisma.ysqProgress.deleteMany({ where: { userId: BigInt(userId) } });
   }
 
   async getUserSettings(userId: number) {
@@ -321,6 +354,7 @@ export class BotService {
       this.prisma.practicePlan.deleteMany({ where: { userId: uid } }),
       this.prisma.childhoodRating.deleteMany({ where: { userId: uid } }),
       this.prisma.ysqResult.deleteMany({ where: { userId: uid } }),
+      this.prisma.ysqProgress.deleteMany({ where: { userId: uid } }),
       this.prisma.scheduledNotification.deleteMany({ where: { userId: uid } }),
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
       this.prisma.user.delete({ where: { id: uid } }),
