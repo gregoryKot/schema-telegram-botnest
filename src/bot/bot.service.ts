@@ -293,6 +293,21 @@ export class BotService {
     );
   }
 
+  async getYsqResult(userId: number): Promise<{ answers: number[]; completedAt: Date } | null> {
+    const r = await this.prisma.ysqResult.findUnique({ where: { userId: BigInt(userId) } });
+    if (!r) return null;
+    return { answers: r.answers as number[], completedAt: r.completedAt };
+  }
+
+  async saveYsqResult(userId: number, answers: number[]): Promise<void> {
+    const uid = BigInt(userId);
+    await this.prisma.ysqResult.upsert({
+      where: { userId: uid },
+      update: { answers, completedAt: new Date() },
+      create: { userId: uid, answers },
+    });
+  }
+
   async deleteAllUserData(userId: number): Promise<void> {
     const uid = BigInt(userId);
     await this.prisma.$transaction([
@@ -301,6 +316,7 @@ export class BotService {
       this.prisma.userPractice.deleteMany({ where: { userId: uid } }),
       this.prisma.practicePlan.deleteMany({ where: { userId: uid } }),
       this.prisma.childhoodRating.deleteMany({ where: { userId: uid } }),
+      this.prisma.ysqResult.deleteMany({ where: { userId: uid } }),
       this.prisma.scheduledNotification.deleteMany({ where: { userId: uid } }),
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
       this.prisma.user.delete({ where: { id: uid } }),

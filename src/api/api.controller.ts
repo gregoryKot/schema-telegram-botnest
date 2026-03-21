@@ -311,6 +311,21 @@ export class ApiController {
     return { ok: true };
   }
 
+  // ─── YSQ Result ─────────────────────────────────────────────────────────────
+
+  @Get('ysq-result')
+  async getYsqResult(@Req() req: AuthRequest) {
+    return this.botService.getYsqResult(req.telegramUserId);
+  }
+
+  @Post('ysq-result')
+  async saveYsqResult(@Req() req: AuthRequest, @Body() body: { answers: number[] }) {
+    if (!Array.isArray(body.answers) || body.answers.length !== 116) throw new BadRequestException('Invalid answers');
+    if (!body.answers.every(a => Number.isInteger(a) && a >= 0 && a <= 6)) throw new BadRequestException('Invalid answer values');
+    await this.botService.saveYsqResult(req.telegramUserId, body.answers);
+    return { ok: true };
+  }
+
   @Delete('user')
   async deleteUser(@Req() req: AuthRequest) {
     await this.botService.deleteAllUserData(req.telegramUserId);
