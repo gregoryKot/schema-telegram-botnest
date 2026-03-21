@@ -15,10 +15,14 @@ export class AlertLogger extends ConsoleLogger {
   private alert(message: string) {
     if (!this.botToken || !this.adminId) return;
 
+    const now = Date.now();
+    // Evict entries older than 1 hour to prevent unbounded Map growth
+    for (const [k, t] of this.seen) if (now - t > 3_600_000) this.seen.delete(k);
+
     const key = message.slice(0, 100);
     const lastSent = this.seen.get(key) ?? 0;
-    if (Date.now() - lastSent < 60_000) return;
-    this.seen.set(key, Date.now());
+    if (now - lastSent < 60_000) return;
+    this.seen.set(key, now);
 
     const text = `🚨 *Ошибка на сервере*\n\`${message.slice(0, 300)}\``;
     fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {

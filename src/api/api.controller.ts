@@ -248,7 +248,7 @@ export class ApiController {
 
   @Get('plan/pending')
   async getPendingPlans(@Req() req: AuthRequest) {
-    const tzOffset = (await this.botService.getUserSettings(req.telegramUserId))?.notifyTzOffset ?? 0;
+    const tzOffset = (await this.botService.getUserSettings(req.telegramUserId))?.notifyTzOffset ?? 2;
     const today = this.localDate(tzOffset);
     const plans = await this.botService.getPendingPlans(req.telegramUserId, today);
     return plans;
@@ -261,7 +261,7 @@ export class ApiController {
   ) {
     if (!NEED_IDS.includes(body.needId as NeedId) || !body.practiceText?.trim()) throw new BadRequestException();
     const settings = await this.botService.getUserSettings(req.telegramUserId);
-    const tzOffset = settings?.notifyTzOffset ?? 0;
+    const tzOffset = settings?.notifyTzOffset ?? 2;
     const tomorrow = this.localDate(tzOffset, 1);
     const plan = await this.botService.createPlan(
       req.telegramUserId, body.needId, body.practiceText.trim(), tomorrow, body.reminderUtcHour,
