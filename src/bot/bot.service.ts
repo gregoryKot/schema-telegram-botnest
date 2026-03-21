@@ -302,7 +302,7 @@ export class BotService {
       this.prisma.practicePlan.deleteMany({ where: { userId: uid } }),
       this.prisma.childhoodRating.deleteMany({ where: { userId: uid } }),
       this.prisma.scheduledNotification.deleteMany({ where: { userId: uid } }),
-      this.prisma.pair.deleteMany({ where: { userId1: uid } }),
+      this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
       this.prisma.user.delete({ where: { id: uid } }),
     ]);
   }

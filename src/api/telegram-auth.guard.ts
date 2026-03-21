@@ -30,7 +30,13 @@ export class TelegramAuthGuard implements CanActivate {
     const params = new URLSearchParams(initData);
     const userStr = params.get('user');
     if (!userStr) throw new UnauthorizedException('Missing user');
-    req.telegramUserId = JSON.parse(userStr).id as number;
+    try {
+      const user = JSON.parse(userStr);
+      if (typeof user.id !== 'number') throw new Error('Invalid user.id');
+      req.telegramUserId = user.id;
+    } catch {
+      throw new UnauthorizedException('Invalid user data');
+    }
 
     return true;
   }

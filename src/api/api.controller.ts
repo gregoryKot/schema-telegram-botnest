@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Logger, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
@@ -13,6 +13,8 @@ interface AuthRequest extends Request {
 @Controller('api')
 @UseGuards(TelegramAuthGuard)
 export class ApiController {
+  private readonly logger = new Logger(ApiController.name);
+
   constructor(
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
@@ -48,6 +50,7 @@ export class ApiController {
   }
 
   private async onDiaryComplete(userId: number, ratings: Partial<Record<NeedId, number>>) {
+    try {
     await this.notificationService.cancel(userId, 'reminder');
     await this.notificationService.cancel(userId, 'pre_reminder');
 
@@ -59,7 +62,7 @@ export class ApiController {
     if (!await this.notificationService.hasPending(userId, 'summary')) {
       const sendAt = new Date();
       sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
-      if (sendAt <= new Date()) sendAt.setTime(Date.now());
+      if (sendAt <= new Date()) sendAt.setUTCDate(sendAt.getUTCDate() + 1);
       await this.notificationService.schedule(userId, 'summary', sendAt, { text });
     }
 
@@ -81,6 +84,9 @@ export class ApiController {
       if (total === days && !await this.notificationService.hasPending(userId, `anniversary_${days}`)) {
         await this.notificationService.schedule(userId, `anniversary_${days}`, new Date());
       }
+    }
+    } catch (err) {
+      this.logger.error('onDiaryComplete failed', err);
     }
   }
 
