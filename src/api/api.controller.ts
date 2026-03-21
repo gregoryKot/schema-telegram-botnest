@@ -75,11 +75,15 @@ export class ApiController {
   }
 
   @Post('rating')
-  async saveRating(@Req() req: AuthRequest, @Body() body: { needId: string; value: number }) {
+  async saveRating(@Req() req: AuthRequest, @Body() body: { needId: string; value: number; date?: string }) {
     if (!NEED_IDS.includes(body.needId as NeedId) || !Number.isInteger(body.value) || body.value < 0 || body.value > 10) {
       throw new BadRequestException('Invalid needId or value');
     }
-    await this.botService.saveRating(req.telegramUserId, body.needId as NeedId, body.value);
+    if (body.date && !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) throw new BadRequestException('Invalid date');
+    await this.botService.saveRating(req.telegramUserId, body.needId as NeedId, body.value, body.date);
+
+    // Skip diary-complete logic for historical backfill
+    if (body.date) return { ok: true, allDone: false };
 
     // Check if all needs are now rated today → trigger diary-complete logic
     const ratings = await this.botService.getRatings(req.telegramUserId);
