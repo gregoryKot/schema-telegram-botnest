@@ -55,7 +55,7 @@ export class ApiController {
     await this.notificationService.cancel(userId, 'pre_reminder');
 
     const settings = await this.botService.getUserSettings(userId);
-    const tzOffset = settings?.notifyTzOffset ?? 0;
+    const tzOffset = settings?.notifyTzOffset ?? 2;
     const notifyUtcHour = settings?.notifyUtcHour ?? 19;
     const text = buildSummaryText(this.botService.getNeeds(), ratings, tzOffset);
 
