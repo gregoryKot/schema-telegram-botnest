@@ -135,7 +135,7 @@ export class TelegramScheduleService {
     const streak = await this.analyticsService.getConsecutiveDays(userId);
     for (const days of [7, 14, 30] as const) {
       if (streak === days) {
-        const has = await this.notificationService.hasPending(userId, `streak_${days}`);
+        const has = await this.notificationService.hasEver(userId, `streak_${days}`);
         if (!has) await this.notificationService.schedule(userId, `streak_${days}`, new Date());
       }
     }
@@ -143,7 +143,7 @@ export class TelegramScheduleService {
     const total = await this.analyticsService.getTotalDaysFilled(userId);
     for (const days of [1, 3, 7] as const) {
       if (total === days) {
-        const has = await this.notificationService.hasPending(userId, `onboarding_${days}`);
+        const has = await this.notificationService.hasEver(userId, `onboarding_${days}`);
         if (!has) await this.notificationService.schedule(userId, `onboarding_${days}`, new Date());
       }
     }

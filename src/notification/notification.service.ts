@@ -79,6 +79,14 @@ export class NotificationService {
     return count > 0;
   }
 
+  /** True если уведомление данного типа уже было отправлено или стоит в очереди */
+  async hasEver(userId: number, type: NotificationType): Promise<boolean> {
+    const count = await this.prisma.scheduledNotification.count({
+      where: { userId: BigInt(userId), type, cancelledAt: null },
+    });
+    return count > 0;
+  }
+
   /** Отменить все pending уведомления пользователя (при деактивации) */
   async cancelAll(userId: number) {
     await this.prisma.scheduledNotification.updateMany({
