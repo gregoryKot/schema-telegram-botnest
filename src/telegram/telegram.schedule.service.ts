@@ -126,12 +126,11 @@ export class TelegramScheduleService {
     const ratings = await this.botService.getRatings(userId);
     const text = buildSummaryText(this.botService.getNeeds(), ratings, tzOffset);
 
-    if (!await this.notificationService.hasPending(userId, 'summary')) {
-      const sendAt = new Date();
-      sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
-      if (sendAt <= new Date()) sendAt.setTime(Date.now());
-      await this.notificationService.schedule(userId, 'summary', sendAt, { text });
-    }
+    await this.notificationService.cancel(userId, 'summary');
+    const sendAt = new Date();
+    sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
+    if (sendAt <= new Date()) sendAt.setTime(Date.now());
+    await this.notificationService.schedule(userId, 'summary', sendAt, { text });
 
     const streak = await this.analyticsService.getConsecutiveDays(userId);
     for (const days of [7, 14, 30] as const) {
