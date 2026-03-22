@@ -212,18 +212,26 @@ export class ApiController {
     const pendingPair = pairs.find(p => p.status === 'pending' && p.isCreator);
 
     const partners = await Promise.all(activePairs.map(async pair => {
-      const [partnerRatings, partnerName] = await Promise.all([
+      const [partnerRatings, partnerName, partnerHistory] = await Promise.all([
         this.botService.getRatings(pair.partnerId!),
         this.botService.getUserFirstName(pair.partnerId!),
+        this.analyticsService.getHistoryRatings(pair.partnerId!, 7),
       ]);
       const partnerRaw = NEED_IDS.reduce((s, id) => s + (partnerRatings[id] ?? 0), 0) / NEED_IDS.length;
       const partnerTodayDone = NEED_IDS.every(id => partnerRatings[id] !== undefined);
+      const partnerWeekAvgs = partnerHistory.map(day => {
+        const done = NEED_IDS.every(id => day.ratings[id as NeedId] !== undefined);
+        if (!done) return null;
+        const avg = NEED_IDS.reduce((s, id) => s + (day.ratings[id as NeedId] ?? 0), 0) / NEED_IDS.length;
+        return Math.round(avg * 10) / 10;
+      });
       return {
         code: pair.code,
         partnerIndex: partnerTodayDone ? Math.round(partnerRaw * 10) / 10 : null,
         partnerTodayDone,
         partnerName,
         partnerTelegramId: pair.partnerId,
+        partnerWeekAvgs,
       };
     }));
 
