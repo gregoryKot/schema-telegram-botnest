@@ -302,7 +302,7 @@ export class BotService {
 
   async getPendingPlans(userId: number, date: string) {
     return this.prisma.practicePlan.findMany({
-      where: { userId: BigInt(userId), scheduledDate: date, done: null },
+      where: { userId: BigInt(userId), scheduledDate: { gte: date }, done: null },
       orderBy: { createdAt: 'asc' },
     });
   }
