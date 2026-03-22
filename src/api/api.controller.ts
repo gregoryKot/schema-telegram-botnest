@@ -184,7 +184,12 @@ export class ApiController {
 
   @Get('achievements')
   async getAchievements(@Req() req: AuthRequest) {
-    return this.analyticsService.getAchievements(req.telegramUserId);
+    const [achievements, pairs] = await Promise.all([
+      this.analyticsService.getAchievements(req.telegramUserId),
+      this.botService.getUserPairs(req.telegramUserId),
+    ]);
+    const hasPair = pairs.some(p => p.status === 'active');
+    return [...achievements, { id: 'pair_connected', earned: hasPair }];
   }
 
   @Get('note')
@@ -202,24 +207,27 @@ export class ApiController {
 
   @Get('pair')
   async getPair(@Req() req: AuthRequest) {
-    const pair = await this.botService.getUserPair(req.telegramUserId);
-    if (!pair || !pair.partnerId) {
-      return { paired: false, partnerIndex: null, partnerTodayDone: false, code: pair?.code ?? null, partnerName: null };
-    }
-    const [partnerRatings, partnerUser] = await Promise.all([
-      this.botService.getRatings(pair.partnerId),
-      this.botService.getUserFirstName(pair.partnerId),
-    ]);
-    // index = sum of all needs (unrated = 0) / total needs — same formula as client TodayView
-    const partnerRaw = NEED_IDS.reduce((s, id) => s + (partnerRatings[id] ?? 0), 0) / NEED_IDS.length;
-    const partnerTodayDone = NEED_IDS.every(id => partnerRatings[id] !== undefined);
-    return {
-      paired: true,
-      partnerIndex: partnerTodayDone ? Math.round(partnerRaw * 10) / 10 : null,
-      partnerTodayDone,
-      code: pair.code,
-      partnerName: partnerUser,
-    };
+    const pairs = await this.botService.getUserPairs(req.telegramUserId);
+    const activePairs = pairs.filter(p => p.status === 'active');
+    const pendingPair = pairs.find(p => p.status === 'pending' && p.isCreator);
+
+    const partners = await Promise.all(activePairs.map(async pair => {
+      const [partnerRatings, partnerName] = await Promise.all([
+        this.botService.getRatings(pair.partnerId!),
+        this.botService.getUserFirstName(pair.partnerId!),
+      ]);
+      const partnerRaw = NEED_IDS.reduce((s, id) => s + (partnerRatings[id] ?? 0), 0) / NEED_IDS.length;
+      const partnerTodayDone = NEED_IDS.every(id => partnerRatings[id] !== undefined);
+      return {
+        code: pair.code,
+        partnerIndex: partnerTodayDone ? Math.round(partnerRaw * 10) / 10 : null,
+        partnerTodayDone,
+        partnerName,
+        partnerTelegramId: pair.partnerId,
+      };
+    }));
+
+    return { partners, pendingCode: pendingPair?.code ?? null };
   }
 
   @Post('pair/invite')
@@ -238,8 +246,9 @@ export class ApiController {
   }
 
   @Delete('pair')
-  async leavePair(@Req() req: AuthRequest) {
-    await this.botService.leavePair(req.telegramUserId);
+  async leavePair(@Req() req: AuthRequest, @Body() body: { code: string }) {
+    if (!body.code) throw new BadRequestException('Code required');
+    await this.botService.leavePair(req.telegramUserId, body.code);
     return { ok: true };
   }
 

@@ -202,6 +202,26 @@ export class BotService {
     return { code: pair.code, status: pair.status, isCreator, partnerId };
   }
 
+  async getUserPairs(userId: number): Promise<Array<{
+    code: string;
+    status: string;
+    partnerId: number | null;
+    isCreator: boolean;
+  }>> {
+    const uid = BigInt(userId);
+    const pairs = await this.prisma.pair.findMany({
+      where: { OR: [{ userId1: uid }, { userId2: uid }] },
+      orderBy: { createdAt: 'desc' },
+    });
+    return pairs.map(pair => {
+      const isCreator = pair.userId1 === uid;
+      const partnerId = isCreator
+        ? (pair.userId2 ? Number(pair.userId2) : null)
+        : Number(pair.userId1);
+      return { code: pair.code, status: pair.status, isCreator, partnerId };
+    });
+  }
+
   async createPairInvite(userId: number): Promise<string> {
     const uid = BigInt(userId);
     const existing = await this.prisma.pair.findFirst({ where: { userId1: uid, status: 'pending' } });
@@ -214,11 +234,8 @@ export class BotService {
   async joinPair(userId: number, code: string): Promise<boolean> {
     const uid = BigInt(userId);
     const pair = await this.prisma.pair.findUnique({ where: { code } });
-    if (!pair || pair.status !== 'pending' || pair.userId1 === uid) return false;
-    await this.prisma.$transaction([
-      this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
-      this.prisma.pair.update({ where: { code }, data: { userId2: uid, status: 'active' } }),
-    ]);
+    if (!pair || pair.status !== 'pending' || pair.userId1 === uid || pair.userId2 === uid) return false;
+    await this.prisma.pair.update({ where: { code }, data: { userId2: uid, status: 'active' } });
     return true;
   }
 
@@ -230,16 +247,14 @@ export class BotService {
     return result.count;
   }
 
-  async leavePair(userId: number): Promise<void> {
+  async leavePair(userId: number, code: string): Promise<void> {
     const uid = BigInt(userId);
-    const pair = await this.prisma.pair.findFirst({
-      where: { OR: [{ userId1: uid }, { userId2: uid }] },
-    });
+    const pair = await this.prisma.pair.findUnique({ where: { code } });
     if (!pair) return;
     if (pair.userId1 === uid) {
-      await this.prisma.pair.delete({ where: { id: pair.id } });
-    } else {
-      await this.prisma.pair.update({ where: { id: pair.id }, data: { userId2: null, status: 'pending' } });
+      await this.prisma.pair.delete({ where: { code } });
+    } else if (pair.userId2 === uid) {
+      await this.prisma.pair.update({ where: { code }, data: { userId2: null, status: 'pending' } });
     }
   }
 
