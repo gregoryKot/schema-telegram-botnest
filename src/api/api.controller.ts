@@ -219,10 +219,16 @@ export class ApiController {
       ]);
       const partnerRaw = NEED_IDS.reduce((s, id) => s + (partnerRatings[id] ?? 0), 0) / NEED_IDS.length;
       const partnerTodayDone = NEED_IDS.every(id => partnerRatings[id] !== undefined);
-      const partnerWeekAvgs = partnerHistory.map(day => {
-        const done = NEED_IDS.every(id => day.ratings[id as NeedId] !== undefined);
+      const histByDate = new Map(partnerHistory.map(d => [d.date, d.ratings]));
+      const partnerWeekAvgs = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setUTCDate(d.getUTCDate() - i);
+        const date = d.toISOString().split('T')[0];
+        const ratings = histByDate.get(date);
+        if (!ratings) return null;
+        const done = NEED_IDS.every(id => ratings[id as NeedId] !== undefined);
         if (!done) return null;
-        const avg = NEED_IDS.reduce((s, id) => s + (day.ratings[id as NeedId] ?? 0), 0) / NEED_IDS.length;
+        const avg = NEED_IDS.reduce((s, id) => s + (ratings[id as NeedId] ?? 0), 0) / NEED_IDS.length;
         return Math.round(avg * 10) / 10;
       });
       return {
