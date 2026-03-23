@@ -38,8 +38,15 @@ export class TelegramScheduleService {
         const opts = template.keyboard ? { reply_markup: template.keyboard.reply_markup } : {};
         await this.bot.telegram.sendMessage(notif.userId, template.text, opts);
         await this.notificationService.markSent(notif.id);
-      } catch (err) {
-        this.logger.error(`Failed to send notification id=${notif.id} userId=${notif.userId}`, err);
+      } catch (err: any) {
+        const code = err?.response?.error_code;
+        if (code === 403 || code === 400) {
+          // Bot blocked or user deactivated — skip permanently
+          this.logger.warn(`Skipping notification id=${notif.id} userId=${notif.userId} (Telegram ${code})`);
+          await this.notificationService.markSent(notif.id);
+        } else {
+          this.logger.error(`Failed to send notification id=${notif.id} userId=${notif.userId}`, err);
+        }
       }
     }
   }
