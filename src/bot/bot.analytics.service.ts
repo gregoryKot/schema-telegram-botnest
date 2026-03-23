@@ -19,7 +19,7 @@ export class BotAnalyticsService {
       where: { id: BigInt(userId) },
       select: { notifyTzOffset: true },
     });
-    return user?.notifyTzOffset ?? 0;
+    return user?.notifyTzOffset ?? 2;
   }
 
   async getHistoryRatings(userId: number, days: number): Promise<Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>> {
