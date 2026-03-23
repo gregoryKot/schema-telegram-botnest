@@ -257,7 +257,7 @@ export class BotAnalyticsService {
     const ago30 = new Date(now.getTime() - 30 * 86_400_000);
 
     const [
-      totalUsers, newUsers7, newUsers30, notifyOff,
+      totalUsers, newUsers7, newUsers30, notifyOff, blockedUsers,
       activePairs,
       notifsSentTotal, notifsSent7,
       notifsPerType,
@@ -268,6 +268,7 @@ export class BotAnalyticsService {
       this.prisma.user.count({ where: { createdAt: { gte: ago7 } } }),
       this.prisma.user.count({ where: { createdAt: { gte: ago30 } } }),
       this.prisma.user.count({ where: { notifyEnabled: false } }),
+      this.prisma.user.count({ where: { botBlockedAt: { not: null } } }),
       this.prisma.pair.count({ where: { status: 'active' } }),
       this.prisma.scheduledNotification.count({ where: { sentAt: { not: null } } }),
       this.prisma.scheduledNotification.count({ where: { sentAt: { gte: ago7 } } }),
@@ -298,6 +299,7 @@ export class BotAnalyticsService {
       `👥 <b>Пользователи</b>`,
       `Всего: ${totalUsers} (новых за 7д: ${newUsers7}, за 30д: ${newUsers30})`,
       `Отключили уведомления: ${notifyOff}`,
+      `Заблокировали бота: ${blockedUsers}`,
       '',
       `📔 <b>Дневник</b>`,
       `Заполнили сегодня: ${todayRatings.length}`,

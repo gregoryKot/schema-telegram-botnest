@@ -44,6 +44,7 @@ export class TelegramScheduleService {
           // Bot blocked or user deactivated — skip permanently
           this.logger.warn(`Skipping notification id=${notif.id} userId=${notif.userId} (Telegram ${code})`);
           await this.notificationService.markSent(notif.id);
+          await this.botService.markUserBlocked(notif.userId);
         } else {
           this.logger.error(`Failed to send notification id=${notif.id} userId=${notif.userId}`, err);
         }

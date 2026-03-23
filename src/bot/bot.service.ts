@@ -154,6 +154,13 @@ export class BotService {
     return users.map((u) => Number(u.id));
   }
 
+  async markUserBlocked(userId: number): Promise<void> {
+    await this.prisma.user.updateMany({
+      where: { id: BigInt(userId), botBlockedAt: null },
+      data: { botBlockedAt: new Date() },
+    });
+  }
+
   async getAllUserIds(): Promise<number[]> {
     const users = await this.prisma.user.findMany({ select: { id: true } });
     return users.map((u) => Number(u.id));
