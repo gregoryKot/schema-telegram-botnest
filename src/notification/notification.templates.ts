@@ -38,12 +38,12 @@ export function renderTemplate(
       const lowestNeed = payload?.lowestNeed as string | undefined;
       const yesterdayAvg = payload?.yesterdayAvg as number | undefined;
 
-      let text = '📔 Как ты сегодня?';
+      let text = '📔 Дневник потребностей — отметь оценки за сегодня.';
       if (yesterdayAvg !== undefined) {
-        text += `\nВчера было ${yesterdayAvg.toFixed(1)}.`;
+        text += `\nВчера индекс был ${yesterdayAvg.toFixed(1)}.`;
       }
       if (lowestNeed) {
-        text += ` Как сегодня с ${lowestNeed}?`;
+        text += ` Обрати внимание на ${lowestNeed}.`;
       } else {
         text += '\nЕщё не отметил потребности — займёт минуту.';
       }
@@ -55,7 +55,7 @@ export function renderTemplate(
 
     case 'pre_reminder':
       return {
-        text: '🕐 Дневник ещё не заполнен. Как ты сегодня?',
+        text: '🕐 Дневник ещё не заполнен — займёт минуту.',
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
 
@@ -94,13 +94,13 @@ export function renderTemplate(
 
     case 'lapsing_2':
       return {
-        text: 'Пара дней без записей — бывает. Как ты?',
+        text: 'Пара дней без записей — бывает. Вернёшься — всё сохранилось.',
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
 
     case 'lapsing_4':
       return {
-        text: 'Дневник ждёт без давления.\nЕсли захочешь вернуться — всё на месте.',
+        text: 'Без срочности. Когда вернёшься — всё на месте.',
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
 
