@@ -92,7 +92,9 @@ export class ApiController {
     if (allDone) {
       const [streak] = await Promise.all([
         this.analyticsService.getStreakData(req.telegramUserId),
-        this.scheduleService.onDiaryComplete(req.telegramUserId),
+        this.scheduleService.onDiaryComplete(req.telegramUserId).catch((err) => {
+          this.logger.error('onDiaryComplete failed', err);
+        }),
       ]);
       return { ok: true, allDone: true, streak };
     }

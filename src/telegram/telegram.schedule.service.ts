@@ -80,7 +80,7 @@ export class TelegramScheduleService {
 
     for (const user of users) {
       try {
-        await this.scheduleReminder(user.id, user.notifyUtcHour);
+        await this.scheduleReminder(user.id, user.notifyUtcHour, user.notifyReminderEnabled);
         const isLapsing = await this.checkLapsingState(user.id, user.notifyUtcHour);
         if (!isLapsing) {
           await this.checkMissedPlans(user.id);
@@ -92,7 +92,11 @@ export class TelegramScheduleService {
     }
   }
 
-  private async scheduleReminder(userId: number, notifyUtcHour: number) {
+  private async scheduleReminder(userId: number, notifyUtcHour: number, enabled = true) {
+    if (!enabled) {
+      await this.notificationService.cancel(userId, 'reminder');
+      return;
+    }
     // Smart payload: yesterday avg + lowest need + streak
     const [streak, weeklyStats, history] = await Promise.all([
       this.analyticsService.getConsecutiveDays(userId),

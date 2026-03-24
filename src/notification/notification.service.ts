@@ -50,11 +50,6 @@ export class NotificationService {
     });
   }
 
-  /** Отменить сегодняшнее напоминание (reminder) */
-  async cancelTodayReminder(userId: number) {
-    await this.cancel(userId, 'reminder');
-  }
-
   /** Получить все уведомления которые пора отправить */
   async getDue(): Promise<DueNotification[]> {
     const rows = await this.prisma.scheduledNotification.findMany({

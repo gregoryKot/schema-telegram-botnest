@@ -141,7 +141,16 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.answerCbQuery('⏰ Напомню через час');
         const userId = ctx.from?.id;
         if (userId) {
-          const sendAt = new Date(Date.now() + 3_600_000);
+          const settings = await this.botService.getUserSettings(userId);
+          const tzOffset = settings?.notifyTzOffset ?? 2;
+          let sendAt = new Date(Date.now() + 3_600_000);
+          // Quiet hours: if local hour >= 22, push to 8:00 next morning
+          const localHour = ((sendAt.getUTCHours() + tzOffset) % 24 + 24) % 24;
+          if (localHour >= 22 || localHour < 7) {
+            sendAt = new Date();
+            sendAt.setUTCHours(((8 - tzOffset) % 24 + 24) % 24, 0, 0, 0);
+            if (sendAt <= new Date()) sendAt.setUTCDate(sendAt.getUTCDate() + 1);
+          }
           await this.notificationService.cancel(userId, 'reminder');
           await this.notificationService.schedule(userId, 'pre_reminder', sendAt);
         }
