@@ -113,7 +113,7 @@ export class TelegramScheduleService implements OnModuleInit {
       this.analyticsService.getWeeklyStats(userId),
       this.analyticsService.getHistoryRatings(userId, 2),
     ]);
-    const yesterday = history.find((_, i) => i === 1) ?? history[0];
+    const yesterday = history.find((_, i) => i === 1);
     const yesterdayAvg = yesterday
       ? Object.values(yesterday.ratings).reduce((s, v) => s + v, 0) / Object.values(yesterday.ratings).length
       : undefined;

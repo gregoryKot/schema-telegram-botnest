@@ -75,10 +75,10 @@ export class NotificationService {
     return count > 0;
   }
 
-  /** True если уведомление данного типа уже было отправлено или стоит в очереди */
+  /** True если уведомление данного типа уже было отправлено или стоит в очереди (включая отменённые) */
   async hasEver(userId: number, type: NotificationType): Promise<boolean> {
     const count = await this.prisma.scheduledNotification.count({
-      where: { userId: BigInt(userId), type, cancelledAt: null },
+      where: { userId: BigInt(userId), type },
     });
     return count > 0;
   }
