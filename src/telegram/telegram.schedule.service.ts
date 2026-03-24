@@ -35,7 +35,11 @@ export class TelegramScheduleService {
           await this.notificationService.markSent(notif.id);
           continue;
         }
-        const opts = template.keyboard ? { reply_markup: template.keyboard.reply_markup } : {};
+        const silent = notif.type === 'summary';
+        const opts = {
+          ...(template.keyboard ? { reply_markup: template.keyboard.reply_markup } : {}),
+          ...(silent ? { disable_notification: true } : {}),
+        };
         await this.bot.telegram.sendMessage(notif.userId, template.text, opts);
         await this.notificationService.markSent(notif.id);
       } catch (err: any) {
@@ -84,7 +88,9 @@ export class TelegramScheduleService {
       : undefined;
     const lowest = weeklyStats.filter(s => s.avg !== null).sort((a, b) => (a.avg ?? 10) - (b.avg ?? 10))[0];
     const lowestNeed = lowest ? this.botService.getNeeds().find(n => n.id === lowest.needId)?.chartLabel : undefined;
-    const payload = { streak, yesterdayAvg, lowestNeed };
+    const dayIndex = Math.floor(Date.now() / 86_400_000);
+    const variant = (userId + dayIndex) % 5;
+    const payload = { streak, yesterdayAvg, lowestNeed, variant };
 
     const sendAt = new Date();
     sendAt.setUTCDate(sendAt.getUTCDate() + 1);
@@ -108,13 +114,9 @@ export class TelegramScheduleService {
       if (days === d) {
         const has = await this.notificationService.hasPending(userId, type);
         if (!has) {
-          // Schedule at user's notify hour, not at midnight UTC
-          const sendAt = new Date();
-          sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
-          if (sendAt <= new Date()) sendAt.setTime(Date.now() + 60_000);
           // Replace the regular reminder with the lapsing message — same purpose, better copy
           await this.notificationService.cancel(userId, 'reminder');
-          await this.notificationService.schedule(userId, type, sendAt);
+          await this.notificationService.schedule(userId, type, this.nextSendAt(notifyUtcHour));
         }
         break;
       }
@@ -130,17 +132,14 @@ export class TelegramScheduleService {
     const missed = await this.botService.getMissedPlans(userId, yesterday);
     if (missed.length > 0 && !await this.notificationService.hasPending(userId, 'practice_missed')) {
       const text = missed.map(p => p.practiceText).join(', ');
-      // Schedule at user's notify hour today, not at midnight UTC
-      const sendAt = new Date();
-      sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
-      if (sendAt <= new Date()) sendAt.setTime(Date.now() + 60_000);
-      await this.notificationService.schedule(userId, 'practice_missed', sendAt, { practiceText: text });
+      await this.notificationService.schedule(userId, 'practice_missed', this.nextSendAt(notifyUtcHour), { practiceText: text });
     }
   }
 
   async onDiaryComplete(userId: number) {
     await this.notificationService.cancel(userId, 'reminder');
     await this.notificationService.cancel(userId, 'pre_reminder');
+    await this.notificationService.cancel(userId, 'low_streak_insight');
 
     const settings = await this.botService.getUserSettings(userId);
     const tzOffset = settings?.notifyTzOffset ?? 2;
@@ -196,6 +195,15 @@ export class TelegramScheduleService {
     }
   }
 
+  /** Return sendAt clamped so it's never in the past. If it's passed, push to
+   *  tomorrow at the same notifyUtcHour instead of firing +1 min at midnight. */
+  private nextSendAt(notifyUtcHour: number): Date {
+    const sendAt = new Date();
+    sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
+    if (sendAt <= new Date()) sendAt.setUTCDate(sendAt.getUTCDate() + 1);
+    return sendAt;
+  }
+
   private async scheduleLowStreakInsight(userId: number, notifyUtcHour: number) {
     const lowNeeds = await this.analyticsService.getLowStreakNeeds(userId, 5, 3);
     if (lowNeeds.length === 0) return;
@@ -209,9 +217,6 @@ export class TelegramScheduleService {
     });
     const text = lines.join('\n\n');
 
-    const sendAt = new Date();
-    sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
-    if (sendAt <= new Date()) sendAt.setTime(Date.now() + 60_000);
-    await this.notificationService.schedule(userId, 'low_streak_insight', sendAt, { text });
+    await this.notificationService.schedule(userId, 'low_streak_insight', this.nextSendAt(notifyUtcHour), { text });
   }
 }

@@ -22,6 +22,15 @@ export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, 
 
 const openDiaryButton = Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL);
 const bookingButton = Markup.button.url('📝 Записаться на сессию', BOOKING_URL);
+const snoozeButton = Markup.button.callback('⏰ Через час', 'snooze_reminder');
+
+const REMINDER_INTROS = [
+  '📔 Дневник потребностей — отметь оценки за сегодня.',
+  '📔 Пять оценок — и картина дня готова.',
+  '📔 Отметь потребности за сегодня — займёт меньше минуты.',
+  '📔 Данные о себе копятся только если ты их вносишь.',
+  '📔 Дневник ждёт сегодняшних оценок.',
+];
 
 export interface NotificationTemplate {
   text: string;
@@ -37,20 +46,19 @@ export function renderTemplate(
       const streak = payload?.streak as number | undefined;
       const lowestNeed = payload?.lowestNeed as string | undefined;
       const yesterdayAvg = payload?.yesterdayAvg as number | undefined;
+      const variant = (payload?.variant as number | undefined) ?? 0;
 
-      let text = '📔 Дневник потребностей — отметь оценки за сегодня.';
+      let text = REMINDER_INTROS[variant % REMINDER_INTROS.length];
       if (yesterdayAvg !== undefined) {
         text += `\nВчера индекс был ${yesterdayAvg.toFixed(1)}.`;
       }
       if (lowestNeed) {
         text += ` Обрати внимание на ${lowestNeed}.`;
-      } else {
-        text += '\nЕщё не отметил потребности — займёт минуту.';
       }
       if (streak && streak >= 3) {
         text += `\n\n🔥 Серия: ${streak} ${streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'} подряд.`;
       }
-      return { text, keyboard: Markup.inlineKeyboard([[openDiaryButton]]) };
+      return { text, keyboard: Markup.inlineKeyboard([[openDiaryButton], [snoozeButton]]) };
     }
 
     case 'pre_reminder':

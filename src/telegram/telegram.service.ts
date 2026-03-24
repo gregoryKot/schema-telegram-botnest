@@ -3,6 +3,7 @@ import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT, CHANNEL, BOOKING_URL, MINIAPP_URL } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { NotificationService } from '../notification/notification.service';
 import { buildSummaryText } from '../notification/notification.templates';
 
 const WELCOME_TEXT = `Привет!
@@ -27,6 +28,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     @Inject(TELEGRAF_BOT) @Optional() private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   private stopping = false;
@@ -131,6 +133,21 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('back:welcome action failed', err);
+      }
+    });
+
+    this.bot.action('snooze_reminder', async (ctx) => {
+      try {
+        await ctx.answerCbQuery('⏰ Напомню через час');
+        const userId = ctx.from?.id;
+        if (userId) {
+          const sendAt = new Date(Date.now() + 3_600_000);
+          await this.notificationService.cancel(userId, 'reminder');
+          await this.notificationService.schedule(userId, 'pre_reminder', sendAt);
+        }
+        await ctx.editMessageReplyMarkup(undefined).catch(() => null);
+      } catch (err) {
+        this.logger.error('snooze_reminder action failed', err);
       }
     });
 
