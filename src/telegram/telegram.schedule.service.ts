@@ -65,7 +65,7 @@ export class TelegramScheduleService implements OnModuleInit {
           ...(template.keyboard ? { reply_markup: template.keyboard.reply_markup } : {}),
           ...(silent ? { disable_notification: true } : {}),
         };
-        await this.bot.telegram.sendMessage(notif.userId, template.text, opts);
+        await this.bot!.telegram.sendMessage(notif.userId, template.text, opts);
         await this.notificationService.markSent(notif.id);
       } catch (err: any) {
         const code = err?.response?.error_code;
