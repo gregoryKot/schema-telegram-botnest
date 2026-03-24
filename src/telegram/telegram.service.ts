@@ -164,8 +164,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           }
           await this.notificationService.cancel(userId, 'reminder');
           await this.notificationService.schedule(userId, 'pre_reminder', sendAt);
+          const localHourSend = ((sendAt.getUTCHours() + tzOffset) % 24 + 24) % 24;
+          const localMinSend = sendAt.getUTCMinutes();
+          const timeStr = `${String(localHourSend).padStart(2, '0')}:${String(localMinSend).padStart(2, '0')}`;
+          await ctx.editMessageText(`⏰ Напомню в ${timeStr}`).catch(() =>
+            ctx.editMessageReplyMarkup(undefined).catch(() => null)
+          );
+        } else {
+          await ctx.editMessageReplyMarkup(undefined).catch(() => null);
         }
-        await ctx.editMessageReplyMarkup(undefined).catch(() => null);
       } catch (err) {
         this.logger.error('snooze_reminder action failed', err);
       }
