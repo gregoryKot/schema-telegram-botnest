@@ -245,10 +245,16 @@ export class ApiController {
     @Req() req: AuthRequest,
     @Body() body: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean },
   ) {
-    await this.botService.updateUserSettings(req.telegramUserId, body);
+    const clean: Parameters<typeof this.botService.updateUserSettings>[1] = {};
+    if (typeof body.notifyEnabled === 'boolean') clean.notifyEnabled = body.notifyEnabled;
+    if (typeof body.notifyReminderEnabled === 'boolean') clean.notifyReminderEnabled = body.notifyReminderEnabled;
+    if (typeof body.pairCardDismissed === 'boolean') clean.pairCardDismissed = body.pairCardDismissed;
+    if (Number.isInteger(body.notifyUtcHour) && body.notifyUtcHour! >= 0 && body.notifyUtcHour! <= 23) clean.notifyUtcHour = body.notifyUtcHour;
+    if (Number.isInteger(body.notifyTzOffset) && body.notifyTzOffset! >= -12 && body.notifyTzOffset! <= 14) clean.notifyTzOffset = body.notifyTzOffset;
+    await this.botService.updateUserSettings(req.telegramUserId, clean);
 
     // Reschedule reminder if notification time/toggle changed
-    if ('notifyEnabled' in body || 'notifyUtcHour' in body || 'notifyTzOffset' in body) {
+    if ('notifyEnabled' in clean || 'notifyUtcHour' in clean || 'notifyTzOffset' in clean) {
       const s = await this.botService.getUserSettings(req.telegramUserId);
       await this.notificationService.cancel(req.telegramUserId, 'reminder');
       if (s?.notifyEnabled) {

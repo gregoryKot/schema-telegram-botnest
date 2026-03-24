@@ -42,9 +42,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.command('start', async (ctx) => {
       try {
         const userId = ctx.from?.id;
-        if (userId) await this.botService.registerUser(userId);
+        if (!userId) return;
+        const isReturning = !!(await this.botService.getUserSettings(userId));
+        await this.botService.registerUser(userId, ctx.from?.first_name);
         const payload = (ctx as any).startPayload as string | undefined;
-        if (payload?.startsWith('pair_') && userId) {
+        if (payload?.startsWith('pair_')) {
           const code = payload.slice(5).toUpperCase();
           const ok = await this.botService.joinPair(userId, code);
           if (ok) {
@@ -56,7 +58,16 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           }
           return;
         }
-        await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
+        if (isReturning) {
+          const streak = await this.analyticsService.getConsecutiveDays(userId);
+          const name = ctx.from?.first_name ? ` ${ctx.from.first_name}` : '';
+          const streakLine = streak >= 3
+            ? `\n🔥 Серия: ${streak} ${streak < 5 ? 'дня' : 'дней'} подряд`
+            : '';
+          await ctx.reply(`С возвращением${name}!${streakLine}`, buildWelcomeKeyboard());
+        } else {
+          await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
+        }
       } catch (err) {
         this.logger.error('start command failed', err);
         await ctx.reply('Что-то пошло не так. Попробуй открыть дневник через кнопку ниже.',
