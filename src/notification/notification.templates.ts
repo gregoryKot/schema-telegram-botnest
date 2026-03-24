@@ -161,6 +161,15 @@ export function renderTemplate(
       };
     }
 
+    case 'low_streak_insight': {
+      const text = payload?.text as string | undefined;
+      if (!text) return null;
+      return {
+        text,
+        keyboard: Markup.inlineKeyboard([[Markup.button.url('📝 Записаться на сессию', BOOKING_URL)]]),
+      };
+    }
+
     default:
       return null;
   }

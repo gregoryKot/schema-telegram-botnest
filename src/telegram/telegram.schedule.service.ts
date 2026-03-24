@@ -5,7 +5,7 @@ import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
-import { renderTemplate, renderLowStreakInsight, buildWeeklySummaryText, buildSummaryText } from '../notification/notification.templates';
+import { renderTemplate, buildWeeklySummaryText, buildSummaryText, renderLowStreakInsight } from '../notification/notification.templates';
 
 @Injectable()
 export class TelegramScheduleService {
@@ -62,15 +62,13 @@ export class TelegramScheduleService {
     for (const user of users) {
       try {
         await this.scheduleReminder(user.id, user.notifyUtcHour);
-        await this.checkLapsingState(user.id);
+        await this.checkLapsingState(user.id, user.notifyUtcHour);
         await this.checkMissedPlans(user.id);
-
+        await this.scheduleLowStreakInsight(user.id, user.notifyUtcHour);
       } catch (err) {
         this.logger.error(`Midnight scheduler failed for userId=${user.id}`, err);
       }
     }
-
-    await this.sendLowStreakInsights();
   }
 
   private async scheduleReminder(userId: number, notifyUtcHour: number) {
@@ -101,7 +99,7 @@ export class TelegramScheduleService {
 
   }
 
-  private async checkLapsingState(userId: number) {
+  private async checkLapsingState(userId: number, notifyUtcHour: number) {
     const days = await this.analyticsService.getDaysSinceLastFill(userId);
     const thresholds: Array<[number, 'lapsing_2' | 'lapsing_4' | 'dormant_7' | 'reengagement_30']> = [
       [2, 'lapsing_2'], [4, 'lapsing_4'], [7, 'dormant_7'], [30, 'reengagement_30'],
@@ -109,7 +107,15 @@ export class TelegramScheduleService {
     for (const [d, type] of thresholds) {
       if (days === d) {
         const has = await this.notificationService.hasPending(userId, type);
-        if (!has) await this.notificationService.schedule(userId, type, new Date());
+        if (!has) {
+          // Schedule at user's notify hour, not at midnight UTC
+          const sendAt = new Date();
+          sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
+          if (sendAt <= new Date()) sendAt.setTime(Date.now() + 60_000);
+          // Replace the regular reminder with the lapsing message — same purpose, better copy
+          await this.notificationService.cancel(userId, 'reminder');
+          await this.notificationService.schedule(userId, type, sendAt);
+        }
         break;
       }
     }
@@ -190,24 +196,22 @@ export class TelegramScheduleService {
     }
   }
 
-  private async sendLowStreakInsights() {
-    if (!this.bot) return;
-    const userIds = await this.botService.getAllUserIds();
-    for (const userId of userIds) {
-      try {
-        const lowNeeds = await this.analyticsService.getLowStreakNeeds(userId, 5, 3);
-        if (lowNeeds.length === 0) continue;
-        const needs = this.botService.getNeeds();
-        for (const needId of lowNeeds) {
-          const need = needs.find((n) => n.id === needId)!;
-          const template = renderLowStreakInsight(need.emoji, need.chartLabel);
-          await this.bot.telegram.sendMessage(userId, template.text, {
-            reply_markup: template.keyboard!.reply_markup,
-          });
-        }
-      } catch (err) {
-        this.logger.error(`Low streak insight failed for userId=${userId}`, err);
-      }
-    }
+  private async scheduleLowStreakInsight(userId: number, notifyUtcHour: number) {
+    const lowNeeds = await this.analyticsService.getLowStreakNeeds(userId, 5, 3);
+    if (lowNeeds.length === 0) return;
+    if (await this.notificationService.hasPending(userId, 'low_streak_insight')) return;
+
+    const needs = this.botService.getNeeds();
+    // Combine all low-streak needs into one message
+    const lines = lowNeeds.map((needId) => {
+      const need = needs.find((n) => n.id === needId)!;
+      return renderLowStreakInsight(need.emoji, need.chartLabel).text;
+    });
+    const text = lines.join('\n\n');
+
+    const sendAt = new Date();
+    sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
+    if (sendAt <= new Date()) sendAt.setTime(Date.now() + 60_000);
+    await this.notificationService.schedule(userId, 'low_streak_insight', sendAt, { text });
   }
 }
