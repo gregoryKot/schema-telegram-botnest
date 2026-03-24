@@ -259,59 +259,85 @@ export class BotAnalyticsService {
     const [
       totalUsers, newUsers7, newUsers30, notifyOff, blockedUsers,
       activePairs,
-      notifsSentTotal, notifsSent7,
-      notifsPerType,
-      pendingCount, overdueCount, pendingPerType,
       todayRatings, week7Ratings, month30Ratings,
+      needAvgs,
+      fillsByDow,
     ] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.user.count({ where: { createdAt: { gte: ago7 } } }),
-      this.prisma.user.count({ where: { createdAt: { gte: ago30 } } }),
-      this.prisma.user.count({ where: { notifyEnabled: false } }),
-      this.prisma.user.count({ where: { botBlockedAt: { not: null } } }),
+      this.prisma.user.count({ where: { deletedAt: null } }),
+      this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: ago7 } } }),
+      this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: ago30 } } }),
+      this.prisma.user.count({ where: { deletedAt: null, notifyEnabled: false } }),
+      this.prisma.user.count({ where: { deletedAt: null, botBlockedAt: { not: null } } }),
       this.prisma.pair.count({ where: { status: 'active' } }),
-      this.prisma.scheduledNotification.count({ where: { sentAt: { not: null } } }),
-      this.prisma.scheduledNotification.count({ where: { sentAt: { gte: ago7 } } }),
-      this.prisma.scheduledNotification.groupBy({
-        by: ['type'],
-        where: { sentAt: { gte: ago7 } },
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-      }),
-      this.prisma.scheduledNotification.count({ where: { sentAt: null, cancelledAt: null } }),
-      this.prisma.scheduledNotification.count({ where: { sentAt: null, cancelledAt: null, sendAt: { lte: now } } }),
-      this.prisma.scheduledNotification.groupBy({
-        by: ['type'],
-        where: { sentAt: null, cancelledAt: null },
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-      }),
       this.prisma.rating.findMany({ where: { date: today }, select: { userId: true }, distinct: ['userId'] }),
       this.prisma.rating.findMany({ where: { date: { gte: d7 } }, select: { userId: true }, distinct: ['userId'] }),
       this.prisma.rating.findMany({ where: { date: { gte: d30 } }, select: { userId: true }, distinct: ['userId'] }),
+      // Average score per need over last 7 days
+      this.prisma.rating.groupBy({
+        by: ['needId'],
+        where: { date: { gte: d7 } },
+        _avg: { value: true },
+        orderBy: { _avg: { value: 'asc' } },
+      }),
+      // Fills by day of week (last 30 days) — date strings, compute DOW in JS
+      this.prisma.rating.findMany({
+        where: { date: { gte: d30 } },
+        select: { date: true, userId: true },
+        distinct: ['userId', 'date'],
+      }),
     ]);
 
-    const typeBreakdown = notifsPerType.map(r => `  ${r.type}: ${r._count.id}`).join('\n');
+    // Retention funnel — count users with N+ distinct fill days
+    const fillDates = await this.prisma.rating.findMany({ select: { userId: true, date: true }, distinct: ['userId', 'date'] });
+    const fillsPerUser = new Map<string, number>();
+    for (const r of fillDates) {
+      const k = String(r.userId);
+      fillsPerUser.set(k, (fillsPerUser.get(k) ?? 0) + 1);
+    }
+    const ret1 = [...fillsPerUser.values()].filter(n => n >= 1).length;
+    const ret3 = [...fillsPerUser.values()].filter(n => n >= 3).length;
+    const ret7 = [...fillsPerUser.values()].filter(n => n >= 7).length;
+    const ret30 = [...fillsPerUser.values()].filter(n => n >= 30).length;
+
+    // Churn signal: active in d7-d30 but NOT in last 7 days
+    const activeRecent = new Set(week7Ratings.map(r => String(r.userId)));
+    const activeOlder = new Set(
+      await this.prisma.rating.findMany({ where: { date: { gte: d30, lt: d7 } }, select: { userId: true }, distinct: ['userId'] })
+        .then(rows => rows.map(r => String(r.userId)))
+    );
+    const churnRisk = [...activeOlder].filter(id => !activeRecent.has(id)).length;
+
+    // Most neglected need (lowest avg this week)
+    const lowestNeed = needAvgs[0];
+    const needLabels: Record<string, string> = { attachment: 'Привязанность', autonomy: 'Автономия', expression: 'Выражение чувств', play: 'Спонтанность', limits: 'Границы' };
+
+    // Best fill day of week (last 30 days) — count user-day pairs per DOW
+    const DOW = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+    const dowCounts = new Array(7).fill(0);
+    for (const r of fillsByDow) {
+      dowCounts[new Date(r.date + 'T12:00:00Z').getUTCDay()]++;
+    }
+    const bestDow = dowCounts.indexOf(Math.max(...dowCounts));
+    const fillRate = month30Ratings.length > 0 ? Math.round((todayRatings.length / month30Ratings.length) * 100) : 0;
 
     const lines = [
       `📊 <b>Статистика бота</b> · ${today}`,
       '',
       `👥 <b>Пользователи</b>`,
       `Всего: ${totalUsers} (новых за 7д: ${newUsers7}, за 30д: ${newUsers30})`,
-      `Отключили уведомления: ${notifyOff}`,
-      `Заблокировали бота: ${blockedUsers}`,
+      `Отключили уведомления: ${notifyOff} · заблокировали: ${blockedUsers}`,
       '',
       `📔 <b>Дневник</b>`,
-      `Заполнили сегодня: ${todayRatings.length}`,
-      `Активных за 7 дней: ${week7Ratings.length}`,
-      `Активных за 30 дней: ${month30Ratings.length}`,
+      `Сегодня: ${todayRatings.length} (${fillRate}% от MAU)`,
+      `Активных за 7д: ${week7Ratings.length} · за 30д: ${month30Ratings.length}`,
+      `⚠️ Риск оттока (были 8-30д, нет 7д): ${churnRisk}`,
       '',
-      `🔔 <b>Уведомления</b>`,
-      `Отправлено всего: ${notifsSentTotal}`,
-      `Отправлено за 7 дней: ${notifsSent7}`,
-      `В очереди (pending): ${pendingCount} (из них просрочено: ${overdueCount})`,
-      ...(pendingPerType.length ? [`Pending по типам: ${pendingPerType.map(r => `${r.type}:${r._count.id}`).join(', ')}`] : []),
-      ...(typeBreakdown ? [`\nОтправлено за 7д по типам:\n${typeBreakdown}`] : []),
+      `📈 <b>Retention (все время)</b>`,
+      `1+ день: ${ret1}  ·  3+ дня: ${ret3}  ·  7+ дней: ${ret7}  ·  30+ дней: ${ret30}`,
+      '',
+      `🔍 <b>Инсайты за 7 дней</b>`,
+      lowestNeed ? `Западает: ${needLabels[lowestNeed.needId] ?? lowestNeed.needId} (avg ${lowestNeed._avg.value?.toFixed(1)})` : 'Нет данных по потребностям',
+      `Лучший день для заполнения: ${DOW[bestDow]}`,
       '',
       `💑 <b>Пары</b>`,
       `Активных пар: ${activePairs}`,

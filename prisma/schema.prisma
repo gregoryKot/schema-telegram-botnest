@@ -35,6 +35,7 @@ model User {
   notifyReminderEnabled  Boolean  @default(true)
   pairCardDismissed      Boolean  @default(false)
   botBlockedAt           DateTime?
+  deletedAt              DateTime?
 
   notifications   ScheduledNotification[]
   notes           Note[]

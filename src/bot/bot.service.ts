@@ -78,7 +78,7 @@ export class BotService {
     const validTz = typeof tzOffset === 'number' && Number.isFinite(tzOffset) && tzOffset >= -12 && tzOffset <= 14;
     await this.prisma.user.upsert({
       where: { id: BigInt(userId) },
-      update: { ...(firstName ? { firstName } : {}), botBlockedAt: null },
+      update: { ...(firstName ? { firstName } : {}), botBlockedAt: null, deletedAt: null },
       create: { id: BigInt(userId), firstName, ...(validTz ? { notifyTzOffset: Math.round(tzOffset!) } : {}) },
     });
   }
@@ -168,7 +168,7 @@ export class BotService {
 
   async getAllUsersWithSettings(): Promise<Array<{ id: number; notifyUtcHour: number; notifyTzOffset: number; notifyReminderEnabled: boolean }>> {
     const users = await this.prisma.user.findMany({
-      where: { notifyEnabled: true, botBlockedAt: null },
+      where: { notifyEnabled: true, botBlockedAt: null, deletedAt: null },
       select: { id: true, notifyUtcHour: true, notifyTzOffset: true, notifyReminderEnabled: true },
     });
     return users.map((u) => ({ ...u, id: Number(u.id) }));
@@ -379,7 +379,8 @@ export class BotService {
       this.prisma.ysqProgress.deleteMany({ where: { userId: uid } }),
       this.prisma.scheduledNotification.deleteMany({ where: { userId: uid } }),
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
-      this.prisma.user.delete({ where: { id: uid } }),
+      // Soft-delete: keep the user row so re-registration preserves original createdAt
+      this.prisma.user.update({ where: { id: uid }, data: { deletedAt: new Date(), firstName: null, notifyEnabled: true, notifyUtcHour: 19, notifyTzOffset: 2, disclaimerAccepted: false, pairCardDismissed: false, botBlockedAt: null } }),
     ]);
   }
 }
