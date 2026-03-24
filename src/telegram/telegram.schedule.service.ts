@@ -115,12 +115,17 @@ export class TelegramScheduleService {
   private async checkMissedPlans(userId: number) {
     const settings = await this.botService.getUserSettings(userId);
     const tzOffset = settings?.notifyTzOffset ?? 2;
+    const notifyUtcHour = settings?.notifyUtcHour ?? 19;
     const d = new Date(Date.now() + tzOffset * 3_600_000 - 86_400_000);
     const yesterday = d.toISOString().split('T')[0];
     const missed = await this.botService.getMissedPlans(userId, yesterday);
     if (missed.length > 0 && !await this.notificationService.hasPending(userId, 'practice_missed')) {
       const text = missed.map(p => p.practiceText).join(', ');
-      await this.notificationService.schedule(userId, 'practice_missed', new Date(), { practiceText: text });
+      // Schedule at user's notify hour today, not at midnight UTC
+      const sendAt = new Date();
+      sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
+      if (sendAt <= new Date()) sendAt.setTime(Date.now() + 60_000);
+      await this.notificationService.schedule(userId, 'practice_missed', sendAt, { practiceText: text });
     }
   }
 
