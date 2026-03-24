@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit, Inject, Optional, Logger } from '@nestjs/comm
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
+import { NotificationService } from '../notification/notification.service';
 
 const TIMEZONES: { label: string; offset: number }[] = [
   { label: 'UTC−8 (Лос-Анджелес)', offset: -8 },
@@ -57,6 +58,7 @@ export class TelegramSettingsService implements OnModuleInit {
   constructor(
     @Inject(TELEGRAF_BOT) @Optional() private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async onModuleInit() {
@@ -83,6 +85,7 @@ export class TelegramSettingsService implements OnModuleInit {
         const s = await this.botService.getUserSettings(userId);
         const newEnabled = !(s?.notifyEnabled ?? true);
         await this.botService.updateUserSettings(userId, { notifyEnabled: newEnabled });
+        if (!newEnabled) await this.notificationService.cancelAll(userId);
         const text = await buildSettingsText(this.botService, userId);
         await ctx.editMessageText(text, buildSettingsKeyboard(newEnabled) as any);
       } catch (err) {

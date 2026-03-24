@@ -4,7 +4,7 @@ import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { NotificationService } from '../notification/notification.service';
-import { buildSummaryText } from '../notification/notification.templates';
+import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -20,6 +20,7 @@ export class ApiController {
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
     private readonly notificationService: NotificationService,
+    private readonly scheduleService: TelegramScheduleService,
   ) {}
 
   @Post('init')
@@ -91,52 +92,12 @@ export class ApiController {
     if (allDone) {
       const [streak] = await Promise.all([
         this.analyticsService.getStreakData(req.telegramUserId),
-        this.onDiaryComplete(req.telegramUserId, ratings),
+        this.scheduleService.onDiaryComplete(req.telegramUserId),
       ]);
       return { ok: true, allDone: true, streak };
     }
 
     return { ok: true, allDone: false };
-  }
-
-  private async onDiaryComplete(userId: number, ratings: Partial<Record<NeedId, number>>) {
-    try {
-    await this.notificationService.cancel(userId, 'reminder');
-    await this.notificationService.cancel(userId, 'pre_reminder');
-
-    const settings = await this.botService.getUserSettings(userId);
-    const tzOffset = settings?.notifyTzOffset ?? 2;
-    const notifyUtcHour = settings?.notifyUtcHour ?? 19;
-    const text = buildSummaryText(this.botService.getNeeds(), ratings, tzOffset);
-
-    await this.notificationService.cancel(userId, 'summary');
-    const sendAt = new Date();
-    sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
-    if (sendAt <= new Date()) sendAt.setTime(Date.now());
-    await this.notificationService.schedule(userId, 'summary', sendAt, { text });
-
-    const streak = await this.analyticsService.getConsecutiveDays(userId);
-    for (const days of [7, 14, 30] as const) {
-      if (streak === days && !await this.notificationService.hasEver(userId, `streak_${days}`)) {
-        await this.notificationService.schedule(userId, `streak_${days}`, new Date());
-      }
-    }
-
-    const total = await this.analyticsService.getTotalDaysFilled(userId);
-    for (const days of [1, 3, 7] as const) {
-      if (total === days && !await this.notificationService.hasEver(userId, `onboarding_${days}`)) {
-        await this.notificationService.schedule(userId, `onboarding_${days}`, new Date());
-      }
-    }
-
-    for (const days of [30, 60, 90] as const) {
-      if (total === days && !await this.notificationService.hasEver(userId, `anniversary_${days}`)) {
-        await this.notificationService.schedule(userId, `anniversary_${days}`, new Date());
-      }
-    }
-    } catch (err) {
-      this.logger.error('onDiaryComplete failed', err);
-    }
   }
 
   @Get('history')

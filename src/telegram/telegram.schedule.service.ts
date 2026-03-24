@@ -18,10 +18,25 @@ export class TelegramScheduleService {
     private readonly notificationService: NotificationService,
   ) {}
 
+  private isProcessing = false;
+
   /** Every 5 minutes: send all due notifications from the queue */
   @Cron('*/5 * * * *')
   async processQueue() {
     if (!this.bot) return;
+    if (this.isProcessing) {
+      this.logger.warn('processQueue already running — skipping tick');
+      return;
+    }
+    this.isProcessing = true;
+    try {
+      await this.runProcessQueue();
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+
+  private async runProcessQueue() {
     const due = await this.notificationService.getDue();
     if (due.length === 0) return;
     this.logger.log(`Processing ${due.length} due notifications`);
@@ -66,9 +81,11 @@ export class TelegramScheduleService {
     for (const user of users) {
       try {
         await this.scheduleReminder(user.id, user.notifyUtcHour);
-        await this.checkLapsingState(user.id, user.notifyUtcHour);
-        await this.checkMissedPlans(user.id);
-        await this.scheduleLowStreakInsight(user.id, user.notifyUtcHour);
+        const isLapsing = await this.checkLapsingState(user.id, user.notifyUtcHour);
+        if (!isLapsing) {
+          await this.checkMissedPlans(user.id);
+          await this.scheduleLowStreakInsight(user.id, user.notifyUtcHour);
+        }
       } catch (err) {
         this.logger.error(`Midnight scheduler failed for userId=${user.id}`, err);
       }
@@ -105,7 +122,8 @@ export class TelegramScheduleService {
 
   }
 
-  private async checkLapsingState(userId: number, notifyUtcHour: number) {
+  /** Returns true if a lapsing/dormant notification was scheduled (caller should skip other daily notifs) */
+  private async checkLapsingState(userId: number, notifyUtcHour: number): Promise<boolean> {
     const days = await this.analyticsService.getDaysSinceLastFill(userId);
     const thresholds: Array<[number, 'lapsing_2' | 'lapsing_4' | 'dormant_7' | 'reengagement_30']> = [
       [2, 'lapsing_2'], [4, 'lapsing_4'], [7, 'dormant_7'], [30, 'reengagement_30'],
@@ -118,9 +136,10 @@ export class TelegramScheduleService {
           await this.notificationService.cancel(userId, 'reminder');
           await this.notificationService.schedule(userId, type, this.nextSendAt(notifyUtcHour));
         }
-        break;
+        return true;
       }
     }
+    return false;
   }
 
   private async checkMissedPlans(userId: number) {
@@ -148,9 +167,11 @@ export class TelegramScheduleService {
     const text = buildSummaryText(this.botService.getNeeds(), ratings, tzOffset);
 
     await this.notificationService.cancel(userId, 'summary');
+    // Schedule summary after milestones: if notify hour passed, add 5 min so milestones (sent now)
+    // arrive first and summary follows in the next processQueue cycle.
     const sendAt = new Date();
     sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
-    if (sendAt <= new Date()) sendAt.setTime(Date.now());
+    if (sendAt <= new Date()) sendAt.setTime(Date.now() + 5 * 60_000);
     await this.notificationService.schedule(userId, 'summary', sendAt, { text });
 
     const streak = await this.analyticsService.getConsecutiveDays(userId);
@@ -183,12 +204,13 @@ export class TelegramScheduleService {
     for (const user of users) {
       try {
         if (await this.notificationService.hasPending(user.id, 'weekly')) continue;
+        // Skip dormant users — weekly summary is meaningless without recent data
+        const daysSince = await this.analyticsService.getDaysSinceLastFill(user.id);
+        if (daysSince < 0 || daysSince >= 7) continue;
         const stats = await this.analyticsService.getWeeklyStats(user.id);
         const bestDay = await this.analyticsService.getBestDayOfWeek(user.id);
         const text = buildWeeklySummaryText(stats, this.botService.getNeeds(), bestDay);
-        const sendAt = new Date();
-        sendAt.setUTCHours(user.notifyUtcHour, 0, 0, 0);
-        await this.notificationService.schedule(user.id, 'weekly', sendAt, { text });
+        await this.notificationService.schedule(user.id, 'weekly', this.nextSendAt(user.notifyUtcHour), { text });
       } catch (err) {
         this.logger.error(`Weekly summary failed for userId=${user.id}`, err);
       }

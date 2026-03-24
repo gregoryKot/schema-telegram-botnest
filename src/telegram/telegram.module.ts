@@ -11,6 +11,6 @@ import { NotificationModule } from '../notification/notification.module';
 @Module({
   imports: [BotModule, NotificationModule],
   providers: [TelegramService, TelegramFaqService, TelegramRatingService, TelegramScheduleService, TelegramSettingsService, ...TELEGRAM_PROVIDERS],
-  exports: [TelegramService],
+  exports: [TelegramService, TelegramScheduleService],
 })
 export class TelegramModule {}
