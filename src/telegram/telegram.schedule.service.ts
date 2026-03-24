@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
+import { Injectable, Logger, Inject, Optional, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
@@ -8,7 +8,7 @@ import { NotificationService } from '../notification/notification.service';
 import { renderTemplate, buildWeeklySummaryText, buildSummaryText, renderLowStreakInsight } from '../notification/notification.templates';
 
 @Injectable()
-export class TelegramScheduleService {
+export class TelegramScheduleService implements OnModuleInit {
   private readonly logger = new Logger(TelegramScheduleService.name);
 
   constructor(
@@ -19,6 +19,16 @@ export class TelegramScheduleService {
   ) {}
 
   private isProcessing = false;
+
+  async onModuleInit() {
+    // Catch-up: if midnight cron was missed (deploy/restart), schedule any missing reminders.
+    // Delay 10s so the bot is fully connected before we start sending.
+    setTimeout(() => {
+      this.scheduleDailyReminders().catch((e) =>
+        this.logger.error('Startup reminder catch-up failed', e),
+      );
+    }, 10_000);
+  }
 
   /** Every 5 minutes: send all due notifications from the queue */
   @Cron('*/5 * * * *')
@@ -113,9 +123,7 @@ export class TelegramScheduleService {
     const variant = (userId + dayIndex) % 5;
     const payload = { streak, yesterdayAvg, lowestNeed, variant };
 
-    const sendAt = new Date();
-    sendAt.setUTCDate(sendAt.getUTCDate() + 1);
-    sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
+    const sendAt = this.nextSendAt(notifyUtcHour);
 
     // Always cancel stale reminders and reschedule fresh.
     // hasPending guard caused missed notifications: if a reminder survived from a
