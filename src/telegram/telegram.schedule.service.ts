@@ -92,9 +92,12 @@ export class TelegramScheduleService {
     sendAt.setUTCDate(sendAt.getUTCDate() + 1);
     sendAt.setUTCHours(notifyUtcHour, 0, 0, 0);
 
-    if (!await this.notificationService.hasPending(userId, 'reminder')) {
-      await this.notificationService.schedule(userId, 'reminder', sendAt, payload);
-    }
+    // Always cancel stale reminders and reschedule fresh.
+    // hasPending guard caused missed notifications: if a reminder survived from a
+    // previous day (e.g. server was down at sendAt), the guard blocked scheduling
+    // the next day's reminder entirely.
+    await this.notificationService.cancel(userId, 'reminder');
+    await this.notificationService.schedule(userId, 'reminder', sendAt, payload);
 
   }
 
