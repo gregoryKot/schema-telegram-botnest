@@ -8,23 +8,30 @@ export interface EmotionEntry {
 export interface SchemaDiaryEntry {
   id: number;
   createdAt: string;
-  situation: string;
+  trigger: string;
   emotions: EmotionEntry[];
-  emotionNote?: string | null;
-  bodyFeelings?: string | null;
   thoughts?: string | null;
+  bodyFeelings?: string | null;
+  actualBehavior?: string | null;
   schemaIds: string[];
-  copingModeId?: string | null;
-  healthyAdult?: string | null;
+  schemaOrigin?: string | null;
+  healthyView?: string | null;
+  realProblems?: string | null;
+  excessiveReactions?: string | null;
+  healthyBehavior?: string | null;
 }
 
 export interface ModeDiaryEntry {
   id: number;
   createdAt: string;
   modeId: string;
-  trigger: string;
-  intensity: number;
-  healthyAdult?: string | null;
+  situation: string;
+  thoughts?: string | null;
+  feelings?: string | null;
+  bodyFeelings?: string | null;
+  actions?: string | null;
+  actualNeed?: string | null;
+  childhoodMemories?: string | null;
 }
 
 export interface GratitudeDiaryEntry {

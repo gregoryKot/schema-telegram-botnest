@@ -34,31 +34,35 @@ async function del(path: string): Promise<void> {
 export const api = {
   init: () => post('/api/init', {}),
 
-  // Schema diary
   getSchemaDiary: () => get<SchemaDiaryEntry[]>('/api/diary/schema'),
   createSchemaDiary: (data: {
-    situation: string;
+    trigger: string;
     emotions: EmotionEntry[];
-    emotionNote?: string;
-    bodyFeelings?: string;
     thoughts?: string;
+    bodyFeelings?: string;
+    actualBehavior?: string;
     schemaIds: string[];
-    copingModeId?: string;
-    healthyAdult?: string;
+    schemaOrigin?: string;
+    healthyView?: string;
+    realProblems?: string;
+    excessiveReactions?: string;
+    healthyBehavior?: string;
   }) => post<SchemaDiaryEntry>('/api/diary/schema', data),
   deleteSchemaDiary: (id: number) => del(`/api/diary/schema/${id}`),
 
-  // Mode diary
   getModeDiary: () => get<ModeDiaryEntry[]>('/api/diary/mode'),
   createModeDiary: (data: {
     modeId: string;
-    trigger: string;
-    intensity: number;
-    healthyAdult?: string;
+    situation: string;
+    thoughts?: string;
+    feelings?: string;
+    bodyFeelings?: string;
+    actions?: string;
+    actualNeed?: string;
+    childhoodMemories?: string;
   }) => post<ModeDiaryEntry>('/api/diary/mode', data),
   deleteModeDiary: (id: number) => del(`/api/diary/mode/${id}`),
 
-  // Gratitude diary
   getGratitudeDiary: () => get<GratitudeDiaryEntry[]>('/api/diary/gratitude'),
   createGratitudeDiary: (date: string, items: string[]) =>
     post<GratitudeDiaryEntry>('/api/diary/gratitude', { date, items }),
