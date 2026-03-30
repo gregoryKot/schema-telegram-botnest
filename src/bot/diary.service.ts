@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 export interface EmotionEntry {
   id: string;
@@ -25,7 +26,22 @@ export class DiaryService {
     excessiveReactions?: string;
     healthyBehavior?: string;
   }) {
-    return this.prisma.schemaDiaryEntry.create({ data: { userId, ...data } });
+    return this.prisma.schemaDiaryEntry.create({
+      data: {
+        userId,
+        trigger: data.trigger,
+        emotions: data.emotions as Prisma.InputJsonValue,
+        thoughts: data.thoughts,
+        bodyFeelings: data.bodyFeelings,
+        actualBehavior: data.actualBehavior,
+        schemaIds: data.schemaIds as Prisma.InputJsonValue,
+        schemaOrigin: data.schemaOrigin,
+        healthyView: data.healthyView,
+        realProblems: data.realProblems,
+        excessiveReactions: data.excessiveReactions,
+        healthyBehavior: data.healthyBehavior,
+      },
+    });
   }
 
   getSchemaDiaryEntries(userId: bigint, limit = 30) {
@@ -72,8 +88,8 @@ export class DiaryService {
   upsertGratitudeDiaryEntry(userId: bigint, date: string, items: string[]) {
     return this.prisma.gratitudeDiaryEntry.upsert({
       where: { userId_date: { userId, date } },
-      create: { userId, date, items },
-      update: { items },
+      create: { userId, date, items: items as Prisma.InputJsonValue },
+      update: { items: items as Prisma.InputJsonValue },
     });
   }
 
