@@ -30,8 +30,8 @@ model User {
   firstName              String?
   disclaimerAccepted     Boolean  @default(false)
   notifyEnabled          Boolean  @default(true)
-  notifyUtcHour          Int      @default(19)
-  notifyTzOffset         Int      @default(2)
+  notifyLocalHour        Int      @default(21)
+  notifyTimezone         String   @default("Europe/Moscow")
   notifyReminderEnabled  Boolean  @default(true)
   pairCardDismissed      Boolean  @default(false)
   botBlockedAt           DateTime?

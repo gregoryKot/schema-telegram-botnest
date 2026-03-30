@@ -6,28 +6,26 @@ import { NeedId, NEED_IDS } from './bot.service';
 export class BotAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private localDateString(tzOffsetHours = 0, base = new Date()): string {
-    const local = new Date(base.getTime() + tzOffsetHours * 3600_000);
-    const y = local.getUTCFullYear();
-    const m = String(local.getUTCMonth() + 1).padStart(2, '0');
-    const d = String(local.getUTCDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+  private localDateString(tz: string, base = new Date()): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(base);
   }
 
-  private async userTzOffset(userId: number): Promise<number> {
+  private async userTimezone(userId: number): Promise<string> {
     const user = await this.prisma.user.findUnique({
       where: { id: BigInt(userId) },
-      select: { notifyTzOffset: true },
+      select: { notifyTimezone: true },
     });
-    return user?.notifyTzOffset ?? 2;
+    return user?.notifyTimezone ?? 'Europe/Moscow';
   }
 
   async getHistoryRatings(userId: number, days: number): Promise<Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>> {
-    const tzOffset = await this.userTzOffset(userId);
+    const tz = await this.userTimezone(userId);
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return this.localDateString(tzOffset, d);
+      return this.localDateString(tz, d);
     });
     const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId), date: { in: dates } } });
     const byDate = new Map<string, Partial<Record<NeedId, number>>>();
@@ -39,11 +37,11 @@ export class BotAnalyticsService {
   }
 
   async getLowStreakNeeds(userId: number, threshold: number, days: number): Promise<NeedId[]> {
-    const tzOffset = await this.userTzOffset(userId);
+    const tz = await this.userTimezone(userId);
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return this.localDateString(tzOffset, d);
+      return this.localDateString(tz, d);
     });
     const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId), date: { in: dates } } });
     return NEED_IDS.filter((needId) => {
@@ -53,7 +51,7 @@ export class BotAnalyticsService {
   }
 
   async getConsecutiveDays(userId: number): Promise<number> {
-    const tzOffset = await this.userTzOffset(userId);
+    const tz = await this.userTimezone(userId);
     const rows = await this.prisma.rating.findMany({
       where: { userId: BigInt(userId) },
       select: { date: true },
@@ -62,7 +60,7 @@ export class BotAnalyticsService {
     const dates = new Set(rows.map((r) => r.date));
     let count = 0;
     while (true) {
-      const dateStr = this.localDateString(tzOffset, new Date(Date.now() - count * 86_400_000));
+      const dateStr = this.localDateString(tz, new Date(Date.now() - count * 86_400_000));
       if (!dates.has(dateStr)) break;
       count++;
     }
@@ -85,16 +83,16 @@ export class BotAnalyticsService {
       select: { date: true },
     });
     if (!last) return -1;
-    const tzOffset = await this.userTzOffset(userId);
-    const today = this.localDateString(tzOffset);
+    const tz = await this.userTimezone(userId);
+    const today = this.localDateString(tz);
     const diffMs = new Date(today + 'T00:00:00Z').getTime() - new Date(last.date + 'T00:00:00Z').getTime();
     return Math.floor(diffMs / 86_400_000);
   }
 
   async getWeeklyStats(userId: number): Promise<Array<{ needId: NeedId; avg: number | null; trend: '↑' | '↓' | '→' }>> {
-    const tzOffset = await this.userTzOffset(userId);
+    const tz = await this.userTimezone(userId);
     const last14 = Array.from({ length: 14 }, (_, i) =>
-      this.localDateString(tzOffset, new Date(Date.now() - i * 86_400_000)),
+      this.localDateString(tz, new Date(Date.now() - i * 86_400_000)),
     );
     const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId), date: { in: last14 } } });
     const curSet = new Set(last14.slice(0, 7));
@@ -145,9 +143,9 @@ export class BotAnalyticsService {
       if (Math.round((cur.getTime() - prev.getTime()) / 86_400_000) >= 3) { hasComeBack = true; break; }
     }
     // growth: compare last 7 days vs prev 7 days per need
-    const tzOffset = await this.userTzOffset(userId);
+    const tz = await this.userTimezone(userId);
     const last14 = Array.from({ length: 14 }, (_, i) =>
-      this.localDateString(tzOffset, new Date(Date.now() - i * 86_400_000)),
+      this.localDateString(tz, new Date(Date.now() - i * 86_400_000)),
     );
     const recent = rows.filter(r => last14.slice(0, 7).includes(r.date));
     const older  = rows.filter(r => last14.slice(7).includes(r.date));
@@ -184,20 +182,20 @@ export class BotAnalyticsService {
     todayDone: boolean;
     weekDots: boolean[];
   }> {
-    const tzOffset = await this.userTzOffset(userId);
+    const tz = await this.userTimezone(userId);
     const rows = await this.prisma.rating.findMany({
       where: { userId: BigInt(userId) },
       select: { date: true },
       distinct: ['date'],
     });
     const dates = new Set(rows.map((r) => r.date));
-    const today = this.localDateString(tzOffset);
+    const today = this.localDateString(tz);
 
     // current streak — if today not yet filled, count from yesterday
     const startOffset = dates.has(today) ? 0 : 1;
     let currentStreak = 0;
     while (true) {
-      const d = this.localDateString(tzOffset, new Date(Date.now() - (startOffset + currentStreak) * 86_400_000));
+      const d = this.localDateString(tz, new Date(Date.now() - (startOffset + currentStreak) * 86_400_000));
       if (!dates.has(d)) break;
       currentStreak++;
     }
@@ -217,7 +215,7 @@ export class BotAnalyticsService {
 
     // week dots — last 7 days (today first)
     const weekDots = Array.from({ length: 7 }, (_, i) =>
-      dates.has(this.localDateString(tzOffset, new Date(Date.now() - i * 86_400_000))),
+      dates.has(this.localDateString(tz, new Date(Date.now() - i * 86_400_000))),
     ).reverse(); // Mon→Sun order (oldest first)
 
     return {
@@ -250,9 +248,9 @@ export class BotAnalyticsService {
 
   async getAdminStats(): Promise<string> {
     const now = new Date();
-    const today = this.localDateString(0, now);
-    const d7 = this.localDateString(0, new Date(now.getTime() - 7 * 86_400_000));
-    const d30 = this.localDateString(0, new Date(now.getTime() - 30 * 86_400_000));
+    const today = this.localDateString('UTC', now);
+    const d7 = this.localDateString('UTC', new Date(now.getTime() - 7 * 86_400_000));
+    const d30 = this.localDateString('UTC', new Date(now.getTime() - 30 * 86_400_000));
     const ago7 = new Date(now.getTime() - 7 * 86_400_000);
     const ago30 = new Date(now.getTime() - 30 * 86_400_000);
 

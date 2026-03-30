@@ -6,6 +6,32 @@ import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { buildSummaryText } from '../notification/notification.templates';
 
+function tzOffsetAt(tz: string, date = new Date()): number {
+  const utc = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const local = new Date(date.toLocaleString('en-US', { timeZone: tz }));
+  return Math.round((local.getTime() - utc.getTime()) / 3_600_000);
+}
+
+function nextSendAtHour(localHour: number, tz: string): Date {
+  const now = new Date();
+  for (let daysAhead = 0; daysAhead <= 1; daysAhead++) {
+    const probe = new Date(now.getTime() + daysAhead * 86_400_000);
+    const dateStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(probe);
+    const noonRef = new Date(`${dateStr}T12:00:00.000Z`);
+    const offset = tzOffsetAt(tz, noonRef);
+    const candidate = new Date(`${dateStr}T${String(localHour).padStart(2, '0')}:00:00.000Z`);
+    candidate.setTime(candidate.getTime() - offset * 3_600_000);
+    if (candidate > now) return candidate;
+  }
+  const probe2 = new Date(now.getTime() + 2 * 86_400_000);
+  const dateStr2 = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(probe2);
+  const noonRef2 = new Date(`${dateStr2}T12:00:00.000Z`);
+  const offset2 = tzOffsetAt(tz, noonRef2);
+  const result = new Date(`${dateStr2}T${String(localHour).padStart(2, '0')}:00:00.000Z`);
+  result.setTime(result.getTime() - offset2 * 3_600_000);
+  return result;
+}
+
 const WELCOME_TEXT = `Привет!
 
 Бывает, что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
@@ -153,18 +179,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const userId = ctx.from?.id;
         if (userId) {
           const settings = await this.botService.getUserSettings(userId);
-          const tzOffset = settings?.notifyTzOffset ?? 2;
+          const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
           let sendAt = new Date(Date.now() + 3_600_000);
-          // Quiet hours: if local hour >= 22, push to 8:00 next morning
-          const localHour = ((sendAt.getUTCHours() + tzOffset) % 24 + 24) % 24;
+          // Quiet hours: if local hour >= 22 or < 7, push to 8:00 next morning
+          const offsetNow = tzOffsetAt(tz, sendAt);
+          const localHour = ((sendAt.getUTCHours() + offsetNow) % 24 + 24) % 24;
           if (localHour >= 22 || localHour < 7) {
-            sendAt = new Date();
-            sendAt.setUTCHours(((8 - tzOffset) % 24 + 24) % 24, 0, 0, 0);
-            if (sendAt <= new Date()) sendAt.setUTCDate(sendAt.getUTCDate() + 1);
+            sendAt = nextSendAtHour(8, tz);
           }
           await this.notificationService.cancel(userId, 'reminder');
           await this.notificationService.schedule(userId, 'pre_reminder', sendAt);
-          const localHourSend = ((sendAt.getUTCHours() + tzOffset) % 24 + 24) % 24;
+          const offsetSend = tzOffsetAt(tz, sendAt);
+          const localHourSend = ((sendAt.getUTCHours() + offsetSend) % 24 + 24) % 24;
           const localMinSend = sendAt.getUTCMinutes();
           const timeStr = `${String(localHourSend).padStart(2, '0')}:${String(localMinSend).padStart(2, '0')}`;
           await ctx.editMessageText(`⏰ Напомню в ${timeStr}`).catch(() =>

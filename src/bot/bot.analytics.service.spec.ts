@@ -14,7 +14,7 @@ function d(daysAgo: number): string {
 
 function makePrisma(overrides: Record<string, jest.Mock> = {}) {
   return {
-    user: { findUnique: jest.fn().mockResolvedValue({ notifyTzOffset: 0 }), ...overrides.user },
+    user: { findUnique: jest.fn().mockResolvedValue({ notifyTimezone: 'UTC' }), ...overrides.user },
     rating: {
       findMany: jest.fn().mockResolvedValue([]),
       findFirst: jest.fn().mockResolvedValue(null),

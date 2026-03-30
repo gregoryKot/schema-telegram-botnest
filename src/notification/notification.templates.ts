@@ -9,15 +9,19 @@ function formatDate(date: Date): string {
   return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
 }
 
-export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, number>>, tzOffset = 0): string {
+export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, number>>, tz = 'Europe/Moscow'): string {
   const lines = needs.map((n) => {
     const v = ratings[n.id];
     if (v === undefined) return `${n.emoji} ${'⬜'.repeat(10)} –`;
     return `${n.emoji} ${'🟩'.repeat(v)}${'⬜'.repeat(10 - v)} ${v}/10`;
   });
   const legend = needs.map((n) => `${n.emoji} ${n.chartLabel}`).join('\n');
-  const localDate = new Date(Date.now() + tzOffset * 3600_000);
-  return `📔 Дневник потребностей · ${formatDate(localDate)}\nТвои оценки за сегодня 👇\n\n${lines.join('\n')}\n\n${legend}`;
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, day: 'numeric', month: 'numeric' }).formatToParts(now);
+  const day = Number(parts.find(p => p.type === 'day')?.value ?? now.getDate());
+  const month = Number(parts.find(p => p.type === 'month')?.value ?? now.getMonth() + 1) - 1;
+  const dateStr = `${day} ${MONTHS[month]}`;
+  return `📔 Дневник потребностей · ${dateStr}\nТвои оценки за сегодня 👇\n\n${lines.join('\n')}\n\n${legend}`;
 }
 
 const openDiaryButton = Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL);

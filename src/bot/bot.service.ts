@@ -58,28 +58,28 @@ export class BotService {
     return this.needs;
   }
 
-  private localDateString(tzOffsetHours = 0, base = new Date()): string {
-    const local = new Date(base.getTime() + tzOffsetHours * 3600_000);
-    const y = local.getUTCFullYear();
-    const m = String(local.getUTCMonth() + 1).padStart(2, '0');
-    const d = String(local.getUTCDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+  private localDateString(tz: string, base = new Date()): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(base);
   }
 
-  private async userTzOffset(userId: number): Promise<number> {
+  private async userTimezone(userId: number): Promise<string> {
     const user = await this.prisma.user.findUnique({
       where: { id: BigInt(userId) },
-      select: { notifyTzOffset: true },
+      select: { notifyTimezone: true },
     });
-    return user?.notifyTzOffset ?? 2;
+    return user?.notifyTimezone ?? 'Europe/Moscow';
   }
 
-  async registerUser(userId: number, firstName?: string, tzOffset?: number) {
-    const validTz = typeof tzOffset === 'number' && Number.isFinite(tzOffset) && tzOffset >= -12 && tzOffset <= 14;
+  async registerUser(userId: number, firstName?: string, timezone?: string) {
+    const VALID_TZ = ['America/Los_Angeles','America/New_York','Europe/London','Europe/Berlin',
+      'Europe/Kyiv','Asia/Jerusalem','Europe/Moscow','Asia/Dubai','Asia/Tashkent','Asia/Almaty','Asia/Shanghai'];
+    const validTz = typeof timezone === 'string' && VALID_TZ.includes(timezone);
     await this.prisma.user.upsert({
       where: { id: BigInt(userId) },
       update: { ...(firstName ? { firstName } : {}), botBlockedAt: null, deletedAt: null },
-      create: { id: BigInt(userId), firstName, ...(validTz ? { notifyTzOffset: Math.round(tzOffset!) } : {}) },
+      create: { id: BigInt(userId), firstName, ...(validTz ? { notifyTimezone: timezone! } : {}) },
     });
   }
 
@@ -119,11 +119,11 @@ export class BotService {
   async getUserSettings(userId: number) {
     return this.prisma.user.findUnique({
       where: { id: BigInt(userId) },
-      select: { notifyEnabled: true, notifyUtcHour: true, notifyTzOffset: true, notifyReminderEnabled: true, pairCardDismissed: true },
+      select: { notifyEnabled: true, notifyLocalHour: true, notifyTimezone: true, notifyReminderEnabled: true, pairCardDismissed: true },
     });
   }
 
-  async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean }) {
+  async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean }) {
     await this.prisma.user.update({ where: { id: BigInt(userId) }, data });
   }
 
@@ -146,14 +146,6 @@ export class BotService {
     });
   }
 
-  async getUsersToNotify(utcHour: number): Promise<number[]> {
-    const users = await this.prisma.user.findMany({
-      where: { notifyEnabled: true, notifyUtcHour: utcHour },
-      select: { id: true },
-    });
-    return users.map((u) => Number(u.id));
-  }
-
   async markUserBlocked(userId: number): Promise<void> {
     await this.prisma.user.updateMany({
       where: { id: BigInt(userId), botBlockedAt: null },
@@ -166,10 +158,10 @@ export class BotService {
     return users.map((u) => Number(u.id));
   }
 
-  async getAllUsersWithSettings(): Promise<Array<{ id: number; notifyUtcHour: number; notifyTzOffset: number; notifyReminderEnabled: boolean }>> {
+  async getAllUsersWithSettings(): Promise<Array<{ id: number; notifyLocalHour: number; notifyTimezone: string; notifyReminderEnabled: boolean }>> {
     const users = await this.prisma.user.findMany({
       where: { notifyEnabled: true, botBlockedAt: null, deletedAt: null },
-      select: { id: true, notifyUtcHour: true, notifyTzOffset: true, notifyReminderEnabled: true },
+      select: { id: true, notifyLocalHour: true, notifyTimezone: true, notifyReminderEnabled: true },
     });
     return users.map((u) => ({ ...u, id: Number(u.id) }));
   }
@@ -179,7 +171,7 @@ export class BotService {
       throw new Error('Rating must be integer 0..10');
     }
     const uid = BigInt(userId);
-    const dt = date ?? this.localDateString(await this.userTzOffset(userId));
+    const dt = date ?? this.localDateString(await this.userTimezone(userId));
     await this.prisma.rating.upsert({
       where: { userId_date_needId: { userId: uid, date: dt, needId } },
       update: { value },
@@ -188,7 +180,7 @@ export class BotService {
   }
 
   async getRatings(userId: number, date?: string) {
-    const dt = date ?? this.localDateString(await this.userTzOffset(userId));
+    const dt = date ?? this.localDateString(await this.userTimezone(userId));
     const rows = await this.prisma.rating.findMany({
       where: { userId: BigInt(userId), date: dt },
     });
@@ -380,7 +372,7 @@ export class BotService {
       this.prisma.scheduledNotification.deleteMany({ where: { userId: uid } }),
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
       // Soft-delete: keep the user row so re-registration preserves original createdAt
-      this.prisma.user.update({ where: { id: uid }, data: { deletedAt: new Date(), firstName: null, notifyEnabled: true, notifyUtcHour: 19, notifyTzOffset: 2, disclaimerAccepted: false, pairCardDismissed: false, botBlockedAt: null } }),
+      this.prisma.user.update({ where: { id: uid }, data: { deletedAt: new Date(), firstName: null, notifyEnabled: true, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', disclaimerAccepted: false, pairCardDismissed: false, botBlockedAt: null } }),
     ]);
   }
 }

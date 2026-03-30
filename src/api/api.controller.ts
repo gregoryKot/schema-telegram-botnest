@@ -24,8 +24,8 @@ export class ApiController {
   ) {}
 
   @Post('init')
-  async init(@Req() req: AuthRequest, @Body() body: { tzOffset?: number }) {
-    await this.botService.registerUser(req.telegramUserId, req.telegramFirstName, body.tzOffset);
+  async init(@Req() req: AuthRequest, @Body() body: { timezone?: string }) {
+    await this.botService.registerUser(req.telegramUserId, req.telegramFirstName, body.timezone);
     return { ok: true };
   }
 
@@ -233,8 +233,8 @@ export class ApiController {
     const s = await this.botService.getUserSettings(req.telegramUserId);
     return {
       notifyEnabled: s?.notifyEnabled ?? true,
-      notifyUtcHour: s?.notifyUtcHour ?? 19,
-      notifyTzOffset: s?.notifyTzOffset ?? 2,
+      notifyLocalHour: s?.notifyLocalHour ?? 21,
+      notifyTimezone: s?.notifyTimezone ?? 'Europe/Moscow',
       notifyReminderEnabled: s?.notifyReminderEnabled ?? true,
       pairCardDismissed: s?.pairCardDismissed ?? false,
     };
@@ -243,27 +243,23 @@ export class ApiController {
   @Post('settings')
   async updateSettings(
     @Req() req: AuthRequest,
-    @Body() body: { notifyEnabled?: boolean; notifyUtcHour?: number; notifyTzOffset?: number; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean },
+    @Body() body: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean },
   ) {
+    const VALID_TZ = ['America/Los_Angeles','America/New_York','Europe/London','Europe/Berlin',
+      'Europe/Kyiv','Asia/Jerusalem','Europe/Moscow','Asia/Dubai','Asia/Tashkent','Asia/Almaty','Asia/Shanghai'];
     const clean: Parameters<typeof this.botService.updateUserSettings>[1] = {};
     if (typeof body.notifyEnabled === 'boolean') clean.notifyEnabled = body.notifyEnabled;
     if (typeof body.notifyReminderEnabled === 'boolean') clean.notifyReminderEnabled = body.notifyReminderEnabled;
     if (typeof body.pairCardDismissed === 'boolean') clean.pairCardDismissed = body.pairCardDismissed;
-    if (Number.isInteger(body.notifyUtcHour) && body.notifyUtcHour! >= 0 && body.notifyUtcHour! <= 23) clean.notifyUtcHour = body.notifyUtcHour;
-    if (Number.isInteger(body.notifyTzOffset) && body.notifyTzOffset! >= -12 && body.notifyTzOffset! <= 14) clean.notifyTzOffset = body.notifyTzOffset;
+    if (Number.isInteger(body.notifyLocalHour) && body.notifyLocalHour! >= 0 && body.notifyLocalHour! <= 23) clean.notifyLocalHour = body.notifyLocalHour;
+    if (typeof body.notifyTimezone === 'string' && VALID_TZ.includes(body.notifyTimezone)) clean.notifyTimezone = body.notifyTimezone;
     await this.botService.updateUserSettings(req.telegramUserId, clean);
 
     // Reschedule reminder if notification time/toggle changed
-    if ('notifyEnabled' in clean || 'notifyUtcHour' in clean || 'notifyTzOffset' in clean) {
+    if ('notifyEnabled' in clean || 'notifyLocalHour' in clean || 'notifyTimezone' in clean) {
       const s = await this.botService.getUserSettings(req.telegramUserId);
       await this.notificationService.cancel(req.telegramUserId, 'reminder');
-      if (s?.notifyEnabled) {
-        const now = new Date();
-        const sendAt = new Date(now);
-        sendAt.setUTCHours(s.notifyUtcHour, 0, 0, 0);
-        if (sendAt <= now) sendAt.setUTCDate(sendAt.getUTCDate() + 1);
-        await this.notificationService.schedule(req.telegramUserId, 'reminder', sendAt);
-      }
+      await this.scheduleService.rescheduleForUser(req.telegramUserId);
     }
 
     return { ok: true };
@@ -295,8 +291,8 @@ export class ApiController {
 
   @Get('plan/pending')
   async getPendingPlans(@Req() req: AuthRequest) {
-    const tzOffset = (await this.botService.getUserSettings(req.telegramUserId))?.notifyTzOffset ?? 2;
-    const today = this.localDate(tzOffset);
+    const tz = (await this.botService.getUserSettings(req.telegramUserId))?.notifyTimezone ?? 'Europe/Moscow';
+    const today = this.localDate(tz);
     const plans = await this.botService.getPendingPlans(req.telegramUserId, today);
     return plans;
   }
@@ -308,8 +304,8 @@ export class ApiController {
   ) {
     if (!NEED_IDS.includes(body.needId as NeedId) || !body.practiceText?.trim()) throw new BadRequestException();
     const settings = await this.botService.getUserSettings(req.telegramUserId);
-    const tzOffset = settings?.notifyTzOffset ?? 2;
-    const tomorrow = this.localDate(tzOffset, 1);
+    const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
+    const tomorrow = this.localDate(tz, 1);
     const plan = await this.botService.createPlan(
       req.telegramUserId, body.needId, body.practiceText.trim(), tomorrow, body.reminderUtcHour,
     );
@@ -385,8 +381,10 @@ export class ApiController {
     return { ok: true };
   }
 
-  private localDate(tzOffsetHours: number, daysAhead = 0): string {
-    const d = new Date(Date.now() + tzOffsetHours * 3_600_000 + daysAhead * 86_400_000);
-    return d.toISOString().split('T')[0];
+  private localDate(tz: string, daysAhead = 0): string {
+    const d = new Date(Date.now() + daysAhead * 86_400_000);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(d);
   }
 }

@@ -4,25 +4,24 @@ import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { NotificationService } from '../notification/notification.service';
 
-const TIMEZONES: { label: string; offset: number }[] = [
-  { label: 'UTC−8 (Лос-Анджелес)', offset: -8 },
-  { label: 'UTC−5 (Нью-Йорк)', offset: -5 },
-  { label: 'UTC+0 (Лондон)', offset: 0 },
-  { label: 'UTC+1 (Берлин, Варшава)', offset: 1 },
-  { label: 'UTC+2 (Израиль, Киев)', offset: 2 },
-  { label: 'UTC+3 (Москва)', offset: 3 },
-  { label: 'UTC+4 (Дубай)', offset: 4 },
-  { label: 'UTC+5 (Ташкент)', offset: 5 },
-  { label: 'UTC+6 (Алматы)', offset: 6 },
-  { label: 'UTC+8 (Пекин)', offset: 8 },
+const TIMEZONES: { label: string; tz: string }[] = [
+  { label: 'Лос-Анджелес', tz: 'America/Los_Angeles' },
+  { label: 'Нью-Йорк', tz: 'America/New_York' },
+  { label: 'Лондон', tz: 'Europe/London' },
+  { label: 'Берлин, Варшава', tz: 'Europe/Berlin' },
+  { label: 'Киев', tz: 'Europe/Kyiv' },
+  { label: 'Израиль', tz: 'Asia/Jerusalem' },
+  { label: 'Москва', tz: 'Europe/Moscow' },
+  { label: 'Дубай', tz: 'Asia/Dubai' },
+  { label: 'Ташкент', tz: 'Asia/Tashkent' },
+  { label: 'Алматы', tz: 'Asia/Almaty' },
+  { label: 'Пекин', tz: 'Asia/Shanghai' },
 ];
 
-function toUtcHour(localHour: number, tzOffset: number): number {
-  return ((localHour - tzOffset) % 24 + 24) % 24;
-}
-
-function toLocalHour(utcHour: number, tzOffset: number): number {
-  return ((utcHour + tzOffset) % 24 + 24) % 24;
+function tzOffsetAt(tz: string, date = new Date()): number {
+  const utc = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const local = new Date(date.toLocaleString('en-US', { timeZone: tz }));
+  return Math.round((local.getTime() - utc.getTime()) / 3_600_000);
 }
 
 function pad(n: number): string {
@@ -32,14 +31,15 @@ function pad(n: number): string {
 async function buildSettingsText(botService: BotService, userId: number): Promise<string> {
   const s = await botService.getUserSettings(userId);
   if (!s) return 'Настройки не найдены.';
-  const tz = TIMEZONES.find((t) => t.offset === s.notifyTzOffset) ?? { label: `UTC+${s.notifyTzOffset}`, offset: s.notifyTzOffset };
-  const localHour = toLocalHour(s.notifyUtcHour, s.notifyTzOffset);
+  const tz = TIMEZONES.find((t) => t.tz === s.notifyTimezone)?.label ?? s.notifyTimezone;
+  const offset = tzOffsetAt(s.notifyTimezone);
+  const utcLabel = offset >= 0 ? `UTC+${offset}` : `UTC${offset}`;
   return [
     '⚙️ Настройки уведомлений',
     '',
     `Статус: ${s.notifyEnabled ? '🔔 Включены' : '🔕 Выключены'}`,
-    `Время: ${pad(localHour)}:00`,
-    `Часовой пояс: ${tz.label}`,
+    `Время: ${pad(s.notifyLocalHour)}:00`,
+    `Часовой пояс: ${tz} (${utcLabel})`,
   ].join('\n');
 }
 
@@ -116,9 +116,7 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.answerCbQuery();
         if (!userId) return;
         const localHour = Number((ctx.match as RegExpMatchArray)[1]);
-        const s = await this.botService.getUserSettings(userId);
-        const tzOffset = s?.notifyTzOffset ?? 2;
-        await this.botService.updateUserSettings(userId, { notifyUtcHour: toUtcHour(localHour, tzOffset) });
+        await this.botService.updateUserSettings(userId, { notifyLocalHour: localHour });
         const text = await buildSettingsText(this.botService, userId);
         const updated = await this.botService.getUserSettings(userId);
         await ctx.editMessageText(text, buildSettingsKeyboard(updated?.notifyEnabled ?? true) as any);
@@ -131,7 +129,11 @@ export class TelegramSettingsService implements OnModuleInit {
     this.bot.action('settings:pick_tz', async (ctx) => {
       try {
         await ctx.answerCbQuery();
-        const buttons = TIMEZONES.map((tz) => [Markup.button.callback(tz.label, `settings:tz:${tz.offset}`)]);
+        const buttons = TIMEZONES.map((entry) => {
+          const offset = tzOffsetAt(entry.tz);
+          const utcLabel = offset >= 0 ? `UTC+${offset}` : `UTC${offset}`;
+          return [Markup.button.callback(`${entry.label} (${utcLabel})`, `settings:tz:${entry.tz}`)];
+        });
         buttons.push([Markup.button.callback('⬅️ Назад', 'settings:back')]);
         await ctx.editMessageText('Выбери свой часовой пояс:', Markup.inlineKeyboard(buttons) as any);
       } catch (err) {
@@ -140,15 +142,15 @@ export class TelegramSettingsService implements OnModuleInit {
       }
     });
 
-    this.bot.action(/^settings:tz:(-?\d+)$/, async (ctx) => {
+    this.bot.action(/^settings:tz:(.+)$/, async (ctx) => {
       try {
         const userId = ctx.from?.id;
         await ctx.answerCbQuery();
         if (!userId) return;
-        const tzOffset = Number((ctx.match as RegExpMatchArray)[1]);
+        const timezone = (ctx.match as RegExpMatchArray)[1];
+        if (!TIMEZONES.find((t) => t.tz === timezone)) return;
         const s = await this.botService.getUserSettings(userId);
-        const localHour = toLocalHour(s?.notifyUtcHour ?? 19, s?.notifyTzOffset ?? 2);
-        await this.botService.updateUserSettings(userId, { notifyTzOffset: tzOffset, notifyUtcHour: toUtcHour(localHour, tzOffset) });
+        await this.botService.updateUserSettings(userId, { notifyTimezone: timezone, notifyLocalHour: s?.notifyLocalHour ?? 21 });
         const text = await buildSettingsText(this.botService, userId);
         const updated = await this.botService.getUserSettings(userId);
         await ctx.editMessageText(text, buildSettingsKeyboard(updated?.notifyEnabled ?? true) as any);
