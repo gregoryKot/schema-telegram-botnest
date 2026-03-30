@@ -106,6 +106,45 @@ model ChildhoodRating {
   @@index([userId])
 }
 
+model SchemaDiaryEntry {
+  id           Int      @id @default(autoincrement())
+  userId       BigInt
+  createdAt    DateTime @default(now())
+  situation    String
+  emotions     Json     // {id: string, intensity: number}[]
+  emotionNote  String?
+  bodyFeelings String?
+  thoughts     String?
+  schemaIds    Json     // string[]
+  copingModeId String?
+  healthyAdult String?
+
+  @@index([userId, createdAt])
+}
+
+model ModeDiaryEntry {
+  id           Int      @id @default(autoincrement())
+  userId       BigInt
+  createdAt    DateTime @default(now())
+  modeId       String
+  trigger      String
+  intensity    Int
+  healthyAdult String?
+
+  @@index([userId, createdAt])
+}
+
+model GratitudeDiaryEntry {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  date      String
+  items     Json     // string[]
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
 model ScheduledNotification {
   id          Int       @id @default(autoincrement())
   userId      BigInt
