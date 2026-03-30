@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT, CHANNEL, BOOKING_URL, MINIAPP_URL } from './telegram.constants';
+import { TELEGRAF_BOT, CHANNEL, BOOKING_URL, MINIAPP_URL, DIARIES_URL } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
@@ -36,11 +36,11 @@ const WELCOME_TEXT = `Привет!
 
 Бывает, что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
 
-Дело почти всегда в потребностях. Дневник помогает это увидеть — раз в день, пять шкал, и через несколько дней паттерн становится различимым.`;
+Дело почти всегда в потребностях. Трекер помогает это увидеть — раз в день, пять шкал, и через несколько дней паттерн становится различимым.`;
 
 export function buildWelcomeKeyboard() {
   return Markup.inlineKeyboard([
-    [Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)],
+    [Markup.button.webApp('📱 Трекер потребностей', MINIAPP_URL), Markup.button.webApp('📔 Дневники', DIARIES_URL)],
     [Markup.button.callback('🔍 Как это работает', 'howto')],
     [Markup.button.callback('📖 Подробнее', 'faq'), Markup.button.callback('👤 Обо мне', 'about')],
   ]);
@@ -77,10 +77,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           const ok = await this.botService.joinPair(userId, code);
           if (ok) {
             await ctx.reply('Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.',
-              Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]]));
+              Markup.inlineKeyboard([[Markup.button.webApp('📱 Трекер потребностей', MINIAPP_URL)]]));
           } else {
             await ctx.reply('Ссылка недействительна или уже использована.',
-              Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]]));
+              Markup.inlineKeyboard([[Markup.button.webApp('📱 Трекер потребностей', MINIAPP_URL)]]));
           }
           return;
         }
@@ -97,7 +97,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       } catch (err) {
         this.logger.error('start command failed', err);
         await ctx.reply('Что-то пошло не так. Попробуй открыть дневник через кнопку ниже.',
-          Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]])).catch(() => null);
+          Markup.inlineKeyboard([[Markup.button.webApp('📱 Трекер потребностей', MINIAPP_URL)]])).catch(() => null);
       }
     });
 
@@ -110,7 +110,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       } catch (err) {
         this.logger.error('chart command failed', err);
         await ctx.reply('Что-то пошло не так. Попробуй открыть дневник через кнопку ниже.',
-          Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]])).catch(() => null);
+          Markup.inlineKeyboard([[Markup.button.webApp('📱 Трекер потребностей', MINIAPP_URL)]])).catch(() => null);
+      }
+    });
+
+    this.bot.command('diaries', async (ctx) => {
+      try {
+        await ctx.reply(
+          'Дневники схема-терапии — фиксируй активацию схем, переходы между режимами и благодарность.',
+          Markup.inlineKeyboard([[Markup.button.webApp('📔 Открыть дневники', DIARIES_URL)]]),
+        );
+      } catch (err) {
+        this.logger.error('diaries command failed', err);
       }
     });
 
@@ -206,13 +217,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     await this.bot.telegram.setMyCommands([
       { command: 'start', description: 'Главное меню' },
+      { command: 'diaries', description: 'Дневники схема-терапии' },
       { command: 'chart', description: 'Сводка за сегодня' },
       { command: 'history', description: 'История за 7 дней' },
       { command: 'settings', description: 'Настройки уведомлений' },
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
 
     await this.bot.telegram.callApi('setChatMenuButton' as any, {
-      menu_button: { type: 'web_app', text: 'Дневник', web_app: { url: MINIAPP_URL } },
+      menu_button: { type: 'web_app', text: 'Трекер', web_app: { url: MINIAPP_URL } },
     }).catch((err: unknown) => this.logger.warn('setChatMenuButton failed', err));
 
     this.bot.launch({ dropPendingUpdates: true }).catch((err) => {

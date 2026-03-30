@@ -32,7 +32,7 @@ describe('buildSummaryText', () => {
 
   it('includes header and legend', () => {
     const text = buildSummaryText(NEEDS, {});
-    expect(text).toContain('📔 Дневник потребностей');
+    expect(text).toContain('📔 Трекер потребностей');
     expect(text).toContain('Твои оценки за сегодня 👇');
     expect(text).toContain('Привязанность');
   });

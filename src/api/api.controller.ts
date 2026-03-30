@@ -120,7 +120,7 @@ export class ApiController {
       this.analyticsService.getStreakData(req.telegramUserId),
     ]);
     const needs = this.botService.getNeeds();
-    const lines: string[] = [`📔 Дневник потребностей · последние ${history.length} дней`, ''];
+    const lines: string[] = [`📔 Трекер потребностей · последние ${history.length} дней`, ''];
     for (const day of [...history].reverse()) {
       const vals = needs.map(n => {
         const v = day.ratings[n.id as import('../bot/bot.service').NeedId];

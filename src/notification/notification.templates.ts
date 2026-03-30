@@ -21,7 +21,7 @@ export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, 
   const day = Number(parts.find(p => p.type === 'day')?.value ?? now.getDate());
   const month = Number(parts.find(p => p.type === 'month')?.value ?? now.getMonth() + 1) - 1;
   const dateStr = `${day} ${MONTHS[month]}`;
-  return `📔 Дневник потребностей · ${dateStr}\nТвои оценки за сегодня 👇\n\n${lines.join('\n')}\n\n${legend}`;
+  return `📔 Трекер потребностей · ${dateStr}\nТвои оценки за сегодня 👇\n\n${lines.join('\n')}\n\n${legend}`;
 }
 
 const openDiaryButton = Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL);
@@ -29,7 +29,7 @@ const bookingButton = Markup.button.url('📝 Записаться на сесс
 const snoozeButton = Markup.button.callback('⏰ Через час', 'snooze_reminder');
 
 const REMINDER_INTROS = [
-  '📔 Дневник потребностей — отметь оценки за сегодня.',
+  '📔 Трекер потребностей — отметь оценки за сегодня.',
   '📔 Пять оценок — и картина дня готова.',
   '📔 Отметь потребности за сегодня — займёт меньше минуты.',
   '📔 Данные о себе копятся только если ты их вносишь.',
