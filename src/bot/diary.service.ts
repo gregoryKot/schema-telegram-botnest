@@ -30,11 +30,11 @@ export class DiaryService {
       data: {
         userId,
         trigger: data.trigger,
-        emotions: data.emotions as Prisma.InputJsonValue,
+        emotions: data.emotions as unknown as Prisma.InputJsonValue,
         thoughts: data.thoughts,
         bodyFeelings: data.bodyFeelings,
         actualBehavior: data.actualBehavior,
-        schemaIds: data.schemaIds as Prisma.InputJsonValue,
+        schemaIds: data.schemaIds as unknown as Prisma.InputJsonValue,
         schemaOrigin: data.schemaOrigin,
         healthyView: data.healthyView,
         realProblems: data.realProblems,
@@ -88,8 +88,8 @@ export class DiaryService {
   upsertGratitudeDiaryEntry(userId: bigint, date: string, items: string[]) {
     return this.prisma.gratitudeDiaryEntry.upsert({
       where: { userId_date: { userId, date } },
-      create: { userId, date, items: items as Prisma.InputJsonValue },
-      update: { items: items as Prisma.InputJsonValue },
+      create: { userId, date, items: items as unknown as Prisma.InputJsonValue },
+      update: { items: items as unknown as Prisma.InputJsonValue },
     });
   }
 
