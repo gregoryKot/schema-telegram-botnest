@@ -13,14 +13,17 @@ export class DiaryService {
   // ─── Schema Diary ─────────────────────────────────────────────────────────
 
   createSchemaDiaryEntry(userId: bigint, data: {
-    situation: string;
+    trigger: string;
     emotions: EmotionEntry[];
-    emotionNote?: string;
-    bodyFeelings?: string;
     thoughts?: string;
+    bodyFeelings?: string;
+    actualBehavior?: string;
     schemaIds: string[];
-    copingModeId?: string;
-    healthyAdult?: string;
+    schemaOrigin?: string;
+    healthyView?: string;
+    realProblems?: string;
+    excessiveReactions?: string;
+    healthyBehavior?: string;
   }) {
     return this.prisma.schemaDiaryEntry.create({ data: { userId, ...data } });
   }
@@ -41,9 +44,13 @@ export class DiaryService {
 
   createModeDiaryEntry(userId: bigint, data: {
     modeId: string;
-    trigger: string;
-    intensity: number;
-    healthyAdult?: string;
+    situation: string;
+    thoughts?: string;
+    feelings?: string;
+    bodyFeelings?: string;
+    actions?: string;
+    actualNeed?: string;
+    childhoodMemories?: string;
   }) {
     return this.prisma.modeDiaryEntry.create({ data: { userId, ...data } });
   }

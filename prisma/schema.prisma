@@ -107,29 +107,36 @@ model ChildhoodRating {
 }
 
 model SchemaDiaryEntry {
-  id           Int      @id @default(autoincrement())
-  userId       BigInt
-  createdAt    DateTime @default(now())
-  situation    String
-  emotions     Json     // {id: string, intensity: number}[]
-  emotionNote  String?
-  bodyFeelings String?
-  thoughts     String?
-  schemaIds    Json     // string[]
-  copingModeId String?
-  healthyAdult String?
+  id                 Int      @id @default(autoincrement())
+  userId             BigInt
+  createdAt          DateTime @default(now())
+  trigger            String   // Спусковой механизм (что произошло)
+  emotions           Json     // {id, intensity}[] — Эмоции
+  thoughts           String?  // Мысли (что думаю, предполагаю, чего боюсь)
+  bodyFeelings       String?  // Физические проявления (что с телом)
+  actualBehavior     String?  // Фактическое поведение (что делаю)
+  schemaIds          Json     // string[] — Схемы
+  schemaOrigin       String?  // Откуда эта схема
+  healthyView        String?  // Здоровый взгляд (что на самом деле происходит)
+  realProblems       String?  // Реальные проблемы
+  excessiveReactions String?  // Чрезмерные реакции (где переоценил/а)
+  healthyBehavior    String?  // Здоровое поведение (что могу сделать)
 
   @@index([userId, createdAt])
 }
 
 model ModeDiaryEntry {
-  id           Int      @id @default(autoincrement())
-  userId       BigInt
-  createdAt    DateTime @default(now())
-  modeId       String
-  trigger      String
-  intensity    Int
-  healthyAdult String?
+  id                Int      @id @default(autoincrement())
+  userId            BigInt
+  createdAt         DateTime @default(now())
+  modeId            String   // Режим (кто включился)
+  situation         String   // Ситуация (что произошло)
+  thoughts          String?  // Мысли
+  feelings          String?  // Чувства
+  bodyFeelings      String?  // Тело (что ощутили)
+  actions           String?  // Действия (что конкретно делали)
+  actualNeed        String?  // Что на самом деле было нужно
+  childhoodMemories String?  // Детские воспоминания связанные с ситуацией
 
   @@index([userId, createdAt])
 }

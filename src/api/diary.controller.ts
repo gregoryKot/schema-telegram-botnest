@@ -21,16 +21,19 @@ export class DiaryController {
 
   @Post('schema')
   async createSchemaDiary(@Req() req: AuthRequest, @Body() body: {
-    situation: string;
+    trigger: string;
     emotions: { id: string; intensity: number }[];
-    emotionNote?: string;
-    bodyFeelings?: string;
     thoughts?: string;
+    bodyFeelings?: string;
+    actualBehavior?: string;
     schemaIds: string[];
-    copingModeId?: string;
-    healthyAdult?: string;
+    schemaOrigin?: string;
+    healthyView?: string;
+    realProblems?: string;
+    excessiveReactions?: string;
+    healthyBehavior?: string;
   }) {
-    if (!body.situation?.trim()) throw new BadRequestException('situation required');
+    if (!body.trigger?.trim()) throw new BadRequestException('trigger required');
     if (!Array.isArray(body.emotions)) throw new BadRequestException('emotions required');
     if (!Array.isArray(body.schemaIds)) throw new BadRequestException('schemaIds required');
     return this.diaryService.createSchemaDiaryEntry(BigInt(req.telegramUserId), body);
@@ -52,15 +55,16 @@ export class DiaryController {
   @Post('mode')
   async createModeDiary(@Req() req: AuthRequest, @Body() body: {
     modeId: string;
-    trigger: string;
-    intensity: number;
-    healthyAdult?: string;
+    situation: string;
+    thoughts?: string;
+    feelings?: string;
+    bodyFeelings?: string;
+    actions?: string;
+    actualNeed?: string;
+    childhoodMemories?: string;
   }) {
     if (!body.modeId?.trim()) throw new BadRequestException('modeId required');
-    if (!body.trigger?.trim()) throw new BadRequestException('trigger required');
-    if (!Number.isInteger(body.intensity) || body.intensity < 1 || body.intensity > 10) {
-      throw new BadRequestException('intensity must be 1-10');
-    }
+    if (!body.situation?.trim()) throw new BadRequestException('situation required');
     return this.diaryService.createModeDiaryEntry(BigInt(req.telegramUserId), body);
   }
 
