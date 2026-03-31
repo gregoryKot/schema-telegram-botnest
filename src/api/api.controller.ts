@@ -249,13 +249,15 @@ export class ApiController {
       notifyTimezone: s?.notifyTimezone ?? 'Europe/Moscow',
       notifyReminderEnabled: s?.notifyReminderEnabled ?? true,
       pairCardDismissed: s?.pairCardDismissed ?? false,
+      mySchemaIds: (s?.mySchemaIds as string[] | null) ?? [],
+      myModeIds: (s?.myModeIds as string[] | null) ?? [],
     };
   }
 
   @Post('settings')
   async updateSettings(
     @Req() req: AuthRequest,
-    @Body() body: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean },
+    @Body() body: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[] },
   ) {
     const VALID_TZ = ['America/Los_Angeles','America/New_York','Europe/London','Europe/Berlin',
       'Europe/Kyiv','Asia/Jerusalem','Europe/Moscow','Asia/Dubai','Asia/Tashkent','Asia/Almaty','Asia/Shanghai'];
@@ -265,6 +267,8 @@ export class ApiController {
     if (typeof body.pairCardDismissed === 'boolean') clean.pairCardDismissed = body.pairCardDismissed;
     if (Number.isInteger(body.notifyLocalHour) && body.notifyLocalHour! >= 0 && body.notifyLocalHour! <= 23) clean.notifyLocalHour = body.notifyLocalHour;
     if (typeof body.notifyTimezone === 'string' && VALID_TZ.includes(body.notifyTimezone)) clean.notifyTimezone = body.notifyTimezone;
+    if (Array.isArray(body.mySchemaIds) && body.mySchemaIds.every(id => typeof id === 'string' && id.length < 100)) clean.mySchemaIds = body.mySchemaIds;
+    if (Array.isArray(body.myModeIds) && body.myModeIds.every(id => typeof id === 'string' && id.length < 100)) clean.myModeIds = body.myModeIds;
     await this.botService.updateUserSettings(req.telegramUserId, clean);
 
     // Reschedule reminder if notification time/toggle changed

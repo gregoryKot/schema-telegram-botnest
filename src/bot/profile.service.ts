@@ -55,6 +55,8 @@ export interface UserProfile {
     modeDiary: string | null;
     gratitudeDiary: string | null;
   };
+  mySchemaIds: string[];
+  myModeIds: string[];
 }
 
 @Injectable()
@@ -96,6 +98,8 @@ export class ProfileService {
         modeDiary: lastMode ? lastMode.createdAt.toISOString().split('T')[0] : null,
         gratitudeDiary: lastGratitude?.date ?? null,
       },
+      mySchemaIds: (user?.mySchemaIds as string[] | null) ?? [],
+      myModeIds: (user?.myModeIds as string[] | null) ?? [],
     };
   }
 }

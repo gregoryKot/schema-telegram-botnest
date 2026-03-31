@@ -40,6 +40,8 @@ model User {
   notifyTimezone         String   @default("Europe/Moscow")
   notifyReminderEnabled  Boolean  @default(true)
   pairCardDismissed      Boolean  @default(false)
+  mySchemaIds            Json     @default("[]")
+  myModeIds              Json     @default("[]")
   botBlockedAt           DateTime?
   deletedAt              DateTime?
 
