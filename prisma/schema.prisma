@@ -24,10 +24,16 @@ model YsqProgress {
   updatedAt DateTime @default(now())
 }
 
+enum UserRole {
+  CLIENT
+  THERAPIST
+}
+
 model User {
   id                     BigInt   @id
   createdAt              DateTime @default(now())
   firstName              String?
+  role                   UserRole @default(CLIENT)
   disclaimerAccepted     Boolean  @default(false)
   notifyEnabled          Boolean  @default(true)
   notifyLocalHour        Int      @default(21)

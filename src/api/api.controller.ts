@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Delete, Get, Logger, Param, Post
 import { Request } from 'express';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { ProfileService } from '../bot/profile.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
@@ -19,9 +20,15 @@ export class ApiController {
   constructor(
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
+    private readonly profileService: ProfileService,
     private readonly notificationService: NotificationService,
     private readonly scheduleService: TelegramScheduleService,
   ) {}
+
+  @Get('profile')
+  async getProfile(@Req() req: AuthRequest) {
+    return this.profileService.getProfile(req.telegramUserId);
+  }
 
   @Post('init')
   async init(@Req() req: AuthRequest, @Body() body: { timezone?: string }) {
