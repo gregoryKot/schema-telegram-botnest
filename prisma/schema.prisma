@@ -158,6 +158,15 @@ model GratitudeDiaryEntry {
   @@index([userId])
 }
 
+model AppActivity {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  date      String   // YYYY-MM-DD in user's timezone
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
 model ScheduledNotification {
   id          Int       @id @default(autoincrement())
   userId      BigInt

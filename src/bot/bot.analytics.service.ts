@@ -175,6 +175,37 @@ export class BotAnalyticsService {
     ];
   }
 
+  /** Collect all active dates from any source: ratings, diaries, or explicit app activity. */
+  private async getActiveDates(userId: number): Promise<Set<string>> {
+    const uid = BigInt(userId);
+    const [ratings, activity, schema, mode, gratitude] = await Promise.all([
+      this.prisma.rating.findMany({ where: { userId: uid }, select: { date: true }, distinct: ['date'] }),
+      this.prisma.appActivity.findMany({ where: { userId: uid }, select: { date: true } }),
+      this.prisma.schemaDiaryEntry.findMany({ where: { userId: uid }, select: { createdAt: true } }),
+      this.prisma.modeDiaryEntry.findMany({ where: { userId: uid }, select: { createdAt: true } }),
+      this.prisma.gratitudeDiaryEntry.findMany({ where: { userId: uid }, select: { date: true } }),
+    ]);
+    const tz = await this.userTimezone(userId);
+    const set = new Set<string>();
+    for (const r of ratings) set.add(r.date);
+    for (const a of activity) set.add(a.date);
+    for (const e of schema) set.add(this.localDateString(tz, e.createdAt));
+    for (const e of mode) set.add(this.localDateString(tz, e.createdAt));
+    for (const e of gratitude) set.add(e.date);
+    return set;
+  }
+
+  async recordActivity(userId: number): Promise<{ ok: boolean }> {
+    const tz = await this.userTimezone(userId);
+    const date = this.localDateString(tz);
+    await this.prisma.appActivity.upsert({
+      where: { userId_date: { userId: BigInt(userId), date } },
+      create: { userId: BigInt(userId), date },
+      update: {},
+    });
+    return { ok: true };
+  }
+
   async getStreakData(userId: number): Promise<{
     currentStreak: number;
     longestStreak: number;
@@ -183,12 +214,7 @@ export class BotAnalyticsService {
     weekDots: boolean[];
   }> {
     const tz = await this.userTimezone(userId);
-    const rows = await this.prisma.rating.findMany({
-      where: { userId: BigInt(userId) },
-      select: { date: true },
-      distinct: ['date'],
-    });
-    const dates = new Set(rows.map((r) => r.date));
+    const dates = await this.getActiveDates(userId);
     const today = this.localDateString(tz);
 
     // current streak — if today not yet filled, count from yesterday

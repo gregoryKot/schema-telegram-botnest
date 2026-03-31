@@ -120,6 +120,11 @@ export class ApiController {
     return this.analyticsService.getStreakData(req.telegramUserId);
   }
 
+  @Post('activity')
+  async recordActivity(@Req() req: AuthRequest) {
+    return this.analyticsService.recordActivity(req.telegramUserId);
+  }
+
   @Get('export')
   async getExport(@Req() req: AuthRequest) {
     const [history, streak] = await Promise.all([
