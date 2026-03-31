@@ -1,5 +1,26 @@
 export type DiaryType = 'schema' | 'mode' | 'gratitude';
 
+export interface UserProfile {
+  role: 'CLIENT' | 'THERAPIST';
+  ysq: {
+    completedAt: string | null;
+    activeSchemaIds: string[];
+  };
+  notifications: {
+    enabled: boolean;
+    reminderEnabled: boolean;
+    timezone: string;
+    localHour: number;
+  };
+  streak: number;
+  lastActivity: {
+    needsTracker: string | null;
+    schemaDiary: string | null;
+    modeDiary: string | null;
+    gratitudeDiary: string | null;
+  };
+}
+
 export interface EmotionEntry {
   id: string;
   intensity: number; // 1-5

@@ -1,4 +1,4 @@
-import { SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry, EmotionEntry } from './types';
+import { SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry, EmotionEntry, UserProfile } from './types';
 
 const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
 const BASE = rawBase && !rawBase.startsWith('http') ? `https://${rawBase}` : rawBase;
@@ -33,6 +33,7 @@ async function del(path: string): Promise<void> {
 
 export const api = {
   init: () => post('/api/init', {}),
+  getProfile: () => get<UserProfile>('/api/profile'),
 
   getSchemaDiary: () => get<SchemaDiaryEntry[]>('/api/diary/schema'),
   createSchemaDiary: (data: {

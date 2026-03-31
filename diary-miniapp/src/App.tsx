@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry } from './types';
+import { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry, UserProfile } from './types';
 import { api } from './api';
 import { HomeView } from './components/HomeView';
 import { DiaryListView } from './components/DiaryListView';
@@ -16,19 +16,22 @@ export default function App() {
   const [schemaEntries, setSchemaEntries] = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries, setModeEntries] = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
     try {
       await api.init();
-      const [schema, mode, gratitude] = await Promise.all([
+      const [schema, mode, gratitude, userProfile] = await Promise.all([
         api.getSchemaDiary(),
         api.getModeDiary(),
         api.getGratitudeDiary(),
+        api.getProfile().catch(() => null),
       ]);
       setSchemaEntries(schema);
       setModeEntries(mode);
       setGratitudeEntries(gratitude);
+      if (userProfile) setProfile(userProfile);
     } catch (err) {
       console.error(err);
     } finally {
@@ -95,6 +98,7 @@ export default function App() {
 
       {newEntry === 'schema' && (
         <SchemaEntrySheet
+          activeSchemaIds={profile?.ysq.activeSchemaIds}
           onClose={() => setNewEntry(null)}
           onSave={async (data) => {
             const entry = await api.createSchemaDiary(data);

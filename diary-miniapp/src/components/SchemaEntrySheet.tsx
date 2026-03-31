@@ -4,6 +4,7 @@ import { EMOTIONS, INTENSITY_LABELS, SCHEMA_DOMAINS } from '../diaryData';
 import { EmotionEntry } from '../types';
 
 interface Props {
+  activeSchemaIds?: string[];
   onClose: () => void;
   onSave: (data: {
     trigger: string;
@@ -40,7 +41,7 @@ function Area({ value, onChange, placeholder, rows = 3 }: { value: string; onCha
   );
 }
 
-export function SchemaEntrySheet({ onClose, onSave }: Props) {
+export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   const [trigger, setTrigger] = useState('');
   const [emotions, setEmotions] = useState<EmotionEntry[]>([]);
   const [thoughts, setThoughts] = useState('');
@@ -53,6 +54,10 @@ export function SchemaEntrySheet({ onClose, onSave }: Props) {
   const [excessiveReactions, setExcessiveReactions] = useState('');
   const [healthyBehavior, setHealthyBehavior] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showAllSchemas, setShowAllSchemas] = useState(false);
+
+  const hasPersonalSchemas = activeSchemaIds && activeSchemaIds.length > 0;
+  const useFiltered = hasPersonalSchemas && !showAllSchemas;
 
   const toggleEmotion = (id: string) =>
     setEmotions(prev => prev.find(e => e.id === id) ? prev.filter(e => e.id !== id) : [...prev, { id, intensity: 3 }]);
@@ -148,25 +153,39 @@ export function SchemaEntrySheet({ onClose, onSave }: Props) {
 
         {/* 6. Схемы */}
         <FieldLabel title="6. Схемы" hint="какая проявилась, откуда она у меня" />
-        {SCHEMA_DOMAINS.map(domain => (
-          <div key={domain.id} style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 11, color: domain.color, fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{domain.domain}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {domain.schemas.map(s => {
-                const sel = schemaIds.includes(s.id);
-                return (
-                  <button key={s.id} onClick={() => toggleSchema(s.id)} style={{
-                    background: sel ? `${domain.color}33` : 'rgba(255,255,255,0.06)',
-                    border: sel ? `1px solid ${domain.color}` : '1px solid transparent',
-                    borderRadius: 16, padding: '5px 10px',
-                    color: sel ? '#fff' : 'rgba(255,255,255,0.6)',
-                    fontSize: 12, cursor: 'pointer',
-                  }}>{s.name}</button>
-                );
-              })}
+        {SCHEMA_DOMAINS.map(domain => {
+          const schemas = useFiltered
+            ? domain.schemas.filter(s => activeSchemaIds!.includes(s.id))
+            : domain.schemas;
+          if (schemas.length === 0) return null;
+          return (
+            <div key={domain.id} style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: domain.color, fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{domain.domain}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {schemas.map(s => {
+                  const sel = schemaIds.includes(s.id);
+                  return (
+                    <button key={s.id} onClick={() => toggleSchema(s.id)} style={{
+                      background: sel ? `${domain.color}33` : 'rgba(255,255,255,0.06)',
+                      border: sel ? `1px solid ${domain.color}` : '1px solid transparent',
+                      borderRadius: 16, padding: '5px 10px',
+                      color: sel ? '#fff' : 'rgba(255,255,255,0.6)',
+                      fontSize: 12, cursor: 'pointer',
+                    }}>{s.name}</button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
+        {hasPersonalSchemas && (
+          <button onClick={() => setShowAllSchemas(v => !v)} style={{
+            background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)',
+            fontSize: 12, cursor: 'pointer', padding: '4px 0', marginBottom: 8,
+          }}>
+            {showAllSchemas ? '↑ Показать только мои схемы' : '↓ Показать все схемы'}
+          </button>
+        )}
         <Area value={schemaOrigin} onChange={setSchemaOrigin} placeholder="Откуда эта схема? Связанные воспоминания из прошлого..." rows={2} />
 
         {/* 7. Здоровый взгляд */}
