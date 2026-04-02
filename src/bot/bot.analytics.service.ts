@@ -239,10 +239,15 @@ export class BotAnalyticsService {
     }
     if (currentStreak > longest) longest = currentStreak;
 
-    // week dots — last 7 days (today first)
-    const weekDots = Array.from({ length: 7 }, (_, i) =>
-      dates.has(this.localDateString(tz, new Date(Date.now() - i * 86_400_000))),
-    ).reverse(); // Mon→Sun order (oldest first)
+    // week dots — current calendar week Mon–Sun (future days = false)
+    const [ty, tm, td] = today.split('-').map(Number);
+    const todayUtcNoon = new Date(Date.UTC(ty, tm - 1, td, 12, 0, 0));
+    const todayDow = (todayUtcNoon.getUTCDay() + 6) % 7; // 0=Mon, 6=Sun
+    const weekDots = Array.from({ length: 7 }, (_, i) => {
+      if (i > todayDow) return false; // future day
+      const dayDate = new Date(todayUtcNoon.getTime() + (i - todayDow) * 86_400_000);
+      return dates.has(this.localDateString(tz, dayDate));
+    });
 
     return {
       currentStreak,
