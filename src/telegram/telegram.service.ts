@@ -254,6 +254,24 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    // Plan check-in: plan_done:<planId> / plan_skip:<planId>
+    this.bot.action(/^plan_(done|skip):(\d+)$/, async (ctx) => {
+      try {
+        await ctx.answerCbQuery();
+        const userId = ctx.from?.id;
+        if (!userId) return;
+        const match = ctx.match as RegExpMatchArray;
+        const done = match[1] === 'done';
+        const planId = Number(match[2]);
+        await this.botService.checkinPlan(userId, planId, done);
+        const reply = done ? '✅ Отлично! Записал.' : '❌ Бывает. Можно попробовать завтра.';
+        await ctx.editMessageText(reply).catch(() => ctx.editMessageReplyMarkup(undefined).catch(() => null));
+      } catch (err) {
+        this.logger.error('plan checkin action failed', err);
+        await ctx.answerCbQuery().catch(() => null);
+      }
+    });
+
     await this.bot.telegram.setMyCommands([
       { command: 'start', description: 'Главное меню' },
       { command: 'chart', description: 'Сводка потребностей за сегодня' },

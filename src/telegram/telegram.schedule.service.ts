@@ -140,10 +140,12 @@ export class TelegramScheduleService implements OnModuleInit {
       ? Object.values(yesterday.ratings).reduce((s, v) => s + v, 0) / Object.values(yesterday.ratings).length
       : undefined;
     const lowest = weeklyStats.filter(s => s.avg !== null).sort((a, b) => (a.avg ?? 10) - (b.avg ?? 10))[0];
+    const lowestNeedId = lowest?.needId;
     const lowestNeed = lowest ? this.botService.getNeeds().find(n => n.id === lowest.needId)?.chartLabel : undefined;
     const dayIndex = Math.floor(Date.now() / 86_400_000);
     const variant = (userId + dayIndex) % 5;
-    const payload = { streak, yesterdayAvg, lowestNeed, variant };
+    const seed = (userId + dayIndex) % 3;
+    const payload = { streak, yesterdayAvg, lowestNeedId, lowestNeed, variant, seed };
 
     const sendAt = this.nextSendAt(notifyLocalHour, notifyTimezone);
 
@@ -166,12 +168,20 @@ export class TelegramScheduleService implements OnModuleInit {
       if (days === d) {
         const has = await this.notificationService.hasPending(userId, type);
         if (!has) {
-          // Replace the regular reminder with the lapsing message — same purpose, better copy
           await this.notificationService.cancel(userId, 'reminder');
           await this.notificationService.schedule(userId, type, this.nextSendAt(notifyLocalHour, notifyTimezone));
         }
         return true;
       }
+    }
+    // Nudge every 30 days after day 30 (day 60, 90, 120...)
+    if (days > 30 && days % 30 === 0) {
+      const has = await this.notificationService.hasPending(userId, 'nudge');
+      if (!has) {
+        await this.notificationService.cancel(userId, 'reminder');
+        await this.notificationService.schedule(userId, 'nudge', this.nextSendAt(notifyLocalHour, notifyTimezone), { daysSince: days });
+      }
+      return true;
     }
     return false;
   }
@@ -246,7 +256,8 @@ export class TelegramScheduleService implements OnModuleInit {
         if (daysSince < 0 || daysSince >= 7) continue;
         const stats = await this.analyticsService.getWeeklyStats(user.id);
         const bestDay = await this.analyticsService.getBestDayOfWeek(user.id);
-        const text = buildWeeklySummaryText(stats, this.botService.getNeeds(), bestDay);
+        const seed = user.id % 3;
+        const text = buildWeeklySummaryText(stats, this.botService.getNeeds(), bestDay, seed);
         await this.notificationService.schedule(user.id, 'weekly', this.nextSendAt(user.notifyLocalHour, user.notifyTimezone), { text });
       } catch (err) {
         this.logger.error(`Weekly summary failed for userId=${user.id}`, err);
@@ -277,18 +288,26 @@ export class TelegramScheduleService implements OnModuleInit {
   }
 
   private async scheduleLowStreakInsight(userId: number, notifyLocalHour: number, notifyTimezone: string) {
-    const lowNeeds = await this.analyticsService.getLowStreakNeeds(userId, 5, 3);
+    // Check for needs low 3+ days (threshold 5) and 10+ days (threshold 5) separately
+    const [lowNeeds3, lowNeeds10] = await Promise.all([
+      this.analyticsService.getLowStreakNeeds(userId, 5, 3),
+      this.analyticsService.getLowStreakNeeds(userId, 5, 10),
+    ]);
+    const lowNeeds = lowNeeds10.length > 0 ? lowNeeds10 : lowNeeds3;
     if (lowNeeds.length === 0) return;
     if (await this.notificationService.hasPending(userId, 'low_streak_insight')) return;
 
     const needs = this.botService.getNeeds();
-    // Combine all low-streak needs into one message
-    const lines = lowNeeds.map((needId) => {
-      const need = needs.find((n) => n.id === needId)!;
-      return renderLowStreakInsight(need.emoji, need.chartLabel).text;
-    });
-    const text = lines.join('\n\n');
+    const showBooking = lowNeeds10.length > 0;
+    const daysBelowThreshold = showBooking ? 10 : 3;
+    // Pick the single most concerning need (lowest avg, first in list)
+    const need = needs.find((n) => n.id === lowNeeds[0])!;
+    const { text } = renderLowStreakInsight(need.emoji, need.chartLabel, daysBelowThreshold);
 
-    await this.notificationService.schedule(userId, 'low_streak_insight', this.nextSendAt(notifyLocalHour, notifyTimezone), { text });
+    await this.notificationService.schedule(
+      userId, 'low_streak_insight',
+      this.nextSendAt(notifyLocalHour, notifyTimezone),
+      { text, showBooking },
+    );
   }
 }
