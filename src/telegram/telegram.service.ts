@@ -38,11 +38,29 @@ const WELCOME_TEXT = `Привет!
 
 Дело почти всегда в потребностях. Схема помогает это увидеть — трекер, дневники схема-терапии и YSQ-тест в одном месте.`;
 
+const CONSENT_TEXT = `🔐 Соглашение об обработке данных
+
+Прежде чем начать:
+
+• Твои данные (оценки, дневники, планы) хранятся на защищённом сервере и привязаны к Telegram ID
+• Данные не передаются третьим лицам
+• Ты можешь удалить всё в любой момент через Настройки → Удалить данные
+• Приложение не является медицинским инструментом и не заменяет психотерапию
+
+Нажимая «Принять», ты соглашаешься с этими условиями.`;
+
 export function buildWelcomeKeyboard() {
   return Markup.inlineKeyboard([
     [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
+    [Markup.button.callback('🎯 Какой подход мне подойдёт?', 'quiz:start')],
     [Markup.button.callback('🔍 Как это работает', 'howto')],
     [Markup.button.callback('📖 Подробнее', 'faq'), Markup.button.callback('👤 Обо мне', 'about')],
+  ]);
+}
+
+function buildConsentKeyboard() {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('✅ Принять и продолжить', 'accept_consent')],
   ]);
 }
 
@@ -82,6 +100,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             await ctx.reply('Ссылка недействительна или уже использована.',
               Markup.inlineKeyboard([[Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)]]));
           }
+          return;
+        }
+        const hasConsent = await this.botService.hasAcceptedDisclaimer(userId);
+        if (!hasConsent) {
+          await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
           return;
         }
         if (isReturning) {
@@ -181,6 +204,22 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('back:welcome action failed', err);
+      }
+    });
+
+    this.bot.action('accept_consent', async (ctx) => {
+      try {
+        await ctx.answerCbQuery('Принято ✅');
+        const userId = ctx.from?.id;
+        if (userId) await this.botService.acceptDisclaimer(userId);
+        try {
+          await ctx.editMessageText(WELCOME_TEXT, buildWelcomeKeyboard() as any);
+        } catch {
+          await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
+        }
+      } catch (err) {
+        this.logger.error('accept_consent action failed', err);
+        await ctx.answerCbQuery().catch(() => null);
       }
     });
 
