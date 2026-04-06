@@ -120,10 +120,43 @@ export class TherapyService {
   }
 
   async getTasks(userId: number) {
-    return this.prisma.userTask.findMany({
-      where: { userId: BigInt(userId), done: null },
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const uid = BigInt(userId);
+
+    const tasks = await this.prisma.userTask.findMany({
+      where: { userId: uid, done: null },
       orderBy: { createdAt: 'desc' },
     });
+
+    const result: any[] = [];
+    for (const task of tasks) {
+      // Auto-expire streak tasks that have run out of days
+      if (task.targetDays) {
+        const daysElapsed = Math.floor((now.getTime() - task.createdAt.getTime()) / 86_400_000);
+        if (daysElapsed >= task.targetDays) {
+          await this.prisma.userTask.update({ where: { id: task.id }, data: { done: false, completedAt: now } });
+          continue;
+        }
+      }
+
+      let doneToday: boolean | undefined;
+      if (task.type === 'tracker_streak') {
+        const c = await this.prisma.rating.count({ where: { userId: uid, date: today } });
+        doneToday = c > 0;
+      } else if (task.type === 'diary_streak') {
+        const startOfDay = new Date(today + 'T00:00:00.000Z');
+        const [s, m, g] = await Promise.all([
+          this.prisma.schemaDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
+          this.prisma.modeDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
+          this.prisma.gratitudeDiaryEntry.count({ where: { userId: uid, date: today } }),
+        ]);
+        doneToday = s + m + g > 0;
+      }
+
+      result.push({ ...task, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday });
+    }
+    return result;
   }
 
   async getTaskHistory(userId: number) {
