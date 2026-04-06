@@ -37,7 +37,7 @@ const WELCOME_TEXT = `Привет!
 
 Бывает, что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
 
-Дело почти всегда в потребностях. Схема помогает это увидеть — трекер, дневники схема-терапии и YSQ-тест в одном месте.`;
+Дело почти всегда в потребностях. Схемалаб помогает это увидеть — трекер, дневники схема-терапии и YSQ-тест в одном месте.`;
 
 const CONSENT_TEXT = `🔐 Соглашение об обработке данных
 
@@ -282,7 +282,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
 
     await this.bot.telegram.callApi('setChatMenuButton' as any, {
-      menu_button: { type: 'web_app', text: 'Схема', web_app: { url: MINIAPP_URL } },
+      menu_button: { type: 'web_app', text: 'Схемалаб', web_app: { url: MINIAPP_URL } },
     }).catch((err: unknown) => this.logger.warn('setChatMenuButton failed', err));
 
     this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
