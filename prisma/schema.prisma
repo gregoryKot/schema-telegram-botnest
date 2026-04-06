@@ -45,10 +45,12 @@ model User {
   botBlockedAt           DateTime?
   deletedAt              DateTime?
 
-  notifications   ScheduledNotification[]
-  notes           Note[]
-  pairs1          Pair[]   @relation("PairUser1")
-  pairs2          Pair[]   @relation("PairUser2")
+  notifications          ScheduledNotification[]
+  notes                  Note[]
+  pairs1                 Pair[]            @relation("PairUser1")
+  pairs2                 Pair[]            @relation("PairUser2")
+  therapistRelations     TherapyRelation[] @relation("TherapistOf")
+  clientRelations        TherapyRelation[] @relation("ClientOf")
 }
 
 model Note {
@@ -167,6 +169,34 @@ model AppActivity {
 
   @@unique([userId, date])
   @@index([userId])
+}
+
+model TherapyRelation {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  therapistId BigInt
+  clientId    BigInt?
+  status      String   @default("pending") // "pending" | "active"
+  createdAt   DateTime @default(now())
+
+  therapist   User  @relation("TherapistOf", fields: [therapistId], references: [id], onDelete: Cascade)
+  client      User? @relation("ClientOf",    fields: [clientId],    references: [id], onDelete: SetNull)
+}
+
+model UserTask {
+  id          Int       @id @default(autoincrement())
+  userId      BigInt
+  assignedBy  BigInt?   // null = self, therapistId = from therapist
+  type        String    // 'custom' | 'diary_streak' | 'tracker_streak' | 'schema_diary' | 'mode_diary'
+  text        String
+  targetDays  Int?      // for streak types
+  needId      String?
+  dueDate     String?   // YYYY-MM-DD
+  done        Boolean?  // null = in progress
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, done, createdAt])
 }
 
 model ScheduledNotification {

@@ -22,7 +22,8 @@ export type NotificationType =
   | 'practice_reminder'
   | 'practice_missed'
   | 'low_streak_insight'
-  | 'nudge';
+  | 'nudge'
+  | 'task_assigned';
 
 export interface DueNotification {
   id: number;

@@ -359,6 +359,15 @@ export class BotService {
     });
   }
 
+  async setRole(userId: number, role: 'CLIENT' | 'THERAPIST'): Promise<void> {
+    await this.prisma.user.update({ where: { id: BigInt(userId) }, data: { role } });
+  }
+
+  async getUserRole(userId: number): Promise<'CLIENT' | 'THERAPIST'> {
+    const user = await this.prisma.user.findUnique({ where: { id: BigInt(userId) }, select: { role: true } });
+    return user?.role ?? 'CLIENT';
+  }
+
   async deleteAllUserData(userId: number): Promise<void> {
     const uid = BigInt(userId);
     await this.prisma.$transaction([

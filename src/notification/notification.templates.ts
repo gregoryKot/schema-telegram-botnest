@@ -260,6 +260,24 @@ export function renderTemplate(
       };
     }
 
+    case 'task_assigned': {
+      const text = payload?.text as string | undefined;
+      const needId = payload?.needId as string | undefined;
+      const dueDate = payload?.dueDate as string | undefined;
+      if (!text) return null;
+      const NEED_LABELS: Record<string, string> = {
+        attachment: 'Привязанность', autonomy: 'Автономия',
+        expression: 'Выражение чувств', play: 'Спонтанность', limits: 'Границы',
+      };
+      let msg = `👨‍⚕️ Терапевт назначил задание:\n\n${text}`;
+      if (needId && NEED_LABELS[needId]) msg += `\n\nПотребность: ${NEED_LABELS[needId]}`;
+      if (dueDate) {
+        const d = new Date(dueDate);
+        msg += `\nСрок: ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+      }
+      return { text: msg, keyboard: Markup.inlineKeyboard([[openDiaryButton]]) };
+    }
+
     default:
       return null;
   }

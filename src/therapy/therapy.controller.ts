@@ -1,0 +1,105 @@
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, Logger, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
+import { TelegramAuthGuard } from '../api/telegram-auth.guard';
+import { TherapyService } from './therapy.service';
+import { BotService } from '../bot/bot.service';
+
+interface AuthRequest extends Request {
+  telegramUserId: number;
+}
+
+@Controller('api/therapy')
+@UseGuards(TelegramAuthGuard)
+export class TherapyController {
+  private readonly logger = new Logger(TherapyController.name);
+
+  constructor(
+    private readonly therapyService: TherapyService,
+    private readonly botService: BotService,
+  ) {}
+
+  // ─── Connection ─────────────────────────────────────────────────────────────
+
+  @Post('invite')
+  async createInvite(@Req() req: AuthRequest) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    return this.therapyService.createInvite(req.telegramUserId);
+  }
+
+  @Get('relation')
+  async getRelation(@Req() req: AuthRequest) {
+    return this.therapyService.getRelation(req.telegramUserId);
+  }
+
+  @Post('join')
+  async join(@Req() req: AuthRequest, @Body() body: { code: string }) {
+    if (!body.code) throw new BadRequestException('code required');
+    const ok = await this.therapyService.joinAsClient(req.telegramUserId, body.code);
+    if (!ok) throw new BadRequestException('Invalid or expired code');
+    return { ok: true };
+  }
+
+  @Delete('relation')
+  async disconnect(@Req() req: AuthRequest) {
+    await this.therapyService.disconnect(req.telegramUserId);
+    return { ok: true };
+  }
+
+  @Get('clients')
+  async getClients(@Req() req: AuthRequest) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    return this.therapyService.getClients(req.telegramUserId);
+  }
+
+  // ─── Tasks ───────────────────────────────────────────────────────────────────
+
+  @Post('tasks')
+  async createTask(@Req() req: AuthRequest, @Body() body: {
+    type: string; text: string; targetDays?: number;
+    needId?: string; dueDate?: string; clientId?: number;
+  }) {
+    if (!body.type || !body.text) throw new BadRequestException('type and text required');
+    let targetUserId = req.telegramUserId;
+    let assignedBy: number | undefined;
+
+    if (body.clientId) {
+      const role = await this.botService.getUserRole(req.telegramUserId);
+      if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+      targetUserId = body.clientId;
+      assignedBy = req.telegramUserId;
+    }
+
+    const task = await this.therapyService.createTask(targetUserId, body, assignedBy);
+    if (assignedBy) {
+      await this.therapyService.scheduleTaskNotification(targetUserId, task);
+    }
+    return task;
+  }
+
+  @Get('tasks')
+  async getTasks(@Req() req: AuthRequest) {
+    return this.therapyService.getTasks(req.telegramUserId);
+  }
+
+  @Get('tasks/history')
+  async getTaskHistory(@Req() req: AuthRequest) {
+    return this.therapyService.getTaskHistory(req.telegramUserId);
+  }
+
+  @Get('tasks/client/:clientId')
+  async getTasksForClient(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    const tasks = await this.therapyService.getTasksForClient(req.telegramUserId, Number(clientId));
+    if (tasks === null) throw new ForbiddenException('No active relation with this client');
+    return tasks;
+  }
+
+  @Post('tasks/:id/complete')
+  async completeTask(@Req() req: AuthRequest, @Param('id') id: string, @Body() body: { done: boolean }) {
+    await this.therapyService.completeTask(req.telegramUserId, Number(id), body.done);
+    return { ok: true };
+  }
+}

@@ -5,6 +5,7 @@ import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { buildSummaryText } from '../notification/notification.templates';
+import { TherapyService } from '../therapy/therapy.service';
 
 function tzOffsetAt(tz: string, date = new Date()): number {
   const utc = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
@@ -73,6 +74,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
     private readonly notificationService: NotificationService,
+    private readonly therapyService: TherapyService,
   ) {}
 
   private stopping = false;
@@ -294,6 +296,22 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     if (adminId) {
       this.bot.telegram.sendMessage(adminId, '🚀 Деплой завершён').catch(() => null);
     }
+
+    this.bot.command('therapist', async (ctx) => {
+      try {
+        const userId = ctx.from?.id;
+        if (!userId) return;
+        const secret = (ctx.message as any)?.text?.split(' ')[1];
+        if (!secret || secret !== process.env.THERAPIST_CODE) {
+          await ctx.reply('⛔ Неверный код');
+          return;
+        }
+        await this.botService.setRole(userId, 'THERAPIST');
+        await ctx.reply('✅ Роль терапевта установлена. Открой приложение — там появится кабинет терапевта.');
+      } catch (err) {
+        this.logger.error('therapist command failed', err);
+      }
+    });
 
     // One-time cleanup: cancel legacy pre_reminder notifications left in queue
     this.botService.cancelAllPreReminders().then(n => {

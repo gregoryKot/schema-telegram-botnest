@@ -6,6 +6,7 @@ import { ProfileService } from '../bot/profile.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
+import { TherapyService } from '../therapy/therapy.service';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -23,6 +24,7 @@ export class ApiController {
     private readonly profileService: ProfileService,
     private readonly notificationService: NotificationService,
     private readonly scheduleService: TelegramScheduleService,
+    private readonly therapyService: TherapyService,
   ) {}
 
   @Get('profile')
@@ -89,6 +91,7 @@ export class ApiController {
     }
     if (body.date && !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) throw new BadRequestException('Invalid date');
     await this.botService.saveRating(req.telegramUserId, body.needId as NeedId, body.value, body.date);
+    this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
 
     // Skip diary-complete logic for historical backfill
     if (body.date) return { ok: true, allDone: false };

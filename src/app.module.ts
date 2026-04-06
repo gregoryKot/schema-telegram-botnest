@@ -6,6 +6,7 @@ import { BotModule } from './bot/bot.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ApiModule } from './api/api.module';
 import { NotificationModule } from './notification/notification.module';
+import { TherapyModule } from './therapy/therapy.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { NotificationModule } from './notification/notification.module';
     ScheduleModule.forRoot(),
     PrismaModule,
     NotificationModule,
+    TherapyModule,
     TelegramModule,
     BotModule,
     ApiModule,

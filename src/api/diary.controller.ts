@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Req, U
 import { Request } from 'express';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { DiaryService } from '../bot/diary.service';
+import { TherapyService } from '../therapy/therapy.service';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -10,7 +11,10 @@ interface AuthRequest extends Request {
 @Controller('api/diary')
 @UseGuards(TelegramAuthGuard)
 export class DiaryController {
-  constructor(private readonly diaryService: DiaryService) {}
+  constructor(
+    private readonly diaryService: DiaryService,
+    private readonly therapyService: TherapyService,
+  ) {}
 
   // ─── Schema Diary ─────────────────────────────────────────────────────────
 
@@ -36,7 +40,9 @@ export class DiaryController {
     if (!body.trigger?.trim()) throw new BadRequestException('trigger required');
     if (!Array.isArray(body.emotions)) throw new BadRequestException('emotions required');
     if (!Array.isArray(body.schemaIds)) throw new BadRequestException('schemaIds required');
-    return this.diaryService.createSchemaDiaryEntry(BigInt(req.telegramUserId), body);
+    const entry = await this.diaryService.createSchemaDiaryEntry(BigInt(req.telegramUserId), body);
+    this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
+    return entry;
   }
 
   @Delete('schema/:id')
@@ -65,7 +71,9 @@ export class DiaryController {
   }) {
     if (!body.modeId?.trim()) throw new BadRequestException('modeId required');
     if (!body.situation?.trim()) throw new BadRequestException('situation required');
-    return this.diaryService.createModeDiaryEntry(BigInt(req.telegramUserId), body);
+    const entry = await this.diaryService.createModeDiaryEntry(BigInt(req.telegramUserId), body);
+    this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
+    return entry;
   }
 
   @Delete('mode/:id')
@@ -85,7 +93,9 @@ export class DiaryController {
   async createGratitudeDiary(@Req() req: AuthRequest, @Body() body: { date: string; items: string[] }) {
     if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) throw new BadRequestException('Invalid date');
     if (!Array.isArray(body.items) || body.items.length === 0) throw new BadRequestException('items required');
-    return this.diaryService.upsertGratitudeDiaryEntry(BigInt(req.telegramUserId), body.date, body.items);
+    const entry = await this.diaryService.upsertGratitudeDiaryEntry(BigInt(req.telegramUserId), body.date, body.items);
+    this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
+    return entry;
   }
 
   @Delete('gratitude/:id')
