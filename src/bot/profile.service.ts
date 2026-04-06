@@ -37,6 +37,7 @@ function computeActiveSchemaIds(answers: number[]): string[] {
 }
 
 export interface UserProfile {
+  name: string | null;
   role: 'CLIENT' | 'THERAPIST';
   ysq: {
     completedAt: Date | null;
@@ -80,6 +81,7 @@ export class ProfileService {
     ]);
 
     return {
+      name: user?.firstName ?? null,
       role: (user?.role ?? 'CLIENT') as 'CLIENT' | 'THERAPIST',
       ysq: {
         completedAt: ysqResult?.completedAt ?? null,

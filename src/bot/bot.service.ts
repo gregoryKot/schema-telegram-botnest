@@ -359,6 +359,10 @@ export class BotService {
     });
   }
 
+  async updateName(userId: number, name: string): Promise<void> {
+    await this.prisma.user.update({ where: { id: BigInt(userId) }, data: { firstName: name } });
+  }
+
   async setRole(userId: number, role: 'CLIENT' | 'THERAPIST'): Promise<void> {
     await this.prisma.user.update({ where: { id: BigInt(userId) }, data: { role } });
   }

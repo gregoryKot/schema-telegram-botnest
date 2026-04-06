@@ -32,6 +32,14 @@ export class ApiController {
     return this.profileService.getProfile(req.telegramUserId);
   }
 
+  @Post('profile/name')
+  async updateName(@Req() req: AuthRequest, @Body() body: { name: string }) {
+    const name = body.name?.trim();
+    if (!name || name.length > 50) throw new BadRequestException('Invalid name');
+    await this.botService.updateName(req.telegramUserId, name);
+    return { ok: true };
+  }
+
   @Post('init')
   async init(@Req() req: AuthRequest, @Body() body: { timezone?: string }) {
     await this.botService.registerUser(req.telegramUserId, req.telegramFirstName, body.timezone);
