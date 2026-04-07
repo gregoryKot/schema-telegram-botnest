@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 
 export const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'] as const;
 export type NeedId = typeof NEED_IDS[number];
@@ -73,9 +74,7 @@ export class BotService {
   }
 
   async registerUser(userId: number, firstName?: string, timezone?: string) {
-    const VALID_TZ = ['America/Los_Angeles','America/New_York','Europe/London','Europe/Berlin',
-      'Europe/Kyiv','Asia/Jerusalem','Europe/Moscow','Asia/Dubai','Asia/Tashkent','Asia/Almaty','Asia/Shanghai'];
-    const validTz = typeof timezone === 'string' && VALID_TZ.includes(timezone);
+    const validTz = typeof timezone === 'string' && VALID_TIMEZONES.includes(timezone);
     await this.prisma.user.upsert({
       where: { id: BigInt(userId) },
       update: { ...(firstName ? { firstName } : {}), botBlockedAt: null, deletedAt: null },

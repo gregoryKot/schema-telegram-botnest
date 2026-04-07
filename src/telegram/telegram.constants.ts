@@ -8,3 +8,8 @@ export const MINIAPP_URL = process.env.MINIAPP_URL ?? 'https://schema-miniapp.ve
 /** t.me deep link — use for shareable invite links so Telegram opens the miniapp correctly */
 export const MINIAPP_TGLINK = `https://t.me/${BOT_USERNAME}/${MINIAPP_APP_NAME}`;
 export const DIARIES_URL = `${MINIAPP_URL}?section=diaries`;
+
+export const VALID_TIMEZONES = [
+  'America/Los_Angeles', 'America/New_York', 'Europe/London', 'Europe/Berlin',
+  'Europe/Kyiv', 'Europe/Moscow', 'Asia/Dubai', 'Asia/Tashkent', 'Asia/Almaty', 'Asia/Shanghai',
+];

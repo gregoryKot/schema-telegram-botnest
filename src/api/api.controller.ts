@@ -7,6 +7,7 @@ import { TelegramAuthGuard } from './telegram-auth.guard';
 import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 import { TherapyService } from '../therapy/therapy.service';
+import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -270,14 +271,12 @@ export class ApiController {
     @Req() req: AuthRequest,
     @Body() body: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[] },
   ) {
-    const VALID_TZ = ['America/Los_Angeles','America/New_York','Europe/London','Europe/Berlin',
-      'Europe/Kyiv','Asia/Jerusalem','Europe/Moscow','Asia/Dubai','Asia/Tashkent','Asia/Almaty','Asia/Shanghai'];
     const clean: Parameters<typeof this.botService.updateUserSettings>[1] = {};
     if (typeof body.notifyEnabled === 'boolean') clean.notifyEnabled = body.notifyEnabled;
     if (typeof body.notifyReminderEnabled === 'boolean') clean.notifyReminderEnabled = body.notifyReminderEnabled;
     if (typeof body.pairCardDismissed === 'boolean') clean.pairCardDismissed = body.pairCardDismissed;
     if (Number.isInteger(body.notifyLocalHour) && body.notifyLocalHour! >= 0 && body.notifyLocalHour! <= 23) clean.notifyLocalHour = body.notifyLocalHour;
-    if (typeof body.notifyTimezone === 'string' && VALID_TZ.includes(body.notifyTimezone)) clean.notifyTimezone = body.notifyTimezone;
+    if (typeof body.notifyTimezone === 'string' && VALID_TIMEZONES.includes(body.notifyTimezone)) clean.notifyTimezone = body.notifyTimezone;
     if (Array.isArray(body.mySchemaIds) && body.mySchemaIds.every(id => typeof id === 'string' && id.length < 100)) clean.mySchemaIds = body.mySchemaIds;
     if (Array.isArray(body.myModeIds) && body.myModeIds.every(id => typeof id === 'string' && id.length < 100)) clean.myModeIds = body.myModeIds;
     await this.botService.updateUserSettings(req.telegramUserId, clean);
