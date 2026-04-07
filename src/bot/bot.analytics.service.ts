@@ -1,15 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NeedId, NEED_IDS } from './bot.service';
+import { localDate } from '../utils/tz';
 
 @Injectable()
 export class BotAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private localDateString(tz: string, base = new Date()): string {
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
-    }).format(base);
+    return localDate(tz, base);
   }
 
   private async userTimezone(userId: number): Promise<string> {

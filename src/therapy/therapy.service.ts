@@ -2,30 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
-import { MINIAPP_URL } from '../telegram/telegram.constants';
+import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
 
 function randomCode(): string {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
-/** Returns YYYY-MM-DD in the given IANA timezone */
-function localDate(date: Date, tz: string): string {
-  return new Intl.DateTimeFormat('sv', { timeZone: tz }).format(date);
-}
-
-/** Returns the UTC Date corresponding to midnight of localDateStr in timezone tz */
-function localMidnightUTC(localDateStr: string, tz: string): Date {
-  // Compute what UTC time localDateStr T00:00:00 corresponds to in tz
-  const utcMidnight = new Date(localDateStr + 'T00:00:00Z');
-  // Format that UTC point in tz to see how many hours off it is
-  const localStr = new Intl.DateTimeFormat('sv', {
-    timeZone: tz,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-  }).format(utcMidnight).replace(' ', 'T') + 'Z';
-  const offsetMs = new Date(localStr).getTime() - utcMidnight.getTime();
-  return new Date(utcMidnight.getTime() - offsetMs);
-}
+import { localDate, localMidnightUTC } from '../utils/tz';
 
 export interface TherapyRelationInfo {
   role: 'therapist' | 'client';
@@ -57,7 +40,7 @@ export class TherapyService {
     let code: string;
     do { code = randomCode(); } while (await this.prisma.therapyRelation.findUnique({ where: { code } }));
     await this.prisma.therapyRelation.create({ data: { therapistId: BigInt(therapistId), code } });
-    return { code, url: `${MINIAPP_URL}?startapp=therapy_${code}` };
+    return { code, url: `${MINIAPP_TGLINK}?startapp=therapy_${code}` };
   }
 
   async joinAsClient(clientId: number, code: string): Promise<boolean> {
@@ -146,7 +129,7 @@ export class TherapyService {
     // Use user's stored timezone for correct "today" across all timezones
     const settings = await this.prisma.user.findUnique({ where: { id: uid }, select: { notifyTimezone: true } });
     const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
-    const today = localDate(now, tz);
+    const today = localDate(tz, now);
     const startOfDay = localMidnightUTC(today, tz);
 
     const tasks = await this.prisma.userTask.findMany({
@@ -206,7 +189,7 @@ export class TherapyService {
     const uid = BigInt(clientId);
     const settings = await this.prisma.user.findUnique({ where: { id: uid }, select: { notifyTimezone: true } });
     const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
-    const today = localDate(now, tz);
+    const today = localDate(tz, now);
     const startOfDay = localMidnightUTC(today, tz);
 
     const tasks = await this.prisma.userTask.findMany({
