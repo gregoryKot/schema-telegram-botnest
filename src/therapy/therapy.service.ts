@@ -8,6 +8,25 @@ function randomCode(): string {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
+/** Returns YYYY-MM-DD in the given IANA timezone */
+function localDate(date: Date, tz: string): string {
+  return new Intl.DateTimeFormat('sv', { timeZone: tz }).format(date);
+}
+
+/** Returns the UTC Date corresponding to midnight of localDateStr in timezone tz */
+function localMidnightUTC(localDateStr: string, tz: string): Date {
+  // Compute what UTC time localDateStr T00:00:00 corresponds to in tz
+  const utcMidnight = new Date(localDateStr + 'T00:00:00Z');
+  // Format that UTC point in tz to see how many hours off it is
+  const localStr = new Intl.DateTimeFormat('sv', {
+    timeZone: tz,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).format(utcMidnight).replace(' ', 'T') + 'Z';
+  const offsetMs = new Date(localStr).getTime() - utcMidnight.getTime();
+  return new Date(utcMidnight.getTime() - offsetMs);
+}
+
 export interface TherapyRelationInfo {
   role: 'therapist' | 'client';
   status: string;
@@ -122,8 +141,13 @@ export class TherapyService {
 
   async getTasks(userId: number) {
     const now = new Date();
-    const today = now.toISOString().slice(0, 10);
     const uid = BigInt(userId);
+
+    // Use user's stored timezone for correct "today" across all timezones
+    const settings = await this.prisma.user.findUnique({ where: { id: uid }, select: { notifyTimezone: true } });
+    const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
+    const today = localDate(now, tz);
+    const startOfDay = localMidnightUTC(today, tz);
 
     const tasks = await this.prisma.userTask.findMany({
       where: { userId: uid, done: null },
@@ -142,11 +166,12 @@ export class TherapyService {
       }
 
       let doneToday: boolean | undefined;
+      let progress: number | undefined;
+
       if (task.type === 'tracker_streak') {
         const c = await this.prisma.rating.count({ where: { userId: uid, date: today } });
         doneToday = c > 0;
       } else if (task.type === 'diary_streak') {
-        const startOfDay = new Date(today + 'T00:00:00.000Z');
         const [s, m, g] = await Promise.all([
           this.prisma.schemaDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
           this.prisma.modeDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
@@ -155,7 +180,11 @@ export class TherapyService {
         doneToday = s + m + g > 0;
       }
 
-      result.push({ ...task, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday });
+      if (task.targetDays && ['tracker_streak', 'diary_streak', 'schema_diary', 'mode_diary'].includes(task.type)) {
+        progress = await this.getStreakProgress(userId, task.type, task.targetDays);
+      }
+
+      result.push({ ...task, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday, progress });
     }
     return result;
   }
@@ -169,15 +198,40 @@ export class TherapyService {
   }
 
   async getTasksForClient(therapistId: number, clientId: number) {
-    // Verify relation
     const rel = await this.prisma.therapyRelation.findFirst({
       where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
     });
     if (!rel) return null;
-    return this.prisma.userTask.findMany({
-      where: { userId: BigInt(clientId), assignedBy: BigInt(therapistId) },
+    const now = new Date();
+    const uid = BigInt(clientId);
+    const settings = await this.prisma.user.findUnique({ where: { id: uid }, select: { notifyTimezone: true } });
+    const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
+    const today = localDate(now, tz);
+    const startOfDay = localMidnightUTC(today, tz);
+
+    const tasks = await this.prisma.userTask.findMany({
+      where: { userId: uid, assignedBy: BigInt(therapistId) },
       orderBy: { createdAt: 'desc' },
     });
+
+    return Promise.all(tasks.map(async task => {
+      let doneToday: boolean | undefined;
+      let progress: number | undefined;
+      if (task.type === 'tracker_streak') {
+        doneToday = await this.prisma.rating.count({ where: { userId: uid, date: today } }).then(c => c > 0);
+      } else if (task.type === 'diary_streak') {
+        const [s, m, g] = await Promise.all([
+          this.prisma.schemaDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
+          this.prisma.modeDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
+          this.prisma.gratitudeDiaryEntry.count({ where: { userId: uid, date: today } }),
+        ]);
+        doneToday = s + m + g > 0;
+      }
+      if (task.targetDays && ['tracker_streak', 'diary_streak', 'schema_diary', 'mode_diary'].includes(task.type)) {
+        progress = await this.getStreakProgress(clientId, task.type, task.targetDays);
+      }
+      return { ...task, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday, progress };
+    }));
   }
 
   async completeTask(userId: number, taskId: number, done: boolean): Promise<void> {
