@@ -201,6 +201,7 @@ model UserTask {
   createdAt   DateTime  @default(now())
 
   @@index([userId, done, createdAt])
+  @@index([userId, done, type])
 }
 
 model ScheduledNotification {

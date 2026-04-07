@@ -85,22 +85,27 @@ export class TherapyService {
       where: { therapistId: BigInt(therapistId), status: 'active' },
       include: { client: { select: { id: true, firstName: true } } },
     });
-    const results: TherapyClientSummary[] = [];
-    for (const rel of relations) {
-      if (!rel.client) continue;
-      const clientId = Number(rel.client.id);
-      const streak = await this.analyticsService.getConsecutiveDays(clientId);
-      const daysSince = await this.analyticsService.getDaysSinceLastFill(clientId);
-      const lastActiveDate = daysSince >= 0 ? new Date(Date.now() - daysSince * 86400000).toISOString().slice(0, 10) : null;
-      const history = await this.analyticsService.getHistoryRatings(clientId, 1);
-      const todayRatings = history[0]?.ratings;
-      const todayValues = todayRatings ? Object.values(todayRatings) : [];
-      const todayIndex = todayValues.length === 5
-        ? Math.round(todayValues.reduce((s, v) => s + v, 0) / 5 * 10) / 10
-        : null;
-      results.push({ telegramId: clientId, name: rel.client.firstName, streak, lastActiveDate, todayIndex });
-    }
-    return results;
+    return Promise.all(
+      relations
+        .filter(rel => rel.client !== null)
+        .map(async rel => {
+          const clientId = Number(rel.client!.id);
+          const [streak, daysSince, history] = await Promise.all([
+            this.analyticsService.getConsecutiveDays(clientId),
+            this.analyticsService.getDaysSinceLastFill(clientId),
+            this.analyticsService.getHistoryRatings(clientId, 1),
+          ]);
+          const lastActiveDate = daysSince >= 0
+            ? new Date(Date.now() - daysSince * 86400000).toISOString().slice(0, 10)
+            : null;
+          const todayRatings = history[0]?.ratings;
+          const todayValues = todayRatings ? Object.values(todayRatings) : [];
+          const todayIndex = todayValues.length === 5
+            ? Math.round(todayValues.reduce((s, v) => s + v, 0) / 5 * 10) / 10
+            : null;
+          return { telegramId: clientId, name: rel.client!.firstName, streak, lastActiveDate, todayIndex };
+        }),
+    );
   }
 
   // ─── Tasks ───────────────────────────────────────────────────────────────────
@@ -137,39 +142,35 @@ export class TherapyService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const result: any[] = [];
-    for (const task of tasks) {
-      // Auto-expire streak tasks that have run out of days
-      if (task.targetDays) {
-        const daysElapsed = Math.floor((now.getTime() - task.createdAt.getTime()) / 86_400_000);
-        if (daysElapsed >= task.targetDays) {
-          await this.prisma.userTask.update({ where: { id: task.id }, data: { done: false, completedAt: now } });
-          continue;
-        }
-      }
+    // Cache today's tracker/diary counts to avoid repeating per-task
+    const [trackerToday, diaryToday] = await Promise.all([
+      this.prisma.rating.count({ where: { userId: uid, date: today } }),
+      Promise.all([
+        this.prisma.schemaDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
+        this.prisma.modeDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
+        this.prisma.gratitudeDiaryEntry.count({ where: { userId: uid, date: today } }),
+      ]).then(([s, m, g]) => s + m + g),
+    ]);
 
-      let doneToday: boolean | undefined;
-      let progress: number | undefined;
-
-      if (task.type === 'tracker_streak') {
-        const c = await this.prisma.rating.count({ where: { userId: uid, date: today } });
-        doneToday = c > 0;
-      } else if (task.type === 'diary_streak') {
-        const [s, m, g] = await Promise.all([
-          this.prisma.schemaDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
-          this.prisma.modeDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
-          this.prisma.gratitudeDiaryEntry.count({ where: { userId: uid, date: today } }),
-        ]);
-        doneToday = s + m + g > 0;
-      }
-
-      if (task.targetDays && ['tracker_streak', 'diary_streak', 'schema_diary', 'mode_diary'].includes(task.type)) {
-        progress = await this.getStreakProgress(userId, task.type, task.targetDays);
-      }
-
-      result.push({ ...task, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday, progress });
+    // Auto-expire overdue streak tasks
+    const expired = tasks.filter(t => t.targetDays && Math.floor((now.getTime() - t.createdAt.getTime()) / 86_400_000) >= t.targetDays);
+    if (expired.length > 0) {
+      await Promise.all(expired.map(t => this.prisma.userTask.update({ where: { id: t.id }, data: { done: false, completedAt: now } })));
     }
-    return result;
+    const expiredIds = new Set(expired.map(t => t.id));
+
+    const STREAK_TYPES = new Set(['tracker_streak', 'diary_streak', 'schema_diary', 'mode_diary']);
+    const activeTasks = tasks.filter(t => !expiredIds.has(t.id));
+
+    return Promise.all(activeTasks.map(async task => {
+      const doneToday = task.type === 'tracker_streak' ? trackerToday > 0
+        : task.type === 'diary_streak' ? diaryToday > 0
+        : undefined;
+      const progress = task.targetDays && STREAK_TYPES.has(task.type)
+        ? await this.getStreakProgress(userId, task.type, task.targetDays)
+        : undefined;
+      return { ...task, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday, progress };
+    }));
   }
 
   async getTaskHistory(userId: number) {
@@ -230,12 +231,10 @@ export class TherapyService {
     });
     if (tasks.length === 0) return;
     const now = new Date();
-    for (const task of tasks) {
-      const days = task.targetDays ?? 7;
-      const progress = await this.getStreakProgress(userId, task.type, days);
-      if (progress >= days) {
-        await this.prisma.userTask.update({ where: { id: task.id }, data: { done: true, completedAt: now } });
-      }
+    const progresses = await Promise.all(tasks.map(t => this.getStreakProgress(userId, t.type, t.targetDays ?? 7)));
+    const completed = tasks.filter((t, i) => progresses[i] >= (t.targetDays ?? 7));
+    if (completed.length > 0) {
+      await Promise.all(completed.map(t => this.prisma.userTask.update({ where: { id: t.id }, data: { done: true, completedAt: now } })));
     }
   }
 
