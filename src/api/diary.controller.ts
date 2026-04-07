@@ -8,6 +8,12 @@ interface AuthRequest extends Request {
   telegramUserId: number;
 }
 
+function parseId(raw: string): number {
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n) || n <= 0) throw new BadRequestException('Invalid id');
+  return n;
+}
+
 @Controller('api/diary')
 @UseGuards(TelegramAuthGuard)
 export class DiaryController {
@@ -47,7 +53,7 @@ export class DiaryController {
 
   @Delete('schema/:id')
   async deleteSchemaDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteSchemaDiaryEntry(BigInt(req.telegramUserId), parseInt(id));
+    await this.diaryService.deleteSchemaDiaryEntry(BigInt(req.telegramUserId), parseId(id));
     return { ok: true };
   }
 
@@ -78,7 +84,7 @@ export class DiaryController {
 
   @Delete('mode/:id')
   async deleteModeDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteModeDiaryEntry(BigInt(req.telegramUserId), parseInt(id));
+    await this.diaryService.deleteModeDiaryEntry(BigInt(req.telegramUserId), parseId(id));
     return { ok: true };
   }
 
@@ -100,7 +106,7 @@ export class DiaryController {
 
   @Delete('gratitude/:id')
   async deleteGratitudeDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteGratitudeDiaryEntry(BigInt(req.telegramUserId), parseInt(id));
+    await this.diaryService.deleteGratitudeDiaryEntry(BigInt(req.telegramUserId), parseId(id));
     return { ok: true };
   }
 }

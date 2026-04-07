@@ -14,6 +14,12 @@ interface AuthRequest extends Request {
   telegramFirstName?: string;
 }
 
+function parseId(raw: string): number {
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n <= 0) throw new BadRequestException('Invalid id');
+  return n;
+}
+
 @Controller('api')
 @UseGuards(TelegramAuthGuard)
 export class ApiController {
@@ -309,7 +315,7 @@ export class ApiController {
 
   @Delete('practices/:id')
   async deletePractice(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.botService.deletePractice(req.telegramUserId, Number(id));
+    await this.botService.deletePractice(req.telegramUserId, parseId(id));
     return { ok: true };
   }
 
@@ -350,7 +356,7 @@ export class ApiController {
 
   @Post('plan/:id/checkin')
   async checkinPlan(@Req() req: AuthRequest, @Param('id') id: string, @Body() body: { done: boolean }) {
-    await this.botService.checkinPlan(req.telegramUserId, Number(id), body.done);
+    await this.botService.checkinPlan(req.telegramUserId, parseId(id), body.done);
     return { ok: true };
   }
 

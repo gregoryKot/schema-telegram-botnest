@@ -8,6 +8,12 @@ interface AuthRequest extends Request {
   telegramUserId: number;
 }
 
+function parseId(raw: string): number {
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n <= 0) throw new BadRequestException('Invalid id');
+  return n;
+}
+
 @Controller('api/therapy')
 @UseGuards(TelegramAuthGuard)
 export class TherapyController {
@@ -100,14 +106,14 @@ export class TherapyController {
   async getTasksForClient(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
     const role = await this.botService.getUserRole(req.telegramUserId);
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    const tasks = await this.therapyService.getTasksForClient(req.telegramUserId, Number(clientId));
+    const tasks = await this.therapyService.getTasksForClient(req.telegramUserId, parseId(clientId));
     if (tasks === null) throw new ForbiddenException('No active relation with this client');
     return tasks;
   }
 
   @Post('tasks/:id/complete')
   async completeTask(@Req() req: AuthRequest, @Param('id') id: string, @Body() body: { done: boolean }) {
-    await this.therapyService.completeTask(req.telegramUserId, Number(id), body.done);
+    await this.therapyService.completeTask(req.telegramUserId, parseId(id), body.done);
     return { ok: true };
   }
 }
