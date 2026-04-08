@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, Logger, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, HttpException, Logger, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyService } from './therapy.service';
@@ -6,6 +6,7 @@ import { BotService } from '../bot/bot.service';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
+  userRole?: string;
 }
 
 function parseId(raw: string): number {
@@ -57,6 +58,17 @@ export class TherapyController {
     const role = await this.botService.getUserRole(req.telegramUserId);
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     return this.therapyService.getClients(req.telegramUserId);
+  }
+
+  @Post('clients/add')
+  async addClientManually(@Req() req: AuthRequest, @Body() body: { clientTelegramId: number }) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try {
+      return await this.therapyService.addClientManually(req.telegramUserId, body.clientTelegramId);
+    } catch (e: any) {
+      throw new BadRequestException(e.message ?? 'Error');
+    }
   }
 
   @Post('become-therapist')

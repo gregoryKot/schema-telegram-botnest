@@ -105,9 +105,33 @@ export class TherapyService {
           const todayIndex = todayValues.length === 5
             ? Math.round(todayValues.reduce((s, v) => s + v, 0) / 5 * 10) / 10
             : null;
-          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: rel.clientAlias ?? null, streak, lastActiveDate, todayIndex };
+          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: (rel as any).clientAlias ?? null, streak, lastActiveDate, todayIndex };
         }),
     );
+  }
+
+  async addClientManually(therapistId: number, clientTelegramId: number) {
+    const tid = BigInt(therapistId);
+    const cid = BigInt(clientTelegramId);
+
+    // Check client user exists
+    const clientUser = await this.prisma.user.findUnique({ where: { id: cid }, select: { id: true, firstName: true } });
+    if (!clientUser) throw new Error('User not found');
+
+    // Check no existing active relation
+    const existing = await this.prisma.therapyRelation.findFirst({
+      where: { therapistId: tid, clientId: cid, status: 'active' },
+    });
+    if (existing) throw new Error('Already connected');
+
+    // Create active relation directly (no invite code needed — use random code)
+    const code = Math.random().toString(36).slice(2, 10).toUpperCase();
+    await this.prisma.therapyRelation.create({
+      data: { code, therapistId: tid, clientId: cid, status: 'active' },
+    });
+
+    // Return updated client list
+    return this.getClients(therapistId);
   }
 
   // ─── Tasks ───────────────────────────────────────────────────────────────────
@@ -402,7 +426,7 @@ export class TherapyService {
   async renameClient(therapistId: number, clientId: number, alias: string): Promise<void> {
     await this.prisma.therapyRelation.updateMany({
       where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
-      data: { clientAlias: alias.trim() || null },
+      data: { clientAlias: alias.trim() || null } as any,
     });
   }
 
