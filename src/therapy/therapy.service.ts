@@ -265,6 +265,68 @@ export class TherapyService {
     return diaryDates.size;
   }
 
+  // ─── Session Notes ───────────────────────────────────────────────────────────
+
+  private async assertRelation(therapistId: number, clientId: number): Promise<void> {
+    const rel = await this.prisma.therapyRelation.findFirst({
+      where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
+    });
+    if (!rel) throw new Error('No active relation');
+  }
+
+  async getNotes(therapistId: number, clientId: number) {
+    await this.assertRelation(therapistId, clientId);
+    return this.prisma.therapistNote.findMany({
+      where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId) },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+  }
+
+  async createNote(therapistId: number, clientId: number, body: { date: string; text: string }) {
+    await this.assertRelation(therapistId, clientId);
+    return this.prisma.therapistNote.create({
+      data: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), date: body.date, text: body.text },
+    });
+  }
+
+  async deleteNote(therapistId: number, noteId: number): Promise<void> {
+    await this.prisma.therapistNote.deleteMany({
+      where: { id: noteId, therapistId: BigInt(therapistId) },
+    });
+  }
+
+  // ─── Case Conceptualization ──────────────────────────────────────────────────
+
+  async getConceptualization(therapistId: number, clientId: number) {
+    await this.assertRelation(therapistId, clientId);
+    return this.prisma.clientConceptualization.findUnique({
+      where: { therapistId_clientId: { therapistId: BigInt(therapistId), clientId: BigInt(clientId) } },
+    });
+  }
+
+  async saveConceptualization(therapistId: number, clientId: number, body: {
+    schemaIds?: string[]; modeIds?: string[];
+    triggers?: string; coreWounds?: string; goals?: string;
+  }) {
+    await this.assertRelation(therapistId, clientId);
+    return this.prisma.clientConceptualization.upsert({
+      where: { therapistId_clientId: { therapistId: BigInt(therapistId), clientId: BigInt(clientId) } },
+      create: {
+        therapistId: BigInt(therapistId), clientId: BigInt(clientId),
+        schemaIds: body.schemaIds ?? [], modeIds: body.modeIds ?? [],
+        triggers: body.triggers ?? null, coreWounds: body.coreWounds ?? null, goals: body.goals ?? null,
+      },
+      update: {
+        ...(body.schemaIds !== undefined && { schemaIds: body.schemaIds }),
+        ...(body.modeIds !== undefined && { modeIds: body.modeIds }),
+        ...(body.triggers !== undefined && { triggers: body.triggers }),
+        ...(body.coreWounds !== undefined && { coreWounds: body.coreWounds }),
+        ...(body.goals !== undefined && { goals: body.goals }),
+      },
+    });
+  }
+
   async scheduleTaskNotification(clientId: number, task: { text: string; needId: string | null; dueDate: string | null }): Promise<void> {
     await this.notificationService.schedule(clientId, 'task_assigned', new Date(), {
       text: task.text, needId: task.needId, dueDate: task.dueDate,

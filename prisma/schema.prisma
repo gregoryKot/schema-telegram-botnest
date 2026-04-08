@@ -204,6 +204,31 @@ model UserTask {
   @@index([userId, done, type])
 }
 
+model TherapistNote {
+  id          Int      @id @default(autoincrement())
+  therapistId BigInt
+  clientId    BigInt
+  date        String   // YYYY-MM-DD
+  text        String
+  createdAt   DateTime @default(now())
+
+  @@index([therapistId, clientId, createdAt])
+}
+
+model ClientConceptualization {
+  id          Int      @id @default(autoincrement())
+  therapistId BigInt
+  clientId    BigInt
+  schemaIds   Json     @default("[]")  // string[]
+  modeIds     Json     @default("[]")  // string[]
+  triggers    String?
+  coreWounds  String?
+  goals       String?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([therapistId, clientId])
+}
+
 model ScheduledNotification {
   id          Int       @id @default(autoincrement())
   userId      BigInt

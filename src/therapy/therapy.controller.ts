@@ -116,4 +116,53 @@ export class TherapyController {
     await this.therapyService.completeTask(req.telegramUserId, parseId(id), body.done);
     return { ok: true };
   }
+
+  // ─── Session Notes ───────────────────────────────────────────────────────────
+
+  @Get('notes/:clientId')
+  async getNotes(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try { return await this.therapyService.getNotes(req.telegramUserId, parseId(clientId)); }
+    catch { throw new ForbiddenException('No active relation with this client'); }
+  }
+
+  @Post('notes/:clientId')
+  async createNote(@Req() req: AuthRequest, @Param('clientId') clientId: string, @Body() body: { date: string; text: string }) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    if (!body.text?.trim()) throw new BadRequestException('text required');
+    if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) throw new BadRequestException('Invalid date');
+    try { return await this.therapyService.createNote(req.telegramUserId, parseId(clientId), body); }
+    catch { throw new ForbiddenException('No active relation with this client'); }
+  }
+
+  @Delete('notes/:noteId')
+  async deleteNote(@Req() req: AuthRequest, @Param('noteId') noteId: string) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.therapyService.deleteNote(req.telegramUserId, parseId(noteId));
+    return { ok: true };
+  }
+
+  // ─── Case Conceptualization ──────────────────────────────────────────────────
+
+  @Get('conceptualization/:clientId')
+  async getConceptualization(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try { return await this.therapyService.getConceptualization(req.telegramUserId, parseId(clientId)); }
+    catch { throw new ForbiddenException('No active relation with this client'); }
+  }
+
+  @Post('conceptualization/:clientId')
+  async saveConceptualization(@Req() req: AuthRequest, @Param('clientId') clientId: string, @Body() body: {
+    schemaIds?: string[]; modeIds?: string[];
+    triggers?: string; coreWounds?: string; goals?: string;
+  }) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try { return await this.therapyService.saveConceptualization(req.telegramUserId, parseId(clientId), body); }
+    catch { throw new ForbiddenException('No active relation with this client'); }
+  }
 }
