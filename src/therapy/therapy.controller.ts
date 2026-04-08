@@ -60,6 +60,14 @@ export class TherapyController {
     return this.therapyService.getClients(req.telegramUserId);
   }
 
+  @Post('clients/virtual')
+  async addVirtualClient(@Req() req: AuthRequest, @Body() body: { name: string }) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    if (!body.name?.trim()) throw new BadRequestException('name required');
+    return this.therapyService.addVirtualClient(req.telegramUserId, body.name);
+  }
+
   @Post('clients/add')
   async addClientManually(@Req() req: AuthRequest, @Body() body: { clientTelegramId: number }) {
     const role = await this.botService.getUserRole(req.telegramUserId);

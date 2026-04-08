@@ -87,7 +87,8 @@ export class TherapyService {
       where: { therapistId: BigInt(therapistId), status: 'active' },
       include: { client: { select: { id: true, firstName: true } } },
     });
-    return Promise.all(
+
+    const realClients = await Promise.all(
       relations
         .filter(rel => rel.client !== null)
         .map(async rel => {
@@ -108,6 +109,34 @@ export class TherapyService {
           return { telegramId: clientId, name: rel.client!.firstName, clientAlias: (rel as any).clientAlias ?? null, streak, lastActiveDate, todayIndex };
         }),
     );
+
+    // Virtual (offline) clients: no Telegram account, identified by -rel.id
+    const virtualClients: TherapyClientSummary[] = relations
+      .filter(rel => rel.client === null && (rel as any).virtualClientName)
+      .map(rel => ({
+        telegramId: -rel.id,
+        name: (rel as any).virtualClientName as string,
+        clientAlias: (rel as any).clientAlias ?? null,
+        streak: 0,
+        lastActiveDate: null,
+        todayIndex: null,
+      }));
+
+    return [...realClients, ...virtualClients];
+  }
+
+  async addVirtualClient(therapistId: number, name: string): Promise<TherapyClientSummary[]> {
+    const code = Math.random().toString(36).slice(2, 10).toUpperCase();
+    await (this.prisma.therapyRelation.create as any)({
+      data: {
+        code,
+        therapistId: BigInt(therapistId),
+        clientId: null,
+        status: 'active',
+        virtualClientName: name.trim(),
+      },
+    });
+    return this.getClients(therapistId);
   }
 
   async addClientManually(therapistId: number, clientTelegramId: number) {
@@ -294,6 +323,14 @@ export class TherapyService {
   // ─── Session Notes ───────────────────────────────────────────────────────────
 
   private async assertRelation(therapistId: number, clientId: number): Promise<void> {
+    if (clientId < 0) {
+      // Virtual client — identified by -rel.id
+      const rel = await this.prisma.therapyRelation.findFirst({
+        where: { id: -clientId, therapistId: BigInt(therapistId), status: 'active' },
+      });
+      if (!rel) throw new Error('No active relation');
+      return;
+    }
     const rel = await this.prisma.therapyRelation.findFirst({
       where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
     });
@@ -362,7 +399,7 @@ export class TherapyService {
         goals: existing.goals,
         currentProblems: existing.currentProblems,
       };
-      history = [snapshot, ...history].slice(0, 20);
+      history = [snapshot, ...history];
     }
 
     return this.prisma.clientConceptualization.upsert({
@@ -396,6 +433,9 @@ export class TherapyService {
 
   async getClientData(therapistId: number, clientId: number) {
     await this.assertRelation(therapistId, clientId);
+    if (clientId < 0) {
+      return { name: null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [] };
+    }
     const uid = BigInt(clientId);
     const [user, ysq] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: uid }, select: { firstName: true, mySchemaIds: true, myModeIds: true } }),

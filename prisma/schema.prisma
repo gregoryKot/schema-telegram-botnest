@@ -178,7 +178,8 @@ model TherapyRelation {
   therapistId BigInt
   clientId    BigInt?
   status      String   @default("pending") // "pending" | "active"
-  clientAlias String?  // therapist's custom name for client
+  clientAlias       String?  // therapist's custom name for client
+  virtualClientName String?  // if set: offline/virtual client (no Telegram account)
   createdAt   DateTime @default(now())
 
   therapist   User  @relation("TherapistOf", fields: [therapistId], references: [id], onDelete: Cascade)
