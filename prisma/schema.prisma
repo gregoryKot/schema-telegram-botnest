@@ -216,15 +216,19 @@ model TherapistNote {
 }
 
 model ClientConceptualization {
-  id          Int      @id @default(autoincrement())
-  therapistId BigInt
-  clientId    BigInt
-  schemaIds   Json     @default("[]")  // string[]
-  modeIds     Json     @default("[]")  // string[]
-  triggers    String?
-  coreWounds  String?
-  goals       String?
-  updatedAt   DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  therapistId     BigInt
+  clientId        BigInt
+  schemaIds       Json     @default("[]")  // string[]
+  modeIds         Json     @default("[]")  // string[]
+  earlyExperience String?  // Ранний дисфункциональный опыт
+  unmetNeeds      String?  // Неудовлетворённые базовые потребности
+  triggers        String?  // Схемные триггеры
+  copingStyles    String?  // Стили совладания
+  goals           String?  // Цели схема-терапии
+  currentProblems String?  // Текущие проблемы и симптомы
+  history         Json     @default("[]")  // ConceptSnapshot[]
+  updatedAt       DateTime @updatedAt
 
   @@unique([therapistId, clientId])
 }

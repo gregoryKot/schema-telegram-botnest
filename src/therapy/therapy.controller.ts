@@ -117,6 +117,16 @@ export class TherapyController {
     return { ok: true };
   }
 
+  // ─── Client data ─────────────────────────────────────────────────────────────
+
+  @Get('client-data/:clientId')
+  async getClientData(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try { return await this.therapyService.getClientData(req.telegramUserId, parseId(clientId)); }
+    catch { throw new ForbiddenException('No active relation with this client'); }
+  }
+
   // ─── Session Notes ───────────────────────────────────────────────────────────
 
   @Get('notes/:clientId')
@@ -158,7 +168,8 @@ export class TherapyController {
   @Post('conceptualization/:clientId')
   async saveConceptualization(@Req() req: AuthRequest, @Param('clientId') clientId: string, @Body() body: {
     schemaIds?: string[]; modeIds?: string[];
-    triggers?: string; coreWounds?: string; goals?: string;
+    earlyExperience?: string; unmetNeeds?: string;
+    triggers?: string; copingStyles?: string; goals?: string; currentProblems?: string;
   }) {
     const role = await this.botService.getUserRole(req.telegramUserId);
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');

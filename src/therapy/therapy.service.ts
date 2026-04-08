@@ -9,6 +9,7 @@ function randomCode(): string {
 }
 
 import { localDate, localMidnightUTC } from '../utils/tz';
+import { computeActiveSchemas } from '../utils/ysq';
 
 export interface TherapyRelationInfo {
   role: 'therapist' | 'client';
@@ -307,24 +308,88 @@ export class TherapyService {
 
   async saveConceptualization(therapistId: number, clientId: number, body: {
     schemaIds?: string[]; modeIds?: string[];
-    triggers?: string; coreWounds?: string; goals?: string;
+    earlyExperience?: string; unmetNeeds?: string;
+    triggers?: string; copingStyles?: string; goals?: string; currentProblems?: string;
   }) {
     await this.assertRelation(therapistId, clientId);
+    const tid = BigInt(therapistId);
+    const cid = BigInt(clientId);
+
+    // Fetch current state to push to history before overwriting
+    const existing = await this.prisma.clientConceptualization.findUnique({
+      where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
+    });
+
+    const now = new Date().toISOString();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let history: any[] = Array.isArray(existing?.history) ? (existing.history as any[]) : [];
+
+    if (existing) {
+      // Snapshot current state into history (max 20 snapshots)
+      const snapshot = {
+        savedAt: now,
+        schemaIds: existing.schemaIds,
+        modeIds: existing.modeIds,
+        earlyExperience: existing.earlyExperience,
+        unmetNeeds: existing.unmetNeeds,
+        triggers: existing.triggers,
+        copingStyles: existing.copingStyles,
+        goals: existing.goals,
+        currentProblems: existing.currentProblems,
+      };
+      history = [snapshot, ...history].slice(0, 20);
+    }
+
     return this.prisma.clientConceptualization.upsert({
-      where: { therapistId_clientId: { therapistId: BigInt(therapistId), clientId: BigInt(clientId) } },
+      where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
       create: {
-        therapistId: BigInt(therapistId), clientId: BigInt(clientId),
+        therapistId: tid, clientId: cid,
         schemaIds: body.schemaIds ?? [], modeIds: body.modeIds ?? [],
-        triggers: body.triggers ?? null, coreWounds: body.coreWounds ?? null, goals: body.goals ?? null,
+        earlyExperience: body.earlyExperience ?? null,
+        unmetNeeds: body.unmetNeeds ?? null,
+        triggers: body.triggers ?? null,
+        copingStyles: body.copingStyles ?? null,
+        goals: body.goals ?? null,
+        currentProblems: body.currentProblems ?? null,
+        history: [],
       },
       update: {
         ...(body.schemaIds !== undefined && { schemaIds: body.schemaIds }),
         ...(body.modeIds !== undefined && { modeIds: body.modeIds }),
+        ...(body.earlyExperience !== undefined && { earlyExperience: body.earlyExperience }),
+        ...(body.unmetNeeds !== undefined && { unmetNeeds: body.unmetNeeds }),
         ...(body.triggers !== undefined && { triggers: body.triggers }),
-        ...(body.coreWounds !== undefined && { coreWounds: body.coreWounds }),
+        ...(body.copingStyles !== undefined && { copingStyles: body.copingStyles }),
         ...(body.goals !== undefined && { goals: body.goals }),
+        ...(body.currentProblems !== undefined && { currentProblems: body.currentProblems }),
+        history,
       },
     });
+  }
+
+  // ─── Client data for therapist ───────────────────────────────────────────────
+
+  async getClientData(therapistId: number, clientId: number) {
+    await this.assertRelation(therapistId, clientId);
+    const uid = BigInt(clientId);
+    const [user, ysq] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: uid }, select: { firstName: true, mySchemaIds: true, myModeIds: true } }),
+      this.prisma.ysqResult.findUnique({ where: { userId: uid } }),
+    ]);
+
+    let ysqActiveSchemaIds: string[] = [];
+    if (ysq?.answers) {
+      // Import scoring from constants — inline minimal YSQ scoring
+      ysqActiveSchemaIds = computeActiveSchemas(ysq.answers as number[]);
+    }
+
+    return {
+      name: user?.firstName ?? null,
+      mySchemaIds: (user?.mySchemaIds as string[]) ?? [],
+      myModeIds: (user?.myModeIds as string[]) ?? [],
+      ysqCompletedAt: ysq?.completedAt?.toISOString() ?? null,
+      ysqActiveSchemaIds,
+    };
   }
 
   async scheduleTaskNotification(clientId: number, task: { text: string; needId: string | null; dueDate: string | null }): Promise<void> {
