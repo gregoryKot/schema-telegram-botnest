@@ -178,6 +178,7 @@ model TherapyRelation {
   therapistId BigInt
   clientId    BigInt?
   status      String   @default("pending") // "pending" | "active"
+  clientAlias String?  // therapist's custom name for client
   createdAt   DateTime @default(now())
 
   therapist   User  @relation("TherapistOf", fields: [therapistId], references: [id], onDelete: Cascade)

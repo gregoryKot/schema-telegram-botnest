@@ -119,6 +119,24 @@ export class TherapyController {
 
   // ─── Client data ─────────────────────────────────────────────────────────────
 
+  @Post('rename-client/:clientId')
+  async renameClient(@Req() req: AuthRequest, @Param('clientId') clientId: string, @Body() body: { alias: string }) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    if (typeof body.alias !== 'string') throw new BadRequestException('alias required');
+    await this.therapyService.renameClient(req.telegramUserId, parseId(clientId), body.alias);
+    return { ok: true };
+  }
+
+  @Post('request-ysq/:clientId')
+  async requestYsq(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try { await this.therapyService.requestYsq(req.telegramUserId, parseId(clientId)); }
+    catch { throw new ForbiddenException('No active relation with this client'); }
+    return { ok: true };
+  }
+
   @Get('client-data/:clientId')
   async getClientData(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
     const role = await this.botService.getUserRole(req.telegramUserId);

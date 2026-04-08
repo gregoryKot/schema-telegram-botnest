@@ -22,6 +22,7 @@ export interface TherapyRelationInfo {
 export interface TherapyClientSummary {
   telegramId: number;
   name: string | null;
+  clientAlias: string | null;
   streak: number;
   lastActiveDate: string | null;
   todayIndex: number | null;
@@ -104,7 +105,7 @@ export class TherapyService {
           const todayIndex = todayValues.length === 5
             ? Math.round(todayValues.reduce((s, v) => s + v, 0) / 5 * 10) / 10
             : null;
-          return { telegramId: clientId, name: rel.client!.firstName, streak, lastActiveDate, todayIndex };
+          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: rel.clientAlias ?? null, streak, lastActiveDate, todayIndex };
         }),
     );
   }
@@ -395,6 +396,23 @@ export class TherapyService {
   async scheduleTaskNotification(clientId: number, task: { text: string; needId: string | null; dueDate: string | null }): Promise<void> {
     await this.notificationService.schedule(clientId, 'task_assigned', new Date(), {
       text: task.text, needId: task.needId, dueDate: task.dueDate,
+    });
+  }
+
+  async renameClient(therapistId: number, clientId: number, alias: string): Promise<void> {
+    await this.prisma.therapyRelation.updateMany({
+      where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
+      data: { clientAlias: alias.trim() || null },
+    });
+  }
+
+  async requestYsq(therapistId: number, clientId: number): Promise<void> {
+    await this.assertRelation(therapistId, clientId);
+    const therapist = await this.prisma.user.findUnique({
+      where: { id: BigInt(therapistId) }, select: { firstName: true },
+    });
+    await this.notificationService.schedule(clientId, 'ysq_requested', new Date(), {
+      therapistName: therapist?.firstName ?? null,
     });
   }
 }

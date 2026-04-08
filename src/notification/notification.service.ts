@@ -23,7 +23,8 @@ export type NotificationType =
   | 'practice_missed'
   | 'low_streak_insight'
   | 'nudge'
-  | 'task_assigned';
+  | 'task_assigned'
+  | 'ysq_requested';
 
 export interface DueNotification {
   id: number;
