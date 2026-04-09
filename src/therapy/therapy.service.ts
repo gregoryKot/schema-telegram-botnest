@@ -290,11 +290,12 @@ export class TherapyService {
     }));
   }
 
-  async completeTask(userId: number, taskId: number, done: boolean): Promise<void> {
-    await this.prisma.userTask.updateMany({
+  async completeTask(userId: number, taskId: number, done: boolean): Promise<boolean> {
+    const result = await this.prisma.userTask.updateMany({
       where: { id: taskId, userId: BigInt(userId) },
       data: { done, completedAt: new Date() },
     });
+    return result.count > 0;
   }
 
   async checkStreakTasks(userId: number): Promise<void> {
@@ -416,7 +417,7 @@ export class TherapyService {
         goals: existing.goals,
         currentProblems: existing.currentProblems,
       };
-      history = [snapshot, ...history];
+      history = [snapshot, ...history].slice(0, 20);
     }
 
     return this.prisma.clientConceptualization.upsert({
@@ -508,6 +509,7 @@ export class TherapyService {
 
   async requestYsq(therapistId: number, clientId: number): Promise<void> {
     await this.assertRelation(therapistId, clientId);
+    if (clientId < 0) return; // Virtual client — no Telegram account, cannot send notification
     const therapist = await this.prisma.user.findUnique({
       where: { id: BigInt(therapistId) }, select: { firstName: true },
     });
