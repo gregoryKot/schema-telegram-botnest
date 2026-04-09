@@ -215,11 +215,23 @@ export class TherapyController {
     catch (e: any) { if (e?.message === 'No active relation') throw new ForbiddenException('No active relation with this client'); throw e; }
   }
 
+  @Post('session-info/:clientId')
+  async updateSessionInfo(@Req() req: AuthRequest, @Param('clientId') clientId: string, @Body() body: {
+    therapyStartDate?: string | null; nextSession?: string | null; meetingDays?: number[];
+  }) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try { await this.therapyService.updateSessionInfo(req.telegramUserId, parseId(clientId), body); }
+    catch (e: any) { if (e?.message === 'No active relation') throw new ForbiddenException('No active relation with this client'); throw e; }
+    return { ok: true };
+  }
+
   @Post('conceptualization/:clientId')
   async saveConceptualization(@Req() req: AuthRequest, @Param('clientId') clientId: string, @Body() body: {
     schemaIds?: string[]; modeIds?: string[];
     earlyExperience?: string; unmetNeeds?: string;
     triggers?: string; copingStyles?: string; goals?: string; currentProblems?: string;
+    modeTransitions?: string;
   }) {
     const role = await this.botService.getUserRole(req.telegramUserId);
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');

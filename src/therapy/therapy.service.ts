@@ -26,6 +26,10 @@ export interface TherapyClientSummary {
   streak: number;
   lastActiveDate: string | null;
   todayIndex: number | null;
+  relationCreatedAt: string;
+  therapyStartDate: string | null;
+  nextSession: string | null;
+  meetingDays: number[];
 }
 
 @Injectable()
@@ -111,7 +115,7 @@ export class TherapyService {
           const todayIndex = todayValues.length === 5
             ? Math.round(todayValues.reduce((s, v) => s + v, 0) / 5 * 10) / 10
             : null;
-          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: (rel as any).clientAlias ?? null, streak, lastActiveDate, todayIndex };
+          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: (rel as any).clientAlias ?? null, streak, lastActiveDate, todayIndex, relationCreatedAt: rel.createdAt.toISOString(), therapyStartDate: (rel as any).therapyStartDate ?? null, nextSession: (rel as any).nextSession ?? null, meetingDays: ((rel as any).meetingDays as number[]) ?? [] };
         }),
     );
 
@@ -125,6 +129,10 @@ export class TherapyService {
         streak: 0,
         lastActiveDate: null,
         todayIndex: null,
+        relationCreatedAt: rel.createdAt.toISOString(),
+        therapyStartDate: (rel as any).therapyStartDate ?? null,
+        nextSession: (rel as any).nextSession ?? null,
+        meetingDays: ((rel as any).meetingDays as number[]) ?? [],
       }));
 
     return [...realClients, ...virtualClients];
@@ -338,6 +346,32 @@ export class TherapyService {
     return diaryDates.size;
   }
 
+  // ─── Session Info ────────────────────────────────────────────────────────────
+
+  async updateSessionInfo(therapistId: number, clientId: number, body: {
+    therapyStartDate?: string | null;
+    nextSession?: string | null;
+    meetingDays?: number[];
+  }): Promise<void> {
+    await this.assertRelation(therapistId, clientId);
+    const data: Record<string, unknown> = {};
+    if (body.therapyStartDate !== undefined) data['therapyStartDate'] = body.therapyStartDate;
+    if (body.nextSession !== undefined) data['nextSession'] = body.nextSession;
+    if (body.meetingDays !== undefined) data['meetingDays'] = body.meetingDays;
+    if (Object.keys(data).length === 0) return;
+    if (clientId < 0) {
+      await this.prisma.therapyRelation.updateMany({
+        where: { id: -clientId, therapistId: BigInt(therapistId), status: 'active' },
+        data: data as any,
+      });
+    } else {
+      await this.prisma.therapyRelation.updateMany({
+        where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
+        data: data as any,
+      });
+    }
+  }
+
   // ─── Session Notes ───────────────────────────────────────────────────────────
 
   private async assertRelation(therapistId: number, clientId: number): Promise<void> {
@@ -390,6 +424,7 @@ export class TherapyService {
     schemaIds?: string[]; modeIds?: string[];
     earlyExperience?: string; unmetNeeds?: string;
     triggers?: string; copingStyles?: string; goals?: string; currentProblems?: string;
+    modeTransitions?: string;
   }) {
     await this.assertRelation(therapistId, clientId);
     const tid = BigInt(therapistId);
@@ -416,11 +451,12 @@ export class TherapyService {
         copingStyles: existing.copingStyles,
         goals: existing.goals,
         currentProblems: existing.currentProblems,
+        modeTransitions: (existing as any).modeTransitions ?? null,
       };
       history = [snapshot, ...history].slice(0, 20);
     }
 
-    return this.prisma.clientConceptualization.upsert({
+    return (this.prisma.clientConceptualization.upsert as any)({
       where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
       create: {
         therapistId: tid, clientId: cid,
@@ -431,6 +467,7 @@ export class TherapyService {
         copingStyles: body.copingStyles ?? null,
         goals: body.goals ?? null,
         currentProblems: body.currentProblems ?? null,
+        modeTransitions: body.modeTransitions ?? null,
         history: [],
       },
       update: {
@@ -442,6 +479,7 @@ export class TherapyService {
         ...(body.copingStyles !== undefined && { copingStyles: body.copingStyles }),
         ...(body.goals !== undefined && { goals: body.goals }),
         ...(body.currentProblems !== undefined && { currentProblems: body.currentProblems }),
+        ...(body.modeTransitions !== undefined && { modeTransitions: body.modeTransitions }),
         history,
       },
     });

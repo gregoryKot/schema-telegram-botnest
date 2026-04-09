@@ -180,6 +180,9 @@ model TherapyRelation {
   status      String   @default("pending") // "pending" | "active"
   clientAlias       String?  // therapist's custom name for client
   virtualClientName String?  // if set: offline/virtual client (no Telegram account)
+  therapyStartDate  String?  // YYYY-MM-DD, editable by therapist
+  nextSession       String?  // YYYY-MM-DD, next scheduled session
+  meetingDays       Json     @default("[]")  // number[] weekdays 0=Sun..6=Sat
   createdAt   DateTime @default(now())
 
   therapist   User  @relation("TherapistOf", fields: [therapistId], references: [id], onDelete: Cascade)
@@ -229,6 +232,7 @@ model ClientConceptualization {
   copingStyles    String?  // Стили совладания
   goals           String?  // Цели схема-терапии
   currentProblems String?  // Текущие проблемы и симптомы
+  modeTransitions String?  // Переключение режимов
   history         Json     @default("[]")  // ConceptSnapshot[]
   updatedAt       DateTime @updatedAt
 
