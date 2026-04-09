@@ -11,7 +11,7 @@ interface AuthRequest extends Request {
 
 function parseId(raw: string): number {
   const n = Number(raw);
-  if (!Number.isInteger(n) || n <= 0) throw new BadRequestException('Invalid id');
+  if (!Number.isInteger(n) || n === 0) throw new BadRequestException('Invalid id');
   return n;
 }
 
@@ -60,6 +60,14 @@ export class TherapyController {
     return this.therapyService.getClients(req.telegramUserId);
   }
 
+  @Delete('clients/:clientId')
+  async removeClient(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.therapyService.removeClient(req.telegramUserId, parseId(clientId));
+    return { ok: true };
+  }
+
   @Post('clients/virtual')
   async addVirtualClient(@Req() req: AuthRequest, @Body() body: { name: string }) {
     const role = await this.botService.getUserRole(req.telegramUserId);
@@ -106,7 +114,7 @@ export class TherapyController {
     }
 
     const task = await this.therapyService.createTask(targetUserId, body, assignedBy);
-    if (assignedBy) {
+    if (assignedBy && targetUserId > 0) {
       await this.therapyService.scheduleTaskNotification(targetUserId, task);
     }
     return task;

@@ -49,6 +49,11 @@ export class TherapyService {
     const rel = await this.prisma.therapyRelation.findUnique({ where: { code: code.toUpperCase() } });
     if (!rel || rel.status !== 'pending' || rel.clientId !== null) return false;
     if (rel.therapistId === BigInt(clientId)) return false;
+    // Prevent duplicate: if already connected to this therapist, ignore silently
+    const alreadyConnected = await this.prisma.therapyRelation.findFirst({
+      where: { therapistId: rel.therapistId, clientId: BigInt(clientId), status: 'active' },
+    });
+    if (alreadyConnected) return true;
     await this.prisma.therapyRelation.update({
       where: { id: rel.id },
       data: { clientId: BigInt(clientId), status: 'active' },
@@ -237,6 +242,18 @@ export class TherapyService {
   }
 
   async getTasksForClient(therapistId: number, clientId: number) {
+    if (clientId < 0) {
+      // Virtual client: look up by relation ID
+      const rel = await this.prisma.therapyRelation.findFirst({
+        where: { id: -clientId, therapistId: BigInt(therapistId), status: 'active' },
+      });
+      if (!rel) return null;
+      const tasks = await this.prisma.userTask.findMany({
+        where: { userId: BigInt(clientId), assignedBy: BigInt(therapistId) },
+        orderBy: { createdAt: 'desc' },
+      });
+      return tasks.map(task => ({ ...task, userId: clientId, assignedBy: therapistId, doneToday: undefined, progress: undefined }));
+    }
     const rel = await this.prisma.therapyRelation.findFirst({
       where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
     });
@@ -464,10 +481,29 @@ export class TherapyService {
   }
 
   async renameClient(therapistId: number, clientId: number, alias: string): Promise<void> {
-    await this.prisma.therapyRelation.updateMany({
-      where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
-      data: { clientAlias: alias.trim() || null } as any,
-    });
+    if (clientId < 0) {
+      await this.prisma.therapyRelation.updateMany({
+        where: { id: -clientId, therapistId: BigInt(therapistId), status: 'active' },
+        data: { clientAlias: alias.trim() || null } as any,
+      });
+    } else {
+      await this.prisma.therapyRelation.updateMany({
+        where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
+        data: { clientAlias: alias.trim() || null } as any,
+      });
+    }
+  }
+
+  async removeClient(therapistId: number, clientId: number): Promise<void> {
+    if (clientId < 0) {
+      await this.prisma.therapyRelation.deleteMany({
+        where: { id: -clientId, therapistId: BigInt(therapistId) },
+      });
+    } else {
+      await this.prisma.therapyRelation.deleteMany({
+        where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId) },
+      });
+    }
   }
 
   async requestYsq(therapistId: number, clientId: number): Promise<void> {
