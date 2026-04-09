@@ -17,6 +17,7 @@ export interface TherapyRelationInfo {
   partnerName: string | null;
   partnerId: number | null;
   code: string;
+  nextSession: string | null;
 }
 
 export interface TherapyClientSummary {
@@ -72,14 +73,14 @@ export class TherapyService {
       include: { client: { select: { firstName: true } } },
     });
     if (asTherapist) {
-      return { role: 'therapist', status: 'active', partnerName: asTherapist.client?.firstName ?? null, partnerId: asTherapist.clientId ? Number(asTherapist.clientId) : null, code: asTherapist.code };
+      return { role: 'therapist', status: 'active', partnerName: asTherapist.client?.firstName ?? null, partnerId: asTherapist.clientId ? Number(asTherapist.clientId) : null, code: asTherapist.code, nextSession: null };
     }
     const asClient = await this.prisma.therapyRelation.findFirst({
       where: { clientId: uid, status: 'active' },
       include: { therapist: { select: { id: true, firstName: true } } },
     });
     if (asClient) {
-      return { role: 'client', status: 'active', partnerName: asClient.therapist?.firstName ?? null, partnerId: asClient.therapist ? Number(asClient.therapist.id) : null, code: asClient.code };
+      return { role: 'client', status: 'active', partnerName: asClient.therapist?.firstName ?? null, partnerId: asClient.therapist ? Number(asClient.therapist.id) : null, code: asClient.code, nextSession: (asClient as any).nextSession ?? null };
     }
     return null;
   }
