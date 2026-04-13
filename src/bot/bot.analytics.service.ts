@@ -315,17 +315,18 @@ export class BotAnalyticsService {
       }),
     ]);
 
-    // Retention funnel — count users with N+ distinct fill days
-    const fillDates = await this.prisma.rating.findMany({ select: { userId: true, date: true }, distinct: ['userId', 'date'] });
-    const fillsPerUser = new Map<string, number>();
-    for (const r of fillDates) {
-      const k = String(r.userId);
-      fillsPerUser.set(k, (fillsPerUser.get(k) ?? 0) + 1);
-    }
-    const ret1 = [...fillsPerUser.values()].filter(n => n >= 1).length;
-    const ret3 = [...fillsPerUser.values()].filter(n => n >= 3).length;
-    const ret7 = [...fillsPerUser.values()].filter(n => n >= 7).length;
-    const ret30 = [...fillsPerUser.values()].filter(n => n >= 30).length;
+    // Retention funnel — count users with N+ distinct fill days (raw SQL for efficiency)
+    const retentionRows = await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
+      SELECT COUNT(*) AS cnt FROM (
+        SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 1
+      ) t` as any[];
+    const ret1 = Number(retentionRows[0]?.cnt ?? 0);
+    const ret3 = Number((await this.prisma.$queryRaw<any[]>`
+      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 3) t`)[0]?.cnt ?? 0);
+    const ret7 = Number((await this.prisma.$queryRaw<any[]>`
+      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 7) t`)[0]?.cnt ?? 0);
+    const ret30 = Number((await this.prisma.$queryRaw<any[]>`
+      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 30) t`)[0]?.cnt ?? 0);
 
     // Churn signal: active in d7-d30 but NOT in last 7 days
     const activeRecent = new Set(week7Ratings.map(r => String(r.userId)));

@@ -53,9 +53,6 @@ const CONSENT_TEXT = `🔐 Соглашение об обработке данн
 export function buildWelcomeKeyboard() {
   return Markup.inlineKeyboard([
     [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-    [Markup.button.callback('🎯 Какой подход мне подойдёт?', 'quiz:start')],
-    [Markup.button.callback('🔍 Как это работает', 'howto')],
-    [Markup.button.callback('📖 Подробнее', 'faq'), Markup.button.callback('👤 Обо мне', 'about')],
   ]);
 }
 
@@ -94,6 +91,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const payload = (ctx as any).startPayload as string | undefined;
         if (payload?.startsWith('pair_')) {
           const code = payload.slice(5).toUpperCase();
+          const hasConsent = await this.botService.hasAcceptedDisclaimer(userId);
+          if (!hasConsent) {
+            await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
+            return;
+          }
           const ok = await this.botService.joinPair(userId, code);
           if (ok) {
             await ctx.reply('Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.',
@@ -277,8 +279,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     await this.bot.telegram.setMyCommands([
       { command: 'start', description: 'Главное меню' },
       { command: 'chart', description: 'Сводка потребностей за сегодня' },
-      { command: 'history', description: 'История за 7 дней' },
-      { command: 'settings', description: 'Настройки уведомлений' },
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
 
     await this.bot.telegram.callApi('setChatMenuButton' as any, {

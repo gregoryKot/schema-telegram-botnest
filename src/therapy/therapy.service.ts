@@ -207,7 +207,7 @@ export class TherapyService {
     type: string; text: string; targetDays?: number;
     needId?: string; dueDate?: string;
   }, assignedBy?: number) {
-    return this.prisma.userTask.create({
+    const task = await this.prisma.userTask.create({
       data: {
         userId: BigInt(userId),
         assignedBy: assignedBy ? BigInt(assignedBy) : null,
@@ -218,6 +218,7 @@ export class TherapyService {
         dueDate: body.dueDate ?? null,
       },
     });
+    return { ...task, text: body.text }; // return plaintext to caller
   }
 
   async getTasks(userId: number) {
@@ -561,15 +562,17 @@ export class TherapyService {
   }
 
   async removeClient(therapistId: number, clientId: number): Promise<void> {
-    if (clientId < 0) {
-      await this.prisma.therapyRelation.deleteMany({
-        where: { id: -clientId, therapistId: BigInt(therapistId) },
-      });
-    } else {
-      await this.prisma.therapyRelation.deleteMany({
-        where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId) },
-      });
-    }
+    const tid = BigInt(therapistId);
+    const cid = BigInt(clientId);
+    await this.prisma.$transaction([
+      this.prisma.therapistNote.deleteMany({ where: { therapistId: tid, clientId: cid } }),
+      this.prisma.clientConceptualization.deleteMany({
+        where: { therapistId: tid, clientId: cid },
+      }),
+      clientId < 0
+        ? this.prisma.therapyRelation.deleteMany({ where: { id: -clientId, therapistId: tid } })
+        : this.prisma.therapyRelation.deleteMany({ where: { therapistId: tid, clientId: cid } }),
+    ]);
   }
 
   async requestYsq(therapistId: number, clientId: number): Promise<void> {
