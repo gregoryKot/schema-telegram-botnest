@@ -31,11 +31,11 @@ export class DiaryService {
       data: {
         userId,
         trigger: encrypt(data.trigger) ?? data.trigger,
-        emotions: (encryptJson(data.emotions) ?? JSON.stringify(data.emotions)) as unknown as Prisma.InputJsonValue,
+        emotions: (encryptJson(data.emotions) ?? JSON.stringify(data.emotions)) as any,
         thoughts: encrypt(data.thoughts),
         bodyFeelings: encrypt(data.bodyFeelings),
         actualBehavior: encrypt(data.actualBehavior),
-        schemaIds: data.schemaIds as unknown as Prisma.InputJsonValue,
+        schemaIds: data.schemaIds as any,
         schemaOrigin: encrypt(data.schemaOrigin),
         healthyView: encrypt(data.healthyView),
         realProblems: encrypt(data.realProblems),
@@ -122,7 +122,7 @@ export class DiaryService {
   // ─── Gratitude Diary ──────────────────────────────────────────────────────
 
   upsertGratitudeDiaryEntry(userId: bigint, date: string, items: string[]) {
-    const enc = (encryptJson(items) ?? JSON.stringify(items)) as unknown as Prisma.InputJsonValue;
+    const enc = (encryptJson(items) ?? JSON.stringify(items)) as any;
     return this.prisma.gratitudeDiaryEntry.upsert({
       where: { userId_date: { userId, date } },
       create: { userId, date, items: enc },
