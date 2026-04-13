@@ -4,9 +4,10 @@ import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
+import { randomBytes } from 'crypto';
 
 function randomCode(): string {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
+  return randomBytes(4).toString('hex').toUpperCase();
 }
 
 const CONCEPT_TEXT_FIELDS = ['earlyExperience', 'unmetNeeds', 'triggers', 'copingStyles', 'goals', 'currentProblems', 'modeTransitions'] as const;
@@ -163,7 +164,7 @@ export class TherapyService {
   }
 
   async addVirtualClient(therapistId: number, name: string): Promise<TherapyClientSummary[]> {
-    const code = Math.random().toString(36).slice(2, 10).toUpperCase();
+    const code = randomBytes(5).toString('hex').toUpperCase();
     await (this.prisma.therapyRelation.create as any)({
       data: {
         code,
@@ -191,7 +192,7 @@ export class TherapyService {
     if (existing) throw new Error('Already connected');
 
     // Create active relation directly (no invite code needed — use random code)
-    const code = Math.random().toString(36).slice(2, 10).toUpperCase();
+    const code = randomBytes(5).toString('hex').toUpperCase();
     await this.prisma.therapyRelation.create({
       data: { code, therapistId: tid, clientId: cid, status: 'active' },
     });

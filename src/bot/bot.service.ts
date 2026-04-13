@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 import { encrypt, decrypt } from '../utils/crypto';
+import { randomBytes } from 'crypto';
 
 export const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'] as const;
 export type NeedId = typeof NEED_IDS[number];
@@ -226,7 +227,7 @@ export class BotService {
     const uid = BigInt(userId);
     const existing = await this.prisma.pair.findFirst({ where: { userId1: uid, status: 'pending' } });
     if (existing) return existing.code;
-    const code = Math.random().toString(36).slice(2, 9).toUpperCase();
+    const code = randomBytes(4).toString('hex').toUpperCase();
     await this.prisma.pair.create({ data: { code, userId1: uid } });
     return code;
   }
@@ -320,9 +321,10 @@ export class BotService {
   }
 
   async getMissedPlans(userId: number, date: string) {
-    return this.prisma.practicePlan.findMany({
+    const rows = await this.prisma.practicePlan.findMany({
       where: { userId: BigInt(userId), scheduledDate: date, done: null },
     });
+    return rows.map(r => ({ ...r, practiceText: decrypt(r.practiceText) ?? r.practiceText }));
   }
 
   async getChildhoodRatings(userId: number): Promise<Partial<Record<string, number>>> {
@@ -397,7 +399,7 @@ export class BotService {
       this.prisma.therapyRelation.deleteMany({ where: { OR: [{ clientId: uid }, { therapistId: uid }] } }),
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
       // Soft-delete: keep the user row so re-registration preserves original createdAt
-      this.prisma.user.update({ where: { id: uid }, data: { deletedAt: new Date(), firstName: null, notifyEnabled: true, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', disclaimerAccepted: false, pairCardDismissed: false, botBlockedAt: null } }),
+      this.prisma.user.update({ where: { id: uid }, data: { deletedAt: new Date(), firstName: null, role: 'CLIENT', notifyEnabled: true, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: true, disclaimerAccepted: false, pairCardDismissed: false, botBlockedAt: null, mySchemaIds: [], myModeIds: [] } }),
     ]);
   }
 }

@@ -117,7 +117,8 @@ export class TherapyController {
 
     const task = await this.therapyService.createTask(targetUserId, body, assignedBy);
     if (assignedBy && targetUserId > 0) {
-      await this.therapyService.scheduleTaskNotification(targetUserId, task);
+      // Pass original (plaintext) body so the notification payload is readable
+      await this.therapyService.scheduleTaskNotification(targetUserId, { text: body.text, needId: body.needId ?? null, dueDate: body.dueDate ?? null });
     }
     return task;
   }
