@@ -1,8 +1,6 @@
 [build]
-builder = "nixpacks"
-buildCommand = "npm install && npm run build"
+builder = "dockerfile"
 
 [deploy]
-startCommand = "prisma migrate deploy && node dist/main"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
