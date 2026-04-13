@@ -139,7 +139,7 @@ async function main() {
   // ClientConceptualization
   count = 0;
   const concepts = await prisma.clientConceptualization.findMany();
-  const CONCEPT_FIELDS = ['earlyExperience', 'unmetNeeds', 'triggers', 'copingStyles', 'goals', 'currentProblems', 'modeTransitions'] as const;
+  const CONCEPT_FIELDS = ['earlyExperience', 'unmetNeeds', 'triggers', 'copingStyles', 'goals', 'currentProblems'] as const;
   for (const c of concepts) {
     const update: Record<string, any> = {};
     for (const key of CONCEPT_FIELDS) {
