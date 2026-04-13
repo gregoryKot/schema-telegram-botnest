@@ -3,6 +3,7 @@ import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { NotificationService } from '../notification/notification.service';
+import { TelegramScheduleService } from './telegram.schedule.service';
 
 const TIMEZONES: { label: string; tz: string }[] = [
   { label: 'Лос-Анджелес', tz: 'America/Los_Angeles' },
@@ -59,6 +60,7 @@ export class TelegramSettingsService implements OnModuleInit {
     @Inject(TELEGRAF_BOT) @Optional() private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly notificationService: NotificationService,
+    private readonly scheduleService: TelegramScheduleService,
   ) {}
 
   async onModuleInit() {
@@ -85,7 +87,11 @@ export class TelegramSettingsService implements OnModuleInit {
         const s = await this.botService.getUserSettings(userId);
         const newEnabled = !(s?.notifyEnabled ?? true);
         await this.botService.updateUserSettings(userId, { notifyEnabled: newEnabled });
-        if (!newEnabled) await this.notificationService.cancelAll(userId);
+        if (!newEnabled) {
+          await this.notificationService.cancelAll(userId);
+        } else {
+          await this.scheduleService.rescheduleForUser(userId);
+        }
         const text = await buildSettingsText(this.botService, userId);
         await ctx.editMessageText(text, buildSettingsKeyboard(newEnabled) as any);
       } catch (err) {
@@ -117,6 +123,7 @@ export class TelegramSettingsService implements OnModuleInit {
         if (!userId) return;
         const localHour = Number((ctx.match as RegExpMatchArray)[1]);
         await this.botService.updateUserSettings(userId, { notifyLocalHour: localHour });
+        await this.scheduleService.rescheduleForUser(userId);
         const text = await buildSettingsText(this.botService, userId);
         const updated = await this.botService.getUserSettings(userId);
         await ctx.editMessageText(text, buildSettingsKeyboard(updated?.notifyEnabled ?? true) as any);
@@ -149,8 +156,8 @@ export class TelegramSettingsService implements OnModuleInit {
         if (!userId) return;
         const timezone = (ctx.match as RegExpMatchArray)[1];
         if (!TIMEZONES.find((t) => t.tz === timezone)) return;
-        const s = await this.botService.getUserSettings(userId);
-        await this.botService.updateUserSettings(userId, { notifyTimezone: timezone, notifyLocalHour: s?.notifyLocalHour ?? 21 });
+        await this.botService.updateUserSettings(userId, { notifyTimezone: timezone });
+        await this.scheduleService.rescheduleForUser(userId);
         const text = await buildSettingsText(this.botService, userId);
         const updated = await this.botService.getUserSettings(userId);
         await ctx.editMessageText(text, buildSettingsKeyboard(updated?.notifyEnabled ?? true) as any);

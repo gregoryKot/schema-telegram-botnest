@@ -4,6 +4,7 @@ import { TELEGRAF_BOT, MINIAPP_URL } from './telegram.constants';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
+import { TherapyService } from '../therapy/therapy.service';
 import { buildSummaryText } from '../notification/notification.templates';
 
 const SHORT_MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
@@ -22,6 +23,7 @@ export class TelegramRatingService implements OnModuleInit {
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
     private readonly scheduleService: TelegramScheduleService,
+    private readonly therapyService: TherapyService,
   ) {}
 
   async buildNeedsKeyboard(userId: number) {
@@ -135,6 +137,7 @@ export class TelegramRatingService implements OnModuleInit {
         }
         await ctx.answerCbQuery();
         await this.botService.saveRating(userId, needId as NeedId, raw);
+        this.therapyService.checkStreakTasks(userId).catch(() => null);
 
         const allRatings = await this.botService.getRatings(userId);
         if (NEED_IDS.every((id) => allRatings[id] !== undefined)) {

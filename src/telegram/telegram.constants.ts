@@ -11,5 +11,5 @@ export const DIARIES_URL = `${MINIAPP_URL}?section=diaries`;
 
 export const VALID_TIMEZONES = [
   'America/Los_Angeles', 'America/New_York', 'Europe/London', 'Europe/Berlin',
-  'Europe/Kyiv', 'Europe/Moscow', 'Asia/Dubai', 'Asia/Tashkent', 'Asia/Almaty', 'Asia/Shanghai',
+  'Europe/Kyiv', 'Asia/Jerusalem', 'Europe/Moscow', 'Asia/Dubai', 'Asia/Tashkent', 'Asia/Almaty', 'Asia/Shanghai',
 ];
