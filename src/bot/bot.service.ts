@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
+import { encrypt, decrypt } from '../utils/crypto';
 
 export const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'] as const;
 export type NeedId = typeof NEED_IDS[number];
@@ -131,17 +132,18 @@ export class BotService {
       where: { userId_date: { userId: BigInt(userId), date } },
     });
     return {
-      text: note?.text ?? null,
+      text: note?.text ? decrypt(note.text) : null,
       tags: note?.tags ? note.tags.split(',').filter(Boolean) : [],
     };
   }
 
   async saveNote(userId: number, date: string, text: string, tags?: string[]) {
     const tagsStr = tags ? tags.join(',') : '';
+    const encText = encrypt(text) ?? text;
     await this.prisma.note.upsert({
       where: { userId_date: { userId: BigInt(userId), date } },
-      update: { text, tags: tagsStr },
-      create: { userId: BigInt(userId), date, text, tags: tagsStr },
+      update: { text: encText, tags: tagsStr },
+      create: { userId: BigInt(userId), date, text: encText, tags: tagsStr },
     });
   }
 
@@ -259,15 +261,16 @@ export class BotService {
   // ─── Practices ────────────────────────────────────────────────────────────
 
   async getPractices(userId: number, needId: string) {
-    return this.prisma.userPractice.findMany({
+    const rows = await this.prisma.userPractice.findMany({
       where: { userId: BigInt(userId), needId },
       orderBy: { createdAt: 'asc' },
     });
+    return rows.map(r => ({ ...r, text: decrypt(r.text) ?? r.text }));
   }
 
   async addPractice(userId: number, needId: string, text: string) {
     return this.prisma.userPractice.create({
-      data: { userId: BigInt(userId), needId, text },
+      data: { userId: BigInt(userId), needId, text: encrypt(text) ?? text },
     });
   }
 
@@ -287,7 +290,7 @@ export class BotService {
 
   async createPlan(userId: number, needId: string, practiceText: string, scheduledDate: string, reminderUtcHour?: number) {
     return this.prisma.practicePlan.create({
-      data: { userId: BigInt(userId), needId, practiceText, scheduledDate, reminderUtcHour },
+      data: { userId: BigInt(userId), needId, practiceText: encrypt(practiceText) ?? practiceText, scheduledDate, reminderUtcHour },
     });
   }
 
@@ -299,19 +302,21 @@ export class BotService {
   }
 
   async getPendingPlans(userId: number, date: string) {
-    return this.prisma.practicePlan.findMany({
+    const rows = await this.prisma.practicePlan.findMany({
       where: { userId: BigInt(userId), scheduledDate: { gte: date }, done: null },
       orderBy: { createdAt: 'asc' },
     });
+    return rows.map(r => ({ ...r, practiceText: decrypt(r.practiceText) ?? r.practiceText }));
   }
 
   async getPlanHistory(userId: number, days: number) {
     const since = new Date(Date.now() - days * 86_400_000);
     const sinceStr = since.toISOString().split('T')[0];
-    return this.prisma.practicePlan.findMany({
+    const rows = await this.prisma.practicePlan.findMany({
       where: { userId: BigInt(userId), scheduledDate: { gte: sinceStr } },
       orderBy: { scheduledDate: 'desc' },
     });
+    return rows.map(r => ({ ...r, practiceText: decrypt(r.practiceText) ?? r.practiceText }));
   }
 
   async getMissedPlans(userId: number, date: string) {
@@ -382,6 +387,14 @@ export class BotService {
       this.prisma.ysqResult.deleteMany({ where: { userId: uid } }),
       this.prisma.ysqProgress.deleteMany({ where: { userId: uid } }),
       this.prisma.scheduledNotification.deleteMany({ where: { userId: uid } }),
+      this.prisma.schemaDiaryEntry.deleteMany({ where: { userId: uid } }),
+      this.prisma.modeDiaryEntry.deleteMany({ where: { userId: uid } }),
+      this.prisma.gratitudeDiaryEntry.deleteMany({ where: { userId: uid } }),
+      this.prisma.appActivity.deleteMany({ where: { userId: uid } }),
+      this.prisma.userTask.deleteMany({ where: { userId: uid } }),
+      this.prisma.clientConceptualization.deleteMany({ where: { OR: [{ clientId: uid }, { therapistId: uid }] } }),
+      this.prisma.therapistNote.deleteMany({ where: { OR: [{ clientId: uid }, { therapistId: uid }] } }),
+      this.prisma.therapyRelation.deleteMany({ where: { OR: [{ clientId: uid }, { therapistId: uid }] } }),
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
       // Soft-delete: keep the user row so re-registration preserves original createdAt
       this.prisma.user.update({ where: { id: uid }, data: { deletedAt: new Date(), firstName: null, notifyEnabled: true, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', disclaimerAccepted: false, pairCardDismissed: false, botBlockedAt: null } }),

@@ -3,9 +3,32 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
+import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
 
 function randomCode(): string {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+const CONCEPT_TEXT_FIELDS = ['earlyExperience', 'unmetNeeds', 'triggers', 'copingStyles', 'goals', 'currentProblems', 'modeTransitions'] as const;
+
+function encryptConceptFields(body: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const f of CONCEPT_TEXT_FIELDS) {
+    if (f in body) result[f] = body[f] != null ? encrypt(body[f]) : null;
+  }
+  return result;
+}
+
+function decryptConceptFields(row: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const f of CONCEPT_TEXT_FIELDS) {
+    result[f] = row[f] != null ? decrypt(row[f]) : null;
+  }
+  return result;
+}
+
+function decryptConceptSnapshot(snap: Record<string, any>): Record<string, any> {
+  return { ...snap, ...decryptConceptFields(snap) };
 }
 
 import { localDate, localMidnightUTC } from '../utils/tz';
@@ -188,7 +211,7 @@ export class TherapyService {
         userId: BigInt(userId),
         assignedBy: assignedBy ? BigInt(assignedBy) : null,
         type: body.type,
-        text: body.text,
+        text: encrypt(body.text) ?? body.text,
         targetDays: body.targetDays ?? null,
         needId: body.needId ?? null,
         dueDate: body.dueDate ?? null,
@@ -238,16 +261,17 @@ export class TherapyService {
       const progress = task.targetDays && STREAK_TYPES.has(task.type)
         ? await this.getStreakProgress(userId, task.type, task.targetDays)
         : undefined;
-      return { ...task, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday, progress };
+      return { ...task, text: decrypt(task.text) ?? task.text, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday, progress };
     }));
   }
 
   async getTaskHistory(userId: number) {
-    return this.prisma.userTask.findMany({
+    const rows = await this.prisma.userTask.findMany({
       where: { userId: BigInt(userId), done: { not: null } },
       orderBy: { completedAt: 'desc' },
       take: 30,
     });
+    return rows.map(r => ({ ...r, text: decrypt(r.text) ?? r.text }));
   }
 
   async getTasksForClient(therapistId: number, clientId: number) {
@@ -261,7 +285,7 @@ export class TherapyService {
         where: { userId: BigInt(clientId), assignedBy: BigInt(therapistId) },
         orderBy: { createdAt: 'desc' },
       });
-      return tasks.map(task => ({ ...task, userId: clientId, assignedBy: therapistId, doneToday: undefined, progress: undefined }));
+      return tasks.map(task => ({ ...task, text: decrypt(task.text) ?? task.text, userId: clientId, assignedBy: therapistId, doneToday: undefined, progress: undefined }));
     }
     const rel = await this.prisma.therapyRelation.findFirst({
       where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
@@ -295,7 +319,7 @@ export class TherapyService {
       if (task.targetDays && ['tracker_streak', 'diary_streak', 'schema_diary', 'mode_diary'].includes(task.type)) {
         progress = await this.getStreakProgress(clientId, task.type, task.targetDays);
       }
-      return { ...task, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday, progress };
+      return { ...task, text: decrypt(task.text) ?? task.text, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday, progress };
     }));
   }
 
@@ -392,18 +416,20 @@ export class TherapyService {
 
   async getNotes(therapistId: number, clientId: number) {
     await this.assertRelation(therapistId, clientId);
-    return this.prisma.therapistNote.findMany({
+    const rows = await this.prisma.therapistNote.findMany({
       where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId) },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+    return rows.map(r => ({ ...r, text: decrypt(r.text) ?? r.text }));
   }
 
   async createNote(therapistId: number, clientId: number, body: { date: string; text: string }) {
     await this.assertRelation(therapistId, clientId);
-    return this.prisma.therapistNote.create({
-      data: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), date: body.date, text: body.text },
+    const note = await this.prisma.therapistNote.create({
+      data: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), date: body.date, text: encrypt(body.text) ?? body.text },
     });
+    return { ...note, text: body.text }; // return plaintext to caller
   }
 
   async deleteNote(therapistId: number, noteId: number): Promise<void> {
@@ -416,9 +442,12 @@ export class TherapyService {
 
   async getConceptualization(therapistId: number, clientId: number) {
     await this.assertRelation(therapistId, clientId);
-    return this.prisma.clientConceptualization.findUnique({
+    const row = await this.prisma.clientConceptualization.findUnique({
       where: { therapistId_clientId: { therapistId: BigInt(therapistId), clientId: BigInt(clientId) } },
     });
+    if (!row) return null;
+    const history = Array.isArray(row.history) ? (row.history as any[]).map(decryptConceptSnapshot) : [];
+    return { ...row, ...decryptConceptFields(row), history };
   }
 
   async saveConceptualization(therapistId: number, clientId: number, body: {
@@ -457,33 +486,29 @@ export class TherapyService {
       history = [snapshot, ...history].slice(0, 20);
     }
 
-    return (this.prisma.clientConceptualization.upsert as any)({
+    const enc = encryptConceptFields(body);
+    const saved = await (this.prisma.clientConceptualization.upsert as any)({
       where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
       create: {
         therapistId: tid, clientId: cid,
         schemaIds: body.schemaIds ?? [], modeIds: body.modeIds ?? [],
-        earlyExperience: body.earlyExperience ?? null,
-        unmetNeeds: body.unmetNeeds ?? null,
-        triggers: body.triggers ?? null,
-        copingStyles: body.copingStyles ?? null,
-        goals: body.goals ?? null,
-        currentProblems: body.currentProblems ?? null,
-        modeTransitions: body.modeTransitions ?? null,
+        earlyExperience: enc.earlyExperience ?? null,
+        unmetNeeds: enc.unmetNeeds ?? null,
+        triggers: enc.triggers ?? null,
+        copingStyles: enc.copingStyles ?? null,
+        goals: enc.goals ?? null,
+        currentProblems: enc.currentProblems ?? null,
+        modeTransitions: enc.modeTransitions ?? null,
         history: [],
       },
       update: {
         ...(body.schemaIds !== undefined && { schemaIds: body.schemaIds }),
         ...(body.modeIds !== undefined && { modeIds: body.modeIds }),
-        ...(body.earlyExperience !== undefined && { earlyExperience: body.earlyExperience }),
-        ...(body.unmetNeeds !== undefined && { unmetNeeds: body.unmetNeeds }),
-        ...(body.triggers !== undefined && { triggers: body.triggers }),
-        ...(body.copingStyles !== undefined && { copingStyles: body.copingStyles }),
-        ...(body.goals !== undefined && { goals: body.goals }),
-        ...(body.currentProblems !== undefined && { currentProblems: body.currentProblems }),
-        ...(body.modeTransitions !== undefined && { modeTransitions: body.modeTransitions }),
+        ...Object.fromEntries(Object.entries(enc).filter(([k]) => body[k] !== undefined)),
         history,
       },
     });
+    return { ...saved, ...decryptConceptFields(saved), history: history.map(decryptConceptSnapshot) };
   }
 
   // ─── Client data for therapist ───────────────────────────────────────────────
