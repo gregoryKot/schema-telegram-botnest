@@ -272,8 +272,8 @@ export function renderTemplate(
       let msg = `👨‍⚕️ Терапевт назначил задание:\n\n${text}`;
       if (needId && NEED_LABELS[needId]) msg += `\n\nПотребность: ${NEED_LABELS[needId]}`;
       if (dueDate) {
-        const d = new Date(dueDate);
-        msg += `\nСрок: ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+        const d = new Date(dueDate + 'T12:00:00Z'); // noon UTC — timezone-safe date parsing
+        msg += `\nСрок: ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
       }
       return { text: msg, keyboard: Markup.inlineKeyboard([[openDiaryButton]]) };
     }

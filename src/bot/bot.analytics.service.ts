@@ -236,6 +236,8 @@ export class BotAnalyticsService {
       run = diffDays === 1 ? run + 1 : 1;
       if (run > longest) longest = run;
     }
+    // cover single-date case: loop never updates longest when sorted.length === 1
+    if (run > longest) longest = run;
     if (currentStreak > longest) longest = currentStreak;
 
     // week dots — current calendar week Mon–Sun (future days = false)

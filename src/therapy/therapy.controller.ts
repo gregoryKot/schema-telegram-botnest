@@ -194,7 +194,8 @@ export class TherapyController {
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     if (!body.text?.trim()) throw new BadRequestException('text required');
     if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) throw new BadRequestException('Invalid date');
-    try { return await this.therapyService.createNote(req.telegramUserId, parseId(clientId), body); }
+    const note = { date: body.date, text: body.text.slice(0, 5000) };
+    try { return await this.therapyService.createNote(req.telegramUserId, parseId(clientId), note); }
     catch (e: any) { if (e?.message === 'No active relation') throw new ForbiddenException('No active relation with this client'); throw e; }
   }
 

@@ -44,9 +44,22 @@ export class DiaryController {
     healthyBehavior?: string;
   }) {
     if (!body.trigger?.trim()) throw new BadRequestException('trigger required');
-    if (!Array.isArray(body.emotions)) throw new BadRequestException('emotions required');
-    if (!Array.isArray(body.schemaIds)) throw new BadRequestException('schemaIds required');
-    const entry = await this.diaryService.createSchemaDiaryEntry(BigInt(req.telegramUserId), body);
+    if (!Array.isArray(body.emotions) || body.emotions.length > 50) throw new BadRequestException('emotions required');
+    if (!Array.isArray(body.schemaIds) || body.schemaIds.length > 50) throw new BadRequestException('schemaIds required');
+    const LIMIT = 2000;
+    const trimmed = {
+      ...body,
+      trigger: body.trigger.slice(0, LIMIT),
+      thoughts: body.thoughts?.slice(0, LIMIT),
+      bodyFeelings: body.bodyFeelings?.slice(0, LIMIT),
+      actualBehavior: body.actualBehavior?.slice(0, LIMIT),
+      schemaOrigin: body.schemaOrigin?.slice(0, LIMIT),
+      healthyView: body.healthyView?.slice(0, LIMIT),
+      realProblems: body.realProblems?.slice(0, LIMIT),
+      excessiveReactions: body.excessiveReactions?.slice(0, LIMIT),
+      healthyBehavior: body.healthyBehavior?.slice(0, LIMIT),
+    };
+    const entry = await this.diaryService.createSchemaDiaryEntry(BigInt(req.telegramUserId), trimmed);
     this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
     return entry;
   }
@@ -77,7 +90,18 @@ export class DiaryController {
   }) {
     if (!body.modeId?.trim()) throw new BadRequestException('modeId required');
     if (!body.situation?.trim()) throw new BadRequestException('situation required');
-    const entry = await this.diaryService.createModeDiaryEntry(BigInt(req.telegramUserId), body);
+    const LIMIT = 2000;
+    const trimmedMode = {
+      ...body,
+      situation: body.situation.slice(0, LIMIT),
+      thoughts: body.thoughts?.slice(0, LIMIT),
+      feelings: body.feelings?.slice(0, LIMIT),
+      bodyFeelings: body.bodyFeelings?.slice(0, LIMIT),
+      actions: body.actions?.slice(0, LIMIT),
+      actualNeed: body.actualNeed?.slice(0, LIMIT),
+      childhoodMemories: body.childhoodMemories?.slice(0, LIMIT),
+    };
+    const entry = await this.diaryService.createModeDiaryEntry(BigInt(req.telegramUserId), trimmedMode);
     this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
     return entry;
   }
@@ -99,7 +123,9 @@ export class DiaryController {
   async createGratitudeDiary(@Req() req: AuthRequest, @Body() body: { date: string; items: string[] }) {
     if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) throw new BadRequestException('Invalid date');
     if (!Array.isArray(body.items) || body.items.length === 0) throw new BadRequestException('items required');
-    const entry = await this.diaryService.upsertGratitudeDiaryEntry(BigInt(req.telegramUserId), body.date, body.items);
+    if (body.items.length > 20) throw new BadRequestException('Too many items');
+    const items = body.items.map((s: string) => String(s).slice(0, 500));
+    const entry = await this.diaryService.upsertGratitudeDiaryEntry(BigInt(req.telegramUserId), body.date, items);
     this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
     return entry;
   }
