@@ -78,6 +78,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   private stopping = false;
+  // Pending pair codes for users who need to accept consent first (in-memory, 15 min TTL)
+  private readonly pendingPairCodes = new Map<number, { code: string; expiresAt: number }>();
 
   async onModuleInit() {
     if (!this.bot) {
@@ -96,6 +98,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           const code = payload.slice(5).toUpperCase();
           const hasConsent = await this.botService.hasAcceptedDisclaimer(userId);
           if (!hasConsent) {
+            this.pendingPairCodes.set(userId, { code, expiresAt: Date.now() + 15 * 60_000 });
             await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
             return;
           }
@@ -218,7 +221,21 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       try {
         await ctx.answerCbQuery('Принято ✅');
         const userId = ctx.from?.id;
-        if (userId) await this.botService.acceptDisclaimer(userId);
+        if (userId) {
+          await this.botService.acceptDisclaimer(userId);
+          // Resume pending pair join if user arrived via pair invite link
+          const pending = this.pendingPairCodes.get(userId);
+          if (pending && pending.expiresAt > Date.now()) {
+            this.pendingPairCodes.delete(userId);
+            const ok = await this.botService.joinPair(userId, pending.code);
+            const text = ok
+              ? 'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.'
+              : 'Ссылка недействительна или уже использована.';
+            try { await ctx.editMessageText(text, Markup.inlineKeyboard([[Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)]]) as any); }
+            catch { await ctx.reply(text, Markup.inlineKeyboard([[Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)]])); }
+            return;
+          }
+        }
         try {
           await ctx.editMessageText(WELCOME_TEXT, buildWelcomeKeyboard() as any);
         } catch {
