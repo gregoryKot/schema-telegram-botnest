@@ -14,7 +14,7 @@ export class DiaryService {
 
   // ─── Schema Diary ─────────────────────────────────────────────────────────
 
-  createSchemaDiaryEntry(userId: bigint, data: {
+  async createSchemaDiaryEntry(userId: bigint, data: {
     trigger: string;
     emotions: EmotionEntry[];
     thoughts?: string;
@@ -27,7 +27,7 @@ export class DiaryService {
     excessiveReactions?: string;
     healthyBehavior?: string;
   }) {
-    return this.prisma.schemaDiaryEntry.create({
+    const row = await this.prisma.schemaDiaryEntry.create({
       data: {
         userId,
         trigger: encrypt(data.trigger) ?? data.trigger,
@@ -43,6 +43,20 @@ export class DiaryService {
         healthyBehavior: encrypt(data.healthyBehavior),
       },
     });
+    // Return plaintext so caller doesn't receive encrypted strings
+    return {
+      ...row,
+      trigger: data.trigger,
+      emotions: data.emotions,
+      thoughts: data.thoughts ?? null,
+      bodyFeelings: data.bodyFeelings ?? null,
+      actualBehavior: data.actualBehavior ?? null,
+      schemaOrigin: data.schemaOrigin ?? null,
+      healthyView: data.healthyView ?? null,
+      realProblems: data.realProblems ?? null,
+      excessiveReactions: data.excessiveReactions ?? null,
+      healthyBehavior: data.healthyBehavior ?? null,
+    };
   }
 
   async getSchemaDiaryEntries(userId: bigint, limit = 30) {
@@ -72,7 +86,7 @@ export class DiaryService {
 
   // ─── Mode Diary ───────────────────────────────────────────────────────────
 
-  createModeDiaryEntry(userId: bigint, data: {
+  async createModeDiaryEntry(userId: bigint, data: {
     modeId: string;
     situation: string;
     thoughts?: string;
@@ -82,7 +96,7 @@ export class DiaryService {
     actualNeed?: string;
     childhoodMemories?: string;
   }) {
-    return this.prisma.modeDiaryEntry.create({
+    const row = await this.prisma.modeDiaryEntry.create({
       data: {
         userId,
         modeId: data.modeId,
@@ -95,6 +109,17 @@ export class DiaryService {
         childhoodMemories: encrypt(data.childhoodMemories),
       },
     });
+    // Return plaintext so caller doesn't receive encrypted strings
+    return {
+      ...row,
+      situation: data.situation,
+      thoughts: data.thoughts ?? null,
+      feelings: data.feelings ?? null,
+      bodyFeelings: data.bodyFeelings ?? null,
+      actions: data.actions ?? null,
+      actualNeed: data.actualNeed ?? null,
+      childhoodMemories: data.childhoodMemories ?? null,
+    };
   }
 
   async getModeDiaryEntries(userId: bigint, limit = 30) {
@@ -121,13 +146,14 @@ export class DiaryService {
 
   // ─── Gratitude Diary ──────────────────────────────────────────────────────
 
-  upsertGratitudeDiaryEntry(userId: bigint, date: string, items: string[]) {
+  async upsertGratitudeDiaryEntry(userId: bigint, date: string, items: string[]) {
     const enc = (encryptJson(items) ?? JSON.stringify(items)) as any;
-    return this.prisma.gratitudeDiaryEntry.upsert({
+    const row = await this.prisma.gratitudeDiaryEntry.upsert({
       where: { userId_date: { userId, date } },
       create: { userId, date, items: enc },
       update: { items: enc },
     });
+    return { ...row, items }; // return plaintext items
   }
 
   async getGratitudeDiaryEntries(userId: bigint, limit = 30) {
