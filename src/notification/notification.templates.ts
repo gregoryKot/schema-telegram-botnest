@@ -58,7 +58,7 @@ export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, 
   return `📔 Трекер потребностей · ${dateStr}\nТвои оценки за сегодня 👇\n\n${lines.join('\n')}\n\n${legend}`;
 }
 
-const openDiaryButton = Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL);
+const openDiaryButton = Markup.button.webApp('📱 Открыть СхемаЛаб', MINIAPP_URL);
 const bookingButton = Markup.button.url('📝 Записаться на сессию', BOOKING_URL);
 const snoozeButton = Markup.button.callback('⏰ Через час', 'snooze_reminder');
 

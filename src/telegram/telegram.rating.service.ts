@@ -66,7 +66,7 @@ export class TelegramRatingService implements OnModuleInit {
         await ctx.reply(`📔 История · последние 7 дней\n\n${lines.join('\n')}`);
       } catch (err) {
         this.logger.error('history command failed', err);
-        await ctx.reply('Что-то пошло не так. Попробуй открыть дневник через кнопку ниже.',
+        await ctx.reply('Что-то пошло не так. Попробуй открыть СхемаЛаб через кнопку ниже.',
           Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]])).catch(() => null);
       }
     });
@@ -80,7 +80,7 @@ export class TelegramRatingService implements OnModuleInit {
         await ctx.reply(buildSummaryText(this.botService.getNeeds(), ratings));
       } catch (err) {
         this.logger.error('show:chart action failed', err);
-        await ctx.reply('Что-то пошло не так. Попробуй открыть дневник через кнопку ниже.',
+        await ctx.reply('Что-то пошло не так. Попробуй открыть СхемаЛаб через кнопку ниже.',
           Markup.inlineKeyboard([[Markup.button.webApp('📱 Открыть дневник', MINIAPP_URL)]])).catch(() => null);
       }
     });
