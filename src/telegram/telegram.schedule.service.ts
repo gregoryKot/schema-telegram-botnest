@@ -115,7 +115,7 @@ export class TelegramScheduleService implements OnModuleInit {
         await this.scheduleReminder(user.id, user.notifyLocalHour, user.notifyTimezone, user.notifyReminderEnabled);
         const isLapsing = await this.checkLapsingState(user.id, user.notifyLocalHour, user.notifyTimezone);
         if (!isLapsing) {
-          await this.checkMissedPlans(user.id);
+          await this.checkMissedPlans(user.id, user.notifyLocalHour, user.notifyTimezone);
           await this.scheduleLowStreakInsight(user.id, user.notifyLocalHour, user.notifyTimezone);
         }
       } catch (err) {
@@ -186,10 +186,7 @@ export class TelegramScheduleService implements OnModuleInit {
     return false;
   }
 
-  private async checkMissedPlans(userId: number) {
-    const settings = await this.botService.getUserSettings(userId);
-    const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
-    const notifyLocalHour = settings?.notifyLocalHour ?? 21;
+  private async checkMissedPlans(userId: number, notifyLocalHour: number, tz: string) {
     const yesterday = localDateString(tz, new Date(Date.now() - 86_400_000));
     const missed = await this.botService.getMissedPlans(userId, yesterday);
     if (missed.length > 0 && !await this.notificationService.hasPending(userId, 'practice_missed')) {
