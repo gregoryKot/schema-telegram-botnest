@@ -1,10 +1,9 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT, CHANNEL, BOOKING_URL, MINIAPP_URL, DIARIES_URL } from './telegram.constants';
+import { TELEGRAF_BOT, MINIAPP_URL } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
-import { buildSummaryText } from '../notification/notification.templates';
 import { TherapyService } from '../therapy/therapy.service';
 
 function tzOffsetAt(tz: string, date = new Date()): number {
@@ -52,10 +51,7 @@ const CONSENT_TEXT = `🔐 Соглашение об обработке данн
 
 export function buildWelcomeKeyboard() {
   return Markup.inlineKeyboard([
-    [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-    [Markup.button.callback('🎯 Какой подход мне подойдёт?', 'quiz:start')],
-    [Markup.button.callback('🔍 Как это работает', 'howto')],
-    [Markup.button.callback('📖 Подробнее', 'faq'), Markup.button.callback('👤 Обо мне', 'about')],
+    [Markup.button.webApp('🧠 Открыть СхемаЛаб', MINIAPP_URL)],
   ]);
 }
 
@@ -134,29 +130,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    this.bot.command('chart', async (ctx) => {
-      try {
-        const userId = ctx.from?.id;
-        if (!userId) return;
-        const ratings = await this.botService.getRatings(userId);
-        await ctx.reply(buildSummaryText(this.botService.getNeeds(), ratings));
-      } catch (err) {
-        this.logger.error('chart command failed', err);
-        await ctx.reply('Что-то пошло не так. Попробуй открыть СхемаЛаб через кнопку ниже.',
-          Markup.inlineKeyboard([[Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)]])).catch(() => null);
-      }
-    });
-
-    this.bot.command('diaries', async (ctx) => {
-      try {
-        await ctx.reply(
-          'Дневники схема-терапии — фиксируй активацию схем, переходы между режимами и благодарность.',
-          Markup.inlineKeyboard([[Markup.button.webApp('📔 Дневники', DIARIES_URL)]]),
-        );
-      } catch (err) {
-        this.logger.error('diaries command failed', err);
-      }
-    });
 
     this.bot.command('ping', async (ctx) => {
       try {
@@ -175,23 +148,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       } catch (err) {
         this.logger.error('stats command failed', err);
         await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);
-      }
-    });
-
-    this.bot.command('post', async (ctx) => {
-      try {
-        const adminId = Number(process.env.ADMIN_ID);
-        if (!adminId || ctx.from?.id !== adminId) {
-          await ctx.reply('⛔ Нет доступа');
-          return;
-        }
-        await this.bot!.telegram.sendMessage(CHANNEL, '📅 Запись на сессию — прямо по кнопке', {
-          reply_markup: Markup.inlineKeyboard([Markup.button.url('📝 Записаться', BOOKING_URL)]).reply_markup,
-        });
-        await ctx.reply('✅ Пост отправлен в канал');
-      } catch (err) {
-        this.logger.error('post command failed', err);
-        await ctx.reply('❌ Не удалось отправить пост. Убедись, что бот — админ канала.').catch(() => null);
       }
     });
 
@@ -297,9 +253,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     await this.bot.telegram.setMyCommands([
-      { command: 'start', description: 'Главное меню' },
-      { command: 'chart', description: 'Сводка потребностей за сегодня' },
-      { command: 'history', description: 'История за 7 дней' },
+      { command: 'start', description: 'Открыть СхемаЛаб' },
       { command: 'settings', description: 'Настройки уведомлений' },
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
 
