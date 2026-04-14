@@ -283,16 +283,11 @@ export class BotService {
 
   // ─── Plans ────────────────────────────────────────────────────────────────
 
-  async getPendingPlan(userId: number, date: string) {
-    return this.prisma.practicePlan.findFirst({
-      where: { userId: BigInt(userId), scheduledDate: date, done: null },
-    });
-  }
-
   async createPlan(userId: number, needId: string, practiceText: string, scheduledDate: string, reminderUtcHour?: number) {
-    return this.prisma.practicePlan.create({
+    const row = await this.prisma.practicePlan.create({
       data: { userId: BigInt(userId), needId, practiceText: encrypt(practiceText) ?? practiceText, scheduledDate, reminderUtcHour },
     });
+    return { ...row, practiceText }; // return plaintext to caller
   }
 
   async checkinPlan(userId: number, id: number, done: boolean) {
