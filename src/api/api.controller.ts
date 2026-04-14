@@ -288,9 +288,7 @@ export class ApiController {
     await this.botService.updateUserSettings(req.telegramUserId, clean);
 
     // Reschedule reminder if notification time/toggle changed
-    if ('notifyEnabled' in clean || 'notifyLocalHour' in clean || 'notifyTimezone' in clean) {
-      const s = await this.botService.getUserSettings(req.telegramUserId);
-      await this.notificationService.cancel(req.telegramUserId, 'reminder');
+    if ('notifyEnabled' in clean || 'notifyLocalHour' in clean || 'notifyTimezone' in clean || 'notifyReminderEnabled' in clean) {
       await this.scheduleService.rescheduleForUser(req.telegramUserId);
     }
 
