@@ -389,9 +389,12 @@ export class BotService {
       this.prisma.gratitudeDiaryEntry.deleteMany({ where: { userId: uid } }),
       this.prisma.appActivity.deleteMany({ where: { userId: uid } }),
       this.prisma.userTask.deleteMany({ where: { userId: uid } }),
-      this.prisma.clientConceptualization.deleteMany({ where: { OR: [{ clientId: uid }, { therapistId: uid }] } }),
-      this.prisma.therapistNote.deleteMany({ where: { OR: [{ clientId: uid }, { therapistId: uid }] } }),
-      this.prisma.therapyRelation.deleteMany({ where: { OR: [{ clientId: uid }, { therapistId: uid }] } }),
+      // As therapist: delete records user created for their clients
+      this.prisma.clientConceptualization.deleteMany({ where: { therapistId: uid } }),
+      this.prisma.therapistNote.deleteMany({ where: { therapistId: uid } }),
+      this.prisma.therapyRelation.deleteMany({ where: { therapistId: uid } }),
+      // Note: records created BY therapist ABOUT this user (clientId: uid) are intentionally kept —
+      // therapist's work on a client is their own data, not the client's to delete
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
       // Soft-delete: keep the user row so re-registration preserves original createdAt
       this.prisma.user.update({ where: { id: uid }, data: { deletedAt: new Date(), firstName: null, role: 'CLIENT', notifyEnabled: true, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: true, disclaimerAccepted: false, pairCardDismissed: false, botBlockedAt: null, mySchemaIds: [], myModeIds: [] } }),
