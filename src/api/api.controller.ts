@@ -416,11 +416,18 @@ export class ApiController {
     triggers?: string; feelings?: string; thoughts?: string;
     origins?: string; reality?: string; healthyView?: string; behavior?: string;
   }) {
-    if (!body.schemaId) throw new BadRequestException('schemaId required');
+    if (!body.schemaId || typeof body.schemaId !== 'string') throw new BadRequestException('schemaId required');
+    if (!/^[a-z_]{1,64}$/.test(body.schemaId)) throw new BadRequestException('invalid schemaId');
+    const MAX = 3000;
+    const fields = ['triggers', 'feelings', 'thoughts', 'origins', 'reality', 'healthyView', 'behavior'] as const;
+    for (const f of fields) {
+      if (body[f] !== undefined && (typeof body[f] !== 'string' || body[f]!.length > MAX))
+        throw new BadRequestException(`${f} too long or invalid`);
+    }
     return this.botService.upsertSchemaNote(req.telegramUserId, body.schemaId, {
-      triggers: body.triggers, feelings: body.feelings, thoughts: body.thoughts,
-      origins: body.origins, reality: body.reality, healthyView: body.healthyView,
-      behavior: body.behavior,
+      triggers: body.triggers?.trim(), feelings: body.feelings?.trim(), thoughts: body.thoughts?.trim(),
+      origins: body.origins?.trim(), reality: body.reality?.trim(), healthyView: body.healthyView?.trim(),
+      behavior: body.behavior?.trim(),
     });
   }
 
@@ -435,10 +442,17 @@ export class ApiController {
     triggers?: string; feelings?: string; thoughts?: string;
     needs?: string; behavior?: string;
   }) {
-    if (!body.modeId) throw new BadRequestException('modeId required');
+    if (!body.modeId || typeof body.modeId !== 'string') throw new BadRequestException('modeId required');
+    if (!/^[a-z_]{1,64}$/.test(body.modeId)) throw new BadRequestException('invalid modeId');
+    const MAX = 3000;
+    const fields = ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'] as const;
+    for (const f of fields) {
+      if (body[f] !== undefined && (typeof body[f] !== 'string' || body[f]!.length > MAX))
+        throw new BadRequestException(`${f} too long or invalid`);
+    }
     return this.botService.upsertModeNote(req.telegramUserId, body.modeId, {
-      triggers: body.triggers, feelings: body.feelings, thoughts: body.thoughts,
-      needs: body.needs, behavior: body.behavior,
+      triggers: body.triggers?.trim(), feelings: body.feelings?.trim(), thoughts: body.thoughts?.trim(),
+      needs: body.needs?.trim(), behavior: body.behavior?.trim(),
     });
   }
 
