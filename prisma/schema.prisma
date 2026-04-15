@@ -48,6 +48,8 @@ model User {
 
   notifications          ScheduledNotification[]
   notes                  Note[]
+  schemaNotes            UserSchemaNote[]
+  modeNotes              UserModeNote[]
   pairs1                 Pair[]            @relation("PairUser1")
   pairs2                 Pair[]            @relation("PairUser2")
   therapistRelations     TherapyRelation[] @relation("TherapistOf")
@@ -237,6 +239,38 @@ model ClientConceptualization {
   updatedAt       DateTime @updatedAt
 
   @@unique([therapistId, clientId])
+}
+
+model UserSchemaNote {
+  id          Int      @id @default(autoincrement())
+  userId      BigInt
+  schemaId    String
+  triggers    String   @default("")
+  feelings    String   @default("")
+  thoughts    String   @default("")
+  origins     String   @default("")
+  reality     String   @default("")
+  healthyView String   @default("")
+  behavior    String   @default("")
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, schemaId])
+}
+
+model UserModeNote {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  modeId    String
+  triggers  String   @default("")
+  feelings  String   @default("")
+  thoughts  String   @default("")
+  needs     String   @default("")
+  behavior  String   @default("")
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, modeId])
 }
 
 model ScheduledNotification {

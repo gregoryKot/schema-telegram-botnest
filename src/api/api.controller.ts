@@ -405,6 +405,43 @@ export class ApiController {
     return { ok: true };
   }
 
+  @Get('schema-notes')
+  async getSchemaNotes(@Req() req: AuthRequest) {
+    return this.botService.getSchemaNotes(req.telegramUserId);
+  }
+
+  @Post('schema-notes')
+  async upsertSchemaNote(@Req() req: AuthRequest, @Body() body: {
+    schemaId: string;
+    triggers?: string; feelings?: string; thoughts?: string;
+    origins?: string; reality?: string; healthyView?: string; behavior?: string;
+  }) {
+    if (!body.schemaId) throw new BadRequestException('schemaId required');
+    return this.botService.upsertSchemaNote(req.telegramUserId, body.schemaId, {
+      triggers: body.triggers, feelings: body.feelings, thoughts: body.thoughts,
+      origins: body.origins, reality: body.reality, healthyView: body.healthyView,
+      behavior: body.behavior,
+    });
+  }
+
+  @Get('mode-notes')
+  async getModeNotes(@Req() req: AuthRequest) {
+    return this.botService.getModeNotes(req.telegramUserId);
+  }
+
+  @Post('mode-notes')
+  async upsertModeNote(@Req() req: AuthRequest, @Body() body: {
+    modeId: string;
+    triggers?: string; feelings?: string; thoughts?: string;
+    needs?: string; behavior?: string;
+  }) {
+    if (!body.modeId) throw new BadRequestException('modeId required');
+    return this.botService.upsertModeNote(req.telegramUserId, body.modeId, {
+      triggers: body.triggers, feelings: body.feelings, thoughts: body.thoughts,
+      needs: body.needs, behavior: body.behavior,
+    });
+  }
+
   @Delete('user')
   async deleteUser(@Req() req: AuthRequest) {
     await this.botService.deleteAllUserData(req.telegramUserId);

@@ -360,6 +360,45 @@ export class BotService {
     });
   }
 
+  async getSchemaNote(userId: number, schemaId: string) {
+    return this.prisma.userSchemaNote.findUnique({ where: { userId_schemaId: { userId: BigInt(userId), schemaId } } });
+  }
+
+  async getSchemaNotes(userId: number) {
+    return this.prisma.userSchemaNote.findMany({ where: { userId: BigInt(userId) } });
+  }
+
+  async upsertSchemaNote(userId: number, schemaId: string, data: {
+    triggers?: string; feelings?: string; thoughts?: string;
+    origins?: string; reality?: string; healthyView?: string; behavior?: string;
+  }) {
+    const uid = BigInt(userId);
+    return this.prisma.userSchemaNote.upsert({
+      where: { userId_schemaId: { userId: uid, schemaId } },
+      update: data,
+      create: { userId: uid, schemaId, ...data },
+    });
+  }
+
+  async getModeNote(userId: number, modeId: string) {
+    return this.prisma.userModeNote.findUnique({ where: { userId_modeId: { userId: BigInt(userId), modeId } } });
+  }
+
+  async getModeNotes(userId: number) {
+    return this.prisma.userModeNote.findMany({ where: { userId: BigInt(userId) } });
+  }
+
+  async upsertModeNote(userId: number, modeId: string, data: {
+    triggers?: string; feelings?: string; thoughts?: string; needs?: string; behavior?: string;
+  }) {
+    const uid = BigInt(userId);
+    return this.prisma.userModeNote.upsert({
+      where: { userId_modeId: { userId: uid, modeId } },
+      update: data,
+      create: { userId: uid, modeId, ...data },
+    });
+  }
+
   async updateName(userId: number, name: string): Promise<void> {
     await this.prisma.user.update({ where: { id: BigInt(userId) }, data: { firstName: name } });
   }
@@ -378,6 +417,8 @@ export class BotService {
     await this.prisma.$transaction([
       this.prisma.rating.deleteMany({ where: { userId: uid } }),
       this.prisma.note.deleteMany({ where: { userId: uid } }),
+      this.prisma.userSchemaNote.deleteMany({ where: { userId: uid } }),
+      this.prisma.userModeNote.deleteMany({ where: { userId: uid } }),
       this.prisma.userPractice.deleteMany({ where: { userId: uid } }),
       this.prisma.practicePlan.deleteMany({ where: { userId: uid } }),
       this.prisma.childhoodRating.deleteMany({ where: { userId: uid } }),
