@@ -144,7 +144,7 @@ export class BotService {
   async getUserSettings(userId: number) {
     return this.prisma.user.findUnique({
       where: { id: BigInt(userId) },
-      select: { notifyEnabled: true, notifyLocalHour: true, notifyTimezone: true, notifyReminderEnabled: true, pairCardDismissed: true, mySchemaIds: true, myModeIds: true },
+      select: { notifyEnabled: true, notifyLocalHour: true, notifyTimezone: true, notifyReminderEnabled: true, pairCardDismissed: true, mySchemaIds: true, myModeIds: true, therapistShareCards: true, therapistShareProfile: true },
     });
   }
 
