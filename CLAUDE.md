@@ -38,3 +38,30 @@
 
 - Схема: `prisma/schema.prisma`. После изменений — `prisma migrate dev --name <название>`.
 - На Railway миграции применяются автоматически через `start:prod`.
+
+## Новая таблица с пользовательскими данными — обязательный чеклист
+
+При добавлении любой модели с полем `userId` **обязательно** выполнить все 4 шага:
+
+**1. Удаление при удалении аккаунта**
+Добавить имя модели в `USER_DATA_TABLES` в начале `src/bot/bot.service.ts`.
+Это единственное место — `deleteAllUserData` автоматически очистит её.
+TypeScript проверит что имя корректно (тип `_VerifyTables`).
+
+**2. Шифрование**
+Объявить `EncryptSchema` рядом с методами модели:
+```typescript
+const MY_SCHEMA: EncryptSchema = { strings: ['text', 'note'], jsonArrays: ['items'] };
+```
+Использовать `encryptRecord(data, MY_SCHEMA)` при записи и `decryptRecord(row, MY_SCHEMA)` при чтении.
+Не шифровать: `id`, `userId`, `createdAt`, `updatedAt`, типы-перечисления (modeId, schemaId, needId).
+
+**3. Каскадное удаление в Prisma**
+```prisma
+user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+```
+
+**4. После изменений схемы**
+```bash
+npx prisma generate
+```

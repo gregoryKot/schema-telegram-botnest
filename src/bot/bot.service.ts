@@ -4,6 +4,30 @@ import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
 import { randomBytes } from 'crypto';
 
+// ── User data registry ───────────────────────────────────────────────────────
+// CHECKLIST when adding a new table with userId:
+//   1. Add the model name here — deleteAllUserData will clear it automatically
+//   2. In service methods: use encryptRecord/decryptRecord (from utils/crypto)
+//      and declare an EncryptSchema constant near the methods
+//   3. Add onDelete: Cascade on the User relation in schema.prisma
+//   4. Run `npx prisma generate` after schema changes
+//
+// TypeScript: if a name doesn't exist on PrismaService you get a compile error.
+const USER_DATA_TABLES = [
+  'rating',
+  'note',
+  'userSchemaNote', 'userModeNote',
+  'userBeliefCheck', 'userLetter', 'userSafePlace', 'userFlashcard',
+  'userPractice', 'practicePlan', 'childhoodRating',
+  'ysqResult', 'ysqProgress',
+  'scheduledNotification',
+  'schemaDiaryEntry', 'modeDiaryEntry', 'gratitudeDiaryEntry',
+  'appActivity',
+  'userTask',
+] as const;
+// Compile-time check: any invalid table name above becomes a TS error here.
+type _VerifyTables = { [K in typeof USER_DATA_TABLES[number]]: PrismaService[K] };
+
 export const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'] as const;
 export type NeedId = typeof NEED_IDS[number];
 
@@ -535,33 +559,15 @@ export class BotService {
   async deleteAllUserData(userId: number): Promise<void> {
     const uid = BigInt(userId);
     await this.prisma.$transaction([
-      this.prisma.rating.deleteMany({ where: { userId: uid } }),
-      this.prisma.note.deleteMany({ where: { userId: uid } }),
-      this.prisma.userSchemaNote.deleteMany({ where: { userId: uid } }),
-      this.prisma.userModeNote.deleteMany({ where: { userId: uid } }),
-      this.prisma.userBeliefCheck.deleteMany({ where: { userId: uid } }),
-      this.prisma.userLetter.deleteMany({ where: { userId: uid } }),
-      this.prisma.userSafePlace.deleteMany({ where: { userId: uid } }),
-      this.prisma.userFlashcard.deleteMany({ where: { userId: uid } }),
-      this.prisma.userPractice.deleteMany({ where: { userId: uid } }),
-      this.prisma.practicePlan.deleteMany({ where: { userId: uid } }),
-      this.prisma.childhoodRating.deleteMany({ where: { userId: uid } }),
-      this.prisma.ysqResult.deleteMany({ where: { userId: uid } }),
-      this.prisma.ysqProgress.deleteMany({ where: { userId: uid } }),
-      this.prisma.scheduledNotification.deleteMany({ where: { userId: uid } }),
-      this.prisma.schemaDiaryEntry.deleteMany({ where: { userId: uid } }),
-      this.prisma.modeDiaryEntry.deleteMany({ where: { userId: uid } }),
-      this.prisma.gratitudeDiaryEntry.deleteMany({ where: { userId: uid } }),
-      this.prisma.appActivity.deleteMany({ where: { userId: uid } }),
-      this.prisma.userTask.deleteMany({ where: { userId: uid } }),
-      // As therapist: delete records user created for their clients
+      // All user-owned tables — driven by USER_DATA_TABLES registry above
+      ...USER_DATA_TABLES.map(table => (this.prisma[table] as any).deleteMany({ where: { userId: uid } })),
+      // Therapist-owned records (keyed by therapistId, not userId)
       this.prisma.clientConceptualization.deleteMany({ where: { therapistId: uid } }),
       this.prisma.therapistNote.deleteMany({ where: { therapistId: uid } }),
       this.prisma.therapyRelation.deleteMany({ where: { therapistId: uid } }),
-      // Note: records created BY therapist ABOUT this user (clientId: uid) are intentionally kept —
-      // therapist's work on a client is their own data, not the client's to delete
+      // Pairs use two columns (special case)
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
-      // Soft-delete: keep the user row so re-registration preserves original createdAt
+      // Soft-delete: keep the row so re-registration preserves original createdAt
       this.prisma.user.update({ where: { id: uid }, data: { deletedAt: new Date(), firstName: null, role: 'CLIENT', notifyEnabled: true, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: true, disclaimerAccepted: false, pairCardDismissed: false, botBlockedAt: null, mySchemaIds: [], myModeIds: [] } }),
     ]);
   }

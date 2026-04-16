@@ -40,3 +40,39 @@ export function decryptJson<T>(val: string | null | undefined): T | null {
   if (s == null) return null;
   try { return JSON.parse(s) as T; } catch { return null; }
 }
+
+// ── Record-level encryption ──────────────────────────────────────────────────
+// Declare a schema once, use it for both write (encryptRecord) and read (decryptRecord).
+// This ensures every field is always encrypted/decrypted consistently.
+//
+// Usage:
+//   const MY_SCHEMA: EncryptSchema = { strings: ['text', 'reframe'], jsonArrays: ['items'] };
+//   const row = await prisma.myModel.create({ data: encryptRecord(data, MY_SCHEMA) });
+//   return decryptRecord(row, MY_SCHEMA);
+
+export interface EncryptSchema {
+  strings?: string[];    // fields to encrypt/decrypt as plain strings
+  jsonArrays?: string[]; // fields to encrypt/decrypt as JSON-encoded arrays
+}
+
+export function encryptRecord<T extends Record<string, unknown>>(data: T, schema: EncryptSchema): T {
+  const out: any = { ...data };
+  for (const f of schema.strings ?? []) {
+    if (out[f] != null) out[f] = encrypt(String(out[f]));
+  }
+  for (const f of schema.jsonArrays ?? []) {
+    if (out[f] != null) out[f] = encryptJson(out[f]) ?? JSON.stringify(out[f]);
+  }
+  return out;
+}
+
+export function decryptRecord<T extends Record<string, unknown>>(row: T, schema: EncryptSchema): T {
+  const out: any = { ...row };
+  for (const f of schema.strings ?? []) {
+    if (out[f] != null) out[f] = decrypt(String(out[f]));
+  }
+  for (const f of schema.jsonArrays ?? []) {
+    if (out[f] != null) out[f] = decryptJson(String(out[f]));
+  }
+  return out;
+}
