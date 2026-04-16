@@ -148,7 +148,7 @@ export class BotService {
     });
   }
 
-  async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[] }) {
+  async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean }) {
     await this.prisma.user.update({ where: { id: BigInt(userId) }, data });
   }
 
