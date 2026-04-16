@@ -539,19 +539,25 @@ export class BotService {
   // ── Therapist: client notes access ───────────────────────────────────────────
 
   async getClientSchemaNotes(therapistId: number, clientId: number) {
-    const rel = await this.prisma.therapyRelation.findFirst({
-      where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
-    });
+    const uid = BigInt(clientId);
+    const [rel, client] = await Promise.all([
+      this.prisma.therapyRelation.findFirst({ where: { therapistId: BigInt(therapistId), clientId: uid, status: 'active' } }),
+      this.prisma.user.findUnique({ where: { id: uid }, select: { therapistShareCards: true } }),
+    ]);
     if (!rel) return null;
-    return this.prisma.userSchemaNote.findMany({ where: { userId: BigInt(clientId) } });
+    if (client?.therapistShareCards === false) return [];
+    return this.prisma.userSchemaNote.findMany({ where: { userId: uid } });
   }
 
   async getClientModeNotes(therapistId: number, clientId: number) {
-    const rel = await this.prisma.therapyRelation.findFirst({
-      where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
-    });
+    const uid = BigInt(clientId);
+    const [rel, client] = await Promise.all([
+      this.prisma.therapyRelation.findFirst({ where: { therapistId: BigInt(therapistId), clientId: uid, status: 'active' } }),
+      this.prisma.user.findUnique({ where: { id: uid }, select: { therapistShareCards: true } }),
+    ]);
     if (!rel) return null;
-    return this.prisma.userModeNote.findMany({ where: { userId: BigInt(clientId) } });
+    if (client?.therapistShareCards === false) return [];
+    return this.prisma.userModeNote.findMany({ where: { userId: uid } });
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -568,7 +574,7 @@ export class BotService {
       // Pairs use two columns (special case)
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
       // Soft-delete: keep the row so re-registration preserves original createdAt
-      this.prisma.user.update({ where: { id: uid }, data: { deletedAt: new Date(), firstName: null, role: 'CLIENT', notifyEnabled: true, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: true, disclaimerAccepted: false, pairCardDismissed: false, botBlockedAt: null, mySchemaIds: [], myModeIds: [] } }),
+      this.prisma.user.update({ where: { id: uid }, data: { deletedAt: new Date(), firstName: null, role: 'CLIENT', notifyEnabled: true, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: true, disclaimerAccepted: false, pairCardDismissed: false, botBlockedAt: null, mySchemaIds: [], myModeIds: [], therapistShareCards: true, therapistShareProfile: true } }),
     ]);
   }
 }

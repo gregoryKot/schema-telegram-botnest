@@ -43,6 +43,8 @@ model User {
   pairCardDismissed      Boolean  @default(false)
   mySchemaIds            Json     @default("[]")
   myModeIds              Json     @default("[]")
+  therapistShareCards    Boolean  @default(true)
+  therapistShareProfile  Boolean  @default(true)
   botBlockedAt           DateTime?
   deletedAt              DateTime?
 

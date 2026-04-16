@@ -522,9 +522,13 @@ export class TherapyService {
     }
     const uid = BigInt(clientId);
     const [user, ysq] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: uid }, select: { firstName: true, mySchemaIds: true, myModeIds: true } }),
+      this.prisma.user.findUnique({ where: { id: uid }, select: { firstName: true, mySchemaIds: true, myModeIds: true, therapistShareProfile: true } }),
       this.prisma.ysqResult.findUnique({ where: { userId: uid } }),
     ]);
+
+    if (user?.therapistShareProfile === false) {
+      return { name: user?.firstName ?? null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [] };
+    }
 
     let ysqActiveSchemaIds: string[] = [];
     if (ysq?.answers) {

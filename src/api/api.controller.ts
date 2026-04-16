@@ -269,13 +269,15 @@ export class ApiController {
       pairCardDismissed: s?.pairCardDismissed ?? false,
       mySchemaIds: (s?.mySchemaIds as string[] | null) ?? [],
       myModeIds: (s?.myModeIds as string[] | null) ?? [],
+      therapistShareCards: s?.therapistShareCards ?? true,
+      therapistShareProfile: s?.therapistShareProfile ?? true,
     };
   }
 
   @Post('settings')
   async updateSettings(
     @Req() req: AuthRequest,
-    @Body() body: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[] },
+    @Body() body: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean },
   ) {
     const clean: Parameters<typeof this.botService.updateUserSettings>[1] = {};
     if (typeof body.notifyEnabled === 'boolean') clean.notifyEnabled = body.notifyEnabled;
@@ -285,6 +287,8 @@ export class ApiController {
     if (typeof body.notifyTimezone === 'string' && VALID_TIMEZONES.includes(body.notifyTimezone)) clean.notifyTimezone = body.notifyTimezone;
     if (Array.isArray(body.mySchemaIds) && body.mySchemaIds.every(id => typeof id === 'string' && id.length < 100)) clean.mySchemaIds = body.mySchemaIds;
     if (Array.isArray(body.myModeIds) && body.myModeIds.every(id => typeof id === 'string' && id.length < 100)) clean.myModeIds = body.myModeIds;
+    if (typeof body.therapistShareCards === 'boolean') clean.therapistShareCards = body.therapistShareCards;
+    if (typeof body.therapistShareProfile === 'boolean') clean.therapistShareProfile = body.therapistShareProfile;
     await this.botService.updateUserSettings(req.telegramUserId, clean);
 
     // Reschedule reminder if notification time/toggle changed
