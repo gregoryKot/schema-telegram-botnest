@@ -50,6 +50,10 @@ model User {
   notes                  Note[]
   schemaNotes            UserSchemaNote[]
   modeNotes              UserModeNote[]
+  beliefChecks           UserBeliefCheck[]
+  letters                UserLetter[]
+  safePlace              UserSafePlace?
+  flashcards             UserFlashcard[]
   pairs1                 Pair[]            @relation("PairUser1")
   pairs2                 Pair[]            @relation("PairUser2")
   therapistRelations     TherapyRelation[] @relation("TherapistOf")
@@ -271,6 +275,49 @@ model UserModeNote {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, modeId])
+}
+
+model UserBeliefCheck {
+  id              Int      @id @default(autoincrement())
+  userId          BigInt
+  belief          String
+  evidenceFor     String
+  evidenceAgainst String
+  reframe         String?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model UserLetter {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  text      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model UserSafePlace {
+  userId      BigInt   @id
+  description String
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserFlashcard {
+  id         Int      @id @default(autoincrement())
+  userId     BigInt
+  modeId     String
+  needId     String
+  reflection String?
+  action     String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model ScheduledNotification {

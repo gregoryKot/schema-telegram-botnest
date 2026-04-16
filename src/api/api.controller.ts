@@ -456,6 +456,107 @@ export class ApiController {
     });
   }
 
+  // ── Belief checks ─────────────────────────────────────────────────────────────
+
+  @Get('belief-checks')
+  getBeliefChecks(@Req() req: AuthRequest) {
+    return this.botService.getBeliefChecks(req.telegramUserId);
+  }
+
+  @Post('belief-checks')
+  async createBeliefCheck(@Req() req: AuthRequest, @Body() body: { belief?: string; evidenceFor?: unknown; evidenceAgainst?: unknown; reframe?: string }) {
+    const MAX = 3000;
+    if (!body.belief || typeof body.belief !== 'string' || body.belief.length > MAX) throw new BadRequestException('invalid belief');
+    if (!Array.isArray(body.evidenceFor) || !body.evidenceFor.every(s => typeof s === 'string' && s.length <= MAX)) throw new BadRequestException('invalid evidenceFor');
+    if (!Array.isArray(body.evidenceAgainst) || !body.evidenceAgainst.every(s => typeof s === 'string' && s.length <= MAX)) throw new BadRequestException('invalid evidenceAgainst');
+    if (body.reframe !== undefined && (typeof body.reframe !== 'string' || body.reframe.length > MAX)) throw new BadRequestException('invalid reframe');
+    return this.botService.createBeliefCheck(req.telegramUserId, {
+      belief: body.belief.trim(),
+      evidenceFor: (body.evidenceFor as string[]).map(s => s.trim()).filter(Boolean),
+      evidenceAgainst: (body.evidenceAgainst as string[]).map(s => s.trim()).filter(Boolean),
+      reframe: body.reframe?.trim() || undefined,
+    });
+  }
+
+  @Delete('belief-checks/:id')
+  deleteBeliefCheck(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.botService.deleteBeliefCheck(req.telegramUserId, parseId(id));
+  }
+
+  // ── Letters ───────────────────────────────────────────────────────────────────
+
+  @Get('letters')
+  getLetters(@Req() req: AuthRequest) {
+    return this.botService.getLetters(req.telegramUserId);
+  }
+
+  @Post('letters')
+  async createLetter(@Req() req: AuthRequest, @Body() body: { text?: string }) {
+    if (!body.text || typeof body.text !== 'string' || body.text.length > 10000) throw new BadRequestException('invalid text');
+    return this.botService.createLetter(req.telegramUserId, body.text.trim());
+  }
+
+  @Delete('letters/:id')
+  deleteLetter(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.botService.deleteLetter(req.telegramUserId, parseId(id));
+  }
+
+  // ── Safe place ────────────────────────────────────────────────────────────────
+
+  @Get('safe-place')
+  getSafePlace(@Req() req: AuthRequest) {
+    return this.botService.getSafePlace(req.telegramUserId);
+  }
+
+  @Post('safe-place')
+  async upsertSafePlace(@Req() req: AuthRequest, @Body() body: { description?: string }) {
+    if (!body.description || typeof body.description !== 'string' || body.description.length > 10000) throw new BadRequestException('invalid description');
+    return this.botService.upsertSafePlace(req.telegramUserId, body.description.trim());
+  }
+
+  // ── Flashcards ────────────────────────────────────────────────────────────────
+
+  @Get('flashcards')
+  getFlashcards(@Req() req: AuthRequest) {
+    return this.botService.getFlashcards(req.telegramUserId);
+  }
+
+  @Post('flashcards')
+  async createFlashcard(@Req() req: AuthRequest, @Body() body: { modeId?: string; needId?: string; reflection?: string; action?: string }) {
+    const MAX = 3000;
+    if (!body.modeId || typeof body.modeId !== 'string' || !/^[a-z_]{1,64}$/.test(body.modeId)) throw new BadRequestException('invalid modeId');
+    if (!body.needId || typeof body.needId !== 'string' || !NEED_IDS.includes(body.needId as NeedId) && body.needId !== 'detached' && body.needId !== 'critic') throw new BadRequestException('invalid needId');
+    if (body.reflection !== undefined && (typeof body.reflection !== 'string' || body.reflection.length > MAX)) throw new BadRequestException('invalid reflection');
+    if (body.action !== undefined && (typeof body.action !== 'string' || body.action.length > MAX)) throw new BadRequestException('invalid action');
+    return this.botService.createFlashcard(req.telegramUserId, {
+      modeId: body.modeId,
+      needId: body.needId,
+      reflection: body.reflection?.trim() || undefined,
+      action: body.action?.trim() || undefined,
+    });
+  }
+
+  @Delete('flashcards/:id')
+  deleteFlashcard(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.botService.deleteFlashcard(req.telegramUserId, parseId(id));
+  }
+
+  // ── Therapist: client notes ───────────────────────────────────────────────────
+
+  @Get('therapy/client/:clientId/schema-notes')
+  async getClientSchemaNotes(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    const notes = await this.botService.getClientSchemaNotes(req.telegramUserId, parseId(clientId));
+    if (!notes) throw new BadRequestException('relation not found');
+    return notes;
+  }
+
+  @Get('therapy/client/:clientId/mode-notes')
+  async getClientModeNotes(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    const notes = await this.botService.getClientModeNotes(req.telegramUserId, parseId(clientId));
+    if (!notes) throw new BadRequestException('relation not found');
+    return notes;
+  }
+
   @Delete('user')
   async deleteUser(@Req() req: AuthRequest) {
     await this.botService.deleteAllUserData(req.telegramUserId);

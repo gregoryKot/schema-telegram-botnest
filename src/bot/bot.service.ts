@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
-import { encrypt, decrypt } from '../utils/crypto';
+import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
 import { randomBytes } from 'crypto';
 
 export const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'] as const;
@@ -412,6 +412,126 @@ export class BotService {
     return user?.role ?? 'CLIENT';
   }
 
+  // ── Belief checks ────────────────────────────────────────────────────────────
+
+  async getBeliefChecks(userId: number) {
+    const rows = await this.prisma.userBeliefCheck.findMany({
+      where: { userId: BigInt(userId) }, orderBy: { createdAt: 'desc' }, take: 30,
+    });
+    return rows.map(r => ({
+      ...r,
+      belief: decrypt(r.belief) ?? r.belief,
+      evidenceFor: decryptJson<string[]>(r.evidenceFor) ?? [],
+      evidenceAgainst: decryptJson<string[]>(r.evidenceAgainst) ?? [],
+      reframe: decrypt(r.reframe),
+    }));
+  }
+
+  async createBeliefCheck(userId: number, data: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) {
+    return this.prisma.userBeliefCheck.create({
+      data: {
+        userId: BigInt(userId),
+        belief: encrypt(data.belief) ?? data.belief,
+        evidenceFor: encryptJson(data.evidenceFor) ?? JSON.stringify(data.evidenceFor),
+        evidenceAgainst: encryptJson(data.evidenceAgainst) ?? JSON.stringify(data.evidenceAgainst),
+        reframe: encrypt(data.reframe),
+      },
+    });
+  }
+
+  async deleteBeliefCheck(userId: number, id: number) {
+    return this.prisma.userBeliefCheck.deleteMany({ where: { id, userId: BigInt(userId) } });
+  }
+
+  // ── Letters ───────────────────────────────────────────────────────────────────
+
+  async getLetters(userId: number) {
+    const rows = await this.prisma.userLetter.findMany({
+      where: { userId: BigInt(userId) }, orderBy: { createdAt: 'desc' }, take: 30,
+    });
+    return rows.map(r => ({ ...r, text: decrypt(r.text) ?? r.text }));
+  }
+
+  async createLetter(userId: number, text: string) {
+    const row = await this.prisma.userLetter.create({
+      data: { userId: BigInt(userId), text: encrypt(text) ?? text },
+    });
+    return { ...row, text };
+  }
+
+  async deleteLetter(userId: number, id: number) {
+    return this.prisma.userLetter.deleteMany({ where: { id, userId: BigInt(userId) } });
+  }
+
+  // ── Safe place ────────────────────────────────────────────────────────────────
+
+  async getSafePlace(userId: number) {
+    const row = await this.prisma.userSafePlace.findUnique({ where: { userId: BigInt(userId) } });
+    if (!row) return null;
+    return { ...row, description: decrypt(row.description) ?? row.description };
+  }
+
+  async upsertSafePlace(userId: number, description: string) {
+    const enc = encrypt(description) ?? description;
+    const uid = BigInt(userId);
+    const row = await this.prisma.userSafePlace.upsert({
+      where: { userId: uid },
+      update: { description: enc },
+      create: { userId: uid, description: enc },
+    });
+    return { ...row, description };
+  }
+
+  // ── Flashcards ────────────────────────────────────────────────────────────────
+
+  async getFlashcards(userId: number) {
+    const rows = await this.prisma.userFlashcard.findMany({
+      where: { userId: BigInt(userId) }, orderBy: { createdAt: 'desc' }, take: 30,
+    });
+    return rows.map(r => ({
+      ...r,
+      reflection: decrypt(r.reflection),
+      action: decrypt(r.action),
+    }));
+  }
+
+  async createFlashcard(userId: number, data: { modeId: string; needId: string; reflection?: string; action?: string }) {
+    const row = await this.prisma.userFlashcard.create({
+      data: {
+        userId: BigInt(userId),
+        modeId: data.modeId,
+        needId: data.needId,
+        reflection: encrypt(data.reflection),
+        action: encrypt(data.action),
+      },
+    });
+    return { ...row, reflection: data.reflection ?? null, action: data.action ?? null };
+  }
+
+  async deleteFlashcard(userId: number, id: number) {
+    return this.prisma.userFlashcard.deleteMany({ where: { id, userId: BigInt(userId) } });
+  }
+
+  // ── Therapist: client notes access ───────────────────────────────────────────
+
+  async getClientSchemaNotes(therapistId: number, clientId: number) {
+    const rel = await this.prisma.therapyRelation.findFirst({
+      where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
+    });
+    if (!rel) return null;
+    return this.prisma.userSchemaNote.findMany({ where: { userId: BigInt(clientId) } });
+  }
+
+  async getClientModeNotes(therapistId: number, clientId: number) {
+    const rel = await this.prisma.therapyRelation.findFirst({
+      where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
+    });
+    if (!rel) return null;
+    return this.prisma.userModeNote.findMany({ where: { userId: BigInt(clientId) } });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+
   async deleteAllUserData(userId: number): Promise<void> {
     const uid = BigInt(userId);
     await this.prisma.$transaction([
@@ -419,6 +539,10 @@ export class BotService {
       this.prisma.note.deleteMany({ where: { userId: uid } }),
       this.prisma.userSchemaNote.deleteMany({ where: { userId: uid } }),
       this.prisma.userModeNote.deleteMany({ where: { userId: uid } }),
+      this.prisma.userBeliefCheck.deleteMany({ where: { userId: uid } }),
+      this.prisma.userLetter.deleteMany({ where: { userId: uid } }),
+      this.prisma.userSafePlace.deleteMany({ where: { userId: uid } }),
+      this.prisma.userFlashcard.deleteMany({ where: { userId: uid } }),
       this.prisma.userPractice.deleteMany({ where: { userId: uid } }),
       this.prisma.practicePlan.deleteMany({ where: { userId: uid } }),
       this.prisma.childhoodRating.deleteMany({ where: { userId: uid } }),
