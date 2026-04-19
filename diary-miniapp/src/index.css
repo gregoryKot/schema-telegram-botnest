@@ -10,9 +10,10 @@ html, body {
 }
 
 body {
-  background: #0f1117;
+  background: #0d0f18;
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
   color: #ffffff;
   min-height: 100vh;
 }
@@ -28,6 +29,41 @@ button {
 textarea {
   font-family: inherit;
   resize: none;
+}
+
+/* Hide scrollbars */
+::-webkit-scrollbar { width: 0; background: transparent; }
+
+/* Placeholder */
+::placeholder {
+  color: rgba(255, 255, 255, 0.22);
+}
+
+/* Textarea focus via class */
+.field-input {
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.field-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Selector pill active feedback */
+.sel-btn {
+  transition: background 100ms ease, border-color 100ms ease, opacity 80ms ease;
+}
+.sel-btn:active {
+  opacity: 0.7;
+}
+
+/* Card tap feedback */
+.card {
+  transition: background 120ms ease, transform 80ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.card:active {
+  transform: scale(0.985);
 }
 
 @keyframes fade-in {

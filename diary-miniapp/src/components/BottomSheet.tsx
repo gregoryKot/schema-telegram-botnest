@@ -39,29 +39,31 @@ export function BottomSheet({ onClose, children, zIndex = 200 }: Props) {
     <>
       <div onClick={onClose} style={{
         position: 'fixed', inset: 0, zIndex,
-        background: 'rgba(0,0,0,0.55)',
+        background: 'rgba(0,0,0,0.6)',
         animation: 'fade-in 200ms ease',
       }} />
       <div ref={sheetRef} style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: zIndex + 1,
-        background: '#161821',
-        borderRadius: '24px 24px 0 0',
+        background: '#141620',
+        borderRadius: '22px 22px 0 0',
         maxHeight: '92vh',
         display: 'flex',
         flexDirection: 'column',
         animation: 'sheet-up 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+        boxShadow: '0 -4px 40px rgba(0,0,0,0.5)',
       }}>
+        {/* Drag handle area */}
         <div
           onPointerDown={onHandleDown}
           onPointerMove={onHandleMove}
           onPointerUp={onHandleUp}
-          style={{ padding: '12px 0 6px', display: 'flex', justifyContent: 'center', cursor: 'grab', flexShrink: 0, touchAction: 'none' }}
+          style={{ padding: '14px 0 6px', display: 'flex', justifyContent: 'center', cursor: 'grab', flexShrink: 0, touchAction: 'none' }}
         >
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+          <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
         </div>
         {showHint && (
-          <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.35)', paddingBottom: 10, animation: 'fade-in 300ms ease', flexShrink: 0 }}>
-            Потяни вниз чтобы закрыть
+          <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)', paddingBottom: 8, animation: 'fade-in 300ms ease', flexShrink: 0 }}>
+            Потяни вниз, чтобы закрыть
           </div>
         )}
         <div style={{ overflowY: 'auto', flex: 1, padding: '0 20px 48px' }}>

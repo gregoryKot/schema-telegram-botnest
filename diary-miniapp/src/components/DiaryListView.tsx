@@ -27,15 +27,15 @@ function formatDt(iso: string) {
 function Field({ label, text }: { label: string; text: string }) {
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{text}</div>
+      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 1.5 }}>{text}</div>
     </div>
   );
 }
 
 function DeleteBtn({ color, onClick }: { color: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} style={{ marginTop: 8, background: `${color}22`, border: 'none', borderRadius: 8, padding: '6px 12px', color, fontSize: 12, cursor: 'pointer' }}>
+    <button onClick={onClick} className="sel-btn" style={{ marginTop: 8, background: `${color}18`, border: `1px solid ${color}33`, borderRadius: 8, padding: '6px 12px', color, fontSize: 12, cursor: 'pointer' }}>
       Удалить запись
     </button>
   );
@@ -47,31 +47,33 @@ function SchemaCard({ entry, color, onDelete }: { entry: SchemaDiaryEntry; color
   const schemas = entry.schemaIds.map(id => getSchemaById(id)).filter(Boolean);
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: '14px 16px', marginBottom: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-      <div style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => setOpen(o => !o)}>
+    <div className="card" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 16, marginBottom: 8, border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+      <div style={{ cursor: 'pointer', padding: '13px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => setOpen(o => !o)}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>{formatDt(entry.createdAt)}</div>
-          <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.4 }}>{entry.trigger.slice(0, 80)}{entry.trigger.length > 80 ? '…' : ''}</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginBottom: 5, letterSpacing: '0.02em' }}>{formatDt(entry.createdAt)}</div>
+          <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.45 }}>{entry.trigger.slice(0, 80)}{entry.trigger.length > 80 ? '…' : ''}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
             {emotionMetas.map(em => <span key={em.id} style={{ fontSize: 14 }}>{em.emoji}</span>)}
             {schemas.slice(0, 2).map(s => s && (
-              <span key={s.id} style={{ fontSize: 11, background: `${s.domainColor}22`, color: s.domainColor, borderRadius: 8, padding: '2px 7px' }}>{s.name}</span>
+              <span key={s.id} style={{ fontSize: 11, background: `${s.domainColor}1a`, color: s.domainColor, borderRadius: 8, padding: '2px 8px', fontWeight: 500 }}>{s.name}</span>
             ))}
           </div>
         </div>
-        <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 16 }}>{open ? '∧' : '∨'}</span>
+        <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: 14, marginTop: 2 }}>{open ? '∧' : '∨'}</span>
       </div>
       {open && (
-        <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 12 }}>
-          {entry.thoughts && <Field label="Мысли" text={entry.thoughts} />}
-          {entry.bodyFeelings && <Field label="Тело" text={entry.bodyFeelings} />}
-          {entry.actualBehavior && <Field label="Фактическое поведение" text={entry.actualBehavior} />}
-          {entry.schemaOrigin && <Field label="Откуда схема" text={entry.schemaOrigin} />}
-          {entry.healthyView && <Field label="Здоровый взгляд" text={entry.healthyView} />}
-          {entry.realProblems && <Field label="Реальные проблемы" text={entry.realProblems} />}
-          {entry.excessiveReactions && <Field label="Чрезмерные реакции" text={entry.excessiveReactions} />}
-          {entry.healthyBehavior && <Field label="Здоровое поведение" text={entry.healthyBehavior} />}
-          <DeleteBtn color={color} onClick={onDelete} />
+        <div style={{ padding: '0 16px 14px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ paddingTop: 12 }}>
+            {entry.thoughts && <Field label="Мысли" text={entry.thoughts} />}
+            {entry.bodyFeelings && <Field label="Тело" text={entry.bodyFeelings} />}
+            {entry.actualBehavior && <Field label="Фактическое поведение" text={entry.actualBehavior} />}
+            {entry.schemaOrigin && <Field label="Откуда схема" text={entry.schemaOrigin} />}
+            {entry.healthyView && <Field label="Здоровый взгляд" text={entry.healthyView} />}
+            {entry.realProblems && <Field label="Реальные проблемы" text={entry.realProblems} />}
+            {entry.excessiveReactions && <Field label="Чрезмерные реакции" text={entry.excessiveReactions} />}
+            {entry.healthyBehavior && <Field label="Здоровое поведение" text={entry.healthyBehavior} />}
+            <DeleteBtn color={color} onClick={onDelete} />
+          </div>
         </div>
       )}
     </div>
@@ -83,28 +85,30 @@ function ModeCard({ entry, color, onDelete }: { entry: ModeDiaryEntry; color: st
   const mode = getModeById(entry.modeId);
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: '14px 16px', marginBottom: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-      <div style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => setOpen(o => !o)}>
+    <div className="card" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 16, marginBottom: 8, border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+      <div style={{ cursor: 'pointer', padding: '13px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => setOpen(o => !o)}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>{formatDt(entry.createdAt)}</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginBottom: 5, letterSpacing: '0.02em' }}>{formatDt(entry.createdAt)}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <span style={{ fontSize: 20 }}>{mode?.emoji ?? '🔄'}</span>
             <div style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>{mode?.name ?? entry.modeId}</div>
           </div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>{entry.situation.slice(0, 70)}{entry.situation.length > 70 ? '…' : ''}</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)' }}>{entry.situation.slice(0, 70)}{entry.situation.length > 70 ? '…' : ''}</div>
         </div>
-        <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 16 }}>{open ? '∧' : '∨'}</span>
+        <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: 14, marginTop: 2 }}>{open ? '∧' : '∨'}</span>
       </div>
       {open && (
-        <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 12 }}>
-          <Field label="Ситуация" text={entry.situation} />
-          {entry.thoughts && <Field label="Мысли" text={entry.thoughts} />}
-          {entry.feelings && <Field label="Чувства" text={entry.feelings} />}
-          {entry.bodyFeelings && <Field label="Тело" text={entry.bodyFeelings} />}
-          {entry.actions && <Field label="Действия" text={entry.actions} />}
-          {entry.actualNeed && <Field label="Что на самом деле было нужно" text={entry.actualNeed} />}
-          {entry.childhoodMemories && <Field label="Детские воспоминания" text={entry.childhoodMemories} />}
-          <DeleteBtn color={color} onClick={onDelete} />
+        <div style={{ padding: '0 16px 14px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ paddingTop: 12 }}>
+            <Field label="Ситуация" text={entry.situation} />
+            {entry.thoughts && <Field label="Мысли" text={entry.thoughts} />}
+            {entry.feelings && <Field label="Чувства" text={entry.feelings} />}
+            {entry.bodyFeelings && <Field label="Тело" text={entry.bodyFeelings} />}
+            {entry.actions && <Field label="Действия" text={entry.actions} />}
+            {entry.actualNeed && <Field label="Что на самом деле было нужно" text={entry.actualNeed} />}
+            {entry.childhoodMemories && <Field label="Детские воспоминания" text={entry.childhoodMemories} />}
+            <DeleteBtn color={color} onClick={onDelete} />
+          </div>
         </div>
       )}
     </div>
@@ -117,23 +121,25 @@ function GratitudeCard({ entry, color, onDelete }: { entry: GratitudeDiaryEntry;
   const dateStr = d.toLocaleDateString('ru', { day: 'numeric', month: 'long', weekday: 'short' });
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: '14px 16px', marginBottom: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-      <div style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => setOpen(o => !o)}>
+    <div className="card" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 16, marginBottom: 8, border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+      <div style={{ cursor: 'pointer', padding: '13px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => setOpen(o => !o)}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>{dateStr}</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginBottom: 5, letterSpacing: '0.02em' }}>{dateStr}</div>
           {entry.items.slice(0, 2).map((it, i) => (
-            <div key={i} style={{ fontSize: 14, color: '#fff', lineHeight: 1.4 }}>🌱 {it.slice(0, 55)}{it.length > 55 ? '…' : ''}</div>
+            <div key={i} style={{ fontSize: 14, color: '#fff', lineHeight: 1.45, marginBottom: 2 }}>🌱 {it.slice(0, 55)}{it.length > 55 ? '…' : ''}</div>
           ))}
-          {entry.items.length > 2 && <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginTop: 3 }}>+ ещё {entry.items.length - 2}</div>}
+          {entry.items.length > 2 && <div style={{ color: 'rgba(255,255,255,0.32)', fontSize: 12, marginTop: 3 }}>+ ещё {entry.items.length - 2}</div>}
         </div>
-        <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 16 }}>{open ? '∧' : '∨'}</span>
+        <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: 14, marginTop: 2 }}>{open ? '∧' : '∨'}</span>
       </div>
       {open && (
-        <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 12 }}>
-          {entry.items.map((it, i) => (
-            <div key={i} style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginBottom: 6, lineHeight: 1.5 }}>🌱 {it}</div>
-          ))}
-          <DeleteBtn color={color} onClick={onDelete} />
+        <div style={{ padding: '0 16px 14px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ paddingTop: 12 }}>
+            {entry.items.map((it, i) => (
+              <div key={i} style={{ fontSize: 14, color: 'rgba(255,255,255,0.78)', marginBottom: 6, lineHeight: 1.5 }}>🌱 {it}</div>
+            ))}
+            <DeleteBtn color={color} onClick={onDelete} />
+          </div>
         </div>
       )}
     </div>
@@ -141,25 +147,32 @@ function GratitudeCard({ entry, color, onDelete }: { entry: GratitudeDiaryEntry;
 }
 
 function Empty({ text }: { text: string }) {
-  return <div style={{ textAlign: 'center', padding: '60px 24px', color: 'rgba(255,255,255,0.35)', fontSize: 14, lineHeight: 1.6 }}>{text}</div>;
+  return (
+    <div style={{ textAlign: 'center', padding: '80px 32px 60px', color: 'rgba(255,255,255,0.32)', fontSize: 14, lineHeight: 1.7 }}>
+      <div style={{ fontSize: 42, marginBottom: 16, opacity: 0.45 }}>📭</div>
+      {text}
+    </div>
+  );
 }
 
 export function DiaryListView({ type, schemaEntries, modeEntries, gratitudeEntries, onBack, onNewEntry, onDelete }: Props) {
   const meta = DIARY_META[type];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0f1117', animation: 'slide-in-right 250ms ease' }}>
-      <div style={{ position: 'sticky', top: 0, background: '#0f1117', zIndex: 10, padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 10, width: 36, height: 36, cursor: 'pointer', color: '#fff', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: '#0d0f18', animation: 'slide-in-right 250ms ease' }}>
+      {/* Sticky header with top color accent */}
+      <div style={{ position: 'sticky', top: 0, background: '#0d0f18', zIndex: 10, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ height: 2, background: `linear-gradient(90deg, ${meta.color} 0%, transparent 65%)`, opacity: 0.65 }} />
+        <div style={{ padding: '11px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 10, width: 36, height: 36, cursor: 'pointer', color: '#fff', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             ‹
           </button>
-          <span style={{ fontSize: 22 }}>{meta.emoji}</span>
+          <span style={{ fontSize: 20 }}>{meta.emoji}</span>
           <span style={{ fontSize: 17, fontWeight: 700, color: '#fff' }}>{meta.title}</span>
         </div>
       </div>
 
-      <div style={{ padding: '16px 16px 100px' }}>
+      <div style={{ padding: '14px 16px 100px' }}>
         {type === 'schema' && (
           schemaEntries.length === 0 ? <Empty text={meta.emptyText} /> :
             schemaEntries.map(e => <SchemaCard key={e.id} entry={e} color={meta.color} onDelete={() => onDelete('schema', e.id)} />)
@@ -175,11 +188,12 @@ export function DiaryListView({ type, schemaEntries, modeEntries, gratitudeEntri
       </div>
 
       <button onClick={onNewEntry} style={{
-        position: 'fixed', bottom: 24, right: 20,
-        background: meta.color, border: 'none', borderRadius: 20,
-        padding: '14px 20px', color: type === 'gratitude' ? '#0f1117' : '#fff',
+        position: 'fixed', bottom: 28, right: 20,
+        background: meta.color, border: 'none', borderRadius: 22,
+        padding: '14px 22px', color: type === 'gratitude' ? '#0d0f18' : '#fff',
         fontSize: 15, fontWeight: 700, cursor: 'pointer',
-        boxShadow: `0 4px 24px ${meta.color}66`,
+        boxShadow: `0 6px 28px ${meta.color}55`,
+        WebkitTapHighlightColor: 'transparent',
       }}>
         + Новая запись
       </button>

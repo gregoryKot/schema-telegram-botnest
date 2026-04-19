@@ -18,21 +18,48 @@ interface Props {
 
 const COLOR = '#60a5fa';
 
-function FieldLabel({ title, hint }: { title: string; hint?: string }) {
+function StepLabel({ step, title, hint, required }: { step: number; title: string; hint?: string; required?: boolean }) {
   return (
-    <div style={{ marginTop: 20, marginBottom: 8 }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{title}</div>
-      {hint && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{hint}</div>}
+    <div style={{ marginTop: 22, marginBottom: 9, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+      <div style={{
+        width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+        background: `${COLOR}22`, border: `1px solid ${COLOR}44`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 11, fontWeight: 700, color: COLOR, marginTop: 1,
+      }}>
+        {step}
+      </div>
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
+          {title}
+          {required && <span style={{ color: COLOR, marginLeft: 4, fontSize: 12 }}>*</span>}
+        </div>
+        {hint && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', marginTop: 2 }}>{hint}</div>}
+      </div>
     </div>
   );
 }
 
 function Area({ value, onChange, placeholder, rows = 3 }: { value: string; onChange: (v: string) => void; placeholder: string; rows?: number }) {
   return (
-    <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows} style={{
-      width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-      borderRadius: 12, padding: '12px 14px', color: '#fff', fontSize: 14, lineHeight: 1.5, outline: 'none',
-    }} />
+    <textarea
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      className="field-input"
+      style={{
+        width: '100%',
+        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        padding: '12px 14px',
+        color: '#fff',
+        fontSize: 14,
+        lineHeight: 1.5,
+        outline: 'none',
+      }}
+    />
   );
 }
 
@@ -72,22 +99,21 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Дневник режимов</div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>Новая запись</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', marginBottom: 4 }}>Новая запись</div>
 
-        {/* 1. Режим */}
-        <FieldLabel title="1. Режим" hint="кто включился" />
+        <StepLabel step={1} title="Режим" hint="кто включился" required />
         {MODE_GROUPS.map(group => (
           <div key={group.id} style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 10, color: group.color, fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{group.group}</div>
+            <div style={{ fontSize: 10, color: group.color, fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>{group.group}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {group.items.map(m => {
                 const sel = modeId === m.id;
                 return (
-                  <button key={m.id} onClick={() => setModeId(sel ? '' : m.id)} style={{
-                    background: sel ? `${group.color}33` : 'rgba(255,255,255,0.06)',
+                  <button key={m.id} onClick={() => setModeId(sel ? '' : m.id)} className="sel-btn" style={{
+                    background: sel ? `${group.color}28` : 'rgba(255,255,255,0.06)',
                     border: sel ? `1px solid ${group.color}` : '1px solid transparent',
                     borderRadius: 16, padding: '6px 11px',
-                    color: sel ? '#fff' : 'rgba(255,255,255,0.6)',
+                    color: sel ? '#fff' : 'rgba(255,255,255,0.55)',
                     fontSize: 13, cursor: 'pointer',
                   }}>
                     {m.emoji} {m.name}
@@ -98,44 +124,38 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           </div>
         ))}
 
-        {/* 2. Ситуация */}
-        <FieldLabel title="2. Ситуация" hint="что произошло?" />
+        <StepLabel step={2} title="Ситуация" hint="что произошло?" required />
         <Area value={situation} onChange={setSituation} placeholder="Опиши что случилось, где, с кем, когда?" />
 
-        {/* 3. Мысли */}
-        <FieldLabel title="3. Мысли" />
+        <StepLabel step={3} title="Мысли" />
         <Area value={thoughts} onChange={setThoughts} placeholder="Что думаешь в этом режиме?" rows={2} />
 
-        {/* 4. Чувства */}
-        <FieldLabel title="4. Чувства" />
+        <StepLabel step={4} title="Чувства" />
         <Area value={feelings} onChange={setFeelings} placeholder="Что чувствуешь? Страх, злость, пустота..." rows={2} />
 
-        {/* 5. Тело */}
-        <FieldLabel title="5. Тело" hint="что ощутили?" />
+        <StepLabel step={5} title="Тело" hint="что ощутили?" />
         <Area value={bodyFeelings} onChange={setBodyFeelings} placeholder="Напряжение, сжатие, онемение, тяжесть..." rows={2} />
 
-        {/* 6. Действия */}
-        <FieldLabel title="6. Действия" hint="что конкретно делали" />
+        <StepLabel step={6} title="Действия" hint="что конкретно делали" />
         <Area value={actions} onChange={setActions} placeholder="Что делаешь или сделал/а в этом режиме?" rows={2} />
 
-        {/* 7. Что на самом деле было нужно */}
-        <FieldLabel title="7. Что на самом деле вам было нужно?" />
+        <StepLabel step={7} title="Что на самом деле вам было нужно?" />
         <Area value={actualNeed} onChange={setActualNeed} placeholder="За этим режимом — какая настоящая потребность?" rows={2} />
 
-        {/* 8. Детские воспоминания */}
-        <FieldLabel title="8. Детские воспоминания" hint="связанные с ситуацией" />
+        <StepLabel step={8} title="Детские воспоминания" hint="связанные с ситуацией" />
         <Area value={childhoodMemories} onChange={setChildhoodMemories} placeholder="Напоминает ли что-то из детства? Похожие ситуации, ощущения..." rows={3} />
 
         <button onClick={handleSave} disabled={!canSave || saving} style={{
-          marginTop: 24, width: '100%', padding: '14px', borderRadius: 14,
-          background: canSave ? COLOR : 'rgba(255,255,255,0.1)',
-          color: canSave ? '#fff' : 'rgba(255,255,255,0.3)',
+          marginTop: 24, width: '100%', padding: '15px', borderRadius: 14,
+          background: canSave ? COLOR : 'rgba(255,255,255,0.09)',
+          color: canSave ? '#fff' : 'rgba(255,255,255,0.28)',
           border: 'none', fontSize: 16, fontWeight: 600, cursor: canSave ? 'pointer' : 'default',
+          transition: 'background 200ms, color 200ms',
         }}>
           {saving ? 'Сохраняю...' : 'Сохранить'}
         </button>
         {!canSave && (
-          <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>
+          <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.28)', marginTop: 8 }}>
             Обязательно: выбери режим и опиши ситуацию
           </div>
         )}
