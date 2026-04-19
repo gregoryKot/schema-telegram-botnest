@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { MODE_GROUPS } from '../diaryData';
+import { haptic } from '../haptic';
 
 interface Props {
   onClose: () => void;
@@ -89,7 +90,10 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         actualNeed: actualNeed || undefined,
         childhoodMemories: childhoodMemories || undefined,
       });
+      haptic.success();
       onClose();
+    } catch {
+      haptic.error();
     } finally {
       setSaving(false);
     }
@@ -109,7 +113,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
               {group.items.map(m => {
                 const sel = modeId === m.id;
                 return (
-                  <button key={m.id} onClick={() => setModeId(sel ? '' : m.id)} className="sel-btn" style={{
+                  <button key={m.id} onClick={() => { haptic.select(); setModeId(sel ? '' : m.id); }} className="sel-btn" style={{
                     background: sel ? `${group.color}28` : 'rgba(255,255,255,0.06)',
                     border: sel ? `1px solid ${group.color}` : '1px solid transparent',
                     borderRadius: 16, padding: '6px 11px',

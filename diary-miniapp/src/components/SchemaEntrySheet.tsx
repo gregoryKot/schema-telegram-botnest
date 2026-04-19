@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { EMOTIONS, INTENSITY_LABELS, SCHEMA_DOMAINS } from '../diaryData';
 import { EmotionEntry } from '../types';
+import { haptic } from '../haptic';
 
 interface Props {
   activeSchemaIds?: string[];
@@ -22,6 +23,47 @@ interface Props {
 }
 
 const COLOR = '#f87171';
+
+function RequiredProgress({ trigger, hasEmotions, hasSchemas }: { trigger: string; hasEmotions: boolean; hasSchemas: boolean }) {
+  const steps = [
+    { label: 'Ситуация', done: trigger.trim().length > 0 },
+    { label: 'Эмоции', done: hasEmotions },
+    { label: 'Схемы', done: hasSchemas },
+  ];
+  const filled = steps.filter(s => s.done).length;
+
+  return (
+    <div style={{ marginBottom: 18, marginTop: 6 }}>
+      <div style={{ display: 'flex', gap: 5, marginBottom: 7 }}>
+        {steps.map((s, i) => (
+          <div key={i} style={{ flex: 1, position: 'relative' }}>
+            <div style={{
+              height: 3, borderRadius: 2,
+              background: s.done ? COLOR : 'rgba(255,255,255,0.1)',
+              transition: 'background 300ms ease',
+            }} />
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 5 }}>
+        {steps.map((s, i) => (
+          <div key={i} style={{
+            flex: 1, fontSize: 10, fontWeight: 500, letterSpacing: '0.02em',
+            color: s.done ? COLOR : 'rgba(255,255,255,0.25)',
+            transition: 'color 300ms ease',
+          }}>
+            {s.done ? '✓ ' : ''}{s.label}
+          </div>
+        ))}
+      </div>
+      {filled === 3 && (
+        <div style={{ fontSize: 11, color: COLOR, marginTop: 6, opacity: 0.8 }}>
+          Все обязательные поля заполнены — можно сохранять
+        </div>
+      )}
+    </div>
+  );
+}
 
 function StepLabel({ step, title, hint, required }: { step: number; title: string; hint?: string; required?: boolean }) {
   return (
@@ -86,14 +128,20 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   const hasPersonalSchemas = activeSchemaIds && activeSchemaIds.length > 0;
   const useFiltered = hasPersonalSchemas && !showAllSchemas;
 
-  const toggleEmotion = (id: string) =>
+  const toggleEmotion = (id: string) => {
+    haptic.select();
     setEmotions(prev => prev.find(e => e.id === id) ? prev.filter(e => e.id !== id) : [...prev, { id, intensity: 3 }]);
+  };
 
-  const setIntensity = (id: string, intensity: number) =>
+  const setIntensity = (id: string, intensity: number) => {
+    haptic.select();
     setEmotions(prev => prev.map(e => e.id === id ? { ...e, intensity } : e));
+  };
 
-  const toggleSchema = (id: string) =>
+  const toggleSchema = (id: string) => {
+    haptic.select();
     setSchemaIds(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
+  };
 
   const canSave = trigger.trim().length > 0 && emotions.length > 0 && schemaIds.length > 0;
 
@@ -114,7 +162,10 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         excessiveReactions: excessiveReactions || undefined,
         healthyBehavior: healthyBehavior || undefined,
       });
+      haptic.success();
       onClose();
+    } catch {
+      haptic.error();
     } finally {
       setSaving(false);
     }
@@ -124,7 +175,9 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Дневник проявления схем</div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', marginBottom: 4 }}>Новая запись</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', marginBottom: 12 }}>Новая запись</div>
+
+        <RequiredProgress trigger={trigger} hasEmotions={emotions.length > 0} hasSchemas={schemaIds.length > 0} />
 
         <StepLabel step={1} title="Спусковой механизм" hint="что произошло" required />
         <Area value={trigger} onChange={setTrigger} placeholder="Опиши ситуацию: что случилось, где, с кем, когда?" rows={3} />

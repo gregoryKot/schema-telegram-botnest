@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
+import { haptic } from '../haptic';
 
 interface Props {
   onClose: () => void;
@@ -24,7 +25,10 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
     setSaving(true);
     try {
       await onSave(date, items.filter(it => it.trim().length > 0));
+      haptic.success();
       onClose();
+    } catch {
+      haptic.error();
     } finally {
       setSaving(false);
     }

@@ -9,6 +9,48 @@ import { GratitudeEntrySheet } from './components/GratitudeEntrySheet';
 
 const TODAY = new Date().toISOString().split('T')[0];
 
+const SKELETON_COLOR = 'rgba(255,255,255,0.07)';
+const SKELETON_SHIMMER = 'rgba(255,255,255,0.04)';
+
+function SkeletonBar({ w, h = 14, radius = 6 }: { w: number | string; h?: number; radius?: number }) {
+  return <div style={{ width: w, height: h, borderRadius: radius, background: SKELETON_COLOR }} />;
+}
+
+function SkeletonCard({ accentOpacity = 0.06 }: { accentOpacity?: number }) {
+  return (
+    <div style={{
+      background: SKELETON_SHIMMER, borderRadius: 18, marginBottom: 10,
+      display: 'flex', alignItems: 'stretch',
+      border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden', height: 80,
+    }}>
+      <div style={{ width: 3, background: `rgba(255,255,255,${accentOpacity})`, flexShrink: 0 }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '0 14px' }}>
+        <div style={{ width: 46, height: 46, borderRadius: 13, background: SKELETON_COLOR, flexShrink: 0 }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <SkeletonBar w={110} h={13} />
+          <SkeletonBar w={160} h={11} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div style={{ padding: '20px 16px', animation: 'fade-in 200ms ease' }}>
+      <div style={{ marginBottom: 26 }}>
+        <SkeletonBar w={130} h={26} radius={8} />
+        <div style={{ marginTop: 10 }}>
+          <SkeletonBar w={200} h={13} />
+        </div>
+      </div>
+      <SkeletonCard accentOpacity={0.12} />
+      <SkeletonCard accentOpacity={0.09} />
+      <SkeletonCard accentOpacity={0.07} />
+    </div>
+  );
+}
+
 export default function App() {
   const [activeDiary, setActiveDiary] = useState<DiaryType | null>(null);
   const [newEntry, setNewEntry] = useState<DiaryType | null>(null);
@@ -17,7 +59,7 @@ export default function App() {
   const [modeEntries, setModeEntries] = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
@@ -64,17 +106,11 @@ export default function App() {
 
   const todayGratitude = gratitudeEntries.find(e => e.date === TODAY);
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>
-        Загрузка...
-      </div>
-    );
-  }
-
   return (
-    <div style={{ minHeight: '100vh', background: '#0f1117' }}>
-      {activeDiary ? (
+    <div style={{ minHeight: '100vh', background: '#0d0f18' }}>
+      {loading ? (
+        <LoadingSkeleton />
+      ) : activeDiary ? (
         <DiaryListView
           type={activeDiary}
           schemaEntries={schemaEntries}
@@ -92,6 +128,7 @@ export default function App() {
           lastSchemaDiaryDate={schemaEntries[0]?.createdAt}
           lastModeDiaryDate={modeEntries[0]?.createdAt}
           lastGratitudeDiaryDate={gratitudeEntries[0]?.date}
+          streak={profile?.streak}
           onOpen={type => setActiveDiary(type)}
         />
       )}

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry, DiaryType } from '../types';
 import { EMOTIONS, getModeById, getSchemaById } from '../diaryData';
+import { haptic } from '../haptic';
 
 interface Props {
   type: DiaryType;
@@ -35,7 +36,7 @@ function Field({ label, text }: { label: string; text: string }) {
 
 function DeleteBtn({ color, onClick }: { color: string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="sel-btn" style={{ marginTop: 8, background: `${color}18`, border: `1px solid ${color}33`, borderRadius: 8, padding: '6px 12px', color, fontSize: 12, cursor: 'pointer' }}>
+    <button onClick={() => { haptic.warning(); onClick(); }} className="sel-btn" style={{ marginTop: 8, background: `${color}18`, border: `1px solid ${color}33`, borderRadius: 8, padding: '6px 12px', color, fontSize: 12, cursor: 'pointer' }}>
       Удалить запись
     </button>
   );
@@ -48,7 +49,7 @@ function SchemaCard({ entry, color, onDelete }: { entry: SchemaDiaryEntry; color
 
   return (
     <div className="card" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 16, marginBottom: 8, border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-      <div style={{ cursor: 'pointer', padding: '13px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => setOpen(o => !o)}>
+      <div style={{ cursor: 'pointer', padding: '13px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => { haptic.tap(); setOpen(o => !o); }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginBottom: 5, letterSpacing: '0.02em' }}>{formatDt(entry.createdAt)}</div>
           <div style={{ fontSize: 14, color: '#fff', lineHeight: 1.45 }}>{entry.trigger.slice(0, 80)}{entry.trigger.length > 80 ? '…' : ''}</div>
@@ -86,7 +87,7 @@ function ModeCard({ entry, color, onDelete }: { entry: ModeDiaryEntry; color: st
 
   return (
     <div className="card" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 16, marginBottom: 8, border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-      <div style={{ cursor: 'pointer', padding: '13px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => setOpen(o => !o)}>
+      <div style={{ cursor: 'pointer', padding: '13px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => { haptic.tap(); setOpen(o => !o); }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginBottom: 5, letterSpacing: '0.02em' }}>{formatDt(entry.createdAt)}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -122,7 +123,7 @@ function GratitudeCard({ entry, color, onDelete }: { entry: GratitudeDiaryEntry;
 
   return (
     <div className="card" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 16, marginBottom: 8, border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden' }}>
-      <div style={{ cursor: 'pointer', padding: '13px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => setOpen(o => !o)}>
+      <div style={{ cursor: 'pointer', padding: '13px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }} onClick={() => { haptic.tap(); setOpen(o => !o); }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginBottom: 5, letterSpacing: '0.02em' }}>{dateStr}</div>
           {entry.items.slice(0, 2).map((it, i) => (
@@ -157,14 +158,33 @@ function Empty({ text }: { text: string }) {
 
 export function DiaryListView({ type, schemaEntries, modeEntries, gratitudeEntries, onBack, onNewEntry, onDelete }: Props) {
   const meta = DIARY_META[type];
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    if (t.clientX < 40) touchStart.current = { x: t.clientX, y: t.clientY };
+  };
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.current.x;
+    const dy = Math.abs(t.clientY - touchStart.current.y);
+    touchStart.current = null;
+    if (dx > 72 && dy < 50) { haptic.tap(); onBack(); }
+  };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0d0f18', animation: 'slide-in-right 250ms ease' }}>
+    <div
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      style={{ minHeight: '100vh', background: '#0d0f18', animation: 'slide-in-right 250ms ease' }}
+    >
       {/* Sticky header with top color accent */}
       <div style={{ position: 'sticky', top: 0, background: '#0d0f18', zIndex: 10, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <div style={{ height: 2, background: `linear-gradient(90deg, ${meta.color} 0%, transparent 65%)`, opacity: 0.65 }} />
         <div style={{ padding: '11px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 10, width: 36, height: 36, cursor: 'pointer', color: '#fff', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <button onClick={() => { haptic.tap(); onBack(); }} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 10, width: 36, height: 36, cursor: 'pointer', color: '#fff', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             ‹
           </button>
           <span style={{ fontSize: 20 }}>{meta.emoji}</span>
@@ -187,7 +207,7 @@ export function DiaryListView({ type, schemaEntries, modeEntries, gratitudeEntri
         )}
       </div>
 
-      <button onClick={onNewEntry} style={{
+      <button onClick={() => { haptic.tap(); onNewEntry(); }} style={{
         position: 'fixed', bottom: 28, right: 20,
         background: meta.color, border: 'none', borderRadius: 22,
         padding: '14px 22px', color: type === 'gratitude' ? '#0d0f18' : '#fff',

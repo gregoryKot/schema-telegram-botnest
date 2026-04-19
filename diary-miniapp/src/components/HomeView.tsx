@@ -1,4 +1,5 @@
 import { DiaryType } from '../types';
+import { haptic } from '../haptic';
 
 interface DiaryMeta {
   type: DiaryType;
@@ -17,6 +18,7 @@ interface Props {
   lastSchemaDiaryDate?: string;
   lastModeDiaryDate?: string;
   lastGratitudeDiaryDate?: string;
+  streak?: number;
   onOpen: (type: DiaryType) => void;
 }
 
@@ -29,7 +31,7 @@ function formatDate(iso?: string): string | undefined {
 function DiaryCard({ meta, onOpen }: { meta: DiaryMeta; onOpen: () => void }) {
   return (
     <div
-      onClick={onOpen}
+      onClick={() => { haptic.tap(); onOpen(); }}
       className="card"
       style={{
         background: 'rgba(255,255,255,0.04)',
@@ -88,7 +90,7 @@ function DiaryCard({ meta, onOpen }: { meta: DiaryMeta; onOpen: () => void }) {
   );
 }
 
-export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount, lastSchemaDiaryDate, lastModeDiaryDate, lastGratitudeDiaryDate, onOpen }: Props) {
+export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount, lastSchemaDiaryDate, lastModeDiaryDate, lastGratitudeDiaryDate, streak, onOpen }: Props) {
   const diaries: DiaryMeta[] = [
     {
       type: 'schema',
@@ -122,8 +124,21 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
   return (
     <div style={{ padding: '20px 16px 36px' }}>
       <div style={{ marginBottom: 26 }}>
-        <div style={{ fontSize: 26, fontWeight: 700, color: '#fff', marginBottom: 6, letterSpacing: '-0.4px' }}>
-          Дневники
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div style={{ fontSize: 26, fontWeight: 700, color: '#fff', letterSpacing: '-0.4px' }}>
+            Дневники
+          </div>
+          {streak != null && streak > 0 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: 'rgba(251,146,60,0.15)',
+              border: '1px solid rgba(251,146,60,0.3)',
+              borderRadius: 20, padding: '5px 10px',
+            }}>
+              <span style={{ fontSize: 14 }}>🔥</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#fb923c' }}>{streak}</span>
+            </div>
+          )}
         </div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', lineHeight: 1.6 }}>
           Инструменты схема-терапии для самонаблюдения
