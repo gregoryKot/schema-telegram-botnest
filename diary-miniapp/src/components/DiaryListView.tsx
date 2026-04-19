@@ -13,10 +13,10 @@ interface Props {
   onDelete: (type: DiaryType, id: number) => void;
 }
 
-const DIARY_META: Record<DiaryType, { title: string; emoji: string; color: string; emptyText: string }> = {
-  schema:    { title: 'Дневник схем',          emoji: '📓', color: '#f87171', emptyText: 'Ещё нет записей. Запиши момент, когда активировалась схема.' },
-  mode:      { title: 'Дневник режимов',       emoji: '🔄', color: '#60a5fa', emptyText: 'Ещё нет записей. Зафиксируй режим, когда заметишь его.' },
-  gratitude: { title: 'Дневник благодарности', emoji: '🌱', color: '#34d399', emptyText: 'Ещё нет записей. Начни с трёх вещей за сегодня.' },
+const DIARY_META: Record<DiaryType, { title: string; emoji: string; color: string; emptyText: string; fabLabel: string }> = {
+  schema:    { title: 'Дневник схем',          emoji: '📓', color: '#f87171', emptyText: 'Здесь будут твои наблюдения.\nКогда заметишь, что схема включилась — открой и запиши момент.', fabLabel: '+ Записать момент' },
+  mode:      { title: 'Дневник режимов',       emoji: '🔄', color: '#60a5fa', emptyText: 'Здесь будут твои записи о режимах.\nКак только поймёшь, что какой-то режим взял управление — зафиксируй это.', fabLabel: '+ Записать режим' },
+  gratitude: { title: 'Дневник благодарности', emoji: '🌱', color: '#34d399', emptyText: 'Здесь будут твои дни благодарности.\nНачни сегодня — три вещи, большие или маленькие.', fabLabel: '+ Записать день' },
 };
 
 function formatDt(iso: string) {
@@ -37,7 +37,7 @@ function Field({ label, text }: { label: string; text: string }) {
 function DeleteBtn({ color, onClick }: { color: string; onClick: () => void }) {
   return (
     <button onClick={() => { haptic.warning(); onClick(); }} className="sel-btn" style={{ marginTop: 8, background: `${color}18`, border: `1px solid ${color}33`, borderRadius: 8, padding: '6px 12px', color, fontSize: 12, cursor: 'pointer' }}>
-      Удалить запись
+      Удалить эту запись
     </button>
   );
 }
@@ -148,10 +148,12 @@ function GratitudeCard({ entry, color, onDelete }: { entry: GratitudeDiaryEntry;
 }
 
 function Empty({ text }: { text: string }) {
+  const [line1, line2] = text.split('\n');
   return (
     <div style={{ textAlign: 'center', padding: '80px 32px 60px', color: 'rgba(255,255,255,0.32)', fontSize: 14, lineHeight: 1.7 }}>
       <div style={{ fontSize: 42, marginBottom: 16, opacity: 0.45 }}>📭</div>
-      {text}
+      <div style={{ fontWeight: 500, color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>{line1}</div>
+      {line2 && <div style={{ fontSize: 13 }}>{line2}</div>}
     </div>
   );
 }
@@ -215,7 +217,7 @@ export function DiaryListView({ type, schemaEntries, modeEntries, gratitudeEntri
         boxShadow: `0 6px 28px ${meta.color}55`,
         WebkitTapHighlightColor: 'transparent',
       }}>
-        + Новая запись
+        {meta.fabLabel}
       </button>
     </div>
   );

@@ -103,9 +103,9 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Дневник режимов</div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', marginBottom: 4 }}>Новая запись</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', marginBottom: 4 }}>Кто сейчас внутри?</div>
 
-        <StepLabel step={1} title="Режим" hint="кто включился" required />
+        <StepLabel step={1} title="Режим" hint="кто взял управление" required />
         {MODE_GROUPS.map(group => (
           <div key={group.id} style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 10, color: group.color, fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>{group.group}</div>
@@ -128,26 +128,26 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           </div>
         ))}
 
-        <StepLabel step={2} title="Ситуация" hint="что произошло?" required />
-        <Area value={situation} onChange={setSituation} placeholder="Опиши что случилось, где, с кем, когда?" />
+        <StepLabel step={2} title="Ситуация" hint="что произошло" required />
+        <Area value={situation} onChange={setSituation} placeholder="Что случилось? Где ты, с кем, в какой момент?" />
 
         <StepLabel step={3} title="Мысли" />
-        <Area value={thoughts} onChange={setThoughts} placeholder="Что думаешь в этом режиме?" rows={2} />
+        <Area value={thoughts} onChange={setThoughts} placeholder="Что говорит этот режим? Какие у него мысли?" rows={2} />
 
         <StepLabel step={4} title="Чувства" />
-        <Area value={feelings} onChange={setFeelings} placeholder="Что чувствуешь? Страх, злость, пустота..." rows={2} />
+        <Area value={feelings} onChange={setFeelings} placeholder="Что этот режим чувствует? Страх, злость, пустоту..." rows={2} />
 
-        <StepLabel step={5} title="Тело" hint="что ощутили?" />
-        <Area value={bodyFeelings} onChange={setBodyFeelings} placeholder="Напряжение, сжатие, онемение, тяжесть..." rows={2} />
+        <StepLabel step={5} title="Тело" hint="что ощущаешь" />
+        <Area value={bodyFeelings} onChange={setBodyFeelings} placeholder="Что происходит с телом? Напряжение, онемение, тяжесть..." rows={2} />
 
-        <StepLabel step={6} title="Действия" hint="что конкретно делали" />
-        <Area value={actions} onChange={setActions} placeholder="Что делаешь или сделал/а в этом режиме?" rows={2} />
+        <StepLabel step={6} title="Действия" hint="что ты делаешь или делал/а" />
+        <Area value={actions} onChange={setActions} placeholder="Что этот режим заставляет тебя делать или хотеть сделать?" rows={2} />
 
-        <StepLabel step={7} title="Что на самом деле вам было нужно?" />
-        <Area value={actualNeed} onChange={setActualNeed} placeholder="За этим режимом — какая настоящая потребность?" rows={2} />
+        <StepLabel step={7} title="Что тебе на самом деле было нужно?" />
+        <Area value={actualNeed} onChange={setActualNeed} placeholder="Какую потребность пытается закрыть этот режим?" rows={2} />
 
         <StepLabel step={8} title="Детские воспоминания" hint="связанные с ситуацией" />
-        <Area value={childhoodMemories} onChange={setChildhoodMemories} placeholder="Напоминает ли что-то из детства? Похожие ситуации, ощущения..." rows={3} />
+        <Area value={childhoodMemories} onChange={setChildhoodMemories} placeholder="Напоминает что-то из детства? Похожее чувство, похожая ситуация?" rows={3} />
 
         <button onClick={handleSave} disabled={!canSave || saving} style={{
           marginTop: 24, width: '100%', padding: '15px', borderRadius: 14,
@@ -156,11 +156,11 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           border: 'none', fontSize: 16, fontWeight: 600, cursor: canSave ? 'pointer' : 'default',
           transition: 'background 200ms, color 200ms',
         }}>
-          {saving ? 'Сохраняю...' : 'Сохранить'}
+          {saving ? 'Сохраняю...' : 'Сохранить запись'}
         </button>
         {!canSave && (
           <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.28)', marginTop: 8 }}>
-            Обязательно: выбери режим и опиши ситуацию
+            Выбери режим и опиши ситуацию — и можно будет сохранить
           </div>
         )}
       </div>

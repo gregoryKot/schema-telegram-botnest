@@ -47,7 +47,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
           {formatDate(date)}
         </div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)', marginBottom: 18, lineHeight: 1.6 }}>
-          Три вещи, за которые ты благодарен. Даже маленькие — они тоже считаются.
+          За что ты благодарен сегодня? Даже самое маленькое — оно важно.
         </div>
 
         {items.map((item, i) => (
@@ -65,7 +65,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
             <textarea
               value={item}
               onChange={e => update(i, e.target.value)}
-              placeholder={['Что-то хорошее, что случилось...', 'Кто-то или что-то, что помогло...', 'Момент, который запомнился...'][i]}
+              placeholder={['Что-то хорошее, что произошло сегодня...', 'Кто-то, кто помог или поддержал...', 'Момент, который хочется запомнить...'][i]}
               rows={2}
               className="field-input"
               style={{
@@ -91,7 +91,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
             color: 'rgba(255,255,255,0.38)',
             fontSize: 13, cursor: 'pointer', marginBottom: 4,
           }}>
-            + ещё одна вещь
+            + ещё одна
           </button>
         )}
 

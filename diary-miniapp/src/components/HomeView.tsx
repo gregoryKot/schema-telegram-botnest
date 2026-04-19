@@ -72,7 +72,7 @@ function DiaryCard({ meta, onOpen }: { meta: DiaryMeta; onOpen: () => void }) {
           </div>
         ) : (
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)', marginTop: 6 }}>
-            Нет записей
+            Пока пусто
           </div>
         )}
       </div>
@@ -96,7 +96,7 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
       type: 'schema',
       emoji: '📓',
       title: 'Дневник схем',
-      subtitle: 'Когда схема активировалась — ситуация, эмоции, мысли',
+      subtitle: 'Что произошло, что почувствовал/а, какая схема включилась',
       color: '#f87171',
       count: schemaDiaryCount,
       lastDate: lastSchemaDiaryDate,
@@ -105,7 +105,7 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
       type: 'mode',
       emoji: '🔄',
       title: 'Дневник режимов',
-      subtitle: 'Какой режим включился и что его запустило',
+      subtitle: 'Какой режим взял управление — и почему',
       color: '#60a5fa',
       count: modeDiaryCount,
       lastDate: lastModeDiaryDate,
@@ -114,7 +114,7 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
       type: 'gratitude',
       emoji: '🌱',
       title: 'Дневник благодарности',
-      subtitle: 'Три вещи, за которые ты благодарен сегодня',
+      subtitle: 'За что ты благодарен сегодня — даже самое маленькое',
       color: '#34d399',
       count: gratitudeDiaryCount,
       lastDate: lastGratitudeDiaryDate,
@@ -126,7 +126,7 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
       <div style={{ marginBottom: 26 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <div style={{ fontSize: 26, fontWeight: 700, color: '#fff', letterSpacing: '-0.4px' }}>
-            Дневники
+            Мои дневники
           </div>
           {streak != null && streak > 0 && (
             <div style={{
@@ -141,7 +141,7 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
           )}
         </div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', lineHeight: 1.6 }}>
-          Инструменты схема-терапии для самонаблюдения
+          Место для честного разговора с собой
         </div>
       </div>
       {diaries.map(meta => (

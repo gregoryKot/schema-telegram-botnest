@@ -58,7 +58,7 @@ function RequiredProgress({ trigger, hasEmotions, hasSchemas }: { trigger: strin
       </div>
       {filled === 3 && (
         <div style={{ fontSize: 11, color: COLOR, marginTop: 6, opacity: 0.8 }}>
-          Все обязательные поля заполнены — можно сохранять
+          Готово — можно сохранять
         </div>
       )}
     </div>
@@ -174,15 +174,15 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Дневник проявления схем</div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', marginBottom: 12 }}>Новая запись</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Дневник схем</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', marginBottom: 12 }}>Что произошло?</div>
 
         <RequiredProgress trigger={trigger} hasEmotions={emotions.length > 0} hasSchemas={schemaIds.length > 0} />
 
-        <StepLabel step={1} title="Спусковой механизм" hint="что произошло" required />
-        <Area value={trigger} onChange={setTrigger} placeholder="Опиши ситуацию: что случилось, где, с кем, когда?" rows={3} />
+        <StepLabel step={1} title="Спусковой механизм" hint="что запустило схему" required />
+        <Area value={trigger} onChange={setTrigger} placeholder="Что случилось? Где ты был/а, с кем, что произошло?" rows={3} />
 
-        <StepLabel step={2} title="Чувства" hint="что я чувствую и готов/а сделать" required />
+        <StepLabel step={2} title="Чувства" hint="что поднялось внутри" required />
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
           {EMOTIONS.map(em => {
             const sel = emotions.find(e => e.id === em.id);
@@ -218,16 +218,16 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           );
         })}
 
-        <StepLabel step={3} title="Мысли" hint="что я думаю и предполагаю, чего боюсь" />
-        <Area value={thoughts} onChange={setThoughts} placeholder="Какие мысли возникли? Чего опасаешься?" />
+        <StepLabel step={3} title="Мысли" hint="что говорит голова" />
+        <Area value={thoughts} onChange={setThoughts} placeholder="Какие мысли появились? Что ты говоришь себе в этот момент?" />
 
-        <StepLabel step={4} title="Тело" hint="что с моим телом" />
-        <Area value={bodyFeelings} onChange={setBodyFeelings} placeholder="Сжатие в груди, тяжесть, учащённый пульс..." rows={2} />
+        <StepLabel step={4} title="Тело" hint="что ощущаешь физически" />
+        <Area value={bodyFeelings} onChange={setBodyFeelings} placeholder="Где в теле это чувствуется? Сжатие, тяжесть, пульс, дыхание..." rows={2} />
 
-        <StepLabel step={5} title="Фактическое поведение" hint="что я сейчас делаю" />
-        <Area value={actualBehavior} onChange={setActualBehavior} placeholder="Что ты делаешь или хочешь сделать в этой ситуации?" rows={2} />
+        <StepLabel step={5} title="Моя реакция" hint="что ты делаешь или хочешь сделать" />
+        <Area value={actualBehavior} onChange={setActualBehavior} placeholder="Что ты сделал/а или хотел/а сделать? Убежать, замолчать, накричать..." rows={2} />
 
-        <StepLabel step={6} title="Схемы" hint="какая проявилась, откуда она у меня" required />
+        <StepLabel step={6} title="Схемы" hint="какая включилась" required />
         {SCHEMA_DOMAINS.map(domain => {
           const schemas = useFiltered
             ? domain.schemas.filter(s => activeSchemaIds!.includes(s.id))
@@ -258,22 +258,22 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
             background: 'none', border: 'none', color: 'rgba(255,255,255,0.32)',
             fontSize: 12, cursor: 'pointer', padding: '4px 0', marginBottom: 8,
           }}>
-            {showAllSchemas ? '↑ Показать только мои схемы' : '↓ Показать все схемы'}
+            {showAllSchemas ? '↑ Только мои схемы' : '↓ Все схемы'}
           </button>
         )}
-        <Area value={schemaOrigin} onChange={setSchemaOrigin} placeholder="Откуда эта схема? Связанные воспоминания из прошлого..." rows={2} />
+        <Area value={schemaOrigin} onChange={setSchemaOrigin} placeholder="Откуда она взялась? Что вспоминается из детства или прошлого?" rows={2} />
 
-        <StepLabel step={7} title="Здоровый взгляд" hint="что на самом деле происходит" />
-        <Area value={healthyView} onChange={setHealthyView} placeholder="Если смотреть на ситуацию без схемы — что ты видишь?" />
+        <StepLabel step={7} title="Здоровый взгляд" hint="как выглядит ситуация без схемы" />
+        <Area value={healthyView} onChange={setHealthyView} placeholder="Если убрать схему в сторону — что на самом деле здесь происходит?" />
 
-        <StepLabel step={8} title="Реальные проблемы" hint="в чём реальные трудности" />
-        <Area value={realProblems} onChange={setRealProblems} placeholder="Что в этой ситуации действительно сложно?" rows={2} />
+        <StepLabel step={8} title="Что действительно сложно" hint="без преувеличения" />
+        <Area value={realProblems} onChange={setRealProblems} placeholder="Что в этом моменте по-настоящему трудно — если не раздувать?" rows={2} />
 
-        <StepLabel step={9} title="Чрезмерные реакции" hint="в чём я переоценил/а ситуацию" />
-        <Area value={excessiveReactions} onChange={setExcessiveReactions} placeholder="Где реакция была сильнее, чем требует ситуация?" rows={2} />
+        <StepLabel step={9} title="Где я преувеличил/а" hint="что было больше, чем нужно" />
+        <Area value={excessiveReactions} onChange={setExcessiveReactions} placeholder="Где реакция оказалась больше, чем требовала ситуация?" rows={2} />
 
-        <StepLabel step={10} title="Здоровое поведение" hint="что я могу сделать, сохраняя независимость и безопасность" />
-        <Area value={healthyBehavior} onChange={setHealthyBehavior} placeholder="Как Здоровый Взрослый поступил бы в этой ситуации?" />
+        <StepLabel step={10} title="Здоровое поведение" hint="как поступил бы Здоровый Взрослый" />
+        <Area value={healthyBehavior} onChange={setHealthyBehavior} placeholder="Что сделал бы Здоровый Взрослый внутри тебя?" />
 
         <button onClick={handleSave} disabled={!canSave || saving} style={{
           marginTop: 24, width: '100%', padding: '15px', borderRadius: 14,
@@ -282,11 +282,11 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           border: 'none', fontSize: 16, fontWeight: 600, cursor: canSave ? 'pointer' : 'default',
           transition: 'background 200ms, color 200ms',
         }}>
-          {saving ? 'Сохраняю...' : 'Сохранить'}
+          {saving ? 'Сохраняю...' : 'Сохранить запись'}
         </button>
         {!canSave && (
           <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.28)', marginTop: 8 }}>
-            Обязательно: спусковой механизм, эмоции и схемы
+            Заполни ситуацию, эмоции и схемы — и можно будет сохранить
           </div>
         )}
       </div>
