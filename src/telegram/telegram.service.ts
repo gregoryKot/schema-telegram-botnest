@@ -305,9 +305,28 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    this.bot.command('about', async (ctx) => {
+      try {
+        const text = [
+          '🧠 <b>СхемаЛаб</b>',
+          '',
+          'Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.',
+          '',
+          '<b>Об авторе</b>',
+          'Канал о схема-терапии — @SchemeHappens',
+          'Записаться на сессию — @kotlarewski',
+        ].join('\n');
+        await ctx.reply(text, { parse_mode: 'HTML' });
+      } catch (err) {
+        this.logger.error('about command failed', err);
+        await ctx.reply('Не удалось загрузить информацию.').catch(() => null);
+      }
+    });
+
     await this.bot.telegram.setMyCommands([
       { command: 'start', description: 'Открыть СхемаЛаб' },
       { command: 'settings', description: 'Настройки уведомлений' },
+      { command: 'about', description: 'О приложении и авторе' },
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
 
     await this.bot.telegram.callApi('setChatMenuButton' as any, {
