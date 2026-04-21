@@ -33,7 +33,7 @@ function decryptConceptSnapshot(snap: Record<string, any>): Record<string, any> 
 }
 
 import { localDate, localMidnightUTC } from '../utils/tz';
-import { computeActiveSchemas } from '../utils/ysq';
+import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
 
 export interface TherapyRelationInfo {
   role: 'therapist' | 'client';
@@ -521,20 +521,22 @@ export class TherapyService {
       return { name: null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [] };
     }
     const uid = BigInt(clientId);
-    const [user, ysq] = await Promise.all([
+    const [user, ysq, rawHistory] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: uid }, select: { firstName: true, mySchemaIds: true, myModeIds: true, therapistShareProfile: true } }),
       this.prisma.ysqResult.findUnique({ where: { userId: uid } }),
+      this.prisma.ysqResultHistory.findMany({ where: { userId: uid }, orderBy: { completedAt: 'desc' }, take: 20 }),
     ]);
 
     if (user?.therapistShareProfile === false) {
-      return { name: user?.firstName ?? null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [] };
+      return { name: user?.firstName ?? null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [], ysqHistory: [] };
     }
 
-    let ysqActiveSchemaIds: string[] = [];
-    if (ysq?.answers) {
-      // Import scoring from constants — inline minimal YSQ scoring
-      ysqActiveSchemaIds = computeActiveSchemas(ysq.answers as number[]);
-    }
+    const ysqActiveSchemaIds = ysq?.answers ? computeActiveSchemas(ysq.answers as number[]) : [];
+    const ysqHistory = rawHistory.map(r => ({
+      id: r.id,
+      completedAt: r.completedAt.toISOString(),
+      scores: computeYsqScores(r.answers as number[]),
+    }));
 
     return {
       name: user?.firstName ?? null,
@@ -542,6 +544,7 @@ export class TherapyService {
       myModeIds: (user?.myModeIds as string[]) ?? [],
       ysqCompletedAt: ysq?.completedAt?.toISOString() ?? null,
       ysqActiveSchemaIds,
+      ysqHistory,
     };
   }
 

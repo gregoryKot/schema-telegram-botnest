@@ -19,7 +19,7 @@ const USER_DATA_TABLES = [
   'userSchemaNote', 'userModeNote',
   'userBeliefCheck', 'userLetter', 'userSafePlace', 'userFlashcard',
   'userPractice', 'practicePlan', 'childhoodRating',
-  'ysqResult', 'ysqProgress',
+  'ysqResult', 'ysqProgress', 'ysqResultHistory',
   'scheduledNotification',
   'schemaDiaryEntry', 'modeDiaryEntry', 'gratitudeDiaryEntry',
   'appActivity',
@@ -383,11 +383,24 @@ export class BotService {
 
   async saveYsqResult(userId: number, answers: number[]): Promise<void> {
     const uid = BigInt(userId);
-    await this.prisma.ysqResult.upsert({
-      where: { userId: uid },
-      update: { answers, completedAt: new Date() },
-      create: { userId: uid, answers },
+    const now = new Date();
+    await Promise.all([
+      this.prisma.ysqResult.upsert({
+        where: { userId: uid },
+        update: { answers, completedAt: now },
+        create: { userId: uid, answers },
+      }),
+      this.prisma.ysqResultHistory.create({ data: { userId: uid, answers, completedAt: now } }),
+    ]);
+  }
+
+  async getYsqHistory(userId: number): Promise<Array<{ id: number; completedAt: Date; answers: number[] }>> {
+    const rows = await this.prisma.ysqResultHistory.findMany({
+      where: { userId: BigInt(userId) },
+      orderBy: { completedAt: 'desc' },
+      take: 20,
     });
+    return rows.map(r => ({ id: r.id, completedAt: r.completedAt, answers: r.answers as number[] }));
   }
 
   private static readonly SCHEMA_NOTE_SCHEMA: EncryptSchema = {

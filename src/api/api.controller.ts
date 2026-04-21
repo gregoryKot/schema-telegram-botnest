@@ -8,6 +8,7 @@ import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 import { TherapyService } from '../therapy/therapy.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
+import { computeYsqScores } from '../utils/ysq';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -407,6 +408,16 @@ export class ApiController {
   async deleteYsqResult(@Req() req: AuthRequest) {
     await this.botService.deleteYsqResult(req.telegramUserId);
     return { ok: true };
+  }
+
+  @Get('ysq-history')
+  async getYsqHistory(@Req() req: AuthRequest) {
+    const raw = await this.botService.getYsqHistory(req.telegramUserId);
+    return raw.map(r => ({
+      id: r.id,
+      completedAt: r.completedAt.toISOString(),
+      scores: computeYsqScores(r.answers),
+    }));
   }
 
   @Get('schema-notes')

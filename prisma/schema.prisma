@@ -60,6 +60,7 @@ model User {
   pairs2                 Pair[]            @relation("PairUser2")
   therapistRelations     TherapyRelation[] @relation("TherapistOf")
   clientRelations        TherapyRelation[] @relation("ClientOf")
+  ysqHistory             YsqResultHistory[]
 }
 
 model Note {
@@ -113,6 +114,16 @@ model YsqResult {
   userId      BigInt   @id
   answers     Json
   completedAt DateTime @default(now())
+}
+
+model YsqResultHistory {
+  id          Int      @id @default(autoincrement())
+  userId      BigInt
+  answers     Json
+  completedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completedAt])
 }
 
 model ChildhoodRating {
