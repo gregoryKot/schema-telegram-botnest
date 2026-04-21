@@ -588,7 +588,7 @@ export class BotService {
       ...USER_DATA_TABLES.map(table => (this.prisma[table] as any).deleteMany({ where: { userId: uid } })),
       // Therapist-owned records (keyed by therapistId, not userId)
       this.prisma.clientConceptualization.deleteMany({ where: { therapistId: uid } }),
-      this.prisma.therapistNote.deleteMany({ where: { OR: [{ therapistId: uid }, { clientId: uid }] } }),
+      this.prisma.therapistNote.deleteMany({ where: { therapistId: uid } }),
       this.prisma.therapyRelation.deleteMany({ where: { therapistId: uid } }),
       // Pairs use two columns (special case)
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
