@@ -182,6 +182,14 @@ export class BotService {
     return users.map((u) => Number(u.id));
   }
 
+  async getBroadcastUserIds(): Promise<number[]> {
+    const users = await this.prisma.user.findMany({
+      where: { deletedAt: null, botBlockedAt: null },
+      select: { id: true },
+    });
+    return users.map((u) => Number(u.id));
+  }
+
   async getAllUsersWithSettings(): Promise<Array<{ id: number; notifyLocalHour: number; notifyTimezone: string; notifyReminderEnabled: boolean }>> {
     const users = await this.prisma.user.findMany({
       where: { notifyEnabled: true, botBlockedAt: null, deletedAt: null },

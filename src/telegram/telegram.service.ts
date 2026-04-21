@@ -83,6 +83,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    const redirectUsername = process.env.BOT_REDIRECT_USERNAME;
+    if (redirectUsername) {
+      const redirectText = `Бот переехал! Открывай @${redirectUsername}`;
+      this.bot.on('message', async (ctx) => { await ctx.reply(redirectText).catch(() => null); });
+      this.bot.on('callback_query', async (ctx) => {
+        await (ctx as any).answerCbQuery(redirectText, { show_alert: true }).catch(() => null);
+      });
+      this.bot.launch({ dropPendingUpdates: true }).catch(() => null);
+      this.logger.log(`Bot running in redirect mode → @${redirectUsername}`);
+      return;
+    }
+
     this.bot.command('start', async (ctx) => {
       try {
         const userId = ctx.from?.id;
@@ -252,6 +264,47 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    this.bot.command('therapist', async (ctx) => {
+      try {
+        const userId = ctx.from?.id;
+        if (!userId) return;
+        const secret = (ctx.message as any)?.text?.split(' ')[1];
+        if (!secret || secret !== process.env.THERAPIST_CODE) {
+          await ctx.reply('⛔ Неверный код');
+          return;
+        }
+        await this.botService.setRole(userId, 'THERAPIST');
+        await ctx.reply('✅ Роль терапевта установлена. Открой приложение — там появится кабинет терапевта.');
+      } catch (err) {
+        this.logger.error('therapist command failed', err);
+      }
+    });
+
+    this.bot.command('broadcast', async (ctx) => {
+      try {
+        const adminId = Number(process.env.ADMIN_ID);
+        if (!adminId || ctx.from?.id !== adminId) { await ctx.reply('⛔ Нет доступа'); return; }
+        const text = ((ctx.message as any)?.text as string | undefined)?.slice('/broadcast '.length).trim();
+        if (!text) { await ctx.reply('Укажи текст: /broadcast <сообщение>'); return; }
+        const userIds = await this.botService.getBroadcastUserIds();
+        await ctx.reply(`Начинаю рассылку для ${userIds.length} пользователей...`);
+        let sent = 0, failed = 0;
+        for (const uid of userIds) {
+          try {
+            await this.bot!.telegram.sendMessage(uid, text);
+            sent++;
+          } catch {
+            failed++;
+          }
+          await new Promise(r => setTimeout(r, 50));
+        }
+        await ctx.reply(`✅ Готово: ${sent} доставлено, ${failed} ошибок`);
+      } catch (err) {
+        this.logger.error('broadcast command failed', err);
+        await ctx.reply('❌ Ошибка рассылки').catch(() => null);
+      }
+    });
+
     await this.bot.telegram.setMyCommands([
       { command: 'start', description: 'Открыть СхемаЛаб' },
       { command: 'settings', description: 'Настройки уведомлений' },
@@ -272,22 +325,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     if (adminId) {
       this.bot.telegram.sendMessage(adminId, '🚀 Деплой завершён').catch(() => null);
     }
-
-    this.bot.command('therapist', async (ctx) => {
-      try {
-        const userId = ctx.from?.id;
-        if (!userId) return;
-        const secret = (ctx.message as any)?.text?.split(' ')[1];
-        if (!secret || secret !== process.env.THERAPIST_CODE) {
-          await ctx.reply('⛔ Неверный код');
-          return;
-        }
-        await this.botService.setRole(userId, 'THERAPIST');
-        await ctx.reply('✅ Роль терапевта установлена. Открой приложение — там появится кабинет терапевта.');
-      } catch (err) {
-        this.logger.error('therapist command failed', err);
-      }
-    });
 
     // One-time cleanup: cancel legacy pre_reminder notifications left in queue
     this.botService.cancelAllPreReminders().then(n => {
