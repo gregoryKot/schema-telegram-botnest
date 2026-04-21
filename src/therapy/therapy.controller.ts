@@ -1,4 +1,5 @@
 import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, HttpException, Logger, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { timingSafeEqual } from 'crypto';
 import { Request } from 'express';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyService } from './therapy.service';
@@ -91,7 +92,8 @@ export class TherapyController {
   @Post('become-therapist')
   async becomeTherapist(@Req() req: AuthRequest, @Body() body: { code: string }) {
     const expected = process.env.THERAPIST_CODE;
-    if (!expected || body.code !== expected) throw new ForbiddenException('Invalid code');
+    const valid = !!expected && (() => { try { return timingSafeEqual(Buffer.from(body.code ?? ''), Buffer.from(expected)); } catch { return false; } })();
+    if (!valid) throw new ForbiddenException('Invalid code');
     await this.botService.setRole(req.telegramUserId, 'THERAPIST');
     return { ok: true };
   }

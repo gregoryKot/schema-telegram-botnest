@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
-import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
-import { randomBytes } from 'crypto';
+import { encrypt, decrypt, encryptJson, decryptJson, encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { randomBytes, timingSafeEqual } from 'crypto';
 
 // ── User data registry ───────────────────────────────────────────────────────
 // CHECKLIST when adding a new table with userId:
@@ -390,12 +390,21 @@ export class BotService {
     });
   }
 
+  private static readonly SCHEMA_NOTE_SCHEMA: EncryptSchema = {
+    strings: ['triggers', 'feelings', 'thoughts', 'origins', 'reality', 'healthyView', 'behavior'],
+  };
+  private static readonly MODE_NOTE_SCHEMA: EncryptSchema = {
+    strings: ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'],
+  };
+
   async getSchemaNote(userId: number, schemaId: string) {
-    return this.prisma.userSchemaNote.findUnique({ where: { userId_schemaId: { userId: BigInt(userId), schemaId } } });
+    const row = await this.prisma.userSchemaNote.findUnique({ where: { userId_schemaId: { userId: BigInt(userId), schemaId } } });
+    return row ? decryptRecord(row, BotService.SCHEMA_NOTE_SCHEMA) : null;
   }
 
   async getSchemaNotes(userId: number) {
-    return this.prisma.userSchemaNote.findMany({ where: { userId: BigInt(userId) } });
+    const rows = await this.prisma.userSchemaNote.findMany({ where: { userId: BigInt(userId) } });
+    return rows.map(r => decryptRecord(r, BotService.SCHEMA_NOTE_SCHEMA));
   }
 
   async upsertSchemaNote(userId: number, schemaId: string, data: {
@@ -403,29 +412,33 @@ export class BotService {
     origins?: string; reality?: string; healthyView?: string; behavior?: string;
   }) {
     const uid = BigInt(userId);
+    const enc = encryptRecord(data, BotService.SCHEMA_NOTE_SCHEMA);
     return this.prisma.userSchemaNote.upsert({
       where: { userId_schemaId: { userId: uid, schemaId } },
-      update: data,
-      create: { userId: uid, schemaId, ...data },
+      update: enc,
+      create: { userId: uid, schemaId, ...enc },
     });
   }
 
   async getModeNote(userId: number, modeId: string) {
-    return this.prisma.userModeNote.findUnique({ where: { userId_modeId: { userId: BigInt(userId), modeId } } });
+    const row = await this.prisma.userModeNote.findUnique({ where: { userId_modeId: { userId: BigInt(userId), modeId } } });
+    return row ? decryptRecord(row, BotService.MODE_NOTE_SCHEMA) : null;
   }
 
   async getModeNotes(userId: number) {
-    return this.prisma.userModeNote.findMany({ where: { userId: BigInt(userId) } });
+    const rows = await this.prisma.userModeNote.findMany({ where: { userId: BigInt(userId) } });
+    return rows.map(r => decryptRecord(r, BotService.MODE_NOTE_SCHEMA));
   }
 
   async upsertModeNote(userId: number, modeId: string, data: {
     triggers?: string; feelings?: string; thoughts?: string; needs?: string; behavior?: string;
   }) {
     const uid = BigInt(userId);
+    const enc = encryptRecord(data, BotService.MODE_NOTE_SCHEMA);
     return this.prisma.userModeNote.upsert({
       where: { userId_modeId: { userId: uid, modeId } },
-      update: data,
-      create: { userId: uid, modeId, ...data },
+      update: enc,
+      create: { userId: uid, modeId, ...enc },
     });
   }
 
@@ -575,7 +588,7 @@ export class BotService {
       ...USER_DATA_TABLES.map(table => (this.prisma[table] as any).deleteMany({ where: { userId: uid } })),
       // Therapist-owned records (keyed by therapistId, not userId)
       this.prisma.clientConceptualization.deleteMany({ where: { therapistId: uid } }),
-      this.prisma.therapistNote.deleteMany({ where: { therapistId: uid } }),
+      this.prisma.therapistNote.deleteMany({ where: { OR: [{ therapistId: uid }, { clientId: uid }] } }),
       this.prisma.therapyRelation.deleteMany({ where: { therapistId: uid } }),
       // Pairs use two columns (special case)
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
