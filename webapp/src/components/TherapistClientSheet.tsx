@@ -44,11 +44,6 @@ function nextSessionLabel(dateStr: string): string {
   return timePart ? `${base} · ${timePart}` : base;
 }
 
-function streakEmoji(s: number) {
-  if (s >= 7) return '🔥';
-  if (s >= 1) return '🌱';
-  return '🫥';
-}
 function indexColor(v: number) {
   if (v >= 7) return '#06d6a0';
   if (v >= 4) return 'var(--accent-yellow)';

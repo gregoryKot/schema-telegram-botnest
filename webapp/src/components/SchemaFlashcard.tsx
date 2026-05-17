@@ -59,7 +59,6 @@ const NEEDS = [
 
 type Step = 'mode' | 'response' | 'need' | 'action';
 const STEPS: Step[] = ['mode', 'response', 'need', 'action'];
-const STEP_LABELS = ['Режим', 'Ответ', 'Потребность', 'Действие'];
 
 function loadLocal(): FlashcardEntry[] {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'); } catch { return []; }

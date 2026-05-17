@@ -15,7 +15,7 @@ interface Props {
 
 export function ReflectionSheet({ date, needs, ratings, onClose }: Props) {
   const [text, setText] = useState('');
-  const [loaded, setLoaded] = useState(false);
+  const [_loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Find lowest-rated need
