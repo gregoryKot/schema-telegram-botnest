@@ -65,11 +65,128 @@ async function del(path: string): Promise<void> {
   if (!res.ok) throw new Error(`API error: ${res.status}`);
 }
 
-// ─── Re-export all types from miniapp api (same backend) ─────────────────────
-export type { UserSettings, StreakData, Achievement, UserPractice, PartnerInfo,
-  PairsData, PracticePlan, UserTask, TherapyRelationInfo, TherapyClientSummary,
-  TherapistNote, ConceptSnapshot, ClientConceptualization, YsqHistoryEntry, ClientData,
-} from '../../schema-miniapp/src/api';
+// ─── Shared types (mirrored from miniapp, same backend) ──────────────────────
+export interface UserSettings {
+  notifyEnabled: boolean;
+  notifyLocalHour: number;
+  notifyTimezone: string;
+  notifyReminderEnabled: boolean;
+  pairCardDismissed: boolean;
+  mySchemaIds: string[];
+  myModeIds: string[];
+  therapistShareCards: boolean;
+  therapistShareProfile: boolean;
+}
+export interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+  totalDays: number;
+  todayDone: boolean;
+  weekDots: boolean[];
+}
+export interface Achievement { id: string; earned: boolean; }
+export interface UserPractice { id: number; needId: string; text: string; }
+export interface PartnerInfo {
+  code: string;
+  partnerIndex: number | null;
+  partnerTodayDone: boolean;
+  partnerName: string | null;
+  partnerTelegramId: number | null;
+  partnerWeekAvgs: (number | null)[];
+}
+export interface PairsData { partners: PartnerInfo[]; pendingCode: string | null; }
+export interface PracticePlan {
+  id: number;
+  needId: string;
+  practiceText: string;
+  scheduledDate: string;
+  reminderUtcHour: number | null;
+  done: boolean | null;
+}
+export interface UserTask {
+  id: number;
+  userId: number;
+  assignedBy: number | null;
+  type: string;
+  text: string;
+  targetDays: number | null;
+  needId: string | null;
+  dueDate: string | null;
+  done: boolean | null;
+  completedAt: string | null;
+  createdAt: string;
+  doneToday?: boolean;
+  progress?: number;
+}
+export interface TherapyRelationInfo {
+  role: 'therapist' | 'client';
+  status: string;
+  partnerName: string | null;
+  partnerId: number | null;
+  code: string;
+  nextSession: string | null;
+}
+export interface TherapyClientSummary {
+  telegramId: number;
+  name: string | null;
+  clientAlias: string | null;
+  streak: number;
+  lastActiveDate: string | null;
+  todayIndex: number | null;
+  relationCreatedAt: string;
+  therapyStartDate: string | null;
+  nextSession: string | null;
+  meetingDays: number[];
+}
+export interface TherapistNote {
+  id: number;
+  therapistId: number;
+  clientId: number;
+  date: string;
+  text: string;
+  createdAt: string;
+}
+export interface ConceptSnapshot {
+  savedAt: string;
+  schemaIds: string[];
+  modeIds: string[];
+  earlyExperience: string | null;
+  unmetNeeds: string | null;
+  triggers: string | null;
+  copingStyles: string | null;
+  goals: string | null;
+  currentProblems: string | null;
+  modeTransitions?: string | null;
+}
+export interface ClientConceptualization {
+  id: number;
+  therapistId: number;
+  clientId: number;
+  schemaIds: string[];
+  modeIds: string[];
+  earlyExperience: string | null;
+  unmetNeeds: string | null;
+  triggers: string | null;
+  copingStyles: string | null;
+  goals: string | null;
+  currentProblems: string | null;
+  modeTransitions: string | null;
+  history: ConceptSnapshot[];
+  updatedAt: string;
+}
+export interface YsqHistoryEntry {
+  id: number;
+  completedAt: string;
+  scores: { id: string; pct5plus: number }[];
+}
+export interface ClientData {
+  name: string | null;
+  mySchemaIds: string[];
+  myModeIds: string[];
+  ysqCompletedAt: string | null;
+  ysqActiveSchemaIds: string[];
+  ysqHistory: YsqHistoryEntry[];
+}
 
 // ─── API object (identical endpoints, different auth header) ──────────────────
 export const api = {
