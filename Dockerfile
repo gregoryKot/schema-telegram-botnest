@@ -21,4 +21,4 @@ RUN npm run build --prefix webapp
 # ── Prune dev deps (backend only) ──────────────────────────────────────────
 RUN npm prune --production
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node scripts/migrate-from-railway.js && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node scripts/migrate-from-railway.js; node dist/main"]
