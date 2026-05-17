@@ -1,58 +1,115 @@
 #!/usr/bin/env node
-// One-time data migration from Railway to Amvera Postgres
-// Runs at container startup, checks if data already exists before inserting
+// One-time data migration: reads from Railway Postgres, writes to Amvera Postgres
+// Runs at container startup; skips if data already exists
 
 const { Client } = require('pg');
-const fs = require('fs');
-const path = require('path');
+
+// Tables in FK-safe insertion order (parents before children)
+const TABLES = [
+  'User',
+  'Pair',
+  'TherapyRelation',
+  'AuthProvider',
+  'WebSession',
+  'AppActivity',
+  'ChildhoodRating',
+  'ClientConceptualization',
+  'GratitudeDiaryEntry',
+  'ModeDiaryEntry',
+  'Note',
+  'PracticePlan',
+  'Rating',
+  'ScheduledNotification',
+  'SchemaDiaryEntry',
+  'TherapistNote',
+  'UserModeNote',
+  'UserPractice',
+  'UserSafePlace',
+  'UserSchemaNote',
+  'UserTask',
+  'UserBeliefCheck',
+  'UserFlashcard',
+  'UserLetter',
+  'YsqProgress',
+  'YsqResult',
+  'YsqResultHistory',
+];
+
+async function copyTable(src, dst, table) {
+  const { rows } = await src.query(`SELECT * FROM "${table}"`);
+  if (rows.length === 0) return 0;
+
+  const cols = Object.keys(rows[0]);
+  const colList = cols.map(c => `"${c}"`).join(', ');
+
+  let inserted = 0;
+  for (const row of rows) {
+    const values = cols.map(c => {
+      const v = row[c];
+      // pg returns jsonb as parsed JS objects; pass them as-is and pg will re-serialize
+      return v;
+    });
+    const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+    try {
+      await dst.query(
+        `INSERT INTO "${table}" (${colList}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
+        values,
+      );
+      inserted++;
+    } catch (err) {
+      console.error(`[migration] Row error in ${table}: ${err.message}`);
+    }
+  }
+  return inserted;
+}
 
 async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
+  const railwayUrl = process.env.RAILWAY_DATABASE_URL;
+  const amveraUrl  = process.env.DATABASE_URL;
+
+  if (!railwayUrl) {
+    console.log('[migration] RAILWAY_DATABASE_URL not set, skipping');
+    return;
+  }
+  if (!amveraUrl) {
     console.log('[migration] DATABASE_URL not set, skipping');
     return;
   }
 
-  const client = new Client({ connectionString: databaseUrl });
+  const src = new Client({ connectionString: railwayUrl, ssl: { rejectUnauthorized: false } });
+  const dst = new Client({ connectionString: amveraUrl });
 
   try {
-    await client.connect();
+    await src.connect();
+    await dst.connect();
 
-    // Check if data already exists
-    const result = await client.query('SELECT COUNT(*) FROM "User"');
-    const userCount = parseInt(result.rows[0].count, 10);
-
-    if (userCount > 0) {
-      console.log(`[migration] Data already present (${userCount} users), skipping Railway import`);
+    // Check if already migrated
+    const check = await dst.query('SELECT COUNT(*) FROM "User"');
+    const existing = parseInt(check.rows[0].count, 10);
+    if (existing > 0) {
+      console.log(`[migration] Already have ${existing} users, skipping`);
       return;
     }
 
-    console.log('[migration] Empty database detected, importing Railway data...');
+    console.log('[migration] Empty DB — starting Railway → Amvera copy...');
 
-    const sqlFile = path.join(__dirname, 'railway_data.sql');
-    if (!fs.existsSync(sqlFile)) {
-      console.log('[migration] railway_data.sql not found, skipping');
-      return;
+    let total = 0;
+    for (const table of TABLES) {
+      try {
+        const n = await copyTable(src, dst, table);
+        console.log(`[migration]   ${table}: ${n} rows`);
+        total += n;
+      } catch (err) {
+        console.error(`[migration] Table ${table} failed: ${err.message}`);
+      }
     }
 
-    const sql = fs.readFileSync(sqlFile, 'utf8');
-
-    // Split by semicolons but preserve multiline values
-    // Execute the whole file as one transaction
-    await client.query('BEGIN');
-    try {
-      await client.query(sql);
-      await client.query('COMMIT');
-      console.log('[migration] Railway data imported successfully');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      console.error('[migration] Import failed, rolled back:', err.message);
-    }
-
+    console.log(`[migration] Done — ${total} rows copied`);
   } catch (err) {
-    console.error('[migration] Connection error:', err.message);
+    console.error('[migration] Fatal error:', err.message);
   } finally {
-    await client.end();
+    await src.end().catch(() => null);
+    await dst.end().catch(() => null);
   }
 }
 
