@@ -24,9 +24,16 @@ import { AuthModule } from './auth/auth.module';
     ]),
     // Serve webapp/dist as static files — only when built (prod).
     // React Router needs excludePaths to let /api/* reach NestJS.
+    // Telegram-only mini app at /tg (no login, uses initData)
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'schema-miniapp', 'dist'),
+      serveRoot: '/tg',
+      serveStaticOptions: { fallthrough: true },
+    }),
+    // Website with login at /
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'webapp', 'dist'),
-      exclude: ['/api/{*path}'],
+      exclude: ['/api/{*path}', '/tg/{*path}'],
       serveStaticOptions: {
         fallthrough: true, // 404 → pass to NestJS (handles /api/*)
       },
