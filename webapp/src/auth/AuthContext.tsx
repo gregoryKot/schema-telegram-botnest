@@ -44,11 +44,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [scheduleRefresh]);
 
-  // On mount: try to restore session from httpOnly cookie
+  // Try Telegram WebApp auto-auth using initData
+  const doTelegramWebAppAuth = useCallback(async (): Promise<boolean> => {
+    try {
+      const tg = (window as any).Telegram?.WebApp;
+      const initData = tg?.initData;
+      if (!initData) return false;
+
+      const res = await fetch(`${API_BASE}/api/auth/telegram/webapp`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData }),
+      });
+      if (!res.ok) return false;
+      const { accessToken: token, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
+      setTokenState(token);
+      scheduleRefresh(expiresIn);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [scheduleRefresh]);
+
+  // On mount: try Telegram WebApp auth first, then fall back to httpOnly cookie
   useEffect(() => {
-    doRefresh().finally(() => setIsLoading(false));
+    const init = async () => {
+      const tgOk = await doTelegramWebAppAuth();
+      if (!tgOk) await doRefresh();
+      setIsLoading(false);
+    };
+    init();
     return () => { if (refreshTimer.current) clearTimeout(refreshTimer.current); };
-  }, [doRefresh]);
+  }, [doRefresh, doTelegramWebAppAuth]);
 
   const setAccessToken = useCallback((token: string, expiresIn: number) => {
     setTokenState(token);
