@@ -10,20 +10,16 @@ RUN npm install
 COPY webapp/package*.json ./webapp/
 RUN npm install --prefix webapp
 
-# ── Telegram mini-app dependencies ─────────────────────────────────────────
-COPY schema-miniapp/package*.json ./schema-miniapp/
-RUN npm install --prefix schema-miniapp
-
-# ── Copy source and build both ──────────────────────────────────────────────
+# ── Copy source and build ──────────────────────────────────────────────────
 COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-# Build webapp (website) — output goes to webapp/dist/ → served at /
+# Build webapp (website) — output → webapp/dist/ → served at /
 RUN npm run build --prefix webapp
 
-# Build schema-miniapp (Telegram-only) — output → schema-miniapp/dist → served at /tg
-RUN npm run build --prefix schema-miniapp
+# schema-miniapp (Telegram-only) is pre-built and committed at schema-miniapp/dist/
+# → served at /tg (built locally with vite base '/tg/')
 
 # ── Prune dev deps (backend only) ──────────────────────────────────────────
 RUN npm prune --production
