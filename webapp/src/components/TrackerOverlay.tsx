@@ -76,9 +76,9 @@ function SummaryDonut({ avg }: { avg: number }) {
 }
 
 export function TrackerOverlay({
-  needs, ratings, saved, isOffline,
+  needs, ratings, saved: _saved, isOffline,
   onChange, onSaved, onClose, initialNeedId,
-  onOpenNote, onOpenGoal, onOpenHistory, yesterdayRatings = {},
+  onOpenNote, onOpenGoal: _onOpenGoal, onOpenHistory, yesterdayRatings = {},
   date, onDone,
 }: Props) {
   const safeTop = useSafeTop();
@@ -105,7 +105,7 @@ export function TrackerOverlay({
     }
     return 0;
   });
-  const [unlocked,    setUnlocked]    = useState<Set<string>>(new Set());
+  const [_unlocked,   setUnlocked]    = useState<Set<string>>(new Set());
   const [detailNeed,  setDetailNeed]  = useState<Need | null>(null);
   const [onbStep,     setOnbStep]     = useState(0);
   const [showOnb,     setShowOnb]     = useState(() => !isBackfill && !localStorage.getItem(ONBOARDING_KEY));

@@ -12,7 +12,6 @@ import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { api } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
 import { BottomSheet } from '../components/BottomSheet';
-import { SectionLabel } from '../components/SectionLabel';
 import { fmtDate } from '../utils/format';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 
@@ -162,7 +161,7 @@ function TaskProgressBar({ task }: { task: UserTask }) {
   );
 }
 
-export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, practiceCount, planCount, refreshKey, initialTasks, onTasksChanged, userRole, onOpenTherapistCabinet }: Props) {
+export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, practiceCount, planCount, refreshKey, initialTasks, onTasksChanged, userRole: _userRole, onOpenTherapistCabinet: _onOpenTherapistCabinet }: Props) {
   const safeTop = useSafeTop();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
@@ -192,7 +191,6 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
     return () => { ignore = true; };
   }, [refreshKey]);
 
-  const myTasks = tasks.filter(t => t.assignedBy === null);
   const therapistTasks = tasks.filter(t => t.assignedBy !== null);
 
   function openTask(task: UserTask) {

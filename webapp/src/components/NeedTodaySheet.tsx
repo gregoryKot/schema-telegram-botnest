@@ -23,7 +23,7 @@ const DISCLAIMER_CONTENT = [
   'Если чувствуешь, что что-то важное требует внимания — терапия это место, где можно разобраться по-настоящему. Безопасно, глубоко, рядом живой человек.',
 ];
 
-export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
+export function NeedTodaySheet({ need, value, yesterdayValue: _yesterdayValue, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showExamples, setShowExamples] = useState(false);

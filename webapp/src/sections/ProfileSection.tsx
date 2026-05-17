@@ -60,9 +60,9 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [notesOpen, setNotesOpen] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
-  const [insightsOpen] = useState(false); // kept for future use
+  const [_insightsOpen] = useState(false); // kept for future use
   const [showBestDayInfo, setShowBestDayInfo] = useState(false);
-  const [homeScreenStatus] = useState<string | null>(null);
+  const [_homeScreenStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setReady(false);
@@ -92,15 +92,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const earnedList    = achievements?.filter(a => a.earned) ?? [];
   const hasInsights   = insights && insights.weeklyStats.some(s => s.avg !== null);
 
-  const insightSummary = (() => {
-    if (!insights) return null;
-    if (insights.bestDayOfWeek && insights.totalDays >= 7) return `Лучший день — ${insights.bestDayOfWeek}`;
-    const rising = insights.weeklyStats.find(s => s.trend === '↑');
-    if (rising) return `${NEED_NAMES[rising.needId]} растёт`;
-    return 'Заполняй дневник каждый день';
-  })();
-
-  const showHomeSuggestion = false; // moved to onboarding
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 140, paddingTop: safeTop, animation: 'fade-in 0.25s ease', overflowX: 'hidden' }}>

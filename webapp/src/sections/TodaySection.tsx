@@ -14,7 +14,7 @@ import { COLORS } from '../types';
 import type { Need, UserProfile } from '../types';
 import { NEED_DATA } from '../needData';
 import { api } from '../api';
-import type { StreakData, UserTask } from '../api';
+import type { UserTask } from '../api';
 import type { Section } from '../components/BottomNav';
 import { useSafeTop } from '../utils/safezone';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
@@ -72,13 +72,6 @@ function hexToRgb(hex: string): string {
   return [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)).join(',');
 }
 
-function plural(n: number, one: string, few: string, many: string): string {
-  const m10 = n % 10, m100 = n % 100;
-  if (m100 >= 11 && m100 <= 19) return many;
-  if (m10 === 1) return one;
-  if (m10 >= 2 && m10 <= 4) return few;
-  return many;
-}
 
 function formatGreetingDate(): string {
   const now = new Date();
@@ -199,7 +192,7 @@ interface Props {
 
 export function TodaySection({
   needs, ratings, yesterdayRatings = {},
-  onNavigate, onOpenSchema, onOpenAdvanced, onOpenTracker, onOpenTrackerAt, onOpenTrackerHistory,
+  onNavigate: _onNavigate, onOpenSchema, onOpenAdvanced, onOpenTracker, onOpenTrackerAt, onOpenTrackerHistory,
   onOpenDiaries, onOpenChildhoodWheel,
   refreshKey, userRole, onOpenTherapistCabinet, onTasksChanged,
 }: Props) {
@@ -258,21 +251,6 @@ export function TodaySection({
       .catch(() => {});
   }, [refreshKey]);
 
-  function openTask(task: UserTask) {
-    if (task.assignedBy !== null && task.type !== 'custom') setActiveTaskId(task.id);
-    switch (task.type) {
-      case 'diary_streak':    onOpenDiaries(); break;
-      case 'tracker_streak':  onOpenTracker(); break;
-      case 'schema_intro':    if (task.text) setIntroSchemaId(task.text); break;
-      case 'mode_intro':      if (task.text) setIntroModeId(task.text); break;
-      default:
-        if (ALL_SCHEMAS.some(s => s.id === task.text)) { setIntroSchemaId(task.text); break; }
-        if (ALL_MODES.some(m => m.id === task.text))   { setIntroModeId(task.text);   break; }
-        // belief_check, letter_to_self etc — navigate to Help
-        onNavigate('help');
-    }
-  }
-
   function handleTaskComplete() {
     if (activeTaskId === null) return;
     const id = activeTaskId;
@@ -282,10 +260,6 @@ export function TodaySection({
       .then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); })
       .catch(() => {});
   }
-
-  const myTasks        = tasks.filter(t => t.assignedBy === null);
-  const therapistTasks = tasks.filter(t => t.assignedBy !== null);
-  const hasAnyTask     = tasks.length > 0;
 
   const streak       = profile?.streak ?? 0;
   const ratedCount   = needs.filter(n => ratings[n.id] !== undefined).length;

@@ -8,7 +8,7 @@ import { todayStr } from '../utils/format';
 import { cacheTherapistContact } from '../utils/therapistContact';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 import { CHILDHOOD_DONE_KEY } from './ChildhoodWheelSheet';
-import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './YSQTestSheet';
+import { YSQ_PROGRESS_KEY } from './YSQTestSheet';
 
 import { TodaySection } from '../sections/TodaySection';
 import { DiarySection } from '../sections/DiarySection';
@@ -146,7 +146,6 @@ export function AppShell() {
   const therapistBackHandlerRef = useRef<() => void>(() => setCabinetView('list'));
   const switchTherapistMode = (on: boolean) => { localStorage.setItem('therapist_mode', on ? '1' : '0'); setTherapistMode(on); };
 
-  const tabScrollPositions = useRef<Record<TrackerTab, number>>({ today: 0, history: 0 });
 
   // Online/offline
   useEffect(() => {

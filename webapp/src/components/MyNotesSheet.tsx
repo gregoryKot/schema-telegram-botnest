@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { api } from '../api';
-import { SCHEMA_DOMAINS, getModeById, ALL_MODES } from '../schemaTherapyData';
+import { SCHEMA_DOMAINS, getModeById } from '../schemaTherapyData';
 import { SchemaIntroSheet } from './SchemaIntroSheet';
 import { ModeIntroSheet } from './ModeIntroSheet';
 

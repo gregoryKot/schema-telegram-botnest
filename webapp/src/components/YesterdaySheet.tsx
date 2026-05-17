@@ -105,7 +105,7 @@ export function YesterdaySheet({ needs, date, onClose }: Props) {
   );
 }
 
-function SliderRow({ needId, label, value, color, saved, onChange }: {
+function SliderRow({ needId: _needId, label, value, color, saved, onChange }: {
   needId: string; label: string; value: number; color: string; saved: boolean; onChange: (v: number) => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);

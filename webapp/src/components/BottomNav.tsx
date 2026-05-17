@@ -31,7 +31,7 @@ const TABS: TabDef[] = [
   { id: 'profile', label: 'Профиль',  color: '#a78bfa' },
 ];
 
-function TabIcon({ id, active, color, isTherapist }: { id: Section; active: boolean; color: string; isTherapist?: boolean }) {
+function TabIcon({ id, active, color, isTherapist: _isTherapist }: { id: Section; active: boolean; color: string; isTherapist?: boolean }) {
   const s: React.CSSProperties = {
     width: 22, height: 22,
     color: active ? color : 'var(--text-faint)',

@@ -24,7 +24,7 @@ interface Props {
 export function NoteSheet({ date, onClose }: Props) {
   const [text, setText] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
-  const [loaded, setLoaded] = useState(false);
+  const [_loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
