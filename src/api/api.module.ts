@@ -6,9 +6,10 @@ import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
 import { TelegramModule } from '../telegram/telegram.module';
 import { TherapyModule } from '../therapy/therapy.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [BotModule, NotificationModule, TelegramModule, TherapyModule],
+  imports: [BotModule, NotificationModule, TelegramModule, TherapyModule, AuthModule],
   controllers: [ApiController, DiaryController],
   providers: [TelegramAuthGuard],
 })

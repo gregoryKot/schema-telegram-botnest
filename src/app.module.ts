@@ -10,6 +10,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ApiModule } from './api/api.module';
 import { NotificationModule } from './notification/notification.module';
 import { TherapyModule } from './therapy/therapy.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TherapyModule } from './therapy/therapy.module';
     ]),
     PrismaModule,
     NotificationModule,
+    AuthModule,
     TherapyModule,
     TelegramModule,
     BotModule,

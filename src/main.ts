@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { AlertLogger } from './logger/alert.logger';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const cookieParser = require('cookie-parser');
 
 // BigInt → number in JSON responses (Telegram user IDs fit safely in Number)
 (BigInt.prototype as any).toJSON = function () { return Number(this); };
@@ -8,11 +10,19 @@ import { AlertLogger } from './logger/alert.logger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new AlertLogger() });
 
-  const origins = process.env.ALLOWED_ORIGINS?.split(',') ?? ['https://schema-miniapp.vercel.app', 'https://diary-miniapp-sigma.vercel.app', 'http://localhost:5173'];
+  app.use(cookieParser());
+
+  const origins = process.env.ALLOWED_ORIGINS?.split(',') ?? [
+    'https://schema-miniapp.vercel.app',
+    'https://diary-miniapp-sigma.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:5174',
+  ];
   app.enableCors({
     origin: origins,
-    methods: ['GET', 'POST', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'x-telegram-init-data'],
+    methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'x-telegram-init-data', 'Authorization', 'x-requested-with'],
+    credentials: true, // required for httpOnly cookies
   });
 
   const port = process.env.PORT ?? 3000;

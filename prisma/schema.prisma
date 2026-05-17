@@ -61,6 +61,42 @@ model User {
   therapistRelations     TherapyRelation[] @relation("TherapistOf")
   clientRelations        TherapyRelation[] @relation("ClientOf")
   ysqHistory             YsqResultHistory[]
+  authProviders          AuthProvider[]
+  webSessions            WebSession[]
+}
+
+// OAuth provider link (telegram | google) → userId
+model AuthProvider {
+  id          Int      @id @default(autoincrement())
+  userId      BigInt
+  provider    String   // 'telegram' | 'google'
+  providerId  String   // telegramId as string, or Google sub
+  email       String?
+  displayName String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+// Web sessions — refresh token rotation with theft detection
+model WebSession {
+  id           String   @id @default(cuid())
+  userId       BigInt
+  // SHA-256 hash of the actual refresh token (token itself never stored)
+  tokenHash    String   @unique
+  family       String   // random ID per login — if old token reused, entire family revoked
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  ipAddress    String?
+  userAgent    String?
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([family])
 }
 
 model Note {

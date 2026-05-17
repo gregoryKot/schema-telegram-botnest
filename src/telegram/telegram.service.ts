@@ -49,7 +49,8 @@ const CONSENT_TEXT = `🔐 Соглашение об обработке данн
 
 Нажимая «Принять», ты соглашаешься с этими условиями.`;
 
-export function buildWelcomeKeyboard() {
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export function buildWelcomeKeyboard(): any {
   return Markup.inlineKeyboard([
     [Markup.button.webApp('🧠 Открыть СхемаЛаб', MINIAPP_URL)],
   ]);
