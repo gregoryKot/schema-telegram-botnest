@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_GUARD } from '@nestjs/core';
+import { join } from 'path';
 import { UserThrottlerGuard } from './api/throttler.guard';
 import { TelegramModule } from './telegram/telegram.module';
 import { BotModule } from './bot/bot.module';
@@ -17,9 +19,18 @@ import { AuthModule } from './auth/auth.module';
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
-      { name: 'short', ttl: 1000,  limit: 10  }, // 10 req/sec per user
-      { name: 'long',  ttl: 60000, limit: 200 }, // 200 req/min per user
+      { name: 'short', ttl: 1000,  limit: 10  },
+      { name: 'long',  ttl: 60000, limit: 200 },
     ]),
+    // Serve webapp/dist as static files — only when built (prod).
+    // React Router needs excludePaths to let /api/* reach NestJS.
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', 'webapp', 'dist'),
+      exclude: ['/api/(.*)'],
+      serveStaticOptions: {
+        fallthrough: true, // 404 → pass to NestJS (handles /api/*)
+      },
+    }),
     PrismaModule,
     NotificationModule,
     AuthModule,

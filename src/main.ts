@@ -12,17 +12,18 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  // CORS only needed for the Telegram mini-app (different origin).
+  // The web app is served from the same domain → no CORS needed for it.
   const origins = process.env.ALLOWED_ORIGINS?.split(',') ?? [
     'https://schema-miniapp.vercel.app',
     'https://diary-miniapp-sigma.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:5174',
+    'http://localhost:5173', // miniapp dev
   ];
   app.enableCors({
     origin: origins,
     methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
     allowedHeaders: ['Content-Type', 'x-telegram-init-data', 'Authorization', 'x-requested-with'],
-    credentials: true, // required for httpOnly cookies
+    credentials: true,
   });
 
   const port = process.env.PORT ?? 3000;

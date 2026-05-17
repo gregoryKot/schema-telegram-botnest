@@ -23,7 +23,7 @@ function cookieOptions(maxAgeS: number) {
   return {
     httpOnly: true,
     secure: true,
-    sameSite: 'none' as const,
+    sameSite: 'strict' as const, // same domain → CSRF impossible
     path: '/api/auth',
     maxAge: maxAgeS * 1000,
   };
@@ -47,7 +47,7 @@ export class AuthController {
       linkUserId: (req as any).webUser?.userId?.toString() ?? null,
     })).toString('base64url');
 
-    res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+    res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'strict', maxAge: 10 * 60 * 1000, path: '/api/auth' });
     res.redirect(this.auth.buildGoogleAuthUrl(state));
   }
 
