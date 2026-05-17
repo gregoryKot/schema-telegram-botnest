@@ -11,6 +11,8 @@ declare global {
   }
 }
 
+const isTelegramContext = !!(window as any).Telegram?.WebApp?.initData;
+
 export function LoginPage() {
   const { isAuthenticated, setAccessToken } = useAuth();
   const navigate = useNavigate();
@@ -21,6 +23,33 @@ export function LoginPage() {
   useEffect(() => {
     if (isAuthenticated) navigate('/', { replace: true });
   }, [isAuthenticated, navigate]);
+
+  const retryTelegramAuth = async () => {
+    setTelegramLoading(true);
+    setError(null);
+    try {
+      const initData = (window as any).Telegram?.WebApp?.initData;
+      if (!initData) { setError('initData недоступен'); return; }
+      const res = await fetch('/api/auth/telegram/webapp', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData }),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        setError(`Ошибка ${res.status}: ${body.slice(0, 120)}`);
+        return;
+      }
+      const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
+      setAccessToken(accessToken, expiresIn);
+      navigate('/', { replace: true });
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
 
   // Inject Telegram Login Widget script
   useEffect(() => {
@@ -62,6 +91,22 @@ export function LoginPage() {
   const handleGoogle = () => {
     window.location.href = `${API_BASE}/api/auth/google`;
   };
+
+  // Inside Telegram but auto-auth failed — show minimal retry UI
+  if (isTelegramContext) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>🧠</div>
+        <p style={{ color: 'var(--text-sub)', marginBottom: 24, textAlign: 'center' }}>
+          {telegramLoading ? 'Загрузка...' : 'Не удалось войти автоматически'}
+        </p>
+        {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 16, textAlign: 'center', maxWidth: 320 }}>{error}</p>}
+        <button className="btn-outline" onClick={retryTelegramAuth} disabled={telegramLoading}>
+          Попробовать снова
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{
