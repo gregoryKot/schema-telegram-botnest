@@ -106,6 +106,23 @@ export class AuthController {
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
+  // ─── Telegram WebApp auto-auth (initData) ─────────────────────────────────
+
+  @Post('telegram/webapp')
+  @HttpCode(200)
+  async telegramWebApp(
+    @Body('initData') initData: string,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: any,
+  ): Promise<{ accessToken: string; expiresIn: number }> {
+    if (!initData) throw new BadRequestException('Missing initData');
+    const { id: telegramId, firstName } = this.auth.verifyTelegramWebAppData(initData);
+    const userId = await this.auth.findOrCreateUserByProvider('telegram', String(telegramId), firstName) as bigint;
+    const tokens = await this.auth.issueTokens(userId, req.ip, req.headers['user-agent']);
+    res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+    return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+  }
+
   // ─── Link Telegram to existing account ────────────────────────────────────
 
   @Post('link/telegram')

@@ -99,6 +99,47 @@ export class AuthService {
     return { id, firstName: fields['first_name'] ?? '' };
   }
 
+  // ─── Telegram WebApp initData ──────────────────────────────────────────────
+
+  verifyTelegramWebAppData(initData: string): { id: number; firstName: string } {
+    const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
+
+    const params = new URLSearchParams(initData);
+    const hash = params.get('hash');
+    if (!hash) throw new UnauthorizedException('Missing hash in initData');
+
+    // Check auth_date freshness (allow 1 hour for mini apps — WebApp is long-lived)
+    const authDate = parseInt(params.get('auth_date') ?? '0', 10);
+    if (Date.now() / 1000 - authDate > 3600) throw new UnauthorizedException('Telegram initData expired');
+
+    // Build check string: all fields except hash, sorted, joined with \n
+    params.delete('hash');
+    const checkString = Array.from(params.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join('\n');
+
+    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+    const expectedHash = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
+
+    if (!crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(expectedHash, 'hex'))) {
+      throw new UnauthorizedException('Invalid Telegram WebApp signature');
+    }
+
+    // Parse user field (JSON string in initData)
+    const userJson = params.get('user');
+    if (!userJson) throw new UnauthorizedException('Missing user in initData');
+    let user: { id: number; first_name?: string };
+    try {
+      user = JSON.parse(userJson);
+    } catch {
+      throw new UnauthorizedException('Invalid user JSON in initData');
+    }
+
+    if (!user.id) throw new UnauthorizedException('Missing user id in initData');
+    return { id: user.id, firstName: user.first_name ?? '' };
+  }
+
   // ─── Find or create user ───────────────────────────────────────────────────
 
   async findOrCreateUserByProvider(
