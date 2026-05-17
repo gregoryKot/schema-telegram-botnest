@@ -11,7 +11,19 @@ declare global {
   }
 }
 
-const isTelegramContext = !!(window as any).Telegram?.WebApp?.initData;
+function getTelegramDebug() {
+  const tg = (window as any).Telegram?.WebApp;
+  return {
+    hasTelegram: !!(window as any).Telegram,
+    hasWebApp: !!tg,
+    initDataLen: tg?.initData?.length ?? 0,
+    initDataPreview: (tg?.initData ?? '').slice(0, 80),
+    initDataUnsafe: tg?.initDataUnsafe ? JSON.stringify(tg.initDataUnsafe).slice(0, 120) : 'none',
+    version: tg?.version ?? 'none',
+    platform: tg?.platform ?? 'none',
+    href: window.location.href,
+  };
+}
 
 export function LoginPage() {
   const { isAuthenticated, setAccessToken } = useAuth();
@@ -19,6 +31,8 @@ export function LoginPage() {
   const telegramRef = useRef<HTMLDivElement>(null);
   const [telegramLoading, setTelegramLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [debug] = useState(getTelegramDebug);
+  const isTelegramContext = debug.initDataLen > 0;
 
   useEffect(() => {
     if (isAuthenticated) navigate('/', { replace: true });
@@ -92,10 +106,23 @@ export function LoginPage() {
     window.location.href = `${API_BASE}/api/auth/google`;
   };
 
+  const debugPanel = (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: 8, background: 'rgba(0,0,0,0.85)', color: '#0f0', fontFamily: 'monospace', fontSize: 10, zIndex: 9999, wordBreak: 'break-all', maxHeight: '40vh', overflow: 'auto' }}>
+      <div>hasTelegram: {String(debug.hasTelegram)}</div>
+      <div>hasWebApp: {String(debug.hasWebApp)}</div>
+      <div>version: {debug.version} / platform: {debug.platform}</div>
+      <div>initDataLen: {debug.initDataLen}</div>
+      <div>initDataPreview: {debug.initDataPreview}</div>
+      <div>initDataUnsafe: {debug.initDataUnsafe}</div>
+      <div>href: {debug.href}</div>
+    </div>
+  );
+
   // Inside Telegram but auto-auth failed — show minimal retry UI
   if (isTelegramContext) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, paddingTop: 200 }}>
+        {debugPanel}
         <div style={{ fontSize: 48, marginBottom: 16 }}>🧠</div>
         <p style={{ color: 'var(--text-sub)', marginBottom: 24, textAlign: 'center' }}>
           {telegramLoading ? 'Загрузка...' : 'Не удалось войти автоматически'}
@@ -119,6 +146,7 @@ export function LoginPage() {
       position: 'relative',
       overflow: 'hidden',
     }}>
+      {debugPanel}
       {/* Ambient blobs */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
