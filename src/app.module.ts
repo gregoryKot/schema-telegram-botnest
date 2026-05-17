@@ -26,7 +26,7 @@ import { AuthModule } from './auth/auth.module';
     // React Router needs excludePaths to let /api/* reach NestJS.
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'webapp', 'dist'),
-      exclude: ['/api/(.*)'],
+      exclude: ['/api/{*path}'],
       serveStaticOptions: {
         fallthrough: true, // 404 → pass to NestJS (handles /api/*)
       },
