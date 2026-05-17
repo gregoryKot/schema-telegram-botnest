@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback, RefObject } from 'react';
+import { useState, useEffect, useRef, useCallback, type RefObject } from 'react';
 import { COLORS } from '../types';
 import type { Need } from '../types';
 import { api } from '../api';
 import { BottomSheet } from './BottomSheet';
 
 /** Prevent the iOS overflowY:auto container from stealing touch events on the slider track */
-function usePreventScrollOnTrack(trackRef: RefObject<HTMLDivElement>) {
+function usePreventScrollOnTrack(trackRef: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
