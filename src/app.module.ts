@@ -22,20 +22,14 @@ import { AuthModule } from './auth/auth.module';
       { name: 'short', ttl: 1000,  limit: 10  },
       { name: 'long',  ttl: 60000, limit: 200 },
     ]),
-    // Serve webapp/dist as static files — only when built (prod).
-    // React Router needs excludePaths to let /api/* reach NestJS.
-    // Telegram-only mini app at /tg (no login, uses initData)
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'schema-miniapp', 'dist'),
-      serveRoot: '/app',
-      serveStaticOptions: { fallthrough: true },
-    }),
-    // Website with login at /
+    // Single ServeStatic for everything.
+    // webapp/dist serves the website at /
+    // webapp/dist/app/ contains the Telegram mini app (schema-miniapp build)
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'webapp', 'dist'),
-      exclude: ['/api/{*path}', '/app/{*path}'],
+      exclude: ['/api/{*path}'],
       serveStaticOptions: {
-        fallthrough: true, // 404 → pass to NestJS (handles /api/*)
+        fallthrough: true,
       },
     }),
     PrismaModule,
