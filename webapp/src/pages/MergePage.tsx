@@ -57,7 +57,7 @@ export function MergePage() {
       const res = await fetch(`${API_BASE}/api/auth/merge`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
         body: JSON.stringify({ token }),
       });
       if (!res.ok) {
