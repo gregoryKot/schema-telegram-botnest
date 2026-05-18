@@ -7,6 +7,7 @@ import { SecurityLogService } from './security-log.service';
 import { AuthProviderRegistry } from './providers/registry';
 import { GoogleProvider } from './providers/google.provider';
 import { TelegramProvider } from './providers/telegram.provider';
+import { VkProvider } from './providers/vk.provider';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
@@ -19,6 +20,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     SecurityLogService,
     GoogleProvider,
     TelegramProvider,
+    VkProvider,
     AuthProviderRegistry,
   ],
   controllers: [AuthController],

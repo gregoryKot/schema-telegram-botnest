@@ -100,59 +100,60 @@ export class AuthController {
     return { kind: 'merge', mergeToken, summary, otherDisplay: identity.displayName ?? identity.email ?? null };
   }
 
-  // ─── Google OAuth ─────────────────────────────────────────────────────────
+  // ─── OAuth helpers ────────────────────────────────────────────────────────
+  //
+  // Each redirect-flow provider has a tiny stub that calls these helpers.
+  // Adding a new OAuth provider (Yandex, Apple, …) = add provider file,
+  // register in AuthProviderRegistry/AuthModule, add stub here:
+  //
+  //   @Get('yandex') @UseGuards(OptionalJwtGuard)
+  //   yandexRedirect(@Req() r,@Res() s) { return this.oauthRedirect('yandex', r, s); }
+  //   @Get('yandex/callback')
+  //   yandexCallback(...) { return this.oauthCallback('yandex', ...); }
+  //
+  // We don't use Get(':provider') because it would shadow /me, /refresh etc.
 
-  @Get('google')
-  @UseGuards(OptionalJwtGuard)
-  googleRedirect(@Req() req: any, @Res() res: any): void {
+  private oauthRedirect(provider: string, req: any, res: any): void {
+    const handler = this.providers.get(provider);
+    if (!handler.buildAuthUrl) throw new BadRequestException(`Provider ${provider} doesn't support OAuth`);
     const state = Buffer.from(JSON.stringify({
       nonce: Math.random().toString(36).slice(2),
       linkUserId: (req as any).webUser?.userId?.toString() ?? null,
     })).toString('base64url');
-
-    // sameSite: 'lax' — cookie must travel back when Google redirects to the
-    // callback (cross-site top-level navigation).
     res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
-    res.redirect(this.providers.get('google').buildAuthUrl!(state));
+    res.redirect(handler.buildAuthUrl(state));
   }
 
-  @Get('google/callback')
-  async googleCallback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Query('error') error: string,
-    @Req() req: any,
-    @Res() res: any,
+  private async oauthCallback(
+    provider: string, code: string, state: string, error: string, req: any, res: any,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
-      if (error) throw new UnauthorizedException('Google auth denied');
+      const handler = this.providers.get(provider);
+      if (!handler.exchangeCode) throw new BadRequestException(`Provider ${provider} doesn't support OAuth`);
+      if (error) throw new UnauthorizedException(`${provider} auth denied`);
       if (!code || !state) throw new BadRequestException('Missing code or state');
 
       const savedState = req.cookies?.['oauth_state'];
-      // Require state cookie present AND matching — previously a missing
-      // cookie silently passed the check, allowing CSRF on the callback.
       if (!savedState || savedState !== state) throw new UnauthorizedException('OAuth state mismatch');
       res.clearCookie('oauth_state', { path: '/api/auth' });
 
-      const identity = await this.providers.get('google').exchangeCode!(code);
-
+      const identity = await handler.exchangeCode(code);
       let linkUserId: bigint | null = null;
       try {
         const raw = JSON.parse(Buffer.from(state, 'base64url').toString()).linkUserId;
         if (raw) linkUserId = BigInt(raw);
       } catch { /* ignore */ }
 
-      const outcome = await this.signInOrLinkOrMerge('google', identity, {
+      const outcome = await this.signInOrLinkOrMerge(provider, identity, {
         linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
       });
 
       if (outcome.kind === 'merge') {
-        // Redirect to a frontend route that shows the merge confirmation.
         const params = new URLSearchParams({
           token: outcome.mergeToken,
           summary: JSON.stringify(outcome.summary),
-          provider: 'google',
+          provider,
           name: outcome.otherDisplay ?? '',
         });
         res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
@@ -162,9 +163,41 @@ export class AuthController {
       res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
       res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
     } catch (err) {
-      this.logger.error(`Google callback error: ${(err as Error).message}`);
-      res.redirect(`${frontendBase}/auth/error?reason=google_failed`);
+      this.logger.error(`${provider} callback error: ${(err as Error).message}`);
+      res.redirect(`${frontendBase}/auth/error?reason=${provider}_failed`);
     }
+  }
+
+  // ─── Google OAuth ─────────────────────────────────────────────────────────
+
+  @Get('google')
+  @UseGuards(OptionalJwtGuard)
+  googleRedirect(@Req() req: any, @Res() res: any): void {
+    return this.oauthRedirect('google', req, res);
+  }
+
+  @Get('google/callback')
+  async googleCallback(
+    @Query('code') code: string, @Query('state') state: string,
+    @Query('error') error: string, @Req() req: any, @Res() res: any,
+  ): Promise<void> {
+    return this.oauthCallback('google', code, state, error, req, res);
+  }
+
+  // ─── VK OAuth ─────────────────────────────────────────────────────────────
+
+  @Get('vk')
+  @UseGuards(OptionalJwtGuard)
+  vkRedirect(@Req() req: any, @Res() res: any): void {
+    return this.oauthRedirect('vk', req, res);
+  }
+
+  @Get('vk/callback')
+  async vkCallback(
+    @Query('code') code: string, @Query('state') state: string,
+    @Query('error') error: string, @Req() req: any, @Res() res: any,
+  ): Promise<void> {
+    return this.oauthCallback('vk', code, state, error, req, res);
   }
 
   // ─── Telegram Login Widget ────────────────────────────────────────────────

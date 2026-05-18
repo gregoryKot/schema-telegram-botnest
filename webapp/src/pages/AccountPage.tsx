@@ -12,7 +12,7 @@ declare global {
 }
 
 interface Provider {
-  provider: 'google' | 'telegram';
+  provider: 'google' | 'telegram' | 'vk';
   email: string | null;
   displayName: string | null;
 }
@@ -94,11 +94,13 @@ export function AccountPage() {
   }, [showTgWidget, accessToken]);
 
   const linkGoogle = () => {
-    // Top-level navigation — pass access token via query so backend knows to link
     window.location.href = `${API_BASE}/api/auth/google?link_token=${encodeURIComponent(accessToken ?? '')}`;
   };
+  const linkVk = () => {
+    window.location.href = `${API_BASE}/api/auth/vk?link_token=${encodeURIComponent(accessToken ?? '')}`;
+  };
 
-  const unlink = async (provider: 'google' | 'telegram') => {
+  const unlink = async (provider: 'google' | 'telegram' | 'vk') => {
     if (!confirm(`Отвязать ${provider === 'google' ? 'Google' : 'Telegram'}?`)) return;
     setBusy(true);
     setError(null);
@@ -122,6 +124,7 @@ export function AccountPage() {
 
   const hasGoogle = providers.some(p => p.provider === 'google');
   const hasTelegram = providers.some(p => p.provider === 'telegram');
+  const hasVk = providers.some(p => p.provider === 'vk');
 
   return (
     <div style={{ padding: 24, maxWidth: 480, margin: '0 auto' }}>
@@ -198,6 +201,28 @@ export function AccountPage() {
               <div ref={tgRef} />
             </div>
           )}
+
+          {/* VK */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#0077FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 14, fontWeight: 800 }}>
+                VK
+              </div>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>ВКонтакте</div>
+                {hasVk && <div style={{ color: 'var(--text-sub)', fontSize: 12 }}>{providers.find(p => p.provider === 'vk')?.displayName ?? providers.find(p => p.provider === 'vk')?.email ?? 'привязан'}</div>}
+              </div>
+            </div>
+            {hasVk ? (
+              <button disabled={busy} onClick={() => unlink('vk')} style={{ background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
+                Отвязать
+              </button>
+            ) : (
+              <button disabled={busy} onClick={linkVk} style={{ background: 'var(--accent)', border: 'none', color: 'white', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                Привязать
+              </button>
+            )}
+          </div>
         </div>
       )}
 
