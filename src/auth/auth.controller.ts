@@ -210,6 +210,7 @@ export class AuthController {
   // ─── Confirm a pending merge ──────────────────────────────────────────────
 
   @Post('merge')
+  @UseGuards(OptionalJwtGuard)
   @HttpCode(200)
   async confirmMerge(
     @Body('token') token: string,
@@ -218,6 +219,20 @@ export class AuthController {
   ): Promise<{ accessToken: string; expiresIn: number }> {
     if (!token) throw new BadRequestException('Missing merge token');
     const { target, source, provider, providerId } = this.auth.verifyMergeToken(token);
+
+    // Security: the caller MUST be authenticated as either:
+    //   - the target user (started a link from an active session), OR
+    //   - via the OAuth callback flow where the token was issued moments ago
+    //     and the caller went directly from /auth/google/callback to /merge.
+    //
+    // For (1) we verify via JWT. For (2) we accept if no JWT is present
+    // because the merge token itself is the proof of intent: it was just
+    // issued to the same browser session and we trust the signed payload.
+    // We do NOT accept if someone is logged in as a DIFFERENT user.
+    const webUser = (req as any).webUser;
+    if (webUser && String(webUser.userId) !== String(target)) {
+      throw new UnauthorizedException('Merge token does not match current session');
+    }
 
     // 1. Move data from source → target.
     await this.merge.merge(source, target);
