@@ -43,9 +43,13 @@ export class TelegramAuthGuard implements CanActivate {
     const botToken = this.config.get<string>('BOT_TOKEN')?.trim();
     if (!botToken) throw new UnauthorizedException('BOT_TOKEN not configured');
 
-    const skipAuth = this.config.get<string>('SKIP_AUTH') === 'true';
+    // SKIP_AUTH was a dev-only escape hatch. Hard-disable in production
+    // regardless of env value — otherwise a misconfig/leaked secret = full
+    // takeover of every Telegram user by passing crafted x-telegram-init-data.
+    const skipAuth = process.env.NODE_ENV !== 'production'
+      && this.config.get<string>('SKIP_AUTH') === 'true';
     if (skipAuth) {
-      this.logger.warn('SKIP_AUTH=true — validation skipped');
+      this.logger.warn('SKIP_AUTH=true (DEV ONLY) — validation skipped');
     } else {
       try {
         validate(initData, botToken, { expiresIn: 86400 });

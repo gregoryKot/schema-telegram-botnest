@@ -13,6 +13,7 @@ import {
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
@@ -22,6 +23,11 @@ import { ProviderIdentity } from './providers/types';
 
 const REFRESH_COOKIE = 'refresh_token';
 const CSRF_HEADER = 'x-requested-with';
+
+function hasCsrfHeader(req: any): boolean {
+  const v = req.headers?.[CSRF_HEADER];
+  return typeof v === 'string' && v.length > 0;
+}
 
 function cookieOptions(maxAgeS: number) {
   return {
@@ -122,7 +128,9 @@ export class AuthController {
       if (!code || !state) throw new BadRequestException('Missing code or state');
 
       const savedState = req.cookies?.['oauth_state'];
-      if (savedState && savedState !== state) throw new UnauthorizedException('OAuth state mismatch');
+      // Require state cookie present AND matching — previously a missing
+      // cookie silently passed the check, allowing CSRF on the callback.
+      if (!savedState || savedState !== state) throw new UnauthorizedException('OAuth state mismatch');
       res.clearCookie('oauth_state', { path: '/api/auth' });
 
       const identity = await this.providers.get('google').exchangeCode!(code);
@@ -161,6 +169,7 @@ export class AuthController {
 
   @Post('telegram/widget')
   @UseGuards(OptionalJwtGuard)
+  @Throttle({ short: { limit: 5, ttl: 60_000 }, long: { limit: 30, ttl: 3_600_000 } })
   @HttpCode(200)
   async telegramWidget(
     @Body() body: Record<string, string>,
@@ -211,12 +220,16 @@ export class AuthController {
 
   @Post('merge')
   @UseGuards(OptionalJwtGuard)
+  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 3_600_000 } })
   @HttpCode(200)
   async confirmMerge(
     @Body('token') token: string,
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ): Promise<{ accessToken: string; expiresIn: number }> {
+    // CSRF: require the custom header same way refresh/logout do. Browser
+    // cannot set it from a cross-origin form/img.
+    if (!hasCsrfHeader(req)) throw new UnauthorizedException('Missing CSRF header');
     if (!token) throw new BadRequestException('Missing merge token');
     const { target, source, provider, providerId } = this.auth.verifyMergeToken(token);
 
@@ -304,7 +317,7 @@ export class AuthController {
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ): Promise<{ accessToken: string; expiresIn: number }> {
-    if (!req.headers[CSRF_HEADER]) throw new UnauthorizedException('Missing CSRF header');
+    if (!hasCsrfHeader(req)) throw new UnauthorizedException('Missing CSRF header');
     const rawRefresh = req.cookies?.[REFRESH_COOKIE];
     if (!rawRefresh) throw new UnauthorizedException('No refresh token');
     const tokens = await this.auth.rotateRefreshToken(rawRefresh, req.ip, req.headers['user-agent']);
@@ -321,7 +334,7 @@ export class AuthController {
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ): Promise<{ ok: boolean }> {
-    if (!req.headers[CSRF_HEADER]) throw new UnauthorizedException('Missing CSRF header');
+    if (!hasCsrfHeader(req)) throw new UnauthorizedException('Missing CSRF header');
     const rawRefresh = req.cookies?.[REFRESH_COOKIE];
     if (rawRefresh) {
       if (all === 'true') {

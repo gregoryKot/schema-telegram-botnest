@@ -55,18 +55,25 @@ export class ApiController {
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────
 
+  // Client-writable UI flags. `therapistMode` deliberately NOT in this list:
+  // it's the de-facto "is therapist UI" flag and is derived server-side from
+  // `role` (see bot.service.setRole). Letting clients flip it would be a
+  // privilege escalation into therapist UI.
   private readonly FLAG_FIELDS = [
     'themePref', 'onboardingV1Done', 'onboardingV2Done', 'onboardingSkipped',
     'practicesOnboardingDone', 'childhoodWheelDone', 'ysqBannerDismissed',
     'hintSheetCloseShown', 'hintHistoryDismissed', 'trackerOnboardingDone',
     'lastCelebrationDate', 'lastYesterdayBannerDate', 'lastWeeklyQuestionWeek',
     'schemaIntrosShown', 'modeIntrosShown',
-    'therapistMode', 'defaultSection',
+    'defaultSection',
   ] as const;
+
+  // Read-only flags — returned by GET but not writable via POST.
+  private readonly FLAG_FIELDS_READ = [...this.FLAG_FIELDS, 'therapistMode'] as const;
 
   @Get('user-flags')
   async getUserFlags(@Req() req: AuthRequest) {
-    const select = Object.fromEntries(this.FLAG_FIELDS.map(f => [f, true]));
+    const select = Object.fromEntries(this.FLAG_FIELDS_READ.map(f => [f, true]));
     const u = await (this.prisma.user as any).findUnique({
       where: { id: BigInt(req.telegramUserId) },
       select,

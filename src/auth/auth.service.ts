@@ -219,14 +219,14 @@ export class AuthService {
     return jwt.sign(
       { kind: 'merge', target: String(targetUserId), source: String(sourceUserId), provider, providerId },
       secret,
-      { expiresIn: 10 * 60 }, // 10 minutes
+      { expiresIn: 10 * 60, algorithm: 'HS256' }, // 10 minutes
     );
   }
 
   verifyMergeToken(token: string): { target: bigint; source: bigint; provider: string; providerId: string } {
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
     try {
-      const p = jwt.verify(token, secret) as any;
+      const p = jwt.verify(token, secret, { algorithms: ['HS256'] }) as any;
       if (p.kind !== 'merge') throw new Error('Wrong token kind');
       return { target: BigInt(p.target), source: BigInt(p.source), provider: p.provider, providerId: p.providerId };
     } catch {
@@ -258,7 +258,7 @@ export class AuthService {
 
   async issueTokens(userId: BigInt, ip?: string, userAgent?: string): Promise<TokenPair> {
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
-    const accessToken = jwt.sign({ sub: String(userId), type: 'access' }, secret, { expiresIn: ACCESS_TOKEN_TTL_S });
+    const accessToken = jwt.sign({ sub: String(userId), type: 'access' }, secret, { expiresIn: ACCESS_TOKEN_TTL_S, algorithm: 'HS256' });
 
     const rawRefresh = crypto.randomBytes(40).toString('hex');
     const tokenHash = this.hashToken(rawRefresh);
@@ -285,7 +285,7 @@ export class AuthService {
   verifyAccessToken(token: string): { userId: BigInt } {
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
     try {
-      const payload = jwt.verify(token, secret) as { sub: string; type: string };
+      const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as { sub: string; type: string };
       if (payload.type !== 'access') throw new UnauthorizedException('Wrong token type');
       return { userId: BigInt(payload.sub) };
     } catch (err) {
@@ -320,7 +320,7 @@ export class AuthService {
 
     // Issue new token in the same family
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
-    const accessToken = jwt.sign({ sub: String(session.userId), type: 'access' }, secret, { expiresIn: ACCESS_TOKEN_TTL_S });
+    const accessToken = jwt.sign({ sub: String(session.userId), type: 'access' }, secret, { expiresIn: ACCESS_TOKEN_TTL_S, algorithm: 'HS256' });
 
     const newRaw = crypto.randomBytes(40).toString('hex');
     const newHash = this.hashToken(newRaw);

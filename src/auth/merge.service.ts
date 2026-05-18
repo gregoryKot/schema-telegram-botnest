@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 // Tables where a userId column points to User.id (BigInt).
@@ -11,29 +12,47 @@ const USER_OWNED_TABLES = [
   'ChildhoodRating', 'ScheduledNotification',
   'SchemaDiaryEntry', 'ModeDiaryEntry', 'GratitudeDiaryEntry',
   'AppActivity', 'UserTask', 'DiaryDraft',
-  'Pair', 'TherapyRelation',
   'AuthProvider',
 ] as const;
+// Note: Pair / TherapyRelation handled separately below — two userId refs.
 
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
 // valid for the new one). Source's rows are simply destroyed.
 const SECURITY_SENSITIVE_TABLES = ['WebSession'] as const;
 
-// Tables with a unique constraint that includes userId — for these we have
-// to handle conflicts row by row (source row dropped when target already has
-// the same key).
-interface UniqueRule { table: string; cols: string[]; }
-const UNIQUE_RULES: UniqueRule[] = [
-  { table: 'Rating',                cols: ['userId', 'date', 'needId'] },
-  { table: 'YsqProgress',           cols: ['userId'] }, // userId is PK
-  { table: 'YsqResult',             cols: ['userId'] },
-  { table: 'UserSchemaNote',        cols: ['userId', 'schemaId'] },
-  { table: 'UserModeNote',          cols: ['userId', 'modeId'] },
-  { table: 'UserSafePlace',         cols: ['userId'] },
-  { table: 'ChildhoodRating',       cols: ['userId', 'needId'] },
-  { table: 'DiaryDraft',            cols: ['userId', 'type'] },
+// Per-table allow-list of "other columns" in unique constraints that include
+// userId. When source and target both have a row with the same (userId, …key)
+// the source row is dropped first so the bulk UPDATE that follows can succeed
+// without violating the constraint.
+const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
+  { table: 'Rating',           cols: ['date', 'needId'] },
+  { table: 'YsqProgress',      cols: [] }, // userId is PK
+  { table: 'YsqResult',        cols: [] },
+  { table: 'UserSchemaNote',   cols: ['schemaId'] },
+  { table: 'UserModeNote',     cols: ['modeId'] },
+  { table: 'UserSafePlace',    cols: [] },
+  { table: 'ChildhoodRating',  cols: ['needId'] },
+  { table: 'DiaryDraft',       cols: ['type'] },
 ];
+
+// Whitelist of identifiers we'll embed directly in SQL. Anything outside this
+// set is rejected — defence in depth even though sources are all constants in
+// this file.
+const KNOWN_TABLES = new Set<string>([
+  ...USER_OWNED_TABLES,
+  ...SECURITY_SENSITIVE_TABLES,
+  'Pair', 'TherapyRelation', 'User',
+]);
+const KNOWN_COLS = new Set<string>([
+  'userId', 'userId1', 'userId2', 'therapistId', 'clientId', 'id',
+  'date', 'needId', 'schemaId', 'modeId', 'type',
+]);
+function ident(name: string, kind: 'table' | 'col'): string {
+  const ok = (kind === 'table' ? KNOWN_TABLES : KNOWN_COLS).has(name);
+  if (!ok) throw new Error(`Refusing to interpolate unknown SQL identifier: ${name}`);
+  return `"${name}"`;
+}
 
 @Injectable()
 export class MergeService {
@@ -41,14 +60,16 @@ export class MergeService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // Returns a summary of how much data each side has — used by the UI to
-  // present the user with an informed merge confirmation.
+  // Returns a row-count summary so the UI can present an informed merge
+  // confirmation ("you'll move 87 ratings, 14 diary entries, …").
   async summarize(userId: bigint): Promise<Record<string, number>> {
     const counts: Record<string, number> = {};
     for (const table of USER_OWNED_TABLES) {
       try {
-        const rows = await this.prisma.$queryRawUnsafe<Array<{ c: bigint }>>(
-          `SELECT COUNT(*)::bigint AS c FROM "${table}" WHERE "userId" = ${userId}`,
+        // Table name comes from our constant. Value goes through parameter
+        // binding (Prisma.sql template) — never string-concatenated.
+        const rows = await this.prisma.$queryRaw<Array<{ c: bigint }>>(
+          Prisma.sql`SELECT COUNT(*)::bigint AS c FROM ${Prisma.raw(ident(table, 'table'))} WHERE "userId" = ${userId}`,
         );
         const n = Number(rows[0]?.c ?? 0n);
         if (n > 0) counts[table] = n;
@@ -69,50 +90,81 @@ export class MergeService {
     await this.prisma.$transaction(async (tx) => {
       // 0. Drop security-sensitive rows of source (refresh tokens, etc).
       for (const table of SECURITY_SENSITIVE_TABLES) {
-        await tx.$executeRawUnsafe(`DELETE FROM "${table}" WHERE "userId" = ${sourceId}`);
-      }
-      // 1. Drop source rows that would collide on a (userId, …) unique key.
-      for (const rule of UNIQUE_RULES) {
-        const otherCols = rule.cols.filter(c => c !== 'userId');
-        const joinCond = ['"src"."userId" = ' + sourceId, '"tgt"."userId" = ' + targetId,
-          ...otherCols.map(c => `"src"."${c}" = "tgt"."${c}"`)].join(' AND ');
-        await tx.$executeRawUnsafe(`
-          DELETE FROM "${rule.table}" "src"
-          WHERE "userId" = ${sourceId}
-            AND EXISTS (
-              SELECT 1 FROM "${rule.table}" "tgt"
-              WHERE ${joinCond}
-            )
-        `);
-      }
-      // 2. Reassign remaining source rows to target.
-      for (const table of USER_OWNED_TABLES) {
-        await tx.$executeRawUnsafe(
-          `UPDATE "${table}" SET "userId" = ${targetId} WHERE "userId" = ${sourceId}`,
+        await tx.$executeRaw(
+          Prisma.sql`DELETE FROM ${Prisma.raw(ident(table, 'table'))} WHERE "userId" = ${sourceId}`,
         );
       }
-      // 3. Pair table has two refs (user1Id / user2Id) — special-case.
-      await tx.$executeRawUnsafe(
-        `UPDATE "Pair" SET "userId1" = ${targetId} WHERE "userId1" = ${sourceId} AND "user2Id" <> ${targetId}`,
-      );
-      await tx.$executeRawUnsafe(
-        `UPDATE "Pair" SET "user2Id" = ${targetId} WHERE "user2Id" = ${sourceId} AND "userId1" <> ${targetId}`,
-      );
-      await tx.$executeRawUnsafe(
-        `DELETE FROM "Pair" WHERE "userId1" = ${sourceId} OR "user2Id" = ${sourceId}`,
-      );
+
+      // 1. Drop source rows that would collide on a (userId, …key) unique.
+      for (const rule of UNIQUE_RULES) {
+        const tbl = Prisma.raw(ident(rule.table, 'table'));
+        if (rule.cols.length === 0) {
+          // Unique on (userId) alone — if target already has a row for this
+          // table, drop source's row.
+          await tx.$executeRaw(Prisma.sql`
+            DELETE FROM ${tbl} WHERE "userId" = ${sourceId}
+              AND EXISTS (SELECT 1 FROM ${tbl} WHERE "userId" = ${targetId})
+          `);
+        } else {
+          // Unique on (userId, col1, col2, …) — drop source rows where target
+          // already has the same key tuple.
+          const colCond = Prisma.join(
+            rule.cols.map(c => {
+              const col = Prisma.raw(ident(c, 'col'));
+              return Prisma.sql`src.${col} = tgt.${col}`;
+            }),
+            ' AND ',
+          );
+          await tx.$executeRaw(Prisma.sql`
+            DELETE FROM ${tbl} src
+            WHERE src."userId" = ${sourceId}
+              AND EXISTS (
+                SELECT 1 FROM ${tbl} tgt
+                WHERE tgt."userId" = ${targetId} AND ${colCond}
+              )
+          `);
+        }
+      }
+
+      // 2. Reassign remaining source rows to target.
+      for (const table of USER_OWNED_TABLES) {
+        await tx.$executeRaw(Prisma.sql`
+          UPDATE ${Prisma.raw(ident(table, 'table'))}
+          SET "userId" = ${targetId}
+          WHERE "userId" = ${sourceId}
+        `);
+      }
+
+      // 3. Pair table has two refs — both can point at source.
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "Pair" SET "userId1" = ${targetId}
+        WHERE "userId1" = ${sourceId} AND ("userId2" IS NULL OR "userId2" <> ${targetId})
+      `);
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "Pair" SET "userId2" = ${targetId}
+        WHERE "userId2" = ${sourceId} AND "userId1" <> ${targetId}
+      `);
+      // Anything left points at source on either side AND the other side is
+      // already target → would create a self-pair; just drop.
+      await tx.$executeRaw(Prisma.sql`
+        DELETE FROM "Pair" WHERE "userId1" = ${sourceId} OR "userId2" = ${sourceId}
+      `);
+
       // 4. TherapyRelation (therapistId / clientId).
-      await tx.$executeRawUnsafe(
-        `UPDATE "TherapyRelation" SET "therapistId" = ${targetId} WHERE "therapistId" = ${sourceId} AND "clientId" <> ${targetId}`,
-      );
-      await tx.$executeRawUnsafe(
-        `UPDATE "TherapyRelation" SET "clientId" = ${targetId} WHERE "clientId" = ${sourceId} AND "therapistId" <> ${targetId}`,
-      );
-      await tx.$executeRawUnsafe(
-        `DELETE FROM "TherapyRelation" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}`,
-      );
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "TherapyRelation" SET "therapistId" = ${targetId}
+        WHERE "therapistId" = ${sourceId} AND "clientId" <> ${targetId}
+      `);
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "TherapyRelation" SET "clientId" = ${targetId}
+        WHERE "clientId" = ${sourceId} AND "therapistId" <> ${targetId}
+      `);
+      await tx.$executeRaw(Prisma.sql`
+        DELETE FROM "TherapyRelation" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
+      `);
+
       // 5. Finally, delete the now-empty source User.
-      await tx.$executeRawUnsafe(`DELETE FROM "User" WHERE id = ${sourceId}`);
+      await tx.$executeRaw(Prisma.sql`DELETE FROM "User" WHERE id = ${sourceId}`);
     });
     const ms = Date.now() - startedAt;
     this.logger.log(`Merged user ${sourceId} → ${targetId} (${ms}ms)`);

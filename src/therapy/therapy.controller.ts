@@ -1,4 +1,5 @@
 import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, HttpException, Logger, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { timingSafeEqual } from 'crypto';
 import { Request } from 'express';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
@@ -79,17 +80,22 @@ export class TherapyController {
 
   @Post('clients/add')
   async addClientManually(@Req() req: AuthRequest, @Body() body: { clientTelegramId: number }) {
-    const role = await this.botService.getUserRole(req.telegramUserId);
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    if (!Number.isInteger(body.clientTelegramId) || body.clientTelegramId <= 0) throw new BadRequestException('Invalid clientTelegramId');
-    try {
-      return await this.therapyService.addClientManually(req.telegramUserId, body.clientTelegramId);
-    } catch (e: any) {
-      throw new BadRequestException(e.message ?? 'Error');
-    }
+    // SECURITY: silently attaching a therapist to a real user's account (and
+    // gaining read access to their schema/mode notes, ratings, etc) without
+    // the client's consent is unacceptable for a therapy app. Manual add is
+    // now restricted to VIRTUAL clients (offline patients, those without
+    // Telegram). Real clients must use the invite-code flow (`joinAsClient`).
+    throw new ForbiddenException(
+      'Manual add of real Telegram users is disabled. Use the invite code flow: ' +
+      'generate a code via /api/therapy/invite, share it with the client, ' +
+      'they POST /api/therapy/join.',
+    );
+    // Defensive: silence "unused" lint by referencing args.
+    void req; void body;
   }
 
   @Post('become-therapist')
+  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 3_600_000 } })
   async becomeTherapist(@Req() req: AuthRequest, @Body() body: { code: string }) {
     const expected = process.env.THERAPIST_CODE;
     const valid = !!expected && (() => { try { return timingSafeEqual(Buffer.from(body.code ?? ''), Buffer.from(expected)); } catch { return false; } })();
@@ -113,6 +119,13 @@ export class TherapyController {
     if (body.clientId) {
       const role = await this.botService.getUserRole(req.telegramUserId);
       if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+      // SECURITY: assert there is an actual therapy relation. Without this
+      // any THERAPIST can inject tasks into ANY user's account.
+      try {
+        await this.therapyService.assertHasClient(req.telegramUserId, body.clientId);
+      } catch {
+        throw new ForbiddenException('No therapy relation with this client');
+      }
       targetUserId = body.clientId;
       assignedBy = req.telegramUserId;
     }
