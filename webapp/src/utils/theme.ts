@@ -3,9 +3,8 @@ export type Theme = 'dark' | 'light';
 const KEY = 'app_theme';
 
 function detectTheme(): Theme {
-  // System preference
-  if (window.matchMedia?.('(prefers-color-scheme: light)').matches) return 'light';
-  return 'dark';
+  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) return 'dark';
+  return 'light';
 }
 
 export function getTheme(): Theme {
