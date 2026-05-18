@@ -571,6 +571,10 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 
 /* ─── Loader / spinner ───────────────────────────────────────────────────── */
 .loader-center {
+  /* flex: 1 so this fills the available width inside #root (which is
+     flex-row by default — without flex:1 children shrink to content
+     and slide left). */
+  flex: 1;
   display: flex; align-items: center; justify-content: center;
   min-height: 100vh;
 }

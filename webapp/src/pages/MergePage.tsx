@@ -74,7 +74,7 @@ export function MergePage() {
   };
 
   return (
-    <div style={{ padding: 24, maxWidth: 480, margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+    <div style={{ flex: 1, padding: 24, maxWidth: 480, margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '100%', boxSizing: 'border-box' }}>
       <div className="card" style={{ padding: 28 }}>
         <div style={{ fontSize: 36, marginBottom: 12 }}>🔀</div>
         <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Объединить аккаунты?</h1>
