@@ -37,7 +37,52 @@ export class ApiController {
     private readonly prisma: PrismaService,
   ) {}
 
-  // ─── Client state (server-side localStorage mirror) ────────────────────────
+  // ─── Typed UI flags ────────────────────────────────────────────────────────
+
+  @Get('user-flags')
+  async getUserFlags(@Req() req: AuthRequest) {
+    const u = await (this.prisma.user as any).findUnique({
+      where: { id: BigInt(req.telegramUserId) },
+      select: {
+        themePref: true,
+        onboardingV2Done: true,
+        practicesOnboardingDone: true,
+        childhoodWheelDone: true,
+        ysqBannerDismissed: true,
+        therapistMode: true,
+        defaultSection: true,
+      },
+    });
+    return u ?? {};
+  }
+
+  @Post('user-flags')
+  async setUserFlags(
+    @Req() req: AuthRequest,
+    @Body() body: Partial<{
+      themePref: string | null;
+      onboardingV2Done: boolean;
+      practicesOnboardingDone: boolean;
+      childhoodWheelDone: boolean;
+      ysqBannerDismissed: boolean;
+      therapistMode: boolean;
+      defaultSection: string | null;
+    }>,
+  ): Promise<{ ok: true }> {
+    if (!body || typeof body !== 'object') throw new BadRequestException('Invalid body');
+    const allowed = ['themePref', 'onboardingV2Done', 'practicesOnboardingDone',
+                     'childhoodWheelDone', 'ysqBannerDismissed', 'therapistMode', 'defaultSection'];
+    const data: Record<string, unknown> = {};
+    for (const k of allowed) if (k in body) data[k] = (body as any)[k];
+    if (Object.keys(data).length === 0) return { ok: true };
+    await (this.prisma.user as any).update({
+      where: { id: BigInt(req.telegramUserId) },
+      data,
+    });
+    return { ok: true };
+  }
+
+  // ─── Client state (legacy localStorage mirror for long-tail keys) ──────────
 
   @Get('client-state')
   async getClientState(@Req() req: AuthRequest): Promise<Record<string, unknown>> {
@@ -54,7 +99,6 @@ export class ApiController {
     @Body() body: Record<string, unknown>,
   ): Promise<{ ok: true }> {
     if (!body || typeof body !== 'object') throw new BadRequestException('Invalid body');
-    // Merge with existing — partial updates allowed
     const u = await (this.prisma.user as any).findUnique({
       where: { id: BigInt(req.telegramUserId) },
       select: { clientState: true },
