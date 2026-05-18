@@ -18,8 +18,9 @@ RUN npm run build
 # Build webapp (website) — output → webapp/dist/ → served at /
 RUN npm run build --prefix webapp
 
-# schema-miniapp (Telegram-only) is pre-built and committed at schema-miniapp/dist/
-# → served at /tg (built locally with vite base '/tg/')
+# Copy pre-built schema-miniapp into webapp/dist/app so it's served by the same
+# ServeStaticModule at /app (built locally with vite base '/app/')
+RUN mkdir -p webapp/dist/app && cp -r schema-miniapp/dist/* webapp/dist/app/
 
 # ── Prune dev deps (backend only) ──────────────────────────────────────────
 RUN npm prune --production
