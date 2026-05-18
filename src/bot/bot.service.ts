@@ -460,7 +460,12 @@ export class BotService {
   }
 
   async setRole(userId: number, role: 'CLIENT' | 'THERAPIST'): Promise<void> {
-    await this.prisma.user.update({ where: { id: BigInt(userId) }, data: { role } });
+    // When promoting to THERAPIST also enable therapistMode by default
+    // (was client-side auto-enable via localStorage check)
+    await this.prisma.user.update({
+      where: { id: BigInt(userId) },
+      data: { role, therapistMode: role === 'THERAPIST' },
+    });
   }
 
   async getUserRole(userId: number): Promise<'CLIENT' | 'THERAPIST'> {
