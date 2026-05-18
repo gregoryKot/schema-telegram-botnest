@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { GoogleProvider } from './google.provider';
 import { TelegramProvider } from './telegram.provider';
+import { VkProvider } from './vk.provider';
 import { AuthProviderHandler } from './types';
 
 // Single place that knows about all providers. Add a new auth method by:
@@ -15,8 +16,9 @@ export class AuthProviderRegistry {
   constructor(
     google: GoogleProvider,
     telegram: TelegramProvider,
+    vk: VkProvider,
   ) {
-    for (const p of [google, telegram]) this.map.set(p.id, p);
+    for (const p of [google, telegram, vk]) this.map.set(p.id, p);
   }
 
   get(id: string): AuthProviderHandler {
