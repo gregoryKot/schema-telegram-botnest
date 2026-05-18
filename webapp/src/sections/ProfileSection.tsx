@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import type { Achievement } from '../api';
-import { useSafeTop } from '../utils/safezone';
 import { BottomSheet } from '../components/BottomSheet';
 import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
@@ -45,7 +44,6 @@ interface Props {
 }
 
 export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, displayName }: Props) {
-  const safeTop = useSafeTop();
   const firstName = displayName || '';
 
   const [streak, setStreak]             = useState<StreakData | null>(null);
@@ -94,36 +92,26 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: 140, paddingTop: safeTop, animation: 'fade-in 0.25s ease', overflowX: 'hidden' }}>
+    <div className="page-inner">
 
       {/* ── Хедер ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 20px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{
-            width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
-            background: 'linear-gradient(135deg, var(--accent), var(--accent-blue))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20, fontWeight: 700, color: '#fff',
-          }}>
-            {(firstName || 'Я')[0].toUpperCase()}
-          </div>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.4px' }}>
-              {firstName || 'Я'}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div>
+          <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-0.6px', color: 'var(--text)', marginBottom: 6 }}>
+            {firstName || 'Профиль'}
+          </h1>
+          {totalDays > 0 && (
+            <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>
+              {totalDays} {totalDays === 1 ? 'день' : totalDays < 5 ? 'дня' : 'дней'} в приложении
             </div>
-            {totalDays > 0 && (
-              <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 1 }}>
-                {totalDays} {totalDays === 1 ? 'день' : totalDays < 5 ? 'дня' : 'дней'} в приложении
-              </div>
-            )}
-          </div>
+          )}
         </div>
-        <button onClick={onOpenSettings} style={{ width: 38, height: 38, borderRadius: 12, border: 'none', background: 'rgba(var(--fg-rgb),0.06)', color: 'var(--text-sub)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          ⚙️
+        <button onClick={onOpenSettings} style={{ padding: '8px 16px', borderRadius: 9, border: '1px solid var(--line)', background: 'var(--bg-elev)', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit', flexShrink: 0 }}>
+          ⚙️ <span>Настройки</span>
         </button>
       </div>
 
-      <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 720 }}>
 
         {/* ── Скелетон ── */}
         {!ready && (

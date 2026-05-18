@@ -124,6 +124,13 @@ export class AuthController {
     res.redirect(handler.buildAuthUrl(state));
   }
 
+  private requireCsrf(req: any, endpoint: string): void {
+    if (!hasCsrfHeader(req)) {
+      this.securityLog.log('csrf_blocked', { endpoint, ip: req.ip, ua: (req.headers['user-agent'] ?? '').slice(0, 80) });
+      throw new UnauthorizedException('Missing CSRF header');
+    }
+  }
+
   private async oauthCallback(
     provider: string, code: string, state: string, error: string, req: any, res: any,
   ): Promise<void> {
@@ -305,7 +312,7 @@ export class AuthController {
   ): Promise<{ accessToken: string; expiresIn: number }> {
     // CSRF: require the custom header same way refresh/logout do. Browser
     // cannot set it from a cross-origin form/img.
-    if (!hasCsrfHeader(req)) throw new UnauthorizedException('Missing CSRF header');
+    this.requireCsrf(req, "merge");
     if (!token) throw new BadRequestException('Missing merge token');
     const { target, source, provider, providerId } = this.auth.verifyMergeToken(token);
 
@@ -395,7 +402,7 @@ export class AuthController {
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ): Promise<{ accessToken: string; expiresIn: number }> {
-    if (!hasCsrfHeader(req)) throw new UnauthorizedException('Missing CSRF header');
+    this.requireCsrf(req, "refresh");
     const rawRefresh = req.cookies?.[REFRESH_COOKIE];
     if (!rawRefresh) throw new UnauthorizedException('No refresh token');
     const tokens = await this.auth.rotateRefreshToken(rawRefresh, req.ip, req.headers['user-agent']);
@@ -412,7 +419,7 @@ export class AuthController {
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ): Promise<{ ok: boolean }> {
-    if (!hasCsrfHeader(req)) throw new UnauthorizedException('Missing CSRF header');
+    this.requireCsrf(req, "logout");
     const rawRefresh = req.cookies?.[REFRESH_COOKIE];
     if (rawRefresh) {
       if (all === 'true') {

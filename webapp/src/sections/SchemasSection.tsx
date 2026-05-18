@@ -129,56 +129,46 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   ];
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: 140, paddingTop: safeTop }}>
+    <div className="page-inner">
 
       {/* ── Header ── */}
-      <div style={{ padding: '24px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.5px', lineHeight: 1.15 }}>
+          <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-0.6px', color: 'var(--text)', marginBottom: 6 }}>
             Паттерны
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 3 }}>
-            Схемы, режимы, потребности
-          </div>
+          </h1>
+          <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>Схемы, режимы, потребности</div>
         </div>
         <button
           onClick={() => onOpenSchema()}
-          style={{ width: 38, height: 38, borderRadius: 12, border: 'none', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 4 }}
-          title="Библиотека схема-терапии"
-        >📖</button>
+          style={{ padding: '8px 16px', borderRadius: 9, border: '1px solid var(--line)', background: 'var(--bg-elev)', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit', flexShrink: 0 }}
+        >
+          📖 <span>Библиотека</span>
+        </button>
       </div>
 
       {/* ── Tab switcher ── */}
-      <div style={{ padding: '16px 20px 0' }}>
-        <div style={{
-          display: 'flex',
-          background: 'var(--surface-2)',
-          border: '1px solid var(--border-color)',
-          borderRadius: 14,
-          padding: 3,
-        }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
-              flex: 1,
-              padding: '9px 0',
-              borderRadius: 11,
-              border: 'none',
-              fontFamily: 'inherit',
-              fontSize: 14,
-              fontWeight: tab === t.id ? 700 : 400,
-              cursor: 'pointer',
-              background: tab === t.id ? 'var(--sheet-bg)' : 'transparent',
-              color: tab === t.id ? 'var(--text)' : 'var(--text-sub)',
-              transition: 'all 0.18s',
-              boxShadow: tab === t.id ? '0 1px 6px rgba(0,0,0,0.18)' : 'none',
-            }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--line)', marginBottom: 24, gap: 0 }}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{
+            padding: '10px 20px',
+            border: 'none',
+            borderBottom: `2px solid ${tab === t.id ? 'var(--text)' : 'transparent'}`,
+            marginBottom: -1,
+            fontFamily: 'inherit',
+            fontSize: 14,
+            fontWeight: tab === t.id ? 600 : 400,
+            cursor: 'pointer',
+            background: 'transparent',
+            color: tab === t.id ? 'var(--text)' : 'var(--text-faint)',
+            transition: 'color 0.15s',
+          }}>
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      <div style={{ padding: '16px 20px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 720 }}>
 
         {/* ══════════════════════ СХЕМЫ ══════════════════════ */}
         {tab === 'schemas' && (
