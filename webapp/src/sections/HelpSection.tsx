@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useSafeTop } from '../utils/safezone';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { LetterToSelf } from '../components/LetterToSelf';
 import { BeliefCheck } from '../components/BeliefCheck';
@@ -162,7 +161,6 @@ function TaskProgressBar({ task }: { task: UserTask }) {
 }
 
 export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, practiceCount, planCount, refreshKey, initialTasks, onTasksChanged, userRole: _userRole, onOpenTherapistCabinet: _onOpenTherapistCabinet }: Props) {
-  const safeTop = useSafeTop();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
   const [showFlashcard, setShowFlashcard] = useState(false);
@@ -227,12 +225,12 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: 140, paddingTop: safeTop, animation: 'fade-in 0.25s ease', overflowX: 'hidden' }}>
+    <div className="page-inner">
 
       {/* Header */}
-      <div style={{ padding: '20px 20px 12px' }}>
-        <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px' }}>Помощь</div>
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4, lineHeight: 1.5 }}>
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-0.6px', color: 'var(--text)', marginBottom: 6 }}>Помощь</h1>
+        <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>
           Инструменты и упражнения
         </div>
         {/* Next session banner for clients */}
@@ -256,11 +254,11 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         })()}
       </div>
 
-      <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 800 }}>
 
         {/* Therapist tasks — shown prominently when assigned */}
         {therapistTasks.filter(t => !t.doneToday).length > 0 && (
-          <div style={{ background: 'color-mix(in srgb, var(--accent) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)', borderRadius: 18, padding: '14px 16px' }}>
+          <div style={{ background: 'color-mix(in srgb, var(--accent) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)', borderRadius: 14, padding: '14px 16px' }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 10 }}>
               От терапевта
             </div>
@@ -270,8 +268,8 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
           </div>
         )}
 
-        {/* 2-column tool grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {/* Tool grid — 3 columns on desktop */}
+        <div className="tool-grid">
           <ToolCard emoji="🎯" label="Мои цели" sub={tasks.length === 0 ? 'Нет активных' : `${tasks.length} ${plural(tasks.length, 'цель', 'цели', 'целей')}`} accentColor="var(--accent-orange)" onClick={() => setShowAllTasks(true)} />
           <ToolCard emoji="🗂" label="Практики" sub={practiceCount == null ? undefined : practiceCount === 0 ? 'Нет практик' : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`} accentColor="var(--accent)" onClick={onOpenPractices} />
           <ToolCard emoji="🗓" label="Планы" sub={planCount == null ? undefined : planCount === 0 ? 'История пуста' : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`} accentColor="var(--accent-blue)" onClick={onOpenPlans} />
