@@ -82,6 +82,29 @@ model User {
   authProviders          AuthProvider[]
   webSessions            WebSession[]
   drafts                 DiaryDraft[]
+  therapistRequest       TherapistRequest?
+}
+
+// User-initiated request to be granted THERAPIST role. Admin reviews via the
+// Telegram bot (inline buttons "Approve" / "Reject"). Replaces the previous
+// shared-static THERAPIST_CODE flow.
+model TherapistRequest {
+  id            Int       @id @default(autoincrement())
+  userId        BigInt    @unique
+  fullName      String
+  qualification String
+  contacts      String    // free text: site, telegram handle, etc
+  message       String?   // optional cover letter
+  status        String    @default("pending") // 'pending' | 'approved' | 'rejected'
+  reviewedAt    DateTime?
+  reviewedBy    BigInt?   // admin's Telegram id
+  rejectReason  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
 }
 
 // Unsaved diary entry drafts (replaces localStorage `diary_draft_*` keys)

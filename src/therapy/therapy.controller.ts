@@ -4,6 +4,7 @@ import { timingSafeEqual } from 'crypto';
 import { Request } from 'express';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyService } from './therapy.service';
+import { TherapistRequestService } from './therapist-request.service';
 import { BotService } from '../bot/bot.service';
 
 interface AuthRequest extends Request {
@@ -25,6 +26,7 @@ export class TherapyController {
   constructor(
     private readonly therapyService: TherapyService,
     private readonly botService: BotService,
+    private readonly therapistRequestService: TherapistRequestService,
   ) {}
 
   // ─── Connection ─────────────────────────────────────────────────────────────
@@ -94,14 +96,31 @@ export class TherapyController {
     void req; void body;
   }
 
+  // DEPRECATED. Replaced by /api/therapy/request → admin approval flow.
+  // Kept returning 410 Gone so any clients still using the old endpoint get
+  // a clear error rather than silent failure.
   @Post('become-therapist')
-  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 3_600_000 } })
-  async becomeTherapist(@Req() req: AuthRequest, @Body() body: { code: string }) {
-    const expected = process.env.THERAPIST_CODE;
-    const valid = !!expected && (() => { try { return timingSafeEqual(Buffer.from(body.code ?? ''), Buffer.from(expected)); } catch { return false; } })();
-    if (!valid) throw new ForbiddenException('Invalid code');
-    await this.botService.setRole(req.telegramUserId, 'THERAPIST');
-    return { ok: true };
+  async becomeTherapist() {
+    throw new HttpException(
+      'Этот способ отключён. Используй /api/therapy/request — заявку рассмотрит администратор.',
+      410,
+    );
+  }
+
+  // ─── Therapist role request (admin-approved) ────────────────────────────
+
+  @Post('request')
+  @Throttle({ short: { limit: 2, ttl: 60_000 }, long: { limit: 5, ttl: 24 * 3_600_000 } })
+  async submitRequest(@Req() req: AuthRequest, @Body() body: {
+    fullName: string; qualification: string; contacts: string; message?: string;
+  }) {
+    return this.therapistRequestService.submit(req.telegramUserId, body);
+  }
+
+  @Get('request')
+  async getMyRequest(@Req() req: AuthRequest) {
+    const row = await this.therapistRequestService.getMine(req.telegramUserId);
+    return row ?? null;
   }
 
   // ─── Tasks ───────────────────────────────────────────────────────────────────
