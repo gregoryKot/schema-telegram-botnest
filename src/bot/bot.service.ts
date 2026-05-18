@@ -24,6 +24,7 @@ const USER_DATA_TABLES = [
   'schemaDiaryEntry', 'modeDiaryEntry', 'gratitudeDiaryEntry',
   'appActivity',
   'userTask',
+  'diaryDraft',
 ] as const;
 // Compile-time check: any invalid table name above becomes a TS error here.
 type _VerifyTables = { [K in typeof USER_DATA_TABLES[number]]: PrismaService[K] };
