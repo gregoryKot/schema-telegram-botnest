@@ -322,7 +322,7 @@ export function TodaySection({
                 <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}
                      onClick={() => onOpenTrackerAt ? onOpenTrackerAt(n.id) : onOpenTracker()}>
                   <div style={{ width: 148, fontSize: 14, color: 'var(--text)', flexShrink: 0, lineHeight: 1.3 }}>
-                    {NEED_DATA[n.id]?.title ?? n.chartLabel}
+                    {NEED_DATA[n.id]?.name ?? n.chartLabel}
                   </div>
                   <div style={{ flex: 1, height: 5, background: 'var(--surface-3)', borderRadius: 999, overflow: 'hidden' }}>
                     <div style={{ width: `${((value ?? 0) / 10) * 100}%`, height: '100%', background: color, borderRadius: 999, transition: 'width 0.4s ease' }} />
