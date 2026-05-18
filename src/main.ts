@@ -14,11 +14,15 @@ async function bootstrap() {
 
   // CORS only needed for the Telegram mini-app (different origin).
   // The web app is served from the same domain → no CORS needed for it.
-  const origins = process.env.ALLOWED_ORIGINS?.split(',') ?? [
-    'https://schema-miniapp.vercel.app',
-    'https://diary-miniapp-sigma.vercel.app',
-    'http://localhost:5173', // miniapp dev
-  ];
+  // Production default is restrictive; localhost is dev-only.
+  const isProd = process.env.NODE_ENV === 'production';
+  const origins = process.env.ALLOWED_ORIGINS?.split(',') ?? (isProd
+    ? ['https://schemalab.ru']
+    : [
+        'https://schema-miniapp.vercel.app',
+        'https://diary-miniapp-sigma.vercel.app',
+        'http://localhost:5173',
+      ]);
   app.enableCors({
     origin: origins,
     methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],

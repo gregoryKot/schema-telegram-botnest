@@ -401,6 +401,12 @@ export class TherapyService {
 
   // ─── Session Notes ───────────────────────────────────────────────────────────
 
+  // Public wrapper for the controller — same semantics as the private
+  // helper used by all therapist-only data accessors.
+  async assertHasClient(therapistId: number, clientId: number): Promise<void> {
+    return this.assertRelation(therapistId, clientId);
+  }
+
   private async assertRelation(therapistId: number, clientId: number): Promise<void> {
     if (clientId < 0) {
       // Virtual client — identified by -rel.id
