@@ -312,6 +312,10 @@ export function AppShell() {
 
         {/* Bottom actions */}
         <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)' }}>
+          <a href="/account" className="nav-item" style={{ textDecoration: 'none', color: 'var(--text-sub)' }}>
+            <span className="nav-icon">🔗</span>
+            Аккаунт
+          </a>
           <button
             className="nav-item"
             onClick={() => logout()}
