@@ -1,7 +1,5 @@
 import type { DiaryType } from '../../types';
-import { useSafeTop } from '../../utils/safezone';
 import { fmtDateLong } from '../../utils/format';
-import { haptic } from '../../haptic';
 
 interface DiaryMeta {
   type: DiaryType;
@@ -24,63 +22,14 @@ interface Props {
   onClose?: () => void;
 }
 
-
-function DiaryCard({ meta, onOpen }: { meta: DiaryMeta; onOpen: () => void }) {
-  return (
-    <div
-      onClick={() => { haptic.tap(); onOpen(); }}
-      className="card"
-      style={{
-        borderRadius: 20,
-        marginBottom: 12,
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'stretch',
-        overflow: 'hidden',
-        WebkitTapHighlightColor: 'transparent',
-        transition: 'opacity 120ms',
-      }}
-    >
-      {/* Left color accent bar */}
-      <div style={{ width: 4, flexShrink: 0, background: meta.color, opacity: 0.7 }} />
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 16px', flex: 1 }}>
-        <div style={{
-          width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-          background: `${meta.color}20`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 24,
-        }}>
-          {meta.emoji}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>
-            {meta.title}
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.4 }}>
-            {meta.subtitle}
-          </div>
-          {meta.count > 0 && (
-            <div style={{ fontSize: 11, color: meta.color, marginTop: 6, fontWeight: 500 }}>
-              {meta.count} {meta.count === 1 ? 'запись' : meta.count < 5 ? 'записи' : 'записей'}
-              {meta.lastDate && ` · последняя ${fmtDateLong(meta.lastDate)}`}
-            </div>
-          )}
-        </div>
-        <div style={{ color: 'var(--text-faint)', fontSize: 20, flexShrink: 0 }}>›</div>
-      </div>
-    </div>
-  );
-}
-
-export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount, lastSchemaDiaryDate, lastModeDiaryDate, lastGratitudeDiaryDate, onOpen, onClose }: Props) {
+export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount, lastSchemaDiaryDate, lastModeDiaryDate, lastGratitudeDiaryDate, onOpen, onClose: _onClose }: Props) {
   const diaries: DiaryMeta[] = [
     {
       type: 'schema',
       emoji: '📓',
       title: 'Дневник схем',
-      subtitle: 'Что-то триггернуло? Запиши — ситуацию, чувства, мысли',
-      color: 'var(--accent-red)',
+      subtitle: 'Что-то триггернуло? Запиши — ситуацию, чувства, мысли, поведение',
+      color: 'var(--c-rose)',
       count: schemaDiaryCount,
       lastDate: lastSchemaDiaryDate,
     },
@@ -89,7 +38,7 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
       emoji: '🔄',
       title: 'Дневник режимов',
       subtitle: 'Поймал себя в знакомом состоянии? Запиши — кто взял управление',
-      color: 'var(--accent-blue)',
+      color: 'var(--c-slate)',
       count: modeDiaryCount,
       lastDate: lastModeDiaryDate,
     },
@@ -98,28 +47,70 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
       emoji: '🌱',
       title: 'Дневник благодарности',
       subtitle: 'Три вещи, за которые можно сказать спасибо сегодня',
-      color: 'var(--accent-green)',
+      color: 'var(--c-moss)',
       count: gratitudeDiaryCount,
       lastDate: lastGratitudeDiaryDate,
     },
   ];
 
-  const safeTop = useSafeTop();
-
   return (
-    <div style={{ padding: `${safeTop + 16}px 16px 32px` }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        {onClose && <span onClick={onClose} style={{ fontSize: 26, color: 'var(--text-sub)', cursor: 'pointer', lineHeight: 1 }}>‹</span>}
-        <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)' }}>Мои дневники</span>
-      </div>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+    <div className="page-inner">
+      {/* Header */}
+      <div style={{ marginBottom: 36 }}>
+        <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-0.6px', color: 'var(--text)', marginBottom: 10 }}>
+          Дневник
+        </h1>
+        <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, maxWidth: 520 }}>
           Замечай паттерны, фиксируй моменты. Веди один или все три — как тебе удобно.
-        </div>
+        </p>
       </div>
-      {diaries.map(meta => (
-        <DiaryCard key={meta.type} meta={meta} onOpen={() => onOpen(meta.type)} />
-      ))}
+
+      {/* Diary cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 640 }}>
+        {diaries.map(meta => (
+          <div
+            key={meta.type}
+            onClick={() => onOpen(meta.type)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 18,
+              padding: '20px 20px',
+              background: 'var(--bg-elev)',
+              border: '1px solid var(--line)',
+              borderRadius: 14,
+              cursor: 'pointer',
+              transition: 'border-color 0.15s, background 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--line-strong)')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
+          >
+            {/* Accent bar */}
+            <div style={{ width: 4, height: 48, borderRadius: 4, background: meta.color, flexShrink: 0, opacity: 0.75 }} />
+
+            {/* Icon */}
+            <div style={{
+              width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+              background: `color-mix(in srgb, ${meta.color} 12%, transparent)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24,
+            }}>
+              {meta.emoji}
+            </div>
+
+            {/* Text */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{meta.title}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.4 }}>{meta.subtitle}</div>
+              {meta.count > 0 && (
+                <div style={{ fontSize: 12, color: meta.color, marginTop: 5, fontWeight: 500 }}>
+                  {meta.count} {meta.count === 1 ? 'запись' : meta.count < 5 ? 'записи' : 'записей'}
+                  {meta.lastDate && ` · последняя ${fmtDateLong(meta.lastDate)}`}
+                </div>
+              )}
+            </div>
+
+            <span style={{ fontSize: 18, color: 'var(--text-ghost)', flexShrink: 0 }}>›</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
