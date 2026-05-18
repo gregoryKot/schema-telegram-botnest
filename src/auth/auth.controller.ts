@@ -195,9 +195,50 @@ export class AuthController {
   @Get('vk/callback')
   async vkCallback(
     @Query('code') code: string, @Query('state') state: string,
-    @Query('error') error: string, @Req() req: any, @Res() res: any,
+    @Query('device_id') deviceId: string, @Query('error') error: string,
+    @Req() req: any, @Res() res: any,
   ): Promise<void> {
-    return this.oauthCallback('vk', code, state, error, req, res);
+    // VK ID needs device_id + PKCE state for token exchange. Bypass the
+    // generic helper and call the provider-specific method.
+    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+    try {
+      const vk = this.providers.get('vk') as any;
+      if (error) throw new UnauthorizedException(`vk auth denied: ${error}`);
+      if (!code || !state || !deviceId) throw new BadRequestException('Missing code / state / device_id');
+
+      const savedState = req.cookies?.['oauth_state'];
+      if (!savedState || savedState !== state) throw new UnauthorizedException('OAuth state mismatch');
+      res.clearCookie('oauth_state', { path: '/api/auth' });
+
+      const identity = await vk.exchangeCodeWithContext(code, deviceId, state);
+
+      let linkUserId: bigint | null = null;
+      try {
+        const raw = JSON.parse(Buffer.from(state, 'base64url').toString()).linkUserId;
+        if (raw) linkUserId = BigInt(raw);
+      } catch { /* ignore */ }
+
+      const outcome = await this.signInOrLinkOrMerge('vk', identity, {
+        linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
+      });
+
+      if (outcome.kind === 'merge') {
+        const params = new URLSearchParams({
+          token: outcome.mergeToken,
+          summary: JSON.stringify(outcome.summary),
+          provider: 'vk',
+          name: outcome.otherDisplay ?? '',
+        });
+        res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
+        return;
+      }
+
+      res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+      res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
+    } catch (err) {
+      this.logger.error(`vk callback error: ${(err as Error).message}`);
+      res.redirect(`${frontendBase}/auth/error?reason=vk_failed`);
+    }
   }
 
   // ─── Telegram Login Widget ────────────────────────────────────────────────

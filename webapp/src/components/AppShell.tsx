@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api';
 import { COLORS } from '../types';
@@ -9,6 +9,7 @@ import { cacheTherapistContact } from '../utils/therapistContact';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 import { CHILDHOOD_DONE_KEY } from './ChildhoodWheelSheet';
 import { YSQ_PROGRESS_KEY } from './YSQTestSheet';
+import { CommandPalette } from './CommandPalette';
 
 import { TodaySection } from '../sections/TodaySection';
 import { DiarySection } from '../sections/DiarySection';
@@ -50,6 +51,10 @@ const NAV_ITEMS: { id: Section; icon: string; label: string }[] = [
   { id: 'profile', icon: '👤', label: 'Профиль' },
   { id: 'help',    icon: '💡', label: 'Помощь' },
 ];
+
+const SECTION_LABELS: Record<Section, string> = {
+  today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', help: 'Помощь',
+};
 
 const TODAY_DATE = todayStr();
 const TODAY_KEY = 'celebrated_' + TODAY_DATE;
@@ -146,6 +151,27 @@ export function AppShell() {
   const therapistBackHandlerRef = useRef<() => void>(() => setCabinetView('list'));
   const switchTherapistMode = (on: boolean) => { localStorage.setItem('therapist_mode', on ? '1' : '0'); setTherapistMode(on); };
 
+  // Command palette
+  const [cmdOpen, setCmdOpen] = useState(false);
+
+  // Breadcrumbs
+  const breadcrumbs = useMemo(() => {
+    if (therapistMode) return ['Кабинет'];
+    return [SECTION_LABELS[section]];
+  }, [therapistMode, section]);
+
+  // Global ⌘K
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmdOpen(true); }
+      if (!therapistMode && e.metaKey) {
+        const map: Record<string, Section> = { '1': 'today', '2': 'diary', '3': 'schemas', '4': 'profile', '5': 'help' };
+        if (map[e.key]) { e.preventDefault(); setSection(map[e.key] as Section); }
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [therapistMode]);
 
   // Online/offline
   useEffect(() => {
@@ -276,66 +302,78 @@ export function AppShell() {
   }
 
   return (
-    <div className="app-layout">
-      {/* ── Sidebar (desktop) ──────────────────────────────────────────────── */}
+    <div className="app-shell">
+      {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
       <aside className="sidebar">
-        {/* Brand */}
-        <div style={{
-          padding: '20px 16px 16px',
-          display: 'flex', alignItems: 'center', gap: 10,
-          borderBottom: '1px solid var(--border-color)',
-          marginBottom: 8,
-        }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: 'linear-gradient(135deg, var(--accent-indigo), var(--accent))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20, flexShrink: 0,
-            boxShadow: '0 4px 12px rgba(124, 114, 248, 0.3)',
-          }}>🧠</div>
-          <span style={{ fontWeight: 700, fontSize: 16 }}>СхемаЛаб</span>
+        <div className="sb-brand">
+          <div className="sb-logo">СЛ</div>
+          <div className="sb-name">СхемаЛаб</div>
         </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, paddingTop: 4 }}>
-          {NAV_ITEMS.map(item => (
-            <button
-              key={item.id}
-              className={`nav-item${section === item.id ? ' active' : ''}`}
-              onClick={() => setSection(item.id)}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              {item.label}
+        {userRole === 'THERAPIST' && (
+          <div className="sb-mode-switch">
+            <button className={`sb-mode-btn${!therapistMode ? ' is-active' : ''}`}
+                    onClick={() => switchTherapistMode(false)}>Клиент</button>
+            <button className={`sb-mode-btn${therapistMode ? ' is-active' : ''}`}
+                    onClick={() => switchTherapistMode(true)}>Терапевт</button>
+          </div>
+        )}
+
+        <nav className="sb-nav">
+          {!therapistMode && NAV_ITEMS.map(item => (
+            <button key={item.id}
+                    className={`sb-item${section === item.id ? ' is-active' : ''}`}
+                    onClick={() => setSection(item.id)}>
+              <span>{item.label}</span>
             </button>
           ))}
+          {therapistMode && (
+            <button className="sb-item is-active"><span>Кабинет</span></button>
+          )}
         </nav>
 
-        {/* Bottom actions */}
-        <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)' }}>
-          <a href="/account" className="nav-item" style={{ textDecoration: 'none', color: 'var(--text-sub)' }}>
-            <span className="nav-icon">🔗</span>
-            Аккаунт
+        <div className="sb-foot">
+          <a href="/account" className="sb-account">
+            <div className="sb-avatar">{(displayName ?? '?')[0].toUpperCase()}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="sb-acc-name">{displayName || 'Профиль'}</div>
+              <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>
+            </div>
           </a>
-          <button
-            className="nav-item"
-            onClick={() => logout()}
-            style={{ color: 'var(--accent-red)' }}
-          >
-            <span className="nav-icon">🚪</span>
-            Выйти
+          <button className="sb-item" onClick={() => logout()}
+                  style={{ marginTop: 2, color: 'var(--c-rose)' }}>
+            <span>Выйти</span>
           </button>
         </div>
       </aside>
 
-      {/* ── Main content ────────────────────────────────────────────────────── */}
-      <main className="main-content" style={{ position: 'relative' }}>
-        {isOffline && (
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, background: 'rgba(239,68,68,0.92)', backdropFilter: 'blur(8px)', padding: '10px 20px', textAlign: 'center', fontSize: 13, fontWeight: 500, color: '#fff' }}>
-            Нет подключения — данные не сохраняются
+      {/* ── Main ─────────────────────────────────────────────────────────────── */}
+      <div className="main">
+        {/* Topbar */}
+        <div className="topbar">
+          <div className="crumbs">
+            {breadcrumbs.map((c, i) => (
+              <span key={i}>
+                {i > 0 && <span className="sep" style={{ margin: '0 4px' }}>›</span>}
+                <span className={i === breadcrumbs.length - 1 ? 'now' : ''}>{c}</span>
+              </span>
+            ))}
           </div>
-        )}
+          <div className="t-spacer" />
+          {isOffline && (
+            <span style={{ fontSize: 12, color: 'var(--c-rose)', fontWeight: 500 }}>офлайн</span>
+          )}
+          <button className="search-pill" onClick={() => setCmdOpen(true)}>
+            <span>Перейти к…</span>
+            <span className="sp-spacer" />
+            <span className="kbd">⌘K</span>
+          </button>
+        </div>
 
-        {/* Therapist mode — full replacement */}
+        {/* Canvas */}
+        <div className="canvas">
+
+        {/* Therapist mode */}
         {therapistMode && (
           <TherapistClientSheet
             view={cabinetView}
@@ -347,7 +385,7 @@ export function AppShell() {
 
         {/* Regular sections */}
         {!therapistMode && (
-          <div className="page-content animate-fade" key={section}>
+          <div className="page animate-fade" key={section}>
             {section === 'today' && (
               <TodaySection
                 needs={needs}
@@ -600,9 +638,11 @@ export function AppShell() {
             onOpenGratitude={() => setNewDiaryEntry('gratitude')}
           />
         )}
-      </main>
 
-      {/* ── Mobile bottom nav ───────────────────────────────────────────────── */}
+        </div>{/* end canvas */}
+      </div>{/* end main */}
+
+      {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
       <nav className="mobile-nav">
         {NAV_ITEMS.map(item => (
           <button
@@ -615,6 +655,15 @@ export function AppShell() {
           </button>
         ))}
       </nav>
+
+      {/* ── Command palette ─────────────────────────────────────────────────── */}
+      {cmdOpen && (
+        <CommandPalette
+          section={section}
+          onNavigate={(s) => { setSection(s); }}
+          onClose={() => setCmdOpen(false)}
+        />
+      )}
     </div>
   );
 }

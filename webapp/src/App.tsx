@@ -8,9 +8,10 @@ import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
 import { AppShell } from './components/AppShell';
 
-// Apply saved theme before first render
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+// Apply saved theme before first render (key: app_theme)
+const savedTheme = localStorage.getItem('app_theme');
+if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+// Default is now light (no attribute needed for light mode)
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
