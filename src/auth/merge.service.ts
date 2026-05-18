@@ -12,8 +12,13 @@ const USER_OWNED_TABLES = [
   'SchemaDiaryEntry', 'ModeDiaryEntry', 'GratitudeDiaryEntry',
   'AppActivity', 'UserTask', 'DiaryDraft',
   'Pair', 'TherapyRelation',
-  'AuthProvider', 'WebSession',
+  'AuthProvider',
 ] as const;
+
+// Tables we DELETE rather than move during merge — moving them would carry
+// over security-sensitive state (refresh tokens of the old account become
+// valid for the new one). Source's rows are simply destroyed.
+const SECURITY_SENSITIVE_TABLES = ['WebSession'] as const;
 
 // Tables with a unique constraint that includes userId — for these we have
 // to handle conflicts row by row (source row dropped when target already has
@@ -60,7 +65,12 @@ export class MergeService {
   // actively logged into).
   async merge(sourceId: bigint, targetId: bigint): Promise<void> {
     if (sourceId === targetId) return;
+    const startedAt = Date.now();
     await this.prisma.$transaction(async (tx) => {
+      // 0. Drop security-sensitive rows of source (refresh tokens, etc).
+      for (const table of SECURITY_SENSITIVE_TABLES) {
+        await tx.$executeRawUnsafe(`DELETE FROM "${table}" WHERE "userId" = ${sourceId}`);
+      }
       // 1. Drop source rows that would collide on a (userId, …) unique key.
       for (const rule of UNIQUE_RULES) {
         const otherCols = rule.cols.filter(c => c !== 'userId');
@@ -104,6 +114,7 @@ export class MergeService {
       // 5. Finally, delete the now-empty source User.
       await tx.$executeRawUnsafe(`DELETE FROM "User" WHERE id = ${sourceId}`);
     });
-    this.logger.log(`Merged user ${sourceId} → ${targetId}`);
+    const ms = Date.now() - startedAt;
+    this.logger.log(`Merged user ${sourceId} → ${targetId} (${ms}ms)`);
   }
 }
