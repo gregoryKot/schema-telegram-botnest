@@ -1,32 +1,62 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
-const RAW = process.env.ENCRYPTION_KEY ?? '';
-const KEY = RAW.length === 64 ? Buffer.from(RAW, 'hex') : null; // 32 bytes = AES-256
+// Multi-key support for online key rotation:
+//   ENCRYPTION_KEY     — current key, used for ALL new encryption
+//   ENCRYPTION_KEY_OLD — comma-separated old keys, tried on decryption only
+// During rotation: add new key as ENCRYPTION_KEY, move previous to OLD, run
+// `npm run rotate-encryption`. After it finishes, remove ENCRYPTION_KEY_OLD.
+function loadKeys(): { current: Buffer | null; all: Buffer[] } {
+  const parse = (hex: string): Buffer | null =>
+    hex.length === 64 ? Buffer.from(hex, 'hex') : null;
+  const cur = parse((process.env.ENCRYPTION_KEY ?? '').trim());
+  const olds = (process.env.ENCRYPTION_KEY_OLD ?? '')
+    .split(',').map(s => s.trim()).filter(Boolean)
+    .map(parse).filter((k): k is Buffer => k !== null);
+  const all = [cur, ...olds].filter((k): k is Buffer => k !== null);
+  return { current: cur, all };
+}
+const { current: CURRENT_KEY, all: ALL_KEYS } = loadKeys();
 
 export function encrypt(text: string | null | undefined): string | null {
-  if (!text || !KEY) return text ?? null;
+  if (!text || !CURRENT_KEY) return text ?? null;
   const iv = randomBytes(12);
-  const cipher = createCipheriv('aes-256-gcm', KEY, iv);
+  const cipher = createCipheriv('aes-256-gcm', CURRENT_KEY, iv);
   const enc = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
   const tag = cipher.getAuthTag();
   return Buffer.concat([iv, tag, enc]).toString('base64');
 }
 
 export function decrypt(value: string | null | undefined): string | null {
-  if (!value || !KEY) return value ?? null;
+  if (!value || ALL_KEYS.length === 0) return value ?? null;
+  let buf: Buffer;
   try {
-    const buf = Buffer.from(value, 'base64');
-    // Minimum: 12 (iv) + 16 (tag) + 1 (data) = 29 bytes
-    if (buf.length < 29) return value;
-    const iv = buf.subarray(0, 12);
-    const tag = buf.subarray(12, 28);
-    const data = buf.subarray(28);
-    const decipher = createDecipheriv('aes-256-gcm', KEY, iv);
-    decipher.setAuthTag(tag);
-    return decipher.update(data).toString('utf8') + decipher.final('utf8');
+    buf = Buffer.from(value, 'base64');
+    if (buf.length < 29) return value; // not encrypted format
   } catch {
-    return value; // legacy plaintext — return as-is
+    return value;
   }
+  const iv = buf.subarray(0, 12);
+  const tag = buf.subarray(12, 28);
+  const data = buf.subarray(28);
+  // Try each known key — current first, then old keys.
+  for (const key of ALL_KEYS) {
+    try {
+      const decipher = createDecipheriv('aes-256-gcm', key, iv);
+      decipher.setAuthTag(tag);
+      return decipher.update(data).toString('utf8') + decipher.final('utf8');
+    } catch { /* wrong key, try next */ }
+  }
+  return value; // none worked — legacy plaintext, return as-is
+}
+
+// Re-encrypt with the CURRENT key. Used by rotation script — pass any
+// encrypted blob, get back a blob encrypted with the new key. Returns the
+// input unchanged if it can't be decrypted (plaintext or unknown key).
+export function reencrypt(value: string | null | undefined): string | null {
+  if (!value || !CURRENT_KEY) return value ?? null;
+  const decrypted = decrypt(value);
+  if (decrypted === null || decrypted === value) return value;
+  return encrypt(decrypted);
 }
 
 // For JSON fields stored as encrypted string

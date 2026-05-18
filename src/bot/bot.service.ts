@@ -625,17 +625,33 @@ export class BotService {
 
   async deleteAllUserData(userId: number): Promise<void> {
     const uid = BigInt(userId);
+    // HARD delete — right-to-erasure. We tear out every row that references
+    // this user, including auth providers, web sessions, therapist requests,
+    // and finally the User row itself. NO soft-delete fallback.
+    //
+    // After the transaction we run VACUUM on the touched tables (outside the
+    // transaction — VACUUM can't run inside one). This reclaims dead tuples
+    // so the data is physically overwriteable by Postgres faster.
     await this.prisma.$transaction([
-      // All user-owned tables — driven by USER_DATA_TABLES registry above
+      // All user-owned tables (USER_DATA_TABLES registry above).
       ...USER_DATA_TABLES.map(table => (this.prisma[table] as any).deleteMany({ where: { userId: uid } })),
-      // Therapist-owned records (keyed by therapistId, not userId)
+      // Therapist-side rows (keyed by therapistId).
       this.prisma.clientConceptualization.deleteMany({ where: { therapistId: uid } }),
       this.prisma.therapistNote.deleteMany({ where: { therapistId: uid } }),
-      this.prisma.therapyRelation.deleteMany({ where: { therapistId: uid } }),
-      // Pairs use two columns (special case)
+      this.prisma.therapyRelation.deleteMany({ where: { OR: [{ therapistId: uid }, { clientId: uid }] } }),
+      // Pairs (two refs).
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
-      // Soft-delete: keep the row so re-registration preserves original createdAt
-      this.prisma.user.update({ where: { id: uid }, data: { deletedAt: new Date(), firstName: null, role: 'CLIENT', notifyEnabled: true, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: true, disclaimerAccepted: false, pairCardDismissed: false, botBlockedAt: null, mySchemaIds: [], myModeIds: [], therapistShareCards: true, therapistShareProfile: true } }),
+      // Auth: providers + web sessions + therapist requests.
+      (this.prisma as any).authProvider.deleteMany({ where: { userId: uid } }),
+      (this.prisma as any).webSession.deleteMany({ where: { userId: uid } }),
+      (this.prisma as any).therapistRequest.deleteMany({ where: { userId: uid } }),
+      // Finally — the user row itself.
+      this.prisma.user.delete({ where: { id: uid } }),
     ]);
+    // Async VACUUM (non-blocking, no FULL — just reclaims dead tuples).
+    // Postgres will run autovacuum eventually anyway; this nudges it.
+    this.prisma.$executeRawUnsafe('VACUUM ANALYZE').catch((e) =>
+      this.logger.warn(`Post-delete VACUUM failed: ${(e as Error).message}`),
+    );
   }
 }

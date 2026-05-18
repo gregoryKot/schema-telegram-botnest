@@ -54,6 +54,36 @@
 ### Аудит-события
 `SecurityLogService` пишет в логи + DM админу при: merge_confirmed, role_changed, therapist_request_submitted, csrf_blocked, suspicious_initdata (попытка подделать подпись). Если приходит много suspicious_initdata — атака или ротация BOT_TOKEN не докатилась.
 
+### Резервные копии БД (важно для шифрования при компрометации)
+Поля в БД зашифрованы AES-256-GCM с ключом из env `ENCRYPTION_KEY`. **Если утечёт бэкап Amvera CNPG + env-snapshot одновременно — данные открыты**.
+
+Что нужно от Amvera (запросить у их саппорта):
+1. Шифруются ли резервные копии CNPG at-rest?
+2. Где они хранятся (в том же ДЦ, отдельно, у третьей стороны)?
+3. Кто имеет к ним доступ (только владелец проекта или сотрудники Amvera)?
+4. Encryption keys для бэкапов — ваши или Amvera управляет?
+
+Долгосрочные меры (если хочется паранойи):
+- ENCRYPTION_KEY держать **не в env**, а в отдельном secret manager / HSM (для Amvera маловероятно).
+- Делать собственные офлайн encrypted dumps (`pg_dump | openssl enc -aes-256-gcm`) и хранить в другом облаке.
+- Принять что для российского небольшого хостинга это accepted risk.
+
+### Ротация ENCRYPTION_KEY
+1. Сгенерить новый ключ: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+2. В Amvera env: `ENCRYPTION_KEY_OLD = <старый>`, `ENCRYPTION_KEY = <новый>`. Restart.
+3. Запустить `npm run rotate-encryption` (через Amvera exec/SSH).
+4. Убрать `ENCRYPTION_KEY_OLD`. Restart.
+
+`decrypt()` поддерживает несколько ключей одновременно — старые читаются как fallback, новые записываются всегда current ключом.
+
+### Удаление аккаунта
+`deleteAllUserData` теперь **hard delete** (не soft с deletedAt-флагом):
+- DELETE по всем USER_DATA_TABLES + AuthProvider + WebSession + TherapistRequest + сам User
+- После транзакции триггер `VACUUM ANALYZE` (не FULL, не блокирует) → быстрее освобождает dead tuples
+- Юзер удалён логически мгновенно. Физическое освобождение страниц Postgres'ом — через autovacuum в течение часов.
+
+Для строгого GDPR-уровня right-to-erasure нужен ещё `VACUUM FULL` (лочит таблицы) или disk-level encryption. Не делаем, accepted risk.
+
 ## Telegram
 
 - Переходы между экранами — `editMessageText`, не `reply` (не засорять чат).
