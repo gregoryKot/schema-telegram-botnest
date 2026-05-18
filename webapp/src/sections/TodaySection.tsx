@@ -181,7 +181,7 @@ export function TodaySection({
       const today = todayStr();
       const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
       const vals = sorted.map(d => {
-        const rs = Object.values(d.ratings);
+        const rs = Object.values(d.ratings) as number[];
         if (rs.length === 0) return 0;
         return rs.reduce((s, v) => s + v, 0) / rs.length;
       });
