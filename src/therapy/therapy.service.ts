@@ -17,6 +17,13 @@ function encryptConceptFields(body: Record<string, any>): Record<string, any> {
   for (const f of CONCEPT_TEXT_FIELDS) {
     if (f in body) result[f] = body[f] != null ? encrypt(body[f]) : null;
   }
+  // Clinical labels — encrypted JSON string (plaintext-tolerant on read).
+  if ('schemaIds' in body && Array.isArray(body.schemaIds)) {
+    result.schemaIds = encryptJson(body.schemaIds) ?? JSON.stringify(body.schemaIds);
+  }
+  if ('modeIds' in body && Array.isArray(body.modeIds)) {
+    result.modeIds = encryptJson(body.modeIds) ?? JSON.stringify(body.modeIds);
+  }
   return result;
 }
 
@@ -24,6 +31,13 @@ function decryptConceptFields(row: Record<string, any>): Record<string, any> {
   const result: Record<string, any> = {};
   for (const f of CONCEPT_TEXT_FIELDS) {
     result[f] = row[f] != null ? decrypt(row[f]) : null;
+  }
+  // schemaIds / modeIds: legacy rows have JSON arrays; new rows have encrypted strings.
+  for (const f of ['schemaIds', 'modeIds']) {
+    const v = row[f];
+    if (v == null) { result[f] = []; continue; }
+    if (typeof v === 'string') result[f] = decryptJson<string[]>(v) ?? [];
+    else result[f] = v;
   }
   return result;
 }
@@ -499,7 +513,9 @@ export class TherapyService {
       where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
       create: {
         therapistId: tid, clientId: cid,
-        schemaIds: body.schemaIds ?? [], modeIds: body.modeIds ?? [],
+        // schemaIds / modeIds taken from `enc` — encrypted blob.
+        schemaIds: enc.schemaIds ?? [],
+        modeIds:   enc.modeIds   ?? [],
         earlyExperience: enc.earlyExperience ?? null,
         unmetNeeds: enc.unmetNeeds ?? null,
         triggers: enc.triggers ?? null,
@@ -510,8 +526,6 @@ export class TherapyService {
         history: [],
       },
       update: {
-        ...(body.schemaIds !== undefined && { schemaIds: body.schemaIds }),
-        ...(body.modeIds !== undefined && { modeIds: body.modeIds }),
         ...Object.fromEntries(Object.entries(enc).filter(([k]) => body[k] !== undefined)),
         history,
       },
