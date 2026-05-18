@@ -8,6 +8,7 @@ import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 import { TherapyService } from '../therapy/therapy.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthService } from '../auth/auth.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 import { computeYsqScores } from '../utils/ysq';
 
@@ -35,7 +36,22 @@ export class ApiController {
     private readonly scheduleService: TelegramScheduleService,
     private readonly therapyService: TherapyService,
     private readonly prisma: PrismaService,
+    private readonly authService: AuthService,
   ) {}
+
+  // ─── Link token for mini-app users ────────────────────────────────────────
+  //
+  // The mini-app authenticates with `x-telegram-init-data`. To start an
+  // OAuth-style provider link (Google, VK, …) it needs a JWT to pass as
+  // ?link_token=… on the redirect. This endpoint issues one.
+
+  @Get('link-token')
+  async issueLinkToken(@Req() req: AuthRequest): Promise<{ linkToken: string; expiresIn: number }> {
+    const tokens = await this.authService.issueTokens(
+      BigInt(req.telegramUserId), req.ip, (req.headers as any)['user-agent'],
+    );
+    return { linkToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+  }
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────
 

@@ -6,6 +6,18 @@
 - `src/telegram/` — всё связанное с Telegram (команды, кнопки, провайдер бота)
 - `src/prisma/` — PrismaService, подключение к БД
 
+## Два фронтенда — один бэк
+
+- `webapp/` — сайт `schemalab.ru` (логин Google/Telegram, JWT)
+- `schema-miniapp/` — Telegram мини-апп `schemalab.ru/app/` (initData)
+- Оба ходят в один NestJS API. Данные **общие** если `userId` совпадает.
+
+Когда совпадает:
+- Telegram login на сайте ⇄ мини-апп = один и тот же `userId = telegramId` ✓
+- Google login на сайте → отдельный web-only `userId`. Чтобы данные подтянулись из мини-аппа — юзеру надо в `/account` нажать "Привязать Telegram" и потвердить merge.
+
+См. `src/auth/merge.service.ts` — транзакционный перенос userId по всем USER_OWNED_TABLES при подтверждённом merge.
+
 **Новая функциональность** → сначала логика в `bot.service.ts`, потом UI в `telegram.service.ts`.
 Не смешивай Telegram-логику с бизнес-логикой.
 
