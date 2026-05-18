@@ -48,7 +48,10 @@ export class AuthController {
       linkUserId: (req as any).webUser?.userId?.toString() ?? null,
     })).toString('base64url');
 
-    res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'strict', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+    // sameSite: 'lax' so the cookie IS sent when Google redirects the user
+    // back to /api/auth/google/callback. 'strict' would block it (cross-site
+    // top-level navigation), causing every Google login to fail with state mismatch.
+    res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
     res.redirect(this.auth.buildGoogleAuthUrl(state));
   }
 
