@@ -189,24 +189,49 @@ export class AuthService {
 
   async linkProviderToUser(
     userId: BigInt,
-    provider: 'telegram' | 'google',
+    provider: string,
     providerId: string,
     displayName?: string,
     email?: string,
-  ): Promise<void> {
+  ): Promise<{ ok: true } | { ok: false; conflictUserId: string }> {
     const existing = await (this.prisma as any).authProvider.findUnique({
       where: { provider_providerId: { provider, providerId } },
     });
 
     if (existing) {
-      if (String(existing.userId) === String(userId)) return; // already linked to this user
-      throw new ConflictException(`This ${provider} account is already linked to another user`);
+      if (String(existing.userId) === String(userId)) return { ok: true };
+      // The other account is real and has its own userId. Caller decides
+      // whether to merge.
+      return { ok: false, conflictUserId: String(existing.userId) };
     }
 
     await (this.prisma as any).authProvider.create({
       data: { userId, provider, providerId, displayName, email },
     });
     this.logger.log(`Linked ${provider} provider to userId ${userId}`);
+    return { ok: true };
+  }
+
+  // Short-lived signed token used to confirm a merge in the next request
+  // (e.g. user must click "Yes, merge" in the UI before destructive work runs).
+  buildMergeToken(targetUserId: BigInt, sourceUserId: BigInt, provider: string, providerId: string): string {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    return jwt.sign(
+      { kind: 'merge', target: String(targetUserId), source: String(sourceUserId), provider, providerId },
+      secret,
+      { expiresIn: 10 * 60 }, // 10 minutes
+    );
+  }
+
+  verifyMergeToken(token: string): { target: bigint; source: bigint; provider: string; providerId: string } {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    try {
+      const p = jwt.verify(token, secret) as any;
+      if (p.kind !== 'merge') throw new Error('Wrong token kind');
+      return { target: BigInt(p.target), source: BigInt(p.source), provider: p.provider, providerId: p.providerId };
+    } catch {
+      throw new UnauthorizedException('Invalid or expired merge token');
+    }
   }
 
   async unlinkProvider(userId: BigInt, provider: 'google' | 'telegram'): Promise<void> {

@@ -5,6 +5,7 @@ import { setTokenProvider } from './api';
 import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { AccountPage } from './pages/AccountPage';
+import { MergePage } from './pages/MergePage';
 import { AppShell } from './components/AppShell';
 
 // Apply saved theme before first render
@@ -45,6 +46,11 @@ function AppRoutes() {
         <Route path="/account" element={
           <RequireAuth>
             <AccountPage />
+          </RequireAuth>
+        } />
+        <Route path="/account/merge" element={
+          <RequireAuth>
+            <MergePage />
           </RequireAuth>
         } />
         <Route path="/*" element={

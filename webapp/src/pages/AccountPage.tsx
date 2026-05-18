@@ -62,6 +62,18 @@ export function AccountPage() {
           const body = await res.json().catch(() => ({ message: 'Link failed' }));
           throw new Error(body.message ?? 'Link failed');
         }
+        const data = await res.json() as { ok?: true } | { merge: true; mergeToken: string; summary: Record<string, number> };
+        if ('merge' in data) {
+          // Conflict — go to merge confirmation
+          const params = new URLSearchParams({
+            token: data.mergeToken,
+            summary: JSON.stringify(data.summary),
+            provider: 'telegram',
+            name: userData.first_name ?? '',
+          });
+          navigate(`/account/merge?${params.toString()}`);
+          return;
+        }
         await refresh();
         setShowTgWidget(false);
       } catch (e) {
