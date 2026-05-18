@@ -1,0 +1,17 @@
+node_modules
+dist
+.git
+.claude
+.claire
+test
+schema-miniapp/node_modules
+schema-miniapp/src
+schema-miniapp/.git
+schema-miniapp/.claude
+schema-miniapp/index.html
+schema-miniapp/tsconfig.json
+schema-miniapp/vite.config.ts
+schema-miniapp/package-lock.json
+schema-telegram-botnest
+webapp/node_modules
+*.log

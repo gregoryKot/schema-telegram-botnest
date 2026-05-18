@@ -45,15 +45,24 @@ model User {
   myModeIds              Json     @default("[]")
   therapistShareCards    Boolean  @default(true)
   therapistShareProfile  Boolean  @default(true)
-  clientState            Json     @default("{}")  // legacy localStorage-mirror: long-tail keys still served from here
-  // ── Typed UI flags (migrated out of clientState) ────────────────────────
-  themePref               String?  // 'light' | 'dark' (null = system)
-  onboardingV2Done        Boolean  @default(false)
-  practicesOnboardingDone Boolean  @default(false)
-  childhoodWheelDone      Boolean  @default(false)
-  ysqBannerDismissed      Boolean  @default(false)
-  therapistMode           Boolean  @default(false)
-  defaultSection          String?  // last-selected bottom nav section
+  // ── Typed UI flags (migrated out of localStorage) ───────────────────────
+  themePref                String?  // 'light' | 'dark' (null = system)
+  onboardingV1Done         Boolean  @default(false)
+  onboardingV2Done         Boolean  @default(false)
+  onboardingSkipped        Json     @default("[]")  // string[] of dismissed onboarding step ids
+  practicesOnboardingDone  Boolean  @default(false)
+  childhoodWheelDone       Boolean  @default(false)
+  ysqBannerDismissed       Boolean  @default(false)
+  hintSheetCloseShown      Boolean  @default(false)
+  hintHistoryDismissed     Boolean  @default(false)
+  trackerOnboardingDone    Boolean  @default(false)
+  lastCelebrationDate      String?  // YYYY-MM-DD — last day we showed daily celebration
+  lastYesterdayBannerDate  String?  // YYYY-MM-DD — date for which "yesterday banner" was dismissed
+  lastWeeklyQuestionWeek   String?  // YYYY-Www — last week the weekly question was answered/dismissed
+  schemaIntrosShown        Json     @default("[]")  // string[] of schema ids whose intro was viewed
+  modeIntrosShown          Json     @default("[]")  // string[] of mode ids whose intro was viewed
+  therapistMode            Boolean  @default(false)
+  defaultSection           String?  // last-selected bottom nav section
   botBlockedAt           DateTime?
   deletedAt              DateTime?
 
@@ -72,6 +81,19 @@ model User {
   ysqHistory             YsqResultHistory[]
   authProviders          AuthProvider[]
   webSessions            WebSession[]
+  drafts                 DiaryDraft[]
+}
+
+// Unsaved diary entry drafts (replaces localStorage `diary_draft_*` keys)
+model DiaryDraft {
+  userId    BigInt
+  type      String   // 'schema' | 'mode' | 'gratitude'
+  startedAt DateTime
+  data      Json
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, type])
 }
 
 // OAuth provider link (telegram | google) → userId

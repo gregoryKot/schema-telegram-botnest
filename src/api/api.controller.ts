@@ -39,19 +39,21 @@ export class ApiController {
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────
 
+  private readonly FLAG_FIELDS = [
+    'themePref', 'onboardingV1Done', 'onboardingV2Done', 'onboardingSkipped',
+    'practicesOnboardingDone', 'childhoodWheelDone', 'ysqBannerDismissed',
+    'hintSheetCloseShown', 'hintHistoryDismissed', 'trackerOnboardingDone',
+    'lastCelebrationDate', 'lastYesterdayBannerDate', 'lastWeeklyQuestionWeek',
+    'schemaIntrosShown', 'modeIntrosShown',
+    'therapistMode', 'defaultSection',
+  ] as const;
+
   @Get('user-flags')
   async getUserFlags(@Req() req: AuthRequest) {
+    const select = Object.fromEntries(this.FLAG_FIELDS.map(f => [f, true]));
     const u = await (this.prisma.user as any).findUnique({
       where: { id: BigInt(req.telegramUserId) },
-      select: {
-        themePref: true,
-        onboardingV2Done: true,
-        practicesOnboardingDone: true,
-        childhoodWheelDone: true,
-        ysqBannerDismissed: true,
-        therapistMode: true,
-        defaultSection: true,
-      },
+      select,
     });
     return u ?? {};
   }
@@ -59,21 +61,11 @@ export class ApiController {
   @Post('user-flags')
   async setUserFlags(
     @Req() req: AuthRequest,
-    @Body() body: Partial<{
-      themePref: string | null;
-      onboardingV2Done: boolean;
-      practicesOnboardingDone: boolean;
-      childhoodWheelDone: boolean;
-      ysqBannerDismissed: boolean;
-      therapistMode: boolean;
-      defaultSection: string | null;
-    }>,
+    @Body() body: Record<string, unknown>,
   ): Promise<{ ok: true }> {
     if (!body || typeof body !== 'object') throw new BadRequestException('Invalid body');
-    const allowed = ['themePref', 'onboardingV2Done', 'practicesOnboardingDone',
-                     'childhoodWheelDone', 'ysqBannerDismissed', 'therapistMode', 'defaultSection'];
     const data: Record<string, unknown> = {};
-    for (const k of allowed) if (k in body) data[k] = (body as any)[k];
+    for (const k of this.FLAG_FIELDS) if (k in body) data[k] = (body as any)[k];
     if (Object.keys(data).length === 0) return { ok: true };
     await (this.prisma.user as any).update({
       where: { id: BigInt(req.telegramUserId) },
@@ -82,31 +74,38 @@ export class ApiController {
     return { ok: true };
   }
 
-  // ─── Client state (legacy localStorage mirror for long-tail keys) ──────────
+  // ─── Diary drafts ──────────────────────────────────────────────────────────
 
-  @Get('client-state')
-  async getClientState(@Req() req: AuthRequest): Promise<Record<string, unknown>> {
-    const u = await (this.prisma.user as any).findUnique({
-      where: { id: BigInt(req.telegramUserId) },
-      select: { clientState: true },
+  @Get('drafts')
+  async getDrafts(@Req() req: AuthRequest) {
+    const rows = await (this.prisma as any).diaryDraft.findMany({
+      where: { userId: BigInt(req.telegramUserId) },
+      select: { type: true, startedAt: true, data: true },
     });
-    return (u?.clientState as Record<string, unknown>) ?? {};
+    return Object.fromEntries(rows.map((r: any) => [r.type, { startedAt: r.startedAt.toISOString(), data: r.data }]));
   }
 
-  @Post('client-state')
-  async setClientState(
+  @Post('drafts/:type')
+  async saveDraft(
     @Req() req: AuthRequest,
-    @Body() body: Record<string, unknown>,
+    @Param('type') type: string,
+    @Body() body: { startedAt: string; data: unknown },
   ): Promise<{ ok: true }> {
-    if (!body || typeof body !== 'object') throw new BadRequestException('Invalid body');
-    const u = await (this.prisma.user as any).findUnique({
-      where: { id: BigInt(req.telegramUserId) },
-      select: { clientState: true },
+    if (!['schema', 'mode', 'gratitude'].includes(type)) throw new BadRequestException('Invalid type');
+    if (!body?.startedAt) throw new BadRequestException('Missing startedAt');
+    await (this.prisma as any).diaryDraft.upsert({
+      where: { userId_type: { userId: BigInt(req.telegramUserId), type } },
+      update: { data: body.data, startedAt: new Date(body.startedAt) },
+      create: { userId: BigInt(req.telegramUserId), type, data: body.data, startedAt: new Date(body.startedAt) },
     });
-    const merged = { ...(u?.clientState as Record<string, unknown> ?? {}), ...body };
-    await (this.prisma.user as any).update({
-      where: { id: BigInt(req.telegramUserId) },
-      data: { clientState: merged },
+    return { ok: true };
+  }
+
+  @Delete('drafts/:type')
+  async deleteDraft(@Req() req: AuthRequest, @Param('type') type: string): Promise<{ ok: true }> {
+    if (!['schema', 'mode', 'gratitude'].includes(type)) throw new BadRequestException('Invalid type');
+    await (this.prisma as any).diaryDraft.deleteMany({
+      where: { userId: BigInt(req.telegramUserId), type },
     });
     return { ok: true };
   }
