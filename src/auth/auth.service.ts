@@ -85,9 +85,11 @@ export class AuthService {
     const authDate = parseInt(fields['auth_date'] ?? '0', 10);
     if (Date.now() / 1000 - authDate > 300) throw new UnauthorizedException('Telegram auth data expired');
 
-    // Verify HMAC-SHA256
+    // Verify HMAC-SHA256.
+    // NB: Login Widget secret key = SHA256(bot_token).
+    // (WebApp initData uses HMAC_SHA256("WebAppData", bot_token) — different!)
     const checkString = Object.keys(fields).sort().map(k => `${k}=${fields[k]}`).join('\n');
-    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+    const secretKey = crypto.createHash('sha256').update(botToken).digest();
     const expectedHash = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
 
     if (!crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(expectedHash, 'hex'))) {
