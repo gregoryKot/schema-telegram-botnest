@@ -97,7 +97,7 @@ export function LoginPage() {
   // Inside Telegram but auto-auth failed — show minimal retry UI
   if (isTelegramContext) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🧠</div>
         <p style={{ color: 'var(--text-sub)', marginBottom: 24, textAlign: 'center' }}>
           {telegramLoading ? 'Загрузка...' : 'Не удалось войти автоматически'}
@@ -112,6 +112,7 @@ export function LoginPage() {
 
   return (
     <div style={{
+      flex: 1,
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',

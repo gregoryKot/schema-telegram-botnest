@@ -127,7 +127,7 @@ export function AccountPage() {
   const hasVk = providers.some(p => p.provider === 'vk');
 
   return (
-    <div style={{ padding: 24, maxWidth: 480, margin: '0 auto' }}>
+    <div style={{ flex: 1, padding: 24, maxWidth: 480, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
       <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 15, marginBottom: 16, cursor: 'pointer', padding: 0 }}>
         ← Назад
       </button>
