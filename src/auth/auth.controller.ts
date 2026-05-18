@@ -20,6 +20,7 @@ import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { ProviderIdentity } from './providers/types';
+import { SecurityLogService } from './security-log.service';
 
 const REFRESH_COOKIE = 'refresh_token';
 const CSRF_HEADER = 'x-requested-with';
@@ -48,6 +49,7 @@ export class AuthController {
     private readonly config: ConfigService,
     private readonly providers: AuthProviderRegistry,
     private readonly merge: MergeService,
+    private readonly securityLog: SecurityLogService,
   ) {}
 
   // ─── Generic helper ───────────────────────────────────────────────────────
@@ -261,6 +263,7 @@ export class AuthController {
     // 3. Issue fresh tokens for the target user.
     const tokens = await this.auth.issueTokens(target, req.ip, req.headers['user-agent']);
     res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+    this.securityLog.log('merge_confirmed', { target, source, provider, ip: req.ip });
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
@@ -306,6 +309,7 @@ export class AuthController {
     }
     const webUser: WebUser = req.webUser;
     await this.auth.unlinkProvider(webUser.userId as bigint, provider as any);
+    this.securityLog.log('provider_unlinked', { userId: webUser.userId, provider, ip: req.ip });
     return { ok: true };
   }
 

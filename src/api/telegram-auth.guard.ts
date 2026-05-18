@@ -54,7 +54,19 @@ export class TelegramAuthGuard implements CanActivate {
       try {
         validate(initData, botToken, { expiresIn: 86400 });
       } catch (err) {
-        this.logger.warn(`initData invalid: ${(err as Error).message}`);
+        const reason = (err as Error).message;
+        this.logger.warn(`initData invalid: ${reason}`);
+        // Loud alert: signature failure on initData is either a real attack
+        // (someone trying to forge a Telegram identity) or a bot-token rotation
+        // we forgot to roll out. Either way, admin should see it.
+        fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: process.env.ADMIN_ID,
+            text: `🚨 suspicious_initdata: ${reason} (ip: ${(req.ip ?? '?')})`,
+          }),
+        }).catch(() => null);
         throw new UnauthorizedException('Invalid initData');
       }
     }

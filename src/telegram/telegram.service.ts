@@ -297,16 +297,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.bot.command('therapist', async (ctx) => {
+      // DEPRECATED: was `/therapist <THERAPIST_CODE>` — bypassed the new
+      // admin-approval flow. Redirect users to the mini-app form.
       try {
-        const userId = ctx.from?.id;
-        if (!userId) return;
-        const secret = (ctx.message as any)?.text?.split(' ')[1];
-        if (!secret || secret !== process.env.THERAPIST_CODE) {
-          await ctx.reply('⛔ Неверный код');
-          return;
-        }
-        await this.botService.setRole(userId, 'THERAPIST');
-        await ctx.reply('✅ Роль терапевта установлена. Открой приложение — там появится кабинет терапевта.');
+        await ctx.reply(
+          '🩺 Заявка на роль психолога теперь подаётся через настройки приложения:\n' +
+          'Открой мини-апп → Настройки → "Я психолог" → заполни форму.\n' +
+          'Админ проверит и одобрит.',
+        );
       } catch (err) {
         this.logger.error('therapist command failed', err);
       }
