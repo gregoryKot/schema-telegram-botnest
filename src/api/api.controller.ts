@@ -7,6 +7,7 @@ import { TelegramAuthGuard } from './telegram-auth.guard';
 import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 import { TherapyService } from '../therapy/therapy.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 import { computeYsqScores } from '../utils/ysq';
 
@@ -33,7 +34,38 @@ export class ApiController {
     private readonly notificationService: NotificationService,
     private readonly scheduleService: TelegramScheduleService,
     private readonly therapyService: TherapyService,
+    private readonly prisma: PrismaService,
   ) {}
+
+  // ─── Client state (server-side localStorage mirror) ────────────────────────
+
+  @Get('client-state')
+  async getClientState(@Req() req: AuthRequest): Promise<Record<string, unknown>> {
+    const u = await (this.prisma.user as any).findUnique({
+      where: { id: BigInt(req.telegramUserId) },
+      select: { clientState: true },
+    });
+    return (u?.clientState as Record<string, unknown>) ?? {};
+  }
+
+  @Post('client-state')
+  async setClientState(
+    @Req() req: AuthRequest,
+    @Body() body: Record<string, unknown>,
+  ): Promise<{ ok: true }> {
+    if (!body || typeof body !== 'object') throw new BadRequestException('Invalid body');
+    // Merge with existing — partial updates allowed
+    const u = await (this.prisma.user as any).findUnique({
+      where: { id: BigInt(req.telegramUserId) },
+      select: { clientState: true },
+    });
+    const merged = { ...(u?.clientState as Record<string, unknown> ?? {}), ...body };
+    await (this.prisma.user as any).update({
+      where: { id: BigInt(req.telegramUserId) },
+      data: { clientState: merged },
+    });
+    return { ok: true };
+  }
 
   @Get('profile')
   async getProfile(@Req() req: AuthRequest) {

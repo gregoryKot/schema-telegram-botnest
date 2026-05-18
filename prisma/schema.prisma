@@ -45,6 +45,7 @@ model User {
   myModeIds              Json     @default("[]")
   therapistShareCards    Boolean  @default(true)
   therapistShareProfile  Boolean  @default(true)
+  clientState            Json     @default("{}")  // localStorage-mirror: onboarding flags, theme, dismissed cards, etc
   botBlockedAt           DateTime?
   deletedAt              DateTime?
 
