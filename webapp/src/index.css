@@ -635,6 +635,39 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 }
 .chev { font-size: 14px; color: var(--text-ghost); }
 
+/* ─── Today page grid ────────────────────────────────────────────────────── */
+.today-grid {
+  display: grid;
+  grid-template-columns: 1fr 272px;
+  gap: 56px;
+  align-items: start;
+  padding: 40px 56px 80px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.today-right {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.today-right-card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+}
+@media (max-width: 1000px) {
+  .today-grid { grid-template-columns: 1fr; gap: 32px; padding: 32px 40px 80px; }
+  .today-right { position: static; flex-direction: row; flex-wrap: wrap; gap: 12px; }
+  .today-right-card { flex: 1; min-width: 200px; }
+}
+@media (max-width: 767px) {
+  .today-grid { padding: 20px 16px 80px; gap: 28px; }
+  .today-right { display: none; }
+}
+
 /* ─── Mobile — bottom nav ────────────────────────────────────────────────── */
 .mobile-nav {
   position: fixed;

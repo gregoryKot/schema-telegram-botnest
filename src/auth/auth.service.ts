@@ -13,6 +13,13 @@ import * as crypto from 'crypto';
 const ACCESS_TOKEN_TTL_S = 15 * 60;       // 15 minutes
 const REFRESH_TOKEN_TTL_S = 30 * 24 * 3600; // 30 days
 
+// JWT identity — pinned so tokens can't be replayed across services that
+// happen to share JWT_SECRET. Existing in-flight access tokens (issued
+// before this change) will fail verification once → frontend will hit
+// /api/auth/refresh which is DB-backed and continues to work.
+const JWT_ISSUER = 'schemalab.ru';
+const JWT_AUDIENCE = 'schemalab.ru';
+
 // Telegram user IDs are at most ~10 digits. Web-only users get IDs
 // starting from 10^15 to avoid any collision.
 const WEB_USER_ID_MIN = 1_000_000_000_000_000n;
@@ -219,14 +226,14 @@ export class AuthService {
     return jwt.sign(
       { kind: 'merge', target: String(targetUserId), source: String(sourceUserId), provider, providerId },
       secret,
-      { expiresIn: 10 * 60, algorithm: 'HS256' }, // 10 minutes
+      { expiresIn: 10 * 60, algorithm: 'HS256', issuer: JWT_ISSUER, audience: JWT_AUDIENCE },
     );
   }
 
   verifyMergeToken(token: string): { target: bigint; source: bigint; provider: string; providerId: string } {
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
     try {
-      const p = jwt.verify(token, secret, { algorithms: ['HS256'] }) as any;
+      const p = jwt.verify(token, secret, { algorithms: ['HS256'], issuer: JWT_ISSUER, audience: JWT_AUDIENCE }) as any;
       if (p.kind !== 'merge') throw new Error('Wrong token kind');
       return { target: BigInt(p.target), source: BigInt(p.source), provider: p.provider, providerId: p.providerId };
     } catch {
@@ -258,7 +265,7 @@ export class AuthService {
 
   async issueTokens(userId: BigInt, ip?: string, userAgent?: string): Promise<TokenPair> {
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
-    const accessToken = jwt.sign({ sub: String(userId), type: 'access' }, secret, { expiresIn: ACCESS_TOKEN_TTL_S, algorithm: 'HS256' });
+    const accessToken = jwt.sign({ sub: String(userId), type: 'access' }, secret, { expiresIn: ACCESS_TOKEN_TTL_S, algorithm: 'HS256', issuer: JWT_ISSUER, audience: JWT_AUDIENCE });
 
     const rawRefresh = crypto.randomBytes(40).toString('hex');
     const tokenHash = this.hashToken(rawRefresh);
@@ -285,7 +292,7 @@ export class AuthService {
   verifyAccessToken(token: string): { userId: BigInt } {
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
     try {
-      const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as { sub: string; type: string };
+      const payload = jwt.verify(token, secret, { algorithms: ['HS256'], issuer: JWT_ISSUER, audience: JWT_AUDIENCE }) as { sub: string; type: string };
       if (payload.type !== 'access') throw new UnauthorizedException('Wrong token type');
       return { userId: BigInt(payload.sub) };
     } catch (err) {
@@ -320,7 +327,7 @@ export class AuthService {
 
     // Issue new token in the same family
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
-    const accessToken = jwt.sign({ sub: String(session.userId), type: 'access' }, secret, { expiresIn: ACCESS_TOKEN_TTL_S, algorithm: 'HS256' });
+    const accessToken = jwt.sign({ sub: String(session.userId), type: 'access' }, secret, { expiresIn: ACCESS_TOKEN_TTL_S, algorithm: 'HS256', issuer: JWT_ISSUER, audience: JWT_AUDIENCE });
 
     const newRaw = crypto.randomBytes(40).toString('hex');
     const newHash = this.hashToken(newRaw);

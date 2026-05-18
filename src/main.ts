@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { AlertLogger } from './logger/alert.logger';
+import { PrismaService } from './prisma/prisma.service';
+import { migrateClinicalLabels } from './utils/encrypt-migration';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
 
@@ -35,6 +37,12 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'x-telegram-init-data', 'Authorization', 'x-requested-with'],
     credentials: true,
   });
+
+  // One-shot encrypt-at-rest migration for clinical labels. Idempotent —
+  // skips rows already encrypted. Doesn't block startup if it fails.
+  app.get(PrismaService).$connect()
+    .then(() => migrateClinicalLabels(app.get(PrismaService)))
+    .catch((e) => console.error('Clinical-label migration failed:', e));
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
