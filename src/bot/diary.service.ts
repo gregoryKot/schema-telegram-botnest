@@ -35,7 +35,9 @@ export class DiaryService {
         thoughts: encrypt(data.thoughts),
         bodyFeelings: encrypt(data.bodyFeelings),
         actualBehavior: encrypt(data.actualBehavior),
-        schemaIds: data.schemaIds as any,
+        // Clinical labels — encrypted JSON string. decryptRecord-style
+        // helper isn't used here because the schema is small enough.
+        schemaIds: (encryptJson(data.schemaIds) ?? JSON.stringify(data.schemaIds)) as any,
         schemaOrigin: encrypt(data.schemaOrigin),
         healthyView: encrypt(data.healthyView),
         realProblems: encrypt(data.realProblems),
@@ -72,6 +74,11 @@ export class DiaryService {
       thoughts: decrypt(r.thoughts),
       bodyFeelings: decrypt(r.bodyFeelings),
       actualBehavior: decrypt(r.actualBehavior),
+      // Legacy plaintext returns as already-deserialised array (Prisma Json);
+      // new encrypted form returns as string → decrypt+parse.
+      schemaIds: typeof r.schemaIds === 'string'
+        ? (decryptJson<string[]>(r.schemaIds as unknown as string) ?? r.schemaIds)
+        : r.schemaIds,
       schemaOrigin: decrypt(r.schemaOrigin),
       healthyView: decrypt(r.healthyView),
       realProblems: decrypt(r.realProblems),
@@ -99,7 +106,8 @@ export class DiaryService {
     const row = await this.prisma.modeDiaryEntry.create({
       data: {
         userId,
-        modeId: data.modeId,
+        // Clinical label — encrypted on write, plaintext-tolerant on read.
+        modeId: encrypt(data.modeId) ?? data.modeId,
         situation: encrypt(data.situation) ?? data.situation,
         thoughts: encrypt(data.thoughts),
         feelings: encrypt(data.feelings),
@@ -130,6 +138,7 @@ export class DiaryService {
     });
     return rows.map(r => ({
       ...r,
+      modeId: decrypt(r.modeId) ?? r.modeId,
       situation: decrypt(r.situation) ?? r.situation,
       thoughts: decrypt(r.thoughts),
       feelings: decrypt(r.feelings),

@@ -145,7 +145,7 @@ export class BotService {
   async getUserSettings(userId: number) {
     // Explicit select — only return fields used by the API. Adding a new
     // public setting? Add it here AND in api.controller.getSettings().
-    return this.prisma.user.findUnique({
+    const row = await this.prisma.user.findUnique({
       where: { id: BigInt(userId) },
       select: {
         notifyEnabled: true,
@@ -159,10 +159,14 @@ export class BotService {
         therapistShareProfile: true,
       },
     });
+    if (!row) return row;
+    // Decrypt clinical labels if encrypted (forward-compat with plaintext rows).
+    return decryptRecord(row as any, { jsonArrays: ['mySchemaIds', 'myModeIds'] });
   }
 
   async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean }) {
-    await this.prisma.user.update({ where: { id: BigInt(userId) }, data });
+    const enc = encryptRecord(data as Record<string, unknown>, { jsonArrays: ['mySchemaIds', 'myModeIds'] });
+    await this.prisma.user.update({ where: { id: BigInt(userId) }, data: enc as any });
   }
 
   async getNote(userId: number, date: string): Promise<{ text: string | null; tags: string[] }> {
@@ -171,17 +175,22 @@ export class BotService {
     });
     return {
       text: note?.text ? decrypt(note.text) : null,
-      tags: note?.tags ? note.tags.split(',').filter(Boolean) : [],
+      // Tags: new rows store comma-joined encrypted blob; legacy rows store
+      // comma-joined plaintext. decrypt() returns plaintext unchanged.
+      tags: note?.tags
+        ? (decrypt(note.tags) ?? '').split(',').filter(Boolean)
+        : [],
     };
   }
 
   async saveNote(userId: number, date: string, text: string, tags?: string[]) {
-    const tagsStr = tags ? tags.join(',') : '';
+    const tagsPlain = tags ? tags.join(',') : '';
     const encText = encrypt(text) ?? text;
+    const encTags = encrypt(tagsPlain) ?? tagsPlain;
     await this.prisma.note.upsert({
       where: { userId_date: { userId: BigInt(userId), date } },
-      update: { text: encText, tags: tagsStr },
-      create: { userId: BigInt(userId), date, text: encText, tags: tagsStr },
+      update: { text: encText, tags: encTags },
+      create: { userId: BigInt(userId), date, text: encText, tags: encTags },
     });
   }
 
