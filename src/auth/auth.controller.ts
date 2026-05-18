@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard, WebUser } from './jwt.guard';
+import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
 
 const REFRESH_COOKIE = 'refresh_token';
 const CSRF_HEADER = 'x-requested-with';
@@ -41,6 +41,7 @@ export class AuthController {
   // ─── Google OAuth: initiate ────────────────────────────────────────────────
 
   @Get('google')
+  @UseGuards(OptionalJwtGuard)
   googleRedirect(@Req() req: any, @Res() res: any): void {
     const state = Buffer.from(JSON.stringify({
       nonce: Math.random().toString(36).slice(2),
@@ -135,6 +136,23 @@ export class AuthController {
     const { id: telegramId, firstName } = this.auth.verifyTelegramWidgetData(body);
     const webUser: WebUser = req.webUser;
     await this.auth.linkProviderToUser(webUser.userId as bigint, 'telegram', String(telegramId), firstName);
+    return { ok: true };
+  }
+
+  // ─── Unlink a provider ────────────────────────────────────────────────────
+
+  @Post('unlink/:provider')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  async unlink(
+    @Req() req: any,
+  ): Promise<{ ok: boolean }> {
+    const provider = req.params.provider as string;
+    if (!['google', 'telegram'].includes(provider)) {
+      throw new BadRequestException('Unknown provider');
+    }
+    const webUser: WebUser = req.webUser;
+    await this.auth.unlinkProvider(webUser.userId as bigint, provider as 'google' | 'telegram');
     return { ok: true };
   }
 

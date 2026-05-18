@@ -3,26 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME as string | undefined;
+const BOT_USERNAME = (import.meta.env.VITE_BOT_USERNAME as string | undefined) ?? 'SchemaLabBot';
 
 declare global {
   interface Window {
     onTelegramAuth?: (user: Record<string, string>) => void;
   }
-}
-
-function getTelegramDebug() {
-  const tg = (window as any).Telegram?.WebApp;
-  return {
-    hasTelegram: !!(window as any).Telegram,
-    hasWebApp: !!tg,
-    initDataLen: tg?.initData?.length ?? 0,
-    initDataPreview: (tg?.initData ?? '').slice(0, 80),
-    initDataUnsafe: tg?.initDataUnsafe ? JSON.stringify(tg.initDataUnsafe).slice(0, 120) : 'none',
-    version: tg?.version ?? 'none',
-    platform: tg?.platform ?? 'none',
-    href: window.location.href,
-  };
 }
 
 export function LoginPage() {
@@ -31,8 +17,7 @@ export function LoginPage() {
   const telegramRef = useRef<HTMLDivElement>(null);
   const [telegramLoading, setTelegramLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [debug] = useState(getTelegramDebug);
-  const isTelegramContext = debug.initDataLen > 0;
+  const isTelegramContext = !!(window as any).Telegram?.WebApp?.initData;
 
   useEffect(() => {
     if (isAuthenticated) navigate('/', { replace: true });
@@ -106,23 +91,10 @@ export function LoginPage() {
     window.location.href = `${API_BASE}/api/auth/google`;
   };
 
-  const debugPanel = (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: 8, background: 'rgba(0,0,0,0.85)', color: '#0f0', fontFamily: 'monospace', fontSize: 10, zIndex: 9999, wordBreak: 'break-all', maxHeight: '40vh', overflow: 'auto' }}>
-      <div>hasTelegram: {String(debug.hasTelegram)}</div>
-      <div>hasWebApp: {String(debug.hasWebApp)}</div>
-      <div>version: {debug.version} / platform: {debug.platform}</div>
-      <div>initDataLen: {debug.initDataLen}</div>
-      <div>initDataPreview: {debug.initDataPreview}</div>
-      <div>initDataUnsafe: {debug.initDataUnsafe}</div>
-      <div>href: {debug.href}</div>
-    </div>
-  );
-
   // Inside Telegram but auto-auth failed — show minimal retry UI
   if (isTelegramContext) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, paddingTop: 200 }}>
-        {debugPanel}
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🧠</div>
         <p style={{ color: 'var(--text-sub)', marginBottom: 24, textAlign: 'center' }}>
           {telegramLoading ? 'Загрузка...' : 'Не удалось войти автоматически'}
@@ -146,7 +118,6 @@ export function LoginPage() {
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {debugPanel}
       {/* Ambient blobs */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
@@ -216,20 +187,14 @@ export function LoginPage() {
           </div>
 
           {/* Telegram widget */}
-          {BOT_USERNAME ? (
-            <div style={{
-              display: 'flex', justifyContent: 'center',
-              opacity: telegramLoading ? 0.5 : 1,
-              transition: 'opacity 0.2s',
-              minHeight: 56,
-            }}>
-              <div ref={telegramRef} />
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', color: 'var(--text-faint)', fontSize: 13, padding: '12px 0' }}>
-              Telegram вход настраивается
-            </div>
-          )}
+          <div style={{
+            display: 'flex', justifyContent: 'center',
+            opacity: telegramLoading ? 0.5 : 1,
+            transition: 'opacity 0.2s',
+            minHeight: 56,
+          }}>
+            <div ref={telegramRef} />
+          </div>
 
           {error && (
             <p style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>

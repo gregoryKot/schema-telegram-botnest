@@ -207,6 +207,18 @@ export class AuthService {
     this.logger.log(`Linked ${provider} provider to userId ${userId}`);
   }
 
+  async unlinkProvider(userId: BigInt, provider: 'google' | 'telegram'): Promise<void> {
+    // Don't allow unlinking the last provider — user would lose access
+    const all = await (this.prisma as any).authProvider.findMany({ where: { userId } });
+    if (all.length <= 1) {
+      throw new ConflictException('Cannot unlink the only authentication method');
+    }
+    await (this.prisma as any).authProvider.deleteMany({
+      where: { userId, provider },
+    });
+    this.logger.log(`Unlinked ${provider} from userId ${userId}`);
+  }
+
   async getUserProviders(userId: BigInt): Promise<Array<{ provider: string; email: string | null; displayName: string | null }>> {
     const rows = await (this.prisma as any).authProvider.findMany({
       where: { userId },

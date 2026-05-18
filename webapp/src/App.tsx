@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './auth/AuthContext';
 import { setTokenProvider } from './api';
 import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
+import { AccountPage } from './pages/AccountPage';
 import { AppShell } from './components/AppShell';
 
 // Apply saved theme before first render
@@ -40,6 +41,11 @@ function AppRoutes() {
               <a href="/login" style={{ color: 'var(--accent)' }}>Попробовать снова</a>
             </p>
           </div>
+        } />
+        <Route path="/account" element={
+          <RequireAuth>
+            <AccountPage />
+          </RequireAuth>
         } />
         <Route path="/*" element={
           <RequireAuth>

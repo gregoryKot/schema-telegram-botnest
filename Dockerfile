@@ -16,6 +16,8 @@ RUN npx prisma generate
 RUN npm run build
 
 # Build webapp (website) — output → webapp/dist/ → served at /
+# VITE_BOT_USERNAME is baked into the bundle so the Telegram Login Widget works
+ENV VITE_BOT_USERNAME=SchemaLabBot
 RUN npm run build --prefix webapp
 
 # Copy pre-built schema-miniapp into webapp/dist/app so it's served by the same
@@ -25,4 +27,4 @@ RUN mkdir -p webapp/dist/app && cp -r schema-miniapp/dist/* webapp/dist/app/
 # ── Prune dev deps (backend only) ──────────────────────────────────────────
 RUN npm prune --production
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node scripts/migrate-from-railway.js; node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
