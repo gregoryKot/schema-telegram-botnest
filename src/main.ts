@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { AlertLogger } from './logger/alert.logger';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -11,6 +12,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new AlertLogger() });
 
   app.use(cookieParser());
+  // Cap request bodies. Largest legitimate payload is a YSQ progress update
+  // (~116 ints + page) — well under 100 KB. Cap at 256 KB to leave room for
+  // big text fields (letters, schema notes) while killing DoS via huge JSON.
+  app.use(json({ limit: '256kb' }));
+  app.use(urlencoded({ limit: '256kb', extended: true }));
 
   // CORS only needed for the Telegram mini-app (different origin).
   // The web app is served from the same domain → no CORS needed for it.

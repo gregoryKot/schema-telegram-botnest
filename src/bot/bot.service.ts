@@ -143,8 +143,22 @@ export class BotService {
   }
 
   async getUserSettings(userId: number) {
-    // No select — returns full User so new fields are included automatically
-    return this.prisma.user.findUnique({ where: { id: BigInt(userId) } });
+    // Explicit select — only return fields used by the API. Adding a new
+    // public setting? Add it here AND in api.controller.getSettings().
+    return this.prisma.user.findUnique({
+      where: { id: BigInt(userId) },
+      select: {
+        notifyEnabled: true,
+        notifyLocalHour: true,
+        notifyTimezone: true,
+        notifyReminderEnabled: true,
+        pairCardDismissed: true,
+        mySchemaIds: true,
+        myModeIds: true,
+        therapistShareCards: true,
+        therapistShareProfile: true,
+      },
+    });
   }
 
   async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean }) {
