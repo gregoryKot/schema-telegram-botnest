@@ -14,8 +14,14 @@ export class TelegramProvider implements AuthProviderHandler {
   // Spec: https://core.telegram.org/widgets/login#checking-authorization
   verifyClientData(data: Record<string, unknown>): ProviderIdentity {
     const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
+    // Telegram Login Widget sends `id` and `auth_date` as NUMBERS in the
+    // JSON payload. Coerce everything non-null to string for the check-string
+    // — Telegram's HMAC is computed over string values.
     const fields: Record<string, string> = {};
-    for (const [k, v] of Object.entries(data)) if (typeof v === 'string') fields[k] = v;
+    for (const [k, v] of Object.entries(data)) {
+      if (v == null) continue;
+      fields[k] = String(v);
+    }
 
     const hash = fields['hash'];
     if (!hash) throw new UnauthorizedException('Missing hash');
