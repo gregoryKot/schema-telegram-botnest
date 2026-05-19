@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import type { Achievement } from '../api';
+import type { Achievement, TherapyRelationInfo } from '../api';
 import { BottomSheet } from '../components/BottomSheet';
 import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
@@ -62,6 +62,18 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [showBestDayInfo, setShowBestDayInfo] = useState(false);
   const [_homeScreenStatus] = useState<string | null>(null);
 
+  // Therapist relation
+  const [relation, setRelation] = useState<TherapyRelationInfo | null>(null);
+
+  // Notifications
+  const [notifEnabled, setNotifEnabled] = useState(true);
+  const [reminderEnabled, setReminderEnabled] = useState(true);
+  const [savingNotif, setSavingNotif] = useState(false);
+
+  // Delete account
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     setReady(false);
     setStreak(null);
@@ -79,6 +91,13 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         })
         .catch(() => {}),
       api.history(112).then(h => setActiveDates(new Set(h.map(d => d.date)))).catch(() => {}),
+      api.getTherapyRelation().then(r => setRelation(r)).catch(() => {}),
+      api.getSettings().then(s => {
+        if (s) {
+          setNotifEnabled(s.notifyEnabled ?? true);
+          setReminderEnabled(s.notifyReminderEnabled ?? true);
+        }
+      }).catch(() => {}),
     ]).finally(() => setReady(true));
   }, [refreshKey]);
 
@@ -412,6 +431,102 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           </div>
         )}
 
+        {/* ── Терапевт ── */}
+        {relation?.role === 'client' && relation.partnerName && (
+          <div className="section">
+            <div className="section-head"><h3>Терапевт</h3></div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{relation.partnerName}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 16 }}>Схема-терапевт</div>
+            {[
+              relation.nextSession ? ['Следующая сессия', (() => {
+                const [datePart, timePart] = relation.nextSession!.includes('T') ? relation.nextSession!.split('T') : [relation.nextSession!, null];
+                const [y, m, d] = datePart.split('-').map(Number);
+                const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+                const DAYS = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+                const date = new Date(y, m - 1, d);
+                return `${DAYS[date.getDay()]}, ${d} ${MONTHS[m - 1]}${timePart ? ' · ' + timePart : ''}`;
+              })()] : null,
+            ].filter(Boolean).map(([k, v]) => (
+              <div key={k as string} className="list-line">
+                <span style={{ fontSize: 13, color: 'var(--text-sub)', width: 180, flexShrink: 0 }}>{k as string}</span>
+                <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{v as string}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Уведомления ── */}
+        <div className="section">
+          <div className="section-head"><h3>Уведомления</h3></div>
+          {[
+            { key: 'notifEnabled', label: 'Все уведомления', sub: 'Основной переключатель', value: notifEnabled,
+              onChange: (v: boolean) => {
+                setNotifEnabled(v);
+                setSavingNotif(true);
+                api.updateSettings({ notifyEnabled: v }).finally(() => setSavingNotif(false));
+              }
+            },
+            { key: 'reminder', label: 'Вечернее напоминание', sub: 'Напоминание заполнить трекер', value: reminderEnabled,
+              onChange: (v: boolean) => {
+                setReminderEnabled(v);
+                setSavingNotif(true);
+                api.updateSettings({ notifyReminderEnabled: v }).finally(() => setSavingNotif(false));
+              }
+            },
+          ].map(item => (
+            <div key={item.key} className="list-line">
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{item.label}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>{item.sub}</div>
+              </div>
+              <div
+                onClick={() => !savingNotif && item.onChange(!item.value)}
+                style={{
+                  width: 36, height: 20, borderRadius: 999,
+                  background: item.value ? 'var(--accent)' : 'var(--surface-3)',
+                  position: 'relative', cursor: savingNotif ? 'default' : 'pointer',
+                  transition: 'background 0.2s', flexShrink: 0,
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: 3,
+                  left: item.value ? 18 : 3,
+                  width: 14, height: 14, borderRadius: '50%', background: '#fff',
+                  transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Данные ── */}
+        <div className="section">
+          <div className="section-head"><h3>Данные</h3></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <span
+              className="link"
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                api.getExport().then(({ text }) => {
+                  const a = document.createElement('a');
+                  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+                  a.download = 'schemalab-export.txt';
+                  a.click();
+                }).catch(() => {});
+              }}
+            >
+              Экспортировать все данные
+            </span>
+            <span
+              className="link"
+              style={{ color: 'var(--c-rose)', cursor: 'pointer' }}
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              Удалить аккаунт
+            </span>
+          </div>
+        </div>
+
         <div>
           <TherapyNote compact />
         </div>
@@ -500,6 +615,40 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       )}
 
       {notesOpen && <MyNotesSheet onClose={() => setNotesOpen(false)} />}
+
+      {/* Delete account confirm */}
+      {showDeleteConfirm && (
+        <BottomSheet onClose={() => !deleting && setShowDeleteConfirm(false)} zIndex={300}>
+          <div style={{ paddingTop: 4 }}>
+            <div style={{ fontSize: 22, marginBottom: 12 }}>⚠️</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Удалить аккаунт?</div>
+            <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 24 }}>
+              Все данные будут удалены безвозвратно: дневники, записи, прогресс, настройки. Восстановить невозможно.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                style={{ flex: 1, padding: '13px', borderRadius: 14, border: '1px solid var(--line)', background: 'transparent', color: 'var(--text)', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => {
+                  setDeleting(true);
+                  api.deleteAllUserData()
+                    .then(() => { window.location.reload(); })
+                    .catch(() => { setDeleting(false); });
+                }}
+                disabled={deleting}
+                style={{ flex: 1, padding: '13px', borderRadius: 14, border: 'none', background: 'var(--c-rose)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit', opacity: deleting ? 0.6 : 1 }}
+              >
+                {deleting ? 'Удаляем...' : 'Удалить'}
+              </button>
+            </div>
+          </div>
+        </BottomSheet>
+      )}
     </div>
   );
 }

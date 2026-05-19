@@ -62,10 +62,10 @@ interface Props {
 type Tab = 'schemas' | 'modes' | 'needs';
 
 export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel }: Props) {
-  const [tab, setTab]                     = useState<Tab>('schemas');
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(MY_SCHEMA_IDS_KEY));
   const [myModeIds, setMyModeIds]         = useState<string[]>(() => readLocalIds(MY_MODE_IDS_KEY));
   const [ysqSchemaIds, setYsqSchemaIds]   = useState<string[]>([]);
+  const [ysqScores, setYsqScores]         = useState<Record<string, number>>({});
   const [profileLoading, setProfileLoading] = useState(true);
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
   const [showModePicker, setShowModePicker]     = useState(false);
@@ -73,12 +73,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
   const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [detailNeedId, setDetailNeedId]   = useState<string | null>(null);
-  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
-  const [expandedModeGroups, setExpandedModeGroups] = useState<Set<string>>(new Set());
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
 
   useEffect(() => {
-    api.getProfile().then(p => {
+    Promise.all([api.getProfile(), api.getYsqHistory()]).then(([p, history]) => {
       const serverSchemas = p.mySchemaIds ?? [];
       const serverModes   = p.myModeIds ?? [];
       setManualSchemaIds(serverSchemas);
@@ -87,6 +85,15 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       if (serverModes.length > 0) localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(serverModes));
       setYsqSchemaIds(p.ysq.activeSchemaIds ?? []);
       setYsqCompletedAt(p.ysq.completedAt);
+      // Build scores map from latest YSQ history entry
+      if (Array.isArray(history) && history.length > 0) {
+        const latest = history[0];
+        const map: Record<string, number> = {};
+        if (Array.isArray(latest.scores)) {
+          for (const s of latest.scores) map[s.id] = Math.round(s.pct5plus);
+        }
+        setYsqScores(map);
+      }
       setProfileLoading(false);
     }).catch(() => setProfileLoading(false));
   }, []);
@@ -102,29 +109,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
     api.updateSettings({ mySchemaIds: ids }).catch(() => {});
   }
 
-  function toggleDomain(id: string) {
-    setExpandedDomains(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
-
-  function toggleModeGroup(id: string) {
-    setExpandedModeGroups(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
-
   const hasChildhood = Object.keys(childhoodRatings).length > 0;
-
-  const TABS: { id: Tab; label: string }[] = [
-    { id: 'schemas', label: 'Схемы' },
-    { id: 'modes',   label: 'Режимы' },
-    { id: 'needs',   label: 'Потребности' },
-  ];
 
   return (
     <div className="page-inner-wide">
@@ -142,299 +127,275 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         </button>
       </div>
 
-      {/* ── Tab switcher ── */}
-      <div className="tabs" style={{ padding: '0', marginBottom: 24 }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} className={`tab${tab === t.id ? ' is-active' : ''}`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
       <div>
 
-        {/* ══════════════════════ СХЕМЫ ══════════════════════ */}
-        {tab === 'schemas' && (
-          <>
-            {/* МОИ СХЕМЫ */}
-            <div className="section">
-              <div className="section-head"><h3>Мои схемы</h3></div>
-              {profileLoading ? (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {[80, 100, 90, 110].map((w, i) => (
-                    <div key={i} style={{ height: 32, width: w, borderRadius: 20,
-                      background: 'linear-gradient(90deg,transparent 25%,transparent 50%,transparent 75%)',
-                      backgroundSize: '200% auto', animation: 'shimmer 1.5s linear infinite' }} />
-                  ))}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {allSchemaIds.map(id => {
-                    const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
-                    const schema = domain?.schemas.find(s => s.id === id);
-                    if (!schema || !domain) return null;
-                    const c = domain.color; // CSS variable — use directly
-                    return (
-                      <button key={id} onClick={() => setDetailSchemaId(id)} style={{
-                        padding: '6px 13px', borderRadius: 20,
-                        border: `1.5px solid ${cm(c, 35)}`,
-                        background: cm(c, 9),
-                        color: c, fontSize: 13, fontWeight: 600,
-                        cursor: 'pointer', fontFamily: 'inherit',
-                        WebkitTapHighlightColor: 'transparent',
-                      }}>
-                        {shortName(schema.name)}
-                      </button>
-                    );
-                  })}
-                  <button onClick={() => setShowSchemaPicker(true)} style={{
-                    padding: '6px 13px', borderRadius: 20,
-                    border: '1.5px dashed var(--line)',
-                    background: 'transparent',
-                    color: 'var(--text-sub)', fontSize: 13, fontWeight: 500,
-                    cursor: 'pointer', fontFamily: 'inherit',
-                    WebkitTapHighlightColor: 'transparent',
-                  }}>
-                    + Добавить
-                  </button>
-                </div>
+        {/* ══════════ ТВОИ ВЫРАЖЕННЫЕ СХЕМЫ (YSQ) ══════════ */}
+        {!profileLoading && ysqSchemaIds.length > 0 && (
+          <div className="section">
+            <div className="section-head">
+              <h3>Твои выраженные схемы</h3>
+              {ysqCompletedAt && (
+                <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+                  YSQ от {fmtDate(ysqCompletedAt.slice(0, 10))}
+                </span>
               )}
             </div>
-
-            {/* YSQ card */}
-            <div className="section">
-              <div className="section-head">
-                <h3>YSQ-тест схем</h3>
-                <button onClick={() => onOpenSchema({ startTest: true })} className="link">
-                  {ysqCompletedAt ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · пройти снова →` : 'Начать →'}
-                </button>
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-                {ysqCompletedAt ? '116 вопросов · определяет активные схемы автоматически' : 'Определи схемы автоматически — 116 вопросов, 10 минут'}
-              </div>
-            </div>
-
-            {/* ВСЕ СХЕМЫ */}
-            <div className="section">
-              <div className="section-head"><h3>Все схемы</h3></div>
-              <div>
-                {SCHEMA_DOMAINS.map(domain => {
-                  const isOpen = expandedDomains.has(domain.id);
-                  const c = domain.color; // CSS variable
-                  return (
-                    <div key={domain.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                      <div onClick={() => toggleDomain(domain.id)} style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '14px 16px', cursor: 'pointer',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: hex(c), flexShrink: 0 }} />
-                          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-                            {domain.domain}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 14, color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>
-                            {domain.schemas.length}
-                          </span>
-                          <span style={{
-                            color: 'var(--text-faint)', fontSize: 14,
-                            display: 'inline-block',
-                            transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.2s',
-                          }}>›</span>
-                        </div>
-                      </div>
-                      {isOpen && (
-                        <div style={{ padding: '0 16px 14px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                          {domain.schemas.map(s => {
-                            const active = allSchemaIds.includes(s.id);
-                            return (
-                              <button key={s.id} onClick={() => setDetailSchemaId(s.id)} style={{
-                                padding: '6px 13px', borderRadius: 20,
-                                border: `1.5px solid ${cm(c, active ? 42 : 18)}`,
-                                background: cm(c, active ? 11 : 5),
-                                color: active ? c : 'var(--text-sub)',
-                                fontSize: 13, fontWeight: active ? 600 : 400,
-                                cursor: 'pointer', fontFamily: 'inherit',
-                                WebkitTapHighlightColor: 'transparent',
-                              }}>
-                                {shortName(s.name)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ══════════════════════ РЕЖИМЫ ══════════════════════ */}
-        {tab === 'modes' && (
-          <>
-            {/* МОИ РЕЖИМЫ */}
-            <div className="section">
-              <div className="section-head"><h3>Мои режимы</h3></div>
-              {profileLoading ? (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {[90, 110, 80].map((w, i) => (
-                    <div key={i} style={{ height: 32, width: w, borderRadius: 20,
-                      background: 'linear-gradient(90deg,transparent 25%,transparent 50%,transparent 75%)',
-                      backgroundSize: '200% auto', animation: 'shimmer 1.5s linear infinite' }} />
-                  ))}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {myModes.map(m => {
-                    const c = m.groupColor; // CSS variable
-                    return (
-                      <button key={m.id} onClick={() => setIntroModeId(m.id)} style={{
-                        padding: '6px 13px', borderRadius: 20,
-                        border: `1.5px solid ${cm(c, 35)}`,
-                        background: cm(c, 9),
-                        color: c, fontSize: 13, fontWeight: 600,
-                        cursor: 'pointer', fontFamily: 'inherit',
-                        WebkitTapHighlightColor: 'transparent',
-                        display: 'flex', alignItems: 'center', gap: 5,
-                      }}>
-                        <span style={{ fontSize: 14 }}>{m.emoji}</span>
-                        {m.name}
-                      </button>
-                    );
-                  })}
-                  <button onClick={() => setShowModePicker(true)} style={{
-                    padding: '6px 13px', borderRadius: 20,
-                    border: '1.5px dashed var(--line)',
-                    background: 'transparent',
-                    color: 'var(--text-sub)', fontSize: 13, fontWeight: 500,
-                    cursor: 'pointer', fontFamily: 'inherit',
-                    WebkitTapHighlightColor: 'transparent',
-                  }}>
-                    + Добавить
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* ВСЕ РЕЖИМЫ */}
-            <div className="section">
-              <div className="section-head"><h3>Все режимы</h3></div>
-              <div>
-                {MODE_GROUPS.map(group => {
-                  const isOpen = expandedModeGroups.has(group.id);
-                  const c = group.color; // CSS variable
-                  return (
-                    <div key={group.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                      <div onClick={() => toggleModeGroup(group.id)} style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '14px 16px', cursor: 'pointer',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: hex(c), flexShrink: 0 }} />
-                          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-                            {group.group}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 14, color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>
-                            {group.items.length}
-                          </span>
-                          <span style={{
-                            color: 'var(--text-faint)', fontSize: 14,
-                            display: 'inline-block',
-                            transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.2s',
-                          }}>›</span>
-                        </div>
-                      </div>
-                      {isOpen && (
-                        <div style={{ padding: '0 16px 14px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                          {group.items.map(m => {
-                            const active = myModeIds.includes(m.id);
-                            return (
-                              <button key={m.id} onClick={() => setIntroModeId(m.id)} style={{
-                                padding: '6px 12px', borderRadius: 20,
-                                border: `1.5px solid ${cm(c, active ? 42 : 18)}`,
-                                background: cm(c, active ? 11 : 5),
-                                color: active ? c : 'var(--text-sub)',
-                                fontSize: 13, fontWeight: active ? 600 : 400,
-                                cursor: 'pointer', fontFamily: 'inherit',
-                                WebkitTapHighlightColor: 'transparent',
-                                display: 'flex', alignItems: 'center', gap: 5,
-                              }}>
-                                <span style={{ fontSize: 14 }}>{m.emoji}</span>
-                                {m.name}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ══════════════════════ ПОТРЕБНОСТИ ══════════════════════ */}
-        {tab === 'needs' && (
-          <>
-            <div className="section">
-              <div className="section-head">
-                <h3>Потребности</h3>
-                {hasChildhood && (
-                  <button className="link" onClick={() => onOpenChildhoodWheel?.()}>Изменить детство →</button>
-                )}
-              </div>
-
-              {!hasChildhood && (
-                <div onClick={() => onOpenChildhoodWheel?.()} className="list-line" style={{ cursor: 'pointer' }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🌱</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Колесо детства</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Как потребности удовлетворялись в детстве?</div>
-                  </div>
-                  <span style={{ color: 'var(--text-faint)', fontSize: 14 }}>›</span>
-                </div>
-              )}
-
-              {NEED_IDS.map(({ id, color }) => {
-                const d = NEED_DATA[id];
-                if (!d) return null;
-                const childScore = childhoodRatings[id];
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {ysqSchemaIds.map(sid => {
+                const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === sid));
+                const schema = domain?.schemas.find(s => s.id === sid);
+                if (!schema || !domain) return null;
+                const c = domain.color;
+                const score = ysqScores[sid] ?? 0;
                 return (
-                  <div key={id} onClick={() => setDetailNeedId(id)} className="list-line" style={{ cursor: 'pointer' }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-                      background: `${color}18`, border: `1px solid ${color}30`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-                    }}>
-                      {d.emoji}
+                  <div
+                    key={sid}
+                    onClick={() => setDetailSchemaId(sid)}
+                    style={{
+                      display: 'grid', gridTemplateColumns: '1.5fr 1fr 52px',
+                      gap: 24, alignItems: 'center',
+                      padding: '14px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ width: 4, height: 22, background: c, borderRadius: 2, flexShrink: 0 }} />
+                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{schema.name}</span>
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.25 }}>{d.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>{d.hint}</div>
+                    <div style={{ height: 4, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ width: `${score}%`, height: '100%', background: c, borderRadius: 4 }} />
                     </div>
-                    {childScore !== undefined ? (
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: needScoreColor(childScore), lineHeight: 1 }}>{childScore}</div>
-                        <div style={{ fontSize: 9, color: 'var(--text-faint)', letterSpacing: '0.04em', marginTop: 2 }}>детство</div>
-                      </div>
-                    ) : (
-                      <span style={{ color: 'var(--text-faint)', fontSize: 14, flexShrink: 0 }}>›</span>
-                    )}
+                    <span style={{ fontSize: 14, fontWeight: 500, color: c, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                      {score > 0 ? `${score}%` : '—'}
+                    </span>
                   </div>
                 );
               })}
             </div>
-
-          </>
+          </div>
         )}
+
+        {/* ══════════ YSQ-тест схем ══════════ */}
+        <div className="section">
+          <div className="section-head">
+            <h3>YSQ-тест схем</h3>
+            <button onClick={() => onOpenSchema({ startTest: true })} className="link">
+              {ysqCompletedAt ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · пройти снова →` : 'Начать →'}
+            </button>
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+            {ysqCompletedAt ? '116 вопросов · определяет активные схемы автоматически' : 'Определи схемы автоматически — 116 вопросов, 10 минут'}
+          </div>
+        </div>
+
+        {/* ══════════ МОИ СХЕМЫ ══════════ */}
+        <div className="section">
+          <div className="section-head">
+            <h3>Мои схемы</h3>
+            <button onClick={() => setShowSchemaPicker(true)} className="link">+ Добавить</button>
+          </div>
+          {profileLoading ? (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[80, 100, 90, 110].map((w, i) => (
+                <div key={i} style={{ height: 32, width: w, borderRadius: 20, background: 'var(--surface-2)', animation: 'shimmer 1.5s linear infinite' }} />
+              ))}
+            </div>
+          ) : allSchemaIds.length === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+              Пройди YSQ-тест или добавь вручную
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {allSchemaIds.map(id => {
+                const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
+                const schema = domain?.schemas.find(s => s.id === id);
+                if (!schema || !domain) return null;
+                const c = domain.color;
+                return (
+                  <button key={id} onClick={() => setDetailSchemaId(id)} style={{
+                    padding: '6px 13px', borderRadius: 20,
+                    border: `1.5px solid ${cm(c, 35)}`,
+                    background: cm(c, 9),
+                    color: c, fontSize: 13, fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}>
+                    {shortName(schema.name)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ══════════ ПОЛНАЯ КАРТА ══════════ */}
+        <div className="section">
+          <div className="section-head">
+            <h3>Полная карта · 20 схем</h3>
+            <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>5 доменов</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
+            {SCHEMA_DOMAINS.map(domain => {
+              const c = domain.color;
+              const activeCount = domain.schemas.filter(s => allSchemaIds.includes(s.id)).length;
+              return (
+                <div key={domain.id}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 16 }}>
+                    <span style={{ width: 24, height: 3, background: c, flexShrink: 0, alignSelf: 'center' }} />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: c }}>{domain.domain}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+                      {activeCount > 0 ? `${activeCount} из ${domain.schemas.length} активны` : `${domain.schemas.length} схем`}
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', columnGap: 32, rowGap: 16 }}>
+                    {domain.schemas.map(s => {
+                      const isMine = allSchemaIds.includes(s.id);
+                      return (
+                        <div key={s.id} onClick={() => setDetailSchemaId(s.id)} style={{ cursor: 'pointer' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 14, fontWeight: isMine ? 600 : 500, color: isMine ? 'var(--text)' : 'var(--text-sub)' }}>
+                              {s.name}
+                            </span>
+                            {isMine && <span style={{ width: 6, height: 6, borderRadius: '50%', background: c, flexShrink: 0 }} />}
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 4, lineHeight: 1.5 }}>{s.desc}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ══════════ МОИ РЕЖИМЫ ══════════ */}
+        <div className="section">
+          <div className="section-head">
+            <h3>Мои режимы</h3>
+            <button onClick={() => setShowModePicker(true)} className="link">+ Добавить</button>
+          </div>
+          {profileLoading ? (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[90, 110, 80].map((w, i) => (
+                <div key={i} style={{ height: 32, width: w, borderRadius: 20, background: 'var(--surface-2)', animation: 'shimmer 1.5s linear infinite' }} />
+              ))}
+            </div>
+          ) : myModes.length === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>Добавь режимы которые узнаёшь у себя</div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {myModes.map(m => {
+                const c = m.groupColor;
+                return (
+                  <button key={m.id} onClick={() => setIntroModeId(m.id)} style={{
+                    padding: '6px 13px', borderRadius: 20,
+                    border: `1.5px solid ${cm(c, 35)}`,
+                    background: cm(c, 9),
+                    color: c, fontSize: 13, fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    WebkitTapHighlightColor: 'transparent',
+                    display: 'flex', alignItems: 'center', gap: 5,
+                  }}>
+                    <span style={{ fontSize: 14 }}>{m.emoji}</span>
+                    {m.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ══════════ ВСЕ РЕЖИМЫ (карта) ══════════ */}
+        <div className="section">
+          <div className="section-head">
+            <h3>Карта режимов</h3>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+            {MODE_GROUPS.map(group => {
+              const c = group.color;
+              return (
+                <div key={group.id}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 12 }}>
+                    <span style={{ width: 20, height: 3, background: c, flexShrink: 0, alignSelf: 'center' }} />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: c }}>{group.group}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+                    {group.items.map(m => {
+                      const active = myModeIds.includes(m.id);
+                      return (
+                        <div key={m.id} onClick={() => setIntroModeId(m.id)} style={{
+                          padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                          background: active ? cm(c, 9) : 'var(--surface-2)',
+                          border: `1px solid ${active ? cm(c, 25) : 'var(--line)'}`,
+                          display: 'flex', alignItems: 'flex-start', gap: 8,
+                          transition: 'all 0.15s',
+                        }}>
+                          <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{m.emoji}</span>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: active ? c : 'var(--text)' }}>{m.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{m.short}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ══════════ ПОТРЕБНОСТИ ══════════ */}
+        <div className="section">
+          <div className="section-head">
+            <h3>Базовые потребности</h3>
+            {hasChildhood ? (
+              <button className="link" onClick={() => onOpenChildhoodWheel?.()}>Изменить детство →</button>
+            ) : (
+              <button className="link" onClick={() => onOpenChildhoodWheel?.()}>Пройти колесо детства →</button>
+            )}
+          </div>
+
+          {!hasChildhood && (
+            <div onClick={() => onOpenChildhoodWheel?.()} className="list-line" style={{ cursor: 'pointer', marginBottom: 8 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🌱</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Колесо детства</div>
+                <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Как потребности удовлетворялись в детстве?</div>
+              </div>
+              <span style={{ color: 'var(--text-faint)', fontSize: 14 }}>›</span>
+            </div>
+          )}
+
+          {NEED_IDS.map(({ id, color }) => {
+            const d = NEED_DATA[id];
+            if (!d) return null;
+            const childScore = childhoodRatings[id];
+            return (
+              <div key={id} onClick={() => setDetailNeedId(id)} className="list-line" style={{ cursor: 'pointer' }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+                  background: `${color}18`, border: `1px solid ${color}30`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+                }}>
+                  {d.emoji}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.25 }}>{d.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>{d.hint}</div>
+                </div>
+                {childScore !== undefined ? (
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: needScoreColor(childScore), lineHeight: 1 }}>{childScore}</div>
+                    <div style={{ fontSize: 9, color: 'var(--text-faint)', letterSpacing: '0.04em', marginTop: 2 }}>детство</div>
+                  </div>
+                ) : (
+                  <span style={{ color: 'var(--text-faint)', fontSize: 14, flexShrink: 0 }}>›</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
       </div>
 
