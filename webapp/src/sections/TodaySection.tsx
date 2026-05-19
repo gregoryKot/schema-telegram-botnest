@@ -264,113 +264,108 @@ export function TodaySection({
   const DIARY_COLORS: Record<string, string> = { schema: '#818cf8', mode: '#f472b6', gratitude: '#4ade80' };
 
   return (
-    <div className="today-grid">
+    <div className="page-inner-wide">
 
-      {/* ── LEFT: main content ────────────────────────────────────────────── */}
-      <div style={{ minWidth: 0 }}>
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <div className="eyebrow" style={{ marginBottom: 8 }}>
+        {formatHeaderDate()}{streak > 0 ? ` · ${streak}-й день стрика` : ''}
+      </div>
+      <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 40 }}>
+        {greeting()}{firstName ? `, ${firstName}` : ''}
+      </h1>
 
-        {/* Date metadata */}
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 6 }}>
-          {formatHeaderDate()}{streak > 0 ? ` · ${streak}-й день стрика` : ''}
-        </div>
+      {/* ── Two-column layout ───────────────────────────────────────────────── */}
+      <div className="doc-grid">
 
-        {/* Greeting */}
-        <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-0.6px', lineHeight: 1.15, color: 'var(--text)', marginBottom: 28 }}>
-          {greeting()}{firstName ? `, ${firstName}` : ''}
-        </h1>
+        {/* ── LEFT ──────────────────────────────────────────────────────────── */}
+        <div style={{ minWidth: 0 }}>
 
-        {/* Therapist cabinet banner */}
-        {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
-          <div onClick={onOpenTherapistCabinet} className="card" style={{ padding: '14px 18px', marginBottom: 24, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: 'color-mix(in srgb, var(--accent) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🧑‍⚕️</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Кабинет терапевта</div>
-              <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Клиенты · Задания · Концептуализация</div>
+          {/* Therapist cabinet banner */}
+          {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
+            <div onClick={onOpenTherapistCabinet}
+              style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '14px 18px', marginBottom: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: 'color-mix(in srgb, var(--accent) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🧑‍⚕️</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Кабинет терапевта</div>
+                <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Клиенты · Задания · Концептуализация</div>
+              </div>
+              <span style={{ fontSize: 16, color: 'var(--text-ghost)' }}>›</span>
             </div>
-            <span style={{ fontSize: 18, color: 'var(--text-ghost)' }}>›</span>
-          </div>
-        )}
+          )}
 
-        {/* Onboarding */}
-        <OnboardingWidget
-          profile={profile}
-          hasSchemas={hasSchemas}
-          onOpenSchema={onOpenSchema}
-          onOpenAdvanced={onOpenAdvanced}
-          onOpenTracker={onOpenTracker}
-          onOpenDiaries={onOpenDiaries}
-          onOpenChildhoodWheel={onOpenChildhoodWheel}
-        />
+          {/* Onboarding */}
+          <OnboardingWidget
+            profile={profile}
+            hasSchemas={hasSchemas}
+            onOpenSchema={onOpenSchema}
+            onOpenAdvanced={onOpenAdvanced}
+            onOpenTracker={onOpenTracker}
+            onOpenDiaries={onOpenDiaries}
+            onOpenChildhoodWheel={onOpenChildhoodWheel}
+          />
 
-        {/* ── Needs section ── */}
-        <div style={{ marginBottom: 36 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Потребности сегодня</div>
-            <button onClick={onOpenTracker} style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-              Изменить →
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* ── Needs section ── */}
+          <div className="section">
+            <div className="section-head">
+              <h3>Потребности сегодня</h3>
+              <button className="link" onClick={onOpenTracker}>Изменить →</button>
+            </div>
             {needs.map(n => {
-              const value   = ratings[n.id];
-              const yest    = yesterdayRatings[n.id];
-              const delta   = (value !== undefined && yest !== undefined) ? (value - yest) : null;
-              const color   = COLORS[n.id] ?? '#888';
-              const filled  = value !== undefined;
+              const value  = ratings[n.id];
+              const yest   = yesterdayRatings[n.id];
+              const delta  = (value !== undefined && yest !== undefined) ? (value - yest) : null;
+              const color  = COLORS[n.id] ?? 'var(--accent)';
+              const filled = value !== undefined;
               return (
-                <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}
+                <div key={n.id} style={{ borderBottom: '1px solid var(--line)' }}
                      onClick={() => onOpenTrackerAt ? onOpenTrackerAt(n.id) : onOpenTracker()}>
-                  <div style={{ width: 148, fontSize: 14, color: 'var(--text)', flexShrink: 0, lineHeight: 1.3 }}>
-                    {NEED_DATA[n.id]?.name ?? n.chartLabel}
-                  </div>
-                  <div style={{ flex: 1, height: 5, background: 'var(--surface-3)', borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{ width: `${((value ?? 0) / 10) * 100}%`, height: '100%', background: color, borderRadius: 999, transition: 'width 0.4s ease' }} />
-                  </div>
-                  <div style={{ width: 56, textAlign: 'right', fontSize: 14, fontWeight: 600, color: filled ? 'var(--text)' : 'var(--text-ghost)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
-                    {filled ? value : '—'}
-                    {delta !== null && delta !== 0 && (
-                      <span style={{ fontSize: 11, color: delta > 0 ? 'var(--c-moss)' : 'var(--c-rose)', marginLeft: 3, fontWeight: 500 }}>
-                        {delta > 0 ? '↑' : '↓'}{Math.abs(delta).toFixed(1)}
-                      </span>
-                    )}
+                  <div className="need-row" style={{ cursor: 'pointer' }}>
+                    <span style={{ fontSize: 13, color: 'var(--text)' }}>
+                      {NEED_DATA[n.id]?.name ?? n.chartLabel}
+                    </span>
+                    <div className="bar">
+                      <i style={{ width: `${((value ?? 0) / 10) * 100}%`, background: color }} />
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: filled ? 'var(--text)' : 'var(--text-ghost)' }}>
+                      {filled ? value : '—'}
+                      {delta !== null && delta !== 0 && (
+                        <span style={{ fontSize: 10, color: delta > 0 ? 'var(--c-moss)' : 'var(--c-rose)', marginLeft: 3, fontWeight: 500 }}>
+                          {delta > 0 ? '↑' : '↓'}{Math.abs(delta).toFixed(1)}
+                        </span>
+                      )}
+                    </span>
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
 
-        {/* ── Practices section ── */}
-        {(activeTasks.length > 0 || tasks.some(t => t.done !== null)) && (
-          <div style={{ marginBottom: 36 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Практики на сегодня</div>
-              {activeTasks.length > 0 && (
-                <span style={{ fontSize: 12, color: 'var(--text-faint)', fontWeight: 500 }}>{activeTasks.length} активных</span>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {tasks.slice(0, 5).map((task, i) => {
+          {/* ── Practices section ── */}
+          {(activeTasks.length > 0 || tasks.some(t => t.done !== null)) && (
+            <div className="section">
+              <div className="section-head">
+                <h3>Практики на сегодня</h3>
+                {activeTasks.length > 0 && <span className="hint">{activeTasks.length} активных</span>}
+              </div>
+              {tasks.slice(0, 5).map(task => {
                 const emoji  = resolveTaskEmoji(task);
                 const isDone = task.done === true;
                 const isFail = task.done === false;
                 return (
-                  <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 0', borderTop: i > 0 ? '1px solid var(--line)' : undefined }}>
-                    <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${isDone ? 'var(--c-moss)' : 'var(--line-strong)'}`, background: isDone ? 'color-mix(in srgb, var(--c-moss) 12%, transparent)' : 'transparent', flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>
+                  <div key={task.id} className="list-line">
+                    <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${isDone ? 'var(--c-moss)' : 'var(--line-strong)'}`, background: isDone ? 'color-mix(in srgb, var(--c-moss) 12%, transparent)' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>
                       {isDone ? '✓' : isFail ? '×' : ''}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: isDone ? 'var(--text-faint)' : 'var(--text)', textDecoration: isDone ? 'line-through' : undefined, lineHeight: 1.3 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: isDone ? 'var(--text-faint)' : 'var(--text)', textDecoration: isDone ? 'line-through' : undefined, lineHeight: 1.3 }}>
                         {emoji} {resolveTaskText(task)}
                       </div>
                       {task.assignedBy !== null && (
-                        <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>От терапевта</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>от терапевта</div>
                       )}
                     </div>
                     {task.done === null && (
-                      <button onClick={() => handleTaskAction(task)} style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                      <button onClick={() => handleTaskAction(task)} className="link" style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
                         начать →
                       </button>
                     )}
@@ -378,111 +373,103 @@ export function TodaySection({
                 );
               })}
               {tasks.length > 5 && (
-                <button onClick={() => setShowAllTasks(true)} style={{ marginTop: 8, fontSize: 12, color: 'var(--accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+                <button onClick={() => setShowAllTasks(true)} className="link" style={{ marginTop: 10, display: 'block' }}>
                   Все задания ({tasks.length}) →
                 </button>
               )}
-            </div>
-            <button onClick={() => setShowDiaryTask(true)} style={{ marginTop: 10, fontSize: 12, color: 'var(--text-faint)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-              + Поставить цель
-            </button>
-          </div>
-        )}
-
-        {/* ── Recent diary entries ── */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Последние записи</div>
-            <button onClick={onOpenDiaries} style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-              Все →
-            </button>
-          </div>
-
-          {!diariesLoaded ? (
-            <SkeletonLines />
-          ) : recentDiaries.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {recentDiaries.map((entry, i) => {
-                const color = DIARY_COLORS[entry.type] ?? '#aaa';
-                return (
-                  <div key={i} onClick={onOpenDiaries} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 0', borderTop: i > 0 ? '1px solid var(--line)' : undefined, cursor: 'pointer' }}>
-                    <div style={{ width: 4, height: 34, borderRadius: 4, background: color, flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.label}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>{entry.dateStr}{entry.time ? ` · ${entry.time}` : ''}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div style={{ fontSize: 14, color: 'var(--text-faint)', lineHeight: 1.6 }}>
-              Фиксируй моменты когда схема активируется — это главная практика
+              <button onClick={() => setShowDiaryTask(true)} style={{ marginTop: 8, fontSize: 12, color: 'var(--text-faint)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                + Поставить цель
+              </button>
             </div>
           )}
-        </div>
 
-      </div>
-
-      {/* ── RIGHT: side panel ─────────────────────────────────────────────── */}
-      <div className="today-right">
-
-        {/* Index card */}
-        <div className="today-right-card" onClick={onOpenTrackerHistory} style={{ cursor: onOpenTrackerHistory ? 'pointer' : undefined }}>
-          <CapLabel>Индекс сегодня</CapLabel>
-          <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: '-3px', lineHeight: 1, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
-            {avgScore ?? '—'}
-          </div>
-          {weekDelta !== null && (
-            <div style={{ fontSize: 13, color: weekDelta > 0 ? 'var(--c-moss)' : weekDelta < 0 ? 'var(--c-rose)' : 'var(--text-faint)', marginTop: 4, fontWeight: 500 }}>
-              {weekDelta > 0 ? '+' : ''}{weekDelta.toFixed(1)} за неделю
+          {/* ── Recent diary entries ── */}
+          <div className="section">
+            <div className="section-head">
+              <h3>Последние записи</h3>
+              <button className="link" onClick={onOpenDiaries}>Все →</button>
             </div>
-          )}
-          {history14.length > 1 && (
-            <div style={{ marginTop: 12 }}>
-              <Sparkline values={history14} />
-              <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>{Math.min(history14.length, 14)} дней</div>
-            </div>
-          )}
-        </div>
-
-        {/* Therapist card */}
-        {therapyRelation?.partnerName && therapyRelation.role === 'client' && (
-          <div className="today-right-card">
-            <CapLabel>Терапевт</CapLabel>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{therapyRelation.partnerName}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 14 }}>Схема-терапевт</div>
-            {nextSessionLabel && (
+            {!diariesLoaded ? (
+              <SkeletonLines />
+            ) : recentDiaries.length > 0 ? (
               <>
-                <CapLabel>Следующая встреча</CapLabel>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{nextSessionLabel}</div>
-                {daysToSession && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 14 }}>{daysToSession}</div>}
+                {recentDiaries.map((entry, i) => {
+                  const color = DIARY_COLORS[entry.type] ?? '#aaa';
+                  return (
+                    <div key={i} className="list-line" onClick={onOpenDiaries} style={{ cursor: 'pointer' }}>
+                      <div style={{ width: 3, height: 28, borderRadius: 3, background: color, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.label}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>{entry.dateStr}{entry.time ? ` · ${entry.time}` : ''}</div>
+                      </div>
+                    </div>
+                  );
+                })}
               </>
+            ) : (
+              <div style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.7, padding: '8px 0' }}>
+                Фиксируй моменты когда схема активируется — это главная практика
+              </div>
             )}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <a href={`tg://user?id=${therapyRelation.partnerId}`} style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: '1px solid var(--line)', textAlign: 'center', fontSize: 13, fontWeight: 500, color: 'var(--text)', textDecoration: 'none' }}>
-                Сообщение
-              </a>
-            </div>
           </div>
-        )}
 
-        {/* Streak card */}
-        <div className="today-right-card">
-          <CapLabel>Стрик</CapLabel>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: '-3px', lineHeight: 1, color: streak > 0 ? '#fb923c' : 'var(--text-ghost)', fontVariantNumeric: 'tabular-nums' }}>
-              {streak}
-            </div>
-            <div style={{ fontSize: 14, color: 'var(--text-faint)', fontWeight: 500 }}>дней подряд</div>
-          </div>
-          {streak === 0 && (
-            <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 6 }}>
-              Оцени потребности — начнётся стрик
-            </div>
-          )}
         </div>
 
+        {/* ── RIGHT: bare aside, no card wrappers ───────────────────────────── */}
+        <aside className="doc-aside today-aside">
+
+          {/* Index */}
+          <div className="eyebrow" style={{ marginBottom: 10 }}>Индекс сегодня</div>
+          <div onClick={onOpenTrackerHistory} style={{ cursor: onOpenTrackerHistory ? 'pointer' : undefined }}>
+            <div style={{ fontSize: 54, fontWeight: 500, letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+              {avgScore ?? '—'}
+            </div>
+            {weekDelta !== null && (
+              <div style={{ fontSize: 12, color: weekDelta > 0 ? 'var(--c-moss)' : weekDelta < 0 ? 'var(--c-rose)' : 'var(--text-faint)', marginTop: 6, fontWeight: 500 }}>
+                {weekDelta > 0 ? '+' : ''}{weekDelta.toFixed(1)} за неделю
+              </div>
+            )}
+            {history14.length > 1 && (
+              <div style={{ marginTop: 14 }}>
+                <Sparkline values={history14} />
+                <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>{Math.min(history14.length, 14)} дней</div>
+              </div>
+            )}
+          </div>
+
+          <hr className="hr-soft" style={{ margin: '32px 0' }} />
+
+          {/* Therapist block */}
+          {therapyRelation?.partnerName && therapyRelation.role === 'client' && (
+            <>
+              <div className="eyebrow" style={{ marginBottom: 8 }}>Терапевт</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{therapyRelation.partnerName}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 14 }}>Схема-терапевт</div>
+              {nextSessionLabel && (
+                <>
+                  <div className="eyebrow" style={{ marginBottom: 6 }}>Следующая встреча</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{nextSessionLabel}</div>
+                  {daysToSession && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 14 }}>{daysToSession}</div>}
+                </>
+              )}
+              <a href={`tg://user?id=${therapyRelation.partnerId}`}
+                style={{ display: 'block', padding: '7px 0', borderRadius: 7, border: '1px solid var(--line)', textAlign: 'center', fontSize: 13, fontWeight: 500, color: 'var(--text)', textDecoration: 'none', marginTop: 4 }}>
+                Написать
+              </a>
+              <hr className="hr-soft" style={{ margin: '28px 0' }} />
+            </>
+          )}
+
+          {/* Streak */}
+          <div className="eyebrow" style={{ marginBottom: 10 }}>Стрик</div>
+          <div style={{ fontSize: 54, fontWeight: 500, letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: streak > 0 ? 'var(--c-clay)' : 'var(--text-ghost)' }}>
+            {streak}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 6 }}>
+            {streak === 0 ? 'Оцени потребности — начнётся стрик' : 'дней подряд'}
+          </div>
+
+        </aside>
       </div>
 
       {/* Overlays */}

@@ -95,9 +95,9 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
     <div className="page-inner">
 
       {/* ── Хедер ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 40 }}>
         <div>
-          <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-0.6px', color: 'var(--text)', marginBottom: 6 }}>
+          <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 6 }}>
             {firstName || 'Профиль'}
           </h1>
           {totalDays > 0 && (
@@ -106,12 +106,12 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             </div>
           )}
         </div>
-        <button onClick={onOpenSettings} style={{ padding: '8px 16px', borderRadius: 9, border: '1px solid var(--line)', background: 'var(--bg-elev)', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit', flexShrink: 0 }}>
+        <button onClick={onOpenSettings} className="btn btn-secondary">
           ⚙️ <span>Настройки</span>
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 720 }}>
+      <div style={{ maxWidth: 720 }}>
 
         {/* ── Скелетон ── */}
         {!ready && (
@@ -124,7 +124,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
         {/* ── Стрик ── */}
         {ready && streak !== null && (
-          <div className="card" style={{ borderRadius: 20, padding: '20px 20px 18px' }}>
+          <div className="section">
+            <div className="section-head"><h3>Стрик</h3></div>
             {/* Top row: big number + secondary stats */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
@@ -216,10 +217,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           const MONTH_RU = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
 
           return (
-            <div className="card" style={{ borderRadius: 20, padding: '16px 16px 14px' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 12 }}>
-                Активность
-              </div>
+            <div className="section">
+              <div className="section-head"><h3>Активность</h3></div>
               <div style={{ overflowX: 'auto' }}>
                 <div style={{ display: 'flex', gap: 3, minWidth: 'max-content' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingTop: 16 }}>
@@ -262,15 +261,10 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
         {/* ── Достижения ── */}
         {ready && achievements && (
-          <div onClick={() => setShowAchievements(true)} className="card" style={{ borderRadius: 20, padding: '16px 0 16px 16px', cursor: 'pointer', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingRight: 16 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-                Достижения
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{earnedList.length} из {achievements.length}</span>
-                <span style={{ fontSize: 15, color: 'var(--text-faint)' }}>›</span>
-              </div>
+          <div onClick={() => setShowAchievements(true)} className="section" style={{ cursor: 'pointer', overflow: 'hidden' }}>
+            <div className="section-head">
+              <h3>Достижения</h3>
+              <span className="hint">{earnedList.length} из {achievements.length} →</span>
             </div>
 
             {earnedList.length === 0 ? (
@@ -320,8 +314,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
         {/* ── Паттерны (инсайты) ── */}
         {ready && hasInsights && (
-          <div className="card" style={{ borderRadius: 20, padding: '16px 16px 18px' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 14 }}>Паттерны</div>
+          <div className="section">
+            <div className="section-head"><h3>Паттерны</h3></div>
 
             {/* Best / worst day pills */}
             {((insights?.bestDayOfWeek || insights?.worstDayOfWeek) && (insights?.totalDays ?? 0) >= 7) && (
@@ -373,10 +367,10 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
         {/* ── Мои записи ── */}
         {ready && notesCount !== null && (
-          <div onClick={() => setNotesOpen(true)} className="card" style={{ borderRadius: 20, padding: '16px 16px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Мои записи</div>
-              <span style={{ fontSize: 15, color: 'var(--text-faint)' }}>›</span>
+          <div onClick={() => setNotesOpen(true)} className="section" style={{ cursor: 'pointer' }}>
+            <div className="section-head">
+              <h3>Мои записи</h3>
+              <span className="hint">→</span>
             </div>
 
             {notesCount.schema + notesCount.mode === 0 ? (
