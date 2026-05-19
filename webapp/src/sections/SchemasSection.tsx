@@ -3,7 +3,6 @@ import { api } from '../api';
 import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
 import { NEED_DATA } from '../needData';
-import { useSafeTop } from '../utils/safezone';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { BottomSheet } from '../components/BottomSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
@@ -77,7 +76,6 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [expandedModeGroups, setExpandedModeGroups] = useState<Set<string>>(new Set());
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
-  const safeTop = useSafeTop();
 
   useEffect(() => {
     api.getProfile().then(p => {

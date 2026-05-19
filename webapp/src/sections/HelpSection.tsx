@@ -33,13 +33,20 @@ function ToolCard({ emoji, label, sub, onClick, accentColor }: { emoji: string; 
   return (
     <div
       onClick={onClick}
-      className="card"
-      style={{ cursor: 'pointer', padding: '18px 16px', borderRadius: 18, display: 'flex', flexDirection: 'column', gap: 8, WebkitTapHighlightColor: 'transparent' }}
+      style={{
+        cursor: 'pointer', padding: '18px 16px', borderRadius: 14,
+        background: 'var(--bg-elev)', border: '1px solid var(--line)',
+        display: 'flex', flexDirection: 'column', gap: 8,
+        WebkitTapHighlightColor: 'transparent',
+        transition: 'border-color 0.15s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--line-strong)')}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
     >
-      <span style={{ fontSize: 30, lineHeight: 1 }}>{emoji}</span>
+      <span style={{ fontSize: 28, lineHeight: 1 }}>{emoji}</span>
       <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: accentColor || 'var(--text)', lineHeight: 1.3 }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.4 }}>{sub}</div>}
+        <div style={{ fontSize: 14, fontWeight: 600, color: accentColor || 'var(--text)', lineHeight: 1.3 }}>{label}</div>
+        {sub && <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.4 }}>{sub}</div>}
       </div>
     </div>
   );
@@ -280,7 +287,7 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
           <ToolCard emoji="🌱" label="Колесо детства" sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'} accentColor="var(--accent-green)" onClick={onOpenChildhoodWheel} />
         </div>
 
-        <div style={{ paddingBottom: 4 }}>
+        <div>
           <TherapyNote compact />
         </div>
 

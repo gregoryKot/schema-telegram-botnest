@@ -319,13 +319,9 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token already used or expired');
     }
 
-    // Mark this token as used
-    await (this.prisma as any).webSession.update({
-      where: { tokenHash },
-      data: { revokedAt: new Date() },
-    });
-
-    // Issue new token in the same family
+    // Issue new token in the same family. The mark-old-as-used + create-new
+    // pair MUST be atomic — otherwise a crash between them leaves the user
+    // with no valid session at all.
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
     const accessToken = jwt.sign({ sub: String(session.userId), type: 'access' }, secret, { expiresIn: ACCESS_TOKEN_TTL_S, algorithm: 'HS256', issuer: JWT_ISSUER, audience: JWT_AUDIENCE });
 
@@ -333,17 +329,23 @@ export class AuthService {
     const newHash = this.hashToken(newRaw);
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_S * 1000);
 
-    await (this.prisma as any).webSession.create({
-      data: {
-        id: crypto.randomUUID(),
-        userId: session.userId,
-        tokenHash: newHash,
-        family: session.family,
-        expiresAt,
-        ipAddress: ip,
-        userAgent,
-      },
-    });
+    await this.prisma.$transaction([
+      (this.prisma as any).webSession.update({
+        where: { tokenHash },
+        data: { revokedAt: new Date() },
+      }),
+      (this.prisma as any).webSession.create({
+        data: {
+          id: crypto.randomUUID(),
+          userId: session.userId,
+          tokenHash: newHash,
+          family: session.family,
+          expiresAt,
+          ipAddress: ip,
+          userAgent,
+        },
+      }),
+    ]);
 
     return { accessToken, refreshToken: newRaw, expiresIn: ACCESS_TOKEN_TTL_S };
   }

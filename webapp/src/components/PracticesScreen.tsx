@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import type { UserPractice } from '../api';
 import { Loader } from './Loader';
-import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
 import { NEED_DATA } from '../needData';
 
@@ -18,7 +17,6 @@ interface Props {
 }
 
 export function PracticesScreen({ onClose, onOpenTracker }: Props) {
-  const safeTop = useSafeTop();
   const [needIdx, setNeedIdx] = useState(0);
   const [practices, setPractices] = useState<UserPractice[] | null>(null);
   const [input, setInput] = useState('');
@@ -66,7 +64,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   const isMid = todayScore !== undefined && todayScore > 4 && todayScore <= 7;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto', paddingTop: safeTop }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 8px' }}>
         <span onClick={onClose} style={{ fontSize: 26, color: 'var(--text-sub)', cursor: 'pointer', lineHeight: 1 }}>‹</span>
