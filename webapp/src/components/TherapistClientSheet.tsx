@@ -525,6 +525,103 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               </div>
             )}
 
+            {/* Today dashboard */}
+            {!loading && clients.length > 0 && (() => {
+              const today = todayStr();
+              const sessionsToday = clients
+                .filter(c => c.nextSession && c.nextSession.slice(0, 10) === today)
+                .sort((a, b) => (a.nextSession ?? '').localeCompare(b.nextSession ?? ''));
+              const activeToday = clients.filter(c => c.lastActiveDate === today);
+              const needAttention = clients
+                .filter(c => {
+                  if (!c.lastActiveDate) return true;
+                  const daysSince = Math.floor((Date.now() - new Date(c.lastActiveDate).getTime()) / 86400000);
+                  return daysSince >= 3 || c.streak === 0;
+                })
+                .slice(0, 4);
+
+              if (sessionsToday.length === 0 && needAttention.length === 0) return null;
+              return (
+                <div className="doc-grid" style={{ marginBottom: 40 }}>
+                  <div>
+                    {sessionsToday.length > 0 && (
+                      <div className="section">
+                        <div className="section-head">
+                          <h3>Сессии сегодня</h3>
+                          <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{sessionsToday.length} {sessionsToday.length === 1 ? 'встреча' : sessionsToday.length < 5 ? 'встречи' : 'встреч'}</span>
+                        </div>
+                        {sessionsToday.map(client => {
+                          const [, timePart] = (client.nextSession ?? '').includes('T') ? (client.nextSession ?? '').split('T') : ['', null];
+                          const name = client.clientAlias ?? client.name ?? `ID ${client.telegramId}`;
+                          return (
+                            <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer', padding: '14px 0' }}>
+                              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-sub)', width: 52, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{timePart ?? '—'}</span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 14, fontWeight: 600 }}>{name}</div>
+                                {client.streak > 0 && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3 }}>стрик {client.streak} дней</div>}
+                              </div>
+                              <span className="link" style={{ flexShrink: 0 }}>открыть →</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {activeToday.length > 0 && (
+                      <div className="section">
+                        <div className="section-head">
+                          <h3>Активны сегодня</h3>
+                          <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{activeToday.length} из {clients.length}</span>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {activeToday.map(client => (
+                            <button
+                              key={client.telegramId}
+                              onClick={() => openClient(client)}
+                              style={{ padding: '6px 12px', borderRadius: 20, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, fontWeight: 500, color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
+                            >
+                              <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
+                              {client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}
+                              {client.todayIndex !== null && (
+                                <span style={{ fontSize: 12, color: indexColor(client.todayIndex), fontVariantNumeric: 'tabular-nums' }}>{client.todayIndex.toFixed(1)}</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {needAttention.length > 0 && (
+                    <aside style={{ alignSelf: 'start' }}>
+                      <div className="section">
+                        <div className="section-head"><h3>Ожидают внимания</h3></div>
+                        {needAttention.map(client => {
+                          const name = client.clientAlias ?? client.name ?? `ID ${client.telegramId}`;
+                          const daysSince = client.lastActiveDate
+                            ? Math.floor((Date.now() - new Date(client.lastActiveDate).getTime()) / 86400000)
+                            : null;
+                          const hint = !client.lastActiveDate
+                            ? 'Ещё не входил в приложение'
+                            : client.streak === 0
+                            ? `Стрик прерван${daysSince ? ` · ${daysSince} дн. без активности` : ''}`
+                            : daysSince !== null ? `${daysSince} дн. без активности` : '';
+                          return (
+                            <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{name}</div>
+                                {hint && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>{hint}</div>}
+                              </div>
+                              <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>›</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </aside>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Client table */}
             {loading ? (
               <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>
