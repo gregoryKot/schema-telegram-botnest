@@ -78,16 +78,13 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
         }}
       >
         {/* Handle */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border-color)', margin: '8px auto 20px' }} />
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--line)', margin: '8px auto 20px' }} />
 
         {/* Domain + Schema name */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
           <div style={{ width: 10, height: 10, borderRadius: 5, background: domainColor, flexShrink: 0, marginTop: 7 }} />
           <div>
-            <div style={{
-              fontSize: 9, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase',
-              color: domainColor, marginBottom: 5,
-            }}>
+            <div className="eyebrow" style={{ color: domainColor, marginBottom: 5 }}>
               {domainEntry.domain}
             </div>
             <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.3px' }}>
@@ -98,7 +95,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
 
         {/* Description */}
         <div style={{
-          background: 'var(--surface-2)', border: '1px solid var(--border-color)',
+          background: 'transparent', border: '1px solid var(--line)',
           borderRadius: 16, padding: '14px 16px', marginBottom: 14,
         }}>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.65 }}>
@@ -109,20 +106,15 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
         {/* Beliefs */}
         {beliefs.length > 0 && (
           <>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>Типичные убеждения</div>
             <div style={{
-              fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-              color: 'var(--text-faint)', marginBottom: 8,
-            }}>
-              Типичные убеждения
-            </div>
-            <div style={{
-              background: 'var(--surface-2)', border: '1px solid var(--border-color)',
+              background: 'transparent', border: '1px solid var(--line)',
               borderRadius: 16, padding: '4px 16px', marginBottom: 16,
             }}>
               {beliefs.map((b, i) => (
                 <div key={i} style={{
                   display: 'flex', gap: 10, padding: '10px 0',
-                  borderTop: i > 0 ? '1px solid var(--border-color)' : undefined,
+                  borderTop: i > 0 ? '1px solid var(--line)' : undefined,
                 }}>
                   <span style={{ color: domainColor, flexShrink: 0, fontSize: 18, lineHeight: 1 }}>·</span>
                   <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, fontStyle: 'italic' }}>
@@ -141,8 +133,8 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
             style={{
               flex: 1, padding: '13px', borderRadius: 14, border: 'none',
               fontFamily: 'inherit',
-              background: isAdded ? 'var(--surface-2)' : 'color-mix(in srgb, var(--accent) 12%, transparent)',
-              outline: `1px solid ${isAdded ? 'var(--border-color)' : 'color-mix(in srgb, var(--accent) 30%, transparent)'}`,
+              background: isAdded ? 'transparent' : 'color-mix(in srgb, var(--accent) 12%, transparent)',
+              outline: `1px solid ${isAdded ? 'var(--line)' : 'color-mix(in srgb, var(--accent) 30%, transparent)'}`,
               color: isAdded ? 'var(--text-faint)' : 'var(--accent)',
               fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
             }}

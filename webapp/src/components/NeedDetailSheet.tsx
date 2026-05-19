@@ -83,7 +83,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
             display: 'flex', alignItems: 'flex-start', gap: 14,
           }}>
             <div style={{ textAlign: 'center', flexShrink: 0 }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color, lineHeight: 1 }}>{childhoodRating}</div>
+              <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.03em', color, lineHeight: 1 }}>{childhoodRating}</div>
               <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 3, letterSpacing: '0.04em' }}>детство</div>
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.6, paddingTop: 2 }}>
@@ -95,9 +95,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
         {/* Related schemas */}
         {relatedSchemas.length > 0 && (
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>
-              Связанные схемы
-            </div>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>Связанные схемы</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {relatedSchemas.map(s => (
                 <div key={s.id} style={{
@@ -120,9 +118,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
 
         {/* Tips / Actions */}
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
-            {level === 'low' ? 'Что поможет сейчас' : 'Практика'}
-          </div>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>{level === 'low' ? 'Что поможет сейчас' : 'Практика'}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {tips.map((tip, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>

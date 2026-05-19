@@ -163,7 +163,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[80, 100, 90, 110].map((w, i) => (
                     <div key={i} style={{ height: 32, width: w, borderRadius: 20,
-                      background: 'linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%)',
+                      background: 'linear-gradient(90deg,transparent 25%,transparent 50%,transparent 75%)',
                       backgroundSize: '200% auto', animation: 'shimmer 1.5s linear infinite' }} />
                   ))}
                 </div>
@@ -189,7 +189,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                   })}
                   <button onClick={() => setShowSchemaPicker(true)} style={{
                     padding: '6px 13px', borderRadius: 20,
-                    border: '1.5px dashed var(--border-color)',
+                    border: '1.5px dashed var(--line)',
                     background: 'transparent',
                     color: 'var(--text-sub)', fontSize: 13, fontWeight: 500,
                     cursor: 'pointer', fontFamily: 'inherit',
@@ -283,7 +283,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[90, 110, 80].map((w, i) => (
                     <div key={i} style={{ height: 32, width: w, borderRadius: 20,
-                      background: 'linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%)',
+                      background: 'linear-gradient(90deg,transparent 25%,transparent 50%,transparent 75%)',
                       backgroundSize: '200% auto', animation: 'shimmer 1.5s linear infinite' }} />
                   ))}
                 </div>
@@ -308,7 +308,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                   })}
                   <button onClick={() => setShowModePicker(true)} style={{
                     padding: '6px 13px', borderRadius: 20,
-                    border: '1.5px dashed var(--border-color)',
+                    border: '1.5px dashed var(--line)',
                     background: 'transparent',
                     color: 'var(--text-sub)', fontSize: 13, fontWeight: 500,
                     cursor: 'pointer', fontFamily: 'inherit',

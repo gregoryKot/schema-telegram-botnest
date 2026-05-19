@@ -65,7 +65,7 @@ function SummaryDonut({ avg }: { avg: number }) {
           <stop offset="100%" stopColor="var(--accent-green)"/>
         </linearGradient>
       </defs>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--surface-2)" strokeWidth={5}/>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="transparent" strokeWidth={5}/>
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="url(#dg2)" strokeWidth={5}
         strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
         transform={`rotate(-90 ${cx} ${cy})`} style={{ transition:'stroke-dashoffset 0.35s ease' }}/>
@@ -183,7 +183,7 @@ export function TrackerOverlay({
         display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
         <button onClick={onClose} style={{
           width:34, height:34, borderRadius:10, border:'none', cursor:'pointer',
-          background:'var(--surface-2)', display:'flex', alignItems:'center', justifyContent:'center',
+          background:'transparent', display:'flex', alignItems:'center', justifyContent:'center',
           color:'var(--text-sub)',
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -205,7 +205,7 @@ export function TrackerOverlay({
             {onOpenNote && (
               <button onClick={onOpenNote} style={{
                 width:34, height:34, borderRadius:10, border:'none', cursor:'pointer',
-                background:'var(--surface-2)', display:'flex', alignItems:'center', justifyContent:'center',
+                background:'transparent', display:'flex', alignItems:'center', justifyContent:'center',
                 color:'var(--text-sub)',
               }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -217,7 +217,7 @@ export function TrackerOverlay({
             {onOpenHistory && (
               <button onClick={() => { onClose(); onOpenHistory(); }} style={{
                 width:34, height:34, borderRadius:10, border:'none', cursor:'pointer',
-                background:'var(--surface-2)', display:'flex', alignItems:'center', justifyContent:'center',
+                background:'transparent', display:'flex', alignItems:'center', justifyContent:'center',
                 color:'var(--text-sub)',
               }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -235,12 +235,12 @@ export function TrackerOverlay({
       {/* Onboarding */}
       {showOnb && (
         <div style={{ padding:'0 20px 8px', flexShrink:0 }}>
-          <div style={{ background:'var(--surface)', border:'1px solid var(--border-color)',
+          <div style={{ background:'transparent', border:'1px solid var(--line)',
             borderRadius:16, padding:'14px 16px' }}>
             <div style={{ display:'flex', gap:5, marginBottom:10 }}>
               {ONBOARDING_STEPS.map((_,i)=>(
                 <div key={i} style={{ width:i===onbStep?16:6, height:6, borderRadius:3,
-                  background:i===onbStep?'var(--accent)':'var(--surface-2)', transition:'all 0.2s' }}/>
+                  background:i===onbStep?'var(--accent)':'transparent', transition:'all 0.2s' }}/>
               ))}
             </div>
             <div style={{ display:'flex', gap:12, alignItems:'flex-start', marginBottom:12 }}>
@@ -262,7 +262,7 @@ export function TrackerOverlay({
               </button>
               <button onClick={() => onbStep < 2 ? setOnbStep(s=>s+1) : dismissOnb()} style={{
                 flex:1, padding:'8px', border:'none', fontFamily:'inherit', borderRadius:10,
-                background:'var(--surface-2)', color:'var(--accent)',
+                background:'transparent', color:'var(--accent)',
                 fontSize:12, fontWeight:600, cursor:'pointer',
               }}>
                 {onbStep < 2 ? 'Далее →' : 'Понятно, начнём'}
@@ -277,7 +277,7 @@ export function TrackerOverlay({
         <div onClick={() => setDetailNeed(need)} style={{
           display:'inline-flex', alignItems:'center', gap:8, cursor:'pointer',
           padding:'6px 16px', borderRadius:20,
-          background:'var(--surface)', border:'1px solid var(--border-color)',
+          background:'transparent', border:'1px solid var(--line)',
         }}>
           <span style={{ fontSize:16, fontWeight:700, color:'var(--text)', letterSpacing:'-0.3px' }}>
             {need.chartLabel}
@@ -317,7 +317,7 @@ export function TrackerOverlay({
         <div style={{ display:'flex', alignItems:'center', gap:16 }}>
           <button onClick={() => handleChange(need.id, Math.max(0, value-1))} style={{
             width:46, height:46, borderRadius:23, border:'none', fontFamily:'inherit',
-            background:'var(--surface-2)', color:'var(--text-sub)',
+            background:'transparent', color:'var(--text-sub)',
             fontSize:22, fontWeight:300, cursor:'pointer',
             display:'flex', alignItems:'center', justifyContent:'center',
           }}>−</button>
@@ -327,7 +327,7 @@ export function TrackerOverlay({
           </div>
           <button onClick={() => handleChange(need.id, Math.min(10, value+1))} style={{
             width:46, height:46, borderRadius:23, border:'none', fontFamily:'inherit',
-            background:'var(--surface-2)', color:'var(--text-sub)',
+            background:'transparent', color:'var(--text-sub)',
             fontSize:22, fontWeight:300, cursor:'pointer',
             display:'flex', alignItems:'center', justifyContent:'center',
           }}>+</button>
@@ -338,7 +338,7 @@ export function TrackerOverlay({
       <div style={{ padding:'0 20px', paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))', display:'flex', flexDirection:'column', gap:8, flexShrink:0 }}>
         {/* Summary when all done */}
         {allRated && (
-          <div style={{ background:'var(--surface)', border:'1px solid var(--border-color)',
+          <div style={{ background:'transparent', border:'1px solid var(--line)',
             borderRadius:16, padding:'14px 18px',
             display:'flex', alignItems:'center', justifyContent:'space-between' }}>
             <div>
@@ -365,7 +365,7 @@ export function TrackerOverlay({
         <div style={{ display:'flex', gap:10 }}>
           <button onClick={() => idx>0 && setIdx(idx-1)} style={{
             flex:1, padding:'13px', borderRadius:14, border:'none', fontFamily:'inherit',
-            background:idx===0?'var(--surface)':'var(--surface-2)',
+            background:idx===0?'transparent':'transparent',
             color:idx===0?'var(--text-faint)':'var(--text-sub)',
             fontSize:14, cursor:idx===0?'default':'pointer',
           }}>← Назад</button>

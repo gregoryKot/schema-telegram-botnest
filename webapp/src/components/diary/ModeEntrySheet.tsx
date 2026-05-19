@@ -122,7 +122,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         <StepLabel step={1} title="Режим" hint="кто взял управление" />
         {MODE_GROUPS.map(group => (
           <div key={group.id} style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 10, color: group.color, fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{group.group}</div>
+            <div className="eyebrow" style={{ color: group.color, marginBottom: 6 }}>{group.group}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {group.items.map(m => {
                 const sel = modeId === m.id;

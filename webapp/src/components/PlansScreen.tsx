@@ -13,7 +13,7 @@ interface Props {
 function statusColor(done: boolean | null) {
   if (done === true)  return { bg: 'rgba(52,211,153,0.08)', border: 'rgba(52,211,153,0.2)', text: 'var(--accent-green)' };
   if (done === false) return { bg: 'rgba(248,113,113,0.07)', border: 'rgba(248,113,113,0.18)', text: 'var(--accent-red)' };
-  return { bg: 'var(--surface)', border: 'var(--border-color)', text: 'var(--text-sub)' };
+  return { bg: 'transparent', border: 'var(--line)', text: 'var(--text-sub)' };
 }
 
 function statusIcon(done: boolean | null) {
@@ -51,13 +51,13 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
         position: 'sticky', top: 0, zIndex: 10,
         background: 'var(--nav-bg)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid var(--border-color)',
+        borderBottom: '1px solid var(--line)',
         padding: '16px 20px 14px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button onClick={onClose} style={{
             width: 34, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
-            background: 'var(--surface-2)',
+            background: 'transparent',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'var(--text-sub)', fontSize: 20, lineHeight: 1,
           }}>‹</button>
@@ -93,7 +93,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             {onOpenTracker && (
               <button onClick={() => { onClose(); onOpenTracker(); }} style={{
                 padding: '12px 28px', borderRadius: 14, border: 'none', fontFamily: 'inherit',
-                background: 'var(--surface)', outline: '1px solid var(--border-color)',
+                background: 'transparent', outline: '1px solid var(--line)',
                 color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
               }}>
                 Открыть трекер →
@@ -105,10 +105,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             {/* Pending plans */}
             {pending.length > 0 && (
               <div style={{ marginBottom: 24 }}>
-                <div style={{
-                  fontSize: 11, fontWeight: 700, letterSpacing: '0.10em',
-                  textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10,
-                }}>
+                <div className="eyebrow" style={{ marginBottom: 10 }}>
                   Ожидают выполнения
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -120,10 +117,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             {/* Completed plans */}
             {completed.length > 0 && (
               <div>
-                <div style={{
-                  fontSize: 11, fontWeight: 700, letterSpacing: '0.10em',
-                  textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10,
-                }}>
+                <div className="eyebrow" style={{ marginBottom: 10 }}>
                   Выполненные
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

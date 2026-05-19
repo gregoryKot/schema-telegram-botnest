@@ -230,7 +230,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           if (schemas.length === 0) return null;
           return (
             <div key={domain.id} style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 11, color: domain.color, fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{domain.domain}</div>
+              <div className="eyebrow" style={{ color: domain.color, marginBottom: 6 }}>{domain.domain}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {schemas.map(s => {
                   const sel = schemaIds.includes(s.id);

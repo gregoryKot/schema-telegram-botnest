@@ -83,7 +83,7 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
       background: 'var(--nav-bg)',
       backdropFilter: 'blur(24px)',
       WebkitBackdropFilter: 'blur(24px)',
-      borderTop: '1px solid var(--border-color)',
+      borderTop: '1px solid var(--line)',
       zIndex: 50,
       paddingBottom: 'env(safe-area-inset-bottom, 24px)',
     }}>

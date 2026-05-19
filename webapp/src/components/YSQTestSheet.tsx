@@ -531,7 +531,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             }}
           >
             {schema && (
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: schema.color, marginBottom: 12 }}>
+              <div style={{ className="eyebrow" style={{ color: schema.color, marginBottom: 12 }}>
                 {schema.name}
               </div>
             )}
@@ -575,7 +575,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                     width: '100%', display: 'flex', alignItems: 'center', gap: 14,
                     padding: '13px 16px', borderRadius: 16,
                     border: `1.5px solid ${selected ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.08)'}`,
-                    background: selected ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'var(--surface)',
+                    background: selected ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
                     cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent',
                     transition: 'background 0.12s, border-color 0.12s',
                   }}
@@ -609,7 +609,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
         <div style={{ padding: '8px 0 16px' }}>
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>🧠</div>
-            <div style={{ fontSize: 23, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 6 }}>
+            <div style={{ fontSize: 23, fontWeight: 600, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 6 }}>
               Опросник схем YSQ-R
             </div>
             <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>
@@ -741,7 +741,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           <div style={{ padding: '8px 0 16px' }}>
             {/* Header */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 4 }}>
+              <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 4 }}>
                 {activeLabel}
               </div>
               {dateLabel && (
@@ -762,7 +762,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             {/* Active schemas grouped by domain */}
             {activeByDomain.map(domain => (
               <div key={domain.needId} style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>
+                <div style={{ className="eyebrow" style={{ marginBottom: 10 }} }}>
                   {domain.label}
                 </div>
                 {domain.schemas.map(schema => {
@@ -892,7 +892,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             {/* History timeline */}
             {history.length >= 2 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>
+                <div style={{ className="eyebrow" style={{ marginBottom: 10 }} }}>
                   История прохождений
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

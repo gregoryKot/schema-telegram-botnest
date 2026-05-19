@@ -122,7 +122,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
         <div style={{ paddingTop: 4 }}>
           <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 16 }}>{viewing.date}</div>
           <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border-color)',
+            background: 'transparent', border: '1px solid var(--line)',
             borderRadius: 20, padding: '16px',
           }}>
             {[
@@ -134,10 +134,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
               <div key={row.label} style={{
                 paddingBottom: i < arr.length - 1 ? 12 : 0,
                 marginBottom: i < arr.length - 1 ? 12 : 0,
-                borderBottom: i < arr.length - 1 ? '1px solid var(--border-color)' : undefined,
+                borderBottom: i < arr.length - 1 ? '1px solid var(--line)' : undefined,
               }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
-                  color: 'var(--text-faint)', marginBottom: 4 }}>{row.label}</div>
+                <div className="eyebrow" style={{ marginBottom: 4 }}>{row.label}</div>
                 <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                   {row.value}
                 </div>
@@ -166,8 +165,8 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             const n = NEEDS.find(x => x.id === card.needId);
             return (
               <div key={card.id} onClick={() => setViewing(card)} style={{
-                padding: '12px 14px', background: 'var(--surface)',
-                border: '1px solid var(--border-color)',
+                padding: '12px 14px', background: 'transparent',
+                border: '1px solid var(--line)',
                 borderRadius: 16, marginBottom: 8, cursor: 'pointer',
               }}>
                 <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 4 }}>{card.date}</div>
@@ -205,7 +204,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             </div>
           </div>
           <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border-color)',
+            background: 'transparent', border: '1px solid var(--line)',
             borderRadius: 20, padding: '16px', marginBottom: 20,
           }}>
             {[
@@ -216,10 +215,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
               <div key={row.label} style={{
                 paddingBottom: i < arr.length - 1 ? 12 : 0,
                 marginBottom: i < arr.length - 1 ? 12 : 0,
-                borderBottom: i < arr.length - 1 ? '1px solid var(--border-color)' : undefined,
+                borderBottom: i < arr.length - 1 ? '1px solid var(--line)' : undefined,
               }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
-                  color: 'var(--text-faint)', marginBottom: 3 }}>{row.label}</div>
+                <div className="eyebrow" style={{ marginBottom: 3 }}>{row.label}</div>
                 <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5 }}>{row.value}</div>
               </div>
             ))}
@@ -227,7 +225,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           {onOpenTracker && (
             <button onClick={() => { onClose(); setTimeout(onOpenTracker!, 100); }} style={{
               width: '100%', padding: '13px', borderRadius: 14, border: 'none', fontFamily: 'inherit',
-              background: 'var(--surface)', outline: '1px solid var(--border-color)',
+              background: 'transparent', outline: '1px solid var(--line)',
               color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 10,
             }}>
               Открыть трекер →
@@ -295,8 +293,8 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           {allCards.length > 0 && (
             <button onClick={() => setShowHistory(true)} style={{
               width: '100%', padding: '11px', borderRadius: 14, fontFamily: 'inherit',
-              border: 'none', background: 'var(--surface)',
-              outline: '1px solid var(--border-color)',
+              border: 'none', background: 'transparent',
+              outline: '1px solid var(--line)',
               color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', marginBottom: 10,
             }}>
               История карточек ({allCards.length})
@@ -350,8 +348,8 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             {MODES.map(m => (
               <button key={m.id} onClick={() => { setSelectedMode(m.id); setStep('response'); }} style={{
                 textAlign: 'left', padding: '14px 16px', borderRadius: 16,
-                border: '1px solid var(--border-color)',
-                background: 'var(--surface)', cursor: 'pointer',
+                border: '1px solid var(--line)',
+                background: 'transparent', cursor: 'pointer',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                   <span style={{ fontSize: 20 }}>{m.emoji}</span>
@@ -381,8 +379,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             background: 'rgba(52,211,153,0.07)', border: '1px solid rgba(52,211,153,0.18)',
             borderRadius: 20, padding: '16px', marginBottom: 16,
           }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-green)',
-              textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+            <div className="eyebrow" style={{ color: 'var(--accent-green)', marginBottom: 10 }}>
               🌿 Говорит тебе
             </div>
             <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>
@@ -399,7 +396,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             rows={3}
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: 'var(--surface)', border: '1px solid var(--border-color)',
+              background: 'transparent', border: '1px solid var(--line)',
               borderRadius: 14, padding: '12px 14px',
               color: 'var(--text)', fontSize: 14, lineHeight: 1.55,
               resize: 'none', outline: 'none', fontFamily: 'inherit', marginBottom: 16,
@@ -442,8 +439,8 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
               return (
                 <button key={n.id} onClick={() => { setSelectedNeed(n.id); setStep('action'); }} style={{
                   textAlign: 'left', padding: '13px 16px', borderRadius: 14, cursor: 'pointer',
-                  border: `1px solid ${sel ? 'var(--accent)' : 'var(--border-color)'}`,
-                  background: sel ? 'var(--surface-2)' : 'var(--surface)',
+                  border: `1px solid ${sel ? 'var(--accent)' : 'var(--line)'}`,
+                  background: sel ? 'var(--surface-2)' : 'transparent',
                   color: 'var(--text)', fontSize: 14, fontWeight: sel ? 600 : 400,
                   fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10,
                 }}>
@@ -477,7 +474,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
         {needInfo && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
-            background: 'var(--surface)', border: '1px solid var(--border-color)',
+            background: 'transparent', border: '1px solid var(--line)',
             borderRadius: 14, padding: '11px 14px', marginBottom: 16,
           }}>
             <span style={{ fontSize: 20 }}>{needInfo.emoji}</span>
@@ -497,8 +494,8 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           rows={3}
           style={{
             width: '100%', boxSizing: 'border-box',
-            background: 'var(--surface)',
-            border: `1px solid ${action.trim() ? 'var(--accent)' : 'var(--border-color)'}`,
+            background: 'transparent',
+            border: `1px solid ${action.trim() ? 'var(--accent)' : 'var(--line)'}`,
             borderRadius: 14, padding: '12px 14px',
             color: 'var(--text)', fontSize: 14, lineHeight: 1.55,
             resize: 'none', outline: 'none', fontFamily: 'inherit', marginBottom: 16,

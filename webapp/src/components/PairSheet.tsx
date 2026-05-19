@@ -116,7 +116,7 @@ export function PairSheet({ onClose }: Props) {
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 2 }}>{name} сегодня</div>
                       {done ? (
-                        <div style={{ fontSize: 30, fontWeight: 800, color, lineHeight: 1 }}>
+                        <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: '-0.03em', color, lineHeight: 1 }}>
                           {idx.toFixed(1)}
                           <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-sub)' }}>/10</span>
                         </div>

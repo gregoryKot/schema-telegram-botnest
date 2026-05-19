@@ -143,7 +143,7 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
               {emoji}
             </div>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--text-sub)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>
+              <div className="eyebrow" style={{ marginBottom: 3 }}>
                 {(step as number) + 1} из {total}
               </div>
               <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)' }}>
