@@ -34,8 +34,8 @@ function ToolCard({ emoji, label, sub, onClick, accentColor }: { emoji: string; 
     <div
       onClick={onClick}
       style={{
-        cursor: 'pointer', padding: '18px 16px', borderRadius: 14,
-        background: 'var(--bg-elev)', border: '1px solid var(--line)',
+        cursor: 'pointer', padding: '18px 16px', borderRadius: 10,
+        background: 'transparent', border: '1px solid var(--line)',
         display: 'flex', flexDirection: 'column', gap: 8,
         WebkitTapHighlightColor: 'transparent',
         transition: 'border-color 0.15s',
@@ -43,9 +43,9 @@ function ToolCard({ emoji, label, sub, onClick, accentColor }: { emoji: string; 
       onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--line-strong)')}
       onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
     >
-      <span style={{ fontSize: 28, lineHeight: 1 }}>{emoji}</span>
+      <span style={{ fontSize: 26, lineHeight: 1 }}>{emoji}</span>
       <div>
-        <div style={{ fontSize: 14, fontWeight: 600, color: accentColor || 'var(--text)', lineHeight: 1.3 }}>{label}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: accentColor || 'var(--text)', lineHeight: 1.3 }}>{label}</div>
         {sub && <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.4 }}>{sub}</div>}
       </div>
     </div>
@@ -261,13 +261,13 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         })()}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 800 }}>
+      <div style={{ maxWidth: 800 }}>
 
         {/* Therapist tasks — shown prominently when assigned */}
         {therapistTasks.filter(t => !t.doneToday).length > 0 && (
-          <div style={{ background: 'color-mix(in srgb, var(--accent) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)', borderRadius: 14, padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 10 }}>
-              От терапевта
+          <div className="section">
+            <div className="section-head">
+              <h3 style={{ color: 'var(--accent)' }}>От терапевта</h3>
             </div>
             {therapistTasks.filter(t => !t.doneToday).map(task => (
               <TaskRow key={task.id} task={task} onOpen={() => openTask(task)} />
@@ -275,19 +275,22 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
           </div>
         )}
 
-        {/* Tool grid — 3 columns on desktop */}
-        <div className="tool-grid">
-          <ToolCard emoji="🎯" label="Мои цели" sub={tasks.length === 0 ? 'Нет активных' : `${tasks.length} ${plural(tasks.length, 'цель', 'цели', 'целей')}`} accentColor="var(--accent-orange)" onClick={() => setShowAllTasks(true)} />
-          <ToolCard emoji="🗂" label="Практики" sub={practiceCount == null ? undefined : practiceCount === 0 ? 'Нет практик' : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`} accentColor="var(--accent)" onClick={onOpenPractices} />
-          <ToolCard emoji="🗓" label="Планы" sub={planCount == null ? undefined : planCount === 0 ? 'История пуста' : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`} accentColor="var(--accent-blue)" onClick={onOpenPlans} />
-          <ToolCard emoji="🔍" label="Проверка убеждений" sub="Правда ли это?" accentColor="var(--accent-yellow)" onClick={() => setShowBeliefCheck(true)} />
-          <ToolCard emoji="🏡" label="Безопасное место" sub="Ресурс в тревожный момент" accentColor="var(--accent-green)" onClick={() => setShowSafePlace(true)} />
-          <ToolCard emoji="✉️" label="Письмо себе" sub="Уязвимому Ребёнку" accentColor="var(--accent-pink)" onClick={() => setShowLetterToSelf(true)} />
-          <ToolCard emoji="🆘" label="Мне плохо" sub="5 шагов чтобы разобраться" accentColor="var(--accent-red)" onClick={() => setShowFlashcard(true)} />
-          <ToolCard emoji="🌱" label="Колесо детства" sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'} accentColor="var(--accent-green)" onClick={onOpenChildhoodWheel} />
+        {/* Tool grid */}
+        <div className="section">
+          <div className="section-head"><h3>Инструменты</h3></div>
+          <div className="tool-grid">
+            <ToolCard emoji="🎯" label="Мои цели" sub={tasks.length === 0 ? 'Нет активных' : `${tasks.length} ${plural(tasks.length, 'цель', 'цели', 'целей')}`} accentColor="var(--accent-orange)" onClick={() => setShowAllTasks(true)} />
+            <ToolCard emoji="🗂" label="Практики" sub={practiceCount == null ? undefined : practiceCount === 0 ? 'Нет практик' : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`} accentColor="var(--accent)" onClick={onOpenPractices} />
+            <ToolCard emoji="🗓" label="Планы" sub={planCount == null ? undefined : planCount === 0 ? 'История пуста' : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`} accentColor="var(--accent-blue)" onClick={onOpenPlans} />
+            <ToolCard emoji="🔍" label="Проверка убеждений" sub="Правда ли это?" accentColor="var(--accent-yellow)" onClick={() => setShowBeliefCheck(true)} />
+            <ToolCard emoji="🏡" label="Безопасное место" sub="Ресурс в тревожный момент" accentColor="var(--accent-green)" onClick={() => setShowSafePlace(true)} />
+            <ToolCard emoji="✉️" label="Письмо себе" sub="Уязвимому Ребёнку" accentColor="var(--accent-pink)" onClick={() => setShowLetterToSelf(true)} />
+            <ToolCard emoji="🆘" label="Мне плохо" sub="5 шагов чтобы разобраться" accentColor="var(--accent-red)" onClick={() => setShowFlashcard(true)} />
+            <ToolCard emoji="🌱" label="Колесо детства" sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'} accentColor="var(--accent-green)" onClick={onOpenChildhoodWheel} />
+          </div>
         </div>
 
-        <div>
+        <div className="section">
           <TherapyNote compact />
         </div>
 

@@ -54,7 +54,7 @@ function SchemaCard({ entry, color, onDelete }: { entry: SchemaDiaryEntry; color
   const emotionMetas = EMOTIONS.filter(e => entry.emotions.some(em => em.id === e.id));
   const schemas = entry.schemaIds.map(id => getSchemaById(id)).filter(Boolean);
   return (
-    <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px', marginBottom: 8, background: 'var(--bg-elev)' }}>
+    <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px', marginBottom: 8, background: 'transparent' }}>
       <div onClick={() => setOpen(v => !v)} style={{ cursor: 'pointer' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
           <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{formatDt(entry.createdAt)}</span>
@@ -93,7 +93,7 @@ function ModeCard({ entry, color, onDelete }: { entry: ModeDiaryEntry; color: st
   const [open, setOpen] = useState(false);
   const mode = getModeById(entry.modeId);
   return (
-    <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px', marginBottom: 8, background: 'var(--bg-elev)' }}>
+    <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px', marginBottom: 8, background: 'transparent' }}>
       <div onClick={() => setOpen(v => !v)} style={{ cursor: 'pointer' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
           <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{formatDt(entry.createdAt)}</span>
@@ -122,7 +122,7 @@ function ModeCard({ entry, color, onDelete }: { entry: ModeDiaryEntry; color: st
 function GratitudeCard({ entry, color, onDelete }: { entry: GratitudeDiaryEntry; color: string; onDelete: () => void }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px', marginBottom: 8, background: 'var(--bg-elev)' }}>
+    <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px', marginBottom: 8, background: 'transparent' }}>
       <div onClick={() => setOpen(v => !v)} style={{ cursor: 'pointer' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
           <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
@@ -187,16 +187,16 @@ export function DiaryListView({ type, schemaEntries, modeEntries, gratitudeEntri
   return (
     <div className="page-inner">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 32 }}>
-        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+      <div style={{ marginBottom: 36 }}>
+        <button onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', padding: 0, fontFamily: 'inherit', marginBottom: 12 }}>
           ← Дневник
         </button>
-        <span style={{ color: 'var(--text-ghost)' }}>›</span>
-        <span style={{ fontSize: 22 }}>{meta.emoji}</span>
-        <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.4px', color: 'var(--text)', margin: 0 }}>{meta.title}</h1>
-        {totalCount > 0 && <span style={{ fontSize: 13, color: 'var(--text-faint)', marginLeft: 2 }}>{totalCount}</span>}
-        <div style={{ marginLeft: 'auto' }}>
-          <button onClick={onNewEntry} style={{ padding: '9px 18px', border: 'none', borderRadius: 9, background: meta.color, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+          <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, margin: 0 }}>
+            {meta.emoji} {meta.title}
+            {totalCount > 0 && <span style={{ fontSize: 16, fontWeight: 400, color: 'var(--text-faint)', marginLeft: 8 }}>{totalCount}</span>}
+          </h1>
+          <button onClick={onNewEntry} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: meta.color, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, marginTop: 4 }}>
             {meta.fabLabel}
           </button>
         </div>
