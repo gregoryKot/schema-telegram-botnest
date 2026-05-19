@@ -3,7 +3,6 @@ import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { LetterToSelf } from '../components/LetterToSelf';
 import { BeliefCheck } from '../components/BeliefCheck';
 import { SafePlace } from '../components/SafePlace';
-import { TherapyNote } from '../components/TherapyNote';
 import { CHILDHOOD_DONE_KEY } from '../components/ChildhoodWheelSheet';
 import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
 import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
@@ -39,29 +38,6 @@ interface Props {
   onOpenTherapistCabinet?: () => void;
 }
 
-function ToolCard({ emoji, label, sub, onClick, accentColor }: { emoji: string; label: string; sub?: string; onClick: () => void; accentColor?: string }) {
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        cursor: 'pointer', padding: '18px 16px', borderRadius: 10,
-        background: 'transparent', border: '1px solid var(--line)',
-        display: 'flex', flexDirection: 'column', gap: 8,
-        WebkitTapHighlightColor: 'transparent',
-        transition: 'border-color 0.15s',
-      }}
-      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--line-strong)')}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
-    >
-      <span style={{ fontSize: 26, lineHeight: 1 }}>{emoji}</span>
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: accentColor || 'var(--text)', lineHeight: 1.3 }}>{label}</div>
-        {sub && <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.4 }}>{sub}</div>}
-      </div>
-    </div>
-  );
-}
-
 function plural(n: number, one: string, few: string, many: string) {
   const m10 = n % 10, m100 = n % 100;
   if (m100 >= 11 && m100 <= 19) return many;
@@ -70,17 +46,8 @@ function plural(n: number, one: string, few: string, many: string) {
   return many;
 }
 
-
-const TASK_EMOJI: Record<string, string> = {
-  diary_streak: '📔', tracker_streak: '📊', belief_check: '🔍',
-  letter_to_self: '✉️', safe_place: '🏡', childhood_wheel: '🌱',
-  flashcard: '🆘', schema_intro: '🧩', mode_intro: '🔄', custom: '✏️',
-};
-
-// Resolve display text for tasks that may have raw IDs as text
 function resolveTaskDisplayText(task: UserTask): string {
   const text = getTaskDisplayText(task.type, task.text);
-  // If still raw (didn't resolve via type), try ID lookup
   if (text === task.text) {
     const schema = ALL_SCHEMAS.find(s => s.id === task.text);
     if (schema) return `Карточка схемы: ${schema.name}`;
@@ -90,89 +57,52 @@ function resolveTaskDisplayText(task: UserTask): string {
   return text;
 }
 
-function resolveTaskEmoji(task: UserTask): string {
-  if (TASK_EMOJI[task.type]) return TASK_EMOJI[task.type];
-  // Fallback: check if text is a schema or mode ID
-  if (ALL_SCHEMAS.some(s => s.id === task.text)) return '🧩';
-  if (ALL_MODES.some(m => m.id === task.text)) return '🔄';
-  return '⏳';
-}
-
-function TaskRow({ task, onOpen, onComplete }: { task: UserTask; onOpen: () => void; onComplete?: () => void }) {
+// Calm document-style task row (no emoji bubbles, no rounded boxes)
+function TaskLine({ task, onOpen, onComplete, fromTherapist }: { task: UserTask; onOpen: () => void; onComplete?: () => void; fromTherapist?: boolean }) {
   const isStreakTask = task.type === 'diary_streak' || task.type === 'tracker_streak';
-  const isAssigned = task.assignedBy !== null;
   const [completing, setCompleting] = useState(false);
-  const emoji = task.doneToday ? '✅' : resolveTaskEmoji(task);
-
+  const target = task.targetDays ?? 0;
+  const progress = task.progress !== undefined ? Math.min(task.progress, target) : 0;
   return (
     <div
       onClick={task.doneToday ? undefined : onOpen}
-      style={{
-        padding: '14px',
-        background: 'transparent',
-        border: `1px solid ${isAssigned && !task.doneToday ? 'color-mix(in srgb, var(--accent) 30%, transparent)' : 'var(--line)'}`,
-        borderRadius: 16,
-        marginBottom: 8,
-        display: 'flex', alignItems: 'center', gap: 12,
-        cursor: task.doneToday ? 'default' : 'pointer',
-        opacity: task.doneToday ? 0.55 : 1,
-        transition: 'all 0.15s',
-      }}
+      className="list-line"
+      style={{ cursor: task.doneToday ? 'default' : 'pointer', opacity: task.doneToday ? 0.45 : 1 }}
     >
-      {/* Icon bubble */}
-      <div style={{
-        width: 38, height: 38, borderRadius: 12, flexShrink: 0,
-        background: task.doneToday ? 'rgba(52,211,153,0.1)' : 'var(--surface-2)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19,
-      }}>
-        {emoji}
-      </div>
-
-      {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {isAssigned && !task.doneToday && (
-          <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 3 }}>
-            от терапевта
-          </div>
+        {fromTherapist && !task.doneToday && (
+          <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 4 }}>от терапевта</div>
         )}
-        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', lineHeight: 1.35 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', lineHeight: 1.4 }}>
           {resolveTaskDisplayText(task)}
         </div>
-        {task.doneToday && isStreakTask && (
-          <div style={{ fontSize: 11, color: 'var(--accent-green)', marginTop: 3 }}>Сделано сегодня — завтра снова</div>
+        {target > 0 && (
+          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ flex: 1, maxWidth: 180, height: 3, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ width: `${target ? (progress / target) * 100 : 0}%`, height: '100%', background: 'var(--accent)' }} />
+            </div>
+            <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>{progress}/{target}</span>
+          </div>
         )}
-        <TaskProgressBar task={task} />
-        {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>до {fmtDate(task.dueDate)}</div>}
+        {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>до {fmtDate(task.dueDate)}</div>}
+        {task.doneToday && isStreakTask && (
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>сделано сегодня · завтра снова</div>
+        )}
       </div>
-
-      {/* Action */}
       {!task.doneToday && task.done === null && task.type === 'custom' && onComplete ? (
         <button
           disabled={completing}
           onClick={e => { e.stopPropagation(); setCompleting(true); onComplete(); }}
-          style={{ background: 'rgba(52,211,153,0.12)', outline: '1px solid rgba(52,211,153,0.22)', border: 'none', borderRadius: 10, padding: '7px 12px', color: 'var(--accent-green)', fontSize: 12, fontWeight: 600, cursor: completing ? 'default' : 'pointer', flexShrink: 0, opacity: completing ? 0.5 : 1, fontFamily: 'inherit' }}
+          className="link"
+          style={{ background: 'none', border: 'none', padding: 0, cursor: completing ? 'default' : 'pointer', opacity: completing ? 0.5 : 1, fontFamily: 'inherit' }}
         >
-          {completing ? '...' : 'Готово'}
+          {completing ? '...' : 'готово →'}
         </button>
-      ) : !task.doneToday && task.type !== 'custom' ? (
-        <span style={{ color: 'var(--text-faint)', fontSize: 18, flexShrink: 0 }}>›</span>
-      ) : null}
-    </div>
-  );
-}
-
-function TaskProgressBar({ task }: { task: UserTask }) {
-  if (task.type === 'custom' || !task.targetDays) return null;
-  const target = task.targetDays;
-  // Use server-computed progress (actual days done) if available, else fall back to elapsed days
-  const progress = task.progress !== undefined ? Math.min(task.progress, target) : 0;
-  const pct = target > 0 ? (progress / target) * 100 : 0;
-  return (
-    <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-      <div style={{ flex: 1, height: 4, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 4, overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent)', borderRadius: 4, transition: 'width 0.3s ease' }} />
-      </div>
-      <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>{progress}/{target}</span>
+      ) : !task.doneToday ? (
+        <span className="link">открыть →</span>
+      ) : (
+        <span className="text-xs faint">готово</span>
+      )}
     </div>
   );
 }
@@ -206,7 +136,8 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
     return () => { ignore = true; };
   }, [refreshKey]);
 
-  const therapistTasks = tasks.filter(t => t.assignedBy !== null);
+  const therapistTasks = tasks.filter(t => t.assignedBy !== null && !t.doneToday);
+  const myGoals = tasks.filter(t => t.assignedBy === null && !t.doneToday);
 
   function openTask(task: UserTask) {
     setShowAllTasks(false);
@@ -224,7 +155,6 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
       case 'schema_intro':    if (task.text) setIntroSchemaId(task.text); break;
       case 'mode_intro':      if (task.text) setIntroModeId(task.text); break;
       default:
-        // Fallback: if text is a raw schema/mode ID (old task format)
         if (ALL_SCHEMAS.some(s => s.id === task.text)) { setIntroSchemaId(task.text); break; }
         if (ALL_MODES.some(m => m.id === task.text)) { setIntroModeId(task.text); break; }
         break;
@@ -241,127 +171,179 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
       .catch(() => {});
   }
 
+  // Session banner data
+  const sessionBanner = (() => {
+    if (relation?.role !== 'client' || !relation.nextSession) return null;
+    const [datePart, timePart] = relation.nextSession.includes('T') ? relation.nextSession.split('T') : [relation.nextSession, null];
+    const [y, m, d] = datePart.split('-').map(Number);
+    const MONTHS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    const DAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    const date = new Date(y, m - 1, d);
+    const label = `${DAYS[date.getDay()]}, ${d} ${MONTHS[m - 1]}${timePart ? ` · ${timePart}` : ''}`;
+    const isToday = datePart === new Date().toISOString().slice(0, 10);
+    return { label, isToday, partnerName: relation.partnerName };
+  })();
+
   return (
     <div className="page-inner-wide">
 
       {/* Header */}
-      <div style={{ marginBottom: 36 }}>
-        <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 6 }}>Помощь</h1>
-        <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-          Инструменты и упражнения
+      <div style={{ marginBottom: 48 }}>
+        <h1 className="text-3xl">Помощь</h1>
+        <div className="text-md muted" style={{ marginTop: 8, maxWidth: 560, lineHeight: 1.6 }}>
+          Каталог техник, упражнений и материалов по схема-терапии.
         </div>
-        {/* Next session banner for clients */}
-        {relation?.role === 'client' && relation.nextSession && (() => {
-          const [datePart, timePart] = relation.nextSession.includes('T') ? relation.nextSession.split('T') : [relation.nextSession, null];
-          const [y, m, d] = datePart.split('-').map(Number);
-          const MONTHS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-          const DAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-          const date = new Date(y, m - 1, d);
-          const label = `${DAYS[date.getDay()]}, ${d} ${MONTHS[m - 1]}${timePart ? ` · ${timePart}` : ''}`;
-          const isToday = datePart === new Date().toISOString().slice(0, 10);
-          return (
-            <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 7, background: isToday ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)' : 'rgba(var(--fg-rgb),0.05)', border: `1px solid ${isToday ? 'color-mix(in srgb, var(--accent-green) 25%, transparent)' : 'rgba(var(--fg-rgb),0.1)'}`, borderRadius: 20, padding: '5px 12px' }}>
-              <span style={{ fontSize: 13 }}>📅</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: isToday ? 'var(--accent-green)' : 'rgba(var(--fg-rgb),0.6)' }}>
-                {isToday ? 'Сегодня встреча' : `Встреча: ${label}`}
-              </span>
-              {relation.partnerName && <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>с {relation.partnerName}</span>}
-            </div>
-          );
-        })()}
-      </div>
-
-      <div>
-
-        {/* Therapist tasks — shown prominently when assigned */}
-        {therapistTasks.filter(t => !t.doneToday).length > 0 && (
-          <div className="section">
-            <div className="section-head">
-              <h3 style={{ color: 'var(--accent)' }}>От терапевта</h3>
-            </div>
-            {therapistTasks.filter(t => !t.doneToday).map(task => (
-              <TaskRow key={task.id} task={task} onOpen={() => openTask(task)} />
-            ))}
+        {sessionBanner && (
+          <div className="text-sm" style={{ marginTop: 14, color: sessionBanner.isToday ? 'var(--c-moss)' : 'var(--text-sub)' }}>
+            {sessionBanner.isToday ? '● Сегодня встреча' : `Следующая встреча: ${sessionBanner.label}`}
+            {sessionBanner.partnerName && <span className="muted"> · с {sessionBanner.partnerName}</span>}
           </div>
         )}
+      </div>
 
-        {/* Big practices — 3-column cards with top border */}
+      {/* От терапевта */}
+      {therapistTasks.length > 0 && (
         <div className="section">
-          <div className="eyebrow" style={{ marginBottom: 24 }}>Большие практики</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
-            {[
-              { label: 'Колесо детства', sub: 'Какие базовые потребности были или не были удовлетворены', onClick: onOpenChildhoodWheel, done: childhoodDone },
-              { label: 'Тест YSQ', sub: 'Опросник Янга, 90 вопросов, 20 шкал схем', onClick: () => onOpenSchema?.({ startTest: true }), done: false },
-              { label: 'Карта режимов', sub: 'Найди своего Уязвимого Ребёнка, Критика, Защитника', onClick: () => onOpenSchema?.({ tab: 'modes' }), done: false },
-            ].map(card => (
-              <div
-                key={card.label}
-                onClick={card.onClick}
-                style={{ cursor: 'pointer', padding: '24px 0', borderTop: '2px solid var(--text)' }}
-              >
-                <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text)' }}>{card.label}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 10, lineHeight: 1.55, maxWidth: 280 }}>{card.sub}</div>
-                <span className="link" style={{ marginTop: 18, display: 'inline-block' }}>{card.done ? 'открыть →' : 'начать →'}</span>
-              </div>
-            ))}
+          <div className="section-head">
+            <h3>От терапевта</h3>
+            <span className="hint">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>
           </div>
+          {therapistTasks.map(task => (
+            <TaskLine key={task.id} task={task} onOpen={() => openTask(task)} fromTherapist />
+          ))}
         </div>
+      )}
 
-        {/* Practices by need */}
-        <div className="section">
-          <div className="section-head"><h3>Практики по потребностям</h3></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', columnGap: 48, rowGap: 36 }}>
-            {NEED_ORDER.map(id => {
-              const need = NEED_DATA[id];
-              if (!need) return null;
-              const color = NEED_COLORS[id] ?? 'var(--accent)';
-              return (
-                <div key={id}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{need.name}</span>
-                    <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{need.hint}</span>
-                  </div>
-                  {need.actions.slice(0, 3).map((p, i) => (
-                    <div key={i} className="list-line" style={{ padding: '10px 0' }}>
-                      <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{p}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text-sub)', flexShrink: 0 }}>3 мин</span>
-                    </div>
-                  ))}
+      {/* Большие практики */}
+      <div className="section">
+        <div className="eyebrow" style={{ marginBottom: 24 }}>Большие практики</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
+          {[
+            { label: 'Колесо детства', sub: 'Какие базовые потребности были или не были удовлетворены', onClick: onOpenChildhoodWheel, done: childhoodDone },
+            { label: 'Тест YSQ',       sub: 'Опросник Янга, 90 вопросов, 20 шкал схем',                  onClick: () => onOpenSchema?.({ startTest: true }), done: false },
+            { label: 'Карта режимов',  sub: 'Найди своего Уязвимого Ребёнка, Критика, Защитника',         onClick: () => onOpenSchema?.({ tab: 'modes' }), done: false },
+          ].map(card => (
+            <div
+              key={card.label}
+              onClick={card.onClick}
+              style={{ cursor: 'pointer', padding: '24px 0', borderTop: '2px solid var(--text)' }}
+            >
+              <div className="text-lg">{card.label}</div>
+              <div className="text-sm muted" style={{ marginTop: 10, lineHeight: 1.55, maxWidth: 280 }}>{card.sub}</div>
+              <span className="link" style={{ marginTop: 18, display: 'inline-block' }}>{card.done ? 'открыть →' : 'начать →'}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Практики по потребностям */}
+      <div className="section">
+        <div className="section-head"><h3>Практики по потребностям</h3></div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', columnGap: 48, rowGap: 36 }}>
+          {NEED_ORDER.map(id => {
+            const need = NEED_DATA[id];
+            if (!need) return null;
+            const color = NEED_COLORS[id] ?? 'var(--accent)';
+            return (
+              <div key={id}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
+                  <span className="text-md" style={{ fontWeight: 600 }}>{need.name}</span>
+                  <span className="text-xs faint">{need.hint}</span>
                 </div>
-              );
-            })}
-          </div>
+                {need.actions.slice(0, 3).map((p, i) => (
+                  <div key={i} className="list-line" style={{ padding: '10px 0' }}>
+                    <span className="text-sm" style={{ flex: 1 }}>{p}</span>
+                    <span className="text-xs faint">3 мин</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Safe place — own section */}
-        <div className="section">
-          <div className="section-head"><h3>Безопасное место</h3></div>
-          <div style={{ fontSize: 15, maxWidth: 600, lineHeight: 1.55, color: 'var(--text)' }}>
-            Управляемая визуализация для активации Хорошего Родителя — ресурс в тревожный момент.
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 18 }}>
-            <button className="btn btn-secondary" onClick={() => setShowSafePlace(true)}>▶ Открыть</button>
-          </div>
+      {/* Безопасное место */}
+      <div className="section">
+        <div className="section-head"><h3>Безопасное место</h3></div>
+        <div className="text-md" style={{ maxWidth: 600, lineHeight: 1.55 }}>
+          Управляемая визуализация для активации Хорошего Родителя — ресурс в тревожный момент.
         </div>
+        <div style={{ marginTop: 18 }}>
+          <button className="btn btn-secondary" onClick={() => setShowSafePlace(true)}>▶ Открыть</button>
+        </div>
+      </div>
 
-        {/* Tool grid */}
-        <div className="section">
-          <div className="section-head"><h3>Инструменты</h3></div>
-          <div className="tool-grid">
-            <ToolCard emoji="🎯" label="Мои цели" sub={tasks.length === 0 ? 'Нет активных' : `${tasks.length} ${plural(tasks.length, 'цель', 'цели', 'целей')}`} accentColor="var(--accent-orange)" onClick={() => setShowAllTasks(true)} />
-            <ToolCard emoji="🗂" label="Практики" sub={practiceCount == null ? undefined : practiceCount === 0 ? 'Нет практик' : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`} accentColor="var(--accent)" onClick={onOpenPractices} />
-            <ToolCard emoji="🗓" label="Планы" sub={planCount == null ? undefined : planCount === 0 ? 'История пуста' : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`} accentColor="var(--accent-blue)" onClick={onOpenPlans} />
-            <ToolCard emoji="🔍" label="Проверка убеждений" sub="Правда ли это?" accentColor="var(--accent-yellow)" onClick={() => setShowBeliefCheck(true)} />
-            <ToolCard emoji="✉️" label="Письмо себе" sub="Уязвимому Ребёнку" accentColor="var(--accent-pink)" onClick={() => setShowLetterToSelf(true)} />
-            <ToolCard emoji="🆘" label="Мне плохо" sub="5 шагов чтобы разобраться" accentColor="var(--accent-red)" onClick={() => setShowFlashcard(true)} />
+      {/* Короткие техники — calm document list */}
+      <div className="section">
+        <div className="section-head"><h3>Короткие техники</h3></div>
+        {[
+          { label: 'Мне плохо',           sub: 'Пять шагов чтобы разобраться, что происходит',  onClick: () => setShowFlashcard(true) },
+          { label: 'Проверка убеждений',  sub: 'Правда ли это? Что говорит за, что против',     onClick: () => setShowBeliefCheck(true) },
+          { label: 'Письмо себе',         sub: 'Письмо Уязвимому Ребёнку — от Здорового Взрослого', onClick: () => setShowLetterToSelf(true) },
+        ].map(item => (
+          <div key={item.label} className="list-line" style={{ cursor: 'pointer' }} onClick={item.onClick}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="text-md" style={{ fontWeight: 500 }}>{item.label}</div>
+              <div className="text-sm muted" style={{ marginTop: 3 }}>{item.sub}</div>
+            </div>
+            <span className="link">открыть →</span>
           </div>
-        </div>
+        ))}
+      </div>
 
-        <div className="section">
-          <TherapyNote compact />
-        </div>
+      {/* Каталоги */}
+      <div className="section">
+        <div className="section-head"><h3>Каталоги</h3></div>
+        {[
+          { label: 'Практики',  sub: practiceCount == null ? 'Все упражнения и техники' : practiceCount === 0 ? 'Нет практик'  : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`, onClick: onOpenPractices },
+          { label: 'Планы',     sub: planCount    == null ? 'Планы поддержки и кризисов' : planCount    === 0 ? 'История пуста' : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`,             onClick: onOpenPlans },
+        ].map(item => (
+          <div key={item.label} className="list-line" style={{ cursor: 'pointer' }} onClick={item.onClick}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="text-md" style={{ fontWeight: 500 }}>{item.label}</div>
+              <div className="text-sm muted" style={{ marginTop: 3 }}>{item.sub}</div>
+            </div>
+            <span className="link">открыть →</span>
+          </div>
+        ))}
+      </div>
 
+      {/* Мои цели */}
+      <div className="section">
+        <div className="section-head">
+          <h3>Мои цели</h3>
+          <span className="hint">
+            {myGoals.length === 0
+              ? 'нет активных'
+              : `${myGoals.length} ${plural(myGoals.length, 'активная', 'активные', 'активных')}${taskHistory.length > 0 ? ` · ${taskHistory.length} выполнено` : ''}`}
+          </span>
+        </div>
+        {myGoals.length === 0 ? (
+          <div className="text-sm muted" style={{ maxWidth: 480, lineHeight: 1.55 }}>
+            Поставь себе цель и иди к ней маленькими шагами. Большие изменения начинаются с малого.
+          </div>
+        ) : (
+          myGoals.slice(0, 5).map(task => (
+            <TaskLine
+              key={task.id}
+              task={task}
+              onOpen={() => openTask(task)}
+              onComplete={task.done === null && task.type === 'custom'
+                ? () => api.completeTask(task.id, true)
+                    .then(() => Promise.all([api.getTasks(), api.getTaskHistory()]))
+                    .then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); })
+                    .catch(() => {})
+                : undefined}
+            />
+          ))
+        )}
+        <div style={{ display: 'flex', gap: 18, marginTop: 18, alignItems: 'center' }}>
+          <button className="btn btn-secondary" onClick={() => setShowTaskCreate(true)}>+ Поставить цель</button>
+          {(myGoals.length > 5 || taskHistory.length > 0) && (
+            <span className="link" style={{ cursor: 'pointer' }} onClick={() => setShowAllTasks(true)}>все цели и история →</span>
+          )}
+        </div>
       </div>
 
       {showFlashcard && <SchemaFlashcard onClose={() => setShowFlashcard(false)} onOpenTracker={onOpenTracker} onComplete={handleTaskComplete} />}
@@ -381,95 +363,52 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
       )}
       {showAllTasks && (
         <BottomSheet onClose={() => setShowAllTasks(false)} zIndex={200}>
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18, paddingTop: 4 }}>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
-                Мои цели
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4 }}>
-                {tasks.length === 0
-                  ? 'Поставь себе цель и иди к ней маленькими шагами'
-                  : `${tasks.length} ${plural(tasks.length, 'активная', 'активные', 'активных')}${taskHistory.length > 0 ? ` · ${taskHistory.length} выполнено` : ''}`}
-              </div>
+          <div style={{ paddingTop: 4 }}>
+            <h3 style={{ marginBottom: 4 }}>Мои цели</h3>
+            <div className="text-sm muted" style={{ marginBottom: 24 }}>
+              {tasks.length === 0
+                ? 'Поставь себе цель и иди к ней маленькими шагами'
+                : `${tasks.length} ${plural(tasks.length, 'активная', 'активные', 'активных')}${taskHistory.length > 0 ? ` · ${taskHistory.length} выполнено` : ''}`}
             </div>
-            <div style={{
-              width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-              background: 'rgba(251,146,60,0.12)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-            }}>🎯</div>
-          </div>
 
-          {/* Active tasks */}
-          {tasks.length === 0 ? (
-            <div style={{
-              padding: '36px 20px', textAlign: 'center',
-              background: 'transparent', borderRadius: 16,
-              border: '1px dashed var(--line)', marginBottom: 16,
-            }}>
-              <div style={{ fontSize: 36, marginBottom: 10 }}>✨</div>
-              <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.55, maxWidth: 240, margin: '0 auto' }}>
-                Пока нет активных целей. Поставь первую — большие изменения начинаются с малого.
-              </div>
-            </div>
-          ) : (
-            <div style={{ marginBottom: 8 }}>
-              {tasks.map(task => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  onOpen={() => openTask(task)}
-                  onComplete={task.done === null && task.type === 'custom'
-                    ? () => api.completeTask(task.id, true)
-                        .then(() => Promise.all([api.getTasks(), api.getTaskHistory()]))
-                        .then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); })
-                        .catch(() => {})
-                    : undefined}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Completed history */}
-          {taskHistory.length > 0 && (
-            <>
-              <div className="eyebrow" style={{ marginTop: 20, marginBottom: 10 }}>
-                Выполнено
-              </div>
-              <div>
-                {taskHistory.map((task, i) => (
-                  <div key={task.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0',
-                    borderTop: i > 0 ? '1px solid var(--line)' : 'none',
-                    opacity: 0.6,
-                  }}>
-                    <span style={{ fontSize: 15, flexShrink: 0, width: 20, textAlign: 'center' }}>
-                      {task.done === true ? '✅' : '❌'}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.35 }}>{resolveTaskDisplayText(task)}</div>
-                      {task.completedAt && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>{fmtDate(new Date(task.completedAt).toISOString().slice(0, 10))}</div>}
-                    </div>
-                  </div>
+            {tasks.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                {tasks.map(task => (
+                  <TaskLine
+                    key={task.id}
+                    task={task}
+                    onOpen={() => openTask(task)}
+                    onComplete={task.done === null && task.type === 'custom'
+                      ? () => api.completeTask(task.id, true)
+                          .then(() => Promise.all([api.getTasks(), api.getTaskHistory()]))
+                          .then(([t, h]) => { setTasks(t); setTaskHistory(h); onTasksChanged?.(); })
+                          .catch(() => {})
+                      : undefined}
+                    fromTherapist={task.assignedBy !== null}
+                  />
                 ))}
               </div>
-            </>
-          )}
+            )}
 
-          {/* Add button */}
-          <button
-            onClick={() => { setShowAllTasks(false); setShowTaskCreate(true); }}
-            style={{
-              width: '100%', padding: '14px', borderRadius: 14, border: 'none',
-              background: 'linear-gradient(135deg, rgba(167,139,250,0.18), rgba(167,139,250,0.10))',
-              outline: '1px solid rgba(167,139,250,0.28)',
-              color: 'var(--accent)', fontSize: 15, fontWeight: 600,
-              cursor: 'pointer', marginTop: 18, fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            }}
-          >
-            <span style={{ fontSize: 17 }}>+</span> Поставить цель
-          </button>
+            {taskHistory.length > 0 && (
+              <>
+                <div className="eyebrow" style={{ marginTop: 24, marginBottom: 10 }}>Выполнено</div>
+                {taskHistory.map(task => (
+                  <div key={task.id} className="list-line" style={{ opacity: 0.55 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="text-sm">{resolveTaskDisplayText(task)}</div>
+                      {task.completedAt && <div className="text-xs faint" style={{ marginTop: 2 }}>{fmtDate(new Date(task.completedAt).toISOString().slice(0, 10))}</div>}
+                    </div>
+                    <span className="text-xs faint">{task.done === true ? 'готово' : 'отменено'}</span>
+                  </div>
+                ))}
+              </>
+            )}
+
+            <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={() => { setShowAllTasks(false); setShowTaskCreate(true); }}>
+              + Поставить цель
+            </button>
+          </div>
         </BottomSheet>
       )}
     </div>
