@@ -127,7 +127,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   ];
 
   return (
-    <div className="page-inner">
+    <div className="page-inner-wide">
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 36 }}>
@@ -151,7 +151,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         ))}
       </div>
 
-      <div style={{ maxWidth: 720 }}>
+      <div>
 
         {/* ══════════════════════ СХЕМЫ ══════════════════════ */}
         {tab === 'schemas' && (

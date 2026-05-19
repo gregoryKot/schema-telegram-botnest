@@ -452,6 +452,7 @@ export function AppShell() {
                 onOpenPlans={() => setShowPlans(true)}
                 onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
                 onOpenDiaries={() => setShowDiaries(true)}
+                onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setSchemaHighlight(opts?.highlight); setShowSchemaInfo(true); }}
                 practiceCount={helpPracticeCount}
                 planCount={helpPlanCount}
                 initialTasks={helpTasks}
