@@ -525,152 +525,147 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               </div>
             )}
 
-            {/* Today dashboard */}
+            {/* Today dashboard — только если есть РЕАЛЬНЫЕ сегодняшние данные */}
             {!loading && clients.length > 0 && (() => {
               const today = todayStr();
               const sessionsToday = clients
                 .filter(c => c.nextSession && c.nextSession.slice(0, 10) === today)
                 .sort((a, b) => (a.nextSession ?? '').localeCompare(b.nextSession ?? ''));
               const activeToday = clients.filter(c => c.lastActiveDate === today);
-              const needAttention = clients
-                .filter(c => {
-                  if (!c.lastActiveDate) return true;
-                  const daysSince = Math.floor((Date.now() - new Date(c.lastActiveDate).getTime()) / 86400000);
-                  return daysSince >= 3 || c.streak === 0;
-                })
-                .slice(0, 4);
 
-              if (sessionsToday.length === 0 && needAttention.length === 0) return null;
+              if (sessionsToday.length === 0 && activeToday.length === 0) return null;
               return (
-                <div className="doc-grid" style={{ marginBottom: 40 }}>
-                  <div>
-                    {sessionsToday.length > 0 && (
-                      <div className="section">
-                        <div className="section-head">
-                          <h3>Сессии сегодня</h3>
-                          <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{sessionsToday.length} {sessionsToday.length === 1 ? 'встреча' : sessionsToday.length < 5 ? 'встречи' : 'встреч'}</span>
-                        </div>
-                        {sessionsToday.map(client => {
-                          const [, timePart] = (client.nextSession ?? '').includes('T') ? (client.nextSession ?? '').split('T') : ['', null];
-                          const name = client.clientAlias ?? client.name ?? `ID ${client.telegramId}`;
-                          return (
-                            <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer', padding: '14px 0' }}>
-                              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-sub)', width: 52, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{timePart ?? '—'}</span>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 14, fontWeight: 600 }}>{name}</div>
-                                {client.streak > 0 && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3 }}>{client.streak} дн. подряд</div>}
-                              </div>
-                              <span className="link" style={{ flexShrink: 0 }}>открыть →</span>
+                <div style={{ marginBottom: 40 }}>
+                  {sessionsToday.length > 0 && (
+                    <div className="section">
+                      <div className="section-head">
+                        <h3>Сессии сегодня</h3>
+                        <span className="hint">{sessionsToday.length} {sessionsToday.length === 1 ? 'встреча' : sessionsToday.length < 5 ? 'встречи' : 'встреч'}</span>
+                      </div>
+                      {sessionsToday.map(client => {
+                        const [, timePart] = (client.nextSession ?? '').includes('T') ? (client.nextSession ?? '').split('T') : ['', null];
+                        const name = client.clientAlias ?? client.name ?? `ID ${client.telegramId}`;
+                        return (
+                          <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
+                            <span className="num text-md" style={{ width: 52, flexShrink: 0, color: 'var(--text-sub)', fontWeight: 500 }}>{timePart ?? '—'}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div className="text-md" style={{ fontWeight: 600 }}>{name}</div>
+                              {client.streak > 0 && <div className="text-xs muted" style={{ marginTop: 3 }}>{client.streak} дн. подряд</div>}
                             </div>
-                          );
-                        })}
+                            <span className="link">открыть →</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {activeToday.length > 0 && (
+                    <div className="section">
+                      <div className="section-head">
+                        <h3>Активны сегодня</h3>
+                        <span className="hint">{activeToday.length} из {clients.length}</span>
                       </div>
-                    )}
-                    {activeToday.length > 0 && (
-                      <div className="section">
-                        <div className="section-head">
-                          <h3>Активны сегодня</h3>
-                          <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{activeToday.length} из {clients.length}</span>
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                          {activeToday.map(client => (
-                            <button
-                              key={client.telegramId}
-                              onClick={() => openClient(client)}
-                              style={{ padding: '6px 12px', borderRadius: 20, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, fontWeight: 500, color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
-                            >
-                              <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
-                              {client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}
-                              {client.todayIndex !== null && (
-                                <span style={{ fontSize: 12, color: indexColor(client.todayIndex), fontVariantNumeric: 'tabular-nums' }}>{client.todayIndex.toFixed(1)}</span>
-                              )}
-                            </button>
-                          ))}
-                        </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {activeToday.map(client => (
+                          <button
+                            key={client.telegramId}
+                            onClick={() => openClient(client)}
+                            style={{ padding: '6px 12px', borderRadius: 20, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, fontWeight: 500, color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
+                          >
+                            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
+                            {client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}
+                            {client.todayIndex !== null && (
+                              <span className="num text-xs" style={{ color: indexColor(client.todayIndex) }}>{client.todayIndex.toFixed(1)}</span>
+                            )}
+                          </button>
+                        ))}
                       </div>
-                    )}
-                  </div>
-
-                  {needAttention.length > 0 && (
-                    <aside style={{ alignSelf: 'start' }}>
-                      <div className="section">
-                        <div className="section-head"><h3>Ожидают внимания</h3></div>
-                        {needAttention.map(client => {
-                          const name = client.clientAlias ?? client.name ?? `ID ${client.telegramId}`;
-                          const daysSince = client.lastActiveDate
-                            ? Math.floor((Date.now() - new Date(client.lastActiveDate).getTime()) / 86400000)
-                            : null;
-                          const hint = !client.lastActiveDate
-                            ? 'Ещё не входил в приложение'
-                            : client.streak === 0
-                            ? `Серия прервана${daysSince ? ` · ${daysSince} дн. без активности` : ''}`
-                            : daysSince !== null ? `${daysSince} дн. без активности` : '';
-                          return (
-                            <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{name}</div>
-                                {hint && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>{hint}</div>}
-                              </div>
-                              <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>›</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </aside>
+                    </div>
                   )}
                 </div>
               );
             })()}
 
-            {/* Client table */}
+            {/* Client roster — адаптивно для оффлайн/онлайн */}
             {loading ? (
               <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>
             ) : clients.length === 0 ? (
-              <div style={{ padding: '80px 0', textAlign: 'center' }}>
-                <div style={{ fontSize: 40, marginBottom: 16 }}>👥</div>
-                <div style={{ fontSize: 16, color: 'var(--text-sub)', marginBottom: 6 }}>Пока нет клиентов</div>
-                <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>Добавь первого клиента через кнопку выше</div>
-              </div>
-            ) : (
-              <div>
-                <div className="r-row-head">
-                  <span className="eyebrow" style={{ flex: 2 }}>Клиент</span>
-                  <span className="eyebrow">Начало</span>
-                  <span className="eyebrow" style={{ textAlign: 'right' }}>Активность</span>
-                  <span className="eyebrow" style={{ textAlign: 'right' }}>Индекс</span>
-                  <span className="eyebrow">Следующая встреча</span>
+              <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 32 }}>
+                <h3 style={{ marginBottom: 8 }}>Добавь первого клиента</h3>
+                <div className="text-md muted" style={{ maxWidth: 560, lineHeight: 1.6, marginBottom: 20 }}>
+                  Через кнопку «+ Добавить клиента» вверху. Три варианта:
                 </div>
-                {clients.map(client => (
-                  <div key={client.telegramId} className="r-row row-hover" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
-                    <div style={{ flex: 2, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}</span>
-                        {!client.name && <span className="chip chip-line" style={{ fontSize: 10 }}>оффлайн</span>}
-                      </div>
-                      {client.lastActiveDate && (
-                        <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3 }}>активен {fmtDate(client.lastActiveDate)}</div>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-                      {client.therapyStartDate ? fmtDate(client.therapyStartDate) : '—'}
-                    </div>
-                    <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-sub)' }}>
-                      {client.streak > 0 ? `${client.streak} дн.` : '—'}
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      {client.todayIndex != null ? (
-                        <span style={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.02em', color: indexColor(client.todayIndex) }}>
-                          {client.todayIndex.toFixed(1)}
-                        </span>
-                      ) : <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>—</span>}
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-                      {client.nextSession ? nextSessionLabel(client.nextSession) : '—'}
-                    </div>
-                  </div>
-                ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 600 }}>
+                  <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Ссылка</div><div className="text-sm muted" style={{ marginTop: 3 }}>клиент подключается через Telegram-бот по приглашению</div></div></div>
+                  <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Telegram ID</div><div className="text-sm muted" style={{ marginTop: 3 }}>если знаешь его ID — добавишь сразу</div></div></div>
+                  <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Оффлайн</div><div className="text-sm muted" style={{ marginTop: 3 }}>клиент без Telegram — заметки и концептуализация без бота</div></div></div>
+                </div>
               </div>
-            )}
+            ) : (() => {
+              const onlineClients = clients.filter(c => !!c.name);
+              const offlineClients = clients.filter(c => !c.name);
+              const hasOnline = onlineClients.length > 0;
+              return (
+                <div>
+                  {hasOnline && (
+                    <div className="section">
+                      <div className="section-head">
+                        <h3>Клиенты с приложением</h3>
+                        <span className="hint">{onlineClients.length}</span>
+                      </div>
+                      <div className="r-row-head">
+                        <span className="eyebrow" style={{ flex: 2 }}>Клиент</span>
+                        <span className="eyebrow">Начало</span>
+                        <span className="eyebrow" style={{ textAlign: 'right' }}>Активность</span>
+                        <span className="eyebrow" style={{ textAlign: 'right' }}>Индекс</span>
+                        <span className="eyebrow">Следующая встреча</span>
+                      </div>
+                      {onlineClients.map(client => (
+                        <div key={client.telegramId} className="r-row row-hover" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
+                          <div style={{ flex: 2, minWidth: 0 }}>
+                            <div className="text-md" style={{ fontWeight: 600 }}>{client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}</div>
+                            {client.lastActiveDate && (
+                              <div className="text-xs faint" style={{ marginTop: 3 }}>активен {fmtDate(client.lastActiveDate)}</div>
+                            )}
+                          </div>
+                          <div className="text-sm muted">{client.therapyStartDate ? fmtDate(client.therapyStartDate) : '—'}</div>
+                          <div className="text-sm muted" style={{ textAlign: 'right' }}>{client.streak > 0 ? `${client.streak} дн.` : '—'}</div>
+                          <div style={{ textAlign: 'right' }}>
+                            {client.todayIndex != null ? (
+                              <span className="num" style={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.02em', color: indexColor(client.todayIndex) }}>{client.todayIndex.toFixed(1)}</span>
+                            ) : <span className="text-sm faint">—</span>}
+                          </div>
+                          <div className="text-sm muted">{client.nextSession ? nextSessionLabel(client.nextSession) : '—'}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {offlineClients.length > 0 && (
+                    <div className="section">
+                      <div className="section-head">
+                        <h3>Оффлайн-клиенты</h3>
+                        <span className="hint">{offlineClients.length} · заметки и концептуализация</span>
+                      </div>
+                      {offlineClients.map(client => {
+                        const name = client.clientAlias ?? `ID ${client.telegramId}`;
+                        return (
+                          <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div className="text-md" style={{ fontWeight: 600 }}>{name}</div>
+                              <div className="text-sm muted" style={{ marginTop: 3 }}>
+                                {client.therapyStartDate ? `Начало терапии · ${fmtDate(client.therapyStartDate)}` : 'без Telegram'}
+                                {client.nextSession && ` · след. встреча ${nextSessionLabel(client.nextSession)}`}
+                              </div>
+                            </div>
+                            <span className="link">открыть →</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
