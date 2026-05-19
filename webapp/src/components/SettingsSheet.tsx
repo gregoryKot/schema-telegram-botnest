@@ -499,7 +499,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         <div key={p.code} style={{ marginBottom: 12 }}>
                           <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 6 }}>{p.partnerName ?? 'Друг'} сегодня</div>
                           {p.partnerTodayDone && p.partnerIndex !== null ? (
-                            <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text)', marginBottom: 10 }}>
+                            <div style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 10 }}>
                               {(p.partnerIndex ?? 0).toFixed(1)}<span style={{ fontSize: 16, fontWeight: 400, color: 'var(--text-sub)' }}>/10</span>
                             </div>
                           ) : (
@@ -576,12 +576,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               <div style={{ marginBottom: 8 }}>
                 <SettingsLabel>О ПРИЛОЖЕНИИ</SettingsLabel>
                 <div className="card" style={{ borderRadius: 16, padding: '20px 16px' }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 10 }}>СхемаЛаб</div>
+                  <div style={{ fontSize: 22, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 10 }}>СхемаЛаб</div>
                   <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 16px' }}>
                     Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.
                   </p>
                   <div style={{ height: 1, background: 'rgba(var(--fg-rgb),0.07)', marginBottom: 16 }} />
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>Об авторе</div>
+                  <div className="eyebrow" style={{ marginBottom: 12 }}>Об авторе</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
                     <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
                       Канал о схема-терапии —{' '}
@@ -631,7 +631,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
       {showNotifyInfo && (
         <BottomSheet onClose={() => setShowNotifyInfo(false)} zIndex={300}>
           <div style={{ paddingTop: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 16 }}>Зачем уведомления</div>
+            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем уведомления</div>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>Регулярность — это всё. Один раз в день, в одно и то же время, формирует привычку наблюдать за собой.</p>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}><b style={{ color: 'var(--text)' }}>Итоги дня</b> — приходят в это же время, если дневник заполнен.</p>
           </div>
@@ -642,7 +642,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
       {showPairInfo && (
         <BottomSheet onClose={() => setShowPairInfo(false)} zIndex={300}>
           <div style={{ paddingTop: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 16 }}>Зачем привязывать друга</div>
+            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем привязывать друга</div>
             <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
               Это необязательно — но может помочь.
             </p>
@@ -660,7 +660,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
       {showTherapistInfo && (
         <BottomSheet onClose={() => setShowTherapistInfo(false)} zIndex={300}>
           <div style={{ paddingTop: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 16 }}>Зачем подключать терапевта</div>
+            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем подключать терапевта</div>
             <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
               Если ты работаешь со схема-терапевтом — приложение может стать частью этой работы.
             </p>
@@ -745,9 +745,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 function SectionHeader({ children, onInfo }: { children: React.ReactNode; onInfo?: () => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, paddingTop: 6 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-sub)' }}>
-        {children}
-      </div>
+      <div className="eyebrow">{children}</div>
       {onInfo && (
         <button
           onClick={onInfo}

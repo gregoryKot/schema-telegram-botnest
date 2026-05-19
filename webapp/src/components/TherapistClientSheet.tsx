@@ -468,11 +468,11 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px' }}>Кабинет</div>
-                  <div style={{ background: 'color-mix(in srgb, var(--accent) 20%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 35%, transparent)', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.03em' }}>психолог</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.03em' }}>Кабинет</div>
+                  <span className="chip chip-accent" style={{ fontSize: 10 }}>психолог</span>
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.4 }}>Клиенты · Задания · Концептуализация</div>
+                <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.4 }}>Клиенты · Задания · Концептуализация</div>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                 {/* Exit therapist mode — always visible escape hatch */}
@@ -512,8 +512,8 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                   { value: clients.filter(c => c.todayIndex !== null).length, label: 'ОЦЕНИЛИ' },
                 ].map(({ value, label }) => (
                   <div key={label} className="card" style={{ borderRadius: 16, padding: '14px 12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', lineHeight: 1, letterSpacing: '-0.5px' }}>{value}</div>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 4 }}>{label}</div>
+                    <div style={{ fontSize: 28, fontWeight: 600, color: 'var(--text)', lineHeight: 1, letterSpacing: '-0.03em' }}>{value}</div>
+                    <div className="eyebrow" style={{ marginTop: 4 }}>{label}</div>
                   </div>
                 ))}
               </div>
@@ -647,8 +647,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                 <div
                   key={c.telegramId}
                   onClick={() => openClient(c)}
-                  className="card"
-                  style={{ borderRadius: 16, padding: '14px 16px', marginBottom: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 4px', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}
                 >
                   {/* Avatar */}
                   <div style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, background: avatarColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: '#fff' }}>
@@ -664,8 +663,8 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                   </div>
                   {c.todayIndex !== null && (
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: indexColor(c.todayIndex), lineHeight: 1 }}>{c.todayIndex.toFixed(1)}</div>
-                      <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 2 }}>индекс</div>
+                      <div style={{ fontSize: 20, fontWeight: 600, color: indexColor(c.todayIndex), lineHeight: 1 }}>{c.todayIndex.toFixed(1)}</div>
+                      <div className="eyebrow" style={{ marginTop: 2 }}>индекс</div>
                     </div>
                   )}
                   <span style={{ color: 'var(--text-faint)', fontSize: 16, flexShrink: 0 }}>›</span>
@@ -867,7 +866,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                     <>
                       {hasGoals && (
                         <div style={{ marginBottom: 12 }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: 5 }}>Цель терапии</div>
+                          <div className="eyebrow" style={{ marginBottom: 5 }}>Цель терапии</div>
                           <div style={{ fontSize: 13, color: 'rgba(var(--fg-rgb),0.75)', lineHeight: 1.5 }}>
                             {((concept?.goals || (localConcept.goals as string)) ?? '').slice(0, 160)}
                             {((concept?.goals || (localConcept.goals as string)) ?? '').length > 160 ? '...' : ''}
@@ -876,7 +875,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                       )}
                       {hasSchemas && (
                         <div style={{ marginBottom: 12 }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: 6 }}>Схемы ({activeSchemaIds.length})</div>
+                          <div className="eyebrow" style={{ marginBottom: 6 }}>Схемы ({activeSchemaIds.length})</div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                             {activeSchemaIds.map(id => {
                               const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
@@ -888,13 +887,13 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                       )}
                       {hasModes && (
                         <div style={{ marginBottom: hasTransitions ? 12 : 0 }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: 6 }}>Карта режимов</div>
+                          <div className="eyebrow" style={{ marginBottom: 6 }}>Карта режимов</div>
                           {MODE_GROUPS.map(group => {
                             const groupModes = group.items.filter(m => activeModeIds.includes(m.id));
                             if (groupModes.length === 0) return null;
                             return (
                               <div key={group.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 5 }}>
-                                <span style={{ fontSize: 10, fontWeight: 700, color: group.color + 'aa', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0, minWidth: 68, paddingTop: 4 }}>{group.group.split(':').pop()?.trim() ?? group.group}</span>
+                                <span className="eyebrow" style={{ color: group.color + 'aa', flexShrink: 0, minWidth: 68, paddingTop: 4 }}>{group.group.split(':').pop()?.trim() ?? group.group}</span>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                                   {groupModes.map(m => <span key={m.id} style={{ fontSize: 12, padding: '3px 9px', borderRadius: 20, background: group.color + '25', color: group.color }}>{m.emoji} {m.name}</span>)}
                                 </div>
@@ -905,7 +904,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                       )}
                       {hasTransitions && (
                         <div>
-                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: 5 }}>Переходы режимов</div>
+                          <div className="eyebrow" style={{ marginBottom: 5 }}>Переходы режимов</div>
                           <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
                             {((concept?.modeTransitions || (localConcept.modeTransitions as string)) ?? '').slice(0, 200)}
                             {((concept?.modeTransitions || (localConcept.modeTransitions as string)) ?? '').length > 200 ? '...' : ''}
@@ -929,41 +928,42 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
             })()}
 
             {/* ── ACTION BUTTONS ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div onClick={() => setShowTasksSheet(true)} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid rgba(var(--fg-rgb),0.08)', borderRadius: 14, padding: '13px 16px', cursor: 'pointer' }}>
+            <div className="section" style={{ marginTop: 20 }}>
+              <div className="section-head"><h3>Работа с клиентом</h3></div>
+              <div onClick={() => setShowTasksSheet(true)} className="list-line" style={{ cursor: 'pointer' }}>
                 <span style={{ fontSize: 18 }}>📋</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Задания</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>Задания</div>
                   {clientTasks.filter(t => t.done === null && !t.doneToday).length > 0 && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>{clientTasks.filter(t => t.done === null && !t.doneToday).length} активных</div>}
                 </div>
-                <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
+                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
               </div>
-              <div onClick={() => setShowNotesSheet(true)} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid rgba(var(--fg-rgb),0.08)', borderRadius: 14, padding: '13px 16px', cursor: 'pointer' }}>
+              <div onClick={() => setShowNotesSheet(true)} className="list-line" style={{ cursor: 'pointer' }}>
                 <span style={{ fontSize: 18 }}>📝</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Заметки сессий</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>Заметки сессий</div>
                   {notes.length > 0 && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>{notes.length} заметок</div>}
                 </div>
-                <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
+                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
               </div>
-              <div onClick={() => setShowConceptSheet(true)} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid rgba(var(--fg-rgb),0.08)', borderRadius: 14, padding: '13px 16px', cursor: 'pointer' }}>
+              <div onClick={() => setShowConceptSheet(true)} className="list-line" style={{ cursor: 'pointer' }}>
                 <span style={{ fontSize: 18 }}>🗂</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Концептуализация</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>Концептуализация</div>
                   {concept?.updatedAt && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>Обновлено {fmtDate(concept.updatedAt.slice(0, 10))}</div>}
                 </div>
-                <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
+                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
               </div>
-              <div onClick={() => setShowClientNotesSheet(true)} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid rgba(var(--fg-rgb),0.08)', borderRadius: 14, padding: '13px 16px', cursor: 'pointer' }}>
+              <div onClick={() => setShowClientNotesSheet(true)} className="list-line" style={{ cursor: 'pointer' }}>
                 <span style={{ fontSize: 18 }}>📖</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Записи клиента</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>Записи клиента</div>
                   {(clientSchemaNotesData.length + clientModeNotesData.length) > 0
                     ? <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>Схем: {clientSchemaNotesData.length} · Режимов: {clientModeNotesData.length}</div>
                     : <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Карточки схем и режимов</div>
                   }
                 </div>
-                <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
+                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
               </div>
             </div>
 
@@ -1150,7 +1150,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
               };
               return (
                 <div style={{ background: 'rgba(79,163,247,0.07)', border: '1px solid rgba(79,163,247,0.2)', borderRadius: 14, padding: '12px 14px', marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: 'rgba(79,163,247,0.8)', textTransform: 'uppercase', marginBottom: 10 }}>
+                  <div className="eyebrow" style={{ color: 'rgba(79,163,247,0.8)', marginBottom: 10 }}>
                     📊 YSQ · {hist.length} {hist.length === 1 ? 'прохождение' : hist.length < 5 ? 'прохождения' : 'прохождений'} · {latestDate}
                   </div>
 
@@ -1232,7 +1232,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
             })()}
             {selfSchemaIds.length > 0 && (
               <div style={{ background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.07)', borderRadius: 14, padding: '10px 14px', marginBottom: 14 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: 8 }}>Схемы клиента (самооценка)</div>
+                <div className="eyebrow" style={{ marginBottom: 8 }}>Схемы клиента (самооценка)</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                   {selfSchemaIds.map(id => {
                     const schema = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === id);
@@ -1244,7 +1244,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
             <SectionLabel mb={8}>Актуальные схемы (ЭДС)</SectionLabel>
             {SCHEMA_DOMAINS.map(domain => (
               <div key={domain.id} style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: domain.color + 'aa', textTransform: 'uppercase', marginBottom: 5, paddingLeft: 2 }}>{domain.domain}</div>
+                <div className="eyebrow" style={{ color: domain.color + 'aa', marginBottom: 5, paddingLeft: 2 }}>{domain.domain}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                   {domain.schemas.map(schema => {
                     const active = activeSchemaIds.includes(schema.id);
@@ -1262,7 +1262,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
             <div style={{ marginTop: 6 }}><SectionLabel mb={8}>Карта режимов</SectionLabel></div>
             {MODE_GROUPS.map(group => (
               <div key={group.id} style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: group.color + 'aa', textTransform: 'uppercase', marginBottom: 5, paddingLeft: 2 }}>{group.group}</div>
+                <div className="eyebrow" style={{ color: group.color + 'aa', marginBottom: 5, paddingLeft: 2 }}>{group.group}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                   {group.items.map(mode => {
                     const active = activeModeIds.includes(mode.id);
@@ -1278,7 +1278,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
             <div style={{ marginTop: 8 }}>
               {CONCEPT_FIELDS.map(({ key, label, placeholder }) => (
                 <div key={key} style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-sub)', textTransform: 'uppercase', marginBottom: 5 }}>{label}</div>
+                  <div className="eyebrow" style={{ marginBottom: 5 }}>{label}</div>
                   <textarea
                     value={(localConcept[key] as string) ?? ''}
                     onChange={e => patchConcept({ [key]: e.target.value })}
@@ -1324,7 +1324,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
               <>
                 {clientSchemaNotesData.length > 0 && (
                   <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
+                    <div className="eyebrow" style={{ marginBottom: 10 }}>
                       Схемы · {clientSchemaNotesData.length}
                     </div>
                     {clientSchemaNotesData.map(n => {
@@ -1343,7 +1343,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                             { label: 'Поведение', val: n.behavior },
                           ].filter(f => f.val?.trim()).map(f => (
                             <div key={f.label} style={{ marginBottom: 6 }}>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>{f.label}</div>
+                              <div className="eyebrow" style={{ marginBottom: 2 }}>{f.label}</div>
                               <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.val}</div>
                             </div>
                           ))}
@@ -1355,7 +1355,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                 )}
                 {clientModeNotesData.length > 0 && (
                   <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
+                    <div className="eyebrow" style={{ marginBottom: 10 }}>
                       Режимы · {clientModeNotesData.length}
                     </div>
                     {clientModeNotesData.map(n => {
@@ -1371,7 +1371,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                             { label: 'Поведение', val: n.behavior },
                           ].filter(f => f.val?.trim()).map(f => (
                             <div key={f.label} style={{ marginBottom: 6 }}>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>{f.label}</div>
+                              <div className="eyebrow" style={{ marginBottom: 2 }}>{f.label}</div>
                               <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.val}</div>
                             </div>
                           ))}
