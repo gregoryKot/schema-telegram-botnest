@@ -111,9 +111,23 @@ export function AppShell() {
   const therapistMode = location.pathname.startsWith('/cabinet');
   const openClientId = clientIdParam ? parseInt(clientIdParam, 10) : null;
 
+  // Remember last path per mode so the toggle returns user to where they were
+  useEffect(() => {
+    if (therapistMode) localStorage.setItem('last_cabinet_path', location.pathname);
+    else if (location.pathname !== '/' && !location.pathname.startsWith('/cabinet')) {
+      localStorage.setItem('last_client_path', location.pathname);
+    }
+  }, [location.pathname, therapistMode]);
+
   const switchTherapistMode = useCallback((on: boolean) => {
     localStorage.setItem('therapist_mode', on ? '1' : '0');
-    navigate(on ? '/cabinet' : '/today');
+    if (on) {
+      const last = localStorage.getItem('last_cabinet_path');
+      navigate(last && last.startsWith('/cabinet') ? last : '/cabinet');
+    } else {
+      const last = localStorage.getItem('last_client_path');
+      navigate(last && !last.startsWith('/cabinet') && last !== '/' ? last : '/today');
+    }
   }, [navigate]);
 
   const historyDays = 30;

@@ -59,7 +59,7 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
   { key: 'currentProblems', label: 'Актуальные проблемы и симптомы', placeholder: 'С чем обратился клиент, текущие жалобы, симптоматика...' },
 ];
 
-export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onClose, backHandlerRef }: Props) {
+export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef }: Props) {
   // Client list
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,6 +177,8 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     setLocalNextSession(client.nextSession ?? '');
     setLocalStartDate(client.therapyStartDate ?? '');
     setClientTab('overview');
+    // Triggers URL change (/cabinet/:id) which makes AppShell render view='client'
+    onOpenClient?.(clientId);
     switchView('client');
 
     const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn] = await Promise.all([
@@ -454,17 +456,12 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                   {clients.length} клиентов · Задания · Концептуализация
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={onClose} style={{ padding: '8px 14px', borderRadius: 6, border: 'none', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer' }}>
-                  Выйти
-                </button>
-                <button
-                  onClick={() => openAddMode(addMode ? null : 'invite')}
-                  style={{ padding: '8px 18px', borderRadius: 6, border: 'none', background: addMode ? 'rgba(var(--fg-rgb),0.07)' : 'var(--accent)', color: addMode ? 'var(--text-faint)' : 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
-                >
-                  {addMode ? '✕ Закрыть' : '+ Добавить клиента'}
-                </button>
-              </div>
+              <button
+                onClick={() => openAddMode(addMode ? null : 'invite')}
+                className={addMode ? 'btn btn-secondary' : 'btn btn-primary'}
+              >
+                {addMode ? '✕ Закрыть' : '+ Добавить клиента'}
+              </button>
             </div>
 
             {/* Add client panel */}
