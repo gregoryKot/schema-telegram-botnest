@@ -11,10 +11,11 @@ const USER_OWNED_TABLES = [
   'UserSafePlace', 'UserFlashcard', 'UserPractice', 'PracticePlan',
   'ChildhoodRating', 'ScheduledNotification',
   'SchemaDiaryEntry', 'ModeDiaryEntry', 'GratitudeDiaryEntry',
-  'AppActivity', 'UserTask', 'DiaryDraft',
+  'AppActivity', 'UserTask', 'DiaryDraft', 'TherapistRequest',
   'AuthProvider',
 ] as const;
-// Note: Pair / TherapyRelation handled separately below — two userId refs.
+// Note: Pair / TherapyRelation / TherapistNote / ClientConceptualization
+// handled separately below — multi-column refs (therapistId/clientId/userId1/userId2).
 
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
@@ -26,14 +27,15 @@ const SECURITY_SENSITIVE_TABLES = ['WebSession'] as const;
 // the source row is dropped first so the bulk UPDATE that follows can succeed
 // without violating the constraint.
 const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
-  { table: 'Rating',           cols: ['date', 'needId'] },
-  { table: 'YsqProgress',      cols: [] }, // userId is PK
-  { table: 'YsqResult',        cols: [] },
-  { table: 'UserSchemaNote',   cols: ['schemaId'] },
-  { table: 'UserModeNote',     cols: ['modeId'] },
-  { table: 'UserSafePlace',    cols: [] },
-  { table: 'ChildhoodRating',  cols: ['needId'] },
-  { table: 'DiaryDraft',       cols: ['type'] },
+  { table: 'Rating',            cols: ['date', 'needId'] },
+  { table: 'YsqProgress',       cols: [] }, // userId is PK
+  { table: 'YsqResult',         cols: [] },
+  { table: 'UserSchemaNote',    cols: ['schemaId'] },
+  { table: 'UserModeNote',      cols: ['modeId'] },
+  { table: 'UserSafePlace',     cols: [] },
+  { table: 'ChildhoodRating',   cols: ['needId'] },
+  { table: 'DiaryDraft',        cols: ['type'] },
+  { table: 'TherapistRequest',  cols: [] }, // userId is @unique
 ];
 
 // Whitelist of identifiers we'll embed directly in SQL. Anything outside this
@@ -42,7 +44,7 @@ const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
 const KNOWN_TABLES = new Set<string>([
   ...USER_OWNED_TABLES,
   ...SECURITY_SENSITIVE_TABLES,
-  'Pair', 'TherapyRelation', 'User',
+  'Pair', 'TherapyRelation', 'TherapistNote', 'ClientConceptualization', 'User',
 ]);
 const KNOWN_COLS = new Set<string>([
   'userId', 'userId1', 'userId2', 'therapistId', 'clientId', 'id',
@@ -161,6 +163,47 @@ export class MergeService {
       `);
       await tx.$executeRaw(Prisma.sql`
         DELETE FROM "TherapyRelation" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
+      `);
+
+      // 4b. TherapistNote (therapistId, clientId — no FK, no unique).
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "TherapistNote" SET "therapistId" = ${targetId}
+        WHERE "therapistId" = ${sourceId} AND "clientId" <> ${targetId}
+      `);
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "TherapistNote" SET "clientId" = ${targetId}
+        WHERE "clientId" = ${sourceId} AND "therapistId" <> ${targetId}
+      `);
+      // Drop self-loops (would point at same user on both sides).
+      await tx.$executeRaw(Prisma.sql`
+        DELETE FROM "TherapistNote" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
+      `);
+
+      // 4c. ClientConceptualization (unique on therapistId+clientId).
+      //     Drop source rows that would collide with target's existing row.
+      await tx.$executeRaw(Prisma.sql`
+        DELETE FROM "ClientConceptualization" src
+        WHERE (src."therapistId" = ${sourceId} OR src."clientId" = ${sourceId})
+          AND EXISTS (
+            SELECT 1 FROM "ClientConceptualization" tgt
+            WHERE (tgt."therapistId" = ${targetId} OR tgt."clientId" = ${targetId})
+              AND (
+                (CASE WHEN src."therapistId" = ${sourceId} THEN ${targetId} ELSE src."therapistId" END) = tgt."therapistId"
+                AND
+                (CASE WHEN src."clientId"    = ${sourceId} THEN ${targetId} ELSE src."clientId"    END) = tgt."clientId"
+              )
+          )
+      `);
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "ClientConceptualization" SET "therapistId" = ${targetId}
+        WHERE "therapistId" = ${sourceId} AND "clientId" <> ${targetId}
+      `);
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "ClientConceptualization" SET "clientId" = ${targetId}
+        WHERE "clientId" = ${sourceId} AND "therapistId" <> ${targetId}
+      `);
+      await tx.$executeRaw(Prisma.sql`
+        DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
       `);
 
       // 5. Finally, delete the now-empty source User.
