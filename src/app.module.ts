@@ -30,7 +30,8 @@ import { AuthModule } from './auth/auth.module';
     // API routes are excluded so /api/* still hits NestJS handlers.
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'webapp', 'dist'),
-      renderPath: '/*',
+      // path-to-regexp v6+ syntax: '/*path' (named wildcard), not bare '/*'
+      renderPath: '/*path',
       exclude: ['/api/{*path}'],
     }),
     PrismaModule,
