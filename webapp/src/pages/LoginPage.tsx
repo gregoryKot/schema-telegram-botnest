@@ -165,7 +165,7 @@ export function LoginPage() {
         </div>
 
         {/* Auth card */}
-        <div className="card" style={{ padding: '28px 24px' }}>
+        <div className="card-elevated" style={{ padding: '28px 24px' }}>
           <p style={{ color: 'var(--text-sub)', fontSize: 13, marginBottom: 20, textAlign: 'center' }}>
             Войди, чтобы продолжить
           </p>

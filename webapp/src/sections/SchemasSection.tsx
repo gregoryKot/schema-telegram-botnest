@@ -130,17 +130,14 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
     <div className="page-inner">
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 36 }}>
         <div>
-          <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-0.6px', color: 'var(--text)', marginBottom: 6 }}>
+          <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 6 }}>
             Паттерны
           </h1>
-          <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>Схемы, режимы, потребности</div>
+          <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>Схемы, режимы, потребности</div>
         </div>
-        <button
-          onClick={() => onOpenSchema()}
-          style={{ padding: '8px 16px', borderRadius: 9, border: '1px solid var(--line)', background: 'var(--bg-elev)', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit', flexShrink: 0 }}
-        >
+        <button onClick={() => onOpenSchema()} className="btn btn-secondary">
           📖 <span>Библиотека</span>
         </button>
       </div>

@@ -56,58 +56,35 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
   return (
     <div className="page-inner">
       {/* Header */}
-      <div style={{ marginBottom: 36 }}>
-        <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-0.6px', color: 'var(--text)', marginBottom: 10 }}>
-          Дневник
-        </h1>
-        <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, maxWidth: 520 }}>
-          Замечай паттерны, фиксируй моменты. Веди один или все три — как тебе удобно.
-        </p>
-      </div>
+      <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 8 }}>
+        Дневник
+      </h1>
+      <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 48 }}>
+        Замечай паттерны, фиксируй моменты. Веди один или все три — как тебе удобно.
+      </p>
 
-      {/* Diary cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 640 }}>
+      {/* Diary list */}
+      <div className="section">
+        <div className="section-head">
+          <h3>Типы записей</h3>
+        </div>
         {diaries.map(meta => (
-          <div
-            key={meta.type}
-            onClick={() => onOpen(meta.type)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 18,
-              padding: '20px 20px',
-              background: 'var(--bg-elev)',
-              border: '1px solid var(--line)',
-              borderRadius: 14,
-              cursor: 'pointer',
-              transition: 'border-color 0.15s, background 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--line-strong)')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
-          >
-            {/* Accent bar */}
-            <div style={{ width: 4, height: 48, borderRadius: 4, background: meta.color, flexShrink: 0, opacity: 0.75 }} />
-
-            {/* Icon */}
-            <div style={{
-              width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-              background: `color-mix(in srgb, ${meta.color} 12%, transparent)`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24,
-            }}>
+          <div key={meta.type} className="list-line" onClick={() => onOpen(meta.type)} style={{ cursor: 'pointer' }}>
+            <div style={{ width: 3, alignSelf: 'stretch', borderRadius: 3, background: meta.color, flexShrink: 0, opacity: 0.8 }} />
+            <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: `color-mix(in srgb, ${meta.color} 12%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
               {meta.emoji}
             </div>
-
-            {/* Text */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{meta.title}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.4 }}>{meta.subtitle}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.25 }}>{meta.title}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{meta.subtitle}</div>
               {meta.count > 0 && (
-                <div style={{ fontSize: 12, color: meta.color, marginTop: 5, fontWeight: 500 }}>
+                <div style={{ fontSize: 11, color: meta.color, marginTop: 4, fontWeight: 500 }}>
                   {meta.count} {meta.count === 1 ? 'запись' : meta.count < 5 ? 'записи' : 'записей'}
                   {meta.lastDate && ` · последняя ${fmtDateLong(meta.lastDate)}`}
                 </div>
               )}
             </div>
-
-            <span style={{ fontSize: 18, color: 'var(--text-ghost)', flexShrink: 0 }}>›</span>
+            <span style={{ fontSize: 16, color: 'var(--text-ghost)', flexShrink: 0 }}>›</span>
           </div>
         ))}
       </div>

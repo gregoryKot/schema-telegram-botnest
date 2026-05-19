@@ -235,9 +235,9 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
     <div className="page-inner">
 
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-0.6px', color: 'var(--text)', marginBottom: 6 }}>Помощь</h1>
-        <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>
+      <div style={{ marginBottom: 36 }}>
+        <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 6 }}>Помощь</h1>
+        <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
           Инструменты и упражнения
         </div>
         {/* Next session banner for clients */}
