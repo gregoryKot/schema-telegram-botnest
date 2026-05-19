@@ -507,30 +507,25 @@ export function AppShell() {
         {/* ── History overlay ── */}
         {showTracker && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-            <div style={{
-              position: 'sticky', top: 0, zIndex: 10,
-              background: 'var(--nav-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-              padding: '16px 20px 14px',
-              borderBottom: '1px solid rgba(var(--fg-rgb),0.04)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <button
-                  onClick={() => { setShowTracker(false); setTrackerTab('today'); }}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer', padding: '0 4px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}
-                >
-                  ‹ Назад
-                </button>
-                <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{formatHeaderDate()}</span>
-                <button
-                  onClick={() => { setShowTracker(false); setTrackerTab('today'); setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-                  style={{ background: 'color-mix(in srgb, var(--accent) 10%, var(--surface-2))', border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)', borderRadius: 10, padding: '6px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--accent)', fontFamily: 'inherit' }}
-                >
-                  Оценить →
-                </button>
+            <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
+                <div>
+                  <div className="eyebrow" style={{ marginBottom: 8 }}>Трекер</div>
+                  <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 10 }}>История потребностей</h1>
+                  <div className="text-md muted">{formatHeaderDate()}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <button
+                    onClick={() => { setShowTracker(false); setTrackerTab('today'); setTrackerNeedId(null); setShowTrackerOverlay(true); }}
+                    className="btn btn-primary"
+                  >
+                    Оценить →
+                  </button>
+                  <button onClick={() => { setShowTracker(false); setTrackerTab('today'); }} className="btn btn-secondary">
+                    Закрыть
+                  </button>
+                </div>
               </div>
-              <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.4px', color: 'var(--text)', lineHeight: 1.1 }}>
-                История потребностей
-              </h1>
             </div>
 
             {historyLoading

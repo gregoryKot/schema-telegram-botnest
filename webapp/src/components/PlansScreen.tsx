@@ -42,39 +42,23 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
   const completed = (plans ?? []).filter(p => p.done !== null);
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 80,
-      background: 'var(--bg)', overflowY: 'auto',
-    }}>
-      {/* Header */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 10,
-        background: 'var(--nav-bg)',
-        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid var(--line)',
-        padding: '16px 20px 14px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={onClose} style={{
-            width: 34, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
-            background: 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--text-sub)', fontSize: 20, lineHeight: 1,
-          }}>‹</button>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 80 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.3px' }}>
-              История планов
-            </div>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>Планы</div>
+            <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 10 }}>История планов</h1>
             {plans !== null && plans.length > 0 && (
-              <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
-                {pending.length} активных · {completed.length} завершённых
-              </div>
+              <div className="text-md muted">{pending.length} активных · {completed.length} завершённых</div>
             )}
           </div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button onClick={onClose} className="btn btn-secondary">Закрыть</button>
+          </div>
         </div>
-      </div>
 
-      <div style={{ padding: '16px 20px 140px' }}>
+        <div>
         {!plans ? (
           <Loader minHeight="30vh" />
         ) : plans.length === 0 ? (
@@ -127,6 +111,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   );

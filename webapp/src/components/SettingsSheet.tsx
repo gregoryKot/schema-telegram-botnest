@@ -133,22 +133,26 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
   return (
     <>
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)',
-        overflowY: 'auto',
-      }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+        <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 80 }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 8px' }}>
-          <span onClick={() => view !== 'main' ? setView('main') : onClose()} style={{ fontSize: 26, color: 'var(--text-sub)', cursor: 'pointer', lineHeight: 1 }}>‹</span>
-          <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', flex: 1 }}>
-            {view === 'time' ? 'Время уведомления' : view === 'tz' ? 'Часовой пояс' : 'Настройки'}
-          </span>
-          <span style={{ fontSize: 12, color: 'var(--accent-green)', fontWeight: 600, opacity: savedToast ? 1 : 0, transition: 'opacity 0.3s ease' }}>
-            Сохранено ✓
-          </span>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>Аккаунт</div>
+            <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+              {view === 'time' ? 'Время уведомления' : view === 'tz' ? 'Часовой пояс' : 'Настройки'}
+            </h1>
+          </div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {savedToast && <span className="text-sm" style={{ color: 'var(--c-moss)', fontWeight: 500 }}>Сохранено</span>}
+            {view !== 'main'
+              ? <button onClick={() => setView('main')} className="btn btn-secondary">← Назад</button>
+              : <button onClick={onClose} className="btn btn-secondary">Закрыть</button>
+            }
+          </div>
         </div>
 
-        <div style={{ padding: '8px 16px 120px' }}>
+        <div>
 
           {/* ── TIME VIEW ── */}
           {view === 'time' && (
@@ -608,6 +612,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               </div>
             </>
           )}
+        </div>
         </div>
       </div>
 
