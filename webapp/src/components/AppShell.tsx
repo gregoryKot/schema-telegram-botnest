@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useLocation, useNavigate, useParams, NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api';
 import { COLORS } from '../types';
@@ -14,7 +15,7 @@ import { CommandPalette } from './CommandPalette';
 import { TodaySection } from '../sections/TodaySection';
 import { DiarySection } from '../sections/DiarySection';
 import { SchemasSection } from '../sections/SchemasSection';
-import { ProfileSection, DEFAULT_SECTION_KEY } from '../sections/ProfileSection';
+import { ProfileSection } from '../sections/ProfileSection';
 import { HelpSection } from '../sections/HelpSection';
 
 import { TrackerOverlay } from './TrackerOverlay';
@@ -56,6 +57,12 @@ const SECTION_LABELS: Record<Section, string> = {
   today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', help: 'Помощь',
 };
 
+function sectionFromPath(path: string): Section {
+  const seg = path.split('/').filter(Boolean)[0] ?? 'today';
+  if (['today','diary','schemas','profile','help'].includes(seg)) return seg as Section;
+  return 'today';
+}
+
 const TODAY_DATE = todayStr();
 const TODAY_KEY = 'celebrated_' + TODAY_DATE;
 const YESTERDAY_DATE = (() => {
@@ -90,15 +97,25 @@ function fillHistoryGaps(h: DayHistory[]): DayHistory[] {
   return filled;
 }
 
-function getInitialSection(): Section {
-  const stored = localStorage.getItem(DEFAULT_SECTION_KEY) as Section | null;
-  if (stored && ['today', 'help', 'schemas', 'profile'].includes(stored)) return stored;
-  return 'today';
-}
 
 export function AppShell() {
   const { logout } = useAuth();
-  const [section, setSection] = useState<Section>(getInitialSection);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { clientId: clientIdParam } = useParams<{ clientId?: string }>();
+
+  // ── Section and therapist mode derived from URL ────────────────────────────
+  const section: Section = useMemo(() => sectionFromPath(location.pathname), [location.pathname]);
+  const setSection = useCallback((s: Section) => navigate('/' + s), [navigate]);
+
+  const therapistMode = location.pathname.startsWith('/cabinet');
+  const openClientId = clientIdParam ? parseInt(clientIdParam, 10) : null;
+
+  const switchTherapistMode = useCallback((on: boolean) => {
+    localStorage.setItem('therapist_mode', on ? '1' : '0');
+    navigate(on ? '/cabinet' : '/today');
+  }, [navigate]);
+
   const historyDays = 30;
 
   // Data state
@@ -145,11 +162,8 @@ export function AppShell() {
   const [newDiaryEntry, setNewDiaryEntry] = useState<'schema' | 'mode' | 'gratitude' | null>(null);
   const [showPracticesOnboarding, setShowPracticesOnboarding] = useState(false);
 
-  // Therapist mode
-  const [therapistMode, setTherapistMode] = useState(() => localStorage.getItem('therapist_mode') === '1');
-  const [cabinetView, setCabinetView] = useState<'list' | 'client'>('list');
-  const therapistBackHandlerRef = useRef<() => void>(() => setCabinetView('list'));
-  const switchTherapistMode = (on: boolean) => { localStorage.setItem('therapist_mode', on ? '1' : '0'); setTherapistMode(on); };
+  // Therapist cabinet navigation helpers (URL-based)
+  const therapistBackHandlerRef = useRef<() => void>(() => navigate('/cabinet'));
 
   // Command palette
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -160,7 +174,8 @@ export function AppShell() {
     return [SECTION_LABELS[section]];
   }, [therapistMode, section]);
 
-  // Global ⌘K
+
+  // Global ⌘K + ⌘1–5 section shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmdOpen(true); }
@@ -171,7 +186,7 @@ export function AppShell() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [therapistMode]);
+  }, [therapistMode, setSection]);
 
   // Online/offline
   useEffect(() => {
@@ -222,10 +237,14 @@ export function AppShell() {
     api.getProfile().then(p => {
       setDiaryActiveSchemaIds(p.ysq.activeSchemaIds);
       setUserRole(p.role);
+      // Auto-redirect therapists to cabinet on first login
       if (p.role === 'THERAPIST' && localStorage.getItem('therapist_mode') === null) {
-        switchTherapistMode(true);
+        localStorage.setItem('therapist_mode', '1');
+        navigate('/cabinet');
       }
-      if (p.role !== 'THERAPIST') switchTherapistMode(false);
+      if (p.role !== 'THERAPIST' && location.pathname.startsWith('/cabinet')) {
+        navigate('/today');
+      }
       if (p.name) setDisplayName(p.name);
       if (p.mySchemaIds?.length > 0) {
         localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(p.mySchemaIds));
@@ -321,25 +340,27 @@ export function AppShell() {
 
         <nav className="sb-nav">
           {!therapistMode && NAV_ITEMS.map(item => (
-            <button key={item.id}
-                    className={`sb-item${section === item.id ? ' is-active' : ''}`}
-                    onClick={() => setSection(item.id)}>
+            <NavLink key={item.id} to={'/' + item.id}
+                     className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
               <span>{item.label}</span>
-            </button>
+            </NavLink>
           ))}
           {therapistMode && (
-            <button className="sb-item is-active"><span>Кабинет</span></button>
+            <NavLink to="/cabinet"
+                     className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
+              <span>Кабинет</span>
+            </NavLink>
           )}
         </nav>
 
         <div className="sb-foot">
-          <a href="/account" className="sb-account">
+          <NavLink to="/account" className="sb-account">
             <div className="sb-avatar">{(displayName ?? '?')[0].toUpperCase()}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="sb-acc-name">{displayName || 'Профиль'}</div>
               <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>
             </div>
-          </a>
+          </NavLink>
           <button className="sb-item" onClick={() => logout()}
                   style={{ marginTop: 2, color: 'var(--c-rose)' }}>
             <span>Выйти</span>
@@ -376,9 +397,11 @@ export function AppShell() {
         {/* Therapist mode */}
         {therapistMode && (
           <TherapistClientSheet
-            view={cabinetView}
-            onViewChange={setCabinetView}
-            onClose={() => { switchTherapistMode(false); setCabinetView('list'); }}
+            view={openClientId ? 'client' : 'list'}
+            openClientId={openClientId}
+            onViewChange={(v) => v === 'list' ? navigate('/cabinet') : null}
+            onOpenClient={(id) => navigate('/cabinet/' + id)}
+            onClose={() => switchTherapistMode(false)}
             backHandlerRef={therapistBackHandlerRef}
           />
         )}
@@ -401,7 +424,7 @@ export function AppShell() {
                 onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
                 refreshKey={todayRefreshKey}
                 userRole={userRole}
-                onOpenTherapistCabinet={() => { setCabinetView('list'); switchTherapistMode(true); }}
+                onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
               />
             )}
             {section === 'diary' && (
@@ -435,7 +458,7 @@ export function AppShell() {
                 refreshKey={helpTasksKey}
                 onTasksChanged={() => { api.getTasks().then(setHelpTasks).catch(() => {}); setHelpTasksKey(k => k + 1); }}
                 userRole={userRole}
-                onOpenTherapistCabinet={() => { setCabinetView('list'); switchTherapistMode(true); }}
+                onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
               />
             )}
           </div>
@@ -549,7 +572,7 @@ export function AppShell() {
             userRole={userRole}
             displayName={displayName}
             onNameChanged={setDisplayName}
-            onOpenTherapistCabinet={() => { setShowSettings(false); setTherapistMode(true); }}
+            onOpenTherapistCabinet={() => { setShowSettings(false); navigate('/cabinet'); }}
             therapistMode={therapistMode}
             onToggleTherapistMode={() => switchTherapistMode(!therapistMode)}
           />
@@ -645,14 +668,14 @@ export function AppShell() {
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
       <nav className="mobile-nav">
         {NAV_ITEMS.map(item => (
-          <button
+          <NavLink
             key={item.id}
-            className={`mobile-nav-item${section === item.id ? ' active' : ''}`}
-            onClick={() => setSection(item.id)}
+            to={'/' + item.id}
+            className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}`}
           >
             <span className="mn-icon">{item.icon}</span>
             {item.label}
-          </button>
+          </NavLink>
         ))}
       </nav>
 

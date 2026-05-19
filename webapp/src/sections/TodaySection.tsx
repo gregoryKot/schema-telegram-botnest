@@ -93,13 +93,6 @@ function SkeletonLines() {
 
 // ── Right panel label caps ────────────────────────────────────────────────────
 
-function CapLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="eyebrow" style={{ marginBottom: 8 }}>
-      {children}
-    </div>
-  );
-}
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 

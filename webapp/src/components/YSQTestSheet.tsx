@@ -531,7 +531,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             }}
           >
             {schema && (
-              <div style={{ className="eyebrow" style={{ color: schema.color, marginBottom: 12 }}>
+              <div className="eyebrow" style={{ color: schema.color, marginBottom: 12 }}>
                 {schema.name}
               </div>
             )}
@@ -762,7 +762,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             {/* Active schemas grouped by domain */}
             {activeByDomain.map(domain => (
               <div key={domain.needId} style={{ marginBottom: 20 }}>
-                <div style={{ className="eyebrow" style={{ marginBottom: 10 }} }}>
+                <div className="eyebrow" style={{ marginBottom: 10 }}>
                   {domain.label}
                 </div>
                 {domain.schemas.map(schema => {
@@ -892,7 +892,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             {/* History timeline */}
             {history.length >= 2 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ className="eyebrow" style={{ marginBottom: 10 }} }}>
+                <div className="eyebrow" style={{ marginBottom: 10 }}>
                   История прохождений
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
