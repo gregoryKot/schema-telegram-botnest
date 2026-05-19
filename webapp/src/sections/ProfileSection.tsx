@@ -150,13 +150,13 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               <div style={{ display: 'flex', gap: 16, paddingBottom: 4 }}>
                 {longestStreak > 0 && (
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{longestStreak}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 3 }}>рекорд</div>
+                    <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)', lineHeight: 1 }}>{longestStreak}</div>
+                    <div className="eyebrow" style={{ marginTop: 3 }}>рекорд</div>
                   </div>
                 )}
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{totalDays}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: 3 }}>всего</div>
+                  <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)', lineHeight: 1 }}>{totalDays}</div>
+                  <div className="eyebrow" style={{ marginTop: 3 }}>всего</div>
                 </div>
               </div>
             </div>
@@ -492,7 +492,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       {showBestDayInfo && (
         <BottomSheet onClose={() => setShowBestDayInfo(false)} zIndex={300}>
           <div style={{ paddingTop: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 16 }}>Лучший день</div>
+            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Лучший день</div>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>День недели, в который твои оценки в среднем выше всего.</p>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>Становится точнее с каждой неделей.</p>
           </div>

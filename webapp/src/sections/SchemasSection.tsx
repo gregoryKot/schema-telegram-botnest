@@ -538,7 +538,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-sub)', marginBottom: 8 }}>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>
             С чего начать
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -562,13 +562,13 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
         </div>
 
         <div style={{ height: 1, background: 'rgba(var(--fg-rgb),0.06)', marginBottom: 18 }} />
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 14 }}>Все режимы</div>
+        <div className="eyebrow" style={{ marginBottom: 14 }}>Все режимы</div>
 
         {MODE_GROUPS.map(group => {
           const c = group.color; // CSS variable
           return (
             <div key={group.id} style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: c, marginBottom: 8, opacity: 0.8 }}>
+              <div className="eyebrow" style={{ color: c, marginBottom: 8, opacity: 0.8 }}>
                 {group.group}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

@@ -95,7 +95,7 @@ function SkeletonLines() {
 
 function CapLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>
+    <div className="eyebrow" style={{ marginBottom: 8 }}>
       {children}
     </div>
   );
@@ -493,7 +493,7 @@ export function TodaySection({
                 {task.done === true ? '✅' : task.done === false ? '❌' : resolveTaskEmoji(task)}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                {task.assignedBy !== null && <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 1 }}>от терапевта</div>}
+                {task.assignedBy !== null && <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 1 }}>от терапевта</div>}
                 <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
                 {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>до {fmtDate(task.dueDate)}</div>}
               </div>
@@ -507,7 +507,7 @@ export function TodaySection({
           ))}
           {taskHistory.length > 0 && (
             <>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-faint)', textTransform: 'uppercase', marginTop: 20, marginBottom: 8 }}>Выполнено</div>
+              <div className="eyebrow" style={{ marginTop: 20, marginBottom: 8 }}>Выполнено</div>
               {taskHistory.map(task => (
                 <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--line)', opacity: 0.5 }}>
                   <span style={{ fontSize: 16, flexShrink: 0, width: 22, textAlign: 'center' }}>{task.done === true ? '✅' : '❌'}</span>

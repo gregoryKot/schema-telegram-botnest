@@ -132,7 +132,7 @@ export function AccountPage() {
         ← Назад
       </button>
 
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Аккаунт</h1>
+      <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 8 }}>Аккаунт</h1>
       <p style={{ color: 'var(--text-sub)', fontSize: 14, marginBottom: 24 }}>
         Привязывай несколько способов входа — заходи откуда удобно
       </p>
@@ -146,7 +146,7 @@ export function AccountPage() {
       {loading ? (
         <div className="loader-center" style={{ minHeight: 200 }}><div className="spinner" /></div>
       ) : (
-        <div className="card" style={{ padding: '20px' }}>
+        <div className="card-elevated" style={{ padding: '20px' }}>
           {/* Google */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -295,13 +295,13 @@ function TherapistRequestSection({ accessToken }: { accessToken: string | null }
 
   return (
     <div style={{ marginTop: 24 }}>
-      <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 8, fontWeight: 600, letterSpacing: 0.5 }}>РОЛЬ ПСИХОЛОГА</div>
+      <div className="eyebrow" style={{ marginBottom: 8 }}>Роль психолога</div>
       {req?.status === 'pending' ? (
-        <div className="card" style={{ padding: 16, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+        <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
           ⏳ Твоя заявка на рассмотрении. Когда админ её обработает — придёт уведомление в Telegram.
         </div>
       ) : req?.status === 'approved' ? (
-        <div className="card" style={{ padding: 16, fontSize: 13, color: 'var(--accent-green)' }}>
+        <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--accent-green)' }}>
           ✅ Заявка одобрена. Перезайди в приложение.
         </div>
       ) : !open ? (
@@ -309,7 +309,7 @@ function TherapistRequestSection({ accessToken }: { accessToken: string | null }
           👨‍⚕️ Я психолог — подать заявку
         </button>
       ) : (
-        <div className="card" style={{ padding: 16 }}>
+        <div className="card-elevated" style={{ padding: 16 }}>
           {req?.status === 'rejected' && (
             <div style={{ fontSize: 12, color: 'var(--accent-red)', marginBottom: 10, padding: 8, background: 'rgba(248,113,113,0.08)', borderRadius: 8 }}>
               Прошлая заявка отклонена{req.rejectReason ? `: ${req.rejectReason}` : ''}. Можешь подать новую.

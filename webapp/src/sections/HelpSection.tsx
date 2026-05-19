@@ -99,8 +99,8 @@ function TaskRow({ task, onOpen, onComplete }: { task: UserTask; onOpen: () => v
       onClick={task.doneToday ? undefined : onOpen}
       style={{
         padding: '14px',
-        background: task.doneToday ? 'var(--surface)' : 'var(--surface)',
-        border: `1px solid ${isAssigned && !task.doneToday ? 'color-mix(in srgb, var(--accent) 30%, transparent)' : 'var(--border-color)'}`,
+        background: 'transparent',
+        border: `1px solid ${isAssigned && !task.doneToday ? 'color-mix(in srgb, var(--accent) 30%, transparent)' : 'var(--line)'}`,
         borderRadius: 16,
         marginBottom: 8,
         display: 'flex', alignItems: 'center', gap: 12,
@@ -121,7 +121,7 @@ function TaskRow({ task, onOpen, onComplete }: { task: UserTask; onOpen: () => v
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
         {isAssigned && !task.doneToday && (
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 3 }}>
+          <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 3 }}>
             от терапевта
           </div>
         )}
@@ -336,8 +336,8 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
           {tasks.length === 0 ? (
             <div style={{
               padding: '36px 20px', textAlign: 'center',
-              background: 'var(--surface)', borderRadius: 16,
-              border: '1px dashed var(--border-color)', marginBottom: 16,
+              background: 'transparent', borderRadius: 16,
+              border: '1px dashed var(--line)', marginBottom: 16,
             }}>
               <div style={{ fontSize: 36, marginBottom: 10 }}>✨</div>
               <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.55, maxWidth: 240, margin: '0 auto' }}>
@@ -365,14 +365,14 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
           {/* Completed history */}
           {taskHistory.length > 0 && (
             <>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.10em', color: 'var(--text-faint)', textTransform: 'uppercase', marginTop: 20, marginBottom: 10 }}>
+              <div className="eyebrow" style={{ marginTop: 20, marginBottom: 10 }}>
                 Выполнено
               </div>
-              <div style={{ background: 'var(--surface)', border: '1px solid var(--border-color)', borderRadius: 16, overflow: 'hidden' }}>
+              <div>
                 {taskHistory.map((task, i) => (
                   <div key={task.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
-                    borderTop: i > 0 ? '1px solid var(--border-color)' : 'none',
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0',
+                    borderTop: i > 0 ? '1px solid var(--line)' : 'none',
                     opacity: 0.6,
                   }}>
                     <span style={{ fontSize: 15, flexShrink: 0, width: 20, textAlign: 'center' }}>
