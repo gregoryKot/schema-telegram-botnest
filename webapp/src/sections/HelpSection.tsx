@@ -13,6 +13,15 @@ import type { UserTask, TherapyRelationInfo } from '../api';
 import { BottomSheet } from '../components/BottomSheet';
 import { fmtDate } from '../utils/format';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
+import { NEED_ORDER, NEED_DATA } from '../needData';
+
+const NEED_COLORS: Record<string, string> = {
+  attachment: 'var(--c-plum)',
+  autonomy:   'var(--c-slate)',
+  expression: 'var(--c-rose)',
+  play:       'var(--c-moss)',
+  limits:     'var(--c-amber)',
+};
 
 interface Props {
   onOpenChildhoodWheel: () => void;
@@ -295,6 +304,33 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
                 <span className="link" style={{ marginTop: 18, display: 'inline-block' }}>{card.done ? 'открыть →' : 'начать →'}</span>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Practices by need */}
+        <div className="section">
+          <div className="section-head"><h3>Практики по потребностям</h3></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', columnGap: 48, rowGap: 36 }}>
+            {NEED_ORDER.map(id => {
+              const need = NEED_DATA[id];
+              if (!need) return null;
+              const color = NEED_COLORS[id] ?? 'var(--accent)';
+              return (
+                <div key={id}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{need.name}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{need.hint}</span>
+                  </div>
+                  {need.actions.slice(0, 3).map((p, i) => (
+                    <div key={i} className="list-line" style={{ padding: '10px 0' }}>
+                      <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{p}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-sub)', flexShrink: 0 }}>3 мин</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </div>
 
