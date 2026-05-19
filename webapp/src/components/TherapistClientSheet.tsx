@@ -558,7 +558,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                               <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-sub)', width: 52, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{timePart ?? '—'}</span>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: 14, fontWeight: 600 }}>{name}</div>
-                                {client.streak > 0 && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3 }}>стрик {client.streak} дней</div>}
+                                {client.streak > 0 && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3 }}>{client.streak} дн. подряд</div>}
                               </div>
                               <span className="link" style={{ flexShrink: 0 }}>открыть →</span>
                             </div>
@@ -603,7 +603,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                           const hint = !client.lastActiveDate
                             ? 'Ещё не входил в приложение'
                             : client.streak === 0
-                            ? `Стрик прерван${daysSince ? ` · ${daysSince} дн. без активности` : ''}`
+                            ? `Серия прервана${daysSince ? ` · ${daysSince} дн. без активности` : ''}`
                             : daysSince !== null ? `${daysSince} дн. без активности` : '';
                           return (
                             <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
@@ -636,7 +636,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                 <div className="r-row-head">
                   <span className="eyebrow" style={{ flex: 2 }}>Клиент</span>
                   <span className="eyebrow">Начало</span>
-                  <span className="eyebrow" style={{ textAlign: 'right' }}>Стрик</span>
+                  <span className="eyebrow" style={{ textAlign: 'right' }}>Активность</span>
                   <span className="eyebrow" style={{ textAlign: 'right' }}>Индекс</span>
                   <span className="eyebrow">Следующая встреча</span>
                 </div>
@@ -732,7 +732,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     </span>
                   )}
                   {selectedClient.streak > 0 && (
-                    <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>🔥 стрик {selectedClient.streak} дн.</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{selectedClient.streak} дн. подряд</span>
                   )}
                 </div>
               </div>

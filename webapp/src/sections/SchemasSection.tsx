@@ -24,7 +24,10 @@ const NEED_IDS: { id: string; color: string }[] = [
 ];
 
 function readLocalIds(key: string): string[] {
-  try { return JSON.parse(localStorage.getItem(key) ?? '[]'); } catch { return []; }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) ?? '[]');
+    return Array.isArray(parsed) ? parsed.filter(x => typeof x === 'string') : [];
+  } catch { return []; }
 }
 
 function shortName(name: string): string {
@@ -63,14 +66,14 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
 
   useEffect(() => {
     Promise.all([api.getProfile(), api.getYsqHistory()]).then(([p, history]) => {
-      const serverSchemas = p.mySchemaIds ?? [];
-      const serverModes   = p.myModeIds ?? [];
+      const serverSchemas = Array.isArray(p?.mySchemaIds) ? p.mySchemaIds : [];
+      const serverModes   = Array.isArray(p?.myModeIds)   ? p.myModeIds   : [];
       setManualSchemaIds(serverSchemas);
       if (serverSchemas.length > 0) localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(serverSchemas));
       setMyModeIds(serverModes);
       if (serverModes.length > 0) localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(serverModes));
-      setYsqSchemaIds(p.ysq.activeSchemaIds ?? []);
-      setYsqCompletedAt(p.ysq.completedAt);
+      setYsqSchemaIds(Array.isArray(p?.ysq?.activeSchemaIds) ? p.ysq.activeSchemaIds : []);
+      setYsqCompletedAt(p?.ysq?.completedAt ?? null);
       // Build scores map from latest YSQ history entry
       if (Array.isArray(history) && history.length > 0) {
         const latest = history[0];
