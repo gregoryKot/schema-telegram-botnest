@@ -418,7 +418,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           </div>
         )}
 
-        <div style={{ padding: '4px 0' }}>
+        <div>
           <TherapyNote compact />
         </div>
       </div>

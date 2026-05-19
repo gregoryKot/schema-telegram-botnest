@@ -62,10 +62,11 @@ export class NotificationService {
     return rows.map((r) => ({ ...r, userId: Number(r.userId) }));
   }
 
-  /** Пометить уведомление как отправленное */
+  /** Пометить уведомление как отправленное. Идемпотентно — двойной вызов не падает. */
   async markSent(id: number) {
-    await this.prisma.scheduledNotification.update({
-      where: { id },
+    // updateMany не бросает P2025 если строки уже нет — две конкурентные обработки безопасны.
+    await this.prisma.scheduledNotification.updateMany({
+      where: { id, sentAt: null },
       data: { sentAt: new Date() },
     });
   }

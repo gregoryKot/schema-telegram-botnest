@@ -5,7 +5,6 @@ import { TaskCreateSheet } from './TaskCreateSheet';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { fmtDate, todayStr } from '../utils/format';
-import { useSafeTop } from '../utils/safezone';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../schemaTherapyData';
 
 interface Props {
@@ -61,8 +60,6 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
 ];
 
 export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerRef }: Props) {
-  const safeTop = useSafeTop();
-
   // Client list
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -462,11 +459,11 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div className="therapist-shell">
 
-      {/* ── LIST VIEW ─────────────────────────────────────────────── */}
-      {view === 'list' && (
-        <div style={{ padding: `${safeTop + 20}px 20px 100px` }}>
+      {/* ── LEFT SIDEBAR: client list ──────────────────────────────── */}
+      <div className={`therapist-sidebar${view === 'client' ? ' therapist-sidebar--hidden-mobile' : ''}`}>
+        <div style={{ padding: '24px 20px 60px' }}>
           <div key={`list-${animKey}`} style={slideStyle}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -687,22 +684,33 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
             )}
           </div>
         </div>
-      )}
+      </div>
 
-      {/* ── CLIENT VIEW ───────────────────────────────────────────── */}
-      {view === 'client' && selectedClient && (
-        <div key={`client-${animKey}`} style={{ position: 'fixed', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column', animation: 'fade-in 0.22s ease' }}>
+      {/* ── RIGHT MAIN: client detail ──────────────────────────────── */}
+      <div className={`therapist-main${view === 'client' ? ' therapist-main--visible' : ''}`}>
+
+        {/* Empty state — no client selected */}
+        {(!selectedClient || view === 'list') && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 12, color: 'var(--text-ghost)' }}>
+            <div style={{ fontSize: 40 }}>←</div>
+            <div style={{ fontSize: 14 }}>Выбери клиента</div>
+          </div>
+        )}
+
+        {view === 'client' && selectedClient && (
+          <div key={`client-${animKey}`} style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fade-in 0.22s ease' }}>
 
           {/* ── STICKY HEADER ── */}
-          <div style={{ flexShrink: 0, paddingTop: safeTop + 8, padding: `${safeTop + 8}px 20px 0`, background: 'var(--bg)' }}>
+          <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '16px 24px 0' }}>
             {/* Header row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              {/* Back button — large touch target */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              {/* Back button — mobile only */}
               <div
                 onClick={() => { switchView('list'); setRenamingAlias(false); setYsqRequested(false); }}
-                style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer', marginLeft: -8 }}
+                className="therapist-back-btn"
+                style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
               >
-                <span style={{ fontSize: 26, color: 'var(--text-sub)', lineHeight: 1 }}>‹</span>
+                <span style={{ fontSize: 22, color: 'var(--text-sub)', lineHeight: 1 }}>‹</span>
               </div>
 
               {/* Name / rename */}
@@ -744,13 +752,11 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
 
               {/* Delete error */}
               {deleteError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 4, textAlign: 'center' }}>{deleteError}</div>}
-
-              {/* Thin separator */}
-              <div style={{ height: 1, background: 'rgba(var(--fg-rgb),0.06)', margin: '10px -20px 0' }} />
             </div>
+          </div>
 
-            {/* ── SCROLLABLE CONTENT ── */}
-            <div style={{ flex: 1, overflowY: 'auto' as const, padding: '12px 20px 100px' }}>
+          {/* ── SCROLLABLE CONTENT ── */}
+          <div style={{ flex: 1, padding: '20px 24px 60px' }}>
 
             {/* ── SESSION CARD ── */}
             {(() => {
@@ -962,11 +968,14 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
               </div>
             </div>
 
-            </div>
+          </div>
           </div>
         )}
+      </div>
 
-      {/* ── TASKS SHEET (outside fixed div for correct z-index) ── */}
+      {/* ── BOTTOM SHEETS ── */}
+
+      {/* ── TASKS SHEET ── */}
       {showTasksSheet && selectedClient && (
         <BottomSheet onClose={() => setShowTasksSheet(false)}>
           <div style={{ paddingTop: 4 }}>
@@ -1004,7 +1013,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
         </BottomSheet>
       )}
 
-      {/* ── NOTES SHEET (outside fixed div for correct z-index) ── */}
+      {/* ── NOTES SHEET ── */}
       {showNotesSheet && selectedClient && (
         <BottomSheet onClose={() => setShowNotesSheet(false)}>
           <div style={{ paddingTop: 4 }}>
@@ -1041,7 +1050,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
         </BottomSheet>
       )}
 
-      {/* ── CONCEPT SHEET (outside fixed div for correct z-index) ── */}
+      {/* ── CONCEPT SHEET ── */}
       {showConceptSheet && selectedClient && (
         <BottomSheet onClose={() => { if (conceptDirty) saveConcept(); setShowConceptSheet(false); }}>
           <div style={{ paddingTop: 4 }}>

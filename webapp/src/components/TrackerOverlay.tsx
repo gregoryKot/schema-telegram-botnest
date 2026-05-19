@@ -19,7 +19,7 @@ import type { Need } from '../types';
 import { NEED_DATA } from '../needData';
 import { NeedDial } from './NeedDial';
 import { NeedTodaySheet } from './NeedTodaySheet';
-import { useSafeTop } from '../utils/safezone';
+
 import { api } from '../api';
 import type { StreakData } from '../api';
 
@@ -81,7 +81,6 @@ export function TrackerOverlay({
   onOpenNote, onOpenGoal: _onOpenGoal, onOpenHistory, yesterdayRatings = {},
   date, onDone,
 }: Props) {
-  const safeTop = useSafeTop();
   const timers  = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const unlockTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -180,7 +179,7 @@ export function TrackerOverlay({
       onTouchStart={onTS} onTouchEnd={onTE}>
 
       {/* Header */}
-      <div style={{ padding:`${safeTop+16}px 20px 12px`,
+      <div style={{ padding:`16px 20px 12px`,
         display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
         <button onClick={onClose} style={{
           width:34, height:34, borderRadius:10, border:'none', cursor:'pointer',

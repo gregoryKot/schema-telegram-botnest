@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import type { PracticePlan } from '../api';
 import { Loader } from './Loader';
-import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
 import { NEED_DATA } from '../needData';
 
@@ -33,7 +32,6 @@ function formatDate(dateStr: string): string {
 }
 
 export function PlansScreen({ onClose, onOpenTracker }: Props) {
-  const safeTop = useSafeTop();
   const [plans, setPlans] = useState<PracticePlan[] | null>(null);
 
   useEffect(() => {
@@ -47,7 +45,6 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
     <div style={{
       position: 'fixed', inset: 0, zIndex: 80,
       background: 'var(--bg)', overflowY: 'auto',
-      paddingTop: safeTop,
     }}>
       {/* Header */}
       <div style={{

@@ -4,7 +4,7 @@ import type { UserSettings, PairsData, TherapyRelationInfo } from '../api';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './YSQTestSheet';
 import { BottomSheet } from './BottomSheet';
 import { Loader } from './Loader';
-import { useSafeTop } from '../utils/safezone';
+
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
 import type { Theme } from '../utils/theme';
 
@@ -38,7 +38,6 @@ interface Props {
 }
 
 export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode }: Props) {
-  const safeTop = useSafeTop();
   const [view, setView]             = useState<View>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
   const [pairData, setPairData]     = useState<PairsData | null>(null);
@@ -136,7 +135,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     <>
       <div style={{
         position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)',
-        overflowY: 'auto', paddingTop: safeTop,
+        overflowY: 'auto',
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 8px' }}>

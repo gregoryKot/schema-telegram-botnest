@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 import { encrypt, decrypt, encryptJson, decryptJson, encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
@@ -42,6 +42,7 @@ export interface Need {
 
 @Injectable()
 export class BotService {
+  private readonly logger = new Logger(BotService.name);
   private readonly needs: Need[] = [
     {
       id: 'attachment',

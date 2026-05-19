@@ -668,6 +668,58 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   .today-right { display: none; }
 }
 
+/* ─── Therapist cabinet two-column layout ───────────────────────────────── */
+.therapist-shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+.therapist-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+}
+.therapist-main {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.therapist-back-btn { display: none; }
+@media (max-width: 900px) {
+  .therapist-sidebar { width: 240px; }
+}
+@media (max-width: 767px) {
+  .therapist-shell { display: block; overflow: visible; position: relative; }
+  .therapist-sidebar { width: 100%; border-right: none; overflow-y: visible; }
+  .therapist-sidebar--hidden-mobile { display: none; }
+  .therapist-main { display: none; }
+  .therapist-main--visible {
+    display: flex;
+    position: fixed; inset: 0; z-index: 50;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+  .therapist-back-btn { display: flex !important; }
+}
+
+/* ─── Help section tool grid ─────────────────────────────────────────────── */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+@media (max-width: 900px) {
+  .tool-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 767px) {
+  .tool-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ─── Mobile — bottom nav ────────────────────────────────────────────────── */
 .mobile-nav {
   position: fixed;

@@ -91,13 +91,21 @@ export class TelegramScheduleService implements OnModuleInit {
         await this.notificationService.markSent(notif.id);
       } catch (err: any) {
         const code = err?.response?.error_code;
-        if (code === 403 || code === 400) {
-          // Bot blocked or user deactivated — skip permanently
-          this.logger.warn(`Skipping notification id=${notif.id} userId=${notif.userId} (Telegram ${code})`);
+        const desc = String(err?.response?.description ?? err?.message ?? '');
+        // Treat as permanently blocked only on explicit signals.
+        // 400 + "chat not found" / 403 + "blocked"/"deactivated" / "kicked".
+        // Other 400s (markdown parse error, message too long, etc) are bugs
+        // on OUR side — don't mark legitimate users as blocked for those.
+        const isPermanent =
+          code === 403
+          || (code === 400 && /chat not found|user is deactivated|bot was blocked/i.test(desc));
+        if (isPermanent) {
+          this.logger.warn(`Skipping notification id=${notif.id} userId=${notif.userId} (${code}: ${desc})`);
           await this.notificationService.markSent(notif.id);
           await this.botService.markUserBlocked(notif.userId);
         } else {
-          this.logger.error(`Failed to send notification id=${notif.id} userId=${notif.userId}`, err);
+          // Transient — log + don't markSent so we retry next tick.
+          this.logger.error(`Failed to send notification id=${notif.id} userId=${notif.userId} (${code}: ${desc})`, err);
         }
       }
     }
