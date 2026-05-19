@@ -256,7 +256,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
 
         {step === 'belief' && history.length > 0 && (
           <div style={{ marginTop: 20 }}>
-            <div style={{ className="eyebrow" style={{ marginBottom: 10 }}>Прошлые проверки</div>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>Прошлые проверки</div>
             {history.map(h => (
               <div key={h.id} style={{ padding: '10px 14px', background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.06)', borderRadius: 12, marginBottom: 7 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 3 }}>{h.date}</div>

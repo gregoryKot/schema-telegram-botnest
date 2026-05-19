@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { setTokenProvider } from './api';
@@ -8,68 +8,86 @@ import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
 import { AppShell } from './components/AppShell';
 
-// Apply saved theme before first render (key: app_theme)
+// Apply saved theme before first render
 const savedTheme = localStorage.getItem('app_theme');
 if (savedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-// Default is now light (no attribute needed for light mode)
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <>{children}</>;
-}
-
+// ── Token bridge (inside AuthProvider) ────────────────────────────────────────
 function TokenBridge() {
   const { accessToken } = useAuth();
-  useEffect(() => {
-    setTokenProvider(() => accessToken);
-  }, [accessToken]);
+  useEffect(() => { setTokenProvider(() => accessToken); }, [accessToken]);
   return null;
 }
 
-function AppRoutes() {
+// ── Auth guard as a layout route ───────────────────────────────────────────────
+function RequireAuth() {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <Outlet />;
+}
+
+// ── Root layout — providers wrapper ───────────────────────────────────────────
+function Root() {
   return (
-    <>
+    <AuthProvider>
       <TokenBridge />
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/auth/error" element={
-          <div className="loader-center" style={{ flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontSize: 48 }}>⚠️</div>
-            <p style={{ color: 'var(--text-sub)' }}>
-              Ошибка входа.{' '}
-              <a href="/login" style={{ color: 'var(--accent)' }}>Попробовать снова</a>
-            </p>
-          </div>
-        } />
-        <Route path="/account" element={
-          <RequireAuth>
-            <AccountPage />
-          </RequireAuth>
-        } />
-        <Route path="/account/merge" element={
-          <RequireAuth>
-            <MergePage />
-          </RequireAuth>
-        } />
-        <Route path="/*" element={
-          <RequireAuth>
-            <AppShell />
-          </RequireAuth>
-        } />
-      </Routes>
-    </>
+      <Outlet />
+    </AuthProvider>
+  );
+}
+
+// ── Router ─────────────────────────────────────────────────────────────────────
+const router = createBrowserRouter([
+  {
+    element: <Root />,
+    children: [
+      // Public
+      { path: '/login',          element: <LoginPage /> },
+      { path: '/auth/callback',  element: <AuthCallback /> },
+      { path: '/auth/error',     element: <AuthError /> },
+
+      // Authenticated
+      {
+        element: <RequireAuth />,
+        children: [
+          { path: '/account',       element: <AccountPage /> },
+          { path: '/account/merge', element: <MergePage /> },
+
+          // App shell — all app routes as children
+          {
+            element: <AppShell />,
+            children: [
+              { index: true,                  element: <Navigate to="/today" replace /> },
+              { path: '/today',               element: null },
+              { path: '/diary',               element: null },
+              { path: '/schemas',             element: null },
+              { path: '/profile',             element: null },
+              { path: '/help',                element: null },
+              { path: '/cabinet',             element: null },
+              { path: '/cabinet/:clientId',   element: null },
+              // catch-all → redirect home
+              { path: '*',                    element: <Navigate to="/today" replace /> },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+]);
+
+function AuthError() {
+  return (
+    <div className="loader-center" style={{ flexDirection: 'column', gap: 12 }}>
+      <div style={{ fontSize: 48 }}>⚠️</div>
+      <p style={{ color: 'var(--text-sub)' }}>
+        Ошибка входа.{' '}
+        <a href="/login" style={{ color: 'var(--accent)' }}>Попробовать снова</a>
+      </p>
+    </div>
   );
 }
 
 export default function App() {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
-  );
+  return <RouterProvider router={router} />;
 }

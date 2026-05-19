@@ -9,7 +9,9 @@ import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../schemaTherapyData';
 
 interface Props {
   view: 'list' | 'client';
+  openClientId?: number | null;
   onViewChange: (v: 'list' | 'client') => void;
+  onOpenClient?: (id: number) => void;
   onClose: () => void;
   backHandlerRef?: React.MutableRefObject<() => void>;
 }
@@ -59,7 +61,7 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
   { key: 'goals', label: 'Цели схема-терапии', placeholder: 'Что должно измениться? Конкретные результаты, на которые направлена работа...' },
 ];
 
-export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerRef }: Props) {
+export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose, backHandlerRef }: Props) {
   // Client list
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,7 +134,15 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
   const openClientIdRef = useRef<number | null>(null);
 
   useEffect(() => {
-    api.getTherapyClients().then(setClients).catch(() => {}).finally(() => setLoading(false));
+    api.getTherapyClients().then(cl => {
+      setClients(cl);
+      // If URL has a clientId, auto-open that client
+      if (openClientIdProp) {
+        const c = cl.find(x => x.telegramId === openClientIdProp);
+        if (c) openClient(c);
+      }
+    }).catch(() => {}).finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function switchView(v: 'list' | 'client') {
@@ -646,7 +656,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
               return (
                 <div
                   key={c.telegramId}
-                  onClick={() => openClient(c)}
+                  onClick={() => { if (onOpenClient) onOpenClient(c.telegramId); else openClient(c); }}
                   style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 4px', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}
                 >
                   {/* Avatar */}
@@ -705,7 +715,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               {/* Back button — mobile only */}
               <div
-                onClick={() => { switchView('list'); setRenamingAlias(false); setYsqRequested(false); }}
+                onClick={() => { if (onOpenClient !== undefined) onViewChange('list'); else switchView('list'); setRenamingAlias(false); setYsqRequested(false); }}
                 className="therapist-back-btn"
                 style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
               >
