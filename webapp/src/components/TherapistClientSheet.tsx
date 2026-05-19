@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualization, ClientData } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
-import { BottomSheet } from './BottomSheet';
-import { SectionLabel } from './SectionLabel';
 import { fmtDate, todayStr } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../schemaTherapyData';
 
@@ -17,6 +15,7 @@ interface Props {
 }
 
 type AddMode = null | 'invite' | 'telegram' | 'virtual';
+type ClientTab = 'overview' | 'concept' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
 const DAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
@@ -58,10 +57,9 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
   { key: 'copingStyles', label: 'Стили совладания', placeholder: 'Капитуляция, избегание, гиперкомпенсация — типичные паттерны для каждой схемы...' },
   { key: 'modeTransitions', label: 'Переключение режимов', placeholder: 'Что запускает переход в уязвимого ребёнка? Как активируется карающий критик? Когда появляется здоровый взрослый?...' },
   { key: 'currentProblems', label: 'Актуальные проблемы и симптомы', placeholder: 'С чем обратился клиент, текущие жалобы, симптоматика...' },
-  { key: 'goals', label: 'Цели схема-терапии', placeholder: 'Что должно измениться? Конкретные результаты, на которые направлена работа...' },
 ];
 
-export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose, backHandlerRef }: Props) {
+export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onClose, backHandlerRef }: Props) {
   // Client list
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,15 +76,12 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
   // Delete client
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Client detail
   const [selectedClient, setSelectedClient] = useState<TherapyClientSummary | null>(null);
-  const [showTasksSheet, setShowTasksSheet] = useState(false);
-  const [showNotesSheet, setShowNotesSheet] = useState(false);
-  const [showConceptSheet, setShowConceptSheet] = useState(false);
-  const [showClientNotesSheet, setShowClientNotesSheet] = useState(false);
   const [clientSchemaNotesData, setClientSchemaNotesData] = useState<Array<{ schemaId: string; triggers: string; feelings: string; thoughts: string; origins: string; reality: string; healthyView: string; behavior: string }>>([]);
-  const [clientModeNotesData, setClientModeNotesData]     = useState<Array<{ modeId: string; triggers: string; feelings: string; thoughts: string; needs: string; behavior: string }>>([]);
+  const [clientModeNotesData, setClientModeNotesData] = useState<Array<{ modeId: string; triggers: string; feelings: string; thoughts: string; needs: string; behavior: string }>>([]);
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
   const [notes, setNotes] = useState<TherapistNote[]>([]);
   const [noteError, setNoteError] = useState('');
@@ -96,7 +91,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [conceptDirty, setConceptDirty] = useState(false);
   const [conceptSaving, setConceptSaving] = useState(false);
   const [conceptError, setConceptError] = useState('');
-  const [showHistory, setShowHistory] = useState(false);
   const [newNoteText, setNewNoteText] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
@@ -106,10 +100,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [localStartDate, setLocalStartDate] = useState('');
   const [editingNextSession, setEditingNextSession] = useState(false);
   const [localNextSession, setLocalNextSession] = useState('');
-  const [editingDays, setEditingDays] = useState(false);
-  const [localMeetingDays, setLocalMeetingDays] = useState<number[]>([]);
   const [sessionInfoSaving, setSessionInfoSaving] = useState(false);
-  const [sessionInfoError, setSessionInfoError] = useState('');
 
   // Rename alias
   const [renamingAlias, setRenamingAlias] = useState(false);
@@ -121,14 +112,14 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [ysqRequested, setYsqRequested] = useState(false);
   const [ysqError, setYsqError] = useState('');
 
-  // Delete client error
-  const [deleteError, setDeleteError] = useState('');
-
   // Export
   const [exportCopied, setExportCopied] = useState(false);
 
   // Animation key — changes when view transitions to trigger CSS animation
   const [animKey, setAnimKey] = useState(0);
+
+  // Client detail tab
+  const [clientTab, setClientTab] = useState<ClientTab>('overview');
 
   // Race condition guard: ignore stale state updates when client changes quickly
   const openClientIdRef = useRef<number | null>(null);
@@ -136,7 +127,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   useEffect(() => {
     api.getTherapyClients().then(cl => {
       setClients(cl);
-      // If URL has a clientId, auto-open that client
       if (openClientIdProp) {
         const c = cl.find(x => x.telegramId === openClientIdProp);
         if (c) openClient(c);
@@ -150,30 +140,23 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     onViewChange(v);
   }
 
-  // ─── Back button handler (keeps Telegram back button working for sheets) ─────
+  // ─── Back button handler ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!backHandlerRef || view !== 'client') return;
     backHandlerRef.current = () => {
-      if (showAssign)       { setShowAssign(false);       return; }
-      if (showConceptSheet)       { setShowConceptSheet(false);       return; }
-      if (showTasksSheet)         { setShowTasksSheet(false);         return; }
-      if (showNotesSheet)         { setShowNotesSheet(false);         return; }
-      if (showClientNotesSheet)   { setShowClientNotesSheet(false);   return; }
+      if (showAssign) { setShowAssign(false); return; }
       switchView('list');
     };
-  }, [view, showAssign, showConceptSheet, showTasksSheet, showNotesSheet, showClientNotesSheet, backHandlerRef]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, showAssign, backHandlerRef]);
 
-  // ─── Open client ────────────────────────────────────────────────────────────
+  // ─── Open client ──────────────────────────────────────────────────────────────
 
   async function openClient(client: TherapyClientSummary) {
     const clientId = client.telegramId;
     openClientIdRef.current = clientId;
 
     setSelectedClient(client);
-    setShowTasksSheet(false);
-    setShowNotesSheet(false);
-    setShowConceptSheet(false);
-    setShowClientNotesSheet(false);
     setClientSchemaNotesData([]);
     setClientModeNotesData([]);
     setClientTasks([]);
@@ -184,7 +167,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     setLocalConcept({});
     setConceptDirty(false);
     setConceptError('');
-    setShowHistory(false);
     setYsqRequested(false);
     setYsqError('');
     setRenamingAlias(false);
@@ -192,10 +174,9 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     setDeleteError('');
     setEditingStartDate(false);
     setEditingNextSession(false);
-    setEditingDays(false);
-    setLocalMeetingDays(client.meetingDays ?? []);
     setLocalNextSession(client.nextSession ?? '');
     setLocalStartDate(client.therapyStartDate ?? '');
+    setClientTab('overview');
     switchView('client');
 
     const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn] = await Promise.all([
@@ -207,7 +188,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       api.getClientModeNotes(clientId).catch(() => []),
     ]);
 
-    // Discard stale results if user switched to a different client
     if (openClientIdRef.current !== clientId) return;
 
     setClientTasks(tasks);
@@ -219,7 +199,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     if (fetchedConcept) setLocalConcept(fetchedConcept);
   }
 
-  // ─── Delete client ───────────────────────────────────────────────────────────
+  // ─── Delete client ────────────────────────────────────────────────────────────
 
   async function deleteClient() {
     if (!selectedClient) return;
@@ -234,7 +214,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     } catch { setDeleteError('Не удалось удалить клиента'); } finally { setDeleteLoading(false); }
   }
 
-  // ─── Add client flows ────────────────────────────────────────────────────────
+  // ─── Add client flows ─────────────────────────────────────────────────────────
 
   function openAddMode(mode: AddMode) {
     setAddMode(mode);
@@ -300,7 +280,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     } catch { setAddError('Ошибка. Попробуй ещё раз.'); } finally { setAddLoading(false); }
   }
 
-  // ─── Notes ───────────────────────────────────────────────────────────────────
+  // ─── Notes ────────────────────────────────────────────────────────────────────
 
   async function addNote() {
     if (!selectedClient || !newNoteText.trim()) return;
@@ -320,7 +300,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     } catch { setNoteError('Не удалось удалить заметку'); }
   }
 
-  // ─── Conceptualization ───────────────────────────────────────────────────────
+  // ─── Conceptualization ────────────────────────────────────────────────────────
 
   function patchConcept(patch: Partial<ClientConceptualization>) {
     setLocalConcept(prev => ({ ...prev, ...patch }));
@@ -363,7 +343,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     } finally { setConceptSaving(false); }
   }
 
-  // ─── Alias ───────────────────────────────────────────────────────────────────
+  // ─── Alias ────────────────────────────────────────────────────────────────────
 
   async function saveAlias() {
     if (!selectedClient) return;
@@ -381,17 +361,13 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   async function saveSessionInfo(patch: { therapyStartDate?: string | null; nextSession?: string | null; meetingDays?: number[] }) {
     if (!selectedClient) return;
     setSessionInfoSaving(true);
-    setSessionInfoError('');
     try {
       await api.updateSessionInfo(selectedClient.telegramId, patch);
       const updated = { ...selectedClient, ...patch };
       if (patch.meetingDays !== undefined) updated.meetingDays = patch.meetingDays;
       setSelectedClient(updated);
       setClients(prev => prev.map(c => c.telegramId === selectedClient.telegramId ? updated : c));
-    } catch {
-      setSessionInfoError('Не удалось сохранить');
-      setTimeout(() => setSessionInfoError(''), 3000);
-    } finally { setSessionInfoSaving(false); }
+    } catch { /* ignore */ } finally { setSessionInfoSaving(false); }
   }
 
   async function handleRequestYsq() {
@@ -404,29 +380,26 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     } catch { setYsqError('Не удалось отправить запрос'); }
   }
 
-  // ─── Export ──────────────────────────────────────────────────────────────────
+  // ─── Export ───────────────────────────────────────────────────────────────────
 
   function buildExportText(): string {
     if (!selectedClient || !concept) return '';
-    const therapistName = 'Терапевт';
     const clientName = selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`;
     const date = concept.updatedAt ? fmtDate(concept.updatedAt.slice(0, 10)) : todayStr();
     const c = { ...concept, ...localConcept };
-    const schemaNames = (activeSchemaIds as string[]).map(id => {
+    const schemaNames = activeSchemaIds.map(id => {
       const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
       return s ? `${s.emoji} ${s.name}` : id;
     });
-    const modeNames = (activeModeIds as string[]).map(id => {
+    const modeNames = activeModeIds.map(id => {
       const m = MODE_GROUPS.flatMap(g => g.items).find(x => x.id === id);
       return m ? `${m.emoji} ${m.name}` : id;
     });
     const row = (label: string, value: string | null | undefined) => `${label}\n${value?.trim() || '—'}\n`;
     const div = '─'.repeat(44);
     return [
-      `Терапевт: ${therapistName}   Клиент: ${clientName}   Дата: ${date}`,
-      '',
-      '══════ КРАТКАЯ КОНЦЕПТУАЛИЗАЦИЯ ══════',
-      '',
+      `Клиент: ${clientName}   Дата: ${date}`,
+      '', '══════ КРАТКАЯ КОНЦЕПТУАЛИЗАЦИЯ ══════', '',
       div, row('АКТУАЛЬНЫЕ СХЕМЫ (ЭДС)', schemaNames.join(' · ') || null),
       div, row('КАРТА РЕЖИМОВ', modeNames.join(' · ') || null),
       div, row('РАННИЙ ДИСФУНКЦИОНАЛЬНЫЙ ОПЫТ', c.earlyExperience as string),
@@ -435,9 +408,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       div, row('ДЕЗАДАПТИВНЫЕ КОПИНГИ', c.copingStyles as string),
       div, row('АКТУАЛЬНЫЕ ПРОБЛЕМЫ И СИМПТОМЫ', c.currentProblems as string),
       div, row('ЦЕЛИ СХЕМА-ТЕРАПИИ', c.goals as string),
-      div,
-      '',
-      '@SchemeHappens · Схема-лаб',
+      div, '', '@SchemeHappens · Схема-лаб',
     ].join('\n');
   }
 
@@ -454,7 +425,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     } catch { /* ignore */ }
   }
 
-  // ─── Derived ─────────────────────────────────────────────────────────────────
+  // ─── Derived ──────────────────────────────────────────────────────────────────
 
   const activeSchemaIds = (localConcept.schemaIds ?? concept?.schemaIds ?? []) as string[];
   const activeModeIds = (localConcept.modeIds ?? concept?.modeIds ?? []) as string[];
@@ -462,940 +433,949 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const selfSchemaIds = clientData?.mySchemaIds ?? [];
   const today = todayStr();
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
-
-  const slideStyle: React.CSSProperties = {
-    animation: 'fade-in 0.22s ease',
-  };
+  // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="therapist-shell">
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
 
-      {/* ── LEFT SIDEBAR: client list ──────────────────────────────── */}
-      <div className={`therapist-sidebar${view === 'client' ? ' therapist-sidebar--hidden-mobile' : ''}`}>
-        <div style={{ padding: '24px 20px 60px' }}>
-          <div key={`list-${animKey}`} style={slideStyle}>
+      {/* ── LIST VIEW ──────────────────────────────────────────────────────────── */}
+      {view === 'list' && (
+        <div key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'auto' }}>
+          <div className="page-inner-wide">
+
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40 }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.03em' }}>Кабинет</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.03em' }}>Кабинет</div>
                   <span className="chip chip-accent" style={{ fontSize: 10 }}>психолог</span>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.4 }}>Клиенты · Задания · Концептуализация</div>
+                <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6 }}>
+                  {clients.length} клиентов · Задания · Концептуализация
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                {/* Exit therapist mode — always visible escape hatch */}
-                <button
-                  onClick={onClose}
-                  title="Вернуться в приложение"
-                  style={{
-                    width: 36, height: 36, borderRadius: 18, border: 'none',
-                    background: 'rgba(var(--fg-rgb),0.07)',
-                    color: 'var(--text-faint)',
-                    fontSize: 16, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >✕</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={onClose} style={{ padding: '8px 14px', borderRadius: 6, border: 'none', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer' }}>
+                  Выйти
+                </button>
                 <button
                   onClick={() => openAddMode(addMode ? null : 'invite')}
-                  style={{
-                    width: 36, height: 36, borderRadius: 18, border: 'none',
-                    background: addMode ? 'rgba(var(--fg-rgb),0.08)' : 'color-mix(in srgb, var(--accent) 20%, transparent)',
-                    color: addMode ? 'rgba(var(--fg-rgb),0.5)' : 'var(--accent)',
-                    fontSize: addMode ? 18 : 22, fontWeight: 300, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.15s ease',
-                  }}
+                  style={{ padding: '8px 18px', borderRadius: 6, border: 'none', background: addMode ? 'rgba(var(--fg-rgb),0.07)' : 'var(--accent)', color: addMode ? 'var(--text-faint)' : 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
                 >
-                  {addMode ? '✕' : '+'}
+                  {addMode ? '✕ Закрыть' : '+ Добавить клиента'}
                 </button>
               </div>
             </div>
 
-            {/* Stat cards */}
-            {!loading && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
-                {[
-                  { value: clients.length, label: 'КЛИЕНТОВ' },
-                  { value: clients.filter(c => c.lastActiveDate === today).length, label: 'АКТИВНЫХ' },
-                  { value: clients.filter(c => c.todayIndex !== null).length, label: 'ОЦЕНИЛИ' },
-                ].map(({ value, label }) => (
-                  <div key={label} className="card" style={{ borderRadius: 16, padding: '14px 12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 28, fontWeight: 600, color: 'var(--text)', lineHeight: 1, letterSpacing: '-0.03em' }}>{value}</div>
-                    <div className="eyebrow" style={{ marginTop: 4 }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
             {/* Add client panel */}
-            {addMode !== null && (
-              <div style={{ background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.08)', borderRadius: 18, padding: 16, marginBottom: 20, animation: 'fade-in 0.18s ease' }}>
-                {/* Mode selector */}
-                <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-                  {([
-                    ['invite', '🔗', 'Ссылка'],
-                    ['telegram', '📱', 'Telegram ID'],
-                    ['virtual', '👤', 'Оффлайн'],
-                  ] as [AddMode, string, string][]).map(([mode, icon, label]) => (
-                    <button
-                      key={mode!}
-                      onClick={() => { setAddMode(mode); setAddInput(''); setAddError(''); }}
-                      style={{
-                        flex: 1, padding: '9px 4px', borderRadius: 12, border: 'none',
-                        background: addMode === mode ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : 'rgba(var(--fg-rgb),0.05)',
-                        color: addMode === mode ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.4)',
-                        fontSize: 12, fontWeight: addMode === mode ? 600 : 400, cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {icon} {label}
+            {addMode && (
+              <div style={{ background: 'var(--surface-2)', borderRadius: 12, padding: '24px', marginBottom: 36 }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                  {(['invite', 'telegram', 'virtual'] as const).map(m => (
+                    <button key={m} onClick={() => openAddMode(m)} style={{ padding: '6px 14px', borderRadius: 6, border: `1px solid ${addMode === m ? 'var(--accent)' : 'var(--line)'}`, background: addMode === m ? 'var(--accent-soft)' : 'transparent', color: addMode === m ? 'var(--accent)' : 'var(--text-faint)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}>
+                      {{ invite: '🔗 Пригласить', telegram: '🔢 Telegram ID', virtual: '👤 Оффлайн' }[m]}
                     </button>
                   ))}
                 </div>
 
-                {/* Invite form */}
                 {addMode === 'invite' && (
-                  <>
+                  <div>
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Отправь клиенту ссылку — он перейдёт и автоматически подключится.</div>
                     {!inviteUrl ? (
-                      <button
-                        onClick={createInvite} disabled={inviteLoading}
-                        style={{ width: '100%', padding: '12px 0', borderRadius: 12, border: 'none', background: 'color-mix(in srgb, var(--accent) 20%, transparent)', color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: inviteLoading ? 0.6 : 1 }}
-                      >
+                      <button onClick={createInvite} disabled={inviteLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                         {inviteLoading ? 'Создаю...' : 'Создать ссылку'}
                       </button>
                     ) : (
-                      <>
-                        <input
-                          ref={inviteInputRef} readOnly value={inviteUrl}
-                          onClick={() => inviteInputRef.current?.select()}
-                          style={{ width: '100%', boxSizing: 'border-box', marginBottom: 10, background: 'rgba(var(--fg-rgb),0.05)', border: '1px solid rgba(var(--fg-rgb),0.1)', borderRadius: 10, padding: '9px 12px', outline: 'none', cursor: 'text', color: 'var(--text-sub)', fontSize: 12, fontFamily: 'monospace' }}
-                        />
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={copyInvite} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', background: inviteCopied ? 'color-mix(in srgb, var(--accent-green) 15%, transparent)' : 'rgba(var(--fg-rgb),0.07)', color: inviteCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.6)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                            {inviteCopied ? '✓ Скопировано' : 'Скопировать'}
-                          </button>
-                          <button onClick={shareInvite} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', background: 'color-mix(in srgb, var(--accent) 15%, transparent)', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                            Поделиться
-                          </button>
-                        </div>
-                        <button onClick={() => { setInviteUrl(''); setInviteCopied(false); }} style={{ width: '100%', marginTop: 8, background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', padding: '4px 0' }}>
-                          Создать новую
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <input ref={inviteInputRef} readOnly value={inviteUrl} style={{ flex: 1, minWidth: 200, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 12, color: 'var(--text-sub)', fontFamily: 'monospace' }} />
+                        <button onClick={copyInvite} style={{ padding: '8px 14px', borderRadius: 6, border: 'none', background: inviteCopied ? 'var(--c-moss)' : 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                          {inviteCopied ? '✓ Скопировано' : 'Скопировать'}
                         </button>
-                      </>
+                        <button onClick={shareInvite} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>Поделиться</button>
+                      </div>
                     )}
-                  </>
+                  </div>
                 )}
 
-                {/* Telegram ID form */}
                 {addMode === 'telegram' && (
-                  <>
+                  <div>
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Числовой Telegram ID клиента (узнать у клиента или через @userinfobot)</div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <input
-                        value={addInput}
-                        onChange={e => { setAddInput(e.target.value); setAddError(''); }}
-                        onKeyDown={e => e.key === 'Enter' && addByTelegramId()}
-                        placeholder="Telegram ID клиента"
-                        inputMode="numeric"
-                        autoFocus
-                        style={{ flex: 1, background: 'rgba(var(--fg-rgb),0.06)', border: `1px solid ${addError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.12)'}`, borderRadius: 10, padding: '9px 12px', outline: 'none', color: 'var(--text)', fontSize: 14 }}
-                      />
-                      <button
-                        onClick={addByTelegramId} disabled={addLoading || !addInput.trim()}
-                        style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: addInput.trim() ? 'rgba(var(--fg-rgb),0.12)' : 'rgba(var(--fg-rgb),0.05)', color: addInput.trim() ? 'var(--text)' : 'rgba(var(--fg-rgb),0.3)', fontSize: 13, fontWeight: 600, cursor: addInput.trim() ? 'pointer' : 'default', flexShrink: 0 }}
-                      >
+                      <input type="number" value={addInput} onChange={e => setAddInput(e.target.value)} placeholder="123456789" style={{ width: 180, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }} />
+                      <button onClick={addByTelegramId} disabled={addLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                         {addLoading ? '...' : 'Добавить'}
                       </button>
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>Клиент должен хотя бы раз открыть приложение</div>
-                  </>
+                  </div>
                 )}
 
-                {/* Virtual client form */}
                 {addMode === 'virtual' && (
-                  <>
+                  <div>
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Для клиентов без Telegram — концептуализация и заметки без привязки к боту</div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <input
-                        value={addInput}
-                        onChange={e => { setAddInput(e.target.value); setAddError(''); }}
-                        onKeyDown={e => e.key === 'Enter' && addVirtualClient()}
-                        placeholder="Имя клиента"
-                        autoFocus
-                        style={{ flex: 1, background: 'rgba(var(--fg-rgb),0.06)', border: `1px solid ${addError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.12)'}`, borderRadius: 10, padding: '9px 12px', outline: 'none', color: 'var(--text)', fontSize: 14 }}
-                      />
-                      <button
-                        onClick={addVirtualClient} disabled={addLoading || !addInput.trim()}
-                        style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: addInput.trim() ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: addInput.trim() ? '#fff' : 'rgba(var(--fg-rgb),0.3)', fontSize: 13, fontWeight: 600, cursor: addInput.trim() ? 'pointer' : 'default', flexShrink: 0 }}
-                      >
+                      <input value={addInput} onChange={e => setAddInput(e.target.value)} placeholder="Имя клиента" style={{ width: 240, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }} />
+                      <button onClick={addVirtualClient} disabled={addLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                         {addLoading ? '...' : 'Создать'}
                       </button>
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>Для работы без Telegram: заметки, концептуализация, задания</div>
-                  </>
+                  </div>
                 )}
 
-                {addError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 8 }}>{addError}</div>}
+                {addError && <div style={{ marginTop: 12, fontSize: 13, color: 'var(--c-rose)' }}>{addError}</div>}
               </div>
             )}
 
-            {/* Client list */}
+            {/* Client table */}
             {loading ? (
-              <div style={{ color: 'var(--text-sub)', fontSize: 14, textAlign: 'center', paddingTop: 40 }}>Загружаю...</div>
+              <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>
             ) : clients.length === 0 ? (
-              <div style={{ color: 'var(--text-sub)', fontSize: 14, textAlign: 'center', paddingTop: 20, lineHeight: 1.8 }}>
-                Нет подключённых клиентов.<br />Нажми <strong style={{ color: 'var(--accent)' }}>+</strong> чтобы добавить.
+              <div style={{ padding: '80px 0', textAlign: 'center' }}>
+                <div style={{ fontSize: 40, marginBottom: 16 }}>👥</div>
+                <div style={{ fontSize: 16, color: 'var(--text-sub)', marginBottom: 6 }}>Пока нет клиентов</div>
+                <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>Добавь первого клиента через кнопку выше</div>
               </div>
-            ) : clients.map(c => {
-              const isToday = c.lastActiveDate === today;
-              const isVirtual = c.telegramId < 0;
-              const displayName = c.clientAlias ?? c.name ?? (isVirtual ? 'Оффлайн' : `ID ${c.telegramId}`);
-              const initials = displayName.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
-              const avatarColors = ['#a78bfa', '#60a5fa', '#f472b6', '#34d399', '#fb923c', '#facc15'];
-              const avatarColor = avatarColors[Math.abs(c.telegramId) % avatarColors.length];
-              return (
-                <div
-                  key={c.telegramId}
-                  onClick={() => { if (onOpenClient) onOpenClient(c.telegramId); else openClient(c); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 4px', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}
-                >
-                  {/* Avatar */}
-                  <div style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, background: avatarColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: '#fff' }}>
-                    {initials || '?'}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
-                      {displayName}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                      {isVirtual ? 'Без Telegram' : `${isToday ? 'Сегодня' : c.lastActiveDate ? fmtDate(c.lastActiveDate) : 'Не активен'} · Стрик ${c.streak} дн`}
-                    </div>
-                  </div>
-                  {c.todayIndex !== null && (
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 20, fontWeight: 600, color: indexColor(c.todayIndex), lineHeight: 1 }}>{c.todayIndex.toFixed(1)}</div>
-                      <div className="eyebrow" style={{ marginTop: 2 }}>индекс</div>
-                    </div>
-                  )}
-                  <span style={{ color: 'var(--text-faint)', fontSize: 16, flexShrink: 0 }}>›</span>
+            ) : (
+              <div>
+                <div className="r-row-head">
+                  <span className="eyebrow" style={{ flex: 2 }}>Клиент</span>
+                  <span className="eyebrow">Начало</span>
+                  <span className="eyebrow" style={{ textAlign: 'right' }}>Стрик</span>
+                  <span className="eyebrow" style={{ textAlign: 'right' }}>Индекс</span>
+                  <span className="eyebrow">Следующая встреча</span>
                 </div>
-              );
-            })}
-
-            {/* Invite button */}
-            {!loading && clients.length > 0 && (
-              <div
-                onClick={() => openAddMode('invite')}
-                style={{ border: '1px dashed rgba(var(--fg-rgb),0.18)', borderRadius: 16, padding: '14px 16px', textAlign: 'center', cursor: 'pointer', color: 'var(--text-sub)', fontSize: 14 }}
-              >
-                + Пригласить клиента
+                {clients.map(client => (
+                  <div key={client.telegramId} className="r-row row-hover" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
+                    <div style={{ flex: 2, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600 }}>{client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}</span>
+                        {!client.name && <span className="chip chip-line" style={{ fontSize: 10 }}>оффлайн</span>}
+                      </div>
+                      {client.lastActiveDate && (
+                        <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3 }}>активен {fmtDate(client.lastActiveDate)}</div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                      {client.therapyStartDate ? fmtDate(client.therapyStartDate) : '—'}
+                    </div>
+                    <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-sub)' }}>
+                      {client.streak > 0 ? `${client.streak} дн.` : '—'}
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      {client.todayIndex != null ? (
+                        <span style={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.02em', color: indexColor(client.todayIndex) }}>
+                          {client.todayIndex.toFixed(1)}
+                        </span>
+                      ) : <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>—</span>}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                      {client.nextSession ? nextSessionLabel(client.nextSession) : '—'}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ── RIGHT MAIN: client detail ──────────────────────────────── */}
-      <div className={`therapist-main${view === 'client' ? ' therapist-main--visible' : ''}`}>
+      {/* ── CLIENT VIEW ────────────────────────────────────────────────────────── */}
+      {view === 'client' && selectedClient && (
+        <div key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-        {/* Empty state — no client selected */}
-        {(!selectedClient || view === 'list') && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 12, color: 'var(--text-ghost)' }}>
-            <div style={{ fontSize: 40 }}>←</div>
-            <div style={{ fontSize: 14 }}>Выбери клиента</div>
-          </div>
-        )}
+          {/* Client header */}
+          <div style={{ borderBottom: '1px solid var(--line)', padding: '24px 48px 0', flexShrink: 0 }}>
+            <button onClick={() => switchView('list')} style={{ background: 'none', border: 'none', padding: '0 0 14px', fontSize: 13, color: 'var(--text-faint)', cursor: 'pointer' }}>
+              ← Все клиенты
+            </button>
 
-        {view === 'client' && selectedClient && (
-          <div key={`client-${animKey}`} style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', animation: 'fade-in 0.22s ease' }}>
-
-          {/* ── STICKY HEADER ── */}
-          <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '16px 24px 0' }}>
-            {/* Header row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              {/* Back button — mobile only */}
-              <div
-                onClick={() => { if (onOpenClient !== undefined) onViewChange('list'); else switchView('list'); setRenamingAlias(false); setYsqRequested(false); }}
-                className="therapist-back-btn"
-                style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
-              >
-                <span style={{ fontSize: 22, color: 'var(--text-sub)', lineHeight: 1 }}>‹</span>
-              </div>
-
-              {/* Name / rename */}
-              {renamingAlias ? (
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {renamingAlias ? (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                     <input
-                      autoFocus value={aliasInput}
+                      autoFocus
+                      value={aliasInput}
                       onChange={e => setAliasInput(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && saveAlias()}
-                      placeholder={selectedClient.name ?? 'Имя'}
-                      maxLength={100}
-                      style={{ flex: 1, background: 'rgba(var(--fg-rgb),0.07)', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 10, padding: '7px 10px', outline: 'none', color: 'var(--text)', fontSize: 15 }}
+                      onKeyDown={e => { if (e.key === 'Enter') saveAlias(); if (e.key === 'Escape') setRenamingAlias(false); }}
+                      style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', background: 'transparent', border: 'none', borderBottom: '2px solid var(--accent)', outline: 'none', width: 280, padding: '2px 0', color: 'var(--text)' }}
                     />
-                    <button onClick={saveAlias} disabled={aliasSaving} style={{ padding: '7px 12px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                      {aliasSaving ? '...' : '✓'}
+                    <button onClick={saveAlias} disabled={aliasSaving} style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 12, cursor: 'pointer' }}>
+                      {aliasSaving ? '...' : 'Сохранить'}
                     </button>
-                    <button onClick={() => { setRenamingAlias(false); setAliasError(''); }} style={{ padding: '7px 10px', borderRadius: 10, border: 'none', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>✕</button>
+                    <button onClick={() => setRenamingAlias(false)} style={{ padding: '4px 8px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                    {aliasError && <span style={{ fontSize: 12, color: 'var(--c-rose)' }}>{aliasError}</span>}
                   </div>
-                  {aliasError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 4 }}>{aliasError}</div>}
-                </div>
-              ) : (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {selectedClient.clientAlias ?? selectedClient.name ?? 'Клиент'}
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.025em', margin: 0 }}>
+                      {selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`}
+                    </h1>
+                    {!selectedClient.name && <span className="chip chip-line" style={{ fontSize: 11 }}>оффлайн</span>}
+                    <button
+                      onClick={() => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); }}
+                      style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer' }}
+                      title="Переименовать"
+                    >✎</button>
                   </div>
-                  <button
-                    onClick={() => { setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); setRenamingAlias(true); }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-faint)', padding: '4px', flexShrink: 0 }}
-                  >✎</button>
-                  <button
-                    onClick={deleteClient} disabled={deleteLoading}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--accent-red)', padding: '4px', flexShrink: 0 }}
-                    title="Удалить клиента"
-                  >🗑</button>
+                )}
+                <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {selectedClient.therapyStartDate && (
+                    <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                      С {fmtDate(selectedClient.therapyStartDate)} · {calcTherapyDuration(selectedClient.therapyStartDate)}
+                    </span>
+                  )}
+                  {selectedClient.nextSession && (
+                    <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                      следующая {nextSessionLabel(selectedClient.nextSession)}
+                    </span>
+                  )}
+                  {selectedClient.todayIndex != null && (
+                    <span style={{ fontSize: 13, fontWeight: 500, color: indexColor(selectedClient.todayIndex) }}>
+                      Индекс {selectedClient.todayIndex.toFixed(1)}
+                    </span>
+                  )}
+                  {selectedClient.streak > 0 && (
+                    <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>🔥 стрик {selectedClient.streak} дн.</span>
+                  )}
                 </div>
-              )}
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 24 }}>
+                <button onClick={() => setShowAssign(true)} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                  + Задание
+                </button>
+                <button onClick={() => setClientTab('sessions')} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>
+                  + Заметка
+                </button>
+                <button onClick={deleteClient} disabled={deleteLoading} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--c-rose)', cursor: 'pointer' }}>
+                  {deleteLoading ? '...' : 'Удалить'}
+                </button>
+              </div>
             </div>
 
-              {/* Delete error */}
-              {deleteError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 4, textAlign: 'center' }}>{deleteError}</div>}
+            {/* Tabs */}
+            <div className="tabs">
+              {([
+                ['overview', 'Обзор', null],
+                ['concept', 'Концептуализация', null],
+                ['sessions', 'Сессии', notes.length],
+                ['tasks', 'Задания', clientTasks.length],
+                ['ysq', 'YSQ', clientData?.ysqHistory?.length ?? 0],
+                ['client_notes', 'Записи клиента', clientSchemaNotesData.length + clientModeNotesData.length],
+              ] as [ClientTab, string, number | null][]).map(([t, label, count]) => (
+                <button key={t} className={`tab${clientTab === t ? ' is-active' : ''}`} onClick={() => setClientTab(t)}>
+                  {label}
+                  {count != null && count > 0 && (
+                    <span style={{ marginLeft: 6, background: 'var(--surface-3)', borderRadius: 10, padding: '1px 6px', fontSize: 10.5, fontWeight: 500 }}>{count}</span>
+                  )}
+                </button>
+              ))}
             </div>
 
-          {/* ── SCROLLABLE CONTENT ── */}
-          <div style={{ flex: 1, padding: '20px 24px 60px' }}>
+            {deleteError && <div style={{ padding: '8px 0', fontSize: 13, color: 'var(--c-rose)' }}>{deleteError}</div>}
+          </div>
 
-            {/* ── SESSION CARD ── */}
-            {(() => {
-              const effectiveStart = selectedClient.therapyStartDate ?? selectedClient.relationCreatedAt;
-              const duration = effectiveStart ? calcTherapyDuration(effectiveStart) : null;
-              const displayDays = editingDays ? localMeetingDays : (selectedClient.meetingDays ?? []);
-              return (
-                <div style={{ background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid rgba(var(--fg-rgb),0.08)', borderRadius: 18, padding: '14px 16px', marginBottom: 12 }}>
-                  {/* Row 1: Start date + duration */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <div>
-                      {editingStartDate ? (
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <input
-                            type="date" value={localStartDate} onChange={e => setLocalStartDate(e.target.value)} autoFocus
-                            style={{ background: 'rgba(var(--fg-rgb),0.07)', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 8, padding: '5px 8px', outline: 'none', color: 'var(--text)', fontSize: 13 }}
-                          />
-                          <button onClick={async () => { await saveSessionInfo({ therapyStartDate: localStartDate || null }); setEditingStartDate(false); }} disabled={sessionInfoSaving} style={{ padding: '5px 10px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, cursor: 'pointer' }}>✓</button>
-                          <button onClick={() => setEditingStartDate(false)} style={{ padding: '5px 8px', borderRadius: 8, border: 'none', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>✕</button>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }} onClick={() => { setLocalStartDate(selectedClient.therapyStartDate ?? selectedClient.relationCreatedAt?.slice(0, 10) ?? ''); setEditingStartDate(true); }}>
-                          <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-                            {effectiveStart ? `С ${fmtDate(effectiveStart.slice(0, 10))}` : 'Начало не указано'}
-                          </span>
-                          {duration && <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>· {duration}</span>}
-                          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>✎</span>
-                        </div>
-                      )}
-                    </div>
-                    {/* Activity badge */}
-                    {selectedClient.telegramId > 0 && selectedClient.lastActiveDate && (
-                      <span style={{ fontSize: 11, color: selectedClient.lastActiveDate === today ? '#06d6a0' : 'rgba(var(--fg-rgb),0.3)', background: selectedClient.lastActiveDate === today ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)' : 'rgba(var(--fg-rgb),0.05)', padding: '3px 8px', borderRadius: 20 }}>
-                        {selectedClient.lastActiveDate === today ? '● сегодня' : fmtDate(selectedClient.lastActiveDate)}
-                      </span>
-                    )}
-                  </div>
+          {/* Tab content */}
+          <div style={{ flex: 1, overflow: 'auto' }} key={clientTab}>
 
-                  {/* Row 2: Meeting days + next session */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    {/* Days */}
-                    {editingDays ? (
-                      <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-                        {[1,2,3,4,5,6,0].map(d => (
-                          <button key={d}
-                            onClick={() => setLocalMeetingDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])}
-                            style={{ padding: '4px 9px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, background: localMeetingDays.includes(d) ? 'color-mix(in srgb, var(--accent) 30%, transparent)' : 'rgba(var(--fg-rgb),0.07)', color: localMeetingDays.includes(d) ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.4)' }}
-                          >{DAY_NAMES[d]}</button>
-                        ))}
-                        <button onClick={async () => { await saveSessionInfo({ meetingDays: localMeetingDays }); setEditingDays(false); }} disabled={sessionInfoSaving} style={{ padding: '4px 10px', borderRadius: 20, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>✓</button>
-                        <button onClick={() => setEditingDays(false)} style={{ padding: '4px 8px', borderRadius: 20, border: 'none', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>✕</button>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', gap: 4, alignItems: 'center', cursor: 'pointer' }} onClick={() => { setLocalMeetingDays(selectedClient.meetingDays ?? []); setEditingDays(true); }}>
-                        {displayDays.length === 0 ? (
-                          <span style={{ fontSize: 12, color: 'var(--text-faint)', borderBottom: '1px dashed rgba(var(--fg-rgb),0.2)' }}>дни встреч +</span>
-                        ) : (
-                          <>
-                            {[1,2,3,4,5,6,0].filter(d => displayDays.includes(d)).map(d => (
-                              <span key={d} style={{ fontSize: 12, fontWeight: 600, padding: '3px 8px', borderRadius: 20, background: 'color-mix(in srgb, var(--accent) 15%, transparent)', color: 'var(--accent)' }}>{DAY_NAMES[d]}</span>
-                            ))}
-                            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>✎</span>
-                          </>
-                        )}
+            {/* ── OVERVIEW ─────────────────────────────────────────────────────── */}
+            {clientTab === 'overview' && (
+              <div className="page-inner-wide" style={{ paddingTop: 40 }}>
+                <div className="doc-grid">
+                  <div>
+                    {/* Therapy goals */}
+                    {(localConcept.goals || concept?.goals) && (
+                      <div className="section">
+                        <div className="eyebrow" style={{ marginBottom: 14 }}>Цель терапии</div>
+                        <div style={{ fontSize: 20, lineHeight: 1.5, color: 'var(--text)', letterSpacing: '-0.015em', maxWidth: 720, fontWeight: 400 }}>
+                          {(localConcept.goals || concept?.goals) as string}
+                        </div>
+                        <button className="link" style={{ marginTop: 16, fontSize: 13, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)' }} onClick={() => setClientTab('concept')}>
+                          Открыть концептуализацию →
+                        </button>
                       </div>
                     )}
 
-                    {/* Next session */}
-                    {!editingDays && (
-                      editingNextSession ? (
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginLeft: 'auto' }}>
-                          <input
-                            type="datetime-local" value={localNextSession} onChange={e => setLocalNextSession(e.target.value)} autoFocus
-                            style={{ background: 'rgba(var(--fg-rgb),0.07)', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 8, padding: '5px 8px', outline: 'none', color: 'var(--text)', fontSize: 13 }}
-                          />
-                          <button onClick={async () => { await saveSessionInfo({ nextSession: localNextSession || null }); setEditingNextSession(false); }} disabled={sessionInfoSaving} style={{ padding: '5px 10px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, cursor: 'pointer' }}>✓</button>
-                          <button onClick={() => setEditingNextSession(false)} style={{ padding: '5px 8px', borderRadius: 8, border: 'none', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                    {/* Active schemas by domain */}
+                    {activeSchemaIds.length > 0 && (
+                      <div className="section">
+                        <div className="section-head" style={{ marginBottom: 20 }}>
+                          <h3>Активные схемы</h3>
+                          <span className="hint">{activeSchemaIds.length} в работе</span>
                         </div>
-                      ) : (
-                        <div style={{ marginLeft: 'auto', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => { setLocalNextSession(selectedClient.nextSession ?? ''); setEditingNextSession(true); }}>
-                          {selectedClient.nextSession ? (
-                            <>
-                              <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>след.</span>
-                              <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(var(--fg-rgb),0.7)' }}>{nextSessionLabel(selectedClient.nextSession)}</span>
-                              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>✎</span>
-                            </>
-                          ) : (
-                            <span style={{ fontSize: 12, color: 'var(--text-faint)', borderBottom: '1px dashed rgba(var(--fg-rgb),0.2)' }}>следующая +</span>
-                          )}
-                        </div>
-                      )
-                    )}
-                  </div>
-                  {sessionInfoError && <div style={{ fontSize: 11, color: 'var(--accent-red)', marginTop: 6, textAlign: 'center' }}>{sessionInfoError}</div>}
-                </div>
-              );
-            })()}
-
-            {/* ── CLINICAL SNAPSHOT ── */}
-            {(() => {
-              const hasSchemas = activeSchemaIds.length > 0;
-              const hasModes = activeModeIds.length > 0;
-              const hasGoals = !!(concept?.goals || (localConcept.goals as string));
-              const hasTransitions = !!(concept?.modeTransitions || (localConcept.modeTransitions as string));
-              const hasAnything = hasSchemas || hasModes || hasGoals || hasTransitions;
-              return (
-                <div style={{ background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.07)', borderRadius: 18, padding: '14px 16px', marginBottom: 12 }}>
-                  {hasAnything ? (
-                    <>
-                      {hasGoals && (
-                        <div style={{ marginBottom: 12 }}>
-                          <div className="eyebrow" style={{ marginBottom: 5 }}>Цель терапии</div>
-                          <div style={{ fontSize: 13, color: 'rgba(var(--fg-rgb),0.75)', lineHeight: 1.5 }}>
-                            {((concept?.goals || (localConcept.goals as string)) ?? '').slice(0, 160)}
-                            {((concept?.goals || (localConcept.goals as string)) ?? '').length > 160 ? '...' : ''}
-                          </div>
-                        </div>
-                      )}
-                      {hasSchemas && (
-                        <div style={{ marginBottom: 12 }}>
-                          <div className="eyebrow" style={{ marginBottom: 6 }}>Схемы ({activeSchemaIds.length})</div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                            {activeSchemaIds.map(id => {
-                              const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
-                              const schema = domain?.schemas.find(s => s.id === id);
-                              return schema ? <span key={id} style={{ fontSize: 12, padding: '3px 9px', borderRadius: 20, background: (domain?.color ?? '#888') + '25', color: domain?.color ?? 'rgba(var(--fg-rgb),0.6)' }}>{schema.emoji} {schema.name}</span> : null;
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      {hasModes && (
-                        <div style={{ marginBottom: hasTransitions ? 12 : 0 }}>
-                          <div className="eyebrow" style={{ marginBottom: 6 }}>Карта режимов</div>
-                          {MODE_GROUPS.map(group => {
-                            const groupModes = group.items.filter(m => activeModeIds.includes(m.id));
-                            if (groupModes.length === 0) return null;
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                          {SCHEMA_DOMAINS.map(domain => {
+                            const active = domain.schemas.filter(s => activeSchemaIds.includes(s.id));
+                            if (active.length === 0) return null;
                             return (
-                              <div key={group.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 5 }}>
-                                <span className="eyebrow" style={{ color: group.color + 'aa', flexShrink: 0, minWidth: 68, paddingTop: 4 }}>{group.group.split(':').pop()?.trim() ?? group.group}</span>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                  {groupModes.map(m => <span key={m.id} style={{ fontSize: 12, padding: '3px 9px', borderRadius: 20, background: group.color + '25', color: group.color }}>{m.emoji} {m.name}</span>)}
+                              <div key={domain.id}>
+                                <div className="eyebrow" style={{ color: domain.color, marginBottom: 8 }}>{domain.domain}</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 24, rowGap: 6 }}>
+                                  {active.map(s => (
+                                    <div key={s.id} className="tag-mini">
+                                      <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: domain.color, marginRight: 5, verticalAlign: 'middle' }} />
+                                      {s.name}
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             );
                           })}
                         </div>
-                      )}
-                      {hasTransitions && (
-                        <div>
-                          <div className="eyebrow" style={{ marginBottom: 5 }}>Переходы режимов</div>
-                          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-                            {((concept?.modeTransitions || (localConcept.modeTransitions as string)) ?? '').slice(0, 200)}
-                            {((concept?.modeTransitions || (localConcept.modeTransitions as string)) ?? '').length > 200 ? '...' : ''}
-                          </div>
+                      </div>
+                    )}
+
+                    {/* Mode map */}
+                    {activeModeIds.length > 0 && (
+                      <div className="section">
+                        <div className="section-head" style={{ marginBottom: 20 }}>
+                          <h3>Карта режимов</h3>
+                          <span className="hint">{activeModeIds.length} в работе</span>
                         </div>
-                      )}
-                      <button onClick={() => setShowConceptSheet(true)} style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--accent)', fontSize: 12, cursor: 'pointer', padding: 0, fontWeight: 500 }}>
-                        Редактировать концептуализацию →
-                      </button>
-                    </>
-                  ) : (
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 10 }}>Концептуализация не заполнена</div>
-                      <button onClick={() => setShowConceptSheet(true)} style={{ background: 'color-mix(in srgb, var(--accent) 15%, transparent)', border: 'none', borderRadius: 12, padding: '9px 18px', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                        Заполнить концептуализацию
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* ── ACTION BUTTONS ── */}
-            <div className="section" style={{ marginTop: 20 }}>
-              <div className="section-head"><h3>Работа с клиентом</h3></div>
-              <div onClick={() => setShowTasksSheet(true)} className="list-line" style={{ cursor: 'pointer' }}>
-                <span style={{ fontSize: 18 }}>📋</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>Задания</div>
-                  {clientTasks.filter(t => t.done === null && !t.doneToday).length > 0 && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>{clientTasks.filter(t => t.done === null && !t.doneToday).length} активных</div>}
-                </div>
-                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
-              </div>
-              <div onClick={() => setShowNotesSheet(true)} className="list-line" style={{ cursor: 'pointer' }}>
-                <span style={{ fontSize: 18 }}>📝</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>Заметки сессий</div>
-                  {notes.length > 0 && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>{notes.length} заметок</div>}
-                </div>
-                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
-              </div>
-              <div onClick={() => setShowConceptSheet(true)} className="list-line" style={{ cursor: 'pointer' }}>
-                <span style={{ fontSize: 18 }}>🗂</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>Концептуализация</div>
-                  {concept?.updatedAt && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>Обновлено {fmtDate(concept.updatedAt.slice(0, 10))}</div>}
-                </div>
-                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
-              </div>
-              <div onClick={() => setShowClientNotesSheet(true)} className="list-line" style={{ cursor: 'pointer' }}>
-                <span style={{ fontSize: 18 }}>📖</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>Записи клиента</div>
-                  {(clientSchemaNotesData.length + clientModeNotesData.length) > 0
-                    ? <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>Схем: {clientSchemaNotesData.length} · Режимов: {clientModeNotesData.length}</div>
-                    : <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Карточки схем и режимов</div>
-                  }
-                </div>
-                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
-              </div>
-            </div>
-
-          </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── BOTTOM SHEETS ── */}
-
-      {/* ── TASKS SHEET ── */}
-      {showTasksSheet && selectedClient && (
-        <BottomSheet onClose={() => setShowTasksSheet(false)}>
-          <div style={{ paddingTop: 4 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>📋 Задания</div>
-            <div style={{ background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.07)', borderRadius: 16, overflow: 'hidden', marginBottom: 12 }}>
-              {clientTasks.length === 0 ? (
-                <div style={{ padding: '20px 16px', fontSize: 13, color: 'var(--text-sub)', textAlign: 'center' }}>Нет назначенных заданий</div>
-              ) : clientTasks.map((task, i) => (
-                <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 16px', borderTop: i > 0 ? '1px solid rgba(var(--fg-rgb),0.05)' : undefined }}>
-                  <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{task.done === true ? '✅' : task.done === false ? '❌' : task.doneToday ? '✅' : '⏳'}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.4 }}>{task.text}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 3 }}>
-                      {task.dueDate ? `Срок: ${fmtDate(task.dueDate)}` : fmtDate(task.createdAt.slice(0, 10))}
-                    </div>
-                    {task.progress !== undefined && task.targetDays && (
-                      <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ flex: 1, height: 4, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                          <div style={{ width: `${Math.min(task.progress / task.targetDays, 1) * 100}%`, height: '100%', background: 'var(--accent)', borderRadius: 4 }} />
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32 }}>
+                          {MODE_GROUPS.map(group => {
+                            const active = group.items.filter(m => activeModeIds.includes(m.id));
+                            return (
+                              <div key={group.id}>
+                                <div className="eyebrow" style={{ color: group.color, marginBottom: 10 }}>{group.group}</div>
+                                {active.length === 0 ? (
+                                  <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>—</div>
+                                ) : (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                    {active.map(m => (
+                                      <div key={m.id} style={{ fontSize: 13, color: 'var(--text)' }}>{m.emoji} {m.name}</div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                        <span style={{ fontSize: 11, color: 'var(--text-sub)', flexShrink: 0 }}>{task.progress}/{task.targetDays}</span>
+                      </div>
+                    )}
+
+                    {/* Last session note */}
+                    {notes.length > 0 && (
+                      <div className="section">
+                        <div className="section-head" style={{ marginBottom: 16 }}>
+                          <h3>Заметка сессии</h3>
+                          <button className="link" style={{ fontSize: 13, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)' }} onClick={() => setClientTab('sessions')}>Все заметки →</button>
+                        </div>
+                        <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-sub)', maxWidth: 720 }}>{notes[0].text}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8 }}>{fmtDate(notes[0].date)}</div>
+                      </div>
+                    )}
+
+                    {/* Client notes preview */}
+                    {clientSchemaNotesData.length > 0 && (
+                      <div className="section">
+                        <div className="section-head" style={{ marginBottom: 16 }}>
+                          <h3>Последние записи клиента</h3>
+                          <button className="link" style={{ fontSize: 13, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)' }} onClick={() => setClientTab('client_notes')}>Все записи →</button>
+                        </div>
+                        {clientSchemaNotesData.slice(0, 2).map(n => {
+                          const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === n.schemaId);
+                          const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === n.schemaId));
+                          return (
+                            <div key={n.schemaId} className="list-line">
+                              <span style={{ width: 3, alignSelf: 'stretch', background: domain?.color ?? 'var(--accent)', borderRadius: 2, flexShrink: 0 }} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600 }}>{s?.emoji} {s?.name ?? n.schemaId}</div>
+                                <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>Схема-карточка</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Empty state */}
+                    {activeSchemaIds.length === 0 && activeModeIds.length === 0 && notes.length === 0 && (
+                      <div className="section">
+                        <div style={{ padding: '32px 0', color: 'var(--text-faint)', fontSize: 14 }}>
+                          Заполни концептуализацию, чтобы увидеть схемы и режимы клиента
+                        </div>
+                        <button onClick={() => setClientTab('concept')} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                          Открыть концептуализацию
+                        </button>
                       </div>
                     )}
                   </div>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowAssign(true)}
-              style={{ width: '100%', padding: '13px 0', borderRadius: 14, border: 'none', background: 'color-mix(in srgb, var(--accent) 15%, transparent)', color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-            >
-              + Назначить задание
-            </button>
-          </div>
-        </BottomSheet>
-      )}
 
-      {/* ── NOTES SHEET ── */}
-      {showNotesSheet && selectedClient && (
-        <BottomSheet onClose={() => setShowNotesSheet(false)}>
-          <div style={{ paddingTop: 4 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>📝 Заметки сессий</div>
-            {notes.length === 0 ? (
-              <div style={{ color: 'var(--text-faint)', fontSize: 13, textAlign: 'center', padding: '20px 0 16px' }}>Нет заметок. Добавь первую ниже.</div>
-            ) : notes.map(note => (
-              <div key={note.id} style={{ background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.06)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>{fmtDate(note.date)}</span>
-                  <button onClick={() => removeNote(note.id)} style={{ background: 'none', border: 'none', color: 'var(--accent-red)', fontSize: 18, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>×</button>
-                </div>
-                <div style={{ fontSize: 13, color: 'rgba(var(--fg-rgb),0.75)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.text}</div>
-              </div>
-            ))}
-            <div style={{ background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.07)', borderRadius: 16, padding: 14, marginTop: 8 }}>
-              <textarea
-                value={newNoteText} onChange={e => { setNewNoteText(e.target.value); setNoteError(''); }}
-                placeholder="Заметка сессии: наблюдения, гипотезы, динамика, план следующей встречи..."
-                rows={3}
-                style={{ width: '100%', boxSizing: 'border-box', background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: 'var(--text)', fontSize: 13, lineHeight: 1.5, fontFamily: 'inherit' }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                {noteError ? <div style={{ fontSize: 12, color: 'var(--accent-red)' }}>{noteError}</div> : <div />}
-                <button
-                  onClick={addNote} disabled={noteSaving || !newNoteText.trim()}
-                  style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: newNoteText.trim() ? 'color-mix(in srgb, var(--accent) 25%, transparent)' : 'rgba(var(--fg-rgb),0.06)', color: newNoteText.trim() ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.25)', fontSize: 13, fontWeight: 600, cursor: newNoteText.trim() ? 'pointer' : 'default', opacity: noteSaving ? 0.6 : 1 }}
-                >
-                  {noteSaving ? 'Сохраняю...' : 'Добавить заметку'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </BottomSheet>
-      )}
-
-      {/* ── CONCEPT SHEET ── */}
-      {showConceptSheet && selectedClient && (
-        <BottomSheet onClose={() => { if (conceptDirty) saveConcept(); setShowConceptSheet(false); }}>
-          <div style={{ paddingTop: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>🗂 Концептуализация</div>
-              {concept && (concept.history as unknown[])?.length > 0 && (
-                <button
-                  onClick={() => setShowHistory(h => !h)}
-                  style={{ background: showHistory ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'rgba(var(--fg-rgb),0.06)', border: 'none', borderRadius: 10, padding: '5px 10px', color: showHistory ? 'var(--accent)' : 'var(--text-sub)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                >
-                  🕐 История ({(concept.history as unknown[]).length})
-                </button>
-              )}
-            </div>
-            {showHistory && concept && (concept.history as unknown[])?.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {(concept.history as import('../api').ConceptSnapshot[]).map((snap, i) => {
-                    const snapSchemas = (snap.schemaIds ?? []).map(id => {
-                      const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
-                      const schema = domain?.schemas.find(s => s.id === id);
-                      return schema ? { schema, color: domain!.color } : null;
-                    }).filter(Boolean) as { schema: { id: string; name: string; emoji: string }; color: string }[];
-                    const textFields = [
-                      { label: 'Цель', val: snap.goals },
-                      { label: 'Опыт', val: snap.earlyExperience },
-                      { label: 'Потребности', val: snap.unmetNeeds },
-                      { label: 'Триггеры', val: snap.triggers },
-                      { label: 'Копинг', val: snap.copingStyles },
-                      { label: 'Переходы', val: snap.modeTransitions },
-                      { label: 'Проблемы', val: snap.currentProblems },
-                    ].filter(f => f.val);
-                    return (
-                      <div key={i} style={{ background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.06)', borderRadius: 14, padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-sub)' }}>{fmtDate(snap.savedAt.slice(0, 10))}</span>
-                          <button
-                            onClick={() => { setLocalConcept({ schemaIds: snap.schemaIds ?? [], modeIds: snap.modeIds ?? [], earlyExperience: snap.earlyExperience ?? '', unmetNeeds: snap.unmetNeeds ?? '', triggers: snap.triggers ?? '', copingStyles: snap.copingStyles ?? '', goals: snap.goals ?? '', currentProblems: snap.currentProblems ?? '', modeTransitions: snap.modeTransitions ?? '' }); setConceptDirty(true); setShowHistory(false); }}
-                            style={{ fontSize: 11, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 10%, transparent)', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer' }}
-                          >Восстановить</button>
+                  {/* Right sidebar */}
+                  <aside>
+                    {/* Next session */}
+                    <div className="section">
+                      <div className="eyebrow" style={{ marginBottom: 14 }}>Следующая сессия</div>
+                      {editingNextSession ? (
+                        <div>
+                          <input
+                            type="datetime-local"
+                            value={localNextSession}
+                            onChange={e => setLocalNextSession(e.target.value)}
+                            style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }}
+                          />
+                          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                            <button onClick={async () => { await saveSessionInfo({ nextSession: localNextSession || null }); setEditingNextSession(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 12, cursor: 'pointer' }}>
+                              {sessionInfoSaving ? '...' : 'Сохранить'}
+                            </button>
+                            <button onClick={() => setEditingNextSession(false)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
+                          </div>
                         </div>
-                        {snapSchemas.length > 0 && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
-                            {snapSchemas.map(({ schema, color }) => (
-                              <span key={schema.id} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: color + '20', color }}>{schema.emoji} {schema.name}</span>
-                            ))}
+                      ) : (
+                        <div>
+                          {selectedClient.nextSession ? (
+                            <div style={{ fontSize: 20, fontWeight: 500, letterSpacing: '-0.02em' }}>
+                              {nextSessionLabel(selectedClient.nextSession)}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>Не установлена</div>
+                          )}
+                          {selectedClient.meetingDays && selectedClient.meetingDays.length > 0 && (
+                            <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 4 }}>
+                              {selectedClient.meetingDays.map(d => DAY_NAMES[d]).join(', ')} еженедельно
+                            </div>
+                          )}
+                          <button onClick={() => { setEditingNextSession(true); setLocalNextSession(selectedClient.nextSession ?? ''); }} style={{ background: 'none', border: 'none', padding: '8px 0 0', fontSize: 12, color: 'var(--accent)', cursor: 'pointer' }}>
+                            Изменить →
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
+
+                    {/* Start date */}
+                    <div className="section">
+                      <div className="eyebrow" style={{ marginBottom: 10 }}>Начало терапии</div>
+                      {editingStartDate ? (
+                        <div>
+                          <input
+                            type="date"
+                            value={localStartDate}
+                            onChange={e => setLocalStartDate(e.target.value)}
+                            style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }}
+                          />
+                          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                            <button onClick={async () => { await saveSessionInfo({ therapyStartDate: localStartDate || null }); setEditingStartDate(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 12, cursor: 'pointer' }}>
+                              {sessionInfoSaving ? '...' : 'Сохранить'}
+                            </button>
+                            <button onClick={() => setEditingStartDate(false)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
                           </div>
-                        )}
-                        {(snap.modeIds ?? []).length > 0 && (
-                          <div style={{ marginBottom: 6 }}>
-                            {MODE_GROUPS.map(group => {
-                              const gm = group.items.filter(m => (snap.modeIds ?? []).includes(m.id));
-                              if (gm.length === 0) return null;
-                              return (
-                                <div key={group.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 3 }}>
-                                  {gm.map(m => <span key={m.id} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: group.color + '20', color: group.color }}>{m.emoji} {m.name}</span>)}
-                                </div>
-                              );
-                            })}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 14, color: 'var(--text)' }}>
+                            {selectedClient.therapyStartDate ? fmtDate(selectedClient.therapyStartDate) : <span style={{ color: 'var(--text-faint)' }}>Не указана</span>}
+                          </span>
+                          <button onClick={() => { setEditingStartDate(true); setLocalStartDate(selectedClient.therapyStartDate ?? ''); }} style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--accent)', cursor: 'pointer' }}>
+                            изменить
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Wellbeing index */}
+                    {selectedClient.todayIndex != null && (
+                      <>
+                        <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
+                        <div className="section">
+                          <div className="eyebrow" style={{ marginBottom: 14 }}>Индекс сегодня</div>
+                          <div style={{ fontSize: 48, fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1, color: indexColor(selectedClient.todayIndex) }}>
+                            {selectedClient.todayIndex.toFixed(1)}
                           </div>
-                        )}
-                        {textFields.map(({ label, val }) => (
-                          <div key={label} style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 3 }}>
-                            <span style={{ color: 'var(--text-faint)', fontWeight: 600 }}>{label}: </span>
-                            {(val ?? '').slice(0, 140)}{(val ?? '').length > 140 ? '...' : ''}
+                        </div>
+                      </>
+                    )}
+
+                    <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
+
+                    {/* Quick actions */}
+                    <div className="section">
+                      <div className="eyebrow" style={{ marginBottom: 14 }}>Действия</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {[
+                          { label: '+ Заметка сессии', action: () => setClientTab('sessions') },
+                          { label: '+ Назначить задание', action: () => setShowAssign(true) },
+                          { label: '→ Запросить YSQ', action: () => setClientTab('ysq') },
+                          { label: `↗ Экспорт концепта${exportCopied ? ' ✓' : ''}`, action: handleExport },
+                        ].map(item => (
+                          <button key={item.label} onClick={item.action} style={{ textAlign: 'left', background: 'none', border: 'none', padding: 0, fontSize: 13, color: 'var(--accent)', cursor: 'pointer' }}>
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </aside>
+                </div>
+              </div>
+            )}
+
+            {/* ── CONCEPT ──────────────────────────────────────────────────────── */}
+            {clientTab === 'concept' && (
+              <div className="page-inner-wide" style={{ paddingTop: 40 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
+                  <div>
+                    <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Концептуализация</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {conceptDirty && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>несохранено</span>}
+                    <button onClick={saveConcept} disabled={!conceptDirty || conceptSaving} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: conceptDirty ? 'var(--accent)' : 'var(--surface-3)', color: conceptDirty ? 'var(--on-accent)' : 'var(--text-faint)', fontSize: 13, fontWeight: 500, cursor: conceptDirty ? 'pointer' : 'default' }}>
+                      {conceptSaving ? 'Сохраняю...' : 'Сохранить'}
+                    </button>
+                    <button onClick={handleExport} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, cursor: 'pointer' }}>
+                      ↗ Экспорт{exportCopied ? ' ✓' : ''}
+                    </button>
+                  </div>
+                </div>
+
+                {conceptError && <div style={{ marginBottom: 16, padding: '10px 16px', borderRadius: 8, background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', color: 'var(--c-rose)', fontSize: 13 }}>{conceptError}</div>}
+
+                <div className="doc-grid">
+                  <div>
+                    {/* Goals */}
+                    <div className="section">
+                      <div className="eyebrow" style={{ marginBottom: 12 }}>Цели схема-терапии</div>
+                      <textarea
+                        className="textarea"
+                        value={(localConcept.goals as string) ?? ''}
+                        onChange={e => patchConcept({ goals: e.target.value })}
+                        placeholder="Что должно измениться. Конкретные результаты, на которые направлена работа."
+                        rows={3}
+                        style={{ fontSize: 15, lineHeight: 1.6, borderColor: 'var(--accent-line)' }}
+                      />
+                    </div>
+
+                    {/* Schema selection */}
+                    <div className="section">
+                      <div className="section-head" style={{ marginBottom: 20 }}>
+                        <h3>Актуальные схемы</h3>
+                        <span className="hint">{activeSchemaIds.length} активны из 20</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        {SCHEMA_DOMAINS.map(domain => (
+                          <div key={domain.id}>
+                            <div className="eyebrow" style={{ color: domain.color, marginBottom: 10 }}>{domain.domain}</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                              {domain.schemas.map(s => {
+                                const active = activeSchemaIds.includes(s.id);
+                                return (
+                                  <button key={s.id} onClick={() => toggleSchemaId(s.id)} style={{ padding: '6px 12px', borderRadius: 6, fontSize: 12.5, fontWeight: active ? 600 : 500, background: active ? domain.color + '18' : 'transparent', color: active ? domain.color : 'var(--text-faint)', border: `1px solid ${active ? domain.color + '40' : 'var(--line)'}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+                                    {s.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Mode selection */}
+                    <div className="section">
+                      <div className="section-head" style={{ marginBottom: 20 }}>
+                        <h3>Карта режимов</h3>
+                        <span className="hint">{activeModeIds.length} в работе</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                        {MODE_GROUPS.map(group => (
+                          <div key={group.id}>
+                            <div className="eyebrow" style={{ color: group.color, marginBottom: 10 }}>{group.group}</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                              {group.items.map(m => {
+                                const active = activeModeIds.includes(m.id);
+                                return (
+                                  <button key={m.id} onClick={() => toggleModeId(m.id)} style={{ padding: '6px 12px', borderRadius: 6, fontSize: 12.5, fontWeight: active ? 600 : 500, background: active ? group.color + '18' : 'transparent', color: active ? group.color : 'var(--text-faint)', border: `1px solid ${active ? group.color + '40' : 'var(--line)'}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+                                    {m.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Text fields */}
+                    {CONCEPT_FIELDS.map(field => (
+                      <div key={field.key} className="section">
+                        <div className="eyebrow" style={{ marginBottom: 12 }}>{field.label}</div>
+                        <textarea
+                          className="textarea"
+                          value={(localConcept[field.key] as string) ?? ''}
+                          onChange={e => patchConcept({ [field.key]: e.target.value })}
+                          placeholder={field.placeholder}
+                          rows={4}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Right sidebar */}
+                  <aside>
+                    <div className="eyebrow" style={{ marginBottom: 16 }}>Что заполнено</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {([
+                        ['Цели терапии', !!(localConcept.goals || concept?.goals)],
+                        ['Ранний опыт', !!(localConcept.earlyExperience || concept?.earlyExperience)],
+                        ['Неудовл. потребности', !!(localConcept.unmetNeeds || concept?.unmetNeeds)],
+                        ['Триггеры', !!(localConcept.triggers || concept?.triggers)],
+                        ['Копинги', !!(localConcept.copingStyles || concept?.copingStyles)],
+                        ['Переходы режимов', !!(localConcept.modeTransitions || concept?.modeTransitions)],
+                        ['Актуальные проблемы', !!(localConcept.currentProblems || concept?.currentProblems)],
+                      ] as [string, boolean][]).map(([label, has]) => (
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: has ? 'var(--accent)' : 'var(--text-ghost)', flexShrink: 0 }} />
+                          <span style={{ fontSize: 13, color: has ? 'var(--text)' : 'var(--text-faint)' }}>{label}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* YSQ cross-reference */}
+                    {ysqSchemaIds.length > 0 && (
+                      <>
+                        <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
+                        <div className="eyebrow" style={{ marginBottom: 14 }}>Сверка с YSQ</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {ysqSchemaIds.slice(0, 6).map(id => {
+                            const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
+                            const inConcept = activeSchemaIds.includes(id);
+                            return (
+                              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{s?.name ?? id}</span>
+                                {!inConcept && <span style={{ fontSize: 11, color: 'var(--c-amber)', fontWeight: 500 }}>+ добавить?</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+
+                    {/* History */}
+                    {concept?.history && concept.history.length > 0 && (
+                      <>
+                        <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
+                        <div className="eyebrow" style={{ marginBottom: 12 }}>История версий</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
+                            <span style={{ fontSize: 13 }}>Текущая версия</span>
+                          </div>
+                          {concept.history.slice(0, 3).map((h, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--text-ghost)', flexShrink: 0 }} />
+                              <span style={{ fontSize: 13, color: 'var(--text-sub)', flex: 1 }}>Версия {concept.history.length - i}</span>
+                              <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{fmtDate(h.savedAt.slice(0, 10))}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </aside>
+                </div>
+              </div>
+            )}
+
+            {/* ── SESSIONS ─────────────────────────────────────────────────────── */}
+            {clientTab === 'sessions' && (
+              <div className="page-inner" style={{ paddingTop: 40 }}>
+                {/* New note composer */}
+                <div className="section">
+                  <div className="eyebrow" style={{ marginBottom: 12 }}>Новая заметка · {fmtDate(today)}</div>
+                  <textarea
+                    className="textarea"
+                    value={newNoteText}
+                    onChange={e => setNewNoteText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
+                    rows={4}
+                    placeholder="Наблюдения, гипотезы, динамика, план следующей встречи…"
+                    style={{ fontSize: 14, lineHeight: 1.65 }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>⌘+Enter — сохранить</span>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => setNewNoteText('')} style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--text-sub)', cursor: 'pointer' }}>
+                        Очистить
+                      </button>
+                      <button onClick={addNote} disabled={!newNoteText.trim() || noteSaving} style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                        {noteSaving ? 'Сохраняю...' : 'Сохранить'}
+                      </button>
+                    </div>
+                  </div>
+                  {noteError && <div style={{ marginTop: 8, fontSize: 13, color: 'var(--c-rose)' }}>{noteError}</div>}
+                </div>
+
+                {notes.length > 0 && (
+                  <>
+                    <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '40px 0 28px' }} />
+                    <div className="eyebrow" style={{ marginBottom: 24 }}>Архив · {notes.length} заметок</div>
+                    {notes.map((note, i) => (
+                      <div key={note.id} style={{ marginBottom: 32 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                            <span style={{ fontSize: 15, fontWeight: 600 }}>{fmtDate(note.date)}</span>
+                            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Заметка {notes.length - i}</span>
+                          </div>
+                          <button onClick={() => removeNote(note.id)} style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, fontSize: 12, color: 'var(--text-ghost)', cursor: 'pointer' }} title="Удалить">✕</button>
+                        </div>
+                        <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-sub)', maxWidth: 720, whiteSpace: 'pre-wrap' }}>
+                          {note.text}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {notes.length === 0 && (
+                  <div style={{ padding: '48px 0', color: 'var(--text-faint)', fontSize: 14, textAlign: 'center' }}>
+                    Заметок ещё нет. Добавь первую выше.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── TASKS ────────────────────────────────────────────────────────── */}
+            {clientTab === 'tasks' && (
+              <div className="page-inner-wide" style={{ paddingTop: 40 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
+                  <div>
+                    <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Задания</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>{clientTasks.length} домашних практик</div>
+                  </div>
+                  <button onClick={() => setShowAssign(true)} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                    + Назначить
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 48 }}>
+                  {([
+                    ['active', 'Активные', 'var(--accent)'],
+                    ['done', 'Завершённые', 'var(--c-moss)'],
+                  ] as [string, string, string][]).map(([status, label, color]) => {
+                    const items = status === 'done' ? clientTasks.filter(t => t.done === true) : clientTasks.filter(t => !t.done);
+                    return (
+                      <div key={status}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                          <span className="eyebrow">{label}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{items.length}</span>
+                        </div>
+                        {items.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-faint)', padding: '12px 0' }}>—</div>}
+                        {items.map(t => (
+                          <div key={t.id} className="list-line">
+                            <span style={{ width: 14, height: 14, borderRadius: 4, border: `1.5px solid ${color}`, background: t.done ? color : 'transparent', flexShrink: 0, marginTop: 2 }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', textDecoration: t.done ? 'line-through' : 'none', opacity: t.done ? 0.6 : 1 }}>{t.text}</div>
+                              {t.dueDate && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3 }}>до {fmtDate(t.dueDate)}</div>}
+                            </div>
                           </div>
                         ))}
                       </div>
                     );
                   })}
                 </div>
-              </div>
-            )}
-            {selectedClient.telegramId > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <button
-                  onClick={handleRequestYsq}
-                  style={{ width: '100%', padding: '10px 16px', borderRadius: 12, border: '1px solid rgba(96,165,250,0.2)', background: 'rgba(96,165,250,0.06)', color: ysqRequested ? '#06d6a0' : 'rgba(96,165,250,0.8)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
-                >
-                  {ysqRequested ? '✓ Запрос отправлен' : '📋 Запросить тест YSQ'}
-                </button>
-                {ysqError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 6, textAlign: 'center' }}>{ysqError}</div>}
-              </div>
-            )}
-            {(clientData?.ysqHistory?.length ?? 0) > 0 && (() => {
-              const hist = clientData!.ysqHistory!;
-              const latest = hist[0];
-              const prev = hist[1] ?? null;
-              const activeScores = latest.scores.filter(s => s.pct5plus > 50).sort((a, b) => b.pct5plus - a.pct5plus);
-              const inactiveScores = latest.scores.filter(s => s.pct5plus <= 50).sort((a, b) => b.pct5plus - a.pct5plus);
-              const latestDate = new Date(latest.completedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
-              const getDelta = (id: string) => {
-                if (!prev) return null;
-                const p = prev.scores.find(s => s.id === id);
-                if (p == null) return null;
-                const d = (latest.scores.find(s => s.id === id)?.pct5plus ?? 0) - p.pct5plus;
-                return Math.abs(d) >= 5 ? d : null;
-              };
-              return (
-                <div style={{ background: 'rgba(79,163,247,0.07)', border: '1px solid rgba(79,163,247,0.2)', borderRadius: 14, padding: '12px 14px', marginBottom: 14 }}>
-                  <div className="eyebrow" style={{ color: 'rgba(79,163,247,0.8)', marginBottom: 10 }}>
-                    📊 YSQ · {hist.length} {hist.length === 1 ? 'прохождение' : hist.length < 5 ? 'прохождения' : 'прохождений'} · {latestDate}
-                  </div>
 
-                  {/* Active schemas */}
-                  {activeScores.length > 0 && (
-                    <div style={{ marginBottom: 10 }}>
-                      <div style={{ fontSize: 10, color: 'rgba(79,163,247,0.7)', marginBottom: 6 }}>Выраженные ({activeScores.length})</div>
-                      {activeScores.map(score => {
-                        const meta = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === score.id);
-                        const delta = getDelta(score.id);
-                        return (
-                          <div key={score.id} style={{ marginBottom: 6 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                              <span style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500 }}>{meta?.emoji} {meta?.name ?? score.id}</span>
-                              <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                                {delta !== null && (
-                                  <span style={{ fontSize: 11, fontWeight: 600, color: delta < 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                    {delta > 0 ? '+' : ''}{delta}%
-                                  </span>
-                                )}
-                                <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(79,163,247,0.9)' }}>{score.pct5plus}%</span>
+                {clientTasks.length === 0 && (
+                  <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-faint)', fontSize: 14 }}>
+                    Заданий пока нет. Назначь первое.
+                  </div>
+                )}
+
+                <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '48px 0 28px' }} />
+
+                <div className="eyebrow" style={{ marginBottom: 18 }}>Шаблоны заданий</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+                  {[
+                    { t: 'Схема-карточка', sub: 'Триггеры · чувства · мысли · корни · реальность · поведение' },
+                    { t: 'Дневник режима', sub: '5–7 эпизодов · фокус на конкретном режиме' },
+                    { t: 'Письмо себе', sub: 'От Здорового Взрослого к Уязвимому Ребёнку' },
+                    { t: 'Imagery rescripting', sub: 'Аудио-практика, 12 минут' },
+                  ].map(card => (
+                    <div key={card.t} onClick={() => setShowAssign(true)} style={{ cursor: 'pointer' }}>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>{card.t}</div>
+                      <div style={{ fontSize: 12.5, color: 'var(--text-sub)', marginTop: 6, lineHeight: 1.55 }}>{card.sub}</div>
+                      <span style={{ display: 'inline-block', marginTop: 10, fontSize: 12, color: 'var(--accent)' }}>назначить →</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── YSQ ──────────────────────────────────────────────────────────── */}
+            {clientTab === 'ysq' && (
+              <div className="page-inner-wide" style={{ paddingTop: 40 }}>
+                {(!clientData?.ysqHistory || clientData.ysqHistory.length === 0) ? (
+                  <div style={{ padding: '80px 0', textAlign: 'center' }}>
+                    <div style={{ fontSize: 36, marginBottom: 16 }}>📋</div>
+                    <div style={{ fontSize: 16, color: 'var(--text-sub)', marginBottom: 8 }}>YSQ ещё не проходился</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 24 }}>Запроси тест — клиент получит уведомление в боте</div>
+                    <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+                      {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест YSQ'}
+                    </button>
+                    {ysqError && <div style={{ marginTop: 12, fontSize: 13, color: 'var(--c-rose)' }}>{ysqError}</div>}
+
+                    {selfSchemaIds.length > 0 && (
+                      <div style={{ marginTop: 48, textAlign: 'left', maxWidth: 640, margin: '48px auto 0' }}>
+                        <div className="eyebrow" style={{ marginBottom: 16 }}>Схемы, отмеченные клиентом самостоятельно</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {selfSchemaIds.map(id => {
+                            const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
+                            const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
+                            return (
+                              <div key={id} className="tag-mini">
+                                <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: domain?.color ?? 'var(--accent)', marginRight: 5 }} />
+                                {s?.name ?? id}
                               </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
+                      <div>
+                        <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>YSQ</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>
+                          {clientData.ysqHistory.length} прохождений · последнее {clientData.ysqCompletedAt ? fmtDate(clientData.ysqCompletedAt.slice(0, 10)) : '—'}
+                        </div>
+                      </div>
+                      <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                        {ysqRequested ? '✓ Запрос отправлен' : 'Запросить повтор'}
+                      </button>
+                    </div>
+                    {ysqError && <div style={{ marginBottom: 16, fontSize: 13, color: 'var(--c-rose)' }}>{ysqError}</div>}
+
+                    <div className="eyebrow" style={{ marginBottom: 18 }}>Активные схемы по YSQ</div>
+                    <div style={{ marginBottom: 8 }}>
+                      <div className="r-row-head" style={{ gridTemplateColumns: '2fr 1fr' }}>
+                        <span className="eyebrow">Схема</span>
+                        <span className="eyebrow" style={{ textAlign: 'right' }}>% выраженности</span>
+                      </div>
+                    </div>
+                    {clientData.ysqHistory[0]?.scores
+                      .slice()
+                      .sort((a, b) => b.pct5plus - a.pct5plus)
+                      .map(score => {
+                        const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === score.id);
+                        const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === score.id));
+                        const isActive = score.pct5plus > 50;
+                        return (
+                          <div key={score.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px 24px', padding: '12px 0', borderBottom: '1px solid var(--line)', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ width: 3, height: 18, borderRadius: 2, background: domain?.color ?? 'var(--accent)', flexShrink: 0 }} />
+                              <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 500, color: isActive ? 'var(--text)' : 'var(--text-sub)' }}>{s?.name ?? score.id}</span>
                             </div>
-                            <div style={{ height: 3, background: 'rgba(79,163,247,0.1)', borderRadius: 2 }}>
-                              <div style={{ height: '100%', width: `${score.pct5plus}%`, background: 'rgba(79,163,247,0.6)', borderRadius: 2 }} />
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ fontSize: 14, fontWeight: 500, color: score.pct5plus > 65 ? 'var(--c-rose)' : score.pct5plus > 50 ? 'var(--c-clay)' : 'var(--text-sub)' }}>
+                                {score.pct5plus}%
+                              </span>
                             </div>
                           </div>
                         );
-                      })}
-                    </div>
-                  )}
+                      })
+                    }
+                  </div>
+                )}
+              </div>
+            )}
 
-                  {/* Inactive schemas — compact */}
-                  {inactiveScores.length > 0 && (
-                    <div style={{ marginBottom: hist.length >= 2 ? 10 : 0 }}>
-                      <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 6 }}>Остальные</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {inactiveScores.map(score => {
-                          const meta = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === score.id);
-                          const isNearBorder = score.pct5plus >= 30;
+            {/* ── CLIENT NOTES ─────────────────────────────────────────────────── */}
+            {clientTab === 'client_notes' && (
+              <div className="page-inner" style={{ paddingTop: 40 }}>
+                {clientSchemaNotesData.length === 0 && clientModeNotesData.length === 0 ? (
+                  <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)', fontSize: 14 }}>
+                    Клиент ещё не заполнял дневник схем и режимов
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
+                      <div>
+                        <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Дневники клиента</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>
+                          {clientSchemaNotesData.length + clientModeNotesData.length} записей · вид клиента в его дневнике
+                        </div>
+                      </div>
+                    </div>
+
+                    {clientSchemaNotesData.length > 0 && (
+                      <div>
+                        <div className="eyebrow" style={{ marginBottom: 16 }}>Схема-карточки</div>
+                        {clientSchemaNotesData.map(n => {
+                          const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === n.schemaId);
+                          const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === n.schemaId));
                           return (
-                            <span key={score.id} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 12, background: 'rgba(var(--fg-rgb),0.05)', color: isNearBorder ? 'var(--text-sub)' : 'var(--text-faint)' }}>
-                              {meta?.name ?? score.id} {score.pct5plus}%
-                            </span>
+                            <div key={n.schemaId} style={{ marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                <span style={{ width: 3, height: 16, borderRadius: 2, background: domain?.color ?? 'var(--accent)', flexShrink: 0 }} />
+                                <span style={{ fontSize: 14, fontWeight: 600 }}>{s?.emoji} {s?.name ?? n.schemaId}</span>
+                                <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Схема-карточка</span>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
+                                {[
+                                  { label: 'Триггеры', val: n.triggers },
+                                  { label: 'Чувства', val: n.feelings },
+                                  { label: 'Мысли', val: n.thoughts },
+                                  { label: 'Корни', val: n.origins },
+                                  { label: 'Проверка реальности', val: n.reality },
+                                  { label: 'Здоровый взгляд', val: n.healthyView },
+                                  { label: 'Поведение', val: n.behavior },
+                                ].filter(f => f.val?.trim()).map(f => (
+                                  <div key={f.label}>
+                                    <div className="eyebrow" style={{ marginBottom: 4 }}>{f.label}</div>
+                                    <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* History timeline */}
-                  {hist.length >= 2 && (
-                    <div style={{ borderTop: '1px solid rgba(79,163,247,0.15)', paddingTop: 10 }}>
-                      <div style={{ fontSize: 10, color: 'rgba(79,163,247,0.6)', marginBottom: 6 }}>История</div>
-                      {hist.map((entry, idx) => {
-                        const entryActive = entry.scores.filter(s => s.pct5plus > 50).length;
-                        const prevItem = hist[idx + 1];
-                        const entryDelta = prevItem ? entryActive - prevItem.scores.filter(s => s.pct5plus > 50).length : null;
-                        const d = new Date(entry.completedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-                        return (
-                          <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: idx === 0 ? 'rgba(79,163,247,0.8)' : 'rgba(79,163,247,0.25)', flexShrink: 0 }} />
-                            <span style={{ fontSize: 11, color: idx === 0 ? 'var(--text-sub)' : 'var(--text-faint)', flex: 1 }}>
-                              {entryActive} схем {idx === 0 ? '· сейчас' : ''}
-                            </span>
-                            {entryDelta !== null && entryDelta !== 0 && (
-                              <span style={{ fontSize: 11, fontWeight: 600, color: entryDelta < 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                {entryDelta > 0 ? '+' : ''}{entryDelta}
-                              </span>
-                            )}
-                            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{d}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-            {selfSchemaIds.length > 0 && (
-              <div style={{ background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.07)', borderRadius: 14, padding: '10px 14px', marginBottom: 14 }}>
-                <div className="eyebrow" style={{ marginBottom: 8 }}>Схемы клиента (самооценка)</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                  {selfSchemaIds.map(id => {
-                    const schema = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === id);
-                    return schema ? <span key={id} style={{ fontSize: 11, padding: '3px 9px', borderRadius: 20, background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)' }}>{schema.emoji} {schema.name}</span> : null;
-                  })}
-                </div>
+                    {clientModeNotesData.length > 0 && (
+                      <div style={{ marginTop: clientSchemaNotesData.length > 0 ? 36 : 0 }}>
+                        <div className="eyebrow" style={{ marginBottom: 16 }}>Режим-карточки</div>
+                        {clientModeNotesData.map(n => {
+                          const m = getModeById(n.modeId);
+                          const group = MODE_GROUPS.find(g => g.items.some(x => x.id === n.modeId));
+                          return (
+                            <div key={n.modeId} style={{ marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                                <span style={{ width: 3, height: 16, borderRadius: 2, background: group?.color ?? 'var(--accent)', flexShrink: 0 }} />
+                                <span style={{ fontSize: 14, fontWeight: 600 }}>{m?.emoji} {m?.name ?? n.modeId}</span>
+                                <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Режим-карточка</span>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
+                                {[
+                                  { label: 'Триггеры', val: n.triggers },
+                                  { label: 'Чувства', val: n.feelings },
+                                  { label: 'Мысли', val: n.thoughts },
+                                  { label: 'Потребности', val: n.needs },
+                                  { label: 'Поведение', val: n.behavior },
+                                ].filter(f => f.val?.trim()).map(f => (
+                                  <div key={f.label}>
+                                    <div className="eyebrow" style={{ marginBottom: 4 }}>{f.label}</div>
+                                    <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
-            <SectionLabel mb={8}>Актуальные схемы (ЭДС)</SectionLabel>
-            {SCHEMA_DOMAINS.map(domain => (
-              <div key={domain.id} style={{ marginBottom: 10 }}>
-                <div className="eyebrow" style={{ color: domain.color + 'aa', marginBottom: 5, paddingLeft: 2 }}>{domain.domain}</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                  {domain.schemas.map(schema => {
-                    const active = activeSchemaIds.includes(schema.id);
-                    const fromYsq = ysqSchemaIds.includes(schema.id);
-                    return (
-                      <button key={schema.id} onClick={() => toggleSchemaId(schema.id)}
-                        style={{ padding: '5px 10px', borderRadius: 20, cursor: 'pointer', border: fromYsq ? `1px solid ${domain.color}55` : '1px solid transparent', background: active ? domain.color + '30' : 'rgba(var(--fg-rgb),0.05)', color: active ? domain.color : 'rgba(var(--fg-rgb),0.45)', fontSize: 12, fontWeight: active ? 600 : 400, transition: 'all 0.15s ease' }}
-                        title={schema.desc}
-                      >{schema.emoji} {schema.name}</button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-            <div style={{ marginTop: 6 }}><SectionLabel mb={8}>Карта режимов</SectionLabel></div>
-            {MODE_GROUPS.map(group => (
-              <div key={group.id} style={{ marginBottom: 8 }}>
-                <div className="eyebrow" style={{ color: group.color + 'aa', marginBottom: 5, paddingLeft: 2 }}>{group.group}</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                  {group.items.map(mode => {
-                    const active = activeModeIds.includes(mode.id);
-                    return (
-                      <button key={mode.id} onClick={() => toggleModeId(mode.id)}
-                        style={{ padding: '5px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', background: active ? group.color + '30' : 'rgba(var(--fg-rgb),0.05)', color: active ? group.color : 'rgba(var(--fg-rgb),0.45)', fontSize: 12, fontWeight: active ? 600 : 400, transition: 'all 0.15s ease' }}
-                      >{mode.emoji} {mode.name}</button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-            <div style={{ marginTop: 8 }}>
-              {CONCEPT_FIELDS.map(({ key, label, placeholder }) => (
-                <div key={key} style={{ marginBottom: 12 }}>
-                  <div className="eyebrow" style={{ marginBottom: 5 }}>{label}</div>
-                  <textarea
-                    value={(localConcept[key] as string) ?? ''}
-                    onChange={e => patchConcept({ [key]: e.target.value })}
-                    placeholder={placeholder}
-                    rows={3}
-                    style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid rgba(var(--fg-rgb),0.08)', borderRadius: 12, padding: '10px 12px', outline: 'none', resize: 'none', color: 'var(--text)', fontSize: 13, lineHeight: 1.5, fontFamily: 'inherit' }}
-                  />
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={saveConcept} disabled={conceptSaving || !conceptDirty}
-              style={{ width: '100%', padding: '13px 0', borderRadius: 14, border: 'none', background: conceptDirty ? 'linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent), rgba(79,163,247,0.2))' : 'rgba(var(--fg-rgb),0.05)', color: conceptDirty ? 'var(--text)' : 'rgba(var(--fg-rgb),0.25)', fontSize: 14, fontWeight: 600, cursor: conceptDirty ? 'pointer' : 'default', opacity: conceptSaving ? 0.6 : 1 }}
-            >
-              {conceptSaving ? 'Сохраняю...' : conceptDirty ? 'Сохранить концептуализацию' : concept ? `✓ Сохранено ${fmtDate(concept.updatedAt.slice(0, 10))}` : 'Нет изменений'}
-            </button>
-            {conceptError && <div style={{ fontSize: 12, color: 'var(--accent-red)', textAlign: 'center', marginTop: 6 }}>{conceptError}</div>}
-            {concept && (
-              <button
-                onClick={handleExport}
-                style={{ width: '100%', marginTop: 8, padding: '11px 0', borderRadius: 14, border: '1px solid rgba(var(--fg-rgb),0.1)', background: exportCopied ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)' : 'transparent', color: exportCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.4)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
-              >
-                {exportCopied ? '✓ Скопировано' : '↗ Экспорт / Поделиться'}
-              </button>
-            )}
+
           </div>
-        </BottomSheet>
+        </div>
       )}
 
-      {/* ── CLIENT NOTES SHEET ── */}
-      {showClientNotesSheet && selectedClient && (
-        <BottomSheet onClose={() => setShowClientNotesSheet(false)}>
-          <div style={{ paddingTop: 4 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 20 }}>
-              📖 Записи клиента
-            </div>
-            {clientSchemaNotesData.length === 0 && clientModeNotesData.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>📝</div>
-                <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>Клиент ещё не заполнил карточки схем или режимов</div>
-              </div>
-            ) : (
-              <>
-                {clientSchemaNotesData.length > 0 && (
-                  <div style={{ marginBottom: 20 }}>
-                    <div className="eyebrow" style={{ marginBottom: 10 }}>
-                      Схемы · {clientSchemaNotesData.length}
-                    </div>
-                    {clientSchemaNotesData.map(n => {
-                      const s = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(x => ({ ...x, color: d.color }))).find(x => x.id === n.schemaId);
-                      const filled = [n.triggers, n.feelings, n.thoughts, n.origins, n.reality, n.healthyView, n.behavior].filter(Boolean);
-                      return (
-                        <div key={n.schemaId} style={{ background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.07)', borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>{(s as any)?.emoji ?? '●'} {s?.name ?? n.schemaId}</div>
-                          {[
-                            { label: 'Триггеры', val: n.triggers },
-                            { label: 'Чувства', val: n.feelings },
-                            { label: 'Мысли', val: n.thoughts },
-                            { label: 'Корни', val: n.origins },
-                            { label: 'Реальность', val: n.reality },
-                            { label: 'Здоровый взгляд', val: n.healthyView },
-                            { label: 'Поведение', val: n.behavior },
-                          ].filter(f => f.val?.trim()).map(f => (
-                            <div key={f.label} style={{ marginBottom: 6 }}>
-                              <div className="eyebrow" style={{ marginBottom: 2 }}>{f.label}</div>
-                              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.val}</div>
-                            </div>
-                          ))}
-                          {filled.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Не заполнено</div>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {clientModeNotesData.length > 0 && (
-                  <div>
-                    <div className="eyebrow" style={{ marginBottom: 10 }}>
-                      Режимы · {clientModeNotesData.length}
-                    </div>
-                    {clientModeNotesData.map(n => {
-                      const m = getModeById(n.modeId);
-                      return (
-                        <div key={n.modeId} style={{ background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.07)', borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>{m?.emoji ?? '🔄'} {m?.name ?? n.modeId}</div>
-                          {[
-                            { label: 'Триггеры', val: n.triggers },
-                            { label: 'Чувства', val: n.feelings },
-                            { label: 'Мысли', val: n.thoughts },
-                            { label: 'Потребности', val: n.needs },
-                            { label: 'Поведение', val: n.behavior },
-                          ].filter(f => f.val?.trim()).map(f => (
-                            <div key={f.label} style={{ marginBottom: 6 }}>
-                              <div className="eyebrow" style={{ marginBottom: 2 }}>{f.label}</div>
-                              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.val}</div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </BottomSheet>
-      )}
-
+      {/* ── ASSIGN TASK MODAL ─────────────────────────────────────────────────── */}
       {showAssign && selectedClient && (
         <TaskCreateSheet
           clientId={selectedClient.telegramId}
