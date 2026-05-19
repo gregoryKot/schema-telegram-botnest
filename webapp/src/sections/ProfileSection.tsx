@@ -476,7 +476,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                 const date = new Date(y, m - 1, d);
                 return `${DAYS[date.getDay()]}, ${d} ${MONTHS[m - 1]}${timePart ? ' · ' + timePart : ''}`;
               })()] : null,
-            ].filter(Boolean).map(([k, v]) => (
+            ].filter((x): x is string[] => x !== null).map(([k, v]) => (
               <div key={k as string} className="list-line">
                 <span style={{ fontSize: 13, color: 'var(--text-sub)', width: 180, flexShrink: 0 }}>{k as string}</span>
                 <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{v as string}</span>

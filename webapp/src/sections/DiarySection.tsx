@@ -208,7 +208,7 @@ type AnyEntry =
 
 type Filter = 'all' | DiaryType;
 
-export function DiarySection() {
+export function DiarySection({ onClose }: { onClose?: () => void } = {}) {
   const [schemaEntries,    setSchemaEntries]    = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries,      setModeEntries]      = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
@@ -279,12 +279,14 @@ export function DiarySection() {
             {loading ? 'Загрузка…' : totalCount === 0 ? 'Фиксируй паттерны, замечай прогресс' : `${totalCount} ${totalCount === 1 ? 'запись' : totalCount < 5 ? 'записи' : 'записей'} · ведётся непрерывно`}
           </div>
         </div>
-        <button
-          onClick={() => setNewEntry('schema')}
-          className="btn btn-primary"
-        >
-          + Новая запись
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setNewEntry('schema')} className="btn btn-primary">
+            + Новая запись
+          </button>
+          {onClose && (
+            <button onClick={onClose} className="btn btn-secondary">Закрыть</button>
+          )}
+        </div>
       </div>
 
       {/* ── "Что записать сегодня" 3-col grid ── */}

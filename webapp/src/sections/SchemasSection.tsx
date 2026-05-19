@@ -15,18 +15,6 @@ import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 function cm(color: string, pct: number) {
   return `color-mix(in srgb, ${color} ${pct}%, transparent)`;
 }
-/** Keep hex() for dot/icon backgrounds where we need a solid resolved color */
-const VAR_HEX: Record<string, string> = {
-  'var(--accent-red)':    '#f87171',
-  'var(--accent-orange)': '#fb923c',
-  'var(--accent-yellow)': '#facc15',
-  'var(--accent-green)':  '#4ade80',
-  'var(--accent-indigo)': '#818cf8',
-  'var(--accent-blue)':   '#60a5fa',
-  'var(--accent)':        '#a78bfa',
-};
-function hex(color: string) { return VAR_HEX[color] ?? color; }
-
 const NEED_IDS: { id: string; color: string }[] = [
   { id: 'attachment', color: '#ff6b9d' },
   { id: 'autonomy',   color: '#4fa3f7' },
@@ -58,8 +46,6 @@ interface Props {
   childhoodRatings?: Record<string, number>;
   onOpenChildhoodWheel?: () => void;
 }
-
-type Tab = 'schemas' | 'modes' | 'needs';
 
 export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel }: Props) {
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(MY_SCHEMA_IDS_KEY));
