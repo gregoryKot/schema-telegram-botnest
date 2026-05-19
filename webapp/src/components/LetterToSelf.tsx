@@ -111,9 +111,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
         {/* Past letters */}
         {letters.length > 0 && (
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
-              Прошлые письма
-            </div>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>Прошлые письма</div>
             {letters.slice(0, 5).map(l => (
               <div key={l.id} onClick={() => setViewing(l)} style={{ padding: '11px 14px', background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.06)', borderRadius: 12, marginBottom: 7, cursor: 'pointer' }}>
                 <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 4 }}>{l.date}</div>

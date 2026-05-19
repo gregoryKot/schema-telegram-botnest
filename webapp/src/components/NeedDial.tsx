@@ -168,7 +168,7 @@ export function NeedDial({ need, color, value, onChange, size = DEFAULT_SIZE }: 
           {NEED_DATA[need.id]?.subtitle ?? need.chartLabel}
         </div>
         <div style={{
-          fontSize: 76, fontWeight: 800, letterSpacing: '-5px', lineHeight: 1,
+          fontSize: 76, fontWeight: 600, letterSpacing: '-4px', lineHeight: 1,
           color: value > 0 ? 'var(--text)' : 'var(--text-faint)',
           fontVariantNumeric: 'tabular-nums', transition: 'color 0.3s',
         }}>

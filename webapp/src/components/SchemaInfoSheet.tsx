@@ -273,9 +273,7 @@ function ModesTab() {
           borderRadius: 16, padding: '14px 16px', marginBottom: 20, cursor: 'pointer',
         }}
       >
-        <div style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
-          Режим прямо сейчас
-        </div>
+        <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 6 }}>Режим прямо сейчас</div>
         <div style={{ fontSize: 14, color: 'rgba(var(--fg-rgb),0.7)' }}>Как ты себя чувствуешь? →</div>
       </div>
 
@@ -285,7 +283,7 @@ function ModesTab() {
 
       {MODES.map((g) => (
         <div key={g.group} style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: g.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>{g.group}</div>
+          <div className="eyebrow" style={{ color: g.color, marginBottom: 10 }}>{g.group}</div>
           {g.items.map((m) => (
             <div key={m.name} style={{ background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>

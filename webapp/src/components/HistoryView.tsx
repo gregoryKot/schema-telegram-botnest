@@ -220,7 +220,7 @@ function InsightCard({ needs, ratings, onTap }: { needs: Need[]; ratings: Record
   const value = ratings[lowest.id] ?? 0;
   return (
     <div onClick={() => onTap?.(lowest)} style={{
-      background: `color-mix(in srgb, ${color} 8%, var(--surface))`,
+      background: `color-mix(in srgb, ${color} 8%, transparent)`,
       border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`,
       borderRadius: 16, padding: '14px 16px',
       display: 'flex', alignItems: 'center', gap: 12,
@@ -328,7 +328,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                 }}>
                 <span style={{
-                  fontSize: 10, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
+                  fontSize: 10, fontWeight: 600, letterSpacing: '0.07em',
                   color: active ? 'rgba(255,255,255,0.75)' : 'var(--text-faint)',
                 }}>{getDayAbbr(day.date)}</span>
                 <span style={{
@@ -356,8 +356,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
             return (
               <button key={v} onClick={() => setSubView(v)} style={{
                 flex: 1, padding: '7px 0', border: 'none', borderRadius: 10, fontFamily: 'inherit',
-                background: active ? 'var(--surface)' : 'transparent',
-                boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                background: active ? 'rgba(var(--fg-rgb),0.08)' : 'transparent',
                 color: active ? 'var(--text)' : 'var(--text-faint)',
                 fontSize: 13, fontWeight: active ? 600 : 400, cursor: 'pointer',
                 transition: 'all 0.15s ease',
@@ -376,8 +375,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
               return (
                 <button key={d} onClick={() => onChangeDays(d)} style={{
                   padding: '7px 10px', border: 'none', borderRadius: 10, fontFamily: 'inherit',
-                  background: active ? 'var(--surface)' : 'transparent',
-                  boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                  background: active ? 'rgba(var(--fg-rgb),0.08)' : 'transparent',
                   color: active ? 'var(--text)' : 'var(--text-faint)',
                   fontSize: 12, fontWeight: active ? 600 : 400, cursor: 'pointer',
                   transition: 'all 0.15s ease',
@@ -436,8 +434,8 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                 borderRadius: 16, padding: '14px 16px',
                 display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
                 background: ratedCount === 0
-                  ? 'color-mix(in srgb, var(--accent-blue) 7%, var(--surface))'
-                  : 'var(--surface)',
+                  ? 'color-mix(in srgb, var(--accent-blue) 7%, transparent)'
+                  : 'transparent',
               }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: 10, flexShrink: 0,

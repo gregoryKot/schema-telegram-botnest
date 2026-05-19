@@ -101,7 +101,7 @@ export function Celebration({ streak, onDone }: Props) {
         <div style={{ fontSize: 56, lineHeight: 1, marginBottom: 12 }}>
           {isMilestone ? '🏆' : '🔥'}
         </div>
-        <div style={{ fontSize: 52, fontWeight: 800, color: 'var(--text)', lineHeight: 1, marginBottom: 6 }}>
+        <div style={{ fontSize: 52, fontWeight: 600, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1, marginBottom: 6 }}>
           {streak}
         </div>
         <div style={{ fontSize: 16, color: 'var(--text-sub)', marginBottom: 16 }}>

@@ -191,9 +191,9 @@ export function LoginPage() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0',
           }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
+            <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
             <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>или</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--border-color)' }} />
+            <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
           </div>
 
           {/* Telegram widget */}

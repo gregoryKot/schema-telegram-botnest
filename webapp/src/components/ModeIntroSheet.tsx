@@ -155,7 +155,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
                 key={i} onClick={() => { setStep(i); setFlipped(false); }}
                 style={{
                   flex: 1, height: 4, borderRadius: 2, cursor: 'pointer',
-                  background: filled ? color : active ? `${color}55` : 'var(--surface-2)',
+                  background: filled ? color : active ? `${color}55` : 'transparent',
                   transition: 'background 0.2s',
                 }}
               />
@@ -167,15 +167,15 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
         <div
           onClick={() => !flipped && setFlipped(true)}
           style={{
-            background: flipped ? `${color}06` : 'var(--surface)',
-            border: `1px solid ${flipped ? `${color}40` : 'var(--border-color)'}`,
+            background: flipped ? `${color}06` : 'transparent',
+            border: `1px solid ${flipped ? `${color}40` : 'var(--line)'}`,
             borderRadius: 20, padding: '18px 18px 14px', marginBottom: 16,
             minHeight: 120, cursor: flipped ? 'default' : 'pointer', position: 'relative',
             transition: 'all 0.2s',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color }}>
+            <div className="eyebrow" style={{ color }}>
               {step + 1} / {QUESTIONS.length}
             </div>
             {flipped && (
@@ -201,7 +201,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
               </div>
               {answer.trim() ? (
                 <div style={{
-                  background: 'var(--surface-2)', borderRadius: 12, padding: '10px 12px',
+                  background: 'transparent', borderRadius: 12, padding: '10px 12px',
                   fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5,
                   display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as any,
                   overflow: 'hidden',
@@ -233,8 +233,8 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
                 rows={4}
                 style={{
                   width: '100%',
-                  background: 'var(--surface)',
-                  border: `1.5px solid ${answer.trim() ? `${color}66` : 'var(--border-color)'}`,
+                  background: 'transparent',
+                  border: `1.5px solid ${answer.trim() ? `${color}66` : 'var(--line)'}`,
                   borderRadius: 12, padding: '11px 13px',
                   color: 'var(--text)', fontSize: 14, lineHeight: 1.55,
                   resize: 'none', outline: 'none', fontFamily: 'inherit',
@@ -252,7 +252,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
             disabled={step === 0}
             style={{
               width: 44, height: 44, borderRadius: 12, border: 'none', fontFamily: 'inherit',
-              background: step === 0 ? 'var(--surface)' : 'var(--surface-2)',
+              background: step === 0 ? 'transparent' : 'transparent',
               color: step === 0 ? 'var(--text-faint)' : 'var(--text-sub)',
               fontSize: 18, cursor: step === 0 ? 'default' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -276,7 +276,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
               disabled={!hasAny || saving}
               style={{
                 flex: 1, padding: '13px', borderRadius: 12, border: 'none', fontFamily: 'inherit',
-                background: hasAny ? color : 'var(--surface-2)',
+                background: hasAny ? color : 'transparent',
                 color: hasAny ? '#fff' : 'var(--text-faint)',
                 fontSize: 14, fontWeight: 600,
                 cursor: hasAny ? 'pointer' : 'default', transition: 'all 0.2s',

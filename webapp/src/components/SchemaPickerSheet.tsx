@@ -47,10 +47,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
 
         {SCHEMA_DOMAINS.map(domain => (
           <div key={domain.id} style={{ marginBottom: 18 }}>
-            <div style={{
-              fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
-              color: domain.color, marginBottom: 8, opacity: 0.8,
-            }}>
+            <div className="eyebrow" style={{ color: domain.color, marginBottom: 8, opacity: 0.8 }}>
               {domain.domain}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

@@ -49,9 +49,7 @@ export function FloatingPill({ onOpenSchemaDiary, onOpenModeDiary, onOpenGratitu
       {showPicker && (
         <BottomSheet onClose={() => setShowPicker(false)} zIndex={200}>
           <div style={{ paddingTop: 4, paddingBottom: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>
-              Записать момент
-            </div>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>Записать момент</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
               <DiaryTypeButton
                 emoji="📓"
@@ -76,9 +74,7 @@ export function FloatingPill({ onOpenSchemaDiary, onOpenModeDiary, onOpenGratitu
               />
             </div>
             <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', paddingTop: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>
-                Оценить день
-              </div>
+              <div className="eyebrow" style={{ marginBottom: 10 }}>Оценить день</div>
               <DiaryTypeButton
                 emoji="📅"
                 label="Трекер потребностей"

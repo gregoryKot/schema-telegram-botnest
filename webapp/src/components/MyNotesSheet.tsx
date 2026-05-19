@@ -156,16 +156,14 @@ export function MyNotesSheet({ onClose }: Props) {
                     {/* Схемы по доменам */}
                     {allSchemaIds.length > 0 && (
                       <div style={{ marginBottom: 20 }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
-                          Схемы · {allSchemaIds.length}
-                        </div>
+                        <div className="eyebrow" style={{ marginBottom: 10 }}>Схемы · {allSchemaIds.length}</div>
                         {SCHEMA_DOMAINS.map(domain => {
                           const domainSchemas = domain.schemas.filter(s => allSchemaIds.includes(s.id));
                           if (domainSchemas.length === 0) return null;
                           const colorHex = hex(domain.color);
                           return (
                             <div key={domain.id} style={{ marginBottom: 12 }}>
-                              <div style={{ fontSize: 10, fontWeight: 600, color: domain.color, opacity: 0.75, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+                              <div className="eyebrow" style={{ color: domain.color, opacity: 0.75, marginBottom: 6 }}>
                                 {domain.domain}
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -207,9 +205,7 @@ export function MyNotesSheet({ onClose }: Props) {
                     {/* Режимы */}
                     {allModeIds.length > 0 && (
                       <div style={{ marginBottom: 8 }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
-                          Режимы · {allModeIds.length}
-                        </div>
+                        <div className="eyebrow" style={{ marginBottom: 10 }}>Режимы · {allModeIds.length}</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           {allModeIds.map(id => {
                             const m = getModeById(id);

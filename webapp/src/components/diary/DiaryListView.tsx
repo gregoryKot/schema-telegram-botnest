@@ -30,7 +30,7 @@ function formatDt(iso: string) {
 function Field({ label, text }: { label: string; text: string }) {
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{label}</div>
+      <div className="eyebrow" style={{ marginBottom: 3 }}>{label}</div>
       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>{text}</div>
     </div>
   );
@@ -162,7 +162,7 @@ function DraftCard({ type, color, onContinue, onDelete }: { type: DiaryType; col
   return (
     <div style={{ borderRadius: 12, padding: '14px 16px', marginBottom: 14, background: cm(color, 5), border: `1px dashed ${cm(color, 30)}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 6, background: cm(color, 14), color }}>Черновик</span>
+        <span className="eyebrow" style={{ padding: '3px 8px', borderRadius: 6, background: cm(color, 14), color }}>Черновик</span>
         <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{formatDraftAge(draft.startedAt)}</span>
       </div>
       {preview && <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 10, lineHeight: 1.4 }}>{preview.length > 80 ? preview.slice(0, 80) + '…' : preview}</div>}

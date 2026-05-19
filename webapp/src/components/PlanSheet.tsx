@@ -240,7 +240,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
             border: `1px solid ${color}33`,
             borderRadius: 14, padding: '14px 16px', marginBottom: 24,
           }}>
-            <div style={{ fontSize: 12, color, fontWeight: 500, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div className="eyebrow" style={{ color, marginBottom: 6 }}>
               Практика
             </div>
             <div style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.9)', lineHeight: 1.5 }}>
