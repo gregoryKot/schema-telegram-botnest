@@ -27,6 +27,7 @@ import { SchemaInfoSheet } from './SchemaInfoSheet';
 import { NoteSheet } from './NoteSheet';
 import { Celebration } from './Celebration';
 import { Loader } from './Loader';
+import { ErrorBoundary } from './ErrorBoundary';
 import { ChildhoodWheelSheet, shouldShowChildhoodWheel } from './ChildhoodWheelSheet';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { CheckInSheet } from './CheckInSheet';
@@ -49,9 +50,10 @@ const NAV_ITEMS: { id: Section; icon: string; label: string }[] = [
   { id: 'today',   icon: '🏠', label: 'Сегодня' },
   { id: 'diary',   icon: '📔', label: 'Дневник' },
   { id: 'schemas', icon: '🧩', label: 'Схемы' },
-  { id: 'profile', icon: '👤', label: 'Профиль' },
   { id: 'help',    icon: '💡', label: 'Помощь' },
 ];
+// Note: 'profile' removed from nav — accessible via sidebar footer avatar block.
+// Mobile bottom-nav still includes it (см. ниже).
 
 const SECTION_LABELS: Record<Section, string> = {
   today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', help: 'Помощь',
@@ -368,12 +370,15 @@ export function AppShell() {
         </nav>
 
         <div className="sb-foot">
-          <NavLink to="/account" className="sb-account">
+          <NavLink to="/profile" className={({ isActive }) => `sb-account${isActive ? ' is-active' : ''}`}>
             <div className="sb-avatar">{(displayName ?? '?')[0].toUpperCase()}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="sb-acc-name">{displayName || 'Профиль'}</div>
               <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>
             </div>
+          </NavLink>
+          <NavLink to="/account" className="sb-item" style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
+            <span>Аккаунт и привязки</span>
           </NavLink>
           <button className="sb-item" onClick={() => logout()}
                   style={{ marginTop: 2, color: 'var(--c-rose)' }}>
@@ -445,11 +450,13 @@ export function AppShell() {
               <DiarySection />
             )}
             {section === 'schemas' && (
-              <SchemasSection
-                onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setSchemaHighlight(opts?.highlight); setShowSchemaInfo(true); }}
-                childhoodRatings={childhoodRatings}
-                onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
-              />
+              <ErrorBoundary section="Схемы" key="schemas-boundary">
+                <SchemasSection
+                  onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setSchemaHighlight(opts?.highlight); setShowSchemaInfo(true); }}
+                  childhoodRatings={childhoodRatings}
+                  onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
+                />
+              </ErrorBoundary>
             )}
             {section === 'profile' && (
               <ProfileSection
