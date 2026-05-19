@@ -143,36 +143,22 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       </div>
 
       {/* ── Tab switcher ── */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--line)', marginBottom: 24, gap: 0 }}>
+      <div className="tabs" style={{ padding: '0', marginBottom: 24 }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            padding: '10px 20px',
-            border: 'none',
-            borderBottom: `2px solid ${tab === t.id ? 'var(--text)' : 'transparent'}`,
-            marginBottom: -1,
-            fontFamily: 'inherit',
-            fontSize: 14,
-            fontWeight: tab === t.id ? 600 : 400,
-            cursor: 'pointer',
-            background: 'transparent',
-            color: tab === t.id ? 'var(--text)' : 'var(--text-faint)',
-            transition: 'color 0.15s',
-          }}>
+          <button key={t.id} onClick={() => setTab(t.id)} className={`tab${tab === t.id ? ' is-active' : ''}`}>
             {t.label}
           </button>
         ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 720 }}>
+      <div style={{ maxWidth: 720 }}>
 
         {/* ══════════════════════ СХЕМЫ ══════════════════════ */}
         {tab === 'schemas' && (
           <>
             {/* МОИ СХЕМЫ */}
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
-                Мои схемы
-              </div>
+            <div className="section">
+              <div className="section-head"><h3>Мои схемы</h3></div>
               {profileLoading ? (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[80, 100, 90, 110].map((w, i) => (
@@ -216,47 +202,27 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             </div>
 
             {/* YSQ card */}
-            <div style={{
-              background: 'var(--surface)', border: '1px solid var(--border-color)',
-              borderRadius: 18, padding: '14px 16px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--accent)', marginBottom: 2 }}>
-                  YSQ-тест схем
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-                  {ysqCompletedAt
-                    ? `Пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · 116 вопросов`
-                    : 'Определи схемы автоматически'}
-                </div>
+            <div className="section">
+              <div className="section-head">
+                <h3>YSQ-тест схем</h3>
+                <button onClick={() => onOpenSchema({ startTest: true })} className="link">
+                  {ysqCompletedAt ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · пройти снова →` : 'Начать →'}
+                </button>
               </div>
-              <button onClick={() => onOpenSchema({ startTest: true })} style={{
-                padding: '9px 20px', borderRadius: 12, border: 'none',
-                background: ysqCompletedAt
-                  ? 'rgba(var(--fg-rgb),0.08)'
-                  : 'linear-gradient(135deg, var(--accent), var(--accent-blue))',
-                color: ysqCompletedAt ? 'var(--text-sub)' : '#fff',
-                fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-              }}>
-                {ysqCompletedAt ? 'Снова' : 'Начать'}
-              </button>
+              <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                {ysqCompletedAt ? '116 вопросов · определяет активные схемы автоматически' : 'Определи схемы автоматически — 116 вопросов, 10 минут'}
+              </div>
             </div>
 
             {/* ВСЕ СХЕМЫ */}
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
-                Все схемы
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="section">
+              <div className="section-head"><h3>Все схемы</h3></div>
+              <div>
                 {SCHEMA_DOMAINS.map(domain => {
                   const isOpen = expandedDomains.has(domain.id);
                   const c = domain.color; // CSS variable
                   return (
-                    <div key={domain.id} style={{
-                      background: 'var(--surface)', border: '1px solid var(--border-color)',
-                      borderRadius: 16, overflow: 'hidden',
-                    }}>
+                    <div key={domain.id} style={{ borderBottom: '1px solid var(--line)' }}>
                       <div onClick={() => toggleDomain(domain.id)} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '14px 16px', cursor: 'pointer',
@@ -311,10 +277,8 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         {tab === 'modes' && (
           <>
             {/* МОИ РЕЖИМЫ */}
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
-                Мои режимы
-              </div>
+            <div className="section">
+              <div className="section-head"><h3>Мои режимы</h3></div>
               {profileLoading ? (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[90, 110, 80].map((w, i) => (
@@ -357,19 +321,14 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             </div>
 
             {/* ВСЕ РЕЖИМЫ */}
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
-                Все режимы
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="section">
+              <div className="section-head"><h3>Все режимы</h3></div>
+              <div>
                 {MODE_GROUPS.map(group => {
                   const isOpen = expandedModeGroups.has(group.id);
                   const c = group.color; // CSS variable
                   return (
-                    <div key={group.id} style={{
-                      background: 'var(--surface)', border: '1px solid var(--border-color)',
-                      borderRadius: 16, overflow: 'hidden',
-                    }}>
+                    <div key={group.id} style={{ borderBottom: '1px solid var(--line)' }}>
                       <div onClick={() => toggleModeGroup(group.id)} style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '14px 16px', cursor: 'pointer',
@@ -425,66 +384,55 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         {/* ══════════════════════ ПОТРЕБНОСТИ ══════════════════════ */}
         {tab === 'needs' && (
           <>
-            {!hasChildhood && (
-              <div onClick={() => onOpenChildhoodWheel?.()} style={{
-                background: 'color-mix(in srgb, var(--accent) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 18%, transparent)',
-                borderRadius: 18, padding: '14px 16px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              }}>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--accent)', marginBottom: 2 }}>
-                    Колесо детства
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-                    Как потребности удовлетворялись в детстве?
-                  </div>
-                </div>
-                <span style={{ fontSize: 20, color: 'var(--accent)', fontWeight: 300 }}>›</span>
+            <div className="section">
+              <div className="section-head">
+                <h3>Потребности</h3>
+                {hasChildhood && (
+                  <button className="link" onClick={() => onOpenChildhoodWheel?.()}>Изменить детство →</button>
+                )}
               </div>
-            )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {!hasChildhood && (
+                <div onClick={() => onOpenChildhoodWheel?.()} className="list-line" style={{ cursor: 'pointer' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🌱</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Колесо детства</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Как потребности удовлетворялись в детстве?</div>
+                  </div>
+                  <span style={{ color: 'var(--text-faint)', fontSize: 14 }}>›</span>
+                </div>
+              )}
+
               {NEED_IDS.map(({ id, color }) => {
                 const d = NEED_DATA[id];
                 if (!d) return null;
                 const childScore = childhoodRatings[id];
                 return (
-                  <div key={id} onClick={() => setDetailNeedId(id)} style={{
-                    background: 'var(--surface)', border: `1px solid ${color}22`,
-                    borderRadius: 18, padding: '14px 16px', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 14,
-                  }}>
+                  <div key={id} onClick={() => setDetailNeedId(id)} className="list-line" style={{ cursor: 'pointer' }}>
                     <div style={{
-                      width: 46, height: 46, borderRadius: 14, flexShrink: 0,
+                      width: 36, height: 36, borderRadius: 9, flexShrink: 0,
                       background: `${color}18`, border: `1px solid ${color}30`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
                     }}>
                       {d.emoji}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2 }}>{d.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 3 }}>{d.hint}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.25 }}>{d.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>{d.hint}</div>
                     </div>
                     {childScore !== undefined ? (
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: needScoreColor(childScore), lineHeight: 1 }}>{childScore}</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: needScoreColor(childScore), lineHeight: 1 }}>{childScore}</div>
                         <div style={{ fontSize: 9, color: 'var(--text-faint)', letterSpacing: '0.04em', marginTop: 2 }}>детство</div>
                       </div>
                     ) : (
-                      <span style={{ color: 'var(--text-faint)', fontSize: 16, flexShrink: 0 }}>›</span>
+                      <span style={{ color: 'var(--text-faint)', fontSize: 14, flexShrink: 0 }}>›</span>
                     )}
                   </div>
                 );
               })}
             </div>
 
-            {hasChildhood && (
-              <div onClick={() => onOpenChildhoodWheel?.()} style={{
-                textAlign: 'center', paddingTop: 4, cursor: 'pointer',
-              }}>
-                <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Изменить ответы →</span>
-              </div>
-            )}
           </>
         )}
 
