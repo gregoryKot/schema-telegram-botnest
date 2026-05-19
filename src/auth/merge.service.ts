@@ -180,20 +180,30 @@ export class MergeService {
       `);
 
       // 4c. ClientConceptualization (unique on therapistId+clientId).
-      //     Drop source rows that would collide with target's existing row.
+      //     Strategy: prefer target's existing concept row over source's.
+      //     If target already has a row with the same (therapistId/clientId)
+      //     pair (after our remap), drop source's row entirely first.
+      //
+      // Step A: drop source rows where target already has the mapped pair.
+      //   source(therapistId=src) + clientId X → would become (target, X)
+      //   if target already has (target, X) — drop source row
       await tx.$executeRaw(Prisma.sql`
-        DELETE FROM "ClientConceptualization" src
-        WHERE (src."therapistId" = ${sourceId} OR src."clientId" = ${sourceId})
-          AND EXISTS (
-            SELECT 1 FROM "ClientConceptualization" tgt
-            WHERE (tgt."therapistId" = ${targetId} OR tgt."clientId" = ${targetId})
-              AND (
-                (CASE WHEN src."therapistId" = ${sourceId} THEN ${targetId} ELSE src."therapistId" END) = tgt."therapistId"
-                AND
-                (CASE WHEN src."clientId"    = ${sourceId} THEN ${targetId} ELSE src."clientId"    END) = tgt."clientId"
-              )
+        DELETE FROM "ClientConceptualization"
+        WHERE "therapistId" = ${sourceId}
+          AND "clientId" IN (
+            SELECT "clientId" FROM "ClientConceptualization" WHERE "therapistId" = ${targetId}
           )
       `);
+      //   source(clientId=src) + therapistId Y → would become (Y, target)
+      //   if target already has (Y, target) — drop source row
+      await tx.$executeRaw(Prisma.sql`
+        DELETE FROM "ClientConceptualization"
+        WHERE "clientId" = ${sourceId}
+          AND "therapistId" IN (
+            SELECT "therapistId" FROM "ClientConceptualization" WHERE "clientId" = ${targetId}
+          )
+      `);
+      // Step B: remap remaining source rows.
       await tx.$executeRaw(Prisma.sql`
         UPDATE "ClientConceptualization" SET "therapistId" = ${targetId}
         WHERE "therapistId" = ${sourceId} AND "clientId" <> ${targetId}
@@ -202,6 +212,8 @@ export class MergeService {
         UPDATE "ClientConceptualization" SET "clientId" = ${targetId}
         WHERE "clientId" = ${sourceId} AND "therapistId" <> ${targetId}
       `);
+      // Step C: anything still pointing at source on either side would create
+      // a self-loop (therapist === client) — drop.
       await tx.$executeRaw(Prisma.sql`
         DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
       `);
