@@ -334,6 +334,17 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
           </div>
         </div>
 
+        {/* Safe place — own section */}
+        <div className="section">
+          <div className="section-head"><h3>Безопасное место</h3></div>
+          <div style={{ fontSize: 15, maxWidth: 600, lineHeight: 1.55, color: 'var(--text)' }}>
+            Управляемая визуализация для активации Хорошего Родителя — ресурс в тревожный момент.
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 18 }}>
+            <button className="btn btn-secondary" onClick={() => setShowSafePlace(true)}>▶ Открыть</button>
+          </div>
+        </div>
+
         {/* Tool grid */}
         <div className="section">
           <div className="section-head"><h3>Инструменты</h3></div>
@@ -342,7 +353,6 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
             <ToolCard emoji="🗂" label="Практики" sub={practiceCount == null ? undefined : practiceCount === 0 ? 'Нет практик' : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`} accentColor="var(--accent)" onClick={onOpenPractices} />
             <ToolCard emoji="🗓" label="Планы" sub={planCount == null ? undefined : planCount === 0 ? 'История пуста' : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`} accentColor="var(--accent-blue)" onClick={onOpenPlans} />
             <ToolCard emoji="🔍" label="Проверка убеждений" sub="Правда ли это?" accentColor="var(--accent-yellow)" onClick={() => setShowBeliefCheck(true)} />
-            <ToolCard emoji="🏡" label="Безопасное место" sub="Ресурс в тревожный момент" accentColor="var(--accent-green)" onClick={() => setShowSafePlace(true)} />
             <ToolCard emoji="✉️" label="Письмо себе" sub="Уязвимому Ребёнку" accentColor="var(--accent-pink)" onClick={() => setShowLetterToSelf(true)} />
             <ToolCard emoji="🆘" label="Мне плохо" sub="5 шагов чтобы разобраться" accentColor="var(--accent-red)" onClick={() => setShowFlashcard(true)} />
           </div>
