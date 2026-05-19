@@ -753,7 +753,6 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
               {/* Delete error */}
               {deleteError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 4, textAlign: 'center' }}>{deleteError}</div>}
             </div>
-          </div>
 
           {/* ── SCROLLABLE CONTENT ── */}
           <div style={{ flex: 1, padding: '20px 24px 60px' }}>
