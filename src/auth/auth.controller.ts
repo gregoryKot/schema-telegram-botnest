@@ -331,7 +331,13 @@ export class AuthController {
     }
 
     // 1. Move data from source → target.
-    await this.merge.merge(source, target);
+    try {
+      await this.merge.merge(source, target);
+    } catch (err) {
+      const msg = (err as Error).message ?? 'merge failed';
+      this.logger.error(`merge ${source} → ${target} failed: ${msg}`, (err as Error).stack);
+      throw new BadRequestException(`Merge failed: ${msg}`);
+    }
 
     // 2. Link the provider that triggered the merge to the target user.
     const linkRes = await this.auth.linkProviderToUser(target, provider, providerId);
