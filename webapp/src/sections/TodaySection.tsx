@@ -273,16 +273,15 @@ export function TodaySection({
         {/* ── LEFT ──────────────────────────────────────────────────────────── */}
         <div style={{ minWidth: 0 }}>
 
-          {/* Therapist cabinet banner */}
+          {/* Therapist cabinet — calm link block */}
           {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
-            <div onClick={onOpenTherapistCabinet}
-              style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '14px 18px', marginBottom: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: 'color-mix(in srgb, var(--accent) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🧑‍⚕️</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Кабинет терапевта</div>
-                <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>Клиенты · Задания · Концептуализация</div>
+            <div onClick={onOpenTherapistCabinet} className="list-line" style={{ cursor: 'pointer', marginBottom: 24 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="eyebrow" style={{ marginBottom: 4 }}>Терапевт</div>
+                <div className="text-md" style={{ fontWeight: 600 }}>Кабинет терапевта</div>
+                <div className="text-sm muted" style={{ marginTop: 3 }}>Клиенты · Задания · Концептуализация</div>
               </div>
-              <span style={{ fontSize: 16, color: 'var(--text-ghost)' }}>›</span>
+              <span className="link">открыть →</span>
             </div>
           )}
 
@@ -341,20 +340,24 @@ export function TodaySection({
                 {activeTasks.length > 0 && <span className="hint">{activeTasks.length} активных</span>}
               </div>
               {tasks.slice(0, 5).map(task => {
-                const emoji  = resolveTaskEmoji(task);
                 const isDone = task.done === true;
                 const isFail = task.done === false;
                 return (
                   <div key={task.id} className="list-line">
-                    <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${isDone ? 'var(--c-moss)' : 'var(--line-strong)'}`, background: isDone ? 'color-mix(in srgb, var(--c-moss) 12%, transparent)' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>
-                      {isDone ? '✓' : isFail ? '×' : ''}
-                    </div>
+                    <span style={{
+                      width: 14, height: 14, borderRadius: 4,
+                      border: `1.5px solid ${isDone ? 'var(--accent)' : 'var(--line-strong)'}`,
+                      background: isDone ? 'var(--accent)' : 'transparent',
+                      flexShrink: 0, marginTop: 4,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 9, color: '#fff',
+                    }}>{isDone ? '✓' : isFail ? '×' : ''}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: isDone ? 'var(--text-faint)' : 'var(--text)', textDecoration: isDone ? 'line-through' : undefined, lineHeight: 1.3 }}>
-                        {emoji} {resolveTaskText(task)}
+                      <div className="text-md" style={{ fontWeight: 600, opacity: isDone ? 0.55 : 1, textDecoration: isDone ? 'line-through' : 'none' }}>
+                        {resolveTaskText(task)}
                       </div>
-                      {task.assignedBy !== null && (
-                        <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>от терапевта</div>
+                      {task.assignedBy !== null && !isDone && (
+                        <div className="eyebrow" style={{ color: 'var(--accent)', marginTop: 4 }}>от терапевта</div>
                       )}
                     </div>
                     {task.done === null && (
@@ -596,43 +599,23 @@ function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdvanced, o
 
   if (allDone) {
     return (
-      <div style={{ background: 'color-mix(in srgb, var(--c-moss) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--c-moss) 18%, transparent)', borderRadius: 16, padding: '20px', textAlign: 'center', marginBottom: 28 }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>Все шаги пройдены</div>
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 16 }}>
+      <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 24 }}>
+        <div className="eyebrow" style={{ marginBottom: 8, color: 'var(--c-moss)' }}>Старт пройден</div>
+        <div className="text-md" style={{ maxWidth: 540, lineHeight: 1.55 }}>
           Все инструменты изучены — теперь начинается настоящая работа.
         </div>
-        <button onClick={() => { localStorage.setItem(ONBOARDING_DONE_KEY, '1'); setDone(true); }}
-          style={{ padding: '11px 24px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-          Скрыть
-        </button>
-      </div>
-    );
-  }
-
-  if (!autoStep) {
-    const postponedCount = STEPS.filter(s => !s.isDone(profile, ctx)).length;
-    return (
-      <div style={{ background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-        <div style={{ fontSize: 22 }}>📋</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{postponedCount} {postponedCount === 1 ? 'шаг отложен' : 'шага отложено'}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>{doneCount} из {STEPS.length} выполнено</div>
+        <div style={{ marginTop: 14 }}>
+          <button className="link" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}
+                  onClick={() => { localStorage.setItem(ONBOARDING_DONE_KEY, '1'); setDone(true); }}>
+            скрыть →
+          </button>
         </div>
-        <button onClick={() => { setSkipped([]); localStorage.removeItem(ONBOARDING_SKIPPED_KEY); }}
-          style={{ padding: '7px 14px', borderRadius: 9, border: 'none', background: 'color-mix(in srgb, var(--accent) 14%, transparent)', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          Продолжить
-        </button>
       </div>
     );
   }
 
-  const current          = (selectedId ? STEPS.find(s => s.id === selectedId) : null) ?? autoStep;
-  const isCurrentDone    = current.isDone(profile, ctx);
-  const isCurrentSkipped = skipped.includes(current.id) && !isCurrentDone;
-
-  function handleAction() {
-    switch (current.id) {
+  function handleAction(step: StepDef) {
+    switch (step.id) {
       case 'ysq':       onOpenSchema({ startTest: true }); break;
       case 'tracker':   onOpenTracker(); break;
       case 'diary':     onOpenDiaries(); break;
@@ -642,60 +625,73 @@ function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdvanced, o
     setSelectedId(null);
   }
 
-  function handleSkip() {
-    const next = [...skipped, current.id];
+  function handleSkip(step: StepDef) {
+    const next = [...skipped, step.id];
     localStorage.setItem(ONBOARDING_SKIPPED_KEY, JSON.stringify(next));
     setSkipped(next);
     setSelectedId(null);
   }
 
+  // Pending steps in order (not done, not postponed)
+  const pendingSteps = STEPS.filter(s => !s.isDone(profile, ctx) && !skipped.includes(s.id));
+  const visibleStep  = (selectedId ? STEPS.find(s => s.id === selectedId) : null) ?? pendingSteps[0] ?? autoStep;
+  if (!visibleStep) return null;
+
   return (
-    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 16, padding: '16px 18px', marginBottom: 28 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', marginBottom: 14, letterSpacing: '0.05em' }}>
-        {doneCount} из {STEPS.length} шагов выполнено
+    <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 24 }}>
+      <div className="section-head">
+        <h3>С чего начать</h3>
+        <span className="hint">{doneCount} из {STEPS.length} · {pendingSteps.length} впереди</span>
       </div>
 
-      {/* Steps row */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-        {STEPS.map(s => {
-          const isDone = s.isDone(profile, ctx);
-          const isSel  = s.id === current.id;
-          return (
-            <div key={s.id} onClick={() => setSelectedId(s.id)}
-              style={{ flex: 1, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, cursor: 'pointer',
-                background: isDone ? 'color-mix(in srgb, var(--c-moss) 12%, transparent)' : isSel ? 'var(--surface-3)' : 'var(--surface-2)',
-                border: `1.5px solid ${isDone ? 'color-mix(in srgb, var(--c-moss) 22%, transparent)' : isSel ? 'var(--line-strong)' : 'var(--line)'}`,
-                opacity: skipped.includes(s.id) && !isDone ? 0.5 : 1 }}>
-              {isDone ? '✓' : s.emoji}
+      {/* Calm checklist — all steps as document lines */}
+      {STEPS.map(s => {
+        const isDone    = s.isDone(profile, ctx);
+        const isSkipped = skipped.includes(s.id) && !isDone;
+        const isCurrent = s.id === visibleStep.id;
+        return (
+          <div key={s.id} className="list-line" style={{ cursor: 'pointer', opacity: isSkipped ? 0.5 : 1 }}
+               onClick={() => setSelectedId(s.id)}>
+            <span style={{
+              width: 14, height: 14, borderRadius: 4,
+              border: `1.5px solid ${isDone ? 'var(--c-moss)' : isCurrent ? 'var(--accent)' : 'var(--line-strong)'}`,
+              background: isDone ? 'var(--c-moss)' : 'transparent',
+              flexShrink: 0, marginTop: 4,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 9, color: '#fff',
+            }}>{isDone ? '✓' : ''}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="text-md" style={{ fontWeight: 600, opacity: isDone ? 0.6 : 1 }}>{s.title}</div>
+              {isCurrent && !isDone && (
+                <div className="text-sm muted" style={{ marginTop: 4, lineHeight: 1.55 }}>{s.description}</div>
+              )}
             </div>
-          );
-        })}
-      </div>
+            {isCurrent && !isDone ? (
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexShrink: 0 }}>
+                <span className="link" style={{ cursor: 'pointer' }} onClick={e => { e.stopPropagation(); handleSkip(s); }}>
+                  отложить
+                </span>
+                <span className="link" onClick={e => { e.stopPropagation(); handleAction(s); }}>
+                  начать →
+                </span>
+              </div>
+            ) : isSkipped ? (
+              <span className="text-xs faint">отложено</span>
+            ) : !isDone ? (
+              <span className="text-xs faint">в очереди</span>
+            ) : null}
+          </div>
+        );
+      })}
 
-      {/* Current step */}
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 14 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: `color-mix(in srgb, ${current.color} 12%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-          {isCurrentDone ? '✓' : current.emoji}
+      {pendingSteps.length === 0 && skipped.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <span className="link" style={{ cursor: 'pointer' }}
+                onClick={() => { setSkipped([]); localStorage.removeItem(ONBOARDING_SKIPPED_KEY); }}>
+            вернуть отложенные →
+          </span>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{current.title}</div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>{current.description}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>{current.detail}</div>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 8 }}>
-        {!isCurrentDone && (
-          <button onClick={handleSkip} style={{ padding: '8px 14px', border: 'none', borderRadius: 9, background: 'transparent', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>
-            {isCurrentSkipped ? 'Отложено' : 'Отложить'}
-          </button>
-        )}
-        <button onClick={isCurrentDone ? () => setSelectedId(null) : handleAction}
-          disabled={isCurrentSkipped && !isCurrentDone}
-          style={{ flex: 1, padding: '9px 0', border: 'none', borderRadius: 9, background: isCurrentDone ? 'color-mix(in srgb, var(--c-moss) 14%, transparent)' : `color-mix(in srgb, ${current.color} 14%, transparent)`, color: isCurrentDone ? 'var(--c-moss)' : current.color, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          {isCurrentDone ? 'Готово ✓' : current.actionLabel}
-        </button>
-      </div>
+      )}
     </div>
   );
 }
