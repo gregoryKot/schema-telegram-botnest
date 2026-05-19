@@ -65,6 +65,10 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   // Therapist relation
   const [relation, setRelation] = useState<TherapyRelationInfo | null>(null);
 
+  // Progress stats
+  const [diaryCount, setDiaryCount] = useState<number>(0);
+  const [ysqCount, setYsqCount] = useState<number>(0);
+
   // Notifications
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [reminderEnabled, setReminderEnabled] = useState(true);
@@ -92,6 +96,12 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         .catch(() => {}),
       api.history(112).then(h => setActiveDates(new Set(h.map(d => d.date)))).catch(() => {}),
       api.getTherapyRelation().then(r => setRelation(r)).catch(() => {}),
+      Promise.all([
+        api.getSchemaDiary().catch(() => []),
+        api.getModeDiary().catch(() => []),
+        api.getGratitudeDiary().catch(() => []),
+      ]).then(([sd, md, gd]) => setDiaryCount(sd.length + md.length + gd.length)).catch(() => {}),
+      api.getYsqHistory().then(h => setYsqCount(h.length)).catch(() => {}),
       api.getSettings().then(s => {
         if (s) {
           setNotifEnabled(s.notifyEnabled ?? true);
@@ -139,6 +149,26 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               <div key={i} style={{ height: h, borderRadius: 20, background: 'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)', backgroundSize: '200% auto', animation: 'shimmer 1.5s linear infinite' }} />
             ))}
           </>
+        )}
+
+        {/* ── Прогресс ── */}
+        {ready && (
+          <div className="section">
+            <div className="section-head"><h3>Прогресс</h3></div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 36, flexWrap: 'wrap' }}>
+              {[
+                [currentStreak, 'дней стрика'],
+                [totalDays, 'дней всего'],
+                [diaryCount, 'записей дневника'],
+                [ysqCount, 'прохождений YSQ'],
+              ].map(([n, l]) => (
+                <div key={l as string}>
+                  <div className="num" style={{ fontSize: 36, fontWeight: 500, letterSpacing: '-0.025em', color: 'var(--text)' }}>{n as number}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>{l as string}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* ── Стрик ── */}
