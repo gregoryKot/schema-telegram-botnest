@@ -20,6 +20,7 @@ interface Props {
   onOpenPlans: () => void;
   onOpenTracker: () => void;
   onOpenDiaries: () => void;
+  onOpenSchema?: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
   practiceCount?: number | null;
   planCount?: number | null;
   refreshKey?: number;
@@ -167,7 +168,7 @@ function TaskProgressBar({ task }: { task: UserTask }) {
   );
 }
 
-export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, practiceCount, planCount, refreshKey, initialTasks, onTasksChanged, userRole: _userRole, onOpenTherapistCabinet: _onOpenTherapistCabinet }: Props) {
+export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, onOpenSchema, practiceCount, planCount, refreshKey, initialTasks, onTasksChanged, userRole: _userRole, onOpenTherapistCabinet: _onOpenTherapistCabinet }: Props) {
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
   const [showFlashcard, setShowFlashcard] = useState(false);
@@ -232,7 +233,7 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
   }
 
   return (
-    <div className="page-inner">
+    <div className="page-inner-wide">
 
       {/* Header */}
       <div style={{ marginBottom: 36 }}>
@@ -261,7 +262,7 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         })()}
       </div>
 
-      <div style={{ maxWidth: 800 }}>
+      <div>
 
         {/* Therapist tasks — shown prominently when assigned */}
         {therapistTasks.filter(t => !t.doneToday).length > 0 && (
@@ -275,6 +276,28 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
           </div>
         )}
 
+        {/* Big practices — 3-column cards with top border */}
+        <div className="section">
+          <div className="eyebrow" style={{ marginBottom: 24 }}>Большие практики</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
+            {[
+              { label: 'Колесо детства', sub: 'Какие базовые потребности были или не были удовлетворены', onClick: onOpenChildhoodWheel, done: childhoodDone },
+              { label: 'Тест YSQ', sub: 'Опросник Янга, 90 вопросов, 20 шкал схем', onClick: () => onOpenSchema?.({ startTest: true }), done: false },
+              { label: 'Карта режимов', sub: 'Найди своего Уязвимого Ребёнка, Критика, Защитника', onClick: () => onOpenSchema?.({ tab: 'modes' }), done: false },
+            ].map(card => (
+              <div
+                key={card.label}
+                onClick={card.onClick}
+                style={{ cursor: 'pointer', padding: '24px 0', borderTop: '2px solid var(--text)' }}
+              >
+                <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text)' }}>{card.label}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 10, lineHeight: 1.55, maxWidth: 280 }}>{card.sub}</div>
+                <span className="link" style={{ marginTop: 18, display: 'inline-block' }}>{card.done ? 'открыть →' : 'начать →'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Tool grid */}
         <div className="section">
           <div className="section-head"><h3>Инструменты</h3></div>
@@ -286,7 +309,6 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
             <ToolCard emoji="🏡" label="Безопасное место" sub="Ресурс в тревожный момент" accentColor="var(--accent-green)" onClick={() => setShowSafePlace(true)} />
             <ToolCard emoji="✉️" label="Письмо себе" sub="Уязвимому Ребёнку" accentColor="var(--accent-pink)" onClick={() => setShowLetterToSelf(true)} />
             <ToolCard emoji="🆘" label="Мне плохо" sub="5 шагов чтобы разобраться" accentColor="var(--accent-red)" onClick={() => setShowFlashcard(true)} />
-            <ToolCard emoji="🌱" label="Колесо детства" sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'} accentColor="var(--accent-green)" onClick={onOpenChildhoodWheel} />
           </div>
         </div>
 

@@ -54,39 +54,42 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
   ];
 
   return (
-    <div className="page-inner">
+    <div className="page-inner-wide">
       {/* Header */}
-      <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 8 }}>
-        Дневник
-      </h1>
-      <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 48 }}>
-        Замечай паттерны, фиксируй моменты. Веди один или все три — как тебе удобно.
-      </p>
-
-      {/* Diary list */}
-      <div className="section">
-        <div className="section-head">
-          <h3>Типы записей</h3>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40 }}>
+        <div>
+          <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 8 }}>
+            Дневник
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, margin: 0 }}>
+            Замечай паттерны, фиксируй моменты.
+          </p>
         </div>
-        {diaries.map(meta => (
-          <div key={meta.type} className="list-line" onClick={() => onOpen(meta.type)} style={{ cursor: 'pointer' }}>
-            <div style={{ width: 3, alignSelf: 'stretch', borderRadius: 3, background: meta.color, flexShrink: 0, opacity: 0.8 }} />
-            <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: `color-mix(in srgb, ${meta.color} 12%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-              {meta.emoji}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.25 }}>{meta.title}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{meta.subtitle}</div>
-              {meta.count > 0 && (
-                <div style={{ fontSize: 11, color: meta.color, marginTop: 4, fontWeight: 500 }}>
+      </div>
+
+      {/* Diary type cards */}
+      <div className="section">
+        <div className="eyebrow" style={{ marginBottom: 20 }}>Что записать сегодня</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
+          {diaries.map(meta => (
+            <div
+              key={meta.type}
+              onClick={() => onOpen(meta.type)}
+              style={{ cursor: 'pointer', padding: '20px 0', borderTop: `2px solid ${meta.color}` }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>{meta.title}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 8, lineHeight: 1.55, maxWidth: 280 }}>{meta.subtitle}</div>
+              {meta.count > 0 ? (
+                <div style={{ fontSize: 12, color: meta.color, marginTop: 10, fontWeight: 500 }}>
                   {meta.count} {meta.count === 1 ? 'запись' : meta.count < 5 ? 'записи' : 'записей'}
-                  {meta.lastDate && ` · последняя ${fmtDateLong(meta.lastDate)}`}
+                  {meta.lastDate && ` · ${fmtDateLong(meta.lastDate)}`}
                 </div>
+              ) : (
+                <span className="link" style={{ marginTop: 14, display: 'inline-block', fontSize: 13 }}>+ записать →</span>
               )}
             </div>
-            <span style={{ fontSize: 16, color: 'var(--text-ghost)', flexShrink: 0 }}>›</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

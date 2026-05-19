@@ -25,12 +25,13 @@ import { AuthModule } from './auth/auth.module';
     // Single ServeStatic for everything.
     // webapp/dist serves the website at /
     // webapp/dist/app/ contains the Telegram mini app (schema-miniapp build)
+    // renderPath: '/*' makes it SPA-friendly — serves index.html for all
+    // non-file paths so HTML5 history routing (/diary, /schemas, etc.) works.
+    // API routes are excluded so /api/* still hits NestJS handlers.
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'webapp', 'dist'),
+      renderPath: '/*',
       exclude: ['/api/{*path}'],
-      serveStaticOptions: {
-        fallthrough: true,
-      },
     }),
     PrismaModule,
     NotificationModule,
