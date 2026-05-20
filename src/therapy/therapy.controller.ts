@@ -167,6 +167,13 @@ export class TherapyController {
     return this.therapyService.getTaskHistory(req.telegramUserId);
   }
 
+  @Get('tasks/all')
+  async getAllTasks(@Req() req: AuthRequest) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    return this.therapyService.getAllTasksForTherapist(req.telegramUserId);
+  }
+
   @Get('tasks/client/:clientId')
   async getTasksForClient(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
     const role = await this.botService.getUserRole(req.telegramUserId);

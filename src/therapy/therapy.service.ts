@@ -290,6 +290,42 @@ export class TherapyService {
     return rows.map(r => ({ ...r, text: decrypt(r.text) ?? r.text }));
   }
 
+  async getAllTasksForTherapist(therapistId: number) {
+    const relations = await this.prisma.therapyRelation.findMany({
+      where: { therapistId: BigInt(therapistId), status: 'active' },
+      include: { client: { select: { id: true, firstName: true } } },
+    });
+
+    const results: Array<{ clientId: number; clientName: string; tasks: any[] }> = [];
+
+    for (const rel of relations) {
+      const clientId = rel.client ? Number(rel.client.id) : -rel.id;
+      const clientName = rel.client
+        ? ((rel as any).clientAlias ?? rel.client.firstName ?? `ID ${clientId}`)
+        : ((rel as any).clientAlias ?? (rel as any).virtualClientName ?? `ID ${-clientId}`);
+
+      const tasks = await this.prisma.userTask.findMany({
+        where: { assignedBy: BigInt(therapistId), userId: rel.client ? BigInt(clientId) : { lt: 0 } },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (tasks.length > 0) {
+        results.push({
+          clientId,
+          clientName,
+          tasks: tasks.map(t => ({
+            ...t,
+            text: decrypt(t.text) ?? t.text,
+            userId: clientId,
+            assignedBy: therapistId,
+          })),
+        });
+      }
+    }
+
+    return results;
+  }
+
   async getTasksForClient(therapistId: number, clientId: number) {
     if (clientId < 0) {
       // Virtual client: look up by relation ID

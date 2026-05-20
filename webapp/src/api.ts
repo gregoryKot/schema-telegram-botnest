@@ -265,6 +265,7 @@ export const api = {
   getTaskHistory:       () => get<any[]>('/api/therapy/tasks/history'),
   completeTask:         (id: number, done: boolean) => post(`/api/therapy/tasks/${id}/complete`, { done }),
   getTherapyTasksForClient: (clientId: number) => get<any[]>(`/api/therapy/tasks/client/${clientId}`),
+  getAllTherapyTasks:       () => get<{ clientId: number; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
   getTherapistNotes:    (clientId: number) => get<any[]>(`/api/therapy/notes/${clientId}`),
   createTherapistNote:  (clientId: number, date: string, text: string) => postJson<any>(`/api/therapy/notes/${clientId}`, { date, text }),
   deleteTherapistNote:  (noteId: number) => del(`/api/therapy/notes/${noteId}`),
