@@ -53,6 +53,6 @@
 - ⬜ **Merge accounts** — попробуй заново после деплоя `9f5df14`. Если упадёт — теперь покажет конкретное сообщение (не «Internal server error»)
 
 ### Низкий приоритет
-- ⬜ **Bundle size** — 896 KB (233 gzip), vite предупреждает. Code-splitting если упрётся в скорость загрузки
+- ✅ **Bundle size** — 896 KB → 78 KB начальный чанк. React.lazy для всех секций и оверлеев. vendor-react 284 KB (долгий кеш). schema-data 70 KB (needData+schemaTherapyData) только по требованию
 - ⬜ **schema-miniapp** (telegram /app/) — отдельный кодабейс, его мы не трогали. Если в Telegram тоже нужен новый дизайн — это отдельная задача
 - ⬜ **Deprecated npm warns** — старые `@telegram-apps/*`, glob. Безвредно
