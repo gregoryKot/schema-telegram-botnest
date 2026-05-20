@@ -137,6 +137,7 @@ export interface TherapyClientSummary {
   therapyStartDate: string | null;
   nextSession: string | null;
   meetingDays: number[];
+  schemaIds: string[];
 }
 export interface TherapistNote {
   id: number;

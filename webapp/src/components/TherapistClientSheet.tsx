@@ -235,7 +235,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     try {
       const { url } = await api.createTherapyInvite();
       setInviteUrl(url);
-    } catch { setAddError('Не удалось создать ссылку'); } finally { setInviteLoading(false); }
+    } catch (e: any) { setAddError(e?.message ?? 'Не удалось создать ссылку'); } finally { setInviteLoading(false); }
   }
 
   async function copyInvite() {
@@ -670,9 +670,10 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                         <div className="r-row-head">
                           <span className="eyebrow" style={{ flex: 2 }}>Клиент</span>
                           <span className="eyebrow">Начало</span>
-                          <span className="eyebrow" style={{ textAlign: 'right' }}>Активность</span>
+                          <span className="eyebrow" style={{ textAlign: 'right' }}>Стрик</span>
                           <span className="eyebrow" style={{ textAlign: 'right' }}>Индекс</span>
                           <span className="eyebrow">Следующая встреча</span>
+                          <span className="eyebrow" style={{ flex: 2 }}>Активные схемы</span>
                         </div>
                         {onlineClients.map(client => (
                           <div key={client.telegramId} className="r-row row-hover" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
@@ -690,6 +691,19 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                               ) : <span className="text-sm faint">—</span>}
                             </div>
                             <div className="text-sm muted">{client.nextSession ? nextSessionLabel(client.nextSession) : '—'}</div>
+                            <div style={{ flex: 2, display: 'flex', flexWrap: 'wrap', gap: '4px 10px', alignItems: 'center' }}>
+                              {client.schemaIds.length > 0 ? client.schemaIds.slice(0, 3).map(id => {
+                                const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
+                                const schema = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === id);
+                                return (
+                                  <span key={id} className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-sub)' }}>
+                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: domain?.color ?? 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />
+                                    {schema?.name ?? id}
+                                  </span>
+                                );
+                              }) : <span className="text-xs faint">—</span>}
+                              {client.schemaIds.length > 3 && <span className="text-xs faint">+{client.schemaIds.length - 3}</span>}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1356,11 +1370,17 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                   <div style={{ padding: '80px 0', textAlign: 'center' }}>
                     <div style={{ fontSize: 36, marginBottom: 16 }}>📋</div>
                     <div style={{ fontSize: 16, color: 'var(--text-sub)', marginBottom: 8 }}>YSQ ещё не проходился</div>
-                    <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 24 }}>Запроси тест — клиент получит уведомление в боте</div>
-                    <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-                      {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест YSQ'}
-                    </button>
-                    {ysqError && <div style={{ marginTop: 12, fontSize: 13, color: 'var(--c-rose)' }}>{ysqError}</div>}
+                    {selectedClient.telegramId < 0 ? (
+                      <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>Клиент без Telegram — YSQ недоступен</div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 24 }}>Запроси тест — клиент получит уведомление в боте</div>
+                        <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+                          {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест YSQ'}
+                        </button>
+                        {ysqError && <div style={{ marginTop: 12, fontSize: 13, color: 'var(--c-rose)' }}>{ysqError}</div>}
+                      </>
+                    )}
 
                     {selfSchemaIds.length > 0 && (
                       <div style={{ marginTop: 48, textAlign: 'left', maxWidth: 640, margin: '48px auto 0' }}>
