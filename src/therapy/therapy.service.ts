@@ -146,7 +146,7 @@ export class TherapyService {
     const conceptMap = new Map<string, string[]>();
     for (const c of concepts) {
       const raw = c.schemaIds;
-      const ids: string[] = typeof raw === 'string' ? (decryptJson<string[]>(raw) ?? []) : (Array.isArray(raw) ? raw : []);
+      const ids: string[] = typeof raw === 'string' ? (decryptJson<string[]>(raw) ?? []) : (Array.isArray(raw) ? (raw as string[]) : []);
       conceptMap.set(String(c.clientId), ids);
     }
 
