@@ -452,7 +452,9 @@ export function AppShell() {
               />
             )}
             {section === 'diary' && (
-              <DiarySection />
+              <ErrorBoundary section="Дневник" key="diary-boundary">
+                <DiarySection />
+              </ErrorBoundary>
             )}
             {section === 'schemas' && (
               <ErrorBoundary section="Схемы" key="schemas-boundary">
@@ -583,7 +585,9 @@ export function AppShell() {
         {/* ── Diaries overlay ── */}
         {showDiaries && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-            <DiarySection onClose={() => setShowDiaries(false)} />
+            <ErrorBoundary section="Дневник" key="diary-overlay-boundary">
+              <DiarySection onClose={() => setShowDiaries(false)} />
+            </ErrorBoundary>
           </div>
         )}
 
