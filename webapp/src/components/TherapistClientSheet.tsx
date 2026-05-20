@@ -63,6 +63,10 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // Client list
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listTab, setListTab] = useState<'clients' | 'kanban'>('clients');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [allTasks, setAllTasks] = useState<{ clientId: number; clientName: string; tasks: UserTask[] }[] | null>(null);
+  const [allTasksLoading, setAllTasksLoading] = useState(false);
 
   // Add client flow
   const [addMode, setAddMode] = useState<AddMode>(null);
@@ -446,7 +450,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           <div className="page-inner-wide">
 
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.03em' }}>Кабинет</div>
@@ -462,6 +466,40 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               >
                 {addMode ? '✕ Закрыть' : '+ Добавить клиента'}
               </button>
+            </div>
+
+            {/* Tabs + search */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+              <div className="tabs" style={{ marginBottom: 0 }}>
+                <button
+                  className={`tab ${listTab === 'clients' ? 'is-active' : ''}`}
+                  onClick={() => setListTab('clients')}
+                >
+                  Клиенты
+                  {clients.length > 0 && <span className="count">{clients.length}</span>}
+                </button>
+                <button
+                  className={`tab ${listTab === 'kanban' ? 'is-active' : ''}`}
+                  onClick={() => {
+                    setListTab('kanban');
+                    if (!allTasks && !allTasksLoading) {
+                      setAllTasksLoading(true);
+                      api.getAllTherapyTasks().then(setAllTasks).catch(() => setAllTasks([])).finally(() => setAllTasksLoading(false));
+                    }
+                  }}
+                >
+                  Задания
+                </button>
+              </div>
+              {listTab === 'clients' && (
+                <input
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Поиск клиента..."
+                  className="input"
+                  style={{ flex: 1, maxWidth: 320 }}
+                />
+              )}
             </div>
 
             {/* Add client panel */}
@@ -582,87 +620,108 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               );
             })()}
 
-            {/* Client roster — адаптивно для оффлайн/онлайн */}
-            {loading ? (
-              <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>
-            ) : clients.length === 0 ? (
-              <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 32 }}>
-                <h3 style={{ marginBottom: 8 }}>Добавь первого клиента</h3>
-                <div className="text-md muted" style={{ maxWidth: 560, lineHeight: 1.6, marginBottom: 20 }}>
-                  Через кнопку «+ Добавить клиента» вверху. Три варианта:
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 600 }}>
-                  <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Ссылка</div><div className="text-sm muted" style={{ marginTop: 3 }}>клиент подключается через Telegram-бот по приглашению</div></div></div>
-                  <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Telegram ID</div><div className="text-sm muted" style={{ marginTop: 3 }}>если знаешь его ID — добавишь сразу</div></div></div>
-                  <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Оффлайн</div><div className="text-sm muted" style={{ marginTop: 3 }}>клиент без Telegram — заметки и концептуализация без бота</div></div></div>
-                </div>
-              </div>
-            ) : (() => {
-              const onlineClients = clients.filter(c => !!c.name);
-              const offlineClients = clients.filter(c => !c.name);
-              const hasOnline = onlineClients.length > 0;
-              return (
-                <div>
-                  {hasOnline && (
-                    <div className="section">
-                      <div className="section-head">
-                        <h3>Клиенты с приложением</h3>
-                        <span className="hint">{onlineClients.length}</span>
-                      </div>
-                      <div className="r-row-head">
-                        <span className="eyebrow" style={{ flex: 2 }}>Клиент</span>
-                        <span className="eyebrow">Начало</span>
-                        <span className="eyebrow" style={{ textAlign: 'right' }}>Активность</span>
-                        <span className="eyebrow" style={{ textAlign: 'right' }}>Индекс</span>
-                        <span className="eyebrow">Следующая встреча</span>
-                      </div>
-                      {onlineClients.map(client => (
-                        <div key={client.telegramId} className="r-row row-hover" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
-                          <div style={{ flex: 2, minWidth: 0 }}>
-                            <div className="text-md" style={{ fontWeight: 600 }}>{client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}</div>
-                            {client.lastActiveDate && (
-                              <div className="text-xs faint" style={{ marginTop: 3 }}>активен {fmtDate(client.lastActiveDate)}</div>
-                            )}
-                          </div>
-                          <div className="text-sm muted">{client.therapyStartDate ? fmtDate(client.therapyStartDate) : '—'}</div>
-                          <div className="text-sm muted" style={{ textAlign: 'right' }}>{client.streak > 0 ? `${client.streak} дн.` : '—'}</div>
-                          <div style={{ textAlign: 'right' }}>
-                            {client.todayIndex != null ? (
-                              <span className="num" style={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.02em', color: indexColor(client.todayIndex) }}>{client.todayIndex.toFixed(1)}</span>
-                            ) : <span className="text-sm faint">—</span>}
-                          </div>
-                          <div className="text-sm muted">{client.nextSession ? nextSessionLabel(client.nextSession) : '—'}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+            {/* ── Kanban view ── */}
+            {listTab === 'kanban' && (
+              <KanbanView
+                allTasks={allTasks}
+                loading={allTasksLoading}
+                onOpenClient={(clientId) => {
+                  const client = clients.find(c => c.telegramId === clientId);
+                  if (client) openClient(client);
+                }}
+              />
+            )}
 
-                  {offlineClients.length > 0 && (
-                    <div className="section">
-                      <div className="section-head">
-                        <h3>Оффлайн-клиенты</h3>
-                        <span className="hint">{offlineClients.length} · заметки и концептуализация</span>
-                      </div>
-                      {offlineClients.map(client => {
-                        const name = client.clientAlias ?? `ID ${client.telegramId}`;
-                        return (
-                          <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div className="text-md" style={{ fontWeight: 600 }}>{name}</div>
-                              <div className="text-sm muted" style={{ marginTop: 3 }}>
-                                {client.therapyStartDate ? `Начало терапии · ${fmtDate(client.therapyStartDate)}` : 'без Telegram'}
-                                {client.nextSession && ` · след. встреча ${nextSessionLabel(client.nextSession)}`}
-                              </div>
-                            </div>
-                            <span className="link">открыть →</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+            {/* Client roster — адаптивно для оффлайн/онлайн */}
+            {listTab === 'clients' && (
+              loading ? (
+                <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>
+              ) : clients.length === 0 ? (
+                <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 32 }}>
+                  <h3 style={{ marginBottom: 8 }}>Добавь первого клиента</h3>
+                  <div className="text-md muted" style={{ maxWidth: 560, lineHeight: 1.6, marginBottom: 20 }}>
+                    Через кнопку «+ Добавить клиента» вверху. Три варианта:
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 600 }}>
+                    <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Ссылка</div><div className="text-sm muted" style={{ marginTop: 3 }}>клиент подключается через Telegram-бот по приглашению</div></div></div>
+                    <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Telegram ID</div><div className="text-sm muted" style={{ marginTop: 3 }}>если знаешь его ID — добавишь сразу</div></div></div>
+                    <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Оффлайн</div><div className="text-sm muted" style={{ marginTop: 3 }}>клиент без Telegram — заметки и концептуализация без бота</div></div></div>
+                  </div>
                 </div>
-              );
-            })()}
+              ) : (() => {
+                const q = searchQuery.toLowerCase().trim();
+                const filtered = q
+                  ? clients.filter(c => (c.clientAlias ?? c.name ?? '').toLowerCase().includes(q))
+                  : clients;
+                const onlineClients = filtered.filter(c => !!c.name);
+                const offlineClients = filtered.filter(c => !c.name);
+                const hasOnline = onlineClients.length > 0;
+                return (
+                  <div>
+                    {q && filtered.length === 0 && (
+                      <div className="text-md muted" style={{ padding: '24px 0' }}>Ничего не найдено</div>
+                    )}
+                    {hasOnline && (
+                      <div className="section">
+                        <div className="section-head">
+                          <h3>Клиенты с приложением</h3>
+                          <span className="hint">{onlineClients.length}</span>
+                        </div>
+                        <div className="r-row-head">
+                          <span className="eyebrow" style={{ flex: 2 }}>Клиент</span>
+                          <span className="eyebrow">Начало</span>
+                          <span className="eyebrow" style={{ textAlign: 'right' }}>Активность</span>
+                          <span className="eyebrow" style={{ textAlign: 'right' }}>Индекс</span>
+                          <span className="eyebrow">Следующая встреча</span>
+                        </div>
+                        {onlineClients.map(client => (
+                          <div key={client.telegramId} className="r-row row-hover" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
+                            <div style={{ flex: 2, minWidth: 0 }}>
+                              <div className="text-md" style={{ fontWeight: 600 }}>{client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}</div>
+                              {client.lastActiveDate && (
+                                <div className="text-xs faint" style={{ marginTop: 3 }}>активен {fmtDate(client.lastActiveDate)}</div>
+                              )}
+                            </div>
+                            <div className="text-sm muted">{client.therapyStartDate ? fmtDate(client.therapyStartDate) : '—'}</div>
+                            <div className="text-sm muted" style={{ textAlign: 'right' }}>{client.streak > 0 ? `${client.streak} дн.` : '—'}</div>
+                            <div style={{ textAlign: 'right' }}>
+                              {client.todayIndex != null ? (
+                                <span className="num" style={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.02em', color: indexColor(client.todayIndex) }}>{client.todayIndex.toFixed(1)}</span>
+                              ) : <span className="text-sm faint">—</span>}
+                            </div>
+                            <div className="text-sm muted">{client.nextSession ? nextSessionLabel(client.nextSession) : '—'}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {offlineClients.length > 0 && (
+                      <div className="section">
+                        <div className="section-head">
+                          <h3>Оффлайн-клиенты</h3>
+                          <span className="hint">{offlineClients.length} · заметки и концептуализация</span>
+                        </div>
+                        {offlineClients.map(client => {
+                          const name = client.clientAlias ?? `ID ${client.telegramId}`;
+                          return (
+                            <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div className="text-md" style={{ fontWeight: 600 }}>{name}</div>
+                                <div className="text-sm muted" style={{ marginTop: 3 }}>
+                                  {client.therapyStartDate ? `Начало терапии · ${fmtDate(client.therapyStartDate)}` : 'без Telegram'}
+                                  {client.nextSession && ` · след. встреча ${nextSessionLabel(client.nextSession)}`}
+                                </div>
+                              </div>
+                              <span className="link">открыть →</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
+            )}
           </div>
         </div>
       )}
@@ -1465,6 +1524,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       )}
 
       {/* ── ASSIGN TASK MODAL ─────────────────────────────────────────────────── */}
+
       {showAssign && selectedClient && (
         <TaskCreateSheet
           clientId={selectedClient.telegramId}
@@ -1477,6 +1537,83 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           onClose={() => setShowAssign(false)}
         />
       )}
+    </div>
+  );
+}
+
+// ── Kanban ────────────────────────────────────────────────────────────────────
+
+function KanbanView({ allTasks, loading, onOpenClient }: {
+  allTasks: { clientId: number; clientName: string; tasks: UserTask[] }[] | null;
+  loading: boolean;
+  onOpenClient: (clientId: number) => void;
+}) {
+  if (loading || !allTasks) {
+    return <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>;
+  }
+
+  const flat = allTasks.flatMap(group =>
+    group.tasks.map(t => ({ ...t, clientName: group.clientName }))
+  );
+
+  if (flat.length === 0) {
+    return (
+      <div className="section" style={{ paddingTop: 32 }}>
+        <div className="text-md muted">Назначенных заданий пока нет</div>
+      </div>
+    );
+  }
+
+  const pending   = flat.filter(t => t.done === null);
+  const completed = flat.filter(t => t.done === true);
+  const failed    = flat.filter(t => t.done === false);
+
+  const cols: { label: string; items: typeof flat; color: string }[] = [
+    { label: 'Назначено',  items: pending,   color: 'var(--accent)' },
+    { label: 'Выполнено',  items: completed, color: 'var(--c-moss)' },
+    { label: 'Не вышло',   items: failed,    color: 'var(--c-rose)' },
+  ];
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'start' }}>
+      {cols.map(col => (
+        <div key={col.label}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <span className="eyebrow">{col.label}</span>
+            {col.items.length > 0 && (
+              <span style={{ fontSize: 11, fontWeight: 600, color: col.color, background: `color-mix(in srgb, ${col.color} 12%, transparent)`, borderRadius: 10, padding: '1px 8px' }}>
+                {col.items.length}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {col.items.length === 0 && (
+              <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-faint)', fontSize: 13 }}>—</div>
+            )}
+            {col.items.map(task => (
+              <div
+                key={task.id}
+                onClick={() => onOpenClient(task.userId)}
+                style={{
+                  background: 'var(--surface-2)', borderRadius: 10, padding: '12px 14px',
+                  cursor: 'pointer', border: '1px solid var(--line)',
+                  transition: 'border-color 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = col.color)}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
+              >
+                <div style={{ fontSize: 11, fontWeight: 600, color: col.color, marginBottom: 6 }}>
+                  {task.clientName}
+                </div>
+                <div className="text-sm" style={{ lineHeight: 1.5, color: 'var(--text)' }}>{task.text}</div>
+                {task.dueDate && (
+                  <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>до {task.dueDate}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
