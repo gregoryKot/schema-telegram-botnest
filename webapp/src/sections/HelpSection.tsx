@@ -239,57 +239,64 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
       {/* Практики по потребностям */}
       <div className="section">
         <div className="section-head"><h3>Практики по потребностям</h3></div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', columnGap: 48, rowGap: 36 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', columnGap: 48, rowGap: 40 }}>
           {NEED_ORDER.map(id => {
             const need = NEED_DATA[id];
             if (!need) return null;
             const color = NEED_COLORS[id] ?? 'var(--accent)';
             return (
               <div key={id}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
-                  <span className="text-md" style={{ fontWeight: 600 }}>{need.name}</span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 14 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color }}>{need.name}</span>
                   <span className="text-xs faint">{need.hint}</span>
                 </div>
-                {need.actions.slice(0, 3).map((p, i) => (
-                  <div key={i} className="list-line" style={{ padding: '10px 0' }}>
-                    <span className="text-sm" style={{ flex: 1 }}>{p}</span>
-                    <span className="text-xs faint">3 мин</span>
-                  </div>
-                ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {need.actions.slice(0, 3).map((p, i) => (
+                    <div key={i} style={{ padding: '11px 14px 11px 14px', background: 'var(--surface-2)', borderRadius: 8, borderLeft: `3px solid ${color}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ minWidth: 20, height: 20, borderRadius: '50%', background: color + '20', color, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
+                      <span className="text-sm" style={{ flex: 1, lineHeight: 1.45 }}>{p}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-faint)', background: 'var(--surface-3)', padding: '2px 8px', borderRadius: 20, flexShrink: 0 }}>3 мин</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Безопасное место */}
+      {/* Безопасное место — feature card */}
       <div className="section">
-        <div className="section-head"><h3>Безопасное место</h3></div>
-        <div className="text-md" style={{ maxWidth: 600, lineHeight: 1.55 }}>
-          Управляемая визуализация для активации Хорошего Родителя — ресурс в тревожный момент.
-        </div>
-        <div style={{ marginTop: 18 }}>
-          <button className="btn btn-secondary" onClick={() => setShowSafePlace(true)}>▶ Открыть</button>
+        <div style={{ background: 'var(--surface-2)', borderRadius: 12, padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>Медитация</div>
+            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>Безопасное место</div>
+            <div className="text-sm muted" style={{ maxWidth: 440, lineHeight: 1.6 }}>
+              Управляемая визуализация для активации Хорошего Родителя — ресурс в тревожный или тяжёлый момент.
+            </div>
+          </div>
+          <button className="btn btn-primary" onClick={() => setShowSafePlace(true)} style={{ flexShrink: 0 }}>
+            ▶ Начать
+          </button>
         </div>
       </div>
 
-      {/* Короткие техники — calm document list */}
+      {/* Короткие техники — 3-column cards */}
       <div className="section">
         <div className="section-head"><h3>Короткие техники</h3></div>
-        {[
-          { label: 'Мне плохо',           sub: 'Пять шагов чтобы разобраться, что происходит',  onClick: () => setShowFlashcard(true) },
-          { label: 'Проверка убеждений',  sub: 'Правда ли это? Что говорит за, что против',     onClick: () => setShowBeliefCheck(true) },
-          { label: 'Письмо себе',         sub: 'Письмо Уязвимому Ребёнку — от Здорового Взрослого', onClick: () => setShowLetterToSelf(true) },
-        ].map(item => (
-          <div key={item.label} className="list-line" style={{ cursor: 'pointer' }} onClick={item.onClick}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="text-md" style={{ fontWeight: 500 }}>{item.label}</div>
-              <div className="text-sm muted" style={{ marginTop: 3 }}>{item.sub}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
+          {([
+            { label: 'Мне плохо',          sub: 'Пять шагов чтобы разобраться, что происходит',      color: 'var(--c-rose)',  onClick: () => setShowFlashcard(true) },
+            { label: 'Проверка убеждений', sub: 'Правда ли это? Что говорит за, что против',          color: 'var(--c-amber)', onClick: () => setShowBeliefCheck(true) },
+            { label: 'Письмо себе',        sub: 'Письмо Уязвимому Ребёнку — от Здорового Взрослого',  color: 'var(--c-plum)',  onClick: () => setShowLetterToSelf(true) },
+          ] as const).map(item => (
+            <div key={item.label} onClick={item.onClick} style={{ cursor: 'pointer', padding: '20px 0', borderTop: `2px solid ${item.color}` }}>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{item.label}</div>
+              <div className="text-sm muted" style={{ lineHeight: 1.55, maxWidth: 240 }}>{item.sub}</div>
+              <span className="link" style={{ marginTop: 14, display: 'inline-block' }}>открыть →</span>
             </div>
-            <span className="link">открыть →</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Каталоги */}
