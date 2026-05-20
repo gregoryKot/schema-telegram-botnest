@@ -274,6 +274,7 @@ export const api = {
   saveConceptualization:(clientId: number, body: any) => postJson<any>(`/api/therapy/conceptualization/${clientId}`, body),
   updateSessionInfo:    (clientId: number, body: any) => post(`/api/therapy/session-info/${clientId}`, body),
   getTherapyClientData: (clientId: number) => get<any>(`/api/therapy/client-data/${clientId}`),
+  getTherapyClientHistory: (clientId: number) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
   getSchemaNotes:       () => get<any[]>('/api/schema-notes'),
   saveSchemaNote:       (body: any) => post('/api/schema-notes', body),
   getModeNotes:         () => get<any[]>('/api/mode-notes'),

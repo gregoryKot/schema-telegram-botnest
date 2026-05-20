@@ -619,6 +619,18 @@ export class TherapyService {
     };
   }
 
+  async getClientHistory(therapistId: number, clientId: number): Promise<{ date: string; index: number | null; ratings: Record<string, number> }[]> {
+    if (clientId < 0) return [];
+    await this.assertRelation(therapistId, clientId);
+    const history = await this.analyticsService.getHistoryRatings(clientId, 14);
+    return history.map(h => {
+      const ratings = h.ratings as Record<string, number>;
+      const vals = Object.values(ratings);
+      const index = vals.length === 5 ? Math.round(vals.reduce((s, v) => s + v, 0) / 5 * 10) / 10 : null;
+      return { date: h.date, index, ratings };
+    });
+  }
+
   async scheduleTaskNotification(clientId: number, task: { text: string; needId: string | null; dueDate: string | null }): Promise<void> {
     await this.notificationService.schedule(clientId, 'task_assigned', new Date(), {
       text: task.text, needId: task.needId, dueDate: task.dueDate,

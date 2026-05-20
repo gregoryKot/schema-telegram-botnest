@@ -91,6 +91,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [noteError, setNoteError] = useState('');
   const [concept, setConcept] = useState<ClientConceptualization | null>(null);
   const [clientData, setClientData] = useState<ClientData | null>(null);
+  const [clientHistory, setClientHistory] = useState<{ date: string; index: number | null; ratings: Record<string, number> }[]>([]);
   const [localConcept, setLocalConcept] = useState<Partial<ClientConceptualization>>({});
   const [conceptDirty, setConceptDirty] = useState(false);
   const [conceptSaving, setConceptSaving] = useState(false);
@@ -168,6 +169,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     setNoteError('');
     setConcept(null);
     setClientData(null);
+    setClientHistory([]);
     setLocalConcept({});
     setConceptDirty(false);
     setConceptError('');
@@ -185,13 +187,14 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     onOpenClient?.(clientId);
     switchView('client');
 
-    const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn] = await Promise.all([
+    const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn, hist] = await Promise.all([
       api.getTherapyTasksForClient(clientId).catch(() => []),
       api.getTherapistNotes(clientId).catch(() => []),
       api.getConceptualization(clientId).catch(() => null),
       api.getTherapyClientData(clientId).catch(() => null),
       api.getClientSchemaNotes(clientId).catch(() => []),
       api.getClientModeNotes(clientId).catch(() => []),
+      api.getTherapyClientHistory(clientId).catch(() => []),
     ]);
 
     if (openClientIdRef.current !== clientId) return;
@@ -202,6 +205,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     setClientData(fetchedData);
     setClientSchemaNotesData(sn);
     setClientModeNotesData(mn);
+    setClientHistory(hist);
     if (fetchedConcept) setLocalConcept(fetchedConcept);
   }
 
@@ -253,7 +257,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       navigator.share({ text: 'Подключись ко мне в Схема-лабе:', url: inviteUrl }).catch(() => {});
     } else {
       const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent('Подключись ко мне в Схема-лабе')}`;
-      window.open(tgUrl, '_blank');
+      window.open(tgUrl, '_blank', 'noopener');
     }
   }
 
@@ -1036,18 +1040,78 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                       )}
                     </div>
 
-                    {/* Wellbeing index */}
+                    {/* Wellbeing index + sparkline */}
                     {selectedClient.todayIndex != null && (
                       <>
                         <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
                         <div className="section">
-                          <div className="eyebrow" style={{ marginBottom: 14 }}>Индекс сегодня</div>
-                          <div style={{ fontSize: 48, fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1, color: indexColor(selectedClient.todayIndex) }}>
-                            {selectedClient.todayIndex.toFixed(1)}
+                          <div className="eyebrow" style={{ marginBottom: 12 }}>Индекс сегодня</div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
+                            <div style={{ fontSize: 52, fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1, color: indexColor(selectedClient.todayIndex) }}>
+                              {selectedClient.todayIndex.toFixed(1)}
+                            </div>
+                            {clientHistory.length >= 7 && (() => {
+                              const prev = clientHistory.slice(1, 8).map(d => d.index).filter(v => v != null) as number[];
+                              if (!prev.length) return null;
+                              const avgPrev = prev.reduce((s, v) => s + v, 0) / prev.length;
+                              const diff = selectedClient.todayIndex - avgPrev;
+                              return (
+                                <span style={{ fontSize: 12, color: diff >= 0 ? 'var(--c-moss)' : 'var(--c-rose)', fontWeight: 500 }}>
+                                  {diff >= 0 ? '+' : ''}{diff.toFixed(1)} к нед.
+                                </span>
+                              );
+                            })()}
                           </div>
+                          {clientHistory.length >= 3 && (
+                            <ClientSparkline
+                              values={clientHistory.slice(0, 14).map(d => d.index).reverse()}
+                              color={indexColor(selectedClient.todayIndex)}
+                            />
+                          )}
+                          {clientHistory.length > 0 && (
+                            <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 4 }}>
+                              {clientHistory.length} дн. · {clientHistory.length} оценок
+                            </div>
+                          )}
                         </div>
                       </>
                     )}
+
+                    {/* Needs today */}
+                    {clientHistory.length > 0 && (() => {
+                      const today = clientHistory[0];
+                      if (!today || Object.keys(today.ratings).length === 0) return null;
+                      const NEED_LABELS: Record<string, { label: string; color: string }> = {
+                        attachment: { label: 'Привязанность', color: '#ff6b9d' },
+                        autonomy:   { label: 'Автономия',     color: '#4fa3f7' },
+                        expression: { label: 'Выражение чувств', color: '#facc15' },
+                        play:       { label: 'Спонтанность',  color: '#06d6a0' },
+                        limits:     { label: 'Границы',       color: '#a78bfa' },
+                      };
+                      return (
+                        <>
+                          <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
+                          <div className="section">
+                            <div className="eyebrow" style={{ marginBottom: 14 }}>Потребности сегодня</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                              {Object.entries(NEED_LABELS).map(([id, { label, color }]) => {
+                                const v = today.ratings[id];
+                                if (v == null) return null;
+                                return (
+                                  <div key={id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, alignItems: 'center' }}>
+                                    <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>{label}</div>
+                                    <div style={{ width: 80, height: 3, background: 'var(--surface-3)', borderRadius: 2, overflow: 'hidden' }}>
+                                      <div style={{ width: `${v * 10}%`, height: '100%', background: color, borderRadius: 2 }} />
+                                    </div>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: v <= 4 ? 'var(--c-rose)' : v <= 6 ? 'var(--c-amber)' : color, minWidth: 14, textAlign: 'right' }}>{v}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
 
                     <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
 
@@ -1562,6 +1626,23 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 }
 
 // ── Kanban ────────────────────────────────────────────────────────────────────
+
+function ClientSparkline({ values, color }: { values: (number | null)[]; color: string }) {
+  const pts = values.map((v, i) => v !== null ? { x: i, y: v } : null).filter(Boolean) as { x: number; y: number }[];
+  if (pts.length < 2) return null;
+  const W = 180, H = 48;
+  const minY = Math.min(...pts.map(p => p.y));
+  const maxY = Math.max(...pts.map(p => p.y));
+  const range = maxY - minY || 1;
+  const n = values.length - 1 || 1;
+  const d = pts.map(p => `${(p.x / n) * W},${H - ((p.y - minY) / range) * (H - 8) - 4}`).join(' ');
+  return (
+    <svg width={W} height={H} style={{ overflow: 'visible', display: 'block', marginTop: 8 }}>
+      <polyline points={d} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" opacity={0.6} />
+      <circle cx={(pts[pts.length - 1].x / n) * W} cy={H - ((pts[pts.length - 1].y - minY) / range) * (H - 8) - 4} r={3} fill={color} opacity={0.9} />
+    </svg>
+  );
+}
 
 function KanbanView({ allTasks, loading, onOpenClient }: {
   allTasks: { clientId: number; clientName: string; tasks: UserTask[] }[] | null;
