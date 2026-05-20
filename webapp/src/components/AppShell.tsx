@@ -40,7 +40,7 @@ const ModeEntrySheet       = lazy(() => import('./diary/ModeEntrySheet').then(m 
 const GratitudeEntrySheet  = lazy(() => import('./diary/GratitudeEntrySheet').then(m => ({ default: m.GratitudeEntrySheet })));
 const PracticesOnboarding  = lazy(() => import('./PracticesOnboarding').then(m => ({ default: m.PracticesOnboarding })));
 
-const LazyLoader = () => <Loader minHeight="40vh" />;
+const LazyLoader = () => <Loader minHeight="100dvh" />;
 
 import type { PracticePlan, StreakData, UserTask } from '../api';
 

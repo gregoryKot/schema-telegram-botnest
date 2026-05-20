@@ -235,18 +235,22 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                       {activeCount > 0 ? `${activeCount} из ${domain.schemas.length} активны` : `${domain.schemas.length} схем`}
                     </span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', columnGap: 32, rowGap: 16 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
                     {domain.schemas.map(s => {
                       const isMine = allSchemaIds.includes(s.id);
                       return (
-                        <div key={s.id} onClick={() => setDetailSchemaId(s.id)} style={{ cursor: 'pointer' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: 14, fontWeight: isMine ? 600 : 500, color: isMine ? 'var(--text)' : 'var(--text-sub)' }}>
-                              {s.name}
-                            </span>
-                            {isMine && <span style={{ width: 6, height: 6, borderRadius: '50%', background: c, flexShrink: 0 }} />}
+                        <div key={s.id} onClick={() => setDetailSchemaId(s.id)} style={{
+                          cursor: 'pointer', borderRadius: 10,
+                          background: isMine ? cm(c, 7) : 'var(--surface-2)',
+                          border: `1px solid ${isMine ? cm(c, 22) : 'var(--line)'}`,
+                          borderLeft: `3px solid ${isMine ? c : 'var(--line)'}`,
+                          padding: '10px 14px',
+                          transition: 'all 0.15s',
+                        }}>
+                          <div style={{ fontSize: 13, fontWeight: isMine ? 600 : 500, color: isMine ? 'var(--text)' : 'var(--text-sub)', lineHeight: 1.25 }}>
+                            {s.name}
                           </div>
-                          <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 4, lineHeight: 1.5 }}>{s.desc}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 4, lineHeight: 1.45 }}>{s.desc}</div>
                         </div>
                       );
                     })}
@@ -313,16 +317,21 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                       const active = myModeIds.includes(m.id);
                       return (
                         <div key={m.id} onClick={() => setIntroModeId(m.id)} style={{
-                          padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-                          background: active ? cm(c, 9) : 'var(--surface-2)',
-                          border: `1px solid ${active ? cm(c, 25) : 'var(--line)'}`,
-                          display: 'flex', alignItems: 'flex-start', gap: 8,
+                          padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
+                          background: active ? cm(c, 8) : 'var(--surface-2)',
+                          border: `1px solid ${active ? cm(c, 28) : 'var(--line)'}`,
+                          display: 'flex', alignItems: 'flex-start', gap: 10,
                           transition: 'all 0.15s',
                         }}>
-                          <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{m.emoji}</span>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: active ? c : 'var(--text)' }}>{m.name}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>{m.short}</div>
+                          <div style={{
+                            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                            background: active ? cm(c, 22) : cm(c, 14),
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 20,
+                          }}>{m.emoji}</div>
+                          <div style={{ paddingTop: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: active ? c : 'var(--text)', lineHeight: 1.25 }}>{m.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.4 }}>{m.short}</div>
                           </div>
                         </div>
                       );
