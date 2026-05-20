@@ -4,8 +4,8 @@ import { getTherapistContact } from '../utils/therapistContact';
 import { api } from '../api';
 import type { YsqHistoryEntry } from '../api';
 
-export const YSQ_RESULT_KEY = 'ysq_result';
-export const YSQ_PROGRESS_KEY = 'ysq_progress';
+import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from '../utils/storageKeys';
+export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY };
 
 interface Props {
   onClose: () => void;

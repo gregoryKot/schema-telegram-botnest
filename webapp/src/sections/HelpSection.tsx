@@ -3,7 +3,7 @@ import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { LetterToSelf } from '../components/LetterToSelf';
 import { BeliefCheck } from '../components/BeliefCheck';
 import { SafePlace } from '../components/SafePlace';
-import { CHILDHOOD_DONE_KEY } from '../components/ChildhoodWheelSheet';
+import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
 import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';

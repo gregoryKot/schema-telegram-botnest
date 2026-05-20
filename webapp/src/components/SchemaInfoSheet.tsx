@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
-import { YSQTestSheet, YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './YSQTestSheet';
+import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from '../utils/storageKeys';
 import { TherapyNote } from './TherapyNote';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 export { SCHEMA_DOMAINS };
+
+const YSQTestSheet = lazy(() => import('./YSQTestSheet').then(m => ({ default: m.YSQTestSheet })));
 
 type Tab = 'needs' | 'schemas' | 'modes';
 
@@ -455,7 +457,7 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
           </div>
         </div>
       </BottomSheet>
-      {showTest && <YSQTestSheet onClose={() => setShowTest(false)} ratings={ratings} autoResume={autoStartTest} onViewSchemas={(name) => handleViewSchemas(name)} />}
+      {showTest && <Suspense fallback={null}><YSQTestSheet onClose={() => setShowTest(false)} ratings={ratings} autoResume={autoStartTest} onViewSchemas={(name) => handleViewSchemas(name)} /></Suspense>}
     </>
   );
 }

@@ -12,4 +12,19 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    chunkSizeWarningLimit: 400,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
+            return 'vendor-react';
+          }
+          if (id.includes('schemaTherapyData') || id.includes('needData')) {
+            return 'schema-data';
+          }
+        },
+      },
+    },
+  },
 });

@@ -6,11 +6,8 @@ import { SectionLabel } from './SectionLabel';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { TherapyNote } from './TherapyNote';
 
-export const CHILDHOOD_DONE_KEY = 'childhood_wheel_done';
-
-export function shouldShowChildhoodWheel(): boolean {
-  return !localStorage.getItem(CHILDHOOD_DONE_KEY);
-}
+import { CHILDHOOD_DONE_KEY, shouldShowChildhoodWheel } from '../utils/storageKeys';
+export { CHILDHOOD_DONE_KEY, shouldShowChildhoodWheel };
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'] as const;
 type NeedId = typeof NEED_IDS[number];

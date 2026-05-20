@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import type { UserSettings, PairsData, TherapyRelationInfo } from '../api';
-import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './YSQTestSheet';
+import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
 import { BottomSheet } from './BottomSheet';
 import { Loader } from './Loader';
 

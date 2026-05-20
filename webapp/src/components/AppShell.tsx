@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams, NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api';
@@ -7,36 +7,40 @@ import type { Need, DayHistory } from '../types';
 import { applyTheme, getTheme } from '../utils/theme';
 import { todayStr } from '../utils/format';
 import { cacheTherapistContact } from '../utils/therapistContact';
-import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
-import { CHILDHOOD_DONE_KEY } from './ChildhoodWheelSheet';
-import { YSQ_PROGRESS_KEY } from './YSQTestSheet';
+import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, shouldShowChildhoodWheel } from '../utils/storageKeys';
 import { CommandPalette } from './CommandPalette';
-
-import { TodaySection } from '../sections/TodaySection';
-import { DiarySection } from '../sections/DiarySection';
-import { SchemasSection } from '../sections/SchemasSection';
-import { ProfileSection } from '../sections/ProfileSection';
-import { HelpSection } from '../sections/HelpSection';
-
-import { TrackerOverlay } from './TrackerOverlay';
-import { HistoryView } from './HistoryView';
-import { SettingsSheet } from './SettingsSheet';
-import { PracticesScreen } from './PracticesScreen';
-import { PlansScreen } from './PlansScreen';
-import { SchemaInfoSheet } from './SchemaInfoSheet';
-import { NoteSheet } from './NoteSheet';
-import { Celebration } from './Celebration';
 import { Loader } from './Loader';
 import { ErrorBoundary } from './ErrorBoundary';
-import { ChildhoodWheelSheet, shouldShowChildhoodWheel } from './ChildhoodWheelSheet';
-import { TaskCreateSheet } from './TaskCreateSheet';
-import { CheckInSheet } from './CheckInSheet';
-import { TherapistClientSheet } from './TherapistClientSheet';
 import { FloatingPill } from './FloatingPill';
-import { SchemaEntrySheet } from './diary/SchemaEntrySheet';
-import { ModeEntrySheet } from './diary/ModeEntrySheet';
-import { GratitudeEntrySheet } from './diary/GratitudeEntrySheet';
-import { PracticesOnboarding } from './PracticesOnboarding';
+
+// — always-needed small helpers (no heavy data deps) —
+import { NoteSheet } from './NoteSheet';
+import { Celebration } from './Celebration';
+import { CheckInSheet } from './CheckInSheet';
+import { TaskCreateSheet } from './TaskCreateSheet';
+
+// — lazy: sections (each can pull in schemaTherapyData / needData on demand) —
+const TodaySection   = lazy(() => import('../sections/TodaySection').then(m => ({ default: m.TodaySection })));
+const DiarySection   = lazy(() => import('../sections/DiarySection').then(m => ({ default: m.DiarySection })));
+const SchemasSection = lazy(() => import('../sections/SchemasSection').then(m => ({ default: m.SchemasSection })));
+const ProfileSection = lazy(() => import('../sections/ProfileSection').then(m => ({ default: m.ProfileSection })));
+const HelpSection    = lazy(() => import('../sections/HelpSection').then(m => ({ default: m.HelpSection })));
+
+// — lazy: heavy overlays —
+const TrackerOverlay       = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
+const HistoryView          = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
+const SettingsSheet        = lazy(() => import('./SettingsSheet').then(m => ({ default: m.SettingsSheet })));
+const PracticesScreen      = lazy(() => import('./PracticesScreen').then(m => ({ default: m.PracticesScreen })));
+const PlansScreen          = lazy(() => import('./PlansScreen').then(m => ({ default: m.PlansScreen })));
+const SchemaInfoSheet      = lazy(() => import('./SchemaInfoSheet').then(m => ({ default: m.SchemaInfoSheet })));
+const ChildhoodWheelSheet  = lazy(() => import('./ChildhoodWheelSheet').then(m => ({ default: m.ChildhoodWheelSheet })));
+const TherapistClientSheet = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
+const SchemaEntrySheet     = lazy(() => import('./diary/SchemaEntrySheet').then(m => ({ default: m.SchemaEntrySheet })));
+const ModeEntrySheet       = lazy(() => import('./diary/ModeEntrySheet').then(m => ({ default: m.ModeEntrySheet })));
+const GratitudeEntrySheet  = lazy(() => import('./diary/GratitudeEntrySheet').then(m => ({ default: m.GratitudeEntrySheet })));
+const PracticesOnboarding  = lazy(() => import('./PracticesOnboarding').then(m => ({ default: m.PracticesOnboarding })));
+
+const LazyLoader = () => <Loader minHeight="40vh" />;
 
 import type { PracticePlan, StreakData, UserTask } from '../api';
 
@@ -412,6 +416,7 @@ export function AppShell() {
 
         {/* Canvas */}
         <div className="canvas">
+        <Suspense fallback={<LazyLoader />}>
 
         {/* Therapist mode */}
         {therapistMode && (
@@ -679,6 +684,7 @@ export function AppShell() {
           />
         )}
 
+        </Suspense>
         </div>{/* end canvas */}
       </div>{/* end main */}
 
