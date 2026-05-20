@@ -7,7 +7,7 @@ import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
 import { randomBytes } from 'crypto';
 
 function randomCode(): string {
-  return randomBytes(4).toString('hex').toUpperCase();
+  return randomBytes(6).toString('hex').toUpperCase();
 }
 
 const CONCEPT_TEXT_FIELDS = ['earlyExperience', 'unmetNeeds', 'triggers', 'copingStyles', 'goals', 'currentProblems', 'modeTransitions'] as const;
@@ -69,6 +69,7 @@ export interface TherapyClientSummary {
   therapyStartDate: string | null;
   nextSession: string | null;
   meetingDays: number[];
+  schemaIds: string[];
 }
 
 @Injectable()
@@ -131,10 +132,23 @@ export class TherapyService {
   }
 
   async getClients(therapistId: number): Promise<TherapyClientSummary[]> {
+    const tid = BigInt(therapistId);
     const relations = await this.prisma.therapyRelation.findMany({
-      where: { therapistId: BigInt(therapistId), status: 'active' },
+      where: { therapistId: tid, status: 'active' },
       include: { client: { select: { id: true, firstName: true } } },
     });
+
+    // Batch-load all conceptualizations for this therapist
+    const concepts = await this.prisma.clientConceptualization.findMany({
+      where: { therapistId: tid },
+      select: { clientId: true, schemaIds: true },
+    });
+    const conceptMap = new Map<string, string[]>();
+    for (const c of concepts) {
+      const raw = c.schemaIds;
+      const ids: string[] = typeof raw === 'string' ? (decryptJson<string[]>(raw) ?? []) : (Array.isArray(raw) ? raw : []);
+      conceptMap.set(String(c.clientId), ids);
+    }
 
     const realClients = await Promise.all(
       relations
@@ -154,7 +168,7 @@ export class TherapyService {
           const todayIndex = todayValues.length === 5
             ? Math.round(todayValues.reduce((s, v) => s + v, 0) / 5 * 10) / 10
             : null;
-          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: (rel as any).clientAlias ?? null, streak, lastActiveDate, todayIndex, relationCreatedAt: rel.createdAt.toISOString(), therapyStartDate: (rel as any).therapyStartDate ?? null, nextSession: (rel as any).nextSession ?? null, meetingDays: ((rel as any).meetingDays as number[]) ?? [] };
+          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: (rel as any).clientAlias ?? null, streak, lastActiveDate, todayIndex, relationCreatedAt: rel.createdAt.toISOString(), therapyStartDate: (rel as any).therapyStartDate ?? null, nextSession: (rel as any).nextSession ?? null, meetingDays: ((rel as any).meetingDays as number[]) ?? [], schemaIds: conceptMap.get(String(clientId)) ?? [] };
         }),
     );
 
@@ -172,6 +186,7 @@ export class TherapyService {
         therapyStartDate: (rel as any).therapyStartDate ?? null,
         nextSession: (rel as any).nextSession ?? null,
         meetingDays: ((rel as any).meetingDays as number[]) ?? [],
+        schemaIds: conceptMap.get(String(-rel.id)) ?? [],
       }));
 
     return [...realClients, ...virtualClients];
