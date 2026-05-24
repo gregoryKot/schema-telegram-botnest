@@ -712,6 +712,11 @@ export function AppShell() {
           section={section}
           onNavigate={(s) => { setSection(s); }}
           onClose={() => setCmdOpen(false)}
+          userRole={userRole}
+          therapistMode={therapistMode}
+          onToggleMode={() => switchTherapistMode(!therapistMode)}
+          onOpenClient={(id) => { navigate('/cabinet/' + id); }}
+          onNewDiaryEntry={() => { navigate('/diary'); }}
         />
       )}
     </div>
