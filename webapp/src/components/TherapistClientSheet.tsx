@@ -92,6 +92,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [concept, setConcept] = useState<ClientConceptualization | null>(null);
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [clientHistory, setClientHistory] = useState<{ date: string; index: number | null; ratings: Record<string, number> }[]>([]);
+  const [clientDiary, setClientDiary] = useState<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>([]);
   const [localConcept, setLocalConcept] = useState<Partial<ClientConceptualization>>({});
   const [conceptDirty, setConceptDirty] = useState(false);
   const [conceptSaving, setConceptSaving] = useState(false);
@@ -170,6 +171,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     setConcept(null);
     setClientData(null);
     setClientHistory([]);
+    setClientDiary([]);
     setLocalConcept({});
     setConceptDirty(false);
     setConceptError('');
@@ -187,7 +189,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     onOpenClient?.(clientId);
     switchView('client');
 
-    const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn, hist] = await Promise.all([
+    const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn, hist, diary] = await Promise.all([
       api.getTherapyTasksForClient(clientId).catch(() => []),
       api.getTherapistNotes(clientId).catch(() => []),
       api.getConceptualization(clientId).catch(() => null),
@@ -195,6 +197,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       api.getClientSchemaNotes(clientId).catch(() => []),
       api.getClientModeNotes(clientId).catch(() => []),
       api.getTherapyClientHistory(clientId).catch(() => []),
+      api.getClientDiary(clientId).catch(() => []),
     ]);
 
     if (openClientIdRef.current !== clientId) return;
@@ -206,6 +209,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     setClientSchemaNotesData(sn);
     setClientModeNotesData(mn);
     setClientHistory(hist);
+    setClientDiary(diary);
     if (fetchedConcept) setLocalConcept(fetchedConcept);
   }
 
@@ -931,26 +935,56 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                       </div>
                     )}
 
-                    {/* Client notes preview */}
-                    {clientSchemaNotesData.length > 0 && (
+                    {/* Client diary entries preview */}
+                    {clientDiary.length > 0 && (
                       <div className="section">
                         <div className="section-head" style={{ marginBottom: 16 }}>
                           <h3>Последние записи клиента</h3>
                           <button className="link" style={{ fontSize: 13, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)' }} onClick={() => setClientTab('client_notes')}>Все записи →</button>
                         </div>
-                        {clientSchemaNotesData.slice(0, 2).map(n => {
-                          const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === n.schemaId);
-                          const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === n.schemaId));
-                          return (
-                            <div key={n.schemaId} className="list-line">
-                              <span style={{ width: 3, alignSelf: 'stretch', background: domain?.color ?? 'var(--accent)', borderRadius: 2, flexShrink: 0 }} />
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: 600 }}>{s?.emoji} {s?.name ?? n.schemaId}</div>
-                                <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>Схема-карточка</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {clientDiary.slice(0, 5).map((entry, i) => {
+                            let color = 'var(--text-faint)';
+                            let title = '';
+                            let typeLabel = '';
+                            if (entry.type === 'schema') {
+                              const firstId = entry.schemaIds?.[0];
+                              const domain = firstId ? SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === firstId)) : null;
+                              const schema = firstId ? SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === firstId) : null;
+                              color = domain?.color ?? 'var(--accent)';
+                              title = schema ? `${schema.emoji} ${schema.name}` : (entry.schemaIds?.join(', ') ?? 'Схема');
+                              const extra = (entry.schemaIds?.length ?? 0) > 1 ? ` +${(entry.schemaIds?.length ?? 1) - 1}` : '';
+                              title += extra;
+                              typeLabel = 'Схема-дневник';
+                            } else if (entry.type === 'mode') {
+                              const mode = getModeById(entry.modeId ?? '');
+                              const group = mode ? MODE_GROUPS.find(g => g.items.some(m => m.id === entry.modeId)) : null;
+                              color = group?.color ?? 'var(--accent-violet)';
+                              title = mode ? `${mode.emoji} ${mode.name}` : (entry.modeId ?? 'Режим');
+                              typeLabel = 'Режим-дневник';
+                            } else {
+                              color = '#06d6a0';
+                              title = 'Благодарность';
+                              typeLabel = 'Дневник благодарности';
+                            }
+                            return (
+                              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 14px', borderRadius: 10, background: 'var(--surface-2)', borderLeft: `3px solid ${color}` }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{title}</span>
+                                    <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{typeLabel}</span>
+                                  </div>
+                                  {entry.excerpt && (
+                                    <div style={{ fontSize: 12, color: 'var(--text-sub)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 480 }}>
+                                      {entry.excerpt}
+                                    </div>
+                                  )}
+                                </div>
+                                <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0 }}>{fmtDate(entry.date)}</span>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
