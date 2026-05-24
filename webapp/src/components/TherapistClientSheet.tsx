@@ -63,18 +63,23 @@ function RosterSparkline({ values }: { values: (number | null)[] }) {
   const W = 96, H = 30, N = 14;
   const pts = values.slice(-N);
   const nums = pts.filter(v => v != null) as number[];
-  if (nums.length === 0) return <svg width={W} height={H} />;
+  if (nums.length < 2) return <svg width={W} height={H} />;
   const min = Math.min(...nums), max = Math.max(...nums);
   const range = max - min || 1;
   const step = W / Math.max(N - 1, 1);
   const x = (i: number) => i * step;
   const y = (v: number) => H - 4 - ((v - min) / range) * (H - 8);
   const d = pts.map((v, i) => v == null ? null : `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).filter(Boolean).join(' ');
-  const dots = pts.map((v, i) => v == null ? null : { cx: x(i), cy: y(v) });
+  // Color by most recent non-null value
+  const last = nums[nums.length - 1];
+  const color = last >= 7 ? '#06d6a0' : last >= 4 ? 'var(--c-amber)' : 'var(--c-rose)';
+  // Last point dot
+  const lastIdx = pts.map((v, i) => v != null ? i : -1).filter(i => i >= 0).pop() ?? -1;
+  const lastPt = lastIdx >= 0 && pts[lastIdx] != null ? { cx: x(lastIdx), cy: y(pts[lastIdx]!) } : null;
   return (
     <svg width={W} height={H} className="spark">
-      {d && <path d={d} fill="none" stroke="var(--text-ghost)" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />}
-      {dots.map((p, i) => p && <circle key={i} cx={p.cx} cy={p.cy} r={2} fill="var(--text-faint)" />)}
+      {d && <path d={d} fill="none" stroke={color} strokeWidth={1.5} strokeOpacity={0.5} strokeLinejoin="round" strokeLinecap="round" />}
+      {lastPt && <circle cx={lastPt.cx} cy={lastPt.cy} r={2.5} fill={color} />}
     </svg>
   );
 }
