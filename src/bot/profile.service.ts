@@ -2,6 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from './bot.analytics.service';
 import { computeActiveSchemas } from '../utils/ysq';
+import { decryptRecord } from '../utils/crypto';
+
+function toStringArray(val: unknown): string[] {
+  return Array.isArray(val) ? (val as string[]) : [];
+}
 
 export interface UserProfile {
   name: string | null;
@@ -67,8 +72,8 @@ export class ProfileService {
         modeDiary: lastMode ? lastMode.createdAt.toISOString().split('T')[0] : null,
         gratitudeDiary: lastGratitude?.date ?? null,
       },
-      mySchemaIds: (user?.mySchemaIds as string[] | null) ?? [],
-      myModeIds: (user?.myModeIds as string[] | null) ?? [],
+      mySchemaIds: toStringArray(user ? decryptRecord(user as any, { jsonArrays: ['mySchemaIds'] }).mySchemaIds : null),
+      myModeIds: toStringArray(user ? decryptRecord(user as any, { jsonArrays: ['myModeIds'] }).myModeIds : null),
     };
   }
 }
