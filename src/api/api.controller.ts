@@ -366,8 +366,8 @@ export class ApiController {
       notifyTimezone: s?.notifyTimezone ?? 'Europe/Moscow',
       notifyReminderEnabled: s?.notifyReminderEnabled ?? true,
       pairCardDismissed: s?.pairCardDismissed ?? false,
-      mySchemaIds: (s?.mySchemaIds as string[] | null) ?? [],
-      myModeIds: (s?.myModeIds as string[] | null) ?? [],
+      mySchemaIds: Array.isArray(s?.mySchemaIds) ? (s.mySchemaIds as string[]) : [],
+      myModeIds: Array.isArray(s?.myModeIds) ? (s.myModeIds as string[]) : [],
       therapistShareCards: s?.therapistShareCards ?? true,
       therapistShareProfile: s?.therapistShareProfile ?? true,
     };
