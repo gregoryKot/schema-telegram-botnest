@@ -636,7 +636,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 /* ─── Roster ─────────────────────────────────────────────────────────────── */
 .r-row {
   display: grid;
-  grid-template-columns: 1.8fr 110px 80px 90px 1.3fr 1.5fr;
+  grid-template-columns: 1.8fr 90px 100px 1.4fr;
   gap: 20px; padding: 16px 0;
   border-bottom: 1px solid var(--line);
   align-items: center; cursor: pointer; transition: background .1s;
@@ -644,7 +644,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .r-row:hover { background: var(--surface-2); }
 .r-row-head {
   display: grid;
-  grid-template-columns: 1.8fr 110px 80px 90px 1.3fr 1.5fr;
+  grid-template-columns: 1.8fr 90px 100px 1.4fr;
   gap: 20px; padding: 0 0 10px;
   border-bottom: 1px solid var(--line);
 }

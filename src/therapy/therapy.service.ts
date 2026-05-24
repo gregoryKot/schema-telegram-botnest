@@ -65,6 +65,7 @@ export interface TherapyClientSummary {
   streak: number;
   lastActiveDate: string | null;
   todayIndex: number | null;
+  recentIndexHistory: (number | null)[];  // 14 values, index 0 = today
   relationCreatedAt: string;
   therapyStartDate: string | null;
   nextSession: string | null;
@@ -158,17 +159,21 @@ export class TherapyService {
           const [streak, daysSince, history] = await Promise.all([
             this.analyticsService.getConsecutiveDays(clientId),
             this.analyticsService.getDaysSinceLastFill(clientId),
-            this.analyticsService.getHistoryRatings(clientId, 1),
+            this.analyticsService.getHistoryRatings(clientId, 14),
           ]);
           const lastActiveDate = daysSince >= 0
             ? new Date(Date.now() - daysSince * 86400000).toISOString().slice(0, 10)
             : null;
-          const todayRatings = history[0]?.ratings;
-          const todayValues = todayRatings ? Object.values(todayRatings) : [];
-          const todayIndex = todayValues.length === 5
-            ? Math.round(todayValues.reduce((s, v) => s + v, 0) / 5 * 10) / 10
-            : null;
-          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: (rel as any).clientAlias ?? null, streak, lastActiveDate, todayIndex, relationCreatedAt: rel.createdAt.toISOString(), therapyStartDate: (rel as any).therapyStartDate ?? null, nextSession: (rel as any).nextSession ?? null, meetingDays: ((rel as any).meetingDays as number[]) ?? [], schemaIds: conceptMap.get(String(clientId)) ?? [] };
+          const byDate = new Map(history.map(d => [d.date, d.ratings]));
+          const recentIndexHistory: (number | null)[] = Array.from({ length: 14 }, (_, i) => {
+            const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+            const r = byDate.get(d);
+            if (!r) return null;
+            const vals = Object.values(r) as number[];
+            return vals.length === 5 ? Math.round(vals.reduce((s, v) => s + v, 0) / 5 * 10) / 10 : null;
+          });
+          const todayIndex = recentIndexHistory[0];
+          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: (rel as any).clientAlias ?? null, streak, lastActiveDate, todayIndex, recentIndexHistory, relationCreatedAt: rel.createdAt.toISOString(), therapyStartDate: (rel as any).therapyStartDate ?? null, nextSession: (rel as any).nextSession ?? null, meetingDays: ((rel as any).meetingDays as number[]) ?? [], schemaIds: conceptMap.get(String(clientId)) ?? [] };
         }),
     );
 
@@ -182,6 +187,7 @@ export class TherapyService {
         streak: 0,
         lastActiveDate: null,
         todayIndex: null,
+        recentIndexHistory: Array(14).fill(null) as null[],
         relationCreatedAt: rel.createdAt.toISOString(),
         therapyStartDate: (rel as any).therapyStartDate ?? null,
         nextSession: (rel as any).nextSession ?? null,
