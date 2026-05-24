@@ -98,6 +98,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [conceptSaving, setConceptSaving] = useState(false);
   const [conceptError, setConceptError] = useState('');
   const [newNoteText, setNewNoteText] = useState('');
+  const [newNoteDate, setNewNoteDate] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
 
@@ -301,9 +302,11 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     setNoteSaving(true);
     setNoteError('');
     try {
-      const note = await api.createTherapistNote(selectedClient.telegramId, todayStr(), newNoteText.trim());
-      setNotes(prev => [note, ...prev]);
+      const date = newNoteDate || todayStr();
+      const note = await api.createTherapistNote(selectedClient.telegramId, date, newNoteText.trim());
+      setNotes(prev => [note, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
       setNewNoteText('');
+      setNewNoteDate('');
     } catch { setNoteError('Не удалось сохранить заметку'); } finally { setNoteSaving(false); }
   }
 
@@ -445,7 +448,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const activeModeIds = (localConcept.modeIds ?? concept?.modeIds ?? []) as string[];
   const ysqSchemaIds = clientData?.ysqActiveSchemaIds ?? [];
   const selfSchemaIds = clientData?.mySchemaIds ?? [];
-  const today = todayStr();
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 
@@ -830,7 +832,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                 ['sessions', 'Сессии', notes.length],
                 ['tasks', 'Задания', clientTasks.length],
                 ['ysq', 'YSQ', clientData?.ysqHistory?.length ?? 0],
-                ['client_notes', 'Записи клиента', clientSchemaNotesData.length + clientModeNotesData.length],
+                ['client_notes', 'Записи клиента', clientSchemaNotesData.length + clientModeNotesData.length + clientDiary.length],
               ] as [ClientTab, string, number | null][]).map(([t, label, count]) => (
                 <button key={t} className={`tab${clientTab === t ? ' is-active' : ''}`} onClick={() => setClientTab(t)}>
                   {label}
@@ -1339,58 +1341,68 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
             {/* ── SESSIONS ─────────────────────────────────────────────────────── */}
             {clientTab === 'sessions' && (
               <div className="page-inner" style={{ paddingTop: 40 }}>
-                {/* New note composer */}
-                <div className="section">
-                  <div className="eyebrow" style={{ marginBottom: 12 }}>Новая заметка · {fmtDate(today)}</div>
-                  <textarea
-                    className="textarea"
-                    value={newNoteText}
-                    onChange={e => setNewNoteText(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
-                    rows={4}
-                    placeholder="Наблюдения, гипотезы, динамика, план следующей встречи…"
-                    style={{ fontSize: 14, lineHeight: 1.65 }}
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-                    <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>⌘+Enter — сохранить</span>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={() => setNewNoteText('')} style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--text-sub)', cursor: 'pointer' }}>
-                        Очистить
-                      </button>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 64, alignItems: 'start' }}>
+                  {/* Notes timeline */}
+                  <div>
+                    {notes.length === 0 ? (
+                      <div style={{ padding: '64px 0', color: 'var(--text-faint)', fontSize: 14, textAlign: 'center' }}>
+                        Заметок ещё нет. Добавь первую справа.
+                      </div>
+                    ) : (
+                      <div style={{ position: 'relative', paddingLeft: 28 }}>
+                        {/* Vertical timeline line */}
+                        <div style={{ position: 'absolute', left: 7, top: 8, bottom: 8, width: 2, background: 'var(--line)', borderRadius: 2 }} />
+                        {notes.map((note, i) => (
+                          <div key={note.id} style={{ position: 'relative', marginBottom: 36 }}>
+                            {/* Timeline dot */}
+                            <div style={{ position: 'absolute', left: -25, top: 4, width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--bg)', zIndex: 1 }} />
+                            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{fmtDate(note.date)}</span>
+                                <span style={{ fontSize: 11, color: 'var(--text-faint)', background: 'var(--surface-3)', borderRadius: 4, padding: '1px 6px' }}>
+                                  Сессия {notes.length - i}
+                                </span>
+                              </div>
+                              <button onClick={() => removeNote(note.id)} style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, fontSize: 12, color: 'var(--text-ghost)', cursor: 'pointer' }} title="Удалить">✕</button>
+                            </div>
+                            <div style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--text-sub)', whiteSpace: 'pre-wrap' }}>
+                              {note.text}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Composer */}
+                  <div style={{ position: 'sticky', top: 24 }}>
+                    <div className="eyebrow" style={{ marginBottom: 12 }}>Новая заметка</div>
+                    <div style={{ marginBottom: 10 }}>
+                      <input
+                        type="date"
+                        value={newNoteDate || todayStr()}
+                        onChange={e => setNewNoteDate(e.target.value)}
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13, color: 'var(--text)', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <textarea
+                      className="textarea"
+                      value={newNoteText}
+                      onChange={e => setNewNoteText(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
+                      rows={6}
+                      placeholder="Наблюдения, гипотезы, динамика, план следующей встречи…"
+                      style={{ fontSize: 13, lineHeight: 1.65 }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>⌘+Enter</span>
                       <button onClick={addNote} disabled={!newNoteText.trim() || noteSaving} style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                        {noteSaving ? 'Сохраняю...' : 'Сохранить'}
+                        {noteSaving ? '...' : 'Сохранить'}
                       </button>
                     </div>
+                    {noteError && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--c-rose)' }}>{noteError}</div>}
                   </div>
-                  {noteError && <div style={{ marginTop: 8, fontSize: 13, color: 'var(--c-rose)' }}>{noteError}</div>}
                 </div>
-
-                {notes.length > 0 && (
-                  <>
-                    <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '40px 0 28px' }} />
-                    <div className="eyebrow" style={{ marginBottom: 24 }}>Архив · {notes.length} заметок</div>
-                    {notes.map((note, i) => (
-                      <div key={note.id} style={{ marginBottom: 32 }}>
-                        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                            <span style={{ fontSize: 15, fontWeight: 600 }}>{fmtDate(note.date)}</span>
-                            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Заметка {notes.length - i}</span>
-                          </div>
-                          <button onClick={() => removeNote(note.id)} style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, fontSize: 12, color: 'var(--text-ghost)', cursor: 'pointer' }} title="Удалить">✕</button>
-                        </div>
-                        <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-sub)', maxWidth: 720, whiteSpace: 'pre-wrap' }}>
-                          {note.text}
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )}
-
-                {notes.length === 0 && (
-                  <div style={{ padding: '48px 0', color: 'var(--text-faint)', fontSize: 14, textAlign: 'center' }}>
-                    Заметок ещё нет. Добавь первую выше.
-                  </div>
-                )}
               </div>
             )}
 
@@ -1639,20 +1651,69 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
             {/* ── CLIENT NOTES ─────────────────────────────────────────────────── */}
             {clientTab === 'client_notes' && (
               <div className="page-inner" style={{ paddingTop: 40 }}>
-                {clientSchemaNotesData.length === 0 && clientModeNotesData.length === 0 ? (
+                {clientSchemaNotesData.length === 0 && clientModeNotesData.length === 0 && clientDiary.length === 0 ? (
                   <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)', fontSize: 14 }}>
-                    Клиент ещё не заполнял дневник схем и режимов
+                    Клиент ещё не заполнял дневник
                   </div>
                 ) : (
                   <>
                     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
                       <div>
-                        <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Дневники клиента</div>
+                        <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Записи клиента</div>
                         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>
-                          {clientSchemaNotesData.length + clientModeNotesData.length} записей · вид клиента в его дневнике
+                          {clientDiary.length + clientSchemaNotesData.length + clientModeNotesData.length} записей
                         </div>
                       </div>
                     </div>
+
+                    {/* Diary entries (schema diary, mode diary, gratitude) */}
+                    {clientDiary.length > 0 && (
+                      <div style={{ marginBottom: 40 }}>
+                        <div className="eyebrow" style={{ marginBottom: 16 }}>Дневник событий</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {clientDiary.map((entry, i) => {
+                            let color = 'var(--text-faint)';
+                            let title = '';
+                            let typeLabel = '';
+                            if (entry.type === 'schema') {
+                              const firstId = entry.schemaIds?.[0];
+                              const domain = firstId ? SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === firstId)) : null;
+                              const schema = firstId ? SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === firstId) : null;
+                              color = domain?.color ?? 'var(--accent)';
+                              title = schema ? `${schema.emoji} ${schema.name}` : (entry.schemaIds?.join(', ') ?? 'Схема');
+                              if ((entry.schemaIds?.length ?? 0) > 1) title += ` +${(entry.schemaIds?.length ?? 1) - 1}`;
+                              typeLabel = 'Схема-дневник';
+                            } else if (entry.type === 'mode') {
+                              const mode = getModeById(entry.modeId ?? '');
+                              const group = mode ? MODE_GROUPS.find(g => g.items.some(m => m.id === entry.modeId)) : null;
+                              color = group?.color ?? 'var(--accent-violet)';
+                              title = mode ? `${mode.emoji} ${mode.name}` : (entry.modeId ?? 'Режим');
+                              typeLabel = 'Режим-дневник';
+                            } else {
+                              color = '#06d6a0';
+                              title = 'Благодарность';
+                              typeLabel = 'Дневник благодарности';
+                            }
+                            return (
+                              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px', borderRadius: 10, background: 'var(--surface-2)', borderLeft: `3px solid ${color}` }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{title}</span>
+                                    <span style={{ fontSize: 11, color: 'var(--text-faint)', background: 'var(--surface-3)', borderRadius: 4, padding: '1px 6px' }}>{typeLabel}</span>
+                                  </div>
+                                  {entry.excerpt && (
+                                    <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+                                      {entry.excerpt}
+                                    </div>
+                                  )}
+                                </div>
+                                <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0, paddingTop: 2 }}>{fmtDate(entry.date)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     {clientSchemaNotesData.length > 0 && (
                       <div>
