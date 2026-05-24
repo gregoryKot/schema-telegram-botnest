@@ -133,6 +133,7 @@ export interface TherapyClientSummary {
   streak: number;
   lastActiveDate: string | null;
   todayIndex: number | null;
+  recentIndexHistory: (number | null)[];
   relationCreatedAt: string;
   therapyStartDate: string | null;
   nextSession: string | null;
