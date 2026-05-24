@@ -59,6 +59,26 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
   { key: 'currentProblems', label: 'Актуальные проблемы и симптомы', placeholder: 'С чем обратился клиент, текущие жалобы, симптоматика...' },
 ];
 
+function RosterSparkline({ values }: { values: (number | null)[] }) {
+  const W = 96, H = 30, N = 14;
+  const pts = values.slice(-N);
+  const nums = pts.filter(v => v != null) as number[];
+  if (nums.length === 0) return <svg width={W} height={H} />;
+  const min = Math.min(...nums), max = Math.max(...nums);
+  const range = max - min || 1;
+  const step = W / Math.max(N - 1, 1);
+  const x = (i: number) => i * step;
+  const y = (v: number) => H - 4 - ((v - min) / range) * (H - 8);
+  const d = pts.map((v, i) => v == null ? null : `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).filter(Boolean).join(' ');
+  const dots = pts.map((v, i) => v == null ? null : { cx: x(i), cy: y(v) });
+  return (
+    <svg width={W} height={H} className="spark">
+      {d && <path d={d} fill="none" stroke="var(--text-ghost)" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />}
+      {dots.map((p, i) => p && <circle key={i} cx={p.cx} cy={p.cy} r={2} fill="var(--text-faint)" />)}
+    </svg>
+  );
+}
+
 export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef }: Props) {
   // Client list
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
@@ -678,36 +698,40 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                           <span className="hint">{onlineClients.length}</span>
                         </div>
                         <div className="r-row-head">
-                          <span className="eyebrow" style={{ flex: 2 }}>Клиент</span>
-                          <span className="eyebrow">Начало</span>
-                          <span className="eyebrow" style={{ textAlign: 'right' }}>Стрик</span>
-                          <span className="eyebrow" style={{ textAlign: 'right' }}>Индекс</span>
-                          <span className="eyebrow">Следующая встреча</span>
-                          <span className="eyebrow" style={{ flex: 2 }}>Активные схемы</span>
+                          <span className="eyebrow">Клиент</span>
+                          <span className="eyebrow">Индекс</span>
+                          <span className="eyebrow">14 дн.</span>
+                          <span className="eyebrow">Активные схемы</span>
                         </div>
                         {onlineClients.map(client => (
                           <div key={client.telegramId} className="r-row row-hover" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
-                            <div style={{ flex: 2, minWidth: 0 }}>
-                              <div className="text-md" style={{ fontWeight: 600 }}>{client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}</div>
-                              {client.lastActiveDate && (
-                                <div className="text-xs faint" style={{ marginTop: 3 }}>активен {fmtDate(client.lastActiveDate)}</div>
-                              )}
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span className="text-base" style={{ fontWeight: 600 }}>{client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}</span>
+                                {client.lastActiveDate === todayStr() && (
+                                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
+                                )}
+                              </div>
+                              <div className="text-xs faint" style={{ marginTop: 3 }}>
+                                {client.therapyStartDate ? `с ${fmtDate(client.therapyStartDate)}` : 'начало не задано'}
+                                {client.streak > 0 && ` · стрик ${client.streak} дн.`}
+                              </div>
                             </div>
-                            <div className="text-sm muted">{client.therapyStartDate ? fmtDate(client.therapyStartDate) : '—'}</div>
-                            <div className="text-sm muted" style={{ textAlign: 'right' }}>{client.streak > 0 ? `${client.streak} дн.` : '—'}</div>
-                            <div style={{ textAlign: 'right' }}>
+                            <div>
                               {client.todayIndex != null ? (
-                                <span className="num" style={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.02em', color: indexColor(client.todayIndex) }}>{client.todayIndex.toFixed(1)}</span>
+                                <span className="num" style={{ fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em', color: indexColor(client.todayIndex) }}>{client.todayIndex.toFixed(1)}</span>
                               ) : <span className="text-sm faint">—</span>}
                             </div>
-                            <div className="text-sm muted">{client.nextSession ? nextSessionLabel(client.nextSession) : '—'}</div>
-                            <div style={{ flex: 2, display: 'flex', flexWrap: 'wrap', gap: '4px 10px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <RosterSparkline values={(client.recentIndexHistory ?? []).slice().reverse()} />
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', alignItems: 'center' }}>
                               {client.schemaIds.length > 0 ? client.schemaIds.slice(0, 3).map(id => {
                                 const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
                                 const schema = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === id);
                                 return (
-                                  <span key={id} className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-sub)' }}>
-                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: domain?.color ?? 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />
+                                  <span key={id} className="tag-mini">
+                                    <span style={{ width: 8, height: 8, borderRadius: 2, background: domain?.color ?? 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />
                                     {schema?.name ?? id}
                                   </span>
                                 );
@@ -854,11 +878,11 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               <div className="page-inner-wide" style={{ paddingTop: 40 }}>
                 <div className="doc-grid">
                   <div>
-                    {/* Therapy goals */}
+                    {/* Therapy goals — shown as a quiet quote */}
                     {(localConcept.goals || concept?.goals) && (
                       <div className="section">
                         <div className="eyebrow" style={{ marginBottom: 14 }}>Цель терапии</div>
-                        <div style={{ fontSize: 20, lineHeight: 1.5, color: 'var(--text)', letterSpacing: '-0.015em', maxWidth: 720, fontWeight: 400 }}>
+                        <div style={{ fontSize: 22, lineHeight: 1.45, color: 'var(--text)', letterSpacing: '-0.02em', maxWidth: 720, fontWeight: 400 }}>
                           {(localConcept.goals || concept?.goals) as string}
                         </div>
                         <button className="link" style={{ marginTop: 16, fontSize: 13, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent)' }} onClick={() => setClientTab('concept')}>
@@ -884,7 +908,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                                 <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 24, rowGap: 6 }}>
                                   {active.map(s => (
                                     <div key={s.id} className="tag-mini">
-                                      <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: domain.color, marginRight: 5, verticalAlign: 'middle' }} />
+                                      <span className="swatch" style={{ background: domain.color }} />
                                       {s.name}
                                     </div>
                                   ))}
@@ -914,7 +938,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                                 ) : (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                     {active.map(m => (
-                                      <div key={m.id} style={{ fontSize: 13, color: 'var(--text)' }}>{m.emoji} {m.name}</div>
+                                      <div key={m.id} style={{ fontSize: 13, color: 'var(--text)' }}>{m.name}</div>
                                     ))}
                                   </div>
                                 )}
@@ -1501,7 +1525,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                             const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
                             return (
                               <div key={id} className="tag-mini">
-                                <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: domain?.color ?? 'var(--accent)', marginRight: 5 }} />
+                                <span className="swatch" style={{ background: domain?.color ?? 'var(--accent)' }} />
                                 {s?.name ?? id}
                               </div>
                             );
