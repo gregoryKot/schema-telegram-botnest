@@ -211,6 +211,14 @@ export class TherapyController {
     return { ok: true };
   }
 
+  @Get('client/:clientId/diary')
+  async getClientDiary(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    const role = await this.botService.getUserRole(req.telegramUserId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try { return await this.therapyService.getClientDiaryEntries(req.telegramUserId, parseId(clientId)); }
+    catch (e: any) { if (e?.message === 'No active relation') throw new ForbiddenException('No active relation with this client'); throw e; }
+  }
+
   @Get('client-history/:clientId')
   async getClientHistory(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
     const role = await this.botService.getUserRole(req.telegramUserId);

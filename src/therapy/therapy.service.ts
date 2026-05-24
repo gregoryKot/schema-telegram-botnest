@@ -631,6 +631,66 @@ export class TherapyService {
     });
   }
 
+  async getClientDiaryEntries(therapistId: number, clientId: number): Promise<{
+    type: 'schema' | 'mode' | 'gratitude';
+    date: string;
+    schemaIds?: string[];
+    modeId?: string;
+    excerpt: string;
+  }[]> {
+    if (clientId < 0) return [];
+    await this.assertRelation(therapistId, clientId);
+    const uid = BigInt(clientId);
+    const [schemaRows, modeRows, gratitudeRows] = await Promise.all([
+      this.prisma.schemaDiaryEntry.findMany({
+        where: { userId: uid },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { schemaIds: true, trigger: true, createdAt: true },
+      }),
+      this.prisma.modeDiaryEntry.findMany({
+        where: { userId: uid },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { modeId: true, situation: true, createdAt: true },
+      }),
+      this.prisma.gratitudeDiaryEntry.findMany({
+        where: { userId: uid },
+        orderBy: { date: 'desc' },
+        take: 10,
+        select: { date: true, items: true },
+      }),
+    ]);
+
+    const entries: { type: 'schema' | 'mode' | 'gratitude'; dateMs: number; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[] = [];
+
+    for (const r of schemaRows) {
+      const schemaIds: string[] = typeof r.schemaIds === 'string'
+        ? (decryptJson<string[]>(r.schemaIds as unknown as string) ?? [])
+        : (r.schemaIds as string[]) ?? [];
+      const trigger = decrypt(r.trigger as string) ?? (r.trigger as string);
+      entries.push({ type: 'schema', dateMs: r.createdAt.getTime(), date: r.createdAt.toISOString().slice(0, 10), schemaIds, excerpt: trigger });
+    }
+
+    for (const r of modeRows) {
+      const modeId = decrypt(r.modeId) ?? r.modeId;
+      const situation = decrypt(r.situation) ?? r.situation;
+      entries.push({ type: 'mode', dateMs: r.createdAt.getTime(), date: r.createdAt.toISOString().slice(0, 10), modeId, excerpt: situation });
+    }
+
+    for (const r of gratitudeRows) {
+      const items: string[] = typeof r.items === 'string'
+        ? (decryptJson<string[]>(r.items as unknown as string) ?? [])
+        : (r.items as string[]) ?? [];
+      entries.push({ type: 'gratitude', dateMs: new Date(r.date + 'T00:00:00').getTime(), date: r.date, excerpt: items.slice(0, 2).join(' · ') });
+    }
+
+    return entries
+      .sort((a, b) => b.dateMs - a.dateMs)
+      .slice(0, 10)
+      .map(({ dateMs: _d, ...rest }) => rest);
+  }
+
   async scheduleTaskNotification(clientId: number, task: { text: string; needId: string | null; dueDate: string | null }): Promise<void> {
     await this.notificationService.schedule(clientId, 'task_assigned', new Date(), {
       text: task.text, needId: task.needId, dueDate: task.dueDate,
