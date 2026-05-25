@@ -339,8 +339,10 @@ export class AuthController {
       await this.merge.merge(source, target);
     } catch (err) {
       const msg = (err as Error).message ?? 'merge failed';
+      // Full error → logs + admin alert (AlertLogger picks up .error).
       this.logger.error(`merge ${source} → ${target} failed: ${msg}`, (err as Error).stack);
-      throw new BadRequestException(`Merge failed: ${msg}`);
+      // Friendly message to client — no Prisma internals leaked.
+      throw new BadRequestException('Не удалось объединить аккаунты. Админ уведомлён — попробуйте позже.');
     }
 
     // 2. Link the provider that triggered the merge to the target user.
