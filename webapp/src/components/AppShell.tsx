@@ -731,7 +731,7 @@ export function AppShell() {
 
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
       <nav className="mobile-nav">
-        {NAV_ITEMS.map(item => (
+        {NAV_ITEMS.filter(item => item.id !== 'exercises').map(item => (
           <NavLink
             key={item.id}
             to={'/' + item.id}
