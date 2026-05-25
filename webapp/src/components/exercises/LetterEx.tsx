@@ -1,10 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
+
+function fmtAgo(d: string): string {
+  const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+  if (days === 0) return 'сегодня';
+  if (days === 1) return 'вчера';
+  if (days < 7) return `${days} дн. назад`;
+  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
 
 export function LetterEx({ onBack }: { onBack: () => void }) {
   const [text, setText] = useState('');
   const [done, setDone] = useState(false);
+  const [pastLetters, setPastLetters] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (done) api.getLetters().then(l => setPastLetters(l.slice(0, 3))).catch(() => {});
+  }, [done]);
 
   async function seal() {
     try { await api.createLetter(text); } catch {}
@@ -12,10 +25,22 @@ export function LetterEx({ onBack }: { onBack: () => void }) {
   }
 
   if (done) {
+    const others = pastLetters.filter(l => l.text !== text);
     return (
       <ExScreen onBack={onBack} eyebrow="Письмо · сохранено" eyebrowColor="var(--c-moss)"
         title={<>Письмо<br/><span className="it">написано.</span></>}
         lede="Иногда — самая важная работа. Вернись к нему через неделю и перечитай вслух."
+        aside={others.length > 0 ? (
+          <div className="aside-card">
+            <div className="aside-card-eyebrow">Прошлые письма · {pastLetters.length}</div>
+            {others.slice(0, 2).map((l, i) => (
+              <div key={i} className="history-row">
+                <span className="history-date">{fmtAgo(l.createdAt)}</span>
+                <span className="history-snippet">«{l.text.slice(0, 120)}…»</span>
+              </div>
+            ))}
+          </div>
+        ) : undefined}
       >
         <div className="letter-paper">
           <div className="letter-salutation">Дорогой маленький я,</div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { ExScreen, StepsBar, GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphPlus, GlyphX } from './ExScreen';
 
@@ -11,6 +11,14 @@ const SIDE_HINTS: Record<number, { title: string; body: string; list: string[] }
   3: { title: 'Не позитив, а точность', body: 'Не «всё хорошо» — это не работает. Сформулируй точнее: с оговорками, с признанием сложности, с состраданием.', list: ['«иногда я ошибаюсь, и это»', '«часть из этого правда, и»', '«я устал, и это не значит»'] },
 };
 
+function fmtAgo(d: string): string {
+  const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+  if (days === 0) return 'сегодня';
+  if (days === 1) return 'вчера';
+  if (days < 7) return `${days} дн. назад`;
+  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
 export function BeliefCheckEx({ onBack }: { onBack: () => void }) {
   const [step, setStep] = useState(0);
   const [belief, setBelief] = useState('');
@@ -20,6 +28,11 @@ export function BeliefCheckEx({ onBack }: { onBack: () => void }) {
   const [forInput, setForInput] = useState('');
   const [againstInput, setAgainstInput] = useState('');
   const [done, setDone] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (done) api.getBeliefChecks().then(h => setHistory(h.slice(0, 4))).catch(() => {});
+  }, [done]);
 
   const completed = [
     belief.trim() ? 0 : -1,
@@ -32,22 +45,35 @@ export function BeliefCheckEx({ onBack }: { onBack: () => void }) {
   function addAgainst() { const v = againstInput.trim(); if (!v) return; setAgainstList(l => [...l, v]); setAgainstInput(''); }
 
   async function saveAll() {
-    try { await api.createBeliefCheck({ belief, forList, againstList, reframe }); } catch {}
+    try { await api.createBeliefCheck({ belief, evidenceFor: forList, evidenceAgainst: againstList, reframe }); } catch {}
     setDone(true);
   }
+
+  const pastChecks = history.filter(h => h.belief !== belief).slice(0, 3);
 
   if (done) {
     return (
       <ExScreen onBack={onBack} eyebrow="Проверка убеждения · сохранено" eyebrowColor="var(--c-moss)"
         title={<>Готово.<br/><span className="it">Мысль проверена.</span></>}
         lede="Иногда достаточно увидеть доказательства, чтобы мысль потеряла силу. Сохранено в дневнике."
-        aside={
+        aside={<>
           <div className="aside-card">
             <div className="aside-card-eyebrow">Что попробовать дальше</div>
             <h3>Знакомство со схемой</h3>
             <p className="body">Если эта мысль возвращается часто — стоит копнуть, какая схема за ней стоит.</p>
           </div>
-        }
+          {pastChecks.length > 0 && (
+            <div className="aside-card">
+              <div className="aside-card-eyebrow">Прошлые проверки · {history.length}</div>
+              {pastChecks.map((h, i) => (
+                <div key={i} className="history-row">
+                  <span className="history-date">{fmtAgo(h.createdAt)}</span>
+                  <span className="history-snippet">«{h.belief}»</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>}
       >
         <div className="done-card">
           <div className="stamp"><GlyphCheck /> Сохранено · {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</div>
