@@ -27,15 +27,18 @@ const SECURITY_SENSITIVE_TABLES = ['WebSession'] as const;
 // the source row is dropped first so the bulk UPDATE that follows can succeed
 // without violating the constraint.
 const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
-  { table: 'Rating',            cols: ['date', 'needId'] },
-  { table: 'YsqProgress',       cols: [] }, // userId is PK
-  { table: 'YsqResult',         cols: [] },
-  { table: 'UserSchemaNote',    cols: ['schemaId'] },
-  { table: 'UserModeNote',      cols: ['modeId'] },
-  { table: 'UserSafePlace',     cols: [] },
-  { table: 'ChildhoodRating',   cols: ['needId'] },
-  { table: 'DiaryDraft',        cols: ['type'] },
-  { table: 'TherapistRequest',  cols: [] }, // userId is @unique
+  { table: 'Rating',              cols: ['date', 'needId'] },
+  { table: 'Note',                cols: ['date'] },
+  { table: 'GratitudeDiaryEntry', cols: ['date'] },
+  { table: 'AppActivity',         cols: ['date'] },
+  { table: 'YsqProgress',         cols: [] }, // userId is PK
+  { table: 'YsqResult',           cols: [] },
+  { table: 'UserSchemaNote',      cols: ['schemaId'] },
+  { table: 'UserModeNote',        cols: ['modeId'] },
+  { table: 'UserSafePlace',       cols: [] },
+  { table: 'ChildhoodRating',     cols: ['needId'] },
+  { table: 'DiaryDraft',          cols: ['type'] },
+  { table: 'TherapistRequest',    cols: [] }, // userId is @unique
 ];
 
 // Whitelist of identifiers we'll embed directly in SQL. Anything outside this
