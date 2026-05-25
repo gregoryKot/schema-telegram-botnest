@@ -84,31 +84,26 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
               return (
                 <div
                   key={i}
-                  style={{ borderRadius: 10, background: 'var(--surface-2)', borderLeft: `3px solid ${color}`, overflow: 'hidden', cursor: 'pointer' }}
+                  style={{ borderLeft: `3px solid ${color}`, paddingLeft: 16, paddingBottom: 20, marginBottom: 4, cursor: 'pointer' }}
                   onClick={() => setExpandedDiary(expanded ? null : i)}
                 >
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{title}</span>
-                        <span style={{ fontSize: 11, color: 'var(--text-faint)', background: 'var(--surface-3)', borderRadius: 4, padding: '1px 6px' }}>{typeLabel}</span>
-                      </div>
-                      {!expanded && entry.excerpt && (
-                        <div style={{ fontSize: 12, color: 'var(--text-sub)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {entry.excerpt}
-                        </div>
-                      )}
-                      {expanded && entry.excerpt && (
-                        <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginTop: 4 }}>
-                          {entry.excerpt}
-                        </div>
-                      )}
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+                    <div>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{title}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-faint)', marginLeft: 10 }}>{typeLabel}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                      <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{fmtDate(entry.date)}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{expanded ? '▲' : '▼'}</span>
-                    </div>
+                    <span style={{ fontSize: 12, color: 'var(--text-faint)', flexShrink: 0 }}>{fmtDate(entry.date)}</span>
                   </div>
+                  {!expanded && entry.excerpt && (
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {entry.excerpt}
+                    </div>
+                  )}
+                  {expanded && entry.excerpt && (
+                    <div style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, whiteSpace: 'pre-wrap', marginTop: 8, maxWidth: 720 }}>
+                      {entry.excerpt}
+                    </div>
+                  )}
                 </div>
               );
             })}

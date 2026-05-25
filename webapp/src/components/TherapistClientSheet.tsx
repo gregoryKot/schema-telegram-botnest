@@ -1165,12 +1165,17 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                   </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 48 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 56 }}>
                   {([
-                    ['active', 'Активные', 'var(--accent)'],
-                    ['done', 'Завершённые', 'var(--c-moss)'],
+                    ['assigned', 'Назначено', 'var(--c-slate)'],
+                    ['inprogress', 'В работе', 'var(--accent)'],
+                    ['done', 'Завершено', 'var(--c-moss)'],
                   ] as [string, string, string][]).map(([status, label, color]) => {
-                    const items = status === 'done' ? clientTasks.filter(t => t.done === true) : clientTasks.filter(t => !t.done);
+                    const items = status === 'done'
+                      ? clientTasks.filter(t => t.done === true)
+                      : status === 'inprogress'
+                        ? clientTasks.filter(t => !t.done && (t.progress ?? 0) > 0)
+                        : clientTasks.filter(t => !t.done && !(t.progress ?? 0));
                     return (
                       <div key={status}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>

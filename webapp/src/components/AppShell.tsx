@@ -40,6 +40,7 @@ const SchemaEntrySheet     = lazy(() => import('./diary/SchemaEntrySheet').then(
 const ModeEntrySheet       = lazy(() => import('./diary/ModeEntrySheet').then(m => ({ default: m.ModeEntrySheet })));
 const GratitudeEntrySheet  = lazy(() => import('./diary/GratitudeEntrySheet').then(m => ({ default: m.GratitudeEntrySheet })));
 const PracticesOnboarding  = lazy(() => import('./PracticesOnboarding').then(m => ({ default: m.PracticesOnboarding })));
+const ExercisesSection     = lazy(() => import('../sections/ExercisesSection').then(m => ({ default: m.ExercisesSection })));
 
 const LazyLoader = () => <Loader minHeight="100dvh" />;
 
@@ -48,25 +49,26 @@ import type { PracticePlan, StreakData, UserTask, TherapyClientSummary } from '.
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
 
-type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'help';
+type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'help' | 'exercises';
 type TrackerTab = 'today' | 'history';
 
 const NAV_ITEMS: { id: Section; label: string }[] = [
-  { id: 'today',   label: 'Сегодня' },
-  { id: 'diary',   label: 'Дневник' },
-  { id: 'schemas', label: 'Схемы' },
-  { id: 'help',    label: 'Помощь' },
+  { id: 'today',     label: 'Сегодня' },
+  { id: 'diary',     label: 'Дневник' },
+  { id: 'schemas',   label: 'Схемы' },
+  { id: 'exercises', label: 'Практики' },
+  { id: 'help',      label: 'Помощь' },
 ];
 // Note: 'profile' removed from nav — accessible via sidebar footer avatar block.
 // Mobile bottom-nav still includes it (см. ниже).
 
 const SECTION_LABELS: Record<Section, string> = {
-  today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', help: 'Помощь',
+  today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', help: 'Помощь', exercises: 'Упражнения',
 };
 
 function sectionFromPath(path: string): Section {
   const seg = path.split('/').filter(Boolean)[0] ?? 'today';
-  if (['today','diary','schemas','profile','help'].includes(seg)) return seg as Section;
+  if (['today','diary','schemas','profile','help','exercises'].includes(seg)) return seg as Section;
   return 'today';
 }
 
@@ -520,6 +522,11 @@ export function AppShell() {
                 onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
               />
             )}
+            {section === 'exercises' && (
+              <ErrorBoundary section="Упражнения" key="exercises-boundary">
+                <ExercisesSection />
+              </ErrorBoundary>
+            )}
           </div>
         )}
 
@@ -724,7 +731,7 @@ export function AppShell() {
 
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
       <nav className="mobile-nav">
-        {NAV_ITEMS.map(item => (
+        {NAV_ITEMS.filter(item => item.id !== 'exercises').map(item => (
           <NavLink
             key={item.id}
             to={'/' + item.id}
