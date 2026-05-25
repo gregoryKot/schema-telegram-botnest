@@ -94,6 +94,21 @@
 - Callback data формат: `действие:параметр` (например `need:safety`, `rate:safety:7`).
 - Константы (`CHANNEL`, `BOOKING_URL`) — в начале файла, не inline в коде.
 
+## Деплой webapp (ОБЯЗАТЕЛЬНО)
+
+`webapp/dist/` хранится в git и именно его Amvera раздаёт на проде.
+**После любых изменений в `webapp/src/` или `webapp/index.html`** — обязательно пересобрать и закоммитить dist:
+
+```bash
+cd webapp && node_modules/.bin/vite build
+cd ..
+git add -f webapp/dist
+git commit -m "build: rebuild webapp dist"
+git push
+```
+
+Без этого шага на проде будет старый дизайн.
+
 ## БД
 
 - Схема: `prisma/schema.prisma`. После изменений — `prisma migrate dev --name <название>`.
