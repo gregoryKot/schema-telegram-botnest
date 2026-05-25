@@ -6,7 +6,7 @@ import { fmtDate, todayStr } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../schemaTherapyData';
 import { RosterSparkline, ClientSparkline } from './therapist/Sparklines';
 import { KanbanView } from './therapist/KanbanView';
-import { ClientSessionsTab } from './therapist/ClientSessionsTab';
+
 import { ClientNotesTab } from './therapist/ClientNotesTab';
 import { ClientYSQTab } from './therapist/ClientYSQTab';
 
@@ -128,12 +128,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
   // Export
   const [exportCopied, setExportCopied] = useState(false);
-
-  // Debounce search
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedQuery(searchQuery), 200);
-    return () => clearTimeout(id);
-  }, [searchQuery]);
 
   // Client data loading state
   const [tabLoading, setTabLoading] = useState(false);
