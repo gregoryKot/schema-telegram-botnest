@@ -69,10 +69,9 @@ export class MergeService {
   // confirmation ("you'll move 87 ratings, 14 diary entries, …").
   async summarize(userId: bigint): Promise<Record<string, number>> {
     const counts: Record<string, number> = {};
+    const failed: string[] = [];
     for (const table of USER_OWNED_TABLES) {
       try {
-        // Table name comes from our constant. Value goes through parameter
-        // binding (Prisma.sql template) — never string-concatenated.
         const rows = await this.prisma.$queryRaw<Array<{ c: bigint }>>(
           Prisma.sql`SELECT COUNT(*)::bigint AS c FROM ${Prisma.raw(ident(table, 'table'))} WHERE "userId" = ${userId}`,
         );
@@ -80,7 +79,13 @@ export class MergeService {
         if (n > 0) counts[table] = n;
       } catch (err) {
         this.logger.warn(`summarize ${table}: ${(err as Error).message}`);
+        failed.push(table);
       }
+    }
+    // If we couldn't count some tables, surface this — otherwise the merge
+    // UI claims "you'll move 5 rows" when actually 5000 are moving.
+    if (failed.length > 0) {
+      this.logger.error(`summarize partial — failed tables: ${failed.join(', ')}`);
     }
     return counts;
   }

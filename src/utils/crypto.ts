@@ -17,6 +17,17 @@ function loadKeys(): { current: Buffer | null; all: Buffer[] } {
 }
 const { current: CURRENT_KEY, all: ALL_KEYS } = loadKeys();
 
+// Fail loudly in production if no key is configured — silently storing
+// sensitive psychology notes in plaintext is unacceptable.
+if (process.env.NODE_ENV === 'production' && !CURRENT_KEY) {
+  // Throwing at module-load time means the process crashes on boot, which
+  // is what we want — better than running with broken encryption.
+  throw new Error(
+    'FATAL: ENCRYPTION_KEY missing or wrong length in production. ' +
+    'Generate one: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+  );
+}
+
 export function encrypt(text: string | null | undefined): string | null {
   if (!text) return text ?? null;
   if (!CURRENT_KEY) {

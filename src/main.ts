@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 import { AlertLogger } from './logger/alert.logger';
 import { PrismaService } from './prisma/prisma.service';
 import { migrateClinicalLabels } from './utils/encrypt-migration';
-import { PrismaExceptionFilter } from './filters/prisma-exception.filter';
+import { PrismaExceptionFilter, GenericExceptionFilter } from './prisma/prisma-exception.filter';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
 
@@ -14,8 +14,10 @@ const cookieParser = require('cookie-parser');
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new AlertLogger() });
 
-  app.useGlobalFilters(new PrismaExceptionFilter());
   app.use(cookieParser());
+  // Order matters: more-specific filter LAST (Nest applies them in reverse).
+  // GenericExceptionFilter is the catch-all; PrismaExceptionFilter catches first.
+  app.useGlobalFilters(new GenericExceptionFilter(), new PrismaExceptionFilter());
   // Cap request bodies. Largest legitimate payload is a YSQ progress update
   // (~116 ints + page) — well under 100 KB. Cap at 256 KB to leave room for
   // big text fields (letters, schema notes) while killing DoS via huge JSON.
