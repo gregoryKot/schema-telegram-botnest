@@ -333,7 +333,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         let sent = 0, failed = 0;
         for (const uid of userIds) {
           try {
-            await this.bot!.telegram.sendMessage(uid, text);
+            // Plain text — no parse_mode. Avoids stray markdown chars from
+            // breaking the broadcast for half the users.
+            await this.bot!.telegram.sendMessage(uid, text, { parse_mode: undefined });
             sent++;
           } catch (err: any) {
             failed++;

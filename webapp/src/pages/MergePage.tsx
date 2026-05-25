@@ -36,6 +36,7 @@ export function MergePage() {
   const { setAccessToken } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
 
   const token = params.get('token') ?? '';
   const summaryStr = params.get('summary') ?? '{}';
@@ -112,9 +113,27 @@ export function MergePage() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-        <button disabled={busy} onClick={confirm} className="btn btn-primary">
-          {busy ? 'Объединяю...' : 'Объединить'}
+      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 24, cursor: busy ? 'default' : 'pointer', maxWidth: 600 }}>
+        <input
+          type="checkbox"
+          checked={acknowledged}
+          onChange={e => setAcknowledged(e.target.checked)}
+          disabled={busy}
+          style={{ marginTop: 3, width: 16, height: 16, accentColor: 'var(--accent)' }}
+        />
+        <span className="text-sm" style={{ lineHeight: 1.5 }}>
+          Я понимаю что данные второго аккаунта необратимо переедут, а сам тот аккаунт будет удалён.
+        </span>
+      </label>
+
+      <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+        <button disabled={busy || !acknowledged} onClick={confirm} className="btn btn-primary">
+          {busy ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+              Объединяю…
+            </span>
+          ) : 'Объединить'}
         </button>
         <button disabled={busy} onClick={() => navigate('/account')} className="btn btn-secondary">
           Отмена

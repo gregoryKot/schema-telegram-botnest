@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
-import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualization, ClientData } from '../api';
+import type { TherapyClientSummary, UserTask } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { fmtDate, todayStr } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../schemaTherapyData';
 import { RosterSparkline, ClientSparkline } from './therapist/Sparklines';
 import { KanbanView } from './therapist/KanbanView';
-
 import { ClientNotesTab } from './therapist/ClientNotesTab';
 import { ClientYSQTab } from './therapist/ClientYSQTab';
+import { useClientDetail } from './therapist/useClientDetail';
+import { useAddClient } from './therapist/useAddClient';
 
 interface Props {
   view: 'list' | 'client';
