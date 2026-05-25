@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api } from '../api';
 import { Loader } from '../components/Loader';
 
@@ -50,8 +51,19 @@ const GlyphArrow = () => (
 );
 
 export function ExercisesSection() {
+  const location = useLocation();
   const [open, setOpen] = useState<ExId | null>(null);
+  const [schemaInitialId, setSchemaInitialId] = useState<string | undefined>(undefined);
   const [stats, setStats] = useState<Partial<Record<ExId, ExStats>>>({});
+
+  useEffect(() => {
+    const state = location.state as { openSchemaEx?: string } | null;
+    if (state?.openSchemaEx) {
+      setOpen('schema');
+      setSchemaInitialId(state.openSchemaEx);
+      window.history.replaceState({}, '', '/exercises');
+    }
+  }, []);
 
   useEffect(() => {
     Promise.allSettled([
@@ -100,7 +112,7 @@ export function ExercisesSection() {
     return (
       <Suspense fallback={<Loader minHeight="100dvh" />}>
         {open === 'belief' && <BeliefCheckEx onBack={onBack} />}
-        {open === 'schema' && <SchemaEx onBack={onBack} />}
+        {open === 'schema' && <SchemaEx onBack={onBack} initialSchemaId={schemaInitialId} />}
         {open === 'mode'   && <ModeEx onBack={onBack} />}
         {open === 'letter' && <LetterEx onBack={onBack} />}
         {open === 'safe'   && <SafePlaceEx onBack={onBack} />}
