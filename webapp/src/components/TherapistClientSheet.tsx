@@ -50,9 +50,9 @@ function nextSessionLabel(dateStr: string): string {
 }
 
 function indexColor(v: number) {
-  if (v >= 7) return '#06d6a0';
-  if (v >= 4) return 'var(--accent-yellow)';
-  return 'var(--accent-red)';
+  if (v >= 7) return 'var(--c-moss)';
+  if (v >= 5) return 'var(--text)';
+  return 'var(--c-rose)';
 }
 
 const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; placeholder: string }[] = [
@@ -72,7 +72,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [loading, setLoading] = useState(true);
   const [listTab, setListTab] = useState<'clients' | 'kanban'>('clients');
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'wait' | 'virtual'>('all');
   const [allTasks, setAllTasks] = useState<{ clientId: number; clientName: string; tasks: UserTask[] }[] | null>(null);
   const [allTasksLoading, setAllTasksLoading] = useState(false);
 
@@ -481,14 +481,11 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           <div className="page-inner-wide">
 
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40 }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.03em' }}>Кабинет</div>
-                  <span className="chip chip-accent" style={{ fontSize: 10 }}>психолог</span>
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6 }}>
-                  {clients.length} клиентов · Задания · Концептуализация
+                <div style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1 }}>Кабинет</div>
+                <div style={{ fontSize: 15, color: 'var(--text-sub)', marginTop: 8 }}>
+                  {clients.length} {clients.length === 1 ? 'клиент' : clients.length < 5 ? 'клиента' : 'клиентов'} · {clients.filter(c => c.lastActiveDate === todayStr()).length} активны сегодня
                 </div>
               </div>
               <button
@@ -499,38 +496,39 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               </button>
             </div>
 
-            {/* Tabs + search */}
+            {/* Filter bar */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
               <div className="tabs" style={{ marginBottom: 0 }}>
-                <button
-                  className={`tab ${listTab === 'clients' ? 'is-active' : ''}`}
-                  onClick={() => setListTab('clients')}
-                >
-                  Клиенты
-                  {clients.length > 0 && <span className="count">{clients.length}</span>}
+                <button className={`tab ${listTab === 'clients' ? 'is-active' : ''}`} onClick={() => setListTab('clients')}>
+                  Клиенты{clients.length > 0 && <span className="count">{clients.length}</span>}
                 </button>
-                <button
-                  className={`tab ${listTab === 'kanban' ? 'is-active' : ''}`}
-                  onClick={() => {
-                    setListTab('kanban');
-                    if (!allTasks && !allTasksLoading) {
-                      setAllTasksLoading(true);
-                      api.getAllTherapyTasks().then(setAllTasks).catch(() => setAllTasks([])).finally(() => setAllTasksLoading(false));
-                    }
-                  }}
-                >
-                  Задания
-                </button>
+                <button className={`tab ${listTab === 'kanban' ? 'is-active' : ''}`} onClick={() => {
+                  setListTab('kanban');
+                  if (!allTasks && !allTasksLoading) {
+                    setAllTasksLoading(true);
+                    api.getAllTherapyTasks().then(setAllTasks).catch(() => setAllTasks([])).finally(() => setAllTasksLoading(false));
+                  }
+                }}>Задания</button>
               </div>
-              {listTab === 'clients' && (
-                <input
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Поиск клиента..."
-                  className="input"
-                  style={{ flex: 1, maxWidth: 320 }}
-                />
-              )}
+              {listTab === 'clients' && (<>
+                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                       placeholder="Найти клиента" className="input"
+                       style={{ maxWidth: 320, background: 'transparent', borderColor: 'var(--line)' }} />
+                <div style={{ display: 'flex', gap: 2 }}>
+                  {(['all', 'active', 'wait', 'virtual'] as const).map((k) => {
+                    const label = { all: 'Все', active: 'Активны', wait: 'Ждут', virtual: 'Оффлайн' }[k];
+                    return (
+                      <button key={k} onClick={() => setFilterStatus(k)}
+                              style={{ padding: '5px 12px', borderRadius: 6, fontSize: 12.5, border: 'none', cursor: 'pointer',
+                                       fontWeight: filterStatus === k ? 600 : 500,
+                                       background: filterStatus === k ? 'var(--surface-3)' : 'transparent',
+                                       color: filterStatus === k ? 'var(--text)' : 'var(--text-faint)' }}>
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>)}
             </div>
 
             {/* Add client panel */}
@@ -663,7 +661,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               />
             )}
 
-            {/* Client roster — адаптивно для оффлайн/онлайн */}
+            {/* Client roster */}
             {listTab === 'clients' && (
               loading ? (
                 <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>
@@ -680,45 +678,41 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                   </div>
                 </div>
               ) : (() => {
-                const q = debouncedQuery.toLowerCase().trim();
-                const filtered = q
-                  ? clients.filter(c => (c.clientAlias ?? c.name ?? '').toLowerCase().includes(q))
-                  : clients;
-                const onlineClients = filtered.filter(c => !!c.name);
-                const offlineClients = filtered.filter(c => !c.name);
-                const hasOnline = onlineClients.length > 0;
+                const today = todayStr();
+                const q = searchQuery.toLowerCase().trim();
+                let filtered = q ? clients.filter(c => (c.clientAlias ?? c.name ?? '').toLowerCase().includes(q)) : clients.slice();
+                if (filterStatus === 'active') filtered = filtered.filter(c => c.lastActiveDate === today);
+                else if (filterStatus === 'wait') filtered = filtered.filter(c => c.lastActiveDate !== today && !!c.name);
+                else if (filterStatus === 'virtual') filtered = filtered.filter(c => !c.name);
+                const hasOnline = filtered.some(c => !!c.name);
                 return (
                   <div>
-                    {q && filtered.length === 0 && (
+                    {filtered.length === 0 && (
                       <div className="text-md muted" style={{ padding: '24px 0' }}>Ничего не найдено</div>
                     )}
                     {hasOnline && (
-                      <div className="section">
-                        <div className="section-head">
-                          <h3>Клиенты с приложением</h3>
-                          <span className="hint">{onlineClients.length}</span>
-                        </div>
+                      <>
                         <div className="r-row-head">
                           <span className="eyebrow">Клиент</span>
-                          <span className="eyebrow">Индекс</span>
+                          <span className="eyebrow" style={{ textAlign: 'right' }}>Индекс</span>
                           <span className="eyebrow">14 дн.</span>
                           <span className="eyebrow">Активные схемы</span>
                         </div>
-                        {onlineClients.map(client => (
-                          <div key={client.telegramId} className="r-row row-hover" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
+                        {filtered.filter(c => !!c.name).map(client => (
+                          <div key={client.telegramId} className="r-row" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
                             <div style={{ minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span className="text-base" style={{ fontWeight: 600 }}>{client.clientAlias ?? client.name ?? `ID ${client.telegramId}`}</span>
-                                {client.lastActiveDate === todayStr() && (
+                                <span className="text-base" style={{ fontWeight: 600 }}>{client.clientAlias ?? client.name}</span>
+                                {client.lastActiveDate === today && (
                                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
                                 )}
                               </div>
                               <div className="text-xs faint" style={{ marginTop: 3 }}>
-                                {client.therapyStartDate ? `с ${fmtDate(client.therapyStartDate)}` : 'начало не задано'}
+                                {client.lastActiveDate === today ? 'активен сегодня' : client.lastActiveDate ? 'был недавно' : 'не активен'}
                                 {client.streak > 0 && ` · стрик ${client.streak} дн.`}
                               </div>
                             </div>
-                            <div>
+                            <div style={{ textAlign: 'right' }}>
                               {client.todayIndex != null ? (
                                 <span className="num" style={{ fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em', color: indexColor(client.todayIndex) }}>{client.todayIndex.toFixed(1)}</span>
                               ) : <span className="text-sm faint">—</span>}
@@ -741,24 +735,23 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                             </div>
                           </div>
                         ))}
-                      </div>
+                      </>
                     )}
-
-                    {offlineClients.length > 0 && (
-                      <div className="section">
-                        <div className="section-head">
-                          <h3>Оффлайн-клиенты</h3>
-                          <span className="hint">{offlineClients.length} · заметки и концептуализация</span>
-                        </div>
-                        {offlineClients.map(client => {
+                    {filtered.filter(c => !c.name).length > 0 && (
+                      <div style={{ marginTop: hasOnline ? 32 : 0 }}>
+                        {hasOnline && <div className="eyebrow" style={{ marginBottom: 12 }}>Оффлайн-клиенты</div>}
+                        {filtered.filter(c => !c.name).map(client => {
                           const name = client.clientAlias ?? `ID ${client.telegramId}`;
                           return (
                             <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div className="text-md" style={{ fontWeight: 600 }}>{name}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span className="text-md" style={{ fontWeight: 600 }}>{name}</span>
+                                  <span className="chip chip-line" style={{ fontSize: 11 }}>оффлайн</span>
+                                </div>
                                 <div className="text-sm muted" style={{ marginTop: 3 }}>
-                                  {client.therapyStartDate ? `Начало терапии · ${fmtDate(client.therapyStartDate)}` : 'без Telegram'}
-                                  {client.nextSession && ` · след. встреча ${nextSessionLabel(client.nextSession)}`}
+                                  {client.therapyStartDate ? `с ${fmtDate(client.therapyStartDate)}` : 'без Telegram'}
+                                  {client.nextSession && ` · ${nextSessionLabel(client.nextSession)}`}
                                 </div>
                               </div>
                               <span className="link">открыть →</span>
@@ -780,21 +773,21 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
         <div key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
           {/* Client header */}
-          <div style={{ borderBottom: '1px solid var(--line)', padding: '24px 48px 0', flexShrink: 0 }}>
-            <button onClick={() => switchView('list')} style={{ background: 'none', border: 'none', padding: '0 0 14px', fontSize: 13, color: 'var(--text-faint)', cursor: 'pointer' }}>
+          <div style={{ borderBottom: '1px solid var(--line)', padding: '40px 64px 0', flexShrink: 0 }}>
+            <button onClick={() => switchView('list')} style={{ background: 'none', border: 'none', padding: '0 0 16px', fontSize: 13, color: 'var(--text-faint)', cursor: 'pointer' }}>
               ← Все клиенты
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 {renamingAlias ? (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
                     <input
                       autoFocus
                       value={aliasInput}
                       onChange={e => setAliasInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') saveAlias(); if (e.key === 'Escape') setRenamingAlias(false); }}
-                      style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', background: 'transparent', border: 'none', borderBottom: '2px solid var(--accent)', outline: 'none', width: 280, padding: '2px 0', color: 'var(--text)' }}
+                      style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', background: 'transparent', border: 'none', borderBottom: '2px solid var(--accent)', outline: 'none', width: 320, padding: '2px 0', color: 'var(--text)' }}
                     />
                     <button onClick={saveAlias} disabled={aliasSaving} style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 12, cursor: 'pointer' }}>
                       {aliasSaving ? '...' : 'Сохранить'}
@@ -803,11 +796,18 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     {aliasError && <span style={{ fontSize: 12, color: 'var(--c-rose)' }}>{aliasError}</span>}
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.025em', margin: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                    <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, margin: 0 }}>
                       {selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`}
                     </h1>
-                    {!selectedClient.name && <span className="chip chip-line" style={{ fontSize: 11 }}>оффлайн</span>}
+                    {selectedClient.lastActiveDate === todayStr() ? (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--c-moss)', whiteSpace: 'nowrap' }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
+                        активна сегодня
+                      </span>
+                    ) : !selectedClient.name ? (
+                      <span className="chip chip-line" style={{ fontSize: 11 }}>оффлайн</span>
+                    ) : null}
                     <button
                       onClick={() => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); }}
                       style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer' }}
@@ -815,35 +815,27 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     >✎</button>
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap' }}>
                   {selectedClient.therapyStartDate && (
-                    <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
                       С {fmtDate(selectedClient.therapyStartDate)} · {calcTherapyDuration(selectedClient.therapyStartDate)}
                     </span>
                   )}
                   {selectedClient.nextSession && (
-                    <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
                       следующая {nextSessionLabel(selectedClient.nextSession)}
                     </span>
                   )}
-                  {selectedClient.todayIndex != null && (
-                    <span style={{ fontSize: 13, fontWeight: 500, color: indexColor(selectedClient.todayIndex) }}>
-                      Индекс {selectedClient.todayIndex.toFixed(1)}
-                    </span>
-                  )}
                   {selectedClient.streak > 0 && (
-                    <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{selectedClient.streak} дн. подряд</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>{selectedClient.streak} дн. подряд</span>
                   )}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 24 }}>
-                <button onClick={() => setShowAssign(true)} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                  + Задание
-                </button>
-                <button onClick={() => setClientTab('sessions')} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>
-                  + Заметка
-                </button>
-                <button onClick={deleteClient} disabled={deleteLoading} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--c-rose)', cursor: 'pointer' }}>
+                <button onClick={() => setShowAssign(true)} className="btn btn-primary">+ Задание</button>
+                <button onClick={() => setClientTab('sessions')} className="btn btn-secondary">+ Заметка</button>
+                <button onClick={deleteClient} disabled={deleteLoading}
+                        style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--c-rose)', cursor: 'pointer' }}>
                   {deleteLoading ? '...' : 'Удалить'}
                 </button>
               </div>
@@ -1440,13 +1432,60 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
             {/* ── SESSIONS ─────────────────────────────────────────────────────── */}
             {clientTab === 'sessions' && (
-              <ClientSessionsTab
-                notes={notes}
-                newNoteText={newNoteText} newNoteDate={newNoteDate}
-                noteSaving={noteSaving} noteError={noteError}
-                setNewNoteText={setNewNoteText} setNewNoteDate={setNewNoteDate}
-                addNote={addNote} removeNote={removeNote}
-              />
+              <div className="page-inner" style={{ paddingTop: 40 }}>
+                {/* Composer */}
+                <div style={{ marginBottom: 0 }}>
+                  <div className="eyebrow" style={{ marginBottom: 16 }}>
+                    Новая заметка · {fmtDate(newNoteDate || todayStr())}
+                    <input type="date" value={newNoteDate || todayStr()} onChange={e => setNewNoteDate(e.target.value)}
+                           style={{ marginLeft: 10, fontSize: 11, padding: '2px 6px', border: '1px solid var(--line)', borderRadius: 4, background: 'transparent', color: 'var(--text-faint)' }} />
+                  </div>
+                  <textarea
+                    className="textarea"
+                    value={newNoteText}
+                    onChange={e => setNewNoteText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
+                    rows={4}
+                    placeholder="Наблюдения, гипотезы, динамика, план следующей встречи…"
+                    style={{ fontSize: 15, lineHeight: 1.65 }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>⌘+Enter — сохранить</span>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {newNoteText.trim() && (
+                        <button onClick={() => setNewNoteText('')} className="btn btn-secondary">Отмена</button>
+                      )}
+                      <button onClick={addNote} disabled={!newNoteText.trim() || noteSaving} className="btn btn-primary">
+                        {noteSaving ? '...' : 'Сохранить'}
+                      </button>
+                    </div>
+                  </div>
+                  {noteError && <div style={{ marginTop: 8, fontSize: 13, color: 'var(--c-rose)' }}>{noteError}</div>}
+                </div>
+
+                <hr className="hr-soft" style={{ margin: '48px 0' }} />
+
+                {/* Archive */}
+                <div className="eyebrow" style={{ marginBottom: 32 }}>Архив · {notes.length} заметок</div>
+                {notes.length === 0 ? (
+                  <div style={{ color: 'var(--text-faint)', fontSize: 14 }}>Заметок пока нет</div>
+                ) : (
+                  notes.map((note, i) => (
+                    <div key={note.id} style={{ marginBottom: 48 }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{fmtDate(note.date)}</span>
+                          <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>Сессия {notes.length - i}</span>
+                        </div>
+                        <button onClick={() => removeNote(note.id)} style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, fontSize: 12, color: 'var(--text-ghost)', cursor: 'pointer' }}>✕</button>
+                      </div>
+                      <div style={{ fontSize: 15, lineHeight: 1.7, color: 'var(--text-sub)', maxWidth: 720, whiteSpace: 'pre-wrap' }}>
+                        {note.text}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             )}
 
             {/* ── TASKS ────────────────────────────────────────────────────────── */}
