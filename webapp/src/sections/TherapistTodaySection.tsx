@@ -16,6 +16,30 @@ function greeting(name: string | null) {
   return name ? `${salutation}, ${name}` : salutation;
 }
 
+/** True if the client has a session scheduled for today */
+function hasSessionToday(c: TherapyClientSummary): boolean {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayDay = new Date().getDay();
+  // nextSession wins: if explicitly set to today, show it
+  if (c.nextSession) {
+    const sessionDate = c.nextSession.slice(0, 10);
+    if (sessionDate === todayStr) return true;
+    // If nextSession is in the future or past — don't fall through to meetingDays
+    // (meetingDays is the recurring pattern, nextSession is the specific override)
+    return false;
+  }
+  // No explicit nextSession — use recurring meetingDays
+  return c.meetingDays.includes(todayDay);
+}
+
+/** Extract HH:MM time from nextSession if it's today */
+function sessionTime(c: TherapyClientSummary): string {
+  if (!c.nextSession) return '';
+  const todayStr = new Date().toISOString().slice(0, 10);
+  if (c.nextSession.slice(0, 10) !== todayStr) return '';
+  return c.nextSession.includes('T') ? c.nextSession.split('T')[1].slice(0, 5) : '';
+}
+
 interface Props {
   displayName: string | null;
   onOpenClient: (id: number) => void;
@@ -30,6 +54,9 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
   }, []);
 
   const activeToday = clients.filter(c => c.todayIndex != null);
+  const sessionsToday = clients.filter(hasSessionToday);
+
+  // Clients with no activity for 3+ days (and not active today)
   const needingAttention = clients.filter(c => {
     if (c.todayIndex != null) return false;
     const last = c.lastActiveDate;
@@ -37,9 +64,6 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
     const daysSince = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
     return daysSince >= 3;
   });
-
-  const todayDay = new Date().getDay();
-  const sessionsToday = clients.filter(c => c.meetingDays.includes(todayDay));
 
   return (
     <div className="page animate-fade">
@@ -52,7 +76,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
           </h1>
         </div>
 
-        <div className="doc-grid" style={{ '--doc-cols': '1fr 1fr' } as React.CSSProperties}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
           {/* Left column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Sessions today */}
@@ -64,19 +88,23 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                 <div style={{ color: 'var(--text-sub)', fontSize: 14 }}>Сессий не запланировано</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {sessionsToday.map(c => (
-                    <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'var(--surface-2)', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                      <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>
-                        {c.clientAlias ?? c.name ?? `#${c.telegramId}`}
-                      </span>
-                      {c.nextSession && (
-                        <span style={{ fontSize: 12, color: 'var(--text-faint)', marginLeft: 'auto' }}>
-                          {c.nextSession.includes('T') ? c.nextSession.split('T')[1].slice(0, 5) : ''}
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                  {sessionsToday
+                    .slice()
+                    .sort((a, b) => (sessionTime(a) || '99:99').localeCompare(sessionTime(b) || '99:99'))
+                    .map(c => {
+                      const time = sessionTime(c);
+                      return (
+                        <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
+                                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'var(--surface-2)', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>
+                            {c.clientAlias ?? c.name ?? `#${c.telegramId}`}
+                          </span>
+                          {time && (
+                            <span style={{ fontSize: 12, color: 'var(--text-faint)', marginLeft: 'auto' }}>{time}</span>
+                          )}
+                        </button>
+                      );
+                    })}
                 </div>
               )}
             </div>
@@ -96,7 +124,9 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                     return (
                       <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
                               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: done ? '#06d6a0' : 'var(--surface-3)', flexShrink: 0, display: 'inline-block', border: done ? 'none' : '1.5px solid var(--line-strong)' }} />
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, display: 'inline-block',
+                          background: done ? '#06d6a0' : 'var(--surface-3)',
+                          border: done ? 'none' : '1.5px solid var(--line-strong)' }} />
                         <span style={{ fontSize: 13.5, color: 'var(--text)', fontWeight: 500 }}>{name}</span>
                         {done && c.todayIndex != null && (
                           <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-faint)' }}>
@@ -104,7 +134,9 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                           </span>
                         )}
                         <span style={{ fontSize: 11, color: 'var(--text-ghost)', marginLeft: done ? 4 : 'auto' }}>
-                          {done ? 'заполнил' : c.lastActiveDate ? `${Math.floor((Date.now() - new Date(c.lastActiveDate).getTime()) / 86400000)} дн.` : 'нет данных'}
+                          {done ? 'заполнил' : c.lastActiveDate
+                            ? `${Math.floor((Date.now() - new Date(c.lastActiveDate).getTime()) / 86400000)} дн.`
+                            : 'нет данных'}
                         </span>
                       </button>
                     );
@@ -114,7 +146,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
             </div>
           </div>
 
-          {/* Right column / rail */}
+          {/* Right column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Needs attention */}
             {needingAttention.length > 0 && (
@@ -138,7 +170,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
               </div>
             )}
 
-            {/* Active today highlight */}
+            {/* Active today */}
             {activeToday.length > 0 && (
               <div className="card" style={{ padding: '20px 24px' }}>
                 <div className="eyebrow" style={{ marginBottom: 12 }}>Заполнили сегодня</div>
@@ -153,7 +185,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
               </div>
             )}
 
-            {/* Summary stat */}
+            {/* Summary stats */}
             {!loading && clients.length > 0 && (
               <div style={{ display: 'flex', gap: 12 }}>
                 <div className="card" style={{ flex: 1, padding: '16px 20px', textAlign: 'center' }}>
