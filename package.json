@@ -67,6 +67,11 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.20.0"
   },
+  "overrides": {
+    "babel-plugin-istanbul": "^8.0.0",
+    "test-exclude": "^8.0.0",
+    "glob": "^13.0.6"
+  },
   "jest": {
     "moduleFileExtensions": [
       "js",
