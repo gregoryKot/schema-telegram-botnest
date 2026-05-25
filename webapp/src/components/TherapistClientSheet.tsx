@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import type { TherapyClientSummary, UserTask } from '../api';
+import type { TherapyClientSummary, UserTask, ClientConceptualization } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { fmtDate, todayStr } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../schemaTherapyData';
@@ -20,7 +20,6 @@ interface Props {
   backHandlerRef?: React.MutableRefObject<() => void>;
 }
 
-type AddMode = null | 'invite' | 'telegram' | 'virtual';
 type ClientTab = 'overview' | 'concept' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
 const DAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -68,7 +67,7 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
 
 
 export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef }: Props) {
-  // Client list
+  // ─── Client list ──────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [listTab, setListTab] = useState<'clients' | 'kanban'>('clients');
@@ -76,394 +75,64 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'wait' | 'virtual'>('all');
   const [allTasks, setAllTasks] = useState<{ clientId: number; clientName: string; tasks: UserTask[] }[] | null>(null);
   const [allTasksLoading, setAllTasksLoading] = useState(false);
-
-  // Add client flow
-  const [addMode, setAddMode] = useState<AddMode>(null);
-  const [addInput, setAddInput] = useState('');
-  const [addLoading, setAddLoading] = useState(false);
-  const [addError, setAddError] = useState('');
-  const [inviteUrl, setInviteUrl] = useState('');
-  const [inviteCopied, setInviteCopied] = useState(false);
-  const [inviteLoading, setInviteLoading] = useState(false);
-  const inviteInputRef = useRef<HTMLInputElement>(null);
-
-  // Delete client
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
-
-  // Client detail
-  const [selectedClient, setSelectedClient] = useState<TherapyClientSummary | null>(null);
-  const [clientSchemaNotesData, setClientSchemaNotesData] = useState<Array<{ schemaId: string; triggers: string; feelings: string; thoughts: string; origins: string; reality: string; healthyView: string; behavior: string }>>([]);
-  const [clientModeNotesData, setClientModeNotesData] = useState<Array<{ modeId: string; triggers: string; feelings: string; thoughts: string; needs: string; behavior: string }>>([]);
-  const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
-  const [notes, setNotes] = useState<TherapistNote[]>([]);
-  const [noteError, setNoteError] = useState('');
-  const [concept, setConcept] = useState<ClientConceptualization | null>(null);
-  const [clientData, setClientData] = useState<ClientData | null>(null);
-  const [clientHistory, setClientHistory] = useState<{ date: string; index: number | null; ratings: Record<string, number> }[]>([]);
-  const [clientDiary, setClientDiary] = useState<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>([]);
-  const [localConcept, setLocalConcept] = useState<Partial<ClientConceptualization>>({});
-  const [conceptError, setConceptError] = useState('');
-  const [expandedSnapshot, setExpandedSnapshot] = useState<number | null>(null);
-  const [newNoteText, setNewNoteText] = useState('');
-  const [newNoteDate, setNewNoteDate] = useState('');
-  const [noteSaving, setNoteSaving] = useState(false);
-  const [showAssign, setShowAssign] = useState(false);
-
-  // Session info editing
-  const [editingStartDate, setEditingStartDate] = useState(false);
-  const [localStartDate, setLocalStartDate] = useState('');
-  const [editingNextSession, setEditingNextSession] = useState(false);
-  const [localNextSession, setLocalNextSession] = useState('');
-  const [sessionInfoSaving, setSessionInfoSaving] = useState(false);
-
-  // Rename alias
-  const [renamingAlias, setRenamingAlias] = useState(false);
-  const [aliasInput, setAliasInput] = useState('');
-  const [aliasSaving, setAliasSaving] = useState(false);
-  const [aliasError, setAliasError] = useState('');
-
-  // YSQ request
-  const [ysqRequested, setYsqRequested] = useState(false);
-  const [ysqError, setYsqError] = useState('');
-
-  // Export
-  const [exportCopied, setExportCopied] = useState(false);
-
-  // Client data loading state
-  const [tabLoading, setTabLoading] = useState(false);
-
-  // Animation key — changes when view transitions to trigger CSS animation
   const [animKey, setAnimKey] = useState(0);
-
-  // Client detail tab
-  const [clientTab, setClientTab] = useState<ClientTab>('overview');
-
-  // Race condition guard: ignore stale state updates when client changes quickly
-  const openClientIdRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    api.getTherapyClients().then(cl => {
-      setClients(cl);
-      if (openClientIdProp) {
-        const c = cl.find(x => x.telegramId === openClientIdProp);
-        if (c) openClient(c);
-      }
-    }).catch(() => {}).finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   function switchView(v: 'list' | 'client') {
     setAnimKey(k => k + 1);
     onViewChange(v);
   }
 
+  // ─── Hooks ────────────────────────────────────────────────────────────────────
+  const detail = useClientDetail({ onOpenClient, switchView, setClients });
+  const addClient = useAddClient({ setClients });
+
+  // ─── Bootstrap ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    api.getTherapyClients().then(cl => {
+      setClients(cl);
+      if (openClientIdProp) {
+        const c = cl.find(x => x.telegramId === openClientIdProp);
+        if (c) detail.openClient(c);
+      }
+    }).catch(() => {}).finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ─── Back button handler ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!backHandlerRef || view !== 'client') return;
     backHandlerRef.current = () => {
-      if (showAssign) { setShowAssign(false); return; }
+      if (detail.showAssign) { detail.setShowAssign(false); return; }
       switchView('list');
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, showAssign, backHandlerRef]);
+  }, [view, detail.showAssign, backHandlerRef]);
 
-  // ─── Open client ──────────────────────────────────────────────────────────────
+  // ─── Destructure for JSX convenience ─────────────────────────────────────────
+  const {
+    selectedClient, clientSchemaNotesData, clientModeNotesData,
+    clientTasks, setClientTasks, notes, noteError,
+    concept, clientData, clientHistory, clientDiary,
+    localConcept, conceptError, expandedSnapshot, setExpandedSnapshot,
+    saveStatus, newNoteText, setNewNoteText, newNoteDate, setNewNoteDate,
+    noteSaving, showAssign, setShowAssign,
+    editingStartDate, setEditingStartDate, localStartDate, setLocalStartDate,
+    editingNextSession, setEditingNextSession, localNextSession, setLocalNextSession,
+    sessionInfoSaving, renamingAlias, setRenamingAlias, aliasInput, setAliasInput,
+    aliasSaving, aliasError, ysqRequested, ysqError, exportCopied,
+    deleteLoading, deleteError, tabLoading, clientTab, setClientTab,
+    activeSchemaIds, activeModeIds, ysqSchemaIds, selfSchemaIds,
+    openClient, deleteClient, addNote, removeNote,
+    patchConcept, toggleSchemaId, toggleModeId,
+    saveAlias, saveSessionInfo, handleRequestYsq, handleExport,
+  } = detail;
 
-  async function openClient(client: TherapyClientSummary) {
-    const clientId = client.telegramId;
-    openClientIdRef.current = clientId;
-
-    setSelectedClient(client);
-    setClientSchemaNotesData([]);
-    setClientModeNotesData([]);
-    setClientTasks([]);
-    setNotes([]);
-    setNoteError('');
-    setConcept(null);
-    setClientData(null);
-    setClientHistory([]);
-    setClientDiary([]);
-    setLocalConcept({});
-    setConceptError('');
-    setExpandedSnapshot(null);
-    setYsqRequested(false);
-    setYsqError('');
-    setRenamingAlias(false);
-    setAliasError('');
-    setDeleteError('');
-    setEditingStartDate(false);
-    setEditingNextSession(false);
-    setLocalNextSession(client.nextSession ?? '');
-    setLocalStartDate(client.therapyStartDate ?? '');
-    setClientTab('overview');
-    setTabLoading(true);
-    // Triggers URL change (/cabinet/:id) which makes AppShell render view='client'
-    onOpenClient?.(clientId);
-    switchView('client');
-
-    const [tasks, fetchedNotes, fetchedConcept, fetchedData, sn, mn, hist, diary] = await Promise.all([
-      api.getTherapyTasksForClient(clientId).catch(() => []),
-      api.getTherapistNotes(clientId).catch(() => []),
-      api.getConceptualization(clientId).catch(() => null),
-      api.getTherapyClientData(clientId).catch(() => null),
-      api.getClientSchemaNotes(clientId).catch(() => []),
-      api.getClientModeNotes(clientId).catch(() => []),
-      api.getTherapyClientHistory(clientId).catch(() => []),
-      api.getClientDiary(clientId).catch(() => []),
-    ]);
-
-    if (openClientIdRef.current !== clientId) return;
-
-    setTabLoading(false);
-    setClientTasks(tasks);
-    setNotes(fetchedNotes);
-    setConcept(fetchedConcept);
-    setClientData(fetchedData);
-    setClientSchemaNotesData(sn);
-    setClientModeNotesData(mn);
-    setClientHistory(hist);
-    setClientDiary(diary);
-    if (fetchedConcept) setLocalConcept(fetchedConcept);
-  }
-
-  // ─── Delete client ────────────────────────────────────────────────────────────
-
-  async function deleteClient() {
-    if (!selectedClient) return;
-    const name = selectedClient.clientAlias ?? selectedClient.name ?? 'этого клиента';
-    if (!window.confirm(`Удалить ${name}? Связь будет разорвана, данные сохранятся.`)) return;
-    setDeleteLoading(true);
-    setDeleteError('');
-    try {
-      await api.removeClient(selectedClient.telegramId);
-      setClients(prev => prev.filter(c => c.telegramId !== selectedClient.telegramId));
-      switchView('list');
-    } catch { setDeleteError('Не удалось удалить клиента'); } finally { setDeleteLoading(false); }
-  }
-
-  // ─── Add client flows ─────────────────────────────────────────────────────────
-
-  function openAddMode(mode: AddMode) {
-    setAddMode(mode);
-    setAddInput('');
-    setAddError('');
-    setInviteUrl('');
-    setInviteCopied(false);
-  }
-
-  async function createInvite() {
-    setInviteLoading(true);
-    try {
-      const { url } = await api.createTherapyInvite();
-      setInviteUrl(url);
-    } catch (e: any) { setAddError(e?.message ?? 'Не удалось создать ссылку'); } finally { setInviteLoading(false); }
-  }
-
-  async function copyInvite() {
-    if (!inviteUrl) return;
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setInviteCopied(true);
-      setTimeout(() => setInviteCopied(false), 2000);
-    } catch { inviteInputRef.current?.select(); }
-  }
-
-  function shareInvite() {
-    if (!inviteUrl) return;
-    if (navigator.share) {
-      navigator.share({ text: 'Подключись ко мне в Схема-лабе:', url: inviteUrl }).catch(() => {});
-    } else {
-      const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent('Подключись ко мне в Схема-лабе')}`;
-      window.open(tgUrl, '_blank', 'noopener');
-    }
-  }
-
-  async function addByTelegramId() {
-    const id = parseInt(addInput.trim(), 10);
-    if (!id || isNaN(id)) { setAddError('Введи числовой Telegram ID'); return; }
-    setAddLoading(true);
-    setAddError('');
-    try {
-      const updated = await api.addClientManually(id);
-      setClients(updated);
-      openAddMode(null);
-    } catch (e: any) {
-      const msg = e?.message ?? '';
-      if (msg.toLowerCase().includes('not found')) setAddError('Пользователь не найден. Должен открыть приложение хотя бы раз.');
-      else if (msg.toLowerCase().includes('already')) setAddError('Клиент уже подключён');
-      else setAddError('Ошибка. Проверь ID.');
-    } finally { setAddLoading(false); }
-  }
-
-  async function addVirtualClient() {
-    const name = addInput.trim();
-    if (!name) { setAddError('Введи имя клиента'); return; }
-    setAddLoading(true);
-    setAddError('');
-    try {
-      const updated = await api.addVirtualClient(name);
-      setClients(updated);
-      openAddMode(null);
-    } catch { setAddError('Ошибка. Попробуй ещё раз.'); } finally { setAddLoading(false); }
-  }
-
-  // ─── Notes ────────────────────────────────────────────────────────────────────
-
-  async function addNote() {
-    if (!selectedClient || !newNoteText.trim()) return;
-    setNoteSaving(true);
-    setNoteError('');
-    try {
-      const date = newNoteDate || todayStr();
-      const note = await api.createTherapistNote(selectedClient.telegramId, date, newNoteText.trim());
-      setNotes(prev => [note, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
-      setNewNoteText('');
-      setNewNoteDate('');
-    } catch { setNoteError('Не удалось сохранить заметку'); } finally { setNoteSaving(false); }
-  }
-
-  async function removeNote(noteId: number) {
-    try {
-      await api.deleteTherapistNote(noteId);
-      setNotes(prev => prev.filter(n => n.id !== noteId));
-    } catch { setNoteError('Не удалось удалить заметку'); }
-  }
-
-  // ─── Conceptualization ────────────────────────────────────────────────────────
-
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved'>('idle');
-
-  function patchConcept(patch: Partial<ClientConceptualization>) {
-    setLocalConcept(prev => ({ ...prev, ...patch }));
-    setSaveStatus('pending');
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(autoSave, 700);
-  }
-
-  async function autoSave() {
-    if (!selectedClient) return;
-    setSaveStatus('saving');
-    try {
-      const saved = await api.saveConceptualization(selectedClient.telegramId, {
-        schemaIds: (localConcept.schemaIds ?? []) as string[],
-        modeIds: (localConcept.modeIds ?? []) as string[],
-        earlyExperience: (localConcept.earlyExperience as string) ?? '',
-        unmetNeeds: (localConcept.unmetNeeds as string) ?? '',
-        triggers: (localConcept.triggers as string) ?? '',
-        copingStyles: (localConcept.copingStyles as string) ?? '',
-        goals: (localConcept.goals as string) ?? '',
-        currentProblems: (localConcept.currentProblems as string) ?? '',
-        modeTransitions: (localConcept.modeTransitions as string) ?? '',
-      });
-      setConcept(saved);
-      setConceptError('');
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch { setSaveStatus('idle'); }
-  }
-
-  function toggleSchemaId(id: string) {
-    const current = (localConcept.schemaIds ?? concept?.schemaIds ?? []) as string[];
-    const next = current.includes(id) ? current.filter(x => x !== id) : [...current, id];
-    patchConcept({ schemaIds: next });
-  }
-
-  function toggleModeId(id: string) {
-    const current = (localConcept.modeIds ?? concept?.modeIds ?? []) as string[];
-    const next = current.includes(id) ? current.filter(x => x !== id) : [...current, id];
-    patchConcept({ modeIds: next });
-  }
-
-  // ─── Alias ────────────────────────────────────────────────────────────────────
-
-  async function saveAlias() {
-    if (!selectedClient) return;
-    setAliasSaving(true);
-    setAliasError('');
-    try {
-      await api.renameClient(selectedClient.telegramId, aliasInput);
-      const updated = { ...selectedClient, clientAlias: aliasInput.trim() || null };
-      setSelectedClient(updated);
-      setClients(prev => prev.map(c => c.telegramId === selectedClient.telegramId ? updated : c));
-      setRenamingAlias(false);
-    } catch { setAliasError('Не удалось сохранить имя'); } finally { setAliasSaving(false); }
-  }
-
-  async function saveSessionInfo(patch: { therapyStartDate?: string | null; nextSession?: string | null; meetingDays?: number[] }) {
-    if (!selectedClient) return;
-    setSessionInfoSaving(true);
-    try {
-      await api.updateSessionInfo(selectedClient.telegramId, patch);
-      const updated = { ...selectedClient, ...patch };
-      if (patch.meetingDays !== undefined) updated.meetingDays = patch.meetingDays;
-      setSelectedClient(updated);
-      setClients(prev => prev.map(c => c.telegramId === selectedClient.telegramId ? updated : c));
-    } catch { /* ignore */ } finally { setSessionInfoSaving(false); }
-  }
-
-  async function handleRequestYsq() {
-    if (!selectedClient) return;
-    setYsqError('');
-    try {
-      await api.requestYsq(selectedClient.telegramId);
-      setYsqRequested(true);
-      setTimeout(() => setYsqRequested(false), 3000);
-    } catch { setYsqError('Не удалось отправить запрос'); }
-  }
-
-  // ─── Export ───────────────────────────────────────────────────────────────────
-
-  function buildExportText(): string {
-    if (!selectedClient || !concept) return '';
-    const clientName = selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`;
-    const date = concept.updatedAt ? fmtDate(concept.updatedAt.slice(0, 10)) : todayStr();
-    const c = { ...concept, ...localConcept };
-    const schemaNames = activeSchemaIds.map(id => {
-      const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
-      return s ? `${s.emoji} ${s.name}` : id;
-    });
-    const modeNames = activeModeIds.map(id => {
-      const m = MODE_GROUPS.flatMap(g => g.items).find(x => x.id === id);
-      return m ? `${m.emoji} ${m.name}` : id;
-    });
-    const row = (label: string, value: string | null | undefined) => `${label}\n${value?.trim() || '—'}\n`;
-    const div = '─'.repeat(44);
-    return [
-      `Клиент: ${clientName}   Дата: ${date}`,
-      '', '══════ КРАТКАЯ КОНЦЕПТУАЛИЗАЦИЯ ══════', '',
-      div, row('АКТУАЛЬНЫЕ СХЕМЫ (ЭДС)', schemaNames.join(' · ') || null),
-      div, row('КАРТА РЕЖИМОВ', modeNames.join(' · ') || null),
-      div, row('РАННИЙ ДИСФУНКЦИОНАЛЬНЫЙ ОПЫТ', c.earlyExperience as string),
-      div, row('НЕУДОВЛЕТВОРЁННЫЕ БАЗОВЫЕ ПОТРЕБНОСТИ', c.unmetNeeds as string),
-      div, row('СХЕМНЫЕ ТРИГГЕРЫ', c.triggers as string),
-      div, row('ДЕЗАДАПТИВНЫЕ КОПИНГИ', c.copingStyles as string),
-      div, row('АКТУАЛЬНЫЕ ПРОБЛЕМЫ И СИМПТОМЫ', c.currentProblems as string),
-      div, row('ЦЕЛИ СХЕМА-ТЕРАПИИ', c.goals as string),
-      div, '', '@SchemeHappens · Схема-лаб',
-    ].join('\n');
-  }
-
-  async function handleExport() {
-    const text = buildExportText();
-    if (!text) return;
-    try {
-      if (navigator.share) { await navigator.share({ text }); return; }
-    } catch { /* fallthrough */ }
-    try {
-      await navigator.clipboard.writeText(text);
-      setExportCopied(true);
-      setTimeout(() => setExportCopied(false), 2500);
-    } catch { /* ignore */ }
-  }
-
-  // ─── Derived ──────────────────────────────────────────────────────────────────
-
-  const activeSchemaIds = (localConcept.schemaIds ?? concept?.schemaIds ?? []) as string[];
-  const activeModeIds = (localConcept.modeIds ?? concept?.modeIds ?? []) as string[];
-  const ysqSchemaIds = clientData?.ysqActiveSchemaIds ?? [];
-  const selfSchemaIds = clientData?.mySchemaIds ?? [];
+  const {
+    addMode, addInput, setAddInput, addLoading, addError,
+    inviteUrl, inviteCopied, inviteLoading, inviteInputRef,
+    openAddMode, createInvite, copyInvite, shareInvite,
+    addByTelegramId, addVirtualClient,
+  } = addClient;
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 
@@ -1278,11 +947,11 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
                     {/* Text fields */}
                     {CONCEPT_FIELDS.map(field => (
-                      <div key={field.key} className="section">
+                      <div key={String(field.key)} className="section">
                         <div className="eyebrow" style={{ marginBottom: 12 }}>{field.label}</div>
                         <textarea
                           className="textarea"
-                          value={(localConcept[field.key] as string) ?? ''}
+                          value={(localConcept[field.key as keyof ClientConceptualization] as string) ?? ''}
                           onChange={e => patchConcept({ [field.key]: e.target.value })}
                           placeholder={field.placeholder}
                           rows={4}
@@ -1337,7 +1006,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                         <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
                         <div className="eyebrow" style={{ marginBottom: 12 }}>История версий · {concept.history.length}</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {concept.history.slice(0, 5).map((h, i) => {
+                          {concept.history.slice(0, 5).map((h: any, i: number) => {
                             const vNum = concept.history.length - i;
                             const isOpen = expandedSnapshot === i;
                             const textFields: { label: string; val: string | null }[] = [
@@ -1367,7 +1036,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                                       <div style={{ marginBottom: 10 }}>
                                         <div className="eyebrow" style={{ marginBottom: 6 }}>Схемы</div>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                          {h.schemaIds.map(id => {
+                                          {h.schemaIds.map((id: string) => {
                                             const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
                                             const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
                                             return (
@@ -1385,7 +1054,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                                       <div style={{ marginBottom: 10 }}>
                                         <div className="eyebrow" style={{ marginBottom: 6 }}>Режимы</div>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                          {h.modeIds.map(id => {
+                                          {h.modeIds.map((id: string) => {
                                             const m = getModeById(id);
                                             const group = MODE_GROUPS.find(g => g.items.some(x => x.id === id));
                                             return (
