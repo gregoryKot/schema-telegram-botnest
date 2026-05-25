@@ -86,6 +86,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    // Sweep expired pair-code entries every 30 min so the in-memory map
+    // doesn't accumulate stale entries from users who never completed consent.
+    setInterval(() => {
+      const now = Date.now();
+      for (const [uid, entry] of this.pendingPairCodes) {
+        if (entry.expiresAt < now) this.pendingPairCodes.delete(uid);
+      }
+    }, 30 * 60_000).unref();
+
     const redirectUsername = process.env.BOT_REDIRECT_USERNAME;
     if (redirectUsername) {
       const redirectText = `Бот переехал! Открывай @${redirectUsername}`;
@@ -93,7 +102,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       this.bot.on('callback_query', async (ctx) => {
         await (ctx as any).answerCbQuery(redirectText, { show_alert: true }).catch(() => null);
       });
-      this.bot.launch({ dropPendingUpdates: true }).catch(() => null);
+      this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
+        this.logger.error('Redirect-mode bot failed to launch', err);
+      });
       this.logger.log(`Bot running in redirect mode → @${redirectUsername}`);
       return;
     }
@@ -214,7 +225,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('accept_consent action failed', err);
-        await ctx.answerCbQuery().catch(() => null);
+        await ctx.editMessageText('Что-то пошло не так. Попробуй нажать ещё раз.').catch(() => null);
       }
     });
 
@@ -275,6 +286,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('snooze_reminder action failed', err);
+        await ctx.editMessageText('Не удалось перенести напоминание. Попробуй ещё раз.').catch(() => null);
       }
     });
 
@@ -292,7 +304,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.editMessageText(reply).catch(() => ctx.editMessageReplyMarkup(undefined).catch(() => null));
       } catch (err) {
         this.logger.error('plan checkin action failed', err);
-        await ctx.answerCbQuery().catch(() => null);
+        await ctx.editMessageText('Не удалось сохранить. Попробуй ещё раз.').catch(() => null);
       }
     });
 
@@ -323,8 +335,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           try {
             await this.bot!.telegram.sendMessage(uid, text);
             sent++;
-          } catch {
+          } catch (err: any) {
             failed++;
+            const code = err?.response?.error_code;
+            const desc = String(err?.response?.description ?? err?.message ?? '');
+            const isPermanent = code === 403
+              || (code === 400 && /chat not found|user is deactivated|bot was blocked/i.test(desc));
+            if (isPermanent) {
+              await this.botService.markUserBlocked(uid).catch(() => null);
+            }
           }
           await new Promise(r => setTimeout(r, 50));
         }

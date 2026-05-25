@@ -61,9 +61,15 @@ export class TelegramScheduleService implements OnModuleInit {
       return;
     }
     this.isProcessing = true;
+    // Kill-switch: release lock if runProcessQueue hangs past the next cron tick.
+    const killTimer = setTimeout(() => {
+      this.logger.error('processQueue timed out after 4 min — releasing lock');
+      this.isProcessing = false;
+    }, 4 * 60_000);
     try {
       await this.runProcessQueue();
     } finally {
+      clearTimeout(killTimer);
       this.isProcessing = false;
     }
   }
@@ -76,7 +82,14 @@ export class TelegramScheduleService implements OnModuleInit {
     for (const notif of due) {
       try {
         const payload = notif.payload as Record<string, unknown> | null;
-        const template = renderTemplate(notif.type as any, payload ?? undefined);
+        let template: ReturnType<typeof renderTemplate>;
+        try {
+          template = renderTemplate(notif.type as any, payload ?? undefined);
+        } catch (renderErr) {
+          this.logger.error(`renderTemplate threw for type=${notif.type} id=${notif.id} — skipping`, renderErr);
+          await this.notificationService.markSent(notif.id);
+          continue;
+        }
         if (!template) {
           this.logger.warn(`No template for type=${notif.type} id=${notif.id} — skipping`);
           await this.notificationService.markSent(notif.id);
@@ -87,7 +100,12 @@ export class TelegramScheduleService implements OnModuleInit {
           ...(template.keyboard ? { reply_markup: template.keyboard.reply_markup } : {}),
           ...(silent ? { disable_notification: true } : {}),
         };
-        await this.bot!.telegram.sendMessage(notif.userId, template.text, opts);
+        await Promise.race([
+          this.bot!.telegram.sendMessage(notif.userId, template.text, opts),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('sendMessage timeout')), 15_000),
+          ),
+        ]);
         await this.notificationService.markSent(notif.id);
       } catch (err: any) {
         const code = err?.response?.error_code;

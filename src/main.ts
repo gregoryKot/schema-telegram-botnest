@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { AlertLogger } from './logger/alert.logger';
 import { PrismaService } from './prisma/prisma.service';
 import { migrateClinicalLabels } from './utils/encrypt-migration';
+import { PrismaExceptionFilter } from './filters/prisma-exception.filter';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
 
@@ -13,6 +14,7 @@ const cookieParser = require('cookie-parser');
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new AlertLogger() });
 
+  app.useGlobalFilters(new PrismaExceptionFilter());
   app.use(cookieParser());
   // Cap request bodies. Largest legitimate payload is a YSQ progress update
   // (~116 ints + page) — well under 100 KB. Cap at 256 KB to leave room for
@@ -38,14 +40,13 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // One-shot encrypt-at-rest migration for clinical labels. Idempotent —
-  // skips rows already encrypted. Doesn't block startup if it fails.
-  app.get(PrismaService).$connect()
-    .then(() => migrateClinicalLabels(app.get(PrismaService)))
-    .catch((e) => console.error('Clinical-label migration failed:', e));
-
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
+
+  // Run after listen so PrismaService.onModuleInit has already connected.
+  // Idempotent — skips rows already encrypted. Doesn't block startup.
+  migrateClinicalLabels(app.get(PrismaService))
+    .catch((e) => console.error('Clinical-label migration failed:', e));
 
   process.on('SIGTERM', () => app.close());
   process.on('SIGINT', () => app.close());

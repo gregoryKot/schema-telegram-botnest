@@ -16,7 +16,8 @@ export type SecurityEvent =
   | 'therapist_request_decided'
   | 'csrf_blocked'
   | 'rate_limited'
-  | 'suspicious_initdata';
+  | 'suspicious_initdata'
+  | 'refresh_token_reuse';
 
 // Events we DM the admin about. Verbose events (success login etc) only
 // go to server logs.
@@ -26,6 +27,7 @@ const ALERT_EVENTS = new Set<SecurityEvent>([
   'therapist_request_submitted',
   'csrf_blocked',
   'suspicious_initdata',
+  'refresh_token_reuse',
 ]);
 
 @Injectable()
@@ -69,6 +71,7 @@ export class SecurityLogService {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: adminId, text, parse_mode: 'Markdown' }),
+        signal: AbortSignal.timeout(8_000),
       });
     } catch (e) {
       this.logger.warn(`Admin alert failed: ${(e as Error).message}`);

@@ -23,11 +23,22 @@ export class TherapistRequestService {
     if (!token) return;
     const body: any = { chat_id: chatId, text, parse_mode: 'Markdown' };
     if (replyMarkup) body.reply_markup = replyMarkup;
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }).catch((e) => this.logger.warn(`sendTg: ${e.message}`));
+    let res: Response | null = null;
+    try {
+      res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch (e: any) {
+      this.logger.warn(`sendTg network error: ${e.message}`);
+      return;
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({})) as { description?: string };
+      this.logger.warn(`sendTg ${res.status} for chat_id=${chatId}: ${err.description ?? ''}`);
+    }
   }
 
   private get adminId(): number | null {
