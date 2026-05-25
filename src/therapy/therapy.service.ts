@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
-import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
+import { encrypt, decrypt, encryptJson, decryptJson, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { randomBytes } from 'crypto';
 
 function randomCode(): string {
@@ -695,6 +695,27 @@ export class TherapyService {
       .sort((a, b) => b.dateMs - a.dateMs)
       .slice(0, 10)
       .map(({ dateMs: _d, ...rest }) => rest);
+  }
+
+  private static readonly SCHEMA_NOTE_SCHEMA: EncryptSchema = {
+    strings: ['triggers', 'feelings', 'thoughts', 'origins', 'reality', 'healthyView', 'behavior'],
+  };
+  private static readonly MODE_NOTE_SCHEMA: EncryptSchema = {
+    strings: ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'],
+  };
+
+  async getClientSchemaNotes(therapistId: number, clientId: number) {
+    if (clientId < 0) return [];
+    await this.assertRelation(therapistId, clientId);
+    const rows = await this.prisma.userSchemaNote.findMany({ where: { userId: BigInt(clientId) } });
+    return rows.map(r => decryptRecord(r as any, TherapyService.SCHEMA_NOTE_SCHEMA));
+  }
+
+  async getClientModeNotes(therapistId: number, clientId: number) {
+    if (clientId < 0) return [];
+    await this.assertRelation(therapistId, clientId);
+    const rows = await this.prisma.userModeNote.findMany({ where: { userId: BigInt(clientId) } });
+    return rows.map(r => decryptRecord(r as any, TherapyService.MODE_NOTE_SCHEMA));
   }
 
   async scheduleTaskNotification(clientId: number, task: { text: string; needId: string | null; dueDate: string | null }): Promise<void> {
