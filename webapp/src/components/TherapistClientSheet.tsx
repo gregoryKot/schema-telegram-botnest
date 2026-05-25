@@ -103,6 +103,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [clientDiary, setClientDiary] = useState<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>([]);
   const [localConcept, setLocalConcept] = useState<Partial<ClientConceptualization>>({});
   const [conceptError, setConceptError] = useState('');
+  const [expandedSnapshot, setExpandedSnapshot] = useState<number | null>(null);
   const [newNoteText, setNewNoteText] = useState('');
   const [newNoteDate, setNewNoteDate] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
@@ -190,6 +191,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     setClientDiary([]);
     setLocalConcept({});
     setConceptError('');
+    setExpandedSnapshot(null);
     setYsqRequested(false);
     setYsqError('');
     setRenamingAlias(false);
@@ -991,7 +993,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                             } else if (entry.type === 'mode') {
                               const mode = getModeById(entry.modeId ?? '');
                               const group = mode ? MODE_GROUPS.find(g => g.items.some(m => m.id === entry.modeId)) : null;
-                              color = group?.color ?? 'var(--accent-violet)';
+                              color = group?.color ?? 'var(--c-plum)';
                               title = mode ? `${mode.emoji} ${mode.name}` : (entry.modeId ?? 'Режим');
                               typeLabel = 'Режим-дневник';
                             } else {
@@ -1346,19 +1348,88 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     {concept?.history && concept.history.length > 0 && (
                       <>
                         <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
-                        <div className="eyebrow" style={{ marginBottom: 12 }}>История версий</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
-                            <span style={{ fontSize: 13 }}>Текущая версия</span>
-                          </div>
-                          {concept.history.slice(0, 3).map((h, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--text-ghost)', flexShrink: 0 }} />
-                              <span style={{ fontSize: 13, color: 'var(--text-sub)', flex: 1 }}>Версия {concept.history.length - i}</span>
-                              <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{fmtDate(h.savedAt.slice(0, 10))}</span>
-                            </div>
-                          ))}
+                        <div className="eyebrow" style={{ marginBottom: 12 }}>История версий · {concept.history.length}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {concept.history.slice(0, 5).map((h, i) => {
+                            const vNum = concept.history.length - i;
+                            const isOpen = expandedSnapshot === i;
+                            const textFields: { label: string; val: string | null }[] = [
+                              { label: 'Ранний опыт', val: h.earlyExperience },
+                              { label: 'Неудовл. потребности', val: h.unmetNeeds },
+                              { label: 'Триггеры', val: h.triggers },
+                              { label: 'Копинг-стратегии', val: h.copingStyles },
+                              { label: 'Цели', val: h.goals },
+                              { label: 'Текущие проблемы', val: h.currentProblems },
+                              { label: 'Переходы режимов', val: h.modeTransitions ?? null },
+                            ].filter(f => f.val?.trim());
+                            return (
+                              <div key={i} style={{ borderRadius: 8, border: '1px solid var(--line)', overflow: 'hidden' }}>
+                                <button
+                                  onClick={() => setExpandedSnapshot(isOpen ? null : i)}
+                                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: isOpen ? 'var(--surface-2)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                                >
+                                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-ghost)', flexShrink: 0 }} />
+                                  <span style={{ fontSize: 13, color: 'var(--text-sub)', flex: 1 }}>Версия {vNum}</span>
+                                  <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{fmtDate(h.savedAt.slice(0, 10))}</span>
+                                  <span style={{ fontSize: 11, color: 'var(--text-ghost)', marginLeft: 4 }}>{isOpen ? '▲' : '▼'}</span>
+                                </button>
+                                {isOpen && (
+                                  <div style={{ padding: '12px 14px', borderTop: '1px solid var(--line)', background: 'var(--surface-2)' }}>
+                                    {/* Schema chips */}
+                                    {h.schemaIds.length > 0 && (
+                                      <div style={{ marginBottom: 10 }}>
+                                        <div className="eyebrow" style={{ marginBottom: 6 }}>Схемы</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                          {h.schemaIds.map(id => {
+                                            const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
+                                            const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
+                                            return (
+                                              <span key={id} className="tag-mini">
+                                                <span className="swatch" style={{ background: domain?.color ?? 'var(--accent)' }} />
+                                                {s?.name ?? id}
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {/* Mode chips */}
+                                    {h.modeIds.length > 0 && (
+                                      <div style={{ marginBottom: 10 }}>
+                                        <div className="eyebrow" style={{ marginBottom: 6 }}>Режимы</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                          {h.modeIds.map(id => {
+                                            const m = getModeById(id);
+                                            const group = MODE_GROUPS.find(g => g.items.some(x => x.id === id));
+                                            return (
+                                              <span key={id} className="tag-mini">
+                                                <span className="swatch" style={{ background: group?.color ?? 'var(--c-plum)' }} />
+                                                {m?.name ?? id}
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {/* Text fields */}
+                                    {textFields.length > 0 && (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                        {textFields.map(f => (
+                                          <div key={f.label}>
+                                            <div className="eyebrow" style={{ marginBottom: 2 }}>{f.label}</div>
+                                            <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {h.schemaIds.length === 0 && h.modeIds.length === 0 && textFields.length === 0 && (
+                                      <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Нет данных</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </>
                     )}
