@@ -6,7 +6,6 @@ import { NEED_DATA } from '../needData';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { BottomSheet } from '../components/BottomSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
-import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
@@ -60,7 +59,6 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const [showModePicker, setShowModePicker]     = useState(false);
   const [introModeId, setIntroModeId]     = useState<string | null>(null);
   const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
-  const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [detailNeedId, setDetailNeedId]   = useState<string | null>(null);
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
 
@@ -422,12 +420,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         <SchemaDetailSheet
           schemaId={detailSchemaId}
           onClose={() => setDetailSchemaId(null)}
-          onOpenDiary={() => setIntroSchemaId(detailSchemaId)}
         />
-      )}
-
-      {introSchemaId && (
-        <SchemaIntroSheet schemaId={introSchemaId} onClose={() => setIntroSchemaId(null)} />
       )}
 
       {detailNeedId && (

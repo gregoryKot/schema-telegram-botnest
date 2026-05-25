@@ -75,8 +75,15 @@ function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; acc
   </>);
 }
 
-export function SchemaEx({ onBack }: { onBack: () => void }) {
-  const [picked, setPicked] = useState<{ id: string; name: string; desc: string; color: string; domain: string } | null>(null);
+export function SchemaEx({ onBack, initialSchemaId }: { onBack: () => void; initialSchemaId?: string }) {
+  const [picked, setPicked] = useState<{ id: string; name: string; desc: string; color: string; domain: string } | null>(() => {
+    if (!initialSchemaId) return null;
+    for (const d of SCHEMA_DOMAINS) {
+      const s = d.schemas.find(s => s.id === initialSchemaId);
+      if (s) return { id: s.id, name: s.name, desc: s.libraryDesc, color: d.color, domain: d.domain };
+    }
+    return null;
+  });
 
   if (!picked) {
     return (

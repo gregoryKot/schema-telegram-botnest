@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 import { api } from '../api';
@@ -33,10 +34,10 @@ function readSchemaIds(): string[] {
 interface Props {
   schemaId: string;
   onClose: () => void;
-  onOpenDiary: () => void;
 }
 
-export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
+export function SchemaDetailSheet({ schemaId, onClose }: Props) {
+  const navigate = useNavigate();
   const domainEntry = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === schemaId));
   const schema = domainEntry?.schemas.find(s => s.id === schemaId);
   const [myIds, setMyIds] = useState<string[]>(readSchemaIds);
@@ -142,7 +143,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
             {isAdded ? '✓ В моих схемах' : '+ В мои схемы'}
           </button>
           <button
-            onClick={() => { onClose(); onOpenDiary(); }}
+            onClick={() => { onClose(); navigate('/exercises', { state: { openSchemaEx: schemaId } }); }}
             style={{
               flex: 1, padding: '13px', borderRadius: 14, border: 'none',
               fontFamily: 'inherit',
