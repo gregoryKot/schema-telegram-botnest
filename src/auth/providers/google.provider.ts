@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthProviderHandler, ProviderIdentity } from './types';
 
@@ -6,6 +6,7 @@ import { AuthProviderHandler, ProviderIdentity } from './types';
 export class GoogleProvider implements AuthProviderHandler {
   readonly id = 'google';
   readonly displayName = 'Google';
+  private readonly logger = new Logger(GoogleProvider.name);
 
   constructor(private readonly config: ConfigService) {}
 
@@ -36,12 +37,23 @@ export class GoogleProvider implements AuthProviderHandler {
         code, client_id: clientId, client_secret: clientSecret,
         redirect_uri: redirectUri, grant_type: 'authorization_code',
       }),
+      signal: AbortSignal.timeout(10_000),
     });
-    if (!tokenRes.ok) throw new UnauthorizedException('Google token exchange failed');
+    if (!tokenRes.ok) {
+      const body = await tokenRes.text().catch(() => '');
+      this.logger.warn(`Google token exchange failed (${tokenRes.status}): ${body.slice(0, 200)}`);
+      throw new UnauthorizedException('Google token exchange failed');
+    }
     const { id_token } = await tokenRes.json() as { id_token: string };
 
-    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${id_token}`);
-    if (!verifyRes.ok) throw new UnauthorizedException('Google ID token verification failed');
+    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${id_token}`, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!verifyRes.ok) {
+      const body = await verifyRes.text().catch(() => '');
+      this.logger.warn(`Google token verification failed (${verifyRes.status}): ${body.slice(0, 200)}`);
+      throw new UnauthorizedException('Google ID token verification failed');
+    }
     const payload = await verifyRes.json() as { sub: string; email: string; name: string; aud: string; email_verified: string };
 
     if (payload.aud !== clientId)         throw new UnauthorizedException('Google token audience mismatch');

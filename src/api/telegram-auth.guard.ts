@@ -52,7 +52,7 @@ export class TelegramAuthGuard implements CanActivate {
       this.logger.warn('SKIP_AUTH=true (DEV ONLY) — validation skipped');
     } else {
       try {
-        validate(initData, botToken, { expiresIn: 86400 });
+        validate(initData, botToken, { expiresIn: 3600 });
       } catch (err) {
         const reason = (err as Error).message;
         this.logger.warn(`initData invalid: ${reason}`);
@@ -66,6 +66,7 @@ export class TelegramAuthGuard implements CanActivate {
             chat_id: process.env.ADMIN_ID,
             text: `🚨 suspicious_initdata: ${reason} (ip: ${(req.ip ?? '?')})`,
           }),
+          signal: AbortSignal.timeout(5_000),
         }).catch(() => null);
         throw new UnauthorizedException('Invalid initData');
       }

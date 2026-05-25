@@ -13,6 +13,7 @@ import {
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
@@ -117,7 +118,7 @@ export class AuthController {
     const handler = this.providers.get(provider);
     if (!handler.buildAuthUrl) throw new BadRequestException(`Provider ${provider} doesn't support OAuth`);
     const state = Buffer.from(JSON.stringify({
-      nonce: Math.random().toString(36).slice(2),
+      nonce: randomBytes(16).toString('hex'),
       linkUserId: (req as any).webUser?.userId?.toString() ?? null,
     })).toString('base64url');
     res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
@@ -259,7 +260,10 @@ export class AuthController {
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ): Promise<any> {
-    const identity = this.providers.get('telegram').verifyClientData!(body);
+    this.requireCsrf(req, 'telegram/widget');
+    const telegramHandler = this.providers.get('telegram');
+    if (!telegramHandler.verifyClientData) throw new BadRequestException('Telegram provider does not support direct verification');
+    const identity = telegramHandler.verifyClientData(body);
     const linkUserId = (req as any).webUser?.userId ?? null;
 
     const outcome = await this.signInOrLinkOrMerge('telegram', identity, {
@@ -433,7 +437,12 @@ export class AuthController {
           const tokens = await this.auth.rotateRefreshToken(rawRefresh);
           const { userId } = this.auth.verifyAccessToken(tokens.accessToken);
           await this.auth.revokeAllSessions(userId as bigint);
-        } catch { /* token may already be invalid */ }
+        } catch (err) {
+          if (!(err instanceof UnauthorizedException)) {
+            this.logger.error(`logout all-sessions error: ${(err as Error).message}`, err);
+          }
+          // UnauthorizedException = token already invalid, fine to continue logout
+        }
       } else {
         await this.auth.revokeSession(rawRefresh);
       }

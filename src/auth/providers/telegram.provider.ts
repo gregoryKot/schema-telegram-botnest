@@ -25,6 +25,9 @@ export class TelegramProvider implements AuthProviderHandler {
 
     const hash = fields['hash'];
     if (!hash) throw new UnauthorizedException('Missing hash');
+    // Must be 64 hex chars — otherwise Buffer.from(hash,'hex') yields a
+    // wrong-length buffer and timingSafeEqual throws RangeError → 500.
+    if (!/^[0-9a-f]{64}$/i.test(hash)) throw new UnauthorizedException('Malformed hash');
     delete fields['hash'];
 
     const authDate = parseInt(fields['auth_date'] ?? '0', 10);

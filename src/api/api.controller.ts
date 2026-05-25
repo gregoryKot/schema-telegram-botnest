@@ -116,10 +116,13 @@ export class ApiController {
   ): Promise<{ ok: true }> {
     if (!['schema', 'mode', 'gratitude'].includes(type)) throw new BadRequestException('Invalid type');
     if (!body?.startedAt) throw new BadRequestException('Missing startedAt');
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(body.startedAt)) throw new BadRequestException('Invalid startedAt format');
+    const startedAt = new Date(body.startedAt);
+    if (isNaN(startedAt.getTime())) throw new BadRequestException('Invalid startedAt value');
     await (this.prisma as any).diaryDraft.upsert({
       where: { userId_type: { userId: BigInt(req.telegramUserId), type } },
-      update: { data: body.data, startedAt: new Date(body.startedAt) },
-      create: { userId: BigInt(req.telegramUserId), type, data: body.data, startedAt: new Date(body.startedAt) },
+      update: { data: body.data, startedAt },
+      create: { userId: BigInt(req.telegramUserId), type, data: body.data, startedAt },
     });
     return { ok: true };
   }
@@ -176,6 +179,7 @@ export class ApiController {
   @Post('ysq-progress')
   async saveYsqProgress(@Req() req: AuthRequest, @Body() body: { answers: number[]; page: number }) {
     if (!Array.isArray(body.answers) || body.answers.length !== 116) throw new BadRequestException('Invalid answers');
+    if (!body.answers.every(a => Number.isInteger(a) && a >= 0 && a <= 6)) throw new BadRequestException('Invalid answer values');
     if (!Number.isInteger(body.page) || body.page < 0) throw new BadRequestException('Invalid page');
     await this.botService.saveYsqProgress(req.telegramUserId, body.answers, body.page);
     return { ok: true };
@@ -205,7 +209,7 @@ export class ApiController {
     }
     if (body.date && !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) throw new BadRequestException('Invalid date');
     await this.botService.saveRating(req.telegramUserId, body.needId as NeedId, body.value, body.date);
-    this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
+    this.therapyService.checkStreakTasks(req.telegramUserId).catch((err) => this.logger.error('checkStreakTasks failed', err));
 
     // Skip diary-complete logic for historical backfill
     if (body.date) return { ok: true, allDone: false };
@@ -215,7 +219,10 @@ export class ApiController {
     const allDone = NEED_IDS.every(id => ratings[id] !== undefined);
     if (allDone) {
       const [streak] = await Promise.all([
-        this.analyticsService.getStreakData(req.telegramUserId),
+        this.analyticsService.getStreakData(req.telegramUserId).catch((err) => {
+          this.logger.error('getStreakData failed', err);
+          return null;
+        }),
         this.scheduleService.onDiaryComplete(req.telegramUserId).catch((err) => {
           this.logger.error('onDiaryComplete failed', err);
         }),
@@ -384,8 +391,8 @@ export class ApiController {
     if (typeof body.pairCardDismissed === 'boolean') clean.pairCardDismissed = body.pairCardDismissed;
     if (Number.isInteger(body.notifyLocalHour) && body.notifyLocalHour! >= 0 && body.notifyLocalHour! <= 23) clean.notifyLocalHour = body.notifyLocalHour;
     if (typeof body.notifyTimezone === 'string' && VALID_TIMEZONES.includes(body.notifyTimezone)) clean.notifyTimezone = body.notifyTimezone;
-    if (Array.isArray(body.mySchemaIds) && body.mySchemaIds.every(id => typeof id === 'string' && id.length < 100)) clean.mySchemaIds = body.mySchemaIds;
-    if (Array.isArray(body.myModeIds) && body.myModeIds.every(id => typeof id === 'string' && id.length < 100)) clean.myModeIds = body.myModeIds;
+    if (Array.isArray(body.mySchemaIds) && body.mySchemaIds.length <= 200 && body.mySchemaIds.every(id => typeof id === 'string' && id.length < 100)) clean.mySchemaIds = body.mySchemaIds;
+    if (Array.isArray(body.myModeIds) && body.myModeIds.length <= 200 && body.myModeIds.every(id => typeof id === 'string' && id.length < 100)) clean.myModeIds = body.myModeIds;
     if (typeof body.therapistShareCards === 'boolean') clean.therapistShareCards = body.therapistShareCards;
     if (typeof body.therapistShareProfile === 'boolean') clean.therapistShareProfile = body.therapistShareProfile;
     await this.botService.updateUserSettings(req.telegramUserId, clean);

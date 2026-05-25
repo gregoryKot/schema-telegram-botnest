@@ -4,6 +4,11 @@ import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualiza
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { fmtDate, todayStr } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../schemaTherapyData';
+import { RosterSparkline, ClientSparkline } from './therapist/Sparklines';
+import { KanbanView } from './therapist/KanbanView';
+import { ClientSessionsTab } from './therapist/ClientSessionsTab';
+import { ClientNotesTab } from './therapist/ClientNotesTab';
+import { ClientYSQTab } from './therapist/ClientYSQTab';
 
 interface Props {
   view: 'list' | 'client';
@@ -59,30 +64,7 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
   { key: 'currentProblems', label: 'Актуальные проблемы и симптомы', placeholder: 'С чем обратился клиент, текущие жалобы, симптоматика...' },
 ];
 
-function RosterSparkline({ values }: { values: (number | null)[] }) {
-  const W = 96, H = 30, N = 14;
-  const pts = values.slice(-N);
-  const nums = pts.filter(v => v != null) as number[];
-  if (nums.length < 2) return <svg width={W} height={H} />;
-  const min = Math.min(...nums), max = Math.max(...nums);
-  const range = max - min || 1;
-  const step = W / Math.max(N - 1, 1);
-  const x = (i: number) => i * step;
-  const y = (v: number) => H - 4 - ((v - min) / range) * (H - 8);
-  const d = pts.map((v, i) => v == null ? null : `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).filter(Boolean).join(' ');
-  // Color by most recent non-null value
-  const last = nums[nums.length - 1];
-  const color = last >= 7 ? '#06d6a0' : last >= 4 ? 'var(--c-amber)' : 'var(--c-rose)';
-  // Last point dot
-  const lastIdx = pts.map((v, i) => v != null ? i : -1).filter(i => i >= 0).pop() ?? -1;
-  const lastPt = lastIdx >= 0 && pts[lastIdx] != null ? { cx: x(lastIdx), cy: y(pts[lastIdx]!) } : null;
-  return (
-    <svg width={W} height={H} className="spark">
-      {d && <path d={d} fill="none" stroke={color} strokeWidth={1.5} strokeOpacity={0.5} strokeLinejoin="round" strokeLinecap="round" />}
-      {lastPt && <circle cx={lastPt.cx} cy={lastPt.cy} r={2.5} fill={color} />}
-    </svg>
-  );
-}
+
 
 export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef }: Props) {
   // Client list
@@ -90,6 +72,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [loading, setLoading] = useState(true);
   const [listTab, setListTab] = useState<'clients' | 'kanban'>('clients');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [allTasks, setAllTasks] = useState<{ clientId: number; clientName: string; tasks: UserTask[] }[] | null>(null);
   const [allTasksLoading, setAllTasksLoading] = useState(false);
 
@@ -146,6 +129,15 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
   // Export
   const [exportCopied, setExportCopied] = useState(false);
+
+  // Debounce search
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(searchQuery), 200);
+    return () => clearTimeout(id);
+  }, [searchQuery]);
+
+  // Client data loading state
+  const [tabLoading, setTabLoading] = useState(false);
 
   // Animation key — changes when view transitions to trigger CSS animation
   const [animKey, setAnimKey] = useState(0);
@@ -211,6 +203,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     setLocalNextSession(client.nextSession ?? '');
     setLocalStartDate(client.therapyStartDate ?? '');
     setClientTab('overview');
+    setTabLoading(true);
     // Triggers URL change (/cabinet/:id) which makes AppShell render view='client'
     onOpenClient?.(clientId);
     switchView('client');
@@ -228,6 +221,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
     if (openClientIdRef.current !== clientId) return;
 
+    setTabLoading(false);
     setClientTasks(tasks);
     setNotes(fetchedNotes);
     setConcept(fetchedConcept);
@@ -684,7 +678,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                   </div>
                 </div>
               ) : (() => {
-                const q = searchQuery.toLowerCase().trim();
+                const q = debouncedQuery.toLowerCase().trim();
                 const filtered = q
                   ? clients.filter(c => (c.clientAlias ?? c.name ?? '').toLowerCase().includes(q))
                   : clients;
@@ -878,6 +872,13 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           {/* Tab content */}
           <div style={{ flex: 1, overflow: 'auto' }} key={clientTab}>
 
+            {/* Loading state */}
+            {tabLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240 }}>
+                <div className="spinner" />
+              </div>
+            ) : <>
+
             {/* ── OVERVIEW ─────────────────────────────────────────────────────── */}
             {clientTab === 'overview' && (
               <div className="page-inner-wide" style={{ paddingTop: 40 }}>
@@ -1020,7 +1021,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     )}
 
                     {/* Empty state */}
-                    {activeSchemaIds.length === 0 && activeModeIds.length === 0 && notes.length === 0 && (
+                    {activeSchemaIds.length === 0 && activeModeIds.length === 0 && notes.length === 0 && clientDiary.length === 0 && (
                       <div className="section">
                         <div style={{ padding: '32px 0', color: 'var(--text-faint)', fontSize: 14 }}>
                           Заполни концептуализацию, чтобы увидеть схемы и режимы клиента
@@ -1369,70 +1370,13 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
             {/* ── SESSIONS ─────────────────────────────────────────────────────── */}
             {clientTab === 'sessions' && (
-              <div className="page-inner" style={{ paddingTop: 40 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 64, alignItems: 'start' }}>
-                  {/* Notes timeline */}
-                  <div>
-                    {notes.length === 0 ? (
-                      <div style={{ padding: '64px 0', color: 'var(--text-faint)', fontSize: 14, textAlign: 'center' }}>
-                        Заметок ещё нет. Добавь первую справа.
-                      </div>
-                    ) : (
-                      <div style={{ position: 'relative', paddingLeft: 28 }}>
-                        {/* Vertical timeline line */}
-                        <div style={{ position: 'absolute', left: 7, top: 8, bottom: 8, width: 2, background: 'var(--line)', borderRadius: 2 }} />
-                        {notes.map((note, i) => (
-                          <div key={note.id} style={{ position: 'relative', marginBottom: 36 }}>
-                            {/* Timeline dot */}
-                            <div style={{ position: 'absolute', left: -25, top: 4, width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--bg)', zIndex: 1 }} />
-                            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
-                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{fmtDate(note.date)}</span>
-                                <span style={{ fontSize: 11, color: 'var(--text-faint)', background: 'var(--surface-3)', borderRadius: 4, padding: '1px 6px' }}>
-                                  Сессия {notes.length - i}
-                                </span>
-                              </div>
-                              <button onClick={() => removeNote(note.id)} style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, fontSize: 12, color: 'var(--text-ghost)', cursor: 'pointer' }} title="Удалить">✕</button>
-                            </div>
-                            <div style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--text-sub)', whiteSpace: 'pre-wrap' }}>
-                              {note.text}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Composer */}
-                  <div style={{ position: 'sticky', top: 24 }}>
-                    <div className="eyebrow" style={{ marginBottom: 12 }}>Новая заметка</div>
-                    <div style={{ marginBottom: 10 }}>
-                      <input
-                        type="date"
-                        value={newNoteDate || todayStr()}
-                        onChange={e => setNewNoteDate(e.target.value)}
-                        style={{ width: '100%', padding: '7px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13, color: 'var(--text)', boxSizing: 'border-box' }}
-                      />
-                    </div>
-                    <textarea
-                      className="textarea"
-                      value={newNoteText}
-                      onChange={e => setNewNoteText(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(); }}
-                      rows={6}
-                      placeholder="Наблюдения, гипотезы, динамика, план следующей встречи…"
-                      style={{ fontSize: 13, lineHeight: 1.65 }}
-                    />
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-                      <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>⌘+Enter</span>
-                      <button onClick={addNote} disabled={!newNoteText.trim() || noteSaving} style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                        {noteSaving ? '...' : 'Сохранить'}
-                      </button>
-                    </div>
-                    {noteError && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--c-rose)' }}>{noteError}</div>}
-                  </div>
-                </div>
-              </div>
+              <ClientSessionsTab
+                notes={notes}
+                newNoteText={newNoteText} newNoteDate={newNoteDate}
+                noteSaving={noteSaving} noteError={noteError}
+                setNewNoteText={setNewNoteText} setNewNoteDate={setNewNoteDate}
+                addNote={addNote} removeNote={removeNote}
+              />
             )}
 
             {/* ── TASKS ────────────────────────────────────────────────────────── */}
@@ -1504,317 +1448,32 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
             {/* ── YSQ ──────────────────────────────────────────────────────────── */}
             {clientTab === 'ysq' && (
-              <div className="page-inner-wide" style={{ paddingTop: 40 }}>
-                {(!clientData?.ysqHistory || clientData.ysqHistory.length === 0) ? (
-                  <div style={{ padding: '80px 0', textAlign: 'center' }}>
-                    <div style={{ fontSize: 36, marginBottom: 16 }}>📋</div>
-                    <div style={{ fontSize: 16, color: 'var(--text-sub)', marginBottom: 8 }}>YSQ ещё не проходился</div>
-                    {selectedClient.telegramId < 0 ? (
-                      <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>Клиент без Telegram — YSQ недоступен</div>
-                    ) : (
-                      <>
-                        <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 24 }}>Запроси тест — клиент получит уведомление в боте</div>
-                        <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-                          {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест YSQ'}
-                        </button>
-                        {ysqError && <div style={{ marginTop: 12, fontSize: 13, color: 'var(--c-rose)' }}>{ysqError}</div>}
-                      </>
-                    )}
-
-                    {selfSchemaIds.length > 0 && (
-                      <div style={{ marginTop: 48, textAlign: 'left', maxWidth: 640, margin: '48px auto 0' }}>
-                        <div className="eyebrow" style={{ marginBottom: 16 }}>Схемы, отмеченные клиентом самостоятельно</div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                          {selfSchemaIds.map(id => {
-                            const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
-                            const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
-                            return (
-                              <div key={id} className="tag-mini">
-                                <span className="swatch" style={{ background: domain?.color ?? 'var(--accent)' }} />
-                                {s?.name ?? id}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (() => {
-                  const hist = clientData.ysqHistory;
-                  const latest = hist[0];
-                  const prev = hist[1] ?? null;
-                  // Chronological order for chart (oldest → newest)
-                  const chronHist = hist.slice().reverse();
-                  // Top 5 schemas by latest score
-                  const top5 = latest.scores.slice().sort((a, b) => b.pct5plus - a.pct5plus).slice(0, 5);
-                  const top5Ids = new Set(top5.map(s => s.id));
-                  // All schemas sorted by latest score desc
-                  const allSorted = latest.scores.slice().sort((a, b) => b.pct5plus - a.pct5plus);
-
-                  // Chart geometry
-                  const CL = 44, CR = 780, CT = 14, CB = 192, CW = CR - CL, CH = CB - CT;
-                  const xOf = (i: number) => CL + (chronHist.length > 1 ? (i / (chronHist.length - 1)) * CW : CW / 2);
-                  const yOf = (pct: number) => CB - (pct / 100) * CH;
-
-                  return (
-                    <div>
-                      {/* Header */}
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 36 }}>
-                        <div>
-                          <h2 style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.025em', margin: 0 }}>YSQ</h2>
-                          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6 }}>
-                            {hist.length} {hist.length === 1 ? 'прохождение' : hist.length < 5 ? 'прохождения' : 'прохождений'} · последнее {clientData.ysqCompletedAt ? fmtDate(clientData.ysqCompletedAt.slice(0, 10)) : '—'}
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={handleExport} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, cursor: 'pointer' }}>
-                            {exportCopied ? '✓ Скопировано' : 'Экспорт'}
-                          </button>
-                          {selectedClient.telegramId >= 0 && (
-                            <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                              {ysqRequested ? '✓ Запрос отправлен' : 'Запросить повтор'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      {ysqError && <div style={{ marginBottom: 16, fontSize: 13, color: 'var(--c-rose)' }}>{ysqError}</div>}
-
-                      {/* Dynamics chart — only if ≥2 runs */}
-                      {chronHist.length >= 2 && (
-                        <div style={{ marginBottom: 48 }}>
-                          <div className="eyebrow" style={{ marginBottom: 20 }}>Динамика топ-5 схем</div>
-                          <svg viewBox="0 0 820 230" style={{ width: '100%', overflow: 'visible', display: 'block' }}>
-                            {/* Grid lines */}
-                            {[0, 25, 50, 75, 100].map(v => (
-                              <g key={v}>
-                                <line x1={CL} x2={CR} y1={yOf(v)} y2={yOf(v)} stroke="var(--line)" strokeWidth={1} />
-                                <text x={CL - 8} y={yOf(v) + 4} fontSize={10} fill="var(--text-faint)" textAnchor="end">{v}</text>
-                              </g>
-                            ))}
-                            {/* X axis dates */}
-                            {chronHist.map((run, i) => (
-                              <text key={i} x={xOf(i)} y={CB + 18} fontSize={10} fill="var(--text-faint)" textAnchor="middle">
-                                {fmtDate(run.completedAt.slice(0, 10))}
-                              </text>
-                            ))}
-                            {/* Lines for top 5 schemas */}
-                            {top5.map(({ id }) => {
-                              const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === id));
-                              const color = domain?.color ?? 'var(--accent)';
-                              const points = chronHist.map((run, i) => {
-                                const sc = run.scores.find(s => s.id === id);
-                                return sc ? `${xOf(i)},${yOf(sc.pct5plus)}` : null;
-                              }).filter(Boolean).join(' ');
-                              const lastRun = chronHist[chronHist.length - 1];
-                              const lastScore = lastRun.scores.find(s => s.id === id);
-                              return (
-                                <g key={id}>
-                                  <polyline points={points} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" opacity={0.75} />
-                                  {lastScore && (
-                                    <circle cx={xOf(chronHist.length - 1)} cy={yOf(lastScore.pct5plus)} r={4} fill={color} />
-                                  )}
-                                </g>
-                              );
-                            })}
-                          </svg>
-                          {/* Legend */}
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px', marginTop: 12 }}>
-                            {top5.map(({ id }) => {
-                              const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
-                              const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
-                              return (
-                                <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <span style={{ width: 10, height: 10, borderRadius: 2, background: domain?.color ?? 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />
-                                  <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{s?.name ?? id}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* All scales table */}
-                      <div>
-                        <div className="eyebrow" style={{ marginBottom: 16 }}>Все шкалы</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr repeat(3, 80px)', gap: '0 8px', marginBottom: 8 }}>
-                          <span className="eyebrow">Схема</span>
-                          <span className="eyebrow" style={{ textAlign: 'right' }}>{fmtDate(latest.completedAt.slice(0, 10))}</span>
-                          {prev && <span className="eyebrow" style={{ textAlign: 'right' }}>{fmtDate(prev.completedAt.slice(0, 10))}</span>}
-                          {prev && <span className="eyebrow" style={{ textAlign: 'right' }}>Δ</span>}
-                        </div>
-                        {allSorted.map(score => {
-                          const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === score.id);
-                          const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === score.id));
-                          const prevScore = prev?.scores.find(x => x.id === score.id);
-                          const delta = prevScore != null ? score.pct5plus - prevScore.pct5plus : null;
-                          const isTop5 = top5Ids.has(score.id);
-                          return (
-                            <div key={score.id} style={{ display: 'grid', gridTemplateColumns: '1fr repeat(3, 80px)', gap: '0 8px', padding: '11px 0', borderBottom: '1px solid var(--line)', alignItems: 'center' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ width: 3, height: 18, borderRadius: 2, background: domain?.color ?? 'var(--accent)', flexShrink: 0 }} />
-                                <span style={{ fontSize: 13, fontWeight: isTop5 ? 600 : 400, color: isTop5 ? 'var(--text)' : 'var(--text-sub)' }}>{s?.name ?? score.id}</span>
-                              </div>
-                              <span style={{ textAlign: 'right', fontSize: 13, fontWeight: 500, color: score.pct5plus > 65 ? 'var(--c-rose)' : score.pct5plus > 50 ? 'var(--c-clay)' : 'var(--text-sub)' }}>
-                                {score.pct5plus}%
-                              </span>
-                              {prev && (
-                                <span style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-faint)' }}>
-                                  {prevScore != null ? `${prevScore.pct5plus}%` : '—'}
-                                </span>
-                              )}
-                              {prev && (
-                                <span style={{ textAlign: 'right', fontSize: 13, fontWeight: delta != null && delta !== 0 ? 500 : 400, color: delta == null || delta === 0 ? 'var(--text-faint)' : delta < 0 ? 'var(--c-moss)' : 'var(--c-rose)' }}>
-                                  {delta == null ? '—' : delta === 0 ? '0' : `${delta > 0 ? '+' : ''}${delta}`}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
+              <ClientYSQTab
+                clientData={clientData}
+                selectedClient={selectedClient}
+                selfSchemaIds={selfSchemaIds}
+                ysqSchemaIds={ysqSchemaIds}
+                ysqRequested={ysqRequested}
+                ysqError={ysqError}
+                exportCopied={exportCopied}
+                handleRequestYsq={handleRequestYsq}
+                handleExport={handleExport}
+              />
             )}
+
+            {/* ── OLD YSQ BODY (replaced) — keep tombstone so edit finds it */}
 
             {/* ── CLIENT NOTES ─────────────────────────────────────────────────── */}
             {clientTab === 'client_notes' && (
-              <div className="page-inner" style={{ paddingTop: 40 }}>
-                {clientSchemaNotesData.length === 0 && clientModeNotesData.length === 0 && clientDiary.length === 0 ? (
-                  <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)', fontSize: 14 }}>
-                    Клиент ещё не заполнял дневник
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
-                      <div>
-                        <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Записи клиента</div>
-                        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>
-                          {clientDiary.length + clientSchemaNotesData.length + clientModeNotesData.length} записей
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Diary entries (schema diary, mode diary, gratitude) */}
-                    {clientDiary.length > 0 && (
-                      <div style={{ marginBottom: 40 }}>
-                        <div className="eyebrow" style={{ marginBottom: 16 }}>Дневник событий</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          {clientDiary.map((entry, i) => {
-                            let color = 'var(--text-faint)';
-                            let title = '';
-                            let typeLabel = '';
-                            if (entry.type === 'schema') {
-                              const firstId = entry.schemaIds?.[0];
-                              const domain = firstId ? SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === firstId)) : null;
-                              const schema = firstId ? SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === firstId) : null;
-                              color = domain?.color ?? 'var(--accent)';
-                              title = schema ? `${schema.emoji} ${schema.name}` : (entry.schemaIds?.join(', ') ?? 'Схема');
-                              if ((entry.schemaIds?.length ?? 0) > 1) title += ` +${(entry.schemaIds?.length ?? 1) - 1}`;
-                              typeLabel = 'Схема-дневник';
-                            } else if (entry.type === 'mode') {
-                              const mode = getModeById(entry.modeId ?? '');
-                              const group = mode ? MODE_GROUPS.find(g => g.items.some(m => m.id === entry.modeId)) : null;
-                              color = group?.color ?? 'var(--accent-violet)';
-                              title = mode ? `${mode.emoji} ${mode.name}` : (entry.modeId ?? 'Режим');
-                              typeLabel = 'Режим-дневник';
-                            } else {
-                              color = '#06d6a0';
-                              title = 'Благодарность';
-                              typeLabel = 'Дневник благодарности';
-                            }
-                            return (
-                              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 16px', borderRadius: 10, background: 'var(--surface-2)', borderLeft: `3px solid ${color}` }}>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{title}</span>
-                                    <span style={{ fontSize: 11, color: 'var(--text-faint)', background: 'var(--surface-3)', borderRadius: 4, padding: '1px 6px' }}>{typeLabel}</span>
-                                  </div>
-                                  {entry.excerpt && (
-                                    <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-                                      {entry.excerpt}
-                                    </div>
-                                  )}
-                                </div>
-                                <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0, paddingTop: 2 }}>{fmtDate(entry.date)}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {clientSchemaNotesData.length > 0 && (
-                      <div>
-                        <div className="eyebrow" style={{ marginBottom: 16 }}>Схема-карточки</div>
-                        {clientSchemaNotesData.map(n => {
-                          const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === n.schemaId);
-                          const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === n.schemaId));
-                          return (
-                            <div key={n.schemaId} style={{ marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                                <span style={{ width: 3, height: 16, borderRadius: 2, background: domain?.color ?? 'var(--accent)', flexShrink: 0 }} />
-                                <span style={{ fontSize: 14, fontWeight: 600 }}>{s?.emoji} {s?.name ?? n.schemaId}</span>
-                                <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Схема-карточка</span>
-                              </div>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
-                                {[
-                                  { label: 'Триггеры', val: n.triggers },
-                                  { label: 'Чувства', val: n.feelings },
-                                  { label: 'Мысли', val: n.thoughts },
-                                  { label: 'Корни', val: n.origins },
-                                  { label: 'Проверка реальности', val: n.reality },
-                                  { label: 'Здоровый взгляд', val: n.healthyView },
-                                  { label: 'Поведение', val: n.behavior },
-                                ].filter(f => f.val?.trim()).map(f => (
-                                  <div key={f.label}>
-                                    <div className="eyebrow" style={{ marginBottom: 4 }}>{f.label}</div>
-                                    <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {clientModeNotesData.length > 0 && (
-                      <div style={{ marginTop: clientSchemaNotesData.length > 0 ? 36 : 0 }}>
-                        <div className="eyebrow" style={{ marginBottom: 16 }}>Режим-карточки</div>
-                        {clientModeNotesData.map(n => {
-                          const m = getModeById(n.modeId);
-                          const group = MODE_GROUPS.find(g => g.items.some(x => x.id === n.modeId));
-                          return (
-                            <div key={n.modeId} style={{ marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                                <span style={{ width: 3, height: 16, borderRadius: 2, background: group?.color ?? 'var(--accent)', flexShrink: 0 }} />
-                                <span style={{ fontSize: 14, fontWeight: 600 }}>{m?.emoji} {m?.name ?? n.modeId}</span>
-                                <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Режим-карточка</span>
-                              </div>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 28px' }}>
-                                {[
-                                  { label: 'Триггеры', val: n.triggers },
-                                  { label: 'Чувства', val: n.feelings },
-                                  { label: 'Мысли', val: n.thoughts },
-                                  { label: 'Потребности', val: n.needs },
-                                  { label: 'Поведение', val: n.behavior },
-                                ].filter(f => f.val?.trim()).map(f => (
-                                  <div key={f.label}>
-                                    <div className="eyebrow" style={{ marginBottom: 4 }}>{f.label}</div>
-                                    <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+              <ClientNotesTab
+                clientSchemaNotesData={clientSchemaNotesData}
+                clientModeNotesData={clientModeNotesData}
+                clientDiary={clientDiary}
+              />
             )}
+
+            </> /* end tabLoading ternary */}
+
 
           </div>
         </div>
@@ -1838,96 +1497,3 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   );
 }
 
-// ── Kanban ────────────────────────────────────────────────────────────────────
-
-function ClientSparkline({ values, color }: { values: (number | null)[]; color: string }) {
-  const pts = values.map((v, i) => v !== null ? { x: i, y: v } : null).filter(Boolean) as { x: number; y: number }[];
-  if (pts.length < 2) return null;
-  const W = 180, H = 48;
-  const minY = Math.min(...pts.map(p => p.y));
-  const maxY = Math.max(...pts.map(p => p.y));
-  const range = maxY - minY || 1;
-  const n = values.length - 1 || 1;
-  const d = pts.map(p => `${(p.x / n) * W},${H - ((p.y - minY) / range) * (H - 8) - 4}`).join(' ');
-  return (
-    <svg width={W} height={H} style={{ overflow: 'visible', display: 'block', marginTop: 8 }}>
-      <polyline points={d} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" opacity={0.6} />
-      <circle cx={(pts[pts.length - 1].x / n) * W} cy={H - ((pts[pts.length - 1].y - minY) / range) * (H - 8) - 4} r={3} fill={color} opacity={0.9} />
-    </svg>
-  );
-}
-
-function KanbanView({ allTasks, loading, onOpenClient }: {
-  allTasks: { clientId: number; clientName: string; tasks: UserTask[] }[] | null;
-  loading: boolean;
-  onOpenClient: (clientId: number) => void;
-}) {
-  if (loading || !allTasks) {
-    return <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>;
-  }
-
-  const flat = allTasks.flatMap(group =>
-    group.tasks.map(t => ({ ...t, clientName: group.clientName }))
-  );
-
-  if (flat.length === 0) {
-    return (
-      <div className="section" style={{ paddingTop: 32 }}>
-        <div className="text-md muted">Назначенных заданий пока нет</div>
-      </div>
-    );
-  }
-
-  const pending   = flat.filter(t => t.done === null);
-  const completed = flat.filter(t => t.done === true);
-  const failed    = flat.filter(t => t.done === false);
-
-  const cols: { label: string; items: typeof flat; color: string }[] = [
-    { label: 'Назначено',  items: pending,   color: 'var(--accent)' },
-    { label: 'Выполнено',  items: completed, color: 'var(--c-moss)' },
-    { label: 'Не вышло',   items: failed,    color: 'var(--c-rose)' },
-  ];
-
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'start' }}>
-      {cols.map(col => (
-        <div key={col.label}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <span className="eyebrow">{col.label}</span>
-            {col.items.length > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 600, color: col.color, background: `color-mix(in srgb, ${col.color} 12%, transparent)`, borderRadius: 10, padding: '1px 8px' }}>
-                {col.items.length}
-              </span>
-            )}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {col.items.length === 0 && (
-              <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-faint)', fontSize: 13 }}>—</div>
-            )}
-            {col.items.map(task => (
-              <div
-                key={task.id}
-                onClick={() => onOpenClient(task.userId)}
-                style={{
-                  background: 'var(--surface-2)', borderRadius: 10, padding: '12px 14px',
-                  cursor: 'pointer', border: '1px solid var(--line)',
-                  transition: 'border-color 0.15s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = col.color)}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
-              >
-                <div style={{ fontSize: 11, fontWeight: 600, color: col.color, marginBottom: 6 }}>
-                  {task.clientName}
-                </div>
-                <div className="text-sm" style={{ lineHeight: 1.5, color: 'var(--text)' }}>{task.text}</div>
-                {task.dueDate && (
-                  <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>до {task.dueDate}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}

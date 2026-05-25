@@ -282,7 +282,7 @@ export class BotService {
     const uid = BigInt(userId);
     const existing = await this.prisma.pair.findFirst({ where: { userId1: uid, status: 'pending' } });
     if (existing) return existing.code;
-    const code = randomBytes(4).toString('hex').toUpperCase();
+    const code = randomBytes(6).toString('hex').toUpperCase();
     await this.prisma.pair.create({ data: { code, userId1: uid } });
     return code;
   }
@@ -291,8 +291,14 @@ export class BotService {
     const uid = BigInt(userId);
     const pair = await this.prisma.pair.findUnique({ where: { code } });
     if (!pair || pair.status !== 'pending' || pair.userId1 === uid || pair.userId2 === uid) return false;
-    await this.prisma.pair.update({ where: { code }, data: { userId2: uid, status: 'active' } });
-    return true;
+    // Conditional update — atomic at the DB level. If two users race to join
+    // the same code, only the one whose UPDATE still matches `pending` + empty
+    // slot wins; the loser gets count 0.
+    const res = await this.prisma.pair.updateMany({
+      where: { code, status: 'pending', userId2: null },
+      data: { userId2: uid, status: 'active' },
+    });
+    return res.count === 1;
   }
 
   async cancelAllPreReminders(): Promise<number> {
@@ -385,11 +391,12 @@ export class BotService {
   }
 
   async saveChildhoodRatings(userId: number, ratings: Record<string, number>): Promise<void> {
-    await Promise.all(
+    const uid = BigInt(userId);
+    await this.prisma.$transaction(
       Object.entries(ratings).map(([needId, value]) =>
         this.prisma.childhoodRating.upsert({
-          where: { userId_needId: { userId: BigInt(userId), needId } },
-          create: { userId: BigInt(userId), needId, value },
+          where: { userId_needId: { userId: uid, needId } },
+          create: { userId: uid, needId, value },
           update: { value },
         })
       )
@@ -409,7 +416,7 @@ export class BotService {
   async saveYsqResult(userId: number, answers: number[]): Promise<void> {
     const uid = BigInt(userId);
     const now = new Date();
-    await Promise.all([
+    await this.prisma.$transaction([
       this.prisma.ysqResult.upsert({
         where: { userId: uid },
         update: { answers, completedAt: now },
@@ -649,9 +656,9 @@ export class BotService {
       // Finally — the user row itself.
       this.prisma.user.delete({ where: { id: uid } }),
     ]);
-    // Async VACUUM (non-blocking, no FULL — just reclaims dead tuples).
-    // Postgres will run autovacuum eventually anyway; this nudges it.
-    this.prisma.$executeRawUnsafe('VACUUM ANALYZE').catch((e) =>
+    // Async VACUUM on the affected tables only (non-blocking, no FULL).
+    // Scope to User table and key user-data tables — avoids a full-DB scan.
+    this.prisma.$executeRawUnsafe('VACUUM ANALYZE "User"').catch((e) =>
       this.logger.warn(`Post-delete VACUUM failed: ${(e as Error).message}`),
     );
   }

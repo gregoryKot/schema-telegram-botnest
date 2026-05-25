@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Logger, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { DiaryService } from '../bot/diary.service';
@@ -17,6 +17,8 @@ function parseId(raw: string): number {
 @Controller('api/diary')
 @UseGuards(TelegramAuthGuard)
 export class DiaryController {
+  private readonly logger = new Logger(DiaryController.name);
+
   constructor(
     private readonly diaryService: DiaryService,
     private readonly therapyService: TherapyService,
@@ -60,7 +62,7 @@ export class DiaryController {
       healthyBehavior: body.healthyBehavior?.slice(0, LIMIT),
     };
     const entry = await this.diaryService.createSchemaDiaryEntry(BigInt(req.telegramUserId), trimmed);
-    this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
+    this.therapyService.checkStreakTasks(req.telegramUserId).catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;
   }
 
@@ -102,7 +104,7 @@ export class DiaryController {
       childhoodMemories: body.childhoodMemories?.slice(0, LIMIT),
     };
     const entry = await this.diaryService.createModeDiaryEntry(BigInt(req.telegramUserId), trimmedMode);
-    this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
+    this.therapyService.checkStreakTasks(req.telegramUserId).catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;
   }
 
@@ -126,7 +128,7 @@ export class DiaryController {
     if (body.items.length > 20) throw new BadRequestException('Too many items');
     const items = body.items.map((s: string) => String(s).slice(0, 500));
     const entry = await this.diaryService.upsertGratitudeDiaryEntry(BigInt(req.telegramUserId), body.date, items);
-    this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
+    this.therapyService.checkStreakTasks(req.telegramUserId).catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;
   }
 

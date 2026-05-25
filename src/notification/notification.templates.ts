@@ -40,6 +40,7 @@ const CURATED_PRACTICE: Record<NeedId, string[]> = {
 
 function pickPractice(needId: NeedId, seed: number): string {
   const list = CURATED_PRACTICE[needId];
+  if (!list?.length) return '';
   return list[seed % list.length];
 }
 
@@ -299,10 +300,11 @@ export function buildWeeklySummaryText(
   seed = 0,
 ): string {
   const lines = stats.map(({ needId, avg, trend }) => {
-    const need = needs.find((n) => n.id === needId)!;
+    const need = needs.find((n) => n.id === needId);
+    if (!need) return null;
     if (avg === null) return `${need.emoji} ${need.chartLabel}  –`;
     return `${need.emoji} ${need.chartLabel}  ${avg.toFixed(1)} ${trend}`;
-  });
+  }).filter(Boolean);
   const bestLine = bestDay ? `\nЛучший день — ${bestDay} 🌟` : '';
 
   // Find lowest need with data and suggest a practice
