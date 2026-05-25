@@ -34,7 +34,8 @@ const PracticesScreen      = lazy(() => import('./PracticesScreen').then(m => ({
 const PlansScreen          = lazy(() => import('./PlansScreen').then(m => ({ default: m.PlansScreen })));
 const SchemaInfoSheet      = lazy(() => import('./SchemaInfoSheet').then(m => ({ default: m.SchemaInfoSheet })));
 const ChildhoodWheelSheet  = lazy(() => import('./ChildhoodWheelSheet').then(m => ({ default: m.ChildhoodWheelSheet })));
-const TherapistClientSheet = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
+const TherapistClientSheet  = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
+const TherapistTodaySection = lazy(() => import('../sections/TherapistTodaySection').then(m => ({ default: m.TherapistTodaySection })));
 const SchemaEntrySheet     = lazy(() => import('./diary/SchemaEntrySheet').then(m => ({ default: m.SchemaEntrySheet })));
 const ModeEntrySheet       = lazy(() => import('./diary/ModeEntrySheet').then(m => ({ default: m.ModeEntrySheet })));
 const GratitudeEntrySheet  = lazy(() => import('./diary/GratitudeEntrySheet').then(m => ({ default: m.GratitudeEntrySheet })));
@@ -42,7 +43,7 @@ const PracticesOnboarding  = lazy(() => import('./PracticesOnboarding').then(m =
 
 const LazyLoader = () => <Loader minHeight="100dvh" />;
 
-import type { PracticePlan, StreakData, UserTask } from '../api';
+import type { PracticePlan, StreakData, UserTask, TherapyClientSummary } from '../api';
 
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
@@ -50,11 +51,11 @@ applyTheme(getTheme());
 type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'help';
 type TrackerTab = 'today' | 'history';
 
-const NAV_ITEMS: { id: Section; icon: string; label: string }[] = [
-  { id: 'today',   icon: '🏠', label: 'Сегодня' },
-  { id: 'diary',   icon: '📔', label: 'Дневник' },
-  { id: 'schemas', icon: '🧩', label: 'Схемы' },
-  { id: 'help',    icon: '💡', label: 'Помощь' },
+const NAV_ITEMS: { id: Section; label: string }[] = [
+  { id: 'today',   label: 'Сегодня' },
+  { id: 'diary',   label: 'Дневник' },
+  { id: 'schemas', label: 'Схемы' },
+  { id: 'help',    label: 'Помощь' },
 ];
 // Note: 'profile' removed from nav — accessible via sidebar footer avatar block.
 // Mobile bottom-nav still includes it (см. ниже).
@@ -182,6 +183,9 @@ export function AppShell() {
   const [newDiaryEntry, setNewDiaryEntry] = useState<'schema' | 'mode' | 'gratitude' | null>(null);
   const [showPracticesOnboarding, setShowPracticesOnboarding] = useState(false);
 
+  // Therapist clients (for sidebar)
+  const [therapistClients, setTherapistClients] = useState<TherapyClientSummary[]>([]);
+
   // Therapist cabinet navigation helpers (URL-based)
   const therapistBackHandlerRef = useRef<() => void>(() => navigate('/cabinet'));
 
@@ -271,6 +275,7 @@ export function AppShell() {
       }
       if (p.role === 'THERAPIST') {
         cacheTherapistContact({ role: 'THERAPIST', partnerId: null, partnerName: null, myId: null, myName: p.name });
+        api.getTherapyClients().then(setTherapistClients).catch(() => {});
       } else {
         api.getTherapyRelation().then(rel => {
           cacheTherapistContact({ role: 'CLIENT', partnerId: rel?.partnerId ?? null, partnerName: rel?.partnerName ?? null, myId: null, myName: null });
@@ -365,12 +370,31 @@ export function AppShell() {
               <span>{item.label}</span>
             </NavLink>
           ))}
-          {therapistMode && (
-            <NavLink to="/cabinet"
+          {therapistMode && (<>
+            <NavLink to="/cabinet/today"
                      className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
-              <span>Кабинет</span>
+              <span>Сегодня</span>
             </NavLink>
-          )}
+            <NavLink to="/cabinet" end
+                     className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
+              <span>Все клиенты</span>
+            </NavLink>
+            {therapistClients.length > 0 && (
+              <div className="sb-clients">
+                {therapistClients.map(c => {
+                  const name = c.clientAlias ?? c.name ?? `#${c.telegramId}`;
+                  const activeToday = c.todayIndex != null;
+                  return (
+                    <NavLink key={c.telegramId} to={`/cabinet/${c.telegramId}`}
+                             className={({ isActive }) => `sb-item sb-client-item${isActive ? ' is-active' : ''}`}>
+                      {activeToday && <span className="sb-active-dot" />}
+                      <span className="sb-client-name">{name}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
+            )}
+          </>)}
         </nav>
 
         <div className="sb-foot">
@@ -419,7 +443,13 @@ export function AppShell() {
         <Suspense fallback={<LazyLoader />}>
 
         {/* Therapist mode */}
-        {therapistMode && (
+        {therapistMode && location.pathname === '/cabinet/today' && (
+          <TherapistTodaySection
+            displayName={displayName}
+            onOpenClient={(id) => navigate('/cabinet/' + id)}
+          />
+        )}
+        {therapistMode && location.pathname !== '/cabinet/today' && (
           <TherapistClientSheet
             view={openClientId ? 'client' : 'list'}
             openClientId={openClientId}
@@ -700,7 +730,6 @@ export function AppShell() {
             to={'/' + item.id}
             className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}`}
           >
-            <span className="mn-icon">{item.icon}</span>
             {item.label}
           </NavLink>
         ))}

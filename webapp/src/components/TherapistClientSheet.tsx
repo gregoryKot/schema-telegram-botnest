@@ -338,9 +338,38 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
   // ─── Conceptualization ────────────────────────────────────────────────────────
 
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved'>('idle');
+
   function patchConcept(patch: Partial<ClientConceptualization>) {
     setLocalConcept(prev => ({ ...prev, ...patch }));
     setConceptDirty(true);
+    setSaveStatus('pending');
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(autoSave, 700);
+  }
+
+  async function autoSave() {
+    if (!selectedClient) return;
+    setSaveStatus('saving');
+    try {
+      const saved = await api.saveConceptualization(selectedClient.telegramId, {
+        schemaIds: (localConcept.schemaIds ?? []) as string[],
+        modeIds: (localConcept.modeIds ?? []) as string[],
+        earlyExperience: (localConcept.earlyExperience as string) ?? '',
+        unmetNeeds: (localConcept.unmetNeeds as string) ?? '',
+        triggers: (localConcept.triggers as string) ?? '',
+        copingStyles: (localConcept.copingStyles as string) ?? '',
+        goals: (localConcept.goals as string) ?? '',
+        currentProblems: (localConcept.currentProblems as string) ?? '',
+        modeTransitions: (localConcept.modeTransitions as string) ?? '',
+      });
+      setConcept(saved);
+      setConceptDirty(false);
+      setConceptError('');
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch { setSaveStatus('idle'); }
   }
 
   function toggleSchemaId(id: string) {
@@ -1210,11 +1239,10 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Концептуализация</div>
                     <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    {conceptDirty && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>несохранено</span>}
-                    <button onClick={saveConcept} disabled={!conceptDirty || conceptSaving} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: conceptDirty ? 'var(--accent)' : 'var(--surface-3)', color: conceptDirty ? 'var(--on-accent)' : 'var(--text-faint)', fontSize: 13, fontWeight: 500, cursor: conceptDirty ? 'pointer' : 'default' }}>
-                      {conceptSaving ? 'Сохраняю...' : 'Сохранить'}
-                    </button>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-faint)', minWidth: 120, textAlign: 'right' }}>
+                      {saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : saveStatus === 'pending' ? 'автосохранение' : ''}
+                    </span>
                     <button onClick={handleExport} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, cursor: 'pointer' }}>
                       ↗ Экспорт{exportCopied ? ' ✓' : ''}
                     </button>
