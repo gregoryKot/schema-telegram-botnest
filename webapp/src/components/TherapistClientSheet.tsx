@@ -102,8 +102,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   const [clientHistory, setClientHistory] = useState<{ date: string; index: number | null; ratings: Record<string, number> }[]>([]);
   const [clientDiary, setClientDiary] = useState<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>([]);
   const [localConcept, setLocalConcept] = useState<Partial<ClientConceptualization>>({});
-  const [conceptDirty, setConceptDirty] = useState(false);
-  const [conceptSaving, setConceptSaving] = useState(false);
   const [conceptError, setConceptError] = useState('');
   const [newNoteText, setNewNoteText] = useState('');
   const [newNoteDate, setNewNoteDate] = useState('');
@@ -191,7 +189,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     setClientHistory([]);
     setClientDiary([]);
     setLocalConcept({});
-    setConceptDirty(false);
     setConceptError('');
     setYsqRequested(false);
     setYsqError('');
@@ -343,7 +340,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
   function patchConcept(patch: Partial<ClientConceptualization>) {
     setLocalConcept(prev => ({ ...prev, ...patch }));
-    setConceptDirty(true);
     setSaveStatus('pending');
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(autoSave, 700);
@@ -365,7 +361,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
         modeTransitions: (localConcept.modeTransitions as string) ?? '',
       });
       setConcept(saved);
-      setConceptDirty(false);
       setConceptError('');
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
@@ -382,30 +377,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     const current = (localConcept.modeIds ?? concept?.modeIds ?? []) as string[];
     const next = current.includes(id) ? current.filter(x => x !== id) : [...current, id];
     patchConcept({ modeIds: next });
-  }
-
-  async function saveConcept() {
-    if (!selectedClient || !conceptDirty) return;
-    setConceptSaving(true);
-    setConceptError('');
-    try {
-      const saved = await api.saveConceptualization(selectedClient.telegramId, {
-        schemaIds: (localConcept.schemaIds ?? []) as string[],
-        modeIds: (localConcept.modeIds ?? []) as string[],
-        earlyExperience: (localConcept.earlyExperience as string) ?? '',
-        unmetNeeds: (localConcept.unmetNeeds as string) ?? '',
-        triggers: (localConcept.triggers as string) ?? '',
-        copingStyles: (localConcept.copingStyles as string) ?? '',
-        goals: (localConcept.goals as string) ?? '',
-        currentProblems: (localConcept.currentProblems as string) ?? '',
-        modeTransitions: (localConcept.modeTransitions as string) ?? '',
-      });
-      setConcept(saved);
-      setLocalConcept(saved);
-      setConceptDirty(false);
-    } catch (e: any) {
-      setConceptError(e?.message?.startsWith('API') ? 'Ошибка сервера. Попробуй позже.' : (e?.message ?? 'Ошибка сохранения'));
-    } finally { setConceptSaving(false); }
   }
 
   // ─── Alias ────────────────────────────────────────────────────────────────────
