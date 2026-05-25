@@ -3,7 +3,7 @@ import { api } from '../api';
 import type { TherapyClientSummary } from '../api';
 import { todayStr } from '../utils/format';
 
-type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'help';
+type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'help' | 'exercises';
 
 interface Props {
   section: Section;
