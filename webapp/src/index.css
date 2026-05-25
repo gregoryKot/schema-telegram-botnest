@@ -222,6 +222,14 @@ a { color: inherit; text-decoration: none; }
 }
 .sb-item.is-active .badge { background: var(--accent-soft); color: var(--accent); }
 
+.sb-clients { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); }
+.sb-client-item { padding: 5px 8px; font-size: 12.5px; }
+.sb-active-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #06d6a0; flex-shrink: 0;
+}
+.sb-client-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .sb-foot {
   margin-top: auto;
   padding: 10px 0 12px;
@@ -726,8 +734,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   color: var(--text-faint); font-size: 10px; font-weight: 500;
   cursor: pointer; transition: color .15s; border: none; background: none;
 }
-.mobile-nav-item.active { color: var(--accent); }
-.mobile-nav-item .mn-icon { font-size: 19px; }
+.mobile-nav-item.active { color: var(--accent); font-weight: 600; }
 
 /* ─── Responsive breakpoints ─────────────────────────────────────────────── */
 @media (max-width: 767px) {
