@@ -64,6 +64,7 @@ const router = createBrowserRouter([
               { path: '/schemas',             element: null },
               { path: '/profile',             element: null },
               { path: '/help',                element: null },
+              { path: '/exercises',           element: null },
               { path: '/cabinet',             element: null },
               { path: '/cabinet/:clientId',   element: null },
               // catch-all → redirect home
