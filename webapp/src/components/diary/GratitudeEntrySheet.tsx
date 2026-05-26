@@ -58,6 +58,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
   return (
     <ExScreen
       onBack={goBack}
+      backLabel="Назад к дневнику"
       eyebrow={`Дневник благодарности · ${dateLabel}`}
       eyebrowColor="var(--c-moss)"
       title={<>Три вещи,<br /><span className="it">за которые сегодня — спасибо</span></>}
