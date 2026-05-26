@@ -137,7 +137,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
+    <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
 
       {/* ── LIST VIEW ──────────────────────────────────────────────────────────── */}
       {view === 'list' && (
@@ -1153,76 +1153,112 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
             )}
 
             {/* ── TASKS ────────────────────────────────────────────────────────── */}
-            {clientTab === 'tasks' && (
-              <div className="page-inner-wide" style={{ paddingTop: 40 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
+            {clientTab === 'tasks' && (() => {
+              const activeTasks  = clientTasks.filter(t => !t.done);
+              const doneTasks    = clientTasks.filter(t => t.done === true);
+              return (
+              <div className="page-inner" style={{ paddingTop: 40 }}>
+
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40 }}>
                   <div>
-                    <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Задания</div>
-                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>{clientTasks.length} домашних практик</div>
+                    <div className="eyebrow" style={{ marginBottom: 8 }}>Домашние задания</div>
+                    <h2 style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.02em', margin: 0, lineHeight: 1.1 }}>
+                      {activeTasks.length > 0
+                        ? <>{activeTasks.length} <span style={{ fontSize: 16, fontWeight: 400, color: 'var(--text-sub)' }}>активных</span></>
+                        : 'Нет активных'}
+                    </h2>
                   </div>
-                  <button onClick={() => setShowAssign(true)} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                    + Назначить
-                  </button>
+                  <button onClick={() => setShowAssign(true)} className="btn btn-primary">+ Назначить</button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 56 }}>
-                  {([
-                    ['assigned', 'Назначено', 'var(--c-slate)'],
-                    ['inprogress', 'В работе', 'var(--accent)'],
-                    ['done', 'Завершено', 'var(--c-moss)'],
-                  ] as [string, string, string][]).map(([status, label, color]) => {
-                    const items = status === 'done'
-                      ? clientTasks.filter(t => t.done === true)
-                      : status === 'inprogress'
-                        ? clientTasks.filter(t => !t.done && (t.progress ?? 0) > 0)
-                        : clientTasks.filter(t => !t.done && !(t.progress ?? 0));
-                    return (
-                      <div key={status}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                          <span className="eyebrow">{label}</span>
-                          <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{items.length}</span>
-                        </div>
-                        {items.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-faint)', padding: '12px 0' }}>—</div>}
-                        {items.map(t => (
-                          <div key={t.id} className="list-line">
-                            <span style={{ width: 14, height: 14, borderRadius: 4, border: `1.5px solid ${color}`, background: t.done ? color : 'transparent', flexShrink: 0, marginTop: 2 }} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', textDecoration: t.done ? 'line-through' : 'none', opacity: t.done ? 0.6 : 1 }}>{t.text}</div>
-                              {t.dueDate && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3 }}>до {fmtDate(t.dueDate)}</div>}
+                {/* Active tasks */}
+                {activeTasks.length > 0 && (
+                  <div className="section">
+                    <div className="section-head">
+                      <h3>В работе</h3>
+                      <span className="hint">{activeTasks.length}</span>
+                    </div>
+                    {activeTasks.map(t => (
+                      <div key={t.id} className="list-line">
+                        <span style={{
+                          width: 18, height: 18, borderRadius: 5, flexShrink: 0, marginTop: 1,
+                          border: '2px solid var(--accent)', background: 'transparent',
+                          display: 'inline-block'
+                        }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="text-md" style={{ fontWeight: 600 }}>{t.text}</div>
+                          {t.dueDate && (
+                            <div className="text-xs faint" style={{ marginTop: 3 }}>
+                              до {fmtDate(t.dueDate)}
                             </div>
-                          </div>
-                        ))}
+                          )}
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-
-                {clientTasks.length === 0 && (
-                  <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-faint)', fontSize: 14 }}>
-                    Заданий пока нет. Назначь первое.
+                    ))}
                   </div>
                 )}
 
-                <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '48px 0 28px' }} />
+                {/* Done tasks */}
+                {doneTasks.length > 0 && (
+                  <div className="section">
+                    <div className="section-head">
+                      <h3 style={{ color: 'var(--text-sub)' }}>Выполнено</h3>
+                      <span className="hint" style={{ color: 'var(--c-moss)' }}>{doneTasks.length}</span>
+                    </div>
+                    {doneTasks.map(t => (
+                      <div key={t.id} className="list-line" style={{ opacity: 0.55 }}>
+                        <span style={{
+                          width: 18, height: 18, borderRadius: 5, flexShrink: 0, marginTop: 1,
+                          background: 'var(--c-moss)', border: 'none',
+                          display: 'grid', placeItems: 'center',
+                          fontSize: 10, color: 'var(--on-accent)', fontWeight: 700
+                        }}>✓</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="text-md" style={{ fontWeight: 500, textDecoration: 'line-through' }}>{t.text}</div>
+                          {t.dueDate && (
+                            <div className="text-xs faint" style={{ marginTop: 3 }}>до {fmtDate(t.dueDate)}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-                <div className="eyebrow" style={{ marginBottom: 18 }}>Шаблоны заданий</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+                {/* Empty state */}
+                {clientTasks.length === 0 && (
+                  <div style={{ padding: '48px 0 24px' }}>
+                    <div style={{ fontSize: 15, color: 'var(--text-sub)', marginBottom: 20, lineHeight: 1.6 }}>
+                      Нет назначенных заданий. Домашние практики помогают закрепить работу между сессиями.
+                    </div>
+                    <button onClick={() => setShowAssign(true)} className="btn btn-primary">
+                      + Назначить первое задание
+                    </button>
+                  </div>
+                )}
+
+                {/* Divider + templates */}
+                <hr className="hr-soft" style={{ margin: '48px 0 32px' }} />
+                <div className="eyebrow" style={{ marginBottom: 20 }}>Шаблоны заданий</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {[
                     { t: 'Схема-карточка', sub: 'Триггеры · чувства · мысли · корни · реальность · поведение' },
-                    { t: 'Дневник режима', sub: '5–7 эпизодов · фокус на конкретном режиме' },
+                    { t: 'Дневник режима', sub: '5–7 эпизодов, фокус на конкретном режиме' },
                     { t: 'Письмо себе', sub: 'От Здорового Взрослого к Уязвимому Ребёнку' },
                     { t: 'Imagery rescripting', sub: 'Аудио-практика, 12 минут' },
                   ].map(card => (
-                    <div key={card.t} onClick={() => setShowAssign(true)} style={{ cursor: 'pointer' }}>
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>{card.t}</div>
-                      <div style={{ fontSize: 12.5, color: 'var(--text-sub)', marginTop: 6, lineHeight: 1.55 }}>{card.sub}</div>
-                      <span style={{ display: 'inline-block', marginTop: 10, fontSize: 12, color: 'var(--accent)' }}>назначить →</span>
+                    <div key={card.t} className="list-line" onClick={() => setShowAssign(true)} style={{ cursor: 'pointer' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="text-md" style={{ fontWeight: 600 }}>{card.t}</div>
+                        <div className="text-sm muted" style={{ marginTop: 3, lineHeight: 1.5 }}>{card.sub}</div>
+                      </div>
+                      <span className="link" style={{ flexShrink: 0 }}>назначить →</span>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* ── YSQ ──────────────────────────────────────────────────────────── */}
             {clientTab === 'ysq' && (
