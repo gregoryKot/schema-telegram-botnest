@@ -3,6 +3,7 @@ import { GlyphArrowLeft } from './exercises/ExScreen';
 import { SectionLabel } from './SectionLabel';
 import { api } from '../api';
 import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
 
@@ -43,6 +44,7 @@ export function getTaskDisplayText(type: string, text: string): string {
 }
 
 export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, onClose }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [type, setType] = useState<TaskType>(defaultType ?? 'diary_streak');
   const [targetDays, setTargetDays] = useState(7);
   const [text, setText] = useState('');
@@ -91,7 +93,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
+import { useHistorySheet } from '../../hooks/useHistorySheet';
 
 const SENSES = [
   { k: 'see',   label: 'Что я вижу',           ph: 'высокие сосны, солнце сквозь ветки, мхом покрытый камень…' },
@@ -10,6 +11,7 @@ const SENSES = [
 ] as const;
 
 export function SafePlaceEx({ onBack, onComplete }: { onBack: () => void; onComplete?: () => void }) {
+  const goBack = useHistorySheet(onBack);
   const [overview, setOverview] = useState('');
   const [senses, setSenses] = useState<Record<string, string>>({ see: '', hear: '', feel: '', smell: '' });
   const [done, setDone] = useState(false);
@@ -26,7 +28,7 @@ export function SafePlaceEx({ onBack, onComplete }: { onBack: () => void; onComp
 
   if (done) {
     return (
-      <ExScreen onBack={onBack} eyebrow="Безопасное место · сохранено" eyebrowColor="var(--c-moss)"
+      <ExScreen onBack={goBack} eyebrow="Безопасное место · сохранено" eyebrowColor="var(--c-moss)"
         title={<>Твоё<br/><span className="it">безопасное место.</span></>}
         lede="Возвращайся сюда, когда станет тревожно. Закрой глаза. Прочти. Побудь."
       >
@@ -44,14 +46,14 @@ export function SafePlaceEx({ onBack, onComplete }: { onBack: () => void; onComp
         <div className="ex-foot">
           <button className="ex-btn ex-btn-outline" onClick={() => setDone(false)}>Изменить</button>
           <span className="spacer" />
-          <button className="ex-btn ex-btn-primary" onClick={onBack}>Закрыть</button>
+          <button className="ex-btn ex-btn-primary" onClick={goBack}>Закрыть</button>
         </div>
       </ExScreen>
     );
   }
 
   return (
-    <ExScreen onBack={onBack} eyebrow="№ 05 · Ресурс" eyebrowColor="var(--c-moss)"
+    <ExScreen onBack={goBack} eyebrow="№ 05 · Ресурс" eyebrowColor="var(--c-moss)"
       title={<>Безопасное<br/><span className="it">место</span></>}
       lede="Опиши место, где тебе спокойно — реальное или воображаемое. Чтобы было куда вернуться мысленно, когда становится тревожно."
       aside={<>

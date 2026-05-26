@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { GlyphArrowLeft } from './exercises/ExScreen';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 
 interface Props {
@@ -32,6 +33,7 @@ const SCHEMA_DESC: Record<string, string> = {
 };
 
 export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [ids, setIds] = useState<string[]>(selected);
 
   const toggle = (id: string) =>
@@ -40,12 +42,12 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
         <button
           className="ex-btn ex-btn-primary"
-          onClick={() => { onSave(ids); onClose(); }}
+          onClick={() => { onSave(ids); goBack(); }}
           style={{ padding: '6px 18px', fontSize: 14 }}
         >
           Сохранить{ids.length > 0 ? ` (${ids.length})` : ''}

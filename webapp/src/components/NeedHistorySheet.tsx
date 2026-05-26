@@ -3,6 +3,7 @@ import { COLORS } from '../types';
 import type { Need, DayHistory } from '../types';
 import { NEED_DATA } from '../needData';
 import { GlyphArrowLeft } from './exercises/ExScreen';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { SectionLabel } from './SectionLabel';
 import { getTherapistContact } from '../utils/therapistContact';
 
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function NeedHistorySheet({ need, value, history, childhoodValue, onClose }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const data = NEED_DATA[need.id];
   if (!data) return null;
@@ -54,7 +56,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>

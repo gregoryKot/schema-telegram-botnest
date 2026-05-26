@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
+import { useHistorySheet } from '../../hooks/useHistorySheet';
 
 function fmtAgo(d: string): string {
   const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
@@ -11,6 +12,7 @@ function fmtAgo(d: string): string {
 }
 
 export function LetterEx({ onBack, onComplete }: { onBack: () => void; onComplete?: () => void }) {
+  const goBack = useHistorySheet(onBack);
   const [text, setText] = useState('');
   const [done, setDone] = useState(false);
   const [pastLetters, setPastLetters] = useState<any[]>([]);
@@ -28,7 +30,7 @@ export function LetterEx({ onBack, onComplete }: { onBack: () => void; onComplet
   if (done) {
     const others = pastLetters.filter(l => l.text !== text);
     return (
-      <ExScreen onBack={onBack} eyebrow="Письмо · сохранено" eyebrowColor="var(--c-moss)"
+      <ExScreen onBack={goBack} eyebrow="Письмо · сохранено" eyebrowColor="var(--c-moss)"
         title={<>Письмо<br/><span className="it">написано.</span></>}
         lede="Иногда — самая важная работа. Вернись к нему через неделю и перечитай вслух."
         aside={others.length > 0 ? (
@@ -54,14 +56,14 @@ export function LetterEx({ onBack, onComplete }: { onBack: () => void; onComplet
         <div className="ex-foot">
           <button className="ex-btn ex-btn-outline" onClick={() => setDone(false)}>Изменить</button>
           <span className="spacer" />
-          <button className="ex-btn ex-btn-primary" onClick={onBack}>Закрыть</button>
+          <button className="ex-btn ex-btn-primary" onClick={goBack}>Закрыть</button>
         </div>
       </ExScreen>
     );
   }
 
   return (
-    <ExScreen onBack={onBack} eyebrow="№ 04 · Эмоциональная работа" eyebrowColor="var(--c-amber)"
+    <ExScreen onBack={goBack} eyebrow="№ 04 · Эмоциональная работа" eyebrowColor="var(--c-amber)"
       title={<>Письмо<br/><span className="it">уязвимому ребёнку</span></>}
       lede="Сядь рядом с собой-маленьким — таким, каким ты был, когда было трудно. Скажи ему то, что он должен был услышать тогда."
       aside={<>

@@ -6,6 +6,7 @@ import { GlyphArrowLeft } from './exercises/ExScreen';
 import { SectionLabel } from './SectionLabel';
 import { getTherapistContact } from '../utils/therapistContact';
 import { PlanSheet } from './PlanSheet';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 interface Props {
   need: Need;
@@ -24,6 +25,7 @@ const DISCLAIMER_CONTENT = [
 ];
 
 export function NeedTodaySheet({ need, value, yesterdayValue: _yesterdayValue, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
@@ -63,7 +65,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue: _yesterdayValue, o
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       {/* Topbar */}
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>
@@ -242,7 +244,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue: _yesterdayValue, o
           </div>
           {onOpenHelp && (
             <div
-              onClick={() => { onClose(); onOpenHelp(); }}
+              onClick={() => { onOpenHelp(); goBack(); }}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 background: 'color-mix(in srgb, var(--accent-red) 8%, transparent)',
@@ -270,7 +272,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue: _yesterdayValue, o
           needLabel={need.chartLabel}
           color={color}
           onClose={() => setShowPlan(false)}
-          onSaved={() => { setShowPlan(false); onPlanSaved?.(need.id); onClose(); }}
+          onSaved={() => { setShowPlan(false); onPlanSaved?.(need.id); goBack(); }}
         />
       )}
 
