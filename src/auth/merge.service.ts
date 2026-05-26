@@ -226,7 +226,15 @@ export class MergeService {
         DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
       `);
 
-      // 5. Finally, delete the now-empty source User.
+      // 5. Propagate disclaimerAccepted: if source had accepted, mark target too.
+      //    Must happen before DELETE so we can still read source.disclaimerAccepted.
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "User" SET "disclaimerAccepted" = true
+        WHERE id = ${targetId}
+          AND (SELECT "disclaimerAccepted" FROM "User" WHERE id = ${sourceId})
+      `);
+
+      // 6. Finally, delete the now-empty source User.
       await tx.$executeRaw(Prisma.sql`DELETE FROM "User" WHERE id = ${sourceId}`);
     });
     const ms = Date.now() - startedAt;

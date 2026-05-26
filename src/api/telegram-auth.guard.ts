@@ -75,20 +75,27 @@ export class TelegramAuthGuard implements CanActivate {
     const params = new URLSearchParams(initData);
     const userStr = params.get('user');
     if (!userStr) throw new UnauthorizedException('Missing user');
+    let rawTelegramId: number;
+    let firstName: string | undefined;
     try {
       const user = JSON.parse(userStr);
       if (typeof user.id !== 'number') throw new Error('Invalid user.id');
-      req.telegramUserId = user.id;
-      req.telegramFirstName = typeof user.first_name === 'string' ? user.first_name : undefined;
+      rawTelegramId = user.id;
+      firstName = typeof user.first_name === 'string' ? user.first_name : undefined;
     } catch {
       throw new UnauthorizedException('Invalid user data');
     }
 
-    await (this.prisma.user as any).upsert({
-      where: { id: BigInt(req.telegramUserId) },
-      update: req.telegramFirstName ? { firstName: req.telegramFirstName } : {},
-      create: { id: BigInt(req.telegramUserId), firstName: req.telegramFirstName },
-    });
+    // Resolve canonical userId via AuthProvider so that merged accounts
+    // (Telegram merged → Google) still land on the correct userId instead
+    // of creating a new empty User with the raw Telegram ID.
+    const canonicalId = await this.authService.findOrCreateUserByProvider(
+      'telegram', String(rawTelegramId), firstName,
+    );
+    req.telegramUserId = Number(canonicalId);
+    req.telegramFirstName = firstName;
+    // Also expose BigInt-safe ref for controllers that need it
+    req.webUser = { userId: canonicalId };
 
     return true;
   }
