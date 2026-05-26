@@ -4,7 +4,6 @@ import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
 import { NEED_DATA } from '../needData';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
-import { BottomSheet } from '../components/BottomSheet';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';

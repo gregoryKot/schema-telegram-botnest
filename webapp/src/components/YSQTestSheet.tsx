@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { BottomSheet } from './BottomSheet';
+import { GlyphArrowLeft } from './exercises/ExScreen';
 import { getTherapistContact } from '../utils/therapistContact';
 import { api } from '../api';
 import type { YsqHistoryEntry } from '../api';
@@ -601,17 +601,23 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
     );
   }
 
-  // ── Intro + Result in BottomSheet ─────────────────────────────────────────────
+  // ── Intro + Result ────────────────────────────────────────────────────────────
   return (
-    <BottomSheet onClose={onClose} zIndex={300}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+          <GlyphArrowLeft /> Назад
+        </button>
+      </div>
+      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
       {/* INTRO */}
       {phase === 'intro' && (
-        <div style={{ padding: '8px 0 16px' }}>
-          <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <div style={{ fontSize: 40, marginBottom: 10 }}>🧠</div>
-            <div style={{ fontSize: 23, fontWeight: 600, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 6 }}>
+        <div>
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <div style={{ fontSize: 48, marginBottom: 14 }}>🧠</div>
+            <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 8, lineHeight: 1.2 }}>
               Опросник схем YSQ-R
-            </div>
+            </h1>
             <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>
               Паттерны мышления и поведения, сложившиеся в детстве
             </div>
@@ -660,7 +666,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
           {hasProgress ? (
             <>
-              <button onClick={handleContinue} className="btn-primary" style={{ marginBottom: 10 }}>
+              <button onClick={handleContinue} className="ex-btn ex-btn-primary" style={{ marginBottom: 10 }}>
                 Продолжить ({progressAnswered} из 116)
               </button>
               <button onClick={handleStartFresh} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 14, background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer', marginBottom: 10 }}>
@@ -668,7 +674,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
               </button>
             </>
           ) : (
-            <button onClick={() => { userStartedRef.current = true; setPhase('test'); setPage(0); }} className="btn-primary" style={{ marginBottom: 10 }}>
+            <button onClick={() => { userStartedRef.current = true; setPhase('test'); setPage(0); }} className="ex-btn ex-btn-primary" style={{ marginBottom: 10 }}>
               Начать тест
             </button>
           )}
@@ -738,12 +744,12 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
         };
 
         return (
-          <div style={{ padding: '8px 0 16px' }}>
+          <div>
             {/* Header */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 4 }}>
+              <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', marginBottom: 4, lineHeight: 1.2 }}>
                 {activeLabel}
-              </div>
+              </h1>
               {dateLabel && (
                 <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Пройдено {dateLabel}</div>
               )}
@@ -925,7 +931,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
               </div>
             )}
 
-            <button onClick={onClose} className="btn-primary" style={{ marginTop: 4, marginBottom: 10 }}>
+            <button onClick={onClose} className="ex-btn ex-btn-primary" style={{ marginTop: 4, marginBottom: 10 }}>
               Сохранить и закрыть
             </button>
 
@@ -950,6 +956,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           </div>
         );
       })()}
-    </BottomSheet>
+      </div>
+    </div>
   );
 }
