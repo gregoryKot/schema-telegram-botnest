@@ -147,8 +147,8 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40 }}>
               <div>
-                <div style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1 }}>Кабинет</div>
-                <div style={{ fontSize: 15, color: 'var(--text-sub)', marginTop: 8 }}>
+                <h1 className="hub-title" style={{ marginBottom: 8 }}>Кабинет</h1>
+                <div style={{ fontSize: 15, color: 'var(--text-sub)', marginTop: 0 }}>
                   {clients.length} {clients.length === 1 ? 'клиент' : clients.length < 5 ? 'клиента' : 'клиентов'} · {clients.filter(c => c.lastActiveDate === todayStr()).length} активны сегодня
                 </div>
               </div>
