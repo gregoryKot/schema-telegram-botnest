@@ -60,7 +60,7 @@ export function LoginPage() {
       try {
         const res = await fetch(`${API_BASE}/api/auth/telegram/widget`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
           body: JSON.stringify(userData),
           credentials: 'include',
         });
