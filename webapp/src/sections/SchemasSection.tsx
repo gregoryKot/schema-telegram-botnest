@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
 import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
@@ -481,16 +482,17 @@ const MODE_DESC: Record<string, string> = {
 };
 
 function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; onSave: (ids: string[]) => void; onClose: () => void }) {
+  const goBack = useHistorySheet(onClose);
   const [ids, setIds] = useState<string[]>(selected);
   const toggle = (id: string) => setIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
-        <button onClick={() => { onSave(ids); onClose(); }} className="ex-btn ex-btn-primary" style={{ padding: '7px 20px' }}>
+        <button onClick={() => { onSave(ids); goBack(); }} className="ex-btn ex-btn-primary" style={{ padding: '7px 20px' }}>
           Сохранить{ids.length > 0 ? ` · ${ids.length}` : ''}
         </button>
       </div>

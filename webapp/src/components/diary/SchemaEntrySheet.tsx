@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GlyphArrowLeft } from '../exercises/ExScreen';
+import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { EMOTIONS, INTENSITY_LABELS, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import type { EmotionEntry } from '../../types';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
@@ -71,6 +72,7 @@ interface DraftData {
 }
 
 export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
+  const goBack = useHistorySheet(onClose);
   const existing = loadDraft<DraftData>('schema');
   const draft = existing?.data ?? null;
 
@@ -142,14 +144,14 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
       haptic.error();
     } finally {
       setSaving(false);
-      onClose();
+      goBack();
     }
   };
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
         <button onClick={handleSave} disabled={!canSave || saving} style={{

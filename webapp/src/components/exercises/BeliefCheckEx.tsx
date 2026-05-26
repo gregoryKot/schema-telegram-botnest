@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { ExScreen, StepsBar, GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphPlus, GlyphX } from './ExScreen';
+import { useHistorySheet } from '../../hooks/useHistorySheet';
 
 const STEPS = ['Убеждение', 'Доказательства за', 'Доказательства против', 'Переформулировка'];
 
@@ -20,6 +21,7 @@ function fmtAgo(d: string): string {
 }
 
 export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onComplete?: () => void }) {
+  const goBack = useHistorySheet(onBack);
   const [step, setStep] = useState(0);
   const [belief, setBelief] = useState('');
   const [forList, setForList] = useState<string[]>([]);
@@ -54,7 +56,7 @@ export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onCo
 
   if (done) {
     return (
-      <ExScreen onBack={onBack} eyebrow="Проверка убеждения · сохранено" eyebrowColor="var(--c-moss)"
+      <ExScreen onBack={goBack} eyebrow="Проверка убеждения · сохранено" eyebrowColor="var(--c-moss)"
         title={<>Готово.<br/><span className="it">Мысль проверена.</span></>}
         lede="Иногда достаточно увидеть доказательства, чтобы мысль потеряла силу. Сохранено в дневнике."
         aside={<>
@@ -98,7 +100,7 @@ export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onCo
         <div className="ex-foot">
           <button className="ex-btn ex-btn-outline" onClick={() => { setDone(false); setStep(0); setBelief(''); setForList([]); setAgainstList([]); setReframe(''); }}>Проверить ещё одну</button>
           <span className="spacer" />
-          <button className="ex-btn ex-btn-primary" onClick={onBack}>Закрыть</button>
+          <button className="ex-btn ex-btn-primary" onClick={goBack}>Закрыть</button>
         </div>
       </ExScreen>
     );
@@ -106,7 +108,7 @@ export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onCo
 
   const hint = SIDE_HINTS[step];
   return (
-    <ExScreen onBack={onBack} eyebrow="№ 01 · Когнитивная работа" eyebrowColor="var(--c-slate)"
+    <ExScreen onBack={goBack} eyebrow="№ 01 · Когнитивная работа" eyebrowColor="var(--c-slate)"
       title={<>Проверка<br/><span className="it">убеждения</span></>}
       lede="Поставь одну мысль перед судом фактов. Что её подтверждает, что опровергает, и как сформулировать точнее."
       aside={

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphArrowRight } from './ExScreen';
+import { useHistorySheet } from '../../hooks/useHistorySheet';
 
 const NEEDS = [
   { id: 'attachment',  label: 'Привязанность',    color: 'var(--c-rose)',
@@ -74,6 +75,7 @@ function WheelSvg({ ratings }: { ratings: Record<string, number> }) {
 }
 
 export function ChildhoodWheelEx({ onBack, onSaved }: { onBack: () => void; onSaved?: (r: Record<string,number>) => void }) {
+  const goBack = useHistorySheet(onBack);
   const [ratings, setRatings] = useState<Record<string, number>>({ attachment: 5, autonomy: 5, expression: 5, play: 5, limits: 5 });
   const [done, setDone] = useState(false);
 
@@ -89,7 +91,7 @@ export function ChildhoodWheelEx({ onBack, onSaved }: { onBack: () => void; onSa
 
   if (done) {
     return (
-      <ExScreen onBack={onBack} eyebrow="Колесо детства · сохранено" eyebrowColor="var(--accent-indigo)"
+      <ExScreen onBack={goBack} eyebrow="Колесо детства · сохранено" eyebrowColor="var(--accent-indigo)"
         title={<>Колесо<br/><span className="it">детства</span></>}
         lede={`Среднее ${avg}/10. ${lowNeeds.length ? `${lowNeeds.length} зон ниже 5 — это места, где могли сформироваться схемы.` : 'Все зоны выше 4 — это редкий ресурс.'}`}
         aside={<div className="aside-card"><div className="aside-card-eyebrow">Что дальше</div><h3>Связать с сегодня</h3><p className="body">Открой дневник за последнюю неделю и сравни — какие потребности сегодня просели больше всего. Часто это те же зоны.</p></div>}
@@ -116,14 +118,14 @@ export function ChildhoodWheelEx({ onBack, onSaved }: { onBack: () => void; onSa
         <div className="ex-foot">
           <button className="ex-btn ex-btn-outline" onClick={() => setDone(false)}>Пересмотреть оценки</button>
           <span className="spacer" />
-          <button className="ex-btn ex-btn-primary" onClick={onBack}>Закрыть</button>
+          <button className="ex-btn ex-btn-primary" onClick={goBack}>Закрыть</button>
         </div>
       </ExScreen>
     );
   }
 
   return (
-    <ExScreen onBack={onBack} eyebrow="№ 06 · Истоки" eyebrowColor="var(--accent-indigo)"
+    <ExScreen onBack={goBack} eyebrow="№ 06 · Истоки" eyebrowColor="var(--accent-indigo)"
       title={<>Колесо<br/><span className="it">детства</span></>}
       lede="Оцени пять базовых потребностей в детстве. Не отдельные моменты, а как было «в целом, большую часть времени» — там, где формировались схемы."
       aside={<>

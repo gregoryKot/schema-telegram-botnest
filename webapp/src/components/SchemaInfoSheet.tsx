@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense } from 'react';
 import { SectionLabel } from './SectionLabel';
 import { GlyphArrowLeft } from './exercises/ExScreen';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from '../utils/storageKeys';
 import { TherapyNote } from './TherapyNote';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
@@ -322,6 +323,7 @@ export function SchemaInfoContent({ initialTab, highlight }: { initialTab?: Tab;
 }
 
 export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, highlightSchema: initHighlight }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [showTest, setShowTest] = useState(autoStartTest ?? false);
   const [contentKey, setContentKey] = useState(0);
   const [contentInitialTab, setContentInitialTab] = useState<Tab>(initialTab ?? 'needs');
@@ -340,7 +342,7 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
     <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
       {/* Topbar */}
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>

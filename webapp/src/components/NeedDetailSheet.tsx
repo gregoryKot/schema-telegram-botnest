@@ -1,4 +1,5 @@
 import { GlyphArrowLeft } from './exercises/ExScreen';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { NEED_DATA } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onClose }: Props) {
+  const goBack = useHistorySheet(onClose);
   const need = NEED_DATA[needId];
   const color = NEED_COLORS[needId] ?? '#a78bfa';
 
@@ -51,7 +53,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>

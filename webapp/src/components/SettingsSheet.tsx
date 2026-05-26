@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
 import type { UserSettings, PairsData, TherapyRelationInfo } from '../api';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
@@ -37,6 +38,7 @@ interface Props {
 }
 
 export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [view, setView]             = useState<View>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
   const [pairData, setPairData]     = useState<PairsData | null>(null);
@@ -146,7 +148,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
             {savedToast && <span className="text-sm" style={{ color: 'var(--c-moss)', fontWeight: 500 }}>Сохранено</span>}
             {view !== 'main'
               ? <button onClick={() => setView('main')} className="btn btn-secondary">← Назад</button>
-              : <button onClick={onClose} className="btn btn-secondary">Закрыть</button>
+              : <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
             }
           </div>
         </div>

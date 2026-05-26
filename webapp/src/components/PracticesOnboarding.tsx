@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import type { Need } from '../types';
 import { api } from '../api';
 import { NEED_DATA } from '../needData';
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function PracticesOnboarding({ needs, onDone }: Props) {
+  const goBack = useHistorySheet(onDone);
   const [step, setStep] = useState<'intro' | number>('intro');
   const [input, setInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -25,7 +27,7 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
 
   function finish() {
     localStorage.setItem(PRACTICES_ONBOARDING_KEY, '1');
-    onDone();
+    goBack();
   }
 
   async function handleSaveAndNext() {
