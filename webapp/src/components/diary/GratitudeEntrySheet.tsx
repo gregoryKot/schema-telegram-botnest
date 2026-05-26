@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { GlyphArrowLeft } from '../exercises/ExScreen';
+import { ExScreen, GlyphCheck, GlyphPlus } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { fmtDateLong, todayStr } from '../../utils/format';
@@ -13,11 +13,11 @@ interface Props {
 }
 
 const PLACEHOLDERS = [
-  'Что-то хорошее, что произошло сегодня...',
-  'Кто-то, кто помог или поддержал...',
-  'Момент, который хочется запомнить...',
-  'Что-то простое, что согрело...',
-  'Что-то, что обычно не замечаешь...',
+  'Что-то хорошее, что произошло сегодня…',
+  'Кто-то, кто помог или поддержал…',
+  'Момент, который хочется запомнить…',
+  'Что-то простое, что согрело…',
+  'Что-то, что обычно не замечаешь…',
 ];
 
 export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Props) {
@@ -29,19 +29,21 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
   const [saving, setSaving] = useState(false);
 
   const update = (i: number, v: string) => setItems(prev => prev.map((it, idx) => idx === i ? v : it));
+  const addItem = () => { haptic.select(); setItems(prev => prev.length < 5 ? [...prev, ''] : prev); };
 
   useEffect(() => {
     if (!existingItems) saveDraft('gratitude', { items });
   }, [items, existingItems]);
 
-  const canSave = items.filter(it => it.trim().length > 0).length >= 1;
+  const filled = items.filter(it => it.trim().length > 0);
+  const canSave = filled.length >= 1;
 
   const handleSave = async () => {
     if (!canSave || saving) return;
     haptic.success();
     setSaving(true);
     try {
-      await onSave(date, items.filter(it => it.trim().length > 0));
+      await onSave(date, filled);
       clearDraft('gratitude');
     } catch {
       haptic.error();
@@ -54,66 +56,56 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
   const dateLabel = date === todayStr() ? 'сегодня' : fmtDateLong(date);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
-          <GlyphArrowLeft /> Назад
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={!canSave || saving}
-          className="ex-btn ex-btn-primary"
-          style={{ padding: '6px 18px', fontSize: 14, opacity: canSave ? 1 : 0.35 }}
-        >
-          {saving ? 'Сохраняю...' : 'Сохранить'}
-        </button>
-      </div>
-      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', lineHeight: 1.15, marginBottom: 6 }}>
-          Дневник благодарности
-        </h1>
-        <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 10 }}>{dateLabel}</div>
-        <p style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 24, lineHeight: 1.6 }}>
-          За что ты благодарен сегодня? Даже самое маленькое — оно важно.
-        </p>
-
+    <ExScreen
+      onBack={goBack}
+      eyebrow={`Дневник благодарности · ${dateLabel}`}
+      eyebrowColor="var(--c-moss)"
+      title={<>Три вещи,<br /><span className="it">за которые сегодня — спасибо</span></>}
+      lede="Даже самое маленькое. Особенно — самое маленькое. Запоминается то, что назвал."
+      aside={
+        <div className="aside-card" style={{ borderColor: 'var(--c-moss)40', background: 'var(--c-moss)08', position: 'sticky', top: 40 }}>
+          <div className="aside-card-eyebrow" style={{ color: 'var(--c-moss)' }}>Почему это работает</div>
+          <h3>Мозг учится замечать</h3>
+          <p className="body">Психика устроена так, чтобы запоминать опасное. Регулярная практика благодарности — это не «позитивное мышление», а тренировка нервной системы замечать тёплое наряду с тревожным.</p>
+        </div>
+      }
+    >
+      <div style={{ marginTop: 8 }}>
         {items.map((item, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 10, flexShrink: 0, marginTop: 2,
-              background: item.trim() ? '#34d39922' : 'rgba(var(--fg-rgb),0.06)',
-              border: item.trim() ? '1px solid #34d39966' : '1px solid rgba(var(--fg-rgb),0.1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13, color: 'var(--accent-green)', fontWeight: 700,
-              transition: 'background 150ms, border-color 150ms',
-            }}>
-              {i + 1}
-            </div>
+          <div key={i} className={'grat-row ' + (item.trim() ? 'is-filled' : '')}>
+            <span className="grat-num-big">{String(i + 1).padStart(2, '0')}</span>
             <textarea
               value={item}
               onChange={e => update(i, e.target.value)}
               placeholder={PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}
-              rows={2}
-              className="field-input"
-              style={{
-                flex: 1, background: 'rgba(var(--fg-rgb),0.05)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-                borderRadius: 12, padding: '10px 12px', color: 'var(--text)', fontSize: 14, lineHeight: 1.5,
-                outline: 'none',
-              }}
+              rows={1}
+              autoFocus={i === 0}
             />
           </div>
         ))}
-
         {items.length < 5 && (
-          <button onClick={() => setItems(prev => [...prev, ''])} style={{
-            background: 'rgba(var(--fg-rgb),0.05)', border: '1px dashed rgba(var(--fg-rgb),0.15)',
-            borderRadius: 12, padding: '10px', width: '100%', color: 'var(--text-sub)',
-            fontSize: 13, cursor: 'pointer', marginBottom: 4,
-          }}>
-            + добавить ещё
+          <button className="add-row-btn" onClick={addItem}>
+            <GlyphPlus />
+            <span style={{ marginLeft: 8 }}>Добавить ещё пункт</span>
           </button>
         )}
       </div>
-    </div>
+
+      <div className="ex-foot">
+        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+          {filled.length} / {items.length} заполнено
+        </span>
+        <span className="spacer" />
+        <button
+          className="ex-btn ex-btn-primary"
+          disabled={!canSave || saving}
+          onClick={handleSave}
+          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+        >
+          {saving ? 'Сохраняю…' : 'Сохранить запись'}
+          {!saving && <GlyphCheck />}
+        </button>
+      </div>
+    </ExScreen>
   );
 }

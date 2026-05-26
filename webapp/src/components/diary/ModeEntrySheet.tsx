@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { GlyphArrowLeft } from '../exercises/ExScreen';
+import { ExScreen, GlyphArrowLeft, GlyphCheck } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
@@ -19,54 +19,35 @@ interface Props {
   }) => Promise<void>;
 }
 
-const COLOR = 'var(--accent-blue)';
-
-function StepLabel({ step, title, hint }: { step: number; title: string; hint?: string }) {
-  return (
-    <div style={{ marginTop: 22, marginBottom: 9, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-      <div style={{
-        width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-        background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.3)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, fontWeight: 700, color: 'var(--accent-blue)', marginTop: 1,
-      }}>
-        {step}
-      </div>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{title}</div>
-        {hint && <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>{hint}</div>}
-      </div>
-    </div>
-  );
-}
-
-function Area({ value, onChange, placeholder, rows = 3 }: { value: string; onChange: (v: string) => void; placeholder: string; rows?: number }) {
-  return (
-    <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="field-input" style={{
-      width: '100%', background: 'rgba(var(--fg-rgb),0.05)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-      borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14, lineHeight: 1.5, outline: 'none',
-    }} />
-  );
-}
+type DraftData = {
+  modeId: string; situation: string; thoughts: string;
+  feelings: string; bodyFeelings: string; actions: string;
+  actualNeed: string; childhoodMemories: string;
+};
 
 export function ModeEntrySheet({ onClose, onSave }: Props) {
   const goBack = useHistorySheet(onClose);
-  const existing = loadDraft<{ modeId: string; situation: string; thoughts: string; feelings: string; bodyFeelings: string; actions: string; actualNeed: string; childhoodMemories: string }>('mode');
+  const existing = loadDraft<DraftData>('mode');
   const d = existing?.data;
 
-  const [modeId, setModeId] = useState(d?.modeId ?? '');
+  const [modeId, setModeId]     = useState(d?.modeId ?? '');
   const [situation, setSituation] = useState(d?.situation ?? '');
-  const [thoughts, setThoughts] = useState(d?.thoughts ?? '');
-  const [feelings, setFeelings] = useState(d?.feelings ?? '');
+  const [thoughts, setThoughts]   = useState(d?.thoughts ?? '');
+  const [feelings, setFeelings]   = useState(d?.feelings ?? '');
   const [bodyFeelings, setBodyFeelings] = useState(d?.bodyFeelings ?? '');
-  const [actions, setActions] = useState(d?.actions ?? '');
+  const [actions, setActions]     = useState(d?.actions ?? '');
   const [actualNeed, setActualNeed] = useState(d?.actualNeed ?? '');
   const [childhoodMemories, setChildhoodMemories] = useState(d?.childhoodMemories ?? '');
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]       = useState(false);
+  const [showPicker, setShowPicker] = useState(!d?.modeId);
 
   useEffect(() => {
     saveDraft('mode', { modeId, situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories });
   }, [modeId, situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories]);
+
+  const selectedMode = modeId
+    ? MODE_GROUPS.flatMap(g => g.items.map(m => ({ ...m, color: g.color, groupName: g.group }))).find(m => m.id === modeId)
+    : null;
 
   const canSave = modeId.length > 0 && situation.trim().length > 0;
 
@@ -93,79 +74,200 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     }
   };
 
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
-          <GlyphArrowLeft /> Назад
-        </button>
-        <button onClick={handleSave} disabled={!canSave || saving} style={{
-          padding: '6px 18px', borderRadius: 10, border: 'none',
-          background: canSave ? COLOR : 'rgba(var(--fg-rgb),0.08)',
-          color: canSave ? '#fff' : 'rgba(var(--fg-rgb),0.25)',
-          fontSize: 13, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', flexShrink: 0,
-        }}>
-          {saving ? 'Сохраняю...' : 'Сохранить'}
-        </button>
-      </div>
-      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', lineHeight: 1.15, marginBottom: 6 }}>
-          Дневник режимов
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 24 }}>
-          {existing ? 'Продолжаем с того места' : 'Кто сейчас внутри?'}
-        </p>
-
-        <StepLabel step={1} title="Режим" hint="кто взял управление" />
-        {MODE_GROUPS.map(group => (
-          <div key={group.id} style={{ marginBottom: 12 }}>
-            <div className="eyebrow" style={{ color: group.color, marginBottom: 6 }}>{group.group}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {group.items.map(m => {
-                const sel = modeId === m.id;
-                return (
-                  <button key={m.id} onClick={() => { haptic.select(); setModeId(sel ? '' : m.id); }} className="sel-btn" style={{
-                    background: sel ? `${group.color}33` : 'rgba(var(--fg-rgb),0.06)',
-                    border: sel ? `1px solid ${group.color}` : '1px solid transparent',
-                    borderRadius: 16, padding: '6px 11px',
-                    color: sel ? 'var(--chip-sel-text)' : 'rgba(var(--fg-rgb),0.6)',
-                    fontSize: 13, cursor: 'pointer',
-                  }}>
-                    {m.emoji} {m.name}
-                  </button>
-                );
-              })}
+  // ── Step 1: picker ──
+  if (!modeId || showPicker) {
+    return (
+      <ExScreen
+        onBack={goBack}
+        eyebrow="Дневник режимов · новая запись"
+        eyebrowColor="var(--c-slate)"
+        title={<>Кто сейчас<br /><span className="it">взял управление?</span></>}
+        lede="Выбери режим — состояние, которое сейчас включено. Если не уверен — выбери самый похожий."
+        aside={
+          <div className="aside-card" style={{ borderColor: 'var(--c-slate)40', background: 'var(--c-slate)08' }}>
+            <div className="aside-card-eyebrow" style={{ color: 'var(--c-slate)' }}>Подсказка</div>
+            <h3>Как его узнать</h3>
+            <p className="body">Режим узнаётся не по мыслям, а по тому, как меняется тело и тон голоса в голове. Замечай резкие переключения — это его след.</p>
+          </div>
+        }
+      >
+        {MODE_GROUPS.map(g => (
+          <div key={g.id} style={{ marginBottom: 28 }}>
+            <div className="chip-section-eyebrow" style={{ color: g.color }}>
+              <span className="dot" style={{ background: g.color }} />
+              {g.group}
             </div>
+            {g.items.map(m => (
+              <div
+                key={m.id}
+                className={'mode-card ' + (modeId === m.id ? 'is-selected' : '')}
+                style={{ '--mode-color': g.color } as React.CSSProperties}
+                onClick={() => { haptic.select(); setModeId(m.id); setShowPicker(false); }}
+              >
+                <span className="mode-card-stripe" />
+                <div>
+                  <div className="mode-card-name">{m.name}</div>
+                  <div className="mode-card-short">{m.short}</div>
+                </div>
+                <span className="mode-check"><GlyphCheck /></span>
+              </div>
+            ))}
           </div>
         ))}
+      </ExScreen>
+    );
+  }
 
-        <StepLabel step={2} title="Ситуация" hint="что случилось" />
-        <Area value={situation} onChange={setSituation} placeholder="Что произошло? Где ты, с кем, в какой момент?" />
-
-        <StepLabel step={3} title="Мысли" hint="что говорит этот режим" />
-        <Area value={thoughts} onChange={setThoughts} placeholder="Что этот режим говорит тебе? Во что он верит?" rows={2} />
-
-        <StepLabel step={4} title="Чувства" hint="что этот режим ощущает" />
-        <Area value={feelings} onChange={setFeelings} placeholder="Что этот режим чувствует? Страх, злость, пустоту..." rows={2} />
-
-        <StepLabel step={5} title="Тело" hint="что ощущаешь" />
-        <Area value={bodyFeelings} onChange={setBodyFeelings} placeholder="Что происходит с телом? Напряжение, онемение, тяжесть..." rows={2} />
-
-        <StepLabel step={6} title="Действия" hint="что ты делаешь или делал/а" />
-        <Area value={actions} onChange={setActions} placeholder="Как этот режим тебя тянет поступить?" rows={2} />
-
-        <StepLabel step={7} title="Что тебе на самом деле нужно?" />
-        <Area value={actualNeed} onChange={setActualNeed} placeholder="Чего тебе на самом деле не хватает?" rows={2} />
-
-        <StepLabel step={8} title="Детские воспоминания" hint="связанные с ситуацией" />
-        <Area value={childhoodMemories} onChange={setChildhoodMemories} placeholder="Напоминает что-то из детства? Похожее чувство, похожая ситуация?" rows={3} />
-
-        {!canSave && (
-          <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-sub)', marginTop: 20 }}>
-            Выбери режим и опиши ситуацию — и можно будет сохранить
+  // ── Step 2: form ──
+  const modeColor = selectedMode?.color ?? 'var(--c-slate)';
+  return (
+    <ExScreen
+      onBack={goBack}
+      eyebrow={selectedMode?.groupName ?? 'Режим'}
+      eyebrowColor={modeColor}
+      title={selectedMode?.name ?? ''}
+      lede={selectedMode?.short ?? ''}
+      aside={
+        <>
+          <div className="aside-card" style={{ borderColor: modeColor + '40', background: modeColor + '08', position: 'sticky', top: 40 }}>
+            <div className="aside-card-eyebrow" style={{ color: modeColor }}>Подсказка</div>
+            <h3>Говори от лица режима</h3>
+            <p className="body">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
           </div>
-        )}
+          <button className="ex-btn ex-btn-ghost" onClick={() => setShowPicker(true)} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <GlyphArrowLeft /> Сменить режим
+          </button>
+        </>
+      }
+    >
+      <div className="prompt" style={{ marginTop: 8 }}>
+        <div className="prompt-num">1.</div>
+        <div>
+          <div className="prompt-label">Что случилось <span style={{ color: 'var(--c-rose)', marginLeft: 2 }}>*</span></div>
+          <p className="prompt-hint">Что включило этот режим — конкретно, без обобщений.</p>
+          <textarea
+            className={'paper-input ' + (situation.trim() ? 'is-filled' : '')}
+            rows={3}
+            value={situation}
+            onChange={e => setSituation(e.target.value)}
+            placeholder="Папа позвонил, начал спрашивать про работу. Почувствовал как «отключился»…"
+            autoFocus
+          />
+        </div>
       </div>
-    </div>
+
+      <div className="prompt">
+        <div className="prompt-num">2.</div>
+        <div>
+          <div className="prompt-label">Что говорит этот режим</div>
+          <p className="prompt-hint">Внутренний монолог — что он повторяет, во что верит.</p>
+          <textarea
+            className={'paper-input ' + (thoughts.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={thoughts}
+            onChange={e => setThoughts(e.target.value)}
+            placeholder="«Не лезь. Не показывай. Никому не интересно по-настоящему»…"
+          />
+        </div>
+      </div>
+
+      <div className="prompt">
+        <div className="prompt-num">3.</div>
+        <div>
+          <div className="prompt-label">Что он чувствует</div>
+          <p className="prompt-hint">Эмоции этого режима — даже если он сам их «не чувствует».</p>
+          <textarea
+            className={'paper-input ' + (feelings.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={feelings}
+            onChange={e => setFeelings(e.target.value)}
+            placeholder="Пустота, отрешённость. Под этим — обида и страх…"
+          />
+        </div>
+      </div>
+
+      <div className="prompt">
+        <div className="prompt-num">4.</div>
+        <div>
+          <div className="prompt-label">Тело</div>
+          <textarea
+            className={'paper-input ' + (bodyFeelings.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={bodyFeelings}
+            onChange={e => setBodyFeelings(e.target.value)}
+            placeholder="Тяжесть в груди, голос становится плоским, плечи сводит…"
+          />
+        </div>
+      </div>
+
+      <div className="prompt">
+        <div className="prompt-num">5.</div>
+        <div>
+          <div className="prompt-label">Что он тебя тянет сделать</div>
+          <textarea
+            className={'paper-input ' + (actions.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={actions}
+            onChange={e => setActions(e.target.value)}
+            placeholder="Закончить разговор быстрее. Лечь и листать ленту…"
+          />
+        </div>
+      </div>
+
+      <div className="flow-section-head">
+        <span className="flow-section-num">·</span>
+        <div>
+          <div className="flow-section-title">Под режимом</div>
+          <div className="flow-section-sub">За каждым режимом — настоящая потребность, которой он не умеет напрямую попросить.</div>
+        </div>
+      </div>
+
+      <div className="prompt">
+        <div className="prompt-num">6.</div>
+        <div>
+          <div className="prompt-label">Чего на самом деле нужно</div>
+          <p className="prompt-hint">Не режиму — тебе. Чего не хватает в этот момент.</p>
+          <textarea
+            className={'paper-input ' + (actualNeed.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={actualNeed}
+            onChange={e => setActualNeed(e.target.value)}
+            placeholder="Чтобы папа спросил как я, а не как работа…"
+          />
+        </div>
+      </div>
+
+      <div className="prompt">
+        <div className="prompt-num">7.</div>
+        <div>
+          <div className="prompt-label">Откуда это знакомо</div>
+          <p className="prompt-hint">Из детства? Похожее чувство, похожая ситуация?</p>
+          <textarea
+            className={'paper-input ' + (childhoodMemories.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={childhoodMemories}
+            onChange={e => setChildhoodMemories(e.target.value)}
+            placeholder="Когда мама приходила с работы — я уже знал что лучше не лезть…"
+          />
+        </div>
+      </div>
+
+      <div className="ex-foot">
+        <span style={{ fontSize: 12, color: 'var(--text-faint)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: 'var(--c-moss)' }} />
+          Автосохранение
+        </span>
+        <span className="spacer" />
+        <button
+          className="ex-btn ex-btn-primary"
+          disabled={!canSave || saving}
+          onClick={handleSave}
+          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+        >
+          {saving ? 'Сохраняю…' : 'Сохранить запись'}
+          {!saving && <GlyphCheck />}
+        </button>
+      </div>
+    </ExScreen>
   );
 }
