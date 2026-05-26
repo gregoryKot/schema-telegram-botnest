@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
-import { BottomSheet } from './BottomSheet';
-import { SectionLabel } from './SectionLabel';
+import { GlyphArrowLeft } from './exercises/ExScreen';
 
 const TAGS = [
   { id: 'work',       label: 'Работа',      emoji: '💼' },
@@ -63,12 +62,18 @@ export function NoteSheet({ date, onClose }: Props) {
   }
 
   return (
-    <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 8 }}>
-        <SectionLabel purple mb={16}>Заметка к дню</SectionLabel>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+          <GlyphArrowLeft /> Назад
+        </button>
+      </div>
+      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
+        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', lineHeight: 1.15, marginBottom: 28 }}>
+          Заметка к дню
+        </h1>
 
-        {/* Tags */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 20 }}>
           {TAGS.map(t => {
             const on = selectedTags.has(t.id);
             return (
@@ -77,11 +82,11 @@ export function NoteSheet({ date, onClose }: Props) {
                 onClick={() => toggleTag(t.id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+                  padding: '7px 14px', borderRadius: 20, cursor: 'pointer',
                   background: on ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'rgba(var(--fg-rgb),0.05)',
                   border: `1px solid ${on ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
                   color: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.5)',
-                  fontSize: 12, fontWeight: on ? 600 : 400,
+                  fontSize: 13, fontWeight: on ? 600 : 400,
                   transition: 'all 0.15s',
                 }}
               >
@@ -98,33 +103,33 @@ export function NoteSheet({ date, onClose }: Props) {
           placeholder="Что происходило сегодня? Любая мысль..."
           maxLength={500}
           style={{
-            width: '100%', minHeight: 100,
+            width: '100%', minHeight: 120,
             background: 'rgba(var(--fg-rgb),0.05)',
             border: '1px solid rgba(var(--fg-rgb),0.1)',
-            borderRadius: 12, padding: '12px 14px',
+            borderRadius: 12, padding: '14px 16px',
             color: 'var(--text)', fontSize: 15, lineHeight: 1.6,
             resize: 'none', outline: 'none', boxSizing: 'border-box',
             fontFamily: 'inherit',
           }}
         />
-        <div style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'right', marginTop: 4, marginBottom: 16 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'right', marginTop: 4, marginBottom: 24 }}>
           {text.length}/500
         </div>
 
         {error && (
-          <div style={{ fontSize: 12, color: 'rgba(255,100,100,0.8)', marginBottom: 10 }}>
+          <div style={{ fontSize: 13, color: 'rgba(255,100,100,0.8)', marginBottom: 12 }}>
             Не удалось сохранить. Попробуй ещё раз.
           </div>
         )}
         <button
           onClick={handleSave}
           disabled={!hasContent || saving}
-          className="btn-primary"
-          style={{ borderRadius: 12, opacity: hasContent ? 1 : 0.35 }}
+          className="ex-btn ex-btn-primary"
+          style={{ opacity: hasContent ? 1 : 0.35 }}
         >
           {saving ? 'Сохранение...' : 'Сохранить'}
         </button>
       </div>
-    </BottomSheet>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BottomSheet } from '../BottomSheet';
+import { GlyphArrowLeft } from '../exercises/ExScreen';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { fmtDateLong, todayStr } from '../../utils/format';
 import { haptic } from '../../haptic';
@@ -10,6 +10,14 @@ interface Props {
   existingItems?: string[];
   onSave: (date: string, items: string[]) => Promise<void>;
 }
+
+const PLACEHOLDERS = [
+  'Что-то хорошее, что произошло сегодня...',
+  'Кто-то, кто помог или поддержал...',
+  'Момент, который хочется запомнить...',
+  'Что-то простое, что согрело...',
+  'Что-то, что обычно не замечаешь...',
+];
 
 export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Props) {
   const existing = !existingItems ? loadDraft<{ items: string[] }>('gratitude') : null;
@@ -43,27 +51,32 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
 
   const dateLabel = date === todayStr() ? 'сегодня' : fmtDateLong(date);
 
-  const PLACEHOLDERS = [
-    'Что-то хорошее, что произошло сегодня...',
-    'Кто-то, кто помог или поддержал...',
-    'Момент, который хочется запомнить...',
-    'Что-то простое, что согрело...',
-    'Что-то, что обычно не замечаешь...',
-  ];
-
   return (
-    <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Дневник благодарности</div>
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 20 }}>
-          {dateLabel}
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 16, lineHeight: 1.6 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+          <GlyphArrowLeft /> Назад
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={!canSave || saving}
+          className="ex-btn ex-btn-primary"
+          style={{ padding: '6px 18px', fontSize: 14, opacity: canSave ? 1 : 0.35 }}
+        >
+          {saving ? 'Сохраняю...' : 'Сохранить'}
+        </button>
+      </div>
+      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
+        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', lineHeight: 1.15, marginBottom: 6 }}>
+          Дневник благодарности
+        </h1>
+        <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 10 }}>{dateLabel}</div>
+        <p style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 24, lineHeight: 1.6 }}>
           За что ты благодарен сегодня? Даже самое маленькое — оно важно.
-        </div>
+        </p>
 
         {items.map((item, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
             <div style={{
               width: 32, height: 32, borderRadius: 10, flexShrink: 0, marginTop: 2,
               background: item.trim() ? '#34d39922' : 'rgba(var(--fg-rgb),0.06)',
@@ -98,17 +111,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
             + добавить ещё
           </button>
         )}
-
-        <button onClick={handleSave} disabled={!canSave || saving} style={{
-          marginTop: 20, width: '100%', padding: '14px', borderRadius: 14,
-          background: canSave ? 'var(--accent-green)' : 'rgba(var(--fg-rgb),0.1)',
-          color: canSave ? 'var(--bg)' : 'rgba(var(--fg-rgb),0.3)',
-          border: 'none', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default',
-          transition: 'background 200ms, color 200ms',
-        }}>
-          {saving ? 'Сохраняю...' : 'Сохранить'}
-        </button>
       </div>
-    </BottomSheet>
+    </div>
   );
 }

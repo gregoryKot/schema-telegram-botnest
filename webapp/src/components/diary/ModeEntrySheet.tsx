@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BottomSheet } from '../BottomSheet';
+import { GlyphArrowLeft } from '../exercises/ExScreen';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { haptic } from '../../haptic';
@@ -92,32 +92,27 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   };
 
   return (
-    <BottomSheet onClose={onClose}>
-      <div>
-        {/* Sticky header */}
-        <div style={{
-          position: 'sticky', top: 0, zIndex: 5,
-          background: 'var(--sheet-bg)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          paddingTop: 4, paddingBottom: 12,
-          borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
-          marginBottom: 8,
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+          <GlyphArrowLeft /> Назад
+        </button>
+        <button onClick={handleSave} disabled={!canSave || saving} style={{
+          padding: '6px 18px', borderRadius: 10, border: 'none',
+          background: canSave ? COLOR : 'rgba(var(--fg-rgb),0.08)',
+          color: canSave ? '#fff' : 'rgba(var(--fg-rgb),0.25)',
+          fontSize: 13, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', flexShrink: 0,
         }}>
-          <div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Дневник режимов</div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-              {existing ? 'Продолжаем с того места' : 'Кто сейчас внутри?'}
-            </div>
-          </div>
-          <button onClick={handleSave} disabled={!canSave || saving} style={{
-            padding: '9px 18px', borderRadius: 12, border: 'none',
-            background: canSave ? COLOR : 'rgba(var(--fg-rgb),0.08)',
-            color: canSave ? '#fff' : 'rgba(var(--fg-rgb),0.25)',
-            fontSize: 13, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', flexShrink: 0,
-          }}>
-            {saving ? 'Сохраняю...' : 'Сохранить'}
-          </button>
-        </div>
+          {saving ? 'Сохраняю...' : 'Сохранить'}
+        </button>
+      </div>
+      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
+        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', lineHeight: 1.15, marginBottom: 6 }}>
+          Дневник режимов
+        </h1>
+        <p style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 24 }}>
+          {existing ? 'Продолжаем с того места' : 'Кто сейчас внутри?'}
+        </p>
 
         <StepLabel step={1} title="Режим" hint="кто взял управление" />
         {MODE_GROUPS.map(group => (
@@ -164,11 +159,11 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         <Area value={childhoodMemories} onChange={setChildhoodMemories} placeholder="Напоминает что-то из детства? Похожее чувство, похожая ситуация?" rows={3} />
 
         {!canSave && (
-          <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-sub)', marginTop: 16, paddingBottom: 8 }}>
+          <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-sub)', marginTop: 20 }}>
             Выбери режим и опиши ситуацию — и можно будет сохранить
           </div>
         )}
       </div>
-    </BottomSheet>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BottomSheet } from '../BottomSheet';
+import { GlyphArrowLeft } from '../exercises/ExScreen';
 import { EMOTIONS, INTENSITY_LABELS, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import type { EmotionEntry } from '../../types';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
@@ -116,14 +116,17 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
 
   const canSave = trigger.trim().length > 0;
 
+  const hasDraft = !!(draft && Object.values(draft).some(v =>
+    Array.isArray(v) ? v.length > 0 : typeof v === 'string' && v.trim().length > 0
+  ));
+
   const handleSave = async () => {
     if (!canSave || saving) return;
     haptic.success();
     setSaving(true);
     try {
       await onSave({
-        trigger,
-        emotions,
+        trigger, emotions,
         thoughts: thoughts || undefined,
         bodyFeelings: bodyFeelings || undefined,
         actualBehavior: actualBehavior || undefined,
@@ -143,37 +146,28 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
     }
   };
 
-  const hasDraft = !!(draft && Object.values(draft).some(v =>
-    Array.isArray(v) ? v.length > 0 : typeof v === 'string' && v.trim().length > 0
-  ));
-
   return (
-    <BottomSheet onClose={onClose}>
-      <div>
-        {/* Sticky header */}
-        <div style={{
-          position: 'sticky', top: 0, zIndex: 5,
-          background: 'var(--sheet-bg)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          paddingTop: 4, paddingBottom: 12,
-          borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
-          marginBottom: 8,
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+          <GlyphArrowLeft /> Назад
+        </button>
+        <button onClick={handleSave} disabled={!canSave || saving} style={{
+          padding: '6px 18px', borderRadius: 10, border: 'none',
+          background: canSave ? COLOR : 'rgba(var(--fg-rgb),0.08)',
+          color: canSave ? '#fff' : 'rgba(var(--fg-rgb),0.25)',
+          fontSize: 13, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', flexShrink: 0,
         }}>
-          <div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Дневник схем</div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-              {hasDraft ? 'Продолжаем с того места' : 'С чего начнём?'}
-            </div>
-          </div>
-          <button onClick={handleSave} disabled={!canSave || saving} style={{
-            padding: '9px 18px', borderRadius: 12, border: 'none',
-            background: canSave ? COLOR : 'rgba(var(--fg-rgb),0.08)',
-            color: canSave ? '#fff' : 'rgba(var(--fg-rgb),0.25)',
-            fontSize: 13, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', flexShrink: 0,
-          }}>
-            {saving ? 'Сохраняю...' : 'Сохранить'}
-          </button>
-        </div>
+          {saving ? 'Сохраняю...' : 'Сохранить'}
+        </button>
+      </div>
+      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
+        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', lineHeight: 1.15, marginBottom: 6 }}>
+          Дневник схем
+        </h1>
+        <p style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 24 }}>
+          {hasDraft ? 'Продолжаем с того места' : 'С чего начнём?'}
+        </p>
 
         <StepLabel step={1} title="Что случилось?" hint="опиши ситуацию — где, с кем, когда" required />
         <Area value={trigger} onChange={setTrigger} placeholder="Что произошло? Где ты был/а, с кем, в какой момент?" rows={3} />
@@ -271,11 +265,11 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         <Area value={healthyBehavior} onChange={setHealthyBehavior} placeholder="Что сделал бы Здоровый Взрослый внутри тебя?" />
 
         {!canSave && (
-          <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-sub)', marginTop: 16, paddingBottom: 8 }}>
+          <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-sub)', marginTop: 20 }}>
             Опиши ситуацию — и можно будет сохранить
           </div>
         )}
       </div>
-    </BottomSheet>
+    </div>
   );
 }
