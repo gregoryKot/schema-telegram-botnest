@@ -33,7 +33,7 @@ const SettingsSheet        = lazy(() => import('./SettingsSheet').then(m => ({ d
 const PracticesScreen      = lazy(() => import('./PracticesScreen').then(m => ({ default: m.PracticesScreen })));
 const PlansScreen          = lazy(() => import('./PlansScreen').then(m => ({ default: m.PlansScreen })));
 const SchemaInfoSheet      = lazy(() => import('./SchemaInfoSheet').then(m => ({ default: m.SchemaInfoSheet })));
-const ChildhoodWheelSheet  = lazy(() => import('./ChildhoodWheelSheet').then(m => ({ default: m.ChildhoodWheelSheet })));
+const ChildhoodWheelEx     = lazy(() => import('./exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
 const TherapistClientSheet  = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
 const TherapistTodaySection = lazy(() => import('../sections/TherapistTodaySection').then(m => ({ default: m.TherapistTodaySection })));
 const SchemaEntrySheet     = lazy(() => import('./diary/SchemaEntrySheet').then(m => ({ default: m.SchemaEntrySheet })));
@@ -662,11 +662,12 @@ export function AppShell() {
           />
         )}
         {showChildhoodWheel && (
-          <ChildhoodWheelSheet
-            onClose={() => setShowChildhoodWheel(false)}
-            onOpenSchemas={() => { setShowChildhoodWheel(false); setShowSchemaInfo(true); }}
-            onSaved={(r) => setChildhoodRatings(r)}
-          />
+          <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+            <ChildhoodWheelEx
+              onBack={() => setShowChildhoodWheel(false)}
+              onSaved={(r) => setChildhoodRatings(r)}
+            />
+          </div>
         )}
         {showTodayNote && (
           <NoteSheet date={TODAY_DATE} onClose={() => {

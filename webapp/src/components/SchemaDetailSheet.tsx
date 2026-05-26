@@ -31,6 +31,12 @@ function readSchemaIds(): string[] {
   try { return JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '[]'); } catch { return []; }
 }
 
+const GlyphBack = () => (
+  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 3L5 8l5 5" />
+  </svg>
+);
+
 interface Props {
   schemaId: string;
   onClose: () => void;
@@ -58,98 +64,60 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
   }
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 90,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex', alignItems: 'flex-end',
-      }}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          width: '100%',
-          background: 'var(--sheet-bg)',
-          borderRadius: '24px 24px 0 0',
-          padding: '8px 20px 40px',
-          maxHeight: '80%',
-          overflowY: 'auto',
-          animation: 'sheet-up 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-        }}
-      >
-        {/* Handle */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--line)', margin: '8px auto 20px' }} />
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
+      {/* Header */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-sub)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, padding: '4px 0' }}>
+          <GlyphBack /> Назад
+        </button>
+      </div>
 
-        {/* Domain + Schema name */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
-          <div style={{ width: 10, height: 10, borderRadius: 5, background: domainColor, flexShrink: 0, marginTop: 7 }} />
-          <div>
-            <div className="eyebrow" style={{ color: domainColor, marginBottom: 5 }}>
-              {domainEntry.domain}
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.3px' }}>
-              {schema.name}
-            </div>
-          </div>
+      {/* Content */}
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '48px 32px 80px' }}>
+        {/* Eyebrow */}
+        <div className="eyebrow" style={{ color: domainColor, marginBottom: 12 }}>
+          <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: domainColor, marginRight: 8, verticalAlign: 'middle' }} />
+          {domainEntry.domain}
         </div>
+
+        {/* Title */}
+        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(36px, 5vw, 52px)', fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.02em', color: 'var(--text)', marginBottom: 24 }}>
+          {schema.name}
+        </h1>
 
         {/* Description */}
-        <div style={{
-          background: 'transparent', border: '1px solid var(--line)',
-          borderRadius: 16, padding: '14px 16px', marginBottom: 14,
-        }}>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.65 }}>
-            {schema.libraryDesc ?? schema.desc}
-          </div>
-        </div>
+        <p style={{ fontSize: 17, lineHeight: 1.7, color: 'var(--text-sub)', marginBottom: 40, maxWidth: 600 }}>
+          {schema.libraryDesc ?? schema.desc}
+        </p>
 
         {/* Beliefs */}
         {beliefs.length > 0 && (
-          <>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>Типичные убеждения</div>
-            <div style={{
-              background: 'transparent', border: '1px solid var(--line)',
-              borderRadius: 16, padding: '4px 16px', marginBottom: 16,
-            }}>
+          <div style={{ marginBottom: 40 }}>
+            <div className="eyebrow" style={{ marginBottom: 16 }}>Типичные убеждения</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
               {beliefs.map((b, i) => (
-                <div key={i} style={{
-                  display: 'flex', gap: 10, padding: '10px 0',
-                  borderTop: i > 0 ? '1px solid var(--line)' : undefined,
-                }}>
-                  <span style={{ color: domainColor, flexShrink: 0, fontSize: 18, lineHeight: 1 }}>·</span>
-                  <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, fontStyle: 'italic' }}>
-                    «{b}»
-                  </span>
+                <div key={i} style={{ padding: '16px 0', borderTop: '1px solid var(--line)', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                  <span style={{ color: domainColor, fontFamily: 'var(--serif)', fontSize: 24, lineHeight: 1, flexShrink: 0, marginTop: -2 }}>·</span>
+                  <span style={{ fontFamily: 'var(--serif)', fontSize: 19, fontStyle: 'italic', lineHeight: 1.5, color: 'var(--text)' }}>«{b}»</span>
                 </div>
               ))}
+              <div style={{ borderTop: '1px solid var(--line)' }} />
             </div>
-          </>
+          </div>
         )}
 
-        {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <button
             onClick={toggleSchema}
-            style={{
-              flex: 1, padding: '13px', borderRadius: 14, border: 'none',
-              fontFamily: 'inherit',
-              background: isAdded ? 'transparent' : 'color-mix(in srgb, var(--accent) 12%, transparent)',
-              outline: `1px solid ${isAdded ? 'var(--line)' : 'color-mix(in srgb, var(--accent) 30%, transparent)'}`,
-              color: isAdded ? 'var(--text-faint)' : 'var(--accent)',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-            }}
+            className={'ex-btn ' + (isAdded ? 'ex-btn-outline' : 'ex-btn-ghost')}
+            style={{ minWidth: 180 }}
           >
             {isAdded ? '✓ В моих схемах' : '+ В мои схемы'}
           </button>
           <button
             onClick={() => { onClose(); navigate('/exercises', { state: { openSchemaEx: schemaId } }); }}
-            style={{
-              flex: 1, padding: '13px', borderRadius: 14, border: 'none',
-              fontFamily: 'inherit',
-              background: 'linear-gradient(135deg, var(--accent), #60a5fa)',
-              color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            }}
+            className="ex-btn ex-btn-primary"
           >
             Познакомиться →
           </button>
