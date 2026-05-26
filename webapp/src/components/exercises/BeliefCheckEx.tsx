@@ -85,11 +85,11 @@ export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onCo
           <div className="done-cols">
             <div>
               <div className="dlabel" style={{ color: 'var(--c-rose)' }}>За · {forList.length}</div>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{forList.map((f, i) => <li key={i} style={{ fontSize: 14, color: 'var(--text-sub)', padding: '3px 0' }}>· {f}</li>)}</ul>
+              <ul className="ev-col" style={{ margin: 0, padding: 0 }}>{forList.map((f, i) => <li key={i}>{f}</li>)}</ul>
             </div>
             <div>
               <div className="dlabel" style={{ color: 'var(--c-moss)' }}>Против · {againstList.length}</div>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{againstList.map((a, i) => <li key={i} style={{ fontSize: 14, color: 'var(--text-sub)', padding: '3px 0' }}>· {a}</li>)}</ul>
+              <ul className="ev-col" style={{ margin: 0, padding: 0 }}>{againstList.map((a, i) => <li key={i}>{a}</li>)}</ul>
             </div>
           </div>
           {reframe.trim() && (<>
@@ -128,7 +128,7 @@ export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onCo
           <div>
             <div className="ex-prompt-label">Запиши мысль, которую хочешь проверить</div>
             <p className="ex-prompt-hint">Одно убеждение за раз. Та самая фраза, которая повторяется в голове.</p>
-            <textarea className={'paper-area ' + (belief.trim() ? 'is-filled' : '')} rows={3} value={belief} onChange={e => setBelief(e.target.value)} placeholder="Например: я всегда всё порчу, меня никто не любит…" autoFocus />
+            <textarea className={'paper-input ' + (belief.trim() ? 'is-filled' : '')} rows={3} value={belief} onChange={e => setBelief(e.target.value)} placeholder="Например: я всегда всё порчу, меня никто не любит…" autoFocus />
           </div>
         </div>
         <div className="ex-foot"><span className="spacer" /><button className="ex-btn ex-btn-primary" disabled={!belief.trim()} onClick={() => setStep(1)}>Дальше · доказательства за <GlyphArrowRight /></button></div>
