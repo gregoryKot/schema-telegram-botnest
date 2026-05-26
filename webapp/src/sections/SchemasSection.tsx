@@ -8,6 +8,7 @@ import { BottomSheet } from '../components/BottomSheet';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
+import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 
 const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 
@@ -485,12 +486,20 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
   const toggle = (id: string) => setIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   return (
-    <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Мои режимы</div>
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 20, lineHeight: 1.5 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+          <GlyphArrowLeft /> Назад
+        </button>
+        <button onClick={() => { onSave(ids); onClose(); }} className="ex-btn ex-btn-primary" style={{ padding: '7px 20px' }}>
+          Сохранить{ids.length > 0 ? ` · ${ids.length}` : ''}
+        </button>
+      </div>
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '36px 24px 80px' }}>
+        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>Мои режимы</h1>
+        <p style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 28, lineHeight: 1.6 }}>
           Выбери режимы которые ты замечаешь у себя.
-        </div>
+        </p>
 
         <div style={{ marginBottom: 20 }}>
           <div className="eyebrow" style={{ marginBottom: 8 }}>
@@ -545,10 +554,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
           );
         })}
 
-        <button onClick={() => { onSave(ids); onClose(); }} style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg, var(--accent), var(--accent-blue))', color: '#fff', fontSize: 16, fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>
-          Сохранить{ids.length > 0 ? ` (${ids.length})` : ''}
-        </button>
       </div>
-    </BottomSheet>
+    </div>
   );
 }

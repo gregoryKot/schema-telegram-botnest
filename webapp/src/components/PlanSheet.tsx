@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import type { UserPractice } from '../api';
-import { BottomSheet } from './BottomSheet';
+import { GlyphArrowLeft, GlyphCheck } from './exercises/ExScreen';
 import { SectionLabel } from './SectionLabel';
 
 function ianaToUtcOffset(iana: string): number {
@@ -132,21 +132,28 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
   }
 
   return (
-    <BottomSheet onClose={onClose}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg)', overflowY: 'auto' }}>
+      {/* Topbar */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+          <GlyphArrowLeft /> Назад
+        </button>
+      </div>
+      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
         <div style={{
-          width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+          width: 48, height: 48, borderRadius: 14, flexShrink: 0,
           background: color + '26',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24,
         }}>
           {needEmoji}
         </div>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2 }}>
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', lineHeight: 1.1, marginBottom: 4 }}>
             Что сделаешь завтра?
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 2 }}>
+          </h1>
+          <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
             {needLabel}
           </div>
         </div>
@@ -222,10 +229,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
             />
           </div>
           {customText.trim() && (
-            <button
-              onClick={handleCustomSubmit}
-              className="btn-primary"
-            >
+            <button onClick={handleCustomSubmit} className="ex-btn ex-btn-primary">
               Продолжить →
             </button>
           )}
@@ -334,30 +338,21 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
             </div>
           )}
           <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              onClick={() => setPhase('pick')}
-              style={{
-                flex: 1, padding: '14px 0', borderRadius: 14, border: '1px solid rgba(var(--fg-rgb),0.1)',
-                background: 'transparent', color: 'var(--text-sub)', fontSize: 15, cursor: 'pointer',
-              }}
-            >
+            <button onClick={() => setPhase('pick')} className="ex-btn ex-btn-ghost" style={{ flex: 1 }}>
               ← Назад
             </button>
             <button
               onClick={() => { setSaveError(false); handleSave(); }}
               disabled={saving || savedOk}
-              style={{
-                flex: 2, padding: '14px 0', borderRadius: 14, border: 'none',
-                background: savedOk ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)' : saving ? 'rgba(var(--fg-rgb),0.1)' : color,
-                color: savedOk ? 'var(--accent-green)' : '#fff', fontSize: 15, fontWeight: 600, cursor: (saving || savedOk) ? 'default' : 'pointer',
-                transition: 'all 0.3s',
-              }}
+              className="ex-btn ex-btn-primary"
+              style={{ flex: 2, background: savedOk ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)' : saving ? 'rgba(var(--fg-rgb),0.1)' : color, color: savedOk ? 'var(--accent-green)' : '#fff', transition: 'all 0.3s' }}
             >
-              {savedOk ? '✓ Запланировано' : saving ? '...' : 'Сохранить план'}
+              {savedOk ? <><GlyphCheck /> Запланировано</> : saving ? '…' : 'Сохранить план'}
             </button>
           </div>
         </>
       )}
-    </BottomSheet>
+      </div>
+    </div>
   );
 }
