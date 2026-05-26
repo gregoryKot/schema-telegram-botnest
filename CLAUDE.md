@@ -94,6 +94,30 @@
 - Callback data формат: `действие:параметр` (например `need:safety`, `rate:safety:7`).
 - Константы (`CHANNEL`, `BOOKING_URL`) — в начале файла, не inline в коде.
 
+## Новый fullscreen-лист или оверлей в webapp (ОБЯЗАТЕЛЬНО)
+
+Любой компонент с `position: fixed, inset: 0` (sheet, экран упражнения, оверлей) **обязан** использовать хук `useHistorySheet` — иначе кнопка «Назад» в браузере уведёт пользователя из приложения.
+
+```tsx
+import { useHistorySheet } from '../hooks/useHistorySheet'; // путь от компонента
+
+export function MySheet({ onClose }: { onClose: () => void }) {
+  const goBack = useHistorySheet(onClose);
+  // ...
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, ... }}>
+      <button onClick={goBack}>Назад</button>   {/* НЕ onClick={onClose} */}
+    </div>
+  );
+}
+```
+
+Правила:
+- Хук вызывается **один раз** в теле компонента, принимает функцию закрытия (`onClose` / `onBack` / `onDone`).
+- Все кнопки «Назад» и «Закрыть» внутри листа используют `goBack()`, **не** `onClose()` напрямую.
+- Если лист закрывается после сохранения (`await api.save(); goBack()`), тоже `goBack()`.
+- Исключение: внутренние мини-модалки поверх листа (тёмный backdrop для подтверждения) — у них свой локальный `onClose`, хук там не нужен.
+
 ## Деплой webapp (ОБЯЗАТЕЛЬНО)
 
 `webapp/dist/` хранится в git и именно его Amvera раздаёт на проде.
