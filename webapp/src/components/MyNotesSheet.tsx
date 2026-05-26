@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { api } from '../api';
 import { SCHEMA_DOMAINS, getModeById } from '../schemaTherapyData';
-import { SchemaIntroSheet } from './SchemaIntroSheet';
 import { ModeIntroSheet } from './ModeIntroSheet';
+
+const SchemaEx = lazy(() => import('./exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -311,13 +312,11 @@ export function MyNotesSheet({ onClose }: Props) {
       </div>
 
       {openSchemaId && (
-        <SchemaIntroSheet
-          schemaId={openSchemaId}
-          onClose={() => setOpenSchemaId(null)}
-          onComplete={() => {
-            api.getSchemaNotes().then(setSchemaNotes).catch(() => {});
-          }}
-        />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}>
+            <SchemaEx onBack={() => setOpenSchemaId(null)} initialSchemaId={openSchemaId} onComplete={() => api.getSchemaNotes().then(setSchemaNotes).catch(() => {})} />
+          </Suspense>
+        </div>
       )}
       {openModeId && (
         <ModeIntroSheet

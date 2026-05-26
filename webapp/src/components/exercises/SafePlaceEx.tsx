@@ -9,7 +9,7 @@ const SENSES = [
   { k: 'smell', label: 'Что я обоняю',           ph: 'хвоя, дождь, дым от далёкого костра…' },
 ] as const;
 
-export function SafePlaceEx({ onBack }: { onBack: () => void }) {
+export function SafePlaceEx({ onBack, onComplete }: { onBack: () => void; onComplete?: () => void }) {
   const [overview, setOverview] = useState('');
   const [senses, setSenses] = useState<Record<string, string>>({ see: '', hear: '', feel: '', smell: '' });
   const [done, setDone] = useState(false);
@@ -20,6 +20,7 @@ export function SafePlaceEx({ onBack }: { onBack: () => void }) {
   async function save() {
     const desc = [overview, ...SENSES.filter(s => senses[s.k].trim()).map(s => `${s.label}: ${senses[s.k]}`)].join('\n');
     try { await api.saveSafePlace(desc); } catch {}
+    onComplete?.();
     setDone(true);
   }
 

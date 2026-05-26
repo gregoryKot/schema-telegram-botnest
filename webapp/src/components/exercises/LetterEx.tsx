@@ -10,7 +10,7 @@ function fmtAgo(d: string): string {
   return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
-export function LetterEx({ onBack }: { onBack: () => void }) {
+export function LetterEx({ onBack, onComplete }: { onBack: () => void; onComplete?: () => void }) {
   const [text, setText] = useState('');
   const [done, setDone] = useState(false);
   const [pastLetters, setPastLetters] = useState<any[]>([]);
@@ -21,6 +21,7 @@ export function LetterEx({ onBack }: { onBack: () => void }) {
 
   async function seal() {
     try { await api.createLetter(text); } catch {}
+    onComplete?.();
     setDone(true);
   }
 
