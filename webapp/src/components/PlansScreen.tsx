@@ -4,6 +4,7 @@ import type { PracticePlan } from '../api';
 import { Loader } from './Loader';
 import { COLORS } from '../types';
 import { NEED_DATA } from '../needData';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 interface Props {
   onClose: () => void;
@@ -32,6 +33,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function PlansScreen({ onClose, onOpenTracker }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [plans, setPlans] = useState<PracticePlan[] | null>(null);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             )}
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button onClick={onClose} className="btn btn-secondary">Закрыть</button>
+            <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
           </div>
         </div>
 
@@ -75,7 +77,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
               Планы создаются в трекере — выбери потребность с низкой оценкой и нажми «Запланировать практику»
             </div>
             {onOpenTracker && (
-              <button onClick={() => { onClose(); onOpenTracker(); }} style={{
+              <button onClick={() => { onOpenTracker?.(); goBack(); }} style={{
                 padding: '12px 28px', borderRadius: 14, border: 'none', fontFamily: 'inherit',
                 background: 'transparent', outline: '1px solid var(--line)',
                 color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer',

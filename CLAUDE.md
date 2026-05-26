@@ -118,6 +118,9 @@ export function MySheet({ onClose }: { onClose: () => void }) {
 - Если лист закрывается после сохранения (`await api.save(); goBack()`), тоже `goBack()`.
 - Исключение: внутренние мини-модалки поверх листа (тёмный backdrop для подтверждения) — у них свой локальный `onClose`, хук там не нужен.
 
+**Важно — не использовать `history.pushState` или `window.addEventListener('popstate')` напрямую.**
+Хук работает через `useNavigate`/`useLocation` из react-router-dom. Прямой вызов `history.pushState` конфликтует с React Router: при нажатии «Назад» срабатывают оба обработчика одновременно — лист закрывается И роутер уходит на предыдущий раздел.
+
 ## Деплой webapp (ОБЯЗАТЕЛЬНО)
 
 `webapp/dist/` хранится в git и именно его Amvera раздаёт на проде.

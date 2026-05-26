@@ -3,6 +3,7 @@ import { api } from '../api';
 import type { UserPractice } from '../api';
 import { Loader } from './Loader';
 import { COLORS } from '../types';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { NEED_DATA } from '../needData';
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function PracticesScreen({ onClose, onOpenTracker }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [needIdx, setNeedIdx] = useState(0);
   const [practices, setPractices] = useState<UserPractice[] | null>(null);
   const [input, setInput] = useState('');
@@ -79,7 +81,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             {errorToast && <span className="text-sm" style={{ color: 'var(--c-rose)', fontWeight: 500 }}>Ошибка сохранения</span>}
             {addedToast && <span className="text-sm" style={{ color: 'var(--c-moss)', fontWeight: 500 }}>Добавлено</span>}
-            <button onClick={onClose} className="btn btn-secondary">Закрыть</button>
+            <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
           </div>
         </div>
 
