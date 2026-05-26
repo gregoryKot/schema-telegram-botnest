@@ -11,7 +11,6 @@ const SchemaEx      = lazy(() => import('../components/exercises/FlashcardEx').t
 const ModeEx        = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { api } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
-import { BottomSheet } from '../components/BottomSheet';
 import { fmtDate } from '../utils/format';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { NEED_ORDER, NEED_DATA } from '../needData';

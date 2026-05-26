@@ -10,7 +10,6 @@ import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateShe
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
-import { BottomSheet } from '../components/BottomSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { fmtDate, todayStr } from '../utils/format';
 

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import type { Achievement, TherapyRelationInfo } from '../api';
-import { BottomSheet } from '../components/BottomSheet';
 import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
@@ -562,10 +561,14 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         </div>
       </div>
 
-      {/* ── BottomSheet: Достижения ── */}
+      {/* ── Достижения ── */}
       {showAchievements && achievements && (
-        <BottomSheet onClose={() => { setShowAchievements(false); setSelectedAchievement(null); }}>
-          <div style={{ paddingTop: 4 }}>
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => { setShowAchievements(false); setSelectedAchievement(null); }}
+        >
+        <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto', maxHeight: '80vh', overflowY: 'auto' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Достижения</span>
               <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{earnedList.length} из {achievements.length}</span>
@@ -608,8 +611,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                 );
               })}
             </div>
-          </div>
-        </BottomSheet>
+        </div>
+        </div>
       )}
 
       {/* Achievement detail overlay */}
@@ -635,21 +638,29 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
       {/* Best day tooltip */}
       {showBestDayInfo && (
-        <BottomSheet onClose={() => setShowBestDayInfo(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => setShowBestDayInfo(false)}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
             <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Лучший день</div>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>День недели, в который твои оценки в среднем выше всего.</p>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>Становится точнее с каждой неделей.</p>
           </div>
-        </BottomSheet>
+        </div>
       )}
 
       {notesOpen && <MyNotesSheet onClose={() => setNotesOpen(false)} />}
 
       {/* Delete account confirm */}
       {showDeleteConfirm && (
-        <BottomSheet onClose={() => !deleting && setShowDeleteConfirm(false)} zIndex={300}>
-          <div style={{ paddingTop: 4 }}>
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => !deleting && setShowDeleteConfirm(false)}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
             <div style={{ fontSize: 22, marginBottom: 12 }}>⚠️</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Удалить аккаунт?</div>
             <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 24 }}>
@@ -677,7 +688,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               </button>
             </div>
           </div>
-        </BottomSheet>
+        </div>
       )}
     </div>
   );
