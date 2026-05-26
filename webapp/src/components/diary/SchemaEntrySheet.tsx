@@ -114,6 +114,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   return (
     <ExScreen
       onBack={goBack}
+      backLabel="Назад к дневнику"
       eyebrow="Дневник схем · новая запись"
       eyebrowColor="var(--c-rose)"
       title={<>Записать<br /><span className="it">момент</span></>}

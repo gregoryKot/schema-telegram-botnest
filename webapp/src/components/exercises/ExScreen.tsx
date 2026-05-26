@@ -40,6 +40,7 @@ export function GlyphX() {
 // ── Shared exercise wrapper ───────────────────────────────────────────────────
 interface ExScreenProps {
   onBack: () => void;
+  backLabel?: string;
   eyebrow: ReactNode;
   eyebrowColor: string;
   title: ReactNode;
@@ -49,13 +50,13 @@ interface ExScreenProps {
   children?: ReactNode;
 }
 
-export function ExScreen({ onBack, eyebrow, eyebrowColor, title, lede, aside, foot, children }: ExScreenProps) {
+export function ExScreen({ onBack, backLabel, eyebrow, eyebrowColor, title, lede, aside, foot, children }: ExScreenProps) {
   return (
     <div className="ex-screen">
       <div className="ex-topbar">
         <button className="ex-back" onClick={onBack}>
           <GlyphArrowLeft />
-          Назад к упражнениям
+          {backLabel ?? 'Назад к упражнениям'}
         </button>
       </div>
       <div className="page">

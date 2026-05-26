@@ -79,6 +79,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     return (
       <ExScreen
         onBack={goBack}
+        backLabel="Назад к дневнику"
         eyebrow="Дневник режимов · новая запись"
         eyebrowColor="var(--c-slate)"
         title={<>Кто сейчас<br /><span className="it">взял управление?</span></>}
@@ -123,6 +124,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   return (
     <ExScreen
       onBack={goBack}
+      backLabel="Назад к дневнику"
       eyebrow={selectedMode?.groupName ?? 'Режим'}
       eyebrowColor={modeColor}
       title={selectedMode?.name ?? ''}
