@@ -73,7 +73,7 @@ function WheelSvg({ ratings }: { ratings: Record<string, number> }) {
   );
 }
 
-export function ChildhoodWheelEx({ onBack }: { onBack: () => void }) {
+export function ChildhoodWheelEx({ onBack, onSaved }: { onBack: () => void; onSaved?: (r: Record<string,number>) => void }) {
   const [ratings, setRatings] = useState<Record<string, number>>({ attachment: 5, autonomy: 5, expression: 5, play: 5, limits: 5 });
   const [done, setDone] = useState(false);
 
@@ -83,6 +83,7 @@ export function ChildhoodWheelEx({ onBack }: { onBack: () => void }) {
 
   async function save() {
     try { await api.saveChildhoodRatings(ratings); } catch {}
+    onSaved?.(ratings);
     setDone(true);
   }
 
