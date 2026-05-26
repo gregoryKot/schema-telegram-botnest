@@ -1,4 +1,5 @@
 import { GlyphArrowLeft } from './exercises/ExScreen';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 const PARAGRAPHS = [
   'Индекс — это не цель. Нет задачи достичь 10 или не опускаться ниже 7.',
@@ -8,10 +9,11 @@ const PARAGRAPHS = [
 ];
 
 export function IndexInfoSheet({ onClose }: { onClose: () => void }) {
+  const goBack = useHistorySheet(onClose);
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>

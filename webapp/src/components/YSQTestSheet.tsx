@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { GlyphArrowLeft } from './exercises/ExScreen';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { getTherapistContact } from '../utils/therapistContact';
 import { api } from '../api';
 import type { YsqHistoryEntry } from '../api';
@@ -354,6 +355,7 @@ function computeScores(answers: number[]): Record<string, SchemaScore> {
 }
 
 export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [phase, setPhase] = useState<Phase>('intro');
   const [answers, setAnswers] = useState<number[]>(Array(QUESTIONS.length).fill(0));
   const [page, setPage] = useState(0);
@@ -605,7 +607,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>
@@ -679,7 +681,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             </button>
           )}
 
-          <button onClick={onClose} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 14, background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>
+          <button onClick={goBack} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 14, background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>
             Отмена
           </button>
 
@@ -814,7 +816,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                       </div>
 
                       <div
-                        onClick={() => onViewSchemas ? onViewSchemas(schema.name) : onClose()}
+                        onClick={() => onViewSchemas ? onViewSchemas(schema.name) : goBack()}
                         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0', marginBottom: showDiaryHint ? 8 : 0 }}
                       >
                         <span style={{ fontSize: 13, color: 'var(--accent)' }}>Читать карточку схемы</span>
@@ -931,7 +933,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
               </div>
             )}
 
-            <button onClick={onClose} className="ex-btn ex-btn-primary" style={{ marginTop: 4, marginBottom: 10 }}>
+            <button onClick={goBack} className="ex-btn ex-btn-primary" style={{ marginTop: 4, marginBottom: 10 }}>
               Сохранить и закрыть
             </button>
 

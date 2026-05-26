@@ -3,6 +3,7 @@ import { api } from '../api';
 import type { UserPractice } from '../api';
 import { GlyphArrowLeft, GlyphCheck } from './exercises/ExScreen';
 import { SectionLabel } from './SectionLabel';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 function ianaToUtcOffset(iana: string): number {
   try {
@@ -72,6 +73,7 @@ function defaultReminderIdx(): number {
 }
 
 export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSaved }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [userPractices, setUserPractices] = useState<UserPractice[]>([]);
   const [selectedText, setSelectedText] = useState('');
   const [customText, setCustomText] = useState('');
@@ -135,7 +137,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--bg)', overflowY: 'auto' }}>
       {/* Topbar */}
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>

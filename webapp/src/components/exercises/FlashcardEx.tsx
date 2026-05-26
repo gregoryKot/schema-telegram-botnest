@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../../api';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { ExScreen, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScreen';
+import { useHistorySheet } from '../../hooks/useHistorySheet';
 
 const SCHEMA_QUESTIONS = [
   { key: 'triggers',    label: 'Что запускает эту схему?',        hint: 'Ситуации, слова, интонации — типичные триггеры', placeholder: 'Когда не отвечают на сообщения; когда критикуют при других…' },
@@ -76,6 +77,7 @@ function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; acc
 }
 
 export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () => void; initialSchemaId?: string; onComplete?: () => void }) {
+  const goBack = useHistorySheet(onBack);
   const [picked, setPicked] = useState<{ id: string; name: string; desc: string; color: string; domain: string } | null>(() => {
     if (!initialSchemaId) return null;
     for (const d of SCHEMA_DOMAINS) {
@@ -87,7 +89,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
 
   if (!picked) {
     return (
-      <ExScreen onBack={onBack} eyebrow="№ 02 · Знакомство" eyebrowColor="var(--c-plum)"
+      <ExScreen onBack={goBack} eyebrow="№ 02 · Знакомство" eyebrowColor="var(--c-plum)"
         title={<>Карточка<br/><span className="it">схемы</span></>}
         lede="Выбери одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка."
         aside={<div className="aside-card"><div className="aside-card-eyebrow">Зачем это</div><h3>Назвать — значит вернуть себе власть</h3><p className="body">Схема работает в тени. Когда мы её называем — она становится паттерном, а не «правдой о тебе».</p></div>}
@@ -113,7 +115,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
   }
 
   return (
-    <ExScreen onBack={onBack} eyebrow={picked.domain} eyebrowColor={picked.color} title={picked.name} lede={picked.desc}
+    <ExScreen onBack={goBack} eyebrow={picked.domain} eyebrowColor={picked.color} title={picked.name} lede={picked.desc}
       aside={<>
         <div className="aside-card" style={{ borderColor: picked.color + '40', background: picked.color + '08' }}>
           <div className="aside-card-eyebrow" style={{ color: picked.color }}>Совет</div>
@@ -129,6 +131,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
 }
 
 export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => void; initialModeId?: string; onComplete?: () => void }) {
+  const goBack = useHistorySheet(onBack);
   const [picked, setPicked] = useState<{ id: string; name: string; short: string; color: string; group: string } | null>(() => {
     if (!initialModeId) return null;
     for (const g of MODE_GROUPS) {
@@ -140,7 +143,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
 
   if (!picked) {
     return (
-      <ExScreen onBack={onBack} eyebrow="№ 03 · Знакомство" eyebrowColor="var(--c-clay)"
+      <ExScreen onBack={goBack} eyebrow="№ 03 · Знакомство" eyebrowColor="var(--c-clay)"
         title={<>Карточка<br/><span className="it">режима</span></>}
         lede="Режим — это эмоциональное состояние, которое включается целиком. Описать его — значит научиться его узнавать в моменте."
         aside={<div className="aside-card"><div className="aside-card-eyebrow">Совет</div><h3>Начни с того, что чаще включается</h3><p className="body">Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого — чтобы было что искать в себе в трудный момент.</p></div>}
@@ -166,7 +169,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
   }
 
   return (
-    <ExScreen onBack={onBack} eyebrow={picked.group} eyebrowColor={picked.color} title={picked.name} lede={picked.short}
+    <ExScreen onBack={goBack} eyebrow={picked.group} eyebrowColor={picked.color} title={picked.name} lede={picked.short}
       aside={<>
         <div className="aside-card" style={{ borderColor: picked.color + '40', background: picked.color + '08' }}>
           <div className="aside-card-eyebrow" style={{ color: picked.color }}>Подсказка</div>
