@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import type { UserSettings, PairsData, TherapyRelationInfo } from '../api';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
-import { BottomSheet } from './BottomSheet';
 import { Loader } from './Loader';
 
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
@@ -618,130 +617,132 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
       {/* Export text overlay */}
       {exportText && (
-        <BottomSheet onClose={() => { setExportText(null); setExportCopied(false); }} zIndex={300}>
-          <div style={{ paddingTop: 4 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Сводка для терапевта</div>
-            <pre style={{ fontSize: 11, color: 'var(--text-sub)', lineHeight: 1.6, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '12px 14px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: 14, userSelect: 'all', fontFamily: 'monospace' }}>
-              {exportText}
-            </pre>
-            <button onClick={async () => { try { await navigator.clipboard.writeText(exportText); setExportCopied(true); setTimeout(() => setExportCopied(false), 2000); } catch {} }}
-              style={{ width: '100%', padding: '13px 0', border: 'none', borderRadius: 12, background: exportCopied ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)' : 'rgba(var(--fg-rgb),0.08)', color: exportCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.7)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-              {exportCopied ? '✓ Скопировано' : 'Скопировать'}
-            </button>
-          </div>
-        </BottomSheet>
+        <InfoModal onClose={() => { setExportText(null); setExportCopied(false); }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Сводка для терапевта</div>
+          <pre style={{ fontSize: 11, color: 'var(--text-sub)', lineHeight: 1.6, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '12px 14px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: 14, userSelect: 'all', fontFamily: 'monospace' }}>
+            {exportText}
+          </pre>
+          <button onClick={async () => { try { await navigator.clipboard.writeText(exportText); setExportCopied(true); setTimeout(() => setExportCopied(false), 2000); } catch {} }}
+            style={{ width: '100%', padding: '13px 0', border: 'none', borderRadius: 12, background: exportCopied ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)' : 'rgba(var(--fg-rgb),0.08)', color: exportCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.7)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            {exportCopied ? '✓ Скопировано' : 'Скопировать'}
+          </button>
+        </InfoModal>
       )}
 
       {/* Notify info */}
       {showNotifyInfo && (
-        <BottomSheet onClose={() => setShowNotifyInfo(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
-            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем уведомления</div>
-            <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>Регулярность — это всё. Один раз в день, в одно и то же время, формирует привычку наблюдать за собой.</p>
-            <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}><b style={{ color: 'var(--text)' }}>Итоги дня</b> — приходят в это же время, если дневник заполнен.</p>
-          </div>
-        </BottomSheet>
+        <InfoModal onClose={() => setShowNotifyInfo(false)}>
+          <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем уведомления</div>
+          <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>Регулярность — это всё. Один раз в день, в одно и то же время, формирует привычку наблюдать за собой.</p>
+          <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}><b style={{ color: 'var(--text)' }}>Итоги дня</b> — приходят в это же время, если дневник заполнен.</p>
+        </InfoModal>
       )}
 
       {/* Pair info */}
       {showPairInfo && (
-        <BottomSheet onClose={() => setShowPairInfo(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
-            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем привязывать друга</div>
-            <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
-              Это необязательно — но может помочь.
-            </p>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 12 }}>
-              Ты и друг (партнёр, коллега) видите <b style={{ color: 'var(--text)' }}>индексы дня</b> друг друга — просто число от 0 до 10. Никаких деталей, дневников или оценок.
-            </p>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-              Иногда знать, что кому-то важно как у тебя дела — уже достаточно. Это мягкая взаимная видимость, без осуждения.
-            </p>
-          </div>
-        </BottomSheet>
+        <InfoModal onClose={() => setShowPairInfo(false)}>
+          <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем привязывать друга</div>
+          <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
+            Это необязательно — но может помочь.
+          </p>
+          <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 12 }}>
+            Ты и друг (партнёр, коллега) видите <b style={{ color: 'var(--text)' }}>индексы дня</b> друг друга — просто число от 0 до 10. Никаких деталей, дневников или оценок.
+          </p>
+          <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
+            Иногда знать, что кому-то важно как у тебя дела — уже достаточно. Это мягкая взаимная видимость, без осуждения.
+          </p>
+        </InfoModal>
       )}
 
       {/* Therapist info */}
       {showTherapistInfo && (
-        <BottomSheet onClose={() => setShowTherapistInfo(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
-            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем подключать терапевта</div>
-            <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
-              Если ты работаешь со схема-терапевтом — приложение может стать частью этой работы.
-            </p>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 12 }}>
-              Терапевт, которому ты дашь код, видит <b style={{ color: 'var(--text)' }}>трекер потребностей и задания</b>. Карточки схем, профиль и дневники ты контролируешь сам — можно закрыть в настройках.
-            </p>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-              Это даёт терапевту контекст без лишних объяснений — и позволяет работать с реальными паттернами, не с тем, что вспомнилось на сессии.
-            </p>
-          </div>
-        </BottomSheet>
+        <InfoModal onClose={() => setShowTherapistInfo(false)}>
+          <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем подключать терапевта</div>
+          <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
+            Если ты работаешь со схема-терапевтом — приложение может стать частью этой работы.
+          </p>
+          <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 12 }}>
+            Терапевт, которому ты дашь код, видит <b style={{ color: 'var(--text)' }}>трекер потребностей и задания</b>. Карточки схем, профиль и дневники ты контролируешь сам — можно закрыть в настройках.
+          </p>
+          <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
+            Это даёт терапевту контекст без лишних объяснений — и позволяет работать с реальными паттернами, не с тем, что вспомнилось на сессии.
+          </p>
+        </InfoModal>
       )}
 
       {/* Privacy */}
       {showPrivacy && (
-        <BottomSheet onClose={() => { setShowPrivacy(false); setDeleteConfirm(false); }} zIndex={300}>
-          <div style={{ paddingTop: 4 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Данные и конфиденциальность</div>
+        <InfoModal onClose={() => { setShowPrivacy(false); setDeleteConfirm(false); }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Данные и конфиденциальность</div>
 
-            {[
-              { title: 'Что хранится на сервере', text: 'Дневник, оценки, заметки, практики, результаты тестов — всё привязано к Telegram-аккаунту и доступно с любого устройства.' },
-              { title: 'Передача третьим лицам', text: 'Данные не продаются и не передаются рекламным сетям или третьим лицам. Никогда.' },
-            ].map(block => (
-              <div key={block.title} style={{ marginBottom: 12, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '14px 16px' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(var(--fg-rgb),0.8)', marginBottom: 6 }}>{block.title}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{block.text}</div>
-              </div>
-            ))}
-
-            {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(var(--fg-rgb),0.8)', marginBottom: 10 }}>Удалить данные теста YSQ-R</div>
-                <button onClick={() => { localStorage.removeItem(YSQ_PROGRESS_KEY); localStorage.removeItem(YSQ_RESULT_KEY); api.deleteYsqResult().catch(() => {}); setShowPrivacy(false); }}
-                  style={{ width: '100%', padding: '13px 0', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-                  Удалить результаты теста
-                </button>
-              </div>
-            )}
-
-            <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>
-              Разработано для образовательных целей. Не является медицинским или психологическим сервисом.
+          {[
+            { title: 'Что хранится на сервере', text: 'Дневник, оценки, заметки, практики, результаты тестов — всё привязано к Telegram-аккаунту и доступно с любого устройства.' },
+            { title: 'Передача третьим лицам', text: 'Данные не продаются и не передаются рекламным сетям или третьим лицам. Никогда.' },
+          ].map(block => (
+            <div key={block.title} style={{ marginBottom: 12, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '14px 16px' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(var(--fg-rgb),0.8)', marginBottom: 6 }}>{block.title}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{block.text}</div>
             </div>
+          ))}
+
+          {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(var(--fg-rgb),0.8)', marginBottom: 10 }}>Удалить данные теста YSQ-R</div>
+              <button onClick={() => { localStorage.removeItem(YSQ_PROGRESS_KEY); localStorage.removeItem(YSQ_RESULT_KEY); api.deleteYsqResult().catch(() => {}); setShowPrivacy(false); }}
+                style={{ width: '100%', padding: '13px 0', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+                Удалить результаты теста
+              </button>
+            </div>
+          )}
+
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>
+            Разработано для образовательных целей. Не является медицинским или психологическим сервисом.
           </div>
-        </BottomSheet>
+        </InfoModal>
       )}
 
-      {/* Delete sheet — прямой флоу */}
+      {/* Delete sheet */}
       {showDeleteSheet && (
-        <BottomSheet onClose={() => { setShowDeleteSheet(false); setDeleteConfirm(false); }} zIndex={300}>
-          <div style={{ paddingTop: 4 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 8 }}>Удалить все данные</div>
-            <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 20 }}>
-              Дневники, оценки, практики, колесо детства, результаты тестов, заметки, задания, связи с терапевтом — всё удалится с сервера. Это действие необратимо.
-            </div>
-            {!deleteConfirm ? (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setShowDeleteSheet(false)} style={{ flex: 1, padding: '14px 0', borderRadius: 14, border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'transparent', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer' }}>
-                  Отмена
-                </button>
-                <button onClick={() => setDeleteConfirm(true)} style={{ flex: 1, padding: '14px 0', borderRadius: 14, border: 'none', background: 'rgba(239,68,68,0.15)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  Удалить
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div style={{ fontSize: 14, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 16, fontWeight: 500 }}>Точно? Восстановить невозможно.</div>
-                <button disabled={deleting} onClick={async () => { setDeleting(true); try { await api.deleteAllUserData(); const theme = localStorage.getItem('app_theme'); localStorage.clear(); sessionStorage.clear(); if (theme) localStorage.setItem('app_theme', theme); window.location.reload(); } catch { setDeleting(false); setDeleteConfirm(false); } }}
-                  style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: '#ef4444', color: 'var(--text)', fontSize: 15, fontWeight: 700, cursor: deleting ? 'default' : 'pointer' }}>
-                  {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
-                </button>
-              </div>
-            )}
+        <InfoModal onClose={() => { setShowDeleteSheet(false); setDeleteConfirm(false); }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 8 }}>Удалить все данные</div>
+          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 20 }}>
+            Дневники, оценки, практики, колесо детства, результаты тестов, заметки, задания, связи с терапевтом — всё удалится с сервера. Это действие необратимо.
           </div>
-        </BottomSheet>
+          {!deleteConfirm ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowDeleteSheet(false)} style={{ flex: 1, padding: '14px 0', borderRadius: 14, border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'transparent', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer' }}>
+                Отмена
+              </button>
+              <button onClick={() => setDeleteConfirm(true)} style={{ flex: 1, padding: '14px 0', borderRadius: 14, border: 'none', background: 'rgba(239,68,68,0.15)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                Удалить
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontSize: 14, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 16, fontWeight: 500 }}>Точно? Восстановить невозможно.</div>
+              <button disabled={deleting} onClick={async () => { setDeleting(true); try { await api.deleteAllUserData(); const theme = localStorage.getItem('app_theme'); localStorage.clear(); sessionStorage.clear(); if (theme) localStorage.setItem('app_theme', theme); window.location.reload(); } catch { setDeleting(false); setDeleteConfirm(false); } }}
+                style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: '#ef4444', color: 'var(--text)', fontSize: 15, fontWeight: 700, cursor: deleting ? 'default' : 'pointer' }}>
+                {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
+              </button>
+            </div>
+          )}
+        </InfoModal>
       )}
     </>
+  );
+}
+
+function InfoModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end' }}
+      onClick={onClose}
+    >
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
+        {children}
+      </div>
+    </div>
   );
 }
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { COLORS } from '../types';
 import type { Need, DayHistory } from '../types';
 import { NEED_DATA } from '../needData';
-import { BottomSheet } from './BottomSheet';
+import { GlyphArrowLeft } from './exercises/ExScreen';
 import { SectionLabel } from './SectionLabel';
 import { getTherapistContact } from '../utils/therapistContact';
 
@@ -26,7 +26,6 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
   if (!data) return null;
   const color = COLORS[need.id] ?? '#888';
 
-  // Trend
   const scores = history.map(d => d.ratings[need.id] ?? 0);
   const n = scores.length;
   const recentCount = Math.min(3, n);
@@ -37,13 +36,11 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
   const trendLabel = trendDiff > 0.5 ? 'Растёт' : trendDiff < -0.5 ? 'Падает' : 'Стабильно';
   const trendSign = trendDiff >= 0 ? '+' : '';
 
-  // Random tip from level-appropriate pool — stable for this sheet instance
   const tipKey = value <= 3 ? 'low' : value <= 6 ? 'medium' : 'high';
   const tipPool = data.tips[tipKey];
   const [tipIdx] = useState(() => Math.floor(Math.random() * tipPool.length));
   const tip = tipPool[tipIdx];
 
-  // Sparkline
   const reversed = [...history].reverse();
   const W = 200, H = 48;
   const xStep = reversed.length > 1 ? W / (reversed.length - 1) : W / 2;
@@ -55,132 +52,146 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
   const areaPath = lastPt ? `${linePath} L ${lastPt.x.toFixed(1)} ${H} L 0 ${H} Z` : '';
 
   return (
-    <BottomSheet onClose={onClose}>
-      {/* Header — tap to close */}
-      <div
-        onClick={onClose}
-        style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 24, cursor: 'pointer' }}
-      >
-        <div style={{
-          width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-          background: color + '26',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 22,
-        }}>
-          {data.emoji}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2, marginBottom: 8 }}>
-            {need.chartLabel}
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {data.tags.map((tag) => (
-              <span key={tag} style={{
-                fontSize: 11, padding: '3px 8px', borderRadius: 20,
-                background: color + '1f', color,
-              }}>
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div style={{ fontSize: 20, color: 'var(--text-faint)', flexShrink: 0, lineHeight: 1, paddingTop: 2 }}>✕</div>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+          <GlyphArrowLeft /> Назад
+        </button>
       </div>
+      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
 
-      {/* Section 1: 7-day sparkline */}
-      <div style={{ marginBottom: 24 }}>
-        <SectionLabel>За 7 дней</SectionLabel>
-        <div style={{
-          background: 'rgba(var(--fg-rgb),0.04)',
-          borderRadius: 14, padding: '14px 16px',
-          display: 'flex', alignItems: 'center', gap: 16,
-        }}>
-          <svg width={200} height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
-            style={{ flex: 1 }}>
-            <defs>
-              <linearGradient id={`sheet-area-${need.id}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-                <stop offset="100%" stopColor={color} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <path d={areaPath} fill={`url(#sheet-area-${need.id})`} />
-            <polyline points={polyStr} fill="none" stroke={color} strokeWidth={2}
-              strokeLinecap="round" strokeLinejoin="round" />
-            {lastPt && <circle cx={lastPt.x} cy={lastPt.y} r={3} fill={color} />}
-            {childhoodValue !== undefined && (() => {
-              const cy = yFor(childhoodValue);
-              return (
-                <>
-                  <line x1={0} y1={cy} x2={W} y2={cy}
-                    stroke={color} strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.45} />
-                  <text x={W - 2} y={cy - 3} textAnchor="end" fontSize={8} fill={color} fillOpacity={0.6}>
-                    детство {childhoodValue}
-                  </text>
-                </>
-              );
-            })()}
-          </svg>
-          <div style={{ flexShrink: 0, textAlign: 'right' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color }}>{trendLabel}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
-              {trendSign}{trendDiff.toFixed(1)} за неделю
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Childhood context — shown if data exists */}
-      {childhoodValue !== undefined && (
-        <div style={{ marginBottom: 24 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 28 }}>
           <div style={{
-            background: childhoodValue <= 4 ? 'color-mix(in srgb, var(--accent-red) 8%, transparent)' : 'color-mix(in srgb, var(--accent-green) 8%, transparent)',
-            border: `1px solid ${childhoodValue <= 4 ? 'color-mix(in srgb, var(--accent-red) 20%, transparent)' : 'color-mix(in srgb, var(--accent-green) 20%, transparent)'}`,
-            borderRadius: 14, padding: '12px 14px',
-            display: 'flex', alignItems: 'center', gap: 12,
+            width: 52, height: 52, borderRadius: 16, flexShrink: 0,
+            background: color + '26',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26,
           }}>
-            <div style={{ fontSize: 28, flexShrink: 0 }}>🌱</div>
-            <div>
-              <div style={{ fontSize: 12, color: childhoodValue <= 4 ? 'var(--accent-red)' : 'var(--accent-green)', fontWeight: 500, marginBottom: 3 }}>
-                Детство: {childhoodValue}/10
-                {recentAvg > 0 && childhoodValue > 0 && (
-                  <span style={{ color: 'var(--text-sub)', fontWeight: 400, marginLeft: 8 }}>
-                    → сейчас {recentAvg.toFixed(1)} {recentAvg > childhoodValue ? '↑' : recentAvg < childhoodValue ? '↓' : ''}
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-                {childhoodValue <= 4
-                  ? 'Эта потребность давно чувствительна — вероятно, это не просто плохой период, а паттерн. Схема-терапия работает именно с этим.'
-                  : 'В детстве эта зона была достаточно удовлетворена. Если сейчас низко — скорее всего ситуативное истощение.'}
+            {data.emoji}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', lineHeight: 1.1, marginBottom: 8 }}>
+              {need.chartLabel}
+            </h1>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {data.tags.map((tag) => (
+                <span key={tag} style={{
+                  fontSize: 11, padding: '3px 10px', borderRadius: 20,
+                  background: color + '1f', color,
+                }}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 7-day sparkline */}
+        <div style={{ marginBottom: 24 }}>
+          <SectionLabel>За 7 дней</SectionLabel>
+          <div style={{
+            background: 'rgba(var(--fg-rgb),0.04)',
+            borderRadius: 14, padding: '14px 16px',
+            display: 'flex', alignItems: 'center', gap: 16,
+          }}>
+            <svg width={200} height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ flex: 1 }}>
+              <defs>
+                <linearGradient id={`sheet-area-${need.id}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <path d={areaPath} fill={`url(#sheet-area-${need.id})`} />
+              <polyline points={polyStr} fill="none" stroke={color} strokeWidth={2}
+                strokeLinecap="round" strokeLinejoin="round" />
+              {lastPt && <circle cx={lastPt.x} cy={lastPt.y} r={3} fill={color} />}
+              {childhoodValue !== undefined && (() => {
+                const cy = yFor(childhoodValue);
+                return (
+                  <>
+                    <line x1={0} y1={cy} x2={W} y2={cy}
+                      stroke={color} strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.45} />
+                    <text x={W - 2} y={cy - 3} textAnchor="end" fontSize={8} fill={color} fillOpacity={0.6}>
+                      детство {childhoodValue}
+                    </text>
+                  </>
+                );
+              })()}
+            </svg>
+            <div style={{ flexShrink: 0, textAlign: 'right' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color }}>{trendLabel}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
+                {trendSign}{trendDiff.toFixed(1)} за неделю
               </div>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Section 2: Random tip */}
-      <div style={{ marginBottom: 24 }}>
-        <SectionLabel>Попробуй сегодня</SectionLabel>
-        <div style={{ background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 14, padding: '14px 16px' }}>
-          <div style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.85)', lineHeight: 1.6 }}>
-            {tip}
-            <span
-              onClick={(e) => { e.stopPropagation(); setShowDisclaimer(true); }}
-              style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: 16, height: 16, borderRadius: '50%',
-                background: 'rgba(var(--fg-rgb),0.1)', color: 'var(--text-sub)',
-                fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                marginLeft: 6, verticalAlign: 'middle',
-              }}
-            >?</span>
+        {/* Childhood context */}
+        {childhoodValue !== undefined && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{
+              background: childhoodValue <= 4 ? 'color-mix(in srgb, var(--accent-red) 8%, transparent)' : 'color-mix(in srgb, var(--accent-green) 8%, transparent)',
+              border: `1px solid ${childhoodValue <= 4 ? 'color-mix(in srgb, var(--accent-red) 20%, transparent)' : 'color-mix(in srgb, var(--accent-green) 20%, transparent)'}`,
+              borderRadius: 14, padding: '12px 14px',
+              display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <div style={{ fontSize: 28, flexShrink: 0 }}>🌱</div>
+              <div>
+                <div style={{ fontSize: 12, color: childhoodValue <= 4 ? 'var(--accent-red)' : 'var(--accent-green)', fontWeight: 500, marginBottom: 3 }}>
+                  Детство: {childhoodValue}/10
+                  {recentAvg > 0 && childhoodValue > 0 && (
+                    <span style={{ color: 'var(--text-sub)', fontWeight: 400, marginLeft: 8 }}>
+                      → сейчас {recentAvg.toFixed(1)} {recentAvg > childhoodValue ? '↑' : recentAvg < childhoodValue ? '↓' : ''}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+                  {childhoodValue <= 4
+                    ? 'Эта потребность давно чувствительна — вероятно, это не просто плохой период, а паттерн. Схема-терапия работает именно с этим.'
+                    : 'В детстве эта зона была достаточно удовлетворена. Если сейчас низко — скорее всего ситуативное истощение.'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Random tip */}
+        <div style={{ marginBottom: 24 }}>
+          <SectionLabel>Попробуй сегодня</SectionLabel>
+          <div style={{ background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 14, padding: '14px 16px' }}>
+            <div style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.85)', lineHeight: 1.6 }}>
+              {tip}
+              <span
+                onClick={() => setShowDisclaimer(true)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 16, height: 16, borderRadius: '50%',
+                  background: 'rgba(var(--fg-rgb),0.1)', color: 'var(--text-sub)',
+                  fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                  marginLeft: 6, verticalAlign: 'middle',
+                }}
+              >?</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Explanation */}
+        <div>
+          <SectionLabel>Об этой потребности</SectionLabel>
+          <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
+            {data.explanation}
           </div>
         </div>
       </div>
 
       {showDisclaimer && (
-        <BottomSheet onClose={() => setShowDisclaimer(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => setShowDisclaimer(false)}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
             <SectionLabel purple mb={16}>О советах</SectionLabel>
             {DISCLAIMER_CONTENT.map((p, i) => (
               <p key={i} style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>{p}</p>
@@ -189,16 +200,8 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
               → {getTherapistContact().name === 'автору' ? 'Поговорить с психологом' : `Написать ${getTherapistContact().name}`}
             </a>
           </div>
-        </BottomSheet>
-      )}
-
-      {/* Section 3: Explanation */}
-      <div>
-        <SectionLabel>Об этой потребности</SectionLabel>
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-          {data.explanation}
         </div>
-      </div>
-    </BottomSheet>
+      )}
+    </div>
   );
 }
