@@ -874,7 +874,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .ex-card:nth-child(2n)     { padding-left: 32px; }
 .ex-grid--single .ex-card  { padding-left: 0; padding-right: 0; border-right: none; }
 .ex-card:hover { background: var(--surface-2); }
-.ex-card:hover .ex-card-arrow { color: var(--accent); transform: translateX(2px); }
+.ex-card:hover .ex-card-arrow, .ex-card:hover .ex-card-cta { color: var(--accent); transform: translateX(2px); }
 .ex-card-glyph {
   width: 56px; height: 56px; border-radius: 12px;
   display: grid; place-items: center;
@@ -892,7 +892,8 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 }
 .ex-card-desc { font-size: 13.5px; line-height: 1.55; color: var(--text-sub); margin-bottom: 10px; }
 .ex-card-meta { display: flex; gap: 14px; font-size: 11.5px; color: var(--text-faint); }
-.ex-card-arrow { font-size: 18px; color: var(--text-ghost); align-self: center; transition: transform .15s, color .12s; }
+.ex-card-meta .done { color: var(--c-moss); display: inline-flex; align-items: center; gap: 4px; }
+.ex-card-arrow, .ex-card-cta { font-size: 18px; color: var(--text-ghost); align-self: center; transition: transform .15s, color .12s; }
 
 /* ── Exercise screen ────────────────────────────────────────────────── */
 .ex-screen {

@@ -173,16 +173,16 @@ export function ExercisesSection() {
                         <p className="ex-card-desc">{ex.desc}</p>
                         <div className="ex-card-meta">
                           <span>{ex.time}</span>
-                          {s ? (<>
-                            <span>·</span>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <span>·</span>
+                          {s ? (
+                            <span className="done">
                               <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--c-moss)', display: 'inline-block' }} />
                               {fmtCount(s.count, 'запис')} · {fmtAgo(s.lastDone)}
                             </span>
-                          </>) : <><span>·</span><span>не начато</span></>}
+                          ) : <span>не начато</span>}
                         </div>
                       </div>
-                      <span className="ex-card-arrow">›</span>
+                      <span className="ex-card-cta">›</span>
                     </div>
                   );
                 })}
