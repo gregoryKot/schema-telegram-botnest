@@ -125,7 +125,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                       <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
                               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, display: 'inline-block',
-                          background: done ? '#06d6a0' : 'var(--surface-3)',
+                          background: done ? 'var(--c-moss)' : 'var(--surface-3)',
                           border: done ? 'none' : '1.5px solid var(--line-strong)' }} />
                         <span style={{ fontSize: 13.5, color: 'var(--text)', fontWeight: 500 }}>{name}</span>
                         {done && c.todayIndex != null && (
@@ -177,7 +177,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {activeToday.map(c => (
                     <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
-                            style={{ padding: '4px 10px', borderRadius: 999, border: 'none', background: 'rgba(6,214,160,0.12)', color: '#059669', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+                            style={{ padding: '4px 10px', borderRadius: 999, border: 'none', background: 'color-mix(in srgb, var(--c-moss) 14%, transparent)', color: 'var(--c-moss)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
                       {c.clientAlias ?? c.name ?? `#${c.telegramId}`}
                     </button>
                   ))}

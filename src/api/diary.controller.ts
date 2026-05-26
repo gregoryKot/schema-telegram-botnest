@@ -6,7 +6,10 @@ import { TherapyService } from '../therapy/therapy.service';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
+  webUser: { userId: bigint };
 }
+
+function uid(req: AuthRequest): bigint { return req.webUser.userId; }
 
 function parseId(raw: string): number {
   const n = parseInt(raw, 10);
@@ -28,7 +31,7 @@ export class DiaryController {
 
   @Get('schema')
   getSchemaDiary(@Req() req: AuthRequest) {
-    return this.diaryService.getSchemaDiaryEntries(BigInt(req.telegramUserId));
+    return this.diaryService.getSchemaDiaryEntries(uid(req));
   }
 
   @Post('schema')
@@ -61,14 +64,14 @@ export class DiaryController {
       excessiveReactions: body.excessiveReactions?.slice(0, LIMIT),
       healthyBehavior: body.healthyBehavior?.slice(0, LIMIT),
     };
-    const entry = await this.diaryService.createSchemaDiaryEntry(BigInt(req.telegramUserId), trimmed);
-    this.therapyService.checkStreakTasks(req.telegramUserId).catch((err) => this.logger.error('checkStreakTasks failed', err));
+    const entry = await this.diaryService.createSchemaDiaryEntry(uid(req), trimmed);
+    this.therapyService.checkStreakTasks(uid(req)).catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;
   }
 
   @Delete('schema/:id')
   async deleteSchemaDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteSchemaDiaryEntry(BigInt(req.telegramUserId), parseId(id));
+    await this.diaryService.deleteSchemaDiaryEntry(uid(req), parseId(id));
     return { ok: true };
   }
 
@@ -76,7 +79,7 @@ export class DiaryController {
 
   @Get('mode')
   getModeDiary(@Req() req: AuthRequest) {
-    return this.diaryService.getModeDiaryEntries(BigInt(req.telegramUserId));
+    return this.diaryService.getModeDiaryEntries(uid(req));
   }
 
   @Post('mode')
@@ -103,14 +106,14 @@ export class DiaryController {
       actualNeed: body.actualNeed?.slice(0, LIMIT),
       childhoodMemories: body.childhoodMemories?.slice(0, LIMIT),
     };
-    const entry = await this.diaryService.createModeDiaryEntry(BigInt(req.telegramUserId), trimmedMode);
-    this.therapyService.checkStreakTasks(req.telegramUserId).catch((err) => this.logger.error('checkStreakTasks failed', err));
+    const entry = await this.diaryService.createModeDiaryEntry(uid(req), trimmedMode);
+    this.therapyService.checkStreakTasks(uid(req)).catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;
   }
 
   @Delete('mode/:id')
   async deleteModeDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteModeDiaryEntry(BigInt(req.telegramUserId), parseId(id));
+    await this.diaryService.deleteModeDiaryEntry(uid(req), parseId(id));
     return { ok: true };
   }
 
@@ -118,7 +121,7 @@ export class DiaryController {
 
   @Get('gratitude')
   getGratitudeDiary(@Req() req: AuthRequest) {
-    return this.diaryService.getGratitudeDiaryEntries(BigInt(req.telegramUserId));
+    return this.diaryService.getGratitudeDiaryEntries(uid(req));
   }
 
   @Post('gratitude')
@@ -127,14 +130,14 @@ export class DiaryController {
     if (!Array.isArray(body.items) || body.items.length === 0) throw new BadRequestException('items required');
     if (body.items.length > 20) throw new BadRequestException('Too many items');
     const items = body.items.map((s: string) => String(s).slice(0, 500));
-    const entry = await this.diaryService.upsertGratitudeDiaryEntry(BigInt(req.telegramUserId), body.date, items);
-    this.therapyService.checkStreakTasks(req.telegramUserId).catch((err) => this.logger.error('checkStreakTasks failed', err));
+    const entry = await this.diaryService.upsertGratitudeDiaryEntry(uid(req), body.date, items);
+    this.therapyService.checkStreakTasks(uid(req)).catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;
   }
 
   @Delete('gratitude/:id')
   async deleteGratitudeDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteGratitudeDiaryEntry(BigInt(req.telegramUserId), parseId(id));
+    await this.diaryService.deleteGratitudeDiaryEntry(uid(req), parseId(id));
     return { ok: true };
   }
 }

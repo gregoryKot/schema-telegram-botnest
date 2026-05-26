@@ -72,11 +72,11 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
               } else if (entry.type === 'mode') {
                 const mode = getModeById(entry.modeId ?? '');
                 const group = mode ? MODE_GROUPS.find(g => g.items.some(m => m.id === entry.modeId)) : null;
-                color = group?.color ?? 'var(--accent-violet)';
+                color = group?.color ?? 'var(--accent)';
                 title = mode ? `${mode.emoji} ${mode.name}` : (entry.modeId ?? 'Режим');
                 typeLabel = 'Режим-дневник';
               } else {
-                color = '#06d6a0';
+                color = 'var(--c-moss)';
                 title = 'Благодарность';
                 typeLabel = 'Дневник благодарности';
               }

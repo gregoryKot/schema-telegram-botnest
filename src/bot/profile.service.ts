@@ -39,17 +39,15 @@ export class ProfileService {
     private readonly analytics: BotAnalyticsService,
   ) {}
 
-  async getProfile(userId: number): Promise<UserProfile> {
-    const uid = BigInt(userId);
-
+  async getProfile(userId: bigint): Promise<UserProfile> {
     const [user, ysqResult, streakData, lastSchema, lastMode, lastGratitude, lastRating] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: uid } }),
-      this.prisma.ysqResult.findUnique({ where: { userId: uid } }),
+      this.prisma.user.findUnique({ where: { id: userId } }),
+      this.prisma.ysqResult.findUnique({ where: { userId } }),
       this.analytics.getStreakData(userId),
-      this.prisma.schemaDiaryEntry.findFirst({ where: { userId: uid }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
-      this.prisma.modeDiaryEntry.findFirst({ where: { userId: uid }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
-      this.prisma.gratitudeDiaryEntry.findFirst({ where: { userId: uid }, orderBy: { date: 'desc' }, select: { date: true } }),
-      this.prisma.rating.findFirst({ where: { userId: uid }, orderBy: { date: 'desc' }, select: { date: true } }),
+      this.prisma.schemaDiaryEntry.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
+      this.prisma.modeDiaryEntry.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
+      this.prisma.gratitudeDiaryEntry.findFirst({ where: { userId }, orderBy: { date: 'desc' }, select: { date: true } }),
+      this.prisma.rating.findFirst({ where: { userId }, orderBy: { date: 'desc' }, select: { date: true } }),
     ]);
 
     return {

@@ -43,7 +43,7 @@ export class TelegramScheduleService implements OnModuleInit {
   }
 
   /** Reschedule reminder for a single user (called after settings change). */
-  async rescheduleForUser(userId: number) {
+  async rescheduleForUser(userId: bigint) {
     const s = await this.botService.getUserSettings(userId);
     if (!s?.notifyEnabled) {
       await this.notificationService.cancel(userId, 'reminder');
@@ -120,7 +120,7 @@ export class TelegramScheduleService implements OnModuleInit {
         if (isPermanent) {
           this.logger.warn(`Skipping notification id=${notif.id} userId=${notif.userId} (${code}: ${desc})`);
           await this.notificationService.markSent(notif.id);
-          await this.botService.markUserBlocked(notif.userId);
+          await this.botService.markUserBlocked(BigInt(notif.userId));
         } else {
           // Transient — log + don't markSent so we retry next tick.
           this.logger.error(`Failed to send notification id=${notif.id} userId=${notif.userId} (${code}: ${desc})`, err);
@@ -138,11 +138,12 @@ export class TelegramScheduleService implements OnModuleInit {
 
     for (const user of users) {
       try {
-        await this.scheduleReminder(user.id, user.notifyLocalHour, user.notifyTimezone, user.notifyReminderEnabled);
-        const isLapsing = await this.checkLapsingState(user.id, user.notifyLocalHour, user.notifyTimezone);
+        const uid = BigInt(user.id);
+        await this.scheduleReminder(uid, user.notifyLocalHour, user.notifyTimezone, user.notifyReminderEnabled);
+        const isLapsing = await this.checkLapsingState(uid, user.notifyLocalHour, user.notifyTimezone);
         if (!isLapsing) {
-          await this.checkMissedPlans(user.id, user.notifyLocalHour, user.notifyTimezone);
-          await this.scheduleLowStreakInsight(user.id, user.notifyLocalHour, user.notifyTimezone);
+          await this.checkMissedPlans(uid, user.notifyLocalHour, user.notifyTimezone);
+          await this.scheduleLowStreakInsight(uid, user.notifyLocalHour, user.notifyTimezone);
         }
       } catch (err) {
         this.logger.error(`Midnight scheduler failed for userId=${user.id}`, err);
@@ -150,7 +151,7 @@ export class TelegramScheduleService implements OnModuleInit {
     }
   }
 
-  private async scheduleReminder(userId: number, notifyLocalHour: number, notifyTimezone: string, enabled = true) {
+  private async scheduleReminder(userId: bigint, notifyLocalHour: number, notifyTimezone: string, enabled = true) {
     if (!enabled) {
       await this.notificationService.cancel(userId, 'reminder');
       return;
@@ -169,8 +170,8 @@ export class TelegramScheduleService implements OnModuleInit {
     const lowestNeedId = lowest?.needId;
     const lowestNeed = lowest ? this.botService.getNeeds().find(n => n.id === lowest.needId)?.chartLabel : undefined;
     const dayIndex = Math.floor(Date.now() / 86_400_000);
-    const variant = (userId + dayIndex) % 5;
-    const seed = (userId + dayIndex) % 3;
+    const variant = Number((userId + BigInt(dayIndex)) % 5n);
+    const seed = Number((userId + BigInt(dayIndex)) % 3n);
     const payload = { streak, yesterdayAvg, lowestNeedId, lowestNeed, variant, seed };
 
     const sendAt = this.nextSendAt(notifyLocalHour, notifyTimezone);
@@ -185,7 +186,7 @@ export class TelegramScheduleService implements OnModuleInit {
   }
 
   /** Returns true if a lapsing/dormant notification was scheduled (caller should skip other daily notifs) */
-  private async checkLapsingState(userId: number, notifyLocalHour: number, notifyTimezone: string): Promise<boolean> {
+  private async checkLapsingState(userId: bigint, notifyLocalHour: number, notifyTimezone: string): Promise<boolean> {
     const days = await this.analyticsService.getDaysSinceLastFill(userId);
     const thresholds: Array<[number, 'lapsing_2' | 'lapsing_4' | 'dormant_7' | 'reengagement_30']> = [
       [2, 'lapsing_2'], [4, 'lapsing_4'], [7, 'dormant_7'], [30, 'reengagement_30'],
@@ -212,7 +213,7 @@ export class TelegramScheduleService implements OnModuleInit {
     return false;
   }
 
-  private async checkMissedPlans(userId: number, notifyLocalHour: number, tz: string) {
+  private async checkMissedPlans(userId: bigint, notifyLocalHour: number, tz: string) {
     const yesterday = localDateString(tz, new Date(Date.now() - 86_400_000));
     const missed = await this.botService.getMissedPlans(userId, yesterday);
     if (missed.length > 0 && !await this.notificationService.hasPending(userId, 'practice_missed')) {
@@ -221,7 +222,7 @@ export class TelegramScheduleService implements OnModuleInit {
     }
   }
 
-  async onDiaryComplete(userId: number) {
+  async onDiaryComplete(userId: bigint) {
     await this.notificationService.cancel(userId, 'reminder');
     await this.notificationService.cancel(userId, 'pre_reminder');
     await this.notificationService.cancel(userId, 'low_streak_insight');
@@ -273,15 +274,16 @@ export class TelegramScheduleService implements OnModuleInit {
 
     for (const user of users) {
       try {
-        if (await this.notificationService.hasPending(user.id, 'weekly')) continue;
+        const uid = BigInt(user.id);
+        if (await this.notificationService.hasPending(uid, 'weekly')) continue;
         // Skip dormant users — weekly summary is meaningless without recent data
-        const daysSince = await this.analyticsService.getDaysSinceLastFill(user.id);
+        const daysSince = await this.analyticsService.getDaysSinceLastFill(uid);
         if (daysSince < 0 || daysSince >= 7) continue;
-        const stats = await this.analyticsService.getWeeklyStats(user.id);
-        const bestDay = await this.analyticsService.getBestDayOfWeek(user.id);
+        const stats = await this.analyticsService.getWeeklyStats(uid);
+        const bestDay = await this.analyticsService.getBestDayOfWeek(uid);
         const seed = user.id % 3;
         const text = buildWeeklySummaryText(stats, this.botService.getNeeds(), bestDay, seed);
-        await this.notificationService.schedule(user.id, 'weekly', this.nextSendAt(user.notifyLocalHour, user.notifyTimezone), { text });
+        await this.notificationService.schedule(uid, 'weekly', this.nextSendAt(user.notifyLocalHour, user.notifyTimezone), { text });
       } catch (err) {
         this.logger.error(`Weekly summary failed for userId=${user.id}`, err);
       }
@@ -310,7 +312,7 @@ export class TelegramScheduleService implements OnModuleInit {
     return result;
   }
 
-  private async scheduleLowStreakInsight(userId: number, notifyLocalHour: number, notifyTimezone: string) {
+  private async scheduleLowStreakInsight(userId: bigint, notifyLocalHour: number, notifyTimezone: string) {
     // Check for needs low 3+ days (threshold 5) and 10+ days (threshold 5) separately
     const [lowNeeds3, lowNeeds10] = await Promise.all([
       this.analyticsService.getLowStreakNeeds(userId, 5, 3),

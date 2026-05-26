@@ -49,7 +49,7 @@ export class TherapistRequestService {
 
   // Anyone can submit one request. Re-submitting while pending is rejected.
   // Re-submitting after rejection is allowed (overwrites the previous row).
-  async submit(userId: number, input: {
+  async submit(userId: bigint, input: {
     fullName: string; qualification: string; contacts: string; message?: string;
   }): Promise<{ id: number; status: string }> {
     const role = await this.botService.getUserRole(userId);
@@ -64,27 +64,27 @@ export class TherapistRequestService {
     if (!contacts || contacts.length > MAX_CONTACTS) throw new BadRequestException('Invalid contacts');
     if (message && message.length > MAX_MSG) throw new BadRequestException('Message too long');
 
-    const existing = await (this.prisma as any).therapistRequest.findUnique({ where: { userId: BigInt(userId) } });
+    const existing = await (this.prisma as any).therapistRequest.findUnique({ where: { userId } });
     if (existing?.status === 'pending') throw new ConflictException('Request already pending');
     if (existing?.status === 'approved') throw new ConflictException('Request already approved');
 
     const row = existing
       ? await (this.prisma as any).therapistRequest.update({
-          where: { userId: BigInt(userId) },
+          where: { userId },
           data: { fullName, qualification, contacts, message, status: 'pending',
                   reviewedAt: null, reviewedBy: null, rejectReason: null },
         })
       : await (this.prisma as any).therapistRequest.create({
-          data: { userId: BigInt(userId), fullName, qualification, contacts, message, status: 'pending' },
+          data: { userId, fullName, qualification, contacts, message, status: 'pending' },
         });
 
     this.notifyAdmin(row).catch((e) => this.logger.warn(`notifyAdmin failed: ${e.message}`));
     return { id: row.id, status: row.status };
   }
 
-  async getMine(userId: number) {
+  async getMine(userId: bigint) {
     return (this.prisma as any).therapistRequest.findUnique({
-      where: { userId: BigInt(userId) },
+      where: { userId },
       select: { id: true, status: true, rejectReason: true, createdAt: true, reviewedAt: true },
     });
   }
