@@ -41,7 +41,7 @@ function CWTrack({ value, onChange, color }: { value: number; onChange: (v: numb
     >
       <div className="cw-track-line">
         <div className="cw-track-fill" style={{ width: pct + '%' }} />
-        {[0, 25, 50, 75, 100].map(p => <div key={p} style={{ position: 'absolute', width: 1, height: 6, background: 'var(--line)', left: p + '%', top: -2 }} />)}
+        {[0, 25, 50, 75, 100].map(p => <div key={p} className="cw-track-pip" style={{ left: p + '%' }} />)}
       </div>
       <div className="cw-thumb" style={{ left: pct + '%' }} />
     </div>
@@ -94,8 +94,8 @@ export function ChildhoodWheelEx({ onBack, onSaved }: { onBack: () => void; onSa
         lede={`Среднее ${avg}/10. ${lowNeeds.length ? `${lowNeeds.length} зон ниже 5 — это места, где могли сформироваться схемы.` : 'Все зоны выше 4 — это редкий ресурс.'}`}
         aside={<div className="aside-card"><div className="aside-card-eyebrow">Что дальше</div><h3>Связать с сегодня</h3><p className="body">Открой дневник за последнюю неделю и сравни — какие потребности сегодня просели больше всего. Часто это те же зоны.</p></div>}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 48 }}>
-          <div>
+        <div className="cw-grid">
+          <div className="cw-sliders">
             {NEEDS.map((n, i) => (
               <div key={n.id} className="cw-row" style={{ '--c-color': n.color } as React.CSSProperties}>
                 <span className="cw-row-num">{String(i + 1).padStart(2, '0')}</span>

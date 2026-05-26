@@ -1049,6 +1049,9 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .sp-sense-input::placeholder { color: var(--text-ghost); font-style: italic; }
 
 /* Childhood wheel */
+.cw-grid { display: grid; grid-template-columns: 1fr 360px; gap: 56px; align-items: start; margin-bottom: 32px; }
+.cw-sliders { display: flex; flex-direction: column; }
+.cw-track-pip { position: absolute; top: -2px; width: 1px; height: 5px; background: var(--text-ghost); }
 .cw-row { display: grid; grid-template-columns: 32px 1fr 56px; gap: 16px; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--line); }
 .cw-row-num { font-family: var(--serif); font-style: italic; font-size: 22px; color: var(--text-ghost); }
 .cw-row-body { min-width: 0; }
