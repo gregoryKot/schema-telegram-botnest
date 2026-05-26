@@ -128,8 +128,15 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
   );
 }
 
-export function ModeEx({ onBack }: { onBack: () => void }) {
-  const [picked, setPicked] = useState<{ id: string; name: string; short: string; color: string; group: string } | null>(null);
+export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => void; initialModeId?: string; onComplete?: () => void }) {
+  const [picked, setPicked] = useState<{ id: string; name: string; short: string; color: string; group: string } | null>(() => {
+    if (!initialModeId) return null;
+    for (const g of MODE_GROUPS) {
+      const m = g.items.find(m => m.id === initialModeId);
+      if (m) return { id: m.id, name: m.name, short: m.short, color: g.color, group: g.group };
+    }
+    return null;
+  });
 
   if (!picked) {
     return (
@@ -169,7 +176,7 @@ export function ModeEx({ onBack }: { onBack: () => void }) {
         <button className="ex-btn ex-btn-ghost" onClick={() => setPicked(null)} style={{ padding: '8px 12px' }}><GlyphArrowLeft /> Сменить режим</button>
       </>}
     >
-      <FlashcardFlow questions={MODE_QUESTIONS} accentColor={picked.color} onSave={data => api.saveModeNote({ modeId: picked.id, ...data })} />
+      <FlashcardFlow questions={MODE_QUESTIONS} accentColor={picked.color} onSave={async data => { await api.saveModeNote({ modeId: picked.id, ...data }); onComplete?.(); }} />
     </ExScreen>
   );
 }

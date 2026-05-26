@@ -2,12 +2,12 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
-import { ModeIntroSheet } from '../components/ModeIntroSheet';
 
 const BeliefCheckEx = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const LetterEx      = lazy(() => import('../components/exercises/LetterEx').then(m => ({ default: m.LetterEx })));
 const SafePlaceEx   = lazy(() => import('../components/exercises/SafePlaceEx').then(m => ({ default: m.SafePlaceEx })));
 const SchemaEx      = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
+const ModeEx        = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { api } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
 import { BottomSheet } from '../components/BottomSheet';
@@ -375,7 +375,11 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
           <Suspense fallback={null}><SchemaEx onBack={() => setIntroSchemaId(null)} initialSchemaId={introSchemaId} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} /></Suspense>
         </div>
       )}
-      {introModeId && <ModeIntroSheet modeId={introModeId} onClose={() => setIntroModeId(null)} onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} />}
+      {introModeId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} /></Suspense>
+        </div>
+      )}
       {showTaskCreate && (
         <TaskCreateSheet
           onCreated={() => {

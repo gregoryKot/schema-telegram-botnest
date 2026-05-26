@@ -7,9 +7,8 @@ import type { UserTask, TherapyRelationInfo } from '../api';
 import type { Section } from '../components/BottomNav';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
-import { ModeIntroSheet } from '../components/ModeIntroSheet';
-
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
+const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { BottomSheet } from '../components/BottomSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { fmtDate, todayStr } from '../utils/format';
@@ -482,7 +481,11 @@ export function TodaySection({
           <Suspense fallback={null}><SchemaEx onBack={() => setIntroSchemaId(null)} initialSchemaId={introSchemaId} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} /></Suspense>
         </div>
       )}
-      {introModeId   && <ModeIntroSheet   modeId={introModeId}   onClose={() => setIntroModeId(null)}   onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} />}
+      {introModeId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} /></Suspense>
+        </div>
+      )}
 
       {/* All tasks sheet */}
       {showAllTasks && (

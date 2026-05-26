@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { api } from '../api';
 import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
 import { NEED_DATA } from '../needData';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { BottomSheet } from '../components/BottomSheet';
-import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
+
+const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 
 /** color-mix: works with CSS vars AND hex. Replaces the old hex-alpha hack. */
 function cm(color: string, pct: number) {
@@ -413,7 +414,9 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       )}
 
       {introModeId && (
-        <ModeIntroSheet modeId={introModeId} onClose={() => setIntroModeId(null)} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} /></Suspense>
+        </div>
       )}
 
       {detailSchemaId && (

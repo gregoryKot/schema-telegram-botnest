@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
+import { GlyphArrowLeft } from './exercises/ExScreen';
 import { api } from '../api';
 
 const STORAGE_KEY = 'schema_flashcards';
@@ -64,6 +64,16 @@ function loadLocal(): FlashcardEntry[] {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'); } catch { return []; }
 }
 
+function Topbar({ onBack, label = 'Закрыть' }: { onBack: () => void; label?: string }) {
+  return (
+    <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
+      <button className="ex-btn ex-btn-ghost" onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <GlyphArrowLeft /> {label}
+      </button>
+    </div>
+  );
+}
+
 interface Props { onClose: () => void; onOpenTracker?: () => void; onComplete?: () => void; }
 
 export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
@@ -113,51 +123,61 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     setSelectedNeed(null); setAction(''); setDone(false); setGrounded(false);
   }
 
-  // ── Viewing past card ─────────────────────────────────────────────────────
+  const progressBar = (
+    <div style={{ display: 'flex', gap: 4, marginBottom: 28 }}>
+      {STEPS.map((s, i) => (
+        <div key={s} style={{
+          flex: 1, height: 3, borderRadius: 2,
+          background: i < stepIndex ? 'var(--accent)'
+            : i === stepIndex ? 'rgba(var(--fg-rgb),0.25)'
+            : 'var(--line)',
+          transition: 'background 0.2s',
+        }}/>
+      ))}
+    </div>
+  );
+
+  // Viewing a past card
   if (viewing) {
     const modeInfo = MODES.find(m => m.id === viewing.mode);
     const needInfo = NEEDS.find(n => n.id === viewing.needId);
     return (
-      <BottomSheet onClose={() => setViewing(null)} zIndex={300}>
-        <div style={{ paddingTop: 4 }}>
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 16 }}>{viewing.date}</div>
-          <div style={{
-            background: 'transparent', border: '1px solid var(--line)',
-            borderRadius: 20, padding: '16px',
-          }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 95, background: 'var(--bg)', overflowY: 'auto' }}>
+        <Topbar onBack={() => setViewing(null)} label="К истории" />
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px 80px' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 20, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{viewing.date}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {[
-              { label: 'Режим',        value: `${modeInfo?.emoji ?? '🧩'} ${modeInfo?.label ?? viewing.mode}` },
-              viewing.reflection ? { label: 'Рефлексия',    value: viewing.reflection } : null,
-              needInfo            ? { label: 'Потребность',  value: `${needInfo.emoji} ${needInfo.label}` } : null,
-              viewing.action      ? { label: 'Шаг',          value: viewing.action } : null,
+              { label: 'Режим',       value: `${modeInfo?.emoji ?? '🧩'} ${modeInfo?.label ?? viewing.mode}` },
+              viewing.reflection ? { label: 'Рефлексия',   value: viewing.reflection } : null,
+              needInfo            ? { label: 'Потребность', value: `${needInfo.emoji} ${needInfo.label}` } : null,
+              viewing.action      ? { label: 'Шаг',         value: viewing.action } : null,
             ].filter(Boolean).map((row, i, arr) => row && (
               <div key={row.label} style={{
-                paddingBottom: i < arr.length - 1 ? 12 : 0,
-                marginBottom: i < arr.length - 1 ? 12 : 0,
-                borderBottom: i < arr.length - 1 ? '1px solid var(--line)' : undefined,
+                padding: '20px 0',
+                borderBottom: i < arr.length - 1 ? '1px solid var(--line)' : 'none',
               }}>
-                <div className="eyebrow" style={{ marginBottom: 4 }}>{row.label}</div>
-                <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                <div className="eyebrow" style={{ marginBottom: 8 }}>{row.label}</div>
+                <div style={{ fontFamily: i === 0 ? 'var(--serif)' : 'inherit', fontSize: i === 0 ? 22 : 15, color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
                   {row.value}
                 </div>
               </div>
             ))}
           </div>
         </div>
-      </BottomSheet>
+      </div>
     );
   }
 
-  // ── History list ──────────────────────────────────────────────────────────
+  // History list
   if (showHistory) {
     return (
-      <BottomSheet onClose={() => setShowHistory(false)} zIndex={300}>
-        <div style={{ paddingTop: 4 }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>
-            История карточек
-          </div>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
+        <Topbar onBack={() => setShowHistory(false)} label="Назад" />
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px 80px' }}>
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>История карточек</h1>
           {allCards.length === 0 ? (
-            <div style={{ fontSize: 14, color: 'var(--text-sub)', textAlign: 'center', padding: '24px 0' }}>
+            <div style={{ fontSize: 15, color: 'var(--text-sub)', textAlign: 'center', padding: '40px 0' }}>
               Пока нет сохранённых карточек
             </div>
           ) : allCards.map(card => {
@@ -165,17 +185,16 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             const n = NEEDS.find(x => x.id === card.needId);
             return (
               <div key={card.id} onClick={() => setViewing(card)} style={{
-                padding: '12px 14px', background: 'transparent',
-                border: '1px solid var(--line)',
-                borderRadius: 16, marginBottom: 8, cursor: 'pointer',
+                padding: '16px 20px', background: 'transparent',
+                border: '1px solid var(--line)', borderRadius: 16, marginBottom: 10, cursor: 'pointer',
               }}>
-                <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 4 }}>{card.date}</div>
-                <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{card.date}</div>
+                <div style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)', lineHeight: 1.4 }}>
                   {m?.emoji ?? '🧩'} {m?.label ?? card.mode}
                   {n ? ` · ${n.emoji} ${n.label}` : ''}
                 </div>
                 {card.action && (
-                  <div style={{ fontSize: 12, color: 'var(--accent-green)', marginTop: 4,
+                  <div style={{ fontSize: 13, color: 'var(--accent)', marginTop: 6,
                     overflow: 'hidden', display: '-webkit-box',
                     WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' as any }}>
                     → {card.action}
@@ -185,208 +204,167 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             );
           })}
         </div>
-      </BottomSheet>
+      </div>
     );
   }
 
-  // ── Done ──────────────────────────────────────────────────────────────────
+  // Done state
   if (done) {
     const modeInfo = MODES.find(m => m.id === selectedMode);
     const needInfo = NEEDS.find(n => n.id === selectedNeed);
     return (
-      <BottomSheet onClose={onClose}>
-        <div style={{ paddingTop: 4 }}>
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ fontSize: 52, marginBottom: 12 }}>🌿</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Сохранено</div>
-            <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-              Ты сделал шаг навстречу себе. Это уже немало.
-            </div>
-          </div>
-          <div style={{
-            background: 'transparent', border: '1px solid var(--line)',
-            borderRadius: 20, padding: '16px', marginBottom: 20,
-          }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+        <Topbar onBack={onClose} label="Закрыть" />
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center' }}>
+          <div style={{ fontSize: 64, marginBottom: 20 }}>🌿</div>
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>Сохранено</h1>
+          <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 40 }}>
+            Ты сделал шаг навстречу себе. Это уже немало.
+          </p>
+          <div style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 20, padding: '24px', marginBottom: 32, textAlign: 'left' }}>
             {[
               { label: 'Режим',       value: `${modeInfo?.emoji} ${modeInfo?.label}` },
               needInfo ? { label: 'Потребность', value: `${needInfo.emoji} ${needInfo.label}` } : null,
               action   ? { label: 'Шаг',         value: action } : null,
             ].filter(Boolean).map((row, i, arr) => row && (
               <div key={row.label} style={{
-                paddingBottom: i < arr.length - 1 ? 12 : 0,
-                marginBottom: i < arr.length - 1 ? 12 : 0,
+                paddingBottom: i < arr.length - 1 ? 16 : 0,
+                marginBottom: i < arr.length - 1 ? 16 : 0,
                 borderBottom: i < arr.length - 1 ? '1px solid var(--line)' : undefined,
               }}>
-                <div className="eyebrow" style={{ marginBottom: 3 }}>{row.label}</div>
-                <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5 }}>{row.value}</div>
+                <div className="eyebrow" style={{ marginBottom: 6 }}>{row.label}</div>
+                <div style={{ fontFamily: i === 0 ? 'var(--serif)' : 'inherit', fontSize: i === 0 ? 20 : 15, color: 'var(--text)', lineHeight: 1.5 }}>{row.value}</div>
               </div>
             ))}
           </div>
           {onOpenTracker && (
-            <button onClick={() => { onClose(); setTimeout(onOpenTracker!, 100); }} style={{
-              width: '100%', padding: '13px', borderRadius: 14, border: 'none', fontFamily: 'inherit',
-              background: 'transparent', outline: '1px solid var(--line)',
-              color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 10,
-            }}>
+            <button onClick={() => { onClose(); setTimeout(onOpenTracker!, 100); }} className="ex-btn ex-btn-outline" style={{ width: '100%', marginBottom: 12 }}>
               Открыть трекер →
             </button>
           )}
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={handleNew} style={{
-              flex: 1, padding: '13px', borderRadius: 14, border: 'none', fontFamily: 'inherit',
-              background: 'var(--surface-2)', color: 'var(--text-sub)',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer',
-            }}>Ещё одну</button>
-            <button onClick={onClose} style={{
-              flex: 1, padding: '13px', borderRadius: 14, border: 'none', fontFamily: 'inherit',
-              background: 'rgba(var(--fg-rgb),0.06)', color: 'var(--accent)',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer',
-            }}>Готово</button>
+            <button onClick={handleNew} className="ex-btn ex-btn-ghost" style={{ flex: 1 }}>Ещё одну</button>
+            <button onClick={onClose} className="ex-btn ex-btn-primary" style={{ flex: 1 }}>Готово</button>
           </div>
         </div>
-      </BottomSheet>
+      </div>
     );
   }
 
-  // ── Grounding ─────────────────────────────────────────────────────────────
+  // Grounding screen (first step — breathing exercise)
   if (!grounded) {
     return (
-      <BottomSheet onClose={onClose}>
-        <div style={{ paddingTop: 4, textAlign: 'center' }}>
-          <div style={{ fontSize: 52, marginBottom: 12 }}>💙</div>
-          <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+        <Topbar onBack={onClose} label="Закрыть" />
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center' }}>
+          <div style={{ fontSize: 64, marginBottom: 20 }}>💙</div>
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>
             Ты сделал правильно
-          </div>
-          <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.8, marginBottom: 24 }}>
+          </h1>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, marginBottom: 36 }}>
             То, что ты чувствуешь сейчас — это нормально.<br/>Это пройдёт.
-          </div>
-          {/* Breathing box */}
+          </p>
           <div style={{
             background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)',
-            borderRadius: 20, padding: '18px 16px', marginBottom: 24, textAlign: 'left',
+            borderRadius: 20, padding: '24px', marginBottom: 36, textAlign: 'left',
           }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-blue)', marginBottom: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#60a5fa', marginBottom: 18 }}>
               Три вдоха прямо сейчас
             </div>
             {['Вдох через нос — 4 секунды', 'Задержи — 2 секунды', 'Медленный выдох — 6 секунд'].map((t, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: i < 2 ? 10 : 0 }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: i < 2 ? 12 : 0 }}>
                 <div style={{
-                  width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
                   background: 'rgba(96,165,250,0.14)', border: '1px solid rgba(96,165,250,0.22)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, color: 'var(--accent-blue)', fontWeight: 700,
+                  fontFamily: 'var(--serif)', fontSize: 14, color: '#60a5fa',
                 }}>{i + 1}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>{t}</div>
+                <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>{t}</div>
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 20 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 28 }}>
             Почувствуй ноги на полу. Ты в безопасности.
-          </div>
-          <button onClick={() => setGrounded(true)} style={{
-            width: '100%', padding: '14px', borderRadius: 14, border: 'none', fontFamily: 'inherit',
-            background: 'rgba(96,165,250,0.12)', outline: '1px solid rgba(96,165,250,0.22)',
-            color: 'var(--accent-blue)', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 10,
-          }}>
+          </p>
+          <button onClick={() => setGrounded(true)} className="ex-btn ex-btn-primary" style={{ width: '100%', marginBottom: 12 }}>
             Стало чуть лучше — разобраться →
           </button>
           {allCards.length > 0 && (
-            <button onClick={() => setShowHistory(true)} style={{
-              width: '100%', padding: '11px', borderRadius: 14, fontFamily: 'inherit',
-              border: 'none', background: 'transparent',
-              outline: '1px solid var(--line)',
-              color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', marginBottom: 10,
-            }}>
+            <button onClick={() => setShowHistory(true)} className="ex-btn ex-btn-ghost" style={{ width: '100%', marginBottom: 10 }}>
               История карточек ({allCards.length})
             </button>
           )}
           <button onClick={onClose} style={{
-            width: '100%', padding: '11px', borderRadius: 14, border: 'none', fontFamily: 'inherit',
-            background: 'transparent', color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer',
+            width: '100%', padding: '11px', border: 'none', background: 'transparent',
+            color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
           }}>
             Просто закрыть
           </button>
         </div>
-      </BottomSheet>
+      </div>
     );
   }
 
-  // ── Progress bar ──────────────────────────────────────────────────────────
-  const progressBar = (
-    <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
-      {STEPS.map((s, i) => (
-        <div key={s} style={{
-          flex: 1, height: 4, borderRadius: 2,
-          background: i < stepIndex ? 'var(--accent)'
-            : i === stepIndex ? 'rgba(var(--fg-rgb),0.25)'
-            : 'var(--surface-2)',
-          transition: 'background 0.2s',
-        }}/>
-      ))}
-    </div>
-  );
-
-  // ── Step 1: Mode ──────────────────────────────────────────────────────────
+  // Step 1: Mode selection
   if (step === 'mode') {
     return (
-      <BottomSheet onClose={onClose}>
-        <div style={{ paddingTop: 4 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+        <Topbar onBack={onClose} label="Закрыть" />
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
             <div>
-              <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Что сейчас активно?</div>
-              <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>Шаг 1 из 4 — выбери режим</div>
+              <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 1 из 4</div>
+              <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)' }}>Что сейчас активно?</h1>
             </div>
             {allCards.length > 0 && (
-              <button onClick={() => setShowHistory(true)} style={{
-                background: 'none', border: 'none', fontSize: 11,
-                color: 'var(--text-faint)', cursor: 'pointer', padding: 0,
-              }}>История</button>
+              <button onClick={() => setShowHistory(true)} className="ex-btn ex-btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }}>
+                История
+              </button>
             )}
           </div>
           {progressBar}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {MODES.map(m => (
               <button key={m.id} onClick={() => { setSelectedMode(m.id); setStep('response'); }} style={{
-                textAlign: 'left', padding: '14px 16px', borderRadius: 16,
-                border: '1px solid var(--line)',
-                background: 'transparent', cursor: 'pointer',
+                textAlign: 'left', padding: '18px 20px', borderRadius: 16,
+                border: '1px solid var(--line)', background: 'transparent', cursor: 'pointer',
+                fontFamily: 'inherit',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                  <span style={{ fontSize: 20 }}>{m.emoji}</span>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: m.color }}>{m.label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                  <span style={{ fontSize: 22 }}>{m.emoji}</span>
+                  <span style={{ fontFamily: 'var(--serif)', fontSize: 18, color: m.color }}>{m.label}</span>
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--text-faint)', paddingLeft: 30 }}>{m.desc}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-faint)', paddingLeft: 34 }}>{m.desc}</div>
               </button>
             ))}
           </div>
-          <div style={{ marginTop: 20 }}><TherapyNote compact/></div>
+          <div style={{ marginTop: 32 }}><TherapyNote compact /></div>
         </div>
-      </BottomSheet>
+      </div>
     );
   }
 
-  // ── Step 2: Healthy Adult response ────────────────────────────────────────
+  // Step 2: Healthy Adult response
   if (step === 'response') {
     return (
-      <BottomSheet onClose={onClose}>
-        <div style={{ paddingTop: 4 }}>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Здоровый Взрослый</div>
-            <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>Шаг 2 из 4</div>
-          </div>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+        <Topbar onBack={() => setStep('mode')} label="Назад" />
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px' }}>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 2 из 4</div>
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 28 }}>Здоровый Взрослый</h1>
           {progressBar}
           <div style={{
             background: 'rgba(52,211,153,0.07)', border: '1px solid rgba(52,211,153,0.18)',
-            borderRadius: 20, padding: '16px', marginBottom: 16,
+            borderRadius: 20, padding: '20px', marginBottom: 24,
           }}>
-            <div className="eyebrow" style={{ color: 'var(--accent-green)', marginBottom: 10 }}>
+            <div className="eyebrow" style={{ color: 'var(--accent-green)', marginBottom: 12 }}>
               🌿 Говорит тебе
             </div>
-            <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>
+            <p style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)', lineHeight: 1.7, margin: 0 }}>
               {modeData?.response}
-            </div>
+            </p>
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 8 }}>
+          <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 10 }}>
             Что отзывается? <span style={{ color: 'var(--text-faint)' }}>(необязательно)</span>
           </div>
           <textarea
@@ -394,133 +372,91 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             onChange={e => setReflection(e.target.value)}
             placeholder="Что хочется сказать себе..."
             rows={3}
-            style={{
-              width: '100%', boxSizing: 'border-box',
-              background: 'transparent', border: '1px solid var(--line)',
-              borderRadius: 14, padding: '12px 14px',
-              color: 'var(--text)', fontSize: 14, lineHeight: 1.55,
-              resize: 'none', outline: 'none', fontFamily: 'inherit', marginBottom: 16,
-            }}
+            className="paper-area"
+            style={{ marginBottom: 20 }}
           />
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => setStep('mode')} style={{
-              width: 44, height: 44, borderRadius: 12, border: 'none', fontFamily: 'inherit',
-              background: 'var(--surface-2)', color: 'var(--text-sub)',
-              fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>←</button>
-            <button onClick={() => setStep('need')} style={{
-              flex: 1, padding: '13px', borderRadius: 12, border: 'none', fontFamily: 'inherit',
-              background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text)',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer',
-            }}>Дальше →</button>
-          </div>
-          <div style={{ marginTop: 20 }}><TherapyNote compact/></div>
+          <button onClick={() => setStep('need')} className="ex-btn ex-btn-primary" style={{ width: '100%' }}>
+            Дальше →
+          </button>
+          <div style={{ marginTop: 24 }}><TherapyNote compact /></div>
         </div>
-      </BottomSheet>
+      </div>
     );
   }
 
-  // ── Step 3: Need ──────────────────────────────────────────────────────────
+  // Step 3: Need selection
   if (step === 'need') {
     return (
-      <BottomSheet onClose={onClose}>
-        <div style={{ paddingTop: 4 }}>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Что за этим стоит?</div>
-            <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>Шаг 3 из 4 — нужда</div>
-          </div>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+        <Topbar onBack={() => setStep('response')} label="Назад" />
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px' }}>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 3 из 4</div>
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 28 }}>Что за этим стоит?</h1>
           {progressBar}
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 14, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 15, color: 'var(--text-sub)', marginBottom: 20, lineHeight: 1.6 }}>
             Какая потребность сейчас не удовлетворена?
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
             {NEEDS.map(n => {
               const sel = selectedNeed === n.id;
               return (
                 <button key={n.id} onClick={() => { setSelectedNeed(n.id); setStep('action'); }} style={{
-                  textAlign: 'left', padding: '13px 16px', borderRadius: 14, cursor: 'pointer',
+                  textAlign: 'left', padding: '16px 20px', borderRadius: 14, cursor: 'pointer',
                   border: `1px solid ${sel ? 'var(--accent)' : 'var(--line)'}`,
-                  background: sel ? 'var(--surface-2)' : 'transparent',
-                  color: 'var(--text)', fontSize: 14, fontWeight: sel ? 600 : 400,
-                  fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 10,
+                  background: sel ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'transparent',
+                  color: 'var(--text)', fontSize: 15,
+                  fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 12,
                 }}>
-                  <span style={{ fontSize: 18 }}>{n.emoji}</span>
-                  {n.label}
+                  <span style={{ fontSize: 22 }}>{n.emoji}</span>
+                  <span style={{ fontFamily: 'var(--serif)', fontSize: 18 }}>{n.label}</span>
                 </button>
               );
             })}
           </div>
-          <button onClick={() => setStep('response')} style={{
-            width: 44, height: 44, borderRadius: 12, border: 'none', fontFamily: 'inherit',
-            background: 'var(--surface-2)', color: 'var(--text-sub)',
-            fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>←</button>
-          <div style={{ marginTop: 20 }}><TherapyNote compact/></div>
+          <div style={{ marginTop: 24 }}><TherapyNote compact /></div>
         </div>
-      </BottomSheet>
+      </div>
     );
   }
 
-  // ── Step 4: Action ────────────────────────────────────────────────────────
+  // Step 4: Action
   const needInfo = NEEDS.find(n => n.id === selectedNeed);
   return (
-    <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Один маленький шаг</div>
-          <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>Шаг 4 из 4</div>
-        </div>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+      <Topbar onBack={() => setStep('need')} label="Назад" />
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px' }}>
+        <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 4 из 4</div>
+        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 28 }}>Один маленький шаг</h1>
         {progressBar}
         {needInfo && (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
+            display: 'flex', alignItems: 'center', gap: 14,
             background: 'transparent', border: '1px solid var(--line)',
-            borderRadius: 14, padding: '11px 14px', marginBottom: 16,
+            borderRadius: 14, padding: '14px 18px', marginBottom: 20,
           }}>
-            <span style={{ fontSize: 20 }}>{needInfo.emoji}</span>
+            <span style={{ fontSize: 24 }}>{needInfo.emoji}</span>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 1 }}>Потребность</div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{needInfo.label}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Потребность</div>
+              <div style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)' }}>{needInfo.label}</div>
             </div>
           </div>
         )}
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 8, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 15, color: 'var(--text-sub)', marginBottom: 12, lineHeight: 1.6 }}>
           Что одно маленькое действие ты можешь сделать прямо сейчас?
-        </div>
+        </p>
         <textarea
           value={action}
           onChange={e => setAction(e.target.value)}
           placeholder="Написать другу, выйти подышать, обнять подушку..."
           rows={3}
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            background: 'transparent',
-            border: `1px solid ${action.trim() ? 'var(--accent)' : 'var(--line)'}`,
-            borderRadius: 14, padding: '12px 14px',
-            color: 'var(--text)', fontSize: 14, lineHeight: 1.55,
-            resize: 'none', outline: 'none', fontFamily: 'inherit', marginBottom: 16,
-            transition: 'border-color 0.2s',
-          }}
+          className="paper-area"
+          style={{ marginBottom: 20, borderColor: action.trim() ? 'var(--accent)' : 'var(--line)' }}
         />
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => setStep('need')} style={{
-            width: 44, height: 44, borderRadius: 12, border: 'none', fontFamily: 'inherit',
-            background: 'var(--surface-2)', color: 'var(--text-sub)',
-            fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>←</button>
-          <button onClick={save} disabled={!action.trim()} style={{
-            flex: 1, padding: '13px', borderRadius: 12, border: 'none', fontFamily: 'inherit',
-            background: action.trim() ? 'rgba(52,211,153,0.15)' : 'var(--surface-2)',
-            outline: action.trim() ? '1px solid rgba(52,211,153,0.25)' : 'none',
-            color: action.trim() ? 'var(--accent-green)' : 'var(--text-faint)',
-            fontSize: 14, fontWeight: 600,
-            cursor: action.trim() ? 'pointer' : 'default', transition: 'all 0.2s',
-          }}>
-            Сохранить
-          </button>
-        </div>
-        <div style={{ marginTop: 20 }}><TherapyNote compact/></div>
+        <button onClick={save} disabled={!action.trim()} className="ex-btn ex-btn-primary" style={{ width: '100%' }}>
+          Сохранить
+        </button>
+        <div style={{ marginTop: 24 }}><TherapyNote compact /></div>
       </div>
-    </BottomSheet>
+    </div>
   );
 }
