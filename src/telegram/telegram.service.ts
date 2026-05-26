@@ -111,8 +111,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.command('start', async (ctx) => {
       try {
-        const userId = ctx.from?.id;
-        if (!userId) return;
+        const rawId = ctx.from?.id;
+        if (!rawId) return;
+        const userId = BigInt(rawId);
         const isReturning = !!(await this.botService.getUserSettings(userId));
         await this.botService.registerUser(userId, ctx.from?.first_name);
         const payload = (ctx as any).startPayload as string | undefined;
@@ -120,7 +121,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           const code = payload.slice(5).toUpperCase();
           const hasConsent = await this.botService.hasAcceptedDisclaimer(userId);
           if (!hasConsent) {
-            this.pendingPairCodes.set(userId, { code, expiresAt: Date.now() + 15 * 60_000 });
+            this.pendingPairCodes.set(rawId, { code, expiresAt: Date.now() + 15 * 60_000 });
             await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
             return;
           }
@@ -134,8 +135,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           }
           return;
         }
-        const hasConsent = await this.botService.hasAcceptedDisclaimer(userId);
-        if (!hasConsent) {
+        const hasConsent2 = await this.botService.hasAcceptedDisclaimer(userId);
+        if (!hasConsent2) {
           await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
           return;
         }
@@ -202,13 +203,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.action('accept_consent', async (ctx) => {
       try {
         await ctx.answerCbQuery('Принято ✅');
-        const userId = ctx.from?.id;
-        if (userId) {
+        const rawId = ctx.from?.id;
+        if (rawId) {
+          const userId = BigInt(rawId);
           await this.botService.acceptDisclaimer(userId);
           // Resume pending pair join if user arrived via pair invite link
-          const pending = this.pendingPairCodes.get(userId);
+          const pending = this.pendingPairCodes.get(rawId);
           if (pending && pending.expiresAt > Date.now()) {
-            this.pendingPairCodes.delete(userId);
+            this.pendingPairCodes.delete(rawId);
             const ok = await this.botService.joinPair(userId, pending.code);
             const text = ok
               ? 'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.'
@@ -261,8 +263,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.action('snooze_reminder', async (ctx) => {
       try {
         await ctx.answerCbQuery('⏰ Напомню через час');
-        const userId = ctx.from?.id;
-        if (userId) {
+        const rawId = ctx.from?.id;
+        if (rawId) {
+          const userId = BigInt(rawId);
           const settings = await this.botService.getUserSettings(userId);
           const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
           let sendAt = new Date(Date.now() + 3_600_000);
@@ -294,8 +297,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.action(/^plan_(done|skip):(\d+)$/, async (ctx) => {
       try {
         await ctx.answerCbQuery();
-        const userId = ctx.from?.id;
-        if (!userId) return;
+        const rawId = ctx.from?.id;
+        if (!rawId) return;
+        const userId = BigInt(rawId);
         const match = ctx.match as RegExpMatchArray;
         const done = match[1] === 'done';
         const planId = Number(match[2]);
@@ -344,7 +348,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             const isPermanent = code === 403
               || (code === 400 && /chat not found|user is deactivated|bot was blocked/i.test(desc));
             if (isPermanent) {
-              await this.botService.markUserBlocked(uid).catch(() => null);
+              await this.botService.markUserBlocked(BigInt(uid)).catch(() => null);
             }
           }
           await new Promise(r => setTimeout(r, 50));

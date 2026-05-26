@@ -653,7 +653,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                               title = mode ? `${mode.emoji} ${mode.name}` : (entry.modeId ?? 'Режим');
                               typeLabel = 'Режим-дневник';
                             } else {
-                              color = '#06d6a0';
+                              color = 'var(--c-moss)';
                               title = 'Благодарность';
                               typeLabel = 'Дневник благодарности';
                             }
@@ -909,7 +909,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                               {domain.schemas.map(s => {
                                 const active = activeSchemaIds.includes(s.id);
                                 return (
-                                  <button key={s.id} onClick={() => toggleSchemaId(s.id)} style={{ padding: '6px 12px', borderRadius: 6, fontSize: 12.5, fontWeight: active ? 600 : 400, background: active ? domain.color : 'var(--bg-alt)', color: active ? '#fff' : 'var(--text-faint)', border: `1px solid ${active ? domain.color : 'var(--line)'}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+                                  <button key={s.id} onClick={() => toggleSchemaId(s.id)} style={{ padding: '6px 12px', borderRadius: 6, fontSize: 12.5, fontWeight: active ? 600 : 400, background: active ? domain.color : 'var(--surface-2)', color: active ? 'var(--on-accent)' : 'var(--text-faint)', border: `1px solid ${active ? domain.color : 'var(--line)'}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
                                     {s.name}
                                   </button>
                                 );
@@ -934,7 +934,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                               {group.items.map(m => {
                                 const active = activeModeIds.includes(m.id);
                                 return (
-                                  <button key={m.id} onClick={() => toggleModeId(m.id)} style={{ padding: '6px 12px', borderRadius: 6, fontSize: 12.5, fontWeight: active ? 600 : 400, background: active ? group.color : 'var(--bg-alt)', color: active ? '#fff' : 'var(--text-faint)', border: `1px solid ${active ? group.color : 'var(--line)'}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+                                  <button key={m.id} onClick={() => toggleModeId(m.id)} style={{ padding: '6px 12px', borderRadius: 6, fontSize: 12.5, fontWeight: active ? 600 : 400, background: active ? group.color : 'var(--surface-2)', color: active ? 'var(--on-accent)' : 'var(--text-faint)', border: `1px solid ${active ? group.color : 'var(--line)'}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
                                     {m.name}
                                   </button>
                                 );

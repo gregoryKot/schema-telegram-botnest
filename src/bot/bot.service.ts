@@ -93,61 +93,60 @@ export class BotService {
     }).format(base);
   }
 
-  private async userTimezone(userId: number): Promise<string> {
+  private async userTimezone(userId: bigint): Promise<string> {
     const user = await this.prisma.user.findUnique({
-      where: { id: BigInt(userId) },
+      where: { id: userId },
       select: { notifyTimezone: true },
     });
     return user?.notifyTimezone ?? 'Europe/Moscow';
   }
 
-  async registerUser(userId: number, firstName?: string, timezone?: string) {
+  async registerUser(userId: bigint, firstName?: string, timezone?: string) {
     const validTz = typeof timezone === 'string' && VALID_TIMEZONES.includes(timezone);
     await this.prisma.user.upsert({
-      where: { id: BigInt(userId) },
+      where: { id: userId },
       update: { ...(firstName ? { firstName } : {}), botBlockedAt: null, deletedAt: null },
-      create: { id: BigInt(userId), firstName, ...(validTz ? { notifyTimezone: timezone! } : {}) },
+      create: { id: userId, firstName, ...(validTz ? { notifyTimezone: timezone! } : {}) },
     });
   }
 
-  async getUserFirstName(userId: number): Promise<string | null> {
-    const u = await this.prisma.user.findUnique({ where: { id: BigInt(userId) }, select: { firstName: true } });
+  async getUserFirstName(userId: bigint): Promise<string | null> {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { firstName: true } });
     return u?.firstName ?? null;
   }
 
-  async acceptDisclaimer(userId: number): Promise<void> {
-    await this.prisma.user.update({ where: { id: BigInt(userId) }, data: { disclaimerAccepted: true } });
+  async acceptDisclaimer(userId: bigint): Promise<void> {
+    await this.prisma.user.update({ where: { id: userId }, data: { disclaimerAccepted: true } });
   }
 
-  async hasAcceptedDisclaimer(userId: number): Promise<boolean> {
-    const u = await this.prisma.user.findUnique({ where: { id: BigInt(userId) }, select: { disclaimerAccepted: true } });
+  async hasAcceptedDisclaimer(userId: bigint): Promise<boolean> {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { disclaimerAccepted: true } });
     return u?.disclaimerAccepted ?? false;
   }
 
-  async getYsqProgress(userId: number): Promise<{ answers: number[]; page: number } | null> {
-    const r = await this.prisma.ysqProgress.findUnique({ where: { userId: BigInt(userId) } });
+  async getYsqProgress(userId: bigint): Promise<{ answers: number[]; page: number } | null> {
+    const r = await this.prisma.ysqProgress.findUnique({ where: { userId } });
     if (!r) return null;
     return { answers: r.answers as number[], page: r.page };
   }
 
-  async saveYsqProgress(userId: number, answers: number[], page: number): Promise<void> {
-    const uid = BigInt(userId);
+  async saveYsqProgress(userId: bigint, answers: number[], page: number): Promise<void> {
     await this.prisma.ysqProgress.upsert({
-      where: { userId: uid },
+      where: { userId },
       update: { answers, page, updatedAt: new Date() },
-      create: { userId: uid, answers, page },
+      create: { userId, answers, page },
     });
   }
 
-  async deleteYsqProgress(userId: number): Promise<void> {
-    await this.prisma.ysqProgress.deleteMany({ where: { userId: BigInt(userId) } });
+  async deleteYsqProgress(userId: bigint): Promise<void> {
+    await this.prisma.ysqProgress.deleteMany({ where: { userId } });
   }
 
-  async getUserSettings(userId: number) {
+  async getUserSettings(userId: bigint) {
     // Explicit select — only return fields used by the API. Adding a new
     // public setting? Add it here AND in api.controller.getSettings().
     const row = await this.prisma.user.findUnique({
-      where: { id: BigInt(userId) },
+      where: { id: userId },
       select: {
         notifyEnabled: true,
         notifyLocalHour: true,
@@ -165,14 +164,14 @@ export class BotService {
     return decryptRecord(row as any, { jsonArrays: ['mySchemaIds', 'myModeIds'] });
   }
 
-  async updateUserSettings(userId: number, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean }) {
+  async updateUserSettings(userId: bigint, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean }) {
     const enc = encryptRecord(data as Record<string, unknown>, { jsonArrays: ['mySchemaIds', 'myModeIds'] });
-    await this.prisma.user.update({ where: { id: BigInt(userId) }, data: enc as any });
+    await this.prisma.user.update({ where: { id: userId }, data: enc as any });
   }
 
-  async getNote(userId: number, date: string): Promise<{ text: string | null; tags: string[] }> {
+  async getNote(userId: bigint, date: string): Promise<{ text: string | null; tags: string[] }> {
     const note = await this.prisma.note.findUnique({
-      where: { userId_date: { userId: BigInt(userId), date } },
+      where: { userId_date: { userId, date } },
     });
     return {
       text: note?.text ? decrypt(note.text) : null,
@@ -184,20 +183,20 @@ export class BotService {
     };
   }
 
-  async saveNote(userId: number, date: string, text: string, tags?: string[]) {
+  async saveNote(userId: bigint, date: string, text: string, tags?: string[]) {
     const tagsPlain = tags ? tags.join(',') : '';
     const encText = encrypt(text) ?? text;
     const encTags = encrypt(tagsPlain) ?? tagsPlain;
     await this.prisma.note.upsert({
-      where: { userId_date: { userId: BigInt(userId), date } },
+      where: { userId_date: { userId, date } },
       update: { text: encText, tags: encTags },
-      create: { userId: BigInt(userId), date, text: encText, tags: encTags },
+      create: { userId, date, text: encText, tags: encTags },
     });
   }
 
-  async markUserBlocked(userId: number): Promise<void> {
+  async markUserBlocked(userId: bigint): Promise<void> {
     await this.prisma.user.updateMany({
-      where: { id: BigInt(userId), botBlockedAt: null },
+      where: { id: userId, botBlockedAt: null },
       data: { botBlockedAt: new Date() },
     });
   }
@@ -223,29 +222,28 @@ export class BotService {
     return users.map((u) => ({ ...u, id: Number(u.id) }));
   }
 
-  async saveRating(userId: number, needId: NeedId, value: number, date?: string) {
+  async saveRating(userId: bigint, needId: NeedId, value: number, date?: string) {
     if (!Number.isInteger(value) || value < 0 || value > 10) {
       throw new Error('Rating must be integer 0..10');
     }
-    const uid = BigInt(userId);
     const dt = date ?? this.localDateString(await this.userTimezone(userId));
     await this.prisma.rating.upsert({
-      where: { userId_date_needId: { userId: uid, date: dt, needId } },
+      where: { userId_date_needId: { userId, date: dt, needId } },
       update: { value },
-      create: { userId: uid, date: dt, needId, value },
+      create: { userId, date: dt, needId, value },
     });
   }
 
-  async getRatings(userId: number, date?: string) {
+  async getRatings(userId: bigint, date?: string) {
     const dt = date ?? this.localDateString(await this.userTimezone(userId));
     const rows = await this.prisma.rating.findMany({
-      where: { userId: BigInt(userId), date: dt },
+      where: { userId, date: dt },
     });
     return Object.fromEntries(rows.map((r) => [r.needId, r.value])) as Partial<Record<NeedId, number>>;
   }
 
-  async getUserPair(userId: number): Promise<{ code: string; status: string; isCreator: boolean; partnerId: number | null } | null> {
-    const uid = BigInt(userId);
+  async getUserPair(userId: bigint): Promise<{ code: string; status: string; isCreator: boolean; partnerId: number | null } | null> {
+    const uid = userId;
     const pair = await this.prisma.pair.findFirst({
       where: { OR: [{ userId1: uid }, { userId2: uid }] },
       orderBy: { createdAt: 'desc' },
@@ -258,13 +256,13 @@ export class BotService {
     return { code: pair.code, status: pair.status, isCreator, partnerId };
   }
 
-  async getUserPairs(userId: number): Promise<Array<{
+  async getUserPairs(userId: bigint): Promise<Array<{
     code: string;
     status: string;
     partnerId: number | null;
     isCreator: boolean;
   }>> {
-    const uid = BigInt(userId);
+    const uid = userId;
     const pairs = await this.prisma.pair.findMany({
       where: { OR: [{ userId1: uid }, { userId2: uid }] },
       orderBy: { createdAt: 'desc' },
@@ -278,17 +276,16 @@ export class BotService {
     });
   }
 
-  async createPairInvite(userId: number): Promise<string> {
-    const uid = BigInt(userId);
-    const existing = await this.prisma.pair.findFirst({ where: { userId1: uid, status: 'pending' } });
+  async createPairInvite(userId: bigint): Promise<string> {
+    const existing = await this.prisma.pair.findFirst({ where: { userId1: userId, status: 'pending' } });
     if (existing) return existing.code;
     const code = randomBytes(6).toString('hex').toUpperCase();
-    await this.prisma.pair.create({ data: { code, userId1: uid } });
+    await this.prisma.pair.create({ data: { code, userId1: userId } });
     return code;
   }
 
-  async joinPair(userId: number, code: string): Promise<boolean> {
-    const uid = BigInt(userId);
+  async joinPair(userId: bigint, code: string): Promise<boolean> {
+    const uid = userId;
     const pair = await this.prisma.pair.findUnique({ where: { code } });
     if (!pair || pair.status !== 'pending' || pair.userId1 === uid || pair.userId2 === uid) return false;
     // Conditional update — atomic at the DB level. If two users race to join
@@ -309,8 +306,8 @@ export class BotService {
     return result.count;
   }
 
-  async leavePair(userId: number, code: string): Promise<void> {
-    const uid = BigInt(userId);
+  async leavePair(userId: bigint, code: string): Promise<void> {
+    const uid = userId;
     const pair = await this.prisma.pair.findUnique({ where: { code } });
     if (!pair) return;
     if (pair.userId1 === uid) {
@@ -322,113 +319,111 @@ export class BotService {
 
   // ─── Practices ────────────────────────────────────────────────────────────
 
-  async getPractices(userId: number, needId: string) {
+  async getPractices(userId: bigint, needId: string) {
     const rows = await this.prisma.userPractice.findMany({
-      where: { userId: BigInt(userId), needId },
+      where: { userId, needId },
       orderBy: { createdAt: 'asc' },
     });
     return rows.map(r => ({ ...r, text: decrypt(r.text) ?? r.text }));
   }
 
-  async addPractice(userId: number, needId: string, text: string) {
+  async addPractice(userId: bigint, needId: string, text: string) {
     return this.prisma.userPractice.create({
-      data: { userId: BigInt(userId), needId, text: encrypt(text) ?? text },
+      data: { userId, needId, text: encrypt(text) ?? text },
     });
   }
 
-  async deletePractice(userId: number, id: number) {
+  async deletePractice(userId: bigint, id: number) {
     await this.prisma.userPractice.deleteMany({
-      where: { id, userId: BigInt(userId) },
+      where: { id, userId },
     });
   }
 
   // ─── Plans ────────────────────────────────────────────────────────────────
 
-  async createPlan(userId: number, needId: string, practiceText: string, scheduledDate: string, reminderUtcHour?: number) {
+  async createPlan(userId: bigint, needId: string, practiceText: string, scheduledDate: string, reminderUtcHour?: number) {
     const row = await this.prisma.practicePlan.create({
-      data: { userId: BigInt(userId), needId, practiceText: encrypt(practiceText) ?? practiceText, scheduledDate, reminderUtcHour },
+      data: { userId, needId, practiceText: encrypt(practiceText) ?? practiceText, scheduledDate, reminderUtcHour },
     });
     return { ...row, practiceText }; // return plaintext to caller
   }
 
-  async checkinPlan(userId: number, id: number, done: boolean) {
+  async checkinPlan(userId: bigint, id: number, done: boolean) {
     await this.prisma.practicePlan.updateMany({
-      where: { id, userId: BigInt(userId) },
+      where: { id, userId },
       data: { done, checkedAt: new Date() },
     });
   }
 
-  async getPendingPlans(userId: number, date: string) {
+  async getPendingPlans(userId: bigint, date: string) {
     const rows = await this.prisma.practicePlan.findMany({
-      where: { userId: BigInt(userId), scheduledDate: { gte: date }, done: null },
+      where: { userId, scheduledDate: { gte: date }, done: null },
       orderBy: { createdAt: 'asc' },
     });
     return rows.map(r => ({ ...r, practiceText: decrypt(r.practiceText) ?? r.practiceText }));
   }
 
-  async getPlanHistory(userId: number, days: number) {
+  async getPlanHistory(userId: bigint, days: number) {
     const since = new Date(Date.now() - days * 86_400_000);
     const sinceStr = since.toISOString().split('T')[0];
     const rows = await this.prisma.practicePlan.findMany({
-      where: { userId: BigInt(userId), scheduledDate: { gte: sinceStr } },
+      where: { userId, scheduledDate: { gte: sinceStr } },
       orderBy: { scheduledDate: 'desc' },
     });
     return rows.map(r => ({ ...r, practiceText: decrypt(r.practiceText) ?? r.practiceText }));
   }
 
-  async getMissedPlans(userId: number, date: string) {
+  async getMissedPlans(userId: bigint, date: string) {
     const rows = await this.prisma.practicePlan.findMany({
-      where: { userId: BigInt(userId), scheduledDate: date, done: null },
+      where: { userId, scheduledDate: date, done: null },
     });
     return rows.map(r => ({ ...r, practiceText: decrypt(r.practiceText) ?? r.practiceText }));
   }
 
-  async getChildhoodRatings(userId: number): Promise<Partial<Record<string, number>>> {
-    const rows = await this.prisma.childhoodRating.findMany({ where: { userId: BigInt(userId) } });
+  async getChildhoodRatings(userId: bigint): Promise<Partial<Record<string, number>>> {
+    const rows = await this.prisma.childhoodRating.findMany({ where: { userId } });
     const result: Partial<Record<string, number>> = {};
     for (const row of rows) result[row.needId] = row.value;
     return result;
   }
 
-  async saveChildhoodRatings(userId: number, ratings: Record<string, number>): Promise<void> {
-    const uid = BigInt(userId);
+  async saveChildhoodRatings(userId: bigint, ratings: Record<string, number>): Promise<void> {
     await this.prisma.$transaction(
       Object.entries(ratings).map(([needId, value]) =>
         this.prisma.childhoodRating.upsert({
-          where: { userId_needId: { userId: uid, needId } },
-          create: { userId: uid, needId, value },
+          where: { userId_needId: { userId, needId } },
+          create: { userId, needId, value },
           update: { value },
         })
       )
     );
   }
 
-  async getYsqResult(userId: number): Promise<{ answers: number[]; completedAt: Date } | null> {
-    const r = await this.prisma.ysqResult.findUnique({ where: { userId: BigInt(userId) } });
+  async getYsqResult(userId: bigint): Promise<{ answers: number[]; completedAt: Date } | null> {
+    const r = await this.prisma.ysqResult.findUnique({ where: { userId } });
     if (!r) return null;
     return { answers: r.answers as number[], completedAt: r.completedAt };
   }
 
-  async deleteYsqResult(userId: number): Promise<void> {
-    await this.prisma.ysqResult.deleteMany({ where: { userId: BigInt(userId) } });
+  async deleteYsqResult(userId: bigint): Promise<void> {
+    await this.prisma.ysqResult.deleteMany({ where: { userId } });
   }
 
-  async saveYsqResult(userId: number, answers: number[]): Promise<void> {
-    const uid = BigInt(userId);
+  async saveYsqResult(userId: bigint, answers: number[]): Promise<void> {
     const now = new Date();
     await this.prisma.$transaction([
       this.prisma.ysqResult.upsert({
-        where: { userId: uid },
+        where: { userId },
         update: { answers, completedAt: now },
-        create: { userId: uid, answers },
+        create: { userId, answers },
       }),
-      this.prisma.ysqResultHistory.create({ data: { userId: uid, answers, completedAt: now } }),
+      this.prisma.ysqResultHistory.create({ data: { userId, answers, completedAt: now } }),
     ]);
   }
 
-  async getYsqHistory(userId: number): Promise<Array<{ id: number; completedAt: Date; answers: number[] }>> {
+  async getYsqHistory(userId: bigint): Promise<Array<{ id: number; completedAt: Date; answers: number[] }>> {
     const rows = await this.prisma.ysqResultHistory.findMany({
-      where: { userId: BigInt(userId) },
+      where: { userId },
       orderBy: { completedAt: 'desc' },
       take: 20,
     });
@@ -442,74 +437,72 @@ export class BotService {
     strings: ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'],
   };
 
-  async getSchemaNote(userId: number, schemaId: string) {
-    const row = await this.prisma.userSchemaNote.findUnique({ where: { userId_schemaId: { userId: BigInt(userId), schemaId } } });
+  async getSchemaNote(userId: bigint, schemaId: string) {
+    const row = await this.prisma.userSchemaNote.findUnique({ where: { userId_schemaId: { userId, schemaId } } });
     return row ? decryptRecord(row, BotService.SCHEMA_NOTE_SCHEMA) : null;
   }
 
-  async getSchemaNotes(userId: number) {
-    const rows = await this.prisma.userSchemaNote.findMany({ where: { userId: BigInt(userId) } });
+  async getSchemaNotes(userId: bigint) {
+    const rows = await this.prisma.userSchemaNote.findMany({ where: { userId } });
     return rows.map(r => decryptRecord(r, BotService.SCHEMA_NOTE_SCHEMA));
   }
 
-  async upsertSchemaNote(userId: number, schemaId: string, data: {
+  async upsertSchemaNote(userId: bigint, schemaId: string, data: {
     triggers?: string; feelings?: string; thoughts?: string;
     origins?: string; reality?: string; healthyView?: string; behavior?: string;
   }) {
-    const uid = BigInt(userId);
     const enc = encryptRecord(data, BotService.SCHEMA_NOTE_SCHEMA);
     return this.prisma.userSchemaNote.upsert({
-      where: { userId_schemaId: { userId: uid, schemaId } },
+      where: { userId_schemaId: { userId, schemaId } },
       update: enc,
-      create: { userId: uid, schemaId, ...enc },
+      create: { userId, schemaId, ...enc },
     });
   }
 
-  async getModeNote(userId: number, modeId: string) {
-    const row = await this.prisma.userModeNote.findUnique({ where: { userId_modeId: { userId: BigInt(userId), modeId } } });
+  async getModeNote(userId: bigint, modeId: string) {
+    const row = await this.prisma.userModeNote.findUnique({ where: { userId_modeId: { userId, modeId } } });
     return row ? decryptRecord(row, BotService.MODE_NOTE_SCHEMA) : null;
   }
 
-  async getModeNotes(userId: number) {
-    const rows = await this.prisma.userModeNote.findMany({ where: { userId: BigInt(userId) } });
+  async getModeNotes(userId: bigint) {
+    const rows = await this.prisma.userModeNote.findMany({ where: { userId } });
     return rows.map(r => decryptRecord(r, BotService.MODE_NOTE_SCHEMA));
   }
 
-  async upsertModeNote(userId: number, modeId: string, data: {
+  async upsertModeNote(userId: bigint, modeId: string, data: {
     triggers?: string; feelings?: string; thoughts?: string; needs?: string; behavior?: string;
   }) {
-    const uid = BigInt(userId);
     const enc = encryptRecord(data, BotService.MODE_NOTE_SCHEMA);
     return this.prisma.userModeNote.upsert({
-      where: { userId_modeId: { userId: uid, modeId } },
+      where: { userId_modeId: { userId, modeId } },
       update: enc,
-      create: { userId: uid, modeId, ...enc },
+      create: { userId, modeId, ...enc },
     });
   }
 
-  async updateName(userId: number, name: string): Promise<void> {
-    await this.prisma.user.update({ where: { id: BigInt(userId) }, data: { firstName: name } });
+  async updateName(userId: bigint, name: string): Promise<void> {
+    await this.prisma.user.update({ where: { id: userId }, data: { firstName: name } });
   }
 
-  async setRole(userId: number, role: 'CLIENT' | 'THERAPIST'): Promise<void> {
+  async setRole(userId: bigint, role: 'CLIENT' | 'THERAPIST'): Promise<void> {
     // When promoting to THERAPIST also enable therapistMode by default
     // (was client-side auto-enable via localStorage check)
     await this.prisma.user.update({
-      where: { id: BigInt(userId) },
+      where: { id: userId },
       data: { role, therapistMode: role === 'THERAPIST' },
     });
   }
 
-  async getUserRole(userId: number): Promise<'CLIENT' | 'THERAPIST'> {
-    const user = await this.prisma.user.findUnique({ where: { id: BigInt(userId) }, select: { role: true } });
+  async getUserRole(userId: bigint): Promise<'CLIENT' | 'THERAPIST'> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
     return user?.role ?? 'CLIENT';
   }
 
   // ── Belief checks ────────────────────────────────────────────────────────────
 
-  async getBeliefChecks(userId: number) {
+  async getBeliefChecks(userId: bigint) {
     const rows = await this.prisma.userBeliefCheck.findMany({
-      where: { userId: BigInt(userId) }, orderBy: { createdAt: 'desc' }, take: 30,
+      where: { userId }, orderBy: { createdAt: 'desc' }, take: 30,
     });
     return rows.map(r => ({
       ...r,
@@ -520,10 +513,10 @@ export class BotService {
     }));
   }
 
-  async createBeliefCheck(userId: number, data: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) {
+  async createBeliefCheck(userId: bigint, data: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) {
     return this.prisma.userBeliefCheck.create({
       data: {
-        userId: BigInt(userId),
+        userId,
         belief: encrypt(data.belief) ?? data.belief,
         evidenceFor: encryptJson(data.evidenceFor) ?? JSON.stringify(data.evidenceFor),
         evidenceAgainst: encryptJson(data.evidenceAgainst) ?? JSON.stringify(data.evidenceAgainst),
@@ -532,54 +525,53 @@ export class BotService {
     });
   }
 
-  async deleteBeliefCheck(userId: number, id: number) {
-    return this.prisma.userBeliefCheck.deleteMany({ where: { id, userId: BigInt(userId) } });
+  async deleteBeliefCheck(userId: bigint, id: number) {
+    return this.prisma.userBeliefCheck.deleteMany({ where: { id, userId } });
   }
 
   // ── Letters ───────────────────────────────────────────────────────────────────
 
-  async getLetters(userId: number) {
+  async getLetters(userId: bigint) {
     const rows = await this.prisma.userLetter.findMany({
-      where: { userId: BigInt(userId) }, orderBy: { createdAt: 'desc' }, take: 30,
+      where: { userId }, orderBy: { createdAt: 'desc' }, take: 30,
     });
     return rows.map(r => ({ ...r, text: decrypt(r.text) ?? r.text }));
   }
 
-  async createLetter(userId: number, text: string) {
+  async createLetter(userId: bigint, text: string) {
     const row = await this.prisma.userLetter.create({
-      data: { userId: BigInt(userId), text: encrypt(text) ?? text },
+      data: { userId, text: encrypt(text) ?? text },
     });
     return { ...row, text };
   }
 
-  async deleteLetter(userId: number, id: number) {
-    return this.prisma.userLetter.deleteMany({ where: { id, userId: BigInt(userId) } });
+  async deleteLetter(userId: bigint, id: number) {
+    return this.prisma.userLetter.deleteMany({ where: { id, userId } });
   }
 
   // ── Safe place ────────────────────────────────────────────────────────────────
 
-  async getSafePlace(userId: number) {
-    const row = await this.prisma.userSafePlace.findUnique({ where: { userId: BigInt(userId) } });
+  async getSafePlace(userId: bigint) {
+    const row = await this.prisma.userSafePlace.findUnique({ where: { userId } });
     if (!row) return null;
     return { ...row, description: decrypt(row.description) ?? row.description };
   }
 
-  async upsertSafePlace(userId: number, description: string) {
+  async upsertSafePlace(userId: bigint, description: string) {
     const enc = encrypt(description) ?? description;
-    const uid = BigInt(userId);
     const row = await this.prisma.userSafePlace.upsert({
-      where: { userId: uid },
+      where: { userId },
       update: { description: enc },
-      create: { userId: uid, description: enc },
+      create: { userId, description: enc },
     });
     return { ...row, description };
   }
 
   // ── Flashcards ────────────────────────────────────────────────────────────────
 
-  async getFlashcards(userId: number) {
+  async getFlashcards(userId: bigint) {
     const rows = await this.prisma.userFlashcard.findMany({
-      where: { userId: BigInt(userId) }, orderBy: { createdAt: 'desc' }, take: 30,
+      where: { userId }, orderBy: { createdAt: 'desc' }, take: 30,
     });
     return rows.map(r => ({
       ...r,
@@ -588,10 +580,10 @@ export class BotService {
     }));
   }
 
-  async createFlashcard(userId: number, data: { modeId: string; needId: string; reflection?: string; action?: string }) {
+  async createFlashcard(userId: bigint, data: { modeId: string; needId: string; reflection?: string; action?: string }) {
     const row = await this.prisma.userFlashcard.create({
       data: {
-        userId: BigInt(userId),
+        userId,
         modeId: data.modeId,
         needId: data.needId,
         reflection: encrypt(data.reflection),
@@ -601,38 +593,36 @@ export class BotService {
     return { ...row, reflection: data.reflection ?? null, action: data.action ?? null };
   }
 
-  async deleteFlashcard(userId: number, id: number) {
-    return this.prisma.userFlashcard.deleteMany({ where: { id, userId: BigInt(userId) } });
+  async deleteFlashcard(userId: bigint, id: number) {
+    return this.prisma.userFlashcard.deleteMany({ where: { id, userId } });
   }
 
   // ── Therapist: client notes access ───────────────────────────────────────────
 
-  async getClientSchemaNotes(therapistId: number, clientId: number) {
-    const uid = BigInt(clientId);
+  async getClientSchemaNotes(therapistId: bigint, clientId: bigint) {
     const [rel, client] = await Promise.all([
-      this.prisma.therapyRelation.findFirst({ where: { therapistId: BigInt(therapistId), clientId: uid, status: 'active' } }),
-      this.prisma.user.findUnique({ where: { id: uid }, select: { therapistShareCards: true } }),
+      this.prisma.therapyRelation.findFirst({ where: { therapistId, clientId, status: 'active' } }),
+      this.prisma.user.findUnique({ where: { id: clientId }, select: { therapistShareCards: true } }),
     ]);
     if (!rel) return null;
     if (client?.therapistShareCards === false) return [];
-    return this.prisma.userSchemaNote.findMany({ where: { userId: uid } });
+    return this.prisma.userSchemaNote.findMany({ where: { userId: clientId } });
   }
 
-  async getClientModeNotes(therapistId: number, clientId: number) {
-    const uid = BigInt(clientId);
+  async getClientModeNotes(therapistId: bigint, clientId: bigint) {
     const [rel, client] = await Promise.all([
-      this.prisma.therapyRelation.findFirst({ where: { therapistId: BigInt(therapistId), clientId: uid, status: 'active' } }),
-      this.prisma.user.findUnique({ where: { id: uid }, select: { therapistShareCards: true } }),
+      this.prisma.therapyRelation.findFirst({ where: { therapistId, clientId, status: 'active' } }),
+      this.prisma.user.findUnique({ where: { id: clientId }, select: { therapistShareCards: true } }),
     ]);
     if (!rel) return null;
     if (client?.therapistShareCards === false) return [];
-    return this.prisma.userModeNote.findMany({ where: { userId: uid } });
+    return this.prisma.userModeNote.findMany({ where: { userId: clientId } });
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
 
-  async deleteAllUserData(userId: number): Promise<void> {
-    const uid = BigInt(userId);
+  async deleteAllUserData(userId: bigint): Promise<void> {
+    const uid = userId;
     // HARD delete — right-to-erasure. We tear out every row that references
     // this user, including auth providers, web sessions, therapist requests,
     // and finally the User row itself. NO soft-delete fallback.

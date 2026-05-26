@@ -29,7 +29,7 @@ function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-async function buildSettingsText(botService: BotService, userId: number): Promise<string> {
+async function buildSettingsText(botService: BotService, userId: bigint): Promise<string> {
   const s = await botService.getUserSettings(userId);
   if (!s) return 'Настройки не найдены.';
   const tz = TIMEZONES.find((t) => t.tz === s.notifyTimezone)?.label ?? s.notifyTimezone;
@@ -68,8 +68,9 @@ export class TelegramSettingsService implements OnModuleInit {
 
     this.bot.command('settings', async (ctx) => {
       try {
-        const userId = ctx.from?.id;
-        if (!userId) return;
+        const rawId = ctx.from?.id;
+        if (!rawId) return;
+        const userId = BigInt(rawId);
         const s = await this.botService.getUserSettings(userId);
         const text = await buildSettingsText(this.botService, userId);
         await ctx.reply(text, buildSettingsKeyboard(s?.notifyEnabled ?? true));
@@ -81,9 +82,10 @@ export class TelegramSettingsService implements OnModuleInit {
 
     this.bot.action('settings:toggle', async (ctx) => {
       try {
-        const userId = ctx.from?.id;
+        const rawId = ctx.from?.id;
         await ctx.answerCbQuery();
-        if (!userId) return;
+        if (!rawId) return;
+        const userId = BigInt(rawId);
         const s = await this.botService.getUserSettings(userId);
         const newEnabled = !(s?.notifyEnabled ?? true);
         await this.botService.updateUserSettings(userId, { notifyEnabled: newEnabled });
@@ -118,9 +120,10 @@ export class TelegramSettingsService implements OnModuleInit {
 
     this.bot.action(/^settings:hour:(\d+)$/, async (ctx) => {
       try {
-        const userId = ctx.from?.id;
+        const rawId = ctx.from?.id;
         await ctx.answerCbQuery();
-        if (!userId) return;
+        if (!rawId) return;
+        const userId = BigInt(rawId);
         const localHour = Number((ctx.match as RegExpMatchArray)[1]);
         await this.botService.updateUserSettings(userId, { notifyLocalHour: localHour });
         await this.scheduleService.rescheduleForUser(userId);
@@ -151,9 +154,10 @@ export class TelegramSettingsService implements OnModuleInit {
 
     this.bot.action(/^settings:tz:(.+)$/, async (ctx) => {
       try {
-        const userId = ctx.from?.id;
+        const rawId = ctx.from?.id;
         await ctx.answerCbQuery();
-        if (!userId) return;
+        if (!rawId) return;
+        const userId = BigInt(rawId);
         const timezone = (ctx.match as RegExpMatchArray)[1];
         if (!TIMEZONES.find((t) => t.tz === timezone)) return;
         await this.botService.updateUserSettings(userId, { notifyTimezone: timezone });
@@ -169,9 +173,10 @@ export class TelegramSettingsService implements OnModuleInit {
 
     this.bot.action('settings:back', async (ctx) => {
       try {
-        const userId = ctx.from?.id;
+        const rawId = ctx.from?.id;
         await ctx.answerCbQuery();
-        if (!userId) return;
+        if (!rawId) return;
+        const userId = BigInt(rawId);
         const s = await this.botService.getUserSettings(userId);
         const text = await buildSettingsText(this.botService, userId);
         await ctx.editMessageText(text, buildSettingsKeyboard(s?.notifyEnabled ?? true) as any);
