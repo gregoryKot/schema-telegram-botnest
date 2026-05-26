@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
+import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 
 const BeliefCheckEx = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const LetterEx      = lazy(() => import('../components/exercises/LetterEx').then(m => ({ default: m.LetterEx })));
@@ -390,14 +391,19 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         />
       )}
       {showAllTasks && (
-        <BottomSheet onClose={() => setShowAllTasks(false)} zIndex={200}>
-          <div style={{ paddingTop: 4 }}>
-            <h3 style={{ marginBottom: 4 }}>Мои цели</h3>
-            <div className="text-sm muted" style={{ marginBottom: 24 }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', overflowY: 'auto' }}>
+          <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
+            <button className="ex-btn ex-btn-ghost" onClick={() => setShowAllTasks(false)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+              <GlyphArrowLeft /> Назад
+            </button>
+          </div>
+          <div style={{ maxWidth: 560, margin: '0 auto', padding: '32px 24px 80px' }}>
+            <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>Мои цели</h1>
+            <p style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 28, lineHeight: 1.6 }}>
               {tasks.length === 0
                 ? 'Поставь себе цель и иди к ней маленькими шагами'
                 : `${tasks.length} ${plural(tasks.length, 'активная', 'активные', 'активных')}${taskHistory.length > 0 ? ` · ${taskHistory.length} выполнено` : ''}`}
-            </div>
+            </p>
 
             {tasks.length > 0 && (
               <div style={{ marginBottom: 8 }}>
@@ -433,11 +439,11 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
               </>
             )}
 
-            <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={() => { setShowAllTasks(false); setShowTaskCreate(true); }}>
+            <button className="ex-btn ex-btn-primary" style={{ marginTop: 24, width: '100%' }} onClick={() => { setShowAllTasks(false); setShowTaskCreate(true); }}>
               + Поставить цель
             </button>
           </div>
-        </BottomSheet>
+        </div>
       )}
     </div>
   );

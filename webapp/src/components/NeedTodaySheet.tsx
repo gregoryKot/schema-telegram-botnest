@@ -2,7 +2,7 @@ import { useRef, useCallback, useState, useEffect } from 'react';
 import { COLORS } from '../types';
 import type { Need } from '../types';
 import { NEED_DATA } from '../needData';
-import { BottomSheet } from './BottomSheet';
+import { GlyphArrowLeft } from './exercises/ExScreen';
 import { SectionLabel } from './SectionLabel';
 import { getTherapistContact } from '../utils/therapistContact';
 import { PlanSheet } from './PlanSheet';
@@ -60,28 +60,32 @@ export function NeedTodaySheet({ need, value, yesterdayValue: _yesterdayValue, o
   }, [calcValue]);
 
   return (
-    <BottomSheet onClose={onClose}>
-      {/* Header — tap to close */}
-      <div
-        onClick={onClose}
-        style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 24, cursor: 'pointer' }}
-      >
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
+      {/* Topbar */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+          <GlyphArrowLeft /> Назад
+        </button>
+      </div>
+      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
         <div style={{
-          width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+          width: 52, height: 52, borderRadius: 16, flexShrink: 0,
           background: color + '26',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 22,
+          fontSize: 26,
         }}>
           {data.emoji}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2, marginBottom: 8 }}>
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', lineHeight: 1.1, marginBottom: 8 }}>
             {need.chartLabel}
-          </div>
+          </h1>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {data.tags.map((tag) => (
               <span key={tag} style={{
-                fontSize: 11, padding: '3px 8px', borderRadius: 20,
+                fontSize: 11, padding: '3px 10px', borderRadius: 20,
                 background: color + '1f', color,
               }}>
                 {tag}
@@ -89,7 +93,6 @@ export function NeedTodaySheet({ need, value, yesterdayValue: _yesterdayValue, o
             ))}
           </div>
         </div>
-        <div style={{ fontSize: 20, color: 'var(--text-faint)', flexShrink: 0, lineHeight: 1, paddingTop: 2 }}>✕</div>
       </div>
 
       {/* Section 5: Slider — at top for immediate access */}
@@ -272,8 +275,9 @@ export function NeedTodaySheet({ need, value, yesterdayValue: _yesterdayValue, o
       )}
 
       {showDisclaimer && (
-        <BottomSheet onClose={() => setShowDisclaimer(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowDisclaimer(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
             <SectionLabel purple mb={16}>О советах</SectionLabel>
             {DISCLAIMER_CONTENT.map((p, i) => (
               <p key={i} style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>
@@ -288,9 +292,10 @@ export function NeedTodaySheet({ need, value, yesterdayValue: _yesterdayValue, o
               → {getTherapistContact().name === 'автору' ? 'Поговорить с психологом' : `Написать ${getTherapistContact().name}`}
             </a>
           </div>
-        </BottomSheet>
+        </div>
       )}
 
-    </BottomSheet>
+      </div>
+    </div>
   );
 }

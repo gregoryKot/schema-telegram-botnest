@@ -7,6 +7,7 @@ import type { UserTask, TherapyRelationInfo } from '../api';
 import type { Section } from '../components/BottomNav';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
+import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { BottomSheet } from '../components/BottomSheet';
@@ -487,10 +488,16 @@ export function TodaySection({
         </div>
       )}
 
-      {/* All tasks sheet */}
+      {/* All tasks overlay */}
       {showAllTasks && (
-        <BottomSheet onClose={() => setShowAllTasks(false)} zIndex={200}>
-          <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 20 }}>Все задания</div>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', overflowY: 'auto' }}>
+          <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
+            <button className="ex-btn ex-btn-ghost" onClick={() => setShowAllTasks(false)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+              <GlyphArrowLeft /> Назад
+            </button>
+          </div>
+          <div style={{ maxWidth: 560, margin: '0 auto', padding: '32px 24px 80px' }}>
+          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>Все задания</h1>
           {tasks.map(task => (
             <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
               <span style={{ fontSize: 18, flexShrink: 0, width: 22, textAlign: 'center' }}>
@@ -523,10 +530,11 @@ export function TodaySection({
               ))}
             </>
           )}
-          <button onClick={() => { setShowAllTasks(false); setShowTaskCreate(true); }} style={{ marginTop: 16, width: '100%', padding: '13px 0', borderRadius: 14, border: 'none', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={() => { setShowAllTasks(false); setShowTaskCreate(true); }} className="ex-btn ex-btn-primary" style={{ marginTop: 20, width: '100%' }}>
             + Поставить цель
           </button>
-        </BottomSheet>
+          </div>
+        </div>
       )}
     </div>
   );
