@@ -51,7 +51,7 @@ function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; acc
 
   return (<>
     <div className="tick-strip">
-      {questions.map((_, i) => <div key={i} className={'tick ' + (filled[i] ? 'filled ' : '') + (i === step ? 'active' : '')} style={{ '--accent': accentColor } as React.CSSProperties} onClick={() => setStep(i)} />)}
+      {questions.map((_, i) => <div key={i} className={'tick ' + (filled[i] ? 'is-filled ' : '') + (i === step ? 'is-active' : '')} style={{ '--accent': accentColor } as React.CSSProperties} onClick={() => setStep(i)} />)}
     </div>
     <div className="flash" style={{ borderColor: data[q.key].trim() ? accentColor + '55' : 'var(--line)' }}>
       <div className="flash-eyebrow" style={{ color: accentColor }}>
@@ -100,7 +100,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
                 style={{ display: 'grid', gridTemplateColumns: '8px 1fr auto', gap: 18, alignItems: 'start', padding: '16px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}>
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color, marginTop: 10 }} />
                 <div>
-                  <div style={{ fontFamily: 'var(--serif)', fontSize: 22, lineHeight: 1.1, color: 'var(--text)', marginBottom: 4 }}>{s.name}</div>
+                  <div style={{ fontFamily: 'var(--serif)', fontSize: 26, lineHeight: 1.1, color: 'var(--text)', marginBottom: 4 }}>{s.name}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{s.libraryDesc}</div>
                 </div>
                 <span style={{ color: 'var(--text-ghost)', fontSize: 22, marginTop: 8 }}>›</span>
@@ -153,7 +153,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
                 style={{ display: 'grid', gridTemplateColumns: '8px 1fr auto', gap: 18, alignItems: 'start', padding: '14px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}>
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: g.color, marginTop: 8 }} />
                 <div>
-                  <div style={{ fontFamily: 'var(--serif)', fontSize: 20, lineHeight: 1.15, color: 'var(--text)', marginBottom: 4 }}>{m.name}</div>
+                  <div style={{ fontFamily: 'var(--serif)', fontSize: 26, lineHeight: 1.15, color: 'var(--text)', marginBottom: 4 }}>{m.name}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{m.short}</div>
                 </div>
                 <span style={{ color: 'var(--text-ghost)', fontSize: 22, marginTop: 6 }}>›</span>
