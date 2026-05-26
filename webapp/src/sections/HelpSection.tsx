@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
-import { LetterToSelf } from '../components/LetterToSelf';
-import { BeliefCheck } from '../components/BeliefCheck';
-import { SafePlace } from '../components/SafePlace';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
-import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
+
+const BeliefCheckEx = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
+const LetterEx      = lazy(() => import('../components/exercises/LetterEx').then(m => ({ default: m.LetterEx })));
+const SafePlaceEx   = lazy(() => import('../components/exercises/SafePlaceEx').then(m => ({ default: m.SafePlaceEx })));
+const SchemaEx      = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 import { api } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
 import { BottomSheet } from '../components/BottomSheet';
@@ -354,10 +355,26 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
       </div>
 
       {showFlashcard && <SchemaFlashcard onClose={() => setShowFlashcard(false)} onOpenTracker={onOpenTracker} onComplete={handleTaskComplete} />}
-      {showBeliefCheck && <BeliefCheck onClose={() => setShowBeliefCheck(false)} onComplete={handleTaskComplete} />}
-      {showLetterToSelf && <LetterToSelf onClose={() => setShowLetterToSelf(false)} onComplete={handleTaskComplete} />}
-      {showSafePlace && <SafePlace onClose={() => setShowSafePlace(false)} onComplete={handleTaskComplete} />}
-      {introSchemaId && <SchemaIntroSheet schemaId={introSchemaId} onClose={() => setIntroSchemaId(null)} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} />}
+      {showBeliefCheck && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><BeliefCheckEx onBack={() => setShowBeliefCheck(false)} onComplete={handleTaskComplete} /></Suspense>
+        </div>
+      )}
+      {showLetterToSelf && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><LetterEx onBack={() => setShowLetterToSelf(false)} onComplete={handleTaskComplete} /></Suspense>
+        </div>
+      )}
+      {showSafePlace && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><SafePlaceEx onBack={() => setShowSafePlace(false)} onComplete={handleTaskComplete} /></Suspense>
+        </div>
+      )}
+      {introSchemaId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><SchemaEx onBack={() => setIntroSchemaId(null)} initialSchemaId={introSchemaId} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} /></Suspense>
+        </div>
+      )}
       {introModeId && <ModeIntroSheet modeId={introModeId} onClose={() => setIntroModeId(null)} onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} />}
       {showTaskCreate && (
         <TaskCreateSheet

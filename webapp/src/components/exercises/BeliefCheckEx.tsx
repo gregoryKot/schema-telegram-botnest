@@ -19,7 +19,7 @@ function fmtAgo(d: string): string {
   return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
-export function BeliefCheckEx({ onBack }: { onBack: () => void }) {
+export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onComplete?: () => void }) {
   const [step, setStep] = useState(0);
   const [belief, setBelief] = useState('');
   const [forList, setForList] = useState<string[]>([]);
@@ -46,6 +46,7 @@ export function BeliefCheckEx({ onBack }: { onBack: () => void }) {
 
   async function saveAll() {
     try { await api.createBeliefCheck({ belief, evidenceFor: forList, evidenceAgainst: againstList, reframe }); } catch {}
+    onComplete?.();
     setDone(true);
   }
 

@@ -75,7 +75,7 @@ function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; acc
   </>);
 }
 
-export function SchemaEx({ onBack, initialSchemaId }: { onBack: () => void; initialSchemaId?: string }) {
+export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () => void; initialSchemaId?: string; onComplete?: () => void }) {
   const [picked, setPicked] = useState<{ id: string; name: string; desc: string; color: string; domain: string } | null>(() => {
     if (!initialSchemaId) return null;
     for (const d of SCHEMA_DOMAINS) {
@@ -123,7 +123,7 @@ export function SchemaEx({ onBack, initialSchemaId }: { onBack: () => void; init
         <button className="ex-btn ex-btn-ghost" onClick={() => setPicked(null)} style={{ padding: '8px 12px' }}><GlyphArrowLeft /> Сменить схему</button>
       </>}
     >
-      <FlashcardFlow questions={SCHEMA_QUESTIONS} accentColor={picked.color} onSave={data => api.saveSchemaNote({ schemaId: picked.id, ...data })} />
+      <FlashcardFlow questions={SCHEMA_QUESTIONS} accentColor={picked.color} onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} />
     </ExScreen>
   );
 }

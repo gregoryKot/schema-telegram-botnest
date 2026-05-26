@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { COLORS } from '../types';
 import type { Need, UserProfile } from '../types';
 import { NEED_DATA } from '../needData';
@@ -7,8 +7,9 @@ import type { UserTask, TherapyRelationInfo } from '../api';
 import type { Section } from '../components/BottomNav';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
-import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
+
+const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 import { BottomSheet } from '../components/BottomSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { fmtDate, todayStr } from '../utils/format';
@@ -476,7 +477,11 @@ export function TodaySection({
           onClose={() => setShowTaskCreate(false)}
         />
       )}
-      {introSchemaId && <SchemaIntroSheet schemaId={introSchemaId} onClose={() => setIntroSchemaId(null)} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} />}
+      {introSchemaId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><SchemaEx onBack={() => setIntroSchemaId(null)} initialSchemaId={introSchemaId} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} /></Suspense>
+        </div>
+      )}
       {introModeId   && <ModeIntroSheet   modeId={introModeId}   onClose={() => setIntroModeId(null)}   onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} />}
 
       {/* All tasks sheet */}
