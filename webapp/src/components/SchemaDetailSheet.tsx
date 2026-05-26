@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 import { api } from '../api';
@@ -44,6 +45,7 @@ interface Props {
 
 export function SchemaDetailSheet({ schemaId, onClose }: Props) {
   const navigate = useNavigate();
+  const goBack = useHistorySheet(onClose);
   const domainEntry = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === schemaId));
   const schema = domainEntry?.schemas.find(s => s.id === schemaId);
   const [myIds, setMyIds] = useState<string[]>(readSchemaIds);
@@ -67,7 +69,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       {/* Header */}
       <div style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-sub)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, padding: '4px 0' }}>
+        <button onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-sub)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, padding: '4px 0' }}>
           <GlyphBack /> Назад
         </button>
       </div>

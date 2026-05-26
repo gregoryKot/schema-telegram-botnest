@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GlyphArrowLeft } from '../exercises/ExScreen';
+import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { haptic } from '../../haptic';
@@ -49,6 +50,7 @@ function Area({ value, onChange, placeholder, rows = 3 }: { value: string; onCha
 }
 
 export function ModeEntrySheet({ onClose, onSave }: Props) {
+  const goBack = useHistorySheet(onClose);
   const existing = loadDraft<{ modeId: string; situation: string; thoughts: string; feelings: string; bodyFeelings: string; actions: string; actualNeed: string; childhoodMemories: string }>('mode');
   const d = existing?.data;
 
@@ -87,14 +89,14 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
       haptic.error();
     } finally {
       setSaving(false);
-      onClose();
+      goBack();
     }
   };
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
         <button onClick={handleSave} disabled={!canSave || saving} style={{

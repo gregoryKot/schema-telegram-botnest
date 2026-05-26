@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { GlyphArrowLeft } from './exercises/ExScreen';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
 import { SCHEMA_DOMAINS, getModeById } from '../schemaTherapyData';
 
@@ -47,6 +48,7 @@ type Tab = 'cards' | 'diary' | 'exercises';
 interface Props { onClose: () => void; }
 
 export function MyNotesSheet({ onClose }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [tab, setTab] = useState<Tab>('cards');
   const [loading, setLoading] = useState(true);
 
@@ -117,7 +119,7 @@ export function MyNotesSheet({ onClose }: Props) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       {/* Topbar */}
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>

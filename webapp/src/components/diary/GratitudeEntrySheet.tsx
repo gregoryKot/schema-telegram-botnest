@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GlyphArrowLeft } from '../exercises/ExScreen';
+import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { fmtDateLong, todayStr } from '../../utils/format';
 import { haptic } from '../../haptic';
@@ -20,6 +21,7 @@ const PLACEHOLDERS = [
 ];
 
 export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Props) {
+  const goBack = useHistorySheet(onClose);
   const existing = !existingItems ? loadDraft<{ items: string[] }>('gratitude') : null;
   const initItems = existingItems ?? existing?.data?.items ?? ['', '', ''];
 
@@ -45,7 +47,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
       haptic.error();
     } finally {
       setSaving(false);
-      onClose();
+      goBack();
     }
   };
 
@@ -54,7 +56,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
         <button

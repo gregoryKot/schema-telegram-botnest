@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { GlyphArrowLeft } from './exercises/ExScreen';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 const TAGS = [
   { id: 'work',       label: 'Работа',      emoji: '💼' },
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function NoteSheet({ date, onClose }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [text, setText] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [_loaded, setLoaded] = useState(false);
@@ -53,7 +55,7 @@ export function NoteSheet({ date, onClose }: Props) {
     setError(false);
     try {
       await api.saveNote(date, text.trim(), [...selectedTags]);
-      onClose();
+      goBack();
     } catch {
       setError(true);
     } finally {
@@ -64,7 +66,7 @@ export function NoteSheet({ date, onClose }: Props) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>
