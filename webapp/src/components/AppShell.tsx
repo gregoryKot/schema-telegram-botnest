@@ -418,8 +418,9 @@ export function AppShell() {
       </aside>
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
-      <div className="main">
-        {/* Topbar */}
+      <div className={`main${therapistMode ? ' main--cabinet' : ''}`}>
+        {/* Topbar — hidden in therapist mode (cabinet has its own header) */}
+        {!therapistMode && (
         <div className="topbar">
           <div className="crumbs">
             {breadcrumbs.map((c, i) => (
@@ -439,6 +440,7 @@ export function AppShell() {
             <span className="kbd">⌘K</span>
           </button>
         </div>
+        )}
 
         {/* Canvas */}
         <div className="canvas">
