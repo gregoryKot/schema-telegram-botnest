@@ -220,7 +220,7 @@ function DraftBanner({ type, color, title, onContinue, onDelete }: {
       </div>
       {preview && <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 10, lineHeight: 1.4 }}>{String(preview).slice(0, 90)}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={onContinue} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: color, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Продолжить</button>
+        <button onClick={onContinue} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: color, color: 'var(--on-accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Продолжить</button>
         {!confirm
           ? <button onClick={() => setConfirm(true)} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--surface-2)', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>Удалить</button>
           : <button onClick={onDelete} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--c-rose)22', color: 'var(--c-rose)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Удалить</button>

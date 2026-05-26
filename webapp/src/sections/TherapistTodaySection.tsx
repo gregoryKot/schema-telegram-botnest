@@ -71,7 +71,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
         {/* Hero */}
         <div style={{ marginBottom: 48 }}>
           <div className="eyebrow" style={{ marginBottom: 10 }}>{todayLabel()}</div>
-          <h1 style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 0 }}>
+          <h1 className="hub-title" style={{ marginBottom: 0 }}>
             {greeting(displayName)}
           </h1>
         </div>
