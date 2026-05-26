@@ -806,11 +806,11 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                       const today = clientHistory[0];
                       if (!today || Object.keys(today.ratings).length === 0) return null;
                       const NEED_LABELS: Record<string, { label: string; color: string }> = {
-                        attachment: { label: 'Привязанность', color: '#ff6b9d' },
-                        autonomy:   { label: 'Автономия',     color: '#4fa3f7' },
-                        expression: { label: 'Выражение чувств', color: '#facc15' },
-                        play:       { label: 'Спонтанность',  color: '#06d6a0' },
-                        limits:     { label: 'Границы',       color: '#a78bfa' },
+                        attachment: { label: 'Привязанность', color: 'var(--c-plum)' },
+                        autonomy:   { label: 'Автономия',     color: 'var(--c-slate)' },
+                        expression: { label: 'Выражение чувств', color: 'var(--c-rose)' },
+                        play:       { label: 'Спонтанность',  color: 'var(--c-moss)' },
+                        limits:     { label: 'Границы',       color: 'var(--c-amber)' },
                       };
                       return (
                         <>
