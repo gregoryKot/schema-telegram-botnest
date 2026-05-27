@@ -3,7 +3,6 @@ import { COLORS } from '../types';
 import type { Need } from '../types';
 import { NEED_DATA } from '../needData';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
-import { SectionLabel } from './SectionLabel';
 import { getTherapistContact } from '../utils/therapistContact';
 import { PlanSheet } from './PlanSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
