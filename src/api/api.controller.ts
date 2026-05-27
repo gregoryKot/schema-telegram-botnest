@@ -669,14 +669,14 @@ export class ApiController {
 
   @Get('therapy/client/:clientId/schema-notes')
   async getClientSchemaNotes(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
-    const notes = await this.botService.getClientSchemaNotes(uid(req), parseId(clientId));
+    const notes = await this.botService.getClientSchemaNotes(uid(req), BigInt(parseId(clientId)));
     if (!notes) throw new BadRequestException('relation not found');
     return notes;
   }
 
   @Get('therapy/client/:clientId/mode-notes')
   async getClientModeNotes(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
-    const notes = await this.botService.getClientModeNotes(uid(req), parseId(clientId));
+    const notes = await this.botService.getClientModeNotes(uid(req), BigInt(parseId(clientId)));
     if (!notes) throw new BadRequestException('relation not found');
     return notes;
   }
