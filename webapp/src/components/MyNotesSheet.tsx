@@ -13,16 +13,6 @@ type DiaryEntry = { id: number; createdAt: string; type: 'schema' | 'mode' | 'gr
 type Exercise   = { id: number; createdAt: string; type: 'belief' | 'letter' | 'flashcard'; label: string; preview: string };
 type SafeEntry  = { description: string; updatedAt: string } | null;
 
-const VAR_HEX: Record<string, string> = {
-  'var(--accent-red)':    '#f87171',
-  'var(--accent-orange)': '#fb923c',
-  'var(--accent-yellow)': '#facc15',
-  'var(--accent-green)':  '#34d399',
-  'var(--accent-indigo)': '#818cf8',
-  'var(--accent-blue)':   '#60a5fa',
-  'var(--accent)':        '#a78bfa',
-};
-function hex(color: string) { return VAR_HEX[color] ?? color; }
 
 function notePreview(note: SchemaNote | ModeNote): string {
   const skip = new Set(['schemaId', 'modeId']);
@@ -147,7 +137,6 @@ export function MyNotesSheet({ onClose }: Props) {
                       {SCHEMA_DOMAINS.map(domain => {
                         const domainSchemas = domain.schemas.filter(s => allSchemaIds.includes(s.id));
                         if (domainSchemas.length === 0) return null;
-                        const colorHex = hex(domain.color);
                         return (
                           <div key={domain.id} style={{ marginBottom: 20 }}>
                             <div className="eyebrow" style={{ color: domain.color, marginBottom: 8 }}>{domain.domain}</div>
