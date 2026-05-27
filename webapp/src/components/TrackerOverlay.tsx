@@ -19,6 +19,7 @@ import type { Need } from '../types';
 import { NEED_DATA } from '../needData';
 import { NeedDial } from './NeedDial';
 import { NeedTodaySheet } from './NeedTodaySheet';
+import { GlyphArrowLeft } from './exercises/ExScreen';
 
 import { api } from '../api';
 import type { StreakData } from '../api';
@@ -181,29 +182,21 @@ export function TrackerOverlay({
       onTouchStart={onTS} onTouchEnd={onTE}>
 
       {/* Header */}
-      <div style={{ padding:`16px 20px 12px`,
-        display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
-        <button onClick={goBack} style={{
-          width:34, height:34, borderRadius:10, border:'none', cursor:'pointer',
-          background:'transparent', display:'flex', alignItems:'center', justifyContent:'center',
-          color:'var(--text-sub)',
-        }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
+      <div className="ex-topbar" style={{ justifyContent:'space-between', flexShrink:0 }}>
+        <button className="ex-back" onClick={goBack}>
+          <GlyphArrowLeft /> {isBackfill ? 'Закрыть' : 'Назад'}
         </button>
         <div style={{ textAlign:'center' }}>
           <div style={{ fontSize:13, fontWeight:600, color:'var(--text)' }}>
             {isBackfill ? 'Оценки за день' : 'Трекер потребностей'}
           </div>
-          <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:2 }}>
-            {isBackfill ? date : 'свайп · тап по шкале · +/−'}
-          </div>
+          {isBackfill && (
+            <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:2 }}>{date}</div>
+          )}
         </div>
         {/* Карандаш + история */}
         {!isBackfill ? (
-          <div style={{ display:'flex', gap:8 }}>
+          <div style={{ display:'flex', gap:4 }}>
             {onOpenNote && (
               <button onClick={onOpenNote} style={{
                 width:34, height:34, borderRadius:10, border:'none', cursor:'pointer',

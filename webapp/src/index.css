@@ -901,9 +901,10 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 
 /* ── Exercise screen ────────────────────────────────────────────────── */
 .ex-screen {
+  position: fixed; inset: 0; z-index: 200;
   background: var(--bg);
   display: grid; grid-template-rows: auto 1fr;
-  overflow: hidden; height: 100%;
+  overflow: hidden;
 }
 .ex-topbar {
   height: 52px; padding: 0 32px;

@@ -605,12 +605,13 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
   // ── Intro + Result ────────────────────────────────────────────────────────────
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'var(--bg)', overflowY: 'auto' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+      <div className="ex-topbar">
+        <button className="ex-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>
+      <div className="page">
       <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
       {/* INTRO */}
       {phase === 'intro' && (
@@ -959,6 +960,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
         );
       })()}
       </div>
+      </div> {/* .page */}
     </div>
   );
 }
