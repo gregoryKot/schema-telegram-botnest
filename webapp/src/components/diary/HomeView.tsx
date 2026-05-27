@@ -56,15 +56,14 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
   return (
     <div className="page-inner-wide">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40 }}>
-        <div>
-          <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 8 }}>
-            Дневник
-          </h1>
-          <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, margin: 0 }}>
-            Замечай паттерны, фиксируй моменты.
-          </p>
+      <div style={{ marginBottom: 40 }}>
+        <div className="eyebrow" style={{ marginBottom: 8 }}>
+          <span style={{ color: 'var(--accent)' }}>● </span>Дневник
         </div>
+        <h1 className="hub-title" style={{ marginBottom: 8 }}>
+          Замечай<br /><span className="it">паттерны</span>
+        </h1>
+        <p className="hub-sub" style={{ margin: 0 }}>Фиксируй моменты, следи за динамикой.</p>
       </div>
 
       {/* Diary type cards */}
