@@ -320,10 +320,12 @@ export function TodaySection({
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="eyebrow" style={{ marginBottom: 8 }}>
-        {formatHeaderDate()}{streak > 0 ? ` · ${streak}-й день стрика` : ''}
+        <span style={{ color: 'var(--accent)' }}>● </span>
+        {formatHeaderDate()}{streak > 0 ? ` · ${streak}-й стрик` : ''}
       </div>
-      <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 40 }}>
-        {greeting()}{firstName ? `, ${firstName}` : ''}
+      <h1 className="hub-title" style={{ marginBottom: 40 }}>
+        {greeting().split(' ')[0]}<br />
+        <span className="it">{greeting().split(' ').slice(1).join(' ')}{firstName ? `, ${firstName}` : ''}</span>
       </h1>
 
       {/* ── Two-column layout ───────────────────────────────────────────────── */}
