@@ -6,6 +6,7 @@ import { COLORS } from '../types';
 import { Loader } from './Loader';
 import { CheckInSheet } from './CheckInSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { GlyphArrowLeft } from './exercises/ExScreen';
 
 const HistoryView   = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
 const TrackerOverlay = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
@@ -56,38 +57,40 @@ export function HistorySheet({
   const [backfillDate, setBackfillDate] = useState<string | null>(null);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-      <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
-          <div>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>Трекер</div>
-            <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 10 }}>
-              История потребностей
-            </h1>
-          </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button onClick={() => { onOpenTracker(); goBack(); }} className="btn btn-primary">Оценить →</button>
-            <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
-          </div>
-        </div>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+      {/* ExScreen-style topbar */}
+      <div className="ex-topbar" style={{ justifyContent: 'space-between' }}>
+        <button className="ex-back" onClick={goBack}>
+          <GlyphArrowLeft /> Назад к трекеру
+        </button>
+        <button onClick={() => { onOpenTracker(); goBack(); }} className="btn btn-primary" style={{ fontSize: 13, padding: '7px 16px' }}>
+          Оценить →
+        </button>
       </div>
 
-      {historyLoading
-        ? <Loader minHeight="60vh" />
-        : <Suspense fallback={<Loader minHeight="60vh" />}>
-            <HistoryView
-              needs={needs}
-              history={history}
-              currentRatings={ratings}
-              childhoodRatings={childhoodRatings}
-              onOpenSchemas={onOpenSchemas}
-              onOpenChildhoodWheel={onOpenChildhoodWheel}
-              onGoToToday={() => { onOpenTracker(); goBack(); }}
-              onBackfill={(date) => setBackfillDate(date)}
-            />
-          </Suspense>
-      }
-      <div style={{ height: 80 }} />
+      <div className="page">
+        <div className="page-inner-wide" style={{ paddingTop: 48, paddingBottom: 24 }}>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>Трекер</div>
+          <h1 className="hub-title" style={{ marginBottom: 40 }}>История<br /><span className="it">потребностей</span></h1>
+        </div>
+
+        {historyLoading
+          ? <Loader minHeight="60vh" />
+          : <Suspense fallback={<Loader minHeight="60vh" />}>
+              <HistoryView
+                needs={needs}
+                history={history}
+                currentRatings={ratings}
+                childhoodRatings={childhoodRatings}
+                onOpenSchemas={onOpenSchemas}
+                onOpenChildhoodWheel={onOpenChildhoodWheel}
+                onGoToToday={() => { onOpenTracker(); goBack(); }}
+                onBackfill={(date) => setBackfillDate(date)}
+              />
+            </Suspense>
+        }
+        <div style={{ height: 80 }} />
+      </div>
 
       {pendingPlans.length > 0 && needs.length > 0 && (() => {
         const plan = pendingPlans.find(p => p.scheduledDate < todayDate);

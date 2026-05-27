@@ -4,7 +4,7 @@ import { api } from '../api';
 import type { UserSettings, PairsData, TherapyRelationInfo } from '../api';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
 import { Loader } from './Loader';
-
+import { GlyphArrowLeft } from './exercises/ExScreen';
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
 import type { Theme } from '../utils/theme';
 
@@ -134,23 +134,26 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
   return (
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+        {/* ExScreen-style topbar */}
+        <div className="ex-topbar" style={{ justifyContent: 'space-between' }}>
+          <button className="ex-back" onClick={view !== 'main' ? () => setView('main') : goBack}>
+            <GlyphArrowLeft />
+            {view !== 'main' ? 'Назад' : 'Закрыть'}
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {savedToast && <span style={{ fontSize: 13, color: 'var(--c-moss)', fontWeight: 600 }}>Сохранено ✓</span>}
+          </div>
+        </div>
+
+        <div className="page">
         <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 80 }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
-          <div>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>Аккаунт</div>
-            <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-              {view === 'time' ? 'Время уведомления' : view === 'tz' ? 'Часовой пояс' : 'Настройки'}
-            </h1>
-          </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            {savedToast && <span className="text-sm" style={{ color: 'var(--c-moss)', fontWeight: 500 }}>Сохранено</span>}
-            {view !== 'main'
-              ? <button onClick={() => setView('main')} className="btn btn-secondary">← Назад</button>
-              : <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
-            }
-          </div>
+        <div style={{ marginBottom: 36 }}>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>Аккаунт</div>
+          <h1 className="hub-title">
+            {view === 'time' ? <>Время<br /><span className="it">уведомления</span></> : view === 'tz' ? <>Часовой<br /><span className="it">пояс</span></> : <>Настройки</>}
+          </h1>
         </div>
 
         <div>
@@ -510,7 +513,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                           ) : (
                             <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 10 }}>Ещё не заполнил дневник</div>
                           )}
-                          <button onClick={() => handleLeave(p.code)} style={{ width: '100%', padding: 12, border: 'none', borderRadius: 12, background: 'rgba(255,100,100,0.1)', color: 'rgba(255,100,100,0.7)', fontSize: 14, cursor: 'pointer' }}>
+                          <button onClick={() => handleLeave(p.code)} style={{ width: '100%', padding: 12, border: 'none', borderRadius: 12, background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', color: 'var(--c-rose)', fontSize: 14, cursor: 'pointer' }}>
                             Выйти из пары
                           </button>
                         </div>
@@ -528,7 +531,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         <div style={{ background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '12px 14px' }}>
                           <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 8 }}>Скопируй и отправь другу:</div>
                           <div style={{ fontSize: 12, color: 'rgba(var(--fg-rgb),0.7)', wordBreak: 'break-all', lineHeight: 1.5, marginBottom: 10, userSelect: 'all' }}>{pairInviteUrl}</div>
-                          <button onClick={handleCopyPairInvite} style={{ width: '100%', padding: '10px', border: 'none', borderRadius: 10, background: pairInviteCopied ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)' : 'color-mix(in srgb, var(--accent) 20%, transparent)', color: pairInviteCopied ? '#06d6a0' : 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                          <button onClick={handleCopyPairInvite} style={{ width: '100%', padding: '10px', border: 'none', borderRadius: 10, background: pairInviteCopied ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)' : 'color-mix(in srgb, var(--accent) 20%, transparent)', color: pairInviteCopied ? 'var(--c-moss)' : 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                             {pairInviteCopied ? '✓ Скопировано' : 'Скопировать ссылку'}
                           </button>
                         </div>
@@ -608,13 +611,14 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 <SettingsLabel>ДАННЫЕ</SettingsLabel>
                 <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
                   <Row label="О данных и конфиденциальности" emoji="🔒" onClick={() => setShowPrivacy(true)} />
-                  <Row label="Удалить все данные" emoji="🗑" divider color="#f87171" onClick={() => { setDeleteConfirm(false); setShowDeleteSheet(true); }} />
+                  <Row label="Удалить все данные" emoji="🗑" divider color="var(--c-rose)" onClick={() => { setDeleteConfirm(false); setShowDeleteSheet(true); }} />
                 </div>
               </div>
             </>
           )}
         </div>
         </div>
+        </div> {/* .page */}
       </div>
 
       {/* Export text overlay */}
@@ -625,7 +629,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
             {exportText}
           </pre>
           <button onClick={async () => { try { await navigator.clipboard.writeText(exportText); setExportCopied(true); setTimeout(() => setExportCopied(false), 2000); } catch {} }}
-            style={{ width: '100%', padding: '13px 0', border: 'none', borderRadius: 12, background: exportCopied ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)' : 'rgba(var(--fg-rgb),0.08)', color: exportCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.7)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            style={{ width: '100%', padding: '13px 0', border: 'none', borderRadius: 12, background: exportCopied ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)' : 'rgba(var(--fg-rgb),0.08)', color: exportCopied ? 'var(--c-moss)' : 'rgba(var(--fg-rgb),0.7)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
             {exportCopied ? '✓ Скопировано' : 'Скопировать'}
           </button>
         </InfoModal>

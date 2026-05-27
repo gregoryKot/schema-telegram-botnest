@@ -1,4 +1,4 @@
-import { GlyphArrowLeft } from './exercises/ExScreen';
+import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { NEED_DATA } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
@@ -36,11 +36,8 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   const level = childhoodRating !== undefined
     ? (childhoodRating <= 3 ? 'low' : childhoodRating <= 6 ? 'medium' : 'high')
     : null;
-
   const rangeDesc = childhoodRating !== undefined
-    ? (childhoodRating <= 3 ? need.ranges[0].description
-      : childhoodRating <= 6 ? need.ranges[1].description
-      : need.ranges[2].description)
+    ? (childhoodRating <= 3 ? need.ranges[0].description : childhoodRating <= 6 ? need.ranges[1].description : need.ranges[2].description)
     : null;
 
   const domainIds = NEED_DOMAIN_MAP[needId] ?? [];
@@ -51,78 +48,78 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   const tips = level ? need.tips[level].slice(0, 3) : need.actions.slice(0, 3);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
-          <GlyphArrowLeft /> Назад
-        </button>
-      </div>
-
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '48px 24px 80px' }}>
-
-        {/* Header */}
-        <div style={{ fontSize: 52, marginBottom: 16 }}>{need.emoji}</div>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 5vw, 44px)', fontWeight: 400, lineHeight: 1.1, color: 'var(--text)', marginBottom: 8 }}>
-          {need.name}
-        </h1>
-        <div style={{ fontSize: 14, color, fontWeight: 600, marginBottom: 28, letterSpacing: '0.02em' }}>{need.subtitle}</div>
-
-        {/* Explanation */}
-        <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.75, marginBottom: 36, borderLeft: `3px solid ${color}55`, paddingLeft: 20 }}>
-          {need.explanation}
-        </p>
-
-        {/* Childhood score */}
-        {childhoodRating !== undefined && (
-          <div style={{ background: `${color}08`, border: `1px solid ${color}25`, borderRadius: 20, padding: '24px', marginBottom: 36 }}>
-            <div className="eyebrow" style={{ color, marginBottom: 16 }}>Твой балл в детстве</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 14 }}>
+    <ExScreen
+      onBack={goBack}
+      backLabel="Назад"
+      eyebrow={`${need.emoji} Потребность`}
+      eyebrowColor={color}
+      title={<>{need.name}<br /><span className="it">{need.subtitle}</span></>}
+      lede={need.explanation}
+      aside={
+        childhoodRating !== undefined ? (
+          <div className="aside-card" style={{ borderColor: `${color}40`, background: `${color}08`, position: 'sticky', top: 40 }}>
+            <div className="aside-card-eyebrow" style={{ color }}>Твой балл в детстве</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
               <span style={{ fontFamily: 'var(--serif)', fontSize: 56, lineHeight: 1, color }}>{childhoodRating}</span>
-              <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>из 10</span>
+              <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>из 10</span>
             </div>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65, margin: 0 }}>{rangeDesc}</p>
+            {rangeDesc && (
+              <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.65 }}>{rangeDesc}</p>
+            )}
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${color}22` }}>
+              <div style={{ display: 'flex', gap: 3 }}>
+                {[...Array(10)].map((_, i) => (
+                  <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < childhoodRating ? color : `${color}20` }} />
+                ))}
+              </div>
+            </div>
           </div>
-        )}
-
-        {/* Related schemas */}
-        {relatedSchemas.length > 0 && (
-          <div style={{ marginBottom: 36 }}>
-            <div className="eyebrow" style={{ marginBottom: 14 }}>Связанные схемы</div>
-            {relatedSchemas.map(s => (
-              <div key={s.id} style={{
-                padding: '14px 18px', borderRadius: 14, marginBottom: 8,
-                background: `${color}06`, border: `1px solid ${color}18`,
-                display: 'flex', alignItems: 'center', gap: 14,
-              }}>
-                <span style={{ fontSize: 22, flexShrink: 0 }}>{(s as any).emoji ?? '●'}</span>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>{s.name}</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{s.desc}</div>
+        ) : undefined
+      }
+    >
+      {/* Related schemas */}
+      {relatedSchemas.length > 0 && (
+        <div className="prompt">
+          <div className="prompt-num">·</div>
+          <div style={{ width: '100%' }}>
+            <div className="prompt-label">Связанные схемы</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+              {relatedSchemas.map(s => (
+                <div key={s.id} className="mode-card" style={{ '--mode-color': color } as React.CSSProperties}>
+                  <span className="mode-card-stripe" />
+                  <div>
+                    <div className="mode-card-name">{(s as any).emoji ?? '●'} {s.name}</div>
+                    <div className="mode-card-short">{s.desc}</div>
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tips */}
+      <div className="prompt">
+        <div className="prompt-num">·</div>
+        <div>
+          <div className="prompt-label">{level === 'low' ? 'Что поможет сейчас' : 'Практика'}</div>
+          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {tips.map((tip, i) => (
+              <div key={i} style={{ display: 'flex', gap: 16 }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                  background: `${color}18`, border: `1px solid ${color}30`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'var(--serif)', fontSize: 15, color,
+                }}>
+                  {i + 1}
+                </div>
+                <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65, paddingTop: 3 }}>{tip}</p>
               </div>
             ))}
           </div>
-        )}
-
-        {/* Tips / Actions */}
-        <div>
-          <div className="eyebrow" style={{ marginBottom: 20 }}>{level === 'low' ? 'Что поможет сейчас' : 'Практика'}</div>
-          {tips.map((tip, i) => (
-            <div key={i} style={{ display: 'flex', gap: 20, marginBottom: 24 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                background: `${color}18`, border: `1px solid ${color}30`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'var(--serif)', fontSize: 15, color,
-              }}>
-                {i + 1}
-              </div>
-              <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65, margin: 0, paddingTop: 3 }}>{tip}</p>
-            </div>
-          ))}
         </div>
-
       </div>
-    </div>
+    </ExScreen>
   );
 }

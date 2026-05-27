@@ -339,20 +339,18 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-      {/* Topbar */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+      <div className="ex-topbar">
+        <button className="ex-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>
 
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '36px 24px 80px' }}>
-        <div style={{ marginBottom: 28 }}>
-          <SectionLabel purple mb={8}>Схема-терапия</SectionLabel>
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 400, color: 'var(--text)' }}>
-            Как это <span style={{ fontStyle: 'italic' }}>работает</span>
-          </h1>
+      <div className="page">
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px 80px' }}>
+        <div style={{ marginBottom: 32 }}>
+          <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 10 }}>Схема-терапия</div>
+          <h1 className="hub-title">Как это <span className="it">работает</span></h1>
         </div>
 
         <SchemaInfoContent key={contentKey} initialTab={contentInitialTab} highlight={highlightSchema} />
@@ -395,6 +393,8 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
           </div>
         </div>
       </div>
+
+      </div> {/* .page */}
 
       {showTest && (
         <Suspense fallback={null}>
