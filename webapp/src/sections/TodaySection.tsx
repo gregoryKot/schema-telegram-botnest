@@ -9,6 +9,7 @@ import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { hasDraft } from '../utils/drafts';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
@@ -70,12 +71,11 @@ function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAddTask }:
 }) {
   const goBack = useHistorySheet(onClose);
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', overflowY: 'auto' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
-          <GlyphArrowLeft /> Назад
-        </button>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+      <div className="ex-topbar">
+        <button className="ex-back" onClick={goBack}><GlyphArrowLeft /> Назад</button>
       </div>
+      <div style={{ overflowY: 'auto' }}>
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '32px 24px 80px' }}>
         <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>Все задания</h1>
         {tasks.map(task => (
@@ -113,6 +113,7 @@ function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAddTask }:
         <button onClick={onAddTask} className="ex-btn ex-btn-primary" style={{ marginTop: 20, width: '100%' }}>
           + Поставить цель
         </button>
+      </div>
       </div>
     </div>
   );
@@ -434,6 +435,32 @@ export function TodaySection({
               <button onClick={() => setShowDiaryTask(true)} style={{ marginTop: 8, fontSize: 12, color: 'var(--text-faint)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                 + Поставить цель
               </button>
+            </div>
+          )}
+
+          {/* ── Draft banner ── */}
+          {(['schema', 'mode', 'gratitude'] as const).some(t => hasDraft(t)) && (
+            <div className="section" style={{ paddingTop: 0 }}>
+              <div className="section-head" style={{ marginBottom: 8 }}>
+                <h3>Незаконченные записи</h3>
+                <button className="link" onClick={onOpenDiaries}>открыть →</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {(['schema', 'mode', 'gratitude'] as const).filter(t => hasDraft(t)).map(type => {
+                  const labels = { schema: 'Дневник схем', mode: 'Дневник режимов', gratitude: 'Благодарность' };
+                  const colors = { schema: 'var(--c-rose)', mode: 'var(--c-slate)', gratitude: 'var(--c-moss)' };
+                  return (
+                    <div key={type} onClick={onOpenDiaries} className="list-line" style={{ cursor: 'pointer' }}>
+                      <div style={{ width: 3, height: 28, borderRadius: 3, background: colors[type], flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors[type] }}>Черновик</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>{labels[type]}</div>
+                      </div>
+                      <span className="link">продолжить →</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
