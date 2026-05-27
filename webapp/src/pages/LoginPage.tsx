@@ -210,6 +210,19 @@ export function LoginPage() {
             <div ref={telegramRef} />
           </div>
 
+          {/* Switch Telegram account */}
+          <div style={{ textAlign: 'center', marginTop: 8 }}>
+            <a
+              href="https://oauth.telegram.org/logout"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setTimeout(() => window.location.reload(), 800)}
+              style={{ fontSize: 12, color: 'var(--text-faint)', textDecoration: 'none' }}
+            >
+              Не ты? Войти с другого аккаунта →
+            </a>
+          </div>
+
           {error && (
             <p style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>
               {error}
