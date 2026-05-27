@@ -64,12 +64,16 @@ export function LoginPage() {
           body: JSON.stringify(userData),
           credentials: 'include',
         });
-        if (!res.ok) throw new Error('Telegram auth failed');
+        if (!res.ok) {
+          const body = await res.text().catch(() => '');
+          setError(`Ошибка ${res.status}: ${body.slice(0, 200) || 'нет деталей'}`);
+          return;
+        }
         const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
         setAccessToken(accessToken, expiresIn);
         navigate('/', { replace: true });
-      } catch {
-        setError('Не удалось войти через Telegram. Попробуй ещё раз.');
+      } catch (e) {
+        setError(`Не удалось войти: ${String(e).slice(0, 150)}`);
       } finally {
         setTelegramLoading(false);
       }
