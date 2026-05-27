@@ -735,7 +735,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--line);
-  z-index: 100;
+  z-index: 49;
   display: flex;
   padding: 6px 0 calc(6px + env(safe-area-inset-bottom, 0px));
 }

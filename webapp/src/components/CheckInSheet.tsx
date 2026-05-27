@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api';
 import type { PracticePlan } from '../api';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 interface Props {
   plan: PracticePlan;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Props) {
+  const goBack = useHistorySheet(onDone);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
@@ -20,7 +22,7 @@ export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Prop
     setError(false);
     try {
       await api.checkinPlan(plan.id, done);
-      onDone();
+      goBack();
     } catch (e) {
       console.error('checkinPlan failed', e);
       setSaving(false);
@@ -90,7 +92,7 @@ export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Prop
         )}
         <div style={{ textAlign: 'center', marginTop: 14 }}>
           <button
-            onClick={onDone}
+            onClick={goBack}
             disabled={saving}
             style={{ background: 'none', border: 'none', fontSize: 13, color: 'var(--text-faint)', cursor: 'pointer', padding: '4px 12px' }}
           >

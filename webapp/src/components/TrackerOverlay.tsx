@@ -22,6 +22,7 @@ import { NeedTodaySheet } from './NeedTodaySheet';
 
 import { api } from '../api';
 import type { StreakData } from '../api';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 interface Props {
   needs: Need[];
@@ -81,6 +82,7 @@ export function TrackerOverlay({
   onOpenNote, onOpenGoal: _onOpenGoal, onOpenHistory, yesterdayRatings = {},
   date, onDone,
 }: Props) {
+  const goBack = useHistorySheet(onClose);
   const timers  = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const unlockTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -181,7 +183,7 @@ export function TrackerOverlay({
       {/* Header */}
       <div style={{ padding:`16px 20px 12px`,
         display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
-        <button onClick={onClose} style={{
+        <button onClick={goBack} style={{
           width:34, height:34, borderRadius:10, border:'none', cursor:'pointer',
           background:'transparent', display:'flex', alignItems:'center', justifyContent:'center',
           color:'var(--text-sub)',
@@ -215,7 +217,7 @@ export function TrackerOverlay({
               </button>
             )}
             {onOpenHistory && (
-              <button onClick={() => { onClose(); onOpenHistory(); }} style={{
+              <button onClick={() => { onOpenHistory(); goBack(); }} style={{
                 width:34, height:34, borderRadius:10, border:'none', cursor:'pointer',
                 background:'transparent', display:'flex', alignItems:'center', justifyContent:'center',
                 color:'var(--text-sub)',
@@ -352,7 +354,7 @@ export function TrackerOverlay({
         )}
 
         {allRated && (
-          <button onClick={isBackfill ? (onDone ?? onClose) : onClose} style={{
+          <button onClick={isBackfill ? (onDone ?? goBack) : goBack} style={{
             width:'100%', padding:'14px', borderRadius:16, border:'1px solid color-mix(in srgb, var(--accent-green) 25%, transparent)',
             background:'color-mix(in srgb, var(--accent-green) 12%, transparent)', color:'var(--accent-green)',
             fontSize:15, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
