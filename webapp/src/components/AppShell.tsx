@@ -403,6 +403,9 @@ export function AppShell() {
               <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>
             </div>
           </NavLink>
+          <button className="sb-item" onClick={() => setShowSettings(true)} style={{ marginTop: 2 }}>
+            <span>Настройки</span>
+          </button>
           <NavLink to="/account" className="sb-item" style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
             <span>Аккаунт и привязки</span>
           </NavLink>
@@ -498,7 +501,6 @@ export function AppShell() {
             )}
             {section === 'profile' && (
               <ProfileSection
-                onOpenSettings={() => setShowSettings(true)}
                 onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
                 refreshKey={profileRefreshKey}
                 displayName={displayName}

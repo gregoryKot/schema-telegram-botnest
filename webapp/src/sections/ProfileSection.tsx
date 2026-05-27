@@ -36,13 +36,13 @@ type InsightsData = { weeklyStats: Array<{ needId: string; avg: number | null; t
 const TODAY_DOW_IDX = (new Date().getDay() + 6) % 7; // 0=пн ... 6=вс
 
 interface Props {
-  onOpenSettings: () => void;
+  onOpenSettings?: () => void;
   onOpenTracker?: () => void;
   refreshKey?: number;
   displayName?: string | null;
 }
 
-export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, displayName }: Props) {
+export function ProfileSection({ onOpenTracker, refreshKey, displayName }: Props) {
   const firstName = displayName || '';
 
   const [streak, setStreak]             = useState<StreakData | null>(null);
@@ -67,11 +67,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   // Progress stats
   const [diaryCount, setDiaryCount] = useState<number>(0);
   const [ysqCount, setYsqCount] = useState<number>(0);
-
-  // Notifications
-  const [notifEnabled, setNotifEnabled] = useState(true);
-  const [reminderEnabled, setReminderEnabled] = useState(true);
-  const [savingNotif, setSavingNotif] = useState(false);
 
   // Delete account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -101,12 +96,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         api.getGratitudeDiary().catch(() => []),
       ]).then(([sd, md, gd]) => setDiaryCount(sd.length + md.length + gd.length)).catch(() => {}),
       api.getYsqHistory().then(h => setYsqCount(h.length)).catch(() => {}),
-      api.getSettings().then(s => {
-        if (s) {
-          setNotifEnabled(s.notifyEnabled ?? true);
-          setReminderEnabled(s.notifyReminderEnabled ?? true);
-        }
-      }).catch(() => {}),
     ]).finally(() => setReady(true));
   }, [refreshKey]);
 
@@ -123,20 +112,18 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
     <div className="page-inner">
 
       {/* ── Хедер ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 40 }}>
-        <div>
-          <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 6 }}>
-            {firstName || 'Профиль'}
-          </h1>
-          {totalDays > 0 && (
-            <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>
-              {totalDays} {totalDays === 1 ? 'день' : totalDays < 5 ? 'дня' : 'дней'} в приложении
-            </div>
-          )}
+      <div style={{ marginBottom: 40 }}>
+        <div className="eyebrow" style={{ marginBottom: 14 }}>
+          <span style={{ color: 'var(--accent)' }}>● </span>Профиль
         </div>
-        <button onClick={onOpenSettings} className="btn btn-secondary">
-          ⚙️ <span>Настройки</span>
-        </button>
+        <h1 className="hub-title" style={{ marginBottom: 10 }}>
+          {firstName || 'Мой'}<br /><span className="it">прогресс</span>
+        </h1>
+        {totalDays > 0 && (
+          <div style={{ fontSize: 15, color: 'var(--text-sub)' }}>
+            {totalDays} {totalDays === 1 ? 'день' : totalDays < 5 ? 'дня' : 'дней'} в приложении
+          </div>
+        )}
       </div>
 
       <div style={{ maxWidth: 720 }}>
@@ -484,80 +471,19 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           </div>
         )}
 
-        {/* ── Уведомления ── */}
-        <div className="section">
-          <div className="section-head"><h3>Уведомления</h3></div>
-          {[
-            { key: 'notifEnabled', label: 'Все уведомления', sub: 'Основной переключатель', value: notifEnabled,
-              onChange: (v: boolean) => {
-                setNotifEnabled(v);
-                setSavingNotif(true);
-                api.updateSettings({ notifyEnabled: v }).finally(() => setSavingNotif(false));
-              }
-            },
-            { key: 'reminder', label: 'Вечернее напоминание', sub: 'Напоминание заполнить трекер', value: reminderEnabled,
-              onChange: (v: boolean) => {
-                setReminderEnabled(v);
-                setSavingNotif(true);
-                api.updateSettings({ notifyReminderEnabled: v }).finally(() => setSavingNotif(false));
-              }
-            },
-          ].map(item => (
-            <div key={item.key} className="list-line">
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{item.label}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>{item.sub}</div>
-              </div>
-              <div
-                onClick={() => !savingNotif && item.onChange(!item.value)}
-                style={{
-                  width: 32, height: 18, borderRadius: 999,
-                  background: item.value ? 'var(--accent)' : 'var(--surface-3)',
-                  position: 'relative', cursor: savingNotif ? 'default' : 'pointer',
-                  transition: 'background 0.2s', flexShrink: 0,
-                }}
-              >
-                <div style={{
-                  position: 'absolute', top: 3,
-                  left: item.value ? 16 : 3,
-                  width: 12, height: 12, borderRadius: '50%', background: '#fff',
-                  transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                }} />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Данные ── */}
-        <div className="section">
-          <div className="section-head"><h3>Данные</h3></div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <span
-              className="link"
-              style={{ cursor: 'pointer' }}
-              onClick={() => {
-                api.getExport().then(({ text }) => {
-                  const a = document.createElement('a');
-                  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
-                  a.download = 'schemalab-export.txt';
-                  a.click();
-                }).catch(() => {});
-              }}
-            >
-              Экспортировать все данные
-            </span>
-            <span
-              className="link"
-              style={{ color: 'var(--c-rose)', cursor: 'pointer' }}
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              Удалить аккаунт
-            </span>
-          </div>
-        </div>
-
         <div>
           <TherapyNote compact />
+        </div>
+
+        {/* ── Удаление аккаунта — discreet link ── */}
+        <div style={{ marginTop: 8, paddingTop: 24, borderTop: '1px solid var(--line)' }}>
+          <span
+            className="link"
+            style={{ color: 'var(--c-rose)', cursor: 'pointer', fontSize: 13 }}
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            Удалить аккаунт
+          </span>
         </div>
       </div>
 
