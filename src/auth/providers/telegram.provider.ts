@@ -31,7 +31,7 @@ export class TelegramProvider implements AuthProviderHandler {
     delete fields['hash'];
 
     const authDate = parseInt(fields['auth_date'] ?? '0', 10);
-    if (Date.now() / 1000 - authDate > 300) throw new UnauthorizedException('Telegram auth data expired');
+    if (Date.now() / 1000 - authDate > 86400) throw new UnauthorizedException('Telegram auth data expired');
 
     // Login Widget: secret_key = SHA256(bot_token).
     const checkString = Object.keys(fields).sort().map(k => `${k}=${fields[k]}`).join('\n');
