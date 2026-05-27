@@ -30,15 +30,21 @@ export class GoogleProvider implements AuthProviderHandler {
     const clientSecret = this.config.getOrThrow<string>('GOOGLE_CLIENT_SECRET');
     const redirectUri  = this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI');
 
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code, client_id: clientId, client_secret: clientSecret,
-        redirect_uri: redirectUri, grant_type: 'authorization_code',
-      }),
-      signal: AbortSignal.timeout(10_000),
-    });
+    let tokenRes: Response;
+    try {
+      tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code, client_id: clientId, client_secret: clientSecret,
+          redirect_uri: redirectUri, grant_type: 'authorization_code',
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch (e: any) {
+      this.logger.error(`Google token fetch network error: ${e?.message} | cause: ${String(e?.cause)}`);
+      throw new UnauthorizedException('Google token exchange network error');
+    }
     if (!tokenRes.ok) {
       const body = await tokenRes.text().catch(() => '');
       this.logger.warn(`Google token exchange failed (${tokenRes.status}): ${body.slice(0, 200)}`);
