@@ -67,7 +67,7 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
 
 
 
-export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange }: Props) {
+export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange }: Props) {
   // ─── Client list ──────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +101,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
   // ─── Sync sidebar when clients list changes (e.g. after adding a client) ──────
   useEffect(() => {
-    onClientsChange?.(clients);
+    _onClientsChange?.(clients);
   }, [clients]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── React to URL-driven client navigation ────────────────────────────────────
