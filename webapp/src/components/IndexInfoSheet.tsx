@@ -1,4 +1,4 @@
-import { GlyphArrowLeft } from './exercises/ExScreen';
+import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 
 const PARAGRAPHS = [
@@ -11,22 +11,20 @@ const PARAGRAPHS = [
 export function IndexInfoSheet({ onClose }: { onClose: () => void }) {
   const goBack = useHistorySheet(onClose);
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
-          <GlyphArrowLeft /> Назад
-        </button>
-      </div>
-      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', lineHeight: 1.15, marginBottom: 28 }}>
-          Об индексе дня
-        </h1>
-        {PARAGRAPHS.map((p, i) => (
-          <p key={i} style={{ fontSize: 16, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 18 }}>
-            {p}
-          </p>
-        ))}
-      </div>
-    </div>
+    <ExScreen
+      onBack={goBack}
+      backLabel="Назад"
+      eyebrow="Трекер"
+      eyebrowColor="var(--accent)"
+      title={<>Об индексе<br /><span className="it">дня</span></>}
+      lede="Что означают цифры и как ими пользоваться."
+    >
+      {PARAGRAPHS.map((p, i) => (
+        <div key={i} className="prompt">
+          <div className="prompt-num">{i + 1}.</div>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.75, margin: 0 }}>{p}</p>
+        </div>
+      ))}
+    </ExScreen>
   );
 }

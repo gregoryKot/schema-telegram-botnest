@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
@@ -32,12 +33,6 @@ function readSchemaIds(): string[] {
   try { return JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '[]'); } catch { return []; }
 }
 
-const GlyphBack = () => (
-  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10 3L5 8l5 5" />
-  </svg>
-);
-
 interface Props {
   schemaId: string;
   onClose: () => void;
@@ -66,65 +61,70 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
-      {/* Header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-sub)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, padding: '4px 0' }}>
-          <GlyphBack /> Назад
-        </button>
-      </div>
-
-      {/* Content */}
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '48px 32px 80px' }}>
-        {/* Eyebrow */}
-        <div className="eyebrow" style={{ color: domainColor, marginBottom: 12 }}>
-          <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: domainColor, marginRight: 8, verticalAlign: 'middle' }} />
-          {domainEntry.domain}
+    <ExScreen
+      onBack={goBack}
+      backLabel="Назад"
+      eyebrow={domainEntry.domain}
+      eyebrowColor={domainColor}
+      title={<>{schema.name}</>}
+      lede={schema.libraryDesc ?? schema.desc}
+      aside={
+        <div className="aside-card" style={{ borderColor: domainColor + '40', background: domainColor + '08', position: 'sticky', top: 40 }}>
+          <div className="aside-card-eyebrow" style={{ color: domainColor }}>Домен</div>
+          <h3 style={{ fontSize: 18 }}>{domainEntry.domain}</h3>
+          <p className="body">{domainEntry.desc ?? 'Группа схем, связанных общей темой.'}</p>
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              onClick={toggleSchema}
+              className={'ex-btn ' + (isAdded ? 'ex-btn-outline' : 'ex-btn-ghost')}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
+            </button>
+            <button
+              onClick={() => { onClose(); navigate('/exercises', { state: { openSchemaEx: schemaId } }); }}
+              className="ex-btn ex-btn-primary"
+              style={{ width: '100%' }}
+            >
+              Познакомиться →
+            </button>
+          </div>
         </div>
-
-        {/* Title */}
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(36px, 5vw, 52px)', fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.02em', color: 'var(--text)', marginBottom: 24 }}>
-          {schema.name}
-        </h1>
-
-        {/* Description */}
-        <p style={{ fontSize: 17, lineHeight: 1.7, color: 'var(--text-sub)', marginBottom: 40, maxWidth: 600 }}>
-          {schema.libraryDesc ?? schema.desc}
-        </p>
-
-        {/* Beliefs */}
-        {beliefs.length > 0 && (
-          <div style={{ marginBottom: 40 }}>
-            <div className="eyebrow" style={{ marginBottom: 16 }}>Типичные убеждения</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      }
+    >
+      {beliefs.length > 0 && (
+        <div className="prompt">
+          <div className="prompt-num">·</div>
+          <div style={{ width: '100%' }}>
+            <div className="prompt-label">Типичные убеждения</div>
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 0 }}>
               {beliefs.map((b, i) => (
                 <div key={i} style={{ padding: '16px 0', borderTop: '1px solid var(--line)', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                  <span style={{ color: domainColor, fontFamily: 'var(--serif)', fontSize: 24, lineHeight: 1, flexShrink: 0, marginTop: -2 }}>·</span>
-                  <span style={{ fontFamily: 'var(--serif)', fontSize: 19, fontStyle: 'italic', lineHeight: 1.5, color: 'var(--text)' }}>«{b}»</span>
+                  <span style={{ color: domainColor, fontFamily: 'var(--serif)', fontSize: 22, lineHeight: 1, flexShrink: 0 }}>·</span>
+                  <span style={{ fontFamily: 'var(--serif)', fontSize: 18, fontStyle: 'italic', lineHeight: 1.55, color: 'var(--text)' }}>«{b}»</span>
                 </div>
               ))}
               <div style={{ borderTop: '1px solid var(--line)' }} />
             </div>
           </div>
-        )}
-
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button
-            onClick={toggleSchema}
-            className={'ex-btn ' + (isAdded ? 'ex-btn-outline' : 'ex-btn-ghost')}
-            style={{ minWidth: 180 }}
-          >
-            {isAdded ? '✓ В моих схемах' : '+ В мои схемы'}
-          </button>
-          <button
-            onClick={() => { onClose(); navigate('/exercises', { state: { openSchemaEx: schemaId } }); }}
-            className="ex-btn ex-btn-primary"
-          >
-            Познакомиться →
-          </button>
         </div>
+      )}
+
+      {/* Mobile action buttons (aside hidden on small screens) */}
+      <div className="ex-foot">
+        <button
+          onClick={toggleSchema}
+          className={'ex-btn ' + (isAdded ? 'ex-btn-outline' : 'ex-btn-ghost')}
+        >
+          {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
+        </button>
+        <button
+          onClick={() => { onClose(); navigate('/exercises', { state: { openSchemaEx: schemaId } }); }}
+          className="ex-btn ex-btn-primary"
+        >
+          Познакомиться →
+        </button>
       </div>
-    </div>
+    </ExScreen>
   );
 }

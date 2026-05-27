@@ -67,8 +67,8 @@ function loadLocal(): FlashcardEntry[] {
 
 function Topbar({ onBack, label = 'Закрыть' }: { onBack: () => void; label?: string }) {
   return (
-    <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-      <button className="ex-btn ex-btn-ghost" onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+    <div className="ex-topbar">
+      <button className="ex-back" onClick={onBack}>
         <GlyphArrowLeft /> {label}
       </button>
     </div>
@@ -144,9 +144,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     const modeInfo = MODES.find(m => m.id === viewing.mode);
     const needInfo = NEEDS.find(n => n.id === viewing.needId);
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 95, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 95, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
         <Topbar onBack={() => setViewing(null)} label="К истории" />
-        <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px 80px' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px 80px', overflowY: 'auto' }}>
           <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 20, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{viewing.date}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {[
@@ -174,9 +174,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   // History list
   if (showHistory) {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
         <Topbar onBack={() => setShowHistory(false)} label="Назад" />
-        <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px 80px' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 24px 80px', overflowY: 'auto' }}>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>История карточек</h1>
           {allCards.length === 0 ? (
             <div style={{ fontSize: 15, color: 'var(--text-sub)', textAlign: 'center', padding: '40px 0' }}>
@@ -215,9 +215,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     const modeInfo = MODES.find(m => m.id === selectedMode);
     const needInfo = NEEDS.find(n => n.id === selectedNeed);
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
         <Topbar onBack={goBack} label="Закрыть" />
-        <div style={{ maxWidth: 600, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
           <div style={{ fontSize: 64, marginBottom: 20 }}>🌿</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>Сохранено</h1>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 40 }}>
@@ -256,9 +256,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   // Grounding screen (first step — breathing exercise)
   if (!grounded) {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
         <Topbar onBack={goBack} label="Закрыть" />
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
           <div style={{ fontSize: 64, marginBottom: 20 }}>💙</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>
             Ты сделал правильно
@@ -310,9 +310,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   // Step 1: Mode selection
   if (step === 'mode') {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
         <Topbar onBack={goBack} label="Закрыть" />
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px', overflowY: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
             <div>
               <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 1 из 4</div>
@@ -349,9 +349,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   // Step 2: Healthy Adult response
   if (step === 'response') {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
         <Topbar onBack={() => setStep('mode')} label="Назад" />
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px', overflowY: 'auto' }}>
           <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 2 из 4</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 28 }}>Здоровый Взрослый</h1>
           {progressBar}
@@ -389,9 +389,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   // Step 3: Need selection
   if (step === 'need') {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
         <Topbar onBack={() => setStep('response')} label="Назад" />
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px', overflowY: 'auto' }}>
           <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 3 из 4</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 28 }}>Что за этим стоит?</h1>
           {progressBar}
@@ -424,9 +424,9 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   // Step 4: Action
   const needInfo = NEEDS.find(n => n.id === selectedNeed);
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
       <Topbar onBack={() => setStep('need')} label="Назад" />
-      <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px' }}>
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px', overflowY: 'auto' }}>
         <div className="eyebrow" style={{ marginBottom: 8 }}>Шаг 4 из 4</div>
         <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 28 }}>Один маленький шаг</h1>
         {progressBar}
