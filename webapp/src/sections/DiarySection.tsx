@@ -213,18 +213,22 @@ function DraftBanner({ type, color, title, onContinue, onDelete }: {
     : type === 'mode' ? (draft.data as Record<string, string>)?.situation
     : (draft.data as Record<string, string[]>)?.items?.[0];
   return (
-    <div style={{ borderRadius: 10, padding: '14px 16px', marginBottom: 12, background: color + '0a', border: `1px dashed ${color}40` }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <span style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: 5, background: color + '22', color }}>Черновик · {title}</span>
-        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{formatDraftAge(draft.startedAt)}</span>
-      </div>
-      {preview && <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 10, lineHeight: 1.4 }}>{String(preview).slice(0, 90)}</div>}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={onContinue} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: color, color: 'var(--on-accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Продолжить</button>
-        {!confirm
-          ? <button onClick={() => setConfirm(true)} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--surface-2)', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>Удалить</button>
-          : <button onClick={onDelete} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--c-rose)22', color: 'var(--c-rose)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Удалить</button>
-        }
+    <div style={{ borderRadius: 10, padding: '12px 14px 12px 0', marginBottom: 10, display: 'flex', alignItems: 'stretch', gap: 0, background: `color-mix(in srgb, ${color} 6%, var(--bg))`, border: `1px solid color-mix(in srgb, ${color} 20%, var(--line))` }}>
+      {/* Colored left stripe */}
+      <div style={{ width: 3, borderRadius: '10px 0 0 10px', background: color, flexShrink: 0, marginRight: 14 }} />
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color }}>Черновик</span>
+          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{title} · {formatDraftAge(draft.startedAt)}</span>
+          <div style={{ flex: 1 }} />
+          <button onClick={onContinue} style={{ fontSize: 12.5, fontWeight: 700, color, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', letterSpacing: '-0.01em' }}>Продолжить →</button>
+          {!confirm
+            ? <button onClick={() => setConfirm(true)} style={{ fontSize: 18, lineHeight: 1, color: 'var(--text-ghost)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>×</button>
+            : <button onClick={onDelete} style={{ fontSize: 12, color: 'var(--c-rose)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', fontWeight: 700 }}>удалить</button>
+          }
+        </div>
+        {preview && <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6, lineHeight: 1.45, paddingRight: 8 }}>{String(preview).slice(0, 100)}</div>}
       </div>
     </div>
   );
@@ -328,9 +332,9 @@ export function DiarySection({ onClose }: { onClose?: () => void } = {}) {
   };
 
   const QUICK_ADD = [
-    { type: 'schema'    as DiaryType, color: 'var(--c-rose)',  eyebrow: 'Дневник схем',    title: 'Записать момент',  desc: 'Триггер, чувства, мысли, схема, здоровый взгляд.', foot: '8–15 мин · 10 шагов' },
-    { type: 'mode'      as DiaryType, color: 'var(--c-slate)', eyebrow: 'Дневник режимов', title: 'Записать режим',   desc: 'Кто сейчас взял управление и что ему нужно.',      foot: '5–10 мин · 7 шагов' },
-    { type: 'gratitude' as DiaryType, color: 'var(--c-moss)',  eyebrow: 'Благодарность',   title: 'Три вещи',        desc: 'За что благодаришь сегодня. Даже маленькое — важно.', foot: '2–5 мин' },
+    { type: 'schema'    as DiaryType, color: 'var(--c-rose)',  eyebrow: 'Дневник схем',    title: 'Записать момент',  desc: 'Триггер · чувства · мысли · схема · здоровый взгляд', foot: '8–15 мин' },
+    { type: 'mode'      as DiaryType, color: 'var(--c-slate)', eyebrow: 'Дневник режимов', title: 'Записать режим',   desc: 'Кто взял управление, что включило, что было нужно',   foot: '5–10 мин' },
+    { type: 'gratitude' as DiaryType, color: 'var(--c-moss)',  eyebrow: 'Благодарность',   title: 'Три вещи',        desc: 'За что благодаришь сегодня. Даже самое маленькое',    foot: '2–5 мин' },
   ];
 
   const FILTERS: { id: Filter; label: string }[] = [
@@ -385,35 +389,40 @@ export function DiarySection({ onClose }: { onClose?: () => void } = {}) {
         {/* ── Hero ── */}
         <div className="diary-hero">
           <div>
-            <div className="eyebrow" style={{ marginBottom: 20 }}>
-              <span style={{ color: 'var(--accent)' }}>● </span>
-              Дневник · {totalCount} {totalCount === 1 ? 'запись' : totalCount < 5 ? 'записи' : 'записей'}
+            <h1 className="hub-title" style={{ marginBottom: 10 }}>Дневник</h1>
+            <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+              {totalCount > 0
+                ? `${totalCount} ${totalCount === 1 ? 'запись' : totalCount < 5 ? 'записи' : 'записей'} · ведётся непрерывно`
+                : 'Фиксируй паттерны, замечай прогресс'}
             </div>
-            <h1 className="hub-title" style={{ marginBottom: 18 }}>
-              Дневник<br />
-              <span className="accent">того, что было</span>
-            </h1>
-            <p className="hub-sub">
-              Три способа записать момент: триггерную ситуацию через схемы, состояние через режим, или маленькие хорошие вещи.
-            </p>
           </div>
-          {totalCount > 0 && (
-            <div className="diary-stats">
-              <div>
-                <div className="diary-stat-num">
-                  {daysThisMonth}<span className="small">/{daysInMonth}</span>
+          <div style={{ display: 'flex', alignItems: 'flex-end', flexDirection: 'column', gap: 16 }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setNewEntry('schema')}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              + Новая запись
+            </button>
+            {totalCount > 0 && (
+              <div className="diary-stats">
+                <div>
+                  <div className="diary-stat-num">{daysThisMonth}<span className="small">/{daysInMonth}</span></div>
+                  <div className="diary-stat-label">Дней с записью</div>
                 </div>
-                <div className="diary-stat-label">Дней с записью · месяц</div>
+                {streak > 1 && (
+                  <div>
+                    <div className="diary-stat-num">{streak}</div>
+                    <div className="diary-stat-label">Дней подряд</div>
+                  </div>
+                )}
               </div>
-              <div>
-                <div className="diary-stat-num">{streak}</div>
-                <div className="diary-stat-label">Дней подряд</div>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* ── Quick add ── */}
+        <div className="eyebrow" style={{ marginBottom: 14 }}>Что записать сегодня</div>
         <div className="quick-add">
           {QUICK_ADD.map(card => (
             <div
@@ -430,7 +439,8 @@ export function DiarySection({ onClose }: { onClose?: () => void } = {}) {
               <div className="qa-title">{card.title}</div>
               <div className="qa-desc">{card.desc}</div>
               <div className="qa-foot">
-                <span>{card.foot}</span>
+                <span style={{ color: 'var(--qa-color)', fontWeight: 600 }}>+ записать</span>
+                <span style={{ marginLeft: 8, color: 'var(--text-ghost)' }}>{card.foot}</span>
                 <span className="qa-arrow">›</span>
               </div>
             </div>
@@ -455,6 +465,11 @@ export function DiarySection({ onClose }: { onClose?: () => void } = {}) {
         })}
 
         {/* ── Filters ── */}
+        {totalCount > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <span className="eyebrow">Архив · {totalCount}</span>
+          </div>
+        )}
         <div className="diary-filters">
           {FILTERS.map(f => (
             <button
