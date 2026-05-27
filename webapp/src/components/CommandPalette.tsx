@@ -3,7 +3,7 @@ import { api } from '../api';
 import type { TherapyClientSummary } from '../api';
 import { todayStr } from '../utils/format';
 
-type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'help' | 'exercises';
+type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
 
 interface Props {
   section: Section;
@@ -21,7 +21,7 @@ const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'diary',   label: 'Дневник',  sub: 'Записи',    hint: '⌘ 2' },
   { id: 'schemas', label: 'Схемы',    sub: '20 схем',   hint: '⌘ 3' },
   { id: 'profile', label: 'Профиль',  sub: 'Аккаунт',   hint: '⌘ 4' },
-  { id: 'help',    label: 'Помощь',   sub: 'Практики',  hint: '⌘ 5' },
+  { id: 'practice', label: 'Практика', sub: 'Практики',  hint: '⌘ 5' },
 ];
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
