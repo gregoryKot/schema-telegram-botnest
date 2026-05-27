@@ -130,6 +130,16 @@ export class AuthController {
       linkUserId: (req as any).webUser?.userId?.toString() ?? null,
     })).toString('base64url');
     res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+
+    // Google uses response_mode=form_post so we need an idTokenNonce in a
+    // SameSite=None cookie (the browser must send it on the cross-site POST).
+    if (provider === 'google') {
+      const idTokenNonce = randomBytes(16).toString('hex');
+      res.cookie('google_nonce', idTokenNonce, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+      res.redirect(handler.buildAuthUrl(state, idTokenNonce));
+      return;
+    }
+
     res.redirect(handler.buildAuthUrl(state));
   }
 
@@ -192,12 +202,56 @@ export class AuthController {
     return this.oauthRedirect('google', req, res);
   }
 
-  @Get('google/callback')
-  async googleCallback(
-    @Query('code') code: string, @Query('state') state: string,
-    @Query('error') error: string, @Req() req: any, @Res() res: any,
+  // Google uses response_mode=form_post — the browser POSTs id_token here.
+  // No server→Google network call needed: we verify the JWT locally via JWKS.
+  @Post('google/callback')
+  @HttpCode(302)
+  async googleCallbackPost(
+    @Body('id_token') idToken: string,
+    @Body('state') state: string,
+    @Body('error') error: string,
+    @Req() req: any, @Res() res: any,
   ): Promise<void> {
-    return this.oauthCallback('google', code, state, error, req, res);
+    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+    try {
+      const handler = this.providers.get('google');
+      if (!handler.verifyIdToken) throw new BadRequestException('Google does not support id_token flow');
+      if (error) throw new UnauthorizedException(`google auth denied: ${error}`);
+      if (!idToken) throw new BadRequestException('Missing id_token');
+
+      const expectedNonce = req.cookies?.['google_nonce'];
+      if (!expectedNonce) throw new UnauthorizedException('Missing google_nonce cookie');
+      res.clearCookie('google_nonce', { path: '/api/auth' });
+
+      const identity = await handler.verifyIdToken(idToken, expectedNonce);
+
+      let linkUserId: bigint | null = null;
+      try {
+        const raw = JSON.parse(Buffer.from(state ?? '', 'base64url').toString()).linkUserId;
+        if (raw) linkUserId = BigInt(raw);
+      } catch { /* ignore */ }
+
+      const outcome = await this.signInOrLinkOrMerge('google', identity, {
+        linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
+      });
+
+      if (outcome.kind === 'merge') {
+        const params = new URLSearchParams({
+          token: outcome.mergeToken,
+          summary: JSON.stringify(outcome.summary),
+          provider: 'google',
+          name: outcome.otherDisplay ?? '',
+        });
+        res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
+        return;
+      }
+
+      res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+      res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
+    } catch (err) {
+      this.logger.error(`google callback error: ${(err as Error).message}`);
+      res.redirect(`${frontendBase}/auth/error?reason=google_failed`);
+    }
   }
 
   // ─── VK OAuth ─────────────────────────────────────────────────────────────
