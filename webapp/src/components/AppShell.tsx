@@ -452,6 +452,7 @@ export function AppShell() {
             onOpenClient={(id) => navigate('/cabinet/' + id)}
             onClose={() => switchTherapistMode(false)}
             backHandlerRef={therapistBackHandlerRef}
+            onClientsChange={setTherapistClients}
           />
         )}
 

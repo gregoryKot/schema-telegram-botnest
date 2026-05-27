@@ -1,5 +1,4 @@
 import { useState, lazy, Suspense } from 'react';
-import { SectionLabel } from './SectionLabel';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from '../utils/storageKeys';
@@ -224,30 +223,33 @@ function ModesTab() {
 
       {/* Check-in selector */}
       {showCheckin && !checkinMode && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.75)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', animation: 'fade-in 150ms ease' }}
-          onClick={() => setShowCheckin(false)}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ background: 'var(--sheet-bg)', borderRadius: '24px 24px 0 0', padding: '20px 20px 48px', animation: 'sheet-up 300ms cubic-bezier(0.34,1.56,0.64,1)' }}
-          >
-            <div style={{ textAlign: 'center', marginBottom: 4 }}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 16px' }} />
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 4, textAlign: 'center' }}>Как ты сейчас?</div>
-            <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 20, textAlign: 'center' }}>Выбери самое близкое ощущение</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-              {MODE_CHECKIN.map((item) => (
-                <div
-                  key={item.label}
-                  onClick={() => setCheckinMode(item)}
-                  style={{ background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 14, padding: '12px 8px', textAlign: 'center', cursor: 'pointer', border: '1px solid rgba(var(--fg-rgb),0.06)' }}
-                >
-                  <div style={{ fontSize: 26, marginBottom: 6 }}>{item.emoji}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-sub)', lineHeight: 1.4 }}>{item.label}</div>
-                </div>
-              ))}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden', animation: 'fade-in 150ms ease' }}>
+          <div className="ex-topbar">
+            <button className="ex-back" onClick={() => setShowCheckin(false)}>
+              <GlyphArrowLeft /> Назад
+            </button>
+          </div>
+          <div className="page">
+            <div className="page-inner" style={{ paddingTop: 48 }}>
+              <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 10 }}>Режим прямо сейчас</div>
+              <h1 className="hub-title" style={{ marginBottom: 8 }}>Как ты<br /><span className="it">сейчас?</span></h1>
+              <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 36 }}>Выбери самое близкое ощущение</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
+                {MODE_CHECKIN.map((item) => (
+                  <div
+                    key={item.label}
+                    onClick={() => setCheckinMode(item)}
+                    className="mode-card"
+                    style={{ '--mode-color': 'var(--accent)' } as React.CSSProperties}
+                  >
+                    <span className="mode-card-stripe" />
+                    <div style={{ textAlign: 'center', width: '100%', padding: '4px 0' }}>
+                      <div style={{ fontSize: 32, marginBottom: 8 }}>{item.emoji}</div>
+                      <div className="mode-card-name" style={{ fontSize: 13, textAlign: 'center' }}>{item.label}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -255,25 +257,33 @@ function ModesTab() {
 
       {/* Result overlay */}
       {checkinMode && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, animation: 'fade-in 150ms ease' }}
-          onClick={() => { setCheckinMode(null); setShowCheckin(false); }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ background: 'color-mix(in srgb, var(--accent) 12%, var(--bg))', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', borderRadius: 24, padding: '32px 24px 24px', width: '100%', maxWidth: 340, textAlign: 'center' }}
-          >
-            <div style={{ fontSize: 56, marginBottom: 12 }}>{checkinMode.emoji}</div>
-            <SectionLabel purple mb={8}>Режим</SectionLabel>
-            <div style={{ fontFamily: 'var(--serif)', fontSize: 22, color: 'var(--text)', marginBottom: 16 }}>{checkinMode.mode}</div>
-            <div style={{ background: 'rgba(var(--fg-rgb),0.06)', borderRadius: 14, padding: '14px 16px', marginBottom: 24, textAlign: 'left' }}>
-              <div style={{ fontSize: 12, color: 'var(--accent)', marginBottom: 6 }}>Что помогает</div>
-              <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65 }}>{checkinMode.tip}</div>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden', animation: 'fade-in 150ms ease' }}>
+          <div className="ex-topbar">
+            <button className="ex-back" onClick={() => { setCheckinMode(null); setShowCheckin(false); }}>
+              <GlyphArrowLeft /> Назад
+            </button>
+          </div>
+          <div className="page">
+            <div className="page-inner" style={{ paddingTop: 56, maxWidth: 520 }}>
+              <div style={{ fontSize: 64, marginBottom: 20, textAlign: 'center' }}>{checkinMode.emoji}</div>
+              <div className="eyebrow" style={{ color: 'var(--accent)', textAlign: 'center', marginBottom: 8 }}>Режим</div>
+              <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', textAlign: 'center', marginBottom: 32 }}>
+                {checkinMode.mode}
+              </h1>
+              <div className="aside-card" style={{ borderColor: 'color-mix(in srgb, var(--accent) 25%, transparent)', background: 'color-mix(in srgb, var(--accent) 6%, transparent)', marginBottom: 32 }}>
+                <div className="aside-card-eyebrow" style={{ color: 'var(--accent)' }}>Что помогает</div>
+                <p className="body" style={{ margin: 0 }}>{checkinMode.tip}</p>
+              </div>
+              <div className="ex-foot" style={{ padding: 0 }}>
+                <span className="spacer" />
+                <button
+                  onClick={() => { setCheckinMode(null); setShowCheckin(false); }}
+                  className="ex-btn ex-btn-primary"
+                >
+                  Понятно
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => { setCheckinMode(null); setShowCheckin(false); }}
-              style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 14, background: 'color-mix(in srgb, var(--accent) 20%, transparent)', color: 'var(--accent)', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-            >Понятно</button>
           </div>
         </div>
       )}

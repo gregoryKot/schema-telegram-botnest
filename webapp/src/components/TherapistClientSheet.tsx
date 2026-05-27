@@ -18,6 +18,7 @@ interface Props {
   onOpenClient?: (id: number) => void;
   onClose: () => void;
   backHandlerRef?: React.MutableRefObject<() => void>;
+  onClientsChange?: (clients: TherapyClientSummary[]) => void;
 }
 
 type ClientTab = 'overview' | 'concept' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
@@ -66,7 +67,7 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
 
 
 
-export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef }: Props) {
+export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange }: Props) {
   // ─── Client list ──────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,6 +98,19 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     }).catch(() => {}).finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ─── Sync sidebar when clients list changes (e.g. after adding a client) ──────
+  useEffect(() => {
+    onClientsChange?.(clients);
+  }, [clients]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── React to URL-driven client navigation ────────────────────────────────────
+  useEffect(() => {
+    if (!openClientIdProp || loading) return;
+    if (detail.selectedClient?.telegramId === openClientIdProp) return;
+    const c = clients.find(x => x.telegramId === openClientIdProp);
+    if (c) detail.openClient(c);
+  }, [openClientIdProp, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Back button handler ──────────────────────────────────────────────────────
   useEffect(() => {
