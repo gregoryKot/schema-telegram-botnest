@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { GlyphArrowLeft } from './exercises/ExScreen';
+import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { SectionLabel } from './SectionLabel';
 import { api } from '../api';
 import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { haptic } from '../haptic';
 
 type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
 
@@ -17,16 +18,16 @@ interface Props {
 
 const STREAK_OPTIONS = [3, 7, 14, 30];
 
-const TASK_OPTIONS: { type: TaskType; emoji: string; label: string; sub: string; hasStreak?: boolean }[] = [
-  { type: 'diary_streak',   emoji: '📔', label: 'Дневник',              sub: 'Заполнять N дней подряд',                  hasStreak: true },
-  { type: 'tracker_streak', emoji: '📊', label: 'Трекер потребностей',  sub: 'Отмечать N дней подряд',                   hasStreak: true },
-  { type: 'schema_intro',   emoji: '🧩', label: 'Карточка схемы',       sub: 'Познакомиться со своей схемой — 7 вопросов' },
-  { type: 'mode_intro',     emoji: '🔄', label: 'Карточка режима',      sub: 'Познакомиться со своим режимом' },
-  { type: 'belief_check',   emoji: '🔍', label: 'Проверить убеждение',  sub: 'Собрать доказательства за и против' },
-  { type: 'letter_to_self', emoji: '✉️', label: 'Письмо себе',          sub: 'Написать Уязвимому Ребёнку' },
-  { type: 'safe_place',     emoji: '🏡', label: 'Безопасное место',     sub: 'Описать и перечитывать' },
-  { type: 'flashcard',      emoji: '🆘', label: 'Мне сейчас плохо',     sub: 'Разобрать ситуацию — 5 шагов' },
-  { type: 'custom',         emoji: '✏️', label: 'Своё задание',         sub: 'Любой текст' },
+const TASK_OPTIONS: { type: TaskType; emoji: string; label: string; sub: string; hasStreak?: boolean; time?: string }[] = [
+  { type: 'diary_streak',   emoji: '📔', label: 'Дневник',              sub: 'Заполнять N дней подряд',                  hasStreak: true, time: '5–10 мин/день' },
+  { type: 'tracker_streak', emoji: '📊', label: 'Трекер потребностей',  sub: 'Отмечать потребности N дней подряд',       hasStreak: true, time: '2–3 мин/день' },
+  { type: 'schema_intro',   emoji: '🧩', label: 'Карточка схемы',       sub: 'Познакомиться со своей схемой — 7 вопросов', time: '15 мин' },
+  { type: 'mode_intro',     emoji: '🔄', label: 'Карточка режима',      sub: 'Познакомиться со своим режимом',            time: '10 мин' },
+  { type: 'belief_check',   emoji: '🔍', label: 'Проверить убеждение',  sub: 'Собрать доказательства за и против',        time: '20 мин' },
+  { type: 'letter_to_self', emoji: '✉️', label: 'Письмо себе',          sub: 'Написать Уязвимому Ребёнку',               time: '30 мин' },
+  { type: 'safe_place',     emoji: '🏡', label: 'Безопасное место',     sub: 'Описать и перечитывать',                   time: '20 мин' },
+  { type: 'flashcard',      emoji: '🆘', label: 'Мне сейчас плохо',     sub: 'Разобрать ситуацию — 5 шагов',             time: '10 мин' },
+  { type: 'custom',         emoji: '✏️', label: 'Своё задание',         sub: 'Любой текст, который сформулируешь сам',   time: '—' },
 ];
 
 const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(s => ({ id: s.id, name: s.name, emoji: (s as any).emoji ?? '●', domainColor: d.color })));
@@ -82,130 +83,185 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
     if (type === 'custom' && !finalText) { setError('Введи описание задания'); return; }
     if (type === 'schema_intro' && !selectedSchemaId) { setError('Выбери схему'); return; }
     if (type === 'mode_intro' && !selectedModeId) { setError('Выбери режим'); return; }
+    haptic.success();
     setSaving(true); setError('');
     try {
       await api.createTask({ type, text: finalText, targetDays: selected.hasStreak ? targetDays : undefined, dueDate: dueDate || undefined, clientId });
       onCreated();
-    } catch { setError('Не удалось сохранить'); }
+    } catch { haptic.error(); setError('Не удалось сохранить'); }
     finally { setSaving(false); }
   }
 
+  const canSave = type !== 'custom' || text.trim().length > 0;
+
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', overflowY: 'auto' }}>
-      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
-          <GlyphArrowLeft /> Назад
-        </button>
-      </div>
-      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 80px' }}>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', lineHeight: 1.15, marginBottom: 28 }}>
-          {clientName ? `Задание для ${clientName}` : 'Новое задание'}
-        </h1>
-
-        {/* Type selector */}
-        <SectionLabel mb={12}>Тип задания</SectionLabel>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 24 }}>
-          {TASK_OPTIONS.map(opt => (
-            <div key={opt.type} onClick={() => setType(opt.type)} style={{
-              padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
-              background: type === opt.type ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'rgba(var(--fg-rgb),0.03)',
-              border: `1px solid ${type === opt.type ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
-              display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-              <span style={{ fontSize: 16, flexShrink: 0 }}>{opt.emoji}</span>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: type === opt.type ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.8)' }}>{opt.label}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>{opt.sub}</div>
-              </div>
+    <ExScreen
+      onBack={goBack}
+      backLabel="Назад к кабинету"
+      eyebrow={clientName ? `Задание для ${clientName}` : 'Новое задание'}
+      eyebrowColor="var(--accent)"
+      title={<>Какое задание<br /><span className="it">назначить?</span></>}
+      lede="Задание появится у клиента в мини-аппе. Можно выбрать готовый формат или написать своё."
+      aside={
+        <div className="aside-card" style={{ borderColor: 'var(--accent)40', background: 'var(--accent)08', position: 'sticky', top: 40 }}>
+          <div className="aside-card-eyebrow" style={{ color: 'var(--accent)' }}>Выбрано</div>
+          <h3>{selected.emoji} {selected.label}</h3>
+          <p className="body">{selected.sub}</p>
+          {selected.time && (
+            <div style={{ fontSize: 11.5, color: 'var(--text-faint)', marginTop: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              {selected.time}
             </div>
-          ))}
+          )}
         </div>
+      }
+    >
+      {/* ── Task type picker ── */}
+      {TASK_OPTIONS.map(opt => (
+        <div
+          key={opt.type}
+          className={'mode-card ' + (type === opt.type ? 'is-selected' : '')}
+          style={{ '--mode-color': 'var(--accent)' } as React.CSSProperties}
+          onClick={() => { haptic.select(); setType(opt.type); }}
+        >
+          <span className="mode-card-stripe" />
+          <div>
+            <div className="mode-card-name">{opt.emoji} {opt.label}</div>
+            <div className="mode-card-short">{opt.sub}</div>
+          </div>
+          <span className="mode-check"><GlyphCheck /></span>
+        </div>
+      ))}
 
-        {/* Streak day picker */}
+      {/* ── Config section ── */}
+      <div ref={configRef}>
+
+        {/* Streak */}
         {selected.hasStreak && (
-          <div style={{ marginBottom: 24 }}>
-            <SectionLabel mb={10}>Цель в днях</SectionLabel>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {STREAK_OPTIONS.map(d => (
-                <div key={d} onClick={() => setTargetDays(d)} style={{
-                  flex: 1, textAlign: 'center', padding: '10px 0', borderRadius: 10, cursor: 'pointer',
-                  background: targetDays === d ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : 'rgba(var(--fg-rgb),0.05)',
-                  border: `1px solid ${targetDays === d ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-                  fontSize: 15, fontWeight: 600, color: targetDays === d ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.5)',
-                }}>{d}</div>
-              ))}
+          <div className="prompt">
+            <div className="prompt-num">·</div>
+            <div>
+              <div className="prompt-label">Цель в днях</div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                {STREAK_OPTIONS.map(d => (
+                  <button
+                    key={d}
+                    onClick={() => setTargetDays(d)}
+                    style={{
+                      flex: 1, padding: '10px 0', borderRadius: 8, cursor: 'pointer',
+                      fontWeight: 700, fontSize: 16,
+                      background: targetDays === d ? 'var(--accent)' : 'var(--surface-2)',
+                      color: targetDays === d ? 'var(--on-accent)' : 'var(--text-sub)',
+                      border: targetDays === d ? 'none' : '1px solid var(--line)',
+                    }}
+                  >{d}</button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* Schema picker */}
         {type === 'schema_intro' && (
-          <div ref={configRef} style={{ marginBottom: 24 }}>
-            <SectionLabel mb={10}>Какую схему изучить?</SectionLabel>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {ALL_SCHEMAS_FLAT.map(s => (
-                <div key={s.id} onClick={() => setSelectedSchemaId(s.id)} style={{
-                  padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
-                  background: selectedSchemaId === s.id ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'rgba(var(--fg-rgb),0.03)',
-                  border: `1px solid ${selectedSchemaId === s.id ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
-                  display: 'flex', alignItems: 'center', gap: 10,
-                }}>
-                  <span style={{ fontSize: 16, flexShrink: 0 }}>{s.emoji}</span>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: selectedSchemaId === s.id ? 'var(--accent)' : 'var(--text)' }}>{s.name}</div>
-                  {selectedSchemaId === s.id && <span style={{ marginLeft: 'auto', fontSize: 14, color: 'var(--accent)' }}>✓</span>}
-                </div>
-              ))}
+          <div className="prompt">
+            <div className="prompt-num">·</div>
+            <div style={{ width: '100%' }}>
+              <div className="prompt-label">Какую схему изучить?</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+                {ALL_SCHEMAS_FLAT.map(s => (
+                  <div
+                    key={s.id}
+                    onClick={() => setSelectedSchemaId(s.id)}
+                    className={'mode-card ' + (selectedSchemaId === s.id ? 'is-selected' : '')}
+                    style={{ '--mode-color': s.domainColor } as React.CSSProperties}
+                  >
+                    <span className="mode-card-stripe" />
+                    <div style={{ flex: 1 }}>
+                      <div className="mode-card-name">{s.emoji} {s.name}</div>
+                    </div>
+                    {selectedSchemaId === s.id && <span className="mode-check"><GlyphCheck /></span>}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* Mode picker */}
         {type === 'mode_intro' && (
-          <div ref={configRef} style={{ marginBottom: 24 }}>
-            <SectionLabel mb={10}>Какой режим изучить?</SectionLabel>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {ALL_MODES.map(m => (
-                <div key={m.id} onClick={() => setSelectedModeId(m.id)} style={{
-                  padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
-                  background: selectedModeId === m.id ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'rgba(var(--fg-rgb),0.03)',
-                  border: `1px solid ${selectedModeId === m.id ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
-                  display: 'flex', alignItems: 'center', gap: 10,
-                }}>
-                  <span style={{ fontSize: 16, flexShrink: 0 }}>{m.emoji}</span>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: selectedModeId === m.id ? 'var(--accent)' : 'var(--text)' }}>{m.name}</div>
-                  {selectedModeId === m.id && <span style={{ marginLeft: 'auto', fontSize: 14, color: 'var(--accent)' }}>✓</span>}
-                </div>
-              ))}
+          <div className="prompt">
+            <div className="prompt-num">·</div>
+            <div style={{ width: '100%' }}>
+              <div className="prompt-label">Какой режим изучить?</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+                {ALL_MODES.map(m => (
+                  <div
+                    key={m.id}
+                    onClick={() => setSelectedModeId(m.id)}
+                    className={'mode-card ' + (selectedModeId === m.id ? 'is-selected' : '')}
+                    style={{ '--mode-color': 'var(--c-slate)' } as React.CSSProperties}
+                  >
+                    <span className="mode-card-stripe" />
+                    <div style={{ flex: 1 }}>
+                      <div className="mode-card-name">{m.emoji} {m.name}</div>
+                    </div>
+                    {selectedModeId === m.id && <span className="mode-check"><GlyphCheck /></span>}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* Custom text */}
         {type === 'custom' && (
-          <div style={{ marginBottom: 24 }}>
-            <SectionLabel mb={10}>Описание задания</SectionLabel>
-            <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Например: позвонить другу раз в неделю"
-              style={{ width: '100%', minHeight: 80, background: 'rgba(var(--fg-rgb),0.05)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14, resize: 'none', boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit' }}
-            />
+          <div className="prompt">
+            <div className="prompt-num">·</div>
+            <div style={{ width: '100%' }}>
+              <div className="prompt-label">Описание задания <span style={{ color: 'var(--c-rose)', marginLeft: 2 }}>*</span></div>
+              <textarea
+                value={text}
+                onChange={e => setText(e.target.value)}
+                placeholder="Например: позвонить другу раз в неделю"
+                className={'paper-input ' + (text.trim() ? 'is-filled' : '')}
+                rows={3}
+                autoFocus
+              />
+            </div>
           </div>
         )}
 
         {/* Due date */}
         {(type === 'custom' || clientId) && (
-          <div style={{ marginBottom: 28 }}>
-            <SectionLabel mb={10}>Срок (необязательно)</SectionLabel>
-            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-              style={{ width: '100%', background: 'rgba(var(--fg-rgb),0.05)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14, boxSizing: 'border-box', outline: 'none' }}
-            />
+          <div className="prompt">
+            <div className="prompt-num">·</div>
+            <div style={{ width: '100%' }}>
+              <SectionLabel mb={8}>Срок (необязательно)</SectionLabel>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                className="paper-input"
+                style={{ width: '100%' }}
+              />
+            </div>
           </div>
         )}
+      </div>
 
-        {error && <div style={{ fontSize: 13, color: 'var(--accent-red)', marginBottom: 14 }}>{error}</div>}
-
-        <button onClick={handleCreate} disabled={saving} className="ex-btn ex-btn-primary" style={{ width: '100%' }}>
-          {saving ? 'Сохраняю...' : 'Создать задание'}
+      {/* ── Footer ── */}
+      <div className="ex-foot">
+        {error && <span style={{ fontSize: 12, color: 'var(--c-rose)' }}>{error}</span>}
+        <span className="spacer" />
+        <button
+          className="ex-btn ex-btn-primary"
+          disabled={!canSave || saving}
+          onClick={handleCreate}
+          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+        >
+          {saving ? 'Сохраняю…' : 'Назначить задание'}
+          {!saving && <GlyphCheck />}
         </button>
       </div>
-    </div>
+    </ExScreen>
   );
 }

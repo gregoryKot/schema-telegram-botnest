@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TherapyNote } from './TherapyNote';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { api } from '../api';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 const STORAGE_KEY = 'schema_flashcards';
 
@@ -77,6 +78,7 @@ function Topbar({ onBack, label = 'Закрыть' }: { onBack: () => void; labe
 interface Props { onClose: () => void; onOpenTracker?: () => void; onComplete?: () => void; }
 
 export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [grounded,     setGrounded]     = useState(false);
   const [step,         setStep]         = useState<Step>('mode');
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
@@ -214,7 +216,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     const needInfo = NEEDS.find(n => n.id === selectedNeed);
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-        <Topbar onBack={onClose} label="Закрыть" />
+        <Topbar onBack={goBack} label="Закрыть" />
         <div style={{ maxWidth: 600, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center' }}>
           <div style={{ fontSize: 64, marginBottom: 20 }}>🌿</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>Сохранено</h1>
@@ -238,13 +240,13 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             ))}
           </div>
           {onOpenTracker && (
-            <button onClick={() => { onClose(); setTimeout(onOpenTracker!, 100); }} className="ex-btn ex-btn-outline" style={{ width: '100%', marginBottom: 12 }}>
+            <button onClick={() => { goBack(); setTimeout(onOpenTracker!, 100); }} className="ex-btn ex-btn-outline" style={{ width: '100%', marginBottom: 12 }}>
               Открыть трекер →
             </button>
           )}
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={handleNew} className="ex-btn ex-btn-ghost" style={{ flex: 1 }}>Ещё одну</button>
-            <button onClick={onClose} className="ex-btn ex-btn-primary" style={{ flex: 1 }}>Готово</button>
+            <button onClick={goBack} className="ex-btn ex-btn-primary" style={{ flex: 1 }}>Готово</button>
           </div>
         </div>
       </div>
@@ -255,7 +257,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   if (!grounded) {
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-        <Topbar onBack={onClose} label="Закрыть" />
+        <Topbar onBack={goBack} label="Закрыть" />
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center' }}>
           <div style={{ fontSize: 64, marginBottom: 20 }}>💙</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>
@@ -294,7 +296,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
               История карточек ({allCards.length})
             </button>
           )}
-          <button onClick={onClose} style={{
+          <button onClick={goBack} style={{
             width: '100%', padding: '11px', border: 'none', background: 'transparent',
             color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
           }}>
@@ -309,7 +311,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   if (step === 'mode') {
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-        <Topbar onBack={onClose} label="Закрыть" />
+        <Topbar onBack={goBack} label="Закрыть" />
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '40px 24px 80px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
             <div>

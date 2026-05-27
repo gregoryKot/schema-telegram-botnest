@@ -29,6 +29,8 @@ const HelpSection    = lazy(() => import('../sections/HelpSection').then(m => ({
 // — lazy: heavy overlays —
 const TrackerOverlay       = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
 const HistoryView          = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
+const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ default: m.DiariesOverlay })));
+const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
 const SettingsSheet        = lazy(() => import('./SettingsSheet').then(m => ({ default: m.SettingsSheet })));
 const PracticesScreen      = lazy(() => import('./PracticesScreen').then(m => ({ default: m.PracticesScreen })));
 const PlansScreen          = lazy(() => import('./PlansScreen').then(m => ({ default: m.PlansScreen })));
@@ -181,7 +183,6 @@ export function AppShell() {
   const [showDiaries, setShowDiaries] = useState(false);
   const [showChildhoodWheel, setShowChildhoodWheel] = useState(false);
   const [showTodayNote, setShowTodayNote] = useState(false);
-  const [backfillDate, setBackfillDate] = useState<string | null>(null);
   const [newDiaryEntry, setNewDiaryEntry] = useState<'schema' | 'mode' | 'gratitude' | null>(null);
   const [showPracticesOnboarding, setShowPracticesOnboarding] = useState(false);
 
@@ -552,82 +553,31 @@ export function AppShell() {
 
         {/* ── History overlay ── */}
         {showTracker && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-            <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
-                <div>
-                  <div className="eyebrow" style={{ marginBottom: 8 }}>Трекер</div>
-                  <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 10 }}>История потребностей</h1>
-                  <div className="text-md muted">{formatHeaderDate()}</div>
-                </div>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <button
-                    onClick={() => { setShowTracker(false); setTrackerTab('today'); setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-                    className="btn btn-primary"
-                  >
-                    Оценить →
-                  </button>
-                  <button onClick={() => { setShowTracker(false); setTrackerTab('today'); }} className="btn btn-secondary">
-                    Закрыть
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {historyLoading
-              ? <Loader minHeight="60vh" />
-              : <HistoryView
-                  needs={needs}
-                  history={history}
-                  currentRatings={ratings}
-                  childhoodRatings={childhoodRatings}
-                  onOpenSchemas={() => setShowSchemaInfo(true)}
-                  onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
-                  onGoToToday={() => { setShowTracker(false); setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-                  onBackfill={(date) => setBackfillDate(date)}
-                />
-            }
-            <div style={{ height: 80 }} />
-
-            {pendingPlans.length > 0 && needs.length > 0 && (() => {
-              const plan = pendingPlans.find(p => p.scheduledDate < TODAY_DATE);
-              if (!plan) return null;
-              const need = needs.find(n => n.id === plan.needId);
-              if (!need) return null;
-              return (
-                <CheckInSheet
-                  plan={plan}
-                  needEmoji={need.emoji ?? ''}
-                  needLabel={need.chartLabel}
-                  color={COLORS[need.id] ?? '#888'}
-                  onDone={() => setPendingPlans(prev => prev.filter(p => p.id !== plan.id))}
-                />
-              );
-            })()}
-
-            {backfillDate && (
-              <TrackerOverlay
-                needs={needs} ratings={{}} saved={{}}
-                onChange={() => {}} onSaved={() => {}}
-                date={backfillDate}
-                onClose={() => setBackfillDate(null)}
-                onDone={() => {
-                  setBackfillDate(null);
-                  setHistoryLoading(true);
-                  api.history(historyDays).then(h => setHistory(fillHistoryGaps(h))).finally(() => setHistoryLoading(false));
-                }}
-              />
-            )}
-          </div>
+          <Suspense fallback={null}>
+            <HistorySheet
+              needs={needs}
+              history={history}
+              historyLoading={historyLoading}
+              ratings={ratings}
+              childhoodRatings={childhoodRatings}
+              pendingPlans={pendingPlans}
+              todayDate={TODAY_DATE}
+              historyDays={historyDays}
+              onClose={() => { setShowTracker(false); setTrackerTab('today'); }}
+              onOpenTracker={() => { setTrackerTab('today'); setTrackerNeedId(null); setShowTrackerOverlay(true); }}
+              onOpenSchemas={() => setShowSchemaInfo(true)}
+              onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
+              onDismissPlan={(id) => setPendingPlans(prev => prev.filter(p => p.id !== id))}
+              onHistoryRefreshed={(h) => { setHistory(h); setHistoryLoading(false); }}
+            />
+          </Suspense>
         )}
 
         {/* ── Diaries overlay ── */}
         {showDiaries && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-            <ErrorBoundary section="Дневник" key="diary-overlay-boundary">
-              <DiarySection onClose={() => setShowDiaries(false)} />
-            </ErrorBoundary>
-          </div>
+          <Suspense fallback={null}>
+            <DiariesOverlay onClose={() => setShowDiaries(false)} />
+          </Suspense>
         )}
 
         {/* ── Fullscreen overlays ── */}
