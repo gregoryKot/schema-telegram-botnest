@@ -1,17 +1,4 @@
 // TrackerOverlay.tsx — Full tracker as standalone overlay
-// Place at: src/components/TrackerOverlay.tsx (NEW FILE)
-//
-// This replaces the inline tracker code in App.tsx.
-// Wire it up in App.tsx:
-//   {showTracker && (
-//     <TrackerOverlay
-//       needs={needs} ratings={ratings} saved={saved}
-//       onClose={() => { setShowTracker(false); setTrackerTab('today'); }}
-//       initialNeedId={trackerNeedId}
-//       onSaved={handleSaved} onChange={handleChange}
-//       isOffline={isOffline}
-//     />
-//   )}
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { COLORS, YESTERDAY } from '../types';
@@ -53,30 +40,6 @@ const ONBOARDING_STEPS = [
     text: 'Всё сохраняется. Динамика появится в разделе «История».' },
 ];
 
-// ── Donut ring ─────────────────────────────────────────────────────────────────
-function SummaryDonut({ avg }: { avg: number }) {
-  const s = 52, r = 20, cx = 26, cy = 26;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - Math.min(avg / 10, 1));
-  return (
-    <svg width={s} height={s}>
-      <defs>
-        <linearGradient id="dg2" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="var(--accent-pink)"/>
-          <stop offset="50%" stopColor="var(--accent-yellow)"/>
-          <stop offset="100%" stopColor="var(--accent-green)"/>
-        </linearGradient>
-      </defs>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="transparent" strokeWidth={5}/>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="url(#dg2)" strokeWidth={5}
-        strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
-        transform={`rotate(-90 ${cx} ${cy})`} style={{ transition:'stroke-dashoffset 0.35s ease' }}/>
-      <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle"
-        fontSize={11} fontWeight={600} fill="var(--text)">{Math.round(avg/10*100)}%</text>
-    </svg>
-  );
-}
-
 export function TrackerOverlay({
   needs, ratings, saved: _saved, isOffline,
   onChange, onSaved, onClose, initialNeedId,
@@ -87,7 +50,6 @@ export function TrackerOverlay({
   const timers  = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const unlockTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  // Backfill mode: own ratings state loaded from API for the given date
   const isBackfill = !!date;
   const [localRatings, setLocalRatings] = useState<Record<string, number>>({});
   const [localLoading, setLocalLoading] = useState(isBackfill);
@@ -119,6 +81,7 @@ export function TrackerOverlay({
   const avg      = needs.length > 0 ? needs.reduce((s,n)=>s+(effectiveRatings[n.id]??0),0)/needs.length : 0;
   const yval     = yesterdayRatings[need.id] ?? YESTERDAY[need.id];
   const delta    = (!isBackfill && value > 0 && yval !== undefined) ? value - yval : null;
+  const ratedCount = needs.filter(n => (effectiveRatings[n.id] ?? 0) > 0).length;
 
   const dismissOnb = useCallback(() => {
     localStorage.setItem(ONBOARDING_KEY, '1');
@@ -153,7 +116,7 @@ export function TrackerOverlay({
     }, 500);
   }, [onChange, onSaved, isOffline, isBackfill, date]);
 
-  // Swipe between needs — high threshold to avoid accidental triggers
+  // Swipe between needs
   const touchRef = useRef<{ x: number; y: number } | null>(null);
   function onTS(e: React.TouchEvent) { touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
   function onTE(e: React.TouchEvent) {
@@ -161,7 +124,6 @@ export function TrackerOverlay({
     const dx = e.changedTouches[0].clientX - touchRef.current.x;
     const dy = e.changedTouches[0].clientY - touchRef.current.y;
     touchRef.current = null;
-    // Only swipe if clearly horizontal (dx much larger than dy) and long enough
     if (Math.abs(dx) < 90 || Math.abs(dy) > Math.abs(dx) * 0.5) return;
     if (dx < 0 && idx < needs.length - 1) setIdx(idx + 1);
     if (dx > 0 && idx > 0) setIdx(idx - 1);
@@ -181,7 +143,7 @@ export function TrackerOverlay({
       display:'flex', flexDirection:'column' }}
       onTouchStart={onTS} onTouchEnd={onTE}>
 
-      {/* Header */}
+      {/* ── Topbar ── */}
       <div className="ex-topbar" style={{ justifyContent:'space-between', flexShrink:0 }}>
         <button className="ex-back" onClick={goBack}>
           <GlyphArrowLeft /> {isBackfill ? 'Закрыть' : 'Назад'}
@@ -194,7 +156,6 @@ export function TrackerOverlay({
             <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:2 }}>{date}</div>
           )}
         </div>
-        {/* Карандаш + история */}
         {!isBackfill ? (
           <div style={{ display:'flex', gap:4 }}>
             {onOpenNote && (
@@ -227,152 +188,221 @@ export function TrackerOverlay({
         )}
       </div>
 
-      {/* Onboarding */}
+      {/* ── Onboarding ── */}
       {showOnb && (
         <div style={{ padding:'0 20px 8px', flexShrink:0 }}>
-          <div style={{ background:'transparent', border:'1px solid var(--line)',
-            borderRadius:16, padding:'14px 16px' }}>
-            <div style={{ display:'flex', gap:5, marginBottom:10 }}>
-              {ONBOARDING_STEPS.map((_,i)=>(
-                <div key={i} style={{ width:i===onbStep?16:6, height:6, borderRadius:3,
-                  background:i===onbStep?'var(--accent)':'transparent', transition:'all 0.2s' }}/>
+          <div style={{
+            background:'rgba(var(--fg-rgb),0.03)',
+            border:'1px solid rgba(var(--fg-rgb),0.08)',
+            borderRadius:20, padding:'16px 18px',
+          }}>
+            {/* Step dots */}
+            <div style={{ display:'flex', gap:5, marginBottom:12 }}>
+              {ONBOARDING_STEPS.map((_,i) => (
+                <div key={i} style={{
+                  width: i===onbStep ? 18 : 6, height:6, borderRadius:3,
+                  background: i===onbStep ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.18)',
+                  transition:'all 0.2s',
+                }}/>
               ))}
             </div>
-            <div style={{ display:'flex', gap:12, alignItems:'flex-start', marginBottom:12 }}>
-              <span style={{ fontSize:22, flexShrink:0 }}>{ONBOARDING_STEPS[onbStep].emoji}</span>
+            <div style={{ display:'flex', gap:14, alignItems:'flex-start', marginBottom:14 }}>
+              <span style={{ fontSize:24, flexShrink:0, lineHeight:1 }}>{ONBOARDING_STEPS[onbStep].emoji}</span>
               <div>
-                <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', marginBottom:4 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:'var(--text)', marginBottom:5 }}>
                   {ONBOARDING_STEPS[onbStep].title}
                 </div>
-                <div style={{ fontSize:12, color:'var(--text-sub)', lineHeight:1.55 }}>
+                <div style={{ fontSize:13, color:'var(--text-sub)', lineHeight:1.6 }}>
                   {ONBOARDING_STEPS[onbStep].text}
                 </div>
               </div>
             </div>
-            <div style={{ display:'flex', gap:8 }}>
-              <button onClick={dismissOnb} style={{ padding:'7px 12px', border:'none',
-                fontFamily:'inherit', borderRadius:10, background:'transparent',
-                color:'var(--text-faint)', fontSize:11, cursor:'pointer' }}>
+            <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+              <button onClick={dismissOnb} style={{
+                padding:'8px 14px', border:'none', fontFamily:'inherit', borderRadius:10,
+                background:'transparent', color:'var(--text-faint)', fontSize:12, cursor:'pointer',
+              }}>
                 Пропустить
               </button>
               <button onClick={() => onbStep < 2 ? setOnbStep(s=>s+1) : dismissOnb()} style={{
-                flex:1, padding:'8px', border:'none', fontFamily:'inherit', borderRadius:10,
-                background:'transparent', color:'var(--accent)',
+                padding:'8px 16px', border:'none', fontFamily:'inherit', borderRadius:10,
+                background:'var(--accent)', color:'#fff',
                 fontSize:12, fontWeight:600, cursor:'pointer',
               }}>
-                {onbStep < 2 ? 'Далее →' : 'Понятно, начнём'}
+                {onbStep < 2 ? 'Далее →' : 'Начнём'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Need name pill — top */}
-      <div style={{ flexShrink:0, paddingTop:showOnb?4:8, textAlign:'center' }}>
-        <div onClick={() => setDetailNeed(need)} style={{
-          display:'inline-flex', alignItems:'center', gap:8, cursor:'pointer',
-          padding:'6px 16px', borderRadius:20,
-          background:'transparent', border:'1px solid var(--line)',
-        }}>
-          <span style={{ fontSize:16, fontWeight:700, color:'var(--text)', letterSpacing:'-0.3px' }}>
-            {need.chartLabel}
+      {/* ── Need heading ── */}
+      <div style={{ flexShrink:0, padding: showOnb ? '8px 24px 0' : '12px 24px 0' }}>
+        {/* Eyebrow */}
+        <div className="eyebrow" style={{ marginBottom:10, display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ color: COLORS[need.id] ?? 'var(--accent)' }}>●</span>
+          <span>
+            {isBackfill ? 'Заполни оценку' : `Потребность ${idx + 1} из ${needs.length}`}
           </span>
-          <span style={{ fontSize:11, color:'var(--text-faint)' }}>ⓘ</span>
-          {delta !== null && delta !== 0 && (
-            <span style={{
-              fontSize:11, fontWeight:600,
-              color:delta>0?'var(--accent-green)':'var(--accent-red)',
-              background:delta>0?'color-mix(in srgb, var(--accent-green) 12%, transparent)':'color-mix(in srgb, var(--accent-red) 12%, transparent)',
-              borderRadius:10, padding:'1px 7px',
-            }}>
-              {delta>0?'+':''}{delta}
+          {ratedCount > 0 && !allRated && (
+            <span style={{ color:'var(--text-faint)', fontWeight:400, marginLeft:'auto' }}>
+              {ratedCount} оценено
+            </span>
+          )}
+          {allRated && (
+            <span style={{ color:'var(--accent-green)', fontWeight:600, marginLeft:'auto' }}>
+              ✓ все готово
             </span>
           )}
         </div>
-      </div>
 
-      {/* Dial + desc — one centered column */}
-      <div style={{ flex:1, display:'flex', flexDirection:'column',
-        alignItems:'center', justifyContent:'space-evenly', overflow:'hidden' }}>
+        {/* Name + delta + detail link */}
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8 }}>
+          <button onClick={() => setDetailNeed(need)} style={{
+            background:'none', border:'none', padding:0, cursor:'pointer', textAlign:'left',
+            display:'flex', alignItems:'center', gap:12,
+          }}>
+            <span style={{ fontSize:32, lineHeight:1 }}>{need.emoji}</span>
+            <div>
+              <div style={{
+                fontFamily:'var(--serif)', fontSize:26, fontWeight:400,
+                color:'var(--text)', lineHeight:1.1,
+              }}>
+                {need.chartLabel}
+              </div>
+              <div style={{ fontSize:12, color:'var(--accent)', marginTop:3, fontWeight:500 }}>
+                подробнее →
+              </div>
+            </div>
+          </button>
 
+          {delta !== null && delta !== 0 && (
+            <div style={{
+              flexShrink:0, padding:'4px 10px', borderRadius:20,
+              fontSize:12, fontWeight:600,
+              color: delta>0 ? 'var(--accent-green)' : 'var(--accent-red)',
+              background: delta>0
+                ? 'color-mix(in srgb, var(--accent-green) 12%, transparent)'
+                : 'color-mix(in srgb, var(--accent-red) 12%, transparent)',
+            }}>
+              {delta>0?'+':''}{delta} вчера
+            </div>
+          )}
+        </div>
+
+        {/* Description */}
         {NEED_DATA[need.id]?.desc && (
           <div style={{
-            fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55,
-            textAlign: 'center', padding: '0 32px',
+            fontSize:13, color:'var(--text-sub)', lineHeight:1.6,
+            marginTop:10, paddingBottom:4,
           }}>
             {NEED_DATA[need.id].desc}
           </div>
         )}
+      </div>
 
+      {/* ── Dial area ── */}
+      <div style={{ flex:1, display:'flex', flexDirection:'column',
+        alignItems:'center', justifyContent:'center', overflow:'hidden', minHeight:0 }}>
         <NeedDial
           need={need} color={COLORS[need.id]??'#888'} value={value}
           onChange={v => { dismissOnb(); handleChange(need.id, v); }}
         />
 
-        <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+        {/* +/- controls */}
+        <div style={{ display:'flex', alignItems:'center', gap:20, marginTop:4 }}>
           <button onClick={() => handleChange(need.id, Math.max(0, value-1))} style={{
-            width:46, height:46, borderRadius:23, border:'none', fontFamily:'inherit',
-            background:'transparent', color:'var(--text-sub)',
-            fontSize:22, fontWeight:300, cursor:'pointer',
+            width:50, height:50, borderRadius:25,
+            border:'1.5px solid rgba(var(--fg-rgb),0.12)',
+            background:'rgba(var(--fg-rgb),0.03)',
+            color:'var(--text)',
+            fontSize:24, fontWeight:300, cursor:'pointer', fontFamily:'inherit',
             display:'flex', alignItems:'center', justifyContent:'center',
+            transition:'background 0.15s',
           }}>−</button>
-          <div style={{ width:64, textAlign:'center', fontSize:9, color:'var(--text-faint)',
-            fontWeight:500, letterSpacing:'0.06em', textTransform:'uppercase' }}>
-            тап по шкале
+          <div style={{ width:72, textAlign:'center', fontSize:9, color:'var(--text-faint)',
+            fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase' }}>
+            тап по дуге
           </div>
           <button onClick={() => handleChange(need.id, Math.min(10, value+1))} style={{
-            width:46, height:46, borderRadius:23, border:'none', fontFamily:'inherit',
-            background:'transparent', color:'var(--text-sub)',
-            fontSize:22, fontWeight:300, cursor:'pointer',
+            width:50, height:50, borderRadius:25,
+            border:'1.5px solid rgba(var(--fg-rgb),0.12)',
+            background:'rgba(var(--fg-rgb),0.03)',
+            color:'var(--text)',
+            fontSize:24, fontWeight:300, cursor:'pointer', fontFamily:'inherit',
             display:'flex', alignItems:'center', justifyContent:'center',
+            transition:'background 0.15s',
           }}>+</button>
         </div>
       </div>
 
-      {/* Bottom */}
-      <div style={{ padding:'0 20px', paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))', display:'flex', flexDirection:'column', gap:8, flexShrink:0 }}>
-        {/* Summary when all done */}
+      {/* ── Bottom ── */}
+      <div style={{
+        padding:'0 20px',
+        paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))',
+        display:'flex', flexDirection:'column', gap:10, flexShrink:0,
+      }}>
+        {/* Summary when all rated */}
         {allRated && (
-          <div style={{ background:'transparent', border:'1px solid var(--line)',
+          <div style={{
+            background:'rgba(var(--fg-rgb),0.04)',
+            border:'1px solid rgba(var(--fg-rgb),0.08)',
             borderRadius:16, padding:'14px 18px',
-            display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+          }}>
             <div>
-              <div style={{ fontSize:11, color:'var(--text-faint)', marginBottom:4 }}>Индекс дня</div>
-              <div style={{ fontSize:22, fontWeight:700, color:'var(--text)' }}>
-                {avg.toFixed(1)}<span style={{ fontSize:13, color:'var(--text-sub)' }}>/10</span>
+              <div style={{ fontSize:11, color:'var(--text-faint)', marginBottom:3 }}>Индекс дня</div>
+              <div style={{
+                fontFamily:'var(--serif)', fontSize:32, fontWeight:400, color:'var(--text)', lineHeight:1,
+              }}>
+                {avg.toFixed(1)}
+                <span style={{ fontFamily:'inherit', fontSize:14, color:'var(--text-sub)' }}> /10</span>
               </div>
             </div>
-            <SummaryDonut avg={avg}/>
+            <div style={{ textAlign:'right' }}>
+              <div style={{ fontSize:11, color:'var(--text-faint)', marginBottom:3 }}>Оценено</div>
+              <div style={{ fontSize:20, fontWeight:700, color:'var(--text)' }}>
+                {ratedCount}<span style={{ fontSize:13, color:'var(--text-sub)', fontWeight:400 }}>/{needs.length}</span>
+              </div>
+            </div>
           </div>
         )}
 
         {allRated && (
-          <button onClick={isBackfill ? (onDone ?? goBack) : goBack} style={{
-            width:'100%', padding:'14px', borderRadius:16, border:'1px solid color-mix(in srgb, var(--accent-green) 25%, transparent)',
-            background:'color-mix(in srgb, var(--accent-green) 12%, transparent)', color:'var(--accent-green)',
-            fontSize:15, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
-          }}>
-            Готово — сохранить всё ✓
+          <button onClick={isBackfill ? (onDone ?? goBack) : goBack} className="btn-primary">
+            ✓ Готово — сохранить
           </button>
         )}
 
-        {/* Nav */}
+        {/* Navigation */}
         <div style={{ display:'flex', gap:10 }}>
-          <button onClick={() => idx>0 && setIdx(idx-1)} style={{
-            flex:1, padding:'13px', borderRadius:14, border:'none', fontFamily:'inherit',
-            background:idx===0?'transparent':'transparent',
-            color:idx===0?'var(--text-faint)':'var(--text-sub)',
-            fontSize:14, cursor:idx===0?'default':'pointer',
-          }}>← Назад</button>
-          {idx < needs.length - 1 && (
-            <button onClick={() => setIdx(idx+1)} style={{
-              flex:2, padding:'13px', borderRadius:14, border:'none', fontFamily:'inherit',
-              background:'var(--accent)',
-              color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer',
-            }}>
+          <button
+            onClick={() => idx > 0 && setIdx(idx-1)}
+            disabled={idx === 0}
+            style={{
+              flex:1, padding:'13px', borderRadius:14, border:'none', fontFamily:'inherit',
+              background:'transparent',
+              color: idx===0 ? 'var(--text-faint)' : 'var(--text-sub)',
+              fontSize:14, cursor: idx===0 ? 'default' : 'pointer',
+            }}
+          >← Назад</button>
+
+          {idx < needs.length - 1 ? (
+            <button onClick={() => setIdx(idx+1)} className="btn-primary" style={{ flex:2 }}>
               Далее →
             </button>
-          )}
+          ) : !allRated ? (
+            <button onClick={() => {
+              const first = needs.findIndex(n => !(effectiveRatings[n.id] ?? 0));
+              if (first >= 0) setIdx(first);
+            }} style={{
+              flex:2, padding:'13px', borderRadius:14, border:'1px solid rgba(var(--fg-rgb),0.12)',
+              background:'transparent', fontFamily:'inherit',
+              color:'var(--text-sub)', fontSize:14, cursor:'pointer',
+            }}>
+              К незаполненным ↩
+            </button>
+          ) : null}
         </div>
 
         {/* Autosave status */}
@@ -383,7 +413,7 @@ export function TrackerOverlay({
         )}
       </div>
 
-      {/* Detail sheet */}
+      {/* ── Detail sheet ── */}
       {detailNeed && (
         <NeedTodaySheet
           need={detailNeed}
