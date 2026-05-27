@@ -42,7 +42,7 @@ interface Props {
   onOpenTracker: () => void;
   onOpenSchemas: () => void;
   onOpenChildhoodWheel: () => void;
-  onDismissPlan: (id: string) => void;
+  onDismissPlan: (id: number) => void;
   onHistoryRefreshed: (h: DayHistory[]) => void;
 }
 

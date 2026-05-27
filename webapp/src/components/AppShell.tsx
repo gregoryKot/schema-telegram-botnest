@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } fro
 import { useLocation, useNavigate, useParams, NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api';
-import { COLORS } from '../types';
 import type { Need, DayHistory } from '../types';
 import { applyTheme, getTheme } from '../utils/theme';
 import { todayStr } from '../utils/format';
@@ -16,7 +15,6 @@ import { FloatingPill } from './FloatingPill';
 // — always-needed small helpers (no heavy data deps) —
 import { NoteSheet } from './NoteSheet';
 import { Celebration } from './Celebration';
-import { CheckInSheet } from './CheckInSheet';
 import { TaskCreateSheet } from './TaskCreateSheet';
 
 // — lazy: sections (each can pull in schemaTherapyData / needData on demand) —
@@ -28,7 +26,6 @@ const HelpSection    = lazy(() => import('../sections/HelpSection').then(m => ({
 
 // — lazy: heavy overlays —
 const TrackerOverlay       = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
-const HistoryView          = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
 const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ default: m.DiariesOverlay })));
 const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
 const SettingsSheet        = lazy(() => import('./SettingsSheet').then(m => ({ default: m.SettingsSheet })));
@@ -81,13 +78,6 @@ const YESTERDAY_DATE = (() => {
   const prev = new Date(y, m - 1, d - 1);
   return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
 })();
-
-function formatHeaderDate(): string {
-  const now = new Date();
-  const dow = now.toLocaleDateString('ru-RU', { weekday: 'short' });
-  const date = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-  return `${dow}, ${date}`;
-}
 
 function fillHistoryGaps(h: DayHistory[]): DayHistory[] {
   if (h.length === 0) return h;

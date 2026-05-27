@@ -245,7 +245,7 @@ type Filter = 'all' | DiaryType;
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function DiarySection({ onClose }: { onClose?: () => void } = {}) {
+export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {}) {
   const [schemaEntries,    setSchemaEntries]    = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries,      setModeEntries]      = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);

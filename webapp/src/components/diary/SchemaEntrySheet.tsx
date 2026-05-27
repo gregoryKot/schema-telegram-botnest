@@ -52,7 +52,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   const [schemaOrigin, setSchemaOrigin] = useState(draft?.schemaOrigin ?? '');
   const [healthyView, setHealthyView] = useState(draft?.healthyView ?? '');
   const [realProblems, setRealProblems] = useState(draft?.realProblems ?? '');
-  const [excessiveReactions, setExcessiveReactions] = useState(draft?.excessiveReactions ?? '');
+  const [excessiveReactions] = useState(draft?.excessiveReactions ?? '');
   const [healthyBehavior, setHealthyBehavior] = useState(draft?.healthyBehavior ?? '');
   const [saving, setSaving] = useState(false);
   const [showAllSchemas, setShowAllSchemas] = useState(false);
