@@ -210,17 +210,22 @@ export function LoginPage() {
             <div ref={telegramRef} />
           </div>
 
-          {/* Switch Telegram account */}
+          {/* Switch Telegram account — widget uses the active browser TG session */}
           <div style={{ textAlign: 'center', marginTop: 8 }}>
-            <a
-              href="https://oauth.telegram.org/logout"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setTimeout(() => window.location.reload(), 800)}
-              style={{ fontSize: 12, color: 'var(--text-faint)', textDecoration: 'none' }}
+            <span
+              title="Виджет автоматически использует текущую сессию Telegram в браузере. Чтобы войти с другого аккаунта — открой эту страницу в приватном окне."
+              style={{ fontSize: 12, color: 'var(--text-faint)', cursor: 'default' }}
             >
-              Не ты? Войти с другого аккаунта →
+              Не ты?{' '}
+            </span>
+            <a
+              href={window.location.href}
+              onClick={e => { e.preventDefault(); window.open(window.location.href, '_blank', 'noopener'); }}
+              style={{ fontSize: 12, color: 'var(--text-faint)' }}
+            >
+              Открыть в новой вкладке
             </a>
+            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}> или приватном окне</span>
           </div>
 
           {error && (
