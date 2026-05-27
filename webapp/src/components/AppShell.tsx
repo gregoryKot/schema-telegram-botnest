@@ -221,6 +221,11 @@ export function AppShell() {
       api.init(tzOffset).then(() => sessionStorage.setItem('init_done', '1')).catch(() => {});
     }
     api.recordActivity().catch(() => {});
+    // Mirror disclaimer acceptance to server so the Telegram mini-app can skip
+    // its consent screen for users who are already active on the website.
+    api.getDisclaimer().then(d => {
+      if (!d.accepted) api.acceptDisclaimer().catch(() => {});
+    }).catch(() => {});
     const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
     Promise.all(NEED_IDS.map(id => api.getPractices(id)))
       .then(r => setHelpPracticeCount(r.reduce((s, a) => s + a.length, 0))).catch(() => setHelpPracticeCount(0));
