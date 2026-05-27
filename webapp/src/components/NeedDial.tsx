@@ -6,7 +6,6 @@
 
 import React, { useCallback, useRef } from 'react';
 import type { Need } from '../types';
-import { NEED_DATA } from '../needData';
 
 interface Props {
   need: Need;
