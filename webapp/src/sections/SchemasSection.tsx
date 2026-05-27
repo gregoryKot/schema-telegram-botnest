@@ -106,12 +106,15 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 36 }}>
         <div>
-          <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 6 }}>
-            Паттерны
+          <div className="eyebrow" style={{ marginBottom: 8 }}>
+            <span style={{ color: 'var(--accent)' }}>● </span>Схема-терапия
+          </div>
+          <h1 className="hub-title" style={{ marginBottom: 8 }}>
+            Мои<br /><span className="it">паттерны</span>
           </h1>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>Схемы, режимы, потребности</div>
+          <p className="hub-sub" style={{ margin: 0 }}>Схемы, режимы, потребности</p>
         </div>
-        <button onClick={() => onOpenSchema()} className="btn btn-secondary">
+        <button onClick={() => onOpenSchema()} className="btn btn-secondary" style={{ marginTop: 14 }}>
           📖 <span>Библиотека</span>
         </button>
       </div>

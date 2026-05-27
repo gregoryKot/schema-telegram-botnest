@@ -474,18 +474,22 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     {aliasError && <span style={{ fontSize: 12, color: 'var(--c-rose)' }}>{aliasError}</span>}
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-                    <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, margin: 0 }}>
+                  <div style={{ marginBottom: 12 }}>
+                    <div className="eyebrow" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ color: 'var(--accent)' }}>●</span>
+                      <span>Клиент</span>
+                      {selectedClient.lastActiveDate === todayStr() ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--c-moss)', fontWeight: 400 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
+                          активна сегодня
+                        </span>
+                      ) : !selectedClient.name ? (
+                        <span className="chip chip-line" style={{ fontSize: 11 }}>оффлайн</span>
+                      ) : null}
+                    </div>
+                    <h1 className="hub-title" style={{ marginBottom: 0 }}>
                       {selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`}
                     </h1>
-                    {selectedClient.lastActiveDate === todayStr() ? (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--c-moss)', whiteSpace: 'nowrap' }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
-                        активна сегодня
-                      </span>
-                    ) : !selectedClient.name ? (
-                      <span className="chip chip-line" style={{ fontSize: 11 }}>оффлайн</span>
-                    ) : null}
                     <button
                       onClick={() => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); }}
                       style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer' }}
