@@ -72,7 +72,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
         <div className="aside-card" style={{ borderColor: domainColor + '40', background: domainColor + '08', position: 'sticky', top: 40 }}>
           <div className="aside-card-eyebrow" style={{ color: domainColor }}>Домен</div>
           <h3 style={{ fontSize: 18 }}>{domainEntry.domain}</h3>
-          <p className="body">{domainEntry.desc ?? 'Группа схем, связанных общей темой.'}</p>
+          <p className="body">{'Группа схем, связанных общей темой.'}</p>
           <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <button
               onClick={toggleSchema}
