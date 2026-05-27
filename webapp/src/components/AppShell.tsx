@@ -147,9 +147,9 @@ export function AppShell() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [childhoodRatings, setChildhoodRatings] = useState<Record<string, number>>({});
   const [pendingPlans, setPendingPlans] = useState<PracticePlan[]>([]);
-  const [helpPracticeCount, setHelpPracticeCount] = useState<number | null>(null);
-  const [helpPlanCount, setHelpPlanCount] = useState<number | null>(null);
-  const [helpTasks, setHelpTasks] = useState<UserTask[] | null>(null);
+  const [_helpPracticeCount, setHelpPracticeCount] = useState<number | null>(null);
+  const [_helpPlanCount, setHelpPlanCount] = useState<number | null>(null);
+  const [_helpTasks, setHelpTasks] = useState<UserTask[] | null>(null);
   const [helpTasksKey, setHelpTasksKey] = useState(0);
   const [diaryActiveSchemaIds, setDiaryActiveSchemaIds] = useState<string[] | undefined>(undefined);
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(null);

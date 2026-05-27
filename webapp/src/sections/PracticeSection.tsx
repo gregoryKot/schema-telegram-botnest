@@ -125,7 +125,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   const [schemaInitialId, setSchemaInitialId] = useState<string | undefined>(undefined);
   const [stats,          setStats]          = useState<Partial<Record<ExId, ExStats>>>({});
   const [showFlashcard,  setShowFlashcard]  = useState(false);
-  const [introSchemaId,  setIntroSchemaId]  = useState<string | null>(null);
+  const [_introSchemaId, _setIntroSchemaId] = useState<string | null>(null);
   const [introModeId,    setIntroModeId]    = useState<string | null>(null);
   const [activeTaskId,   setActiveTaskId]   = useState<number | null>(null);
   const [showTaskCreate, setShowTaskCreate] = useState(false);
