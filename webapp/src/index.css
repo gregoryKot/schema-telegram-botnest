@@ -332,8 +332,8 @@ a { color: inherit; text-decoration: none; }
 /* ─── Buttons ─────────────────────────────────────────────────────────────── */
 /* Full-width legacy buttons (used in sheets, forms) */
 .btn-primary {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--text);
+  color: var(--bg);
   border: none;
   border-radius: var(--r-md);
   padding: 12px 22px;
@@ -343,7 +343,7 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
   transition: background .12s, opacity .12s;
 }
-.btn-primary:hover  { background: var(--accent-hover); }
+.btn-primary:hover  { background: var(--accent); color: var(--on-accent); }
 .btn-primary:active { opacity: 0.85; }
 .btn-primary:disabled { opacity: 0.38; cursor: default; }
 
