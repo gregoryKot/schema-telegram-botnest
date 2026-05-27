@@ -383,13 +383,17 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
   );
 
   return (
-    <div className="page">
-      <div className="page-inner">
+    <div className="page-inner">
 
         {/* ── Hero ── */}
         <div className="diary-hero">
           <div>
-            <h1 className="hub-title" style={{ marginBottom: 10 }}>Дневник</h1>
+            <div className="eyebrow" style={{ marginBottom: 14 }}>
+              <span style={{ color: 'var(--accent)' }}>● </span>Дневник
+            </div>
+            <h1 className="hub-title" style={{ marginBottom: 10 }}>
+              Дневник<br /><span className="it">наблюдений</span>
+            </h1>
             <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>
               {totalCount > 0
                 ? `${totalCount} ${totalCount === 1 ? 'запись' : totalCount < 5 ? 'записи' : 'записей'} · ведётся непрерывно`
@@ -527,7 +531,6 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
           );
         })}
 
-      </div>
     </div>
   );
 }

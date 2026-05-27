@@ -22,7 +22,7 @@ const TodaySection   = lazy(() => import('../sections/TodaySection').then(m => (
 const DiarySection   = lazy(() => import('../sections/DiarySection').then(m => ({ default: m.DiarySection })));
 const SchemasSection = lazy(() => import('../sections/SchemasSection').then(m => ({ default: m.SchemasSection })));
 const ProfileSection = lazy(() => import('../sections/ProfileSection').then(m => ({ default: m.ProfileSection })));
-const HelpSection    = lazy(() => import('../sections/HelpSection').then(m => ({ default: m.HelpSection })));
+const PracticeSection = lazy(() => import('../sections/PracticeSection').then(m => ({ default: m.PracticeSection })));
 
 // — lazy: heavy overlays —
 const TrackerOverlay       = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
@@ -39,7 +39,6 @@ const SchemaEntrySheet     = lazy(() => import('./diary/SchemaEntrySheet').then(
 const ModeEntrySheet       = lazy(() => import('./diary/ModeEntrySheet').then(m => ({ default: m.ModeEntrySheet })));
 const GratitudeEntrySheet  = lazy(() => import('./diary/GratitudeEntrySheet').then(m => ({ default: m.GratitudeEntrySheet })));
 const PracticesOnboarding  = lazy(() => import('./PracticesOnboarding').then(m => ({ default: m.PracticesOnboarding })));
-const ExercisesSection     = lazy(() => import('../sections/ExercisesSection').then(m => ({ default: m.ExercisesSection })));
 
 const LazyLoader = () => <Loader minHeight="100dvh" />;
 
@@ -48,26 +47,27 @@ import type { PracticePlan, StreakData, UserTask, TherapyClientSummary } from '.
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
 
-type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'help' | 'exercises';
+type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
 type TrackerTab = 'today' | 'history';
 
 const NAV_ITEMS: { id: Section; label: string }[] = [
-  { id: 'today',     label: 'Сегодня' },
-  { id: 'diary',     label: 'Дневник' },
-  { id: 'schemas',   label: 'Схемы' },
-  { id: 'exercises', label: 'Практики' },
-  { id: 'help',      label: 'Помощь' },
+  { id: 'today',    label: 'Сегодня' },
+  { id: 'diary',    label: 'Дневник' },
+  { id: 'schemas',  label: 'Схемы' },
+  { id: 'practice', label: 'Практика' },
 ];
 // Note: 'profile' removed from nav — accessible via sidebar footer avatar block.
 // Mobile bottom-nav still includes it (см. ниже).
 
 const SECTION_LABELS: Record<Section, string> = {
-  today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', help: 'Помощь', exercises: 'Упражнения',
+  today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', practice: 'Практика',
 };
 
 function sectionFromPath(path: string): Section {
   const seg = path.split('/').filter(Boolean)[0] ?? 'today';
-  if (['today','diary','schemas','profile','help','exercises'].includes(seg)) return seg as Section;
+  if (['today','diary','schemas','profile','practice'].includes(seg)) return seg as Section;
+  // Legacy redirects
+  if (seg === 'help' || seg === 'exercises') return 'practice';
   return 'today';
 }
 
@@ -197,7 +197,7 @@ export function AppShell() {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmdOpen(true); }
       if (!therapistMode && e.metaKey) {
-        const map: Record<string, Section> = { '1': 'today', '2': 'diary', '3': 'schemas', '4': 'profile', '5': 'help' };
+        const map: Record<string, Section> = { '1': 'today', '2': 'diary', '3': 'schemas', '4': 'practice' };
         if (map[e.key]) { e.preventDefault(); setSection(map[e.key] as Section); }
       }
     }
@@ -504,26 +504,18 @@ export function AppShell() {
                 displayName={displayName}
               />
             )}
-            {section === 'help' && (
-              <HelpSection
-                onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
-                onOpenPractices={() => setShowPractices(true)}
-                onOpenPlans={() => setShowPlans(true)}
-                onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-                onOpenDiaries={() => setShowDiaries(true)}
-                onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setSchemaHighlight(opts?.highlight); setShowSchemaInfo(true); }}
-                practiceCount={helpPracticeCount}
-                planCount={helpPlanCount}
-                initialTasks={helpTasks}
-                refreshKey={helpTasksKey}
-                onTasksChanged={() => { api.getTasks().then(setHelpTasks).catch(() => {}); setHelpTasksKey(k => k + 1); }}
-                userRole={userRole}
-                onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
-              />
-            )}
-            {section === 'exercises' && (
-              <ErrorBoundary section="Упражнения" key="exercises-boundary">
-                <ExercisesSection />
+            {section === 'practice' && (
+              <ErrorBoundary section="Практика" key="practice-boundary">
+                <PracticeSection
+                  onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
+                  onOpenPractices={() => setShowPractices(true)}
+                  onOpenPlans={() => setShowPlans(true)}
+                  onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
+                  onOpenDiaries={() => setShowDiaries(true)}
+                  onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setShowSchemaInfo(true); }}
+                  refreshKey={helpTasksKey}
+                  onTasksChanged={() => { api.getTasks().then(setHelpTasks).catch(() => {}); setHelpTasksKey(k => k + 1); }}
+                />
               </ErrorBoundary>
             )}
           </div>
@@ -680,7 +672,7 @@ export function AppShell() {
 
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
       <nav className="mobile-nav">
-        {NAV_ITEMS.filter(item => item.id !== 'exercises').map(item => (
+        {NAV_ITEMS.map(item => (
           <NavLink
             key={item.id}
             to={'/' + item.id}
