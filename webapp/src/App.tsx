@@ -81,12 +81,24 @@ const router = createBrowserRouter([
 
 function AuthError() {
   return (
-    <div className="loader-center" style={{ flexDirection: 'column', gap: 12 }}>
-      <div style={{ fontSize: 48 }}>⚠️</div>
-      <p style={{ color: 'var(--text-sub)' }}>
-        Ошибка входа.{' '}
-        <a href="/login" style={{ color: 'var(--accent)' }}>Попробовать снова</a>
-      </p>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+      <div style={{ textAlign: 'center', maxWidth: 400 }}>
+        <div className="eyebrow" style={{ color: 'var(--c-rose)', marginBottom: 20 }}>Ошибка входа</div>
+        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 42, fontWeight: 400, lineHeight: 1.15, color: 'var(--text)', margin: '0 0 16px' }}>
+          Что-то<br /><span style={{ fontStyle: 'italic' }}>пошло не так</span>
+        </h1>
+        <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 36px' }}>
+          Авторизация не удалась. Попробуй снова или обратись к нам в Telegram.
+        </p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <a href="/login" style={{ display: 'inline-block', padding: '13px 28px', background: 'var(--accent)', color: '#fff', borderRadius: 12, fontSize: 15, fontWeight: 600, textDecoration: 'none' }}>
+            Попробовать снова
+          </a>
+          <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', padding: '13px 28px', background: 'rgba(var(--fg-rgb),0.06)', color: 'var(--text-sub)', borderRadius: 12, fontSize: 15, fontWeight: 500, textDecoration: 'none' }}>
+            Написать
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
