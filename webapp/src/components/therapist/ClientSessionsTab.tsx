@@ -67,7 +67,7 @@ export function ClientSessionsTab({ notes, newNoteText, newNoteDate, noteSaving,
           />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
             <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>⌘+Enter</span>
-            <button onClick={addNote} disabled={!newNoteText.trim() || noteSaving} style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+            <button onClick={addNote} disabled={!newNoteText.trim() || noteSaving} style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
               {noteSaving ? '...' : 'Сохранить'}
             </button>
           </div>

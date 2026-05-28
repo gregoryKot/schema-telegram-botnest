@@ -81,7 +81,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
             {exportCopied ? '✓ Скопировано' : 'Экспорт'}
           </button>
           {selectedClient.telegramId >= 0 && (
-            <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+            <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
               {ysqRequested ? '✓ Запрос отправлен' : 'Запросить повтор'}
             </button>
           )}
