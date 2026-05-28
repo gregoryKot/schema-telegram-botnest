@@ -1,20 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-const BOT_USERNAME = (import.meta.env.VITE_BOT_USERNAME as string | undefined) ?? 'SchemaLabBot';
-
-declare global {
-  interface Window {
-    onTelegramAuth?: (user: Record<string, string>) => void;
-  }
-}
 
 export function LoginPage() {
   const { isAuthenticated, setAccessToken } = useAuth();
   const navigate = useNavigate();
-  const telegramRef = useRef<HTMLDivElement>(null);
   const [telegramLoading, setTelegramLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isTelegramContext = !!(window as any).Telegram?.WebApp?.initData;
@@ -50,52 +42,14 @@ export function LoginPage() {
     }
   };
 
-  // Inject Telegram Login Widget script
-  useEffect(() => {
-    if (!BOT_USERNAME || !telegramRef.current) return;
-
-    window.onTelegramAuth = async (userData) => {
-      setTelegramLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`${API_BASE}/api/auth/telegram/widget`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
-          body: JSON.stringify(userData),
-          credentials: 'include',
-        });
-        if (!res.ok) {
-          const body = await res.text().catch(() => '');
-          setError(`Ошибка ${res.status}: ${body.slice(0, 200) || 'нет деталей'}`);
-          return;
-        }
-        const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
-        setAccessToken(accessToken, expiresIn);
-        navigate('/today', { replace: true });
-      } catch (e) {
-        setError(`Не удалось войти: ${String(e).slice(0, 150)}`);
-      } finally {
-        setTelegramLoading(false);
-      }
-    };
-
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.async = true;
-    script.setAttribute('data-telegram-login', BOT_USERNAME);
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    script.setAttribute('data-request-access', 'write');
-    telegramRef.current.appendChild(script);
-
-    return () => { delete window.onTelegramAuth; };
-  }, [navigate, setAccessToken]);
-
   const handleGoogle = () => {
     window.location.href = `${API_BASE}/api/auth/google`;
   };
   const handleVk = () => {
     window.location.href = `${API_BASE}/api/auth/vk`;
+  };
+  const handleTelegram = () => {
+    window.location.href = `${API_BASE}/api/auth/telegram-oidc`;
   };
 
   // Inside Telegram but auto-auth failed — show minimal retry UI
@@ -200,33 +154,19 @@ export function LoginPage() {
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
           </div>
 
-          {/* Telegram widget */}
-          <div style={{
-            display: 'flex', justifyContent: 'center',
-            opacity: telegramLoading ? 0.5 : 1,
-            transition: 'opacity 0.2s',
-            minHeight: 56,
-          }}>
-            <div ref={telegramRef} />
-          </div>
-
-          {/* Switch Telegram account — widget uses the active browser TG session */}
-          <div style={{ textAlign: 'center', marginTop: 8 }}>
-            <span
-              title="Виджет автоматически использует текущую сессию Telegram в браузере. Чтобы войти с другого аккаунта — открой эту страницу в приватном окне."
-              style={{ fontSize: 12, color: 'var(--text-faint)', cursor: 'default' }}
-            >
-              Не ты?{' '}
-            </span>
-            <a
-              href={window.location.href}
-              onClick={e => { e.preventDefault(); window.open(window.location.href, '_blank', 'noopener'); }}
-              style={{ fontSize: 12, color: 'var(--text-faint)' }}
-            >
-              Открыть в новой вкладке
-            </a>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}> или приватном окне</span>
-          </div>
+          {/* Telegram OIDC */}
+          <button
+            className="btn-outline"
+            onClick={handleTelegram}
+            disabled={telegramLoading}
+            style={{ opacity: telegramLoading ? 0.6 : 1 }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z" fill="#2AABEE"/>
+              <path d="M5.491 11.74l11.57-4.461c.537-.194 1.006.131.832.943l-1.97 9.281c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.232 14.6 4.27 13.7c-.658-.204-.67-.658.136-.976z" fill="white"/>
+            </svg>
+            Войти через Telegram
+          </button>
 
           {error && (
             <p style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>

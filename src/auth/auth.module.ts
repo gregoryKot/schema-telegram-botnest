@@ -7,6 +7,7 @@ import { SecurityLogService } from './security-log.service';
 import { AuthProviderRegistry } from './providers/registry';
 import { GoogleProvider } from './providers/google.provider';
 import { TelegramProvider } from './providers/telegram.provider';
+import { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import { VkProvider } from './providers/vk.provider';
 import { PrismaModule } from '../prisma/prisma.module';
 
@@ -20,6 +21,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     SecurityLogService,
     GoogleProvider,
     TelegramProvider,
+    TelegramOidcProvider,
     VkProvider,
     AuthProviderRegistry,
   ],
