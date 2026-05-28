@@ -8,6 +8,8 @@ import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
 import { AppShell } from './components/AppShell';
 import { LandingPage } from './pages/LandingPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { OfferPage } from './pages/OfferPage';
 
 // Apply saved theme before first render
 const savedTheme = localStorage.getItem('app_theme');
@@ -45,6 +47,8 @@ const router = createBrowserRouter([
     children: [
       // Public
       { path: '/',               element: <LandingPage /> },
+      { path: '/privacy',        element: <PrivacyPage /> },
+      { path: '/offer',          element: <OfferPage /> },
       { path: '/login',          element: <LoginPage /> },
       { path: '/auth/callback',  element: <AuthCallback /> },
       { path: '/auth/error',     element: <AuthError /> },

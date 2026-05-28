@@ -22,11 +22,12 @@ function BookingForm() {
   const [name, setName]       = useState('');
   const [contact, setContact] = useState('');
   const [message, setMessage] = useState('');
+  const [consent, setConsent] = useState(false);
   const [status, setStatus]   = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !contact.trim()) return;
+    if (!name.trim() || !contact.trim() || !consent) return;
     setStatus('loading');
     try {
       await api.submitBooking({ name: name.trim(), contact: contact.trim(), message: message.trim() || undefined });
@@ -69,8 +70,23 @@ function BookingForm() {
         <label style={{ display: 'block', fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
         <textarea style={{ ...field, resize: 'vertical', minHeight: 96 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={e => setMessage(e.target.value)} maxLength={500} />
       </div>
-      {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Не вышло — напиши напрямую: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
-      <button type="submit" disabled={status === 'loading' || !name.trim() || !contact.trim()} style={{
+      {/* Consent */}
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+        <input
+          type="checkbox"
+          checked={consent}
+          onChange={e => setConsent(e.target.checked)}
+          style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }}
+        />
+        <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
+          Я ознакомился(ась) с{' '}
+          <a href="/privacy" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Политикой конфиденциальности</a>
+          {' '}и даю согласие на обработку персональных данных
+        </span>
+      </label>
+
+      {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Не вышло — напишите напрямую: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
+      <button type="submit" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent} style={{
         padding: '16px 32px', background: 'var(--text)', color: 'var(--bg)',
         border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700,
         cursor: 'pointer', letterSpacing: '.02em',
@@ -567,9 +583,11 @@ export function LandingPage() {
       <footer style={{ borderTop: '1px solid var(--line)', padding: '32px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>© {new Date().getFullYear()} Григорий Котляревский</span>
-          <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-            <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>Telegram</a>
-            <a href="/login" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>Войти в приложение</a>
+          <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+            <a href="/privacy" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Политика конфиденциальности</a>
+            <a href="/offer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
+            <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Telegram</a>
+            <a href="/login" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти в приложение</a>
           </div>
         </div>
       </footer>
