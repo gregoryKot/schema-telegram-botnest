@@ -584,8 +584,8 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                 >
                   <div style={{
                     width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                    border: `2px solid ${selected ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.2)'}`,
-                    background: selected ? 'var(--accent)' : 'transparent',
+                    border: `2px solid ${selected ? 'var(--text)' : 'rgba(var(--fg-rgb),0.2)'}`,
+                    background: selected ? 'var(--text)' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 0.12s',
                   }}>

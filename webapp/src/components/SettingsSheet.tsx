@@ -165,7 +165,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 const active = h === localHour;
                 return (
                   <div key={h} onClick={async () => { await patch({ notifyLocalHour: h }); setView('main'); }}
-                    style={{ padding: '12px 0', borderRadius: 12, textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.06)', color: active ? '#fff' : 'rgba(var(--fg-rgb),0.6)', fontSize: 15, fontWeight: active ? 600 : 400, cursor: 'pointer' }}
+                    style={{ padding: '12px 0', borderRadius: 12, textAlign: 'center', background: active ? 'var(--text)' : 'rgba(var(--fg-rgb),0.06)', color: active ? 'var(--bg)' : 'rgba(var(--fg-rgb),0.6)', fontSize: 15, fontWeight: active ? 600 : 400, cursor: 'pointer' }}
                   >{pad(h)}:00</div>
                 );
               })}
@@ -212,7 +212,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       onClick={() => setTheme(toggleTheme())}
                       style={{
                         width: 46, height: 26, borderRadius: 13,
-                        background: theme === 'light' ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 30%, transparent)',
+                        background: theme === 'light' ? 'var(--text)' : 'color-mix(in srgb, var(--fg-rgb) 30%, transparent)',
                         position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
                         flexShrink: 0,
                       }}
@@ -242,7 +242,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         onClick={onToggleTherapistMode}
                         style={{
                           width: 46, height: 26, borderRadius: 13,
-                          background: therapistMode ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 30%, transparent)',
+                          background: therapistMode ? 'var(--text)' : 'color-mix(in srgb, var(--fg-rgb) 30%, transparent)',
                           position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
                           flexShrink: 0,
                         }}
@@ -390,7 +390,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                                 setTherapyJoinCode('');
                               } catch { setTherapyJoinError('Неверный код'); }
                             }}
-                            style={{ background: 'var(--accent)', border: 'none', borderRadius: 10, padding: '9px 16px', color: 'var(--text)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                            style={{ background: 'var(--text)', border: 'none', borderRadius: 10, padding: '9px 16px', color: 'var(--bg)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                           >
                             Войти
                           </button>
@@ -446,7 +446,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                               setTherapistCodeLoading(false);
                             }
                           }}
-                          style={{ background: 'var(--accent)', border: 'none', borderRadius: 10, padding: '9px 16px', color: 'var(--text)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                          style={{ background: 'var(--text)', border: 'none', borderRadius: 10, padding: '9px 16px', color: 'var(--bg)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                         >
                           Войти
                         </button>
@@ -524,7 +524,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 4 }}>
                         Приглашай друга — видите индексы дня друг друга
                       </div>
-                      <button onClick={handleCreateInvite} disabled={pairLoading} style={{ padding: 14, border: 'none', borderRadius: 12, background: 'var(--accent)', color: 'var(--text)', fontSize: 14, fontWeight: 600, cursor: pairLoading ? 'default' : 'pointer' }}>
+                      <button onClick={handleCreateInvite} disabled={pairLoading} style={{ padding: 14, border: 'none', borderRadius: 12, background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 600, cursor: pairLoading ? 'default' : 'pointer' }}>
                         {pairLoading ? '...' : pairData?.pendingCode ? 'Создать новую ссылку' : 'Создать приглашение'}
                       </button>
                       {pairInviteUrl && (
@@ -555,7 +555,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         </div>
                       )}
                       <button onClick={handleJoin} disabled={!joinCode.trim() || pairLoading}
-                        style={{ width: '100%', padding: 14, border: 'none', borderRadius: 12, background: joinCode.trim() ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 30%, transparent)', color: 'var(--text)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                        style={{ width: '100%', padding: 14, border: 'none', borderRadius: 12, background: joinCode.trim() ? 'var(--text)' : 'rgba(var(--fg-rgb),0.2)', color: joinCode.trim() ? 'var(--bg)' : 'var(--text-faint)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                         Присоединиться
                       </button>
                     </div>

@@ -224,13 +224,13 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                   <div>
                     <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Отправь клиенту ссылку — он перейдёт и автоматически подключится.</div>
                     {!inviteUrl ? (
-                      <button onClick={createInvite} disabled={inviteLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                      <button onClick={createInvite} disabled={inviteLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                         {inviteLoading ? 'Создаю...' : 'Создать ссылку'}
                       </button>
                     ) : (
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         <input ref={inviteInputRef} readOnly value={inviteUrl} style={{ flex: 1, minWidth: 200, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 12, color: 'var(--text-sub)', fontFamily: 'monospace' }} />
-                        <button onClick={copyInvite} style={{ padding: '8px 14px', borderRadius: 6, border: 'none', background: inviteCopied ? 'var(--c-moss)' : 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                        <button onClick={copyInvite} style={{ padding: '8px 14px', borderRadius: 6, border: 'none', background: inviteCopied ? 'var(--c-moss)' : 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                           {inviteCopied ? '✓ Скопировано' : 'Скопировать'}
                         </button>
                         <button onClick={shareInvite} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>Поделиться</button>
@@ -244,7 +244,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Числовой Telegram ID клиента (узнать у клиента или через @userinfobot)</div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <input type="number" value={addInput} onChange={e => setAddInput(e.target.value)} placeholder="123456789" style={{ width: 180, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }} />
-                      <button onClick={addByTelegramId} disabled={addLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                      <button onClick={addByTelegramId} disabled={addLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                         {addLoading ? '...' : 'Добавить'}
                       </button>
                     </div>
@@ -256,7 +256,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Для клиентов без Telegram — концептуализация и заметки без привязки к боту</div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <input value={addInput} onChange={e => setAddInput(e.target.value)} placeholder="Имя клиента" style={{ width: 240, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }} />
-                      <button onClick={addVirtualClient} disabled={addLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                      <button onClick={addVirtualClient} disabled={addLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                         {addLoading ? '...' : 'Создать'}
                       </button>
                     </div>
@@ -702,7 +702,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                         <div style={{ padding: '32px 0', color: 'var(--text-faint)', fontSize: 14 }}>
                           Заполни концептуализацию, чтобы увидеть схемы и режимы клиента
                         </div>
-                        <button onClick={() => setClientTab('concept')} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                        <button onClick={() => setClientTab('concept')} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                           Открыть концептуализацию
                         </button>
                       </div>
