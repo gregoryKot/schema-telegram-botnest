@@ -96,7 +96,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
   const canSave = type !== 'custom' || text.trim().length > 0;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr auto', overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
       {/* ── Topbar ── */}
       <div className="ex-topbar" style={{ justifyContent: 'space-between', flexShrink: 0 }}>
@@ -186,23 +186,21 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
             {/* Streak picker */}
             {selected.hasStreak && (
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
-                  Цель в днях
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div className="eyebrow" style={{ marginBottom: 10 }}>Цель в днях</div>
+                <div style={{ display: 'flex', gap: 6 }}>
                   {STREAK_OPTIONS.map(d => (
                     <button
                       key={d}
                       onClick={() => setTargetDays(d)}
                       style={{
-                        flex: 1, padding: '11px 0', borderRadius: 10, cursor: 'pointer',
-                        fontWeight: 600, fontSize: 16, fontFamily: 'inherit',
-                        background: targetDays === d ? 'var(--text)' : 'rgba(var(--fg-rgb),0.05)',
+                        padding: '5px 14px', borderRadius: 4, cursor: 'pointer',
+                        fontWeight: 500, fontSize: 13, fontFamily: 'inherit',
+                        background: targetDays === d ? 'var(--text)' : 'transparent',
                         color: targetDays === d ? 'var(--bg)' : 'var(--text-sub)',
-                        border: 'none',
+                        border: `1px solid ${targetDays === d ? 'var(--text)' : 'rgba(var(--fg-rgb),0.15)'}`,
                         transition: 'all 0.15s',
                       }}
-                    >{d}</button>
+                    >{d} дн</button>
                   ))}
                 </div>
               </div>
@@ -310,25 +308,28 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
             )}
           </div>
 
-        </div>
-      </div>
+          {/* Submit */}
+          <div style={{ paddingTop: 8, paddingBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {error
+              ? <span style={{ fontSize: 12, color: 'var(--c-rose)' }}>{error}</span>
+              : <span />
+            }
+            <button
+              onClick={handleCreate}
+              disabled={!canSave || saving}
+              style={{
+                padding: '9px 20px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: canSave && !saving ? 'var(--text)' : 'rgba(var(--fg-rgb),0.1)',
+                color: canSave && !saving ? 'var(--bg)' : 'var(--text-faint)',
+                fontSize: 13, fontWeight: 500, fontFamily: 'inherit',
+                transition: 'all 0.15s',
+              }}
+            >
+              {saving ? 'Назначаю…' : 'Назначить задание'}
+            </button>
+          </div>
 
-      {/* ── Sticky footer ── */}
-      <div style={{
-        padding: '16px 20px',
-        paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
-        borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
-        background: 'var(--bg)',
-        flexShrink: 0,
-      }}>
-        {error && <div style={{ fontSize: 12, color: 'var(--c-rose)', marginBottom: 8 }}>{error}</div>}
-        <button
-          className="btn-primary"
-          disabled={!canSave || saving}
-          onClick={handleCreate}
-        >
-          {saving ? 'Назначаю…' : `Назначить задание — ${selected.label}`}
-        </button>
+        </div>
       </div>
 
     </div>
