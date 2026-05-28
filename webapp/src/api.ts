@@ -294,5 +294,5 @@ export const api = {
   getClientSchemaNotes: (clientId: number) => get<any[]>(`/api/therapy/client/${clientId}/schema-notes`),
   getClientModeNotes:   (clientId: number) => get<any[]>(`/api/therapy/client/${clientId}/mode-notes`),
   getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
-  submitBooking:        (body: { name: string; contact: string; message?: string }) => post<{ ok: true }>('/api/booking', body),
+  submitBooking:        (body: { name: string; contact: string; message?: string }) => postJson<{ ok: true }>('/api/booking', body),
 };
