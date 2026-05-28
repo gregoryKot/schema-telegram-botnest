@@ -406,6 +406,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     }).catch(() => null);
   }
 
+  /** Отправить сообщение администратору (для уведомлений о заявках) */
+  async notifyAdmin(text: string): Promise<void> {
+    const adminId = process.env.ADMIN_ID;
+    if (!adminId || !this.bot) return;
+    await this.bot.telegram.sendMessage(adminId, text, { parse_mode: 'HTML' }).catch((err) => {
+      this.logger.error('notifyAdmin failed', err);
+    });
+  }
+
   async onModuleDestroy() {
     this.stopping = true;
     try {

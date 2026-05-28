@@ -20,7 +20,7 @@ export function LoginPage() {
   const isTelegramContext = !!(window as any).Telegram?.WebApp?.initData;
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/', { replace: true });
+    if (isAuthenticated) navigate('/today', { replace: true });
   }, [isAuthenticated, navigate]);
 
   const retryTelegramAuth = async () => {
@@ -42,7 +42,7 @@ export function LoginPage() {
       }
       const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
       setAccessToken(accessToken, expiresIn);
-      navigate('/', { replace: true });
+      navigate('/today', { replace: true });
     } catch (e) {
       setError(String(e));
     } finally {
@@ -71,7 +71,7 @@ export function LoginPage() {
         }
         const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
         setAccessToken(accessToken, expiresIn);
-        navigate('/', { replace: true });
+        navigate('/today', { replace: true });
       } catch (e) {
         setError(`Не удалось войти: ${String(e).slice(0, 150)}`);
       } finally {
