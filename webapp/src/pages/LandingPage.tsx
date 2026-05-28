@@ -106,10 +106,10 @@ const EDUCATION = [
 
 // ─── App feature items ────────────────────────────────────────────────────────
 const APP_FEATURES = [
-  { icon: '📓', title: 'Дневник состояний', text: 'Каждый день — короткая оценка восьми базовых потребностей. Появляется картина того, что происходит.' },
-  { icon: '🧩', title: 'Схемы и режимы', text: 'Узнайте, какие ранние убеждения управляют реакциями. Инструмент диагностики прямо в телефоне.' },
-  { icon: '🎯', title: 'Практики', text: 'Упражнения из схема-терапии и КПТ: переоценка убеждений, письма, безопасное место, флэшкарточки.' },
-  { icon: '📈', title: 'Динамика', text: 'История состояний за недели и месяцы. Видно, что меняется, а что стоит на месте.' },
+  { num: '01', title: 'Дневник состояний', text: 'Каждый день — короткая оценка восьми базовых потребностей. Появляется картина того, что происходит.' },
+  { num: '02', title: 'Схемы и режимы', text: 'Узнайте, какие ранние убеждения управляют реакциями. Инструмент диагностики прямо в телефоне.' },
+  { num: '03', title: 'Практики', text: 'Упражнения из схема-терапии и КПТ: переоценка убеждений, письма, безопасное место, флэшкарточки.' },
+  { num: '04', title: 'Динамика', text: 'История состояний за недели и месяцы. Видно, что меняется, а что стоит на месте.' },
 ];
 
 // ─── Main landing ─────────────────────────────────────────────────────────────
@@ -185,6 +185,16 @@ export function LandingPage() {
           padding: '28px 0', position: 'relative', zIndex: 1,
         }}>
           <span style={{ fontSize: 13, color: 'var(--text-faint)', fontWeight: 500 }}>schemalab.ru</span>
+          <a href="/login" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '8px 18px', background: 'var(--bg-elev)',
+            border: '1px solid var(--line)', borderRadius: 100,
+            fontSize: 13, fontWeight: 600, color: 'var(--text-sub)',
+            textDecoration: 'none', transition: 'border-color .15s, color .15s',
+          }}>
+            <span style={{ fontSize: 15 }}>🧠</span>
+            СхемаЛаб — приложение
+          </a>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '8px 18px', background: 'var(--accent-soft)',
@@ -461,9 +471,10 @@ export function LandingPage() {
                 borderRadius: 16, padding: '24px 20px',
                 color: i === 0 ? 'white' : 'var(--text)',
                 transition: 'transform .2s, box-shadow .2s',
+                display: 'flex', flexDirection: 'column', gap: 10,
               }} className="bento-card">
-                <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
-                <p style={{ fontSize: 14, fontWeight: 700, margin: '0 0 8px', color: i === 0 ? 'white' : 'var(--text)' }}>{f.title}</p>
+                <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.1em', opacity: i === 0 ? .7 : 1, color: i === 0 ? 'white' : 'var(--accent)' }}>{f.num}</span>
+                <p style={{ fontSize: 14, fontWeight: 700, margin: 0, color: i === 0 ? 'white' : 'var(--text)' }}>{f.title}</p>
                 <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: i === 0 ? 'rgba(255,255,255,.8)' : 'var(--text-sub)' }}>{f.text}</p>
               </div>
             ))}
