@@ -58,7 +58,7 @@ function BookingForm() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>Имя *</label>
-          <input style={field} placeholder="Как тебя зовут" value={name} onChange={e => setName(e.target.value)} required maxLength={100} />
+          <input style={field} placeholder="Ваше имя" value={name} onChange={e => setName(e.target.value)} required maxLength={100} />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>Telegram / телефон *</label>
@@ -67,7 +67,7 @@ function BookingForm() {
       </div>
       <div>
         <label style={{ display: 'block', fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
-        <textarea style={{ ...field, resize: 'vertical', minHeight: 96 }} placeholder="Пара слов о том, с чем хочешь разобраться" value={message} onChange={e => setMessage(e.target.value)} maxLength={500} />
+        <textarea style={{ ...field, resize: 'vertical', minHeight: 96 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={e => setMessage(e.target.value)} maxLength={500} />
       </div>
       {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Не вышло — напиши напрямую: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
       <button type="submit" disabled={status === 'loading' || !name.trim() || !contact.trim()} style={{
@@ -107,7 +107,7 @@ const EDUCATION = [
 // ─── App feature items ────────────────────────────────────────────────────────
 const APP_FEATURES = [
   { icon: '📓', title: 'Дневник состояний', text: 'Каждый день — короткая оценка восьми базовых потребностей. Появляется картина того, что происходит.' },
-  { icon: '🧩', title: 'Схемы и режимы', text: 'Узнай, какие ранние убеждения управляют твоими реакциями. Инструмент диагностики прямо в телефоне.' },
+  { icon: '🧩', title: 'Схемы и режимы', text: 'Узнайте, какие ранние убеждения управляют реакциями. Инструмент диагностики прямо в телефоне.' },
   { icon: '🎯', title: 'Практики', text: 'Упражнения из схема-терапии и КПТ: переоценка убеждений, письма, безопасное место, флэшкарточки.' },
   { icon: '📈', title: 'Динамика', text: 'История состояний за недели и месяцы. Видно, что меняется, а что стоит на месте.' },
 ];
@@ -391,7 +391,7 @@ export function LandingPage() {
               <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', color: 'var(--text-faint)' }}>04</span>
               <h3 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '12px 0 10px' }}>Долгосрочный результат</h3>
               <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>
-                Цель — изменить не симптом, а то, как ты воспринимаешь себя. Глубоко, но устойчиво.
+                Цель — изменить не симптом, а то, как человек воспринимает себя. Глубоко, но устойчиво.
               </p>
             </div>
           </div>
@@ -431,7 +431,7 @@ export function LandingPage() {
               Помоги себе сам.<br /><span style={{ fontStyle: 'italic' }}>Между сессиями.</span>
             </h2>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
-              СхемаЛаб — бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Веди дневник состояний, отслеживай потребности, делай упражнения. Всё сохраняется — ты видишь свою динамику.
+              СхемаЛаб — бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Ведите дневник состояний, отслеживайте потребности, делайте упражнения. Всё сохраняется — динамика всегда перед глазами.
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
               <a href="/login" style={{
@@ -498,7 +498,7 @@ export function LandingPage() {
               <p style={{ fontFamily: 'var(--serif)', fontSize: 52, fontWeight: 400, color: 'var(--text)', margin: '8px 0 0', letterSpacing: '-.02em', lineHeight: 1 }}>0 ₽</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {['15 минут онлайн', 'Рассказываешь о запросе', 'Я рассказываю о подходе', 'Никаких обязательств'].map(f => (
+              {['15 минут онлайн', 'Рассказываете о запросе', 'Я рассказываю о подходе', 'Никаких обязательств'].map(f => (
                 <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <span style={{ color: 'var(--accent)', fontSize: 16 }}>✓</span>
                   <span style={{ fontSize: 15, color: 'var(--text-sub)' }}>{f}</span>
@@ -546,7 +546,7 @@ export function LandingPage() {
             Записаться<br /><span style={{ fontStyle: 'italic' }}>на первую встречу</span>
           </h2>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>
-            Оставь имя и контакт — свяжусь в течение дня, договоримся о времени.
+            Оставьте имя и контакт — свяжусь в течение дня, договоримся о времени.
           </p>
           <BookingForm />
         </section>
