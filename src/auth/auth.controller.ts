@@ -311,6 +311,74 @@ export class AuthController {
     }
   }
 
+  // ─── Telegram OIDC (new flow, PKCE) ──────────────────────────────────────
+
+  @Get('telegram-oidc')
+  @UseGuards(OptionalJwtGuard)
+  telegramOidcRedirect(@Req() req: any, @Res() res: any): void {
+    const provider = this.providers.get('telegram-oidc') as any;
+    const state = Buffer.from(JSON.stringify({
+      nonce: randomBytes(16).toString('hex'),
+      linkUserId: (req as any).webUser?.userId?.toString() ?? null,
+    })).toString('base64url');
+    const { verifier, challenge } = provider.generatePkce();
+    res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+    res.cookie('tg_pkce_verifier', verifier, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+    res.redirect(provider.buildAuthUrl(state, challenge));
+  }
+
+  @Get('telegram-oidc/callback')
+  async telegramOidcCallback(
+    @Query('code') code: string,
+    @Query('state') state: string,
+    @Query('error') error: string,
+    @Req() req: any, @Res() res: any,
+  ): Promise<void> {
+    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+    try {
+      if (error) throw new UnauthorizedException(`Telegram OIDC auth denied: ${error}`);
+      if (!code || !state) throw new BadRequestException('Missing code or state');
+
+      const savedState = req.cookies?.['oauth_state'];
+      if (!savedState || savedState !== state) throw new UnauthorizedException('OAuth state mismatch');
+      res.clearCookie('oauth_state', { path: '/api/auth' });
+
+      const codeVerifier = req.cookies?.['tg_pkce_verifier'];
+      if (!codeVerifier) throw new UnauthorizedException('Missing PKCE verifier');
+      res.clearCookie('tg_pkce_verifier', { path: '/api/auth' });
+
+      const provider = this.providers.get('telegram-oidc') as any;
+      const identity = await provider.exchangeCodePkce(code, codeVerifier);
+
+      let linkUserId: bigint | null = null;
+      try {
+        const raw = JSON.parse(Buffer.from(state, 'base64url').toString()).linkUserId;
+        if (raw) linkUserId = BigInt(raw);
+      } catch { /* ignore */ }
+
+      const outcome = await this.signInOrLinkOrMerge('telegram-oidc', identity, {
+        linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
+      });
+
+      if (outcome.kind === 'merge') {
+        const params = new URLSearchParams({
+          token: outcome.mergeToken,
+          summary: JSON.stringify(outcome.summary),
+          provider: 'telegram-oidc',
+          name: outcome.otherDisplay ?? '',
+        });
+        res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
+        return;
+      }
+
+      res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+      res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
+    } catch (err) {
+      this.logger.error(`telegram-oidc callback error: ${(err as Error).message}`);
+      res.redirect(`${frontendBase}/auth/error?reason=telegram_oidc_failed`);
+    }
+  }
+
   // ─── Telegram Login Widget ────────────────────────────────────────────────
 
   @Post('telegram/widget')
