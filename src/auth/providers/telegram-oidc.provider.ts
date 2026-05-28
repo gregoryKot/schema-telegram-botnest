@@ -105,8 +105,9 @@ export class TelegramOidcProvider implements AuthProviderHandler {
       family_name?: string; username?: string;
     };
 
-    const displayName = user.name
-      ?? [user.given_name, user.family_name].filter(Boolean).join(' ')
+    const displayName =
+      user.name
+      || [user.given_name, user.family_name].filter(Boolean).join(' ')
       || user.username
       || `tg_${user.sub}`;
 
