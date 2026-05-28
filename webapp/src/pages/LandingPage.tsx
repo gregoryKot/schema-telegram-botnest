@@ -85,6 +85,33 @@ function BookingForm() {
   );
 }
 
+// ─── Education items ──────────────────────────────────────────────────────────
+const EDUCATION = [
+  {
+    year: '2024 —',
+    title: 'МИП · Бакалавриат',
+    sub: 'Московский институт психоанализа · Психология, психотерапия качества жизни',
+  },
+  {
+    year: '2025',
+    title: 'Практик схема-терапии',
+    sub: '«Практик схема-терапии. Базовый курс» · 47 ак.ч. теории и практики · Лазарев М.А.',
+  },
+  {
+    year: '2025–26',
+    title: 'КПТ · 288 часов',
+    sub: 'Когнитивно-поведенческая терапия · МАНП · 288 ак.ч. (с октября 2025 по июнь 2026)',
+  },
+];
+
+// ─── App feature items ────────────────────────────────────────────────────────
+const APP_FEATURES = [
+  { icon: '📓', title: 'Дневник состояний', text: 'Каждый день — короткая оценка восьми базовых потребностей. Появляется картина того, что происходит.' },
+  { icon: '🧩', title: 'Схемы и режимы', text: 'Узнай, какие ранние убеждения управляют твоими реакциями. Инструмент диагностики прямо в телефоне.' },
+  { icon: '🎯', title: 'Практики', text: 'Упражнения из схема-терапии и КПТ: переоценка убеждений, письма, безопасное место, флэшкарточки.' },
+  { icon: '📈', title: 'Динамика', text: 'История состояний за недели и месяцы. Видно, что меняется, а что стоит на месте.' },
+];
+
 // ─── Main landing ─────────────────────────────────────────────────────────────
 export function LandingPage() {
   const bookingRef    = useRef<HTMLElement>(null);
@@ -92,6 +119,7 @@ export function LandingPage() {
   const aboutRef    = useReveal() as React.RefObject<HTMLElement>;
   const approachRef = useReveal() as React.RefObject<HTMLElement>;
   const statsRef    = useReveal() as React.RefObject<HTMLElement>;
+  const appRef      = useReveal() as React.RefObject<HTMLElement>;
   const priceRef    = useReveal() as React.RefObject<HTMLElement>;
   const formRef     = useReveal() as React.RefObject<HTMLElement>;
 
@@ -99,7 +127,6 @@ export function LandingPage() {
     bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
-  // Show sticky CTA after hero
   useEffect(() => {
     const onScroll = () => setShowCta(window.scrollY > window.innerHeight * 0.8);
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -109,24 +136,30 @@ export function LandingPage() {
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden' }}>
 
-      {/* ── Sticky top CTA ──────────────────────────────────────────────── */}
+      {/* ── Sticky App CTA bar ───────────────────────────────────────────── */}
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         transform: showCta ? 'translateY(0)' : 'translateY(-100%)',
         transition: 'transform .35s cubic-bezier(.4,0,.2,1)',
-        background: 'rgba(245,242,235,0.88)', backdropFilter: 'blur(20px)',
+        background: 'rgba(245,242,235,0.92)', backdropFilter: 'blur(20px)',
         borderBottom: '1px solid var(--line)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 32px', height: 60,
+        padding: '0 32px', height: 60, gap: 16,
       }}>
-        <span style={{ fontFamily: 'var(--serif)', fontSize: 18 }}>Григорий Котляревский</span>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <a href="/login" style={{ fontSize: 13, color: 'var(--text-sub)', textDecoration: 'none' }}>Войти</a>
-          <button onClick={scrollToBooking} style={{
-            padding: '8px 20px', background: 'var(--text)', color: 'var(--bg)',
-            border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer',
-          }}>Записаться</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <span style={{ fontSize: 20 }}>🧠</span>
+          <span style={{ fontSize: 14, color: 'var(--text-sub)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <b style={{ color: 'var(--text)', fontWeight: 700 }}>СхемаЛаб</b>
+            <span style={{ color: 'var(--text-faint)', marginLeft: 8 }}>— дневник состояний и работа со схемами</span>
+          </span>
         </div>
+        <a href="/login" style={{
+          padding: '8px 20px', background: 'var(--accent)', color: 'white',
+          border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
+          textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+        }}>
+          Попробовать бесплатно →
+        </a>
       </div>
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
@@ -134,7 +167,6 @@ export function LandingPage() {
         minHeight: '100dvh', display: 'flex', flexDirection: 'column',
         padding: '0 40px', position: 'relative', overflow: 'hidden',
       }}>
-        {/* Ambient blobs */}
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
           <div className="blob-1" style={{
             position: 'absolute', width: 700, height: 700, borderRadius: '50%',
@@ -148,7 +180,6 @@ export function LandingPage() {
           }} />
         </div>
 
-        {/* Top row */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '28px 0', position: 'relative', zIndex: 1,
@@ -165,10 +196,9 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* Main headline */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 1, paddingBottom: 80 }}>
           <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 28px', animation: 'hero-in .6s .1s both' }}>
-            Схема-терапевт · Онлайн
+            Схема-терапия · Онлайн
           </p>
           <h1 className="hero-headline" style={{
             fontFamily: 'var(--serif)',
@@ -210,7 +240,6 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* Bottom row */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
           paddingBottom: 32, position: 'relative', zIndex: 1,
@@ -218,7 +247,7 @@ export function LandingPage() {
         }}>
           <div>
             <p style={{ fontSize: 22, fontFamily: 'var(--serif)', fontWeight: 400, margin: '0 0 4px' }}>Григорий Котляревский</p>
-            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Психолог · Схема-терапия</p>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Практик схема-терапии</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 12, color: 'var(--text-faint)', letterSpacing: '.1em', textTransform: 'uppercase' }}>Далее</span>
@@ -248,15 +277,19 @@ export function LandingPage() {
           {/* Photo */}
           <div style={{ position: 'relative' }}>
             <div style={{
-              aspectRatio: '3/4', background: 'var(--surface-2)',
-              borderRadius: 24, border: '1px solid var(--line)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 64, overflow: 'hidden',
+              aspectRatio: '3/4',
+              borderRadius: 24,
+              overflow: 'hidden',
               boxShadow: '0 24px 80px rgba(28,25,20,.1)',
+              background: 'var(--surface-2)',
             }}>
-              👤
+              <img
+                src="/gregory.jpg"
+                alt="Григорий Котляревский"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
+                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+              />
             </div>
-            {/* Floating badge */}
             <div style={{
               position: 'absolute', bottom: 24, left: -20,
               background: 'var(--bg-elev)', border: '1px solid var(--line)',
@@ -267,25 +300,46 @@ export function LandingPage() {
               <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: 0 }}>онлайн · сессия</p>
             </div>
           </div>
+
           {/* Text */}
           <div style={{ paddingTop: 24 }}>
             <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 20px' }}>Обо мне</p>
             <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(36px, 4vw, 54px)', fontWeight: 400, lineHeight: 1.1, color: 'var(--text)', margin: '0 0 32px', letterSpacing: '-.01em' }}>
-              Психолог,<br /><span style={{ fontStyle: 'italic' }}>который присутствует</span>
+              Практик,<br /><span style={{ fontStyle: 'italic' }}>который присутствует</span>
             </h2>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 20px' }}>
-              Я Григорий Котляревский — психолог и схема-терапевт. Работаю с людьми, которых преследуют повторяющиеся паттерны: в отношениях, самооценке, хронической тревоге.
+              Я Григорий Котляревский — практик в подходе схема-терапии. Работаю с людьми, которых преследуют повторяющиеся паттерны: в отношениях, самооценке, хронической тревоге.
             </p>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 36px' }}>
-              Меня интересует не только «что» происходит с человеком, но и «почему» — какие ранние убеждения и режимы стоят за сегодняшними трудностями. Говорю на русском и украинском, работаю онлайн.
+              Меня интересует не только «что» происходит с человеком, но и «почему» — какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн.
             </p>
-            <div style={{ display: 'flex', gap: 12 }}>
-              {['Схема-терапия', 'Онлайн', 'Русский · Украинский'].map(tag => (
+
+            {/* Tags */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 40 }}>
+              {['Схема-терапия', 'КПТ', 'Онлайн'].map(tag => (
                 <span key={tag} style={{
                   padding: '8px 16px', background: 'var(--accent-soft)',
                   border: '1px solid var(--accent-line)', borderRadius: 100,
                   fontSize: 13, fontWeight: 600, color: 'var(--accent)',
                 }}>{tag}</span>
+              ))}
+            </div>
+
+            {/* Education */}
+            <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 16px' }}>Образование и обучение</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {EDUCATION.map((item, i) => (
+                <div key={i} style={{
+                  display: 'grid', gridTemplateColumns: '72px 1fr',
+                  gap: '0 16px', padding: '14px 0',
+                  borderBottom: i < EDUCATION.length - 1 ? '1px solid var(--line)' : 'none',
+                }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', paddingTop: 2, whiteSpace: 'nowrap' }}>{item.year}</span>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 3px' }}>{item.title}</p>
+                    <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0, lineHeight: 1.5 }}>{item.sub}</p>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -302,18 +356,8 @@ export function LandingPage() {
                 Как я работаю
               </h2>
             </div>
-            <button onClick={scrollToBooking} style={{
-              padding: '12px 24px', background: 'transparent',
-              border: '1.5px solid var(--line-strong)', borderRadius: 100,
-              fontSize: 14, fontWeight: 600, color: 'var(--text-sub)', cursor: 'pointer',
-              display: 'none', /* hidden on mobile */
-            }}>
-              Начать работу →
-            </button>
           </div>
-          {/* Bento grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'auto auto', gap: 16 }}>
-            {/* Card 01 — spans 2 rows */}
             <div className="bento-card" style={{
               gridRow: '1 / 3', background: 'var(--accent)', color: 'white',
               borderRadius: 20, padding: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
@@ -329,7 +373,6 @@ export function LandingPage() {
                 </p>
               </div>
             </div>
-            {/* Card 02 */}
             <div className="bento-card" style={{ gridColumn: '2 / 4', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 20, padding: '32px', transition: 'transform .25s, box-shadow .25s', cursor: 'default' }}>
               <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', color: 'var(--text-faint)' }}>02</span>
               <h3 style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 400, color: 'var(--text)', margin: '12px 0 10px' }}>Тёплый контакт</h3>
@@ -337,7 +380,6 @@ export function LandingPage() {
                 Наши отношения — не нейтральный экран, а инструмент изменений. Я присутствую в сессии целиком и использую этот контакт как часть терапии.
               </p>
             </div>
-            {/* Card 03 */}
             <div className="bento-card" style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 20, padding: '32px', transition: 'transform .25s, box-shadow .25s', cursor: 'default' }}>
               <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', color: 'var(--text-faint)' }}>03</span>
               <h3 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '12px 0 10px' }}>Доказательная база</h3>
@@ -345,7 +387,6 @@ export function LandingPage() {
                 Схема-терапия эффективна при хронических паттернах — это подтверждено рандомизированными исследованиями.
               </p>
             </div>
-            {/* Card 04 */}
             <div className="bento-card" style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 20, padding: '32px', transition: 'transform .25s, box-shadow .25s', cursor: 'default' }}>
               <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', color: 'var(--text-faint)' }}>04</span>
               <h3 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '12px 0 10px' }}>Долгосрочный результат</h3>
@@ -377,8 +418,61 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── SCHEMALAB APP SECTION ────────────────────────────────────────── */}
+      <section ref={appRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '96px 40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
+          {/* Left: text */}
+          <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 100, marginBottom: 24 }}>
+              <span style={{ fontSize: 16 }}>🧠</span>
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)' }}>СхемаЛаб</span>
+            </div>
+            <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 4vw, 50px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 20px', lineHeight: 1.1, letterSpacing: '-.01em' }}>
+              Помоги себе сам.<br /><span style={{ fontStyle: 'italic' }}>Между сессиями.</span>
+            </h2>
+            <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
+              СхемаЛаб — бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Веди дневник состояний, отслеживай потребности, делай упражнения. Всё сохраняется — ты видишь свою динамику.
+            </p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <a href="/login" style={{
+                padding: '14px 28px', background: 'var(--accent)', color: 'white',
+                border: 'none', borderRadius: 100, fontSize: 15, fontWeight: 700,
+                textDecoration: 'none', display: 'inline-block',
+                boxShadow: '0 6px 24px rgba(99,89,220,.3)',
+              }}>
+                Попробовать бесплатно
+              </a>
+              <a href="https://t.me/SchemaLabBot" target="_blank" rel="noopener noreferrer" style={{
+                padding: '14px 24px', background: 'transparent',
+                border: '1.5px solid var(--line-strong)', borderRadius: 100,
+                fontSize: 15, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none',
+              }}>
+                Telegram-бот
+              </a>
+            </div>
+          </div>
+
+          {/* Right: feature cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {APP_FEATURES.map((f, i) => (
+              <div key={i} style={{
+                background: i === 0 ? 'var(--accent)' : 'var(--bg-elev)',
+                border: i === 0 ? 'none' : '1px solid var(--line)',
+                borderRadius: 16, padding: '24px 20px',
+                color: i === 0 ? 'white' : 'var(--text)',
+                transition: 'transform .2s, box-shadow .2s',
+              }} className="bento-card">
+                <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
+                <p style={{ fontSize: 14, fontWeight: 700, margin: '0 0 8px', color: i === 0 ? 'white' : 'var(--text)' }}>{f.title}</p>
+                <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: i === 0 ? 'rgba(255,255,255,.8)' : 'var(--text-sub)' }}>{f.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── PULL QUOTE ──────────────────────────────────────────────────── */}
-      <section style={{ padding: '80px 40px', borderBottom: '1px solid var(--line)' }}>
+      <section style={{ padding: '80px 40px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ width: 3, height: 48, background: 'var(--accent)', borderRadius: 2, marginBottom: 28 }} />
           <blockquote style={{
@@ -398,13 +492,10 @@ export function LandingPage() {
           Как устроена работа
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-          {/* Free intro */}
           <div style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
               <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Знакомство</span>
-              <p style={{ fontFamily: 'var(--serif)', fontSize: 52, fontWeight: 400, color: 'var(--text)', margin: '8px 0 0', letterSpacing: '-.02em', lineHeight: 1 }}>
-                0 ₽
-              </p>
+              <p style={{ fontFamily: 'var(--serif)', fontSize: 52, fontWeight: 400, color: 'var(--text)', margin: '8px 0 0', letterSpacing: '-.02em', lineHeight: 1 }}>0 ₽</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['15 минут онлайн', 'Рассказываешь о запросе', 'Я рассказываю о подходе', 'Никаких обязательств'].map(f => (
@@ -421,16 +512,13 @@ export function LandingPage() {
               Записаться бесплатно
             </button>
           </div>
-          {/* Session */}
           <div style={{ background: 'var(--text)', border: '1px solid transparent', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 20, right: 20, background: 'var(--accent)', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700, color: 'white' }}>
               Основной
             </div>
             <div>
               <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(236,234,229,.5)' }}>Сессия</span>
-              <p style={{ fontFamily: 'var(--serif)', fontSize: 52, fontWeight: 400, color: '#eceae5', margin: '8px 0 0', letterSpacing: '-.02em', lineHeight: 1 }}>
-                4 000 ₽
-              </p>
+              <p style={{ fontFamily: 'var(--serif)', fontSize: 52, fontWeight: 400, color: '#eceae5', margin: '8px 0 0', letterSpacing: '-.02em', lineHeight: 1 }}>4 000 ₽</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['50 минут онлайн (видео)', 'Индивидуальная работа', 'Схема-терапия', 'Регулярные встречи'].map(f => (
