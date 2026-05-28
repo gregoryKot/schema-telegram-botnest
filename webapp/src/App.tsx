@@ -7,6 +7,7 @@ import { AuthCallback } from './pages/AuthCallback';
 import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
 import { AppShell } from './components/AppShell';
+import { LandingPage } from './pages/LandingPage';
 
 // Apply saved theme before first render
 const savedTheme = localStorage.getItem('app_theme');
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
     element: <Root />,
     children: [
       // Public
+      { path: '/',               element: <LandingPage /> },
       { path: '/login',          element: <LoginPage /> },
       { path: '/auth/callback',  element: <AuthCallback /> },
       { path: '/auth/error',     element: <AuthError /> },
@@ -58,7 +60,6 @@ const router = createBrowserRouter([
           {
             element: <AppShell />,
             children: [
-              { index: true,                  element: <Navigate to="/today" replace /> },
               { path: '/today',               element: null },
               { path: '/diary',               element: null },
               { path: '/schemas',             element: null },

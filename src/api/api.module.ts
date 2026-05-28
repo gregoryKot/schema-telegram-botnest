@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ApiController } from './api.controller';
 import { DiaryController } from './diary.controller';
+import { BookingController } from './booking.controller';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -10,7 +11,7 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [BotModule, NotificationModule, TelegramModule, TherapyModule, AuthModule],
-  controllers: [ApiController, DiaryController],
+  controllers: [ApiController, DiaryController, BookingController],
   providers: [TelegramAuthGuard],
 })
 export class ApiModule {}
