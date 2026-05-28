@@ -185,7 +185,7 @@ export function LandingPage() {
           padding: '28px 0', position: 'relative', zIndex: 1,
         }}>
           <span style={{ fontSize: 13, color: 'var(--text-faint)', fontWeight: 500 }}>schemalab.ru</span>
-          <a href="/login" style={{
+          <a href="#schemalab" style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '8px 18px', background: 'var(--bg-elev)',
             border: '1px solid var(--line)', borderRadius: 100,
@@ -429,7 +429,7 @@ export function LandingPage() {
       </section>
 
       {/* ── SCHEMALAB APP SECTION ────────────────────────────────────────── */}
-      <section ref={appRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '96px 40px' }}>
+      <section id="schemalab" ref={appRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '96px 40px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
           {/* Left: text */}
           <div>
