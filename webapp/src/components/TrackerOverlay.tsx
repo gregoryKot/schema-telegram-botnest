@@ -226,7 +226,7 @@ export function TrackerOverlay({
               </button>
               <button onClick={() => onbStep < 2 ? setOnbStep(s=>s+1) : dismissOnb()} style={{
                 padding:'8px 16px', border:'none', fontFamily:'inherit', borderRadius:10,
-                background:'var(--accent)', color:'#fff',
+                background:'var(--text)', color:'var(--bg)',
                 fontSize:12, fontWeight:600, cursor:'pointer',
               }}>
                 {onbStep < 2 ? 'Далее →' : 'Начнём'}
