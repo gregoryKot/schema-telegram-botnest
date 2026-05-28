@@ -1,412 +1,513 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '../api';
 
-// ─── Sections ────────────────────────────────────────────────────────────────
-const APPROACH_ITEMS = [
-  {
-    icon: '🗺️',
-    title: 'Схема-терапия',
-    text: 'Работаем с глубинными убеждениями и паттернами, которые сформировались в детстве и продолжают влиять на твою жизнь сегодня.',
-  },
-  {
-    icon: '🤝',
-    title: 'Тёплый контакт',
-    text: 'Отношения с терапевтом — это не нейтральный экран. Я присутствую в сессии целиком и использую наш контакт как инструмент изменений.',
-  },
-  {
-    icon: '🔬',
-    title: 'Доказательная база',
-    text: 'Схема-терапия — один из наиболее исследованных методов для работы с хроническими проблемами в отношениях и идентичности.',
-  },
-  {
-    icon: '🌱',
-    title: 'Долгосрочный результат',
-    text: 'Цель — не просто снять симптом, а изменить то, как ты воспринимаешь себя и строишь отношения. Это требует времени, но изменения устойчивы.',
-  },
-];
-
-const FORMAT_ITEMS = [
-  { label: 'Формат', value: 'Онлайн (видео)' },
-  { label: 'Длительность', value: '50 минут' },
-  { label: 'Стоимость', value: '4 000 ₽' },
-  { label: 'Знакомство', value: 'Бесплатно · 15 минут' },
-];
+// ─── Scroll reveal hook ───────────────────────────────────────────────────────
+function useReveal() {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { el.classList.add('revealed'); obs.disconnect(); } },
+      { threshold: 0.12 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return ref;
+}
 
 // ─── Booking form ─────────────────────────────────────────────────────────────
 function BookingForm() {
-  const [name, setName] = useState('');
+  const [name, setName]       = useState('');
   const [contact, setContact] = useState('');
   const [message, setMessage] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-  const formRef = useRef<HTMLDivElement>(null);
+  const [status, setStatus]   = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !contact.trim()) return;
     setStatus('loading');
     try {
       await api.submitBooking({ name: name.trim(), contact: contact.trim(), message: message.trim() || undefined });
       setStatus('done');
-    } catch {
-      setStatus('error');
-    }
+    } catch { setStatus('error'); }
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '13px 16px',
-    background: 'var(--bg-elev)',
-    border: '1.5px solid var(--line)',
-    borderRadius: 10,
-    fontSize: 15,
-    color: 'var(--text)',
-    outline: 'none',
-    boxSizing: 'border-box',
-    fontFamily: 'inherit',
-    transition: 'border-color 0.15s',
+  const field: React.CSSProperties = {
+    width: '100%', padding: '14px 16px', fontSize: 15,
+    background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
+    borderRadius: 12, color: 'var(--text)', outline: 'none',
+    fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color .15s, box-shadow .15s',
   };
 
-  if (status === 'done') {
-    return (
-      <div style={{ textAlign: 'center', padding: '40px 0' }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>✉️</div>
-        <h3 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>
-          Заявка отправлена
-        </h3>
-        <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.6 }}>
-          Я свяжусь с тобой в ближайшее время, чтобы договориться о первой встрече.
-        </p>
-      </div>
-    );
-  }
+  if (status === 'done') return (
+    <div style={{ textAlign: 'center', padding: '48px 0' }}>
+      <div style={{ fontSize: 56, marginBottom: 20 }}>✉️</div>
+      <h3 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>
+        Заявка отправлена
+      </h3>
+      <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7 }}>
+        Свяжусь в течение дня. Договоримся о времени.
+      </p>
+    </div>
+  );
 
   return (
-    <div ref={formRef}>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div>
-          <label style={{ display: 'block', fontSize: 13, color: 'var(--text-sub)', marginBottom: 6, fontWeight: 500 }}>
-            Имя *
-          </label>
-          <input
-            style={inputStyle}
-            placeholder="Как тебя зовут"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-            maxLength={100}
-          />
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>Имя *</label>
+          <input style={field} placeholder="Как тебя зовут" value={name} onChange={e => setName(e.target.value)} required maxLength={100} />
         </div>
         <div>
-          <label style={{ display: 'block', fontSize: 13, color: 'var(--text-sub)', marginBottom: 6, fontWeight: 500 }}>
-            Telegram или телефон *
-          </label>
-          <input
-            style={inputStyle}
-            placeholder="@username или +7 999 000 00 00"
-            value={contact}
-            onChange={e => setContact(e.target.value)}
-            required
-            maxLength={100}
-          />
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>Telegram / телефон *</label>
+          <input style={field} placeholder="@username" value={contact} onChange={e => setContact(e.target.value)} required maxLength={100} />
         </div>
-        <div>
-          <label style={{ display: 'block', fontSize: 13, color: 'var(--text-sub)', marginBottom: 6, fontWeight: 500 }}>
-            С чем хочешь поработать? <span style={{ color: 'var(--text-faint)' }}>(необязательно)</span>
-          </label>
-          <textarea
-            style={{ ...inputStyle, resize: 'vertical', minHeight: 100 }}
-            placeholder="Пара слов о запросе — это поможет мне лучше подготовиться"
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            maxLength={500}
-          />
-        </div>
-        {status === 'error' && (
-          <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>
-            Что-то пошло не так. Напиши мне напрямую: <a href="https://t.me/kotlarewski" style={{ color: 'var(--accent-red)' }}>@kotlarewski</a>
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={status === 'loading' || !name.trim() || !contact.trim()}
-          style={{
-            padding: '14px 28px',
-            background: 'var(--accent)',
-            color: 'var(--on-accent)',
-            border: 'none',
-            borderRadius: 10,
-            fontSize: 15,
-            fontWeight: 600,
-            cursor: 'pointer',
-            opacity: (status === 'loading' || !name.trim() || !contact.trim()) ? 0.6 : 1,
-            transition: 'opacity 0.15s',
-          }}
-        >
-          {status === 'loading' ? 'Отправляю…' : 'Записаться на встречу →'}
-        </button>
-        <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: 0, lineHeight: 1.5 }}>
-          Отвечу в течение дня. Первая встреча — бесплатное знакомство 15 минут, без обязательств.
-        </p>
-      </form>
-    </div>
+      </div>
+      <div>
+        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
+        <textarea style={{ ...field, resize: 'vertical', minHeight: 96 }} placeholder="Пара слов о том, с чем хочешь разобраться" value={message} onChange={e => setMessage(e.target.value)} maxLength={500} />
+      </div>
+      {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Не вышло — напиши напрямую: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
+      <button type="submit" disabled={status === 'loading' || !name.trim() || !contact.trim()} style={{
+        padding: '16px 32px', background: 'var(--text)', color: 'var(--bg)',
+        border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700,
+        cursor: 'pointer', letterSpacing: '.02em',
+        opacity: (status === 'loading' || !name.trim() || !contact.trim()) ? .5 : 1,
+        transition: 'opacity .15s, transform .15s',
+        alignSelf: 'flex-start',
+      }}>
+        {status === 'loading' ? 'Отправляю…' : 'Записаться →'}
+      </button>
+      <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Первая встреча 15 минут — бесплатно. Никаких обязательств.</p>
+    </form>
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
-export function LandingPage() {
-  const bookingRef = useRef<HTMLElement>(null);
+// ─── Approach cards ───────────────────────────────────────────────────────────
+const CARDS = [
+  { num: '01', title: 'Схема-терапия', text: 'Работаем с глубинными убеждениями — теми, что сформировались задолго до сознательного возраста и тихо управляют сегодняшними выборами.', span: true },
+  { num: '02', title: 'Тёплый контакт', text: 'Наши отношения — инструмент изменений. Я присутствую целиком, а не за экраном нейтральности.', span: false },
+  { num: '03', title: 'Доказательная база', text: 'Схема-терапия эффективна при хронических паттернах — это показывают рандомизированные исследования.', span: false },
+  { num: '04', title: 'Долгосрочный результат', text: 'Цель — не снять симптом, а изменить то, как ты воспринимаешь себя и строишь близость. Глубоко, но надолго.', span: false },
+];
 
-  const scrollToBooking = () => {
+// ─── Main landing ─────────────────────────────────────────────────────────────
+export function LandingPage() {
+  const bookingRef    = useRef<HTMLElement>(null);
+  const [showCta, setShowCta] = useState(false);
+  const aboutRef    = useReveal() as React.RefObject<HTMLElement>;
+  const approachRef = useReveal() as React.RefObject<HTMLElement>;
+  const statsRef    = useReveal() as React.RefObject<HTMLElement>;
+  const priceRef    = useReveal() as React.RefObject<HTMLElement>;
+  const formRef     = useReveal() as React.RefObject<HTMLElement>;
+
+  const scrollToBooking = useCallback(() => {
     bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  }, []);
+
+  // Show sticky CTA after hero
+  useEffect(() => {
+    const onScroll = () => setShowCta(window.scrollY > window.innerHeight * 0.8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100dvh', color: 'var(--text)' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden' }}>
 
-      {/* ── Nav ───────────────────────────────────────────────────────────── */}
-      <nav style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        background: 'var(--nav-bg)',
-        backdropFilter: 'blur(12px)',
+      {/* ── Sticky top CTA ──────────────────────────────────────────────── */}
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        transform: showCta ? 'translateY(0)' : 'translateY(-100%)',
+        transition: 'transform .35s cubic-bezier(.4,0,.2,1)',
+        background: 'rgba(245,242,235,0.88)', backdropFilter: 'blur(20px)',
         borderBottom: '1px solid var(--line)',
-        padding: '0 24px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        height: 60,
+        padding: '0 32px', height: 60,
       }}>
-        <span style={{ fontFamily: 'var(--serif)', fontSize: 20, fontWeight: 400, color: 'var(--text)' }}>
-          Григорий Котляревский
-        </span>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+        <span style={{ fontFamily: 'var(--serif)', fontSize: 18 }}>Григорий Котляревский</span>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <a href="/login" style={{ fontSize: 13, color: 'var(--text-sub)', textDecoration: 'none' }}>Войти</a>
-          <button
-            onClick={scrollToBooking}
-            style={{
-              padding: '8px 18px',
-              background: 'var(--accent)',
-              color: 'var(--on-accent)',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Записаться
-          </button>
+          <button onClick={scrollToBooking} style={{
+            padding: '8px 20px', background: 'var(--text)', color: 'var(--bg)',
+            border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          }}>Записаться</button>
         </div>
-      </nav>
+      </div>
 
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <section style={{ maxWidth: 720, margin: '0 auto', padding: '80px 24px 64px' }}>
-        <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 20 }}>
-          Схема-терапевт · онлайн
-        </p>
-        <h1 style={{
-          fontFamily: 'var(--serif)',
-          fontSize: 'clamp(42px, 7vw, 68px)',
-          fontWeight: 400,
-          lineHeight: 1.1,
-          color: 'var(--text)',
-          margin: '0 0 28px',
+      {/* ── HERO ────────────────────────────────────────────────────────── */}
+      <section style={{
+        minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+        padding: '0 40px', position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Ambient blobs */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+          <div className="blob-1" style={{
+            position: 'absolute', width: 700, height: 700, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(77,71,153,.12) 0%, transparent 70%)',
+            top: '-15%', right: '-10%', animation: 'blob-float 18s ease-in-out infinite',
+          }} />
+          <div className="blob-2" style={{
+            position: 'absolute', width: 500, height: 500, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(176,111,74,.1) 0%, transparent 70%)',
+            bottom: '5%', left: '-8%', animation: 'blob-float 24s ease-in-out infinite reverse',
+          }} />
+        </div>
+
+        {/* Top row */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '28px 0', position: 'relative', zIndex: 1,
         }}>
-          Работа с теми паттернами,<br />
-          <span style={{ fontStyle: 'italic' }}>которые мешают жить</span>
-        </h1>
-        <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.75, maxWidth: 540, margin: '0 0 40px' }}>
-          Схема-терапия помогает разобраться, почему мы снова и снова попадаем в одни и те же ситуации — в отношениях, на работе, с самим собой — и найти выход.
-        </p>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button
-            onClick={scrollToBooking}
-            style={{
-              padding: '14px 28px',
-              background: 'var(--accent)',
-              color: 'var(--on-accent)',
-              border: 'none',
-              borderRadius: 10,
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Записаться на знакомство →
-          </button>
-          <a
-            href="https://t.me/kotlarewski"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '14px 24px',
-              background: 'rgba(var(--fg-rgb),0.06)',
-              color: 'var(--text-sub)',
-              borderRadius: 10,
-              fontSize: 15,
-              fontWeight: 500,
-              textDecoration: 'none',
-            }}
-          >
-            Написать в Telegram
-          </a>
-        </div>
-      </section>
-
-      <div style={{ height: 1, background: 'var(--line)', maxWidth: 720, margin: '0 auto 64px', marginLeft: 24, marginRight: 24 }} />
-
-      {/* ── About ─────────────────────────────────────────────────────────── */}
-      <section style={{ maxWidth: 720, margin: '0 auto', padding: '0 24px 72px' }}>
-        <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 24 }}>
-          Обо мне
-        </p>
-        <div style={{ display: 'flex', gap: 40, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          {/* Photo placeholder */}
+          <span style={{ fontSize: 13, color: 'var(--text-faint)', fontWeight: 500 }}>schemalab.ru</span>
           <div style={{
-            width: 160, height: 200, flexShrink: 0,
-            background: 'var(--surface-2)',
-            borderRadius: 16,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 48,
-            border: '1px solid var(--line)',
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '8px 18px', background: 'var(--accent-soft)',
+            border: '1px solid var(--accent-line)', borderRadius: 100,
+            fontSize: 13, fontWeight: 600, color: 'var(--accent)',
           }}>
-            👤
-          </div>
-          <div style={{ flex: 1, minWidth: 260 }}>
-            <h2 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, margin: '0 0 16px', color: 'var(--text)' }}>
-              Григорий Котляревский
-            </h2>
-            <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.75, margin: '0 0 16px' }}>
-              Психолог, схема-терапевт. Прошёл подготовку по схема-терапии и работаю с людьми, которых преследуют повторяющиеся паттерны: в отношениях, самооценке, тревоге.
-            </p>
-            <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.75, margin: 0 }}>
-              Меня интересует не только «что» происходит с человеком, но и «почему» — какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн, с постсоветским пространством, говорю на русском и украинском.
-            </p>
+            <span style={{ width: 7, height: 7, background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'pulse-dot 2s ease-in-out infinite' }} />
+            Знакомство · бесплатно
           </div>
         </div>
-      </section>
 
-      {/* ── Approach ──────────────────────────────────────────────────────── */}
-      <section style={{ background: 'var(--bg-rail)', padding: '64px 24px', marginBottom: 0 }}>
-        <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>
-            Подход
+        {/* Main headline */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 1, paddingBottom: 80 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 28px', animation: 'hero-in .6s .1s both' }}>
+            Схема-терапевт · Онлайн
           </p>
-          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 34, fontWeight: 400, color: 'var(--text)', margin: '0 0 40px' }}>
-            Как я работаю
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-            {APPROACH_ITEMS.map((item) => (
-              <div key={item.title} style={{
-                background: 'var(--bg-elev)',
-                borderRadius: 14,
-                padding: '24px',
-                border: '1px solid var(--line)',
-              }}>
-                <div style={{ fontSize: 28, marginBottom: 12 }}>{item.icon}</div>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', margin: '0 0 8px' }}>{item.title}</h3>
-                <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65, margin: 0 }}>{item.text}</p>
-              </div>
-            ))}
+          <h1 className="hero-headline" style={{
+            fontFamily: 'var(--serif)',
+            fontSize: 'clamp(52px, 9vw, 108px)',
+            fontWeight: 400, lineHeight: 1.02,
+            letterSpacing: '-.02em',
+            color: 'var(--text)', margin: '0 0 36px',
+          }}>
+            <span className="hero-line" style={{ display: 'block', overflow: 'hidden' }}>
+              <span style={{ display: 'block', animation: 'line-in .7s .2s both' }}>Работа с теми</span>
+            </span>
+            <span className="hero-line" style={{ display: 'block', overflow: 'hidden' }}>
+              <span style={{ display: 'block', animation: 'line-in .7s .35s both', fontStyle: 'italic', color: 'var(--accent)' }}>паттернами,</span>
+            </span>
+            <span className="hero-line" style={{ display: 'block', overflow: 'hidden' }}>
+              <span style={{ display: 'block', animation: 'line-in .7s .5s both' }}>которые мешают</span>
+            </span>
+          </h1>
+          <p style={{ fontSize: 18, color: 'var(--text-sub)', lineHeight: 1.7, maxWidth: 520, margin: '0 0 48px', animation: 'hero-in .6s .65s both' }}>
+            Мы снова и снова попадаем в одни и те же ситуации — в отношениях, самооценке, тревоге. Схема-терапия объясняет почему и даёт выход.
+          </p>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', animation: 'hero-in .6s .8s both' }}>
+            <button onClick={scrollToBooking} style={{
+              padding: '16px 36px', background: 'var(--text)', color: 'var(--bg)',
+              border: 'none', borderRadius: 100, fontSize: 16, fontWeight: 700,
+              cursor: 'pointer', letterSpacing: '.01em',
+              boxShadow: '0 8px 32px rgba(28,25,20,.18)',
+            }}>
+              Записаться на встречу
+            </button>
+            <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '16px 28px', background: 'transparent',
+              border: '1.5px solid var(--line-strong)', borderRadius: 100,
+              fontSize: 16, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none',
+            }}>
+              Написать в Telegram ↗
+            </a>
+          </div>
+        </div>
+
+        {/* Bottom row */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+          paddingBottom: 32, position: 'relative', zIndex: 1,
+          animation: 'hero-in .6s 1s both',
+        }}>
+          <div>
+            <p style={{ fontSize: 22, fontFamily: 'var(--serif)', fontWeight: 400, margin: '0 0 4px' }}>Григорий Котляревский</p>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Психолог · Схема-терапия</p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-faint)', letterSpacing: '.1em', textTransform: 'uppercase' }}>Далее</span>
+            <div style={{ width: 1, height: 36, background: 'var(--line-strong)', animation: 'scroll-bar 2s ease-in-out infinite' }} />
           </div>
         </div>
       </section>
 
-      {/* ── Format & Prices ───────────────────────────────────────────────── */}
-      <section style={{ maxWidth: 720, margin: '0 auto', padding: '72px 24px' }}>
-        <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>
-          Формат и цены
-        </p>
-        <h2 style={{ fontFamily: 'var(--serif)', fontSize: 34, fontWeight: 400, color: 'var(--text)', margin: '0 0 40px' }}>
-          Как устроена работа
-        </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
-          {FORMAT_ITEMS.map((item) => (
-            <div key={item.label} style={{
-              background: 'var(--bg-elev)',
-              border: '1px solid var(--line)',
-              borderRadius: 12,
-              padding: '20px',
+      {/* ── MARQUEE ─────────────────────────────────────────────────────── */}
+      <div style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', overflow: 'hidden', padding: '18px 0', background: 'var(--bg-rail)' }}>
+        <div className="marquee-track" style={{ display: 'flex', gap: 0, whiteSpace: 'nowrap' }}>
+          {[...Array(3)].map((_, i) => (
+            <span key={i} style={{ display: 'inline-flex', gap: 0, animation: 'marquee 28s linear infinite' }}>
+              {['Схема-терапия', 'Паттерны', 'Отношения', 'Самооценка', 'Тревога', 'Идентичность', 'Онлайн', 'Бесплатное знакомство'].map(w => (
+                <span key={w} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-sub)', padding: '0 28px' }}>
+                  {w} <span style={{ color: 'var(--accent)', marginLeft: 28 }}>·</span>
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── ABOUT ───────────────────────────────────────────────────────── */}
+      <section ref={aboutRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '96px 40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 3fr', gap: 48, alignItems: 'start' }}>
+          {/* Photo */}
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              aspectRatio: '3/4', background: 'var(--surface-2)',
+              borderRadius: 24, border: '1px solid var(--line)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 64, overflow: 'hidden',
+              boxShadow: '0 24px 80px rgba(28,25,20,.1)',
             }}>
-              <p style={{ fontSize: 12, color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>
-                {item.label}
+              👤
+            </div>
+            {/* Floating badge */}
+            <div style={{
+              position: 'absolute', bottom: 24, left: -20,
+              background: 'var(--bg-elev)', border: '1px solid var(--line)',
+              borderRadius: 16, padding: '14px 20px',
+              boxShadow: '0 8px 32px rgba(28,25,20,.12)',
+            }}>
+              <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px' }}>50 мин</p>
+              <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: 0 }}>онлайн · сессия</p>
+            </div>
+          </div>
+          {/* Text */}
+          <div style={{ paddingTop: 24 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 20px' }}>Обо мне</p>
+            <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(36px, 4vw, 54px)', fontWeight: 400, lineHeight: 1.1, color: 'var(--text)', margin: '0 0 32px', letterSpacing: '-.01em' }}>
+              Психолог,<br /><span style={{ fontStyle: 'italic' }}>который присутствует</span>
+            </h2>
+            <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 20px' }}>
+              Я Григорий Котляревский — психолог и схема-терапевт. Работаю с людьми, которых преследуют повторяющиеся паттерны: в отношениях, самооценке, хронической тревоге.
+            </p>
+            <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 36px' }}>
+              Меня интересует не только «что» происходит с человеком, но и «почему» — какие ранние убеждения и режимы стоят за сегодняшними трудностями. Говорю на русском и украинском, работаю онлайн.
+            </p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              {['Схема-терапия', 'Онлайн', 'Русский · Украинский'].map(tag => (
+                <span key={tag} style={{
+                  padding: '8px 16px', background: 'var(--accent-soft)',
+                  border: '1px solid var(--accent-line)', borderRadius: 100,
+                  fontSize: 13, fontWeight: 600, color: 'var(--accent)',
+                }}>{tag}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── APPROACH BENTO ──────────────────────────────────────────────── */}
+      <section ref={approachRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: 'var(--bg-rail)', padding: '80px 40px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48 }}>
+            <div>
+              <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Подход</p>
+              <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 4vw, 50px)', fontWeight: 400, color: 'var(--text)', margin: 0, letterSpacing: '-.01em' }}>
+                Как я работаю
+              </h2>
+            </div>
+            <button onClick={scrollToBooking} style={{
+              padding: '12px 24px', background: 'transparent',
+              border: '1.5px solid var(--line-strong)', borderRadius: 100,
+              fontSize: 14, fontWeight: 600, color: 'var(--text-sub)', cursor: 'pointer',
+              display: 'none', /* hidden on mobile */
+            }}>
+              Начать работу →
+            </button>
+          </div>
+          {/* Bento grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'auto auto', gap: 16 }}>
+            {/* Card 01 — spans 2 rows */}
+            <div className="bento-card" style={{
+              gridRow: '1 / 3', background: 'var(--accent)', color: 'white',
+              borderRadius: 20, padding: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              minHeight: 320, cursor: 'default', transition: 'transform .25s, box-shadow .25s',
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', opacity: .7 }}>01</span>
+              <div>
+                <h3 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, lineHeight: 1.15, margin: '0 0 16px' }}>
+                  Схема-<br />терапия
+                </h3>
+                <p style={{ fontSize: 14, lineHeight: 1.7, opacity: .85, margin: 0 }}>
+                  Работаем с глубинными убеждениями и режимами, которые сформировались задолго до сознательного возраста — и тихо управляют сегодняшними выборами.
+                </p>
+              </div>
+            </div>
+            {/* Card 02 */}
+            <div className="bento-card" style={{ gridColumn: '2 / 4', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 20, padding: '32px', transition: 'transform .25s, box-shadow .25s', cursor: 'default' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', color: 'var(--text-faint)' }}>02</span>
+              <h3 style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 400, color: 'var(--text)', margin: '12px 0 10px' }}>Тёплый контакт</h3>
+              <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>
+                Наши отношения — не нейтральный экран, а инструмент изменений. Я присутствую в сессии целиком и использую этот контакт как часть терапии.
               </p>
-              <p style={{ fontSize: 18, color: 'var(--text)', fontWeight: 600, margin: 0 }}>{item.value}</p>
+            </div>
+            {/* Card 03 */}
+            <div className="bento-card" style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 20, padding: '32px', transition: 'transform .25s, box-shadow .25s', cursor: 'default' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', color: 'var(--text-faint)' }}>03</span>
+              <h3 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '12px 0 10px' }}>Доказательная база</h3>
+              <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>
+                Схема-терапия эффективна при хронических паттернах — это подтверждено рандомизированными исследованиями.
+              </p>
+            </div>
+            {/* Card 04 */}
+            <div className="bento-card" style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 20, padding: '32px', transition: 'transform .25s, box-shadow .25s', cursor: 'default' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', color: 'var(--text-faint)' }}>04</span>
+              <h3 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '12px 0 10px' }}>Долгосрочный результат</h3>
+              <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>
+                Цель — изменить не симптом, а то, как ты воспринимаешь себя. Глубоко, но устойчиво.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── DARK STATS ──────────────────────────────────────────────────── */}
+      <section ref={statsRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: '#1c1916', padding: '80px 40px', color: '#eceae5' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+          {[
+            { num: '4 000 ₽', label: 'Стоимость сессии', sub: '50 минут онлайн' },
+            { num: '15 мин', label: 'Первая встреча', sub: 'Бесплатно · без обязательств' },
+            { num: '1 на 1', label: 'Формат работы', sub: 'Индивидуальные сессии' },
+          ].map((s, i) => (
+            <div key={i} style={{
+              padding: '48px 40px',
+              borderLeft: i > 0 ? '1px solid rgba(255,255,255,.08)' : 'none',
+            }}>
+              <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(40px, 5vw, 64px)', fontWeight: 400, lineHeight: 1, margin: '0 0 12px', letterSpacing: '-.02em', color: '#eceae5' }}>{s.num}</p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: 'rgba(236,234,229,.8)', margin: '0 0 6px' }}>{s.label}</p>
+              <p style={{ fontSize: 14, color: 'rgba(236,234,229,.4)', margin: 0 }}>{s.sub}</p>
             </div>
           ))}
         </div>
-        <div style={{
-          background: 'var(--accent-soft)',
-          border: '1px solid var(--accent-line)',
-          borderRadius: 12,
-          padding: '20px 24px',
-          display: 'flex', gap: 14, alignItems: 'flex-start',
-        }}>
-          <span style={{ fontSize: 24, flexShrink: 0, marginTop: 2 }}>🎁</span>
-          <div>
-            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', margin: '0 0 4px' }}>
-              Первая встреча — бесплатно
-            </p>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, margin: 0 }}>
-              15 минут, чтобы познакомиться, рассказать про свой запрос и понять, подходим ли мы друг другу. Никаких обязательств.
-            </p>
+      </section>
+
+      {/* ── PULL QUOTE ──────────────────────────────────────────────────── */}
+      <section style={{ padding: '80px 40px', borderBottom: '1px solid var(--line)' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <div style={{ width: 3, height: 48, background: 'var(--accent)', borderRadius: 2, marginBottom: 28 }} />
+          <blockquote style={{
+            fontFamily: 'var(--serif)', fontSize: 'clamp(24px, 4vw, 40px)',
+            fontWeight: 400, fontStyle: 'italic', lineHeight: 1.35,
+            color: 'var(--text)', margin: 0, letterSpacing: '-.01em',
+          }}>
+            «Паттерны не приговор. Они появились как защита — и могут измениться, когда появляется безопасный контакт и понимание того, откуда они взялись.»
+          </blockquote>
+        </div>
+      </section>
+
+      {/* ── PRICES ──────────────────────────────────────────────────────── */}
+      <section ref={priceRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 40px' }}>
+        <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Формат и цены</p>
+        <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 48px', letterSpacing: '-.01em' }}>
+          Как устроена работа
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          {/* Free intro */}
+          <div style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div>
+              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Знакомство</span>
+              <p style={{ fontFamily: 'var(--serif)', fontSize: 52, fontWeight: 400, color: 'var(--text)', margin: '8px 0 0', letterSpacing: '-.02em', lineHeight: 1 }}>
+                0 ₽
+              </p>
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {['15 минут онлайн', 'Рассказываешь о запросе', 'Я рассказываю о подходе', 'Никаких обязательств'].map(f => (
+                <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <span style={{ color: 'var(--accent)', fontSize: 16 }}>✓</span>
+                  <span style={{ fontSize: 15, color: 'var(--text-sub)' }}>{f}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={scrollToBooking} style={{
+              padding: '14px 24px', background: 'transparent', border: '1.5px solid var(--line-strong)',
+              borderRadius: 10, fontSize: 14, fontWeight: 700, color: 'var(--text)', cursor: 'pointer',
+            }}>
+              Записаться бесплатно
+            </button>
+          </div>
+          {/* Session */}
+          <div style={{ background: 'var(--text)', border: '1px solid transparent', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 20, right: 20, background: 'var(--accent)', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700, color: 'white' }}>
+              Основной
+            </div>
+            <div>
+              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(236,234,229,.5)' }}>Сессия</span>
+              <p style={{ fontFamily: 'var(--serif)', fontSize: 52, fontWeight: 400, color: '#eceae5', margin: '8px 0 0', letterSpacing: '-.02em', lineHeight: 1 }}>
+                4 000 ₽
+              </p>
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {['50 минут онлайн (видео)', 'Индивидуальная работа', 'Схема-терапия', 'Регулярные встречи'].map(f => (
+                <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <span style={{ color: 'rgba(144,137,224,1)', fontSize: 16 }}>✓</span>
+                  <span style={{ fontSize: 15, color: 'rgba(236,234,229,.75)' }}>{f}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={scrollToBooking} style={{
+              padding: '14px 24px', background: 'var(--accent)', border: 'none',
+              borderRadius: 10, fontSize: 14, fontWeight: 700, color: 'white', cursor: 'pointer',
+            }}>
+              Начать работу →
+            </button>
           </div>
         </div>
       </section>
 
-      {/* ── Booking ───────────────────────────────────────────────────────── */}
-      <section
-        ref={bookingRef}
-        style={{ background: 'var(--bg-rail)', padding: '64px 24px 80px' }}
-      >
-        <div style={{ maxWidth: 520, margin: '0 auto' }}>
-          <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 }}>
-            Запись
-          </p>
-          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 34, fontWeight: 400, color: 'var(--text)', margin: '0 0 8px' }}>
-            Записаться на встречу
+      {/* ── BOOKING ─────────────────────────────────────────────────────── */}
+      <section ref={bookingRef as any} style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)' }}>
+        <section ref={formRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 680, margin: '0 auto', padding: '80px 40px 96px' }}>
+          <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Запись</p>
+          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 12px', letterSpacing: '-.01em' }}>
+            Записаться<br /><span style={{ fontStyle: 'italic' }}>на первую встречу</span>
           </h2>
-          <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, margin: '0 0 36px' }}>
-            Оставь имя и контакт — я напишу в течение дня и договоримся о времени.
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>
+            Оставь имя и контакт — свяжусь в течение дня, договоримся о времени.
           </p>
           <BookingForm />
-        </div>
+        </section>
       </section>
 
-      {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <footer style={{
-        borderTop: '1px solid var(--line)',
-        padding: '32px 24px',
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 16,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        maxWidth: 720,
-        margin: '0 auto',
-      }}>
-        <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>
-          © {new Date().getFullYear()} Григорий Котляревский
-        </span>
-        <a
-          href="https://t.me/kotlarewski"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}
-        >
-          @kotlarewski
-        </a>
+      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
+      <footer style={{ borderTop: '1px solid var(--line)', padding: '32px 40px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>© {new Date().getFullYear()} Григорий Котляревский</span>
+          <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+            <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>Telegram</a>
+            <a href="/login" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>Войти в приложение</a>
+          </div>
+        </div>
       </footer>
 
+      {/* ── Global styles ───────────────────────────────────────────────── */}
       <style>{`
-        @keyframes land-in {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: none; }
-        }
+        @keyframes hero-in    { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:none } }
+        @keyframes line-in    { from { transform:translateY(110%) } to { transform:none } }
+        @keyframes blob-float { 0%,100% { transform:translate(0,0) scale(1) } 50% { transform:translate(3%,2%) scale(1.04) } }
+        @keyframes scroll-bar { 0%,100% { opacity:.3; transform:scaleY(.6) } 50% { opacity:1; transform:scaleY(1) } }
+        @keyframes marquee    { from { transform:translateX(0) } to { transform:translateX(-100%) } }
+        @keyframes pulse-dot  { 0%,100% { opacity:1; transform:scale(1) } 50% { opacity:.5; transform:scale(.7) } }
+
+        .reveal-section { opacity:0; transform:translateY(32px); transition: opacity .7s ease, transform .7s ease; }
+        .reveal-section.revealed { opacity:1; transform:none; }
+
+        .bento-card:hover { transform:translateY(-4px); box-shadow:0 16px 48px rgba(28,25,20,.12); }
+
         input:focus, textarea:focus {
           border-color: var(--accent) !important;
-          box-shadow: 0 0 0 3px var(--accent-soft);
+          box-shadow: 0 0 0 4px var(--accent-soft);
         }
-        @media (max-width: 500px) {
-          nav span { font-size: 16px; }
+
+        @media (max-width: 768px) {
+          section[style*="grid-template-columns: 2fr 3fr"] > div { grid-template-columns: 1fr !important; }
+          section[style*="repeat(3, 1fr)"] > div { grid-template-columns: 1fr !important; }
+          section[style*="1fr 1fr"] > div { grid-template-columns: 1fr !important; }
+          .bento-card[style*="grid-row"] { grid-row: auto !important; }
+          .bento-card[style*="grid-column"] { grid-column: auto !important; }
         }
       `}</style>
     </div>
