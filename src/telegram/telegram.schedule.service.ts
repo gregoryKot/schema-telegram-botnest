@@ -34,12 +34,14 @@ export class TelegramScheduleService implements OnModuleInit {
 
   async onModuleInit() {
     // Catch-up: if midnight cron was missed (deploy/restart), schedule any missing reminders.
-    // Delay 10s so the bot is fully connected before we start sending.
+    // Delay 30s: give CNPG time to come up after a container restart, and let
+    // the bot finish connecting.  Use warn (not error) so a transient DB blip
+    // at deploy time doesn't page the admin — the cron retries at midnight.
     setTimeout(() => {
       this.scheduleDailyReminders().catch((e) =>
-        this.logger.error('Startup reminder catch-up failed', e),
+        this.logger.warn(`Startup reminder catch-up failed (non-critical, retries at midnight): ${(e as Error).message}`),
       );
-    }, 10_000);
+    }, 30_000);
   }
 
   /** Reschedule reminder for a single user (called after settings change). */
@@ -68,6 +70,18 @@ export class TelegramScheduleService implements OnModuleInit {
     }, 4 * 60_000);
     try {
       await this.runProcessQueue();
+    } catch (err: any) {
+      // P1017 "Server has closed the connection" and other transient connection
+      // errors should not page the admin on every cron tick — they resolve on
+      // the next tick once the DB comes back.  Log as warn so AlertLogger
+      // doesn't send a DM.
+      const msg = String(err?.message ?? err);
+      const isConnError = /server has closed the connection|connection.*refused|ECONNREFUSED|connect ETIMEDOUT|P1001|P1017/i.test(msg);
+      if (isConnError) {
+        this.logger.warn(`processQueue DB connection error (will retry): ${msg.slice(0, 120)}`);
+      } else {
+        this.logger.error(`processQueue failed: ${msg}`, err?.stack);
+      }
     } finally {
       clearTimeout(killTimer);
       this.isProcessing = false;
