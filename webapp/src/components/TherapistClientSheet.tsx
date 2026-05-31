@@ -214,7 +214,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               <div style={{ background: 'var(--surface-2)', borderRadius: 12, padding: '24px', marginBottom: 36 }}>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                   {(['invite', 'telegram', 'virtual'] as const).map(m => (
-                    <button key={m} onClick={() => openAddMode(m)} style={{ padding: '6px 14px', borderRadius: 6, border: `1px solid ${addMode === m ? 'var(--accent)' : 'var(--line)'}`, background: addMode === m ? 'var(--accent-soft)' : 'transparent', color: addMode === m ? 'var(--accent)' : 'var(--text-faint)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}>
+                    <button key={m} onClick={() => openAddMode(m)} style={{ padding: '6px 14px', borderRadius: 6, border: `1px solid ${addMode === m ? 'var(--text)' : 'var(--line)'}`, background: addMode === m ? 'var(--text)' : 'transparent', color: addMode === m ? 'var(--bg)' : 'var(--text-faint)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}>
                       {{ invite: '🔗 Пригласить', telegram: '🔢 Telegram ID', virtual: '👤 Оффлайн' }[m]}
                     </button>
                   ))}

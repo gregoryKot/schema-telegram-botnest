@@ -121,20 +121,23 @@ export function MySheet({ onClose }: { onClose: () => void }) {
 **Важно — не использовать `history.pushState` или `window.addEventListener('popstate')` напрямую.**
 Хук работает через `useNavigate`/`useLocation` из react-router-dom. Прямой вызов `history.pushState` конфликтует с React Router: при нажатии «Назад» срабатывают оба обработчика одновременно — лист закрывается И роутер уходит на предыдущий раздел.
 
-## Деплой webapp (ОБЯЗАТЕЛЬНО)
+## Деплой webapp
 
-`webapp/dist/` хранится в git и именно его Amvera раздаёт на проде.
-**После любых изменений в `webapp/src/` или `webapp/index.html`** — обязательно пересобрать и закоммитить dist:
+`webapp/dist/` **не хранится в git** — Amvera сама собирает webapp из исходников через
+`RUN npm run build --prefix webapp` в `Dockerfile`.
+
+Деплой = обычный `git push` (на origin или amvera):
+
+```bash
+git push           # → GitHub (origin)
+git push amvera main  # → Amvera (триггерит пересборку Docker-образа)
+```
+
+Локальная сборка нужна только для проверки что нет ошибок TypeScript/Vite:
 
 ```bash
 cd webapp && node_modules/.bin/vite build
-cd ..
-git add -f webapp/dist
-git commit -m "build: rebuild webapp dist"
-git push
 ```
-
-Без этого шага на проде будет старый дизайн.
 
 ## БД
 
