@@ -144,11 +144,15 @@ function Disclaimer({ onAccept }: { onAccept: () => void }) {
           Все данные хранятся на защищённом сервере, <strong style={{ color: 'var(--text)' }}>зашифрованы</strong> и привязаны к Telegram-аккаунту. Не передаются третьим лицам.
           <br /><br />
           Удалить все данные можно прямо в приложении — Настройки → «Удалить все данные».
+          <br /><br />
+          <a href="https://schemalab.ru/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
+            Политика конфиденциальности →
+          </a>
         </div>
         <Checkbox
           checked={c2}
           onToggle={() => setC2(p => !p)}
-          label="Я согласен(на) на хранение данных согласно описанным условиям"
+          label="Я согласен(на) на обработку персональных данных согласно Политике конфиденциальности"
         />
       </div>
     </div>,
