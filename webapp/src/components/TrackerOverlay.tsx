@@ -1,13 +1,11 @@
-// TrackerOverlay.tsx — Full tracker as standalone overlay
+// TrackerOverlay.tsx — Variant C · PickerRail (editorial triptych)
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { COLORS, YESTERDAY } from '../types';
 import type { Need } from '../types';
 import { NEED_DATA } from '../needData';
-import { NeedDial } from './NeedDial';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
-
 import { api } from '../api';
 import type { StreakData } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
@@ -25,20 +23,54 @@ interface Props {
   onOpenGoal?: () => void;
   onOpenHistory?: () => void;
   yesterdayRatings?: Record<string, number>;
-  /** When set, enables backfill mode: saves to this past date, loads existing ratings */
   date?: string;
   onDone?: () => void;
 }
 
-const ONBOARDING_KEY = 'tracker_onboarding_v1';
-const ONBOARDING_STEPS = [
-  { emoji: '👆', title: 'Оценивай действия',
-    text: 'Не «я вроде чувствую», а конкретные моменты. Тап по дуге или +/−.' },
-  { emoji: '💡', title: 'Нажми на название',
-    text: 'Там вопрос для рефлексии, примеры и диапазоны оценки.' },
-  { emoji: '📊', title: 'Паттерн — через 3–5 дней',
-    text: 'Всё сохраняется. Динамика появится в разделе «История».' },
-];
+function useIsDesktop() {
+  const [d, setD] = useState(() => window.innerWidth >= 900);
+  useEffect(() => {
+    const h = () => setD(window.innerWidth >= 900);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return d;
+}
+
+function PickerRail({ value, onChange, color }: { value: number; onChange: (v: number) => void; color: string }) {
+  return (
+    <div style={{ width: '100%' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(11, 1fr)', gap: 4 }}>
+        {Array.from({ length: 11 }, (_, i) => {
+          const active = i === value;
+          const passed = value > 0 && i < value;
+          return (
+            <button key={i} onClick={() => onChange(i)} style={{
+              aspectRatio: '1 / 1.2', border: 'none', borderRadius: 8, padding: 0,
+              background: active ? color : passed ? `color-mix(in srgb, ${color} 12%, transparent)` : 'transparent',
+              boxShadow: active ? 'none' : `inset 0 0 0 1px rgba(var(--fg-rgb),0.12)`,
+              color: active ? 'var(--bg)' : passed ? color : 'var(--text-sub)',
+              fontFamily: 'var(--serif)', fontSize: active ? 26 : 20, fontWeight: 400,
+              fontStyle: active ? 'italic' : 'normal', letterSpacing: '-0.02em',
+              cursor: 'pointer', transition: 'all 0.18s',
+            }}>{i}</button>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10,
+        fontSize: 11, color: 'var(--text-faint)', letterSpacing: '0.08em',
+        textTransform: 'uppercase', fontWeight: 600 }}>
+        <span>низко</span><span>средне</span><span>хорошо</span>
+      </div>
+      {value === 0 && (
+        <div style={{ textAlign: 'center', marginTop: 14, fontSize: 11, color: 'var(--text-ghost)',
+          letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
+          ни одна цифра не выбрана
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function TrackerOverlay({
   needs, ratings, saved: _saved, isOffline,
@@ -47,13 +79,12 @@ export function TrackerOverlay({
   date, onDone,
 }: Props) {
   const goBack = useHistorySheet(onClose);
-  const timers  = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const unlockTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-
+  const isDesktop = useIsDesktop();
+  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const isBackfill = !!date;
+
   const [localRatings, setLocalRatings] = useState<Record<string, number>>({});
   const [localLoading, setLocalLoading] = useState(isBackfill);
-
   useEffect(() => {
     if (!isBackfill) return;
     api.ratings(date).then(r => setLocalRatings(r)).finally(() => setLocalLoading(false));
@@ -63,30 +94,20 @@ export function TrackerOverlay({
 
   const [idx, setIdx] = useState(() => {
     if (initialNeedId) { const i = needs.findIndex(n => n.id === initialNeedId); if (i >= 0) return i; }
-    if (!isBackfill) {
-      const f = needs.findIndex(n => ratings[n.id] === undefined);
-      return f >= 0 ? f : 0;
-    }
+    if (!isBackfill) { const f = needs.findIndex(n => ratings[n.id] === undefined); return f >= 0 ? f : 0; }
     return 0;
   });
-  const [_unlocked,   setUnlocked]    = useState<Set<string>>(new Set());
-  const [detailNeed,  setDetailNeed]  = useState<Need | null>(null);
-  const [onbStep,     setOnbStep]     = useState(0);
-  const [showOnb,     setShowOnb]     = useState(() => !isBackfill && !localStorage.getItem(ONBOARDING_KEY));
+  const [detailNeed, setDetailNeed] = useState<Need | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
-  const need     = needs[idx];
-  const value    = effectiveRatings[need.id] ?? 0;
-  const allRated = needs.every(n => effectiveRatings[n.id] !== undefined && effectiveRatings[n.id] > 0);
-  const avg      = needs.length > 0 ? needs.reduce((s,n)=>s+(effectiveRatings[n.id]??0),0)/needs.length : 0;
-  const yval     = yesterdayRatings[need.id] ?? YESTERDAY[need.id];
-  const delta    = (!isBackfill && value > 0 && yval !== undefined) ? value - yval : null;
-  const ratedCount = needs.filter(n => (effectiveRatings[n.id] ?? 0) > 0).length;
-
-  const dismissOnb = useCallback(() => {
-    localStorage.setItem(ONBOARDING_KEY, '1');
-    setShowOnb(false);
-  }, []);
+  const need = needs[idx];
+  const color = COLORS[need.id] ?? 'var(--accent)';
+  const value = effectiveRatings[need.id] ?? 0;
+  const allRated = needs.every(n => (effectiveRatings[n.id] ?? 0) > 0);
+  const yval = yesterdayRatings[need.id] ?? YESTERDAY[need.id];
+  const delta = (!isBackfill && value > 0 && yval !== undefined) ? value - yval : null;
+  const extra = NEED_DATA[need.id];
+  const needName = extra?.name ?? need.chartLabel;
 
   const handleChange = useCallback((needId: string, v: number) => {
     if (isBackfill) {
@@ -94,17 +115,12 @@ export function TrackerOverlay({
       clearTimeout(timers.current[needId]);
       timers.current[needId] = setTimeout(async () => {
         if (v === 0) return;
-        try { await api.saveRating(needId, v, date); setLastSavedAt(new Date()); } catch { /* offline */ }
+        try { await api.saveRating(needId, v, date); setLastSavedAt(new Date()); } catch {}
       }, 500);
       return;
     }
     onChange(needId, v);
     if (isOffline) return;
-    setUnlocked(p => new Set([...p, needId]));
-    clearTimeout(unlockTimers.current[needId]);
-    unlockTimers.current[needId] = setTimeout(() => {
-      setUnlocked(p => { const n = new Set(p); n.delete(needId); return n; });
-    }, 2500);
     clearTimeout(timers.current[needId]);
     timers.current[needId] = setTimeout(async () => {
       if (v === 0) return;
@@ -112,317 +128,268 @@ export function TrackerOverlay({
         const res = await api.saveRating(needId, v);
         onSaved(needId, res.allDone ? res.streak : undefined);
         setLastSavedAt(new Date());
-      } catch { /* handle offline */ }
+      } catch {}
     }, 500);
   }, [onChange, onSaved, isOffline, isBackfill, date]);
 
-  // Swipe between needs
   const touchRef = useRef<{ x: number; y: number } | null>(null);
-  function onTS(e: React.TouchEvent) { touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
-  function onTE(e: React.TouchEvent) {
-    if (touchRef.current === null || detailNeed) return;
+  const onTS = (e: React.TouchEvent) => { touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
+  const onTE = (e: React.TouchEvent) => {
+    if (!touchRef.current || detailNeed) return;
     const dx = e.changedTouches[0].clientX - touchRef.current.x;
     const dy = e.changedTouches[0].clientY - touchRef.current.y;
     touchRef.current = null;
     if (Math.abs(dx) < 90 || Math.abs(dy) > Math.abs(dx) * 0.5) return;
     if (dx < 0 && idx < needs.length - 1) setIdx(idx + 1);
     if (dx > 0 && idx > 0) setIdx(idx - 1);
-  }
+  };
 
-  if (localLoading) {
-    return (
-      <div style={{ position:'fixed', inset:0, zIndex:80, background:'var(--bg)',
-        display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <div style={{ fontSize:14, color:'var(--text-sub)' }}>Загрузка...</div>
+  if (localLoading) return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>Загрузка...</div>
+    </div>
+  );
+
+  const prevNeed = needs[idx - 1];
+  const nextNeed = needs[idx + 1];
+
+  const Steps = () => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      {needs.map((n, i) => (
+        <button key={n.id} onClick={() => setIdx(i)} style={{
+          width: i === idx ? 22 : 6, height: 6, borderRadius: 3, border: 'none', padding: 0,
+          background: i === idx ? (COLORS[n.id] ?? 'var(--accent)')
+            : (effectiveRatings[n.id] ?? 0) > 0 ? 'rgba(var(--fg-rgb),0.3)' : 'rgba(var(--fg-rgb),0.12)',
+          cursor: 'pointer', transition: 'all 0.2s',
+        }} />
+      ))}
+    </div>
+  );
+
+  const Topbar = () => (
+    <div style={{ height: 52, padding: '0 24px', display: 'flex', alignItems: 'center',
+      justifyContent: 'space-between', borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', flexShrink: 0 }}>
+      <button onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8,
+        background: 'none', border: 'none', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', padding: 0 }}>
+        <GlyphArrowLeft /> {isBackfill ? 'Закрыть' : 'Назад'}
+      </button>
+      {isDesktop && (
+        <div style={{ fontSize: 11, color: 'var(--text-faint)', letterSpacing: '0.08em',
+          textTransform: 'uppercase', fontWeight: 600 }}>
+          {isBackfill ? `Оценки за ${date}` : 'Трекер потребностей'}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 2 }}>
+        {onOpenNote && (
+          <button onClick={onOpenNote} style={{ width: 30, height: 30, borderRadius: 6,
+            display: 'grid', placeItems: 'center', background: 'none', border: 'none',
+            color: 'var(--text-faint)', cursor: 'pointer' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+            </svg>
+          </button>
+        )}
+        {onOpenHistory && (
+          <button onClick={() => { onOpenHistory(); goBack(); }} style={{ width: 30, height: 30, borderRadius: 6,
+            display: 'grid', placeItems: 'center', background: 'none', border: 'none',
+            color: 'var(--text-faint)', cursor: 'pointer' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </button>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
 
-  return (
-    <div style={{ position:'fixed', inset:0, zIndex:80, background:'var(--bg)',
-      display:'flex', flexDirection:'column' }}
-      onTouchStart={onTS} onTouchEnd={onTE}>
-
-      {/* ── Topbar ── */}
-      <div className="ex-topbar" style={{ justifyContent:'space-between', flexShrink:0 }}>
-        <button className="ex-back" onClick={goBack}>
-          <GlyphArrowLeft /> {isBackfill ? 'Закрыть' : 'Назад'}
+  const Footer = () => (
+    <div style={{ padding: '14px 24px', display: 'flex', alignItems: 'center',
+      justifyContent: 'space-between', borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
+      flexShrink: 0, gap: 16 }}>
+      <button onClick={() => idx > 0 && setIdx(idx - 1)} disabled={idx === 0}
+        style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8, background: 'none',
+          border: 'none', cursor: idx === 0 ? 'default' : 'pointer', padding: 0,
+          color: idx === 0 ? 'transparent' : 'var(--text-faint)', fontSize: 14, flexShrink: 0 }}>
+        <span>←</span>
+        {prevNeed && <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 15 }}>
+          {(NEED_DATA[prevNeed.id]?.name ?? prevNeed.chartLabel).toLowerCase()}
+        </span>}
+      </button>
+      <div style={{ fontSize: 11, color: 'var(--text-ghost)', letterSpacing: '0.08em',
+        textTransform: 'uppercase', fontWeight: 600, flexShrink: 0, textAlign: 'center' }}>
+        {lastSavedAt
+          ? `сохранено ${lastSavedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`
+          : 'сохранено автоматически'}
+      </div>
+      {allRated ? (
+        <button onClick={isBackfill ? (onDone ?? goBack) : goBack}
+          style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--text)',
+            color: 'var(--bg)', cursor: 'pointer', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+          ✓ Готово
         </button>
-        <div style={{ textAlign:'center' }}>
-          <div style={{ fontSize:13, fontWeight:600, color:'var(--text)' }}>
-            {isBackfill ? 'Оценки за день' : 'Трекер потребностей'}
-          </div>
-          {isBackfill && (
-            <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:2 }}>{date}</div>
-          )}
-        </div>
-        {!isBackfill ? (
-          <div style={{ display:'flex', gap:4 }}>
-            {onOpenNote && (
-              <button onClick={onOpenNote} style={{
-                width:34, height:34, borderRadius:10, border:'none', cursor:'pointer',
-                background:'transparent', display:'flex', alignItems:'center', justifyContent:'center',
-                color:'var(--text-sub)',
-              }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-                </svg>
-              </button>
-            )}
-            {onOpenHistory && (
-              <button onClick={() => { onOpenHistory(); goBack(); }} style={{
-                width:34, height:34, borderRadius:10, border:'none', cursor:'pointer',
-                background:'transparent', display:'flex', alignItems:'center', justifyContent:'center',
-                color:'var(--text-sub)',
-              }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                </svg>
-              </button>
-            )}
-          </div>
-        ) : (
-          <div style={{ width:34 }} />
-        )}
-      </div>
-
-      {/* ── Onboarding ── */}
-      {showOnb && (
-        <div style={{ padding:'0 20px 8px', flexShrink:0 }}>
-          <div style={{
-            background:'rgba(var(--fg-rgb),0.03)',
-            border:'1px solid rgba(var(--fg-rgb),0.08)',
-            borderRadius:20, padding:'16px 18px',
-          }}>
-            {/* Step dots */}
-            <div style={{ display:'flex', gap:5, marginBottom:12 }}>
-              {ONBOARDING_STEPS.map((_,i) => (
-                <div key={i} style={{
-                  width: i===onbStep ? 18 : 6, height:6, borderRadius:3,
-                  background: i===onbStep ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.18)',
-                  transition:'all 0.2s',
-                }}/>
-              ))}
-            </div>
-            <div style={{ display:'flex', gap:14, alignItems:'flex-start', marginBottom:14 }}>
-              <span style={{ fontSize:24, flexShrink:0, lineHeight:1 }}>{ONBOARDING_STEPS[onbStep].emoji}</span>
-              <div>
-                <div style={{ fontSize:14, fontWeight:700, color:'var(--text)', marginBottom:5 }}>
-                  {ONBOARDING_STEPS[onbStep].title}
-                </div>
-                <div style={{ fontSize:13, color:'var(--text-sub)', lineHeight:1.6 }}>
-                  {ONBOARDING_STEPS[onbStep].text}
-                </div>
-              </div>
-            </div>
-            <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
-              <button onClick={dismissOnb} style={{
-                padding:'8px 14px', border:'none', fontFamily:'inherit', borderRadius:10,
-                background:'transparent', color:'var(--text-faint)', fontSize:12, cursor:'pointer',
-              }}>
-                Пропустить
-              </button>
-              <button onClick={() => onbStep < 2 ? setOnbStep(s=>s+1) : dismissOnb()} style={{
-                padding:'8px 16px', border:'none', fontFamily:'inherit', borderRadius:10,
-                background:'var(--text)', color:'var(--bg)',
-                fontSize:12, fontWeight:600, cursor:'pointer',
-              }}>
-                {onbStep < 2 ? 'Далее →' : 'Начнём'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Need heading ── */}
-      <div style={{ flexShrink:0, padding: showOnb ? '8px 24px 0' : '12px 24px 0' }}>
-        {/* Eyebrow */}
-        <div className="eyebrow" style={{ marginBottom:10, display:'flex', alignItems:'center', gap:10 }}>
-          <span style={{ color: COLORS[need.id] ?? 'var(--accent)' }}>●</span>
-          <span>
-            {isBackfill ? 'Заполни оценку' : `Потребность ${idx + 1} из ${needs.length}`}
+      ) : nextNeed ? (
+        <button onClick={() => setIdx(idx + 1)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '10px 20px',
+            borderRadius: 8, border: 'none', background: 'var(--text)', color: 'var(--bg)',
+            cursor: 'pointer', fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+          <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontWeight: 400 }}>
+            далее: {(NEED_DATA[nextNeed.id]?.name ?? nextNeed.chartLabel).toLowerCase()}
           </span>
-          {ratedCount > 0 && !allRated && (
-            <span style={{ color:'var(--text-faint)', fontWeight:400, marginLeft:'auto' }}>
-              {ratedCount} оценено
-            </span>
-          )}
-          {allRated && (
-            <span style={{ color:'var(--accent-green)', fontWeight:600, marginLeft:'auto' }}>
-              ✓ все готово
-            </span>
-          )}
-        </div>
-
-        {/* Name + delta + detail link */}
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8 }}>
-          <button onClick={() => setDetailNeed(need)} style={{
-            background:'none', border:'none', padding:0, cursor:'pointer', textAlign:'left',
-            display:'flex', alignItems:'center', gap:12,
-          }}>
-            <span style={{ fontSize:32, lineHeight:1 }}>{need.emoji}</span>
-            <div>
-              <div style={{
-                fontFamily:'var(--serif)', fontSize:26, fontWeight:400,
-                color:'var(--text)', lineHeight:1.1,
-              }}>
-                {need.chartLabel}
-              </div>
-              <div style={{ fontSize:12, color:'var(--accent)', marginTop:3, fontWeight:500 }}>
-                подробнее →
-              </div>
-            </div>
-          </button>
-
-          {delta !== null && delta !== 0 && (
-            <div style={{
-              flexShrink:0, padding:'4px 10px', borderRadius:20,
-              fontSize:12, fontWeight:600,
-              color: delta>0 ? 'var(--accent-green)' : 'var(--accent-red)',
-              background: delta>0
-                ? 'color-mix(in srgb, var(--accent-green) 12%, transparent)'
-                : 'color-mix(in srgb, var(--accent-red) 12%, transparent)',
-            }}>
-              {delta>0?'+':''}{delta} вчера
-            </div>
-          )}
-        </div>
-
-        {/* Description */}
-        {NEED_DATA[need.id]?.desc && (
-          <div style={{
-            fontSize:13, color:'var(--text-sub)', lineHeight:1.6,
-            marginTop:10, paddingBottom:4,
-          }}>
-            {NEED_DATA[need.id].desc}
-          </div>
-        )}
-      </div>
-
-      {/* ── Dial area ── */}
-      <div style={{ flex:1, display:'flex', flexDirection:'column',
-        alignItems:'center', justifyContent:'center', overflow:'hidden', minHeight:0 }}>
-        <NeedDial
-          need={need} color={COLORS[need.id]??'#888'} value={value}
-          onChange={v => { dismissOnb(); handleChange(need.id, v); }}
-        />
-
-        {/* +/- controls */}
-        <div style={{ display:'flex', alignItems:'center', gap:20, marginTop:4 }}>
-          <button onClick={() => handleChange(need.id, Math.max(0, value-1))} style={{
-            width:50, height:50, borderRadius:25,
-            border:'1.5px solid rgba(var(--fg-rgb),0.12)',
-            background:'rgba(var(--fg-rgb),0.03)',
-            color:'var(--text)',
-            fontSize:24, fontWeight:300, cursor:'pointer', fontFamily:'inherit',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            transition:'background 0.15s',
-          }}>−</button>
-          <div style={{ width:72, textAlign:'center', fontSize:9, color:'var(--text-faint)',
-            fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase' }}>
-            тап по дуге
-          </div>
-          <button onClick={() => handleChange(need.id, Math.min(10, value+1))} style={{
-            width:50, height:50, borderRadius:25,
-            border:'1.5px solid rgba(var(--fg-rgb),0.12)',
-            background:'rgba(var(--fg-rgb),0.03)',
-            color:'var(--text)',
-            fontSize:24, fontWeight:300, cursor:'pointer', fontFamily:'inherit',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            transition:'background 0.15s',
-          }}>+</button>
-        </div>
-      </div>
-
-      {/* ── Bottom ── */}
-      <div style={{
-        padding:'0 20px',
-        paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))',
-        display:'flex', flexDirection:'column', gap:10, flexShrink:0,
-      }}>
-        {/* Summary when all rated */}
-        {allRated && (
-          <div style={{
-            background:'rgba(var(--fg-rgb),0.04)',
-            border:'1px solid rgba(var(--fg-rgb),0.08)',
-            borderRadius:16, padding:'14px 18px',
-            display:'flex', alignItems:'center', justifyContent:'space-between',
-          }}>
-            <div>
-              <div style={{ fontSize:11, color:'var(--text-faint)', marginBottom:3 }}>Индекс дня</div>
-              <div style={{
-                fontFamily:'var(--serif)', fontSize:32, fontWeight:400, color:'var(--text)', lineHeight:1,
-              }}>
-                {avg.toFixed(1)}
-                <span style={{ fontFamily:'inherit', fontSize:14, color:'var(--text-sub)' }}> /10</span>
-              </div>
-            </div>
-            <div style={{ textAlign:'right' }}>
-              <div style={{ fontSize:11, color:'var(--text-faint)', marginBottom:3 }}>Оценено</div>
-              <div style={{ fontSize:20, fontWeight:700, color:'var(--text)' }}>
-                {ratedCount}<span style={{ fontSize:13, color:'var(--text-sub)', fontWeight:400 }}>/{needs.length}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {allRated && (
-          <button onClick={isBackfill ? (onDone ?? goBack) : goBack} className="btn-primary">
-            ✓ Готово — сохранить
-          </button>
-        )}
-
-        {/* Navigation */}
-        <div style={{ display:'flex', gap:10 }}>
-          <button
-            onClick={() => idx > 0 && setIdx(idx-1)}
-            disabled={idx === 0}
-            style={{
-              flex:1, padding:'13px', borderRadius:14, border:'none', fontFamily:'inherit',
-              background:'transparent',
-              color: idx===0 ? 'var(--text-faint)' : 'var(--text-sub)',
-              fontSize:14, cursor: idx===0 ? 'default' : 'pointer',
-            }}
-          >← Назад</button>
-
-          {idx < needs.length - 1 ? (
-            <button onClick={() => setIdx(idx+1)} className="btn-primary" style={{ flex:2 }}>
-              Далее →
-            </button>
-          ) : !allRated ? (
-            <button onClick={() => {
-              const first = needs.findIndex(n => !(effectiveRatings[n.id] ?? 0));
-              if (first >= 0) setIdx(first);
-            }} style={{
-              flex:2, padding:'13px', borderRadius:14, border:'1px solid rgba(var(--fg-rgb),0.12)',
-              background:'transparent', fontFamily:'inherit',
-              color:'var(--text-sub)', fontSize:14, cursor:'pointer',
-            }}>
-              К незаполненным ↩
-            </button>
-          ) : null}
-        </div>
-
-        {/* Autosave status */}
-        {lastSavedAt && (
-          <div style={{ textAlign:'center', fontSize:11, color:'var(--text-faint)' }}>
-            Сохранено {lastSavedAt.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' })}
-          </div>
-        )}
-      </div>
-
-      {/* ── Detail sheet ── */}
-      {detailNeed && (
-        <NeedTodaySheet
-          need={detailNeed}
-          value={effectiveRatings[detailNeed.id] ?? 0}
-          yesterdayValue={yesterdayRatings[detailNeed.id] ?? YESTERDAY[detailNeed.id]}
-          onChange={v => handleChange(detailNeed.id, v)}
-          onClose={() => setDetailNeed(null)}
-        />
+          <span>→</span>
+        </button>
+      ) : (
+        <button onClick={() => { const f = needs.findIndex(n => !(effectiveRatings[n.id] ?? 0)); if (f >= 0) setIdx(f); }}
+          style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid rgba(var(--fg-rgb),0.12)',
+            background: 'transparent', color: 'var(--text-sub)', cursor: 'pointer', fontSize: 13, flexShrink: 0 }}>
+          К незаполненным ↩
+        </button>
       )}
+    </div>
+  );
+
+  const DetailSheet = detailNeed ? (
+    <NeedTodaySheet need={detailNeed} value={effectiveRatings[detailNeed.id] ?? 0}
+      yesterdayValue={yesterdayRatings[detailNeed.id] ?? YESTERDAY[detailNeed.id]}
+      onChange={v => handleChange(detailNeed.id, v)}
+      onClose={() => setDetailNeed(null)} />
+  ) : null;
+
+  // ── Desktop triptych ───────────────────────────────────────────────────────
+  if (isDesktop) return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Topbar />
+      {/* Hero header */}
+      <div style={{ padding: '24px 80px 20px', borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 40 }}>
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 12, display: 'inline-flex',
+              alignItems: 'center', gap: 10, color }}>
+              <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 14,
+                textTransform: 'none', letterSpacing: 0, color: 'var(--text-ghost)' }}>
+                {String(idx + 1).padStart(2, '0')} / {String(needs.length).padStart(2, '0')}
+              </span>
+              <span style={{ width: 5, height: 5, borderRadius: 3, background: 'currentColor', display: 'inline-block' }} />
+              <span>{extra?.subtitle ?? ''}</span>
+            </div>
+            <h1 style={{ fontFamily: 'var(--serif)', fontSize: 64, fontWeight: 400,
+              lineHeight: 0.96, letterSpacing: '-0.025em', color: 'var(--text)', margin: 0 }}>
+              <button onClick={() => setDetailNeed(need)} style={{ all: 'unset', cursor: 'pointer' }}>
+                {needName}
+              </button>
+              <span style={{ marginLeft: 14, fontSize: 48 }}>{need.emoji}</span>
+            </h1>
+            {extra?.desc && (
+              <p style={{ margin: '10px 0 0', fontSize: 14, lineHeight: 1.55,
+                color: 'var(--text-sub)', maxWidth: 520 }}>{extra.desc}</p>
+            )}
+          </div>
+          <Steps />
+        </div>
+      </div>
+      {/* 3 columns */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1.25fr 1fr',
+        overflow: 'hidden', minHeight: 0 }}>
+        {/* Left — question */}
+        <div style={{ padding: '28px 28px 28px 80px', borderRight: '1px solid rgba(var(--fg-rgb),0.07)',
+          display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          <div className="eyebrow" style={{ marginBottom: 16, color: 'var(--text-faint)' }}>вопрос дня</div>
+          <p style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 21,
+            lineHeight: 1.4, color: 'var(--text)', margin: 0 }}>{extra?.question ?? ''}</p>
+          {delta !== null && delta !== 0 && (
+            <div style={{ marginTop: 'auto', paddingTop: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 13,
+                color: 'var(--text-faint)' }}>вчера</span>
+              <span style={{ fontSize: 13, fontWeight: 600,
+                color: delta > 0 ? 'var(--c-moss)' : 'var(--c-rose)' }}>
+                {delta > 0 ? '+' : ''}{delta}
+              </span>
+            </div>
+          )}
+        </div>
+        {/* Center — picker */}
+        <div style={{ padding: '28px 44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRight: '1px solid rgba(var(--fg-rgb),0.07)' }}>
+          <PickerRail value={value} onChange={v => handleChange(need.id, v)} color={color} />
+        </div>
+        {/* Right — examples */}
+        <div style={{ padding: '28px 80px 28px 28px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          <div className="eyebrow" style={{ marginBottom: 16, color: 'var(--text-faint)' }}>что считается</div>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' }}>
+            {(extra?.examples ?? []).map((ex, i, arr) => (
+              <li key={i} style={{ display: 'grid', gridTemplateColumns: '24px 1fr', gap: 10,
+                padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid rgba(var(--fg-rgb),0.07)' : 'none',
+                alignItems: 'start' }}>
+                <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic',
+                  fontSize: 15, color: 'var(--text-ghost)' }}>{i + 1}.</span>
+                <span style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-sub)' }}>{ex}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <Footer />
+      {DetailSheet}
+    </div>
+  );
+
+  // ── Mobile layout ──────────────────────────────────────────────────────────
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      onTouchStart={onTS} onTouchEnd={onTE}>
+      <Topbar />
+      <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color }}>
+            <span style={{ width: 5, height: 5, borderRadius: 3, background: 'currentColor', display: 'inline-block' }} />
+            <span>{extra?.subtitle ?? ''}</span>
+          </div>
+          <Steps />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+          <div style={{ flex: 1 }}>
+            <button onClick={() => setDetailNeed(need)} style={{ all: 'unset', cursor: 'pointer' }}>
+              <h1 style={{ fontFamily: 'var(--serif)', fontSize: 34, fontWeight: 400,
+                lineHeight: 1.0, letterSpacing: '-0.02em', color: 'var(--text)', margin: 0 }}>
+                {needName}
+              </h1>
+            </button>
+            {extra?.desc && (
+              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, marginTop: 6 }}>
+                {extra.desc}
+              </div>
+            )}
+          </div>
+          <span style={{ fontSize: 38, lineHeight: 1, flexShrink: 0 }}>{need.emoji}</span>
+        </div>
+        <div style={{ padding: '14px 0', borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
+          borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', marginBottom: 20 }}>
+          <div className="eyebrow" style={{ marginBottom: 10, color: 'var(--text-faint)' }}>вопрос дня</div>
+          <p style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 17,
+            lineHeight: 1.45, color: 'var(--text)', margin: 0 }}>{extra?.question ?? ''}</p>
+        </div>
+        <div style={{ marginBottom: 24 }}>
+          <PickerRail value={value} onChange={v => handleChange(need.id, v)} color={color} />
+        </div>
+        <div style={{ paddingTop: 4, borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
+          <div className="eyebrow" style={{ marginBottom: 12, color: 'var(--text-faint)' }}>что считается</div>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' }}>
+            {(extra?.examples ?? []).map((ex, i, arr) => (
+              <li key={i} style={{ display: 'grid', gridTemplateColumns: '20px 1fr', gap: 10,
+                padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid rgba(var(--fg-rgb),0.07)' : 'none',
+                alignItems: 'start' }}>
+                <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic',
+                  fontSize: 14, color: 'var(--text-ghost)' }}>{i + 1}.</span>
+                <span style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-sub)' }}>{ex}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <Footer />
+      {DetailSheet}
     </div>
   );
 }
