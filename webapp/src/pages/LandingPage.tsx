@@ -1,6 +1,70 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '../api';
 
+// ─── Design tokens (local to landing) ────────────────────────────────────────
+const R = { pill: 100, card: 24, btn: 12, badge: 14 } as const;          // radius
+const MOSS = '#4a6335';        // green status (passes WCAG AA on paper bg)
+const DARK_BG = '#1c1916';     // intentional always-dark sections
+const INK_ON_DARK = '#eceae5'; // text on dark sections
+
+// ─── Button — single source for all CTAs ─────────────────────────────────────
+type BtnVariant = 'primary' | 'ghost' | 'dark';
+type BtnSize = 'sm' | 'md' | 'lg';
+const BTN_PAD: Record<BtnSize, string> = { sm: '8px 18px', md: '13px 24px', lg: '15px 30px' };
+const BTN_FS:  Record<BtnSize, number> = { sm: 13, md: 14, lg: 15 };
+
+function Btn({
+  children, variant = 'primary', size = 'md', radius = 'pill',
+  href, onClick, type = 'button', full = false, disabled = false, style,
+}: {
+  children: React.ReactNode;
+  variant?: BtnVariant;
+  size?: BtnSize;
+  radius?: 'pill' | 'btn';
+  href?: string;
+  onClick?: () => void;
+  type?: 'button' | 'submit';
+  full?: boolean;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+}) {
+  const variants: Record<BtnVariant, React.CSSProperties> = {
+    primary: { background: 'var(--accent)', color: '#fff', boxShadow: '0 8px 28px rgba(77,71,153,.28)' },
+    ghost:   { background: 'transparent', borderColor: 'var(--line-strong)', color: 'var(--text-sub)', fontWeight: 500 },
+    dark:    { background: 'rgba(255,255,255,.1)', borderColor: 'rgba(255,255,255,.2)', color: INK_ON_DARK },
+  };
+  const css: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    padding: BTN_PAD[size], fontSize: BTN_FS[size], fontWeight: 700, fontFamily: 'inherit',
+    borderRadius: radius === 'pill' ? R.pill : R.btn,
+    border: '1.5px solid transparent', boxSizing: 'border-box',
+    cursor: disabled ? 'default' : 'pointer', textDecoration: 'none',
+    width: full ? '100%' : undefined, opacity: disabled ? 0.4 : 1,
+    transition: 'transform .15s, box-shadow .15s, background .15s, border-color .15s, color .15s',
+    ...variants[variant], ...style,
+  };
+  const enter = (e: React.MouseEvent) => {
+    if (disabled) return;
+    const el = e.currentTarget as HTMLElement;
+    if (variant === 'primary') { el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 12px 40px rgba(77,71,153,.4)'; }
+    else if (variant === 'ghost') { el.style.borderColor = 'var(--text)'; el.style.color = 'var(--text)'; }
+    else { el.style.background = 'rgba(255,255,255,.18)'; }
+  };
+  const leave = (e: React.MouseEvent) => {
+    const el = e.currentTarget as HTMLElement;
+    el.style.transform = '';
+    el.style.boxShadow = variant === 'primary' ? '0 8px 28px rgba(77,71,153,.28)' : '';
+    if (variant === 'ghost') { el.style.borderColor = 'var(--line-strong)'; el.style.color = 'var(--text-sub)'; }
+    if (variant === 'dark') { el.style.background = 'rgba(255,255,255,.1)'; }
+  };
+  if (href) {
+    const ext = href.startsWith('http');
+    return <a href={href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined}
+      style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</a>;
+  }
+  return <button type={type} onClick={onClick} disabled={disabled} style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</button>;
+}
+
 // ─── Scroll reveal via CSS scroll-driven (with IntersectionObserver fallback) ─
 function useReveal() {
   const ref = useRef<HTMLElement>(null);
@@ -141,15 +205,9 @@ function BookingForm() {
         </span>
       </label>
       {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Не вышло — напишите напрямую: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
-      <button type="submit" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent} style={{
-        padding: '16px 32px', background: 'var(--accent)', color: 'white',
-        border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer',
-        opacity: (status === 'loading' || !name.trim() || !contact.trim() || !consent) ? .4 : 1,
-        transition: 'opacity .15s, transform .1s', alignSelf: 'flex-start',
-        boxShadow: '0 8px 28px rgba(77,71,153,.3)',
-      }}>
+      <Btn type="submit" size="lg" radius="btn" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent} style={{ alignSelf: 'flex-start' }}>
         {status === 'loading' ? 'Отправляю…' : 'Записаться на встречу →'}
-      </button>
+      </Btn>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Первая встреча 15 минут — бесплатно. Никаких обязательств.</p>
     </form>
   );
@@ -324,7 +382,7 @@ export function LandingPage() {
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <a href="/login" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
-          <button onClick={scrollToBooking} style={{ padding: '7px 18px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Записаться</button>
+          <Btn size="sm" onClick={scrollToBooking}>Записаться</Btn>
         </div>
       </div>
 
@@ -346,8 +404,8 @@ export function LandingPage() {
               <span style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Григорий Котляревский</span>
               {/* Бейдж скрыт на мобиле */}
               <div className="nav-badge" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: 'rgba(74,99,53,.1)', border: '1px solid rgba(74,99,53,.25)', borderRadius: 100, flexShrink: 0 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a6335', display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#4a6335', letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: MOSS, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: MOSS, letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
               </div>
             </div>
             <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer"
@@ -394,26 +452,8 @@ export function LandingPage() {
                 Мы снова и снова попадаем в одни и те же ситуации — в отношениях, самооценке, тревоге. Схема-терапия объясняет почему и даёт выход.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <button onClick={scrollToBooking} style={{
-                  padding: '15px 32px', background: 'var(--accent)', color: 'white',
-                  border: 'none', borderRadius: 100, fontSize: 15, fontWeight: 700,
-                  cursor: 'pointer', boxShadow: '0 8px 32px rgba(77,71,153,.28)',
-                  transition: 'transform .15s, box-shadow .15s',
-                }}
-                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 12px 40px rgba(77,71,153,.38)'; }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = ''; }}>
-                  Записаться на встречу →
-                </button>
-                <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '15px 24px', border: '1.5px solid var(--line-strong)', borderRadius: 100,
-                  fontSize: 15, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none',
-                  transition: 'border-color .15s, color .15s',
-                }}
-                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--text)'; el.style.color = 'var(--text)'; }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = ''; el.style.color = ''; }}>
-                  Написать в Telegram ↗
-                </a>
+                <Btn size="lg" onClick={scrollToBooking}>Записаться на встречу →</Btn>
+                <Btn variant="ghost" size="lg" href="https://t.me/kotlarewski">Написать в Telegram ↗</Btn>
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '16px 0 0' }}>
                 Первая встреча — бесплатно, 15 минут, без обязательств
@@ -526,10 +566,10 @@ export function LandingPage() {
       </section>
 
       {/* ── PROCESS ─────────────────────────────────────────────────────── */}
-      <section ref={processRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: '#1c1916', padding: '80px 40px' }}>
+      <section ref={processRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: DARK_BG, padding: '80px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(236,234,229,.4)', margin: '0 0 10px' }}>Как начать</p>
-          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 400, color: '#eceae5', margin: '0 0 56px', letterSpacing: '-.01em' }}>Три шага до первой встречи</h2>
+          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 400, color: INK_ON_DARK, margin: '0 0 56px', letterSpacing: '-.01em' }}>Три шага до первой встречи</h2>
           <div className="process-grid">
             {[
               { n: '01', title: 'Оставьте заявку', sub: 'Имя и контакт — этого достаточно. Можно добавить пару слов о запросе.' },
@@ -538,7 +578,7 @@ export function LandingPage() {
             ].map((s, i) => (
               <div key={i} style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,.08)' : 'none', padding: '0 40px 0 ' + (i > 0 ? '40px' : '0') }}>
                 <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(52px, 6vw, 80px)', fontWeight: 400, color: 'rgba(144,137,224,.3)', lineHeight: 1, margin: '0 0 16px', letterSpacing: '-.03em' }}>{s.n}</p>
-                <p style={{ fontSize: 18, fontWeight: 600, color: '#eceae5', margin: '0 0 10px' }}>{s.title}</p>
+                <p style={{ fontSize: 18, fontWeight: 600, color: INK_ON_DARK, margin: '0 0 10px' }}>{s.title}</p>
                 <p style={{ fontSize: 14, color: 'rgba(236,234,229,.5)', lineHeight: 1.7, margin: 0 }}>{s.sub}</p>
               </div>
             ))}
@@ -568,18 +608,14 @@ export function LandingPage() {
                 </div>
               ))}
             </div>
-            <button onClick={scrollToBooking} style={{ padding: '15px 24px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 28px rgba(77,71,153,.3)', transition: 'transform .15s' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; }}>
-              Записаться бесплатно →
-            </button>
+            <Btn radius="btn" full onClick={scrollToBooking}>Записаться бесплатно →</Btn>
           </div>
           {/* Session */}
           <div style={{ background: 'var(--text)', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,.12)', padding: '4px 12px', borderRadius: 100, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.7)' }}>Основной</div>
             <div>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(236,234,229,.45)' }}>Сессия</span>
-              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: '#eceae5', margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>4 000 ₽</p>
+              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>4 000 ₽</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['50 минут онлайн (видео)', 'Индивидуальная работа', 'Схема-терапия и КПТ', 'Регулярные встречи'].map(f => (
@@ -589,11 +625,7 @@ export function LandingPage() {
                 </div>
               ))}
             </div>
-            <button onClick={scrollToBooking} style={{ padding: '15px 24px', background: 'rgba(255,255,255,.1)', border: '1.5px solid rgba(255,255,255,.2)', borderRadius: 10, fontSize: 14, fontWeight: 700, color: '#eceae5', cursor: 'pointer', transition: 'background .15s' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.18)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.1)'; }}>
-              Начать работу →
-            </button>
+            <Btn variant="dark" radius="btn" full onClick={scrollToBooking}>Начать работу →</Btn>
           </div>
         </div>
       </section>
@@ -626,14 +658,8 @@ export function LandingPage() {
                 СхемаЛаб — бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Ведите дневник состояний, отслеживайте потребности, делайте упражнения. Всё сохраняется — динамика всегда перед глазами.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <a href="/login" style={{ padding: '13px 26px', background: 'var(--accent)', color: 'white', borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none', boxShadow: '0 6px 24px rgba(77,71,153,.28)', transition: 'transform .15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; }}>
-                  Попробовать бесплатно
-                </a>
-                <a href="https://t.me/SchemaLabBot" target="_blank" rel="noopener noreferrer" style={{ padding: '13px 22px', background: 'transparent', border: '1.5px solid var(--line-strong)', borderRadius: 100, fontSize: 14, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none' }}>
-                  Telegram-бот
-                </a>
+                <Btn href="/login">Попробовать бесплатно</Btn>
+                <Btn variant="ghost" href="https://t.me/SchemaLabBot">Telegram-бот</Btn>
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
