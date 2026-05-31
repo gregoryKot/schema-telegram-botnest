@@ -118,12 +118,12 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
       eyebrow="Дневник схем · новая запись"
       eyebrowColor="var(--c-rose)"
       title={<>Записать<br /><span className="it">момент</span></>}
-      lede="Поймал триггер — приходи сюда. Десять полей, заполняй сколько успеешь. Обязательное только первое."
+      lede="Поймал триггер – приходи сюда. Десять полей, заполняй сколько успеешь. Обязательное только первое."
       aside={
         <div className="aside-card" style={{ borderColor: 'var(--c-rose)40', background: 'var(--c-rose)08', position: 'sticky', top: 40 }}>
           <div className="aside-card-eyebrow" style={{ color: 'var(--c-rose)' }}>Совет</div>
           <h3>Не обязательно по порядку</h3>
-          <p className="body">Если в моменте трудно — запиши только триггер и чувство. Остальное можно дополнить позже, или когда тебе кто-то поможет это разобрать.</p>
+          <p className="body">Если в моменте трудно – запиши только триггер и чувство. Остальное можно дополнить позже, или когда тебе кто-то поможет это разобрать.</p>
           <ul>
             <li>Автосохранение каждые 5 сек</li>
             <li>Можно вернуться и продолжить</li>
@@ -137,7 +137,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         <span className="flow-section-num">I.</span>
         <div>
           <div className="flow-section-title">Что случилось</div>
-          <div className="flow-section-sub">Внешняя сторона события — ситуация, чувства, тело, твоя реакция.</div>
+          <div className="flow-section-sub">Внешняя сторона события – ситуация, чувства, тело, твоя реакция.</div>
         </div>
       </div>
 
@@ -145,7 +145,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         <div className="prompt-num">1.</div>
         <div>
           <div className="prompt-label">Опиши ситуацию <span style={{ color: 'var(--c-rose)', marginLeft: 2 }}>*</span></div>
-          <p className="prompt-hint">Что произошло? Где, с кем, в какой момент. Конкретно — не обобщай.</p>
+          <p className="prompt-hint">Что произошло? Где, с кем, в какой момент. Конкретно – не обобщай.</p>
           <textarea
             className={'paper-input ' + (trigger.trim() ? 'is-filled' : '')}
             rows={3}
@@ -159,7 +159,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
 
       <div className="field-block" style={{ marginTop: 32 }}>
         <div className="prompt-label" style={{ fontSize: 22, marginBottom: 6 }}>Что поднялось внутри</div>
-        <p className="field-block-hint">Выбери одно или несколько — потом отметь интенсивность.</p>
+        <p className="field-block-hint">Выбери одно или несколько – потом отметь интенсивность.</p>
         <div className="chip-row">
           {EMOTIONS.map(em => {
             const sel = emotions.find(e => e.id === em.id);
@@ -249,7 +249,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         <span className="flow-section-num">II.</span>
         <div>
           <div className="flow-section-title">Какая схема сработала</div>
-          <div className="flow-section-sub">Найди под ситуацией знакомый паттерн. Он не «правда о тебе» — это привычка.</div>
+          <div className="flow-section-sub">Найди под ситуацией знакомый паттерн. Он не «правда о тебе» – это привычка.</div>
         </div>
       </div>
 
@@ -307,7 +307,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
             rows={2}
             value={schemaOrigin}
             onChange={e => setSchemaOrigin(e.target.value)}
-            placeholder="Так папа в детстве оценивал мои оценки — никогда не было достаточно…"
+            placeholder="Так папа в детстве оценивал мои оценки – никогда не было достаточно…"
           />
         </div>
       </div>
@@ -317,14 +317,14 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         <span className="flow-section-num">III.</span>
         <div>
           <div className="flow-section-title">Здоровый взгляд</div>
-          <div className="flow-section-sub">Не «всё хорошо» — а более точно. Что Здоровый Взрослый сказал бы на твоём месте.</div>
+          <div className="flow-section-sub">Не «всё хорошо» – а более точно. Что Здоровый Взрослый сказал бы на твоём месте.</div>
         </div>
       </div>
 
       <div className="prompt">
         <div className="prompt-num">8.</div>
         <div>
-          <div className="prompt-label">Если убрать схему — что происходит</div>
+          <div className="prompt-label">Если убрать схему – что происходит</div>
           <textarea
             className={'paper-input ' + (healthyView.trim() ? 'is-filled' : '')}
             rows={2}
@@ -339,13 +339,13 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         <div className="prompt-num">9.</div>
         <div>
           <div className="prompt-label">Что реально трудно</div>
-          <p className="prompt-hint">Без раздувания — что в этом моменте по-настоящему сложно?</p>
+          <p className="prompt-hint">Без раздувания – что в этом моменте по-настоящему сложно?</p>
           <textarea
             className={'paper-input ' + (realProblems.trim() ? 'is-filled' : '')}
             rows={2}
             value={realProblems}
             onChange={e => setRealProblems(e.target.value)}
-            placeholder="Получать критику при всех — это правда некомфортно…"
+            placeholder="Получать критику при всех – это правда некомфортно…"
           />
         </div>
       </div>

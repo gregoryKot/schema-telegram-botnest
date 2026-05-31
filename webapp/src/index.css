@@ -74,7 +74,7 @@
   --on-accent:     #ffffff;
   --chip-sel-text: #ffffff;
 
-  /* ── Schema / mode palette — restrained, earth-leaning ───────────────── */
+  /* ── Schema / mode palette – restrained, earth-leaning ───────────────── */
   --c-rose:    #c46b6b;
   --c-amber:   #c2862a;
   --c-ochre:   #a17f1f;
@@ -427,7 +427,7 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
-/* Elevated card — for overlays, modals, and standalone pages (login, account) */
+/* Elevated card – for overlays, modals, and standalone pages (login, account) */
 .card-elevated {
   background: var(--bg-elev);
   border: 1px solid var(--line);
@@ -644,7 +644,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 /* ─── Loader / spinner ───────────────────────────────────────────────────── */
 .loader-center {
   /* flex: 1 so this fills the available width inside #root (which is
-     flex-row by default — without flex:1 children shrink to content
+     flex-row by default – without flex:1 children shrink to content
      and slide left). */
   flex: 1;
   display: flex; align-items: center; justify-content: center;
@@ -769,7 +769,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   .tool-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ─── Mobile — bottom nav ────────────────────────────────────────────────── */
+/* ─── Mobile – bottom nav ────────────────────────────────────────────────── */
 .mobile-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
@@ -851,7 +851,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   Exercises — Hub & fullscreen exercise screens
+   Exercises – Hub & fullscreen exercise screens
    ══════════════════════════════════════════════════════════════════════ */
 
 /* ── Hub: editorial library ─────────────────────────────────────────── */
@@ -999,7 +999,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .ex-step.is-done .sn { color: var(--c-moss); }
 
 /* Prompt */
-/* Prompt — shared by exercises and diary flows */
+/* Prompt – shared by exercises and diary flows */
 .ex-prompt, .prompt { display: grid; grid-template-columns: 56px 1fr; gap: 24px; align-items: start; margin-bottom: 28px; }
 .ex-prompt-num, .prompt-num { font-family: var(--serif); font-style: italic; font-size: 48px; line-height: 0.9; color: var(--text-ghost); font-weight: 400; }
 .ex-prompt-label, .prompt-label { font-family: var(--serif); font-size: 36px; line-height: 1.1; letter-spacing: -0.015em; color: var(--text); font-weight: 400; margin-bottom: 10px; }
@@ -1253,14 +1253,14 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   outline-offset: 3px;
   border-radius: 4px;
 }
-/* Кнопки и ссылки — чуть больший радиус */
+/* Кнопки и ссылки – чуть больший радиус */
 button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
   border-radius: 8px;
 }
-/* Инпуты уже получают box-shadow при focus — outline не нужен */
+/* Инпуты уже получают box-shadow при focus – outline не нужен */
 input:focus-visible,
 textarea:focus-visible {
   outline: none;

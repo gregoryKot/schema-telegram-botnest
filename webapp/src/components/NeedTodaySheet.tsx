@@ -19,8 +19,8 @@ interface Props {
 
 const DISCLAIMER_CONTENT = [
   'Дневник помогает видеть паттерны и чуть лучше понимать себя.',
-  'Советы внутри — это приглашение к размышлению, не инструкция.',
-  'Если чувствуешь, что что-то важное требует внимания — терапия это место, где можно разобраться по-настоящему. Безопасно, глубоко, рядом живой человек.',
+  'Советы внутри – это приглашение к размышлению, не инструкция.',
+  'Если чувствуешь, что что-то важное требует внимания – терапия это место, где можно разобраться по-настоящему. Безопасно, глубоко, рядом живой человек.',
 ];
 
 export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
@@ -35,7 +35,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
   const rangeIdx = value <= 3 ? 0 : value <= 6 ? 1 : 2;
   const RANGE_VALUES = [1, 4, 7];
 
-  // Inline slider — prevent iOS scroll container from stealing touch events
+  // Inline slider – prevent iOS scroll container from stealing touch events
   const trackRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = trackRef.current;
@@ -96,7 +96,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
           </div>
           {rangeIdx === 2 && (
             <div style={{ padding: '10px 12px', borderRadius: 8, background: `${color}18`, border: `1px solid ${color}30`, fontSize: 12, color, lineHeight: 1.5 }}>
-              Хороший день — заметь это 🌿
+              Хороший день – заметь это 🌿
             </div>
           )}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 12 }}>
@@ -187,7 +187,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
                 <span className="mode-card-stripe" />
                 <div>
                   <div className="mode-card-name">Запланировать шаг на завтра</div>
-                  <div className="mode-card-short">Один маленький шаг — и напомним</div>
+                  <div className="mode-card-short">Один маленький шаг – и напомним</div>
                 </div>
               </div>
               {onOpenHelp && (

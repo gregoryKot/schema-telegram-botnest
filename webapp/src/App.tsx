@@ -31,7 +31,7 @@ function RequireAuth() {
   return <Outlet />;
 }
 
-// ── Root layout — providers wrapper ───────────────────────────────────────────
+// ── Root layout – providers wrapper ───────────────────────────────────────────
 function Root() {
   return (
     <AuthProvider>
@@ -63,7 +63,7 @@ const router = createBrowserRouter([
           { path: '/account',       element: <AccountPage /> },
           { path: '/account/merge', element: <MergePage /> },
 
-          // App shell — all app routes as children
+          // App shell – all app routes as children
           {
             element: <AppShell />,
             children: [

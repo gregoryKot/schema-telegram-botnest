@@ -315,7 +315,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 )}
               </div>
 
-              {/* Терапевт — CLIENT view */}
+              {/* Терапевт – CLIENT view */}
               {userRole !== 'THERAPIST' && (
                 <div style={{ marginBottom: 8 }}>
                   <SectionHeader onInfo={() => setShowTherapistInfo(true)}>МОЙ ТЕРАПЕВТ</SectionHeader>
@@ -369,7 +369,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     ) : (
                       <div>
                         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 10 }}>
-                          Если терапевт дал код — введи его здесь
+                          Если терапевт дал код – введи его здесь
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
                           <input
@@ -416,7 +416,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
                       }}
                     >
-                      <span>👨‍⚕️</span> Я психолог — войти как специалист
+                      <span>👨‍⚕️</span> Я психолог – войти как специалист
                     </button>
                   ) : (
                     <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', paddingTop: 14 }}>
@@ -457,7 +457,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 </div>
               )}
 
-              {/* Терапевт — THERAPIST view */}
+              {/* Терапевт – THERAPIST view */}
               {userRole === 'THERAPIST' && (
                 <div style={{ marginBottom: 8 }}>
                   <SettingsLabel>КАБИНЕТ ТЕРАПЕВТА</SettingsLabel>
@@ -522,7 +522,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   ) : joinView === 'main' ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 4 }}>
-                        Приглашай друга — видите индексы дня друг друга
+                        Приглашай друга – видите индексы дня друг друга
                       </div>
                       <button onClick={handleCreateInvite} disabled={pairLoading} style={{ padding: 14, border: 'none', borderRadius: 12, background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 600, cursor: pairLoading ? 'default' : 'pointer' }}>
                         {pairLoading ? '...' : pairData?.pendingCode ? 'Создать новую ссылку' : 'Создать приглашение'}
@@ -568,7 +568,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 <SettingsLabel>ПОДЕЛИТЬСЯ</SettingsLabel>
                 <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
                   <Row label="Пригласить друга" sub="Поделиться ссылкой на бота" emoji="🔗" onClick={async () => {
-                    const text = 'Трекер потребностей — отслеживай своё состояние каждый день. t.me/SchemaLabBot';
+                    const text = 'Трекер потребностей – отслеживай своё состояние каждый день. t.me/SchemaLabBot';
                     try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); } catch { try { await navigator.clipboard.writeText(text); } catch {} }
                   }} />
                   <Row label="Для терапевта" sub="Сводка за 30 дней" emoji="📤" divider onClick={async () => {
@@ -592,11 +592,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <div className="eyebrow" style={{ marginBottom: 12 }}>Об авторе</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
                     <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                      Канал о схема-терапии —{' '}
+                      Канал о схема-терапии –{' '}
                       <a href="https://t.me/SchemeHappens" style={{ color: 'var(--accent)', textDecoration: 'none' }}>@SchemeHappens</a>
                     </div>
                     <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                      Записаться на сессию —{' '}
+                      Записаться на сессию –{' '}
                       <a href="https://t.me/kotlarewski" style={{ color: 'var(--accent)', textDecoration: 'none' }}>@kotlarewski</a>
                     </div>
                   </div>
@@ -639,8 +639,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
       {showNotifyInfo && (
         <InfoModal onClose={() => setShowNotifyInfo(false)}>
           <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем уведомления</div>
-          <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>Регулярность — это всё. Один раз в день, в одно и то же время, формирует привычку наблюдать за собой.</p>
-          <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}><b style={{ color: 'var(--text)' }}>Итоги дня</b> — приходят в это же время, если дневник заполнен.</p>
+          <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>Регулярность – это всё. Один раз в день, в одно и то же время, формирует привычку наблюдать за собой.</p>
+          <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}><b style={{ color: 'var(--text)' }}>Итоги дня</b> – приходят в это же время, если дневник заполнен.</p>
         </InfoModal>
       )}
 
@@ -649,13 +649,13 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
         <InfoModal onClose={() => setShowPairInfo(false)}>
           <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем привязывать друга</div>
           <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
-            Это необязательно — но может помочь.
+            Это необязательно – но может помочь.
           </p>
           <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 12 }}>
-            Ты и друг (партнёр, коллега) видите <b style={{ color: 'var(--text)' }}>индексы дня</b> друг друга — просто число от 0 до 10. Никаких деталей, дневников или оценок.
+            Ты и друг (партнёр, коллега) видите <b style={{ color: 'var(--text)' }}>индексы дня</b> друг друга – просто число от 0 до 10. Никаких деталей, дневников или оценок.
           </p>
           <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-            Иногда знать, что кому-то важно как у тебя дела — уже достаточно. Это мягкая взаимная видимость, без осуждения.
+            Иногда знать, что кому-то важно как у тебя дела – уже достаточно. Это мягкая взаимная видимость, без осуждения.
           </p>
         </InfoModal>
       )}
@@ -665,13 +665,13 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
         <InfoModal onClose={() => setShowTherapistInfo(false)}>
           <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем подключать терапевта</div>
           <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
-            Если ты работаешь со схема-терапевтом — приложение может стать частью этой работы.
+            Если ты работаешь со схема-терапевтом – приложение может стать частью этой работы.
           </p>
           <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 12 }}>
-            Терапевт, которому ты дашь код, видит <b style={{ color: 'var(--text)' }}>трекер потребностей и задания</b>. Карточки схем, профиль и дневники ты контролируешь сам — можно закрыть в настройках.
+            Терапевт, которому ты дашь код, видит <b style={{ color: 'var(--text)' }}>трекер потребностей и задания</b>. Карточки схем, профиль и дневники ты контролируешь сам – можно закрыть в настройках.
           </p>
           <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-            Это даёт терапевту контекст без лишних объяснений — и позволяет работать с реальными паттернами, не с тем, что вспомнилось на сессии.
+            Это даёт терапевту контекст без лишних объяснений – и позволяет работать с реальными паттернами, не с тем, что вспомнилось на сессии.
           </p>
         </InfoModal>
       )}
@@ -682,7 +682,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Данные и конфиденциальность</div>
 
           {[
-            { title: 'Что хранится на сервере', text: 'Дневник, оценки, заметки, практики, результаты тестов — всё привязано к Telegram-аккаунту и доступно с любого устройства.' },
+            { title: 'Что хранится на сервере', text: 'Дневник, оценки, заметки, практики, результаты тестов – всё привязано к Telegram-аккаунту и доступно с любого устройства.' },
             { title: 'Передача третьим лицам', text: 'Данные не продаются и не передаются рекламным сетям или третьим лицам. Никогда.' },
           ].map(block => (
             <div key={block.title} style={{ marginBottom: 12, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '14px 16px' }}>
@@ -712,7 +712,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
         <InfoModal onClose={() => { setShowDeleteSheet(false); setDeleteConfirm(false); }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 8 }}>Удалить все данные</div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 20 }}>
-            Дневники, оценки, практики, колесо детства, результаты тестов, заметки, задания, связи с терапевтом — всё удалится с сервера. Это действие необратимо.
+            Дневники, оценки, практики, колесо детства, результаты тестов, заметки, задания, связи с терапевтом – всё удалится с сервера. Это действие необратимо.
           </div>
           {!deleteConfirm ? (
             <div style={{ display: 'flex', gap: 8 }}>

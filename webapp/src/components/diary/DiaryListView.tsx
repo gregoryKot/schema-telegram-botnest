@@ -16,9 +16,9 @@ interface Props {
 }
 
 const DIARY_META: Record<DiaryType, { title: string; eyebrow: string; emoji: string; color: string; emptyLine1: string; emptyLine2: string; fabLabel: string }> = {
-  schema:    { title: 'Дневник схем',          eyebrow: 'Дневник схем',     emoji: '📓', color: 'var(--c-rose)',   emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Когда что-то триггернёт — возвращайся и записывай.', fabLabel: '+ Записать момент' },
-  mode:      { title: 'Дневник режимов',       eyebrow: 'Дневник режимов',  emoji: '🔄', color: 'var(--c-slate)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Как только поймаешь себя в знакомом состоянии — приходи записать.', fabLabel: '+ Записать режим' },
-  gratitude: { title: 'Дневник благодарности', eyebrow: 'Благодарность',    emoji: '🌱', color: 'var(--c-moss)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Начни сегодня — достаточно трёх вещей.', fabLabel: '+ Записать' },
+  schema:    { title: 'Дневник схем',          eyebrow: 'Дневник схем',     emoji: '📓', color: 'var(--c-rose)',   emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Когда что-то триггернёт – возвращайся и записывай.', fabLabel: '+ Записать момент' },
+  mode:      { title: 'Дневник режимов',       eyebrow: 'Дневник режимов',  emoji: '🔄', color: 'var(--c-slate)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Как только поймаешь себя в знакомом состоянии – приходи записать.', fabLabel: '+ Записать режим' },
+  gratitude: { title: 'Дневник благодарности', eyebrow: 'Благодарность',    emoji: '🌱', color: 'var(--c-moss)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Начни сегодня – достаточно трёх вещей.', fabLabel: '+ Записать' },
 };
 
 function formatDt(iso: string) {

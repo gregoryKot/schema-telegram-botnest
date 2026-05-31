@@ -5,9 +5,9 @@ import { ExScreen, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScree
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 
 const SCHEMA_QUESTIONS = [
-  { key: 'triggers',    label: 'Что запускает эту схему?',        hint: 'Ситуации, слова, интонации — типичные триггеры', placeholder: 'Когда не отвечают на сообщения; когда критикуют при других…' },
+  { key: 'triggers',    label: 'Что запускает эту схему?',        hint: 'Ситуации, слова, интонации – типичные триггеры', placeholder: 'Когда не отвечают на сообщения; когда критикуют при других…' },
   { key: 'feelings',    label: 'Как проявляется в теле и чувствах?', hint: 'Эмоции и ощущения когда схема активна', placeholder: 'Тревога и ком в горле; злость и напряжение в груди…' },
-  { key: 'thoughts',    label: 'Что говорит голос схемы?',         hint: 'Устойчивые убеждения — про себя, про других, про будущее', placeholder: '«Меня никто не ценит», «Я всегда облажаюсь»…' },
+  { key: 'thoughts',    label: 'Что говорит голос схемы?',         hint: 'Устойчивые убеждения – про себя, про других, про будущее', placeholder: '«Меня никто не ценит», «Я всегда облажаюсь»…' },
   { key: 'origins',     label: 'Откуда эта схема пришла?',         hint: 'Опыт из детства или юности', placeholder: 'Папа говорил что я недостаточно стараюсь; в школе чувствовал себя чужим…', optional: true },
   { key: 'reality',     label: 'Что реально, а что говорит схема?', hint: 'Факты, которые противоречат голосу схемы', placeholder: 'Есть люди которые ценят меня; большинство прогнозов схемы не сбылись…' },
   { key: 'healthyView', label: 'Слова Здорового Взрослого',        hint: 'Что зрелая, сострадательная часть тебя говорит', placeholder: '«Эта боль из прошлого, сейчас я в безопасности»…' },
@@ -15,7 +15,7 @@ const SCHEMA_QUESTIONS = [
 ];
 
 const MODE_QUESTIONS = [
-  { key: 'triggers',  label: 'Когда этот режим активируется?', hint: 'Ситуации, люди, слова — что его запускает', placeholder: 'Когда меня критикуют, когда нужно выступить…' },
+  { key: 'triggers',  label: 'Когда этот режим активируется?', hint: 'Ситуации, люди, слова – что его запускает', placeholder: 'Когда меня критикуют, когда нужно выступить…' },
   { key: 'feelings',  label: 'Что чувствуешь в этом режиме?',  hint: 'Эмоции и ощущения в теле', placeholder: 'Тревога, комок в горле, напряжение в плечах…' },
   { key: 'thoughts',  label: 'Что говорит этот режим внутри?', hint: 'Убеждения, монолог, голос', placeholder: '«Я недостаточно хорош», «Лучше не рисковать»…' },
   { key: 'needs',     label: 'Чего он на самом деле хочет?',   hint: 'Глубинная потребность за этим режимом', placeholder: 'Безопасности, признания, контакта…' },
@@ -92,7 +92,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
       <ExScreen onBack={goBack} eyebrow="№ 02 · Знакомство" eyebrowColor="var(--c-plum)"
         title={<>Карточка<br/><span className="it">схемы</span></>}
         lede="Выбери одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка."
-        aside={<div className="aside-card"><div className="aside-card-eyebrow">Зачем это</div><h3>Назвать — значит вернуть себе власть</h3><p className="body">Схема работает в тени. Когда мы её называем — она становится паттерном, а не «правдой о тебе».</p></div>}
+        aside={<div className="aside-card"><div className="aside-card-eyebrow">Зачем это</div><h3>Назвать – значит вернуть себе власть</h3><p className="body">Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о тебе».</p></div>}
       >
         {SCHEMA_DOMAINS.map(d => (
           <div key={d.id}>
@@ -120,7 +120,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
         <div className="aside-card" style={{ borderColor: picked.color + '40', background: picked.color + '08' }}>
           <div className="aside-card-eyebrow" style={{ color: picked.color }}>Совет</div>
           <h3>Без правильных ответов</h3>
-          <p className="body">Пиши коротко, своими словами — даже одно предложение полезнее, чем идеальный абзац.</p>
+          <p className="body">Пиши коротко, своими словами – даже одно предложение полезнее, чем идеальный абзац.</p>
         </div>
         <button className="ex-btn ex-btn-ghost" onClick={() => setPicked(null)} style={{ padding: '8px 12px' }}><GlyphArrowLeft /> Сменить схему</button>
       </>}
@@ -145,8 +145,8 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
     return (
       <ExScreen onBack={goBack} eyebrow="№ 03 · Знакомство" eyebrowColor="var(--c-clay)"
         title={<>Карточка<br/><span className="it">режима</span></>}
-        lede="Режим — это эмоциональное состояние, которое включается целиком. Описать его — значит научиться его узнавать в моменте."
-        aside={<div className="aside-card"><div className="aside-card-eyebrow">Совет</div><h3>Начни с того, что чаще включается</h3><p className="body">Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого — чтобы было что искать в себе в трудный момент.</p></div>}
+        lede="Режим – это эмоциональное состояние, которое включается целиком. Описать его – значит научиться его узнавать в моменте."
+        aside={<div className="aside-card"><div className="aside-card-eyebrow">Совет</div><h3>Начни с того, что чаще включается</h3><p className="body">Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого – чтобы было что искать в себе в трудный момент.</p></div>}
       >
         {MODE_GROUPS.map(g => (
           <div key={g.id}>
@@ -174,7 +174,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
         <div className="aside-card" style={{ borderColor: picked.color + '40', background: picked.color + '08' }}>
           <div className="aside-card-eyebrow" style={{ color: picked.color }}>Подсказка</div>
           <h3>Говори в настоящем</h3>
-          <p className="body">«Когда я в этом режиме — я чувствую…» работает лучше, чем абстрактные описания.</p>
+          <p className="body">«Когда я в этом режиме – я чувствую…» работает лучше, чем абстрактные описания.</p>
         </div>
         <button className="ex-btn ex-btn-ghost" onClick={() => setPicked(null)} style={{ padding: '8px 12px' }}><GlyphArrowLeft /> Сменить режим</button>
       </>}

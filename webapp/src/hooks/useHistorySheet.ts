@@ -5,11 +5,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
  * Pushes a history entry via React Router when a sheet mounts so the
  * browser back button closes the sheet instead of navigating away.
  *
- * Uses useNavigate/useLocation so React Router knows about the entry —
+ * Uses useNavigate/useLocation so React Router knows about the entry –
  * bypassing the router with history.pushState caused both the sheet to
  * close AND the router to navigate back simultaneously.
  *
- * Returns a `goBack` function — use it for ALL close/back actions inside
+ * Returns a `goBack` function – use it for ALL close/back actions inside
  * the sheet so that history entries are never orphaned.
  */
 export function useHistorySheet(onClose: () => void) {
@@ -35,7 +35,7 @@ export function useHistorySheet(onClose: () => void) {
       if ((location.state as any)?.__sheetId === id.current) ready.current = true;
       return;
     }
-    // Our entry is gone from history (user pressed back) — close the sheet
+    // Our entry is gone from history (user pressed back) – close the sheet
     if ((location.state as any)?.__sheetId !== id.current) {
       ref.current();
     }

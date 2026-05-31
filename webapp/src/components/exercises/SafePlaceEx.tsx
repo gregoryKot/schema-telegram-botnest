@@ -55,19 +55,19 @@ export function SafePlaceEx({ onBack, onComplete }: { onBack: () => void; onComp
   return (
     <ExScreen onBack={goBack} eyebrow="№ 05 · Ресурс" eyebrowColor="var(--c-moss)"
       title={<>Безопасное<br/><span className="it">место</span></>}
-      lede="Опиши место, где тебе спокойно — реальное или воображаемое. Чтобы было куда вернуться мысленно, когда становится тревожно."
+      lede="Опиши место, где тебе спокойно – реальное или воображаемое. Чтобы было куда вернуться мысленно, когда становится тревожно."
       aside={<>
         <div className="aside-card" style={{ borderColor: 'var(--c-moss)40', background: 'var(--c-moss)08' }}>
           <div className="aside-card-eyebrow" style={{ color: 'var(--c-moss)' }}>Совет</div>
           <h3>Конкретика важнее красоты</h3>
-          <p className="body">«Дача у бабушки, веранда, скрипящие половицы» работает лучше, чем «прекрасный лес». Чем больше деталей — тем легче вернуться.</p>
+          <p className="body">«Дача у бабушки, веранда, скрипящие половицы» работает лучше, чем «прекрасный лес». Чем больше деталей – тем легче вернуться.</p>
         </div>
         <div className="aside-card">
           <div className="aside-card-eyebrow">Можно</div>
           <ul style={{ marginTop: 0 }}>
-            <li>Реальное место — комната, лес, пляж</li>
-            <li>Воображаемое — придуманный мир</li>
-            <li>Воспоминание — момент из жизни</li>
+            <li>Реальное место – комната, лес, пляж</li>
+            <li>Воображаемое – придуманный мир</li>
+            <li>Воспоминание – момент из жизни</li>
           </ul>
         </div>
       </>}

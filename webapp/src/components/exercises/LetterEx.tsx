@@ -32,7 +32,7 @@ export function LetterEx({ onBack, onComplete }: { onBack: () => void; onComplet
     return (
       <ExScreen onBack={goBack} eyebrow="Письмо · сохранено" eyebrowColor="var(--c-moss)"
         title={<>Письмо<br/><span className="it">написано.</span></>}
-        lede="Иногда — самая важная работа. Вернись к нему через неделю и перечитай вслух."
+        lede="Иногда – самая важная работа. Вернись к нему через неделю и перечитай вслух."
         aside={others.length > 0 ? (
           <div className="aside-card">
             <div className="aside-card-eyebrow">Прошлые письма · {pastLetters.length}</div>
@@ -65,20 +65,20 @@ export function LetterEx({ onBack, onComplete }: { onBack: () => void; onComplet
   return (
     <ExScreen onBack={goBack} eyebrow="№ 04 · Эмоциональная работа" eyebrowColor="var(--c-amber)"
       title={<>Письмо<br/><span className="it">уязвимому ребёнку</span></>}
-      lede="Сядь рядом с собой-маленьким — таким, каким ты был, когда было трудно. Скажи ему то, что он должен был услышать тогда."
+      lede="Сядь рядом с собой-маленьким – таким, каким ты был, когда было трудно. Скажи ему то, что он должен был услышать тогда."
       aside={<>
         <div className="aside-card" style={{ borderColor: 'var(--c-amber)40', background: 'var(--c-amber)08' }}>
           <div className="aside-card-eyebrow" style={{ color: 'var(--c-amber)' }}>С чего начать</div>
           <h3>Три вопроса перед тем как писать</h3>
           <ul style={{ marginTop: 14 }}>
-            <li>Какой момент из детства — самый трудный?</li>
+            <li>Какой момент из детства – самый трудный?</li>
             <li>Что ты тогда чувствовал? Чего не хватало?</li>
-            <li>Что он должен был услышать — но не услышал?</li>
+            <li>Что он должен был услышать – но не услышал?</li>
           </ul>
         </div>
         <div className="aside-card">
           <div className="aside-card-eyebrow">Подсказка</div>
-          <p className="body">Не редактируй. Пиши от руки сердца, не от головы. Если становится слишком — остановись и просто посиди.</p>
+          <p className="body">Не редактируй. Пиши от руки сердца, не от головы. Если становится слишком – остановись и просто посиди.</p>
         </div>
       </>}
     >

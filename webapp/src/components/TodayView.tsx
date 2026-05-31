@@ -75,7 +75,7 @@ const ONBOARDING_STEPS = [
   {
     emoji: '👆',
     title: 'Оценивай действия',
-    text: 'Не «я вроде чувствую близость», а «кто-то обнял» или «я сказал, что думаю». Оценка от 1 до 10 — потяни ползунок.',
+    text: 'Не «я вроде чувствую близость», а «кто-то обнял» или «я сказал, что думаю». Оценка от 1 до 10 – потяни ползунок.',
   },
   {
     emoji: '💡',
@@ -166,7 +166,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
 
   const handleChange = useCallback((needId: string, value: number) => {
     onChange(needId, value);
-    if (isOffline) return; // visual update only — no save while offline
+    if (isOffline) return; // visual update only – no save while offline
     // Keep slider unlocked while user is actively dragging + 2.5s after last move
     setUnlocked(prev => new Set([...prev, needId]));
     clearTimeout(unlockTimers.current[needId]);
@@ -188,7 +188,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
   }, [onChange, onSaved, isOffline]);
 
   // Summary calculations
-  // index = sum of all needs (unrated = 0) / total needs — same formula as server getPair
+  // index = sum of all needs (unrated = 0) / total needs – same formula as server getPair
   const avg = needs.length > 0
     ? needs.reduce((s, n) => s + (ratings[n.id] ?? 0), 0) / needs.length
     : 0;
@@ -250,7 +250,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color }}>Сделать завтра что-то для себя</div>
                   <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>
-                    Один маленький шаг — пока помнишь
+                    Один маленький шаг – пока помнишь
                   </div>
                 </div>
                 <span style={{ fontSize: 16, color: color + '88', flexShrink: 0 }}>›</span>
@@ -299,7 +299,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
       {/* Note button + auto-save status */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 18 }}>
         <div style={{ fontSize: 12, color: saveError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.3)' }}>
-          {saveError ? 'Ошибка сохранения — потяни слайдер ещё раз' : lastSavedAt && `Сохранено ${lastSavedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`}
+          {saveError ? 'Ошибка сохранения – потяни слайдер ещё раз' : lastSavedAt && `Сохранено ${lastSavedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
@@ -340,7 +340,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
           <span style={{ fontSize: 20, flexShrink: 0 }}>🗂</span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Что тебе помогает?</div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>Добавь практики — будут под рукой в нужный момент</div>
+            <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>Добавь практики – будут под рукой в нужный момент</div>
           </div>
           <button
             onClick={e => { e.stopPropagation(); localStorage.setItem(PRACTICES_ONBOARDING_KEY, '1'); setPracticesCardVisible(false); }}

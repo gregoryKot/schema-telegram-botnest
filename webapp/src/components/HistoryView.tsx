@@ -141,7 +141,7 @@ function SparklineRow({ need, history, selectedIdx, selectedRatings, onClick }: 
   const prevScore = history[selectedIdx + 1]?.ratings[need.id] ?? score;
   const delta = score - prevScore;
   const trendColor = delta > 0 ? 'var(--accent-green)' : delta < 0 ? 'var(--accent-red)' : 'var(--text-faint)';
-  const trendArrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '—';
+  const trendArrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '–';
   const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
   const areaPath = `${linePath} L ${pts[n - 1].x.toFixed(1)} ${H} L 0 ${H} Z`;
   const polyStr = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
@@ -166,7 +166,7 @@ function SparklineRow({ need, history, selectedIdx, selectedRatings, onClick }: 
         <circle cx={dot.x} cy={dot.y} r={3.5} fill={color} style={{ transition: 'cx 150ms ease, cy 150ms ease' }} />
       </svg>
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-        <span style={{ fontSize: 16, fontWeight: 700, color, minWidth: 20, textAlign: 'right' }}>{score || '—'}</span>
+        <span style={{ fontSize: 16, fontWeight: 700, color, minWidth: 20, textAlign: 'right' }}>{score || '–'}</span>
         {score > 0 && <span style={{ fontSize: 11, fontWeight: 600, color: trendColor }}>{trendArrow}</span>}
       </div>
     </div>
@@ -211,7 +211,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
       <div style={{ padding: '48px 24px', textAlign: 'center' }}>
         <div style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text-sub)', marginBottom: 12, fontStyle: 'italic' }}>Пусто.</div>
         <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 28 }}>
-          Заполни трекер сегодня — через 3–5 дней начнёт проявляться паттерн
+          Заполни трекер сегодня – через 3–5 дней начнёт проявляться паттерн
         </div>
         {onGoToToday && (
           <button onClick={onGoToToday} className="btn-primary" style={{ maxWidth: 280, margin: '0 auto' }}>
@@ -321,7 +321,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
         {subView === 'day' ? (
           <div style={{ padding: '0 20px' }}>
 
-            {/* Wheel — no card, just space */}
+            {/* Wheel – no card, just space */}
             <div style={{ marginBottom: 8 }} key={selected.date}>
               <NeedsWheel needs={needs} ratings={selectedRatings} prevRatings={prevRatings}
                 childhoodRatings={childhoodRatings}
@@ -367,7 +367,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
               </div>
             )}
 
-            {/* Need rows — list-line style */}
+            {/* Need rows – list-line style */}
             <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
               {needs.map((n, i) => {
                 const val = selectedRatings[n.id] ?? 0;
@@ -392,7 +392,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                       color: val > 0 ? color : 'var(--text-faint)',
                       minWidth: 28, textAlign: 'right',
                     }}>
-                      {val > 0 ? val : '—'}
+                      {val > 0 ? val : '–'}
                     </span>
                   </div>
                 );
@@ -451,7 +451,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
 
             {history.length < 3 && (
               <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-faint)', padding: '16px 0', fontStyle: 'italic' }}>
-                Ещё {3 - history.length} {3 - history.length === 1 ? 'день' : 'дня'} — и паттерн начнёт проявляться
+                Ещё {3 - history.length} {3 - history.length === 1 ? 'день' : 'дня'} – и паттерн начнёт проявляться
               </div>
             )}
           </div>
@@ -475,7 +475,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
             {needsLow.length > 0 && (
               <div style={{ marginTop: 20, padding: '14px 0', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
                 <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 8 }}>
-                  <strong style={{ color: 'var(--text)' }}>{needsLow[0].chartLabel}</strong> остаётся низкой несколько дней — разобраться рядом с живым человеком бывает легче.
+                  <strong style={{ color: 'var(--text)' }}>{needsLow[0].chartLabel}</strong> остаётся низкой несколько дней – разобраться рядом с живым человеком бывает легче.
                 </div>
                 <a href={getTherapistContact().bookingUrl} target="_blank" rel="noreferrer"
                   style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>

@@ -21,14 +21,14 @@ type TaskOption = { type: TaskType; label: string; sub: string; hasStreak?: bool
 
 const TASK_OPTIONS: TaskOption[] = [
   { type: 'tracker_streak', label: 'Трекер потребностей',  sub: 'Отмечать потребности N дней подряд',        hasStreak: true, time: '2–3 мин/день',  color: 'var(--c-amber)'  },
-  { type: 'schema_intro',   label: 'Карточка схемы',       sub: 'Познакомиться со схемой — 7 вопросов',      time: '15 мин',             color: 'var(--c-plum)'   },
+  { type: 'schema_intro',   label: 'Карточка схемы',       sub: 'Познакомиться со схемой – 7 вопросов',      time: '15 мин',             color: 'var(--c-plum)'   },
   { type: 'mode_intro',     label: 'Карточка режима',      sub: 'Познакомиться со своим режимом',            time: '10 мин',             color: 'var(--c-slate)'  },
   { type: 'belief_check',   label: 'Проверить убеждение',  sub: 'Собрать доказательства за и против',        time: '20 мин',             color: 'var(--c-moss)'   },
   { type: 'letter_to_self', label: 'Письмо себе',          sub: 'Написать Уязвимому Ребёнку',               time: '30 мин',             color: 'var(--c-clay)'   },
   { type: 'safe_place',     label: 'Безопасное место',     sub: 'Описать и перечитывать',                   time: '20 мин',             color: 'var(--c-moss)'   },
   { type: 'diary_streak',   label: 'Дневник',              sub: 'Заполнять N дней подряд',                  hasStreak: true, time: '5–10 мин/день', color: 'var(--accent-indigo)' },
-  { type: 'flashcard',      label: 'Мне сейчас плохо',     sub: 'Разобрать ситуацию — 5 шагов',             time: '10 мин',             color: 'var(--c-rose)'   },
-  { type: 'custom',         label: 'Своё задание',         sub: 'Любой текст, который сформулируешь сам',   time: '—',                  color: 'var(--text-sub)' },
+  { type: 'flashcard',      label: 'Мне сейчас плохо',     sub: 'Разобрать ситуацию – 5 шагов',             time: '10 мин',             color: 'var(--c-rose)'   },
+  { type: 'custom',         label: 'Своё задание',         sub: 'Любой текст, который сформулируешь сам',   time: '–',                  color: 'var(--text-sub)' },
 ];
 
 const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(s => ({ id: s.id, name: s.name, domainColor: d.color })));
@@ -119,7 +119,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
             Выбери<br /><span className="it">задание</span>
           </h1>
           <p className="hub-sub" style={{ marginBottom: 32 }}>
-            Появится у клиента в мини-аппе — он выполняет самостоятельно.
+            Появится у клиента в мини-аппе – он выполняет самостоятельно.
           </p>
 
           {/* ── Task list ── */}

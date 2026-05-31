@@ -303,7 +303,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 32 }}>
           {[
             { label: 'Мне плохо',       sub: 'Пять шагов: разобраться что происходит, успокоиться', color: 'var(--c-rose)',  onClick: () => setShowFlashcard(true) },
-            { label: 'Тест YSQ',        sub: '90 вопросов, 20 шкал схем — узнай свои паттерны',    color: 'var(--accent)',  onClick: () => onOpenSchema?.({ startTest: true }) },
+            { label: 'Тест YSQ',        sub: '90 вопросов, 20 шкал схем – узнай свои паттерны',    color: 'var(--accent)',  onClick: () => onOpenSchema?.({ startTest: true }) },
             { label: 'Карта режимов',   sub: 'Найди Уязвимого Ребёнка, Критика, Защитника',         color: 'var(--c-slate)', onClick: () => onOpenSchema?.({ tab: 'modes' }) },
             { label: 'Колесо детства',  sub: 'Как удовлетворялись потребности в детстве',           color: 'var(--accent-indigo)', onClick: onOpenChildhoodWheel, done: childhoodDone },
           ].map(item => (

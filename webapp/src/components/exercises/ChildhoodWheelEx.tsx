@@ -9,17 +9,17 @@ const NEEDS = [
     low: 'Взрослый отсутствовал или был непредсказуем. В трудный момент некому было обратиться.',
     high: 'Был стабильный взрослый, которому можно было доверять. Ты чувствовал себя нужным.' },
   { id: 'autonomy',    label: 'Автономия',         color: 'var(--c-clay)',
-    question: 'Доверяли ли тебе — иметь своё мнение, делать выборы по возрасту, ошибаться?',
+    question: 'Доверяли ли тебе – иметь своё мнение, делать выборы по возрасту, ошибаться?',
     low: 'Контролировали, решали за тебя, критиковали. Ошибка была катастрофой.',
-    high: 'Поощряли пробовать самому. Мнение уважали. Ошибки — часть взросления.' },
+    high: 'Поощряли пробовать самому. Мнение уважали. Ошибки – часть взросления.' },
   { id: 'expression',  label: 'Выражение чувств', color: 'var(--c-moss)',
-    question: 'Было ли безопасно выражать злость, страх, грусть — без наказания или стыда?',
+    question: 'Было ли безопасно выражать злость, страх, грусть – без наказания или стыда?',
     low: 'Сильные чувства было опасно показывать. Научился прятать или подавлять.',
     high: 'Можно было плакать, злиться, бояться. Чувства принимались как норма.' },
   { id: 'play',        label: 'Спонтанность',      color: 'var(--accent-indigo)',
-    question: 'Было ли место для игры и лёгкости — без постоянного давления быть продуктивным?',
+    question: 'Было ли место для игры и лёгкости – без постоянного давления быть продуктивным?',
     low: 'Давление выполнять, достигать, быть серьёзным. Беззаботность вызывала вину.',
-    high: 'Было место для игры ради игры. Смех и лёгкость — часть обычной жизни.' },
+    high: 'Было место для игры ради игры. Смех и лёгкость – часть обычной жизни.' },
   { id: 'limits',      label: 'Границы',            color: 'var(--c-amber)',
     question: 'Были ли правила в семье последовательными и справедливыми, не случайными?',
     low: 'Правила были непредсказуемыми, слишком жёсткими или почти отсутствовали.',
@@ -93,8 +93,8 @@ export function ChildhoodWheelEx({ onBack, onSaved }: { onBack: () => void; onSa
     return (
       <ExScreen onBack={goBack} eyebrow="Колесо детства · сохранено" eyebrowColor="var(--accent-indigo)"
         title={<>Колесо<br/><span className="it">детства</span></>}
-        lede={`Среднее ${avg}/10. ${lowNeeds.length ? `${lowNeeds.length} зон ниже 5 — это места, где могли сформироваться схемы.` : 'Все зоны выше 4 — это редкий ресурс.'}`}
-        aside={<div className="aside-card"><div className="aside-card-eyebrow">Что дальше</div><h3>Связать с сегодня</h3><p className="body">Открой дневник за последнюю неделю и сравни — какие потребности сегодня просели больше всего. Часто это те же зоны.</p></div>}
+        lede={`Среднее ${avg}/10. ${lowNeeds.length ? `${lowNeeds.length} зон ниже 5 – это места, где могли сформироваться схемы.` : 'Все зоны выше 4 – это редкий ресурс.'}`}
+        aside={<div className="aside-card"><div className="aside-card-eyebrow">Что дальше</div><h3>Связать с сегодня</h3><p className="body">Открой дневник за последнюю неделю и сравни – какие потребности сегодня просели больше всего. Часто это те же зоны.</p></div>}
       >
         <div className="cw-grid">
           <div className="cw-sliders">
@@ -127,7 +127,7 @@ export function ChildhoodWheelEx({ onBack, onSaved }: { onBack: () => void; onSa
   return (
     <ExScreen onBack={goBack} eyebrow="№ 06 · Истоки" eyebrowColor="var(--accent-indigo)"
       title={<>Колесо<br/><span className="it">детства</span></>}
-      lede="Оцени пять базовых потребностей в детстве. Не отдельные моменты, а как было «в целом, большую часть времени» — там, где формировались схемы."
+      lede="Оцени пять базовых потребностей в детстве. Не отдельные моменты, а как было «в целом, большую часть времени» – там, где формировались схемы."
       aside={<>
         <div className="aside-card" style={{ borderColor: 'var(--c-amber)40', background: 'var(--c-amber)08' }}>
           <div className="aside-card-eyebrow" style={{ color: 'var(--c-amber)' }}>Внимание</div>
@@ -150,9 +150,9 @@ export function ChildhoodWheelEx({ onBack, onSaved }: { onBack: () => void; onSa
       </>}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-faint)', marginBottom: 18, paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
-        <span>0 — почти не было</span>
-        <span>5 — где-то посередине</span>
-        <span>10 — в полной мере</span>
+        <span>0 – почти не было</span>
+        <span>5 – где-то посередине</span>
+        <span>10 – в полной мере</span>
       </div>
       {NEEDS.map((n, i) => (
         <div key={n.id} className="cw-row" style={{ '--c-color': n.color } as React.CSSProperties}>
@@ -163,10 +163,10 @@ export function ChildhoodWheelEx({ onBack, onSaved }: { onBack: () => void; onSa
             <CWTrack value={ratings[n.id]} onChange={v => set(n.id, v)} color={n.color} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 12 }}>
               <div style={{ fontSize: 11.5, lineHeight: 1.55, color: ratings[n.id] <= 4 ? 'var(--c-rose)' : 'var(--text-faint)', fontWeight: ratings[n.id] <= 4 ? 500 : 400 }}>
-                <span style={{ fontWeight: 600 }}>0 — дефицит. </span>{n.low}
+                <span style={{ fontWeight: 600 }}>0 – дефицит. </span>{n.low}
               </div>
               <div style={{ fontSize: 11.5, lineHeight: 1.55, color: ratings[n.id] >= 8 ? 'var(--c-moss)' : 'var(--text-faint)', fontWeight: ratings[n.id] >= 8 ? 500 : 400 }}>
-                <span style={{ fontWeight: 600 }}>10 — насыщение. </span>{n.high}
+                <span style={{ fontWeight: 600 }}>10 – насыщение. </span>{n.high}
               </div>
             </div>
           </div>

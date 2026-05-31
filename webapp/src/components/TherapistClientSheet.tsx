@@ -59,8 +59,8 @@ function indexColor(v: number) {
 const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; placeholder: string }[] = [
   { key: 'earlyExperience', label: 'Ранний дисфункциональный опыт', placeholder: 'Значимые события и паттерны из детства и юности, которые сформировали схемы...' },
   { key: 'unmetNeeds', label: 'Неудовлетворённые базовые потребности', placeholder: 'Привязанность, автономия, свобода выражения, игра/спонтанность, реалистичные границы...' },
-  { key: 'triggers', label: 'Схемные триггеры', placeholder: 'Ситуации, слова, интонации, отношения — что запускает схемные реакции...' },
-  { key: 'copingStyles', label: 'Стили совладания', placeholder: 'Капитуляция, избегание, гиперкомпенсация — типичные паттерны для каждой схемы...' },
+  { key: 'triggers', label: 'Схемные триггеры', placeholder: 'Ситуации, слова, интонации, отношения – что запускает схемные реакции...' },
+  { key: 'copingStyles', label: 'Стили совладания', placeholder: 'Капитуляция, избегание, гиперкомпенсация – типичные паттерны для каждой схемы...' },
   { key: 'modeTransitions', label: 'Переключение режимов', placeholder: 'Что запускает переход в уязвимого ребёнка? Как активируется карающий критик? Когда появляется здоровый взрослый?...' },
   { key: 'currentProblems', label: 'Актуальные проблемы и симптомы', placeholder: 'С чем обратился клиент, текущие жалобы, симптоматика...' },
 ];
@@ -222,7 +222,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
                 {addMode === 'invite' && (
                   <div>
-                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Отправь клиенту ссылку — он перейдёт и автоматически подключится.</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Отправь клиенту ссылку – он перейдёт и автоматически подключится.</div>
                     {!inviteUrl ? (
                       <button onClick={createInvite} disabled={inviteLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                         {inviteLoading ? 'Создаю...' : 'Создать ссылку'}
@@ -253,7 +253,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
                 {addMode === 'virtual' && (
                   <div>
-                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Для клиентов без Telegram — концептуализация и заметки без привязки к боту</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Для клиентов без Telegram – концептуализация и заметки без привязки к боту</div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <input value={addInput} onChange={e => setAddInput(e.target.value)} placeholder="Имя клиента" style={{ width: 240, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }} />
                       <button onClick={addVirtualClient} disabled={addLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
@@ -267,7 +267,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               </div>
             )}
 
-            {/* Today dashboard — только если есть РЕАЛЬНЫЕ сегодняшние данные */}
+            {/* Today dashboard – только если есть РЕАЛЬНЫЕ сегодняшние данные */}
             {!loading && clients.length > 0 && (() => {
               const today = todayStr();
               const sessionsToday = clients
@@ -289,7 +289,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                         const name = client.clientAlias ?? client.name ?? `ID ${client.telegramId}`;
                         return (
                           <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
-                            <span className="num text-md" style={{ width: 52, flexShrink: 0, color: 'var(--text-sub)', fontWeight: 500 }}>{timePart ?? '—'}</span>
+                            <span className="num text-md" style={{ width: 52, flexShrink: 0, color: 'var(--text-sub)', fontWeight: 500 }}>{timePart ?? '–'}</span>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div className="text-md" style={{ fontWeight: 600 }}>{name}</div>
                               {client.streak > 0 && <div className="text-xs muted" style={{ marginTop: 3 }}>{client.streak} дн. подряд</div>}
@@ -351,8 +351,8 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 600 }}>
                     <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Ссылка</div><div className="text-sm muted" style={{ marginTop: 3 }}>клиент подключается через Telegram-бот по приглашению</div></div></div>
-                    <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Telegram ID</div><div className="text-sm muted" style={{ marginTop: 3 }}>если знаешь его ID — добавишь сразу</div></div></div>
-                    <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Оффлайн</div><div className="text-sm muted" style={{ marginTop: 3 }}>клиент без Telegram — заметки и концептуализация без бота</div></div></div>
+                    <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Telegram ID</div><div className="text-sm muted" style={{ marginTop: 3 }}>если знаешь его ID – добавишь сразу</div></div></div>
+                    <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Оффлайн</div><div className="text-sm muted" style={{ marginTop: 3 }}>клиент без Telegram – заметки и концептуализация без бота</div></div></div>
                   </div>
                 </div>
               ) : (() => {
@@ -393,7 +393,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                             <div style={{ textAlign: 'right' }}>
                               {client.todayIndex != null ? (
                                 <span className="num" style={{ fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em', color: indexColor(client.todayIndex) }}>{client.todayIndex.toFixed(1)}</span>
-                              ) : <span className="text-sm faint">—</span>}
+                              ) : <span className="text-sm faint">–</span>}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center' }}>
                               <RosterSparkline values={(client.recentIndexHistory ?? []).slice().reverse()} />
@@ -408,7 +408,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                                     {schema?.name ?? id}
                                   </span>
                                 );
-                              }) : <span className="text-xs faint">—</span>}
+                              }) : <span className="text-xs faint">–</span>}
                               {client.schemaIds.length > 3 && <span className="text-xs faint">+{client.schemaIds.length - 3}</span>}
                             </div>
                           </div>
@@ -560,7 +560,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               <div className="page-inner-wide" style={{ paddingTop: 40 }}>
                 <div className="doc-grid">
                   <div>
-                    {/* Therapy goals — shown as a quiet quote */}
+                    {/* Therapy goals – shown as a quiet quote */}
                     {(localConcept.goals || concept?.goals) && (
                       <div className="section">
                         <div className="eyebrow" style={{ marginBottom: 14 }}>Цель терапии</div>
@@ -616,7 +616,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                               <div key={group.id}>
                                 <div className="eyebrow" style={{ color: group.color, marginBottom: 10 }}>{group.group}</div>
                                 {active.length === 0 ? (
-                                  <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>—</div>
+                                  <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>–</div>
                                 ) : (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                     {active.map(m => (
@@ -1132,7 +1132,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     style={{ fontSize: 15, lineHeight: 1.65 }}
                   />
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-                    <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>⌘+Enter — сохранить</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>⌘+Enter – сохранить</span>
                     <div style={{ display: 'flex', gap: 8 }}>
                       {newNoteText.trim() && (
                         <button onClick={() => setNewNoteText('')} className="btn btn-secondary">Отмена</button>
@@ -1293,7 +1293,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               />
             )}
 
-            {/* ── OLD YSQ BODY (replaced) — keep tombstone so edit finds it */}
+            {/* ── OLD YSQ BODY (replaced) – keep tombstone so edit finds it */}
 
             {/* ── CLIENT NOTES ─────────────────────────────────────────────────── */}
             {clientTab === 'client_notes' && (

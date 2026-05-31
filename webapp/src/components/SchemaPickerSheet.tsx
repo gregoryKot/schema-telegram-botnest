@@ -14,7 +14,7 @@ const SCHEMA_DESC: Record<string, string> = {
   abandonment:              'Страх что близкие бросят или станут недоступны',
   mistrust:                 'Ожидание что люди причинят боль, используют или обманут',
   defectiveness:            'Ощущение себя плохим, неполноценным или нелюбимым',
-  social_isolation:         'Ощущение чужим — отличным от всех остальных людей',
+  social_isolation:         'Ощущение чужим – отличным от всех остальных людей',
   dependence:               'Ощущение неспособности справляться с жизнью самостоятельно',
   vulnerability:            'Преувеличенный страх катастрофы: болезни, краха, аварии',
   enmeshment:               'Чрезмерная вовлечённость с близкими за счёт своей идентичности',
@@ -46,7 +46,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
       eyebrow="Схемы"
       eyebrowColor="var(--accent)"
       title={<>Мои<br /><span className="it">схемы</span></>}
-      lede="Выбери схемы, которые тебе близки. Можно без теста — если ты уже знаешь свои."
+      lede="Выбери схемы, которые тебе близки. Можно без теста – если ты уже знаешь свои."
     >
       {SCHEMA_DOMAINS.map(domain => (
         <div key={domain.id} style={{ marginBottom: 28 }}>

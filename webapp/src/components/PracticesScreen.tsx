@@ -87,7 +87,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           </div>
         </div>
 
-        {/* Need tabs — calm document style */}
+        {/* Need tabs – calm document style */}
         <div className="tabs" style={{ marginBottom: 28 }}>
           {NEED_IDS.map((id, i) => {
             const active = i === needIdx;
@@ -110,8 +110,8 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           <div className="section" style={{ paddingBottom: 8 }}>
             <div className="text-md" style={{ color: isLow ? needColor : 'var(--c-amber)', lineHeight: 1.55, maxWidth: 600 }}>
               {isLow
-                ? <>Сегодня <b>{NEED_NAMES[needId]}</b> на {todayScore}/10 — хороший момент чтобы что-то сделать для этой потребности.</>
-                : <>Сегодня {NEED_NAMES[needId]} — {todayScore}/10. Есть куда расти.</>}
+                ? <>Сегодня <b>{NEED_NAMES[needId]}</b> на {todayScore}/10 – хороший момент чтобы что-то сделать для этой потребности.</>
+                : <>Сегодня {NEED_NAMES[needId]} – {todayScore}/10. Есть куда расти.</>}
             </div>
           </div>
         )}
@@ -125,7 +125,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           {!practices ? (
             <Loader minHeight="20vh" />
           ) : practices.length === 0 ? (
-            <div className="text-sm muted">Пока пусто — добавь первую практику ниже.</div>
+            <div className="text-sm muted">Пока пусто – добавь первую практику ниже.</div>
           ) : (
             practices.map(p => (
               <div key={p.id} className="list-line">
@@ -148,7 +148,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         <div className="section">
           <div className="eyebrow" style={{ marginBottom: 10 }}>Новая практика</div>
           <div className="text-sm muted" style={{ marginBottom: 12, maxWidth: 600 }}>
-            Небольшое конкретное действие — например «позвонить другу» или «прогулка 20 минут»
+            Небольшое конкретное действие – например «позвонить другу» или «прогулка 20 минут»
           </div>
           <div style={{ display: 'flex', gap: 8, maxWidth: 600 }}>
             <input

@@ -334,7 +334,7 @@ export function TodaySection({
         {/* ── LEFT ──────────────────────────────────────────────────────────── */}
         <div style={{ minWidth: 0 }}>
 
-          {/* Therapist cabinet — calm link block */}
+          {/* Therapist cabinet – calm link block */}
           {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
             <div onClick={onOpenTherapistCabinet} className="list-line" style={{ cursor: 'pointer', marginBottom: 24 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -380,7 +380,7 @@ export function TodaySection({
                       <i style={{ width: `${((value ?? 0) / 10) * 100}%`, background: color }} />
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 600, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: filled ? 'var(--text)' : 'var(--text-ghost)' }}>
-                      {filled ? value : '—'}
+                      {filled ? value : '–'}
                       {delta !== null && delta !== 0 && (
                         <span style={{ fontSize: 10, color: delta > 0 ? 'var(--c-moss)' : 'var(--c-rose)', marginLeft: 3, fontWeight: 500 }}>
                           {delta > 0 ? '↑' : '↓'}{Math.abs(delta).toFixed(1)}
@@ -491,7 +491,7 @@ export function TodaySection({
               </>
             ) : (
               <div style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.7, padding: '8px 0' }}>
-                Фиксируй моменты когда схема активируется — это главная практика
+                Фиксируй моменты когда схема активируется – это главная практика
               </div>
             )}
           </div>
@@ -505,7 +505,7 @@ export function TodaySection({
           <div className="eyebrow" style={{ marginBottom: 10 }}>Индекс сегодня</div>
           <div onClick={onOpenTrackerHistory} style={{ cursor: onOpenTrackerHistory ? 'pointer' : undefined }}>
             <div style={{ fontSize: 54, fontWeight: 500, letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-              {avgScore ?? '—'}
+              {avgScore ?? '–'}
             </div>
             {weekDelta !== null && (
               <div style={{ fontSize: 12, color: weekDelta > 0 ? 'var(--c-moss)' : weekDelta < 0 ? 'var(--c-rose)' : 'var(--text-faint)', marginTop: 6, fontWeight: 500 }}>
@@ -549,7 +549,7 @@ export function TodaySection({
             {streak}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 6 }}>
-            {streak === 0 ? 'Оцени потребности — начнётся стрик' : 'дней подряд'}
+            {streak === 0 ? 'Оцени потребности – начнётся стрик' : 'дней подряд'}
           </div>
 
         </aside>
@@ -607,31 +607,31 @@ interface StepDef {
 const STEPS: StepDef[] = [
   { id: 'ysq', emoji: '🧪', color: 'var(--accent)',
     title: 'Пройди тест на схемы',
-    description: 'YSQ-R — 116 вопросов, 10 минут. Узнаешь какие ранние паттерны управляют твоими реакциями.',
+    description: 'YSQ-R – 116 вопросов, 10 минут. Узнаешь какие ранние паттерны управляют твоими реакциями.',
     detail: '20 схем · история прохождений · советы',
     actionLabel: 'Начать тест',
     isDone: (p, ctx) => !!(p?.ysq.completedAt) || !!(ctx?.hasSchemas) },
   { id: 'tracker', emoji: '📊', color: 'var(--c-slate)',
     title: 'Оцени потребности сегодня',
-    description: 'Пять оценок — и ты видишь индекс дня. Через неделю паттерн начнёт проявляться в графике.',
+    description: 'Пять оценок – и ты видишь индекс дня. Через неделю паттерн начнёт проявляться в графике.',
     detail: 'Привязанность · Автономия · Выражение · Радость · Границы',
     actionLabel: 'Перейти в трекер',
     isDone: p => !!(p?.lastActivity.needsTracker) },
   { id: 'diary', emoji: '📔', color: 'var(--accent-indigo)',
     title: 'Сделай первую запись',
-    description: 'Зафикси момент когда схема сработала — это главная практика схема-терапии.',
+    description: 'Зафикси момент когда схема сработала – это главная практика схема-терапии.',
     detail: 'Дневник схем · режимов · благодарности',
     actionLabel: 'Открыть дневник',
     isDone: p => !!(p?.lastActivity.schemaDiary || p?.lastActivity.modeDiary || p?.lastActivity.gratitudeDiary) },
   { id: 'notify', emoji: '🔔', color: 'var(--c-clay)',
     title: 'Включи ежедневное напоминание',
-    description: 'Без регулярности ничего не выйдет. Одно уведомление в нужное время — всё что нужно.',
+    description: 'Без регулярности ничего не выйдет. Одно уведомление в нужное время – всё что нужно.',
     detail: 'Время · часовой пояс · серии дней',
     actionLabel: 'Настроить',
     isDone: p => !!(p?.notifications.enabled) },
   { id: 'childhood', emoji: '🌀', color: 'var(--c-moss)',
     title: 'Исследуй колесо детства',
-    description: 'Оцени как удовлетворялись потребности в детстве — откуда пришли твои паттерны.',
+    description: 'Оцени как удовлетворялись потребности в детстве – откуда пришли твои паттерны.',
     detail: '5 областей · связь с активными схемами',
     actionLabel: 'Открыть',
     isDone: () => !!localStorage.getItem('childhood_wheel_done') },
@@ -666,7 +666,7 @@ function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdvanced, o
       <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 24 }}>
         <div className="eyebrow" style={{ marginBottom: 8, color: 'var(--c-moss)' }}>Старт пройден</div>
         <div className="text-md" style={{ maxWidth: 540, lineHeight: 1.55 }}>
-          Все инструменты изучены — теперь начинается настоящая работа.
+          Все инструменты изучены – теперь начинается настоящая работа.
         </div>
         <div style={{ marginTop: 14 }}>
           <button className="link" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}
@@ -708,7 +708,7 @@ function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdvanced, o
         <span className="hint">{doneCount} из {STEPS.length} · {pendingSteps.length} впереди</span>
       </div>
 
-      {/* Calm checklist — all steps as document lines */}
+      {/* Calm checklist – all steps as document lines */}
       {STEPS.map(s => {
         const isDone    = s.isDone(profile, ctx);
         const isSkipped = skipped.includes(s.id) && !isDone;

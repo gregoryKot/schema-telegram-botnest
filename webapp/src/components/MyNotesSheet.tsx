@@ -104,7 +104,7 @@ export function MyNotesSheet({ onClose }: Props) {
       eyebrow="Личный архив"
       eyebrowColor="var(--accent)"
       title={<>Мои <span className="it">записи</span></>}
-      lede="Карточки схем и режимов, дневниковые записи, завершённые практики — всё в одном месте."
+      lede="Карточки схем и режимов, дневниковые записи, завершённые практики – всё в одном месте."
     >
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 32, borderBottom: '1px solid var(--line)' }}>

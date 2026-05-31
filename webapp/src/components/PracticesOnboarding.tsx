@@ -89,8 +89,8 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
                 Что тебя вытаскивает?
               </h1>
               <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-                Когда потребность низкая — сложно вспомнить что помогает.{' '}
-                <span style={{ color: 'rgba(var(--fg-rgb),0.8)' }}>Добавь заранее</span> — и они будут под рукой в нужный момент.
+                Когда потребность низкая – сложно вспомнить что помогает.{' '}
+                <span style={{ color: 'rgba(var(--fg-rgb),0.8)' }}>Добавь заранее</span> – и они будут под рукой в нужный момент.
               </p>
             </div>
 
@@ -100,7 +100,7 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
               borderRadius: 14, padding: '16px 18px', marginBottom: 32,
             }}>
               <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-                В схема-терапии это называют <span style={{ color: 'var(--accent)', fontWeight: 500 }}>копинг-карточками</span> — маленькими напоминаниями себе о том, что реально работает. Не воля, а конкретный шаг.
+                В схема-терапии это называют <span style={{ color: 'var(--accent)', fontWeight: 500 }}>копинг-карточками</span> – маленькими напоминаниями себе о том, что реально работает. Не воля, а конкретный шаг.
               </div>
             </div>
 
@@ -109,7 +109,7 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
               className="ex-btn ex-btn-primary"
               style={{ width: '100%', padding: '16px', marginBottom: 12, fontSize: 16 }}
             >
-              Заполнить — займёт 2 минуты
+              Заполнить – займёт 2 минуты
             </button>
             <button
               onClick={finish}
@@ -208,7 +208,7 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
 
             {saveError && (
               <div style={{ fontSize: 12, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 10 }}>
-                Не удалось сохранить — попробуй ещё раз
+                Не удалось сохранить – попробуй ещё раз
               </div>
             )}
             <div style={{ display: 'flex', gap: 10 }}>

@@ -52,7 +52,7 @@ export function LoginPage() {
     window.location.href = `${API_BASE}/api/auth/telegram-oidc`;
   };
 
-  // Inside Telegram but auto-auth failed — show minimal retry UI
+  // Inside Telegram but auto-auth failed – show minimal retry UI
   if (isTelegramContext) {
     return (
       <div style={{ flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>

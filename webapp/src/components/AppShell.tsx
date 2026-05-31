@@ -12,19 +12,19 @@ import { Loader } from './Loader';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingPill } from './FloatingPill';
 
-// — always-needed small helpers (no heavy data deps) —
+// – always-needed small helpers (no heavy data deps) –
 import { NoteSheet } from './NoteSheet';
 import { Celebration } from './Celebration';
 import { TaskCreateSheet } from './TaskCreateSheet';
 
-// — lazy: sections (each can pull in schemaTherapyData / needData on demand) —
+// – lazy: sections (each can pull in schemaTherapyData / needData on demand) –
 const TodaySection   = lazy(() => import('../sections/TodaySection').then(m => ({ default: m.TodaySection })));
 const DiarySection   = lazy(() => import('../sections/DiarySection').then(m => ({ default: m.DiarySection })));
 const SchemasSection = lazy(() => import('../sections/SchemasSection').then(m => ({ default: m.SchemasSection })));
 const ProfileSection = lazy(() => import('../sections/ProfileSection').then(m => ({ default: m.ProfileSection })));
 const PracticeSection = lazy(() => import('../sections/PracticeSection').then(m => ({ default: m.PracticeSection })));
 
-// — lazy: heavy overlays —
+// – lazy: heavy overlays –
 const TrackerOverlay       = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
 const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ default: m.DiariesOverlay })));
 const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
@@ -56,7 +56,7 @@ const NAV_ITEMS: { id: Section; label: string }[] = [
   { id: 'schemas',  label: 'Схемы' },
   { id: 'practice', label: 'Практика' },
 ];
-// Note: 'profile' removed from nav — accessible via sidebar footer avatar block.
+// Note: 'profile' removed from nav – accessible via sidebar footer avatar block.
 // Mobile bottom-nav still includes it (см. ниже).
 
 const SECTION_LABELS: Record<Section, string> = {
@@ -422,7 +422,7 @@ export function AppShell() {
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
       <div className={`main${therapistMode ? ' main--cabinet' : ''}`}>
-        {/* Topbar — hidden in therapist mode (cabinet has its own header) */}
+        {/* Topbar – hidden in therapist mode (cabinet has its own header) */}
         {!therapistMode && (
         <div className="topbar">
           <div className="crumbs">
