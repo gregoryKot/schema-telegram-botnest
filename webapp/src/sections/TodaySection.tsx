@@ -407,11 +407,11 @@ export function TodaySection({
                   <div key={task.id} className="list-line">
                     <span style={{
                       width: 14, height: 14, borderRadius: 4,
-                      border: `1.5px solid ${isDone ? 'var(--accent)' : 'var(--line-strong)'}`,
-                      background: isDone ? 'var(--accent)' : 'transparent',
+                      border: `1.5px solid ${isDone ? 'var(--text)' : 'var(--line-strong)'}`,
+                      background: isDone ? 'var(--text)' : 'transparent',
                       flexShrink: 0, marginTop: 4,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, color: '#fff',
+                      fontSize: 9, color: 'var(--bg)',
                     }}>{isDone ? '✓' : isFail ? '×' : ''}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="text-md" style={{ fontWeight: 600, opacity: isDone ? 0.55 : 1, textDecoration: isDone ? 'line-through' : 'none' }}>
