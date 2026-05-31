@@ -413,6 +413,10 @@ export function AppShell() {
                   style={{ marginTop: 2, color: 'var(--c-rose)' }}>
             <span>Выйти</span>
           </button>
+          <div style={{ display: 'flex', gap: 12, padding: '8px 0 0', borderTop: '1px solid var(--line)', marginTop: 4 }}>
+            <a href="/privacy" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Конфиденциальность</a>
+            <a href="/offer" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
+          </div>
         </div>
       </aside>
 

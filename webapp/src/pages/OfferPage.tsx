@@ -1,9 +1,6 @@
-// ⚠️  Перед публикацией заполните: [ОТЧЕСТВО], [ИНН]
-// Самозанятый не имеет ОГРНИП — только ИНН.
-
 const EFFECTIVE_DATE = '28 мая 2025 г.';
-const OPERATOR_NAME  = 'Котляревский Григорий [ОТЧЕСТВО]';
-const OPERATOR_INN   = '[ИНН]';
+const OPERATOR_NAME  = 'Котляревский Григорий Юрьевич';
+const OPERATOR_INN   = '450163793969';
 const OPERATOR_EMAIL = 'gregorykot@gmail.com';
 
 export function OfferPage() {

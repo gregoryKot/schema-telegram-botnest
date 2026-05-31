@@ -125,7 +125,7 @@ export function LoginPage() {
         {/* Auth card */}
         <div className="card-elevated" style={{ padding: '28px 24px' }}>
           <p style={{ color: 'var(--text-sub)', fontSize: 13, marginBottom: 20, textAlign: 'center' }}>
-            Войди, чтобы продолжить
+            Войдите, чтобы продолжить
           </p>
 
           {/* Google */}
@@ -175,9 +175,13 @@ export function LoginPage() {
           )}
         </div>
 
-        {/* Privacy note */}
-        <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 20, lineHeight: 1.6 }}>
-          Твои данные зашифрованы и никогда не передаются третьим лицам
+        {/* Consent note */}
+        <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 20, lineHeight: 1.7 }}>
+          Нажимая «Войти», вы подтверждаете согласие на обработку персональных данных
+          в соответствии с{' '}
+          <a href="/privacy" target="_blank" style={{ color: 'var(--text-faint)', textDecoration: 'underline' }}>
+            Политикой конфиденциальности
+          </a>
         </p>
       </div>
 
