@@ -339,21 +339,23 @@ export function LandingPage() {
 
         <div className="hero-wrap" style={{ position: 'relative', zIndex: 1 }}>
 
-          {/* ── Nav: clean, name left, single link right ── */}
+          {/* ── Nav ── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '26px 0', animation: 'hero-in .5s both' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontFamily: 'var(--serif)', flexShrink: 0 }}>Г</div>
-              <span style={{ fontFamily: 'var(--serif)', fontSize: 17, color: 'var(--text)' }}>Григорий Котляревский</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: 'rgba(74,99,53,.1)', border: '1px solid rgba(74,99,53,.25)', borderRadius: 100 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a6335', display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite', flexShrink: 0 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontFamily: 'var(--serif)', flexShrink: 0 }}>Г</div>
+              <span style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Григорий Котляревский</span>
+              {/* Бейдж скрыт на мобиле */}
+              <div className="nav-badge" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: 'rgba(74,99,53,.1)', border: '1px solid rgba(74,99,53,.25)', borderRadius: 100, flexShrink: 0 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a6335', display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#4a6335', letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
               </div>
             </div>
             <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none', transition: 'color .15s', whiteSpace: 'nowrap' }}
+              className="nav-tg"
+              style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none', transition: 'color .15s', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 12 }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = ''; }}>
-              Написать в Telegram ↗
+              Написать ↗
             </a>
           </div>
 
@@ -365,7 +367,7 @@ export function LandingPage() {
           {/* ── Full-width headline — the centrepiece ── */}
           <h1 style={{
             fontFamily: 'var(--serif)',
-            fontSize: 'clamp(56px, 9vw, 120px)',
+            fontSize: 'clamp(44px, 9vw, 120px)',
             fontWeight: 400, lineHeight: 1.0, letterSpacing: '-.025em',
             color: 'var(--text)', margin: 0,
           }}>
@@ -698,6 +700,11 @@ export function LandingPage() {
         .form-grid    { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 
         input:focus, textarea:focus { border-color:var(--accent) !important; box-shadow:0 0 0 4px var(--accent-soft); }
+
+        @media (max-width:600px) {
+          .nav-badge  { display:none !important; }
+          .nav-tg     { font-size:12px; }
+        }
 
         @media (max-width:900px) {
           .hero-bottom  { grid-template-columns:1fr; gap:32px; }
