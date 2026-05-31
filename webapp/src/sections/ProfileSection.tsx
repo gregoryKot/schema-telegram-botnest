@@ -490,11 +490,10 @@ export function ProfileSection({ onOpenTracker, refreshKey, displayName }: Props
       {/* ── Достижения ── */}
       {showAchievements && achievements && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
           onClick={() => { setShowAchievements(false); setSelectedAchievement(null); }}
         >
-        <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto', maxHeight: '80vh', overflowY: 'auto' }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
+        <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto', border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Достижения</span>
               <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{earnedList.length} из {achievements.length}</span>
@@ -565,12 +564,11 @@ export function ProfileSection({ onOpenTracker, refreshKey, displayName }: Props
       {/* Best day tooltip */}
       {showBestDayInfo && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
           onClick={() => setShowBestDayInfo(false)}
         >
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
-            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Лучший день</div>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 32px', width: '100%', maxWidth: 400, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
+            <div className="eyebrow" style={{ marginBottom: 16 }}>Лучший день</div>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>День недели, в который твои оценки в среднем выше всего.</p>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>Становится точнее с каждой неделей.</p>
           </div>
@@ -582,11 +580,10 @@ export function ProfileSection({ onOpenTracker, refreshKey, displayName }: Props
       {/* Delete account confirm */}
       {showDeleteConfirm && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
           onClick={() => !deleting && setShowDeleteConfirm(false)}
         >
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 420, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div style={{ fontSize: 22, marginBottom: 12 }}>⚠️</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Удалить аккаунт?</div>
             <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 24 }}>

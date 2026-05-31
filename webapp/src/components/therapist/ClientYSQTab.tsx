@@ -26,7 +26,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
           ) : (
             <>
               <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 24 }}>Запроси тест — клиент получит уведомление в боте</div>
-              <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+              <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '9px 20px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест YSQ'}
               </button>
               {ysqError && <div style={{ marginTop: 12, fontSize: 13, color: 'var(--c-rose)' }}>{ysqError}</div>}
