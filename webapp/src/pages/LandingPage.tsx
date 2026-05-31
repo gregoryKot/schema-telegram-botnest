@@ -155,6 +155,25 @@ function BookingForm() {
   );
 }
 
+// ─── Education ───────────────────────────────────────────────────────────────
+const EDUCATION = [
+  {
+    year: '2024 —',
+    title: 'МИП · Бакалавриат',
+    sub: 'Московский институт психоанализа · Психология, психотерапия качества жизни',
+  },
+  {
+    year: '2025',
+    title: 'Практик схема-терапии',
+    sub: '«Практик схема-терапии. Базовый курс» · 47 ак.ч. теории и практики · Лазарев М.А.',
+  },
+  {
+    year: '2025–26',
+    title: 'КПТ · 288 часов',
+    sub: 'Когнитивно-поведенческая терапия · МАНП · 288 ак.ч.',
+  },
+];
+
 // ─── App features ─────────────────────────────────────────────────────────────
 const APP_FEATURES = [
   { num: '01', title: 'Дневник состояний', text: 'Каждый день — короткая оценка восьми базовых потребностей. Появляется картина того, что происходит.' },
@@ -457,9 +476,27 @@ export function LandingPage() {
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
               Меня интересует не только «что» происходит с человеком, но и «почему» — какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн.
             </p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 32 }}>
               {['Схема-терапия', 'КПТ', 'Онлайн'].map(tag => (
                 <span key={tag} style={{ padding: '8px 16px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 100, fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{tag}</span>
+              ))}
+            </div>
+
+            {/* Education */}
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 14px' }}>Образование и обучение</p>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {EDUCATION.map((item, i) => (
+                <div key={i} style={{
+                  display: 'grid', gridTemplateColumns: '68px 1fr', gap: '0 16px',
+                  padding: '13px 0',
+                  borderTop: '1px solid var(--line)',
+                }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', paddingTop: 2, whiteSpace: 'nowrap' }}>{item.year}</span>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 3px' }}>{item.title}</p>
+                    <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0, lineHeight: 1.5 }}>{item.sub}</p>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
