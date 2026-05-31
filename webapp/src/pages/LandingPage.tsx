@@ -150,6 +150,18 @@ const APP_FEATURES = [
   { num: '04', title: 'Динамика',          text: 'История состояний за недели и месяцы. Видно, что меняется, а что стоит на месте.' },
 ];
 
+// ─── App feature card (needs own component for useTilt hook) ─────────────────
+function AppFeatureCard({ f, accent }: { f: typeof APP_FEATURES[0]; accent: boolean }) {
+  const ref = useTilt();
+  return (
+    <div ref={ref} style={{ background: accent ? 'var(--accent)' : 'var(--bg-elev)', border: accent ? 'none' : '1px solid var(--line)', borderRadius: 16, padding: '22px 18px', display: 'flex', flexDirection: 'column', gap: 8, cursor: 'default', transition: 'transform .25s, box-shadow .25s', willChange: 'transform' }}>
+      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', color: accent ? 'rgba(255,255,255,.6)' : 'var(--accent)' }}>{f.num}</span>
+      <p style={{ fontSize: 14, fontWeight: 700, margin: 0, color: accent ? 'white' : 'var(--text)' }}>{f.title}</p>
+      <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: accent ? 'rgba(255,255,255,.78)' : 'var(--text-sub)' }}>{f.text}</p>
+    </div>
+  );
+}
+
 // ─── Approach cards ───────────────────────────────────────────────────────────
 function BentoCard({ num, title, text, accent = false }: { num: string; title: string; text: string; accent?: boolean }) {
   const ref = useTilt();
@@ -489,16 +501,7 @@ export function LandingPage() {
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              {APP_FEATURES.map((f, i) => {
-                const ref = useTilt(); // eslint-disable-line react-hooks/rules-of-hooks
-                return (
-                  <div key={i} ref={ref} style={{ background: i === 0 ? 'var(--accent)' : 'var(--bg-elev)', border: i === 0 ? 'none' : '1px solid var(--line)', borderRadius: 16, padding: '22px 18px', display: 'flex', flexDirection: 'column', gap: 8, cursor: 'default', transition: 'transform .25s, box-shadow .25s', willChange: 'transform' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', color: i === 0 ? 'rgba(255,255,255,.6)' : 'var(--accent)' }}>{f.num}</span>
-                    <p style={{ fontSize: 14, fontWeight: 700, margin: 0, color: i === 0 ? 'white' : 'var(--text)' }}>{f.title}</p>
-                    <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: i === 0 ? 'rgba(255,255,255,.78)' : 'var(--text-sub)' }}>{f.text}</p>
-                  </div>
-                );
-              })}
+              {APP_FEATURES.map((f, i) => <AppFeatureCard key={i} f={f} accent={i === 0} />)}
             </div>
           </div>
         </div>
