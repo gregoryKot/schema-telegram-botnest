@@ -476,40 +476,39 @@ export function LandingPage() {
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
               Меня интересует не только «что» происходит с человеком, но и «почему» — какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн.
             </p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 32 }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {['Схема-терапия', 'КПТ', 'Онлайн'].map(tag => (
                 <span key={tag} style={{ padding: '8px 16px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 100, fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{tag}</span>
-              ))}
-            </div>
-
-            {/* Education */}
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 14px' }}>Образование и обучение</p>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {EDUCATION.map((item, i) => (
-                <div key={i} style={{
-                  display: 'grid', gridTemplateColumns: '68px 1fr', gap: '0 16px',
-                  padding: '13px 0',
-                  borderTop: '1px solid var(--line)',
-                }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', paddingTop: 2, whiteSpace: 'nowrap' }}>{item.year}</span>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 3px' }}>{item.title}</p>
-                    <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0, lineHeight: 1.5 }}>{item.sub}</p>
-                  </div>
-                </div>
               ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── PULL QUOTE ──────────────────────────────────────────────────── */}
-      <section ref={quoteRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '72px 40px' }}>
-        <div style={{ maxWidth: 860, margin: '0 auto' }}>
-          <div style={{ width: 3, height: 44, background: 'var(--accent)', borderRadius: 2, marginBottom: 24 }} />
-          <blockquote style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(22px, 3.2vw, 36px)', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.4, color: 'var(--text)', margin: 0, letterSpacing: '-.01em' }}>
-            «Паттерны не приговор. Они появились как защита — и могут измениться, когда появляется безопасный контакт и понимание того, откуда они взялись.»
-          </blockquote>
+      {/* ── EDUCATION ───────────────────────────────────────────────────── */}
+      <section ref={quoteRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 40px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 60, alignItems: 'start' }}>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Образование</p>
+            <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.2, letterSpacing: '-.01em' }}>
+              Подготовка<br /><span style={{ fontStyle: 'italic' }}>и обучение</span>
+            </h2>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {EDUCATION.map((item, i) => (
+              <div key={i} style={{
+                display: 'grid', gridTemplateColumns: '72px 1fr', gap: '0 20px',
+                padding: '18px 0',
+                borderTop: '1px solid var(--line)',
+              }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', paddingTop: 3, whiteSpace: 'nowrap' }}>{item.year}</span>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>{item.title}</p>
+                  <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0, lineHeight: 1.6 }}>{item.sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
