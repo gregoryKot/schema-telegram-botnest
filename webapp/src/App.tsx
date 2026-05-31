@@ -96,7 +96,7 @@ function AuthError() {
           Авторизация не удалась. Попробуй снова или обратись к нам в Telegram.
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="/login" style={{ display: 'inline-block', padding: '13px 28px', background: 'var(--accent)', color: '#fff', borderRadius: 12, fontSize: 15, fontWeight: 600, textDecoration: 'none' }}>
+          <a href="/login" style={{ display: 'inline-block', padding: '13px 28px', background: 'var(--text)', color: 'var(--bg)', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
             Попробовать снова
           </a>
           <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', padding: '13px 28px', background: 'rgba(var(--fg-rgb),0.06)', color: 'var(--text-sub)', borderRadius: 12, fontSize: 15, fontWeight: 500, textDecoration: 'none' }}>
