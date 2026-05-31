@@ -10,6 +10,7 @@ import { AppShell } from './components/AppShell';
 import { LandingPage } from './pages/LandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { OfferPage } from './pages/OfferPage';
+import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 
 // Apply saved theme before first render
 const savedTheme = localStorage.getItem('app_theme');
@@ -47,6 +48,8 @@ const router = createBrowserRouter([
     children: [
       // Public
       { path: '/',               element: <LandingPage /> },
+      { path: '/articles',       element: <ArticlesListPage /> },
+      { path: '/articles/:slug', element: <ArticlePage /> },
       { path: '/privacy',        element: <PrivacyPage /> },
       { path: '/offer',          element: <OfferPage /> },
       { path: '/login',          element: <LoginPage /> },
