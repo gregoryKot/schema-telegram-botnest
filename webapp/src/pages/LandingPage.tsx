@@ -38,28 +38,41 @@ function useTilt() {
   return ref;
 }
 
-// ─── Marquee strip ────────────────────────────────────────────────────────────
-const TOPICS: { label: string; href: string }[] = [
-  { label: 'Схема-терапия', href: '#approach' },
-  { label: 'Паттерны', href: '#approach' },
-  { label: 'Отношения', href: '#booking' },
-  { label: 'Самооценка', href: '#booking' },
-  { label: 'Тревога', href: '#booking' },
-  { label: 'Идентичность', href: '#approach' },
-  { label: 'КПТ', href: '#approach' },
+// ─── Marquee strips — two different sets ─────────────────────────────────────
+const TOPICS_A: { label: string; href: string }[] = [
+  { label: 'Схема-терапия',       href: '#approach' },
+  { label: 'Паттерны',            href: '#approach' },
+  { label: 'Отношения',           href: '#booking'  },
+  { label: 'Самооценка',          href: '#booking'  },
+  { label: 'Тревога',             href: '#booking'  },
+  { label: 'Идентичность',        href: '#approach' },
+  { label: 'КПТ',                 href: '#approach' },
   { label: 'Бесплатное знакомство', href: '#booking' },
-  { label: 'Онлайн-сессии', href: '#prices' },
+  { label: 'Онлайн-сессии',       href: '#prices'  },
+];
+const TOPICS_B: { label: string; href: string }[] = [
+  { label: 'Безопасная среда',         href: '#about'    },
+  { label: 'Глубинная работа',         href: '#approach' },
+  { label: 'Ранние убеждения',         href: '#approach' },
+  { label: 'Режимы и схемы',           href: '#approach' },
+  { label: 'Устойчивые изменения',     href: '#approach' },
+  { label: 'Первая встреча бесплатно', href: '#booking'  },
+  { label: 'Доказательный метод',      href: '#approach' },
+  { label: 'Индивидуально',            href: '#prices'   },
+  { label: 'Работаю онлайн',           href: '#prices'   },
 ];
 
-function MarqueeStrip({ reverse = false, bg = 'var(--bg-rail)', italic = false }: { reverse?: boolean; bg?: string; italic?: boolean }) {
-  const dur = reverse ? '38s' : '30s';
+function MarqueeStrip({ reverse = false, bg = 'var(--bg-rail)', italic = false, topics = TOPICS_A }: {
+  reverse?: boolean; bg?: string; italic?: boolean; topics?: typeof TOPICS_A;
+}) {
+  const dur = reverse ? '40s' : '32s';
   const anim = reverse ? 'marquee-rev' : 'marquee-fwd';
   return (
     <div style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', overflow: 'hidden', padding: '14px 0', background: bg }}>
       <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
         {[0, 1, 2].map(i => (
           <span key={i} style={{ display: 'inline-flex', flexShrink: 0, animation: `${anim} ${dur} linear infinite` }}>
-            {TOPICS.map(w => (
+            {topics.map(w => (
               <a key={w.label} href={w.href}
                 style={{ fontSize: 14, fontWeight: 500, fontStyle: italic ? 'italic' : 'normal', color: 'var(--text-sub)', padding: '0 20px', textDecoration: 'none', transition: 'color .15s' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
@@ -234,100 +247,126 @@ export function LandingPage() {
       </div>
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-          <div style={{ position: 'absolute', width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(77,71,153,.11) 0%, transparent 70%)', top: '-15%', right: '-8%', animation: 'blob-float 20s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(176,111,74,.08) 0%, transparent 70%)', bottom: '5%', left: '-8%', animation: 'blob-float 26s ease-in-out infinite reverse' }} />
+      <section style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', background: 'var(--bg)' }}>
+
+        {/* Soft ambient light — top-right */}
+        <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+          <div style={{ position: 'absolute', width: 900, height: 600, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(77,71,153,.08) 0%, transparent 65%)', top: '-10%', right: '-15%' }} />
+          <div style={{ position: 'absolute', width: 600, height: 400, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(176,111,74,.07) 0%, transparent 65%)', bottom: '10%', left: '-5%' }} />
         </div>
 
         <div className="hero-wrap" style={{ position: 'relative', zIndex: 1 }}>
-          {/* Nav */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontFamily: 'var(--serif)' }}>Г</div>
-              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Григорий Котляревский</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: 'rgba(107,129,86,.12)', border: '1px solid rgba(107,129,86,.25)', borderRadius: 100 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#6b8156', display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#6b8156', letterSpacing: '.06em' }}>Принимаю клиентов</span>
+
+          {/* ── Nav: clean, name left, single link right ── */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '26px 0', animation: 'hero-in .5s both' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontFamily: 'var(--serif)', flexShrink: 0 }}>Г</div>
+              <span style={{ fontFamily: 'var(--serif)', fontSize: 17, color: 'var(--text)' }}>Григорий Котляревский</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: 'rgba(107,129,86,.11)', border: '1px solid rgba(107,129,86,.22)', borderRadius: 100 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#6b8156', display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite', flexShrink: 0 }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#6b8156', letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <a href="#schemalab" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 100, fontSize: 12, fontWeight: 600, color: 'var(--text-sub)', textDecoration: 'none' }}>
-                🧠 СхемаЛаб
-              </a>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 100, fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse-dot 2s ease-in-out infinite' }} />
-                Знакомство · бесплатно
-              </div>
-            </div>
+            <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none', transition: 'color .15s', whiteSpace: 'nowrap' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = ''; }}>
+              Написать в Telegram ↗
+            </a>
           </div>
 
-          {/* Body */}
-          <div className="hero-body">
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 24px', animation: 'hero-in .6s .1s both' }}>Схема-терапия · Онлайн</p>
-              <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(44px, 5.2vw, 78px)', fontWeight: 400, lineHeight: 1.05, letterSpacing: '-.02em', color: 'var(--text)', margin: '0 0 28px' }}>
-                <span style={{ display: 'block', overflow: 'hidden' }}><span style={{ display: 'block', animation: 'line-in .7s .2s both' }}>Работа с теми</span></span>
-                <span style={{ display: 'block', overflow: 'hidden' }}><span style={{ display: 'block', animation: 'line-in .7s .35s both', fontStyle: 'italic', color: 'var(--accent)' }}>паттернами,</span></span>
-                <span style={{ display: 'block', overflow: 'hidden' }}><span style={{ display: 'block', animation: 'line-in .7s .5s both' }}>которые мешают</span></span>
-              </h1>
-              <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.75, maxWidth: 460, margin: '0 0 40px', animation: 'hero-in .6s .65s both' }}>
+          {/* ── Eyebrow ── */}
+          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--accent)', margin: '20px 0 20px', animation: 'hero-in .6s .15s both' }}>
+            Схема-терапия · Психолог · Онлайн
+          </p>
+
+          {/* ── Full-width headline — the centrepiece ── */}
+          <h1 style={{
+            fontFamily: 'var(--serif)',
+            fontSize: 'clamp(56px, 9vw, 120px)',
+            fontWeight: 400, lineHeight: 1.0, letterSpacing: '-.025em',
+            color: 'var(--text)', margin: 0,
+          }}>
+            <span style={{ display: 'block', overflow: 'hidden' }}>
+              <span style={{ display: 'block', animation: 'line-in .75s .2s both' }}>Работа с теми</span>
+            </span>
+            <span style={{ display: 'block', overflow: 'hidden' }}>
+              <span style={{ display: 'block', animation: 'line-in .75s .38s both', fontStyle: 'italic', color: 'var(--accent)' }}>паттернами,</span>
+            </span>
+            <span style={{ display: 'block', overflow: 'hidden' }}>
+              <span style={{ display: 'block', animation: 'line-in .75s .56s both' }}>которые мешают</span>
+            </span>
+          </h1>
+
+          {/* ── Divider ── */}
+          <div style={{ height: 1, background: 'var(--line-strong)', margin: '36px 0', animation: 'hero-in .5s .7s both' }} />
+
+          {/* ── Below divider: description left / price typography right ── */}
+          <div className="hero-bottom" style={{ animation: 'hero-in .7s .8s both' }}>
+
+            {/* Left: description + CTAs */}
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, maxWidth: 440, margin: '0 0 36px' }}>
                 Мы снова и снова попадаем в одни и те же ситуации — в отношениях, самооценке, тревоге. Схема-терапия объясняет почему и даёт выход.
               </p>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', animation: 'hero-in .6s .8s both' }}>
-                <button onClick={scrollToBooking} style={{ padding: '15px 32px', background: 'var(--text)', color: 'var(--bg)', border: 'none', borderRadius: 100, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 32px rgba(28,25,20,.18)', transition: 'transform .15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; }}>
-                  Записаться на встречу
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <button onClick={scrollToBooking} style={{
+                  padding: '15px 32px', background: 'var(--accent)', color: 'white',
+                  border: 'none', borderRadius: 100, fontSize: 15, fontWeight: 700,
+                  cursor: 'pointer', boxShadow: '0 8px 32px rgba(77,71,153,.28)',
+                  transition: 'transform .15s, box-shadow .15s',
+                }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 12px 40px rgba(77,71,153,.38)'; }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = ''; }}>
+                  Записаться на встречу →
                 </button>
-                <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 24px', border: '1.5px solid var(--line-strong)', borderRadius: 100, fontSize: 15, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none', transition: 'border-color .15s, color .15s' }}
+                <button onClick={scrollToBooking} style={{
+                  padding: '15px 24px', background: 'transparent',
+                  border: '1.5px solid var(--line-strong)', borderRadius: 100,
+                  fontSize: 15, fontWeight: 500, color: 'var(--text-sub)', cursor: 'pointer',
+                  transition: 'border-color .15s, color .15s',
+                }}
                   onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--text)'; el.style.color = 'var(--text)'; }}
                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = ''; el.style.color = ''; }}>
-                  Написать в Telegram ↗
-                </a>
+                  Узнать подробнее
+                </button>
               </div>
             </div>
 
-            {/* Right: price cards */}
-            <div className="hero-cards" style={{ display: 'flex', flexDirection: 'column', gap: 14, justifyContent: 'center', animation: 'hero-in .8s .45s both' }}>
-              <div style={{ background: 'var(--accent)', borderRadius: 20, padding: '28px', boxShadow: '0 20px 60px rgba(77,71,153,.3)', transition: 'transform .2s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; }}>
-                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,.65)', margin: '0 0 10px' }}>Знакомство</p>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: 52, fontWeight: 400, color: 'white', margin: '0 0 6px', lineHeight: 1, letterSpacing: '-.02em' }}>0 ₽</p>
-                <p style={{ fontSize: 13, color: 'rgba(255,255,255,.75)', margin: 0 }}>15 минут · без обязательств</p>
+            {/* Right: price as pure typography */}
+            <div className="hero-prices" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 0 }}>
+              <div style={{ paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--accent)' }}>Знакомство</span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '8px 0 4px' }}>
+                  <span style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(52px, 6vw, 84px)', fontWeight: 400, lineHeight: 1, letterSpacing: '-.03em', color: 'var(--accent)' }}>0 ₽</span>
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>15 минут · без обязательств</p>
               </div>
-              <div style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 20, padding: '24px', boxShadow: '0 8px 24px rgba(28,25,20,.07)', transition: 'transform .2s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; }}>
-                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Сессия</p>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: 44, fontWeight: 400, color: 'var(--text)', margin: '0 0 6px', lineHeight: 1, letterSpacing: '-.02em' }}>4 000 ₽</p>
-                <p style={{ fontSize: 13, color: 'var(--text-sub)', margin: 0 }}>50 минут · онлайн</p>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {['Схема-терапия', 'КПТ', 'Онлайн'].map(t => (
-                  <span key={t} style={{ padding: '6px 14px', background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 100, fontSize: 12, fontWeight: 500, color: 'var(--text-sub)' }}>{t}</span>
-                ))}
+              <div style={{ paddingTop: 24 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Сессия</span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '8px 0 4px' }}>
+                  <span style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(40px, 4.5vw, 64px)', fontWeight: 400, lineHeight: 1, letterSpacing: '-.03em', color: 'var(--text)' }}>4 000 ₽</span>
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>50 минут · онлайн</p>
               </div>
             </div>
+
           </div>
 
-          {/* Bottom strip */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: 28, animation: 'hero-in .6s 1s both' }}>
-            <div>
-              <p style={{ fontSize: 20, fontFamily: 'var(--serif)', fontWeight: 400, margin: '0 0 3px', color: 'var(--text)' }}>Григорий Котляревский</p>
-              <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Психолог · Схема-терапия · КПТ</p>
-            </div>
+          {/* ── Bottom strip ── */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '32px 0 28px', animation: 'hero-in .5s 1.1s both' }}>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0, letterSpacing: '.02em' }}>Психолог · Схема-терапия · КПТ</p>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-faint)', letterSpacing: '.1em', textTransform: 'uppercase' }}>Далее</span>
-              <div style={{ width: 1, height: 32, background: 'var(--line-strong)', animation: 'scroll-bar 2s ease-in-out infinite' }} />
+              <span style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.12em', textTransform: 'uppercase' }}>Далее</span>
+              <div style={{ width: 1, height: 28, background: 'var(--line-strong)', animation: 'scroll-bar 2s ease-in-out infinite' }} />
             </div>
           </div>
+
         </div>
       </section>
 
       {/* ── MARQUEE #1 ───────────────────────────────────────────────────── */}
-      <MarqueeStrip />
+      <MarqueeStrip topics={TOPICS_A} />
 
       {/* ── ABOUT ───────────────────────────────────────────────────────── */}
       <section id="about" ref={aboutRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '88px 40px' }}>
@@ -373,7 +412,7 @@ export function LandingPage() {
       </section>
 
       {/* ── MARQUEE #2 (reverse) ────────────────────────────────────────── */}
-      <MarqueeStrip reverse bg="var(--bg)" italic />
+      <MarqueeStrip reverse bg="var(--bg)" italic topics={TOPICS_B} />
 
       {/* ── APPROACH BENTO ──────────────────────────────────────────────── */}
       <section id="approach" ref={approachRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: 'var(--bg-rail)', padding: '80px 40px' }}>
@@ -411,7 +450,7 @@ export function LandingPage() {
       </section>
 
       {/* ── MARQUEE #3 ───────────────────────────────────────────────────── */}
-      <MarqueeStrip />
+      <MarqueeStrip topics={TOPICS_B} />
 
       {/* ── PRICES ──────────────────────────────────────────────────────── */}
       <section id="prices" ref={priceRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 40px' }}>
@@ -508,7 +547,7 @@ export function LandingPage() {
       </section>
 
       {/* ── MARQUEE #4 ───────────────────────────────────────────────────── */}
-      <MarqueeStrip reverse bg="var(--bg-rail)" />
+      <MarqueeStrip reverse bg="var(--bg-rail)" topics={TOPICS_A} />
 
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: '1px solid var(--line)', padding: '28px 40px' }}>
@@ -539,8 +578,10 @@ export function LandingPage() {
         .reveal-section.revealed { opacity:1; transform:none; }
 
         /* Hero */
-        .hero-wrap  { max-width:1100px; width:100%; margin:0 auto; padding:0 40px; display:flex; flex-direction:column; min-height:100dvh; box-sizing:border-box; }
-        .hero-body  { display:grid; grid-template-columns:1fr 1fr; gap:56px; flex:1; align-items:center; padding-bottom:24px; }
+        .hero-wrap    { max-width:1100px; width:100%; margin:0 auto; padding:0 40px; display:flex; flex-direction:column; min-height:100dvh; box-sizing:border-box; }
+        .hero-bottom  { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:end; }
+        .hero-prices  { }
+
 
         /* Grids */
         .about-inner  { display:grid; grid-template-columns:2fr 3fr; gap:48px; align-items:start; }
@@ -555,8 +596,8 @@ export function LandingPage() {
         input:focus, textarea:focus { border-color:var(--accent) !important; box-shadow:0 0 0 4px var(--accent-soft); }
 
         @media (max-width:900px) {
-          .hero-body    { grid-template-columns:1fr; gap:32px; padding-bottom:16px; }
-          .hero-cards   { display:none; }
+          .hero-bottom  { grid-template-columns:1fr; gap:32px; }
+          .hero-prices  { display:none; }
           .about-inner  { grid-template-columns:1fr; }
           .bento-grid   { grid-template-columns:1fr; }
           .bento-tall   { grid-row:auto; }
