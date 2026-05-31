@@ -303,8 +303,58 @@ export function LandingPage() {
         </div>{/* /inner wrapper */}
       </section>
 
+      {/* ── MARQUEE 1 — topics ─────────────────────────────────────────── */}
+      <div style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', overflow: 'hidden', padding: '16px 0', background: 'var(--bg-rail)' }}>
+        <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
+          {[0, 1, 2].map(i => (
+            <span key={i} style={{ display: 'inline-flex', flexShrink: 0, animation: 'marquee 32s linear infinite' }}>
+              {([
+                { label: 'Схема-терапия', href: '#approach' },
+                { label: 'Паттерны', href: '#approach' },
+                { label: 'Отношения', href: '#booking' },
+                { label: 'Самооценка', href: '#booking' },
+                { label: 'Тревога', href: '#booking' },
+                { label: 'Идентичность', href: '#approach' },
+                { label: 'КПТ', href: '#approach' },
+                { label: 'Онлайн', href: '#prices' },
+              ] as { label: string; href: string }[]).map(w => (
+                <a key={w.label} href={w.href} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-sub)', padding: '0 20px', textDecoration: 'none', transition: 'color .15s' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-sub)')}>
+                  {w.label} <span style={{ color: 'var(--accent)', marginLeft: 20 }}>·</span>
+                </a>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── MARQUEE 2 — benefits (reverse) ─────────────────────────────── */}
+      <div style={{ borderBottom: '1px solid var(--line)', overflow: 'hidden', padding: '14px 0', background: 'var(--bg)' }}>
+        <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
+          {[0, 1, 2].map(i => (
+            <span key={i} style={{ display: 'inline-flex', flexShrink: 0, animation: 'marquee-rev 38s linear infinite' }}>
+              {([
+                { label: 'Бесплатное знакомство', href: '#booking' },
+                { label: 'Первая встреча 15 минут', href: '#prices' },
+                { label: 'Доказательный подход', href: '#approach' },
+                { label: 'Безопасная среда', href: '#about' },
+                { label: 'Работаю онлайн', href: '#prices' },
+                { label: 'Русский · Украинский', href: '#about' },
+              ] as { label: string; href: string }[]).map(w => (
+                <a key={w.label} href={w.href} style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-faint)', padding: '0 24px', textDecoration: 'none', fontStyle: 'italic', transition: 'color .15s' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-sub)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}>
+                  {w.label} <span style={{ fontStyle: 'normal', marginLeft: 24 }}>—</span>
+                </a>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* ── ABOUT ───────────────────────────────────────────────────────── */}
-      <section ref={aboutRef as React.RefObject<HTMLElement>} className="reveal-section about-grid" style={{ maxWidth: 1100, margin: '0 auto', padding: '96px 40px' }}>
+      <section id="about" ref={aboutRef as React.RefObject<HTMLElement>} className="reveal-section about-grid" style={{ maxWidth: 1100, margin: '0 auto', padding: '96px 40px' }}>
         <div className="about-inner">
           {/* Photo */}
           <div style={{ position: 'relative' }}>
@@ -356,7 +406,7 @@ export function LandingPage() {
       </section>
 
       {/* ── APPROACH BENTO ──────────────────────────────────────────────── */}
-      <section ref={approachRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: 'var(--bg-rail)', padding: '80px 40px' }}>
+      <section id="approach" ref={approachRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: 'var(--bg-rail)', padding: '80px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Подход</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 4vw, 50px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 48px', letterSpacing: '-.01em' }}>
@@ -438,7 +488,7 @@ export function LandingPage() {
       </section>
 
       {/* ── PRICES ──────────────────────────────────────────────────────── */}
-      <section ref={priceRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 40px' }}>
+      <section id="prices" ref={priceRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 40px' }}>
         <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Формат и цены</p>
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 48px', letterSpacing: '-.01em' }}>
           Как устроена работа
@@ -491,7 +541,8 @@ export function LandingPage() {
       </section>
 
       {/* ── SCHEMALAB APP ───────────────────────────────────────────────── */}
-      <section id="schemalab" ref={appRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '96px 40px' }}>
+      <section id="schemalab" ref={appRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '96px 40px' }}>
         <div className="app-grid">
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 100, marginBottom: 24 }}>
@@ -536,10 +587,11 @@ export function LandingPage() {
             ))}
           </div>
         </div>
+        </div>{/* /inner */}
       </section>
 
       {/* ── BOOKING ─────────────────────────────────────────────────────── */}
-      <section ref={bookingRef as any} style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)' }}>
+      <section id="booking" ref={bookingRef as any} style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)' }}>
         <section ref={formRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 680, margin: '0 auto', padding: '80px 40px 96px' }}>
           <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Запись</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 12px', letterSpacing: '-.01em' }}>
@@ -574,6 +626,8 @@ export function LandingPage() {
         @keyframes blob-float { 0%,100% { transform:translate(0,0) scale(1) } 50% { transform:translate(3%,2%) scale(1.04) } }
         @keyframes scroll-bar { 0%,100% { opacity:.3; transform:scaleY(.6) } 50% { opacity:1; transform:scaleY(1) } }
         @keyframes pulse-dot  { 0%,100% { opacity:1; transform:scale(1) } 50% { opacity:.5; transform:scale(.7) } }
+        @keyframes marquee     { from { transform:translateX(0) } to { transform:translateX(-100%) } }
+        @keyframes marquee-rev { from { transform:translateX(-100%) } to { transform:translateX(0) } }
 
         .reveal-section { opacity:0; transform:translateY(32px); transition: opacity .7s ease, transform .7s ease; }
         .reveal-section.revealed { opacity:1; transform:none; }
