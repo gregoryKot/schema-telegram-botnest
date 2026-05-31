@@ -168,7 +168,7 @@ export function AccountPage() {
                 Отвязать
               </button>
             ) : (
-              <button disabled={busy} onClick={linkGoogle} style={{ background: 'var(--accent)', border: 'none', color: 'white', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <button disabled={busy} onClick={linkGoogle} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                 Привязать
               </button>
             )}
@@ -190,7 +190,7 @@ export function AccountPage() {
                 Отвязать
               </button>
             ) : (
-              <button disabled={busy} onClick={() => setShowTgWidget(true)} style={{ background: 'var(--accent)', border: 'none', color: 'white', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <button disabled={busy} onClick={() => setShowTgWidget(true)} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                 Привязать
               </button>
             )}
@@ -218,7 +218,7 @@ export function AccountPage() {
                 Отвязать
               </button>
             ) : (
-              <button disabled={busy} onClick={linkVk} style={{ background: 'var(--accent)', border: 'none', color: 'white', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <button disabled={busy} onClick={linkVk} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                 Привязать
               </button>
             )}
@@ -305,7 +305,7 @@ function TherapistRequestSection({ accessToken }: { accessToken: string | null }
           ✅ Заявка одобрена. Перезайди в приложение.
         </div>
       ) : !open ? (
-        <button onClick={() => setOpen(true)} style={{ width: '100%', padding: '14px 0', borderRadius: 12, border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)', background: 'color-mix(in srgb, var(--accent) 8%, transparent)', color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={() => setOpen(true)} style={{ padding: '9px 20px', borderRadius: 6, border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
           👨‍⚕️ Я психолог — подать заявку
         </button>
       ) : (
@@ -327,7 +327,7 @@ function TherapistRequestSection({ accessToken }: { accessToken: string | null }
             style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} />
           <div style={{ display: 'flex', gap: 8 }}>
             <button disabled={busy} onClick={() => setOpen(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>Отмена</button>
-            <button disabled={busy} onClick={submit} style={{ flex: 2, padding: '12px 0', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
+            <button disabled={busy} onClick={submit} style={{ flex: 2, padding: '10px 0', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
           </div>
           {err && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 8 }}>{err}</div>}
         </div>

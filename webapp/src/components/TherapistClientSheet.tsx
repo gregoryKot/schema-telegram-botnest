@@ -465,9 +465,9 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                       value={aliasInput}
                       onChange={e => setAliasInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') saveAlias(); if (e.key === 'Escape') setRenamingAlias(false); }}
-                      style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', background: 'transparent', border: 'none', borderBottom: '2px solid var(--accent)', outline: 'none', width: 320, padding: '2px 0', color: 'var(--text)' }}
+                      style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', background: 'transparent', border: 'none', borderBottom: '2px solid rgba(var(--fg-rgb),0.2)', outline: 'none', width: 320, padding: '2px 0', color: 'var(--text)' }}
                     />
-                    <button onClick={saveAlias} disabled={aliasSaving} style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 12, cursor: 'pointer' }}>
+                    <button onClick={saveAlias} disabled={aliasSaving} style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
                       {aliasSaving ? '...' : 'Сохранить'}
                     </button>
                     <button onClick={() => setRenamingAlias(false)} style={{ padding: '4px 8px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>✕</button>
@@ -723,7 +723,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                             style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }}
                           />
                           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                            <button onClick={async () => { await saveSessionInfo({ nextSession: localNextSession || null }); setEditingNextSession(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 12, cursor: 'pointer' }}>
+                            <button onClick={async () => { await saveSessionInfo({ nextSession: localNextSession || null }); setEditingNextSession(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
                               {sessionInfoSaving ? '...' : 'Сохранить'}
                             </button>
                             <button onClick={() => setEditingNextSession(false)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
@@ -764,7 +764,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                             style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }}
                           />
                           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                            <button onClick={async () => { await saveSessionInfo({ therapyStartDate: localStartDate || null }); setEditingStartDate(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 12, cursor: 'pointer' }}>
+                            <button onClick={async () => { await saveSessionInfo({ therapyStartDate: localStartDate || null }); setEditingStartDate(false); }} disabled={sessionInfoSaving} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
                               {sessionInfoSaving ? '...' : 'Сохранить'}
                             </button>
                             <button onClick={() => setEditingStartDate(false)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
