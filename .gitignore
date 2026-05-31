@@ -66,3 +66,19 @@ schema-miniapp/*
 !schema-miniapp/dist/**
 !schema-miniapp/package.json
 
+
+# macOS junk
+.DS_Store
+**/.DS_Store
+
+# Accidental project duplicates (never commit these)
+schema-telegram-botnest
+schema-telegram-botnest/
+schema-telegram-botnest.zip
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Generated Prisma config artifacts (prisma.config.js itself is a tracked source file)
+prisma.config.d.ts
+prisma.config.js.map
