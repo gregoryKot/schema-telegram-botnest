@@ -96,37 +96,31 @@ function OnboardingCard({ onDismiss }: { onDismiss: () => void }) {
   const isLast = step === total - 1;
 
   return (
-    <div className="card" style={{
-      borderRadius: 16, padding: '16px 18px', marginBottom: 24,
-    }}>
+    <div style={{ borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', paddingBottom: 20, marginBottom: 24 }}>
       {/* Step dots */}
       <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
         {ONBOARDING_STEPS.map((_, i) => (
-          <div key={i} onClick={() => setStep(i)} style={{ width: i === step ? 18 : 6, height: 6, borderRadius: 3, background: i === step ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.15)', cursor: 'pointer', transition: 'all 0.2s' }} />
+          <div key={i} onClick={() => setStep(i)} style={{ width: i === step ? 18 : 6, height: 6, borderRadius: 3, background: i === step ? 'var(--text)' : 'rgba(var(--fg-rgb),0.15)', cursor: 'pointer', transition: 'all 0.2s' }} />
         ))}
       </div>
 
       {/* Content */}
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 16 }}>
-        <span style={{ fontSize: 28, flexShrink: 0, lineHeight: 1 }}>{current.emoji}</span>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 14 }}>
+        <span style={{ fontSize: 26, flexShrink: 0, lineHeight: 1 }}>{current.emoji}</span>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 5 }}>{current.title}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{current.title}</div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{current.text}</div>
         </div>
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button
-          onClick={onDismiss}
-          style={{ padding: '8px 14px', border: 'none', borderRadius: 10, background: 'transparent', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}
-        >
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button onClick={onDismiss}
+          style={{ padding: '6px 12px', border: 'none', borderRadius: 6, background: 'transparent', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>
           Пропустить
         </button>
-        <button
-          onClick={() => isLast ? onDismiss() : setStep(s => s + 1)}
-          style={{ flex: 1, padding: '9px 0', border: 'none', borderRadius: 10, background: 'color-mix(in srgb, var(--accent) 14%, transparent)', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-        >
+        <button onClick={() => isLast ? onDismiss() : setStep(s => s + 1)}
+          style={{ padding: '6px 16px', border: 'none', borderRadius: 6, background: 'var(--text)', color: 'var(--bg)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
           {isLast ? 'Понятно, начнём' : 'Далее →'}
         </button>
       </div>

@@ -76,18 +76,18 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
           </h1>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'start' }}>
           {/* Left column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
             {/* Sessions today */}
-            <div className="card" style={{ padding: '20px 24px' }}>
-              <div className="eyebrow" style={{ marginBottom: 12 }}>Сессии сегодня</div>
+            <div>
+              <div className="eyebrow" style={{ marginBottom: 14 }}>Сессии сегодня</div>
               {loading ? (
                 <div style={{ color: 'var(--text-faint)', fontSize: 14 }}>Загрузка…</div>
               ) : sessionsToday.length === 0 ? (
-                <div style={{ color: 'var(--text-sub)', fontSize: 14 }}>Сессий не запланировано</div>
+                <div style={{ color: 'var(--text-faint)', fontSize: 14, fontFamily: 'var(--serif)', fontStyle: 'italic' }}>Сессий не запланировано</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
                   {sessionsToday
                     .slice()
                     .sort((a, b) => (sessionTime(a) || '99:99').localeCompare(sessionTime(b) || '99:99'))
@@ -95,13 +95,13 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                       const time = sessionTime(c);
                       return (
                         <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
-                                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: 'none', background: 'var(--surface-2)', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0',
+                            borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', border: 'none',
+                            background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
+                          <span style={{ fontWeight: 500, fontSize: 14, color: 'var(--text)', flex: 1 }}>
                             {c.clientAlias ?? c.name ?? `#${c.telegramId}`}
                           </span>
-                          {time && (
-                            <span style={{ fontSize: 12, color: 'var(--text-faint)', marginLeft: 'auto' }}>{time}</span>
-                          )}
+                          {time && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{time}</span>}
                         </button>
                       );
                     })}
@@ -110,30 +110,31 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
             </div>
 
             {/* Client activity */}
-            <div className="card" style={{ padding: '20px 24px' }}>
-              <div className="eyebrow" style={{ marginBottom: 12 }}>Активность клиентов</div>
+            <div>
+              <div className="eyebrow" style={{ marginBottom: 14 }}>Активность клиентов</div>
               {loading ? (
                 <div style={{ color: 'var(--text-faint)', fontSize: 14 }}>Загрузка…</div>
               ) : clients.length === 0 ? (
-                <div style={{ color: 'var(--text-sub)', fontSize: 14 }}>Нет клиентов</div>
+                <div style={{ color: 'var(--text-faint)', fontSize: 14, fontFamily: 'var(--serif)', fontStyle: 'italic' }}>Нет клиентов</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
                   {clients.map(c => {
                     const name = c.clientAlias ?? c.name ?? `#${c.telegramId}`;
                     const done = c.todayIndex != null;
                     return (
                       <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
-                              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, display: 'inline-block',
-                          background: done ? 'var(--c-moss)' : 'var(--surface-3)',
-                          border: done ? 'none' : '1.5px solid var(--line-strong)' }} />
-                        <span style={{ fontSize: 13.5, color: 'var(--text)', fontWeight: 500 }}>{name}</span>
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0',
+                          borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', border: 'none',
+                          background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, display: 'inline-block',
+                          background: done ? 'var(--c-moss)' : 'rgba(var(--fg-rgb),0.15)' }} />
+                        <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500, flex: 1 }}>{name}</span>
                         {done && c.todayIndex != null && (
-                          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-faint)' }}>
+                          <span style={{ fontSize: 13, fontFamily: 'var(--serif)', color: 'var(--text-sub)' }}>
                             {c.todayIndex.toFixed(1)}
                           </span>
                         )}
-                        <span style={{ fontSize: 11, color: 'var(--text-ghost)', marginLeft: done ? 4 : 'auto' }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-ghost)' }}>
                           {done ? 'заполнил' : c.lastActiveDate
                             ? `${Math.floor((Date.now() - new Date(c.lastActiveDate).getTime()) / 86400000)} дн.`
                             : 'нет данных'}
@@ -147,21 +148,49 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
           </div>
 
           {/* Right column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
+            {/* Summary stats */}
+            {!loading && clients.length > 0 && (
+              <div style={{ display: 'flex', gap: 48 }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--serif)', fontSize: 48, fontWeight: 400,
+                    lineHeight: 1, letterSpacing: '-0.02em', color: 'var(--text)' }}>
+                    {activeToday.length}
+                    <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 18,
+                      color: 'var(--text-ghost)', marginLeft: 4 }}>/{clients.length}</span>
+                  </div>
+                  <div className="eyebrow" style={{ marginTop: 6 }}>активны сегодня</div>
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'var(--serif)', fontSize: 48, fontWeight: 400,
+                    lineHeight: 1, letterSpacing: '-0.02em', color: 'var(--text)' }}>
+                    {sessionsToday.length}
+                  </div>
+                  <div className="eyebrow" style={{ marginTop: 6 }}>сессий сегодня</div>
+                </div>
+              </div>
+            )}
+
             {/* Needs attention */}
             {needingAttention.length > 0 && (
-              <div className="card" style={{ padding: '20px 24px', borderLeft: '3px solid var(--c-amber)' }}>
-                <div className="eyebrow" style={{ marginBottom: 12, color: 'var(--c-amber)' }}>Требуют внимания</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div>
+                <div className="eyebrow" style={{ marginBottom: 14, color: 'var(--c-amber)',
+                  display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--c-amber)', display: 'inline-block' }} />
+                  Требуют внимания
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
                   {needingAttention.map(c => (
                     <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                      <span style={{ fontSize: 13.5, color: 'var(--text)', fontWeight: 500 }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0',
+                        borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', border: 'none',
+                        background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
+                      <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500, flex: 1 }}>
                         {c.clientAlias ?? c.name ?? `#${c.telegramId}`}
                       </span>
-                      <span style={{ fontSize: 11, color: 'var(--text-faint)', marginLeft: 'auto' }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
                         {c.lastActiveDate
-                          ? `${Math.floor((Date.now() - new Date(c.lastActiveDate).getTime()) / 86400000)} дн. без активности`
+                          ? `${Math.floor((Date.now() - new Date(c.lastActiveDate).getTime()) / 86400000)} дн.`
                           : 'нет данных'}
                       </span>
                     </button>
@@ -172,29 +201,16 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
 
             {/* Active today */}
             {activeToday.length > 0 && (
-              <div className="card" style={{ padding: '20px 24px' }}>
-                <div className="eyebrow" style={{ marginBottom: 12 }}>Заполнили сегодня</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <div>
+                <div className="eyebrow" style={{ marginBottom: 14 }}>Заполнили сегодня</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
                   {activeToday.map(c => (
                     <button key={c.telegramId} onClick={() => onOpenClient(c.telegramId)}
-                            style={{ padding: '4px 10px', borderRadius: 999, border: 'none', background: 'color-mix(in srgb, var(--c-moss) 14%, transparent)', color: 'var(--c-moss)', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                        fontSize: 14, color: 'var(--c-moss)', fontWeight: 500 }}>
                       {c.clientAlias ?? c.name ?? `#${c.telegramId}`}
                     </button>
                   ))}
-                </div>
-              </div>
-            )}
-
-            {/* Summary stats */}
-            {!loading && clients.length > 0 && (
-              <div style={{ display: 'flex', gap: 12 }}>
-                <div className="card" style={{ flex: 1, padding: '16px 20px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text)' }}>{activeToday.length}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4 }}>из {clients.length} активны</div>
-                </div>
-                <div className="card" style={{ flex: 1, padding: '16px 20px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text)' }}>{sessionsToday.length}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4 }}>сессий сегодня</div>
                 </div>
               </div>
             )}
