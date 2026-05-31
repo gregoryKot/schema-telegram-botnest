@@ -182,8 +182,7 @@ export function LandingPage() {
         <div style={{ maxWidth: 1100, width: '100%', margin: '0 auto', padding: '0 40px', display: 'flex', flexDirection: 'column', flex: 1, position: 'relative', zIndex: 1, boxSizing: 'border-box' }}>
 
           {/* Nav */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '28px 0' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-faint)', fontWeight: 500 }}>schemalab.ru</span>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '28px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <a href="#schemalab" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
