@@ -21,7 +21,7 @@ const MODES = [
     emoji: '😢',
     label: 'Уязвимый Ребёнок',
     desc: 'Грустно, страшно, одиноко, беспомощно',
-    response: 'Здоровый Взрослый слышит тебя: твоя боль настоящая, и ты не один. Позволь себе побыть в этом — без самокритики.',
+    response: 'Здоровый Взрослый слышит тебя: твоя боль настоящая, и ты не один. Позволь себе побыть в этом – без самокритики.',
     color: '#60a5fa',
   },
   {
@@ -29,7 +29,7 @@ const MODES = [
     emoji: '😡',
     label: 'Злой Ребёнок',
     desc: 'Злость, раздражение, хочется взорваться',
-    response: 'Злость — сигнал, что нарушено что-то важное. Не нужно ни давить её, ни выплёскивать. Давай выясним, что за ней стоит.',
+    response: 'Злость – сигнал, что нарушено что-то важное. Не нужно ни давить её, ни выплёскивать. Давай выясним, что за ней стоит.',
     color: '#f87171',
   },
   {
@@ -37,7 +37,7 @@ const MODES = [
     emoji: '🔇',
     label: 'Отстранённый Защитник',
     desc: 'Пусто, онемело, всё равно, хочется исчезнуть',
-    response: 'Ты отключился, чтобы не было больно — это понятно. Но ты в безопасности прямо сейчас. Можно чуть-чуть вернуться.',
+    response: 'Ты отключился, чтобы не было больно – это понятно. Но ты в безопасности прямо сейчас. Можно чуть-чуть вернуться.',
     color: '#94a3b8',
   },
   {
@@ -45,7 +45,7 @@ const MODES = [
     emoji: '🪓',
     label: 'Внутренний Критик',
     desc: 'Стыд, «я облажался», «я недостаточно хорош»',
-    response: 'Критик думает, что защищает тебя, но причиняет боль. Здоровый Взрослый говорит: ты достаточно хорош — прямо сейчас.',
+    response: 'Критик думает, что защищает тебя, но причиняет боль. Здоровый Взрослый говорит: ты достаточно хорош – прямо сейчас.',
     color: '#fb923c',
   },
 ];
@@ -253,7 +253,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
     );
   }
 
-  // Grounding screen (first step — breathing exercise)
+  // Grounding screen (first step – breathing exercise)
   if (!grounded) {
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
@@ -264,7 +264,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             Ты сделал правильно
           </h1>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, marginBottom: 36 }}>
-            То, что ты чувствуешь сейчас — это нормально.<br/>Это пройдёт.
+            То, что ты чувствуешь сейчас – это нормально.<br/>Это пройдёт.
           </p>
           <div style={{
             background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)',
@@ -273,7 +273,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             <div style={{ fontSize: 13, fontWeight: 600, color: '#60a5fa', marginBottom: 18 }}>
               Три вдоха прямо сейчас
             </div>
-            {['Вдох через нос — 4 секунды', 'Задержи — 2 секунды', 'Медленный выдох — 6 секунд'].map((t, i) => (
+            {['Вдох через нос – 4 секунды', 'Задержи – 2 секунды', 'Медленный выдох – 6 секунд'].map((t, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: i < 2 ? 12 : 0 }}>
                 <div style={{
                   width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
@@ -289,7 +289,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             Почувствуй ноги на полу. Ты в безопасности.
           </p>
           <button onClick={() => setGrounded(true)} className="ex-btn ex-btn-primary" style={{ width: '100%', marginBottom: 12 }}>
-            Стало чуть лучше — разобраться →
+            Стало чуть лучше – разобраться →
           </button>
           {allCards.length > 0 && (
             <button onClick={() => setShowHistory(true)} className="ex-btn ex-btn-ghost" style={{ width: '100%', marginBottom: 10 }}>

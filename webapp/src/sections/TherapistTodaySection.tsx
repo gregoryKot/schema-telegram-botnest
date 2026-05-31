@@ -24,11 +24,11 @@ function hasSessionToday(c: TherapyClientSummary): boolean {
   if (c.nextSession) {
     const sessionDate = c.nextSession.slice(0, 10);
     if (sessionDate === todayStr) return true;
-    // If nextSession is in the future or past — don't fall through to meetingDays
+    // If nextSession is in the future or past – don't fall through to meetingDays
     // (meetingDays is the recurring pattern, nextSession is the specific override)
     return false;
   }
-  // No explicit nextSession — use recurring meetingDays
+  // No explicit nextSession – use recurring meetingDays
   return c.meetingDays.includes(todayDay);
 }
 

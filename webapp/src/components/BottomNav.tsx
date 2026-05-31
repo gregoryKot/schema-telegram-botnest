@@ -1,4 +1,4 @@
-// BottomNav.tsx — Redesigned bottom navigation
+// BottomNav.tsx – Redesigned bottom navigation
 // Place at: src/components/BottomNav.tsx
 // Replaces the existing BottomNav component fully.
 //

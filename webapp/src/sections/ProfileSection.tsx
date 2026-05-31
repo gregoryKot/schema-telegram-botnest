@@ -170,7 +170,7 @@ export function ProfileSection({ onOpenTracker, refreshKey, displayName }: Props
                     ? (todayDone ? 'var(--accent)' : 'var(--text)')
                     : 'rgba(var(--fg-rgb),0.2)',
                 }}>
-                  {currentStreak > 0 ? currentStreak : '—'}
+                  {currentStreak > 0 ? currentStreak : '–'}
                 </div>
                 <div style={{ paddingBottom: 4 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: currentStreak > 0 ? 'var(--text-sub)' : 'rgba(var(--fg-rgb),0.35)', lineHeight: 1.2 }}>
@@ -303,7 +303,7 @@ export function ProfileSection({ onOpenTracker, refreshKey, displayName }: Props
             </div>
 
             {earnedList.length === 0 ? (
-              <div style={{ fontSize: 13, color: 'var(--text-sub)', paddingRight: 16 }}>Первое — за первую запись в дневник</div>
+              <div style={{ fontSize: 13, color: 'var(--text-sub)', paddingRight: 16 }}>Первое – за первую запись в дневник</div>
             ) : (
               /* Horizontal scroll of earned achievements */
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingRight: 16, paddingBottom: 2 }}>
@@ -475,7 +475,7 @@ export function ProfileSection({ onOpenTracker, refreshKey, displayName }: Props
           <TherapyNote compact />
         </div>
 
-        {/* ── Удаление аккаунта — discreet link ── */}
+        {/* ── Удаление аккаунта – discreet link ── */}
         <div style={{ marginTop: 8, paddingTop: 24, borderTop: '1px solid var(--line)' }}>
           <span
             className="link"

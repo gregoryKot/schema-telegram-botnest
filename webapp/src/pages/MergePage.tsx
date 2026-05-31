@@ -81,7 +81,7 @@ export function MergePage() {
         Объединить аккаунты?
       </h1>
       <div className="text-md muted" style={{ maxWidth: 600, lineHeight: 1.6, marginBottom: 36 }}>
-        Аккаунт <b>{providerName}</b>{otherName ? ` (${otherName})` : ''} уже существует со своими данными. Если объединить — все они переедут в твой текущий аккаунт.
+        Аккаунт <b>{providerName}</b>{otherName ? ` (${otherName})` : ''} уже существует со своими данными. Если объединить – все они переедут в твой текущий аккаунт.
       </div>
 
       <div className="section">
@@ -90,7 +90,7 @@ export function MergePage() {
           {totalItems > 0 && <span className="hint">{totalItems} {totalItems === 1 ? 'запись' : totalItems < 5 ? 'записи' : 'записей'}</span>}
         </div>
         {totalItems === 0 ? (
-          <div className="text-sm muted">Нет данных — объединение пройдёт без переноса.</div>
+          <div className="text-sm muted">Нет данных – объединение пройдёт без переноса.</div>
         ) : (
           Object.entries(summary).map(([table, n]) => (
             <div key={table} className="list-line">
@@ -103,7 +103,7 @@ export function MergePage() {
 
       <div className="section">
         <div className="text-sm" style={{ color: 'var(--c-amber)', lineHeight: 1.6, maxWidth: 600 }}>
-          Если в обоих аккаунтах есть пересекающиеся записи (одна и та же оценка за один день, например) — версия текущего аккаунта остаётся, дубль из второго удаляется. <b>Действие необратимо.</b>
+          Если в обоих аккаунтах есть пересекающиеся записи (одна и та же оценка за один день, например) – версия текущего аккаунта остаётся, дубль из второго удаляется. <b>Действие необратимо.</b>
         </div>
       </div>
 

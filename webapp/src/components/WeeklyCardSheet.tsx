@@ -37,7 +37,7 @@ function drawCard(canvas: HTMLCanvasElement, needs: Need[], history: DayHistory[
   ctx.font = 'bold 17px -apple-system, sans-serif';
   ctx.fillStyle = fg(0.95); ctx.textAlign = 'left'; ctx.fillText('Трекер потребностей', 28, 56);
   const sorted = [...history].map(d => d.date).sort();
-  const weekRange = sorted.length >= 2 ? `${fmtDate(sorted[0])} — ${fmtDate(sorted[sorted.length - 1])}` : sorted.length === 1 ? fmtDate(sorted[0]) : '';
+  const weekRange = sorted.length >= 2 ? `${fmtDate(sorted[0])} – ${fmtDate(sorted[sorted.length - 1])}` : sorted.length === 1 ? fmtDate(sorted[0]) : '';
   ctx.font = '12px -apple-system, sans-serif'; ctx.fillStyle = fg(0.38); ctx.fillText(weekRange, 28, 76);
   ctx.strokeStyle = fg(0.07); ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(28, 96); ctx.lineTo(W - 28, 96); ctx.stroke();
@@ -48,7 +48,7 @@ function drawCard(canvas: HTMLCanvasElement, needs: Need[], history: DayHistory[
     const color = (COLORS as Record<string, string>)[need.id] ?? '#888';
     ctx.font = '17px serif'; ctx.fillStyle = fg(0.95); ctx.textAlign = 'left'; ctx.fillText(need.emoji, 28, rowY + 20);
     ctx.font = '13px -apple-system, sans-serif'; ctx.fillStyle = fg(0.7); ctx.fillText(need.chartLabel, 52, rowY + 20);
-    const valStr = avg !== null ? avg.toFixed(1) : '—';
+    const valStr = avg !== null ? avg.toFixed(1) : '–';
     ctx.font = 'bold 14px -apple-system, sans-serif'; ctx.fillStyle = color; ctx.textAlign = 'right'; ctx.fillText(valStr, BAR_X - 12, rowY + 20); ctx.textAlign = 'left';
     ctx.fillStyle = fg(0.07);
     ctx.beginPath(); (ctx as any).roundRect?.(BAR_X, rowY + 12, BAR_MAX_W, BAR_H, 3.5) ?? ctx.rect(BAR_X, rowY + 12, BAR_MAX_W, BAR_H); ctx.fill();
@@ -98,13 +98,13 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
 
   function buildShareText() {
     const allAvgs = needs.map(n => calcWeekAvg(history, n.id)).filter(v => v !== null) as number[];
-    const weekIndex = allAvgs.length > 0 ? (allAvgs.reduce((s, v) => s + v, 0) / allAvgs.length).toFixed(1) : '—';
+    const weekIndex = allAvgs.length > 0 ? (allAvgs.reduce((s, v) => s + v, 0) / allAvgs.length).toFixed(1) : '–';
     const sorted = [...history].map(d => d.date).sort();
-    const range = sorted.length >= 2 ? `${fmtDate(sorted[0])} — ${fmtDate(sorted[sorted.length - 1])}` : sorted.length === 1 ? fmtDate(sorted[0]) : '';
+    const range = sorted.length >= 2 ? `${fmtDate(sorted[0])} – ${fmtDate(sorted[sorted.length - 1])}` : sorted.length === 1 ? fmtDate(sorted[0]) : '';
     const streakSuffix = streak > 0 ? ` · Серия: ${streak} дней 🔥` : '';
     return `Трекер потребностей · ${range}\n\n${needs.map(n => {
       const avg = calcWeekAvg(history, n.id);
-      return `${n.emoji} ${n.chartLabel}: ${avg !== null ? avg.toFixed(1) : '—'}`;
+      return `${n.emoji} ${n.chartLabel}: ${avg !== null ? avg.toFixed(1) : '–'}`;
     }).join('\n')}\n\nИндекс: ${weekIndex}/10${streakSuffix}\n\n@SchemeHappens`;
   }
 
@@ -134,7 +134,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
       eyebrow="Итоги недели"
       eyebrowColor="var(--accent)"
       title={<>Карточка<br /><span className="it">для поделиться</span></>}
-      lede="Сводка потребностей за неделю в виде карточки — сохрани или отправь терапевту."
+      lede="Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту."
     >
       {history.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--text-sub)', padding: '48px 0', fontSize: 15 }}>

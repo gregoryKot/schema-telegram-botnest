@@ -266,14 +266,14 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         </div>
       </div>
 
-      {/* Безопасное место — feature card */}
+      {/* Безопасное место – feature card */}
       <div className="section">
         <div style={{ background: 'var(--surface-2)', borderRadius: 12, padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
           <div>
             <div className="eyebrow" style={{ marginBottom: 8 }}>Медитация</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>Безопасное место</div>
             <div className="text-sm muted" style={{ maxWidth: 440, lineHeight: 1.6 }}>
-              Управляемая визуализация для активации Хорошего Родителя — ресурс в тревожный или тяжёлый момент.
+              Управляемая визуализация для активации Хорошего Родителя – ресурс в тревожный или тяжёлый момент.
             </div>
           </div>
           <button className="btn btn-primary" onClick={() => setShowSafePlace(true)} style={{ flexShrink: 0 }}>
@@ -282,14 +282,14 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         </div>
       </div>
 
-      {/* Короткие техники — 3-column cards */}
+      {/* Короткие техники – 3-column cards */}
       <div className="section">
         <div className="section-head"><h3>Короткие техники</h3></div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
           {([
             { label: 'Мне плохо',          sub: 'Пять шагов чтобы разобраться, что происходит',      color: 'var(--c-rose)',  onClick: () => setShowFlashcard(true) },
             { label: 'Проверка убеждений', sub: 'Правда ли это? Что говорит за, что против',          color: 'var(--c-amber)', onClick: () => setShowBeliefCheck(true) },
-            { label: 'Письмо себе',        sub: 'Письмо Уязвимому Ребёнку — от Здорового Взрослого',  color: 'var(--c-plum)',  onClick: () => setShowLetterToSelf(true) },
+            { label: 'Письмо себе',        sub: 'Письмо Уязвимому Ребёнку – от Здорового Взрослого',  color: 'var(--c-plum)',  onClick: () => setShowLetterToSelf(true) },
           ] as const).map(item => (
             <div key={item.label} onClick={item.onClick} style={{ cursor: 'pointer', padding: '20px 0', borderTop: `2px solid ${item.color}` }}>
               <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{item.label}</div>

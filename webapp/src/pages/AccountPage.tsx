@@ -64,7 +64,7 @@ export function AccountPage() {
         }
         const data = await res.json() as { ok?: true } | { merge: true; mergeToken: string; summary: Record<string, number> };
         if ('merge' in data) {
-          // Conflict — go to merge confirmation
+          // Conflict – go to merge confirmation
           const params = new URLSearchParams({
             token: data.mergeToken,
             summary: JSON.stringify(data.summary),
@@ -134,7 +134,7 @@ export function AccountPage() {
 
       <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 8 }}>Аккаунт</h1>
       <p style={{ color: 'var(--text-sub)', fontSize: 14, marginBottom: 24 }}>
-        Привязывай несколько способов входа — заходи откуда удобно
+        Привязывай несколько способов входа – заходи откуда удобно
       </p>
 
       {error && (
@@ -298,7 +298,7 @@ function TherapistRequestSection({ accessToken }: { accessToken: string | null }
       <div className="eyebrow" style={{ marginBottom: 8 }}>Роль психолога</div>
       {req?.status === 'pending' ? (
         <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-          ⏳ Твоя заявка на рассмотрении. Когда админ её обработает — придёт уведомление в Telegram.
+          ⏳ Твоя заявка на рассмотрении. Когда админ её обработает – придёт уведомление в Telegram.
         </div>
       ) : req?.status === 'approved' ? (
         <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--accent-green)' }}>
@@ -306,7 +306,7 @@ function TherapistRequestSection({ accessToken }: { accessToken: string | null }
         </div>
       ) : !open ? (
         <button onClick={() => setOpen(true)} style={{ padding: '9px 20px', borderRadius: 6, border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-          👨‍⚕️ Я психолог — подать заявку
+          👨‍⚕️ Я психолог – подать заявку
         </button>
       ) : (
         <div className="card-elevated" style={{ padding: 16 }}>

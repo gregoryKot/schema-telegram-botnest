@@ -94,8 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
     setTokenState(null);
     // Clinical content (letters, safe place, diary drafts, YSQ answers, schema
-    // labels) is mirrored into localStorage for instant render. On logout —
-    // especially on a shared device — wipe it so the next person can't read it.
+    // labels) is mirrored into localStorage for instant render. On logout –
+    // especially on a shared device – wipe it so the next person can't read it.
     // Theme is the only non-sensitive key worth keeping. Server stays the
     // source of truth, so nothing is lost on the next login.
     try {

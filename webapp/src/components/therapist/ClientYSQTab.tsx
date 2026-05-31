@@ -22,10 +22,10 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
           <div style={{ fontSize: 36, marginBottom: 16 }}>📋</div>
           <div style={{ fontSize: 16, color: 'var(--text-sub)', marginBottom: 8 }}>YSQ ещё не проходился</div>
           {selectedClient.telegramId < 0 ? (
-            <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>Клиент без Telegram — YSQ недоступен</div>
+            <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>Клиент без Telegram – YSQ недоступен</div>
           ) : (
             <>
-              <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 24 }}>Запроси тест — клиент получит уведомление в боте</div>
+              <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 24 }}>Запроси тест – клиент получит уведомление в боте</div>
               <button onClick={handleRequestYsq} disabled={ysqRequested} style={{ padding: '9px 20px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест YSQ'}
               </button>
@@ -73,7 +73,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
         <div>
           <h2 style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.025em', margin: 0 }}>YSQ</h2>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6 }}>
-            {hist.length} {hist.length === 1 ? 'прохождение' : hist.length < 5 ? 'прохождения' : 'прохождений'} · последнее {clientData.ysqCompletedAt ? fmtDate(clientData.ysqCompletedAt.slice(0, 10)) : '—'}
+            {hist.length} {hist.length === 1 ? 'прохождение' : hist.length < 5 ? 'прохождения' : 'прохождений'} · последнее {clientData.ysqCompletedAt ? fmtDate(clientData.ysqCompletedAt.slice(0, 10)) : '–'}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -89,7 +89,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
       </div>
       {ysqError && <div style={{ marginBottom: 16, fontSize: 13, color: 'var(--c-rose)' }}>{ysqError}</div>}
 
-      {/* Dynamics chart — only if ≥2 runs */}
+      {/* Dynamics chart – only if ≥2 runs */}
       {chronHist.length >= 2 && (
         <div style={{ marginBottom: 48 }}>
           <div className="eyebrow" style={{ marginBottom: 20 }}>Динамика топ-5 схем</div>
@@ -161,10 +161,10 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
               <span style={{ textAlign: 'right', fontSize: 13, fontWeight: 500, color: score.pct5plus > 65 ? 'var(--c-rose)' : score.pct5plus > 50 ? 'var(--c-clay)' : 'var(--text-sub)' }}>
                 {score.pct5plus}%
               </span>
-              {prev && <span style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-faint)' }}>{prevScore != null ? `${prevScore.pct5plus}%` : '—'}</span>}
+              {prev && <span style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-faint)' }}>{prevScore != null ? `${prevScore.pct5plus}%` : '–'}</span>}
               {prev && (
                 <span style={{ textAlign: 'right', fontSize: 13, fontWeight: delta != null && delta !== 0 ? 500 : 400, color: delta == null || delta === 0 ? 'var(--text-faint)' : delta < 0 ? 'var(--c-moss)' : 'var(--c-rose)' }}>
-                  {delta == null ? '—' : delta === 0 ? '0' : `${delta > 0 ? '+' : ''}${delta}`}
+                  {delta == null ? '–' : delta === 0 ? '0' : `${delta > 0 ? '+' : ''}${delta}`}
                 </span>
               )}
             </div>

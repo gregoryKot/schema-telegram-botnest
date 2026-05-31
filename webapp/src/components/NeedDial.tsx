@@ -1,4 +1,4 @@
-// NeedDial.tsx — Arc gauge component for needs tracker
+// NeedDial.tsx – Arc gauge component for needs tracker
 // Place at: src/components/NeedDial.tsx
 //
 // Usage:
@@ -18,8 +18,8 @@ interface Props {
 // ── Arc geometry constants ────────────────────────────────────────────────────
 const DEFAULT_SIZE = 280;
 const STROKE = 13;
-const ARC_START  = 135;  // degrees — bottom-left
-const ARC_SWEEP  = 270;  // degrees — ¾ circle
+const ARC_START  = 135;  // degrees – bottom-left
+const ARC_SWEEP  = 270;  // degrees – ¾ circle
 
 function polarXY(cx: number, cy: number, r: number, deg: number): [number, number] {
   const rad = (deg - 90) * Math.PI / 180;

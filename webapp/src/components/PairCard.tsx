@@ -52,7 +52,7 @@ export function PairCard({ partners, pendingCode, showInvite, onOpen, onDismissI
           <span style={{ fontSize: 22 }}>⏳</span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, color: 'var(--text-sub)', fontWeight: 500 }}>Ждём партнёра</div>
-            <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>Ссылка отправлена — напомнить?</div>
+            <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>Ссылка отправлена – напомнить?</div>
           </div>
           <span style={{ fontSize: 16, color: 'var(--text-faint)' }}>›</span>
         </div>

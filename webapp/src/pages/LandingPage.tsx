@@ -7,7 +7,7 @@ const MOSS = '#4a6335';        // green status (passes WCAG AA on paper bg)
 const DARK_BG = '#1c1916';     // intentional always-dark sections
 const INK_ON_DARK = '#eceae5'; // text on dark sections
 
-// ─── Button — single source for all CTAs ─────────────────────────────────────
+// ─── Button – single source for all CTAs ─────────────────────────────────────
 type BtnVariant = 'primary' | 'ghost' | 'dark';
 type BtnSize = 'sm' | 'md' | 'lg';
 const BTN_PAD: Record<BtnSize, string> = { sm: '8px 18px', md: '13px 24px', lg: '15px 30px' };
@@ -102,7 +102,7 @@ function useTilt() {
   return ref;
 }
 
-// ─── Marquee strips — two different sets ─────────────────────────────────────
+// ─── Marquee strips – two different sets ─────────────────────────────────────
 const TOPICS_A: { label: string; href: string }[] = [
   { label: 'Схема-терапия',       href: '#approach' },
   { label: 'Паттерны',            href: '#approach' },
@@ -204,11 +204,11 @@ function BookingForm() {
           Я ознакомился(ась) с{' '}<a href="/privacy" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Политикой конфиденциальности</a>{' '}и даю согласие на обработку данных
         </span>
       </label>
-      {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Не вышло — напишите напрямую: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
+      {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Не вышло – напишите напрямую: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
       <Btn type="submit" size="lg" radius="btn" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent} style={{ alignSelf: 'flex-start' }}>
         {status === 'loading' ? 'Отправляю…' : 'Записаться на встречу →'}
       </Btn>
-      <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Первая встреча 15 минут — бесплатно. Никаких обязательств.</p>
+      <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Первая встреча 15 минут – бесплатно. Никаких обязательств.</p>
     </form>
   );
 }
@@ -216,7 +216,7 @@ function BookingForm() {
 // ─── Education ───────────────────────────────────────────────────────────────
 const EDUCATION = [
   {
-    year: '2024 —',
+    year: '2024 –',
     title: 'МИП · Бакалавриат',
     sub: 'Московский институт психоанализа · Психология, психотерапия качества жизни',
   },
@@ -234,7 +234,7 @@ const EDUCATION = [
 
 // ─── App features ─────────────────────────────────────────────────────────────
 const APP_FEATURES = [
-  { num: '01', title: 'Дневник состояний', text: 'Каждый день — короткая оценка восьми базовых потребностей. Появляется картина того, что происходит.' },
+  { num: '01', title: 'Дневник состояний', text: 'Каждый день – короткая оценка восьми базовых потребностей. Появляется картина того, что происходит.' },
   { num: '02', title: 'Схемы и режимы',   text: 'Узнайте, какие ранние убеждения управляют реакциями. Инструмент диагностики прямо в телефоне.' },
   { num: '03', title: 'Практики',          text: 'Упражнения из схема-терапии и КПТ: переоценка убеждений, письма, безопасное место, флэшкарточки.' },
   { num: '04', title: 'Динамика',          text: 'История состояний за недели и месяцы. Видно, что меняется, а что стоит на месте.' },
@@ -276,27 +276,27 @@ function BentoCard({ num, title, text, accent = false }: { num: string; title: s
 const FAQ_ITEMS = [
   {
     q: 'Что такое схема-терапия?',
-    a: 'Схема-терапия — доказательный интегративный метод, разработанный Джеффри Янгом. Он объединяет элементы КПТ, психоанализа и гештальта и работает с глубинными убеждениями (схемами), которые формируются в детстве и управляют нашими реакциями во взрослом возрасте. Особенно эффективна при хронических паттернах в отношениях, самооценке и эмоциональной регуляции — это подтверждено рандомизированными клиническими исследованиями.',
+    a: 'Схема-терапия – доказательный интегративный метод, разработанный Джеффри Янгом. Он объединяет элементы КПТ, психоанализа, гештальт-терапии и теории привязанности и работает с глубинными убеждениями (схемами), которые формируются в детстве и управляют нашими реакциями во взрослом возрасте. Особенно эффективна при хронических, повторяющихся трудностях в отношениях, самооценке и эмоциональной регуляции – это подтверждено рандомизированными клиническими исследованиями.',
   },
   {
     q: 'Кому подходит схема-терапия?',
-    a: 'Тем, кто замечает повторяющиеся паттерны — в отношениях, самооценке, тревоге, хронической неудовлетворённости. Она особенно эффективна, когда «поверхностная» работа не давала устойчивого результата, и когда хочется понять глубинные причины реакций, а не только снять симптом.',
+    a: 'Тем, кто замечает повторяющиеся паттерны – в отношениях, самооценке, тревоге, хронической неудовлетворённости. Она особенно эффективна, когда «поверхностная» работа не давала устойчивого результата, и когда хочется понять глубинные причины реакций, а не только снять симптом.',
   },
   {
     q: 'Как проходит онлайн-сессия?',
-    a: 'Видеозвонок (Zoom или Google Meet), 50 минут. Нужны стабильный интернет, камера и микрофон. Вы находитесь там, где вам комфортно — качество работы от формата не зависит. Дата и время согласовываются в Telegram.',
+    a: 'Видеозвонок (Zoom или Google Meet), 50 минут. Нужны стабильный интернет, камера и микрофон. Вы находитесь там, где вам комфортно – качество работы от формата не зависит. Дата и время согласовываются в Telegram.',
   },
   {
     q: 'Сколько стоит и как оплатить?',
-    a: 'Вводная встреча (15 минут) — бесплатно. Каждая следующая сессия (50 минут) — 4 000 ₽. Реквизиты для оплаты я отправляю перед сессией. После оплаты вы получаете чек самозанятого через приложение «Мой налог».',
+    a: 'Вводная встреча (15 минут) – бесплатно. Каждая следующая сессия (50 минут) – 4 000 ₽. Реквизиты для оплаты я отправляю перед сессией. После оплаты вы получаете чек самозанятого через приложение «Мой налог».',
   },
   {
     q: 'Это то же самое, что психотерапия?',
-    a: 'Нет. Психологическое консультирование — отдельный вид помощи, не требующий медицинского образования и лицензии. Это не медицинская психотерапия по ФЗ-323. Если у вас есть симптомы психического расстройства — я порекомендую обратиться к врачу-психиатру или психотерапевту с медицинским дипломом.',
+    a: 'Нет. Психологическое консультирование – отдельный вид помощи, не требующий медицинского образования и лицензии. Это не медицинская психотерапия по ФЗ-323. Если у вас есть симптомы психического расстройства – я порекомендую обратиться к врачу-психиатру или психотерапевту с медицинским дипломом.',
   },
   {
     q: 'Что такое СхемаЛаб и зачем он нужен?',
-    a: 'СхемаЛаб — бесплатное веб-приложение, которое я создал для самостоятельной работы между сессиями. Дневник состояний, диагностика схем (тест ЯСО), упражнения из схема-терапии и КПТ, отслеживание динамики. Работает в браузере и через Telegram-бот @SchemaLabBot.',
+    a: 'СхемаЛаб – бесплатное веб-приложение, которое я создал для самостоятельной работы между сессиями. Дневник состояний, диагностика схем (тест ЯСО), упражнения из схема-терапии и КПТ, отслеживание динамики. Работает в браузере и через Telegram-бот @SchemaLabBot.',
   },
 ];
 
@@ -389,7 +389,7 @@ export function LandingPage() {
       {/* ── HERO ────────────────────────────────────────────────────────── */}
       <section style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', background: 'var(--bg)' }}>
 
-        {/* Soft ambient light — top-right */}
+        {/* Soft ambient light – top-right */}
         <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
           <div style={{ position: 'absolute', width: 900, height: 600, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(77,71,153,.08) 0%, transparent 65%)', top: '-10%', right: '-15%' }} />
           <div style={{ position: 'absolute', width: 600, height: 400, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(176,111,74,.07) 0%, transparent 65%)', bottom: '10%', left: '-5%' }} />
@@ -422,7 +422,7 @@ export function LandingPage() {
             Схема-терапевт · Онлайн
           </p>
 
-          {/* ── Full-width headline — the centrepiece ── */}
+          {/* ── Full-width headline – the centrepiece ── */}
           <h1 style={{
             fontFamily: 'var(--serif)',
             fontSize: 'clamp(44px, 9vw, 120px)',
@@ -449,14 +449,14 @@ export function LandingPage() {
             {/* Left: description + CTAs */}
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, maxWidth: 440, margin: '0 0 36px' }}>
-                Мы снова и снова попадаем в одни и те же ситуации — в отношениях, самооценке, тревоге. Схема-терапия объясняет почему и даёт выход.
+                Мы снова и снова попадаем в одни и те же ситуации – в отношениях, самооценке, тревоге. Схема-терапия помогает понять почему – и найти выход.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <Btn size="lg" onClick={scrollToBooking}>Записаться на встречу →</Btn>
                 <Btn variant="ghost" size="lg" href="https://t.me/kotlarewski">Написать в Telegram ↗</Btn>
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '16px 0 0' }}>
-                Первая встреча — бесплатно, 15 минут, без обязательств
+                Первая встреча – бесплатно, 15 минут, без обязательств
               </p>
             </div>
 
@@ -507,10 +507,10 @@ export function LandingPage() {
               Работаю с тем,<br /><span style={{ fontStyle: 'italic' }}>что важно для вас</span>
             </h2>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 18px' }}>
-              Я Григорий Котляревский — схема-терапевт. Работаю с людьми, которые снова и снова оказываются в одних и тех же ситуациях: в отношениях, самооценке, хронической тревоге.
+              Я Григорий Котляревский – схема-терапевт. Работаю с людьми, которые снова и снова оказываются в одних и тех же ситуациях: в отношениях, самооценке, хронической тревоге.
             </p>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
-              Меня интересует не только «что» происходит с человеком, но и «почему» — какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн.
+              Меня интересует не только «что» происходит с человеком, но и «почему» – какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн.
             </p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {['Схема-терапия', 'КПТ', 'Онлайн'].map(tag => (
@@ -557,10 +557,10 @@ export function LandingPage() {
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Подход</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>Как я работаю</h2>
           <div className="bento-grid">
-            <div className="bento-tall"><BentoCard num="01" title={'Схема-\nтерапия'} text="Работаем с глубинными убеждениями и режимами, которые сформировались задолго до сознательного возраста — и тихо управляют сегодняшними выборами." accent /></div>
-            <div className="bento-wide"><BentoCard num="02" title="Тёплый контакт" text="Наши отношения — не нейтральный экран, а инструмент изменений. Я присутствую в сессии целиком и использую этот контакт как часть терапии." /></div>
-            <div><BentoCard num="03" title="Доказательная база" text="Схема-терапия — один из наиболее исследованных методов для работы с хроническими трудностями. Это подтверждено клиническими исследованиями." /></div>
-            <div><BentoCard num="04" title="Долгосрочный результат" text="Цель — изменить не симптом, а то, как вы воспринимаете себя. Глубоко, но устойчиво." /></div>
+            <div className="bento-tall"><BentoCard num="01" title={'Схема-\nтерапия'} text="Работаем с глубинными убеждениями и режимами, которые сформировались ещё в детстве – и тихо управляют сегодняшними выборами." accent /></div>
+            <div className="bento-wide"><BentoCard num="02" title="Тёплый контакт" text="Наши отношения – не нейтральный экран, а инструмент изменений. Я присутствую в сессии целиком и использую этот контакт как часть терапии." /></div>
+            <div><BentoCard num="03" title="Доказательная база" text="Схема-терапия – один из наиболее исследованных методов для работы с хроническими трудностями. Это подтверждено клиническими исследованиями." /></div>
+            <div><BentoCard num="04" title="Долгосрочный результат" text="Цель – изменить не симптом, а то, как вы воспринимаете себя. Глубоко, но устойчиво." /></div>
           </div>
         </div>
       </section>
@@ -572,9 +572,9 @@ export function LandingPage() {
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 400, color: INK_ON_DARK, margin: '0 0 56px', letterSpacing: '-.01em' }}>Три шага до первой встречи</h2>
           <div className="process-grid">
             {[
-              { n: '01', title: 'Оставьте заявку', sub: 'Имя и контакт — этого достаточно. Можно добавить пару слов о запросе.' },
-              { n: '02', title: 'Знакомство 15 минут', sub: 'Бесплатная встреча: расскажете о ситуации, я — о подходе. Без давления.' },
-              { n: '03', title: 'Начинаем работу', sub: 'Если подходим друг другу — назначаем регулярные сессии и двигаемся вглубь.' },
+              { n: '01', title: 'Оставьте заявку', sub: 'Имя и контакт – этого достаточно. Можно добавить пару слов о запросе.' },
+              { n: '02', title: 'Знакомство 15 минут', sub: 'Бесплатная встреча: расскажете о ситуации, я – о подходе. Без давления.' },
+              { n: '03', title: 'Начинаем работу', sub: 'Если подходим друг другу – назначаем регулярные сессии и двигаемся вглубь.' },
             ].map((s, i) => (
               <div key={i} style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,.08)' : 'none', padding: '0 40px 0 ' + (i > 0 ? '40px' : '0') }}>
                 <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(52px, 6vw, 80px)', fontWeight: 400, color: 'rgba(144,137,224,.3)', lineHeight: 1, margin: '0 0 16px', letterSpacing: '-.03em' }}>{s.n}</p>
@@ -594,7 +594,7 @@ export function LandingPage() {
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Формат и цены</p>
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>Как устроена работа</h2>
         <div className="price-grid">
-          {/* Free intro — PRIMARY */}
+          {/* Free intro – PRIMARY */}
           <div style={{ background: 'var(--accent-soft)', border: '1.5px solid var(--accent-line)', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>Знакомство</span>
@@ -637,7 +637,7 @@ export function LandingPage() {
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 12px', letterSpacing: '-.01em' }}>
             Записаться<br /><span style={{ fontStyle: 'italic' }}>на первую встречу</span>
           </h2>
-          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Оставьте имя и контакт — свяжусь в течение дня, договоримся о времени.</p>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Оставьте имя и контакт – свяжусь в течение дня, договоримся о времени.</p>
           <BookingForm />
         </section>
       </section>
@@ -652,10 +652,10 @@ export function LandingPage() {
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>СхемаЛаб</span>
               </div>
               <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 18px', lineHeight: 1.1, letterSpacing: '-.01em' }}>
-                Помоги себе сам.<br /><span style={{ fontStyle: 'italic' }}>Между сессиями.</span>
+Помогите себе сами.<br /><span style={{ fontStyle: 'italic' }}>Между сессиями.</span>
               </h2>
               <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
-                СхемаЛаб — бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Ведите дневник состояний, отслеживайте потребности, делайте упражнения. Всё сохраняется — динамика всегда перед глазами.
+                СхемаЛаб – бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Ведите дневник состояний, отслеживайте потребности, делайте упражнения. Всё сохраняется – динамика всегда перед глазами.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <Btn href="/login">Попробовать бесплатно</Btn>

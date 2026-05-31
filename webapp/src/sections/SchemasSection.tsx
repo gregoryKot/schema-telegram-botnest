@@ -157,7 +157,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                       <div style={{ width: `${score}%`, height: '100%', background: c, borderRadius: 4 }} />
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 500, color: c, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {score > 0 ? `${score}%` : '—'}
+                      {score > 0 ? `${score}%` : '–'}
                     </span>
                   </div>
                 );
@@ -175,7 +175,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             </button>
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-            {ysqCompletedAt ? '116 вопросов · определяет активные схемы автоматически' : 'Определи схемы автоматически — 116 вопросов, 10 минут'}
+            {ysqCompletedAt ? '116 вопросов · определяет активные схемы автоматически' : 'Определи схемы автоматически – 116 вопросов, 10 минут'}
           </div>
         </div>
 
@@ -447,7 +447,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
 const POPULAR_MODE_IDS = ['vulnerable_child', 'detached_protector', 'demanding_critic', 'abandoned_child', 'compliant_surrenderer'];
 
 const MODE_DESC: Record<string, string> = {
-  vulnerable_child:      'Беспомощность, грусть, страх — нуждается в защите',
+  vulnerable_child:      'Беспомощность, грусть, страх – нуждается в защите',
   lonely_child:          'Одиночество и непонятость даже среди людей',
   abandoned_child:       'Страх быть брошенным, тревога при угрозе отношениям',
   humiliated_child:      'Стыд и ощущение дефективности, страх осуждения',
@@ -467,7 +467,7 @@ const MODE_DESC: Record<string, string> = {
   overcontroller:        'Стремится всё контролировать, тревожится от неопределённости',
   perfectionistic_oc:    'Недостижимые стандарты, страх малейшей ошибки',
   suspicious_oc:         'Постоянная настороженность, ищет скрытые угрозы',
-  invincible_oc:         'Отрицает слабость — должен быть сильным всегда',
+  invincible_oc:         'Отрицает слабость – должен быть сильным всегда',
   flagellating_oc:       'Наказывает себя за ошибки строже чем нужно',
   compulsive_oc:         'Навязчивые ритуалы и действия для снижения тревоги',
   worrying_oc:           'Хроническое беспокойство о будущих катастрофах',

@@ -83,12 +83,12 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         eyebrow="Дневник режимов · новая запись"
         eyebrowColor="var(--c-slate)"
         title={<>Кто сейчас<br /><span className="it">взял управление?</span></>}
-        lede="Выбери режим — состояние, которое сейчас включено. Если не уверен — выбери самый похожий."
+        lede="Выбери режим – состояние, которое сейчас включено. Если не уверен – выбери самый похожий."
         aside={
           <div className="aside-card" style={{ borderColor: 'var(--c-slate)40', background: 'var(--c-slate)08' }}>
             <div className="aside-card-eyebrow" style={{ color: 'var(--c-slate)' }}>Подсказка</div>
             <h3>Как его узнать</h3>
-            <p className="body">Режим узнаётся не по мыслям, а по тому, как меняется тело и тон голоса в голове. Замечай резкие переключения — это его след.</p>
+            <p className="body">Режим узнаётся не по мыслям, а по тому, как меняется тело и тон голоса в голове. Замечай резкие переключения – это его след.</p>
           </div>
         }
       >
@@ -146,7 +146,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         <div className="prompt-num">1.</div>
         <div>
           <div className="prompt-label">Что случилось <span style={{ color: 'var(--c-rose)', marginLeft: 2 }}>*</span></div>
-          <p className="prompt-hint">Что включило этот режим — конкретно, без обобщений.</p>
+          <p className="prompt-hint">Что включило этот режим – конкретно, без обобщений.</p>
           <textarea
             className={'paper-input ' + (situation.trim() ? 'is-filled' : '')}
             rows={3}
@@ -162,7 +162,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         <div className="prompt-num">2.</div>
         <div>
           <div className="prompt-label">Что говорит этот режим</div>
-          <p className="prompt-hint">Внутренний монолог — что он повторяет, во что верит.</p>
+          <p className="prompt-hint">Внутренний монолог – что он повторяет, во что верит.</p>
           <textarea
             className={'paper-input ' + (thoughts.trim() ? 'is-filled' : '')}
             rows={2}
@@ -177,13 +177,13 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         <div className="prompt-num">3.</div>
         <div>
           <div className="prompt-label">Что он чувствует</div>
-          <p className="prompt-hint">Эмоции этого режима — даже если он сам их «не чувствует».</p>
+          <p className="prompt-hint">Эмоции этого режима – даже если он сам их «не чувствует».</p>
           <textarea
             className={'paper-input ' + (feelings.trim() ? 'is-filled' : '')}
             rows={2}
             value={feelings}
             onChange={e => setFeelings(e.target.value)}
-            placeholder="Пустота, отрешённость. Под этим — обида и страх…"
+            placeholder="Пустота, отрешённость. Под этим – обида и страх…"
           />
         </div>
       </div>
@@ -220,7 +220,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         <span className="flow-section-num">·</span>
         <div>
           <div className="flow-section-title">Под режимом</div>
-          <div className="flow-section-sub">За каждым режимом — настоящая потребность, которой он не умеет напрямую попросить.</div>
+          <div className="flow-section-sub">За каждым режимом – настоящая потребность, которой он не умеет напрямую попросить.</div>
         </div>
       </div>
 
@@ -228,7 +228,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         <div className="prompt-num">6.</div>
         <div>
           <div className="prompt-label">Чего на самом деле нужно</div>
-          <p className="prompt-hint">Не режиму — тебе. Чего не хватает в этот момент.</p>
+          <p className="prompt-hint">Не режиму – тебе. Чего не хватает в этот момент.</p>
           <textarea
             className={'paper-input ' + (actualNeed.trim() ? 'is-filled' : '')}
             rows={2}
@@ -249,7 +249,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
             rows={2}
             value={childhoodMemories}
             onChange={e => setChildhoodMemories(e.target.value)}
-            placeholder="Когда мама приходила с работы — я уже знал что лучше не лезть…"
+            placeholder="Когда мама приходила с работы – я уже знал что лучше не лезть…"
           />
         </div>
       </div>

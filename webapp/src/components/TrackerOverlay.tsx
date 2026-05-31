@@ -1,4 +1,4 @@
-// TrackerOverlay.tsx — Variant C · PickerRail (editorial triptych)
+// TrackerOverlay.tsx – Variant C · PickerRail (editorial triptych)
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { COLORS, YESTERDAY } from '../types';
@@ -291,7 +291,7 @@ export function TrackerOverlay({
       {/* 3 columns */}
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1.25fr 1fr',
         overflow: 'hidden', minHeight: 0 }}>
-        {/* Left — question */}
+        {/* Left – question */}
         <div style={{ padding: '28px 28px 28px 80px', borderRight: '1px solid rgba(var(--fg-rgb),0.07)',
           display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
           <div className="eyebrow" style={{ marginBottom: 16, color: 'var(--text-faint)' }}>вопрос дня</div>
@@ -308,12 +308,12 @@ export function TrackerOverlay({
             </div>
           )}
         </div>
-        {/* Center — picker */}
+        {/* Center – picker */}
         <div style={{ padding: '28px 44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
           borderRight: '1px solid rgba(var(--fg-rgb),0.07)' }}>
           <PickerRail value={value} onChange={v => handleChange(need.id, v)} color={color} />
         </div>
-        {/* Right — examples */}
+        {/* Right – examples */}
         <div style={{ padding: '28px 80px 28px 28px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
           <div className="eyebrow" style={{ marginBottom: 16, color: 'var(--text-faint)' }}>что считается</div>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column' }}>
