@@ -204,52 +204,91 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Headline */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 80 }}>
-            <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 28px', animation: 'hero-in .6s .1s both' }}>
-              Схема-терапия · Онлайн
-            </p>
-            <h1 style={{
-              fontFamily: 'var(--serif)', fontSize: 'clamp(52px, 9vw, 108px)',
-              fontWeight: 400, lineHeight: 1.02, letterSpacing: '-.02em',
-              color: 'var(--text)', margin: '0 0 36px',
-            }}>
-              <span style={{ display: 'block', overflow: 'hidden' }}>
-                <span style={{ display: 'block', animation: 'line-in .7s .2s both' }}>Работа с теми</span>
-              </span>
-              <span style={{ display: 'block', overflow: 'hidden' }}>
-                <span style={{ display: 'block', animation: 'line-in .7s .35s both', fontStyle: 'italic', color: 'var(--accent)' }}>паттернами,</span>
-              </span>
-              <span style={{ display: 'block', overflow: 'hidden' }}>
-                <span style={{ display: 'block', animation: 'line-in .7s .5s both' }}>которые мешают</span>
-              </span>
-            </h1>
-            <p style={{ fontSize: 18, color: 'var(--text-sub)', lineHeight: 1.7, maxWidth: 520, margin: '0 0 48px', animation: 'hero-in .6s .65s both' }}>
-              Мы снова и снова попадаем в одни и те же ситуации — в отношениях, самооценке, тревоге. Схема-терапия объясняет почему и даёт выход.
-            </p>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', animation: 'hero-in .6s .8s both' }}>
-              <button onClick={scrollToBooking} style={{
-                padding: '16px 36px', background: 'var(--text)', color: 'var(--bg)',
-                border: 'none', borderRadius: 100, fontSize: 16, fontWeight: 700,
-                cursor: 'pointer', boxShadow: '0 8px 32px rgba(28,25,20,.18)',
+          {/* Headline — two-column on desktop */}
+          <div className="hero-body">
+
+            {/* Left: text */}
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 28px', animation: 'hero-in .6s .1s both' }}>
+                Схема-терапия · Онлайн
+              </p>
+              <h1 style={{
+                fontFamily: 'var(--serif)', fontSize: 'clamp(44px, 5.5vw, 80px)',
+                fontWeight: 400, lineHeight: 1.05, letterSpacing: '-.02em',
+                color: 'var(--text)', margin: '0 0 28px',
               }}>
-                Записаться на встречу
-              </button>
-              <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '16px 28px', background: 'transparent',
-                border: '1.5px solid var(--line-strong)', borderRadius: 100,
-                fontSize: 16, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none',
-              }}>
-                Написать в Telegram ↗
-              </a>
+                <span style={{ display: 'block', overflow: 'hidden' }}>
+                  <span style={{ display: 'block', animation: 'line-in .7s .2s both' }}>Работа с теми</span>
+                </span>
+                <span style={{ display: 'block', overflow: 'hidden' }}>
+                  <span style={{ display: 'block', animation: 'line-in .7s .35s both', fontStyle: 'italic', color: 'var(--accent)' }}>паттернами,</span>
+                </span>
+                <span style={{ display: 'block', overflow: 'hidden' }}>
+                  <span style={{ display: 'block', animation: 'line-in .7s .5s both' }}>которые мешают</span>
+                </span>
+              </h1>
+              <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.75, margin: '0 0 40px', animation: 'hero-in .6s .65s both' }}>
+                Мы снова и снова попадаем в одни и те же ситуации — в отношениях, самооценке, тревоге. Схема-терапия объясняет почему и даёт выход.
+              </p>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', animation: 'hero-in .6s .8s both' }}>
+                <button onClick={scrollToBooking} style={{
+                  padding: '15px 32px', background: 'var(--text)', color: 'var(--bg)',
+                  border: 'none', borderRadius: 100, fontSize: 15, fontWeight: 700,
+                  cursor: 'pointer', boxShadow: '0 8px 32px rgba(28,25,20,.18)',
+                }}>
+                  Записаться на встречу
+                </button>
+                <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '15px 24px', background: 'transparent',
+                  border: '1.5px solid var(--line-strong)', borderRadius: 100,
+                  fontSize: 15, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none',
+                }}>
+                  Написать в Telegram ↗
+                </a>
+              </div>
             </div>
+
+            {/* Right: info cards */}
+            <div className="hero-cards" style={{ display: 'flex', flexDirection: 'column', gap: 14, justifyContent: 'center', animation: 'hero-in .7s .4s both' }}>
+              {/* Free intro card */}
+              <div style={{
+                background: 'var(--accent)', color: 'white',
+                borderRadius: 20, padding: '28px 28px 24px',
+                boxShadow: '0 16px 48px rgba(77,71,153,.28)',
+              }}>
+                <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', opacity: .7, margin: '0 0 12px' }}>Знакомство</p>
+                <p style={{ fontFamily: 'var(--serif)', fontSize: 44, fontWeight: 400, lineHeight: 1, margin: '0 0 8px', letterSpacing: '-.02em' }}>0 ₽</p>
+                <p style={{ fontSize: 14, opacity: .85, margin: 0 }}>15 минут · без обязательств</p>
+              </div>
+              {/* Session card */}
+              <div style={{
+                background: 'var(--bg-elev)', border: '1px solid var(--line)',
+                borderRadius: 20, padding: '24px 28px',
+                boxShadow: '0 8px 24px rgba(28,25,20,.07)',
+              }}>
+                <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Сессия</p>
+                <p style={{ fontFamily: 'var(--serif)', fontSize: 40, fontWeight: 400, lineHeight: 1, margin: '0 0 8px', color: 'var(--text)', letterSpacing: '-.02em' }}>4 000 ₽</p>
+                <p style={{ fontSize: 14, color: 'var(--text-sub)', margin: 0 }}>50 минут · онлайн</p>
+              </div>
+              {/* Format tags */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {['Схема-терапия', 'КПТ', 'Онлайн'].map(t => (
+                  <span key={t} style={{
+                    padding: '7px 14px', background: 'var(--bg-elev)',
+                    border: '1px solid var(--line)', borderRadius: 100,
+                    fontSize: 13, fontWeight: 500, color: 'var(--text-sub)',
+                  }}>{t}</span>
+                ))}
+              </div>
+            </div>
+
           </div>
 
           {/* Bottom name strip */}
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-            paddingBottom: 32, animation: 'hero-in .6s 1s both',
+            padding: '0 0 32px', animation: 'hero-in .6s 1s both',
           }}>
             <div>
               <p style={{ fontSize: 22, fontFamily: 'var(--serif)', fontWeight: 400, margin: '0 0 4px' }}>Григорий Котляревский</p>
@@ -542,6 +581,9 @@ export function LandingPage() {
         .bento-card { cursor:default; transition:transform .25s, box-shadow .25s; }
         .bento-card:hover { transform:translateY(-4px); box-shadow:0 16px 48px rgba(28,25,20,.12); }
 
+        /* Hero two-column */
+        .hero-body    { display:grid; grid-template-columns:1fr 1fr; gap:60px; flex:1; align-items:center; padding-bottom:80px; }
+
         /* Grid layouts */
         .about-inner  { display:grid; grid-template-columns:2fr 3fr; gap:48px; align-items:start; }
         .bento-grid   { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:auto auto; gap:16px; }
@@ -558,6 +600,8 @@ export function LandingPage() {
         }
 
         @media (max-width: 900px) {
+          .hero-body    { grid-template-columns:1fr; gap:40px; padding-bottom:40px; }
+          .hero-cards   { display:none; }
           .about-inner  { grid-template-columns:1fr; }
           .app-grid     { grid-template-columns:1fr; }
           .price-grid   { grid-template-columns:1fr; }

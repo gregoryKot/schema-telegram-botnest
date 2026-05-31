@@ -1,1 +1,0 @@
-var e={attachment:`#f472b6`,autonomy:`#4fa3f7`,expression:`#f59e0b`,play:`#10b981`,limits:`#a78bfa`},t={attachment:5,autonomy:6,expression:4,play:7,limits:6};export{t as n,e as t};
