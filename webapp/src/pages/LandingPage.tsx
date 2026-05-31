@@ -301,7 +301,7 @@ export function LandingPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>Г</div>
-          <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)' }}>Григорий Котляревский</span>
+          <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)', whiteSpace: 'nowrap' }}>Григорий Котляревский</span>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <a href="/login" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
@@ -340,7 +340,7 @@ export function LandingPage() {
 
           {/* ── Eyebrow ── */}
           <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--accent)', margin: '20px 0 20px', animation: 'hero-in .6s .15s both' }}>
-            Схема-терапия · Психолог · Онлайн
+            Схема-терапевт · Онлайн
           </p>
 
           {/* ── Full-width headline — the centrepiece ── */}
@@ -351,13 +351,13 @@ export function LandingPage() {
             color: 'var(--text)', margin: 0,
           }}>
             <span style={{ display: 'block', overflow: 'hidden' }}>
-              <span style={{ display: 'block', animation: 'line-in .75s .2s both' }}>Работа с теми</span>
+              <span style={{ display: 'block', animation: 'line-in .75s .2s both' }}>Работа с тем,</span>
             </span>
             <span style={{ display: 'block', overflow: 'hidden' }}>
-              <span style={{ display: 'block', animation: 'line-in .75s .38s both', fontStyle: 'italic', color: 'var(--accent)' }}>паттернами,</span>
+              <span style={{ display: 'block', animation: 'line-in .75s .38s both', fontStyle: 'italic', color: 'var(--accent)' }}>что мешает</span>
             </span>
             <span style={{ display: 'block', overflow: 'hidden' }}>
-              <span style={{ display: 'block', animation: 'line-in .75s .56s both' }}>которые мешают</span>
+              <span style={{ display: 'block', animation: 'line-in .75s .56s both' }}>жить</span>
             </span>
           </h1>
 
@@ -396,21 +396,23 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* Right: price as pure typography */}
-            <div className="hero-prices" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 0 }}>
-              <div style={{ paddingBottom: 24, borderBottom: '1px solid var(--line)' }}>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--accent)' }}>Знакомство</span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '8px 0 4px' }}>
-                  <span style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(52px, 6vw, 84px)', fontWeight: 400, lineHeight: 1, letterSpacing: '-.03em', color: 'var(--accent)' }}>0 ₽</span>
+            {/* Right: free intro — single strong message */}
+            <div className="hero-prices" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+              <div style={{ padding: '32px', background: 'var(--accent-soft)', border: '1.5px solid var(--accent-line)', borderRadius: 24 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--accent)' }}>Первая встреча</span>
+                <div style={{ margin: '12px 0 8px' }}>
+                  <span style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(64px, 7vw, 104px)', fontWeight: 400, lineHeight: 1, letterSpacing: '-.03em', color: 'var(--accent)' }}>0 ₽</span>
                 </div>
-                <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>15 минут · без обязательств</p>
-              </div>
-              <div style={{ paddingTop: 24 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Сессия</span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '8px 0 4px' }}>
-                  <span style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(40px, 4.5vw, 64px)', fontWeight: 400, lineHeight: 1, letterSpacing: '-.03em', color: 'var(--text)' }}>4 000 ₽</span>
-                </div>
-                <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>50 минут · онлайн</p>
+                <p style={{ fontSize: 14, color: 'var(--accent)', opacity: .75, margin: '0 0 20px', lineHeight: 1.5 }}>15 минут · без обязательств<br />Познакомимся и поймём, подходим ли</p>
+                <button onClick={scrollToBooking} style={{
+                  padding: '12px 22px', background: 'var(--accent)', color: 'white',
+                  border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
+                  cursor: 'pointer', width: '100%', transition: 'opacity .15s',
+                }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '.85'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}>
+                  Записаться бесплатно →
+                </button>
               </div>
             </div>
 
@@ -418,7 +420,7 @@ export function LandingPage() {
 
           {/* ── Bottom strip ── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '32px 0 28px', animation: 'hero-in .5s 1.1s both' }}>
-            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0, letterSpacing: '.02em' }}>Психолог · Схема-терапия · КПТ</p>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0, letterSpacing: '.02em' }}>Схема-терапевт · КПТ · Онлайн</p>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.12em', textTransform: 'uppercase' }}>Далее</span>
               <div style={{ width: 1, height: 28, background: 'var(--line-strong)', animation: 'scroll-bar 2s ease-in-out infinite' }} />
@@ -450,7 +452,7 @@ export function LandingPage() {
               Работаю с тем,<br /><span style={{ fontStyle: 'italic' }}>что важно для вас</span>
             </h2>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 18px' }}>
-              Я Григорий Котляревский — психолог, веду практику в подходе схема-терапии. Работаю с людьми, которых преследуют повторяющиеся паттерны: в отношениях, самооценке, хронической тревоге.
+              Я Григорий Котляревский — схема-терапевт. Работаю с людьми, которые снова и снова оказываются в одних и тех же ситуациях: в отношениях, самооценке, хронической тревоге.
             </p>
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
               Меня интересует не только «что» происходит с человеком, но и «почему» — какие ранние убеждения и режимы стоят за сегодняшними трудностями. Работаю онлайн.
@@ -485,7 +487,7 @@ export function LandingPage() {
           <div className="bento-grid">
             <div className="bento-tall"><BentoCard num="01" title={'Схема-\nтерапия'} text="Работаем с глубинными убеждениями и режимами, которые сформировались задолго до сознательного возраста — и тихо управляют сегодняшними выборами." accent /></div>
             <div className="bento-wide"><BentoCard num="02" title="Тёплый контакт" text="Наши отношения — не нейтральный экран, а инструмент изменений. Я присутствую в сессии целиком и использую этот контакт как часть терапии." /></div>
-            <div><BentoCard num="03" title="Доказательная база" text="Схема-терапия эффективна при хронических паттернах — это подтверждено рандомизированными исследованиями." /></div>
+            <div><BentoCard num="03" title="Доказательная база" text="Схема-терапия — один из наиболее исследованных методов для работы с хроническими трудностями. Это подтверждено клиническими исследованиями." /></div>
             <div><BentoCard num="04" title="Долгосрочный результат" text="Цель — изменить не симптом, а то, как вы воспринимаете себя. Глубоко, но устойчиво." /></div>
           </div>
         </div>
