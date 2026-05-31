@@ -483,7 +483,7 @@ export function LandingPage() {
 
       {/* ── EDUCATION ───────────────────────────────────────────────────── */}
       <section ref={quoteRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 40px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 60, alignItems: 'start' }}>
+        <div className="edu-grid" style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Образование</p>
             <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.2, letterSpacing: '-.01em' }}>
@@ -698,6 +698,7 @@ export function LandingPage() {
         .price-grid   { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
         .app-grid     { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
         .form-grid    { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .edu-grid     { display:grid; grid-template-columns:1fr 2fr; gap:60px; align-items:start; }
 
         input:focus, textarea:focus { border-color:var(--accent) !important; box-shadow:0 0 0 4px var(--accent-soft); }
 
@@ -716,6 +717,7 @@ export function LandingPage() {
           .process-grid > div { border-left:none !important; padding:0 !important; }
           .price-grid   { grid-template-columns:1fr; }
           .app-grid     { grid-template-columns:1fr; }
+          .edu-grid     { grid-template-columns:1fr; gap:28px; }
         }
         @media (max-width:600px) {
           .form-grid { grid-template-columns:1fr; }
