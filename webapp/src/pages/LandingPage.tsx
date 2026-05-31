@@ -74,7 +74,7 @@ function MarqueeStrip({ reverse = false, bg = 'var(--bg-rail)', italic = false, 
           <span key={i} style={{ display: 'inline-flex', flexShrink: 0, animation: `${anim} ${dur} linear infinite` }}>
             {topics.map(w => (
               <a key={w.label} href={w.href}
-                style={{ fontSize: 14, fontWeight: 500, fontStyle: italic ? 'italic' : 'normal', color: 'var(--text-sub)', padding: '0 20px', textDecoration: 'none', transition: 'color .15s' }}
+                style={{ fontSize: 14, fontWeight: 500, fontStyle: italic ? 'italic' : 'normal', color: 'var(--text-sub)', padding: '8px 20px', textDecoration: 'none', transition: 'color .15s', display: 'inline-flex', alignItems: 'center' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-sub)'; }}>
                 {w.label}<span style={{ color: 'var(--accent)', marginLeft: 20, fontStyle: 'normal' }}>·</span>
@@ -344,9 +344,9 @@ export function LandingPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontFamily: 'var(--serif)', flexShrink: 0 }}>Г</div>
               <span style={{ fontFamily: 'var(--serif)', fontSize: 17, color: 'var(--text)' }}>Григорий Котляревский</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: 'rgba(107,129,86,.11)', border: '1px solid rgba(107,129,86,.22)', borderRadius: 100 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#6b8156', display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite', flexShrink: 0 }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#6b8156', letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: 'rgba(74,99,53,.1)', border: '1px solid rgba(74,99,53,.25)', borderRadius: 100 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a6335', display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite', flexShrink: 0 }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#4a6335', letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
               </div>
             </div>
             <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer"
@@ -439,9 +439,20 @@ export function LandingPage() {
       <section id="about" ref={aboutRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '88px 40px' }}>
         <div className="about-inner">
           <div style={{ position: 'relative' }}>
-            <div style={{ aspectRatio: '3/4', borderRadius: 24, overflow: 'hidden', background: 'var(--surface-2)', boxShadow: '0 24px 80px rgba(28,25,20,.1)' }}>
+            <div style={{ aspectRatio: '3/4', borderRadius: 24, overflow: 'hidden', background: 'var(--surface-2)', boxShadow: '0 24px 80px rgba(28,25,20,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img src="/gregory.jpg" alt="Григорий Котляревский" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
-                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                onError={e => {
+                  const img = e.currentTarget as HTMLImageElement;
+                  img.style.display = 'none';
+                  const fb = img.parentElement;
+                  if (fb && !fb.querySelector('.photo-fallback')) {
+                    const d = document.createElement('div');
+                    d.className = 'photo-fallback';
+                    d.style.cssText = 'font-family:var(--serif);font-size:72px;color:var(--text-faint);font-weight:400;';
+                    d.textContent = 'ГК';
+                    fb.appendChild(d);
+                  }
+                }} />
             </div>
             <div style={{ position: 'absolute', bottom: 20, left: -16, background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 14, padding: '12px 18px', boxShadow: '0 8px 32px rgba(28,25,20,.12)' }}>
               <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px' }}>50 мин</p>

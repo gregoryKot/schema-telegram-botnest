@@ -1244,3 +1244,24 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   .quick-add-card { border-right: none; border-bottom: 1px solid var(--line); }
   .quick-add-card:last-child { border-bottom: none; }
 }
+
+/* ── Accessibility: keyboard focus indicators ─────────────────────────────── */
+/* Убирает outline только для мышь/тач; сохраняет для клавиатуры */
+*:focus { outline: none; }
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+/* Кнопки и ссылки — чуть больший радиус */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+/* Инпуты уже получают box-shadow при focus — outline не нужен */
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
