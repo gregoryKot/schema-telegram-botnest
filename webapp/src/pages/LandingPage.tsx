@@ -163,7 +163,8 @@ export function LandingPage() {
       </div>
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', padding: '0 40px', position: 'relative', overflow: 'hidden' }}>
+      <section style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+        {/* Full-bleed blobs */}
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
           <div style={{
             position: 'absolute', width: 700, height: 700, borderRadius: '50%',
@@ -177,87 +178,91 @@ export function LandingPage() {
           }} />
         </div>
 
-        {/* Nav */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '28px 0', position: 'relative', zIndex: 1 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-faint)', fontWeight: 500 }}>schemalab.ru</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <a href="#schemalab" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 7,
-              padding: '7px 16px', background: 'var(--bg-elev)',
-              border: '1px solid var(--line)', borderRadius: 100,
-              fontSize: 13, fontWeight: 600, color: 'var(--text-sub)', textDecoration: 'none',
-            }}>
-              <span style={{ fontSize: 14 }}>🧠</span>СхемаЛаб
-            </a>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 7,
-              padding: '7px 16px', background: 'var(--accent-soft)',
-              border: '1px solid var(--accent-line)', borderRadius: 100,
-              fontSize: 13, fontWeight: 600, color: 'var(--accent)',
-            }}>
-              <span style={{ width: 6, height: 6, background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'pulse-dot 2s ease-in-out infinite' }} />
-              Знакомство · бесплатно
+        {/* Constrained inner wrapper */}
+        <div style={{ maxWidth: 1100, width: '100%', margin: '0 auto', padding: '0 40px', display: 'flex', flexDirection: 'column', flex: 1, position: 'relative', zIndex: 1, boxSizing: 'border-box' }}>
+
+          {/* Nav */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '28px 0' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-faint)', fontWeight: 500 }}>schemalab.ru</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <a href="#schemalab" style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '7px 16px', background: 'var(--bg-elev)',
+                border: '1px solid var(--line)', borderRadius: 100,
+                fontSize: 13, fontWeight: 600, color: 'var(--text-sub)', textDecoration: 'none',
+              }}>
+                <span style={{ fontSize: 14 }}>🧠</span>СхемаЛаб
+              </a>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '7px 16px', background: 'var(--accent-soft)',
+                border: '1px solid var(--accent-line)', borderRadius: 100,
+                fontSize: 13, fontWeight: 600, color: 'var(--accent)',
+              }}>
+                <span style={{ width: 6, height: 6, background: 'var(--accent)', borderRadius: '50%', display: 'inline-block', animation: 'pulse-dot 2s ease-in-out infinite' }} />
+                Знакомство · бесплатно
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Headline */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 1, paddingBottom: 80 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 28px', animation: 'hero-in .6s .1s both' }}>
-            Схема-терапия · Онлайн
-          </p>
-          <h1 style={{
-            fontFamily: 'var(--serif)', fontSize: 'clamp(52px, 9vw, 108px)',
-            fontWeight: 400, lineHeight: 1.02, letterSpacing: '-.02em',
-            color: 'var(--text)', margin: '0 0 36px',
+          {/* Headline */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 80 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 28px', animation: 'hero-in .6s .1s both' }}>
+              Схема-терапия · Онлайн
+            </p>
+            <h1 style={{
+              fontFamily: 'var(--serif)', fontSize: 'clamp(52px, 9vw, 108px)',
+              fontWeight: 400, lineHeight: 1.02, letterSpacing: '-.02em',
+              color: 'var(--text)', margin: '0 0 36px',
+            }}>
+              <span style={{ display: 'block', overflow: 'hidden' }}>
+                <span style={{ display: 'block', animation: 'line-in .7s .2s both' }}>Работа с теми</span>
+              </span>
+              <span style={{ display: 'block', overflow: 'hidden' }}>
+                <span style={{ display: 'block', animation: 'line-in .7s .35s both', fontStyle: 'italic', color: 'var(--accent)' }}>паттернами,</span>
+              </span>
+              <span style={{ display: 'block', overflow: 'hidden' }}>
+                <span style={{ display: 'block', animation: 'line-in .7s .5s both' }}>которые мешают</span>
+              </span>
+            </h1>
+            <p style={{ fontSize: 18, color: 'var(--text-sub)', lineHeight: 1.7, maxWidth: 520, margin: '0 0 48px', animation: 'hero-in .6s .65s both' }}>
+              Мы снова и снова попадаем в одни и те же ситуации — в отношениях, самооценке, тревоге. Схема-терапия объясняет почему и даёт выход.
+            </p>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', animation: 'hero-in .6s .8s both' }}>
+              <button onClick={scrollToBooking} style={{
+                padding: '16px 36px', background: 'var(--text)', color: 'var(--bg)',
+                border: 'none', borderRadius: 100, fontSize: 16, fontWeight: 700,
+                cursor: 'pointer', boxShadow: '0 8px 32px rgba(28,25,20,.18)',
+              }}>
+                Записаться на встречу
+              </button>
+              <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '16px 28px', background: 'transparent',
+                border: '1.5px solid var(--line-strong)', borderRadius: 100,
+                fontSize: 16, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none',
+              }}>
+                Написать в Telegram ↗
+              </a>
+            </div>
+          </div>
+
+          {/* Bottom name strip */}
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+            paddingBottom: 32, animation: 'hero-in .6s 1s both',
           }}>
-            <span style={{ display: 'block', overflow: 'hidden' }}>
-              <span style={{ display: 'block', animation: 'line-in .7s .2s both' }}>Работа с теми</span>
-            </span>
-            <span style={{ display: 'block', overflow: 'hidden' }}>
-              <span style={{ display: 'block', animation: 'line-in .7s .35s both', fontStyle: 'italic', color: 'var(--accent)' }}>паттернами,</span>
-            </span>
-            <span style={{ display: 'block', overflow: 'hidden' }}>
-              <span style={{ display: 'block', animation: 'line-in .7s .5s both' }}>которые мешают</span>
-            </span>
-          </h1>
-          <p style={{ fontSize: 18, color: 'var(--text-sub)', lineHeight: 1.7, maxWidth: 520, margin: '0 0 48px', animation: 'hero-in .6s .65s both' }}>
-            Мы снова и снова попадаем в одни и те же ситуации — в отношениях, самооценке, тревоге. Схема-терапия объясняет почему и даёт выход.
-          </p>
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', animation: 'hero-in .6s .8s both' }}>
-            <button onClick={scrollToBooking} style={{
-              padding: '16px 36px', background: 'var(--text)', color: 'var(--bg)',
-              border: 'none', borderRadius: 100, fontSize: 16, fontWeight: 700,
-              cursor: 'pointer', boxShadow: '0 8px 32px rgba(28,25,20,.18)',
-            }}>
-              Записаться на встречу
-            </button>
-            <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '16px 28px', background: 'transparent',
-              border: '1.5px solid var(--line-strong)', borderRadius: 100,
-              fontSize: 16, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none',
-            }}>
-              Написать в Telegram ↗
-            </a>
+            <div>
+              <p style={{ fontSize: 22, fontFamily: 'var(--serif)', fontWeight: 400, margin: '0 0 4px' }}>Григорий Котляревский</p>
+              <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Схема-терапия · КПТ · Онлайн</p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-faint)', letterSpacing: '.1em', textTransform: 'uppercase' }}>Далее</span>
+              <div style={{ width: 1, height: 36, background: 'var(--line-strong)', animation: 'scroll-bar 2s ease-in-out infinite' }} />
+            </div>
           </div>
-        </div>
 
-        {/* Bottom name strip */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-          paddingBottom: 32, position: 'relative', zIndex: 1,
-          animation: 'hero-in .6s 1s both',
-        }}>
-          <div>
-            <p style={{ fontSize: 22, fontFamily: 'var(--serif)', fontWeight: 400, margin: '0 0 4px' }}>Григорий Котляревский</p>
-            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Схема-терапия · КПТ · Онлайн</p>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)', letterSpacing: '.1em', textTransform: 'uppercase' }}>Далее</span>
-            <div style={{ width: 1, height: 36, background: 'var(--line-strong)', animation: 'scroll-bar 2s ease-in-out infinite' }} />
-          </div>
-        </div>
+        </div>{/* /inner wrapper */}
       </section>
 
       {/* ── ABOUT ───────────────────────────────────────────────────────── */}
@@ -447,20 +452,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── BOOKING ─────────────────────────────────────────────────────── */}
-      <section ref={bookingRef as any} style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)' }}>
-        <section ref={formRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 680, margin: '0 auto', padding: '80px 40px 96px' }}>
-          <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Запись</p>
-          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 12px', letterSpacing: '-.01em' }}>
-            Записаться<br /><span style={{ fontStyle: 'italic' }}>на первую встречу</span>
-          </h2>
-          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>
-            Оставьте имя и контакт — свяжусь в течение дня, договоримся о времени.
-          </p>
-          <BookingForm />
-        </section>
-      </section>
-
       {/* ── SCHEMALAB APP ───────────────────────────────────────────────── */}
       <section id="schemalab" ref={appRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '96px 40px' }}>
         <div className="app-grid">
@@ -507,6 +498,20 @@ export function LandingPage() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ── BOOKING ─────────────────────────────────────────────────────── */}
+      <section ref={bookingRef as any} style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)' }}>
+        <section ref={formRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 680, margin: '0 auto', padding: '80px 40px 96px' }}>
+          <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Запись</p>
+          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 12px', letterSpacing: '-.01em' }}>
+            Записаться<br /><span style={{ fontStyle: 'italic' }}>на первую встречу</span>
+          </h2>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>
+            Оставьте имя и контакт — свяжусь в течение дня, договоримся о времени.
+          </p>
+          <BookingForm />
+        </section>
       </section>
 
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
