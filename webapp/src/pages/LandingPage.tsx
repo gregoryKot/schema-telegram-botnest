@@ -402,37 +402,20 @@ export function LandingPage() {
                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = ''; }}>
                   Записаться на встречу →
                 </button>
-                <button onClick={scrollToBooking} style={{
-                  padding: '15px 24px', background: 'transparent',
-                  border: '1.5px solid var(--line-strong)', borderRadius: 100,
-                  fontSize: 15, fontWeight: 500, color: 'var(--text-sub)', cursor: 'pointer',
+                <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '15px 24px', border: '1.5px solid var(--line-strong)', borderRadius: 100,
+                  fontSize: 15, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none',
                   transition: 'border-color .15s, color .15s',
                 }}
                   onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--text)'; el.style.color = 'var(--text)'; }}
                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = ''; el.style.color = ''; }}>
-                  Узнать подробнее
-                </button>
+                  Написать в Telegram ↗
+                </a>
               </div>
-            </div>
-
-            {/* Right: free intro — single strong message */}
-            <div className="hero-prices" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-              <div style={{ padding: '32px', background: 'var(--accent-soft)', border: '1.5px solid var(--accent-line)', borderRadius: 24 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--accent)' }}>Первая встреча</span>
-                <div style={{ margin: '12px 0 8px' }}>
-                  <span style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(64px, 7vw, 104px)', fontWeight: 400, lineHeight: 1, letterSpacing: '-.03em', color: 'var(--accent)' }}>0 ₽</span>
-                </div>
-                <p style={{ fontSize: 14, color: 'var(--accent)', opacity: .75, margin: '0 0 20px', lineHeight: 1.5 }}>15 минут · без обязательств<br />Познакомимся и поймём, подходим ли</p>
-                <button onClick={scrollToBooking} style={{
-                  padding: '12px 22px', background: 'var(--accent)', color: 'white',
-                  border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700,
-                  cursor: 'pointer', width: '100%', transition: 'opacity .15s',
-                }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '.85'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}>
-                  Записаться бесплатно →
-                </button>
-              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '16px 0 0' }}>
+                Первая встреча — бесплатно, 15 минут, без обязательств
+              </p>
             </div>
 
           </div>
@@ -689,8 +672,7 @@ export function LandingPage() {
 
         /* Hero */
         .hero-wrap    { max-width:1100px; width:100%; margin:0 auto; padding:0 40px; display:flex; flex-direction:column; min-height:100dvh; box-sizing:border-box; }
-        .hero-bottom  { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:end; }
-        .hero-prices  { }
+        .hero-bottom  { display:flex; flex-direction:column; gap:0; }
 
 
         /* Grids */
@@ -707,7 +689,6 @@ export function LandingPage() {
 
         @media (max-width:900px) {
           .hero-bottom  { grid-template-columns:1fr; gap:32px; }
-          .hero-prices  { display:none; }
           .about-inner  { grid-template-columns:1fr; }
           .bento-grid   { grid-template-columns:1fr; }
           .bento-tall   { grid-row:auto; }
