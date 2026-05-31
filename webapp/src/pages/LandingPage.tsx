@@ -195,6 +195,69 @@ function BentoCard({ num, title, text, accent = false }: { num: string; title: s
   );
 }
 
+// ─── FAQ accordion ────────────────────────────────────────────────────────────
+const FAQ_ITEMS = [
+  {
+    q: 'Что такое схема-терапия?',
+    a: 'Схема-терапия — доказательный интегративный метод, разработанный Джеффри Янгом. Он объединяет элементы КПТ, психоанализа и гештальта и работает с глубинными убеждениями (схемами), которые формируются в детстве и управляют нашими реакциями во взрослом возрасте. Особенно эффективна при хронических паттернах в отношениях, самооценке и эмоциональной регуляции — это подтверждено рандомизированными клиническими исследованиями.',
+  },
+  {
+    q: 'Кому подходит схема-терапия?',
+    a: 'Тем, кто замечает повторяющиеся паттерны — в отношениях, самооценке, тревоге, хронической неудовлетворённости. Она особенно эффективна, когда «поверхностная» работа не давала устойчивого результата, и когда хочется понять глубинные причины реакций, а не только снять симптом.',
+  },
+  {
+    q: 'Как проходит онлайн-сессия?',
+    a: 'Видеозвонок (Zoom или Google Meet), 50 минут. Нужны стабильный интернет, камера и микрофон. Вы находитесь там, где вам комфортно — качество работы от формата не зависит. Дата и время согласовываются в Telegram.',
+  },
+  {
+    q: 'Сколько стоит и как оплатить?',
+    a: 'Вводная встреча (15 минут) — бесплатно. Каждая следующая сессия (50 минут) — 4 000 ₽. Реквизиты для оплаты я отправляю перед сессией. После оплаты вы получаете чек самозанятого через приложение «Мой налог».',
+  },
+  {
+    q: 'Это то же самое, что психотерапия?',
+    a: 'Нет. Психологическое консультирование — отдельный вид помощи, не требующий медицинского образования и лицензии. Это не медицинская психотерапия по ФЗ-323. Если у вас есть симптомы психического расстройства — я порекомендую обратиться к врачу-психиатру или психотерапевту с медицинским дипломом.',
+  },
+  {
+    q: 'Что такое СхемаЛаб и зачем он нужен?',
+    a: 'СхемаЛаб — бесплатное веб-приложение, которое я создал для самостоятельной работы между сессиями. Дневник состояний, диагностика схем (тест ЯСО), упражнения из схема-терапии и КПТ, отслеживание динамики. Работает в браузере и через Telegram-бот @SchemaLabBot.',
+  },
+];
+
+function FaqList() {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      {FAQ_ITEMS.map((item, i) => (
+        <div key={i} style={{ borderTop: '1px solid var(--line)', borderBottom: i === FAQ_ITEMS.length - 1 ? '1px solid var(--line)' : 'none' }}>
+          <button
+            onClick={() => setOpen(open === i ? null : i)}
+            style={{
+              width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              gap: 16, padding: '22px 0', background: 'none', border: 'none', cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>{item.q}</span>
+            <span style={{
+              flexShrink: 0, width: 28, height: 28, borderRadius: '50%',
+              background: open === i ? 'var(--accent)' : 'rgba(var(--fg-rgb),.07)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18, color: open === i ? 'white' : 'var(--text-sub)',
+              transition: 'background .2s, transform .2s',
+              transform: open === i ? 'rotate(45deg)' : 'none',
+            }}>+</span>
+          </button>
+          {open === i && (
+            <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 22px', maxWidth: 660 }}>
+              {item.a}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function LandingPage() {
   const bookingRef  = useRef<HTMLElement>(null);
@@ -544,6 +607,15 @@ export function LandingPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* ── FAQ ─────────────────────────────────────────────────────────── */}
+      <section id="faq" style={{ maxWidth: 780, margin: '0 auto', padding: '88px 40px' }}>
+        <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Частые вопросы</p>
+        <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 48px', letterSpacing: '-.01em' }}>
+          Что нужно знать
+        </h2>
+        <FaqList />
       </section>
 
       {/* ── MARQUEE #4 ───────────────────────────────────────────────────── */}
