@@ -11,6 +11,7 @@ import { LandingPage } from './pages/LandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { OfferPage } from './pages/OfferPage';
 import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
+import { ReviewsPage } from './pages/ReviewsPage';
 
 // Apply saved theme before first render
 const savedTheme = localStorage.getItem('app_theme');
@@ -49,6 +50,7 @@ const router = createBrowserRouter([
       // Public
       { path: '/',               element: <LandingPage /> },
       { path: '/articles',       element: <ArticlesListPage /> },
+      { path: '/reviews',        element: <ReviewsPage /> },
       { path: '/articles/:slug', element: <ArticlePage /> },
       { path: '/privacy',        element: <PrivacyPage /> },
       { path: '/offer',          element: <OfferPage /> },
