@@ -102,10 +102,12 @@ export function AccountPage() {
     return linkToken;
   };
   const linkGoogle = async () => {
+    sessionStorage.setItem('auth_return_to', '/account');
     const token = await fetchLinkToken();
     window.location.href = `${API_BASE}/api/auth/google?link_token=${encodeURIComponent(token)}`;
   };
   const linkVk = async () => {
+    sessionStorage.setItem('auth_return_to', '/account');
     const token = await fetchLinkToken();
     window.location.href = `${API_BASE}/api/auth/vk?link_token=${encodeURIComponent(token)}`;
   };

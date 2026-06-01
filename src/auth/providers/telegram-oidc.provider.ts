@@ -13,6 +13,8 @@ import { AuthProviderHandler, ProviderIdentity } from './types';
 //   4. GET oauth.telegram.org/userinfo → { sub, name, username }
 //
 // No server secrets needed — PKCE replaces client_secret.
+// The `origin` parameter is required by oauth.telegram.org to validate the
+// initiating domain against the bot's BotFather /setdomain setting.
 
 @Injectable()
 export class TelegramOidcProvider implements AuthProviderHandler {
@@ -31,6 +33,10 @@ export class TelegramOidcProvider implements AuthProviderHandler {
     return `${base}/api/auth/telegram-oidc/callback`;
   }
 
+  private get webappOrigin(): string {
+    return new URL(this.config.getOrThrow<string>('WEBAPP_URL')).origin;
+  }
+
   // ── PKCE helpers ─────────────────────────────────────────────────────────────
   generatePkce(): { verifier: string; challenge: string } {
     const verifier  = randomBytes(32).toString('base64url');
@@ -46,6 +52,7 @@ export class TelegramOidcProvider implements AuthProviderHandler {
       response_type:         'code',
       scope:                 'openid profile',
       state,
+      origin:                this.webappOrigin,
       code_challenge:        codeChallenge ?? '',
       code_challenge_method: 'S256',
     });
