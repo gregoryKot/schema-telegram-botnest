@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
-import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
+import { encrypt, decrypt, encryptJson, decryptJson, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { randomBytes } from 'crypto';
 
 function randomCode(): string {
@@ -65,6 +65,7 @@ export interface TherapyClientSummary {
   streak: number;
   lastActiveDate: string | null;
   todayIndex: number | null;
+  recentIndexHistory: (number | null)[];  // 14 values, index 0 = today
   relationCreatedAt: string;
   therapyStartDate: string | null;
   nextSession: string | null;
@@ -82,31 +83,31 @@ export class TherapyService {
 
   // ─── Connection ─────────────────────────────────────────────────────────────
 
-  async createInvite(therapistId: number): Promise<{ code: string; url: string }> {
+  async createInvite(therapistId: bigint): Promise<{ code: string; url: string }> {
     let code: string;
     do { code = randomCode(); } while (await this.prisma.therapyRelation.findUnique({ where: { code } }));
-    await this.prisma.therapyRelation.create({ data: { therapistId: BigInt(therapistId), code } });
+    await this.prisma.therapyRelation.create({ data: { therapistId, code } });
     return { code, url: `${MINIAPP_TGLINK}?startapp=therapy_${code}` };
   }
 
-  async joinAsClient(clientId: number, code: string): Promise<boolean> {
+  async joinAsClient(clientId: bigint, code: string): Promise<boolean> {
     const rel = await this.prisma.therapyRelation.findUnique({ where: { code: code.toUpperCase() } });
     if (!rel || rel.status !== 'pending' || rel.clientId !== null) return false;
-    if (rel.therapistId === BigInt(clientId)) return false;
+    if (rel.therapistId === clientId) return false;
     // Prevent duplicate: if already connected to this therapist, ignore silently
     const alreadyConnected = await this.prisma.therapyRelation.findFirst({
-      where: { therapistId: rel.therapistId, clientId: BigInt(clientId), status: 'active' },
+      where: { therapistId: rel.therapistId, clientId, status: 'active' },
     });
     if (alreadyConnected) return true;
     await this.prisma.therapyRelation.update({
       where: { id: rel.id },
-      data: { clientId: BigInt(clientId), status: 'active' },
+      data: { clientId, status: 'active' },
     });
     return true;
   }
 
-  async getRelation(userId: number): Promise<TherapyRelationInfo | null> {
-    const uid = BigInt(userId);
+  async getRelation(userId: bigint): Promise<TherapyRelationInfo | null> {
+    const uid = userId;
     const asTherapist = await this.prisma.therapyRelation.findFirst({
       where: { therapistId: uid, status: 'active' },
       include: { client: { select: { firstName: true } } },
@@ -124,15 +125,14 @@ export class TherapyService {
     return null;
   }
 
-  async disconnect(userId: number): Promise<void> {
-    const uid = BigInt(userId);
+  async disconnect(userId: bigint): Promise<void> {
     await this.prisma.therapyRelation.deleteMany({
-      where: { OR: [{ therapistId: uid }, { clientId: uid }] },
+      where: { OR: [{ therapistId: userId }, { clientId: userId }] },
     });
   }
 
-  async getClients(therapistId: number): Promise<TherapyClientSummary[]> {
-    const tid = BigInt(therapistId);
+  async getClients(therapistId: bigint): Promise<TherapyClientSummary[]> {
+    const tid = therapistId;
     const relations = await this.prisma.therapyRelation.findMany({
       where: { therapistId: tid, status: 'active' },
       include: { client: { select: { id: true, firstName: true } } },
@@ -154,21 +154,26 @@ export class TherapyService {
       relations
         .filter(rel => rel.client !== null)
         .map(async rel => {
-          const clientId = Number(rel.client!.id);
+          const clientBigId = rel.client!.id;
+          const clientId = Number(clientBigId);
           const [streak, daysSince, history] = await Promise.all([
-            this.analyticsService.getConsecutiveDays(clientId),
-            this.analyticsService.getDaysSinceLastFill(clientId),
-            this.analyticsService.getHistoryRatings(clientId, 1),
+            this.analyticsService.getConsecutiveDays(clientBigId),
+            this.analyticsService.getDaysSinceLastFill(clientBigId),
+            this.analyticsService.getHistoryRatings(clientBigId, 14),
           ]);
           const lastActiveDate = daysSince >= 0
             ? new Date(Date.now() - daysSince * 86400000).toISOString().slice(0, 10)
             : null;
-          const todayRatings = history[0]?.ratings;
-          const todayValues = todayRatings ? Object.values(todayRatings) : [];
-          const todayIndex = todayValues.length === 5
-            ? Math.round(todayValues.reduce((s, v) => s + v, 0) / 5 * 10) / 10
-            : null;
-          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: (rel as any).clientAlias ?? null, streak, lastActiveDate, todayIndex, relationCreatedAt: rel.createdAt.toISOString(), therapyStartDate: (rel as any).therapyStartDate ?? null, nextSession: (rel as any).nextSession ?? null, meetingDays: ((rel as any).meetingDays as number[]) ?? [], schemaIds: conceptMap.get(String(clientId)) ?? [] };
+          const byDate = new Map(history.map(d => [d.date, d.ratings]));
+          const recentIndexHistory: (number | null)[] = Array.from({ length: 14 }, (_, i) => {
+            const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+            const r = byDate.get(d);
+            if (!r) return null;
+            const vals = Object.values(r) as number[];
+            return vals.length === 5 ? Math.round(vals.reduce((s, v) => s + v, 0) / 5 * 10) / 10 : null;
+          });
+          const todayIndex = recentIndexHistory[0];
+          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: (rel as any).clientAlias ?? null, streak, lastActiveDate, todayIndex, recentIndexHistory, relationCreatedAt: rel.createdAt.toISOString(), therapyStartDate: (rel as any).therapyStartDate ?? null, nextSession: (rel as any).nextSession ?? null, meetingDays: ((rel as any).meetingDays as number[]) ?? [], schemaIds: conceptMap.get(String(clientId)) ?? [] };
         }),
     );
 
@@ -182,6 +187,7 @@ export class TherapyService {
         streak: 0,
         lastActiveDate: null,
         todayIndex: null,
+        recentIndexHistory: Array(14).fill(null) as null[],
         relationCreatedAt: rel.createdAt.toISOString(),
         therapyStartDate: (rel as any).therapyStartDate ?? null,
         nextSession: (rel as any).nextSession ?? null,
@@ -192,12 +198,12 @@ export class TherapyService {
     return [...realClients, ...virtualClients];
   }
 
-  async addVirtualClient(therapistId: number, name: string): Promise<TherapyClientSummary[]> {
+  async addVirtualClient(therapistId: bigint, name: string): Promise<TherapyClientSummary[]> {
     const code = randomBytes(5).toString('hex').toUpperCase();
     await (this.prisma.therapyRelation.create as any)({
       data: {
         code,
-        therapistId: BigInt(therapistId),
+        therapistId,
         clientId: null,
         status: 'active',
         virtualClientName: name.trim(),
@@ -206,9 +212,9 @@ export class TherapyService {
     return this.getClients(therapistId);
   }
 
-  async addClientManually(therapistId: number, clientTelegramId: number) {
-    const tid = BigInt(therapistId);
-    const cid = BigInt(clientTelegramId);
+  async addClientManually(therapistId: bigint, clientTelegramId: bigint) {
+    const tid = therapistId;
+    const cid = clientTelegramId;
 
     // Check client user exists
     const clientUser = await this.prisma.user.findUnique({ where: { id: cid }, select: { id: true, firstName: true } });
@@ -232,14 +238,14 @@ export class TherapyService {
 
   // ─── Tasks ───────────────────────────────────────────────────────────────────
 
-  async createTask(userId: number, body: {
+  async createTask(userId: bigint, body: {
     type: string; text: string; targetDays?: number;
     needId?: string; dueDate?: string;
-  }, assignedBy?: number) {
+  }, assignedBy?: bigint) {
     const task = await this.prisma.userTask.create({
       data: {
-        userId: BigInt(userId),
-        assignedBy: assignedBy ? BigInt(assignedBy) : null,
+        userId,
+        assignedBy: assignedBy ?? null,
         type: body.type,
         text: encrypt(body.text) ?? body.text,
         targetDays: body.targetDays ?? null,
@@ -250,9 +256,9 @@ export class TherapyService {
     return { ...task, text: body.text }; // return plaintext to caller
   }
 
-  async getTasks(userId: number) {
+  async getTasks(userId: bigint) {
     const now = new Date();
-    const uid = BigInt(userId);
+    const uid = userId;
 
     // Use user's stored timezone for correct "today" across all timezones
     const settings = await this.prisma.user.findUnique({ where: { id: uid }, select: { notifyTimezone: true } });
@@ -296,18 +302,18 @@ export class TherapyService {
     }));
   }
 
-  async getTaskHistory(userId: number) {
+  async getTaskHistory(userId: bigint) {
     const rows = await this.prisma.userTask.findMany({
-      where: { userId: BigInt(userId), done: { not: null } },
+      where: { userId, done: { not: null } },
       orderBy: { completedAt: 'desc' },
       take: 30,
     });
     return rows.map(r => ({ ...r, text: decrypt(r.text) ?? r.text }));
   }
 
-  async getAllTasksForTherapist(therapistId: number) {
+  async getAllTasksForTherapist(therapistId: bigint) {
     const relations = await this.prisma.therapyRelation.findMany({
-      where: { therapistId: BigInt(therapistId), status: 'active' },
+      where: { therapistId, status: 'active' },
       include: { client: { select: { id: true, firstName: true } } },
     });
 
@@ -320,7 +326,7 @@ export class TherapyService {
         : ((rel as any).clientAlias ?? (rel as any).virtualClientName ?? `ID ${-clientId}`);
 
       const tasks = await this.prisma.userTask.findMany({
-        where: { assignedBy: BigInt(therapistId), userId: rel.client ? BigInt(clientId) : { lt: 0 } },
+        where: { assignedBy: therapistId, userId: rel.client ? rel.client.id : { lt: 0 } },
         orderBy: { createdAt: 'desc' },
       });
 
@@ -341,32 +347,32 @@ export class TherapyService {
     return results;
   }
 
-  async getTasksForClient(therapistId: number, clientId: number) {
+  async getTasksForClient(therapistId: bigint, clientId: number) {
     if (clientId < 0) {
       // Virtual client: look up by relation ID
       const rel = await this.prisma.therapyRelation.findFirst({
-        where: { id: -clientId, therapistId: BigInt(therapistId), status: 'active' },
+        where: { id: -clientId, therapistId, status: 'active' },
       });
       if (!rel) return null;
       const tasks = await this.prisma.userTask.findMany({
-        where: { userId: BigInt(clientId), assignedBy: BigInt(therapistId) },
+        where: { userId: BigInt(clientId), assignedBy: therapistId },
         orderBy: { createdAt: 'desc' },
       });
-      return tasks.map(task => ({ ...task, text: decrypt(task.text) ?? task.text, userId: clientId, assignedBy: therapistId, doneToday: undefined, progress: undefined }));
+      return tasks.map(task => ({ ...task, text: decrypt(task.text) ?? task.text, userId: clientId, assignedBy: Number(therapistId), doneToday: undefined, progress: undefined }));
     }
+    const uid = BigInt(clientId);
     const rel = await this.prisma.therapyRelation.findFirst({
-      where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
+      where: { therapistId, clientId: uid, status: 'active' },
     });
     if (!rel) return null;
     const now = new Date();
-    const uid = BigInt(clientId);
     const settings = await this.prisma.user.findUnique({ where: { id: uid }, select: { notifyTimezone: true } });
     const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
     const today = localDate(tz, now);
     const startOfDay = localMidnightUTC(today, tz);
 
     const tasks = await this.prisma.userTask.findMany({
-      where: { userId: uid, assignedBy: BigInt(therapistId) },
+      where: { userId: uid, assignedBy: therapistId },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -384,23 +390,23 @@ export class TherapyService {
         doneToday = s + m + g > 0;
       }
       if (task.targetDays && ['tracker_streak', 'diary_streak', 'schema_diary', 'mode_diary'].includes(task.type)) {
-        progress = await this.getStreakProgress(clientId, task.type, task.targetDays);
+        progress = await this.getStreakProgress(uid, task.type, task.targetDays);
       }
       return { ...task, text: decrypt(task.text) ?? task.text, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday, progress };
     }));
   }
 
-  async completeTask(userId: number, taskId: number, done: boolean): Promise<boolean> {
+  async completeTask(userId: bigint, taskId: number, done: boolean): Promise<boolean> {
     const result = await this.prisma.userTask.updateMany({
-      where: { id: taskId, userId: BigInt(userId) },
+      where: { id: taskId, userId },
       data: { done, completedAt: new Date() },
     });
     return result.count > 0;
   }
 
-  async checkStreakTasks(userId: number): Promise<void> {
+  async checkStreakTasks(userId: bigint): Promise<void> {
     const tasks = await this.prisma.userTask.findMany({
-      where: { userId: BigInt(userId), done: null, type: { in: ['diary_streak', 'tracker_streak', 'schema_diary', 'mode_diary'] } },
+      where: { userId, done: null, type: { in: ['diary_streak', 'tracker_streak', 'schema_diary', 'mode_diary'] } },
     });
     if (tasks.length === 0) return;
     const now = new Date();
@@ -411,24 +417,23 @@ export class TherapyService {
     }
   }
 
-  async getStreakProgress(userId: number, type: string, days: number): Promise<number> {
-    const uid = BigInt(userId);
+  async getStreakProgress(userId: bigint, type: string, days: number): Promise<number> {
     const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
     if (type === 'tracker_streak') {
-      const dates = await this.prisma.rating.groupBy({ by: ['date'], where: { userId: uid, date: { gte: since } } });
+      const dates = await this.prisma.rating.groupBy({ by: ['date'], where: { userId, date: { gte: since } } });
       return dates.length;
     }
     if (type === 'schema_diary') {
-      return this.prisma.schemaDiaryEntry.count({ where: { userId: uid, createdAt: { gte: new Date(since) } } });
+      return this.prisma.schemaDiaryEntry.count({ where: { userId, createdAt: { gte: new Date(since) } } });
     }
     if (type === 'mode_diary') {
-      return this.prisma.modeDiaryEntry.count({ where: { userId: uid, createdAt: { gte: new Date(since) } } });
+      return this.prisma.modeDiaryEntry.count({ where: { userId, createdAt: { gte: new Date(since) } } });
     }
     // diary_streak: any diary entry (schema or mode or gratitude)
     const [schema, mode, gratitude] = await Promise.all([
-      this.prisma.schemaDiaryEntry.groupBy({ by: ['createdAt'], where: { userId: uid, createdAt: { gte: new Date(since) } } }),
-      this.prisma.modeDiaryEntry.groupBy({ by: ['createdAt'], where: { userId: uid, createdAt: { gte: new Date(since) } } }),
-      this.prisma.gratitudeDiaryEntry.findMany({ where: { userId: uid, date: { gte: since } }, select: { date: true } }),
+      this.prisma.schemaDiaryEntry.groupBy({ by: ['createdAt'], where: { userId, createdAt: { gte: new Date(since) } } }),
+      this.prisma.modeDiaryEntry.groupBy({ by: ['createdAt'], where: { userId, createdAt: { gte: new Date(since) } } }),
+      this.prisma.gratitudeDiaryEntry.findMany({ where: { userId, date: { gte: since } }, select: { date: true } }),
     ]);
     const diaryDates = new Set([
       ...schema.map(e => e.createdAt.toISOString().slice(0, 10)),
@@ -440,7 +445,7 @@ export class TherapyService {
 
   // ─── Session Info ────────────────────────────────────────────────────────────
 
-  async updateSessionInfo(therapistId: number, clientId: number, body: {
+  async updateSessionInfo(therapistId: bigint, clientId: number, body: {
     therapyStartDate?: string | null;
     nextSession?: string | null;
     meetingDays?: number[];
@@ -453,12 +458,12 @@ export class TherapyService {
     if (Object.keys(data).length === 0) return;
     if (clientId < 0) {
       await this.prisma.therapyRelation.updateMany({
-        where: { id: -clientId, therapistId: BigInt(therapistId), status: 'active' },
+        where: { id: -clientId, therapistId, status: 'active' },
         data: data as any,
       });
     } else {
       await this.prisma.therapyRelation.updateMany({
-        where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
+        where: { therapistId, clientId: BigInt(clientId), status: 'active' },
         data: data as any,
       });
     }
@@ -468,69 +473,73 @@ export class TherapyService {
 
   // Public wrapper for the controller — same semantics as the private
   // helper used by all therapist-only data accessors.
-  async assertHasClient(therapistId: number, clientId: number): Promise<void> {
+  async assertHasClient(therapistId: bigint, clientId: number): Promise<void> {
     return this.assertRelation(therapistId, clientId);
   }
 
-  private async assertRelation(therapistId: number, clientId: number): Promise<void> {
+  private async assertRelation(therapistId: bigint, clientId: number): Promise<void> {
     if (clientId < 0) {
       // Virtual client — identified by -rel.id
       const rel = await this.prisma.therapyRelation.findFirst({
-        where: { id: -clientId, therapistId: BigInt(therapistId), status: 'active' },
+        where: { id: -clientId, therapistId, status: 'active' },
       });
       if (!rel) throw new Error('No active relation');
       return;
     }
     const rel = await this.prisma.therapyRelation.findFirst({
-      where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
+      where: { therapistId, clientId: BigInt(clientId), status: 'active' },
     });
     if (!rel) throw new Error('No active relation');
   }
 
-  async getNotes(therapistId: number, clientId: number) {
+  async getNotes(therapistId: bigint, clientId: number) {
     await this.assertRelation(therapistId, clientId);
+    const tid = therapistId;
+    const cid = BigInt(clientId);
     const rows = await this.prisma.therapistNote.findMany({
-      where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId) },
+      where: { therapistId: tid, clientId: cid },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
     return rows.map(r => ({ ...r, text: decrypt(r.text) ?? r.text }));
   }
 
-  async createNote(therapistId: number, clientId: number, body: { date: string; text: string }) {
+  async createNote(therapistId: bigint, clientId: number, body: { date: string; text: string }) {
     await this.assertRelation(therapistId, clientId);
     const note = await this.prisma.therapistNote.create({
-      data: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), date: body.date, text: encrypt(body.text) ?? body.text },
+      data: { therapistId, clientId: BigInt(clientId), date: body.date, text: encrypt(body.text) ?? body.text },
     });
     return { ...note, text: body.text }; // return plaintext to caller
   }
 
-  async deleteNote(therapistId: number, noteId: number): Promise<void> {
+  async deleteNote(therapistId: bigint, noteId: number): Promise<void> {
     await this.prisma.therapistNote.deleteMany({
-      where: { id: noteId, therapistId: BigInt(therapistId) },
+      where: { id: noteId, therapistId },
     });
   }
 
   // ─── Case Conceptualization ──────────────────────────────────────────────────
 
-  async getConceptualization(therapistId: number, clientId: number) {
+  async getConceptualization(therapistId: bigint, clientId: number) {
     await this.assertRelation(therapistId, clientId);
+    const tid = therapistId;
+    const cid = BigInt(clientId);
     const row = await this.prisma.clientConceptualization.findUnique({
-      where: { therapistId_clientId: { therapistId: BigInt(therapistId), clientId: BigInt(clientId) } },
+      where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
     });
     if (!row) return null;
     const history = Array.isArray(row.history) ? (row.history as any[]).map(decryptConceptSnapshot) : [];
     return { ...row, ...decryptConceptFields(row), history };
   }
 
-  async saveConceptualization(therapistId: number, clientId: number, body: {
+  async saveConceptualization(therapistId: bigint, clientId: number, body: {
     schemaIds?: string[]; modeIds?: string[];
     earlyExperience?: string; unmetNeeds?: string;
     triggers?: string; copingStyles?: string; goals?: string; currentProblems?: string;
     modeTransitions?: string;
   }) {
     await this.assertRelation(therapistId, clientId);
-    const tid = BigInt(therapistId);
+    const tid = therapistId;
     const cid = BigInt(clientId);
 
     // Fetch current state to push to history before overwriting
@@ -586,7 +595,7 @@ export class TherapyService {
 
   // ─── Client data for therapist ───────────────────────────────────────────────
 
-  async getClientData(therapistId: number, clientId: number) {
+  async getClientData(therapistId: bigint, clientId: number) {
     await this.assertRelation(therapistId, clientId);
     if (clientId < 0) {
       return { name: null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [] };
@@ -619,10 +628,10 @@ export class TherapyService {
     };
   }
 
-  async getClientHistory(therapistId: number, clientId: number): Promise<{ date: string; index: number | null; ratings: Record<string, number> }[]> {
+  async getClientHistory(therapistId: bigint, clientId: number): Promise<{ date: string; index: number | null; ratings: Record<string, number> }[]> {
     if (clientId < 0) return [];
     await this.assertRelation(therapistId, clientId);
-    const history = await this.analyticsService.getHistoryRatings(clientId, 14);
+    const history = await this.analyticsService.getHistoryRatings(BigInt(clientId), 14);
     return history.map(h => {
       const ratings = h.ratings as Record<string, number>;
       const vals = Object.values(ratings);
@@ -631,28 +640,109 @@ export class TherapyService {
     });
   }
 
-  async scheduleTaskNotification(clientId: number, task: { text: string; needId: string | null; dueDate: string | null }): Promise<void> {
+  async getClientDiaryEntries(therapistId: bigint, clientId: number): Promise<{
+    type: 'schema' | 'mode' | 'gratitude';
+    date: string;
+    schemaIds?: string[];
+    modeId?: string;
+    excerpt: string;
+  }[]> {
+    if (clientId < 0) return [];
+    await this.assertRelation(therapistId, clientId);
+    const uid = BigInt(clientId);
+    const [schemaRows, modeRows, gratitudeRows] = await Promise.all([
+      this.prisma.schemaDiaryEntry.findMany({
+        where: { userId: uid },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { schemaIds: true, trigger: true, createdAt: true },
+      }),
+      this.prisma.modeDiaryEntry.findMany({
+        where: { userId: uid },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { modeId: true, situation: true, createdAt: true },
+      }),
+      this.prisma.gratitudeDiaryEntry.findMany({
+        where: { userId: uid },
+        orderBy: { date: 'desc' },
+        take: 10,
+        select: { date: true, items: true },
+      }),
+    ]);
+
+    const entries: { type: 'schema' | 'mode' | 'gratitude'; dateMs: number; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[] = [];
+
+    for (const r of schemaRows) {
+      const schemaIds: string[] = typeof r.schemaIds === 'string'
+        ? (decryptJson<string[]>(r.schemaIds as unknown as string) ?? [])
+        : (r.schemaIds as string[]) ?? [];
+      const trigger = decrypt(r.trigger as string) ?? (r.trigger as string);
+      entries.push({ type: 'schema', dateMs: r.createdAt.getTime(), date: r.createdAt.toISOString().slice(0, 10), schemaIds, excerpt: trigger });
+    }
+
+    for (const r of modeRows) {
+      const modeId = decrypt(r.modeId) ?? r.modeId;
+      const situation = decrypt(r.situation) ?? r.situation;
+      entries.push({ type: 'mode', dateMs: r.createdAt.getTime(), date: r.createdAt.toISOString().slice(0, 10), modeId, excerpt: situation });
+    }
+
+    for (const r of gratitudeRows) {
+      const items: string[] = typeof r.items === 'string'
+        ? (decryptJson<string[]>(r.items as unknown as string) ?? [])
+        : (r.items as string[]) ?? [];
+      entries.push({ type: 'gratitude', dateMs: new Date(r.date + 'T00:00:00').getTime(), date: r.date, excerpt: items.slice(0, 2).join(' · ') });
+    }
+
+    return entries
+      .sort((a, b) => b.dateMs - a.dateMs)
+      .slice(0, 10)
+      .map(({ dateMs: _d, ...rest }) => rest);
+  }
+
+  private static readonly SCHEMA_NOTE_SCHEMA: EncryptSchema = {
+    strings: ['triggers', 'feelings', 'thoughts', 'origins', 'reality', 'healthyView', 'behavior'],
+  };
+  private static readonly MODE_NOTE_SCHEMA: EncryptSchema = {
+    strings: ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'],
+  };
+
+  async getClientSchemaNotes(therapistId: bigint, clientId: number) {
+    if (clientId < 0) return [];
+    await this.assertRelation(therapistId, clientId);
+    const rows = await this.prisma.userSchemaNote.findMany({ where: { userId: BigInt(clientId) } });
+    return rows.map(r => decryptRecord(r as any, TherapyService.SCHEMA_NOTE_SCHEMA));
+  }
+
+  async getClientModeNotes(therapistId: bigint, clientId: number) {
+    if (clientId < 0) return [];
+    await this.assertRelation(therapistId, clientId);
+    const rows = await this.prisma.userModeNote.findMany({ where: { userId: BigInt(clientId) } });
+    return rows.map(r => decryptRecord(r as any, TherapyService.MODE_NOTE_SCHEMA));
+  }
+
+  async scheduleTaskNotification(clientId: bigint, task: { text: string; needId: string | null; dueDate: string | null }): Promise<void> {
     await this.notificationService.schedule(clientId, 'task_assigned', new Date(), {
       text: task.text, needId: task.needId, dueDate: task.dueDate,
     });
   }
 
-  async renameClient(therapistId: number, clientId: number, alias: string): Promise<void> {
+  async renameClient(therapistId: bigint, clientId: number, alias: string): Promise<void> {
     if (clientId < 0) {
       await this.prisma.therapyRelation.updateMany({
-        where: { id: -clientId, therapistId: BigInt(therapistId), status: 'active' },
+        where: { id: -clientId, therapistId, status: 'active' },
         data: { clientAlias: alias.trim() || null } as any,
       });
     } else {
       await this.prisma.therapyRelation.updateMany({
-        where: { therapistId: BigInt(therapistId), clientId: BigInt(clientId), status: 'active' },
+        where: { therapistId, clientId: BigInt(clientId), status: 'active' },
         data: { clientAlias: alias.trim() || null } as any,
       });
     }
   }
 
-  async removeClient(therapistId: number, clientId: number): Promise<void> {
-    const tid = BigInt(therapistId);
+  async removeClient(therapistId: bigint, clientId: number): Promise<void> {
+    const tid = therapistId;
     const cid = BigInt(clientId);
     await this.prisma.$transaction([
       this.prisma.therapistNote.deleteMany({ where: { therapistId: tid, clientId: cid } }),
@@ -665,13 +755,13 @@ export class TherapyService {
     ]);
   }
 
-  async requestYsq(therapistId: number, clientId: number): Promise<void> {
+  async requestYsq(therapistId: bigint, clientId: number): Promise<void> {
     await this.assertRelation(therapistId, clientId);
     if (clientId < 0) return; // Virtual client — no Telegram account, cannot send notification
     const therapist = await this.prisma.user.findUnique({
-      where: { id: BigInt(therapistId) }, select: { firstName: true },
+      where: { id: therapistId }, select: { firstName: true },
     });
-    await this.notificationService.schedule(clientId, 'ysq_requested', new Date(), {
+    await this.notificationService.schedule(BigInt(clientId), 'ysq_requested', new Date(), {
       therapistName: therapist?.firstName ?? null,
     });
   }

@@ -1,0 +1,33 @@
+User-agent: *
+Allow: /
+Allow: /privacy
+Allow: /offer
+Allow: /login
+
+# Закрываем личный кабинет от индексации
+Disallow: /today
+Disallow: /diary
+Disallow: /schemas
+Disallow: /profile
+Disallow: /practice
+Disallow: /cabinet
+Disallow: /account
+Disallow: /auth/
+
+# AI crawlers — разрешаем явно
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+Sitemap: https://schemalab.ru/sitemap.xml

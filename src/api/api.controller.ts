@@ -15,7 +15,11 @@ import { computeYsqScores } from '../utils/ysq';
 interface AuthRequest extends Request {
   telegramUserId: number;
   telegramFirstName?: string;
+  webUser: { userId: bigint };
 }
+
+/** Returns the canonical BigInt userId — always precise, even for Google/VK accounts. */
+function uid(req: AuthRequest): bigint { return req.webUser.userId; }
 
 function parseId(raw: string): number {
   const n = Number(raw);
@@ -47,10 +51,7 @@ export class ApiController {
 
   @Get('link-token')
   async issueLinkToken(@Req() req: AuthRequest): Promise<{ linkToken: string; expiresIn: number }> {
-    const tokens = await this.authService.issueTokens(
-      BigInt(req.telegramUserId), req.ip, (req.headers as any)['user-agent'],
-    );
-    return { linkToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+    return { linkToken: this.authService.buildLinkToken(uid(req)), expiresIn: 60 };
   }
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────
@@ -75,7 +76,7 @@ export class ApiController {
   async getUserFlags(@Req() req: AuthRequest) {
     const select = Object.fromEntries(this.FLAG_FIELDS_READ.map(f => [f, true]));
     const u = await (this.prisma.user as any).findUnique({
-      where: { id: BigInt(req.telegramUserId) },
+      where: { id: uid(req) },
       select,
     });
     return u ?? {};
@@ -91,7 +92,7 @@ export class ApiController {
     for (const k of this.FLAG_FIELDS) if (k in body) data[k] = (body as any)[k];
     if (Object.keys(data).length === 0) return { ok: true };
     await (this.prisma.user as any).update({
-      where: { id: BigInt(req.telegramUserId) },
+      where: { id: uid(req) },
       data,
     });
     return { ok: true };
@@ -102,7 +103,7 @@ export class ApiController {
   @Get('drafts')
   async getDrafts(@Req() req: AuthRequest) {
     const rows = await (this.prisma as any).diaryDraft.findMany({
-      where: { userId: BigInt(req.telegramUserId) },
+      where: { userId: uid(req) },
       select: { type: true, startedAt: true, data: true },
     });
     return Object.fromEntries(rows.map((r: any) => [r.type, { startedAt: r.startedAt.toISOString(), data: r.data }]));
@@ -116,10 +117,13 @@ export class ApiController {
   ): Promise<{ ok: true }> {
     if (!['schema', 'mode', 'gratitude'].includes(type)) throw new BadRequestException('Invalid type');
     if (!body?.startedAt) throw new BadRequestException('Missing startedAt');
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(body.startedAt)) throw new BadRequestException('Invalid startedAt format');
+    const startedAt = new Date(body.startedAt);
+    if (isNaN(startedAt.getTime())) throw new BadRequestException('Invalid startedAt value');
     await (this.prisma as any).diaryDraft.upsert({
-      where: { userId_type: { userId: BigInt(req.telegramUserId), type } },
-      update: { data: body.data, startedAt: new Date(body.startedAt) },
-      create: { userId: BigInt(req.telegramUserId), type, data: body.data, startedAt: new Date(body.startedAt) },
+      where: { userId_type: { userId: uid(req), type } },
+      update: { data: body.data, startedAt },
+      create: { userId: uid(req), type, data: body.data, startedAt },
     });
     return { ok: true };
   }
@@ -128,27 +132,27 @@ export class ApiController {
   async deleteDraft(@Req() req: AuthRequest, @Param('type') type: string): Promise<{ ok: true }> {
     if (!['schema', 'mode', 'gratitude'].includes(type)) throw new BadRequestException('Invalid type');
     await (this.prisma as any).diaryDraft.deleteMany({
-      where: { userId: BigInt(req.telegramUserId), type },
+      where: { userId: uid(req), type },
     });
     return { ok: true };
   }
 
   @Get('profile')
   async getProfile(@Req() req: AuthRequest) {
-    return this.profileService.getProfile(req.telegramUserId);
+    return this.profileService.getProfile(uid(req));
   }
 
   @Post('profile/name')
   async updateName(@Req() req: AuthRequest, @Body() body: { name: string }) {
     const name = body.name?.trim();
     if (!name || name.length > 50) throw new BadRequestException('Invalid name');
-    await this.botService.updateName(req.telegramUserId, name);
+    await this.botService.updateName(uid(req), name);
     return { ok: true };
   }
 
   @Post('init')
   async init(@Req() req: AuthRequest, @Body() body: { timezone?: string }) {
-    await this.botService.registerUser(req.telegramUserId, req.telegramFirstName, body.timezone);
+    await this.botService.registerUser(uid(req), req.telegramFirstName, body.timezone);
     return { ok: true };
   }
 
@@ -156,13 +160,13 @@ export class ApiController {
 
   @Get('disclaimer')
   async getDisclaimer(@Req() req: AuthRequest) {
-    const accepted = await this.botService.hasAcceptedDisclaimer(req.telegramUserId);
+    const accepted = await this.botService.hasAcceptedDisclaimer(uid(req));
     return { accepted };
   }
 
   @Post('disclaimer')
   async acceptDisclaimer(@Req() req: AuthRequest) {
-    await this.botService.acceptDisclaimer(req.telegramUserId);
+    await this.botService.acceptDisclaimer(uid(req));
     return { ok: true };
   }
 
@@ -170,20 +174,21 @@ export class ApiController {
 
   @Get('ysq-progress')
   async getYsqProgress(@Req() req: AuthRequest) {
-    return this.botService.getYsqProgress(req.telegramUserId);
+    return this.botService.getYsqProgress(uid(req));
   }
 
   @Post('ysq-progress')
   async saveYsqProgress(@Req() req: AuthRequest, @Body() body: { answers: number[]; page: number }) {
     if (!Array.isArray(body.answers) || body.answers.length !== 116) throw new BadRequestException('Invalid answers');
+    if (!body.answers.every(a => Number.isInteger(a) && a >= 0 && a <= 6)) throw new BadRequestException('Invalid answer values');
     if (!Number.isInteger(body.page) || body.page < 0) throw new BadRequestException('Invalid page');
-    await this.botService.saveYsqProgress(req.telegramUserId, body.answers, body.page);
+    await this.botService.saveYsqProgress(uid(req), body.answers, body.page);
     return { ok: true };
   }
 
   @Delete('ysq-progress')
   async deleteYsqProgress(@Req() req: AuthRequest) {
-    await this.botService.deleteYsqProgress(req.telegramUserId);
+    await this.botService.deleteYsqProgress(uid(req));
     return { ok: true };
   }
 
@@ -195,7 +200,7 @@ export class ApiController {
   @Get('ratings')
   async getRatings(@Req() req: AuthRequest, @Query('date') date?: string) {
     if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException('Invalid date format');
-    return this.botService.getRatings(req.telegramUserId, date);
+    return this.botService.getRatings(uid(req), date);
   }
 
   @Post('rating')
@@ -204,19 +209,22 @@ export class ApiController {
       throw new BadRequestException('Invalid needId or value');
     }
     if (body.date && !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) throw new BadRequestException('Invalid date');
-    await this.botService.saveRating(req.telegramUserId, body.needId as NeedId, body.value, body.date);
-    this.therapyService.checkStreakTasks(req.telegramUserId).catch(() => null);
+    await this.botService.saveRating(uid(req), body.needId as NeedId, body.value, body.date);
+    this.therapyService.checkStreakTasks(uid(req)).catch((err) => this.logger.error('checkStreakTasks failed', err));
 
     // Skip diary-complete logic for historical backfill
     if (body.date) return { ok: true, allDone: false };
 
     // Check if all needs are now rated today → trigger diary-complete logic
-    const ratings = await this.botService.getRatings(req.telegramUserId);
+    const ratings = await this.botService.getRatings(uid(req));
     const allDone = NEED_IDS.every(id => ratings[id] !== undefined);
     if (allDone) {
       const [streak] = await Promise.all([
-        this.analyticsService.getStreakData(req.telegramUserId),
-        this.scheduleService.onDiaryComplete(req.telegramUserId).catch((err) => {
+        this.analyticsService.getStreakData(uid(req)).catch((err) => {
+          this.logger.error('getStreakData failed', err);
+          return null;
+        }),
+        this.scheduleService.onDiaryComplete(uid(req)).catch((err) => {
           this.logger.error('onDiaryComplete failed', err);
         }),
       ]);
@@ -229,24 +237,24 @@ export class ApiController {
   @Get('history')
   async getHistory(@Req() req: AuthRequest, @Query('days') days?: string) {
     const n = Math.min(Number(days) || 7, 30);
-    return this.analyticsService.getHistoryRatings(req.telegramUserId, n);
+    return this.analyticsService.getHistoryRatings(uid(req), n);
   }
 
   @Get('streak')
   async getStreak(@Req() req: AuthRequest) {
-    return this.analyticsService.getStreakData(req.telegramUserId);
+    return this.analyticsService.getStreakData(uid(req));
   }
 
   @Post('activity')
   async recordActivity(@Req() req: AuthRequest) {
-    return this.analyticsService.recordActivity(req.telegramUserId);
+    return this.analyticsService.recordActivity(uid(req));
   }
 
   @Get('export')
   async getExport(@Req() req: AuthRequest) {
     const [history, streak] = await Promise.all([
-      this.analyticsService.getHistoryRatings(req.telegramUserId, 30),
-      this.analyticsService.getStreakData(req.telegramUserId),
+      this.analyticsService.getHistoryRatings(uid(req), 30),
+      this.analyticsService.getStreakData(uid(req)),
     ]);
     const needs = this.botService.getNeeds();
     const lines: string[] = [`📔 Трекер потребностей · последние ${history.length} дней`, ''];
@@ -265,10 +273,10 @@ export class ApiController {
   @Get('insights')
   async getInsights(@Req() req: AuthRequest) {
     const [weeklyStats, bestDayOfWeek, worstDayOfWeek, streak] = await Promise.all([
-      this.analyticsService.getWeeklyStats(req.telegramUserId),
-      this.analyticsService.getBestDayOfWeek(req.telegramUserId),
-      this.analyticsService.getWorstDayOfWeek(req.telegramUserId),
-      this.analyticsService.getStreakData(req.telegramUserId),
+      this.analyticsService.getWeeklyStats(uid(req)),
+      this.analyticsService.getBestDayOfWeek(uid(req)),
+      this.analyticsService.getWorstDayOfWeek(uid(req)),
+      this.analyticsService.getStreakData(uid(req)),
     ]);
     return { weeklyStats, bestDayOfWeek, worstDayOfWeek, totalDays: streak.totalDays };
   }
@@ -276,8 +284,8 @@ export class ApiController {
   @Get('achievements')
   async getAchievements(@Req() req: AuthRequest) {
     const [achievements, pairs] = await Promise.all([
-      this.analyticsService.getAchievements(req.telegramUserId),
-      this.botService.getUserPairs(req.telegramUserId),
+      this.analyticsService.getAchievements(uid(req)),
+      this.botService.getUserPairs(uid(req)),
     ]);
     const hasPair = pairs.some(p => p.status === 'active');
     return [...achievements, { id: 'pair_connected', earned: hasPair }];
@@ -286,27 +294,27 @@ export class ApiController {
   @Get('note')
   async getNote(@Req() req: AuthRequest, @Query('date') date: string) {
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException('Invalid date format');
-    return this.botService.getNote(req.telegramUserId, date);
+    return this.botService.getNote(uid(req), date);
   }
 
   @Post('note')
   async saveNote(@Req() req: AuthRequest, @Body() body: { date: string; text: string; tags?: string[] }) {
     if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date) || typeof body.text !== 'string') throw new BadRequestException();
-    await this.botService.saveNote(req.telegramUserId, body.date, body.text.slice(0, 500), body.tags);
+    await this.botService.saveNote(uid(req), body.date, body.text.slice(0, 500), body.tags);
     return { ok: true };
   }
 
   @Get('pair')
   async getPair(@Req() req: AuthRequest) {
-    const pairs = await this.botService.getUserPairs(req.telegramUserId);
+    const pairs = await this.botService.getUserPairs(uid(req));
     const activePairs = pairs.filter(p => p.status === 'active');
     const pendingPair = pairs.find(p => p.status === 'pending' && p.isCreator);
 
     const partners = await Promise.all(activePairs.map(async pair => {
       const [partnerRatings, partnerName, partnerHistory] = await Promise.all([
-        this.botService.getRatings(pair.partnerId!),
-        this.botService.getUserFirstName(pair.partnerId!),
-        this.analyticsService.getHistoryRatings(pair.partnerId!, 7),
+        this.botService.getRatings(BigInt(pair.partnerId!)),
+        this.botService.getUserFirstName(BigInt(pair.partnerId!)),
+        this.analyticsService.getHistoryRatings(BigInt(pair.partnerId!), 7),
       ]);
       const partnerRaw = NEED_IDS.reduce((s, id) => s + (partnerRatings[id] ?? 0), 0) / NEED_IDS.length;
       const partnerTodayDone = NEED_IDS.every(id => partnerRatings[id] !== undefined);
@@ -337,7 +345,7 @@ export class ApiController {
 
   @Post('pair/invite')
   async createPairInvite(@Req() req: AuthRequest) {
-    const code = await this.botService.createPairInvite(req.telegramUserId);
+    const code = await this.botService.createPairInvite(uid(req));
     const url = `https://t.me/SchemaLabBot/diary?startapp=pair_${code}`;
     return { code, url };
   }
@@ -345,7 +353,7 @@ export class ApiController {
   @Post('pair/join')
   async joinPair(@Req() req: AuthRequest, @Body() body: { code: string }) {
     if (!body.code || !/^[A-Z0-9]{5,12}$/i.test(body.code)) throw new BadRequestException('Invalid code format');
-    const ok = await this.botService.joinPair(req.telegramUserId, body.code.toUpperCase());
+    const ok = await this.botService.joinPair(uid(req), body.code.toUpperCase());
     if (!ok) throw new BadRequestException('Invalid or expired code');
     return { ok: true };
   }
@@ -353,13 +361,13 @@ export class ApiController {
   @Delete('pair')
   async leavePair(@Req() req: AuthRequest, @Body() body: { code: string }) {
     if (!body.code) throw new BadRequestException('Code required');
-    await this.botService.leavePair(req.telegramUserId, body.code);
+    await this.botService.leavePair(uid(req), body.code);
     return { ok: true };
   }
 
   @Get('settings')
   async getSettings(@Req() req: AuthRequest) {
-    const s = await this.botService.getUserSettings(req.telegramUserId);
+    const s = await this.botService.getUserSettings(uid(req));
     return {
       notifyEnabled: s?.notifyEnabled ?? true,
       notifyLocalHour: s?.notifyLocalHour ?? 21,
@@ -384,15 +392,15 @@ export class ApiController {
     if (typeof body.pairCardDismissed === 'boolean') clean.pairCardDismissed = body.pairCardDismissed;
     if (Number.isInteger(body.notifyLocalHour) && body.notifyLocalHour! >= 0 && body.notifyLocalHour! <= 23) clean.notifyLocalHour = body.notifyLocalHour;
     if (typeof body.notifyTimezone === 'string' && VALID_TIMEZONES.includes(body.notifyTimezone)) clean.notifyTimezone = body.notifyTimezone;
-    if (Array.isArray(body.mySchemaIds) && body.mySchemaIds.every(id => typeof id === 'string' && id.length < 100)) clean.mySchemaIds = body.mySchemaIds;
-    if (Array.isArray(body.myModeIds) && body.myModeIds.every(id => typeof id === 'string' && id.length < 100)) clean.myModeIds = body.myModeIds;
+    if (Array.isArray(body.mySchemaIds) && body.mySchemaIds.length <= 200 && body.mySchemaIds.every(id => typeof id === 'string' && id.length < 100)) clean.mySchemaIds = body.mySchemaIds;
+    if (Array.isArray(body.myModeIds) && body.myModeIds.length <= 200 && body.myModeIds.every(id => typeof id === 'string' && id.length < 100)) clean.myModeIds = body.myModeIds;
     if (typeof body.therapistShareCards === 'boolean') clean.therapistShareCards = body.therapistShareCards;
     if (typeof body.therapistShareProfile === 'boolean') clean.therapistShareProfile = body.therapistShareProfile;
-    await this.botService.updateUserSettings(req.telegramUserId, clean);
+    await this.botService.updateUserSettings(uid(req), clean);
 
     // Reschedule reminder if notification time/toggle changed
     if ('notifyEnabled' in clean || 'notifyLocalHour' in clean || 'notifyTimezone' in clean || 'notifyReminderEnabled' in clean) {
-      await this.scheduleService.rescheduleForUser(req.telegramUserId);
+      await this.scheduleService.rescheduleForUser(uid(req));
     }
 
     return { ok: true };
@@ -403,20 +411,20 @@ export class ApiController {
   @Get('practices')
   async getPractices(@Req() req: AuthRequest, @Query('needId') needId: string) {
     if (!NEED_IDS.includes(needId as NeedId)) throw new BadRequestException('Invalid needId');
-    const rows = await this.botService.getPractices(req.telegramUserId, needId);
+    const rows = await this.botService.getPractices(uid(req), needId);
     return rows;
   }
 
   @Post('practices')
   async addPractice(@Req() req: AuthRequest, @Body() body: { needId: string; text: string }) {
     if (!NEED_IDS.includes(body.needId as NeedId) || !body.text?.trim()) throw new BadRequestException();
-    const row = await this.botService.addPractice(req.telegramUserId, body.needId, body.text.trim().slice(0, 200));
+    const row = await this.botService.addPractice(uid(req), body.needId, body.text.trim().slice(0, 200));
     return row;
   }
 
   @Delete('practices/:id')
   async deletePractice(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.botService.deletePractice(req.telegramUserId, parseId(id));
+    await this.botService.deletePractice(uid(req), parseId(id));
     return { ok: true };
   }
 
@@ -424,9 +432,9 @@ export class ApiController {
 
   @Get('plan/pending')
   async getPendingPlans(@Req() req: AuthRequest) {
-    const tz = (await this.botService.getUserSettings(req.telegramUserId))?.notifyTimezone ?? 'Europe/Moscow';
+    const tz = (await this.botService.getUserSettings(uid(req)))?.notifyTimezone ?? 'Europe/Moscow';
     const today = this.localDate(tz);
-    const plans = await this.botService.getPendingPlans(req.telegramUserId, today);
+    const plans = await this.botService.getPendingPlans(uid(req), today);
     return plans;
   }
 
@@ -436,17 +444,17 @@ export class ApiController {
     @Body() body: { needId: string; practiceText: string; reminderUtcHour?: number },
   ) {
     if (!NEED_IDS.includes(body.needId as NeedId) || !body.practiceText?.trim()) throw new BadRequestException();
-    const settings = await this.botService.getUserSettings(req.telegramUserId);
+    const settings = await this.botService.getUserSettings(uid(req));
     const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
     const tomorrow = this.localDate(tz, 1);
     const plan = await this.botService.createPlan(
-      req.telegramUserId, body.needId, body.practiceText.trim(), tomorrow, body.reminderUtcHour,
+      uid(req), body.needId, body.practiceText.trim(), tomorrow, body.reminderUtcHour,
     );
     if (body.reminderUtcHour !== undefined) {
       const sendAt = new Date();
       sendAt.setUTCDate(sendAt.getUTCDate() + 1);
       sendAt.setUTCHours(body.reminderUtcHour, 0, 0, 0);
-      await this.notificationService.schedule(req.telegramUserId, 'practice_reminder', sendAt, {
+      await this.notificationService.schedule(uid(req), 'practice_reminder', sendAt, {
         practiceText: body.practiceText.trim(),
         needId: body.needId,
         planId: plan.id,
@@ -457,21 +465,21 @@ export class ApiController {
 
   @Post('plan/:id/checkin')
   async checkinPlan(@Req() req: AuthRequest, @Param('id') id: string, @Body() body: { done: boolean }) {
-    await this.botService.checkinPlan(req.telegramUserId, parseId(id), body.done);
+    await this.botService.checkinPlan(uid(req), parseId(id), body.done);
     return { ok: true };
   }
 
   @Get('plans/history')
   async getPlanHistory(@Req() req: AuthRequest, @Query('days') days?: string) {
     const n = Math.min(Number(days) || 30, 90);
-    return this.botService.getPlanHistory(req.telegramUserId, n);
+    return this.botService.getPlanHistory(uid(req), n);
   }
 
   // ─── Childhood Wheel ────────────────────────────────────────────────────────
 
   @Get('childhood-ratings')
   async getChildhoodRatings(@Req() req: AuthRequest) {
-    return this.botService.getChildhoodRatings(req.telegramUserId);
+    return this.botService.getChildhoodRatings(uid(req));
   }
 
   @Post('childhood-ratings')
@@ -483,7 +491,7 @@ export class ApiController {
       }
     }
     if (Object.keys(ratings).length === 0) throw new BadRequestException('No valid ratings');
-    await this.botService.saveChildhoodRatings(req.telegramUserId, ratings);
+    await this.botService.saveChildhoodRatings(uid(req), ratings);
     return { ok: true };
   }
 
@@ -491,26 +499,26 @@ export class ApiController {
 
   @Get('ysq-result')
   async getYsqResult(@Req() req: AuthRequest) {
-    return this.botService.getYsqResult(req.telegramUserId);
+    return this.botService.getYsqResult(uid(req));
   }
 
   @Post('ysq-result')
   async saveYsqResult(@Req() req: AuthRequest, @Body() body: { answers: number[] }) {
     if (!Array.isArray(body.answers) || body.answers.length !== 116) throw new BadRequestException('Invalid answers');
     if (!body.answers.every(a => Number.isInteger(a) && a >= 0 && a <= 6)) throw new BadRequestException('Invalid answer values');
-    await this.botService.saveYsqResult(req.telegramUserId, body.answers);
+    await this.botService.saveYsqResult(uid(req), body.answers);
     return { ok: true };
   }
 
   @Delete('ysq-result')
   async deleteYsqResult(@Req() req: AuthRequest) {
-    await this.botService.deleteYsqResult(req.telegramUserId);
+    await this.botService.deleteYsqResult(uid(req));
     return { ok: true };
   }
 
   @Get('ysq-history')
   async getYsqHistory(@Req() req: AuthRequest) {
-    const raw = await this.botService.getYsqHistory(req.telegramUserId);
+    const raw = await this.botService.getYsqHistory(uid(req));
     return raw.map(r => ({
       id: r.id,
       completedAt: r.completedAt.toISOString(),
@@ -520,7 +528,7 @@ export class ApiController {
 
   @Get('schema-notes')
   async getSchemaNotes(@Req() req: AuthRequest) {
-    return this.botService.getSchemaNotes(req.telegramUserId);
+    return this.botService.getSchemaNotes(uid(req));
   }
 
   @Post('schema-notes')
@@ -537,7 +545,7 @@ export class ApiController {
       if (body[f] !== undefined && (typeof body[f] !== 'string' || body[f]!.length > MAX))
         throw new BadRequestException(`${f} too long or invalid`);
     }
-    return this.botService.upsertSchemaNote(req.telegramUserId, body.schemaId, {
+    return this.botService.upsertSchemaNote(uid(req), body.schemaId, {
       triggers: body.triggers?.trim(), feelings: body.feelings?.trim(), thoughts: body.thoughts?.trim(),
       origins: body.origins?.trim(), reality: body.reality?.trim(), healthyView: body.healthyView?.trim(),
       behavior: body.behavior?.trim(),
@@ -546,7 +554,7 @@ export class ApiController {
 
   @Get('mode-notes')
   async getModeNotes(@Req() req: AuthRequest) {
-    return this.botService.getModeNotes(req.telegramUserId);
+    return this.botService.getModeNotes(uid(req));
   }
 
   @Post('mode-notes')
@@ -563,7 +571,7 @@ export class ApiController {
       if (body[f] !== undefined && (typeof body[f] !== 'string' || body[f]!.length > MAX))
         throw new BadRequestException(`${f} too long or invalid`);
     }
-    return this.botService.upsertModeNote(req.telegramUserId, body.modeId, {
+    return this.botService.upsertModeNote(uid(req), body.modeId, {
       triggers: body.triggers?.trim(), feelings: body.feelings?.trim(), thoughts: body.thoughts?.trim(),
       needs: body.needs?.trim(), behavior: body.behavior?.trim(),
     });
@@ -573,7 +581,7 @@ export class ApiController {
 
   @Get('belief-checks')
   getBeliefChecks(@Req() req: AuthRequest) {
-    return this.botService.getBeliefChecks(req.telegramUserId);
+    return this.botService.getBeliefChecks(uid(req));
   }
 
   @Post('belief-checks')
@@ -583,7 +591,7 @@ export class ApiController {
     if (!Array.isArray(body.evidenceFor) || !body.evidenceFor.every(s => typeof s === 'string' && s.length <= MAX)) throw new BadRequestException('invalid evidenceFor');
     if (!Array.isArray(body.evidenceAgainst) || !body.evidenceAgainst.every(s => typeof s === 'string' && s.length <= MAX)) throw new BadRequestException('invalid evidenceAgainst');
     if (body.reframe !== undefined && (typeof body.reframe !== 'string' || body.reframe.length > MAX)) throw new BadRequestException('invalid reframe');
-    return this.botService.createBeliefCheck(req.telegramUserId, {
+    return this.botService.createBeliefCheck(uid(req), {
       belief: body.belief.trim(),
       evidenceFor: (body.evidenceFor as string[]).map(s => s.trim()).filter(Boolean),
       evidenceAgainst: (body.evidenceAgainst as string[]).map(s => s.trim()).filter(Boolean),
@@ -593,45 +601,45 @@ export class ApiController {
 
   @Delete('belief-checks/:id')
   deleteBeliefCheck(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.botService.deleteBeliefCheck(req.telegramUserId, parseId(id));
+    return this.botService.deleteBeliefCheck(uid(req), parseId(id));
   }
 
   // ── Letters ───────────────────────────────────────────────────────────────────
 
   @Get('letters')
   getLetters(@Req() req: AuthRequest) {
-    return this.botService.getLetters(req.telegramUserId);
+    return this.botService.getLetters(uid(req));
   }
 
   @Post('letters')
   async createLetter(@Req() req: AuthRequest, @Body() body: { text?: string }) {
     if (!body.text || typeof body.text !== 'string' || body.text.length > 10000) throw new BadRequestException('invalid text');
-    return this.botService.createLetter(req.telegramUserId, body.text.trim());
+    return this.botService.createLetter(uid(req), body.text.trim());
   }
 
   @Delete('letters/:id')
   deleteLetter(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.botService.deleteLetter(req.telegramUserId, parseId(id));
+    return this.botService.deleteLetter(uid(req), parseId(id));
   }
 
   // ── Safe place ────────────────────────────────────────────────────────────────
 
   @Get('safe-place')
   getSafePlace(@Req() req: AuthRequest) {
-    return this.botService.getSafePlace(req.telegramUserId);
+    return this.botService.getSafePlace(uid(req));
   }
 
   @Post('safe-place')
   async upsertSafePlace(@Req() req: AuthRequest, @Body() body: { description?: string }) {
     if (!body.description || typeof body.description !== 'string' || body.description.length > 10000) throw new BadRequestException('invalid description');
-    return this.botService.upsertSafePlace(req.telegramUserId, body.description.trim());
+    return this.botService.upsertSafePlace(uid(req), body.description.trim());
   }
 
   // ── Flashcards ────────────────────────────────────────────────────────────────
 
   @Get('flashcards')
   getFlashcards(@Req() req: AuthRequest) {
-    return this.botService.getFlashcards(req.telegramUserId);
+    return this.botService.getFlashcards(uid(req));
   }
 
   @Post('flashcards')
@@ -641,7 +649,7 @@ export class ApiController {
     if (!body.needId || typeof body.needId !== 'string' || !NEED_IDS.includes(body.needId as NeedId) && body.needId !== 'detached' && body.needId !== 'critic') throw new BadRequestException('invalid needId');
     if (body.reflection !== undefined && (typeof body.reflection !== 'string' || body.reflection.length > MAX)) throw new BadRequestException('invalid reflection');
     if (body.action !== undefined && (typeof body.action !== 'string' || body.action.length > MAX)) throw new BadRequestException('invalid action');
-    return this.botService.createFlashcard(req.telegramUserId, {
+    return this.botService.createFlashcard(uid(req), {
       modeId: body.modeId,
       needId: body.needId,
       reflection: body.reflection?.trim() || undefined,
@@ -651,28 +659,28 @@ export class ApiController {
 
   @Delete('flashcards/:id')
   deleteFlashcard(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.botService.deleteFlashcard(req.telegramUserId, parseId(id));
+    return this.botService.deleteFlashcard(uid(req), parseId(id));
   }
 
   // ── Therapist: client notes ───────────────────────────────────────────────────
 
   @Get('therapy/client/:clientId/schema-notes')
   async getClientSchemaNotes(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
-    const notes = await this.botService.getClientSchemaNotes(req.telegramUserId, parseId(clientId));
+    const notes = await this.botService.getClientSchemaNotes(uid(req), BigInt(parseId(clientId)));
     if (!notes) throw new BadRequestException('relation not found');
     return notes;
   }
 
   @Get('therapy/client/:clientId/mode-notes')
   async getClientModeNotes(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
-    const notes = await this.botService.getClientModeNotes(req.telegramUserId, parseId(clientId));
+    const notes = await this.botService.getClientModeNotes(uid(req), BigInt(parseId(clientId)));
     if (!notes) throw new BadRequestException('relation not found');
     return notes;
   }
 
   @Delete('user')
   async deleteUser(@Req() req: AuthRequest) {
-    await this.botService.deleteAllUserData(req.telegramUserId);
+    await this.botService.deleteAllUserData(uid(req));
     return { ok: true };
   }
 

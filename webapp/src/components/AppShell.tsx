@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } fro
 import { useLocation, useNavigate, useParams, NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api';
-import { COLORS } from '../types';
 import type { Need, DayHistory } from '../types';
 import { applyTheme, getTheme } from '../utils/theme';
 import { todayStr } from '../utils/format';
@@ -13,28 +12,29 @@ import { Loader } from './Loader';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FloatingPill } from './FloatingPill';
 
-// — always-needed small helpers (no heavy data deps) —
+// – always-needed small helpers (no heavy data deps) –
 import { NoteSheet } from './NoteSheet';
 import { Celebration } from './Celebration';
-import { CheckInSheet } from './CheckInSheet';
 import { TaskCreateSheet } from './TaskCreateSheet';
 
-// — lazy: sections (each can pull in schemaTherapyData / needData on demand) —
+// – lazy: sections (each can pull in schemaTherapyData / needData on demand) –
 const TodaySection   = lazy(() => import('../sections/TodaySection').then(m => ({ default: m.TodaySection })));
 const DiarySection   = lazy(() => import('../sections/DiarySection').then(m => ({ default: m.DiarySection })));
 const SchemasSection = lazy(() => import('../sections/SchemasSection').then(m => ({ default: m.SchemasSection })));
 const ProfileSection = lazy(() => import('../sections/ProfileSection').then(m => ({ default: m.ProfileSection })));
-const HelpSection    = lazy(() => import('../sections/HelpSection').then(m => ({ default: m.HelpSection })));
+const PracticeSection = lazy(() => import('../sections/PracticeSection').then(m => ({ default: m.PracticeSection })));
 
-// — lazy: heavy overlays —
+// – lazy: heavy overlays –
 const TrackerOverlay       = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
-const HistoryView          = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
+const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ default: m.DiariesOverlay })));
+const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
 const SettingsSheet        = lazy(() => import('./SettingsSheet').then(m => ({ default: m.SettingsSheet })));
 const PracticesScreen      = lazy(() => import('./PracticesScreen').then(m => ({ default: m.PracticesScreen })));
 const PlansScreen          = lazy(() => import('./PlansScreen').then(m => ({ default: m.PlansScreen })));
 const SchemaInfoSheet      = lazy(() => import('./SchemaInfoSheet').then(m => ({ default: m.SchemaInfoSheet })));
-const ChildhoodWheelSheet  = lazy(() => import('./ChildhoodWheelSheet').then(m => ({ default: m.ChildhoodWheelSheet })));
-const TherapistClientSheet = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
+const ChildhoodWheelEx     = lazy(() => import('./exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
+const TherapistClientSheet  = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
+const TherapistTodaySection = lazy(() => import('../sections/TherapistTodaySection').then(m => ({ default: m.TherapistTodaySection })));
 const SchemaEntrySheet     = lazy(() => import('./diary/SchemaEntrySheet').then(m => ({ default: m.SchemaEntrySheet })));
 const ModeEntrySheet       = lazy(() => import('./diary/ModeEntrySheet').then(m => ({ default: m.ModeEntrySheet })));
 const GratitudeEntrySheet  = lazy(() => import('./diary/GratitudeEntrySheet').then(m => ({ default: m.GratitudeEntrySheet })));
@@ -42,30 +42,32 @@ const PracticesOnboarding  = lazy(() => import('./PracticesOnboarding').then(m =
 
 const LazyLoader = () => <Loader minHeight="100dvh" />;
 
-import type { PracticePlan, StreakData, UserTask } from '../api';
+import type { PracticePlan, StreakData, UserTask, TherapyClientSummary } from '../api';
 
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
 
-type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'help';
+type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
 type TrackerTab = 'today' | 'history';
 
-const NAV_ITEMS: { id: Section; icon: string; label: string }[] = [
-  { id: 'today',   icon: '🏠', label: 'Сегодня' },
-  { id: 'diary',   icon: '📔', label: 'Дневник' },
-  { id: 'schemas', icon: '🧩', label: 'Схемы' },
-  { id: 'help',    icon: '💡', label: 'Помощь' },
+const NAV_ITEMS: { id: Section; label: string }[] = [
+  { id: 'today',    label: 'Сегодня' },
+  { id: 'diary',    label: 'Дневник' },
+  { id: 'schemas',  label: 'Схемы' },
+  { id: 'practice', label: 'Практика' },
 ];
-// Note: 'profile' removed from nav — accessible via sidebar footer avatar block.
+// Note: 'profile' removed from nav – accessible via sidebar footer avatar block.
 // Mobile bottom-nav still includes it (см. ниже).
 
 const SECTION_LABELS: Record<Section, string> = {
-  today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', help: 'Помощь',
+  today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', practice: 'Практика',
 };
 
 function sectionFromPath(path: string): Section {
   const seg = path.split('/').filter(Boolean)[0] ?? 'today';
-  if (['today','diary','schemas','profile','help'].includes(seg)) return seg as Section;
+  if (['today','diary','schemas','profile','practice'].includes(seg)) return seg as Section;
+  // Legacy redirects
+  if (seg === 'help' || seg === 'exercises') return 'practice';
   return 'today';
 }
 
@@ -76,13 +78,6 @@ const YESTERDAY_DATE = (() => {
   const prev = new Date(y, m - 1, d - 1);
   return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
 })();
-
-function formatHeaderDate(): string {
-  const now = new Date();
-  const dow = now.toLocaleDateString('ru-RU', { weekday: 'short' });
-  const date = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-  return `${dow}, ${date}`;
-}
 
 function fillHistoryGaps(h: DayHistory[]): DayHistory[] {
   if (h.length === 0) return h;
@@ -152,9 +147,9 @@ export function AppShell() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [childhoodRatings, setChildhoodRatings] = useState<Record<string, number>>({});
   const [pendingPlans, setPendingPlans] = useState<PracticePlan[]>([]);
-  const [helpPracticeCount, setHelpPracticeCount] = useState<number | null>(null);
-  const [helpPlanCount, setHelpPlanCount] = useState<number | null>(null);
-  const [helpTasks, setHelpTasks] = useState<UserTask[] | null>(null);
+  const [_helpPracticeCount, setHelpPracticeCount] = useState<number | null>(null);
+  const [_helpPlanCount, setHelpPlanCount] = useState<number | null>(null);
+  const [_helpTasks, setHelpTasks] = useState<UserTask[] | null>(null);
   const [helpTasksKey, setHelpTasksKey] = useState(0);
   const [diaryActiveSchemaIds, setDiaryActiveSchemaIds] = useState<string[] | undefined>(undefined);
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(null);
@@ -178,9 +173,11 @@ export function AppShell() {
   const [showDiaries, setShowDiaries] = useState(false);
   const [showChildhoodWheel, setShowChildhoodWheel] = useState(false);
   const [showTodayNote, setShowTodayNote] = useState(false);
-  const [backfillDate, setBackfillDate] = useState<string | null>(null);
   const [newDiaryEntry, setNewDiaryEntry] = useState<'schema' | 'mode' | 'gratitude' | null>(null);
   const [showPracticesOnboarding, setShowPracticesOnboarding] = useState(false);
+
+  // Therapist clients (for sidebar)
+  const [therapistClients, setTherapistClients] = useState<TherapyClientSummary[]>([]);
 
   // Therapist cabinet navigation helpers (URL-based)
   const therapistBackHandlerRef = useRef<() => void>(() => navigate('/cabinet'));
@@ -200,7 +197,7 @@ export function AppShell() {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmdOpen(true); }
       if (!therapistMode && e.metaKey) {
-        const map: Record<string, Section> = { '1': 'today', '2': 'diary', '3': 'schemas', '4': 'profile', '5': 'help' };
+        const map: Record<string, Section> = { '1': 'today', '2': 'diary', '3': 'schemas', '4': 'practice' };
         if (map[e.key]) { e.preventDefault(); setSection(map[e.key] as Section); }
       }
     }
@@ -224,6 +221,11 @@ export function AppShell() {
       api.init(tzOffset).then(() => sessionStorage.setItem('init_done', '1')).catch(() => {});
     }
     api.recordActivity().catch(() => {});
+    // Mirror disclaimer acceptance to server so the Telegram mini-app can skip
+    // its consent screen for users who are already active on the website.
+    api.getDisclaimer().then(d => {
+      if (!d.accepted) api.acceptDisclaimer().catch(() => {});
+    }).catch(() => {});
     const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
     Promise.all(NEED_IDS.map(id => api.getPractices(id)))
       .then(r => setHelpPracticeCount(r.reduce((s, a) => s + a.length, 0))).catch(() => setHelpPracticeCount(0));
@@ -271,6 +273,7 @@ export function AppShell() {
       }
       if (p.role === 'THERAPIST') {
         cacheTherapistContact({ role: 'THERAPIST', partnerId: null, partnerName: null, myId: null, myName: p.name });
+        api.getTherapyClients().then(setTherapistClients).catch(() => {});
       } else {
         api.getTherapyRelation().then(rel => {
           cacheTherapistContact({ role: 'CLIENT', partnerId: rel?.partnerId ?? null, partnerName: rel?.partnerName ?? null, myId: null, myName: null });
@@ -333,7 +336,7 @@ export function AppShell() {
         <div style={{ fontSize: 40 }}>😔</div>
         <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)' }}>Не удалось загрузить</div>
         <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>Проверь подключение и попробуй ещё раз</div>
-        <button onClick={() => window.location.reload()} style={{ padding: '13px 28px', border: 'none', borderRadius: 14, background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={() => window.location.reload()} style={{ padding: '10px 24px', border: 'none', borderRadius: 8, background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
           Повторить
         </button>
       </div>
@@ -365,12 +368,31 @@ export function AppShell() {
               <span>{item.label}</span>
             </NavLink>
           ))}
-          {therapistMode && (
-            <NavLink to="/cabinet"
+          {therapistMode && (<>
+            <NavLink to="/cabinet/today"
                      className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
-              <span>Кабинет</span>
+              <span>Сегодня</span>
             </NavLink>
-          )}
+            <NavLink to="/cabinet" end
+                     className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
+              <span>Все клиенты</span>
+            </NavLink>
+            {therapistClients.length > 0 && (
+              <div className="sb-clients">
+                {therapistClients.map(c => {
+                  const name = c.clientAlias ?? c.name ?? `#${c.telegramId}`;
+                  const activeToday = c.todayIndex != null;
+                  return (
+                    <NavLink key={c.telegramId} to={`/cabinet/${c.telegramId}`}
+                             className={({ isActive }) => `sb-item sb-client-item${isActive ? ' is-active' : ''}`}>
+                      {activeToday && <span className="sb-active-dot" />}
+                      <span className="sb-client-name">{name}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
+            )}
+          </>)}
         </nav>
 
         <div className="sb-foot">
@@ -381,6 +403,9 @@ export function AppShell() {
               <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>
             </div>
           </NavLink>
+          <button className="sb-item" onClick={() => setShowSettings(true)} style={{ marginTop: 2 }}>
+            <span>Настройки</span>
+          </button>
           <NavLink to="/account" className="sb-item" style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
             <span>Аккаунт и привязки</span>
           </NavLink>
@@ -388,12 +413,17 @@ export function AppShell() {
                   style={{ marginTop: 2, color: 'var(--c-rose)' }}>
             <span>Выйти</span>
           </button>
+          <div style={{ display: 'flex', gap: 12, padding: '8px 0 0', borderTop: '1px solid var(--line)', marginTop: 4 }}>
+            <a href="/privacy" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Конфиденциальность</a>
+            <a href="/offer" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
+          </div>
         </div>
       </aside>
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
-      <div className="main">
-        {/* Topbar */}
+      <div className={`main${therapistMode ? ' main--cabinet' : ''}`}>
+        {/* Topbar – hidden in therapist mode (cabinet has its own header) */}
+        {!therapistMode && (
         <div className="topbar">
           <div className="crumbs">
             {breadcrumbs.map((c, i) => (
@@ -413,13 +443,20 @@ export function AppShell() {
             <span className="kbd">⌘K</span>
           </button>
         </div>
+        )}
 
         {/* Canvas */}
         <div className="canvas">
         <Suspense fallback={<LazyLoader />}>
 
         {/* Therapist mode */}
-        {therapistMode && (
+        {therapistMode && location.pathname === '/cabinet/today' && (
+          <TherapistTodaySection
+            displayName={displayName}
+            onOpenClient={(id) => navigate('/cabinet/' + id)}
+          />
+        )}
+        {therapistMode && location.pathname !== '/cabinet/today' && (
           <TherapistClientSheet
             view={openClientId ? 'client' : 'list'}
             openClientId={openClientId}
@@ -427,6 +464,7 @@ export function AppShell() {
             onOpenClient={(id) => navigate('/cabinet/' + id)}
             onClose={() => switchTherapistMode(false)}
             backHandlerRef={therapistBackHandlerRef}
+            onClientsChange={setTherapistClients}
           />
         )}
 
@@ -467,28 +505,24 @@ export function AppShell() {
             )}
             {section === 'profile' && (
               <ProfileSection
-                onOpenSettings={() => setShowSettings(true)}
                 onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
                 refreshKey={profileRefreshKey}
                 displayName={displayName}
               />
             )}
-            {section === 'help' && (
-              <HelpSection
-                onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
-                onOpenPractices={() => setShowPractices(true)}
-                onOpenPlans={() => setShowPlans(true)}
-                onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-                onOpenDiaries={() => setShowDiaries(true)}
-                onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setSchemaHighlight(opts?.highlight); setShowSchemaInfo(true); }}
-                practiceCount={helpPracticeCount}
-                planCount={helpPlanCount}
-                initialTasks={helpTasks}
-                refreshKey={helpTasksKey}
-                onTasksChanged={() => { api.getTasks().then(setHelpTasks).catch(() => {}); setHelpTasksKey(k => k + 1); }}
-                userRole={userRole}
-                onOpenTherapistCabinet={() => { switchTherapistMode(true); }}
-              />
+            {section === 'practice' && (
+              <ErrorBoundary section="Практика" key="practice-boundary">
+                <PracticeSection
+                  onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
+                  onOpenPractices={() => setShowPractices(true)}
+                  onOpenPlans={() => setShowPlans(true)}
+                  onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
+                  onOpenDiaries={() => setShowDiaries(true)}
+                  onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setShowSchemaInfo(true); }}
+                  refreshKey={helpTasksKey}
+                  onTasksChanged={() => { api.getTasks().then(setHelpTasks).catch(() => {}); setHelpTasksKey(k => k + 1); }}
+                />
+              </ErrorBoundary>
             )}
           </div>
         )}
@@ -513,82 +547,31 @@ export function AppShell() {
 
         {/* ── History overlay ── */}
         {showTracker && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-            <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
-                <div>
-                  <div className="eyebrow" style={{ marginBottom: 8 }}>Трекер</div>
-                  <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 10 }}>История потребностей</h1>
-                  <div className="text-md muted">{formatHeaderDate()}</div>
-                </div>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <button
-                    onClick={() => { setShowTracker(false); setTrackerTab('today'); setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-                    className="btn btn-primary"
-                  >
-                    Оценить →
-                  </button>
-                  <button onClick={() => { setShowTracker(false); setTrackerTab('today'); }} className="btn btn-secondary">
-                    Закрыть
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {historyLoading
-              ? <Loader minHeight="60vh" />
-              : <HistoryView
-                  needs={needs}
-                  history={history}
-                  currentRatings={ratings}
-                  childhoodRatings={childhoodRatings}
-                  onOpenSchemas={() => setShowSchemaInfo(true)}
-                  onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
-                  onGoToToday={() => { setShowTracker(false); setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-                  onBackfill={(date) => setBackfillDate(date)}
-                />
-            }
-            <div style={{ height: 80 }} />
-
-            {pendingPlans.length > 0 && needs.length > 0 && (() => {
-              const plan = pendingPlans.find(p => p.scheduledDate < TODAY_DATE);
-              if (!plan) return null;
-              const need = needs.find(n => n.id === plan.needId);
-              if (!need) return null;
-              return (
-                <CheckInSheet
-                  plan={plan}
-                  needEmoji={need.emoji ?? ''}
-                  needLabel={need.chartLabel}
-                  color={COLORS[need.id] ?? '#888'}
-                  onDone={() => setPendingPlans(prev => prev.filter(p => p.id !== plan.id))}
-                />
-              );
-            })()}
-
-            {backfillDate && (
-              <TrackerOverlay
-                needs={needs} ratings={{}} saved={{}}
-                onChange={() => {}} onSaved={() => {}}
-                date={backfillDate}
-                onClose={() => setBackfillDate(null)}
-                onDone={() => {
-                  setBackfillDate(null);
-                  setHistoryLoading(true);
-                  api.history(historyDays).then(h => setHistory(fillHistoryGaps(h))).finally(() => setHistoryLoading(false));
-                }}
-              />
-            )}
-          </div>
+          <Suspense fallback={null}>
+            <HistorySheet
+              needs={needs}
+              history={history}
+              historyLoading={historyLoading}
+              ratings={ratings}
+              childhoodRatings={childhoodRatings}
+              pendingPlans={pendingPlans}
+              todayDate={TODAY_DATE}
+              historyDays={historyDays}
+              onClose={() => { setShowTracker(false); setTrackerTab('today'); }}
+              onOpenTracker={() => { setTrackerTab('today'); setTrackerNeedId(null); setShowTrackerOverlay(true); }}
+              onOpenSchemas={() => setShowSchemaInfo(true)}
+              onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
+              onDismissPlan={(id) => setPendingPlans(prev => prev.filter(p => p.id !== id))}
+              onHistoryRefreshed={(h) => { setHistory(h); setHistoryLoading(false); }}
+            />
+          </Suspense>
         )}
 
         {/* ── Diaries overlay ── */}
         {showDiaries && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
-            <ErrorBoundary section="Дневник" key="diary-overlay-boundary">
-              <DiarySection onClose={() => setShowDiaries(false)} />
-            </ErrorBoundary>
-          </div>
+          <Suspense fallback={null}>
+            <DiariesOverlay onClose={() => setShowDiaries(false)} />
+          </Suspense>
         )}
 
         {/* ── Fullscreen overlays ── */}
@@ -625,11 +608,12 @@ export function AppShell() {
           />
         )}
         {showChildhoodWheel && (
-          <ChildhoodWheelSheet
-            onClose={() => setShowChildhoodWheel(false)}
-            onOpenSchemas={() => { setShowChildhoodWheel(false); setShowSchemaInfo(true); }}
-            onSaved={(r) => setChildhoodRatings(r)}
-          />
+          <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+            <ChildhoodWheelEx
+              onBack={() => setShowChildhoodWheel(false)}
+              onSaved={(r) => setChildhoodRatings(r)}
+            />
+          </div>
         )}
         {showTodayNote && (
           <NoteSheet date={TODAY_DATE} onClose={() => {
@@ -700,7 +684,6 @@ export function AppShell() {
             to={'/' + item.id}
             className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}`}
           >
-            <span className="mn-icon">{item.icon}</span>
             {item.label}
           </NavLink>
         ))}
@@ -712,6 +695,11 @@ export function AppShell() {
           section={section}
           onNavigate={(s) => { setSection(s); }}
           onClose={() => setCmdOpen(false)}
+          userRole={userRole}
+          therapistMode={therapistMode}
+          onToggleMode={() => switchTherapistMode(!therapistMode)}
+          onOpenClient={(id) => { navigate('/cabinet/' + id); }}
+          onNewDiaryEntry={() => { navigate('/diary'); }}
         />
       )}
     </div>

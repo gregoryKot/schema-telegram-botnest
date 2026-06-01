@@ -36,6 +36,10 @@
 
 ## Безопасность
 
+> Полный security-плейбук — модель угроз, инварианты аутентификации/авторизации,
+> анти-паттерны, чеклист перед деплоем, реагирование на инциденты — в [SECURITY.md](SECURITY.md).
+> Читать перед изменением auth/api/therapy-кода.
+
 - Все env-переменные читаются через `ConfigService` или `process.env` — не хардкодить значения.
 - Данные из callback_data (needId, value) всегда валидируются перед использованием.
 - Команды с побочными эффектами (например `/post`) защищены проверкой `ADMIN_ID`.
@@ -89,6 +93,51 @@
 - Переходы между экранами — `editMessageText`, не `reply` (не засорять чат).
 - Callback data формат: `действие:параметр` (например `need:safety`, `rate:safety:7`).
 - Константы (`CHANNEL`, `BOOKING_URL`) — в начале файла, не inline в коде.
+
+## Новый fullscreen-лист или оверлей в webapp (ОБЯЗАТЕЛЬНО)
+
+Любой компонент с `position: fixed, inset: 0` (sheet, экран упражнения, оверлей) **обязан** использовать хук `useHistorySheet` — иначе кнопка «Назад» в браузере уведёт пользователя из приложения.
+
+```tsx
+import { useHistorySheet } from '../hooks/useHistorySheet'; // путь от компонента
+
+export function MySheet({ onClose }: { onClose: () => void }) {
+  const goBack = useHistorySheet(onClose);
+  // ...
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, ... }}>
+      <button onClick={goBack}>Назад</button>   {/* НЕ onClick={onClose} */}
+    </div>
+  );
+}
+```
+
+Правила:
+- Хук вызывается **один раз** в теле компонента, принимает функцию закрытия (`onClose` / `onBack` / `onDone`).
+- Все кнопки «Назад» и «Закрыть» внутри листа используют `goBack()`, **не** `onClose()` напрямую.
+- Если лист закрывается после сохранения (`await api.save(); goBack()`), тоже `goBack()`.
+- Исключение: внутренние мини-модалки поверх листа (тёмный backdrop для подтверждения) — у них свой локальный `onClose`, хук там не нужен.
+
+**Важно — не использовать `history.pushState` или `window.addEventListener('popstate')` напрямую.**
+Хук работает через `useNavigate`/`useLocation` из react-router-dom. Прямой вызов `history.pushState` конфликтует с React Router: при нажатии «Назад» срабатывают оба обработчика одновременно — лист закрывается И роутер уходит на предыдущий раздел.
+
+## Деплой webapp
+
+`webapp/dist/` **не хранится в git** — Amvera сама собирает webapp из исходников через
+`RUN npm run build --prefix webapp` в `Dockerfile`.
+
+Деплой = обычный `git push` (на origin или amvera):
+
+```bash
+git push           # → GitHub (origin)
+git push amvera main  # → Amvera (триггерит пересборку Docker-образа)
+```
+
+Локальная сборка нужна только для проверки что нет ошибок TypeScript/Vite:
+
+```bash
+cd webapp && node_modules/.bin/vite build
+```
 
 ## БД
 

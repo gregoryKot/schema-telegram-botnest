@@ -23,7 +23,11 @@ export class VkProvider implements AuthProviderHandler {
 
   private readonly verifiers = new Map<string, { verifier: string; expiresAt: number }>();
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService) {
+    // Sweep expired verifiers every 15 min so the map doesn't grow unboundedly
+    // on sustained traffic where buildAuthUrl is never paired with a callback.
+    setInterval(() => this.prune(), 15 * 60_000).unref();
+  }
 
   private prune(): void {
     const now = Date.now();
@@ -87,6 +91,7 @@ export class VkProvider implements AuthProviderHandler {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
+      signal: AbortSignal.timeout(10_000),
     });
     const tokenData = await tokenRes.json() as {
       access_token?: string; user_id?: number; email?: string;
@@ -106,6 +111,7 @@ export class VkProvider implements AuthProviderHandler {
           access_token: tokenData.access_token,
           client_id: clientId,
         }).toString(),
+        signal: AbortSignal.timeout(10_000),
       });
       if (infoRes.ok) {
         const info = await infoRes.json() as { user?: { first_name?: string; last_name?: string } };

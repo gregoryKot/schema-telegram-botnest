@@ -13,6 +13,7 @@ import {
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
@@ -26,8 +27,16 @@ const REFRESH_COOKIE = 'refresh_token';
 const CSRF_HEADER = 'x-requested-with';
 
 function hasCsrfHeader(req: any): boolean {
+  // Primary check: x-requested-with header set by our webapp fetch calls.
   const v = req.headers?.[CSRF_HEADER];
-  return typeof v === 'string' && v.length > 0;
+  if (typeof v === 'string' && v.length > 0) return true;
+  // Fallback: Content-Type: application/json is also CSRF-safe.
+  // Cross-origin form submissions cannot set this content-type without
+  // triggering a CORS preflight, which our server rejects for unknown origins.
+  // Reverse proxies (e.g. Amvera load balancer) may strip x-requested-with,
+  // but they never strip Content-Type — it's required for request parsing.
+  const ct = String(req.headers?.['content-type'] ?? '');
+  return ct.startsWith('application/json');
 }
 
 function cookieOptions(maxAgeS: number) {
@@ -117,10 +126,20 @@ export class AuthController {
     const handler = this.providers.get(provider);
     if (!handler.buildAuthUrl) throw new BadRequestException(`Provider ${provider} doesn't support OAuth`);
     const state = Buffer.from(JSON.stringify({
-      nonce: Math.random().toString(36).slice(2),
+      nonce: randomBytes(16).toString('hex'),
       linkUserId: (req as any).webUser?.userId?.toString() ?? null,
     })).toString('base64url');
     res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+
+    // Google uses response_mode=form_post so we need an idTokenNonce in a
+    // SameSite=None cookie (the browser must send it on the cross-site POST).
+    if (provider === 'google') {
+      const idTokenNonce = randomBytes(16).toString('hex');
+      res.cookie('google_nonce', idTokenNonce, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+      res.redirect(handler.buildAuthUrl(state, idTokenNonce));
+      return;
+    }
+
     res.redirect(handler.buildAuthUrl(state));
   }
 
@@ -183,12 +202,56 @@ export class AuthController {
     return this.oauthRedirect('google', req, res);
   }
 
-  @Get('google/callback')
-  async googleCallback(
-    @Query('code') code: string, @Query('state') state: string,
-    @Query('error') error: string, @Req() req: any, @Res() res: any,
+  // Google uses response_mode=form_post — the browser POSTs id_token here.
+  // No server→Google network call needed: we verify the JWT locally via JWKS.
+  @Post('google/callback')
+  @HttpCode(302)
+  async googleCallbackPost(
+    @Body('id_token') idToken: string,
+    @Body('state') state: string,
+    @Body('error') error: string,
+    @Req() req: any, @Res() res: any,
   ): Promise<void> {
-    return this.oauthCallback('google', code, state, error, req, res);
+    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+    try {
+      const handler = this.providers.get('google');
+      if (!handler.verifyIdToken) throw new BadRequestException('Google does not support id_token flow');
+      if (error) throw new UnauthorizedException(`google auth denied: ${error}`);
+      if (!idToken) throw new BadRequestException('Missing id_token');
+
+      const expectedNonce = req.cookies?.['google_nonce'];
+      if (!expectedNonce) throw new UnauthorizedException('Missing google_nonce cookie');
+      res.clearCookie('google_nonce', { path: '/api/auth' });
+
+      const identity = await handler.verifyIdToken(idToken, expectedNonce);
+
+      let linkUserId: bigint | null = null;
+      try {
+        const raw = JSON.parse(Buffer.from(state ?? '', 'base64url').toString()).linkUserId;
+        if (raw) linkUserId = BigInt(raw);
+      } catch { /* ignore */ }
+
+      const outcome = await this.signInOrLinkOrMerge('google', identity, {
+        linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
+      });
+
+      if (outcome.kind === 'merge') {
+        const params = new URLSearchParams({
+          token: outcome.mergeToken,
+          summary: JSON.stringify(outcome.summary),
+          provider: 'google',
+          name: outcome.otherDisplay ?? '',
+        });
+        res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
+        return;
+      }
+
+      res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+      res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
+    } catch (err) {
+      this.logger.error(`google callback error: ${(err as Error).message}`);
+      res.redirect(`${frontendBase}/auth/error?reason=google_failed`);
+    }
   }
 
   // ─── VK OAuth ─────────────────────────────────────────────────────────────
@@ -248,6 +311,74 @@ export class AuthController {
     }
   }
 
+  // ─── Telegram OIDC (new flow, PKCE) ──────────────────────────────────────
+
+  @Get('telegram-oidc')
+  @UseGuards(OptionalJwtGuard)
+  telegramOidcRedirect(@Req() req: any, @Res() res: any): void {
+    const provider = this.providers.get('telegram-oidc') as any;
+    const state = Buffer.from(JSON.stringify({
+      nonce: randomBytes(16).toString('hex'),
+      linkUserId: (req as any).webUser?.userId?.toString() ?? null,
+    })).toString('base64url');
+    const { verifier, challenge } = provider.generatePkce();
+    res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+    res.cookie('tg_pkce_verifier', verifier, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+    res.redirect(provider.buildAuthUrl(state, challenge));
+  }
+
+  @Get('telegram-oidc/callback')
+  async telegramOidcCallback(
+    @Query('code') code: string,
+    @Query('state') state: string,
+    @Query('error') error: string,
+    @Req() req: any, @Res() res: any,
+  ): Promise<void> {
+    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+    try {
+      if (error) throw new UnauthorizedException(`Telegram OIDC auth denied: ${error}`);
+      if (!code || !state) throw new BadRequestException('Missing code or state');
+
+      const savedState = req.cookies?.['oauth_state'];
+      if (!savedState || savedState !== state) throw new UnauthorizedException('OAuth state mismatch');
+      res.clearCookie('oauth_state', { path: '/api/auth' });
+
+      const codeVerifier = req.cookies?.['tg_pkce_verifier'];
+      if (!codeVerifier) throw new UnauthorizedException('Missing PKCE verifier');
+      res.clearCookie('tg_pkce_verifier', { path: '/api/auth' });
+
+      const provider = this.providers.get('telegram-oidc') as any;
+      const identity = await provider.exchangeCodePkce(code, codeVerifier);
+
+      let linkUserId: bigint | null = null;
+      try {
+        const raw = JSON.parse(Buffer.from(state, 'base64url').toString()).linkUserId;
+        if (raw) linkUserId = BigInt(raw);
+      } catch { /* ignore */ }
+
+      const outcome = await this.signInOrLinkOrMerge('telegram-oidc', identity, {
+        linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
+      });
+
+      if (outcome.kind === 'merge') {
+        const params = new URLSearchParams({
+          token: outcome.mergeToken,
+          summary: JSON.stringify(outcome.summary),
+          provider: 'telegram-oidc',
+          name: outcome.otherDisplay ?? '',
+        });
+        res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
+        return;
+      }
+
+      res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+      res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
+    } catch (err) {
+      this.logger.error(`telegram-oidc callback error: ${(err as Error).message}`);
+      res.redirect(`${frontendBase}/auth/error?reason=telegram_oidc_failed`);
+    }
+  }
+
   // ─── Telegram Login Widget ────────────────────────────────────────────────
 
   @Post('telegram/widget')
@@ -259,7 +390,10 @@ export class AuthController {
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ): Promise<any> {
-    const identity = this.providers.get('telegram').verifyClientData!(body);
+    this.requireCsrf(req, 'telegram/widget');
+    const telegramHandler = this.providers.get('telegram');
+    if (!telegramHandler.verifyClientData) throw new BadRequestException('Telegram provider does not support direct verification');
+    const identity = telegramHandler.verifyClientData(body);
     const linkUserId = (req as any).webUser?.userId ?? null;
 
     const outcome = await this.signInOrLinkOrMerge('telegram', identity, {
@@ -282,6 +416,7 @@ export class AuthController {
 
   // ─── Telegram WebApp initData (mini-app auto-auth) ────────────────────────
 
+  @Throttle({ short: { limit: 5, ttl: 60_000 }, long: { limit: 30, ttl: 3_600_000 } })
   @Post('telegram/webapp')
   @HttpCode(200)
   async telegramWebApp(
@@ -335,8 +470,10 @@ export class AuthController {
       await this.merge.merge(source, target);
     } catch (err) {
       const msg = (err as Error).message ?? 'merge failed';
+      // Full error → logs + admin alert (AlertLogger picks up .error).
       this.logger.error(`merge ${source} → ${target} failed: ${msg}`, (err as Error).stack);
-      throw new BadRequestException(`Merge failed: ${msg}`);
+      // Friendly message to client — no Prisma internals leaked.
+      throw new BadRequestException('Не удалось объединить аккаунты. Админ уведомлён — попробуйте позже.');
     }
 
     // 2. Link the provider that triggered the merge to the target user.
@@ -433,7 +570,12 @@ export class AuthController {
           const tokens = await this.auth.rotateRefreshToken(rawRefresh);
           const { userId } = this.auth.verifyAccessToken(tokens.accessToken);
           await this.auth.revokeAllSessions(userId as bigint);
-        } catch { /* token may already be invalid */ }
+        } catch (err) {
+          if (!(err instanceof UnauthorizedException)) {
+            this.logger.error(`logout all-sessions error: ${(err as Error).message}`, err);
+          }
+          // UnauthorizedException = token already invalid, fine to continue logout
+        }
       } else {
         await this.auth.revokeSession(rawRefresh);
       }
@@ -469,7 +611,6 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async issueLinkToken(@Req() req: any): Promise<{ linkToken: string; expiresIn: number }> {
     const webUser: WebUser = req.webUser;
-    const tokens = await this.auth.issueTokens(webUser.userId as bigint, req.ip, req.headers['user-agent']);
-    return { linkToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+    return { linkToken: this.auth.buildLinkToken(webUser.userId as bigint), expiresIn: 60 };
   }
 }

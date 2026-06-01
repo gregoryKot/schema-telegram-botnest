@@ -1,4 +1,4 @@
-// NeedDial.tsx — Arc gauge component for needs tracker
+// NeedDial.tsx – Arc gauge component for needs tracker
 // Place at: src/components/NeedDial.tsx
 //
 // Usage:
@@ -6,7 +6,6 @@
 
 import React, { useCallback, useRef } from 'react';
 import type { Need } from '../types';
-import { NEED_DATA } from '../needData';
 
 interface Props {
   need: Need;
@@ -19,8 +18,8 @@ interface Props {
 // ── Arc geometry constants ────────────────────────────────────────────────────
 const DEFAULT_SIZE = 280;
 const STROKE = 13;
-const ARC_START  = 135;  // degrees — bottom-left
-const ARC_SWEEP  = 270;  // degrees — ¾ circle
+const ARC_START  = 135;  // degrees – bottom-left
+const ARC_SWEEP  = 270;  // degrees – ¾ circle
 
 function polarXY(cx: number, cy: number, r: number, deg: number): [number, number] {
   const rad = (deg - 90) * Math.PI / 180;
@@ -123,7 +122,7 @@ export function NeedDial({ need, color, value, onChange, size = DEFAULT_SIZE }: 
         {/* Track arc */}
         <path d={arcPath(cx, cy, r, ARC_START, ARC_SWEEP)}
           fill="none" strokeWidth={STROKE} strokeLinecap="round"
-          style={{ stroke: 'var(--track-color)' }} />
+          stroke="rgba(var(--fg-rgb),0.1)" />
 
         {/* Tick marks */}
         {Array.from({ length: 11 }, (_, i) => {
@@ -160,26 +159,37 @@ export function NeedDial({ need, color, value, onChange, size = DEFAULT_SIZE }: 
         alignItems: 'center', justifyContent: 'center',
         pointerEvents: 'none',
       }}>
-        <div style={{
-          fontSize: 11, fontWeight: 500, letterSpacing: '0.02em',
-          color: 'var(--text-faint)', marginBottom: 6,
-          textAlign: 'center', maxWidth: 120, lineHeight: 1.3,
-        }}>
-          {NEED_DATA[need.id]?.subtitle ?? need.chartLabel}
-        </div>
-        <div style={{
-          fontSize: 76, fontWeight: 600, letterSpacing: '-4px', lineHeight: 1,
-          color: value > 0 ? 'var(--text)' : 'var(--text-faint)',
-          fontVariantNumeric: 'tabular-nums', transition: 'color 0.3s',
-        }}>
-          {value}
-        </div>
-        <div style={{
-          fontSize: 12, fontWeight: 600, color: levelColor,
-          marginTop: 8, transition: 'color 0.3s',
-        }}>
-          {levelLabel}
-        </div>
+        {value === 0 ? (
+          <>
+            <div style={{ fontSize: 32, lineHeight: 1, marginBottom: 8 }}>
+              {need.emoji}
+            </div>
+            <div style={{
+              fontSize: 12, color: 'var(--text-faint)', textAlign: 'center',
+              maxWidth: 100, lineHeight: 1.4, fontWeight: 500,
+            }}>
+              тап по дуге
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{
+              fontFamily: 'var(--serif)', fontSize: 72, fontWeight: 400,
+              letterSpacing: '-3px', lineHeight: 1,
+              color: 'var(--text)',
+              fontVariantNumeric: 'tabular-nums',
+              transition: 'color 0.3s',
+            }}>
+              {value}
+            </div>
+            <div style={{
+              fontSize: 12, fontWeight: 600, color: levelColor,
+              marginTop: 6, transition: 'color 0.3s',
+            }}>
+              {levelLabel}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

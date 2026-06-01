@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
 import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
 import { NEED_DATA } from '../needData';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
-import { BottomSheet } from '../components/BottomSheet';
-import { ModeIntroSheet } from '../components/ModeIntroSheet';
-import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
+import { GlyphArrowLeft } from '../components/exercises/ExScreen';
+
+const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 
 /** color-mix: works with CSS vars AND hex. Replaces the old hex-alpha hack. */
 function cm(color: string, pct: number) {
@@ -60,7 +61,6 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const [showModePicker, setShowModePicker]     = useState(false);
   const [introModeId, setIntroModeId]     = useState<string | null>(null);
   const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
-  const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [detailNeedId, setDetailNeedId]   = useState<string | null>(null);
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
 
@@ -106,12 +106,15 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 36 }}>
         <div>
-          <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 6 }}>
-            Паттерны
+          <div className="eyebrow" style={{ marginBottom: 8 }}>
+            <span style={{ color: 'var(--accent)' }}>● </span>Схема-терапия
+          </div>
+          <h1 className="hub-title" style={{ marginBottom: 8 }}>
+            Мои<br /><span className="it">паттерны</span>
           </h1>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>Схемы, режимы, потребности</div>
+          <p className="hub-sub" style={{ margin: 0 }}>Схемы, режимы, потребности</p>
         </div>
-        <button onClick={() => onOpenSchema()} className="btn btn-secondary">
+        <button onClick={() => onOpenSchema()} className="btn btn-secondary" style={{ marginTop: 14 }}>
           📖 <span>Библиотека</span>
         </button>
       </div>
@@ -154,7 +157,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                       <div style={{ width: `${score}%`, height: '100%', background: c, borderRadius: 4 }} />
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 500, color: c, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {score > 0 ? `${score}%` : '—'}
+                      {score > 0 ? `${score}%` : '–'}
                     </span>
                   </div>
                 );
@@ -172,7 +175,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             </button>
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-            {ysqCompletedAt ? '116 вопросов · определяет активные схемы автоматически' : 'Определи схемы автоматически — 116 вопросов, 10 минут'}
+            {ysqCompletedAt ? '116 вопросов · определяет активные схемы автоматически' : 'Определи схемы автоматически – 116 вопросов, 10 минут'}
           </div>
         </div>
 
@@ -415,19 +418,16 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       )}
 
       {introModeId && (
-        <ModeIntroSheet modeId={introModeId} onClose={() => setIntroModeId(null)} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} /></Suspense>
+        </div>
       )}
 
       {detailSchemaId && (
         <SchemaDetailSheet
           schemaId={detailSchemaId}
           onClose={() => setDetailSchemaId(null)}
-          onOpenDiary={() => setIntroSchemaId(detailSchemaId)}
         />
-      )}
-
-      {introSchemaId && (
-        <SchemaIntroSheet schemaId={introSchemaId} onClose={() => setIntroSchemaId(null)} />
       )}
 
       {detailNeedId && (
@@ -447,7 +447,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
 const POPULAR_MODE_IDS = ['vulnerable_child', 'detached_protector', 'demanding_critic', 'abandoned_child', 'compliant_surrenderer'];
 
 const MODE_DESC: Record<string, string> = {
-  vulnerable_child:      'Беспомощность, грусть, страх — нуждается в защите',
+  vulnerable_child:      'Беспомощность, грусть, страх – нуждается в защите',
   lonely_child:          'Одиночество и непонятость даже среди людей',
   abandoned_child:       'Страх быть брошенным, тревога при угрозе отношениям',
   humiliated_child:      'Стыд и ощущение дефективности, страх осуждения',
@@ -467,7 +467,7 @@ const MODE_DESC: Record<string, string> = {
   overcontroller:        'Стремится всё контролировать, тревожится от неопределённости',
   perfectionistic_oc:    'Недостижимые стандарты, страх малейшей ошибки',
   suspicious_oc:         'Постоянная настороженность, ищет скрытые угрозы',
-  invincible_oc:         'Отрицает слабость — должен быть сильным всегда',
+  invincible_oc:         'Отрицает слабость – должен быть сильным всегда',
   flagellating_oc:       'Наказывает себя за ошибки строже чем нужно',
   compulsive_oc:         'Навязчивые ритуалы и действия для снижения тревоги',
   worrying_oc:           'Хроническое беспокойство о будущих катастрофах',
@@ -485,16 +485,25 @@ const MODE_DESC: Record<string, string> = {
 };
 
 function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; onSave: (ids: string[]) => void; onClose: () => void }) {
+  const goBack = useHistorySheet(onClose);
   const [ids, setIds] = useState<string[]>(selected);
   const toggle = (id: string) => setIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   return (
-    <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 4 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Мои режимы</div>
-        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 20, lineHeight: 1.5 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+          <GlyphArrowLeft /> Назад
+        </button>
+        <button onClick={() => { onSave(ids); goBack(); }} className="ex-btn ex-btn-primary" style={{ padding: '7px 20px' }}>
+          Сохранить{ids.length > 0 ? ` · ${ids.length}` : ''}
+        </button>
+      </div>
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '36px 24px 80px' }}>
+        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>Мои режимы</h1>
+        <p style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 28, lineHeight: 1.6 }}>
           Выбери режимы которые ты замечаешь у себя.
-        </div>
+        </p>
 
         <div style={{ marginBottom: 20 }}>
           <div className="eyebrow" style={{ marginBottom: 8 }}>
@@ -549,10 +558,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
           );
         })}
 
-        <button onClick={() => { onSave(ids); onClose(); }} style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg, var(--accent), var(--accent-blue))', color: '#fff', fontSize: 16, fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>
-          Сохранить{ids.length > 0 ? ` (${ids.length})` : ''}
-        </button>
       </div>
-    </BottomSheet>
+    </div>
   );
 }

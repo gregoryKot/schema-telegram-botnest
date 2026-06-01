@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { BottomSheet } from '../BottomSheet';
+import { ExScreen, GlyphCheck } from '../exercises/ExScreen';
+import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { EMOTIONS, INTENSITY_LABELS, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import type { EmotionEntry } from '../../types';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
@@ -23,39 +24,6 @@ interface Props {
   }) => Promise<void>;
 }
 
-const COLOR = 'var(--accent-red)';
-
-function StepLabel({ step, title, hint, required }: { step: number; title: string; hint?: string; required?: boolean }) {
-  return (
-    <div style={{ marginTop: 22, marginBottom: 9, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-      <div style={{
-        width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-        background: 'color-mix(in srgb, var(--accent-red) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-red) 30%, transparent)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, fontWeight: 700, color: 'var(--accent-red)', marginTop: 1,
-      }}>
-        {step}
-      </div>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-          {title}
-          {required && <span style={{ color: 'var(--accent-red)', marginLeft: 4, fontSize: 12 }}>*</span>}
-        </div>
-        {hint && <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>{hint}</div>}
-      </div>
-    </div>
-  );
-}
-
-function Area({ value, onChange, placeholder, rows = 3 }: { value: string; onChange: (v: string) => void; placeholder: string; rows?: number }) {
-  return (
-    <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="field-input" style={{
-      width: '100%', background: 'rgba(var(--fg-rgb),0.05)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-      borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14, lineHeight: 1.5, outline: 'none',
-    }} />
-  );
-}
-
 interface DraftData {
   trigger: string;
   emotions: EmotionEntry[];
@@ -71,6 +39,7 @@ interface DraftData {
 }
 
 export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
+  const goBack = useHistorySheet(onClose);
   const existing = loadDraft<DraftData>('schema');
   const draft = existing?.data ?? null;
 
@@ -83,7 +52,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   const [schemaOrigin, setSchemaOrigin] = useState(draft?.schemaOrigin ?? '');
   const [healthyView, setHealthyView] = useState(draft?.healthyView ?? '');
   const [realProblems, setRealProblems] = useState(draft?.realProblems ?? '');
-  const [excessiveReactions, setExcessiveReactions] = useState(draft?.excessiveReactions ?? '');
+  const [excessiveReactions] = useState(draft?.excessiveReactions ?? '');
   const [healthyBehavior, setHealthyBehavior] = useState(draft?.healthyBehavior ?? '');
   const [saving, setSaving] = useState(false);
   const [showAllSchemas, setShowAllSchemas] = useState(false);
@@ -122,8 +91,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
     setSaving(true);
     try {
       await onSave({
-        trigger,
-        emotions,
+        trigger, emotions,
         thoughts: thoughts || undefined,
         bodyFeelings: bodyFeelings || undefined,
         actualBehavior: actualBehavior || undefined,
@@ -139,109 +107,180 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
       haptic.error();
     } finally {
       setSaving(false);
-      onClose();
+      goBack();
     }
   };
 
-  const hasDraft = !!(draft && Object.values(draft).some(v =>
-    Array.isArray(v) ? v.length > 0 : typeof v === 'string' && v.trim().length > 0
-  ));
-
   return (
-    <BottomSheet onClose={onClose}>
-      <div>
-        {/* Sticky header */}
-        <div style={{
-          position: 'sticky', top: 0, zIndex: 5,
-          background: 'var(--sheet-bg)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          paddingTop: 4, paddingBottom: 12,
-          borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
-          marginBottom: 8,
-        }}>
-          <div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Дневник схем</div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-              {hasDraft ? 'Продолжаем с того места' : 'С чего начнём?'}
-            </div>
-          </div>
-          <button onClick={handleSave} disabled={!canSave || saving} style={{
-            padding: '9px 18px', borderRadius: 12, border: 'none',
-            background: canSave ? COLOR : 'rgba(var(--fg-rgb),0.08)',
-            color: canSave ? '#fff' : 'rgba(var(--fg-rgb),0.25)',
-            fontSize: 13, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', flexShrink: 0,
-          }}>
-            {saving ? 'Сохраняю...' : 'Сохранить'}
-          </button>
+    <ExScreen
+      onBack={goBack}
+      backLabel="Назад к дневнику"
+      eyebrow="Дневник схем · новая запись"
+      eyebrowColor="var(--c-rose)"
+      title={<>Записать<br /><span className="it">момент</span></>}
+      lede="Поймал триггер – приходи сюда. Десять полей, заполняй сколько успеешь. Обязательное только первое."
+      aside={
+        <div className="aside-card" style={{ borderColor: 'var(--c-rose)40', background: 'var(--c-rose)08', position: 'sticky', top: 40 }}>
+          <div className="aside-card-eyebrow" style={{ color: 'var(--c-rose)' }}>Совет</div>
+          <h3>Не обязательно по порядку</h3>
+          <p className="body">Если в моменте трудно – запиши только триггер и чувство. Остальное можно дополнить позже, или когда тебе кто-то поможет это разобрать.</p>
+          <ul>
+            <li>Автосохранение каждые 5 сек</li>
+            <li>Можно вернуться и продолжить</li>
+            <li>Никто кроме тебя не увидит</li>
+          </ul>
         </div>
+      }
+    >
+      {/* ─── I. Что случилось ─── */}
+      <div className="flow-section-head first">
+        <span className="flow-section-num">I.</span>
+        <div>
+          <div className="flow-section-title">Что случилось</div>
+          <div className="flow-section-sub">Внешняя сторона события – ситуация, чувства, тело, твоя реакция.</div>
+        </div>
+      </div>
 
-        <StepLabel step={1} title="Что случилось?" hint="опиши ситуацию — где, с кем, когда" required />
-        <Area value={trigger} onChange={setTrigger} placeholder="Что произошло? Где ты был/а, с кем, в какой момент?" rows={3} />
+      <div className="prompt">
+        <div className="prompt-num">1.</div>
+        <div>
+          <div className="prompt-label">Опиши ситуацию <span style={{ color: 'var(--c-rose)', marginLeft: 2 }}>*</span></div>
+          <p className="prompt-hint">Что произошло? Где, с кем, в какой момент. Конкретно – не обобщай.</p>
+          <textarea
+            className={'paper-input ' + (trigger.trim() ? 'is-filled' : '')}
+            rows={3}
+            value={trigger}
+            onChange={e => setTrigger(e.target.value)}
+            placeholder="Например: на созвоне А. сказал что мой ппт «слабо проработан»…"
+            autoFocus
+          />
+        </div>
+      </div>
 
-        <StepLabel step={2} title="Чувства" hint="что поднялось внутри" />
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 10 }}>
+      <div className="field-block" style={{ marginTop: 32 }}>
+        <div className="prompt-label" style={{ fontSize: 22, marginBottom: 6 }}>Что поднялось внутри</div>
+        <p className="field-block-hint">Выбери одно или несколько – потом отметь интенсивность.</p>
+        <div className="chip-row">
           {EMOTIONS.map(em => {
             const sel = emotions.find(e => e.id === em.id);
             return (
-              <button key={em.id} onClick={() => toggleEmotion(em.id)} className="sel-btn" style={{
-                background: sel ? '#f8717133' : 'rgba(var(--fg-rgb),0.06)',
-                border: sel ? '1px solid #f87171' : '1px solid transparent',
-                borderRadius: 20, padding: '6px 12px', color: sel ? 'var(--chip-sel-text)' : 'rgba(var(--fg-rgb),0.6)',
-                fontSize: 13, cursor: 'pointer',
-              }}>
-                {em.emoji} {em.label}
+              <button
+                key={em.id}
+                className={'chip-pill ' + (sel ? 'is-selected' : '')}
+                onClick={() => toggleEmotion(em.id)}
+              >
+                {em.label}
               </button>
             );
           })}
         </div>
-        {emotions.map(em => {
-          const meta = EMOTIONS.find(e => e.id === em.id)!;
-          return (
-            <div key={em.id} style={{ marginBottom: 8, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '10px 12px' }}>
-              <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 7 }}>{meta.emoji} {meta.label}</div>
-              <div style={{ display: 'flex', gap: 5 }}>
-                {INTENSITY_LABELS.map((lbl, i) => (
-                  <button key={i} onClick={() => setIntensity(em.id, i + 1)} className="sel-btn" style={{
-                    flex: 1, background: em.intensity === i + 1 ? COLOR : 'rgba(var(--fg-rgb),0.08)',
-                    border: 'none', borderRadius: 8, padding: '5px 2px',
-                    color: em.intensity === i + 1 ? '#fff' : 'rgba(var(--fg-rgb),0.4)',
-                    fontSize: 10, cursor: 'pointer',
-                  }}>{lbl}</button>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+        {emotions.length > 0 && (
+          <div style={{ marginTop: 12, paddingTop: 8, borderTop: '1px solid var(--line)' }}>
+            {emotions.map(em => {
+              const meta = EMOTIONS.find(e => e.id === em.id)!;
+              return (
+                <div key={em.id} className="intensity" style={{ '--int-color': 'var(--c-rose)' } as React.CSSProperties}>
+                  <span className="intensity-name">{meta.label}</span>
+                  <div className="intensity-bar">
+                    {INTENSITY_LABELS.map((lbl, i) => (
+                      <div
+                        key={i}
+                        className={'intensity-step ' + (em.intensity >= i + 1 ? 'is-on' : '')}
+                        onClick={() => setIntensity(em.id, i + 1)}
+                        title={lbl}
+                      />
+                    ))}
+                  </div>
+                  <span className="intensity-label">{INTENSITY_LABELS[em.intensity - 1]}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-        <StepLabel step={3} title="Мысли" hint="о чём думаешь" />
-        <Area value={thoughts} onChange={setThoughts} placeholder="Какие мысли появились? Что ты говоришь себе?" />
+      <div className="prompt" style={{ marginTop: 32 }}>
+        <div className="prompt-num">3.</div>
+        <div>
+          <div className="prompt-label">Мысли</div>
+          <p className="prompt-hint">Что говоришь себе? Какие фразы повторяются в голове?</p>
+          <textarea
+            className={'paper-input ' + (thoughts.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={thoughts}
+            onChange={e => setThoughts(e.target.value)}
+            placeholder="«Опять облажался. Все думают что я не справляюсь»…"
+          />
+        </div>
+      </div>
 
-        <StepLabel step={4} title="Тело" hint="что ощущаешь физически" />
-        <Area value={bodyFeelings} onChange={setBodyFeelings} placeholder="Где в теле это чувствуется? Сжатие, тяжесть, пульс, дыхание..." rows={2} />
+      <div className="prompt">
+        <div className="prompt-num">4.</div>
+        <div>
+          <div className="prompt-label">Тело</div>
+          <p className="prompt-hint">Где это ощущается физически? Сжатие, тяжесть, пульс, дыхание.</p>
+          <textarea
+            className={'paper-input ' + (bodyFeelings.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={bodyFeelings}
+            onChange={e => setBodyFeelings(e.target.value)}
+            placeholder="Ком в горле, плечи как камни, дыхание перехватило…"
+          />
+        </div>
+      </div>
 
-        <StepLabel step={5} title="Моя реакция" hint="что ты делаешь или хочешь сделать" />
-        <Area value={actualBehavior} onChange={setActualBehavior} placeholder="Что ты сделал/а или хотел/а сделать? Убежать, замолчать, накричать..." rows={2} />
+      <div className="prompt">
+        <div className="prompt-num">5.</div>
+        <div>
+          <div className="prompt-label">Моя реакция</div>
+          <p className="prompt-hint">Что сделал или хотел сделать? Убежать, замолчать, накричать, заесть.</p>
+          <textarea
+            className={'paper-input ' + (actualBehavior.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={actualBehavior}
+            onChange={e => setActualBehavior(e.target.value)}
+            placeholder="Замолчала. Не смогла дочитать свою часть. Дома легла и листала ленту…"
+          />
+        </div>
+      </div>
 
-        <StepLabel step={6} title="Схемы" hint="что сработало" />
+      {/* ─── II. Какая схема ─── */}
+      <div className="flow-section-head">
+        <span className="flow-section-num">II.</span>
+        <div>
+          <div className="flow-section-title">Какая схема сработала</div>
+          <div className="flow-section-sub">Найди под ситуацией знакомый паттерн. Он не «правда о тебе» – это привычка.</div>
+        </div>
+      </div>
+
+      <div className="field-block">
         {SCHEMA_DOMAINS.map(domain => {
           const schemas = useFiltered
             ? domain.schemas.filter(s => activeSchemaIds?.includes(s.id) ?? false)
             : domain.schemas;
           if (schemas.length === 0) return null;
           return (
-            <div key={domain.id} style={{ marginBottom: 10 }}>
-              <div className="eyebrow" style={{ color: domain.color, marginBottom: 6 }}>{domain.domain}</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <div key={domain.id} style={{ marginBottom: 18 }}>
+              <div className="chip-section-eyebrow" style={{ color: domain.color }}>
+                <span className="dot" style={{ background: domain.color }} />
+                {domain.domain}
+              </div>
+              <div className="chip-row" style={{ marginBottom: 0 }}>
                 {schemas.map(s => {
                   const sel = schemaIds.includes(s.id);
                   return (
-                    <button key={s.id} onClick={() => toggleSchema(s.id)} className="sel-btn" style={{
-                      background: sel ? `${domain.color}33` : 'rgba(var(--fg-rgb),0.06)',
-                      border: sel ? `1px solid ${domain.color}` : '1px solid transparent',
-                      borderRadius: 16, padding: '5px 10px',
-                      color: sel ? 'var(--chip-sel-text)' : 'rgba(var(--fg-rgb),0.6)',
-                      fontSize: 12, cursor: 'pointer',
-                    }}>{s.name}</button>
+                    <button
+                      key={s.id}
+                      className={'chip-pill ' + (sel ? 'is-selected' : '')}
+                      style={sel ? {
+                        '--pill-color': domain.color + '15',
+                        '--pill-fg': domain.color,
+                        '--pill-border': domain.color + '50',
+                      } as React.CSSProperties : undefined}
+                      onClick={() => toggleSchema(s.id)}
+                    >
+                      {s.name}
+                    </button>
                   );
                 })}
               </div>
@@ -256,26 +295,91 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
             {showAllSchemas ? '↑ Только мои' : '↓ Показать все'}
           </button>
         )}
-        <Area value={schemaOrigin} onChange={setSchemaOrigin} placeholder="Это напоминает что-то из прошлого? Из детства?" rows={2} />
-
-        <StepLabel step={7} title="Здоровый взгляд" hint="если смотреть трезво" />
-        <Area value={healthyView} onChange={setHealthyView} placeholder="Если убрать схему в сторону — что на самом деле здесь происходит?" />
-
-        <StepLabel step={8} title="Что реально трудно" hint="без преувеличения" />
-        <Area value={realProblems} onChange={setRealProblems} placeholder="Что в этом моменте по-настоящему трудно — если не раздувать?" rows={2} />
-
-        <StepLabel step={9} title="Где я раздул/а" hint="что оказалось крупнее, чем есть" />
-        <Area value={excessiveReactions} onChange={setExcessiveReactions} placeholder="Где реакция оказалась больше, чем требовала ситуация?" rows={2} />
-
-        <StepLabel step={10} title="Здоровое поведение" hint="как поступил бы Здоровый Взрослый" />
-        <Area value={healthyBehavior} onChange={setHealthyBehavior} placeholder="Что сделал бы Здоровый Взрослый внутри тебя?" />
-
-        {!canSave && (
-          <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-sub)', marginTop: 16, paddingBottom: 8 }}>
-            Опиши ситуацию — и можно будет сохранить
-          </div>
-        )}
       </div>
-    </BottomSheet>
+
+      <div className="prompt" style={{ marginTop: 16 }}>
+        <div className="prompt-num">7.</div>
+        <div>
+          <div className="prompt-label">Откуда это знакомо</div>
+          <p className="prompt-hint">Похоже на что-то из прошлого? Из детства? Из других похожих ситуаций?</p>
+          <textarea
+            className={'paper-input ' + (schemaOrigin.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={schemaOrigin}
+            onChange={e => setSchemaOrigin(e.target.value)}
+            placeholder="Так папа в детстве оценивал мои оценки – никогда не было достаточно…"
+          />
+        </div>
+      </div>
+
+      {/* ─── III. Здоровый взгляд ─── */}
+      <div className="flow-section-head">
+        <span className="flow-section-num">III.</span>
+        <div>
+          <div className="flow-section-title">Здоровый взгляд</div>
+          <div className="flow-section-sub">Не «всё хорошо» – а более точно. Что Здоровый Взрослый сказал бы на твоём месте.</div>
+        </div>
+      </div>
+
+      <div className="prompt">
+        <div className="prompt-num">8.</div>
+        <div>
+          <div className="prompt-label">Если убрать схему – что происходит</div>
+          <textarea
+            className={'paper-input ' + (healthyView.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={healthyView}
+            onChange={e => setHealthyView(e.target.value)}
+            placeholder="Андрей дал критику, как и другим. Это про работу, не про меня…"
+          />
+        </div>
+      </div>
+
+      <div className="prompt">
+        <div className="prompt-num">9.</div>
+        <div>
+          <div className="prompt-label">Что реально трудно</div>
+          <p className="prompt-hint">Без раздувания – что в этом моменте по-настоящему сложно?</p>
+          <textarea
+            className={'paper-input ' + (realProblems.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={realProblems}
+            onChange={e => setRealProblems(e.target.value)}
+            placeholder="Получать критику при всех – это правда некомфортно…"
+          />
+        </div>
+      </div>
+
+      <div className="prompt">
+        <div className="prompt-num">10.</div>
+        <div>
+          <div className="prompt-label">Что сделал бы Здоровый Взрослый</div>
+          <textarea
+            className={'paper-input ' + (healthyBehavior.trim() ? 'is-filled' : '')}
+            rows={2}
+            value={healthyBehavior}
+            onChange={e => setHealthyBehavior(e.target.value)}
+            placeholder="Спросил бы Андрея конкретно что улучшить. Дома сделал бы себе чай вместо ленты…"
+          />
+        </div>
+      </div>
+
+      <div className="ex-foot">
+        <span style={{ fontSize: 12, color: 'var(--text-faint)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: 'var(--c-moss)' }} />
+          Автосохранение
+        </span>
+        <span className="spacer" />
+        <button
+          className="ex-btn ex-btn-primary"
+          disabled={!canSave || saving}
+          onClick={handleSave}
+          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+        >
+          {saving ? 'Сохраняю…' : 'Сохранить запись'}
+          {!saving && <GlyphCheck />}
+        </button>
+      </div>
+    </ExScreen>
   );
 }

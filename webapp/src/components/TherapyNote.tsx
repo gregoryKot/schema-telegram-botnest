@@ -4,7 +4,7 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
   const contact = getTherapistContact();
 
   const linkLabel = contact.isTherapist
-    ? 'Ты специалист — клиенты могут обратиться'
+    ? 'Ты специалист – клиенты могут обратиться'
     : contact.name === 'автору'
       ? 'Поговорить с психологом →'
       : `Написать ${contact.name} →`;
@@ -15,7 +15,7 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
         <span style={{ fontSize: 12 }}>💬</span>
         <span style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.4 }}>
           {contact.isTherapist
-            ? 'Ты работаешь как терапевт — поддержка рядом.'
+            ? 'Ты работаешь как терапевт – поддержка рядом.'
             : 'Инструмент самоисследования, не замена психологу.'
           }{' '}
           {!contact.isTherapist && (
@@ -40,8 +40,8 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
       <div>
         <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.55 }}>
           {contact.isTherapist
-            ? 'Ты работаешь как терапевт. Клиенты обращаются к тебе — ты уже рядом.'
-            : 'Это инструмент самоисследования — не клиническая диагностика и не замена работе с психологом. Если чувствуешь, что нужно разобраться глубже — терапия это место где безопасно.'
+            ? 'Ты работаешь как терапевт. Клиенты обращаются к тебе – ты уже рядом.'
+            : 'Это инструмент самоисследования – не клиническая диагностика и не замена работе с психологом. Если чувствуешь, что нужно разобраться глубже – терапия это место где безопасно.'
           }
         </div>
         <a

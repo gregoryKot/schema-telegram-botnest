@@ -86,6 +86,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    // Sweep expired pair-code entries every 30 min so the in-memory map
+    // doesn't accumulate stale entries from users who never completed consent.
+    setInterval(() => {
+      const now = Date.now();
+      for (const [uid, entry] of this.pendingPairCodes) {
+        if (entry.expiresAt < now) this.pendingPairCodes.delete(uid);
+      }
+    }, 30 * 60_000).unref();
+
     const redirectUsername = process.env.BOT_REDIRECT_USERNAME;
     if (redirectUsername) {
       const redirectText = `Бот переехал! Открывай @${redirectUsername}`;
@@ -93,15 +102,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       this.bot.on('callback_query', async (ctx) => {
         await (ctx as any).answerCbQuery(redirectText, { show_alert: true }).catch(() => null);
       });
-      this.bot.launch({ dropPendingUpdates: true }).catch(() => null);
+      this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
+        this.logger.error('Redirect-mode bot failed to launch', err);
+      });
       this.logger.log(`Bot running in redirect mode → @${redirectUsername}`);
       return;
     }
 
     this.bot.command('start', async (ctx) => {
       try {
-        const userId = ctx.from?.id;
-        if (!userId) return;
+        const rawId = ctx.from?.id;
+        if (!rawId) return;
+        const userId = BigInt(rawId);
         const isReturning = !!(await this.botService.getUserSettings(userId));
         await this.botService.registerUser(userId, ctx.from?.first_name);
         const payload = (ctx as any).startPayload as string | undefined;
@@ -109,7 +121,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           const code = payload.slice(5).toUpperCase();
           const hasConsent = await this.botService.hasAcceptedDisclaimer(userId);
           if (!hasConsent) {
-            this.pendingPairCodes.set(userId, { code, expiresAt: Date.now() + 15 * 60_000 });
+            this.pendingPairCodes.set(rawId, { code, expiresAt: Date.now() + 15 * 60_000 });
             await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
             return;
           }
@@ -123,8 +135,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           }
           return;
         }
-        const hasConsent = await this.botService.hasAcceptedDisclaimer(userId);
-        if (!hasConsent) {
+        const hasConsent2 = await this.botService.hasAcceptedDisclaimer(userId);
+        if (!hasConsent2) {
           await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
           return;
         }
@@ -191,13 +203,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.action('accept_consent', async (ctx) => {
       try {
         await ctx.answerCbQuery('Принято ✅');
-        const userId = ctx.from?.id;
-        if (userId) {
+        const rawId = ctx.from?.id;
+        if (rawId) {
+          const userId = BigInt(rawId);
           await this.botService.acceptDisclaimer(userId);
           // Resume pending pair join if user arrived via pair invite link
-          const pending = this.pendingPairCodes.get(userId);
+          const pending = this.pendingPairCodes.get(rawId);
           if (pending && pending.expiresAt > Date.now()) {
-            this.pendingPairCodes.delete(userId);
+            this.pendingPairCodes.delete(rawId);
             const ok = await this.botService.joinPair(userId, pending.code);
             const text = ok
               ? 'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.'
@@ -214,7 +227,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('accept_consent action failed', err);
-        await ctx.answerCbQuery().catch(() => null);
+        await ctx.editMessageText('Что-то пошло не так. Попробуй нажать ещё раз.').catch(() => null);
       }
     });
 
@@ -250,8 +263,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.action('snooze_reminder', async (ctx) => {
       try {
         await ctx.answerCbQuery('⏰ Напомню через час');
-        const userId = ctx.from?.id;
-        if (userId) {
+        const rawId = ctx.from?.id;
+        if (rawId) {
+          const userId = BigInt(rawId);
           const settings = await this.botService.getUserSettings(userId);
           const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
           let sendAt = new Date(Date.now() + 3_600_000);
@@ -275,6 +289,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('snooze_reminder action failed', err);
+        await ctx.editMessageText('Не удалось перенести напоминание. Попробуй ещё раз.').catch(() => null);
       }
     });
 
@@ -282,8 +297,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.action(/^plan_(done|skip):(\d+)$/, async (ctx) => {
       try {
         await ctx.answerCbQuery();
-        const userId = ctx.from?.id;
-        if (!userId) return;
+        const rawId = ctx.from?.id;
+        if (!rawId) return;
+        const userId = BigInt(rawId);
         const match = ctx.match as RegExpMatchArray;
         const done = match[1] === 'done';
         const planId = Number(match[2]);
@@ -292,7 +308,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.editMessageText(reply).catch(() => ctx.editMessageReplyMarkup(undefined).catch(() => null));
       } catch (err) {
         this.logger.error('plan checkin action failed', err);
-        await ctx.answerCbQuery().catch(() => null);
+        await ctx.editMessageText('Не удалось сохранить. Попробуй ещё раз.').catch(() => null);
       }
     });
 
@@ -321,10 +337,19 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         let sent = 0, failed = 0;
         for (const uid of userIds) {
           try {
-            await this.bot!.telegram.sendMessage(uid, text);
+            // Plain text — no parse_mode. Avoids stray markdown chars from
+            // breaking the broadcast for half the users.
+            await this.bot!.telegram.sendMessage(uid, text, { parse_mode: undefined });
             sent++;
-          } catch {
+          } catch (err: any) {
             failed++;
+            const code = err?.response?.error_code;
+            const desc = String(err?.response?.description ?? err?.message ?? '');
+            const isPermanent = code === 403
+              || (code === 400 && /chat not found|user is deactivated|bot was blocked/i.test(desc));
+            if (isPermanent) {
+              await this.botService.markUserBlocked(BigInt(uid)).catch(() => null);
+            }
           }
           await new Promise(r => setTimeout(r, 50));
         }
@@ -379,6 +404,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.botService.cancelAllPreReminders().then(n => {
       if (n > 0) this.logger.log(`Cancelled ${n} legacy pre_reminder notifications`);
     }).catch(() => null);
+  }
+
+  /** Отправить сообщение администратору (для уведомлений о заявках) */
+  async notifyAdmin(text: string): Promise<void> {
+    const adminId = process.env.ADMIN_ID;
+    if (!adminId || !this.bot) return;
+    await this.bot.telegram.sendMessage(adminId, text, { parse_mode: 'HTML' }).catch((err) => {
+      this.logger.error('notifyAdmin failed', err);
+    });
   }
 
   async onModuleDestroy() {

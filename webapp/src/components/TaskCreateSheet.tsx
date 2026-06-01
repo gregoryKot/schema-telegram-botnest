@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { BottomSheet } from './BottomSheet';
-import { SectionLabel } from './SectionLabel';
+import { GlyphArrowLeft } from './exercises/ExScreen';
 import { api } from '../api';
 import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
+import { useHistorySheet } from '../hooks/useHistorySheet';
+import { haptic } from '../haptic';
 
 type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
 
@@ -16,19 +17,21 @@ interface Props {
 
 const STREAK_OPTIONS = [3, 7, 14, 30];
 
-const TASK_OPTIONS: { type: TaskType; emoji: string; label: string; sub: string; hasStreak?: boolean }[] = [
-  { type: 'diary_streak',   emoji: '📔', label: 'Дневник',              sub: 'Заполнять N дней подряд',                        hasStreak: true },
-  { type: 'tracker_streak', emoji: '📊', label: 'Трекер потребностей',  sub: 'Отмечать N дней подряд',                         hasStreak: true },
-  { type: 'schema_intro',   emoji: '🧩', label: 'Карточка схемы',       sub: 'Познакомиться со своей схемой — 7 вопросов' },
-  { type: 'mode_intro',     emoji: '🔄', label: 'Карточка режима',      sub: 'Познакомиться со своим режимом' },
-  { type: 'belief_check',   emoji: '🔍', label: 'Проверить убеждение',  sub: 'Собрать доказательства за и против' },
-  { type: 'letter_to_self', emoji: '✉️', label: 'Письмо себе',          sub: 'Написать Уязвимому Ребёнку' },
-  { type: 'safe_place',     emoji: '🏡', label: 'Безопасное место',     sub: 'Описать и перечитывать' },
-  { type: 'flashcard',      emoji: '🆘', label: 'Мне сейчас плохо',     sub: 'Разобрать ситуацию — 5 шагов' },
-  { type: 'custom',         emoji: '✏️', label: 'Своё задание',         sub: 'Любой текст' },
+type TaskOption = { type: TaskType; label: string; sub: string; hasStreak?: boolean; time: string; color: string };
+
+const TASK_OPTIONS: TaskOption[] = [
+  { type: 'tracker_streak', label: 'Трекер потребностей',  sub: 'Отмечать потребности N дней подряд',        hasStreak: true, time: '2–3 мин/день',  color: 'var(--c-amber)'  },
+  { type: 'schema_intro',   label: 'Карточка схемы',       sub: 'Познакомиться со схемой – 7 вопросов',      time: '15 мин',             color: 'var(--c-plum)'   },
+  { type: 'mode_intro',     label: 'Карточка режима',      sub: 'Познакомиться со своим режимом',            time: '10 мин',             color: 'var(--c-slate)'  },
+  { type: 'belief_check',   label: 'Проверить убеждение',  sub: 'Собрать доказательства за и против',        time: '20 мин',             color: 'var(--c-moss)'   },
+  { type: 'letter_to_self', label: 'Письмо себе',          sub: 'Написать Уязвимому Ребёнку',               time: '30 мин',             color: 'var(--c-clay)'   },
+  { type: 'safe_place',     label: 'Безопасное место',     sub: 'Описать и перечитывать',                   time: '20 мин',             color: 'var(--c-moss)'   },
+  { type: 'diary_streak',   label: 'Дневник',              sub: 'Заполнять N дней подряд',                  hasStreak: true, time: '5–10 мин/день', color: 'var(--accent-indigo)' },
+  { type: 'flashcard',      label: 'Мне сейчас плохо',     sub: 'Разобрать ситуацию – 5 шагов',             time: '10 мин',             color: 'var(--c-rose)'   },
+  { type: 'custom',         label: 'Своё задание',         sub: 'Любой текст, который сформулируешь сам',   time: '–',                  color: 'var(--text-sub)' },
 ];
 
-const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(s => ({ id: s.id, name: s.name, emoji: (s as any).emoji ?? '●', domainColor: d.color })));
+const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(s => ({ id: s.id, name: s.name, domainColor: d.color })));
 
 export function getTaskDisplayText(type: string, text: string): string {
   if (type === 'schema_intro') {
@@ -43,7 +46,8 @@ export function getTaskDisplayText(type: string, text: string): string {
 }
 
 export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, onClose }: Props) {
-  const [type, setType] = useState<TaskType>(defaultType ?? 'diary_streak');
+  const goBack = useHistorySheet(onClose);
+  const [type, setType] = useState<TaskType>(defaultType ?? 'tracker_streak');
   const [targetDays, setTargetDays] = useState(7);
   const [text, setText] = useState('');
   const [selectedSchemaId, setSelectedSchemaId] = useState('');
@@ -55,7 +59,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
 
   useEffect(() => {
     if ((type === 'schema_intro' || type === 'mode_intro') && configRef.current) {
-      setTimeout(() => configRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+      setTimeout(() => configRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
     }
   }, [type]);
 
@@ -80,122 +84,254 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
     if (type === 'custom' && !finalText) { setError('Введи описание задания'); return; }
     if (type === 'schema_intro' && !selectedSchemaId) { setError('Выбери схему'); return; }
     if (type === 'mode_intro' && !selectedModeId) { setError('Выбери режим'); return; }
+    haptic.success();
     setSaving(true); setError('');
     try {
       await api.createTask({ type, text: finalText, targetDays: selected.hasStreak ? targetDays : undefined, dueDate: dueDate || undefined, clientId });
       onCreated();
-    } catch { setError('Не удалось сохранить'); }
+    } catch { haptic.error(); setError('Не удалось сохранить'); }
     finally { setSaving(false); }
   }
 
-  return (
-    <BottomSheet onClose={onClose} zIndex={200}>
-      <SectionLabel purple mb={16}>
-        {clientName ? `Задание для ${clientName}` : 'Новое задание'}
-      </SectionLabel>
+  const canSave = type !== 'custom' || text.trim().length > 0;
 
-      {/* Type selector */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-        {TASK_OPTIONS.map(opt => (
-          <div key={opt.type} onClick={() => setType(opt.type)} style={{
-            padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
-            background: type === opt.type ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'rgba(var(--fg-rgb),0.03)',
-            border: `1px solid ${type === opt.type ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
-            display: 'flex', alignItems: 'center', gap: 10,
-          }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>{opt.emoji}</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: type === opt.type ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.8)' }}>{opt.label}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>{opt.sub}</div>
-            </div>
-          </div>
-        ))}
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+      {/* ── Topbar ── */}
+      <div className="ex-topbar" style={{ justifyContent: 'space-between', flexShrink: 0 }}>
+        <button className="ex-back" onClick={goBack}>
+          <GlyphArrowLeft /> Назад к кабинету
+        </button>
+        <div />
       </div>
 
-      {/* Streak day picker */}
-      {selected.hasStreak && (
-        <div style={{ marginBottom: 20 }}>
-          <SectionLabel mb={8}>Цель в днях</SectionLabel>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {STREAK_OPTIONS.map(d => (
-              <div key={d} onClick={() => setTargetDays(d)} style={{
-                flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 10, cursor: 'pointer',
-                background: targetDays === d ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : 'rgba(var(--fg-rgb),0.05)',
-                border: `1px solid ${targetDays === d ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-                fontSize: 14, fontWeight: 600, color: targetDays === d ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.5)',
-              }}>{d}</div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* ── Scrollable body ── */}
+      <div style={{ overflowY: 'auto', overflowX: 'hidden' }}>
+        <div className="page-inner" style={{ paddingTop: 32, paddingBottom: 40 }}>
 
-      {/* Schema picker */}
-      {type === 'schema_intro' && (
-        <div ref={configRef} style={{ marginBottom: 20 }}>
-          <SectionLabel mb={10}>Какую схему изучить?</SectionLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {ALL_SCHEMAS_FLAT.map(s => (
-              <div key={s.id} onClick={() => setSelectedSchemaId(s.id)} style={{
-                padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
-                background: selectedSchemaId === s.id ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'rgba(var(--fg-rgb),0.03)',
-                border: `1px solid ${selectedSchemaId === s.id ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
-                display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <span style={{ fontSize: 16, flexShrink: 0 }}>{s.emoji}</span>
-                <div style={{ fontSize: 13, fontWeight: 500, color: selectedSchemaId === s.id ? 'var(--accent)' : 'var(--text)' }}>{s.name}</div>
-                {selectedSchemaId === s.id && <span style={{ marginLeft: 'auto', fontSize: 14, color: 'var(--accent)' }}>✓</span>}
+          {/* Header */}
+          <div className="eyebrow" style={{ marginBottom: 8 }}>
+            <span style={{ color: 'var(--accent)' }}>● </span>
+            {clientName ? `Задание для ${clientName}` : 'Новое задание'}
+          </div>
+          <h1 className="hub-title" style={{ marginBottom: 8 }}>
+            Выбери<br /><span className="it">задание</span>
+          </h1>
+          <p className="hub-sub" style={{ marginBottom: 32 }}>
+            Появится у клиента в мини-аппе – он выполняет самостоятельно.
+          </p>
+
+          {/* ── Task list ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
+            {TASK_OPTIONS.map((opt, i) => {
+              const isSelected = type === opt.type;
+              return (
+                <div
+                  key={opt.type}
+                  onClick={() => { haptic.select(); setType(opt.type); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 16,
+                    padding: '14px 0',
+                    borderBottom: i < TASK_OPTIONS.length - 1 ? '1px solid rgba(var(--fg-rgb),0.07)' : 'none',
+                    cursor: 'pointer',
+                    transition: 'opacity 0.1s',
+                  }}
+                >
+                  {/* Color stripe / indicator */}
+                  <div style={{
+                    width: 4, height: 36, borderRadius: 3, flexShrink: 0,
+                    background: isSelected ? opt.color : 'rgba(var(--fg-rgb),0.1)',
+                    transition: 'background 0.2s',
+                  }} />
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: 15, fontWeight: isSelected ? 600 : 400,
+                      color: isSelected ? 'var(--text)' : 'var(--text)',
+                      lineHeight: 1.3, marginBottom: 2,
+                    }}>
+                      {opt.label}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.4 }}>
+                      {opt.sub}
+                    </div>
+                  </div>
+
+                  <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>{opt.time}</span>
+                    <div style={{
+                      width: 20, height: 20, borderRadius: '50%',
+                      background: isSelected ? 'var(--text)' : 'transparent',
+                      border: `2px solid ${isSelected ? 'var(--text)' : 'rgba(var(--fg-rgb),0.2)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.15s',
+                      flexShrink: 0,
+                    }}>
+                      {isSelected && (
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <polyline points="1.5,5 4,7.5 8.5,2.5" stroke="var(--bg)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── Config section ── */}
+          <div ref={configRef} style={{ marginTop: 28 }}>
+
+            {/* Streak picker */}
+            {selected.hasStreak && (
+              <div style={{ marginBottom: 24 }}>
+                <div className="eyebrow" style={{ marginBottom: 10 }}>Цель в днях</div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {STREAK_OPTIONS.map(d => (
+                    <button
+                      key={d}
+                      onClick={() => setTargetDays(d)}
+                      style={{
+                        padding: '5px 14px', borderRadius: 4, cursor: 'pointer',
+                        fontWeight: 500, fontSize: 13, fontFamily: 'inherit',
+                        background: targetDays === d ? 'var(--text)' : 'transparent',
+                        color: targetDays === d ? 'var(--bg)' : 'var(--text-sub)',
+                        border: `1px solid ${targetDays === d ? 'var(--text)' : 'rgba(var(--fg-rgb),0.15)'}`,
+                        transition: 'all 0.15s',
+                      }}
+                    >{d} дн</button>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            )}
 
-      {/* Mode picker */}
-      {type === 'mode_intro' && (
-        <div ref={configRef} style={{ marginBottom: 20 }}>
-          <SectionLabel mb={10}>Какой режим изучить?</SectionLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {ALL_MODES.map(m => (
-              <div key={m.id} onClick={() => setSelectedModeId(m.id)} style={{
-                padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
-                background: selectedModeId === m.id ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'rgba(var(--fg-rgb),0.03)',
-                border: `1px solid ${selectedModeId === m.id ? 'color-mix(in srgb, var(--accent) 40%, transparent)' : 'rgba(var(--fg-rgb),0.07)'}`,
-                display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <span style={{ fontSize: 16, flexShrink: 0 }}>{m.emoji}</span>
-                <div style={{ fontSize: 13, fontWeight: 500, color: selectedModeId === m.id ? 'var(--accent)' : 'var(--text)' }}>{m.name}</div>
-                {selectedModeId === m.id && <span style={{ marginLeft: 'auto', fontSize: 14, color: 'var(--accent)' }}>✓</span>}
+            {/* Schema picker */}
+            {type === 'schema_intro' && (
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
+                  Какую схему изучить?
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
+                  {ALL_SCHEMAS_FLAT.map((s, i) => (
+                    <div
+                      key={s.id}
+                      onClick={() => setSelectedSchemaId(s.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '11px 0',
+                        borderBottom: i < ALL_SCHEMAS_FLAT.length - 1 ? '1px solid rgba(var(--fg-rgb),0.07)' : 'none',
+                        cursor: 'pointer',
+                        gap: 12,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 3, height: 20, borderRadius: 2, background: s.domainColor, flexShrink: 0 }} />
+                        <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: selectedSchemaId === s.id ? 600 : 400 }}>{s.name}</span>
+                      </div>
+                      {selectedSchemaId === s.id && (
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                          <polyline points="2,7 5.5,10.5 12,3.5" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
+
+            {/* Mode picker */}
+            {type === 'mode_intro' && (
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
+                  Какой режим изучить?
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
+                  {ALL_MODES.map((m, i) => (
+                    <div
+                      key={m.id}
+                      onClick={() => setSelectedModeId(m.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '11px 0',
+                        borderBottom: i < ALL_MODES.length - 1 ? '1px solid rgba(var(--fg-rgb),0.07)' : 'none',
+                        cursor: 'pointer',
+                        gap: 12,
+                      }}
+                    >
+                      <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: selectedModeId === m.id ? 600 : 400 }}>
+                        {m.emoji} {m.name}
+                      </span>
+                      {selectedModeId === m.id && (
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                          <polyline points="2,7 5.5,10.5 12,3.5" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Custom text */}
+            {type === 'custom' && (
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
+                  Описание задания
+                </div>
+                <textarea
+                  value={text}
+                  onChange={e => setText(e.target.value)}
+                  placeholder="Например: позвонить другу раз в неделю"
+                  className={'paper-input ' + (text.trim() ? 'is-filled' : '')}
+                  rows={3}
+                  autoFocus
+                  style={{ width: '100%' }}
+                />
+              </div>
+            )}
+
+            {/* Due date */}
+            {(type === 'custom' || clientId) && (
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
+                  Срок (необязательно)
+                </div>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  className="paper-input"
+                  style={{ width: '100%' }}
+                />
+              </div>
+            )}
           </div>
+
+          {/* Submit */}
+          <div style={{ paddingTop: 8, paddingBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {error
+              ? <span style={{ fontSize: 12, color: 'var(--c-rose)' }}>{error}</span>
+              : <span />
+            }
+            <button
+              onClick={handleCreate}
+              disabled={!canSave || saving}
+              style={{
+                padding: '9px 20px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: canSave && !saving ? 'var(--text)' : 'rgba(var(--fg-rgb),0.1)',
+                color: canSave && !saving ? 'var(--bg)' : 'var(--text-faint)',
+                fontSize: 13, fontWeight: 500, fontFamily: 'inherit',
+                transition: 'all 0.15s',
+              }}
+            >
+              {saving ? 'Назначаю…' : 'Назначить задание'}
+            </button>
+          </div>
+
         </div>
-      )}
+      </div>
 
-      {/* Custom text */}
-      {type === 'custom' && (
-        <div style={{ marginBottom: 20 }}>
-          <SectionLabel mb={8}>Описание задания</SectionLabel>
-          <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Например: позвонить другу раз в неделю"
-            style={{ width: '100%', minHeight: 72, background: 'rgba(var(--fg-rgb),0.05)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 12, padding: '10px 12px', color: 'var(--text)', fontSize: 14, resize: 'none', boxSizing: 'border-box' }}
-          />
-        </div>
-      )}
-
-      {/* Due date */}
-      {(type === 'custom' || clientId) && (
-        <div style={{ marginBottom: 24 }}>
-          <SectionLabel mb={8}>Срок (необязательно)</SectionLabel>
-          <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-            style={{ width: '100%', background: 'rgba(var(--fg-rgb),0.05)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 12, padding: '10px 12px', color: 'var(--text)', fontSize: 14, boxSizing: 'border-box' }}
-          />
-        </div>
-      )}
-
-      {error && <div style={{ fontSize: 13, color: 'var(--accent-red)', marginBottom: 12 }}>{error}</div>}
-
-      <button onClick={handleCreate} disabled={saving} className="btn-primary">
-        {saving ? 'Сохраняю...' : 'Создать задание'}
-      </button>
-    </BottomSheet>
+    </div>
   );
 }

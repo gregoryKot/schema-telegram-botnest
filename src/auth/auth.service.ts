@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { SecurityLogService } from './security-log.service';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 
@@ -38,75 +39,8 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly securityLog: SecurityLogService,
   ) {}
-
-  // ─── Google OAuth ──────────────────────────────────────────────────────────
-
-  buildGoogleAuthUrl(state: string): string {
-    const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
-    const redirectUri = this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI');
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: 'openid email profile',
-      state,
-      access_type: 'online',
-      prompt: 'select_account',
-    });
-    return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
-  }
-
-  async exchangeGoogleCode(code: string): Promise<{ googleId: string; email: string; name: string }> {
-    const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
-    const clientSecret = this.config.getOrThrow<string>('GOOGLE_CLIENT_SECRET');
-    const redirectUri = this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI');
-
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
-    });
-    if (!tokenRes.ok) throw new UnauthorizedException('Google token exchange failed');
-    const { id_token } = await tokenRes.json() as { id_token: string };
-
-    // Verify the ID token with Google's public key endpoint
-    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${id_token}`);
-    if (!verifyRes.ok) throw new UnauthorizedException('Google ID token verification failed');
-    const payload = await verifyRes.json() as { sub: string; email: string; name: string; aud: string; email_verified: string };
-
-    if (payload.aud !== clientId) throw new UnauthorizedException('Google token audience mismatch');
-    if (payload.email_verified !== 'true') throw new UnauthorizedException('Google email not verified');
-
-    return { googleId: payload.sub, email: payload.email, name: payload.name };
-  }
-
-  // ─── Telegram Login Widget ─────────────────────────────────────────────────
-
-  verifyTelegramWidgetData(data: Record<string, string>): { id: number; firstName: string } {
-    const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
-    const { hash, ...fields } = data;
-    if (!hash) throw new UnauthorizedException('Missing hash');
-
-    // Check auth_date (must be within 5 minutes)
-    const authDate = parseInt(fields['auth_date'] ?? '0', 10);
-    if (Date.now() / 1000 - authDate > 300) throw new UnauthorizedException('Telegram auth data expired');
-
-    // Verify HMAC-SHA256.
-    // NB: Login Widget secret key = SHA256(bot_token).
-    // (WebApp initData uses HMAC_SHA256("WebAppData", bot_token) — different!)
-    const checkString = Object.keys(fields).sort().map(k => `${k}=${fields[k]}`).join('\n');
-    const secretKey = crypto.createHash('sha256').update(botToken).digest();
-    const expectedHash = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
-
-    if (!crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(expectedHash, 'hex'))) {
-      throw new UnauthorizedException('Invalid Telegram signature');
-    }
-
-    const id = parseInt(fields['id'] ?? '', 10);
-    if (!id) throw new UnauthorizedException('Missing Telegram user id');
-    return { id, firstName: fields['first_name'] ?? '' };
-  }
 
   // ─── Telegram WebApp initData ──────────────────────────────────────────────
 
@@ -116,6 +50,9 @@ export class AuthService {
     const params = new URLSearchParams(initData);
     const hash = params.get('hash');
     if (!hash) throw new UnauthorizedException('Missing hash in initData');
+    // Must be 64 hex chars — otherwise Buffer.from(hash,'hex') yields a
+    // wrong-length buffer and timingSafeEqual throws RangeError → 500.
+    if (!/^[0-9a-f]{64}$/i.test(hash)) throw new UnauthorizedException('Malformed hash in initData');
 
     // Check auth_date freshness (allow 1 hour for mini apps — WebApp is long-lived)
     const authDate = parseInt(params.get('auth_date') ?? '0', 10);
@@ -287,6 +224,29 @@ export class AuthService {
     return { accessToken, refreshToken: rawRefresh, expiresIn: ACCESS_TOKEN_TTL_S };
   }
 
+  // ─── Short-lived one-time link token (60s, for OAuth redirect URLs) ─────────
+
+  buildLinkToken(userId: bigint): string {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    return jwt.sign(
+      { sub: String(userId), type: 'link' },
+      secret,
+      { expiresIn: 60, algorithm: 'HS256', issuer: JWT_ISSUER, audience: JWT_AUDIENCE },
+    );
+  }
+
+  verifyLinkToken(token: string): { userId: bigint } {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    try {
+      const payload = jwt.verify(token, secret, { algorithms: ['HS256'], issuer: JWT_ISSUER, audience: JWT_AUDIENCE }) as { sub: string; type: string };
+      if (payload.type !== 'link') throw new UnauthorizedException('Wrong token type');
+      return { userId: BigInt(payload.sub) };
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
+      throw new UnauthorizedException('Invalid or expired link token');
+    }
+  }
+
   // ─── Token verification ────────────────────────────────────────────────────
 
   verifyAccessToken(token: string): { userId: BigInt } {
@@ -315,6 +275,7 @@ export class AuthService {
       if (session.family) {
         await this.revokeFamilyExcept(session.family, null);
         this.logger.warn(`Refresh token reuse detected — revoked family ${session.family} for userId ${session.userId}`);
+        this.securityLog.log('refresh_token_reuse', { userId: session.userId, family: session.family });
       }
       throw new UnauthorizedException('Refresh token already used or expired');
     }

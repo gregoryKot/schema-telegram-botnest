@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <>
               <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 12 }}>Страница устарела</h1>
               <div className="text-md muted" style={{ marginBottom: 24, maxWidth: 560 }}>
-                Приложение обновилось — обнови страницу чтобы загрузить новую версию.
+                Приложение обновилось – обнови страницу чтобы загрузить новую версию.
               </div>
               <button
                 className="btn btn-primary"

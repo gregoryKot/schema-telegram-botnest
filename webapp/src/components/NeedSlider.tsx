@@ -147,12 +147,12 @@ export function NeedSlider({ id, label, value, onChange, onTap, locked, onUnlock
               {delta !== null && <DeltaBadge delta={delta} />}
             </>
           ) : (
-            <span style={{ fontSize: 15, color: 'var(--text-faint)' }}>—</span>
+            <span style={{ fontSize: 15, color: 'var(--text-faint)' }}>–</span>
           )}
         </div>
       </div>
 
-      {/* Slider track — disabled when locked, active when unlocked */}
+      {/* Slider track – disabled when locked, active when unlocked */}
       <div
         ref={trackRef}
         onPointerDown={locked ? undefined : handlePointerDown}
@@ -193,7 +193,7 @@ export function NeedSlider({ id, label, value, onChange, onTap, locked, onUnlock
           }} />
         )}
 
-        {/* Thumb — always visible; dimmed when locked */}
+        {/* Thumb – always visible; dimmed when locked */}
         {!locked && (
           <div style={{
             position: 'absolute',
