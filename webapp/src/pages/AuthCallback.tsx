@@ -19,7 +19,9 @@ export function AuthCallback() {
 
     if (token) {
       setAccessToken(token, expiresIn);
-      navigate('/', { replace: true });
+      const returnTo = sessionStorage.getItem('auth_return_to') ?? '/';
+      sessionStorage.removeItem('auth_return_to');
+      navigate(returnTo, { replace: true });
     } else {
       navigate('/login?error=no_token', { replace: true });
     }

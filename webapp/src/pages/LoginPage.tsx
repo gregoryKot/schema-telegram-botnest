@@ -49,6 +49,7 @@ export function LoginPage() {
     window.location.href = `${API_BASE}/api/auth/vk`;
   };
   const handleTelegram = () => {
+    setTelegramLoading(true);
     window.location.href = `${API_BASE}/api/auth/telegram-oidc`;
   };
 
