@@ -20,7 +20,7 @@ export function LoginPage() {
   const isTelegramContext = !!(window as any).Telegram?.WebApp?.initData;
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/', { replace: true });
+    if (isAuthenticated) navigate('/today', { replace: true });
   }, [isAuthenticated, navigate]);
 
   const retryTelegramAuth = async () => {
@@ -42,7 +42,7 @@ export function LoginPage() {
       }
       const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
       setAccessToken(accessToken, expiresIn);
-      navigate('/', { replace: true });
+      navigate('/today', { replace: true });
     } catch (e) {
       setError(String(e));
     } finally {
@@ -60,16 +60,16 @@ export function LoginPage() {
       try {
         const res = await fetch(`${API_BASE}/api/auth/telegram/widget`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
           body: JSON.stringify(userData),
           credentials: 'include',
         });
         if (!res.ok) throw new Error('Telegram auth failed');
         const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
         setAccessToken(accessToken, expiresIn);
-        navigate('/', { replace: true });
+        navigate('/today', { replace: true });
       } catch {
-        setError('Не удалось войти через Telegram. Попробуй ещё раз.');
+        setError('Не удалось войти через Telegram. Попробуйте ещё раз.');
       } finally {
         setTelegramLoading(false);
       }
@@ -167,7 +167,7 @@ export function LoginPage() {
         {/* Auth card */}
         <div className="card-elevated" style={{ padding: '28px 24px' }}>
           <p style={{ color: 'var(--text-sub)', fontSize: 13, marginBottom: 20, textAlign: 'center' }}>
-            Войди, чтобы продолжить
+            Войдите, чтобы продолжить
           </p>
 
           {/* Google */}
@@ -196,7 +196,7 @@ export function LoginPage() {
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
           </div>
 
-          {/* Telegram widget */}
+          {/* Telegram Login Widget */}
           <div style={{
             display: 'flex', justifyContent: 'center',
             opacity: telegramLoading ? 0.5 : 1,
@@ -213,9 +213,13 @@ export function LoginPage() {
           )}
         </div>
 
-        {/* Privacy note */}
-        <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 20, lineHeight: 1.6 }}>
-          Твои данные зашифрованы и никогда не передаются третьим лицам
+        {/* Consent note */}
+        <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 20, lineHeight: 1.7 }}>
+          Нажимая «Войти», вы подтверждаете согласие на обработку персональных данных
+          в соответствии с{' '}
+          <a href="/privacy" target="_blank" style={{ color: 'var(--text-faint)', textDecoration: 'underline' }}>
+            Политикой конфиденциальности
+          </a>
         </p>
       </div>
 
