@@ -94,9 +94,11 @@ export function AccountPage() {
   }, [showTgWidget, accessToken]);
 
   const linkGoogle = () => {
+    sessionStorage.setItem('auth_return_to', '/account');
     window.location.href = `${API_BASE}/api/auth/google?link_token=${encodeURIComponent(accessToken ?? '')}`;
   };
   const linkVk = () => {
+    sessionStorage.setItem('auth_return_to', '/account');
     window.location.href = `${API_BASE}/api/auth/vk?link_token=${encodeURIComponent(accessToken ?? '')}`;
   };
 
