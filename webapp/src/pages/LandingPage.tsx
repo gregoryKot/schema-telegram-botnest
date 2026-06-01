@@ -113,6 +113,7 @@ const TOPICS_A: { label: string; href: string }[] = [
   { label: 'КПТ',                 href: '#approach' },
   { label: 'Бесплатное знакомство', href: '#booking' },
   { label: 'Онлайн-сессии',       href: '#prices'  },
+  { label: 'Отзывы',              href: '/reviews' },
 ];
 const TOPICS_B: { label: string; href: string }[] = [
   { label: 'Безопасная среда',         href: '#about'    },
@@ -124,6 +125,7 @@ const TOPICS_B: { label: string; href: string }[] = [
   { label: 'Доказательный метод',      href: '#approach' },
   { label: 'Индивидуально',            href: '#prices'   },
   { label: 'Работаю онлайн',           href: '#prices'   },
+  { label: 'Почему нет отзывов',       href: '/reviews' },
 ];
 
 function MarqueeStrip({ reverse = false, bg = 'var(--bg-rail)', italic = false, topics = TOPICS_A }: {
@@ -404,16 +406,23 @@ export function LandingPage() {
           {/* ── Nav ── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '26px 0', animation: 'hero-in .5s both' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-              <div style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--text-sub)' }}>Г</span>
-                <img src="/gregory.jpg" alt="Григорий Котляревский" style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-              </div>
-              <span style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Григорий Котляревский</span>
-              {/* Бейдж скрыт на мобиле */}
-              <div className="nav-badge" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: 'rgba(74,99,53,.1)', border: '1px solid rgba(74,99,53,.25)', borderRadius: 100, flexShrink: 0 }}>
+              {/* Имя + фото → Обо мне */}
+              <a href="#about" style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, textDecoration: 'none', color: 'inherit' }}
+                onMouseEnter={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--accent)'; }}
+                onMouseLeave={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--text)'; }}>
+                <div style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--text-sub)' }}>Г</span>
+                  <img src="/gregory.jpg" alt="Григорий Котляревский" style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                </div>
+                <span className="nav-name" style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color .15s' }}>Григорий Котляревский</span>
+              </a>
+              {/* Бейдж → Запись (скрыт на мобиле) */}
+              <a href="#booking" className="nav-badge" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: 'rgba(74,99,53,.1)', border: '1px solid rgba(74,99,53,.25)', borderRadius: 100, flexShrink: 0, textDecoration: 'none', transition: 'background .15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(74,99,53,.18)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(74,99,53,.1)'; }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: MOSS, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: MOSS, letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
-              </div>
+              </a>
             </div>
             <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer"
               className="nav-tg"
