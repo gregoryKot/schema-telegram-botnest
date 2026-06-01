@@ -93,11 +93,21 @@ export function AccountPage() {
     return () => { delete window.onTelegramLink; };
   }, [showTgWidget, accessToken]);
 
-  const linkGoogle = () => {
-    window.location.href = `${API_BASE}/api/auth/google?link_token=${encodeURIComponent(accessToken ?? '')}`;
+  const fetchLinkToken = async (): Promise<string> => {
+    const res = await fetch(`${API_BASE}/api/auth/link-token`, {
+      credentials: 'include',
+      headers: { Authorization: `Bearer ${accessToken ?? ''}` },
+    });
+    const { linkToken } = await res.json() as { linkToken: string };
+    return linkToken;
   };
-  const linkVk = () => {
-    window.location.href = `${API_BASE}/api/auth/vk?link_token=${encodeURIComponent(accessToken ?? '')}`;
+  const linkGoogle = async () => {
+    const token = await fetchLinkToken();
+    window.location.href = `${API_BASE}/api/auth/google?link_token=${encodeURIComponent(token)}`;
+  };
+  const linkVk = async () => {
+    const token = await fetchLinkToken();
+    window.location.href = `${API_BASE}/api/auth/vk?link_token=${encodeURIComponent(token)}`;
   };
 
   const unlink = async (provider: 'google' | 'telegram' | 'vk') => {

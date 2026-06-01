@@ -34,7 +34,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: 'include', // send httpOnly cookie
         headers: { 'x-requested-with': 'webapp', 'Content-Type': 'application/json' },
       });
-      if (!res.ok) return false;
+      if (!res.ok) {
+        // 401 means token is invalid/revoked — clear state to stop retry loop
+        if (res.status === 401) setTokenState(null);
+        return false;
+      }
       const { accessToken: token, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
       setTokenState(token);
       scheduleRefresh(expiresIn);

@@ -313,6 +313,16 @@ export class TherapyController {
   }) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    const MAX = 5000;
+    const textFields = ['earlyExperience', 'unmetNeeds', 'triggers', 'copingStyles', 'goals', 'currentProblems', 'modeTransitions'] as const;
+    for (const f of textFields) {
+      if (body[f] !== undefined && (typeof body[f] !== 'string' || body[f]!.length > MAX))
+        throw new BadRequestException(`${f} too long or invalid`);
+    }
+    if (body.schemaIds !== undefined && (!Array.isArray(body.schemaIds) || body.schemaIds.some(s => typeof s !== 'string' || s.length > 64)))
+      throw new BadRequestException('invalid schemaIds');
+    if (body.modeIds !== undefined && (!Array.isArray(body.modeIds) || body.modeIds.some(s => typeof s !== 'string' || s.length > 64)))
+      throw new BadRequestException('invalid modeIds');
     try { return await this.therapyService.saveConceptualization(uid(req), parseId(clientId), body); }
     catch (e: any) { if (e?.message === 'No active relation') throw new ForbiddenException('No active relation with this client'); throw e; }
   }

@@ -7,6 +7,8 @@ import { migrateClinicalLabels } from './utils/encrypt-migration';
 import { PrismaExceptionFilter, GenericExceptionFilter } from './prisma/prisma-exception.filter';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const helmet = require('helmet');
 
 // BigInt → number in JSON responses (Telegram user IDs fit safely in Number)
 (BigInt.prototype as any).toJSON = function () { return Number(this); };
@@ -15,6 +17,19 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new AlertLogger() });
 
   app.use(cookieParser());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", 'https://telegram.org', 'https://mc.yandex.ru'],
+        connectSrc: ["'self'", 'https://mc.yandex.ru'],
+        imgSrc: ["'self'", 'data:', 'https://mc.yandex.ru'],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  }));
   // Order matters: more-specific filter LAST (Nest applies them in reverse).
   // GenericExceptionFilter is the catch-all; PrismaExceptionFilter catches first.
   app.useGlobalFilters(new GenericExceptionFilter(), new PrismaExceptionFilter());

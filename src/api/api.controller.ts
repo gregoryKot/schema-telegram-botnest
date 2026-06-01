@@ -51,10 +51,7 @@ export class ApiController {
 
   @Get('link-token')
   async issueLinkToken(@Req() req: AuthRequest): Promise<{ linkToken: string; expiresIn: number }> {
-    const tokens = await this.authService.issueTokens(
-      uid(req), req.ip, (req.headers as any)['user-agent'],
-    );
-    return { linkToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+    return { linkToken: this.authService.buildLinkToken(uid(req)), expiresIn: 60 };
   }
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────

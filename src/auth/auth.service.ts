@@ -224,6 +224,29 @@ export class AuthService {
     return { accessToken, refreshToken: rawRefresh, expiresIn: ACCESS_TOKEN_TTL_S };
   }
 
+  // ─── Short-lived one-time link token (60s, for OAuth redirect URLs) ─────────
+
+  buildLinkToken(userId: bigint): string {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    return jwt.sign(
+      { sub: String(userId), type: 'link' },
+      secret,
+      { expiresIn: 60, algorithm: 'HS256', issuer: JWT_ISSUER, audience: JWT_AUDIENCE },
+    );
+  }
+
+  verifyLinkToken(token: string): { userId: bigint } {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    try {
+      const payload = jwt.verify(token, secret, { algorithms: ['HS256'], issuer: JWT_ISSUER, audience: JWT_AUDIENCE }) as { sub: string; type: string };
+      if (payload.type !== 'link') throw new UnauthorizedException('Wrong token type');
+      return { userId: BigInt(payload.sub) };
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
+      throw new UnauthorizedException('Invalid or expired link token');
+    }
+  }
+
   // ─── Token verification ────────────────────────────────────────────────────
 
   verifyAccessToken(token: string): { userId: BigInt } {
