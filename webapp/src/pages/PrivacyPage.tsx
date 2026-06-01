@@ -159,14 +159,19 @@ export function PrivacyPage() {
             </P>
           </Chapter>
 
-          <Chapter n="10" title="Cookie-файлы">
+          <Chapter n="10" title="Cookie-файлы" id="cookies">
+            <P><strong>Обязательные (технические) cookie — не требуют согласия:</strong></P>
             <Table rows={[
-              ['Сессионные cookie (авторизация)', 'Технические, обязательны для работы сайта. Хранятся до закрытия браузера или истечения сессии.'],
-              ['Refresh-token cookie', 'Используется для автоматического обновления сессии. Хранится до 30 дней или до выхода из системы.'],
+              ['Сессионные cookie (авторизация)', 'Необходимы для входа в систему. Хранятся до закрытия браузера или истечения сессии.'],
+              ['Refresh-token cookie', 'Автоматическое обновление сессии. Хранится до 30 дней или до выхода из системы.'],
+              ['OAuth-cookie (oauth_state, tg_pkce_verifier, google_nonce)', 'Временные, только на время процедуры входа через Google или Telegram. Удаляются сразу после завершения авторизации (до 10 минут).'],
+            ]} />
+            <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '16px 0 0' }}><strong>Аналитические cookie — только с вашего согласия:</strong></p>
+            <Table rows={[
+              ['Яндекс.Метрика (_ym_uid, _ym_d и др.)', 'Статистика посещений, тепловые карты, запись сессий (webvisor). Устанавливаются только если вы нажали «Принять все» в баннере согласия. Вы можете отозвать согласие, нажав «Только необходимые» при следующем визите или очистив localStorage (ключ cookie_consent).'],
             ]} />
             <P>
-              Маркетинговые, аналитические и рекламные cookie-файлы на сайте <strong>не используются</strong>.
-              Сторонние аналитические сервисы (Яндекс.Метрика, Google Analytics и т.п.) не подключены.
+              Рекламные и маркетинговые cookie-файлы на сайте <strong>не используются</strong>.
             </P>
           </Chapter>
 
@@ -206,9 +211,9 @@ export function PrivacyPage() {
 function Doc({ children }: { children: React.ReactNode }) {
   return <div style={{ display: 'flex', flexDirection: 'column', gap: 40, marginTop: 48 }}>{children}</div>;
 }
-function Chapter({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
+function Chapter({ n, title, id, children }: { n: string; title: string; id?: string; children: React.ReactNode }) {
   return (
-    <section>
+    <section id={id}>
       <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-.01em', paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
         <span style={{ color: 'var(--accent)', marginRight: 10, fontSize: 14, fontFamily: 'inherit', fontStyle: 'normal' }}>{n}.</span>{title}
       </h2>

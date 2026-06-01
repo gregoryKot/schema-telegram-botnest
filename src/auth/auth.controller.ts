@@ -416,6 +416,7 @@ export class AuthController {
 
   // ─── Telegram WebApp initData (mini-app auto-auth) ────────────────────────
 
+  @Throttle({ short: { limit: 5, ttl: 60_000 }, long: { limit: 30, ttl: 3_600_000 } })
   @Post('telegram/webapp')
   @HttpCode(200)
   async telegramWebApp(
@@ -610,7 +611,6 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async issueLinkToken(@Req() req: any): Promise<{ linkToken: string; expiresIn: number }> {
     const webUser: WebUser = req.webUser;
-    const tokens = await this.auth.issueTokens(webUser.userId as bigint, req.ip, req.headers['user-agent']);
-    return { linkToken: tokens.accessToken, expiresIn: tokens.expiresIn };
+    return { linkToken: this.auth.buildLinkToken(webUser.userId as bigint), expiresIn: 60 };
   }
 }

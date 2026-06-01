@@ -42,6 +42,10 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
+# Claude Code local settings (may contain env vars from permission prompts)
+.claude/settings.local.json
+.claude/worktrees/
+
 # temp directory
 .temp
 .tmp

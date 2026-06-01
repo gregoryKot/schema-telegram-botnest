@@ -19,6 +19,7 @@ import { AuthCallback } from './pages/AuthCallback';
 import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
 import { AppShell } from './components/AppShell';
+import { CookieBanner } from './components/CookieBanner';
 import { LandingPage } from './pages/LandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { OfferPage } from './pages/OfferPage';
@@ -51,6 +52,7 @@ function Root() {
       <TokenBridge />
       <MetrikaTracker />
       <Outlet />
+      <CookieBanner />
     </AuthProvider>
   );
 }

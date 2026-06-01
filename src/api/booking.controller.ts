@@ -50,7 +50,7 @@ export class BookingController {
       .filter(Boolean)
       .join('\n');
 
-    this.logger.log(`New booking: name="${n}" contact="${c}"`);
+    this.logger.log('New booking received');
     await this.telegram.notifyAdmin(text);
 
     return { ok: true };

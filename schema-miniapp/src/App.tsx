@@ -351,6 +351,20 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Clear YSQ data from localStorage if it belongs to a different Telegram user.
+    // Prevents a shared-device scenario where person B reads person A's clinical data.
+    const currentUserId = String((window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id ?? '');
+    if (currentUserId) {
+      const storedUserId = localStorage.getItem('ysq_owner_id');
+      if (storedUserId && storedUserId !== currentUserId) {
+        localStorage.removeItem(YSQ_RESULT_KEY);
+        localStorage.removeItem(YSQ_PROGRESS_KEY);
+      }
+      localStorage.setItem('ysq_owner_id', currentUserId);
+    }
+  }, []);
+
+  useEffect(() => {
     window.Telegram?.WebApp?.ready();
     window.Telegram?.WebApp?.expand();
     window.Telegram?.WebApp?.disableVerticalSwipes?.();

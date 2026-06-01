@@ -44,7 +44,7 @@ export class OptionalJwtGuard implements CanActivate {
     const linkToken = req.query?.link_token as string | undefined;
     if (!req.webUser && linkToken) {
       try {
-        const { userId } = this.auth.verifyAccessToken(linkToken);
+        const { userId } = this.auth.verifyLinkToken(linkToken);
         req.webUser = { userId };
       } catch { /* ignore */ }
     }
