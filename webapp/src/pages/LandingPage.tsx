@@ -237,7 +237,7 @@ const EDUCATION: { year: string; title: string; place: string; placeUrl?: string
     title: 'Когнитивно-поведенческая терапия',
     place: 'МАНП',
     placeUrl: 'https://manp.academy/',
-    note: 'программа профессиональной подготовки, 288 часов',
+    note: 'расширенный курс · преп. Юлия Горячева, президент АДБТ',
   },
   {
     year: '2026',
