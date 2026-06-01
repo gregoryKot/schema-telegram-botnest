@@ -219,19 +219,24 @@ function BookingForm() {
 // ─── Education ───────────────────────────────────────────────────────────────
 const EDUCATION = [
   {
-    year: '2024 –',
-    title: 'МИП · Бакалавриат',
-    sub: 'Московский институт психоанализа · Психология, психотерапия качества жизни',
+    year: '2024 – наст. вр.',
+    title: 'Психология · бакалавриат',
+    sub: 'Московский институт психоанализа · профиль «Психотерапия качества жизни»',
   },
   {
     year: '2025',
-    title: 'Практик схема-терапии',
-    sub: '«Практик схема-терапии. Базовый курс» · 47 ак.ч. теории и практики · Лазарев М.А.',
+    title: 'Схема-терапия',
+    sub: 'Базовый курс «Практик схема-терапии» · 47 часов · преп. М. А. Лазарев',
   },
   {
     year: '2025–26',
-    title: 'КПТ · 288 часов',
-    sub: 'Когнитивно-поведенческая терапия · МАНП · 288 ак.ч.',
+    title: 'Когнитивно-поведенческая терапия',
+    sub: 'МАНП · программа профессиональной подготовки, 288 часов',
+  },
+  {
+    year: '2025',
+    title: 'Майндфулнесс и медитация',
+    sub: 'Школа Осознанности · подготовка преподавателей MMTTP · 150+ часов практики',
   },
 ];
 
@@ -545,9 +550,12 @@ export function LandingPage() {
         <div className="edu-grid" style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Образование</p>
-            <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.2, letterSpacing: '-.01em' }}>
+            <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 18px', lineHeight: 1.2, letterSpacing: '-.01em' }}>
               Подготовка<br /><span style={{ fontStyle: 'italic' }}>и обучение</span>
             </h2>
+            <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0, maxWidth: 290 }}>
+              Регулярно повышаю квалификацию – это методы, которые использую в работе с вами.
+            </p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {EDUCATION.map((item, i) => (
