@@ -185,7 +185,7 @@ function BookingForm() {
     <div style={{ textAlign: 'center', padding: '56px 0' }}>
       <div style={{ fontSize: 56, marginBottom: 20 }}>✉️</div>
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Заявка отправлена</h3>
-      <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7 }}>Свяжусь в течение дня. Договоримся о времени.</p>
+      <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7 }}>Свяжусь с вами в течение дня – обсудим время для знакомства. Если написали вечером, отвечу утром.</p>
     </div>
   );
 
@@ -193,7 +193,7 @@ function BookingForm() {
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="form-grid">
         <div><label style={labelSt}>Имя *</label><input style={field} placeholder="Ваше имя" value={name} onChange={e => setName(e.target.value)} required maxLength={100} /></div>
-        <div><label style={labelSt}>Telegram / телефон *</label><input style={field} placeholder="@username" value={contact} onChange={e => setContact(e.target.value)} required maxLength={100} /></div>
+        <div><label style={labelSt}>Telegram / телефон *</label><input style={field} placeholder="@username или телефон" value={contact} onChange={e => setContact(e.target.value)} required maxLength={100} /></div>
       </div>
       <div>
         <label style={labelSt}>Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
@@ -205,9 +205,9 @@ function BookingForm() {
           Я ознакомился(ась) с{' '}<a href="/privacy" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Политикой конфиденциальности</a>{' '}и даю согласие на обработку данных
         </span>
       </label>
-      {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Не вышло – напишите напрямую: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
+      {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Что-то не отправилось. Напишите мне напрямую в Telegram – отвечу лично: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
       <Btn type="submit" size="lg" radius="btn" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent} style={{ alignSelf: 'flex-start' }}>
-        {status === 'loading' ? 'Отправляю…' : 'Записаться на встречу →'}
+        {status === 'loading' ? 'Отправляю…' : 'Записаться на знакомство →'}
       </Btn>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Первая встреча 15 минут – бесплатно. Никаких обязательств.</p>
     </form>
@@ -459,7 +459,7 @@ export function LandingPage() {
                 Мы снова и снова попадаем в одни и те же ситуации – в отношениях, самооценке, тревоге. Схема-терапия помогает понять почему – и найти выход.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <Btn size="lg" onClick={scrollToBooking}>Записаться на встречу →</Btn>
+                <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
                 <Btn variant="ghost" size="lg" href="https://t.me/kotlarewski">Написать в Telegram ↗</Btn>
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '16px 0 0' }}>
