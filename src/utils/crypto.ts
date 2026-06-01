@@ -17,10 +17,27 @@ function loadKeys(): { current: Buffer | null; all: Buffer[] } {
 }
 const { current: CURRENT_KEY, all: ALL_KEYS } = loadKeys();
 
+// Fail loudly in production if no key is configured — silently storing
+// sensitive psychology notes in plaintext is unacceptable.
+if (process.env.NODE_ENV === 'production' && !CURRENT_KEY) {
+  // Throwing at module-load time means the process crashes on boot, which
+  // is what we want — better than running with broken encryption.
+  throw new Error(
+    'FATAL: ENCRYPTION_KEY missing or wrong length in production. ' +
+    'Generate one: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+  );
+}
+
 export function encrypt(text: string | null | undefined): string | null {
-  if (!text || !CURRENT_KEY) return text ?? null;
+  if (!text) return text ?? null;
+  if (!CURRENT_KEY) {
+    if (process.env.NODE_ENV === 'production') throw new Error('ENCRYPTION_KEY is not configured — refusing to store plaintext');
+    return text;
+  }
   const iv = randomBytes(12);
-  const cipher = createCipheriv('aes-256-gcm', CURRENT_KEY, iv);
+  // authTagLength: 16 — defense in depth. GCM допускает тэги 4–16 байт;
+  // явное пиннование к 16 не даёт случайно ослабить аутентификацию.
+  const cipher = createCipheriv('aes-256-gcm', CURRENT_KEY, iv, { authTagLength: 16 });
   const enc = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
   const tag = cipher.getAuthTag();
   return Buffer.concat([iv, tag, enc]).toString('base64');
@@ -41,7 +58,10 @@ export function decrypt(value: string | null | undefined): string | null {
   // Try each known key — current first, then old keys.
   for (const key of ALL_KEYS) {
     try {
-      const decipher = createDecipheriv('aes-256-gcm', key, iv);
+      // authTagLength: 16 — отбрасывать тэги короче 16 байт; здесь tag всегда
+      // subarray(12,28) = 16, но явный опшен закрепляет контракт (semgrep
+      // gcm-no-tag-length / defense in depth).
+      const decipher = createDecipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
       decipher.setAuthTag(tag);
       return decipher.update(data).toString('utf8') + decipher.final('utf8');
     } catch { /* wrong key, try next */ }

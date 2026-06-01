@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ExScreen, GlyphCheck } from './exercises/ExScreen';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 import { api } from '../api';
@@ -6,8 +9,8 @@ import { api } from '../api';
 const BELIEFS: Record<string, string[]> = {
   emotional_deprivation:     ['Никто никогда по-настоящему не позаботится обо мне', 'Я обречён(а) быть один(а) в своих переживаниях'],
   abandonment:               ['Все рано или поздно уходят', 'Я не могу рассчитывать на близких'],
-  mistrust:                  ['Если открыться — обязательно предадут', 'Люди используют тех, кто им доверяет'],
-  defectiveness:             ['Со мной что-то фундаментально не так', 'Если узнают правду — отвергнут'],
+  mistrust:                  ['Если открыться – обязательно предадут', 'Люди используют тех, кто им доверяет'],
+  defectiveness:             ['Со мной что-то фундаментально не так', 'Если узнают правду – отвергнут'],
   social_isolation:          ['Я не такой(ая) как все', 'Я не вписываюсь ни в одну группу или сообщество'],
   dependence:                ['Я не справлюсь сам(а)', 'Без поддержки я беспомощен(на)'],
   vulnerability:             ['Что-то плохое вот-вот случится', 'Мир опасен, и я не защищён(а)'],
@@ -15,15 +18,15 @@ const BELIEFS: Record<string, string[]> = {
   failure:                   ['Я всегда проваливаюсь там, где другие успешны', 'Я глупее и некомпетентнее других'],
   entitlement:               ['Правила существуют для других, не для меня', 'Я заслуживаю особого отношения'],
   insufficient_self_control: ['Я не могу себя контролировать', 'Терпеть дискомфорт или откладывать удовольствие невыносимо'],
-  subjugation:               ['Если скажу что думаю — будет только хуже', 'Мои желания и чувства неважны'],
-  self_sacrifice:            ['Сначала все остальные, потом я', 'Думать о своём — это эгоизм'],
-  approval_seeking:          ['Мне очень важно, что обо мне думают', 'Если не нравлюсь — значит, со мной что-то не так'],
-  negativity:                ['Всё равно ничего хорошего не выйдет', 'Лучше не надеяться — не разочаруешься'],
-  emotion_inhibition_fear:   ['Если дам волю злости — потеряю контроль', 'Мои сильные эмоции опасны для других'],
-  emotional_inhibition:      ['Показывать чувства — это слабость', 'Лучше держаться и не показывать вида'],
-  unrelenting_standards:     ['Я должен(на) быть идеальным(ой)', 'Ошибаться — недопустимо'],
-  punitiveness_self:         ['Я заслуживаю наказания за ошибки', 'Прощать себя — значит оправдывать слабость'],
-  punitiveness_others:       ['Людей нужно жёстко наказывать за ошибки', 'Прощать слабости — значит поощрять их'],
+  subjugation:               ['Если скажу что думаю – будет только хуже', 'Мои желания и чувства неважны'],
+  self_sacrifice:            ['Сначала все остальные, потом я', 'Думать о своём – это эгоизм'],
+  approval_seeking:          ['Мне очень важно, что обо мне думают', 'Если не нравлюсь – значит, со мной что-то не так'],
+  negativity:                ['Всё равно ничего хорошего не выйдет', 'Лучше не надеяться – не разочаруешься'],
+  emotion_inhibition_fear:   ['Если дам волю злости – потеряю контроль', 'Мои сильные эмоции опасны для других'],
+  emotional_inhibition:      ['Показывать чувства – это слабость', 'Лучше держаться и не показывать вида'],
+  unrelenting_standards:     ['Я должен(на) быть идеальным(ой)', 'Ошибаться – недопустимо'],
+  punitiveness_self:         ['Я заслуживаю наказания за ошибки', 'Прощать себя – значит оправдывать слабость'],
+  punitiveness_others:       ['Людей нужно жёстко наказывать за ошибки', 'Прощать слабости – значит поощрять их'],
 };
 
 function readSchemaIds(): string[] {
@@ -33,10 +36,11 @@ function readSchemaIds(): string[] {
 interface Props {
   schemaId: string;
   onClose: () => void;
-  onOpenDiary: () => void;
 }
 
-export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
+export function SchemaDetailSheet({ schemaId, onClose }: Props) {
+  const navigate = useNavigate();
+  const goBack = useHistorySheet(onClose);
   const domainEntry = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === schemaId));
   const schema = domainEntry?.schemas.find(s => s.id === schemaId);
   const [myIds, setMyIds] = useState<string[]>(readSchemaIds);
@@ -57,103 +61,70 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
   }
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 90,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex', alignItems: 'flex-end',
-      }}
+    <ExScreen
+      onBack={goBack}
+      backLabel="Назад"
+      eyebrow={domainEntry.domain}
+      eyebrowColor={domainColor}
+      title={<>{schema.name}</>}
+      lede={schema.libraryDesc ?? schema.desc}
+      aside={
+        <div className="aside-card" style={{ borderColor: domainColor + '40', background: domainColor + '08', position: 'sticky', top: 40 }}>
+          <div className="aside-card-eyebrow" style={{ color: domainColor }}>Домен</div>
+          <h3 style={{ fontSize: 18 }}>{domainEntry.domain}</h3>
+          <p className="body">{'Группа схем, связанных общей темой.'}</p>
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              onClick={toggleSchema}
+              className={'ex-btn ' + (isAdded ? 'ex-btn-outline' : 'ex-btn-ghost')}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
+            </button>
+            <button
+              onClick={() => { onClose(); navigate('/exercises', { state: { openSchemaEx: schemaId } }); }}
+              className="ex-btn ex-btn-primary"
+              style={{ width: '100%' }}
+            >
+              Познакомиться →
+            </button>
+          </div>
+        </div>
+      }
     >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          width: '100%',
-          background: 'var(--sheet-bg)',
-          borderRadius: '24px 24px 0 0',
-          padding: '8px 20px 40px',
-          maxHeight: '80%',
-          overflowY: 'auto',
-          animation: 'sheet-up 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-        }}
-      >
-        {/* Handle */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--line)', margin: '8px auto 20px' }} />
-
-        {/* Domain + Schema name */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
-          <div style={{ width: 10, height: 10, borderRadius: 5, background: domainColor, flexShrink: 0, marginTop: 7 }} />
-          <div>
-            <div className="eyebrow" style={{ color: domainColor, marginBottom: 5 }}>
-              {domainEntry.domain}
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.3px' }}>
-              {schema.name}
-            </div>
-          </div>
-        </div>
-
-        {/* Description */}
-        <div style={{
-          background: 'transparent', border: '1px solid var(--line)',
-          borderRadius: 16, padding: '14px 16px', marginBottom: 14,
-        }}>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.65 }}>
-            {schema.libraryDesc ?? schema.desc}
-          </div>
-        </div>
-
-        {/* Beliefs */}
-        {beliefs.length > 0 && (
-          <>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>Типичные убеждения</div>
-            <div style={{
-              background: 'transparent', border: '1px solid var(--line)',
-              borderRadius: 16, padding: '4px 16px', marginBottom: 16,
-            }}>
+      {beliefs.length > 0 && (
+        <div className="prompt">
+          <div className="prompt-num">·</div>
+          <div style={{ width: '100%' }}>
+            <div className="prompt-label">Типичные убеждения</div>
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 0 }}>
               {beliefs.map((b, i) => (
-                <div key={i} style={{
-                  display: 'flex', gap: 10, padding: '10px 0',
-                  borderTop: i > 0 ? '1px solid var(--line)' : undefined,
-                }}>
-                  <span style={{ color: domainColor, flexShrink: 0, fontSize: 18, lineHeight: 1 }}>·</span>
-                  <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, fontStyle: 'italic' }}>
-                    «{b}»
-                  </span>
+                <div key={i} style={{ padding: '16px 0', borderTop: '1px solid var(--line)', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                  <span style={{ color: domainColor, fontFamily: 'var(--serif)', fontSize: 22, lineHeight: 1, flexShrink: 0 }}>·</span>
+                  <span style={{ fontFamily: 'var(--serif)', fontSize: 18, fontStyle: 'italic', lineHeight: 1.55, color: 'var(--text)' }}>«{b}»</span>
                 </div>
               ))}
+              <div style={{ borderTop: '1px solid var(--line)' }} />
             </div>
-          </>
-        )}
-
-        {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={toggleSchema}
-            style={{
-              flex: 1, padding: '13px', borderRadius: 14, border: 'none',
-              fontFamily: 'inherit',
-              background: isAdded ? 'transparent' : 'color-mix(in srgb, var(--accent) 12%, transparent)',
-              outline: `1px solid ${isAdded ? 'var(--line)' : 'color-mix(in srgb, var(--accent) 30%, transparent)'}`,
-              color: isAdded ? 'var(--text-faint)' : 'var(--accent)',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-            }}
-          >
-            {isAdded ? '✓ В моих схемах' : '+ В мои схемы'}
-          </button>
-          <button
-            onClick={() => { onClose(); onOpenDiary(); }}
-            style={{
-              flex: 1, padding: '13px', borderRadius: 14, border: 'none',
-              fontFamily: 'inherit',
-              background: 'linear-gradient(135deg, var(--accent), #60a5fa)',
-              color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            }}
-          >
-            Познакомиться →
-          </button>
+          </div>
         </div>
+      )}
+
+      {/* Mobile action buttons (aside hidden on small screens) */}
+      <div className="ex-foot">
+        <button
+          onClick={toggleSchema}
+          className={'ex-btn ' + (isAdded ? 'ex-btn-outline' : 'ex-btn-ghost')}
+        >
+          {isAdded ? <><GlyphCheck /> В моих схемах</> : '+ В мои схемы'}
+        </button>
+        <button
+          onClick={() => { onClose(); navigate('/exercises', { state: { openSchemaEx: schemaId } }); }}
+          className="ex-btn ex-btn-primary"
+        >
+          Познакомиться →
+        </button>
       </div>
-    </div>
+    </ExScreen>
   );
 }

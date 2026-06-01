@@ -75,7 +75,7 @@ const ONBOARDING_STEPS = [
   {
     emoji: '👆',
     title: 'Оценивай действия',
-    text: 'Не «я вроде чувствую близость», а «кто-то обнял» или «я сказал, что думаю». Оценка от 1 до 10 — потяни ползунок.',
+    text: 'Не «я вроде чувствую близость», а «кто-то обнял» или «я сказал, что думаю». Оценка от 1 до 10 – потяни ползунок.',
   },
   {
     emoji: '💡',
@@ -96,37 +96,31 @@ function OnboardingCard({ onDismiss }: { onDismiss: () => void }) {
   const isLast = step === total - 1;
 
   return (
-    <div className="card" style={{
-      borderRadius: 16, padding: '16px 18px', marginBottom: 24,
-    }}>
+    <div style={{ borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', paddingBottom: 20, marginBottom: 24 }}>
       {/* Step dots */}
       <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
         {ONBOARDING_STEPS.map((_, i) => (
-          <div key={i} onClick={() => setStep(i)} style={{ width: i === step ? 18 : 6, height: 6, borderRadius: 3, background: i === step ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.15)', cursor: 'pointer', transition: 'all 0.2s' }} />
+          <div key={i} onClick={() => setStep(i)} style={{ width: i === step ? 18 : 6, height: 6, borderRadius: 3, background: i === step ? 'var(--text)' : 'rgba(var(--fg-rgb),0.15)', cursor: 'pointer', transition: 'all 0.2s' }} />
         ))}
       </div>
 
       {/* Content */}
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 16 }}>
-        <span style={{ fontSize: 28, flexShrink: 0, lineHeight: 1 }}>{current.emoji}</span>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 14 }}>
+        <span style={{ fontSize: 26, flexShrink: 0, lineHeight: 1 }}>{current.emoji}</span>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 5 }}>{current.title}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{current.title}</div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{current.text}</div>
         </div>
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button
-          onClick={onDismiss}
-          style={{ padding: '8px 14px', border: 'none', borderRadius: 10, background: 'transparent', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}
-        >
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button onClick={onDismiss}
+          style={{ padding: '6px 12px', border: 'none', borderRadius: 6, background: 'transparent', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>
           Пропустить
         </button>
-        <button
-          onClick={() => isLast ? onDismiss() : setStep(s => s + 1)}
-          style={{ flex: 1, padding: '9px 0', border: 'none', borderRadius: 10, background: 'color-mix(in srgb, var(--accent) 14%, transparent)', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-        >
+        <button onClick={() => isLast ? onDismiss() : setStep(s => s + 1)}
+          style={{ padding: '6px 16px', border: 'none', borderRadius: 6, background: 'var(--text)', color: 'var(--bg)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
           {isLast ? 'Понятно, начнём' : 'Далее →'}
         </button>
       </div>
@@ -172,7 +166,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
 
   const handleChange = useCallback((needId: string, value: number) => {
     onChange(needId, value);
-    if (isOffline) return; // visual update only — no save while offline
+    if (isOffline) return; // visual update only – no save while offline
     // Keep slider unlocked while user is actively dragging + 2.5s after last move
     setUnlocked(prev => new Set([...prev, needId]));
     clearTimeout(unlockTimers.current[needId]);
@@ -194,7 +188,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
   }, [onChange, onSaved, isOffline]);
 
   // Summary calculations
-  // index = sum of all needs (unrated = 0) / total needs — same formula as server getPair
+  // index = sum of all needs (unrated = 0) / total needs – same formula as server getPair
   const avg = needs.length > 0
     ? needs.reduce((s, n) => s + (ratings[n.id] ?? 0), 0) / needs.length
     : 0;
@@ -256,7 +250,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color }}>Сделать завтра что-то для себя</div>
                   <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>
-                    Один маленький шаг — пока помнишь
+                    Один маленький шаг – пока помнишь
                   </div>
                 </div>
                 <span style={{ fontSize: 16, color: color + '88', flexShrink: 0 }}>›</span>
@@ -305,7 +299,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
       {/* Note button + auto-save status */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 18 }}>
         <div style={{ fontSize: 12, color: saveError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.3)' }}>
-          {saveError ? 'Ошибка сохранения — потяни слайдер ещё раз' : lastSavedAt && `Сохранено ${lastSavedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`}
+          {saveError ? 'Ошибка сохранения – потяни слайдер ещё раз' : lastSavedAt && `Сохранено ${lastSavedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
@@ -346,7 +340,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
           <span style={{ fontSize: 20, flexShrink: 0 }}>🗂</span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Что тебе помогает?</div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>Добавь практики — будут под рукой в нужный момент</div>
+            <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>Добавь практики – будут под рукой в нужный момент</div>
           </div>
           <button
             onClick={e => { e.stopPropagation(); localStorage.setItem(PRACTICES_ONBOARDING_KEY, '1'); setPracticesCardVisible(false); }}

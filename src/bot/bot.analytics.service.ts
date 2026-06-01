@@ -11,22 +11,22 @@ export class BotAnalyticsService {
     return localDate(tz, base);
   }
 
-  private async userTimezone(userId: number): Promise<string> {
+  private async userTimezone(userId: bigint): Promise<string> {
     const user = await this.prisma.user.findUnique({
-      where: { id: BigInt(userId) },
+      where: { id: userId },
       select: { notifyTimezone: true },
     });
     return user?.notifyTimezone ?? 'Europe/Moscow';
   }
 
-  async getHistoryRatings(userId: number, days: number): Promise<Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>> {
+  async getHistoryRatings(userId: bigint, days: number): Promise<Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>> {
     const tz = await this.userTimezone(userId);
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       return this.localDateString(tz, d);
     });
-    const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId), date: { in: dates } } });
+    const rows = await this.prisma.rating.findMany({ where: { userId, date: { in: dates } } });
     const byDate = new Map<string, Partial<Record<NeedId, number>>>();
     for (const row of rows) {
       if (!byDate.has(row.date)) byDate.set(row.date, {});
@@ -35,24 +35,24 @@ export class BotAnalyticsService {
     return dates.filter((d) => byDate.has(d)).map((d) => ({ date: d, ratings: byDate.get(d)! }));
   }
 
-  async getLowStreakNeeds(userId: number, threshold: number, days: number): Promise<NeedId[]> {
+  async getLowStreakNeeds(userId: bigint, threshold: number, days: number): Promise<NeedId[]> {
     const tz = await this.userTimezone(userId);
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       return this.localDateString(tz, d);
     });
-    const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId), date: { in: dates } } });
+    const rows = await this.prisma.rating.findMany({ where: { userId, date: { in: dates } } });
     return NEED_IDS.filter((needId) => {
       const needRows = rows.filter((r) => r.needId === needId);
       return needRows.length === days && needRows.every((r) => r.value < threshold);
     });
   }
 
-  async getConsecutiveDays(userId: number): Promise<number> {
+  async getConsecutiveDays(userId: bigint): Promise<number> {
     const tz = await this.userTimezone(userId);
     const rows = await this.prisma.rating.findMany({
-      where: { userId: BigInt(userId) },
+      where: { userId },
       select: { date: true },
       distinct: ['date'],
     });
@@ -66,18 +66,18 @@ export class BotAnalyticsService {
     return count;
   }
 
-  async getTotalDaysFilled(userId: number): Promise<number> {
+  async getTotalDaysFilled(userId: bigint): Promise<number> {
     const rows = await this.prisma.rating.findMany({
-      where: { userId: BigInt(userId) },
+      where: { userId },
       select: { date: true },
       distinct: ['date'],
     });
     return rows.length;
   }
 
-  async getDaysSinceLastFill(userId: number): Promise<number> {
+  async getDaysSinceLastFill(userId: bigint): Promise<number> {
     const last = await this.prisma.rating.findFirst({
-      where: { userId: BigInt(userId) },
+      where: { userId },
       orderBy: { date: 'desc' },
       select: { date: true },
     });
@@ -88,12 +88,12 @@ export class BotAnalyticsService {
     return Math.floor(diffMs / 86_400_000);
   }
 
-  async getWeeklyStats(userId: number): Promise<Array<{ needId: NeedId; avg: number | null; trend: '↑' | '↓' | '→' }>> {
+  async getWeeklyStats(userId: bigint): Promise<Array<{ needId: NeedId; avg: number | null; trend: '↑' | '↓' | '→' }>> {
     const tz = await this.userTimezone(userId);
     const last14 = Array.from({ length: 14 }, (_, i) =>
       this.localDateString(tz, new Date(Date.now() - i * 86_400_000)),
     );
-    const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId), date: { in: last14 } } });
+    const rows = await this.prisma.rating.findMany({ where: { userId, date: { in: last14 } } });
     const curSet = new Set(last14.slice(0, 7));
     const prevSet = new Set(last14.slice(7));
 
@@ -110,14 +110,14 @@ export class BotAnalyticsService {
     });
   }
 
-  async getAchievements(userId: number): Promise<Array<{ id: string; earned: boolean }>> {
+  async getAchievements(userId: bigint): Promise<Array<{ id: string; earned: boolean }>> {
     const streak = await this.getStreakData(userId);
     const total = streak.totalDays;
     const longest = streak.longestStreak;
 
     // Check for high index day or all-needs day
     const rows = await this.prisma.rating.findMany({
-      where: { userId: BigInt(userId) },
+      where: { userId },
       select: { date: true, needId: true, value: true },
     });
     const byDate = new Map<string, Record<string, number>>();
@@ -175,8 +175,8 @@ export class BotAnalyticsService {
   }
 
   /** Collect all active dates from any source: ratings, diaries, or explicit app activity. */
-  private async getActiveDates(userId: number): Promise<Set<string>> {
-    const uid = BigInt(userId);
+  private async getActiveDates(userId: bigint): Promise<Set<string>> {
+    const uid = userId;
     const [ratings, activity, schema, mode, gratitude] = await Promise.all([
       this.prisma.rating.findMany({ where: { userId: uid }, select: { date: true }, distinct: ['date'] }),
       this.prisma.appActivity.findMany({ where: { userId: uid }, select: { date: true } }),
@@ -194,18 +194,18 @@ export class BotAnalyticsService {
     return set;
   }
 
-  async recordActivity(userId: number): Promise<{ ok: boolean }> {
+  async recordActivity(userId: bigint): Promise<{ ok: boolean }> {
     const tz = await this.userTimezone(userId);
     const date = this.localDateString(tz);
     await this.prisma.appActivity.upsert({
-      where: { userId_date: { userId: BigInt(userId), date } },
-      create: { userId: BigInt(userId), date },
+      where: { userId_date: { userId, date } },
+      create: { userId, date },
       update: {},
     });
     return { ok: true };
   }
 
-  async getStreakData(userId: number): Promise<{
+  async getStreakData(userId: bigint): Promise<{
     currentStreak: number;
     longestStreak: number;
     totalDays: number;
@@ -259,8 +259,8 @@ export class BotAnalyticsService {
     };
   }
 
-  async getBestDayOfWeek(userId: number): Promise<string | null> {
-    const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId) } });
+  async getBestDayOfWeek(userId: bigint): Promise<string | null> {
+    const rows = await this.prisma.rating.findMany({ where: { userId } });
     if (rows.length === 0) return null;
     const sumByDow = new Map<number, { sum: number; count: number }>();
     const DAY_NAMES = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
@@ -377,8 +377,8 @@ export class BotAnalyticsService {
     return lines.join('\n');
   }
 
-  async getWorstDayOfWeek(userId: number): Promise<string | null> {
-    const rows = await this.prisma.rating.findMany({ where: { userId: BigInt(userId) } });
+  async getWorstDayOfWeek(userId: bigint): Promise<string | null> {
+    const rows = await this.prisma.rating.findMany({ where: { userId } });
     if (rows.length === 0) return null;
     const sumByDow = new Map<number, { sum: number; count: number }>();
     const DAY_NAMES = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];

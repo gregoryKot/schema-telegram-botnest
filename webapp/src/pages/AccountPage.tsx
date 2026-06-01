@@ -64,7 +64,7 @@ export function AccountPage() {
         }
         const data = await res.json() as { ok?: true } | { merge: true; mergeToken: string; summary: Record<string, number> };
         if ('merge' in data) {
-          // Conflict — go to merge confirmation
+          // Conflict – go to merge confirmation
           const params = new URLSearchParams({
             token: data.mergeToken,
             summary: JSON.stringify(data.summary),
@@ -93,13 +93,23 @@ export function AccountPage() {
     return () => { delete window.onTelegramLink; };
   }, [showTgWidget, accessToken]);
 
-  const linkGoogle = () => {
-    sessionStorage.setItem('auth_return_to', '/account');
-    window.location.href = `${API_BASE}/api/auth/google?link_token=${encodeURIComponent(accessToken ?? '')}`;
+  const fetchLinkToken = async (): Promise<string> => {
+    const res = await fetch(`${API_BASE}/api/auth/link-token`, {
+      credentials: 'include',
+      headers: { Authorization: `Bearer ${accessToken ?? ''}` },
+    });
+    const { linkToken } = await res.json() as { linkToken: string };
+    return linkToken;
   };
-  const linkVk = () => {
+  const linkGoogle = async () => {
     sessionStorage.setItem('auth_return_to', '/account');
-    window.location.href = `${API_BASE}/api/auth/vk?link_token=${encodeURIComponent(accessToken ?? '')}`;
+    const token = await fetchLinkToken();
+    window.location.href = `${API_BASE}/api/auth/google?link_token=${encodeURIComponent(token)}`;
+  };
+  const linkVk = async () => {
+    sessionStorage.setItem('auth_return_to', '/account');
+    const token = await fetchLinkToken();
+    window.location.href = `${API_BASE}/api/auth/vk?link_token=${encodeURIComponent(token)}`;
   };
 
   const unlink = async (provider: 'google' | 'telegram' | 'vk') => {
@@ -136,7 +146,7 @@ export function AccountPage() {
 
       <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 8 }}>Аккаунт</h1>
       <p style={{ color: 'var(--text-sub)', fontSize: 14, marginBottom: 24 }}>
-        Привязывай несколько способов входа — заходи откуда удобно
+        Привязывай несколько способов входа – заходи откуда удобно
       </p>
 
       {error && (
@@ -170,7 +180,7 @@ export function AccountPage() {
                 Отвязать
               </button>
             ) : (
-              <button disabled={busy} onClick={linkGoogle} style={{ background: 'var(--accent)', border: 'none', color: 'white', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <button disabled={busy} onClick={linkGoogle} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                 Привязать
               </button>
             )}
@@ -192,7 +202,7 @@ export function AccountPage() {
                 Отвязать
               </button>
             ) : (
-              <button disabled={busy} onClick={() => setShowTgWidget(true)} style={{ background: 'var(--accent)', border: 'none', color: 'white', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <button disabled={busy} onClick={() => setShowTgWidget(true)} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                 Привязать
               </button>
             )}
@@ -220,7 +230,7 @@ export function AccountPage() {
                 Отвязать
               </button>
             ) : (
-              <button disabled={busy} onClick={linkVk} style={{ background: 'var(--accent)', border: 'none', color: 'white', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <button disabled={busy} onClick={linkVk} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                 Привязать
               </button>
             )}
@@ -300,15 +310,15 @@ function TherapistRequestSection({ accessToken }: { accessToken: string | null }
       <div className="eyebrow" style={{ marginBottom: 8 }}>Роль психолога</div>
       {req?.status === 'pending' ? (
         <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-          ⏳ Твоя заявка на рассмотрении. Когда админ её обработает — придёт уведомление в Telegram.
+          ⏳ Твоя заявка на рассмотрении. Когда админ её обработает – придёт уведомление в Telegram.
         </div>
       ) : req?.status === 'approved' ? (
         <div className="card-elevated" style={{ padding: 16, fontSize: 13, color: 'var(--accent-green)' }}>
           ✅ Заявка одобрена. Перезайди в приложение.
         </div>
       ) : !open ? (
-        <button onClick={() => setOpen(true)} style={{ width: '100%', padding: '14px 0', borderRadius: 12, border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)', background: 'color-mix(in srgb, var(--accent) 8%, transparent)', color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-          👨‍⚕️ Я психолог — подать заявку
+        <button onClick={() => setOpen(true)} style={{ padding: '9px 20px', borderRadius: 6, border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+          👨‍⚕️ Я психолог – подать заявку
         </button>
       ) : (
         <div className="card-elevated" style={{ padding: 16 }}>
@@ -329,7 +339,7 @@ function TherapistRequestSection({ accessToken }: { accessToken: string | null }
             style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8, background: 'rgba(var(--fg-rgb),0.06)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', resize: 'vertical' }} />
           <div style={{ display: 'flex', gap: 8 }}>
             <button disabled={busy} onClick={() => setOpen(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>Отмена</button>
-            <button disabled={busy} onClick={submit} style={{ flex: 2, padding: '12px 0', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
+            <button disabled={busy} onClick={submit} style={{ flex: 2, padding: '10px 0', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
           </div>
           {err && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 8 }}>{err}</div>}
         </div>

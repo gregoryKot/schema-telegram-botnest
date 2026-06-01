@@ -1,23 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 
-// Canvas fillStyle не понимает CSS-переменные — только hex
+// Canvas fillStyle не понимает CSS-переменные – только hex
 const COLORS = ['#ff6b9d', '#facc15', '#06d6a0', '#a78bfa', '#4fa3f7', '#ff9a3c'];
 
 const MILESTONE_TEXT: Record<number, string> = {
-  3:   'Хорошее начало — паттерн уже виден',
+  3:   'Хорошее начало – паттерн уже виден',
   7:   'Неделя подряд. Это настоящий сдвиг',
   14:  'Две недели подряд. Паттерн становится стабильным',
   21:  '21 день. Тело и ум уже запомнили этот ритм',
   30:  'Месяц. Ты видишь себя по-новому',
   60:  'Два месяца подряд. Это часть тебя',
-  100: '100 дней. Это не просто привычка — это ты',
+  100: '100 дней. Это не просто привычка – это ты',
 };
 
 function getMilestoneText(streak: number): string {
   const milestones = [100, 60, 30, 21, 14, 7, 3];
   const hit = milestones.find(m => streak === m);
   if (hit) return MILESTONE_TEXT[hit];
-  return streak === 1 ? 'Первый день — самый важный' : `${streak} ${pluralDays(streak)} подряд`;
+  return streak === 1 ? 'Первый день – самый важный' : `${streak} ${pluralDays(streak)} подряд`;
 }
 
 function pluralDays(n: number) {

@@ -13,8 +13,10 @@ export interface AuthProviderHandler {
   readonly displayName: string;
 
   // OAuth-redirect flow
-  buildAuthUrl?(state: string): string;
+  buildAuthUrl?(state: string, nonce?: string): string;
   exchangeCode?(code: string): Promise<ProviderIdentity>;
+  // Implicit / form_post flow: verify id_token locally without calling the provider
+  verifyIdToken?(idToken: string, nonce: string): Promise<ProviderIdentity>;
 
   // Direct client-data verification (no redirect)
   verifyClientData?(data: Record<string, unknown>): ProviderIdentity;

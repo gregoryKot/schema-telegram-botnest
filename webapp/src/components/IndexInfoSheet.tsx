@@ -1,24 +1,30 @@
-import { BottomSheet } from './BottomSheet';
-import { SectionLabel } from './SectionLabel';
+import { ExScreen } from './exercises/ExScreen';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 const PARAGRAPHS = [
-  'Индекс — это не цель. Нет задачи достичь 10 или не опускаться ниже 7.',
-  'Потребности не работают как светофор. Они меняются — в зависимости от того, что происходит, с кем ты, насколько выспался.',
-  'День на 5–6, прожитый осознанно, ценнее дня на 9, прожитого на автопилоте. Дневник нужен не чтобы улучшить показатели — а чтобы лучше видеть себя.',
-  'Паттерн начинает читаться через 3–5 дней. Чем регулярнее — тем точнее картина.',
+  'Индекс – это не цель. Нет задачи достичь 10 или не опускаться ниже 7.',
+  'Потребности не работают как светофор. Они меняются – в зависимости от того, что происходит, с кем ты, насколько выспался.',
+  'День на 5–6, прожитый осознанно, ценнее дня на 9, прожитого на автопилоте. Дневник нужен не чтобы улучшить показатели – а чтобы лучше видеть себя.',
+  'Паттерн начинает читаться через 3–5 дней. Чем регулярнее – тем точнее картина.',
 ];
 
 export function IndexInfoSheet({ onClose }: { onClose: () => void }) {
+  const goBack = useHistorySheet(onClose);
   return (
-    <BottomSheet onClose={onClose}>
-      <div style={{ paddingTop: 8 }}>
-        <SectionLabel purple mb={16}>Об индексе дня</SectionLabel>
-        {PARAGRAPHS.map((p, i) => (
-          <p key={i} style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>
-            {p}
-          </p>
-        ))}
-      </div>
-    </BottomSheet>
+    <ExScreen
+      onBack={goBack}
+      backLabel="Назад"
+      eyebrow="Трекер"
+      eyebrowColor="var(--accent)"
+      title={<>Об индексе<br /><span className="it">дня</span></>}
+      lede="Что означают цифры и как ими пользоваться."
+    >
+      {PARAGRAPHS.map((p, i) => (
+        <div key={i} className="prompt">
+          <div className="prompt-num">{i + 1}.</div>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.75, margin: 0 }}>{p}</p>
+        </div>
+      ))}
+    </ExScreen>
   );
 }

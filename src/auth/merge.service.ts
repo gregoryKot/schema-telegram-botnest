@@ -27,15 +27,18 @@ const SECURITY_SENSITIVE_TABLES = ['WebSession'] as const;
 // the source row is dropped first so the bulk UPDATE that follows can succeed
 // without violating the constraint.
 const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
-  { table: 'Rating',            cols: ['date', 'needId'] },
-  { table: 'YsqProgress',       cols: [] }, // userId is PK
-  { table: 'YsqResult',         cols: [] },
-  { table: 'UserSchemaNote',    cols: ['schemaId'] },
-  { table: 'UserModeNote',      cols: ['modeId'] },
-  { table: 'UserSafePlace',     cols: [] },
-  { table: 'ChildhoodRating',   cols: ['needId'] },
-  { table: 'DiaryDraft',        cols: ['type'] },
-  { table: 'TherapistRequest',  cols: [] }, // userId is @unique
+  { table: 'Rating',              cols: ['date', 'needId'] },
+  { table: 'Note',                cols: ['date'] },
+  { table: 'GratitudeDiaryEntry', cols: ['date'] },
+  { table: 'AppActivity',         cols: ['date'] },
+  { table: 'YsqProgress',         cols: [] }, // userId is PK
+  { table: 'YsqResult',           cols: [] },
+  { table: 'UserSchemaNote',      cols: ['schemaId'] },
+  { table: 'UserModeNote',        cols: ['modeId'] },
+  { table: 'UserSafePlace',       cols: [] },
+  { table: 'ChildhoodRating',     cols: ['needId'] },
+  { table: 'DiaryDraft',          cols: ['type'] },
+  { table: 'TherapistRequest',    cols: [] }, // userId is @unique
 ];
 
 // Whitelist of identifiers we'll embed directly in SQL. Anything outside this
@@ -66,10 +69,9 @@ export class MergeService {
   // confirmation ("you'll move 87 ratings, 14 diary entries, …").
   async summarize(userId: bigint): Promise<Record<string, number>> {
     const counts: Record<string, number> = {};
+    const failed: string[] = [];
     for (const table of USER_OWNED_TABLES) {
       try {
-        // Table name comes from our constant. Value goes through parameter
-        // binding (Prisma.sql template) — never string-concatenated.
         const rows = await this.prisma.$queryRaw<Array<{ c: bigint }>>(
           Prisma.sql`SELECT COUNT(*)::bigint AS c FROM ${Prisma.raw(ident(table, 'table'))} WHERE "userId" = ${userId}`,
         );
@@ -77,7 +79,13 @@ export class MergeService {
         if (n > 0) counts[table] = n;
       } catch (err) {
         this.logger.warn(`summarize ${table}: ${(err as Error).message}`);
+        failed.push(table);
       }
+    }
+    // If we couldn't count some tables, surface this — otherwise the merge
+    // UI claims "you'll move 5 rows" when actually 5000 are moving.
+    if (failed.length > 0) {
+      this.logger.error(`summarize partial — failed tables: ${failed.join(', ')}`);
     }
     return counts;
   }
@@ -218,7 +226,15 @@ export class MergeService {
         DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
       `);
 
-      // 5. Finally, delete the now-empty source User.
+      // 5. Propagate disclaimerAccepted: if source had accepted, mark target too.
+      //    Must happen before DELETE so we can still read source.disclaimerAccepted.
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "User" SET "disclaimerAccepted" = true
+        WHERE id = ${targetId}
+          AND (SELECT "disclaimerAccepted" FROM "User" WHERE id = ${sourceId})
+      `);
+
+      // 6. Finally, delete the now-empty source User.
       await tx.$executeRaw(Prisma.sql`DELETE FROM "User" WHERE id = ${sourceId}`);
     });
     const ms = Date.now() - startedAt;

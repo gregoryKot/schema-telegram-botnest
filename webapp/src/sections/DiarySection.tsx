@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry } from '../types';
 import { api } from '../api';
 import { SchemaEntrySheet } from '../components/diary/SchemaEntrySheet';
@@ -12,167 +12,200 @@ const TODAY = new Date().toISOString().split('T')[0];
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-const cm = (color: string, pct: number) => `color-mix(in srgb, ${color} ${pct}%, transparent)`;
-
-function fmtDt(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('ru', { day: 'numeric', month: 'short' }) + ' · ' +
-    d.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+function fmtTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
 }
-function fmtDate(dateStr: string) {
+function fmtDateKey(iso: string) {
+  return iso.slice(0, 10);
+}
+function fmtDayMonth(dateStr: string) {
   const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('ru', { day: 'numeric', month: 'long' });
+  const day = d.getDate();
+  const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  return `${day} ${months[d.getMonth()]}`;
+}
+function fmtWeekday(dateStr: string) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'][d.getDay()];
+}
+function dateRelLabel(dateStr: string) {
+  const today = new Date(TODAY + 'T12:00:00');
+  const d = new Date(dateStr + 'T12:00:00');
+  const diff = Math.round((today.getTime() - d.getTime()) / 86400000);
+  if (diff === 0) return 'сегодня';
+  if (diff === 1) return 'вчера';
+  if (diff < 7) return `${diff} дн. назад`;
+  return null;
 }
 
-function Field({ label, text }: { label: string; text: string }) {
-  return (
-    <div style={{ marginBottom: 10 }}>
-      <div className="eyebrow" style={{ marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>{text}</div>
-    </div>
-  );
-}
+// ─── Delete button ────────────────────────────────────────────────────────────
 
 function DeleteBtn({ color, onClick }: { color: string; onClick: () => void }) {
   const [confirm, setConfirm] = useState(false);
   if (!confirm) return (
-    <button onClick={() => setConfirm(true)} style={{ marginTop: 8, background: cm(color, 12), border: 'none', borderRadius: 8, padding: '6px 12px', color, fontSize: 12, cursor: 'pointer' }}>
-      Удалить
-    </button>
+    <button onClick={e => { e.stopPropagation(); setConfirm(true); }} style={{
+      marginTop: 12, background: color + '18', border: 'none', borderRadius: 8,
+      padding: '6px 12px', color, fontSize: 12, cursor: 'pointer',
+    }}>Удалить</button>
   );
   return (
-    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-      <button onClick={onClick} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: cm('var(--c-rose)', 15), color: 'var(--c-rose)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Удалить навсегда</button>
+    <div style={{ display: 'flex', gap: 8, marginTop: 12 }} onClick={e => e.stopPropagation()}>
+      <button onClick={onClick} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: 'var(--c-rose)18', color: 'var(--c-rose)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Удалить навсегда</button>
       <button onClick={() => setConfirm(false)} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--surface-2)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
     </div>
   );
 }
 
-// ─── Schema entry card ────────────────────────────────────────────────────────
+// ─── Entry card (schema) ──────────────────────────────────────────────────────
 
-function SchemaCard({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: () => void }) {
+function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: () => void }) {
   const [open, setOpen] = useState(false);
   const color = 'var(--c-rose)';
-  const emotionMetas = EMOTIONS.filter(e => entry.emotions.some((em: EmotionEntry) => em.id === e.id));
   const schemas = entry.schemaIds.map(id => getSchemaById(id)).filter(Boolean);
+  const emotionMetas = EMOTIONS.filter(e => entry.emotions.some((em: EmotionEntry) => em.id === e.id));
+
   return (
-    <div style={{ borderBottom: '1px solid var(--line)', padding: '18px 0' }}>
-      <div onClick={() => setOpen(v => !v)} style={{ cursor: 'pointer' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-              <span style={{ width: 3, height: 14, borderRadius: 2, background: color, flexShrink: 0 }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Схема</span>
-              {schemas.length > 0 && <span style={{ fontSize: 12, color, padding: '1px 8px', borderRadius: 8, background: cm(color, 10) }}>{schemas[0]?.name}</span>}
-            </div>
-            <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5, paddingLeft: 11 }}>
-              {entry.trigger.length > 120 && !open ? entry.trigger.slice(0, 120) + '…' : entry.trigger}
-            </div>
-            {!open && emotionMetas.length > 0 && (
-              <div style={{ display: 'flex', gap: 5, marginTop: 5, paddingLeft: 11 }}>
-                {emotionMetas.slice(0, 4).map(e => <span key={e.id} style={{ fontSize: 12, color: 'var(--text-sub)' }}>{e.emoji} {e.label}</span>)}
-              </div>
-            )}
+    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} onClick={() => setOpen(v => !v)}>
+      <span className="entry-time">{fmtTime(entry.createdAt)}</span>
+      <span className="entry-rule" />
+      <div className="entry-body">
+        <div className="entry-eyebrow">
+          <span className="dot" />
+          Дневник схем
+          {schemas.length > 0 && (
+            <span className="entry-tags">
+              {schemas.slice(0, 2).map(s => (
+                <span key={s!.id} className="entry-tag">{s!.name}</span>
+              ))}
+            </span>
+          )}
+        </div>
+        <div className="entry-text">{entry.trigger}</div>
+        {emotionMetas.length > 0 && (
+          <div className="entry-meta">
+            {emotionMetas.slice(0, 4).map(e => (
+              <span key={e.id} className="emo">
+                <span className="emo-dot" style={{ background: 'var(--c-rose)' }} />
+                <span style={{ color: 'var(--text-sub)' }}>{e.label}</span>
+              </span>
+            ))}
           </div>
-          <span style={{ fontSize: 12, color: 'var(--text-faint)', flexShrink: 0, whiteSpace: 'nowrap' }}>{fmtDt(entry.createdAt)}</span>
-        </div>
+        )}
+        {open && (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }} onClick={e => e.stopPropagation()}>
+            {entry.thoughts && <ExpandField label="Мысли" text={entry.thoughts} />}
+            {entry.bodyFeelings && <ExpandField label="Тело" text={entry.bodyFeelings} />}
+            {entry.actualBehavior && <ExpandField label="Реакция" text={entry.actualBehavior} />}
+            {entry.healthyView && <ExpandField label="Здоровый взгляд" text={entry.healthyView} color="var(--accent)" />}
+            <DeleteBtn color="var(--c-rose)" onClick={onDelete} />
+          </div>
+        )}
       </div>
-      {open && (
-        <div style={{ marginTop: 12, paddingLeft: 11 }}>
-          {emotionMetas.length > 0 && <Field label="Чувства" text={emotionMetas.map(e => `${e.emoji} ${e.label}`).join(', ')} />}
-          {entry.thoughts && <Field label="Мысли" text={entry.thoughts} />}
-          {entry.bodyFeelings && <Field label="Тело" text={entry.bodyFeelings} />}
-          {entry.actualBehavior && <Field label="Поведение" text={entry.actualBehavior} />}
-          {schemas.length > 0 && <Field label="Схемы" text={schemas.map(s => s?.name).join(', ')} />}
-          {entry.schemaOrigin && <Field label="Происхождение" text={entry.schemaOrigin} />}
-          {entry.healthyView && <Field label="Здоровый взгляд" text={entry.healthyView} />}
-          {entry.realProblems && <Field label="Реальные проблемы" text={entry.realProblems} />}
-          {entry.excessiveReactions && <Field label="Чрезмерные реакции" text={entry.excessiveReactions} />}
-          {entry.healthyBehavior && <Field label="Здоровое поведение" text={entry.healthyBehavior} />}
-          <DeleteBtn color={color} onClick={onDelete} />
-        </div>
-      )}
+      <span className="entry-cta">›</span>
     </div>
   );
 }
 
-// ─── Mode entry card ──────────────────────────────────────────────────────────
+// ─── Entry card (mode) ────────────────────────────────────────────────────────
 
-function ModeCard({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () => void }) {
+function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () => void }) {
   const [open, setOpen] = useState(false);
   const color = 'var(--c-slate)';
   const mode = getModeById(entry.modeId);
+
   return (
-    <div style={{ borderBottom: '1px solid var(--line)', padding: '18px 0' }}>
-      <div onClick={() => setOpen(v => !v)} style={{ cursor: 'pointer' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-              <span style={{ width: 3, height: 14, borderRadius: 2, background: color, flexShrink: 0 }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Режим</span>
-              {mode && <span style={{ fontSize: 12, color, padding: '1px 8px', borderRadius: 8, background: cm(color, 10) }}>{mode.emoji} {mode.name}</span>}
-            </div>
-            <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5, paddingLeft: 11 }}>
-              {entry.situation.length > 120 && !open ? entry.situation.slice(0, 120) + '…' : entry.situation}
-            </div>
+    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} onClick={() => setOpen(v => !v)}>
+      <span className="entry-time">{fmtTime(entry.createdAt)}</span>
+      <span className="entry-rule" />
+      <div className="entry-body">
+        <div className="entry-eyebrow">
+          <span className="dot" />
+          Дневник режимов
+          {mode && (
+            <span className="entry-tags">
+              <span className="entry-tag">{mode.name}</span>
+            </span>
+          )}
+        </div>
+        <div className="entry-text">{entry.situation}</div>
+        {entry.actualNeed && !open && (
+          <div className="entry-meta">
+            <span style={{ color: 'var(--text-faint)' }}>что было нужно ›</span>
+            <span style={{ color: 'var(--text-sub)' }}>{entry.actualNeed.slice(0, 80)}</span>
           </div>
-          <span style={{ fontSize: 12, color: 'var(--text-faint)', flexShrink: 0, whiteSpace: 'nowrap' }}>{fmtDt(entry.createdAt)}</span>
-        </div>
+        )}
+        {open && (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }} onClick={e => e.stopPropagation()}>
+            {entry.thoughts && <ExpandField label="Мысли режима" text={entry.thoughts} />}
+            {entry.feelings && <ExpandField label="Чувства" text={entry.feelings} />}
+            {entry.actualNeed && <ExpandField label="Что было нужно" text={entry.actualNeed} color="var(--accent)" />}
+            {entry.childhoodMemories && <ExpandField label="Откуда знакомо" text={entry.childhoodMemories} />}
+            <DeleteBtn color="var(--c-slate)" onClick={onDelete} />
+          </div>
+        )}
       </div>
-      {open && (
-        <div style={{ marginTop: 12, paddingLeft: 11 }}>
-          {entry.thoughts && <Field label="Мысли" text={entry.thoughts} />}
-          {entry.feelings && <Field label="Чувства" text={entry.feelings} />}
-          {entry.bodyFeelings && <Field label="Тело" text={entry.bodyFeelings} />}
-          {entry.actions && <Field label="Действия" text={entry.actions} />}
-          {entry.actualNeed && <Field label="Что было нужно" text={entry.actualNeed} />}
-          {entry.childhoodMemories && <Field label="Воспоминания" text={entry.childhoodMemories} />}
-          <DeleteBtn color={color} onClick={onDelete} />
-        </div>
-      )}
+      <span className="entry-cta">›</span>
     </div>
   );
 }
 
-// ─── Gratitude entry card ─────────────────────────────────────────────────────
+// ─── Entry card (gratitude) ───────────────────────────────────────────────────
 
-function GratitudeCard({ entry, onDelete }: { entry: GratitudeDiaryEntry; onDelete: () => void }) {
+function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry; onDelete: () => void }) {
   const [open, setOpen] = useState(false);
   const color = 'var(--c-moss)';
+
   return (
-    <div style={{ borderBottom: '1px solid var(--line)', padding: '18px 0' }}>
-      <div onClick={() => setOpen(v => !v)} style={{ cursor: 'pointer' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-              <span style={{ width: 3, height: 14, borderRadius: 2, background: color, flexShrink: 0 }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Благодарность</span>
-              <span style={{ fontSize: 12, color, padding: '1px 8px', borderRadius: 8, background: cm(color, 10) }}>{entry.items.length} пункта</span>
-            </div>
-            {!open && (
-              <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5, paddingLeft: 11 }}>
-                {entry.items[0]}{entry.items.length > 1 && <span style={{ color: 'var(--text-faint)' }}> · +{entry.items.length - 1}</span>}
-              </div>
-            )}
-          </div>
-          <span style={{ fontSize: 12, color: 'var(--text-faint)', flexShrink: 0, whiteSpace: 'nowrap' }}>{fmtDate(entry.date)}</span>
+    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} onClick={() => setOpen(v => !v)}>
+      <span className="entry-time" style={{ fontStyle: 'italic' }}>·</span>
+      <span className="entry-rule" />
+      <div className="entry-body">
+        <div className="entry-eyebrow">
+          <span className="dot" />
+          Благодарность
+          <span className="entry-tags">
+            <span className="entry-tag">{entry.items.length} {entry.items.length === 1 ? 'пункт' : entry.items.length < 5 ? 'пункта' : 'пунктов'}</span>
+          </span>
         </div>
-      </div>
-      {open && (
-        <div style={{ marginTop: 8, paddingLeft: 11 }}>
-          {entry.items.map((item, i) => (
-            <div key={i} style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 6, paddingLeft: 12, borderLeft: `2px solid ${color}`, lineHeight: 1.55 }}>{item}</div>
+        <ul className="entry-grat-list">
+          {(open ? entry.items : entry.items.slice(0, 2)).map((item, i) => (
+            <li key={i}>
+              <span className="grat-num">{String(i + 1).padStart(2, '0')}</span>
+              {item}
+            </li>
           ))}
-          <DeleteBtn color={color} onClick={onDelete} />
-        </div>
-      )}
+          {!open && entry.items.length > 2 && (
+            <li style={{ color: 'var(--text-faint)', fontStyle: 'italic' }}>
+              <span className="grat-num">···</span>ещё {entry.items.length - 2}
+            </li>
+          )}
+        </ul>
+        {open && (
+          <div onClick={e => e.stopPropagation()}>
+            <DeleteBtn color="var(--c-moss)" onClick={onDelete} />
+          </div>
+        )}
+      </div>
+      <span className="entry-cta">›</span>
+    </div>
+  );
+}
+
+function ExpandField({ label, text, color }: { label: string; text: string; color?: string }) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: color ?? 'var(--text-faint)', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>{text}</div>
     </div>
   );
 }
 
 // ─── Draft banner ─────────────────────────────────────────────────────────────
 
-function DraftBanner({ type, color, onContinue, onDelete }: { type: DiaryType; color: string; onContinue: () => void; onDelete: () => void }) {
+function DraftBanner({ type, color, title, onContinue, onDelete }: {
+  type: DiaryType; color: string; title: string;
+  onContinue: () => void; onDelete: () => void;
+}) {
   const [confirm, setConfirm] = useState(false);
   const draft = loadDraft<Record<string, unknown>>(type);
   if (!draft) return null;
@@ -180,35 +213,39 @@ function DraftBanner({ type, color, onContinue, onDelete }: { type: DiaryType; c
     : type === 'mode' ? (draft.data as Record<string, string>)?.situation
     : (draft.data as Record<string, string[]>)?.items?.[0];
   return (
-    <div style={{ borderRadius: 10, padding: '14px 16px', marginBottom: 16, background: cm(color, 5), border: `1px dashed ${cm(color, 30)}` }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <span className="eyebrow" style={{ padding: '2px 7px', borderRadius: 5, background: cm(color, 14), color }}>Черновик</span>
-        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{formatDraftAge(draft.startedAt)}</span>
-      </div>
-      {preview && <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 10, lineHeight: 1.4 }}>{String(preview).slice(0, 90)}</div>}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={onContinue} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: color, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Продолжить</button>
-        {!confirm
-          ? <button onClick={() => setConfirm(true)} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--surface-2)', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>Удалить</button>
-          : <button onClick={onDelete} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: cm('var(--c-rose)', 18), color: 'var(--c-rose)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Удалить</button>
-        }
+    <div style={{ borderRadius: 10, padding: '12px 14px 12px 0', marginBottom: 10, display: 'flex', alignItems: 'stretch', gap: 0, background: `color-mix(in srgb, ${color} 6%, var(--bg))`, border: `1px solid color-mix(in srgb, ${color} 20%, var(--line))` }}>
+      {/* Colored left stripe */}
+      <div style={{ width: 3, borderRadius: '10px 0 0 10px', background: color, flexShrink: 0, marginRight: 14 }} />
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color }}>Черновик</span>
+          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{title} · {formatDraftAge(draft.startedAt)}</span>
+          <div style={{ flex: 1 }} />
+          <button onClick={onContinue} style={{ fontSize: 12.5, fontWeight: 700, color, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', letterSpacing: '-0.01em' }}>Продолжить →</button>
+          {!confirm
+            ? <button onClick={() => setConfirm(true)} style={{ fontSize: 18, lineHeight: 1, color: 'var(--text-ghost)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>×</button>
+            : <button onClick={onDelete} style={{ fontSize: 12, color: 'var(--c-rose)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', fontWeight: 700 }}>удалить</button>
+          }
+        </div>
+        {preview && <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6, lineHeight: 1.45, paddingRight: 8 }}>{String(preview).slice(0, 100)}</div>}
       </div>
     </div>
   );
 }
 
-// ─── Unified sorted item ──────────────────────────────────────────────────────
+// ─── Unified entry type ───────────────────────────────────────────────────────
 
 type AnyEntry =
-  | { _type: 'schema'; sortKey: string; entry: SchemaDiaryEntry }
-  | { _type: 'mode';   sortKey: string; entry: ModeDiaryEntry   }
-  | { _type: 'gratitude'; sortKey: string; entry: GratitudeDiaryEntry };
-
-// ─── Main component ───────────────────────────────────────────────────────────
+  | { _type: 'schema';    sortKey: string; dateKey: string; entry: SchemaDiaryEntry }
+  | { _type: 'mode';      sortKey: string; dateKey: string; entry: ModeDiaryEntry }
+  | { _type: 'gratitude'; sortKey: string; dateKey: string; entry: GratitudeDiaryEntry };
 
 type Filter = 'all' | DiaryType;
 
-export function DiarySection({ onClose }: { onClose?: () => void } = {}) {
+// ─── Main component ───────────────────────────────────────────────────────────
+
+export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {}) {
   const [schemaEntries,    setSchemaEntries]    = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries,      setModeEntries]      = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
@@ -238,6 +275,29 @@ export function DiarySection({ onClose }: { onClose?: () => void } = {}) {
   useEffect(() => { load(); }, [load]);
 
   const todayGratitude = gratitudeEntries.find(e => e.date === TODAY);
+  const totalCount = schemaEntries.length + modeEntries.length + gratitudeEntries.length;
+
+  // Streak / days-this-month stats
+  const allDateKeys = [
+    ...schemaEntries.map(e => fmtDateKey(e.createdAt)),
+    ...modeEntries.map(e => fmtDateKey(e.createdAt)),
+    ...gratitudeEntries.map(e => e.date),
+  ];
+  const uniqueDates = [...new Set(allDateKeys)].sort().reverse();
+
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const daysThisMonth = uniqueDates.filter(d => d.startsWith(thisMonth)).length;
+  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+
+  let streak = 0;
+  const today = new Date(TODAY);
+  for (let i = 0; i < 60; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    if (uniqueDates.includes(key)) streak++;
+    else if (i > 0) break;
+  }
 
   const handleDelete = async (type: DiaryType, id: number) => {
     if (type === 'schema')    { await api.deleteSchemaDiary(id);    setSchemaEntries(p => p.filter(e => e.id !== id)); }
@@ -245,21 +305,37 @@ export function DiarySection({ onClose }: { onClose?: () => void } = {}) {
     if (type === 'gratitude') { await api.deleteGratitudeDiary(id); setGratitudeEntries(p => p.filter(e => e.id !== id)); }
   };
 
-  // Build unified sorted archive
-  const allEntries: AnyEntry[] = [
-    ...schemaEntries.map(e => ({ _type: 'schema' as const, sortKey: e.createdAt, entry: e })),
-    ...modeEntries.map(e =>   ({ _type: 'mode'   as const, sortKey: e.createdAt, entry: e })),
-    ...gratitudeEntries.map(e => ({ _type: 'gratitude' as const, sortKey: e.date + 'T12:00:00', entry: e })),
-  ].sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+  // Build unified sorted list
+  const allEntries: AnyEntry[] = useMemo(() => [
+    ...schemaEntries.map(e => ({ _type: 'schema' as const, sortKey: e.createdAt, dateKey: fmtDateKey(e.createdAt), entry: e })),
+    ...modeEntries.map(e =>   ({ _type: 'mode'   as const, sortKey: e.createdAt, dateKey: fmtDateKey(e.createdAt), entry: e })),
+    ...gratitudeEntries.map(e => ({ _type: 'gratitude' as const, sortKey: e.date + 'T12:00:00', dateKey: e.date, entry: e })),
+  ].sort((a, b) => b.sortKey.localeCompare(a.sortKey)), [schemaEntries, modeEntries, gratitudeEntries]);
 
   const filtered = filter === 'all' ? allEntries : allEntries.filter(e => e._type === filter);
-  const totalCount = schemaEntries.length + modeEntries.length + gratitudeEntries.length;
 
-  const CARDS = [
-    { type: 'schema'    as DiaryType, title: 'Дневник схем',          sub: 'Триггер · чувства · мысли · реальность · поведение', color: 'var(--c-rose)'  },
-    { type: 'mode'      as DiaryType, title: 'Дневник режимов',       sub: 'Что включило режим, как удалось переключиться',       color: 'var(--c-slate)' },
-    { type: 'gratitude' as DiaryType, title: 'Благодарность',         sub: '3 вещи, за которые благодарен сегодня',               color: 'var(--c-moss)'  },
-  ] as const;
+  // Group by date
+  const grouped = useMemo(() => {
+    const m = new Map<string, AnyEntry[]>();
+    for (const e of filtered) {
+      if (!m.has(e.dateKey)) m.set(e.dateKey, []);
+      m.get(e.dateKey)!.push(e);
+    }
+    return Array.from(m.entries());
+  }, [filtered]);
+
+  const counts = {
+    all: allEntries.length,
+    schema: schemaEntries.length,
+    mode: modeEntries.length,
+    gratitude: gratitudeEntries.length,
+  };
+
+  const QUICK_ADD = [
+    { type: 'schema'    as DiaryType, color: 'var(--c-rose)',  eyebrow: 'Дневник схем',    title: 'Записать момент',  desc: 'Триггер · чувства · мысли · схема · здоровый взгляд', foot: '8–15 мин' },
+    { type: 'mode'      as DiaryType, color: 'var(--c-slate)', eyebrow: 'Дневник режимов', title: 'Записать режим',   desc: 'Кто взял управление, что включило, что было нужно',   foot: '5–10 мин' },
+    { type: 'gratitude' as DiaryType, color: 'var(--c-moss)',  eyebrow: 'Благодарность',   title: 'Три вещи',        desc: 'За что благодаришь сегодня. Даже самое маленькое',    foot: '2–5 мин' },
+  ];
 
   const FILTERS: { id: Filter; label: string }[] = [
     { id: 'all',       label: 'Все' },
@@ -268,151 +344,193 @@ export function DiarySection({ onClose }: { onClose?: () => void } = {}) {
     { id: 'gratitude', label: 'Благодарность' },
   ];
 
-  return (
-    <div className="page-inner-wide">
+  // Show entry sheet instead of hub
+  if (newEntry === 'schema') return (
+    <SchemaEntrySheet
+      activeSchemaIds={activeSchemaIds}
+      onClose={() => setNewEntry(null)}
+      onSave={async data => {
+        const entry = await api.createSchemaDiary(data);
+        setSchemaEntries(prev => [entry, ...prev]);
+        setNewEntry(null);
+      }}
+    />
+  );
+  if (newEntry === 'mode') return (
+    <ModeEntrySheet
+      onClose={() => setNewEntry(null)}
+      onSave={async data => {
+        const entry = await api.createModeDiary(data);
+        setModeEntries(prev => [entry, ...prev]);
+        setNewEntry(null);
+      }}
+    />
+  );
+  if (newEntry === 'gratitude') return (
+    <GratitudeEntrySheet
+      onClose={() => setNewEntry(null)}
+      date={TODAY}
+      existingItems={todayGratitude?.items}
+      onSave={async (date, items) => {
+        const entry = await api.createGratitudeDiary(date, items);
+        setGratitudeEntries(prev => {
+          const rest = prev.filter(e => e.date !== date);
+          return [entry, ...rest].sort((a, b) => b.date.localeCompare(a.date));
+        });
+        setNewEntry(null);
+      }}
+    />
+  );
 
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40 }}>
-        <div>
-          <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 8 }}>Дневник</h1>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-            {loading ? 'Загрузка…' : totalCount === 0 ? 'Фиксируй паттерны, замечай прогресс' : `${totalCount} ${totalCount === 1 ? 'запись' : totalCount < 5 ? 'записи' : 'записей'} · ведётся непрерывно`}
+  return (
+    <div className="page-inner">
+
+        {/* ── Hero ── */}
+        <div className="diary-hero">
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 14 }}>
+              <span style={{ color: 'var(--accent)' }}>● </span>Дневник
+            </div>
+            <h1 className="hub-title" style={{ marginBottom: 10 }}>
+              Дневник<br /><span className="it">наблюдений</span>
+            </h1>
+            <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+              {totalCount > 0
+                ? `${totalCount} ${totalCount === 1 ? 'запись' : totalCount < 5 ? 'записи' : 'записей'} · ведётся непрерывно`
+                : 'Фиксируй паттерны, замечай прогресс'}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', flexDirection: 'column', gap: 16 }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setNewEntry('schema')}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              + Новая запись
+            </button>
+            {totalCount > 0 && (
+              <div className="diary-stats">
+                <div>
+                  <div className="diary-stat-num">{daysThisMonth}<span className="small">/{daysInMonth}</span></div>
+                  <div className="diary-stat-label">Дней с записью</div>
+                </div>
+                {streak > 1 && (
+                  <div>
+                    <div className="diary-stat-num">{streak}</div>
+                    <div className="diary-stat-label">Дней подряд</div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setNewEntry('schema')} className="btn btn-primary">
-            + Новая запись
-          </button>
-          {onClose && (
-            <button onClick={onClose} className="btn btn-secondary">Закрыть</button>
-          )}
-        </div>
-      </div>
 
-      {/* ── "Что записать сегодня" 3-col grid ── */}
-      <div className="section">
-        <div className="eyebrow" style={{ marginBottom: 20 }}>Что записать сегодня</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
-          {CARDS.map(card => (
+        {/* ── Quick add ── */}
+        <div className="eyebrow" style={{ marginBottom: 14 }}>Что записать сегодня</div>
+        <div className="quick-add">
+          {QUICK_ADD.map(card => (
             <div
               key={card.type}
+              className="quick-add-card"
+              style={{ '--qa-color': card.color } as React.CSSProperties}
               onClick={() => setNewEntry(card.type)}
-              style={{ cursor: 'pointer', padding: '20px 0', borderTop: `2px solid ${card.color}` }}
             >
-              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>{card.title}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 8, lineHeight: 1.55, maxWidth: 280 }}>{card.sub}</div>
-              <span className="link" style={{ marginTop: 14, display: 'inline-block', fontSize: 13 }}>+ записать →</span>
+              <div className="qa-stripe" style={{ background: card.color }} />
+              <div className="qa-eyebrow">
+                <span className="dot" />
+                {card.eyebrow}
+              </div>
+              <div className="qa-title">{card.title}</div>
+              <div className="qa-desc">{card.desc}</div>
+              <div className="qa-foot">
+                <span style={{ color: 'var(--qa-color)', fontWeight: 600 }}>+ записать</span>
+                <span style={{ marginLeft: 8, color: 'var(--text-ghost)' }}>{card.foot}</span>
+                <span className="qa-arrow">›</span>
+              </div>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* ── Archive ── */}
-      <div className="section">
-        {/* Filter row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <span className="eyebrow">Архив · {totalCount}</span>
-          <div style={{ display: 'flex', gap: 2 }}>
-            {FILTERS.map(f => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                style={{
-                  padding: '5px 12px', borderRadius: 6, border: 'none',
-                  fontSize: 12.5, fontWeight: filter === f.id ? 600 : 500,
-                  background: filter === f.id ? 'var(--surface-3)' : 'transparent',
-                  color: filter === f.id ? 'var(--text)' : 'var(--text-faint)',
-                  cursor: 'pointer',
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Draft banners */}
+        {/* ── Draft banners ── */}
         {(['schema', 'mode', 'gratitude'] as DiaryType[]).map(type => {
           const colors: Record<DiaryType, string> = { schema: 'var(--c-rose)', mode: 'var(--c-slate)', gratitude: 'var(--c-moss)' };
+          const titles: Record<DiaryType, string> = { schema: 'схема', mode: 'режим', gratitude: 'благодарность' };
           if (!loadDraft(type)) return null;
-          if (filter !== 'all' && filter !== type) return null;
           return (
             <DraftBanner
               key={type + draftKey}
               type={type}
               color={colors[type]}
+              title={titles[type]}
               onContinue={() => setNewEntry(type)}
               onDelete={() => { clearDraft(type); setDraftKey(k => k + 1); }}
             />
           );
         })}
 
+        {/* ── Filters ── */}
+        {totalCount > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <span className="eyebrow">Архив · {totalCount}</span>
+          </div>
+        )}
+        <div className="diary-filters">
+          {FILTERS.map(f => (
+            <button
+              key={f.id}
+              className={'diary-filter ' + (filter === f.id ? 'is-active' : '')}
+              onClick={() => setFilter(f.id)}
+            >
+              {f.label}
+              <span className="diary-filter-count">{counts[f.id]}</span>
+            </button>
+          ))}
+          <span className="spacer" />
+        </div>
+
+        {/* ── Loading ── */}
         {loading && (
           <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-faint)' }}>
             Загрузка…
           </div>
         )}
 
+        {/* ── Empty ── */}
         {!loading && filtered.length === 0 && (
-          <div style={{ padding: '60px 0', textAlign: 'center' }}>
-            <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.35 }}>📭</div>
-            <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 5 }}>Пока здесь тихо</div>
-            <div style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
-              {filter === 'all' ? 'Начни с "Что записать сегодня" выше' : 'Нет записей этого типа'}
+          <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-faint)' }}>
+            <div style={{ fontFamily: 'var(--serif)', fontSize: 28, color: 'var(--text-sub)', fontStyle: 'italic', marginBottom: 8 }}>Пусто.</div>
+            <div style={{ fontSize: 14 }}>
+              {filter === 'all' ? 'Нажми на карточку выше, чтобы начать.' : 'Нет записей этого типа.'}
             </div>
           </div>
         )}
 
-        {!loading && filtered.map(item => {
-          if (item._type === 'schema') return (
-            <SchemaCard key={'s-' + item.entry.id} entry={item.entry} onDelete={() => handleDelete('schema', item.entry.id)} />
-          );
-          if (item._type === 'mode') return (
-            <ModeCard key={'m-' + item.entry.id} entry={item.entry} onDelete={() => handleDelete('mode', item.entry.id)} />
-          );
+        {/* ── Timeline ── */}
+        {!loading && grouped.map(([dateKey, entries]) => {
+          const rel = dateRelLabel(dateKey);
+          const entryCount = entries.length;
           return (
-            <GratitudeCard key={'g-' + item.entry.id} entry={item.entry} onDelete={() => handleDelete('gratitude', item.entry.id)} />
+            <div key={dateKey} className="date-group">
+              <div className="date-group-head">
+                <span className="date-group-day">{fmtDayMonth(dateKey)}</span>
+                <span className="date-group-rel">{rel ? `${rel} · ` : ''}{fmtWeekday(dateKey)}</span>
+                <span className="date-group-count">{entryCount} {entryCount === 1 ? 'запись' : entryCount < 5 ? 'записи' : 'записей'}</span>
+              </div>
+              {entries.map(item => {
+                if (item._type === 'schema') return (
+                  <SchemaEntry key={'s-' + item.entry.id} entry={item.entry} onDelete={() => handleDelete('schema', item.entry.id)} />
+                );
+                if (item._type === 'mode') return (
+                  <ModeEntry key={'m-' + item.entry.id} entry={item.entry} onDelete={() => handleDelete('mode', item.entry.id)} />
+                );
+                return (
+                  <GratitudeEntry key={'g-' + item.entry.id} entry={item.entry} onDelete={() => handleDelete('gratitude', item.entry.id)} />
+                );
+              })}
+            </div>
           );
         })}
-      </div>
 
-      {/* ── Entry creation overlays ── */}
-      {newEntry === 'schema' && (
-        <SchemaEntrySheet
-          activeSchemaIds={activeSchemaIds}
-          onClose={() => setNewEntry(null)}
-          onSave={async (data) => {
-            const entry = await api.createSchemaDiary(data);
-            setSchemaEntries(prev => [entry, ...prev]);
-            setNewEntry(null);
-          }}
-        />
-      )}
-      {newEntry === 'mode' && (
-        <ModeEntrySheet
-          onClose={() => setNewEntry(null)}
-          onSave={async (data) => {
-            const entry = await api.createModeDiary(data);
-            setModeEntries(prev => [entry, ...prev]);
-            setNewEntry(null);
-          }}
-        />
-      )}
-      {newEntry === 'gratitude' && (
-        <GratitudeEntrySheet
-          onClose={() => setNewEntry(null)}
-          date={TODAY}
-          existingItems={todayGratitude?.items}
-          onSave={async (date, items) => {
-            const entry = await api.createGratitudeDiary(date, items);
-            setGratitudeEntries(prev => {
-              const filtered = prev.filter(e => e.date !== date);
-              return [entry, ...filtered].sort((a, b) => b.date.localeCompare(a.date));
-            });
-            setNewEntry(null);
-          }}
-        />
-      )}
     </div>
   );
 }

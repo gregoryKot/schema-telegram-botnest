@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
-import { LetterToSelf } from '../components/LetterToSelf';
-import { BeliefCheck } from '../components/BeliefCheck';
-import { SafePlace } from '../components/SafePlace';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
-import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
-import { ModeIntroSheet } from '../components/ModeIntroSheet';
+import { GlyphArrowLeft } from '../components/exercises/ExScreen';
+
+const BeliefCheckEx = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
+const LetterEx      = lazy(() => import('../components/exercises/LetterEx').then(m => ({ default: m.LetterEx })));
+const SafePlaceEx   = lazy(() => import('../components/exercises/SafePlaceEx').then(m => ({ default: m.SafePlaceEx })));
+const SchemaEx      = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
+const ModeEx        = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { api } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
-import { BottomSheet } from '../components/BottomSheet';
 import { fmtDate } from '../utils/format';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { NEED_ORDER, NEED_DATA } from '../needData';
@@ -265,14 +266,14 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         </div>
       </div>
 
-      {/* Безопасное место — feature card */}
+      {/* Безопасное место – feature card */}
       <div className="section">
         <div style={{ background: 'var(--surface-2)', borderRadius: 12, padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
           <div>
             <div className="eyebrow" style={{ marginBottom: 8 }}>Медитация</div>
             <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 10 }}>Безопасное место</div>
             <div className="text-sm muted" style={{ maxWidth: 440, lineHeight: 1.6 }}>
-              Управляемая визуализация для активации Хорошего Родителя — ресурс в тревожный или тяжёлый момент.
+              Управляемая визуализация для активации Хорошего Родителя – ресурс в тревожный или тяжёлый момент.
             </div>
           </div>
           <button className="btn btn-primary" onClick={() => setShowSafePlace(true)} style={{ flexShrink: 0 }}>
@@ -281,14 +282,14 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         </div>
       </div>
 
-      {/* Короткие техники — 3-column cards */}
+      {/* Короткие техники – 3-column cards */}
       <div className="section">
         <div className="section-head"><h3>Короткие техники</h3></div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
           {([
             { label: 'Мне плохо',          sub: 'Пять шагов чтобы разобраться, что происходит',      color: 'var(--c-rose)',  onClick: () => setShowFlashcard(true) },
             { label: 'Проверка убеждений', sub: 'Правда ли это? Что говорит за, что против',          color: 'var(--c-amber)', onClick: () => setShowBeliefCheck(true) },
-            { label: 'Письмо себе',        sub: 'Письмо Уязвимому Ребёнку — от Здорового Взрослого',  color: 'var(--c-plum)',  onClick: () => setShowLetterToSelf(true) },
+            { label: 'Письмо себе',        sub: 'Письмо Уязвимому Ребёнку – от Здорового Взрослого',  color: 'var(--c-plum)',  onClick: () => setShowLetterToSelf(true) },
           ] as const).map(item => (
             <div key={item.label} onClick={item.onClick} style={{ cursor: 'pointer', padding: '20px 0', borderTop: `2px solid ${item.color}` }}>
               <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{item.label}</div>
@@ -354,11 +355,31 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
       </div>
 
       {showFlashcard && <SchemaFlashcard onClose={() => setShowFlashcard(false)} onOpenTracker={onOpenTracker} onComplete={handleTaskComplete} />}
-      {showBeliefCheck && <BeliefCheck onClose={() => setShowBeliefCheck(false)} onComplete={handleTaskComplete} />}
-      {showLetterToSelf && <LetterToSelf onClose={() => setShowLetterToSelf(false)} onComplete={handleTaskComplete} />}
-      {showSafePlace && <SafePlace onClose={() => setShowSafePlace(false)} onComplete={handleTaskComplete} />}
-      {introSchemaId && <SchemaIntroSheet schemaId={introSchemaId} onClose={() => setIntroSchemaId(null)} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} />}
-      {introModeId && <ModeIntroSheet modeId={introModeId} onClose={() => setIntroModeId(null)} onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} />}
+      {showBeliefCheck && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><BeliefCheckEx onBack={() => setShowBeliefCheck(false)} onComplete={handleTaskComplete} /></Suspense>
+        </div>
+      )}
+      {showLetterToSelf && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><LetterEx onBack={() => setShowLetterToSelf(false)} onComplete={handleTaskComplete} /></Suspense>
+        </div>
+      )}
+      {showSafePlace && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><SafePlaceEx onBack={() => setShowSafePlace(false)} onComplete={handleTaskComplete} /></Suspense>
+        </div>
+      )}
+      {introSchemaId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><SchemaEx onBack={() => setIntroSchemaId(null)} initialSchemaId={introSchemaId} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} /></Suspense>
+        </div>
+      )}
+      {introModeId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} /></Suspense>
+        </div>
+      )}
       {showTaskCreate && (
         <TaskCreateSheet
           onCreated={() => {
@@ -369,14 +390,19 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         />
       )}
       {showAllTasks && (
-        <BottomSheet onClose={() => setShowAllTasks(false)} zIndex={200}>
-          <div style={{ paddingTop: 4 }}>
-            <h3 style={{ marginBottom: 4 }}>Мои цели</h3>
-            <div className="text-sm muted" style={{ marginBottom: 24 }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', overflowY: 'auto' }}>
+          <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
+            <button className="ex-btn ex-btn-ghost" onClick={() => setShowAllTasks(false)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+              <GlyphArrowLeft /> Назад
+            </button>
+          </div>
+          <div style={{ maxWidth: 560, margin: '0 auto', padding: '32px 24px 80px' }}>
+            <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>Мои цели</h1>
+            <p style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 28, lineHeight: 1.6 }}>
               {tasks.length === 0
                 ? 'Поставь себе цель и иди к ней маленькими шагами'
                 : `${tasks.length} ${plural(tasks.length, 'активная', 'активные', 'активных')}${taskHistory.length > 0 ? ` · ${taskHistory.length} выполнено` : ''}`}
-            </div>
+            </p>
 
             {tasks.length > 0 && (
               <div style={{ marginBottom: 8 }}>
@@ -412,11 +438,11 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
               </>
             )}
 
-            <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={() => { setShowAllTasks(false); setShowTaskCreate(true); }}>
+            <button className="ex-btn ex-btn-primary" style={{ marginTop: 24, width: '100%' }} onClick={() => { setShowAllTasks(false); setShowTaskCreate(true); }}>
               + Поставить цель
             </button>
           </div>
-        </BottomSheet>
+        </div>
       )}
     </div>
   );

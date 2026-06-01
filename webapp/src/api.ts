@@ -133,6 +133,7 @@ export interface TherapyClientSummary {
   streak: number;
   lastActiveDate: string | null;
   todayIndex: number | null;
+  recentIndexHistory: (number | null)[];
   relationCreatedAt: string;
   therapyStartDate: string | null;
   nextSession: string | null;
@@ -292,4 +293,6 @@ export const api = {
   deleteFlashcard:      (id: number) => del(`/api/flashcards/${id}`),
   getClientSchemaNotes: (clientId: number) => get<any[]>(`/api/therapy/client/${clientId}/schema-notes`),
   getClientModeNotes:   (clientId: number) => get<any[]>(`/api/therapy/client/${clientId}/mode-notes`),
+  getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
+  submitBooking:        (body: { name: string; contact: string; message?: string }) => postJson<{ ok: true }>('/api/booking', body),
 };

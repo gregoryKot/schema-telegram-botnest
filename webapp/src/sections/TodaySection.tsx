@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { COLORS } from '../types';
 import type { Need, UserProfile } from '../types';
 import { NEED_DATA } from '../needData';
@@ -7,9 +7,11 @@ import type { UserTask, TherapyRelationInfo } from '../api';
 import type { Section } from '../components/BottomNav';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
-import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
-import { ModeIntroSheet } from '../components/ModeIntroSheet';
-import { BottomSheet } from '../components/BottomSheet';
+import { GlyphArrowLeft } from '../components/exercises/ExScreen';
+import { useHistorySheet } from '../hooks/useHistorySheet';
+import { hasDraft } from '../utils/drafts';
+const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
+const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { fmtDate, todayStr } from '../utils/format';
 
@@ -58,6 +60,63 @@ function resolveTaskEmoji(task: UserTask): string {
   if (ALL_SCHEMAS.some(s => s.id === task.text)) return '🧩';
   if (ALL_MODES.some(m => m.id === task.text)) return '🔄';
   return '🎯';
+}
+
+function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAddTask }: {
+  tasks: UserTask[];
+  taskHistory: UserTask[];
+  onClose: () => void;
+  onTaskDone: (id: number) => void;
+  onAddTask: () => void;
+}) {
+  const goBack = useHistorySheet(onClose);
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+      <div className="ex-topbar">
+        <button className="ex-back" onClick={goBack}><GlyphArrowLeft /> Назад</button>
+      </div>
+      <div style={{ overflowY: 'auto' }}>
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '32px 24px 80px' }}>
+        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>Все задания</h1>
+        {tasks.map(task => (
+          <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
+            <span style={{ fontSize: 18, flexShrink: 0, width: 22, textAlign: 'center' }}>
+              {task.done === true ? '✅' : task.done === false ? '❌' : resolveTaskEmoji(task)}
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {task.assignedBy !== null && <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 1 }}>от терапевта</div>}
+              <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
+              {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>до {fmtDate(task.dueDate)}</div>}
+            </div>
+            {task.done === null && task.assignedBy !== null && task.type === 'custom' && (
+              <button onClick={() => onTaskDone(task.id as number)}
+                style={{ padding: '6px 12px', border: 'none', borderRadius: 10, background: 'color-mix(in srgb, var(--c-moss) 14%, transparent)', color: 'var(--c-moss)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                Готово
+              </button>
+            )}
+          </div>
+        ))}
+        {taskHistory.length > 0 && (
+          <>
+            <div className="eyebrow" style={{ marginTop: 20, marginBottom: 8 }}>Выполнено</div>
+            {taskHistory.map(task => (
+              <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--line)', opacity: 0.5 }}>
+                <span style={{ fontSize: 16, flexShrink: 0, width: 22, textAlign: 'center' }}>{task.done === true ? '✅' : '❌'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
+                  {task.completedAt && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1 }}>{fmtDate(new Date(task.completedAt).toISOString().slice(0, 10))}</div>}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+        <button onClick={onAddTask} className="ex-btn ex-btn-primary" style={{ marginTop: 20, width: '100%' }}>
+          + Поставить цель
+        </button>
+      </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
@@ -261,10 +320,12 @@ export function TodaySection({
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="eyebrow" style={{ marginBottom: 8 }}>
-        {formatHeaderDate()}{streak > 0 ? ` · ${streak}-й день стрика` : ''}
+        <span style={{ color: 'var(--accent)' }}>● </span>
+        {formatHeaderDate()}{streak > 0 ? ` · ${streak}-й стрик` : ''}
       </div>
-      <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 40 }}>
-        {greeting()}{firstName ? `, ${firstName}` : ''}
+      <h1 className="hub-title" style={{ marginBottom: 40 }}>
+        {greeting().split(' ')[0]}<br />
+        <span className="it">{greeting().split(' ').slice(1).join(' ')}{firstName ? `, ${firstName}` : ''}</span>
       </h1>
 
       {/* ── Two-column layout ───────────────────────────────────────────────── */}
@@ -273,7 +334,7 @@ export function TodaySection({
         {/* ── LEFT ──────────────────────────────────────────────────────────── */}
         <div style={{ minWidth: 0 }}>
 
-          {/* Therapist cabinet — calm link block */}
+          {/* Therapist cabinet – calm link block */}
           {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
             <div onClick={onOpenTherapistCabinet} className="list-line" style={{ cursor: 'pointer', marginBottom: 24 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -319,7 +380,7 @@ export function TodaySection({
                       <i style={{ width: `${((value ?? 0) / 10) * 100}%`, background: color }} />
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 600, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: filled ? 'var(--text)' : 'var(--text-ghost)' }}>
-                      {filled ? value : '—'}
+                      {filled ? value : '–'}
                       {delta !== null && delta !== 0 && (
                         <span style={{ fontSize: 10, color: delta > 0 ? 'var(--c-moss)' : 'var(--c-rose)', marginLeft: 3, fontWeight: 500 }}>
                           {delta > 0 ? '↑' : '↓'}{Math.abs(delta).toFixed(1)}
@@ -346,11 +407,11 @@ export function TodaySection({
                   <div key={task.id} className="list-line">
                     <span style={{
                       width: 14, height: 14, borderRadius: 4,
-                      border: `1.5px solid ${isDone ? 'var(--accent)' : 'var(--line-strong)'}`,
-                      background: isDone ? 'var(--accent)' : 'transparent',
+                      border: `1.5px solid ${isDone ? 'var(--text)' : 'var(--line-strong)'}`,
+                      background: isDone ? 'var(--text)' : 'transparent',
                       flexShrink: 0, marginTop: 4,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, color: '#fff',
+                      fontSize: 9, color: 'var(--bg)',
                     }}>{isDone ? '✓' : isFail ? '×' : ''}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="text-md" style={{ fontWeight: 600, opacity: isDone ? 0.55 : 1, textDecoration: isDone ? 'line-through' : 'none' }}>
@@ -379,6 +440,32 @@ export function TodaySection({
             </div>
           )}
 
+          {/* ── Draft banner ── */}
+          {(['schema', 'mode', 'gratitude'] as const).some(t => hasDraft(t)) && (
+            <div className="section" style={{ paddingTop: 0 }}>
+              <div className="section-head" style={{ marginBottom: 8 }}>
+                <h3>Незаконченные записи</h3>
+                <button className="link" onClick={onOpenDiaries}>открыть →</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {(['schema', 'mode', 'gratitude'] as const).filter(t => hasDraft(t)).map(type => {
+                  const labels = { schema: 'Дневник схем', mode: 'Дневник режимов', gratitude: 'Благодарность' };
+                  const colors = { schema: 'var(--c-rose)', mode: 'var(--c-slate)', gratitude: 'var(--c-moss)' };
+                  return (
+                    <div key={type} onClick={onOpenDiaries} className="list-line" style={{ cursor: 'pointer' }}>
+                      <div style={{ width: 3, height: 28, borderRadius: 3, background: colors[type], flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors[type] }}>Черновик</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>{labels[type]}</div>
+                      </div>
+                      <span className="link">продолжить →</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* ── Recent diary entries ── */}
           <div className="section">
             <div className="section-head">
@@ -404,7 +491,7 @@ export function TodaySection({
               </>
             ) : (
               <div style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.7, padding: '8px 0' }}>
-                Фиксируй моменты когда схема активируется — это главная практика
+                Фиксируй моменты когда схема активируется – это главная практика
               </div>
             )}
           </div>
@@ -418,7 +505,7 @@ export function TodaySection({
           <div className="eyebrow" style={{ marginBottom: 10 }}>Индекс сегодня</div>
           <div onClick={onOpenTrackerHistory} style={{ cursor: onOpenTrackerHistory ? 'pointer' : undefined }}>
             <div style={{ fontSize: 54, fontWeight: 500, letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-              {avgScore ?? '—'}
+              {avgScore ?? '–'}
             </div>
             {weekDelta !== null && (
               <div style={{ fontSize: 12, color: weekDelta > 0 ? 'var(--c-moss)' : weekDelta < 0 ? 'var(--c-rose)' : 'var(--text-faint)', marginTop: 6, fontWeight: 500 }}>
@@ -462,7 +549,7 @@ export function TodaySection({
             {streak}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 6 }}>
-            {streak === 0 ? 'Оцени потребности — начнётся стрик' : 'дней подряд'}
+            {streak === 0 ? 'Оцени потребности – начнётся стрик' : 'дней подряд'}
           </div>
 
         </aside>
@@ -476,49 +563,26 @@ export function TodaySection({
           onClose={() => setShowTaskCreate(false)}
         />
       )}
-      {introSchemaId && <SchemaIntroSheet schemaId={introSchemaId} onClose={() => setIntroSchemaId(null)} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} />}
-      {introModeId   && <ModeIntroSheet   modeId={introModeId}   onClose={() => setIntroModeId(null)}   onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} />}
+      {introSchemaId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><SchemaEx onBack={() => setIntroSchemaId(null)} initialSchemaId={introSchemaId} onComplete={() => { setIntroSchemaId(null); handleTaskComplete(); }} /></Suspense>
+        </div>
+      )}
+      {introModeId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+          <Suspense fallback={null}><ModeEx onBack={() => setIntroModeId(null)} initialModeId={introModeId} onComplete={() => { setIntroModeId(null); handleTaskComplete(); }} /></Suspense>
+        </div>
+      )}
 
-      {/* All tasks sheet */}
+      {/* All tasks overlay */}
       {showAllTasks && (
-        <BottomSheet onClose={() => setShowAllTasks(false)} zIndex={200}>
-          <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 20 }}>Все задания</div>
-          {tasks.map(task => (
-            <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
-              <span style={{ fontSize: 18, flexShrink: 0, width: 22, textAlign: 'center' }}>
-                {task.done === true ? '✅' : task.done === false ? '❌' : resolveTaskEmoji(task)}
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {task.assignedBy !== null && <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 1 }}>от терапевта</div>}
-                <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
-                {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>до {fmtDate(task.dueDate)}</div>}
-              </div>
-              {task.done === null && task.assignedBy !== null && task.type === 'custom' && (
-                <button onClick={() => api.completeTask(task.id, true).then(() => Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => { setTasks(t); setTaskHistory(h); })).catch(() => {})}
-                  style={{ padding: '6px 12px', border: 'none', borderRadius: 10, background: 'color-mix(in srgb, var(--c-moss) 14%, transparent)', color: 'var(--c-moss)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
-                  Готово
-                </button>
-              )}
-            </div>
-          ))}
-          {taskHistory.length > 0 && (
-            <>
-              <div className="eyebrow" style={{ marginTop: 20, marginBottom: 8 }}>Выполнено</div>
-              {taskHistory.map(task => (
-                <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--line)', opacity: 0.5 }}>
-                  <span style={{ fontSize: 16, flexShrink: 0, width: 22, textAlign: 'center' }}>{task.done === true ? '✅' : '❌'}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
-                    {task.completedAt && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1 }}>{fmtDate(new Date(task.completedAt).toISOString().slice(0, 10))}</div>}
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-          <button onClick={() => { setShowAllTasks(false); setShowTaskCreate(true); }} style={{ marginTop: 16, width: '100%', padding: '13px 0', borderRadius: 14, border: 'none', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-            + Поставить цель
-          </button>
-        </BottomSheet>
+        <AllTasksOverlay
+          tasks={tasks}
+          taskHistory={taskHistory}
+          onClose={() => setShowAllTasks(false)}
+          onTaskDone={id => api.completeTask(id, true).then(() => Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => { setTasks(t); setTaskHistory(h); })).catch(() => {})}
+          onAddTask={() => { setShowAllTasks(false); setShowTaskCreate(true); }}
+        />
       )}
     </div>
   );
@@ -543,31 +607,31 @@ interface StepDef {
 const STEPS: StepDef[] = [
   { id: 'ysq', emoji: '🧪', color: 'var(--accent)',
     title: 'Пройди тест на схемы',
-    description: 'YSQ-R — 116 вопросов, 10 минут. Узнаешь какие ранние паттерны управляют твоими реакциями.',
+    description: 'YSQ-R – 116 вопросов, 10 минут. Узнаешь какие ранние паттерны управляют твоими реакциями.',
     detail: '20 схем · история прохождений · советы',
     actionLabel: 'Начать тест',
     isDone: (p, ctx) => !!(p?.ysq.completedAt) || !!(ctx?.hasSchemas) },
   { id: 'tracker', emoji: '📊', color: 'var(--c-slate)',
     title: 'Оцени потребности сегодня',
-    description: 'Пять оценок — и ты видишь индекс дня. Через неделю паттерн начнёт проявляться в графике.',
+    description: 'Пять оценок – и ты видишь индекс дня. Через неделю паттерн начнёт проявляться в графике.',
     detail: 'Привязанность · Автономия · Выражение · Радость · Границы',
     actionLabel: 'Перейти в трекер',
     isDone: p => !!(p?.lastActivity.needsTracker) },
   { id: 'diary', emoji: '📔', color: 'var(--accent-indigo)',
     title: 'Сделай первую запись',
-    description: 'Зафикси момент когда схема сработала — это главная практика схема-терапии.',
+    description: 'Зафикси момент когда схема сработала – это главная практика схема-терапии.',
     detail: 'Дневник схем · режимов · благодарности',
     actionLabel: 'Открыть дневник',
     isDone: p => !!(p?.lastActivity.schemaDiary || p?.lastActivity.modeDiary || p?.lastActivity.gratitudeDiary) },
   { id: 'notify', emoji: '🔔', color: 'var(--c-clay)',
     title: 'Включи ежедневное напоминание',
-    description: 'Без регулярности ничего не выйдет. Одно уведомление в нужное время — всё что нужно.',
+    description: 'Без регулярности ничего не выйдет. Одно уведомление в нужное время – всё что нужно.',
     detail: 'Время · часовой пояс · серии дней',
     actionLabel: 'Настроить',
     isDone: p => !!(p?.notifications.enabled) },
   { id: 'childhood', emoji: '🌀', color: 'var(--c-moss)',
     title: 'Исследуй колесо детства',
-    description: 'Оцени как удовлетворялись потребности в детстве — откуда пришли твои паттерны.',
+    description: 'Оцени как удовлетворялись потребности в детстве – откуда пришли твои паттерны.',
     detail: '5 областей · связь с активными схемами',
     actionLabel: 'Открыть',
     isDone: () => !!localStorage.getItem('childhood_wheel_done') },
@@ -602,7 +666,7 @@ function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdvanced, o
       <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 24 }}>
         <div className="eyebrow" style={{ marginBottom: 8, color: 'var(--c-moss)' }}>Старт пройден</div>
         <div className="text-md" style={{ maxWidth: 540, lineHeight: 1.55 }}>
-          Все инструменты изучены — теперь начинается настоящая работа.
+          Все инструменты изучены – теперь начинается настоящая работа.
         </div>
         <div style={{ marginTop: 14 }}>
           <button className="link" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}
@@ -644,7 +708,7 @@ function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdvanced, o
         <span className="hint">{doneCount} из {STEPS.length} · {pendingSteps.length} впереди</span>
       </div>
 
-      {/* Calm checklist — all steps as document lines */}
+      {/* Calm checklist – all steps as document lines */}
       {STEPS.map(s => {
         const isDone    = s.isDone(profile, ctx);
         const isSkipped = skipped.includes(s.id) && !isDone;

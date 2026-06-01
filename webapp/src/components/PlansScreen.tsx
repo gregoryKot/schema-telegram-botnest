@@ -4,6 +4,7 @@ import type { PracticePlan } from '../api';
 import { Loader } from './Loader';
 import { COLORS } from '../types';
 import { NEED_DATA } from '../needData';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 interface Props {
   onClose: () => void;
@@ -32,6 +33,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function PlansScreen({ onClose, onOpenTracker }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [plans, setPlans] = useState<PracticePlan[] | null>(null);
 
   useEffect(() => {
@@ -47,14 +49,16 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
           <div>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>Планы</div>
-            <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 10 }}>История планов</h1>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>
+              <span style={{ color: 'var(--accent)' }}>● </span>Планы
+            </div>
+            <h1 className="hub-title" style={{ marginBottom: 8 }}>История<br /><span className="it">планов</span></h1>
             {plans !== null && plans.length > 0 && (
               <div className="text-md muted">{pending.length} активных · {completed.length} завершённых</div>
             )}
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button onClick={onClose} className="btn btn-secondary">Закрыть</button>
+            <button onClick={goBack} className="btn btn-secondary">Закрыть</button>
           </div>
         </div>
 
@@ -72,10 +76,10 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
               fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65,
               marginBottom: 24, maxWidth: 280, margin: '0 auto 24px',
             }}>
-              Планы создаются в трекере — выбери потребность с низкой оценкой и нажми «Запланировать практику»
+              Планы создаются в трекере – выбери потребность с низкой оценкой и нажми «Запланировать практику»
             </div>
             {onOpenTracker && (
-              <button onClick={() => { onClose(); onOpenTracker(); }} style={{
+              <button onClick={() => { onOpenTracker?.(); goBack(); }} style={{
                 padding: '12px 28px', borderRadius: 14, border: 'none', fontFamily: 'inherit',
                 background: 'transparent', outline: '1px solid var(--line)',
                 color: 'var(--accent)', fontSize: 14, fontWeight: 600, cursor: 'pointer',

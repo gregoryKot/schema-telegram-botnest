@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import type { Achievement, TherapyRelationInfo } from '../api';
-import { BottomSheet } from '../components/BottomSheet';
 import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
@@ -37,13 +36,13 @@ type InsightsData = { weeklyStats: Array<{ needId: string; avg: number | null; t
 const TODAY_DOW_IDX = (new Date().getDay() + 6) % 7; // 0=пн ... 6=вс
 
 interface Props {
-  onOpenSettings: () => void;
+  onOpenSettings?: () => void;
   onOpenTracker?: () => void;
   refreshKey?: number;
   displayName?: string | null;
 }
 
-export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, displayName }: Props) {
+export function ProfileSection({ onOpenTracker, refreshKey, displayName }: Props) {
   const firstName = displayName || '';
 
   const [streak, setStreak]             = useState<StreakData | null>(null);
@@ -68,11 +67,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   // Progress stats
   const [diaryCount, setDiaryCount] = useState<number>(0);
   const [ysqCount, setYsqCount] = useState<number>(0);
-
-  // Notifications
-  const [notifEnabled, setNotifEnabled] = useState(true);
-  const [reminderEnabled, setReminderEnabled] = useState(true);
-  const [savingNotif, setSavingNotif] = useState(false);
 
   // Delete account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -102,12 +96,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         api.getGratitudeDiary().catch(() => []),
       ]).then(([sd, md, gd]) => setDiaryCount(sd.length + md.length + gd.length)).catch(() => {}),
       api.getYsqHistory().then(h => setYsqCount(h.length)).catch(() => {}),
-      api.getSettings().then(s => {
-        if (s) {
-          setNotifEnabled(s.notifyEnabled ?? true);
-          setReminderEnabled(s.notifyReminderEnabled ?? true);
-        }
-      }).catch(() => {}),
     ]).finally(() => setReady(true));
   }, [refreshKey]);
 
@@ -124,20 +112,18 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
     <div className="page-inner">
 
       {/* ── Хедер ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 40 }}>
-        <div>
-          <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, marginBottom: 6 }}>
-            {firstName || 'Профиль'}
-          </h1>
-          {totalDays > 0 && (
-            <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>
-              {totalDays} {totalDays === 1 ? 'день' : totalDays < 5 ? 'дня' : 'дней'} в приложении
-            </div>
-          )}
+      <div style={{ marginBottom: 40 }}>
+        <div className="eyebrow" style={{ marginBottom: 14 }}>
+          <span style={{ color: 'var(--accent)' }}>● </span>Профиль
         </div>
-        <button onClick={onOpenSettings} className="btn btn-secondary">
-          ⚙️ <span>Настройки</span>
-        </button>
+        <h1 className="hub-title" style={{ marginBottom: 10 }}>
+          {firstName || 'Мой'}<br /><span className="it">прогресс</span>
+        </h1>
+        {totalDays > 0 && (
+          <div style={{ fontSize: 15, color: 'var(--text-sub)' }}>
+            {totalDays} {totalDays === 1 ? 'день' : totalDays < 5 ? 'дня' : 'дней'} в приложении
+          </div>
+        )}
       </div>
 
       <div style={{ maxWidth: 720 }}>
@@ -184,7 +170,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                     ? (todayDone ? 'var(--accent)' : 'var(--text)')
                     : 'rgba(var(--fg-rgb),0.2)',
                 }}>
-                  {currentStreak > 0 ? currentStreak : '—'}
+                  {currentStreak > 0 ? currentStreak : '–'}
                 </div>
                 <div style={{ paddingBottom: 4 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: currentStreak > 0 ? 'var(--text-sub)' : 'rgba(var(--fg-rgb),0.35)', lineHeight: 1.2 }}>
@@ -317,7 +303,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             </div>
 
             {earnedList.length === 0 ? (
-              <div style={{ fontSize: 13, color: 'var(--text-sub)', paddingRight: 16 }}>Первое — за первую запись в дневник</div>
+              <div style={{ fontSize: 13, color: 'var(--text-sub)', paddingRight: 16 }}>Первое – за первую запись в дневник</div>
             ) : (
               /* Horizontal scroll of earned achievements */
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingRight: 16, paddingBottom: 2 }}>
@@ -485,87 +471,29 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           </div>
         )}
 
-        {/* ── Уведомления ── */}
-        <div className="section">
-          <div className="section-head"><h3>Уведомления</h3></div>
-          {[
-            { key: 'notifEnabled', label: 'Все уведомления', sub: 'Основной переключатель', value: notifEnabled,
-              onChange: (v: boolean) => {
-                setNotifEnabled(v);
-                setSavingNotif(true);
-                api.updateSettings({ notifyEnabled: v }).finally(() => setSavingNotif(false));
-              }
-            },
-            { key: 'reminder', label: 'Вечернее напоминание', sub: 'Напоминание заполнить трекер', value: reminderEnabled,
-              onChange: (v: boolean) => {
-                setReminderEnabled(v);
-                setSavingNotif(true);
-                api.updateSettings({ notifyReminderEnabled: v }).finally(() => setSavingNotif(false));
-              }
-            },
-          ].map(item => (
-            <div key={item.key} className="list-line">
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{item.label}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>{item.sub}</div>
-              </div>
-              <div
-                onClick={() => !savingNotif && item.onChange(!item.value)}
-                style={{
-                  width: 36, height: 20, borderRadius: 999,
-                  background: item.value ? 'var(--accent)' : 'var(--surface-3)',
-                  position: 'relative', cursor: savingNotif ? 'default' : 'pointer',
-                  transition: 'background 0.2s', flexShrink: 0,
-                }}
-              >
-                <div style={{
-                  position: 'absolute', top: 3,
-                  left: item.value ? 18 : 3,
-                  width: 14, height: 14, borderRadius: '50%', background: '#fff',
-                  transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                }} />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Данные ── */}
-        <div className="section">
-          <div className="section-head"><h3>Данные</h3></div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <span
-              className="link"
-              style={{ cursor: 'pointer' }}
-              onClick={() => {
-                api.getExport().then(({ text }) => {
-                  const a = document.createElement('a');
-                  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
-                  a.download = 'schemalab-export.txt';
-                  a.click();
-                }).catch(() => {});
-              }}
-            >
-              Экспортировать все данные
-            </span>
-            <span
-              className="link"
-              style={{ color: 'var(--c-rose)', cursor: 'pointer' }}
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              Удалить аккаунт
-            </span>
-          </div>
-        </div>
-
         <div>
           <TherapyNote compact />
         </div>
+
+        {/* ── Удаление аккаунта – discreet link ── */}
+        <div style={{ marginTop: 8, paddingTop: 24, borderTop: '1px solid var(--line)' }}>
+          <span
+            className="link"
+            style={{ color: 'var(--c-rose)', cursor: 'pointer', fontSize: 13 }}
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            Удалить аккаунт
+          </span>
+        </div>
       </div>
 
-      {/* ── BottomSheet: Достижения ── */}
+      {/* ── Достижения ── */}
       {showAchievements && achievements && (
-        <BottomSheet onClose={() => { setShowAchievements(false); setSelectedAchievement(null); }}>
-          <div style={{ paddingTop: 4 }}>
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={() => { setShowAchievements(false); setSelectedAchievement(null); }}
+        >
+        <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto', border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Достижения</span>
               <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{earnedList.length} из {achievements.length}</span>
@@ -608,8 +536,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                 );
               })}
             </div>
-          </div>
-        </BottomSheet>
+        </div>
+        </div>
       )}
 
       {/* Achievement detail overlay */}
@@ -635,21 +563,27 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
       {/* Best day tooltip */}
       {showBestDayInfo && (
-        <BottomSheet onClose={() => setShowBestDayInfo(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
-            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Лучший день</div>
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={() => setShowBestDayInfo(false)}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 32px', width: '100%', maxWidth: 400, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
+            <div className="eyebrow" style={{ marginBottom: 16 }}>Лучший день</div>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>День недели, в который твои оценки в среднем выше всего.</p>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>Становится точнее с каждой неделей.</p>
           </div>
-        </BottomSheet>
+        </div>
       )}
 
       {notesOpen && <MyNotesSheet onClose={() => setNotesOpen(false)} />}
 
       {/* Delete account confirm */}
       {showDeleteConfirm && (
-        <BottomSheet onClose={() => !deleting && setShowDeleteConfirm(false)} zIndex={300}>
-          <div style={{ paddingTop: 4 }}>
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={() => !deleting && setShowDeleteConfirm(false)}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 420, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div style={{ fontSize: 22, marginBottom: 12 }}>⚠️</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Удалить аккаунт?</div>
             <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 24 }}>
@@ -677,7 +611,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               </button>
             </div>
           </div>
-        </BottomSheet>
+        </div>
       )}
     </div>
   );

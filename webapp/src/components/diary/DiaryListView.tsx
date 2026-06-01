@@ -15,10 +15,10 @@ interface Props {
   onDelete: (type: DiaryType, id: number) => void;
 }
 
-const DIARY_META: Record<DiaryType, { title: string; emoji: string; color: string; emptyLine1: string; emptyLine2: string; fabLabel: string }> = {
-  schema:    { title: 'Дневник схем',          emoji: '📓', color: 'var(--c-rose)',   emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Когда что-то триггернёт — возвращайся и записывай.', fabLabel: '+ Записать момент' },
-  mode:      { title: 'Дневник режимов',       emoji: '🔄', color: 'var(--c-slate)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Как только поймаешь себя в знакомом состоянии — приходи записать.', fabLabel: '+ Записать режим' },
-  gratitude: { title: 'Дневник благодарности', emoji: '🌱', color: 'var(--c-moss)', emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Начни сегодня — достаточно трёх вещей.', fabLabel: '+ Записать' },
+const DIARY_META: Record<DiaryType, { title: string; eyebrow: string; emoji: string; color: string; emptyLine1: string; emptyLine2: string; fabLabel: string }> = {
+  schema:    { title: 'Дневник схем',          eyebrow: 'Дневник схем',     emoji: '📓', color: 'var(--c-rose)',   emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Когда что-то триггернёт – возвращайся и записывай.', fabLabel: '+ Записать момент' },
+  mode:      { title: 'Дневник режимов',       eyebrow: 'Дневник режимов',  emoji: '🔄', color: 'var(--c-slate)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Как только поймаешь себя в знакомом состоянии – приходи записать.', fabLabel: '+ Записать режим' },
+  gratitude: { title: 'Дневник благодарности', eyebrow: 'Благодарность',    emoji: '🌱', color: 'var(--c-moss)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Начни сегодня – достаточно трёх вещей.', fabLabel: '+ Записать' },
 };
 
 function formatDt(iso: string) {
@@ -192,11 +192,17 @@ export function DiaryListView({ type, schemaEntries, modeEntries, gratitudeEntri
           ← Дневник
         </button>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
-          <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1, margin: 0 }}>
-            {meta.emoji} {meta.title}
-            {totalCount > 0 && <span style={{ fontSize: 16, fontWeight: 400, color: 'var(--text-faint)', marginLeft: 8 }}>{totalCount}</span>}
-          </h1>
-          <button onClick={onNewEntry} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: meta.color, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, marginTop: 4 }}>
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>
+              <span style={{ color: meta.color }}>● </span>
+              {meta.eyebrow}
+              {totalCount > 0 && <span style={{ color: 'var(--text-faint)', fontWeight: 400, marginLeft: 8 }}>{totalCount}</span>}
+            </div>
+            <h1 className="hub-title" style={{ marginBottom: 0 }}>
+              {meta.title}
+            </h1>
+          </div>
+          <button onClick={onNewEntry} style={{ padding: '8px 16px', border: 'none', borderRadius: 8, background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, marginTop: 14 }}>
             {meta.fabLabel}
           </button>
         </div>

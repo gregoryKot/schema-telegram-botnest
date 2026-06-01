@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
 import type { UserSettings, PairsData, TherapyRelationInfo } from '../api';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
-import { BottomSheet } from './BottomSheet';
 import { Loader } from './Loader';
-
+import { GlyphArrowLeft } from './exercises/ExScreen';
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
 import type { Theme } from '../utils/theme';
 
@@ -38,6 +38,7 @@ interface Props {
 }
 
 export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode }: Props) {
+  const goBack = useHistorySheet(onClose);
   const [view, setView]             = useState<View>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
   const [pairData, setPairData]     = useState<PairsData | null>(null);
@@ -133,23 +134,26 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
   return (
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+        {/* ExScreen-style topbar */}
+        <div className="ex-topbar" style={{ justifyContent: 'space-between' }}>
+          <button className="ex-back" onClick={view !== 'main' ? () => setView('main') : goBack}>
+            <GlyphArrowLeft />
+            {view !== 'main' ? 'Назад' : 'Закрыть'}
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {savedToast && <span style={{ fontSize: 13, color: 'var(--c-moss)', fontWeight: 600 }}>Сохранено ✓</span>}
+          </div>
+        </div>
+
+        <div className="page">
         <div className="page-inner-wide" style={{ paddingTop: 40, paddingBottom: 80 }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 }}>
-          <div>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>Аккаунт</div>
-            <h1 style={{ fontSize: 36, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-              {view === 'time' ? 'Время уведомления' : view === 'tz' ? 'Часовой пояс' : 'Настройки'}
-            </h1>
-          </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            {savedToast && <span className="text-sm" style={{ color: 'var(--c-moss)', fontWeight: 500 }}>Сохранено</span>}
-            {view !== 'main'
-              ? <button onClick={() => setView('main')} className="btn btn-secondary">← Назад</button>
-              : <button onClick={onClose} className="btn btn-secondary">Закрыть</button>
-            }
-          </div>
+        <div style={{ marginBottom: 36 }}>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>Аккаунт</div>
+          <h1 className="hub-title">
+            {view === 'time' ? <>Время<br /><span className="it">уведомления</span></> : view === 'tz' ? <>Часовой<br /><span className="it">пояс</span></> : <>Настройки</>}
+          </h1>
         </div>
 
         <div>
@@ -161,7 +165,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 const active = h === localHour;
                 return (
                   <div key={h} onClick={async () => { await patch({ notifyLocalHour: h }); setView('main'); }}
-                    style={{ padding: '12px 0', borderRadius: 12, textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.06)', color: active ? '#fff' : 'rgba(var(--fg-rgb),0.6)', fontSize: 15, fontWeight: active ? 600 : 400, cursor: 'pointer' }}
+                    style={{ padding: '12px 0', borderRadius: 12, textAlign: 'center', background: active ? 'var(--text)' : 'rgba(var(--fg-rgb),0.06)', color: active ? 'var(--bg)' : 'rgba(var(--fg-rgb),0.6)', fontSize: 15, fontWeight: active ? 600 : 400, cursor: 'pointer' }}
                   >{pad(h)}:00</div>
                 );
               })}
@@ -188,8 +192,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               {/* Оформление */}
               <div style={{ marginBottom: 8 }}>
                 <SettingsLabel>ОФОРМЛЕНИЕ</SettingsLabel>
-                <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
+                  <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{ fontSize: 18 }}>{theme === 'dark' ? '🌙' : '☀️'}</span>
                       <div>
@@ -208,7 +212,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       onClick={() => setTheme(toggleTheme())}
                       style={{
                         width: 46, height: 26, borderRadius: 13,
-                        background: theme === 'light' ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 30%, transparent)',
+                        background: theme === 'light' ? 'var(--text)' : 'color-mix(in srgb, var(--fg-rgb) 30%, transparent)',
                         position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
                         flexShrink: 0,
                       }}
@@ -238,7 +242,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         onClick={onToggleTherapistMode}
                         style={{
                           width: 46, height: 26, borderRadius: 13,
-                          background: therapistMode ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 30%, transparent)',
+                          background: therapistMode ? 'var(--text)' : 'color-mix(in srgb, var(--fg-rgb) 30%, transparent)',
                           position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
                           flexShrink: 0,
                         }}
@@ -260,7 +264,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               {/* Имя */}
               <div style={{ marginBottom: 8 }}>
                 <SettingsLabel>КАК ТЕБЯ ЗОВУТ</SettingsLabel>
-                <div className="card" style={{ borderRadius: 16, padding: '12px 16px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', padding: '12px 0', display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
@@ -293,7 +297,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               {/* Уведомления */}
               <div style={{ marginBottom: 8 }}>
                 <SectionHeader onInfo={() => setShowNotifyInfo(true)}>УВЕДОМЛЕНИЯ</SectionHeader>
-                <div className="card" style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 8 }}>
+                <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', marginBottom: 8 }}>
                   <Row label="Итоги дня" sub="Ежедневный отчёт по потребностям" right={<Toggle on={settings.notifyEnabled} onClick={() => patch({ notifyEnabled: !settings.notifyEnabled })} />} />
                   <Row label="Напоминание" sub="Заполнить трекер вечером" right={<Toggle on={!!settings.notifyReminderEnabled} onClick={() => patch({ notifyReminderEnabled: !settings.notifyReminderEnabled })} />} divider />
                   {(settings.notifyEnabled || settings.notifyReminderEnabled) && (
@@ -311,11 +315,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 )}
               </div>
 
-              {/* Терапевт — CLIENT view */}
+              {/* Терапевт – CLIENT view */}
               {userRole !== 'THERAPIST' && (
                 <div style={{ marginBottom: 8 }}>
                   <SectionHeader onInfo={() => setShowTherapistInfo(true)}>МОЙ ТЕРАПЕВТ</SectionHeader>
-                  <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+                  <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', paddingTop: 14 }}>
                     {therapyRelation === undefined ? (
                       <div style={{ color: 'var(--text-sub)', fontSize: 13, textAlign: 'center', padding: '8px 0' }}>Загрузка...</div>
                     ) : therapyRelation?.status === 'active' ? (
@@ -365,7 +369,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     ) : (
                       <div>
                         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 10 }}>
-                          Если терапевт дал код — введи его здесь
+                          Если терапевт дал код – введи его здесь
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
                           <input
@@ -386,7 +390,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                                 setTherapyJoinCode('');
                               } catch { setTherapyJoinError('Неверный код'); }
                             }}
-                            style={{ background: 'var(--accent)', border: 'none', borderRadius: 10, padding: '9px 16px', color: 'var(--text)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                            style={{ background: 'var(--text)', border: 'none', borderRadius: 10, padding: '9px 16px', color: 'var(--bg)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                           >
                             Войти
                           </button>
@@ -405,17 +409,17 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     <button
                       onClick={() => setShowBecomeTherapist(true)}
                       style={{
-                        width: '100%', padding: '11px 16px', borderRadius: 14,
-                        border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-                        background: 'color-mix(in srgb, var(--accent) 6%, transparent)',
-                        color: 'var(--accent)', fontSize: 13, fontWeight: 500,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        padding: '9px 16px', borderRadius: 6,
+                        border: '1px solid rgba(var(--fg-rgb),0.15)',
+                        background: 'transparent',
+                        color: 'var(--text-sub)', fontSize: 13, fontWeight: 500,
+                        cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
                       }}
                     >
-                      <span>👨‍⚕️</span> Я психолог — войти как специалист
+                      <span>👨‍⚕️</span> Я психолог – войти как специалист
                     </button>
                   ) : (
-                    <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+                    <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', paddingTop: 14 }}>
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 10 }}>
                         Введи код специалиста
                       </div>
@@ -442,7 +446,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                               setTherapistCodeLoading(false);
                             }
                           }}
-                          style={{ background: 'var(--accent)', border: 'none', borderRadius: 10, padding: '9px 16px', color: 'var(--text)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                          style={{ background: 'var(--text)', border: 'none', borderRadius: 10, padding: '9px 16px', color: 'var(--bg)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                         >
                           Войти
                         </button>
@@ -453,17 +457,17 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 </div>
               )}
 
-              {/* Терапевт — THERAPIST view */}
+              {/* Терапевт – THERAPIST view */}
               {userRole === 'THERAPIST' && (
                 <div style={{ marginBottom: 8 }}>
                   <SettingsLabel>КАБИНЕТ ТЕРАПЕВТА</SettingsLabel>
-                  <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+                  <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
                     <div
                       onClick={onOpenTherapistCabinet}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', cursor: 'pointer' }}
                     >
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--accent)' }}>Открыть кабинет</div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>Открыть кабинет</div>
                         <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>Клиенты, задания, приглашения</div>
                       </div>
                       <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
@@ -477,7 +481,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                             try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
                           } catch { /* ignore */ }
                         }}
-                        style={{ background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)', borderRadius: 10, padding: '8px 16px', color: 'var(--accent)', fontSize: 13, cursor: 'pointer' }}
+                        style={{ border: '1px solid rgba(var(--fg-rgb),0.15)', background: 'transparent', borderRadius: 6, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}
                       >
                         + Создать приглашение клиенту
                       </button>
@@ -494,7 +498,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               {/* Партнёр */}
               <div style={{ marginBottom: 8 }}>
                 <SectionHeader onInfo={() => setShowPairInfo(true)}>ПАРТНЁР</SectionHeader>
-                <div className="card" style={{ borderRadius: 16, padding: 16 }}>
+                <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', paddingTop: 14 }}>
                   {pairLoading && !pairData ? (
                     <div style={{ color: 'var(--text-sub)', fontSize: 13, textAlign: 'center', padding: '12px 0' }}>Загрузка...</div>
                   ) : pairData && pairData.partners.length > 0 ? (
@@ -509,7 +513,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                           ) : (
                             <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 10 }}>Ещё не заполнил дневник</div>
                           )}
-                          <button onClick={() => handleLeave(p.code)} style={{ width: '100%', padding: 12, border: 'none', borderRadius: 12, background: 'rgba(255,100,100,0.1)', color: 'rgba(255,100,100,0.7)', fontSize: 14, cursor: 'pointer' }}>
+                          <button onClick={() => handleLeave(p.code)} style={{ width: '100%', padding: 12, border: 'none', borderRadius: 12, background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', color: 'var(--c-rose)', fontSize: 14, cursor: 'pointer' }}>
                             Выйти из пары
                           </button>
                         </div>
@@ -518,16 +522,16 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   ) : joinView === 'main' ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 4 }}>
-                        Приглашай друга — видите индексы дня друг друга
+                        Приглашай друга – видите индексы дня друг друга
                       </div>
-                      <button onClick={handleCreateInvite} disabled={pairLoading} style={{ padding: 14, border: 'none', borderRadius: 12, background: 'var(--accent)', color: 'var(--text)', fontSize: 14, fontWeight: 600, cursor: pairLoading ? 'default' : 'pointer' }}>
+                      <button onClick={handleCreateInvite} disabled={pairLoading} style={{ padding: 14, border: 'none', borderRadius: 12, background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 600, cursor: pairLoading ? 'default' : 'pointer' }}>
                         {pairLoading ? '...' : pairData?.pendingCode ? 'Создать новую ссылку' : 'Создать приглашение'}
                       </button>
                       {pairInviteUrl && (
                         <div style={{ background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '12px 14px' }}>
                           <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 8 }}>Скопируй и отправь другу:</div>
                           <div style={{ fontSize: 12, color: 'rgba(var(--fg-rgb),0.7)', wordBreak: 'break-all', lineHeight: 1.5, marginBottom: 10, userSelect: 'all' }}>{pairInviteUrl}</div>
-                          <button onClick={handleCopyPairInvite} style={{ width: '100%', padding: '10px', border: 'none', borderRadius: 10, background: pairInviteCopied ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)' : 'color-mix(in srgb, var(--accent) 20%, transparent)', color: pairInviteCopied ? '#06d6a0' : 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                          <button onClick={handleCopyPairInvite} style={{ width: '100%', padding: '8px', border: 'none', borderRadius: 6, background: pairInviteCopied ? 'color-mix(in srgb, var(--accent-green) 14%, transparent)' : 'rgba(var(--fg-rgb),0.07)', color: pairInviteCopied ? 'var(--c-moss)' : 'var(--text-sub)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                             {pairInviteCopied ? '✓ Скопировано' : 'Скопировать ссылку'}
                           </button>
                         </div>
@@ -551,7 +555,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         </div>
                       )}
                       <button onClick={handleJoin} disabled={!joinCode.trim() || pairLoading}
-                        style={{ width: '100%', padding: 14, border: 'none', borderRadius: 12, background: joinCode.trim() ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 30%, transparent)', color: 'var(--text)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                        style={{ width: '100%', padding: 14, border: 'none', borderRadius: 12, background: joinCode.trim() ? 'var(--text)' : 'rgba(var(--fg-rgb),0.2)', color: joinCode.trim() ? 'var(--bg)' : 'var(--text-faint)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                         Присоединиться
                       </button>
                     </div>
@@ -562,9 +566,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               {/* Поделиться + Экспорт */}
               <div style={{ marginBottom: 8 }}>
                 <SettingsLabel>ПОДЕЛИТЬСЯ</SettingsLabel>
-                <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+                <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
                   <Row label="Пригласить друга" sub="Поделиться ссылкой на бота" emoji="🔗" onClick={async () => {
-                    const text = 'Трекер потребностей — отслеживай своё состояние каждый день. t.me/SchemaLabBot';
+                    const text = 'Трекер потребностей – отслеживай своё состояние каждый день. t.me/SchemaLabBot';
                     try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); } catch { try { await navigator.clipboard.writeText(text); } catch {} }
                   }} />
                   <Row label="Для терапевта" sub="Сводка за 30 дней" emoji="📤" divider onClick={async () => {
@@ -579,7 +583,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               {/* О приложении */}
               <div style={{ marginBottom: 8 }}>
                 <SettingsLabel>О ПРИЛОЖЕНИИ</SettingsLabel>
-                <div className="card" style={{ borderRadius: 16, padding: '20px 16px' }}>
+                <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', paddingTop: 20 }}>
                   <div style={{ fontSize: 22, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: 10 }}>СхемаЛаб</div>
                   <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 16px' }}>
                     Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.
@@ -588,11 +592,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <div className="eyebrow" style={{ marginBottom: 12 }}>Об авторе</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
                     <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                      Канал о схема-терапии —{' '}
+                      Канал о схема-терапии –{' '}
                       <a href="https://t.me/SchemeHappens" style={{ color: 'var(--accent)', textDecoration: 'none' }}>@SchemeHappens</a>
                     </div>
                     <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                      Записаться на сессию —{' '}
+                      Записаться на сессию –{' '}
                       <a href="https://t.me/kotlarewski" style={{ color: 'var(--accent)', textDecoration: 'none' }}>@kotlarewski</a>
                     </div>
                   </div>
@@ -605,143 +609,146 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               {/* Конфиденциальность */}
               <div style={{ marginBottom: 8 }}>
                 <SettingsLabel>ДАННЫЕ</SettingsLabel>
-                <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
+                <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
                   <Row label="О данных и конфиденциальности" emoji="🔒" onClick={() => setShowPrivacy(true)} />
-                  <Row label="Удалить все данные" emoji="🗑" divider color="#f87171" onClick={() => { setDeleteConfirm(false); setShowDeleteSheet(true); }} />
+                  <Row label="Удалить все данные" emoji="🗑" divider color="var(--c-rose)" onClick={() => { setDeleteConfirm(false); setShowDeleteSheet(true); }} />
                 </div>
               </div>
             </>
           )}
         </div>
         </div>
+        </div> {/* .page */}
       </div>
 
       {/* Export text overlay */}
       {exportText && (
-        <BottomSheet onClose={() => { setExportText(null); setExportCopied(false); }} zIndex={300}>
-          <div style={{ paddingTop: 4 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Сводка для терапевта</div>
-            <pre style={{ fontSize: 11, color: 'var(--text-sub)', lineHeight: 1.6, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '12px 14px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: 14, userSelect: 'all', fontFamily: 'monospace' }}>
-              {exportText}
-            </pre>
-            <button onClick={async () => { try { await navigator.clipboard.writeText(exportText); setExportCopied(true); setTimeout(() => setExportCopied(false), 2000); } catch {} }}
-              style={{ width: '100%', padding: '13px 0', border: 'none', borderRadius: 12, background: exportCopied ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)' : 'rgba(var(--fg-rgb),0.08)', color: exportCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.7)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-              {exportCopied ? '✓ Скопировано' : 'Скопировать'}
-            </button>
-          </div>
-        </BottomSheet>
+        <InfoModal onClose={() => { setExportText(null); setExportCopied(false); }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Сводка для терапевта</div>
+          <pre style={{ fontSize: 11, color: 'var(--text-sub)', lineHeight: 1.6, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '12px 14px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: 14, userSelect: 'all', fontFamily: 'monospace' }}>
+            {exportText}
+          </pre>
+          <button onClick={async () => { try { await navigator.clipboard.writeText(exportText); setExportCopied(true); setTimeout(() => setExportCopied(false), 2000); } catch {} }}
+            style={{ width: '100%', padding: '13px 0', border: 'none', borderRadius: 12, background: exportCopied ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)' : 'rgba(var(--fg-rgb),0.08)', color: exportCopied ? 'var(--c-moss)' : 'rgba(var(--fg-rgb),0.7)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            {exportCopied ? '✓ Скопировано' : 'Скопировать'}
+          </button>
+        </InfoModal>
       )}
 
       {/* Notify info */}
       {showNotifyInfo && (
-        <BottomSheet onClose={() => setShowNotifyInfo(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
-            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем уведомления</div>
-            <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>Регулярность — это всё. Один раз в день, в одно и то же время, формирует привычку наблюдать за собой.</p>
-            <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}><b style={{ color: 'var(--text)' }}>Итоги дня</b> — приходят в это же время, если дневник заполнен.</p>
-          </div>
-        </BottomSheet>
+        <InfoModal onClose={() => setShowNotifyInfo(false)}>
+          <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем уведомления</div>
+          <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>Регулярность – это всё. Один раз в день, в одно и то же время, формирует привычку наблюдать за собой.</p>
+          <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}><b style={{ color: 'var(--text)' }}>Итоги дня</b> – приходят в это же время, если дневник заполнен.</p>
+        </InfoModal>
       )}
 
       {/* Pair info */}
       {showPairInfo && (
-        <BottomSheet onClose={() => setShowPairInfo(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
-            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем привязывать друга</div>
-            <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
-              Это необязательно — но может помочь.
-            </p>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 12 }}>
-              Ты и друг (партнёр, коллега) видите <b style={{ color: 'var(--text)' }}>индексы дня</b> друг друга — просто число от 0 до 10. Никаких деталей, дневников или оценок.
-            </p>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-              Иногда знать, что кому-то важно как у тебя дела — уже достаточно. Это мягкая взаимная видимость, без осуждения.
-            </p>
-          </div>
-        </BottomSheet>
+        <InfoModal onClose={() => setShowPairInfo(false)}>
+          <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем привязывать друга</div>
+          <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
+            Это необязательно – но может помочь.
+          </p>
+          <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 12 }}>
+            Ты и друг (партнёр, коллега) видите <b style={{ color: 'var(--text)' }}>индексы дня</b> друг друга – просто число от 0 до 10. Никаких деталей, дневников или оценок.
+          </p>
+          <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
+            Иногда знать, что кому-то важно как у тебя дела – уже достаточно. Это мягкая взаимная видимость, без осуждения.
+          </p>
+        </InfoModal>
       )}
 
       {/* Therapist info */}
       {showTherapistInfo && (
-        <BottomSheet onClose={() => setShowTherapistInfo(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
-            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем подключать терапевта</div>
-            <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
-              Если ты работаешь со схема-терапевтом — приложение может стать частью этой работы.
-            </p>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 12 }}>
-              Терапевт, которому ты дашь код, видит <b style={{ color: 'var(--text)' }}>трекер потребностей и задания</b>. Карточки схем, профиль и дневники ты контролируешь сам — можно закрыть в настройках.
-            </p>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-              Это даёт терапевту контекст без лишних объяснений — и позволяет работать с реальными паттернами, не с тем, что вспомнилось на сессии.
-            </p>
-          </div>
-        </BottomSheet>
+        <InfoModal onClose={() => setShowTherapistInfo(false)}>
+          <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>Зачем подключать терапевта</div>
+          <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, marginBottom: 12 }}>
+            Если ты работаешь со схема-терапевтом – приложение может стать частью этой работы.
+          </p>
+          <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 12 }}>
+            Терапевт, которому ты дашь код, видит <b style={{ color: 'var(--text)' }}>трекер потребностей и задания</b>. Карточки схем, профиль и дневники ты контролируешь сам – можно закрыть в настройках.
+          </p>
+          <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
+            Это даёт терапевту контекст без лишних объяснений – и позволяет работать с реальными паттернами, не с тем, что вспомнилось на сессии.
+          </p>
+        </InfoModal>
       )}
 
       {/* Privacy */}
       {showPrivacy && (
-        <BottomSheet onClose={() => { setShowPrivacy(false); setDeleteConfirm(false); }} zIndex={300}>
-          <div style={{ paddingTop: 4 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Данные и конфиденциальность</div>
+        <InfoModal onClose={() => { setShowPrivacy(false); setDeleteConfirm(false); }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Данные и конфиденциальность</div>
 
-            {[
-              { title: 'Что хранится на сервере', text: 'Дневник, оценки, заметки, практики, результаты тестов — всё привязано к Telegram-аккаунту и доступно с любого устройства.' },
-              { title: 'Передача третьим лицам', text: 'Данные не продаются и не передаются рекламным сетям или третьим лицам. Никогда.' },
-            ].map(block => (
-              <div key={block.title} style={{ marginBottom: 12, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '14px 16px' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(var(--fg-rgb),0.8)', marginBottom: 6 }}>{block.title}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{block.text}</div>
-              </div>
-            ))}
-
-            {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(var(--fg-rgb),0.8)', marginBottom: 10 }}>Удалить данные теста YSQ-R</div>
-                <button onClick={() => { localStorage.removeItem(YSQ_PROGRESS_KEY); localStorage.removeItem(YSQ_RESULT_KEY); api.deleteYsqResult().catch(() => {}); setShowPrivacy(false); }}
-                  style={{ width: '100%', padding: '13px 0', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-                  Удалить результаты теста
-                </button>
-              </div>
-            )}
-
-            <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>
-              Разработано для образовательных целей. Не является медицинским или психологическим сервисом.
+          {[
+            { title: 'Что хранится на сервере', text: 'Дневник, оценки, заметки, практики, результаты тестов – всё привязано к Telegram-аккаунту и доступно с любого устройства.' },
+            { title: 'Передача третьим лицам', text: 'Данные не продаются и не передаются рекламным сетям или третьим лицам. Никогда.' },
+          ].map(block => (
+            <div key={block.title} style={{ marginBottom: 12, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '14px 16px' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(var(--fg-rgb),0.8)', marginBottom: 6 }}>{block.title}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{block.text}</div>
             </div>
+          ))}
+
+          {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(var(--fg-rgb),0.8)', marginBottom: 10 }}>Удалить данные теста YSQ-R</div>
+              <button onClick={() => { localStorage.removeItem(YSQ_PROGRESS_KEY); localStorage.removeItem(YSQ_RESULT_KEY); api.deleteYsqResult().catch(() => {}); setShowPrivacy(false); }}
+                style={{ width: '100%', padding: '13px 0', borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+                Удалить результаты теста
+              </button>
+            </div>
+          )}
+
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>
+            Разработано для образовательных целей. Не является медицинским или психологическим сервисом.
           </div>
-        </BottomSheet>
+        </InfoModal>
       )}
 
-      {/* Delete sheet — прямой флоу */}
+      {/* Delete sheet */}
       {showDeleteSheet && (
-        <BottomSheet onClose={() => { setShowDeleteSheet(false); setDeleteConfirm(false); }} zIndex={300}>
-          <div style={{ paddingTop: 4 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 8 }}>Удалить все данные</div>
-            <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 20 }}>
-              Дневники, оценки, практики, колесо детства, результаты тестов, заметки, задания, связи с терапевтом — всё удалится с сервера. Это действие необратимо.
-            </div>
-            {!deleteConfirm ? (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setShowDeleteSheet(false)} style={{ flex: 1, padding: '14px 0', borderRadius: 14, border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'transparent', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer' }}>
-                  Отмена
-                </button>
-                <button onClick={() => setDeleteConfirm(true)} style={{ flex: 1, padding: '14px 0', borderRadius: 14, border: 'none', background: 'rgba(239,68,68,0.15)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  Удалить
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div style={{ fontSize: 14, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 16, fontWeight: 500 }}>Точно? Восстановить невозможно.</div>
-                <button disabled={deleting} onClick={async () => { setDeleting(true); try { await api.deleteAllUserData(); const theme = localStorage.getItem('app_theme'); localStorage.clear(); sessionStorage.clear(); if (theme) localStorage.setItem('app_theme', theme); window.location.reload(); } catch { setDeleting(false); setDeleteConfirm(false); } }}
-                  style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: '#ef4444', color: 'var(--text)', fontSize: 15, fontWeight: 700, cursor: deleting ? 'default' : 'pointer' }}>
-                  {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
-                </button>
-              </div>
-            )}
+        <InfoModal onClose={() => { setShowDeleteSheet(false); setDeleteConfirm(false); }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 8 }}>Удалить все данные</div>
+          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 20 }}>
+            Дневники, оценки, практики, колесо детства, результаты тестов, заметки, задания, связи с терапевтом – всё удалится с сервера. Это действие необратимо.
           </div>
-        </BottomSheet>
+          {!deleteConfirm ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowDeleteSheet(false)} style={{ flex: 1, padding: '14px 0', borderRadius: 14, border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'transparent', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer' }}>
+                Отмена
+              </button>
+              <button onClick={() => setDeleteConfirm(true)} style={{ flex: 1, padding: '14px 0', borderRadius: 14, border: 'none', background: 'rgba(239,68,68,0.15)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                Удалить
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontSize: 14, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 16, fontWeight: 500 }}>Точно? Восстановить невозможно.</div>
+              <button disabled={deleting} onClick={async () => { setDeleting(true); try { await api.deleteAllUserData(); const theme = localStorage.getItem('app_theme'); localStorage.clear(); sessionStorage.clear(); if (theme) localStorage.setItem('app_theme', theme); window.location.reload(); } catch { setDeleting(false); setDeleteConfirm(false); } }}
+                style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: '#ef4444', color: 'var(--text)', fontSize: 15, fontWeight: 700, cursor: deleting ? 'default' : 'pointer' }}>
+                {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
+              </button>
+            </div>
+          )}
+        </InfoModal>
       )}
     </>
+  );
+}
+
+function InfoModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end' }}
+      onClick={onClose}
+    >
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
+        {children}
+      </div>
+    </div>
   );
 }
 

@@ -39,16 +39,16 @@ export class NotificationService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Запланировать уведомление */
-  async schedule(userId: number, type: NotificationType, sendAt: Date, payload?: object) {
+  async schedule(userId: bigint, type: NotificationType, sendAt: Date, payload?: object) {
     await this.prisma.scheduledNotification.create({
-      data: { userId: BigInt(userId), type, sendAt, payload: payload ?? undefined },
+      data: { userId, type, sendAt, payload: payload ?? undefined },
     });
   }
 
   /** Отменить все неотправленные уведомления пользователя данного типа */
-  async cancel(userId: number, type: NotificationType) {
+  async cancel(userId: bigint, type: NotificationType) {
     await this.prisma.scheduledNotification.updateMany({
-      where: { userId: BigInt(userId), type, sentAt: null, cancelledAt: null },
+      where: { userId, type, sentAt: null, cancelledAt: null },
       data: { cancelledAt: new Date() },
     });
   }
@@ -72,25 +72,25 @@ export class NotificationService {
   }
 
   /** Есть ли уже запланированное неотправленное уведомление данного типа */
-  async hasPending(userId: number, type: NotificationType): Promise<boolean> {
+  async hasPending(userId: bigint, type: NotificationType): Promise<boolean> {
     const count = await this.prisma.scheduledNotification.count({
-      where: { userId: BigInt(userId), type, sentAt: null, cancelledAt: null },
+      where: { userId, type, sentAt: null, cancelledAt: null },
     });
     return count > 0;
   }
 
   /** True если уведомление данного типа уже было отправлено или стоит в очереди (включая отменённые) */
-  async hasEver(userId: number, type: NotificationType): Promise<boolean> {
+  async hasEver(userId: bigint, type: NotificationType): Promise<boolean> {
     const count = await this.prisma.scheduledNotification.count({
-      where: { userId: BigInt(userId), type },
+      where: { userId, type },
     });
     return count > 0;
   }
 
   /** Отменить все pending уведомления пользователя (при деактивации) */
-  async cancelAll(userId: number) {
+  async cancelAll(userId: bigint) {
     await this.prisma.scheduledNotification.updateMany({
-      where: { userId: BigInt(userId), sentAt: null, cancelledAt: null },
+      where: { userId, sentAt: null, cancelledAt: null },
       data: { cancelledAt: new Date() },
     });
   }

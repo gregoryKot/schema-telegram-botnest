@@ -36,6 +36,7 @@ export function MergePage() {
   const { setAccessToken } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
 
   const token = params.get('token') ?? '';
   const summaryStr = params.get('summary') ?? '{}';
@@ -80,7 +81,7 @@ export function MergePage() {
         Объединить аккаунты?
       </h1>
       <div className="text-md muted" style={{ maxWidth: 600, lineHeight: 1.6, marginBottom: 36 }}>
-        Аккаунт <b>{providerName}</b>{otherName ? ` (${otherName})` : ''} уже существует со своими данными. Если объединить — все они переедут в твой текущий аккаунт.
+        Аккаунт <b>{providerName}</b>{otherName ? ` (${otherName})` : ''} уже существует со своими данными. Если объединить – все они переедут в твой текущий аккаунт.
       </div>
 
       <div className="section">
@@ -89,7 +90,7 @@ export function MergePage() {
           {totalItems > 0 && <span className="hint">{totalItems} {totalItems === 1 ? 'запись' : totalItems < 5 ? 'записи' : 'записей'}</span>}
         </div>
         {totalItems === 0 ? (
-          <div className="text-sm muted">Нет данных — объединение пройдёт без переноса.</div>
+          <div className="text-sm muted">Нет данных – объединение пройдёт без переноса.</div>
         ) : (
           Object.entries(summary).map(([table, n]) => (
             <div key={table} className="list-line">
@@ -102,7 +103,7 @@ export function MergePage() {
 
       <div className="section">
         <div className="text-sm" style={{ color: 'var(--c-amber)', lineHeight: 1.6, maxWidth: 600 }}>
-          Если в обоих аккаунтах есть пересекающиеся записи (одна и та же оценка за один день, например) — версия текущего аккаунта остаётся, дубль из второго удаляется. <b>Действие необратимо.</b>
+          Если в обоих аккаунтах есть пересекающиеся записи (одна и та же оценка за один день, например) – версия текущего аккаунта остаётся, дубль из второго удаляется. <b>Действие необратимо.</b>
         </div>
       </div>
 
@@ -112,9 +113,27 @@ export function MergePage() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-        <button disabled={busy} onClick={confirm} className="btn btn-primary">
-          {busy ? 'Объединяю...' : 'Объединить'}
+      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 24, cursor: busy ? 'default' : 'pointer', maxWidth: 600 }}>
+        <input
+          type="checkbox"
+          checked={acknowledged}
+          onChange={e => setAcknowledged(e.target.checked)}
+          disabled={busy}
+          style={{ marginTop: 3, width: 16, height: 16, accentColor: 'var(--accent)' }}
+        />
+        <span className="text-sm" style={{ lineHeight: 1.5 }}>
+          Я понимаю что данные второго аккаунта необратимо переедут, а сам тот аккаунт будет удалён.
+        </span>
+      </label>
+
+      <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+        <button disabled={busy || !acknowledged} onClick={confirm} className="btn btn-primary">
+          {busy ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+              Объединяю…
+            </span>
+          ) : 'Объединить'}
         </button>
         <button disabled={busy} onClick={() => navigate('/account')} className="btn btn-secondary">
           Отмена

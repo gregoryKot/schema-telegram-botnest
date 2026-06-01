@@ -42,6 +42,10 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
+# Claude Code local settings (may contain env vars from permission prompts)
+.claude/settings.local.json
+.claude/worktrees/
+
 # temp directory
 .temp
 .tmp
@@ -57,9 +61,28 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
 
+# webapp dist — built by Dockerfile on Amvera, no need to commit
+webapp/dist/
+
 # schema-miniapp is a separate repo — only its pre-built dist + package.json are tracked here
 schema-miniapp/*
 !schema-miniapp/dist/
 !schema-miniapp/dist/**
 !schema-miniapp/package.json
 
+
+# macOS junk
+.DS_Store
+**/.DS_Store
+
+# Accidental project duplicates (never commit these)
+schema-telegram-botnest
+schema-telegram-botnest/
+schema-telegram-botnest.zip
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Generated Prisma config artifacts (prisma.config.js itself is a tracked source file)
+prisma.config.d.ts
+prisma.config.js.map
