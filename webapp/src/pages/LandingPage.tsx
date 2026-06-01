@@ -166,6 +166,7 @@ function BookingForm() {
     try {
       await api.submitBooking({ name: name.trim(), contact: contact.trim(), message: message.trim() || undefined });
       setStatus('done');
+      (window as Window & { ym?: (...a: unknown[]) => void }).ym?.(109568051, 'reachGoal', 'booking_submit');
     } catch { setStatus('error'); }
   };
 

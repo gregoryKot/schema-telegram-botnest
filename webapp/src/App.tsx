@@ -1,5 +1,17 @@
-import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+
+// ── Yandex.Metrika SPA pageview tracking ──────────────────────────────────────
+const YM_ID = 109568051;
+declare global { interface Window { ym?: (id: number, action: string, ...args: unknown[]) => void } }
+
+function MetrikaTracker() {
+  const loc = useLocation();
+  useEffect(() => {
+    window.ym?.(YM_ID, 'hit', window.location.href, { referer: document.referrer });
+  }, [loc.pathname, loc.search]);
+  return null;
+}
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { setTokenProvider } from './api';
 import { LoginPage } from './pages/LoginPage';
@@ -37,6 +49,7 @@ function Root() {
   return (
     <AuthProvider>
       <TokenBridge />
+      <MetrikaTracker />
       <Outlet />
     </AuthProvider>
   );
