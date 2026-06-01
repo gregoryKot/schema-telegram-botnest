@@ -217,26 +217,34 @@ function BookingForm() {
 }
 
 // ─── Education ───────────────────────────────────────────────────────────────
-const EDUCATION = [
+const EDUCATION: { year: string; title: string; place: string; placeUrl?: string; note: string }[] = [
   {
-    year: '2024 – наст. вр.',
+    year: 'с 2024',
     title: 'Психология · бакалавриат',
-    sub: 'Московский институт психоанализа · профиль «Психотерапия качества жизни»',
+    place: 'Московский институт психоанализа',
+    placeUrl: 'https://inpsycho.ru',
+    note: 'профиль «Психотерапия качества жизни»',
   },
   {
     year: '2025',
     title: 'Схема-терапия',
-    sub: 'Базовый курс «Практик схема-терапии» · 47 часов · преп. М. А. Лазарев',
+    place: 'Базовый курс «Практик схема-терапии»',
+    placeUrl: 'https://psylaz.ru/pst/',
+    note: '47 часов · преп. М. А. Лазарев',
   },
   {
     year: '2025–26',
     title: 'Когнитивно-поведенческая терапия',
-    sub: 'МАНП · программа профессиональной подготовки, 288 часов',
+    place: 'МАНП',
+    placeUrl: 'https://manp.academy/',
+    note: 'программа профессиональной подготовки, 288 часов',
   },
   {
     year: '2026',
     title: 'Майндфулнесс и медитация',
-    sub: 'Школа Осознанности · подготовка преподавателей MMTTP · 275 часов',
+    place: 'Школа Осознанности',
+    placeUrl: 'https://mindfulness-school.ru',
+    note: 'инструкторская программа MMTTP, 275 часов · в процессе',
   },
 ];
 
@@ -567,7 +575,13 @@ export function LandingPage() {
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', paddingTop: 3, whiteSpace: 'nowrap' }}>{item.year}</span>
                 <div>
                   <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>{item.title}</p>
-                  <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0, lineHeight: 1.6 }}>{item.sub}</p>
+                  <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0, lineHeight: 1.6 }}>
+                    {item.placeUrl
+                      ? <a href={item.placeUrl} target="_blank" rel="noopener noreferrer"
+                          style={{ color: 'var(--accent)', textDecoration: 'none', borderBottom: '1px solid var(--accent-line)' }}>{item.place} ↗</a>
+                      : item.place}
+                    {' · '}{item.note}
+                  </p>
                 </div>
               </div>
             ))}
