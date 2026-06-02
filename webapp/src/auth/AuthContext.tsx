@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { 'x-requested-with': 'webapp', 'Content-Type': 'application/json' },
       });
       if (!res.ok) {
-        // 401 means token is invalid/revoked — clear state to stop retry loop
+        // 401 means token is invalid/revoked – clear state to stop retry loop
         if (res.status === 401) setTokenState(null);
         return false;
       }

@@ -160,13 +160,13 @@ export function PrivacyPage() {
           </Chapter>
 
           <Chapter n="10" title="Cookie-файлы" id="cookies">
-            <P><strong>Обязательные (технические) cookie — не требуют согласия:</strong></P>
+            <P><strong>Обязательные (технические) cookie – не требуют согласия:</strong></P>
             <Table rows={[
               ['Сессионные cookie (авторизация)', 'Необходимы для входа в систему. Хранятся до закрытия браузера или истечения сессии.'],
               ['Refresh-token cookie', 'Автоматическое обновление сессии. Хранится до 30 дней или до выхода из системы.'],
               ['OAuth-cookie (oauth_state, tg_pkce_verifier, google_nonce)', 'Временные, только на время процедуры входа через Google или Telegram. Удаляются сразу после завершения авторизации (до 10 минут).'],
             ]} />
-            <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '16px 0 0' }}><strong>Аналитические cookie — только с вашего согласия:</strong></p>
+            <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '16px 0 0' }}><strong>Аналитические cookie – только с вашего согласия:</strong></p>
             <Table rows={[
               ['Яндекс.Метрика (_ym_uid, _ym_d и др.)', 'Статистика посещений, тепловые карты, запись сессий (webvisor). Устанавливаются только если вы нажали «Принять все» в баннере согласия. Вы можете отозвать согласие, нажав «Только необходимые» при следующем визите или очистив localStorage (ключ cookie_consent).'],
             ]} />
