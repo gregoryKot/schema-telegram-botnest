@@ -164,9 +164,10 @@ interface EdgeEditorProps {
   edge: ModeMapEdge;
   onChange: (updated: ModeMapEdge) => void;
   onDelete: () => void;
+  onSwap: () => void;
 }
 
-export function ModeMapEdgeEditor({ edge, onChange, onDelete }: EdgeEditorProps) {
+export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap }: EdgeEditorProps) {
   const edgeType = (edge.data?.edgeType ?? 'activates') as string;
   const bidir = edge.data?.bidirectional ?? false;
 
@@ -178,7 +179,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete }: EdgeEditorProps)
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
         {Object.entries(EDGE_TYPE_LABELS).map(([k, v]) => (
           <button key={k}
-            onClick={() => onChange({ ...edge, label: bidir ? v : v, data: { ...edge.data, edgeType: k as EdgeType } })}
+            onClick={() => onChange({ ...edge, data: { ...edge.data, edgeType: k as EdgeType } })}
             style={{ padding: '7px 12px', borderRadius: 6, textAlign: 'left', fontSize: 12.5, cursor: 'pointer',
               border: `1px solid ${edgeType === k ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)'}`,
               background: edgeType === k ? 'var(--accent-soft)' : 'none',
@@ -189,21 +190,29 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete }: EdgeEditorProps)
       </div>
 
       <label style={labelStyle}>Направление</label>
-      <button onClick={() => onChange({ ...edge, data: { ...edge.data, bidirectional: !bidir } })}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', marginBottom: 14,
-          padding: '7px 10px', borderRadius: 6, fontSize: 12.5, cursor: 'pointer',
-          border: `1.5px solid ${bidir ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
-          background: bidir ? 'var(--accent-soft)' : 'none',
-          color: bidir ? 'var(--accent)' : 'var(--text-sub)' }}>
-        <span style={{ fontSize: 14 }}>{bidir ? '↔' : '→'}</span>
-        {bidir ? 'В обе стороны' : 'Одностороннее'}
-      </button>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+        <button onClick={() => onChange({ ...edge, data: { ...edge.data, bidirectional: !bidir } })}
+          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '7px 10px', borderRadius: 6, fontSize: 12.5, cursor: 'pointer',
+            border: `1.5px solid ${bidir ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+            background: bidir ? 'var(--accent-soft)' : 'none',
+            color: bidir ? 'var(--accent)' : 'var(--text-sub)' }}>
+          <span style={{ fontSize: 14 }}>{bidir ? '↔' : '→'}</span>
+          {bidir ? 'Двусторонняя' : 'Односторонняя'}
+        </button>
+        <button onClick={onSwap} title="Поменять направление (откуда → куда)"
+          style={{ padding: '7px 10px', borderRadius: 6, fontSize: 13, cursor: 'pointer',
+            border: '1px solid rgba(var(--fg-rgb),0.14)', background: 'none',
+            color: 'var(--text-sub)' }}>
+          ⇄
+        </button>
+      </div>
 
       <label style={labelStyle}>Подпись (необязательно)</label>
       <input style={inputStyle}
-        value={typeof edge.label === 'string' && !Object.values(EDGE_TYPE_LABELS).includes(edge.label) ? edge.label : ''}
-        onChange={e => onChange({ ...edge, label: e.target.value || EDGE_TYPE_LABELS[edgeType] })}
-        placeholder="Своя подпись" />
+        value={edge.label ?? ''}
+        onChange={e => onChange({ ...edge, label: e.target.value || undefined })}
+        placeholder="Текст на стрелке" />
 
       <button onClick={onDelete} style={deleteBtnStyle}>Удалить связь</button>
     </div>

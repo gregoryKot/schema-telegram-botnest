@@ -28,6 +28,7 @@ export function ModeMapPalette({ onAdd }: Props) {
   const [newName, setNewName] = useState('');
   const [newEmoji, setNewEmoji] = useState('⬡');
   const [newType, setNewType] = useState<NodeType>('custom');
+  const [newCopingSub, setNewCopingSub] = useState<'over' | 'avoid' | 'surr'>('over');
   const addInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -56,6 +57,15 @@ export function ModeMapPalette({ onAdd }: Props) {
     const m = await api.createCustomMode({ name: newName.trim(), emoji: newEmoji, nodeType: newType });
     setCustomModes(prev => [...prev, m]);
     setNewName(''); setNewEmoji('⬡'); setAdding(false);
+  }
+
+  function getCustomNodeData(m: TherapistCustomMode): Omit<ModeMapNode, 'position'>['data'] {
+    const base: ModeMapNode['data'] = { label: m.name };
+    if (m.nodeType === 'coping') {
+      // Default to 'over' unless stored differently (future: store in model)
+      base.copingSubtype = 'over';
+    }
+    return base;
   }
 
   async function removeCustomMode(id: number) {
@@ -134,22 +144,58 @@ export function ModeMapPalette({ onAdd }: Props) {
 
             {adding && (
               <div style={{ padding: '6px 10px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {/* Emoji + name */}
                 <div style={{ display: 'flex', gap: 6 }}>
                   <input ref={addInputRef} value={newEmoji} onChange={e => setNewEmoji(e.target.value)}
                     style={{ ...miniInputStyle, width: 34, textAlign: 'center', fontSize: 15 }} maxLength={2} />
                   <input value={newName} onChange={e => setNewName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveCustomMode(); if (e.key === 'Escape') setAdding(false); }}
-                    placeholder="Название…"
-                    style={{ ...miniInputStyle, flex: 1 }} />
+                    placeholder="Название…" style={{ ...miniInputStyle, flex: 1 }} autoFocus />
                 </div>
-                <select value={newType} onChange={e => setNewType(e.target.value as NodeType)}
-                  style={{ ...miniInputStyle, background: 'var(--bg-elev)' }}>
-                  <option value="child">Детский (круг)</option>
-                  <option value="critic">Критик</option>
-                  <option value="coping">Копинг</option>
-                  <option value="healthy">Здоровый</option>
-                  <option value="custom">Свой</option>
-                </select>
+
+                {/* Shape picker — visual buttons */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {([
+                    { type: 'child' as NodeType,   label: 'Дет.',  shape: 'circle'  },
+                    { type: 'critic' as NodeType,  label: 'Крит.', shape: 'oct'     },
+                    { type: 'healthy' as NodeType, label: 'Здор.', shape: 'rect'    },
+                    { type: 'custom' as NodeType,  label: 'Свой',  shape: 'rect2'   },
+                  ]).map(opt => (
+                    <button key={opt.type} onClick={() => setNewType(opt.type)}
+                      title={opt.label}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                        padding: '4px 6px', borderRadius: 5, cursor: 'pointer', fontSize: 9,
+                        border: `1.5px solid ${newType === opt.type && !(newType === 'coping') ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                        background: newType === opt.type && !(newType === 'coping') ? 'var(--accent-soft)' : 'none',
+                        color: newType === opt.type && !(newType === 'coping') ? 'var(--accent)' : 'var(--text-faint)',
+                      }}>
+                      <MiniShapePreview shape={opt.shape} />
+                      {opt.label}
+                    </button>
+                  ))}
+                  {/* Coping subtypes */}
+                  {([
+                    { sub: 'over' as const,  label: 'Гипер.', shape: 'penta'  },
+                    { sub: 'avoid' as const, label: 'Избег.', shape: 'shield' },
+                    { sub: 'surr' as const,  label: 'Капит.', shape: 'pill'   },
+                  ]).map(opt => {
+                    const active = newType === 'coping' && newCopingSub === opt.sub;
+                    return (
+                      <button key={opt.sub} onClick={() => { setNewType('coping'); setNewCopingSub(opt.sub); }}
+                        title={opt.label}
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                          padding: '4px 6px', borderRadius: 5, cursor: 'pointer', fontSize: 9,
+                          border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                          background: active ? 'var(--accent-soft)' : 'none',
+                          color: active ? 'var(--accent)' : 'var(--text-faint)',
+                        }}>
+                        <MiniShapePreview shape={opt.shape} />
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button onClick={saveCustomMode} style={{ ...miniInputStyle, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, flex: 1 }}>
                     Сохранить
@@ -162,8 +208,8 @@ export function ModeMapPalette({ onAdd }: Props) {
             {customModes.map(m => (
               <div key={m.id} style={{ display: 'flex', alignItems: 'center' }}>
                 <button
-                  onClick={() => onAdd({ id: `cm_${m.id}_${Date.now()}`, type: m.nodeType as NodeType, data: { label: m.name } })}
-                  draggable onDragStart={e => onDragStart(e, { id: `cm_${m.id}_${Date.now()}`, type: m.nodeType as NodeType, data: { label: m.name } })}
+                  onClick={() => onAdd({ id: `cm_${m.id}_${Date.now()}`, type: m.nodeType as NodeType, data: getCustomNodeData(m) })}
+                  draggable onDragStart={e => onDragStart(e, { id: `cm_${m.id}_${Date.now()}`, type: m.nodeType as NodeType, data: getCustomNodeData(m) })}
                   style={{ ...itemStyle, flex: 1 }}>
                   <span style={{ fontSize: 13 }}>{m.emoji}</span>
                   <span style={{ fontSize: 12.5, flex: 1 }}>{m.name}</span>
@@ -214,3 +260,28 @@ const miniInputStyle: React.CSSProperties = {
   border: '1px solid rgba(var(--fg-rgb),0.15)',
   color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
 };
+
+function MiniShapePreview({ shape }: { shape: string }) {
+  const c = 'rgba(var(--fg-rgb),0.5)';
+  const s: React.CSSProperties = { width: 16, height: 16, border: `1.5px solid ${c}`, flexShrink: 0 };
+  if (shape === 'circle')  return <div style={{ ...s, borderRadius: '50%' }} />;
+  if (shape === 'pill')    return <div style={{ ...s, borderRadius: 9999 }} />;
+  if (shape === 'rect')    return <div style={{ ...s, borderRadius: 3 }} />;
+  if (shape === 'rect2')   return <div style={{ ...s, borderRadius: 5 }} />;
+  if (shape === 'penta')   return (
+    <svg width={16} height={16} viewBox="0 0 10 10">
+      <path d="M5,0 L10,3.8 L8.2,10 L1.8,10 L0,3.8 Z" fill="none" stroke={c} strokeWidth="1.2" />
+    </svg>
+  );
+  if (shape === 'shield')  return (
+    <svg width={16} height={16} viewBox="0 0 10 10">
+      <path d="M0,0 L10,0 L10,7 L5,10 L0,7 Z" fill="none" stroke={c} strokeWidth="1.2" />
+    </svg>
+  );
+  if (shape === 'oct')     return (
+    <svg width={16} height={16} viewBox="0 0 10 10">
+      <path d="M1.4,0 L8.6,0 L10,1.4 L10,8.6 L8.6,10 L1.4,10 L0,8.6 L0,1.4 Z" fill="none" stroke={c} strokeWidth="1.2" />
+    </svg>
+  );
+  return <div style={{ ...s, borderRadius: 3 }} />;
+}
