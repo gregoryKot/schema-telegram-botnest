@@ -195,7 +195,7 @@ export function AppShell() {
   // Global ⌘K + ⌘1–5 section shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmdOpen(true); }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmdOpen(true); return; }
       if (!therapistMode && e.metaKey) {
         const map: Record<string, Section> = { '1': 'today', '2': 'diary', '3': 'schemas', '4': 'practice' };
         if (map[e.key]) { e.preventDefault(); setSection(map[e.key] as Section); }

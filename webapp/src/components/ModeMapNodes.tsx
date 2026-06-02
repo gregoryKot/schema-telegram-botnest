@@ -7,6 +7,7 @@ export interface ModeNodeData {
   customColor?: string;
   filled?: boolean;
   fillFull?: boolean;
+  copingSubtype?: 'over' | 'avoid' | 'surr';  // overcompensation | avoidance | surrender
 }
 
 export const TYPE_COLORS: Record<string, string> = {
@@ -106,9 +107,43 @@ function makeRectNode(defaultColor: string, radius: number | string = 10, usePen
 }
 
 export const CriticModeNode  = makeRectNode(TYPE_COLORS.critic,  3);
-export const CopingModeNode  = makeRectNode(TYPE_COLORS.coping,  0, true);
 export const HealthyModeNode = makeRectNode(TYPE_COLORS.healthy, 10);
 export const CustomModeNode  = makeRectNode(TYPE_COLORS.custom,  10);
+
+// Three coping subtypes with distinct shapes
+const COPING_CLIPS = {
+  over:  'polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)',         // pentagon — aggression
+  avoid: 'polygon(0% 0%,100% 0%,100% 72%,50% 100%,0% 72%)',           // shield — protection/withdrawal
+  surr:  undefined,  // soft ellipse via border-radius
+};
+
+export const CopingModeNode = function CopingModeNode({ data, selected }: NodeProps) {
+  const d = data as unknown as ModeNodeData;
+  const color = d.customColor ?? TYPE_COLORS.coping;
+  const light = !!d.fillFull;
+  const sub = d.copingSubtype ?? 'over';
+  const clip = COPING_CLIPS[sub];
+  const radius = sub === 'surr' ? 9999 : 0;
+  return (
+    <div style={{ width: '100%', height: '100%', minWidth: 110, minHeight: 56, position: 'relative' }}>
+      <NodeResizer minWidth={80} minHeight={40} isVisible={!!selected} color={color} />
+      <AllHandles />
+      <div style={{
+        width: '100%', height: '100%',
+        borderRadius: radius,
+        clipPath: clip,
+        background: bgColor(color, d.filled, d.fillFull),
+        border: `2px solid ${selected ? 'var(--accent)' : color}`,
+        boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
+        padding: sub === 'over' ? '22% 10% 10%' : sub === 'avoid' ? '8% 10% 20%' : '8px 14px',
+      }}>
+        <NodeLabel label={d.label} note={d.note} light={light} />
+      </div>
+    </div>
+  );
+};
 
 // ── Cloud node (trigger) ──────────────────────────────────────────────────────
 export const TriggerNode = function TriggerNode({ data, selected }: NodeProps) {

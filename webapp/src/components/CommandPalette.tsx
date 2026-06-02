@@ -83,7 +83,8 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
       action: () => onOpenClient?.(c.telegramId),
     }));
 
-    const navRows: Row[] = NAV_ITEMS.map(n => ({
+    // In therapist cabinet — skip client navigation sections
+    const navRows: Row[] = therapistMode ? [] : NAV_ITEMS.map(n => ({
       type: 'nav' as const,
       label: n.label, sub: n.sub, hint: n.hint,
       action: () => onNavigate(n.id),
@@ -92,7 +93,8 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
     const actionRows: Row[] = [
       ...(userRole === 'THERAPIST' ? [{
         type: 'action' as const,
-        label: therapistMode ? 'Переключиться в режим клиента' : 'Переключиться в режим терапевта',
+        label: therapistMode ? 'Переключиться в режим клиента' : 'Переключиться в кабинет терапевта',
+        sub: therapistMode ? 'Клиентский вид' : 'Кабинет',
         action: () => onToggleMode?.(),
       }] : []),
       ...(!therapistMode ? [{

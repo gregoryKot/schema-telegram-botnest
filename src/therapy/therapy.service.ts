@@ -839,6 +839,34 @@ export class TherapyService {
     await (this.prisma.modeMap as any).delete({ where: { id: mapId } });
   }
 
+  // ─── Therapist Custom Modes ──────────────────────────────────────────────────
+
+  async listCustomModes(therapistId: bigint) {
+    return (this.prisma.therapistCustomMode as any).findMany({
+      where: { therapistId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async createCustomMode(therapistId: bigint, body: { name: string; emoji?: string; nodeType?: string }) {
+    const allowed = ['trigger','child','critic','coping','healthy','custom'];
+    const nodeType = allowed.includes(body.nodeType ?? '') ? body.nodeType : 'custom';
+    return (this.prisma.therapistCustomMode as any).create({
+      data: {
+        therapistId,
+        name: body.name.slice(0, 80),
+        emoji: (body.emoji ?? '⬡').slice(0, 8),
+        nodeType,
+      },
+    });
+  }
+
+  async deleteCustomMode(therapistId: bigint, modeId: number) {
+    await (this.prisma.therapistCustomMode as any).deleteMany({
+      where: { id: modeId, therapistId },
+    });
+  }
+
   private decryptMapJson(v: unknown): unknown[] {
     if (v == null) return [];
     if (typeof v === 'string') return decryptJson<unknown[]>(v) ?? [];

@@ -378,6 +378,18 @@ model ClientConceptualization {
   @@unique([therapistId, clientId])
 }
 
+// Therapist's personal custom modes — shown in palette across all clients.
+model TherapistCustomMode {
+  id          Int      @id @default(autoincrement())
+  therapistId BigInt
+  name        String
+  emoji       String   @default("⬡")
+  nodeType    String   @default("custom")  // trigger|child|critic|coping|healthy|custom
+  createdAt   DateTime @default(now())
+
+  @@index([therapistId, createdAt])
+}
+
 // Named mode maps — multiple per client, each with own title and canvas state.
 // nodes/edges stored as encrypted JSON (same pattern as modeMapNodes above).
 model ModeMap {

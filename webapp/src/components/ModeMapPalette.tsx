@@ -1,31 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MODE_GROUPS } from '../schemaTherapyData';
-import type { ModeMapNode } from '../api';
+import type { ModeMapNode, TherapistCustomMode } from '../api';
+import { api } from '../api';
 
 type NodeType = ModeMapNode['type'];
 
 export const DRAG_TYPE = 'application/modemap-node';
 
-const GROUP_TO_TYPE: Record<string, { type: NodeType; color: string }> = {
+const GROUP_TO_TYPE: Record<string, { type: NodeType; color: string; copingSubtype?: 'over' | 'avoid' | 'surr' }> = {
   child:                   { type: 'child',   color: 'var(--accent-blue)' },
-  coping_surrender:        { type: 'coping',  color: '#94a3b8' },
-  coping_avoidance:        { type: 'coping',  color: 'var(--accent)' },
-  coping_overcompensation: { type: 'coping',  color: 'var(--accent-orange)' },
+  coping_surrender:        { type: 'coping',  color: '#94a3b8', copingSubtype: 'surr' },
+  coping_avoidance:        { type: 'coping',  color: 'var(--accent)', copingSubtype: 'avoid' },
+  coping_overcompensation: { type: 'coping',  color: 'var(--accent-orange)', copingSubtype: 'over' },
   critic:                  { type: 'critic',  color: 'var(--accent-red)' },
   healthy:                 { type: 'healthy', color: 'var(--accent-green)' },
 };
 
-interface Props { onAdd: (node: Omit<ModeMapNode, 'position'>) => void; }
+interface Props {
+  onAdd: (node: Omit<ModeMapNode, 'position'>) => void;
+}
 
 export function ModeMapPalette({ onAdd }: Props) {
   const [search, setSearch] = useState('');
-  // Default: groups collapsed except first open
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
+  const [customModes, setCustomModes] = useState<TherapistCustomMode[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmoji, setNewEmoji] = useState('⬡');
+  const [newType, setNewType] = useState<NodeType>('custom');
+  const addInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    api.listCustomModes().then(setCustomModes).catch(() => {});
+  }, []);
 
   const q = search.trim().toLowerCase();
 
-  const makeNode = (modeId: string, type: NodeType, label: string): Omit<ModeMapNode, 'position'> => ({
-    id: `${modeId}_${Date.now()}`, type, data: { modeId, label },
+  const makeNode = (modeId: string, type: NodeType, label: string, extra?: Partial<ModeMapNode['data']>): Omit<ModeMapNode, 'position'> => ({
+    id: `${modeId}_${Date.now()}`, type, data: { modeId, label, ...extra },
   });
 
   const onDragStart = (e: React.DragEvent, partial: Omit<ModeMapNode, 'position'>) => {
@@ -38,6 +50,18 @@ export function ModeMapPalette({ onAdd }: Props) {
     next.has(id) ? next.delete(id) : next.add(id);
     return next;
   });
+
+  async function saveCustomMode() {
+    if (!newName.trim()) return;
+    const m = await api.createCustomMode({ name: newName.trim(), emoji: newEmoji, nodeType: newType });
+    setCustomModes(prev => [...prev, m]);
+    setNewName(''); setNewEmoji('⬡'); setAdding(false);
+  }
+
+  async function removeCustomMode(id: number) {
+    await api.deleteCustomMode(id);
+    setCustomModes(prev => prev.filter(m => m.id !== id));
+  }
 
   return (
     <div style={{
@@ -55,84 +79,114 @@ export function ModeMapPalette({ onAdd }: Props) {
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {/* Trigger */}
-        {(!q || 'триггер'.includes(q)) && (
-          <button
-            onClick={() => onAdd({ id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
+        {(!q || 'триггер ситуация'.includes(q)) && (
+          <button onClick={() => onAdd({ id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
             draggable onDragStart={e => onDragStart(e, { id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
-            style={itemStyle}>
-            <span style={{ fontSize: 13 }}>☁️</span>
-            <span style={{ fontSize: 12.5, flex: 1 }}>Триггер</span>
+            style={itemStyle} title="Внешняя ситуация, запускающая цикл">
+            <span style={{ fontSize: 12 }}>☁️</span>
+            <span style={{ fontSize: 12.5, flex: 1 }}>Триггер / Ситуация</span>
           </button>
         )}
 
-        {/* Mode groups */}
+        {/* Standard mode groups */}
         {MODE_GROUPS.map(group => {
           const meta = GROUP_TO_TYPE[group.id];
           if (!meta) return null;
-
           const items = q
             ? group.items.filter(i => i.name.toLowerCase().includes(q) || i.short.toLowerCase().includes(q))
             : group.items;
-
           if (q && items.length === 0) return null;
-
           const isOpen = q ? true : openGroups.has(group.id);
-
           return (
             <div key={group.id}>
-              {/* Group header */}
               <button onClick={() => !q && toggleGroup(group.id)}
-                style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '7px 12px',
+                style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '6px 12px',
                   background: 'none', border: 'none', cursor: q ? 'default' : 'pointer',
                   borderTop: '1px solid rgba(var(--fg-rgb),0.05)' }}>
-                <div style={{ width: 10, height: 10, borderRadius: meta.type === 'child' ? '50%' :
-                  meta.type === 'coping' ? 0 : 2,
-                  clipPath: meta.type === 'coping' ? 'polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)' : undefined,
-                  background: group.color, flexShrink: 0, marginRight: 7,
-                }} />
-                <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)', flex: 1, textAlign: 'left' }}>
+                <GroupDot type={meta.type} color={group.color} />
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)', flex: 1, textAlign: 'left', marginLeft: 7 }}>
                   {group.group}
                 </span>
-                {!q && (
-                  <span style={{ fontSize: 10, color: 'var(--text-faint)', marginLeft: 4 }}>
-                    {isOpen ? '▲' : `▼ ${group.items.length}`}
-                  </span>
-                )}
+                {!q && <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{isOpen ? '▲' : `▼ ${group.items.length}`}</span>}
               </button>
-
-              {/* Items */}
               {isOpen && items.map(item => (
                 <button key={item.id}
-                  onClick={() => onAdd(makeNode(item.id, meta.type, item.name))}
-                  draggable onDragStart={e => onDragStart(e, makeNode(item.id, meta.type, item.name))}
+                  onClick={() => onAdd(makeNode(item.id, meta.type, item.name, meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {}))}
+                  draggable onDragStart={e => onDragStart(e, makeNode(item.id, meta.type, item.name, meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {}))}
                   style={itemStyle} title={item.short}>
                   <span style={{ fontSize: 12 }}>{item.emoji}</span>
-                  <span style={{ fontSize: 12, flex: 1, textAlign: 'left', lineHeight: 1.3 }}>{item.name}</span>
+                  <span style={{ fontSize: 12, flex: 1, lineHeight: 1.3 }}>{item.name}</span>
                 </button>
               ))}
             </div>
           );
         })}
 
-        {/* Custom */}
+        {/* Custom therapist modes */}
         {!q && (
-          <div>
-            <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.05)', padding: '7px 12px 4px',
-              fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)' }}>Свой режим</div>
-            <button
-              onClick={() => onAdd({ id: `custom_${Date.now()}`, type: 'custom', data: { label: 'Мой режим' } })}
-              draggable onDragStart={e => onDragStart(e, { id: `custom_${Date.now()}`, type: 'custom', data: { label: 'Мой режим' } })}
-              style={itemStyle}>
-              <span style={{ fontSize: 14 }}>＋</span>
-              <span style={{ fontSize: 12.5, flex: 1 }}>Добавить свой</span>
-            </button>
+          <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', marginTop: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)', flex: 1 }}>Мои режимы</span>
+              <button onClick={() => { setAdding(a => !a); setTimeout(() => addInputRef.current?.focus(), 50); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: 'var(--accent)', padding: 0, lineHeight: 1 }}
+                title="Добавить свой режим">＋</button>
+            </div>
+
+            {adding && (
+              <div style={{ padding: '6px 10px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input ref={addInputRef} value={newEmoji} onChange={e => setNewEmoji(e.target.value)}
+                    style={{ ...miniInputStyle, width: 34, textAlign: 'center', fontSize: 15 }} maxLength={2} />
+                  <input value={newName} onChange={e => setNewName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveCustomMode(); if (e.key === 'Escape') setAdding(false); }}
+                    placeholder="Название…"
+                    style={{ ...miniInputStyle, flex: 1 }} />
+                </div>
+                <select value={newType} onChange={e => setNewType(e.target.value as NodeType)}
+                  style={{ ...miniInputStyle, background: 'var(--bg-elev)' }}>
+                  <option value="child">Детский (круг)</option>
+                  <option value="critic">Критик</option>
+                  <option value="coping">Копинг</option>
+                  <option value="healthy">Здоровый</option>
+                  <option value="custom">Свой</option>
+                </select>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={saveCustomMode} style={{ ...miniInputStyle, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, flex: 1 }}>
+                    Сохранить
+                  </button>
+                  <button onClick={() => setAdding(false)} style={{ ...miniInputStyle, cursor: 'pointer', flex: 0, padding: '5px 10px' }}>✕</button>
+                </div>
+              </div>
+            )}
+
+            {customModes.map(m => (
+              <div key={m.id} style={{ display: 'flex', alignItems: 'center' }}>
+                <button
+                  onClick={() => onAdd({ id: `cm_${m.id}_${Date.now()}`, type: m.nodeType as NodeType, data: { label: m.name } })}
+                  draggable onDragStart={e => onDragStart(e, { id: `cm_${m.id}_${Date.now()}`, type: m.nodeType as NodeType, data: { label: m.name } })}
+                  style={{ ...itemStyle, flex: 1 }}>
+                  <span style={{ fontSize: 13 }}>{m.emoji}</span>
+                  <span style={{ fontSize: 12.5, flex: 1 }}>{m.name}</span>
+                </button>
+                <button onClick={() => removeCustomMode(m.id)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 11, padding: '0 10px', flexShrink: 0 }}
+                  title="Удалить">✕</button>
+              </div>
+            ))}
+
+            {customModes.length === 0 && !adding && (
+              <div style={{ padding: '4px 12px 10px', fontSize: 11.5, color: 'var(--text-faint)', lineHeight: 1.4 }}>
+                Добавь режимы, с которыми<br />работаешь чаще всего
+              </div>
+            )}
           </div>
         )}
 
+        {/* Search no results */}
         {q && MODE_GROUPS.every(g => {
           const m = GROUP_TO_TYPE[g.id];
           return !m || !g.items.some(i => i.name.toLowerCase().includes(q) || i.short.toLowerCase().includes(q));
-        }) && (
+        }) && !customModes.some(m => m.name.toLowerCase().includes(q)) && (
           <div style={{ padding: '20px 14px', fontSize: 12.5, color: 'var(--text-faint)', textAlign: 'center' }}>
             Режим не найден
           </div>
@@ -142,9 +196,21 @@ export function ModeMapPalette({ onAdd }: Props) {
   );
 }
 
+function GroupDot({ type, color }: { type: NodeType; color: string }) {
+  if (type === 'child') return <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />;
+  if (type === 'coping') return <div style={{ width: 10, height: 10, background: color, clipPath: 'polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)', flexShrink: 0 }} />;
+  return <div style={{ width: 10, height: 10, borderRadius: 2, background: color, flexShrink: 0 }} />;
+}
+
 const itemStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 8,
   width: '100%', padding: '6px 14px',
   background: 'none', border: 'none', cursor: 'pointer',
   color: 'var(--text)', textAlign: 'left', outline: 'none',
+};
+
+const miniInputStyle: React.CSSProperties = {
+  padding: '5px 8px', borderRadius: 5, fontSize: 12.5,
+  border: '1px solid rgba(var(--fg-rgb),0.15)',
+  color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
 };
