@@ -445,17 +445,18 @@ export function AppShell() {
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
       <div className={`main${therapistMode ? ' main--cabinet' : ''}`}>
-        {/* Topbar – hidden in therapist mode (cabinet has its own header) */}
-        {!therapistMode && (
+        {/* Topbar – shown in all modes */}
         <div className="topbar">
-          <div className="crumbs">
-            {breadcrumbs.map((c, i) => (
-              <span key={i}>
-                {i > 0 && <span className="sep" style={{ margin: '0 4px' }}>›</span>}
-                <span className={i === breadcrumbs.length - 1 ? 'now' : ''}>{c}</span>
-              </span>
-            ))}
-          </div>
+          {!therapistMode && (
+            <div className="crumbs">
+              {breadcrumbs.map((c, i) => (
+                <span key={i}>
+                  {i > 0 && <span className="sep" style={{ margin: '0 4px' }}>›</span>}
+                  <span className={i === breadcrumbs.length - 1 ? 'now' : ''}>{c}</span>
+                </span>
+              ))}
+            </div>
+          )}
           <div className="t-spacer" />
           {isOffline && (
             <span style={{ fontSize: 12, color: 'var(--c-rose)', fontWeight: 500 }}>офлайн</span>
@@ -466,7 +467,6 @@ export function AppShell() {
             <span className="kbd">⌘K</span>
           </button>
         </div>
-        )}
 
         {/* Canvas */}
         <div className="canvas">
