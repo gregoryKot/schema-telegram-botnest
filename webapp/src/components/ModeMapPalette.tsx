@@ -150,14 +150,14 @@ export function ModeMapPalette({ onAdd }: Props) {
   );
 }
 
-function groupLabelStyle(color: string): React.CSSProperties {
+function groupLabelStyle(labelColor: string): React.CSSProperties {
   return {
     padding: '10px 14px 4px',
     fontSize: 10.5,
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
-    color,
+    color: labelColor,
   };
 }
 

@@ -1,4 +1,4 @@
-import type { ModeMapNode, ModeMapEdge } from '../api';
+import type { ModeMapNode, ModeMapEdge, EdgeType } from '../api';
 
 const EDGE_TYPE_LABELS: Record<string, string> = {
   activates:  'активирует',
@@ -66,7 +66,7 @@ interface EdgeEditorProps {
 }
 
 export function ModeMapEdgeEditor({ edge, onChange, onDelete }: EdgeEditorProps) {
-  const edgeType = edge.data?.edgeType ?? 'activates';
+  const edgeType = (edge.data?.edgeType ?? 'activates') as string;
 
   return (
     <div style={panelStyle}>
@@ -79,7 +79,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete }: EdgeEditorProps)
         {Object.entries(EDGE_TYPE_LABELS).map(([k, v]) => (
           <button
             key={k}
-            onClick={() => onChange({ ...edge, label: v, data: { ...edge.data, edgeType: k as ModeMapEdge['data']['edgeType'] } })}
+            onClick={() => onChange({ ...edge, label: v, data: { edgeType: k as EdgeType } })}
             style={{
               padding: '7px 12px',
               borderRadius: 6,

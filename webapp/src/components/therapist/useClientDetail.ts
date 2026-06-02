@@ -4,7 +4,7 @@ import type { TherapyClientSummary, UserTask, TherapistNote, ClientConceptualiza
 import { fmtDate, todayStr } from '../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 
-type ClientTab = 'overview' | 'concept' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
+type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
 interface Params {
   onOpenClient?: (id: number) => void;
