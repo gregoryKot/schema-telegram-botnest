@@ -174,6 +174,15 @@ export interface ConceptSnapshot {
   currentProblems: string | null;
   modeTransitions?: string | null;
 }
+export interface TherapistCustomMode {
+  id: number;
+  therapistId: number;
+  name: string;
+  emoji: string;
+  nodeType: string;
+  createdAt: string;
+}
+
 export interface ModeMapNode {
   id: string;
   type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom';
@@ -185,7 +194,8 @@ export interface ModeMapNode {
     unmetNeed?: string;
     customColor?: string;
     filled?: boolean;
-    fillFull?: boolean;   // 100% непрозрачная заливка
+    fillFull?: boolean;
+    copingSubtype?: 'over' | 'avoid' | 'surr';
   };
   width?: number;
   height?: number;
@@ -350,6 +360,10 @@ export const api = {
   getClientModeNotes:   (clientId: number) => get<any[]>(`/api/therapy/client/${clientId}/mode-notes`),
   getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
   submitBooking:        (body: { name: string; contact: string; message?: string }) => postJson<{ ok: true }>('/api/booking', body),
+  // Therapist custom modes
+  listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),
+  createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),
+  deleteCustomMode:  (id: number)                    => del(`/api/therapy/custom-modes/${id}`),
   // Mode Maps
   listModeMaps:   (clientId: number) => get<ModeMapMeta[]>(`/api/therapy/mode-maps/${clientId}`),
   getModeMap:     (mapId: number)    => get<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`),

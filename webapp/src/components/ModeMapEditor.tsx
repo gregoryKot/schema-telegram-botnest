@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Controls, MiniMap,
   addEdge, useNodesState, useEdgesState, useReactFlow,
@@ -225,6 +225,29 @@ export function ModeMapEditor({ mapId, initialNodes, initialEdges }: Props) {
     const newEdges = edges.filter(e => e.id !== selectedEdgeId);
     setEdges(newEdges); setSelectedEdgeId(null); scheduleSave(nodes, newEdges);
   }, [selectedEdgeId, nodes, edges, setEdges, scheduleSave]);
+
+  // Keyboard shortcuts — after scheduleSave is declared
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key === 'Escape') { setSelectedNodeId(null); setSelectedEdgeId(null); return; }
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        if (selectedNodeId) {
+          const newNodes = nodes.filter(n => n.id !== selectedNodeId);
+          const newEdges = edges.filter(e2 => e2.source !== selectedNodeId && e2.target !== selectedNodeId);
+          setNodes(newNodes); setEdges(newEdges); setSelectedNodeId(null);
+          scheduleSave(newNodes, newEdges);
+        } else if (selectedEdgeId) {
+          const newEdges = edges.filter(e2 => e2.id !== selectedEdgeId);
+          setEdges(newEdges); setSelectedEdgeId(null);
+          scheduleSave(nodes, newEdges);
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedNodeId, selectedEdgeId, nodes, edges, setNodes, setEdges, scheduleSave]);
 
   return (
     <ReactFlowProvider>

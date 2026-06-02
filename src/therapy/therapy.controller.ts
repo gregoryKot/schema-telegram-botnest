@@ -333,6 +333,31 @@ export class TherapyController {
     catch (e: any) { if (e?.message === 'No active relation') throw new ForbiddenException('No active relation with this client'); throw e; }
   }
 
+  // ─── Therapist Custom Modes ──────────────────────────────────────────────────
+
+  @Get('custom-modes')
+  async listCustomModes(@Req() req: AuthRequest) {
+    const role = await this.botService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    return this.therapyService.listCustomModes(uid(req));
+  }
+
+  @Post('custom-modes')
+  async createCustomMode(@Req() req: AuthRequest, @Body() body: { name?: string; emoji?: string; nodeType?: string }) {
+    const role = await this.botService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    if (!body.name?.trim()) throw new BadRequestException('name required');
+    return this.therapyService.createCustomMode(uid(req), body as { name: string; emoji?: string; nodeType?: string });
+  }
+
+  @Delete('custom-modes/:modeId')
+  async deleteCustomMode(@Req() req: AuthRequest, @Param('modeId') modeId: string) {
+    const role = await this.botService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.therapyService.deleteCustomMode(uid(req), parseId(modeId));
+    return { ok: true };
+  }
+
   // ─── Mode Maps ───────────────────────────────────────────────────────────────
 
   @Get('mode-maps/:clientId')
