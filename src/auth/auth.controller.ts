@@ -23,6 +23,7 @@ import { MergeService } from './merge.service';
 import { ProviderIdentity } from './providers/types';
 import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
+import { EmailService } from './email.service';
 
 const REFRESH_COOKIE = 'refresh_token';
 const CSRF_HEADER = 'x-requested-with';
@@ -61,6 +62,7 @@ export class AuthController {
     private readonly merge: MergeService,
     private readonly securityLog: SecurityLogService,
     private readonly totp: TotpService,
+    private readonly emailSvc: EmailService,
   ) {}
 
   // ─── Generic helper ───────────────────────────────────────────────────────
@@ -645,6 +647,61 @@ export class AuthController {
     if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser;
     return this.totp.regenerateRecoveryCodes(webUser.userId as bigint, code);
+  }
+
+  // ─── Recovery email ──────────────────────────────────────────────────────
+
+  @Post('recovery-email/start')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 24 * 3_600_000 } })
+  @HttpCode(200)
+  async recoveryEmailStart(
+    @Req() req: any,
+    @Body('email') email: string,
+  ): Promise<{ ok: true }> {
+    this.requireCsrf(req, 'recovery-email/start');
+    const webUser: WebUser = req.webUser;
+    return this.emailSvc.sendVerificationLink(webUser.userId as bigint, email);
+  }
+
+  @Get('recovery-email/verify')
+  async recoveryEmailVerify(@Query('token') token: string, @Res() res: any): Promise<void> {
+    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+    try {
+      await this.emailSvc.consumeToken(token, 'verify_email');
+      res.redirect(`${frontendBase}/account?verified=1`);
+    } catch (err) {
+      this.logger.error(`recovery email verify failed: ${(err as Error).message}`);
+      res.redirect(`${frontendBase}/account?verified=0`);
+    }
+  }
+
+  // Public — anyone can request a recovery link by email. We silently
+  // succeed regardless to avoid leaking which emails are registered.
+  @Post('recovery/request')
+  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 24 * 3_600_000 } })
+  @HttpCode(200)
+  async recoveryRequest(@Body('email') email: string): Promise<{ ok: true }> {
+    return this.emailSvc.sendRecoveryLink(email);
+  }
+
+  // Confirm a recovery magic link → issue a session for that user. They land
+  // on /account and can link a new provider before the original token expires.
+  @Post('recovery/confirm')
+  @HttpCode(200)
+  async recoveryConfirm(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: any,
+    @Body('token') token: string,
+  ): Promise<{ accessToken: string; expiresIn: number }> {
+    this.requireCsrf(req, 'recovery/confirm');
+    const { userId } = await this.emailSvc.consumeToken(token, 'recovery');
+    // Recovery DOES skip 2FA — the email proves possession of a separate
+    // factor. Otherwise losing TOTP + all providers = unrecoverable account.
+    const tokens = await this.auth.issueTokens(userId, req.ip, req.headers['user-agent']);
+    res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+    this.securityLog.log('role_changed', { userId, event: 'recovery_login', ip: req.ip });
+    return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
   // Verify a TOTP code in exchange for a real access token. Called by the

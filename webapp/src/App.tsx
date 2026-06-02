@@ -19,6 +19,7 @@ import { AuthCallback } from './pages/AuthCallback';
 import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
 import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
+import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { LandingPage } from './pages/LandingPage';
@@ -73,6 +74,8 @@ const router = createBrowserRouter([
       { path: '/login',          element: <LoginPage /> },
       { path: '/auth/callback',  element: <AuthCallback /> },
       { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
+      { path: '/auth/recovery',          element: <RecoveryPage /> },
+      { path: '/auth/recovery/confirm',  element: <RecoveryPage /> },
       { path: '/auth/error',     element: <AuthError /> },
 
       // Authenticated
