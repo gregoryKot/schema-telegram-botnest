@@ -451,75 +451,69 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       {view === 'client' && selectedClient && (
         <div key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-          {/* Client header */}
-          <div style={{ borderBottom: '1px solid var(--line)', padding: '40px 64px 0', flexShrink: 0 }}>
-            <button onClick={() => switchView('list')} style={{ background: 'none', border: 'none', padding: '0 0 16px', fontSize: 13, color: 'var(--text-faint)', cursor: 'pointer' }}>
-              ← Все клиенты
-            </button>
+          {/* Client header — compact */}
+          <div style={{ borderBottom: '1px solid var(--line)', padding: '14px 40px 0', flexShrink: 0 }}>
+            {/* Row 1: back + name + actions */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+              <button onClick={() => switchView('list')}
+                style={{ background: 'none', border: 'none', fontSize: 12.5, color: 'var(--text-faint)', cursor: 'pointer', padding: 0, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                ← Все клиенты
+              </button>
+              <span style={{ color: 'rgba(var(--fg-rgb),0.15)', fontSize: 12 }}>|</span>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {renamingAlias ? (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
-                    <input
-                      autoFocus
-                      value={aliasInput}
-                      onChange={e => setAliasInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') saveAlias(); if (e.key === 'Escape') setRenamingAlias(false); }}
-                      style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.03em', background: 'transparent', border: 'none', borderBottom: '2px solid rgba(var(--fg-rgb),0.2)', outline: 'none', width: 320, padding: '2px 0', color: 'var(--text)' }}
-                    />
-                    <button onClick={saveAlias} disabled={aliasSaving} style={{ padding: '4px 12px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
-                      {aliasSaving ? '...' : 'Сохранить'}
-                    </button>
-                    <button onClick={() => setRenamingAlias(false)} style={{ padding: '4px 8px', borderRadius: 6, border: 'none', background: 'transparent', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>✕</button>
-                    {aliasError && <span style={{ fontSize: 12, color: 'var(--c-rose)' }}>{aliasError}</span>}
+              {/* Name / inline edit */}
+              {renamingAlias ? (
+                <>
+                  <input autoFocus value={aliasInput} onChange={e => setAliasInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveAlias(); if (e.key === 'Escape') setRenamingAlias(false); }}
+                    style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', background: 'transparent', border: 'none', borderBottom: '2px solid var(--accent)', outline: 'none', width: 220, padding: '1px 0', color: 'var(--text)' }} />
+                  <button onClick={saveAlias} disabled={aliasSaving} style={{ padding: '3px 10px', borderRadius: 5, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
+                    {aliasSaving ? '…' : 'OK'}
+                  </button>
+                  <button onClick={() => setRenamingAlias(false)} style={{ padding: '3px 7px', borderRadius: 5, border: 'none', background: 'transparent', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                  {aliasError && <span style={{ fontSize: 12, color: 'var(--c-rose)' }}>{aliasError}</span>}
+                </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+                    {selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`}
+                  </span>
+                  <button onClick={() => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); }}
+                    style={{ background: 'none', border: 'none', padding: '2px 5px', borderRadius: 4, color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', flexShrink: 0 }} title="Переименовать">✎</button>
+                  {/* Inline meta */}
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
+                    {selectedClient.lastActiveDate === todayStr() && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--c-moss)', flexShrink: 0 }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--c-moss)' }} />был сегодня
+                      </span>
+                    )}
+                    {!selectedClient.name && (
+                      <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0 }}>оффлайн</span>
+                    )}
+                    {selectedClient.therapyStartDate && (
+                      <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        {calcTherapyDuration(selectedClient.therapyStartDate)}
+                      </span>
+                    )}
+                    {selectedClient.nextSession && (
+                      <span style={{ fontSize: 12, color: 'var(--text-sub)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        сессия {nextSessionLabel(selectedClient.nextSession)}
+                      </span>
+                    )}
+                    {selectedClient.streak > 0 && (
+                      <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap', flexShrink: 0 }}>🔥 {selectedClient.streak} дн.</span>
+                    )}
                   </div>
-                ) : (
-                  <div style={{ marginBottom: 12 }}>
-                    <div className="eyebrow" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ color: 'var(--accent)' }}>●</span>
-                      <span>Клиент</span>
-                      {selectedClient.lastActiveDate === todayStr() ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--c-moss)', fontWeight: 400 }}>
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0 }} />
-                          активна сегодня
-                        </span>
-                      ) : !selectedClient.name ? (
-                        <span className="chip chip-line" style={{ fontSize: 11 }}>оффлайн</span>
-                      ) : null}
-                    </div>
-                    <h1 className="hub-title" style={{ marginBottom: 0 }}>
-                      {selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`}
-                    </h1>
-                    <button
-                      onClick={() => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); }}
-                      style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer' }}
-                      title="Переименовать"
-                    >✎</button>
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap' }}>
-                  {selectedClient.therapyStartDate && (
-                    <span style={{ fontSize: 13, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
-                      С {fmtDate(selectedClient.therapyStartDate)} · {calcTherapyDuration(selectedClient.therapyStartDate)}
-                    </span>
-                  )}
-                  {selectedClient.nextSession && (
-                    <span style={{ fontSize: 13, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>
-                      следующая {nextSessionLabel(selectedClient.nextSession)}
-                    </span>
-                  )}
-                  {selectedClient.streak > 0 && (
-                    <span style={{ fontSize: 13, color: 'var(--text-sub)', whiteSpace: 'nowrap' }}>{selectedClient.streak} дн. подряд</span>
-                  )}
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 24 }}>
+              )}
+
+              {/* Actions — right */}
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 'auto' }}>
                 <button onClick={() => setShowAssign(true)} className="btn btn-primary">+ Задание</button>
                 <button onClick={() => setClientTab('sessions')} className="btn btn-secondary">+ Заметка</button>
                 <button onClick={deleteClient} disabled={deleteLoading}
-                        style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--c-rose)', cursor: 'pointer' }}>
-                  {deleteLoading ? '...' : 'Удалить'}
+                  style={{ padding: '7px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--c-rose)', cursor: 'pointer' }}>
+                  {deleteLoading ? '…' : 'Удалить'}
                 </button>
               </div>
             </div>
