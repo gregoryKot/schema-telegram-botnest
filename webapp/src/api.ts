@@ -165,10 +165,12 @@ export interface ModeMapNode {
   type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom';
   position: { x: number; y: number };
   data: {
-    modeId?: string;    // id из MODE_GROUPS, или отсутствует у custom/trigger
-    label: string;      // переопределённое имя или оригинальное
-    note?: string;      // заметка терапевта
-    unmetNeed?: string; // актуально для детских режимов
+    modeId?: string;       // id из MODE_GROUPS, или отсутствует у custom/trigger
+    label: string;         // переопределённое имя или оригинальное
+    note?: string;         // заметка терапевта
+    unmetNeed?: string;    // актуально для детских режимов
+    customColor?: string;  // hex, переопределяет цвет по умолчанию
+    filled?: boolean;      // более насыщенная заливка
   };
 }
 

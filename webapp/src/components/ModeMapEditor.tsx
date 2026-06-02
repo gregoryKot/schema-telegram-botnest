@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import {
-  ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
+  ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Controls, MiniMap,
   addEdge, useNodesState, useEdgesState, useReactFlow,
+  MarkerType,
   type Connection, type Node, type Edge, type NodeTypes,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -21,15 +22,19 @@ function toFlowNodes(nodes: ModeMapNode[]): FlowNode[] {
 
 function toFlowEdges(edges: ModeMapEdge[]): FlowEdge[] {
   const et = (e: ModeMapEdge) => (e.data as ModeMapEdge['data'])?.edgeType;
-  return edges.map(e => ({
-    id: e.id, source: e.source, target: e.target,
-    label: e.label, data: e.data as Record<string, unknown>,
-    type: 'smoothstep',
-    animated: et(e) === 'activates',
-    style: { stroke: edgeColor(et(e)), strokeWidth: 2 },
-    labelStyle: { fontSize: 11, fill: 'var(--text-sub)' },
-    labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 },
-  }));
+  return edges.map(e => {
+    const color = edgeColor(et(e));
+    return {
+      id: e.id, source: e.source, target: e.target,
+      label: e.label, data: e.data as Record<string, unknown>,
+      type: 'smoothstep',
+      animated: et(e) === 'activates',
+      style: { stroke: color, strokeWidth: 2 },
+      markerEnd: { type: MarkerType.ArrowClosed, color, width: 18, height: 18 },
+      labelStyle: { fontSize: 11, fill: 'var(--text-sub)' },
+      labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 },
+    };
+  });
 }
 
 function edgeColor(t?: string) {
@@ -70,10 +75,12 @@ function ModeMapCanvas({
   const { screenToFlowPosition } = useReactFlow();
 
   const onConnect = useCallback((conn: Connection) => {
+    const color = edgeColor('activates');
     const newEdges = addEdge({
       ...conn, type: 'smoothstep', label: 'активирует',
       data: { edgeType: 'activates' } as Record<string, unknown>, animated: true,
-      style: { stroke: edgeColor('activates'), strokeWidth: 2 },
+      style: { stroke: color, strokeWidth: 2 },
+      markerEnd: { type: MarkerType.ArrowClosed, color, width: 18, height: 18 },
       labelStyle: { fontSize: 11, fill: 'var(--text-sub)' },
       labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 },
     }, edges);
@@ -137,7 +144,7 @@ function ModeMapCanvas({
         fitViewOptions={{ padding: 0.2 }}
         deleteKeyCode={null}
       >
-        <Background color="rgba(var(--fg-rgb),0.06)" gap={20} />
+        <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.2)" gap={22} size={1.5} />
         <Controls style={{ background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)' }} />
         <MiniMap style={{ background: 'var(--bg-elev)' }} nodeColor={() => 'rgba(var(--fg-rgb),0.15)'} />
       </ReactFlow>
@@ -187,7 +194,9 @@ export function ModeMapEditor({ clientId, initial }: Props) {
   }, [nodes, edges, setNodes, scheduleSave]);
 
   const handleNodeChange = useCallback((updated: ModeMapNode) => {
-    const newNodes = nodes.map(n => n.id === updated.id ? { ...n, data: updated.data } : n);
+    const newNodes = nodes.map(n => n.id === updated.id
+      ? { ...n, type: updated.type, data: updated.data as Record<string, unknown> }
+      : n);
     setNodes(newNodes);
     scheduleSave(newNodes, edges);
   }, [nodes, edges, setNodes, scheduleSave]);
@@ -202,10 +211,12 @@ export function ModeMapEditor({ clientId, initial }: Props) {
 
   const handleEdgeChange = useCallback((updated: ModeMapEdge) => {
     const et = updated.data?.edgeType;
+    const color = edgeColor(et);
     const newEdges = edges.map(e => e.id !== updated.id ? e : {
       ...e, label: updated.label, data: updated.data as Record<string, unknown>,
       animated: et === 'activates',
-      style: { stroke: edgeColor(et), strokeWidth: 2 },
+      style: { stroke: color, strokeWidth: 2 },
+      markerEnd: { type: MarkerType.ArrowClosed, color, width: 18, height: 18 },
     });
     setEdges(newEdges);
     scheduleSave(nodes, newEdges);
