@@ -90,6 +90,27 @@ model User {
   totpSecret             String?
   totpEnabledAt          DateTime?
   totpRecoveryCodes      Json     @default("[]")
+  // Recovery email — last-resort path in case user loses ALL their auth
+  // providers (Google/Telegram/VK all gone). Receives a magic link to add
+  // a new provider. Verified separately (verifiedAt).
+  recoveryEmail          String?  @unique
+  recoveryEmailVerifiedAt DateTime?
+}
+
+// Email magic-link tokens — for recovery, email verification, etc.
+// One-use, ~30 min TTL. Hash stored, raw token only in the email.
+model EmailToken {
+  id        String   @id @default(cuid())
+  userId    BigInt?  // null = pre-verification (verify email before binding)
+  tokenHash String   @unique
+  email     String   // sent to this address
+  purpose   String   // 'recovery' | 'verify_email'
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // User-initiated request to be granted THERAPIST role. Admin reviews via the

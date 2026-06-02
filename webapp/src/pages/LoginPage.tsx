@@ -174,6 +174,12 @@ export function LoginPage() {
               {error}
             </p>
           )}
+
+          <p style={{ textAlign: 'center', marginTop: 18 }}>
+            <a href="/auth/recovery" style={{ color: 'var(--text-faint)', fontSize: 12, textDecoration: 'underline' }}>
+              Потерял доступ ко всем способам входа?
+            </a>
+          </p>
         </div>
 
         {/* Consent note */}

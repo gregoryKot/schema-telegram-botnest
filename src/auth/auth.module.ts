@@ -5,6 +5,7 @@ import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
+import { EmailService } from './email.service';
 import { AuthProviderRegistry } from './providers/registry';
 import { GoogleProvider } from './providers/google.provider';
 import { TelegramProvider } from './providers/telegram.provider';
@@ -21,6 +22,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     MergeService,
     SecurityLogService,
     TotpService,
+    EmailService,
     GoogleProvider,
     TelegramProvider,
     TelegramOidcProvider,
