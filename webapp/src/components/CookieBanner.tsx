@@ -45,7 +45,6 @@ export function CookieBanner() {
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
       zIndex: 9999,
-      display: 'flex', justifyContent: 'center',
       padding: '0 16px 20px',
       pointerEvents: 'none',
     }}>
@@ -54,22 +53,30 @@ export function CookieBanner() {
         role="dialog"
         aria-label="Согласие на использование куки"
         style={{
-          width: '100%', maxWidth: 440,
-          background: 'var(--bg-elev)',
-          border: '1px solid var(--line)',
-          borderRadius: 16,
-          boxShadow: '0 12px 48px rgba(28,25,20,0.16), 0 2px 8px rgba(28,25,20,0.06)',
-          padding: '18px 20px 16px',
-          display: 'flex', flexDirection: 'column', gap: 16,
+          width: 'min(100%, 440px)', margin: '0 auto',
+          padding: '20px 22px 18px',
+          display: 'flex', flexDirection: 'column', gap: 18,
           pointerEvents: 'auto',
         }}
       >
         {/* Header row */}
-        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-          <span style={{ fontSize: 22, lineHeight: 1, paddingTop: 1, flexShrink: 0 }}>🍪</span>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 5 }}>
-              Мы используем куки
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', position: 'relative' }}>
+          <div style={{ position: 'relative', flexShrink: 0, width: 44, height: 44 }}>
+            <div className="cookie-glow" />
+            <div style={{
+              position: 'relative', width: 44, height: 44, borderRadius: 14,
+              background: 'var(--accent-soft)', border: '1px solid var(--accent-line)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+            }}>
+              <span className="cookie-emoji">🍪</span>
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.15,
+              color: 'var(--text)', marginBottom: 6, letterSpacing: '0.01em',
+            }}>
+              Немного о куки
             </div>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>
               Часть нужна для входа — без них сайт не работает. Аналитику Яндекс.Метрики (с записью сессий) включаем только с вашего согласия.{' '}
