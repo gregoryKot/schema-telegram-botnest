@@ -82,6 +82,14 @@ model User {
   webSessions            WebSession[]
   drafts                 DiaryDraft[]
   therapistRequest       TherapistRequest?
+  // ── 2FA (TOTP, RFC 6238) ────────────────────────────────────────────────
+  // totpSecret: AES-256-GCM encrypted base32 string of the TOTP shared secret.
+  // totpEnabledAt: set when user confirms first valid code. null = not enabled.
+  // totpRecoveryCodes: encrypted JSON array of one-time recovery hashes
+  //   (sha256 hex) — used if user loses their authenticator.
+  totpSecret             String?
+  totpEnabledAt          DateTime?
+  totpRecoveryCodes      Json     @default("[]")
 }
 
 // User-initiated request to be granted THERAPIST role. Admin reviews via the

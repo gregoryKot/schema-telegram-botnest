@@ -18,6 +18,7 @@ import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
+import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { LandingPage } from './pages/LandingPage';
@@ -71,6 +72,7 @@ const router = createBrowserRouter([
       { path: '/offer',          element: <OfferPage /> },
       { path: '/login',          element: <LoginPage /> },
       { path: '/auth/callback',  element: <AuthCallback /> },
+      { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
       { path: '/auth/error',     element: <AuthError /> },
 
       // Authenticated
