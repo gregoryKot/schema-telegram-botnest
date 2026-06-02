@@ -61,7 +61,7 @@ export function CookieBanner() {
       >
         {/* Header row */}
         <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', position: 'relative' }}>
-          <div style={{ position: 'relative', flexShrink: 0, width: 44, height: 44 }}>
+          <div style={{ position: 'relative', flexShrink: 0, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="cookie-glow" />
             <div style={{
               position: 'relative', width: 44, height: 44, borderRadius: 14,
@@ -79,7 +79,7 @@ export function CookieBanner() {
               Немного о куки
             </div>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>
-              Часть нужна для входа — без них сайт не работает. Аналитику Яндекс.Метрики (с записью сессий) включаем только с вашего согласия.{' '}
+              Часть нужна для входа – без них сайт не работает. Аналитику Яндекс.Метрики (с записью сессий) включаем только с вашего согласия.{' '}
               <a href="/privacy#cookies" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 2, fontWeight: 500 }}>
                 Подробнее
               </a>
@@ -87,7 +87,7 @@ export function CookieBanner() {
           </div>
         </div>
 
-        {/* Actions — equal prominence (GDPR 2026): same size, both solid */}
+        {/* Actions – equal prominence (GDPR 2026): same size, both solid */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={decline} className="cookie-btn cookie-btn-reject">
             Только необходимые

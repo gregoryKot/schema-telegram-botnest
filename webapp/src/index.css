@@ -637,7 +637,6 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 @keyframes fade-in     { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slide-up    { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes cookie-in   { from { opacity: 0; transform: translateY(28px); filter: blur(6px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
-@keyframes cookie-glow { 0%,100% { opacity: .55; transform: scale(1); } 50% { opacity: .9; transform: scale(1.12); } }
 @keyframes cookie-float{ 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(-6deg); } }
 @keyframes cookie-sheen{ from { transform: translateX(-120%) skewX(-18deg); } to { transform: translateX(320%) skewX(-18deg); } }
 @keyframes spin        { to { transform: rotate(360deg); } }
@@ -645,7 +644,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .animate-fade  { animation: fade-in .18s ease both; }
 .animate-slide { animation: slide-up .22s ease both; }
 
-/* ─── Cookie consent banner — glass card ─────────────────────────────────── */
+/* ─── Cookie consent banner – glass card ─────────────────────────────────── */
 .cookie-banner {
   position: relative;
   overflow: hidden;
@@ -667,14 +666,16 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   opacity: .6;
 }
-/* Soft accent glow behind the icon */
+/* Soft accent halo centered behind the icon */
 .cookie-glow {
-  position: absolute; top: -18px; left: 2px;
-  width: 90px; height: 90px; border-radius: 50%;
+  position: absolute; top: 50%; left: 50%;
+  width: 72px; height: 72px; margin: -36px 0 0 -36px;
+  border-radius: 50%;
   background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
-  opacity: .5; filter: blur(8px); pointer-events: none;
-  animation: cookie-glow 4s ease-in-out infinite;
+  opacity: .35; filter: blur(12px); pointer-events: none;
+  animation: cookie-glow 4.5s ease-in-out infinite;
 }
+@keyframes cookie-glow { 0%,100% { opacity: .28; transform: scale(.92); } 50% { opacity: .45; transform: scale(1.08); } }
 .cookie-emoji {
   display: inline-block;
   animation: cookie-float 4s ease-in-out infinite;
