@@ -1115,10 +1115,10 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
             )}
 
             {/* ── MODE MAP ─────────────────────────────────────────────────────── */}
-            {clientTab === 'mode_map' && openClientId != null && (
+            {clientTab === 'mode_map' && selectedClient != null && (
               <div style={{ height: 'calc(100vh - 130px)', display: 'flex', flexDirection: 'column' }}>
                 <ModeMapEditor
-                  clientId={openClientId}
+                  clientId={selectedClient.telegramId}
                   initial={concept ?? null}
                 />
               </div>

@@ -172,14 +172,14 @@ export interface ModeMapNode {
   };
 }
 
+export type EdgeType = 'activates' | 'protects' | 'suppresses' | 'leads_to';
+
 export interface ModeMapEdge {
   id: string;
   source: string;
   target: string;
   label?: string;
-  data?: {
-    edgeType?: 'activates' | 'protects' | 'suppresses' | 'leads_to';
-  };
+  data?: { edgeType?: EdgeType };
 }
 
 export interface ClientConceptualization {
