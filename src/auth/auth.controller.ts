@@ -22,6 +22,7 @@ import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
 import { ProviderIdentity } from './providers/types';
 import { SecurityLogService } from './security-log.service';
+import { TotpService } from './totp.service';
 
 const REFRESH_COOKIE = 'refresh_token';
 const CSRF_HEADER = 'x-requested-with';
@@ -59,6 +60,7 @@ export class AuthController {
     private readonly providers: AuthProviderRegistry,
     private readonly merge: MergeService,
     private readonly securityLog: SecurityLogService,
+    private readonly totp: TotpService,
   ) {}
 
   // ─── Generic helper ───────────────────────────────────────────────────────
@@ -81,6 +83,7 @@ export class AuthController {
     opts: { linkUserId: bigint | null; ip?: string; userAgent?: string },
   ): Promise<
     | { kind: 'tokens'; userId: bigint; tokens: Awaited<ReturnType<AuthService['issueTokens']>> }
+    | { kind: 'totp_challenge'; userId: bigint; challengeToken: string }
     | { kind: 'merge'; mergeToken: string; summary: Record<string, number>; otherDisplay: string | null }
   > {
     const { linkUserId, ip, userAgent } = opts;
@@ -89,6 +92,13 @@ export class AuthController {
       const userId = (await this.auth.findOrCreateUserByProvider(
         providerId_ as any, identity.providerId, identity.displayName, identity.email,
       )) as bigint;
+      // 2FA gate: if user has TOTP enabled, don't issue tokens yet — return
+      // a challenge token that the client exchanges for tokens after typing
+      // a valid 6-digit code on /api/auth/2fa/challenge.
+      if (await this.totp.isEnabled(userId)) {
+        const challengeToken = this.auth.buildTotpChallengeToken(userId, ip, userAgent);
+        return { kind: 'totp_challenge', userId, challengeToken };
+      }
       const tokens = await this.auth.issueTokens(userId, ip, userAgent);
       return { kind: 'tokens', userId, tokens };
     }
@@ -98,6 +108,8 @@ export class AuthController {
     );
 
     if (result.ok) {
+      // Linking an additional provider doesn't need re-2FA — the user is
+      // already authed in this session.
       const tokens = await this.auth.issueTokens(linkUserId, ip, userAgent);
       return { kind: 'tokens', userId: linkUserId, tokens };
     }
@@ -107,6 +119,32 @@ export class AuthController {
     const mergeToken = this.auth.buildMergeToken(linkUserId, sourceId, providerId_, identity.providerId);
     const summary = await this.merge.summarize(sourceId);
     return { kind: 'merge', mergeToken, summary, otherDisplay: identity.displayName ?? identity.email ?? null };
+  }
+
+  // Shared response handler for OAuth redirect callbacks (Google, VK, Telegram-OIDC).
+  // Routes the user to the right next page based on the outcome.
+  private finishOAuthRedirect(
+    outcome: Awaited<ReturnType<AuthController['signInOrLinkOrMerge']>>,
+    provider: string,
+    res: any,
+    frontendBase: string,
+  ): void {
+    if (outcome.kind === 'merge') {
+      const params = new URLSearchParams({
+        token: outcome.mergeToken,
+        summary: JSON.stringify(outcome.summary),
+        provider,
+        name: outcome.otherDisplay ?? '',
+      });
+      res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
+      return;
+    }
+    if (outcome.kind === 'totp_challenge') {
+      res.redirect(`${frontendBase}/auth/2fa?token=${encodeURIComponent(outcome.challengeToken)}`);
+      return;
+    }
+    res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+    res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
   }
 
   // ─── OAuth helpers ────────────────────────────────────────────────────────
@@ -174,20 +212,7 @@ export class AuthController {
       const outcome = await this.signInOrLinkOrMerge(provider, identity, {
         linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
       });
-
-      if (outcome.kind === 'merge') {
-        const params = new URLSearchParams({
-          token: outcome.mergeToken,
-          summary: JSON.stringify(outcome.summary),
-          provider,
-          name: outcome.otherDisplay ?? '',
-        });
-        res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
-        return;
-      }
-
-      res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
-      res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
+      this.finishOAuthRedirect(outcome, provider, res, frontendBase);
     } catch (err) {
       this.logger.error(`${provider} callback error: ${(err as Error).message}`);
       res.redirect(`${frontendBase}/auth/error?reason=${provider}_failed`);
@@ -234,20 +259,7 @@ export class AuthController {
       const outcome = await this.signInOrLinkOrMerge('google', identity, {
         linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
       });
-
-      if (outcome.kind === 'merge') {
-        const params = new URLSearchParams({
-          token: outcome.mergeToken,
-          summary: JSON.stringify(outcome.summary),
-          provider: 'google',
-          name: outcome.otherDisplay ?? '',
-        });
-        res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
-        return;
-      }
-
-      res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
-      res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
+      this.finishOAuthRedirect(outcome, 'google', res, frontendBase);
     } catch (err) {
       this.logger.error(`google callback error: ${(err as Error).message}`);
       res.redirect(`${frontendBase}/auth/error?reason=google_failed`);
@@ -291,20 +303,7 @@ export class AuthController {
       const outcome = await this.signInOrLinkOrMerge('vk', identity, {
         linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
       });
-
-      if (outcome.kind === 'merge') {
-        const params = new URLSearchParams({
-          token: outcome.mergeToken,
-          summary: JSON.stringify(outcome.summary),
-          provider: 'vk',
-          name: outcome.otherDisplay ?? '',
-        });
-        res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
-        return;
-      }
-
-      res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
-      res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
+      this.finishOAuthRedirect(outcome, 'vk', res, frontendBase);
     } catch (err) {
       this.logger.error(`vk callback error: ${(err as Error).message}`);
       res.redirect(`${frontendBase}/auth/error?reason=vk_failed`);
@@ -359,20 +358,7 @@ export class AuthController {
       const outcome = await this.signInOrLinkOrMerge('telegram-oidc', identity, {
         linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
       });
-
-      if (outcome.kind === 'merge') {
-        const params = new URLSearchParams({
-          token: outcome.mergeToken,
-          summary: JSON.stringify(outcome.summary),
-          provider: 'telegram-oidc',
-          name: outcome.otherDisplay ?? '',
-        });
-        res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
-        return;
-      }
-
-      res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
-      res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
+      this.finishOAuthRedirect(outcome, 'telegram-oidc', res, frontendBase);
     } catch (err) {
       this.logger.error(`telegram-oidc callback error: ${(err as Error).message}`);
       res.redirect(`${frontendBase}/auth/error?reason=telegram_oidc_failed`);
@@ -409,6 +395,9 @@ export class AuthController {
         otherDisplay: outcome.otherDisplay,
         provider: 'telegram',
       };
+    }
+    if (outcome.kind === 'totp_challenge') {
+      return { totp: true, challengeToken: outcome.challengeToken };
     }
     res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
     return { accessToken: outcome.tokens.accessToken, expiresIn: outcome.tokens.expiresIn };
@@ -591,10 +580,92 @@ export class AuthController {
   async me(@Req() req: any): Promise<{
     userId: string;
     providers: Array<{ provider: string; email: string | null; displayName: string | null }>;
+    totp: { enabled: boolean; recoveryCodesLeft: number };
   }> {
     const webUser: WebUser = req.webUser;
+    const [providers, totp] = await Promise.all([
+      this.auth.getUserProviders(webUser.userId as bigint),
+      this.totp.getStatus(webUser.userId as bigint),
+    ]);
+    return { userId: String(webUser.userId), providers, totp };
+  }
+
+  // ─── 2FA (TOTP) management ────────────────────────────────────────────────
+
+  @Post('2fa/setup')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  async totpSetup(@Req() req: any): Promise<{ otpauthUrl: string; qrDataUrl: string }> {
+    this.requireCsrf(req, '2fa/setup');
+    const webUser: WebUser = req.webUser;
+    // Use one of the user's display names for the QR label
     const providers = await this.auth.getUserProviders(webUser.userId as bigint);
-    return { userId: String(webUser.userId), providers };
+    const label = providers[0]?.email ?? providers[0]?.displayName ?? `user-${webUser.userId}`;
+    return this.totp.startSetup(webUser.userId as bigint, label);
+  }
+
+  @Post('2fa/enable')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  async totpEnable(
+    @Req() req: any,
+    @Body('code') code: string,
+  ): Promise<{ recoveryCodes: string[] }> {
+    this.requireCsrf(req, '2fa/enable');
+    if (!code) throw new BadRequestException('Missing code');
+    const webUser: WebUser = req.webUser;
+    const result = await this.totp.confirmSetup(webUser.userId as bigint, code);
+    this.securityLog.log('role_changed', { userId: webUser.userId, event: '2fa_enabled' });
+    return result;
+  }
+
+  @Post('2fa/disable')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  async totpDisable(
+    @Req() req: any,
+    @Body('code') code: string,
+  ): Promise<{ ok: true }> {
+    this.requireCsrf(req, '2fa/disable');
+    if (!code) throw new BadRequestException('Missing code');
+    const webUser: WebUser = req.webUser;
+    await this.totp.disable(webUser.userId as bigint, code);
+    this.securityLog.log('role_changed', { userId: webUser.userId, event: '2fa_disabled' });
+    return { ok: true };
+  }
+
+  @Post('2fa/recovery-codes')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  async totpRegenerateRecovery(
+    @Req() req: any,
+    @Body('code') code: string,
+  ): Promise<{ recoveryCodes: string[] }> {
+    this.requireCsrf(req, '2fa/recovery-codes');
+    if (!code) throw new BadRequestException('Missing code');
+    const webUser: WebUser = req.webUser;
+    return this.totp.regenerateRecoveryCodes(webUser.userId as bigint, code);
+  }
+
+  // Verify a TOTP code in exchange for a real access token. Called by the
+  // /auth/2fa frontend page after primary login returned a challengeToken.
+  @Post('2fa/challenge')
+  @Throttle({ short: { limit: 5, ttl: 60_000 }, long: { limit: 20, ttl: 3_600_000 } })
+  @HttpCode(200)
+  async totpChallenge(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: any,
+    @Body('challengeToken') challengeToken: string,
+    @Body('code') code: string,
+  ): Promise<{ accessToken: string; expiresIn: number }> {
+    this.requireCsrf(req, '2fa/challenge');
+    if (!challengeToken || !code) throw new BadRequestException('Missing token or code');
+    const { userId } = this.auth.verifyTotpChallengeToken(challengeToken);
+    const ok = await this.totp.verifyCode(userId, code);
+    if (!ok) throw new UnauthorizedException('Invalid 2FA code');
+    const tokens = await this.auth.issueTokens(userId, req.ip, req.headers['user-agent']);
+    res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+    return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
   // ─── Issue a short-lived link token for the mini-app ─────────────────────

@@ -178,6 +178,30 @@ export class AuthService {
     }
   }
 
+  // ─── 2FA challenge token ─────────────────────────────────────────────────
+  // Short-lived (5 min) token returned to client after primary auth IF the
+  // user has TOTP enabled. The client exchanges it + the TOTP code on
+  // /api/auth/2fa/challenge for a real access token.
+  buildTotpChallengeToken(userId: BigInt, ip?: string, userAgent?: string): string {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    return jwt.sign(
+      { kind: 'totp_challenge', sub: String(userId), ip: ip ?? null, ua: (userAgent ?? '').slice(0, 120) },
+      secret,
+      { expiresIn: 5 * 60, algorithm: 'HS256', issuer: JWT_ISSUER, audience: JWT_AUDIENCE },
+    );
+  }
+
+  verifyTotpChallengeToken(token: string): { userId: bigint; ip: string | null; ua: string } {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    try {
+      const p = jwt.verify(token, secret, { algorithms: ['HS256'], issuer: JWT_ISSUER, audience: JWT_AUDIENCE }) as any;
+      if (p.kind !== 'totp_challenge') throw new Error('Wrong token kind');
+      return { userId: BigInt(p.sub), ip: p.ip ?? null, ua: p.ua ?? '' };
+    } catch {
+      throw new UnauthorizedException('Invalid or expired 2FA challenge token');
+    }
+  }
+
   async unlinkProvider(userId: BigInt, provider: 'google' | 'telegram'): Promise<void> {
     // Don't allow unlinking the last provider — user would lose access
     const all = await (this.prisma as any).authProvider.findMany({ where: { userId } });
