@@ -9,26 +9,39 @@ const EDGE_TYPE_LABELS: Record<string, string> = {
 };
 
 const COLOR_PRESETS = [
-  '#7aa3d4', // синий (child)
-  '#d47a7a', // красный (critic)
-  '#d4a07a', // оранжевый (coping)
-  '#7ab87a', // зелёный (healthy)
-  '#7a7ad4', // фиолетовый (custom)
-  '#b07ab8', // розовый
-  '#b8a07a', // тёплый беж
-  '#7ab8b0', // бирюза
+  '#7aa3d4','#d47a7a','#d4a07a','#7ab87a',
+  '#9f7ad4','#b07ab8','#7ab8b0','#94a3b8',
 ];
 
 type NodeType = ModeMapNode['type'];
 
-const SHAPE_OPTIONS: { type: NodeType; label: string; icon: string }[] = [
-  { type: 'child',   label: 'Детский',   icon: '⭕' },
-  { type: 'critic',  label: 'Критик',    icon: '🟥' },
-  { type: 'coping',  label: 'Копинг',    icon: '🟧' },
-  { type: 'healthy', label: 'Здоровый',  icon: '🟩' },
-  { type: 'custom',  label: 'Свой',      icon: '🟦' },
-  { type: 'trigger', label: 'Триггер',   icon: '⚡' },
+// CSS shape previews instead of emoji
+const SHAPE_OPTIONS: { type: NodeType; label: string }[] = [
+  { type: 'child',   label: 'Детский'  },
+  { type: 'critic',  label: 'Критик'   },
+  { type: 'coping',  label: 'Копинг'   },
+  { type: 'healthy', label: 'Здоровый' },
+  { type: 'custom',  label: 'Свой'     },
+  { type: 'trigger', label: 'Триггер'  },
 ];
+
+function ShapePreview({ type, color }: { type: NodeType; color: string }) {
+  const base: React.CSSProperties = {
+    width: 28, height: 28, background: `${color}22`,
+    border: `2px solid ${color}`, flexShrink: 0,
+  };
+  if (type === 'child')   return <div style={{ ...base, borderRadius: '50%' }} />;
+  if (type === 'critic')  return <div style={{ ...base, borderRadius: 3 }} />;
+  if (type === 'coping')  return <div style={{ ...base, borderRadius: 0, clipPath: 'polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)' }} />;
+  if (type === 'healthy') return <div style={{ ...base, borderRadius: 8 }} />;
+  if (type === 'trigger') return (
+    <svg width={28} height={20} viewBox="0 0 28 20">
+      <path d="M5,16 Q1,16 1,11 Q1,7 5,6 Q4,2 8,2 Q11,0 14,2 Q18,0 21,3 Q25,3 27,7 Q27,12 23,13 Q24,16 20,16 Z"
+        fill={`${color}22`} stroke={color} strokeWidth={1.5} />
+    </svg>
+  );
+  return <div style={{ ...base, borderRadius: 8 }} />;
+}
 
 interface NodeEditorProps {
   node: ModeMapNode;
@@ -37,110 +50,77 @@ interface NodeEditorProps {
 }
 
 export function ModeMapNodeEditor({ node, onChange, onDelete }: NodeEditorProps) {
-  const patchData = (data: Partial<ModeMapNode['data']>) =>
-    onChange({ ...node, data: { ...node.data, ...data } });
-  const patchType = (type: NodeType) =>
-    onChange({ ...node, type });
-
+  const patchData = (d: Partial<ModeMapNode['data']>) =>
+    onChange({ ...node, data: { ...node.data, ...d } });
+  const patchType = (type: NodeType) => onChange({ ...node, type });
   const currentColor = node.data.customColor ?? TYPE_COLORS[node.type] ?? TYPE_COLORS.custom;
 
   return (
     <div style={panelStyle}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Редактировать</div>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Режим</div>
 
       <label style={labelStyle}>Название</label>
-      <input
-        style={inputStyle}
-        value={node.data.label}
-        onChange={e => patchData({ label: e.target.value })}
-        placeholder="Название режима"
-      />
+      <input style={inputStyle} value={node.data.label}
+        onChange={e => patchData({ label: e.target.value })} placeholder="Название режима" />
 
       <label style={labelStyle}>Форма и тип</label>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
         {SHAPE_OPTIONS.map(opt => (
-          <button
-            key={opt.type}
-            onClick={() => patchType(opt.type)}
-            title={opt.label}
+          <button key={opt.type} onClick={() => patchType(opt.type)} title={opt.label}
             style={{
-              padding: '5px 8px',
-              borderRadius: 6,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 38, height: 38, borderRadius: 7, cursor: 'pointer',
               border: `1.5px solid ${node.type === opt.type ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
               background: node.type === opt.type ? 'var(--accent-soft)' : 'none',
-              cursor: 'pointer',
-              fontSize: 15,
-              lineHeight: 1,
-            }}
-          >
-            {opt.icon}
+            }}>
+            <ShapePreview type={opt.type} color={node.type === opt.type ? 'var(--accent)' : currentColor} />
           </button>
         ))}
       </div>
 
       <label style={labelStyle}>Цвет</label>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
         {COLOR_PRESETS.map(c => (
-          <button
-            key={c}
-            onClick={() => patchData({ customColor: c })}
-            style={{
-              width: 22, height: 22,
-              borderRadius: '50%',
-              background: c,
-              border: currentColor === c ? '2px solid var(--text)' : '2px solid transparent',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          />
+          <button key={c} onClick={() => patchData({ customColor: c })}
+            style={{ width: 22, height: 22, borderRadius: '50%', background: c, cursor: 'pointer', padding: 0,
+              border: currentColor === c ? '2px solid var(--text)' : '2px solid transparent' }} />
         ))}
-        {/* Reset to default */}
-        <button
-          onClick={() => patchData({ customColor: undefined })}
-          title="Сбросить цвет"
-          style={{
-            width: 22, height: 22, borderRadius: '50%',
-            background: 'none',
-            border: '2px dashed rgba(var(--fg-rgb),0.25)',
-            cursor: 'pointer', fontSize: 11, padding: 0, color: 'var(--text-faint)',
-          }}
-        >✕</button>
+        <button onClick={() => patchData({ customColor: undefined })} title="Сбросить"
+          style={{ width: 22, height: 22, borderRadius: '50%', background: 'none', cursor: 'pointer', padding: 0,
+            border: '2px dashed rgba(var(--fg-rgb),0.25)', fontSize: 10, color: 'var(--text-faint)' }}>✕</button>
       </div>
 
-      <label style={{ ...labelStyle, marginBottom: 8 }}>Заливка</label>
-      <button
-        onClick={() => patchData({ filled: !node.data.filled })}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '7px 10px', borderRadius: 6, marginBottom: 14,
-          border: `1.5px solid ${node.data.filled ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
-          background: node.data.filled ? 'var(--accent-soft)' : 'none',
-          cursor: 'pointer', fontSize: 12.5, color: node.data.filled ? 'var(--accent)' : 'var(--text-sub)',
-          width: '100%',
-        }}
-      >
-        <span style={{ fontSize: 14 }}>🎨</span>
-        {node.data.filled ? 'Насыщенная заливка' : 'Лёгкая заливка'}
-      </button>
+      <label style={labelStyle}>Заливка</label>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+        {([
+          { label: 'Лёгкая', filled: false, fillFull: false },
+          { label: 'Средняя', filled: true,  fillFull: false },
+          { label: 'Полная',  filled: false, fillFull: true  },
+        ] as const).map(opt => {
+          const active = !!node.data.fillFull === opt.fillFull && !!node.data.filled === opt.filled;
+          return (
+            <button key={opt.label} onClick={() => patchData({ filled: opt.filled, fillFull: opt.fillFull })}
+              style={{ flex: 1, padding: '6px 4px', borderRadius: 6, fontSize: 11.5, cursor: 'pointer',
+                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                background: active ? 'var(--accent-soft)' : 'none',
+                color: active ? 'var(--accent)' : 'var(--text-sub)' }}>
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
 
-      <label style={labelStyle}>Заметка терапевта</label>
-      <textarea
-        style={{ ...inputStyle, resize: 'vertical', minHeight: 60 }}
-        value={node.data.note ?? ''}
-        onChange={e => patchData({ note: e.target.value || undefined })}
-        placeholder="Как этот режим проявляется у клиента"
-        rows={3}
-      />
+      <label style={labelStyle}>Заметка</label>
+      <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 56 }} rows={3}
+        value={node.data.note ?? ''} onChange={e => patchData({ note: e.target.value || undefined })}
+        placeholder="Как этот режим проявляется у клиента" />
 
       {(node.type === 'child' || node.type === 'custom') && (
         <>
           <label style={labelStyle}>Неудовлетворённая потребность</label>
-          <input
-            style={inputStyle}
-            value={node.data.unmetNeed ?? ''}
+          <input style={inputStyle} value={node.data.unmetNeed ?? ''}
             onChange={e => patchData({ unmetNeed: e.target.value || undefined })}
-            placeholder="Безопасность, принятие, автономия…"
-          />
+            placeholder="Безопасность, принятие…" />
         </>
       )}
 
@@ -157,37 +137,42 @@ interface EdgeEditorProps {
 
 export function ModeMapEdgeEditor({ edge, onChange, onDelete }: EdgeEditorProps) {
   const edgeType = (edge.data?.edgeType ?? 'activates') as string;
+  const bidir = edge.data?.bidirectional ?? false;
 
   return (
     <div style={panelStyle}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Редактировать связь</div>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Связь</div>
 
       <label style={labelStyle}>Тип связи</label>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
         {Object.entries(EDGE_TYPE_LABELS).map(([k, v]) => (
-          <button
-            key={k}
-            onClick={() => onChange({ ...edge, label: v, data: { edgeType: k as EdgeType } })}
-            style={{
-              padding: '7px 12px', borderRadius: 6, textAlign: 'left',
+          <button key={k}
+            onClick={() => onChange({ ...edge, label: bidir ? v : v, data: { ...edge.data, edgeType: k as EdgeType } })}
+            style={{ padding: '7px 12px', borderRadius: 6, textAlign: 'left', fontSize: 12.5, cursor: 'pointer',
               border: `1px solid ${edgeType === k ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)'}`,
               background: edgeType === k ? 'var(--accent-soft)' : 'none',
-              color: edgeType === k ? 'var(--accent)' : 'var(--text-sub)',
-              fontSize: 12.5, cursor: 'pointer',
-            }}
-          >
+              color: edgeType === k ? 'var(--accent)' : 'var(--text-sub)' }}>
             {v}
           </button>
         ))}
       </div>
 
+      <label style={labelStyle}>Направление</label>
+      <button onClick={() => onChange({ ...edge, data: { ...edge.data, bidirectional: !bidir } })}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', marginBottom: 14,
+          padding: '7px 10px', borderRadius: 6, fontSize: 12.5, cursor: 'pointer',
+          border: `1.5px solid ${bidir ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+          background: bidir ? 'var(--accent-soft)' : 'none',
+          color: bidir ? 'var(--accent)' : 'var(--text-sub)' }}>
+        <span style={{ fontSize: 14 }}>{bidir ? '↔' : '→'}</span>
+        {bidir ? 'В обе стороны' : 'Одностороннее'}
+      </button>
+
       <label style={labelStyle}>Подпись (необязательно)</label>
-      <input
-        style={inputStyle}
+      <input style={inputStyle}
         value={typeof edge.label === 'string' && !Object.values(EDGE_TYPE_LABELS).includes(edge.label) ? edge.label : ''}
         onChange={e => onChange({ ...edge, label: e.target.value || EDGE_TYPE_LABELS[edgeType] })}
-        placeholder="Своя подпись"
-      />
+        placeholder="Своя подпись" />
 
       <button onClick={onDelete} style={deleteBtnStyle}>Удалить связь</button>
     </div>
@@ -201,24 +186,18 @@ const panelStyle: React.CSSProperties = {
   background: 'rgba(var(--fg-rgb),0.02)',
   display: 'flex', flexDirection: 'column',
 };
-
 const labelStyle: React.CSSProperties = {
   fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase',
-  letterSpacing: '0.05em', color: 'var(--text-faint)',
-  marginBottom: 5, display: 'block',
+  letterSpacing: '0.05em', color: 'var(--text-faint)', marginBottom: 5, display: 'block',
 };
-
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '8px 10px', borderRadius: 6,
   border: '1px solid rgba(var(--fg-rgb),0.15)',
   background: 'var(--bg-elev)', color: 'var(--text)',
-  fontSize: 13, marginBottom: 14,
-  boxSizing: 'border-box', outline: 'none',
+  fontSize: 13, marginBottom: 14, boxSizing: 'border-box', outline: 'none',
 };
-
 const deleteBtnStyle: React.CSSProperties = {
   marginTop: 'auto', padding: '8px 12px', borderRadius: 6,
   border: '1px solid rgba(var(--fg-rgb),0.12)',
-  background: 'none', color: 'var(--accent-red)',
-  fontSize: 12.5, cursor: 'pointer',
+  background: 'none', color: 'var(--accent-red)', fontSize: 12.5, cursor: 'pointer',
 };

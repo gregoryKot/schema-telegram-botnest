@@ -7,7 +7,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import type { ModeMapNode, ModeMapEdge, ClientConceptualization } from '../api';
+import type { ModeMapNode, ModeMapEdge } from '../api';
 import { api } from '../api';
 import { NODE_TYPES } from './ModeMapNodes';
 import { ModeMapPalette, DRAG_TYPE } from './ModeMapPalette';
@@ -16,47 +16,65 @@ import { ModeMapNodeEditor, ModeMapEdgeEditor } from './ModeMapNodeEditor';
 type FlowNode = Node<Record<string, unknown>>;
 type FlowEdge = Edge<Record<string, unknown>>;
 
-function toFlowNodes(nodes: ModeMapNode[]): FlowNode[] {
-  return nodes.map(n => ({ id: n.id, type: n.type, position: n.position, data: n.data as Record<string, unknown> }));
+function edgeColor(t?: string) {
+  if (t === 'suppresses') return 'var(--accent-red)';
+  if (t === 'protects')   return 'var(--accent-green)';
+  if (t === 'leads_to')   return 'var(--accent-orange)';
+  return 'rgba(var(--fg-rgb),0.45)';
+}
+
+function makeMarker(color: string) {
+  return { type: MarkerType.ArrowClosed, color, width: 16, height: 16 };
 }
 
 function toFlowEdges(edges: ModeMapEdge[]): FlowEdge[] {
-  const et = (e: ModeMapEdge) => (e.data as ModeMapEdge['data'])?.edgeType;
   return edges.map(e => {
-    const color = edgeColor(et(e));
+    const et = (e.data as ModeMapEdge['data'])?.edgeType;
+    const bidir = (e.data as ModeMapEdge['data'])?.bidirectional;
+    const color = edgeColor(et);
     return {
       id: e.id, source: e.source, target: e.target,
       label: e.label, data: e.data as Record<string, unknown>,
-      type: 'smoothstep',
-      animated: et(e) === 'activates',
+      type: 'smoothstep', animated: et === 'activates',
       style: { stroke: color, strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color, width: 18, height: 18 },
+      markerEnd: makeMarker(color),
+      markerStart: bidir ? makeMarker(color) : undefined,
       labelStyle: { fontSize: 11, fill: 'var(--text-sub)' },
       labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 },
     };
   });
 }
 
-function edgeColor(t?: string) {
-  if (t === 'suppresses') return 'var(--accent-red)';
-  if (t === 'protects')   return 'var(--accent-green)';
-  if (t === 'leads_to')   return 'var(--accent-orange)';
-  return 'rgba(var(--fg-rgb),0.4)';
+function toFlowNodes(nodes: ModeMapNode[]): FlowNode[] {
+  return nodes.map(n => ({
+    id: n.id, type: n.type, position: n.position,
+    data: n.data as Record<string, unknown>,
+    ...(n.width  ? { width:  n.width  } : {}),
+    ...(n.height ? { height: n.height } : {}),
+  }));
 }
 
 function fromFlowNodes(nodes: FlowNode[]): ModeMapNode[] {
-  return nodes.map(n => ({ id: n.id, type: n.type as ModeMapNode['type'], position: n.position, data: n.data as unknown as ModeMapNode['data'] }));
+  return nodes.map(n => ({
+    id: n.id, type: n.type as ModeMapNode['type'], position: n.position,
+    data: n.data as unknown as ModeMapNode['data'],
+    ...(n.width  ? { width:  n.width  } : {}),
+    ...(n.height ? { height: n.height } : {}),
+  }));
 }
 
 function fromFlowEdges(edges: FlowEdge[]): ModeMapEdge[] {
-  return edges.map(e => ({ id: e.id, source: e.source, target: e.target, label: e.label as string | undefined, data: e.data as unknown as ModeMapEdge['data'] }));
+  return edges.map(e => ({
+    id: e.id, source: e.source, target: e.target,
+    label: e.label as string | undefined,
+    data: e.data as unknown as ModeMapEdge['data'],
+  }));
 }
 
-// ─── Inner canvas — uses useReactFlow (must be inside ReactFlowProvider) ──────
+// ─── Inner canvas (uses useReactFlow) ────────────────────────────────────────
 
 interface CanvasProps {
-  nodes: FlowNode[];
-  edges: FlowEdge[];
+  nodes: FlowNode[]; edges: FlowEdge[];
   setNodes: ReturnType<typeof useNodesState<FlowNode>>[1];
   setEdges: ReturnType<typeof useEdgesState<FlowEdge>>[1];
   onNodesChange: ReturnType<typeof useNodesState<FlowNode>>[2];
@@ -67,51 +85,42 @@ interface CanvasProps {
   scheduleSave: (ns: FlowNode[], es: FlowEdge[]) => void;
 }
 
-function ModeMapCanvas({
-  nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange,
-  setSelectedNodeId, setSelectedEdgeId,
-  saveStatus, scheduleSave,
-}: CanvasProps) {
+function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange,
+  setSelectedNodeId, setSelectedEdgeId, saveStatus, scheduleSave }: CanvasProps) {
   const { screenToFlowPosition } = useReactFlow();
 
   const onConnect = useCallback((conn: Connection) => {
     const color = edgeColor('activates');
     const newEdges = addEdge({
       ...conn, type: 'smoothstep', label: 'активирует',
-      data: { edgeType: 'activates' } as Record<string, unknown>, animated: true,
-      style: { stroke: color, strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color, width: 18, height: 18 },
+      data: { edgeType: 'activates' } as Record<string, unknown>,
+      animated: true, style: { stroke: color, strokeWidth: 2 },
+      markerEnd: makeMarker(color),
       labelStyle: { fontSize: 11, fill: 'var(--text-sub)' },
       labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 },
     }, edges);
-    setEdges(newEdges);
-    scheduleSave(nodes, newEdges);
+    setEdges(newEdges); scheduleSave(nodes, newEdges);
   }, [edges, nodes, setEdges, scheduleSave]);
 
-  const onDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-  }, []);
-
+  const onDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }, []);
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const raw = e.dataTransfer.getData(DRAG_TYPE);
     if (!raw) return;
     try {
       const partial: Omit<ModeMapNode, 'position'> = JSON.parse(raw);
-      // Give dropped node a fresh id to allow multiple drops of the same mode
       const freshId = `${partial.data.modeId ?? 'node'}_${Date.now()}`;
       const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-      const newNode: FlowNode = { id: freshId, type: partial.type, position, data: partial.data };
-      const newNodes = [...nodes, newNode];
-      setNodes(newNodes);
-      scheduleSave(newNodes, edges);
-    } catch { /* ignore malformed data */ }
+      const newNodes = [...nodes, { id: freshId, type: partial.type, position, data: partial.data as Record<string, unknown> }];
+      setNodes(newNodes); scheduleSave(newNodes, edges);
+    } catch { /* ignore */ }
   }, [nodes, edges, setNodes, scheduleSave, screenToFlowPosition]);
 
   const onNodesChangeWithSave = useCallback((changes: Parameters<typeof onNodesChange>[0]) => {
     onNodesChange(changes);
     if (changes.some(c => c.type === 'position' && !c.dragging)) scheduleSave(nodes, edges);
+    // Save resize changes
+    if (changes.some(c => c.type === 'dimensions')) scheduleSave(nodes, edges);
   }, [onNodesChange, nodes, edges, scheduleSave]);
 
   return (
@@ -128,23 +137,15 @@ function ModeMapCanvas({
           </div>
         </div>
       )}
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={NODE_TYPES as NodeTypes}
-        onNodesChange={onNodesChangeWithSave}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
+      <ReactFlow nodes={nodes} edges={edges} nodeTypes={NODE_TYPES as NodeTypes}
+        onNodesChange={onNodesChangeWithSave} onEdgesChange={onEdgesChange}
+        onConnect={onConnect} onDrop={onDrop} onDragOver={onDragOver}
         onNodeClick={(_, node) => { setSelectedNodeId(node.id); setSelectedEdgeId(null); }}
         onEdgeClick={(_, edge) => { setSelectedEdgeId(edge.id); setSelectedNodeId(null); }}
         onPaneClick={() => { setSelectedNodeId(null); setSelectedEdgeId(null); }}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
-        deleteKeyCode={null}
+        fitView fitViewOptions={{ padding: 0.2 }} deleteKeyCode={null}
       >
-        <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.2)" gap={22} size={1.5} />
+        <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.18)" gap={22} size={1.5} />
         <Controls style={{ background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)' }} />
         <MiniMap style={{ background: 'var(--bg-elev)' }} nodeColor={() => 'rgba(var(--fg-rgb),0.15)'} />
       </ReactFlow>
@@ -155,13 +156,14 @@ function ModeMapCanvas({
 // ─── Public component ─────────────────────────────────────────────────────────
 
 interface Props {
-  clientId: number;
-  initial: ClientConceptualization | null;
+  mapId: number;
+  initialNodes: ModeMapNode[];
+  initialEdges: ModeMapEdge[];
 }
 
-export function ModeMapEditor({ clientId, initial }: Props) {
-  const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(toFlowNodes((initial?.modeMapNodes ?? []) as ModeMapNode[]));
-  const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(toFlowEdges((initial?.modeMapEdges ?? []) as ModeMapEdge[]));
+export function ModeMapEditor({ mapId, initialNodes, initialEdges }: Props) {
+  const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(toFlowNodes(initialNodes));
+  const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(toFlowEdges(initialEdges));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -176,29 +178,22 @@ export function ModeMapEditor({ clientId, initial }: Props) {
     saveTimer.current = setTimeout(async () => {
       setSaveStatus('saving');
       try {
-        await api.saveConceptualization(clientId, {
-          modeMapNodes: fromFlowNodes(ns),
-          modeMapEdges: fromFlowEdges(es),
-        });
+        await api.updateModeMap(mapId, { nodes: fromFlowNodes(ns), edges: fromFlowEdges(es) });
         setSaveStatus('saved');
       } catch { setSaveStatus('idle'); }
     }, 1200);
-  }, [clientId]);
+  }, [mapId]);
 
   const handleAddNode = useCallback((partial: Omit<ModeMapNode, 'position'>) => {
     const pos = { x: 220 + Math.random() * 280, y: 100 + Math.random() * 200 };
-    const newNode: FlowNode = { id: partial.id, type: partial.type, position: pos, data: partial.data };
-    const newNodes = [...nodes, newNode];
-    setNodes(newNodes);
-    scheduleSave(newNodes, edges);
+    const newNodes = [...nodes, { id: partial.id, type: partial.type, position: pos, data: partial.data as Record<string, unknown> }];
+    setNodes(newNodes); scheduleSave(newNodes, edges);
   }, [nodes, edges, setNodes, scheduleSave]);
 
   const handleNodeChange = useCallback((updated: ModeMapNode) => {
     const newNodes = nodes.map(n => n.id === updated.id
-      ? { ...n, type: updated.type, data: updated.data as Record<string, unknown> }
-      : n);
-    setNodes(newNodes);
-    scheduleSave(newNodes, edges);
+      ? { ...n, type: updated.type, data: updated.data as Record<string, unknown> } : n);
+    setNodes(newNodes); scheduleSave(newNodes, edges);
   }, [nodes, edges, setNodes, scheduleSave]);
 
   const handleDeleteNode = useCallback(() => {
@@ -211,48 +206,40 @@ export function ModeMapEditor({ clientId, initial }: Props) {
 
   const handleEdgeChange = useCallback((updated: ModeMapEdge) => {
     const et = updated.data?.edgeType;
+    const bidir = updated.data?.bidirectional;
     const color = edgeColor(et);
     const newEdges = edges.map(e => e.id !== updated.id ? e : {
       ...e, label: updated.label, data: updated.data as Record<string, unknown>,
-      animated: et === 'activates',
-      style: { stroke: color, strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color, width: 18, height: 18 },
+      animated: et === 'activates', style: { stroke: color, strokeWidth: 2 },
+      markerEnd: makeMarker(color),
+      markerStart: bidir ? makeMarker(color) : undefined,
     });
-    setEdges(newEdges);
-    scheduleSave(nodes, newEdges);
+    setEdges(newEdges); scheduleSave(nodes, newEdges);
   }, [nodes, edges, setEdges, scheduleSave]);
 
   const handleDeleteEdge = useCallback(() => {
     if (!selectedEdgeId) return;
     const newEdges = edges.filter(e => e.id !== selectedEdgeId);
-    setEdges(newEdges); setSelectedEdgeId(null);
-    scheduleSave(nodes, newEdges);
+    setEdges(newEdges); setSelectedEdgeId(null); scheduleSave(nodes, newEdges);
   }, [selectedEdgeId, nodes, edges, setEdges, scheduleSave]);
 
   return (
     <ReactFlowProvider>
       <div style={{ display: 'flex', height: '100%', background: 'var(--bg)' }}>
         <ModeMapPalette onAdd={handleAddNode} />
-        <ModeMapCanvas
-          nodes={nodes} edges={edges}
-          setNodes={setNodes} setEdges={setEdges}
+        <ModeMapCanvas nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
           setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId}
-          saveStatus={saveStatus} scheduleSave={scheduleSave}
-        />
+          saveStatus={saveStatus} scheduleSave={scheduleSave} />
         {selectedNode && (
           <ModeMapNodeEditor
             node={{ id: selectedNode.id, type: selectedNode.type as ModeMapNode['type'], position: selectedNode.position, data: selectedNode.data as unknown as ModeMapNode['data'] }}
-            onChange={handleNodeChange}
-            onDelete={handleDeleteNode}
-          />
+            onChange={handleNodeChange} onDelete={handleDeleteNode} />
         )}
         {selectedEdge && !selectedNode && (
           <ModeMapEdgeEditor
-            edge={{ id: selectedEdge.id, source: selectedEdge.source, target: selectedEdge.target, label: selectedEdge.label as string | undefined, data: selectedEdge.data }}
-            onChange={handleEdgeChange}
-            onDelete={handleDeleteEdge}
-          />
+            edge={{ id: selectedEdge.id, source: selectedEdge.source, target: selectedEdge.target, label: selectedEdge.label as string | undefined, data: selectedEdge.data as unknown as ModeMapEdge['data'] }}
+            onChange={handleEdgeChange} onDelete={handleDeleteEdge} />
         )}
       </div>
     </ReactFlowProvider>

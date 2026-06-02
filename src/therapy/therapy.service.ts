@@ -782,4 +782,67 @@ export class TherapyService {
       therapistName: therapist?.firstName ?? null,
     });
   }
+
+  // ─── Mode Maps ───────────────────────────────────────────────────────────────
+
+  async listModeMaps(therapistId: bigint, clientId: number) {
+    await this.assertRelation(therapistId, clientId);
+    const rows = await (this.prisma.modeMap as any).findMany({
+      where: { therapistId, clientId: BigInt(clientId) },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, title: true, createdAt: true, updatedAt: true },
+    });
+    return rows;
+  }
+
+  async getModeMap(therapistId: bigint, mapId: number) {
+    const row = await (this.prisma.modeMap as any).findUnique({ where: { id: mapId } });
+    if (!row || row.therapistId.toString() !== therapistId.toString())
+      throw new Error('Not found');
+    return {
+      ...row,
+      nodes: this.decryptMapJson(row.nodes),
+      edges: this.decryptMapJson(row.edges),
+    };
+  }
+
+  async createModeMap(therapistId: bigint, clientId: number, title: string) {
+    await this.assertRelation(therapistId, clientId);
+    const row = await (this.prisma.modeMap as any).create({
+      data: { therapistId, clientId: BigInt(clientId), title },
+    });
+    return { ...row, nodes: [], edges: [] };
+  }
+
+  async updateModeMap(therapistId: bigint, mapId: number, body: {
+    title?: string; nodes?: unknown[]; edges?: unknown[];
+  }) {
+    const existing = await (this.prisma.modeMap as any).findUnique({ where: { id: mapId } });
+    if (!existing || existing.therapistId.toString() !== therapistId.toString())
+      throw new Error('Not found');
+    const data: Record<string, unknown> = {};
+    if (body.title !== undefined) data.title = body.title;
+    if (body.nodes !== undefined) data.nodes = encryptJson(body.nodes) ?? JSON.stringify(body.nodes);
+    if (body.edges !== undefined) data.edges = encryptJson(body.edges) ?? JSON.stringify(body.edges);
+    const row = await (this.prisma.modeMap as any).update({ where: { id: mapId }, data });
+    return {
+      ...row,
+      nodes: this.decryptMapJson(row.nodes),
+      edges: this.decryptMapJson(row.edges),
+    };
+  }
+
+  async deleteModeMap(therapistId: bigint, mapId: number) {
+    const existing = await (this.prisma.modeMap as any).findUnique({ where: { id: mapId } });
+    if (!existing || existing.therapistId.toString() !== therapistId.toString())
+      throw new Error('Not found');
+    await (this.prisma.modeMap as any).delete({ where: { id: mapId } });
+  }
+
+  private decryptMapJson(v: unknown): unknown[] {
+    if (v == null) return [];
+    if (typeof v === 'string') return decryptJson<unknown[]>(v) ?? [];
+    if (Array.isArray(v)) return v;
+    return [];
+  }
 }

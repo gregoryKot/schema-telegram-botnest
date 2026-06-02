@@ -378,6 +378,21 @@ model ClientConceptualization {
   @@unique([therapistId, clientId])
 }
 
+// Named mode maps — multiple per client, each with own title and canvas state.
+// nodes/edges stored as encrypted JSON (same pattern as modeMapNodes above).
+model ModeMap {
+  id          Int      @id @default(autoincrement())
+  therapistId BigInt
+  clientId    BigInt
+  title       String   @default("Карта режимов")
+  nodes       Json     @default("[]")
+  edges       Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([therapistId, clientId, createdAt])
+}
+
 model UserSchemaNote {
   id          Int      @id @default(autoincrement())
   userId      BigInt
