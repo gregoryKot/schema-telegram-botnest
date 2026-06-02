@@ -49,59 +49,43 @@ export function CookieBanner() {
       padding: '0 16px 20px',
       pointerEvents: 'none',
     }}>
-      <div style={{
-        width: '100%', maxWidth: 480,
-        background: 'var(--bg-elev)',
-        border: '1px solid var(--line)',
-        borderRadius: 14,
-        boxShadow: '0 8px 40px rgba(28,25,20,0.13), 0 2px 8px rgba(28,25,20,0.07)',
-        padding: '16px 18px',
-        display: 'flex', flexDirection: 'column', gap: 14,
-        pointerEvents: 'auto',
-        animation: 'cookie-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both',
-      }}>
+      <div
+        className="cookie-banner"
+        role="dialog"
+        aria-label="Согласие на использование куки"
+        style={{
+          width: '100%', maxWidth: 440,
+          background: 'var(--bg-elev)',
+          border: '1px solid var(--line)',
+          borderRadius: 16,
+          boxShadow: '0 12px 48px rgba(28,25,20,0.16), 0 2px 8px rgba(28,25,20,0.06)',
+          padding: '18px 20px 16px',
+          display: 'flex', flexDirection: 'column', gap: 16,
+          pointerEvents: 'auto',
+        }}
+      >
         {/* Header row */}
-        <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
-          <span style={{ fontSize: 20, lineHeight: 1, paddingTop: 1, flexShrink: 0 }}>🍪</span>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+          <span style={{ fontSize: 22, lineHeight: 1, paddingTop: 1, flexShrink: 0 }}>🍪</span>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
-              Куки и аналитика
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 5 }}>
+              Мы используем куки
             </div>
-            <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-sub)', lineHeight: 1.55 }}>
-              Обязательные куки нужны для входа. Яндекс.Метрика с записью сессий — только с вашего согласия.{' '}
-              <a href="/privacy#cookies" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>
+              Часть нужна для входа — без них сайт не работает. Аналитику Яндекс.Метрики (с записью сессий) включаем только с вашего согласия.{' '}
+              <a href="/privacy#cookies" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 2, fontWeight: 500 }}>
                 Подробнее
               </a>
             </p>
           </div>
         </div>
 
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button
-            onClick={decline}
-            style={{
-              padding: '7px 14px', borderRadius: 8, border: '1px solid var(--line)',
-              background: 'var(--surface-2)', color: 'var(--text-sub)',
-              fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              transition: 'background 0.15s, border-color 0.15s',
-            }}
-            onMouseEnter={e => { (e.target as HTMLButtonElement).style.background = 'var(--surface-3)'; (e.target as HTMLButtonElement).style.borderColor = 'var(--line-strong)'; }}
-            onMouseLeave={e => { (e.target as HTMLButtonElement).style.background = 'var(--surface-2)'; (e.target as HTMLButtonElement).style.borderColor = 'var(--line)'; }}
-          >
-            Только нужные
+        {/* Actions — equal prominence (GDPR 2026): same size, both solid */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={decline} className="cookie-btn cookie-btn-reject">
+            Только необходимые
           </button>
-          <button
-            onClick={accept}
-            style={{
-              padding: '7px 16px', borderRadius: 8, border: 'none',
-              background: 'var(--text)', color: 'var(--bg)',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => { (e.target as HTMLButtonElement).style.background = 'var(--accent)'; (e.target as HTMLButtonElement).style.color = 'var(--on-accent)'; }}
-            onMouseLeave={e => { (e.target as HTMLButtonElement).style.background = 'var(--text)'; (e.target as HTMLButtonElement).style.color = 'var(--bg)'; }}
-          >
+          <button onClick={accept} className="cookie-btn cookie-btn-accept">
             Принять все
           </button>
         </div>
