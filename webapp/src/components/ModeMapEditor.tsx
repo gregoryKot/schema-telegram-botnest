@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Controls, MiniMap,
   addEdge, useNodesState, useEdgesState, useReactFlow,
-  MarkerType,
+  MarkerType, ConnectionMode,
   type Connection, type Node, type Edge, type NodeTypes,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -34,13 +34,13 @@ function toFlowEdges(edges: ModeMapEdge[]): FlowEdge[] {
     const color = edgeColor(et);
     return {
       id: e.id, source: e.source, target: e.target,
-      label: e.label, data: e.data as Record<string, unknown>,
+      label: e.label || undefined,   // no label by default
+      data: e.data as Record<string, unknown>,
       type: 'smoothstep', animated: et === 'activates',
       style: { stroke: color, strokeWidth: 2 },
       markerEnd: makeMarker(color),
       markerStart: bidir ? makeMarker(color) : undefined,
-      labelStyle: { fontSize: 11, fill: 'var(--text-sub)' },
-      labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 },
+      ...(e.label ? { labelStyle: { fontSize: 11, fill: 'var(--text-sub)' }, labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 } } : {}),
     };
   });
 }
@@ -89,15 +89,20 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
   setSelectedNodeId, setSelectedEdgeId, saveStatus, scheduleSave }: CanvasProps) {
   const { screenToFlowPosition } = useReactFlow();
 
+  const isValidConnection = useCallback((conn: Connection | FlowEdge) => {
+    // Prevent self-connections
+    return conn.source !== conn.target;
+  }, []);
+
   const onConnect = useCallback((conn: Connection) => {
+    if (conn.source === conn.target) return; // extra guard
     const color = edgeColor('activates');
     const newEdges = addEdge({
-      ...conn, type: 'smoothstep', label: 'активирует',
+      ...conn, type: 'smoothstep',
+      // No default label — user adds in editor if needed
       data: { edgeType: 'activates' } as Record<string, unknown>,
       animated: true, style: { stroke: color, strokeWidth: 2 },
       markerEnd: makeMarker(color),
-      labelStyle: { fontSize: 11, fill: 'var(--text-sub)' },
-      labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 },
     }, edges);
     setEdges(newEdges); scheduleSave(nodes, newEdges);
   }, [edges, nodes, setEdges, scheduleSave]);
@@ -143,6 +148,8 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
       <ReactFlow nodes={nodes} edges={edges} nodeTypes={NODE_TYPES as NodeTypes}
         onNodesChange={onNodesChangeWithSave} onEdgesChange={onEdgesChange}
         onConnect={onConnect} onDrop={onDrop} onDragOver={onDragOver}
+        isValidConnection={isValidConnection}
+        connectionMode={ConnectionMode.Loose}
         onNodeClick={(_, node) => { setSelectedNodeId(node.id); setSelectedEdgeId(null); }}
         onEdgeClick={(_, edge) => { setSelectedEdgeId(edge.id); setSelectedNodeId(null); }}
         onPaneClick={() => { setSelectedNodeId(null); setSelectedEdgeId(null); }}
@@ -228,6 +235,15 @@ export function ModeMapEditor({ mapId, initialNodes, initialEdges }: Props) {
     setEdges(newEdges); setSelectedEdgeId(null); scheduleSave(nodes, newEdges);
   }, [selectedEdgeId, nodes, edges, setEdges, scheduleSave]);
 
+  const handleSwapEdge = useCallback(() => {
+    if (!selectedEdgeId) return;
+    const newEdges = edges.map(e => e.id !== selectedEdgeId ? e : {
+      ...e, source: e.target, target: e.source,
+      sourceHandle: e.targetHandle, targetHandle: e.sourceHandle,
+    });
+    setEdges(newEdges); scheduleSave(nodes, newEdges);
+  }, [selectedEdgeId, nodes, edges, setEdges, scheduleSave]);
+
   // Keyboard shortcuts — after scheduleSave is declared
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -267,7 +283,7 @@ export function ModeMapEditor({ mapId, initialNodes, initialEdges }: Props) {
         {selectedEdge && !selectedNode && (
           <ModeMapEdgeEditor
             edge={{ id: selectedEdge.id, source: selectedEdge.source, target: selectedEdge.target, label: selectedEdge.label as string | undefined, data: selectedEdge.data as unknown as ModeMapEdge['data'] }}
-            onChange={handleEdgeChange} onDelete={handleDeleteEdge} />
+            onChange={handleEdgeChange} onDelete={handleDeleteEdge} onSwap={handleSwapEdge} />
         )}
       </div>
     </ReactFlowProvider>
