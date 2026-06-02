@@ -451,10 +451,10 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
       {view === 'client' && selectedClient && (
         <div key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-          {/* Client header — compact */}
-          <div style={{ borderBottom: '1px solid var(--line)', padding: '14px 40px 0', flexShrink: 0 }}>
+          {/* Client header — moderately compact */}
+          <div style={{ borderBottom: '1px solid var(--line)', padding: '24px 48px 0', flexShrink: 0 }}>
             {/* Row 1: back + name + actions */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
               <button onClick={() => switchView('list')}
                 style={{ background: 'none', border: 'none', fontSize: 12.5, color: 'var(--text-faint)', cursor: 'pointer', padding: 0, flexShrink: 0, whiteSpace: 'nowrap' }}>
                 ← Все клиенты
@@ -475,7 +475,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                 </>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 }}>
+                  <span style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--text)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 380 }}>
                     {selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`}
                   </span>
                   <button onClick={() => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); }}
