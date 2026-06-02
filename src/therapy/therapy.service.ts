@@ -24,6 +24,13 @@ function encryptConceptFields(body: Record<string, any>): Record<string, any> {
   if ('modeIds' in body && Array.isArray(body.modeIds)) {
     result.modeIds = encryptJson(body.modeIds) ?? JSON.stringify(body.modeIds);
   }
+  // Mode map — nodes and edges contain sensitive clinical data, must be encrypted.
+  if ('modeMapNodes' in body && Array.isArray(body.modeMapNodes)) {
+    result.modeMapNodes = encryptJson(body.modeMapNodes) ?? JSON.stringify(body.modeMapNodes);
+  }
+  if ('modeMapEdges' in body && Array.isArray(body.modeMapEdges)) {
+    result.modeMapEdges = encryptJson(body.modeMapEdges) ?? JSON.stringify(body.modeMapEdges);
+  }
   return result;
 }
 
@@ -32,11 +39,18 @@ function decryptConceptFields(row: Record<string, any>): Record<string, any> {
   for (const f of CONCEPT_TEXT_FIELDS) {
     result[f] = row[f] != null ? decrypt(row[f]) : null;
   }
-  // schemaIds / modeIds: legacy rows have JSON arrays; new rows have encrypted strings.
+  // schemaIds / modeIds / modeMapNodes / modeMapEdges: legacy rows have JSON arrays;
+  // new rows have encrypted strings.
   for (const f of ['schemaIds', 'modeIds']) {
     const v = row[f];
     if (v == null) { result[f] = []; continue; }
     if (typeof v === 'string') result[f] = decryptJson<string[]>(v) ?? [];
+    else result[f] = v;
+  }
+  for (const f of ['modeMapNodes', 'modeMapEdges']) {
+    const v = row[f];
+    if (v == null) { result[f] = []; continue; }
+    if (typeof v === 'string') result[f] = decryptJson<unknown[]>(v) ?? [];
     else result[f] = v;
   }
   return result;
@@ -537,6 +551,7 @@ export class TherapyService {
     earlyExperience?: string; unmetNeeds?: string;
     triggers?: string; copingStyles?: string; goals?: string; currentProblems?: string;
     modeTransitions?: string;
+    modeMapNodes?: unknown[]; modeMapEdges?: unknown[];
   }) {
     await this.assertRelation(therapistId, clientId);
     const tid = therapistId;
@@ -583,6 +598,8 @@ export class TherapyService {
         goals: enc.goals ?? null,
         currentProblems: enc.currentProblems ?? null,
         modeTransitions: enc.modeTransitions ?? null,
+        modeMapNodes: enc.modeMapNodes ?? [],
+        modeMapEdges: enc.modeMapEdges ?? [],
         history: [],
       },
       update: {

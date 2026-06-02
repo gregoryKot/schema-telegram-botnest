@@ -310,6 +310,7 @@ export class TherapyController {
     earlyExperience?: string; unmetNeeds?: string;
     triggers?: string; copingStyles?: string; goals?: string; currentProblems?: string;
     modeTransitions?: string;
+    modeMapNodes?: unknown[]; modeMapEdges?: unknown[];
   }) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
@@ -323,6 +324,11 @@ export class TherapyController {
       throw new BadRequestException('invalid schemaIds');
     if (body.modeIds !== undefined && (!Array.isArray(body.modeIds) || body.modeIds.some(s => typeof s !== 'string' || s.length > 64)))
       throw new BadRequestException('invalid modeIds');
+    // Mode map: validate arrays exist and aren't absurdly large (max 200 nodes/edges)
+    if (body.modeMapNodes !== undefined && (!Array.isArray(body.modeMapNodes) || body.modeMapNodes.length > 200))
+      throw new BadRequestException('invalid modeMapNodes');
+    if (body.modeMapEdges !== undefined && (!Array.isArray(body.modeMapEdges) || body.modeMapEdges.length > 500))
+      throw new BadRequestException('invalid modeMapEdges');
     try { return await this.therapyService.saveConceptualization(uid(req), parseId(clientId), body); }
     catch (e: any) { if (e?.message === 'No active relation') throw new ForbiddenException('No active relation with this client'); throw e; }
   }
