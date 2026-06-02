@@ -73,15 +73,15 @@ export function ModeMapSelector({ clientId }: Props) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Map selector bar */}
+      {/* Map selector bar — pill-style tabs */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '8px 12px 0',
+        display: 'flex', alignItems: 'center', gap: 4,
+        padding: '8px 12px',
         borderBottom: '1px solid rgba(var(--fg-rgb),0.07)',
-        overflowX: 'auto', flexShrink: 0,
+        overflowX: 'auto', flexShrink: 0, minHeight: 42,
       }}>
         {maps.map(m => (
-          <div key={m.id} style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          <div key={m.id} style={{ display: 'flex', alignItems: 'center', flexShrink: 0, gap: 0 }}>
             {editingId === m.id ? (
               <input
                 ref={titleRef}
@@ -90,50 +90,54 @@ export function ModeMapSelector({ clientId }: Props) {
                 onBlur={() => renameMap(m.id, editTitle)}
                 onKeyDown={e => { if (e.key === 'Enter') renameMap(m.id, editTitle); if (e.key === 'Escape') setEditingId(null); }}
                 style={{
-                  fontSize: 13, fontWeight: 500, padding: '4px 8px',
-                  borderRadius: 6, border: '1.5px solid var(--accent)',
-                  background: 'var(--bg-elev)', color: 'var(--text)',
-                  outline: 'none', width: 120,
+                  fontSize: 13, fontWeight: 500, padding: '4px 8px', borderRadius: 6,
+                  border: '1.5px solid var(--accent)', background: 'var(--bg-elev)',
+                  color: 'var(--text)', outline: 'none', width: 120,
                 }}
                 autoFocus
               />
             ) : (
-              <button
-                onClick={() => selectMap(m.id)}
-                onDoubleClick={() => startEdit(m)}
-                style={{
-                  padding: '5px 12px', borderRadius: '6px 6px 0 0', fontSize: 13, fontWeight: 500,
-                  cursor: 'pointer', whiteSpace: 'nowrap',
-                  border: `1px solid ${activeId === m.id ? 'rgba(var(--fg-rgb),0.1)' : 'transparent'}`,
-                  borderBottom: activeId === m.id ? '1px solid var(--bg)' : '1px solid transparent',
-                  background: activeId === m.id ? 'var(--bg)' : 'none',
-                  color: activeId === m.id ? 'var(--text)' : 'var(--text-sub)',
-                  marginBottom: activeId === m.id ? -1 : 0,
-                }}
-              >
-                {m.title}
-              </button>
-            )}
-            {activeId === m.id && maps.length > 1 && (
-              <button onClick={() => deleteMap(m.id)}
-                title="Удалить карту"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 12, padding: '0 2px 0 0', lineHeight: 1 }}>
-                ✕
-              </button>
+              <div style={{
+                display: 'flex', alignItems: 'center',
+                borderRadius: 7, overflow: 'hidden',
+                background: activeId === m.id ? 'rgba(var(--fg-rgb),0.08)' : 'none',
+                border: activeId === m.id ? '1px solid rgba(var(--fg-rgb),0.12)' : '1px solid transparent',
+              }}>
+                <button
+                  onClick={() => selectMap(m.id)}
+                  onDoubleClick={() => startEdit(m)}
+                  title="Двойной клик — переименовать"
+                  style={{
+                    padding: maps.length > 1 && activeId === m.id ? '4px 6px 4px 12px' : '4px 12px',
+                    fontSize: 13, fontWeight: activeId === m.id ? 600 : 400,
+                    cursor: 'pointer', whiteSpace: 'nowrap', background: 'none',
+                    border: 'none', color: activeId === m.id ? 'var(--text)' : 'var(--text-sub)',
+                  }}
+                >
+                  {m.title}
+                </button>
+                {maps.length > 1 && activeId === m.id && (
+                  <button onClick={() => deleteMap(m.id)} title="Удалить карту"
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-faint)', fontSize: 11, padding: '4px 8px 4px 2px',
+                      lineHeight: 1, display: 'flex', alignItems: 'center',
+                    }}>
+                    ✕
+                  </button>
+                )}
+              </div>
             )}
           </div>
         ))}
         <button onClick={createMap} disabled={creating}
           style={{
-            padding: '5px 10px', borderRadius: 6, fontSize: 12.5, cursor: 'pointer', flexShrink: 0,
-            border: '1px dashed rgba(var(--fg-rgb),0.2)', background: 'none',
-            color: 'var(--text-sub)', whiteSpace: 'nowrap',
+            padding: '4px 10px', borderRadius: 7, fontSize: 12.5, cursor: 'pointer', flexShrink: 0,
+            border: '1px dashed rgba(var(--fg-rgb),0.18)', background: 'none',
+            color: 'var(--text-faint)', whiteSpace: 'nowrap', marginLeft: 2,
           }}>
           {creating ? '…' : '+ Новая карта'}
         </button>
-        <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-faint)', flexShrink: 0, paddingRight: 4 }}>
-          двойной клик — переименовать
-        </div>
       </div>
 
       {/* Editor area */}
