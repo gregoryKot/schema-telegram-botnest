@@ -636,11 +636,51 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 /* ─── Animations ─────────────────────────────────────────────────────────── */
 @keyframes fade-in   { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slide-up  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@keyframes cookie-in { from { opacity: 0; transform: translateY(24px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes cookie-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes spin      { to { transform: rotate(360deg); } }
 
 .animate-fade  { animation: fade-in .18s ease both; }
 .animate-slide { animation: slide-up .22s ease both; }
+
+/* ─── Cookie consent banner ──────────────────────────────────────────────── */
+.cookie-banner {
+  animation: cookie-in .32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.cookie-btn {
+  flex: 1;
+  min-height: 44px;
+  padding: 11px 18px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.cookie-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Equal prominence (2026 GDPR): both reject + accept are solid, same size & weight */
+.cookie-btn-reject {
+  background: var(--surface-3);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+.cookie-btn-reject:hover  { background: var(--line-strong); }
+.cookie-btn-reject:active  { opacity: .8; }
+.cookie-btn-accept {
+  background: var(--text);
+  color: var(--bg);
+  border: 1px solid var(--text);
+}
+.cookie-btn-accept:hover  { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.cookie-btn-accept:active { opacity: .85; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cookie-banner { animation: fade-in .2s ease both; }
+}
 
 /* ─── Loader / spinner ───────────────────────────────────────────────────── */
 .loader-center {
