@@ -1,6 +1,8 @@
 import type { ModeMapNode, ModeMapEdge, EdgeType } from '../api';
 import { TYPE_COLORS } from './ModeMapNodes';
 
+type CopingSubtype = 'over' | 'avoid' | 'surr';
+
 const EDGE_TYPE_LABELS: Record<string, string> = {
   activates:  'активирует',
   protects:   'защищает от',
@@ -15,32 +17,49 @@ const COLOR_PRESETS = [
 
 type NodeType = ModeMapNode['type'];
 
-// CSS shape previews instead of emoji
-const SHAPE_OPTIONS: { type: NodeType; label: string }[] = [
-  { type: 'child',   label: 'Детский'  },
-  { type: 'critic',  label: 'Критик'   },
-  { type: 'coping',  label: 'Копинг'   },
-  { type: 'healthy', label: 'Здоровый' },
-  { type: 'custom',  label: 'Свой'     },
-  { type: 'trigger', label: 'Триггер'  },
+interface ShapeOption {
+  type: NodeType;
+  label: string;
+  copingSubtype?: CopingSubtype;
+  color: string;
+  clip?: string;
+  radius?: number | string;
+  isCircle?: boolean;
+  isCloud?: boolean;
+}
+
+const SHAPE_OPTIONS: ShapeOption[] = [
+  { type: 'trigger', label: 'Триггер',        color: TYPE_COLORS.trigger, isCloud: true },
+  { type: 'child',   label: 'Детский',         color: TYPE_COLORS.child,   isCircle: true },
+  { type: 'critic',  label: 'Критик',          color: TYPE_COLORS.critic,
+    clip: 'polygon(14% 0%,86% 0%,100% 14%,100% 86%,86% 100%,14% 100%,0% 86%,0% 14%)' },
+  { type: 'coping',  label: 'Гиперкомп.',      color: '#d4a07a', copingSubtype: 'over',
+    clip: 'polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)' },
+  { type: 'coping',  label: 'Избегание',       color: '#7aa3d4', copingSubtype: 'avoid',
+    clip: 'polygon(0% 0%,100% 0%,100% 72%,50% 100%,0% 72%)' },
+  { type: 'coping',  label: 'Капитуляция',     color: '#94a3b8', copingSubtype: 'surr', radius: 9999 },
+  { type: 'healthy', label: 'Здоровый',        color: TYPE_COLORS.healthy, radius: 8 },
+  { type: 'custom',  label: 'Свой',            color: TYPE_COLORS.custom,  radius: 8 },
 ];
 
-function ShapePreview({ type, color }: { type: NodeType; color: string }) {
-  const base: React.CSSProperties = {
-    width: 28, height: 28, background: `${color}22`,
-    border: `2px solid ${color}`, flexShrink: 0,
-  };
-  if (type === 'child')   return <div style={{ ...base, borderRadius: '50%' }} />;
-  if (type === 'critic')  return <div style={{ ...base, borderRadius: 3 }} />;
-  if (type === 'coping')  return <div style={{ ...base, borderRadius: 0, clipPath: 'polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)' }} />;
-  if (type === 'healthy') return <div style={{ ...base, borderRadius: 8 }} />;
-  if (type === 'trigger') return (
-    <svg width={28} height={20} viewBox="0 0 28 20">
-      <path d="M5,16 Q1,16 1,11 Q1,7 5,6 Q4,2 8,2 Q11,0 14,2 Q18,0 21,3 Q25,3 27,7 Q27,12 23,13 Q24,16 20,16 Z"
-        fill={`${color}22`} stroke={color} strokeWidth={1.5} />
+function ShapePreview({ opt, active }: { opt: ShapeOption; active: boolean }) {
+  const color = active ? 'var(--accent)' : opt.color;
+  const bg = `${opt.color}25`;
+  const w = 26; const h = opt.isCloud ? 18 : opt.isCircle ? 26 : 26;
+
+  if (opt.isCloud) return (
+    <svg width={w} height={h} viewBox="0 0 28 18">
+      <path d="M5,14 Q1,14 1,10 Q1,6 5,6 Q4,1 9,1 Q12,0 15,2 Q19,0 22,3 Q27,3 27,8 Q27,14 22,14 Z"
+        fill={bg} stroke={color} strokeWidth={1.5} />
     </svg>
   );
-  return <div style={{ ...base, borderRadius: 8 }} />;
+
+  const style: React.CSSProperties = {
+    width: w, height: h, background: bg, border: `2px solid ${color}`, flexShrink: 0,
+    borderRadius: typeof opt.radius === 'number' ? opt.radius : opt.isCircle ? '50%' : undefined,
+    clipPath: opt.clip,
+  };
+  return <div style={style} />;
 }
 
 interface NodeEditorProps {
@@ -52,7 +71,11 @@ interface NodeEditorProps {
 export function ModeMapNodeEditor({ node, onChange, onDelete }: NodeEditorProps) {
   const patchData = (d: Partial<ModeMapNode['data']>) =>
     onChange({ ...node, data: { ...node.data, ...d } });
-  const patchType = (type: NodeType) => onChange({ ...node, type });
+  const patchShape = (opt: ShapeOption) => onChange({
+    ...node,
+    type: opt.type,
+    data: { ...node.data, copingSubtype: opt.copingSubtype },
+  });
   const currentColor = node.data.customColor ?? TYPE_COLORS[node.type] ?? TYPE_COLORS.custom;
 
   return (
@@ -64,18 +87,26 @@ export function ModeMapNodeEditor({ node, onChange, onDelete }: NodeEditorProps)
         onChange={e => patchData({ label: e.target.value })} placeholder="Название режима" />
 
       <label style={labelStyle}>Форма и тип</label>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-        {SHAPE_OPTIONS.map(opt => (
-          <button key={opt.type} onClick={() => patchType(opt.type)} title={opt.label}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 38, height: 38, borderRadius: 7, cursor: 'pointer',
-              border: `1.5px solid ${node.type === opt.type ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
-              background: node.type === opt.type ? 'var(--accent-soft)' : 'none',
-            }}>
-            <ShapePreview type={opt.type} color={node.type === opt.type ? 'var(--accent)' : currentColor} />
-          </button>
-        ))}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 14 }}>
+        {SHAPE_OPTIONS.map((opt, i) => {
+          const isActive = node.type === opt.type &&
+            (opt.copingSubtype ? node.data.copingSubtype === opt.copingSubtype : !opt.copingSubtype || node.type !== 'coping');
+          return (
+            <button key={i} onClick={() => patchShape(opt)} title={opt.label}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 3, width: 44, height: 44, borderRadius: 7, cursor: 'pointer',
+                border: `1.5px solid ${isActive ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                background: isActive ? 'var(--accent-soft)' : 'none',
+                padding: 4,
+              }}>
+              <ShapePreview opt={opt} active={isActive} />
+              <span style={{ fontSize: 9, color: isActive ? 'var(--accent)' : 'var(--text-faint)', lineHeight: 1, textAlign: 'center' }}>
+                {opt.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <label style={labelStyle}>Цвет</label>

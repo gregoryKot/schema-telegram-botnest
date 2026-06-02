@@ -9,7 +9,7 @@ import '@xyflow/react/dist/style.css';
 
 import type { ModeMapNode, ModeMapEdge } from '../api';
 import { api } from '../api';
-import { NODE_TYPES } from './ModeMapNodes';
+import { NODE_TYPES, NODE_DEFAULT_SIZES } from './ModeMapNodes';
 import { ModeMapPalette, DRAG_TYPE } from './ModeMapPalette';
 import { ModeMapNodeEditor, ModeMapEdgeEditor } from './ModeMapNodeEditor';
 
@@ -111,7 +111,8 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
       const partial: Omit<ModeMapNode, 'position'> = JSON.parse(raw);
       const freshId = `${partial.data.modeId ?? 'node'}_${Date.now()}`;
       const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-      const newNodes = [...nodes, { id: freshId, type: partial.type, position, data: partial.data as Record<string, unknown> }];
+      const defaultSize = NODE_DEFAULT_SIZES[partial.type] ?? {};
+      const newNodes = [...nodes, { id: freshId, type: partial.type, position, data: partial.data as Record<string, unknown>, ...defaultSize }];
       setNodes(newNodes); scheduleSave(newNodes, edges);
     } catch { /* ignore */ }
   }, [nodes, edges, setNodes, scheduleSave, screenToFlowPosition]);
@@ -189,7 +190,8 @@ export function ModeMapEditor({ mapId, initialNodes, initialEdges }: Props) {
 
   const handleAddNode = useCallback((partial: Omit<ModeMapNode, 'position'>) => {
     const pos = { x: 220 + Math.random() * 280, y: 100 + Math.random() * 200 };
-    const newNodes = [...nodes, { id: partial.id, type: partial.type, position: pos, data: partial.data as Record<string, unknown> }];
+    const defaultSize = NODE_DEFAULT_SIZES[partial.type] ?? {};
+    const newNodes = [...nodes, { id: partial.id, type: partial.type, position: pos, data: partial.data as Record<string, unknown>, ...defaultSize }];
     setNodes(newNodes); scheduleSave(newNodes, edges);
   }, [nodes, edges, setNodes, scheduleSave]);
 
