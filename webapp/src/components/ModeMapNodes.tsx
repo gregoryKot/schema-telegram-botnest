@@ -32,123 +32,111 @@ function AllHandles() {
 }
 
 function hexToRgb(hex: string) {
-  const m = hex.replace('#','').match(/.{2}/g);
-  if (!m) return null;
-  return `${parseInt(m[0],16)},${parseInt(m[1],16)},${parseInt(m[2],16)}`;
+  const m = hex.replace('#', '').match(/.{2}/g);
+  return m ? `${parseInt(m[0],16)},${parseInt(m[1],16)},${parseInt(m[2],16)}` : null;
 }
 
-function NodeLabel({ label, note }: { label: string; note?: string }) {
+function bgColor(color: string, filled?: boolean, fillFull?: boolean) {
+  const rgb = hexToRgb(color);
+  const op  = fillFull ? 0.9 : filled ? 0.22 : 0.08;
+  return rgb ? `rgba(${rgb},${op})` : `rgba(var(--fg-rgb),${op})`;
+}
+
+function NodeLabel({ label, note, light }: { label: string; note?: string; light?: boolean }) {
   return (
-    <div style={{ textAlign: 'center', padding: '2px 4px' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35, wordBreak: 'break-word' }}>{label}</div>
-      {note && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.3, wordBreak: 'break-word' }}>{note}</div>}
+    <div style={{ textAlign: 'center', padding: '4px 6px' }}>
+      <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-word',
+        color: light ? 'rgba(255,255,255,0.95)' : 'var(--text)' }}>{label}</div>
+      {note && <div style={{ fontSize: 11, marginTop: 3, lineHeight: 1.3, wordBreak: 'break-word',
+        color: light ? 'rgba(255,255,255,0.75)' : 'var(--text-sub)' }}>{note}</div>}
     </div>
   );
 }
 
-// ── Rect-based nodes (critic, coping, healthy, custom) ────────────────────────
-function RectNode({ data, selected, color, shape = 'rounded' }: {
-  data: ModeNodeData; selected?: boolean; color: string; shape?: 'rounded' | 'sharp' | 'pentagon';
-}) {
-  const rgb = hexToRgb(color);
-  const fillOpacity = data.fillFull ? 1 : data.filled ? 0.22 : 0.09;
-  const bg = rgb ? `rgba(${rgb},${fillOpacity})` : `rgba(var(--fg-rgb),${fillOpacity})`;
-  const border = `2px solid ${selected ? 'var(--accent)' : color}`;
-
-  const clipPath = shape === 'pentagon'
-    ? 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)'
-    : undefined;
-  const borderRadius = shape === 'sharp' ? 4 : shape === 'rounded' ? 10 : 0;
-
+// ── Circle node ───────────────────────────────────────────────────────────────
+export const ChildModeNode = function ChildModeNode({ data, selected }: NodeProps) {
+  const d = data as unknown as ModeNodeData;
+  const color = d.customColor ?? TYPE_COLORS.child;
+  const light = !!d.fillFull;
   return (
-    <div style={{
-      background: bg, border, borderRadius,
-      clipPath,
-      minWidth: 120, maxWidth: 200,
-      padding: shape === 'pentagon' ? '28px 20px 14px' : '10px 14px',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.25)' : '0 2px 8px rgba(0,0,0,0.1)',
-      cursor: 'default', userSelect: 'none', position: 'relative',
-    }}>
-      <NodeResizer minWidth={80} minHeight={36} isVisible={!!selected} color={color} />
-      <AllHandles />
-      <NodeLabel label={data.label} note={data.note} />
-    </div>
-  );
-}
-
-// ── Circle node (child modes) ─────────────────────────────────────────────────
-function CircleNode({ data, selected, color }: { data: ModeNodeData; selected?: boolean; color: string }) {
-  const rgb = hexToRgb(color);
-  const fillOpacity = data.fillFull ? 1 : data.filled ? 0.22 : 0.09;
-  const bg = rgb ? `rgba(${rgb},${fillOpacity})` : `rgba(var(--fg-rgb),${fillOpacity})`;
-  const textColor = data.fillFull ? '#fff' : 'var(--text)';
-  return (
-    <div style={{
-      background: bg,
-      border: `2px solid ${selected ? 'var(--accent)' : color}`,
-      borderRadius: '50%',
-      width: 130, height: 130,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.25)' : '0 2px 8px rgba(0,0,0,0.1)',
-      cursor: 'default', userSelect: 'none', position: 'relative',
-      color: textColor,
-    }}>
+    // outer div fills React Flow container (set by NodeResizer)
+    <div style={{ width: '100%', height: '100%', minWidth: 110, minHeight: 110, position: 'relative' }}>
       <NodeResizer minWidth={80} minHeight={80} isVisible={!!selected} color={color} />
       <AllHandles />
-      <NodeLabel label={data.label} note={data.note} />
+      <div style={{
+        width: '100%', height: '100%',
+        borderRadius: '50%', overflow: 'hidden',
+        background: bgColor(color, d.filled, d.fillFull),
+        border: `2px solid ${selected ? 'var(--accent)' : color}`,
+        boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <NodeLabel label={d.label} note={d.note} light={light} />
+      </div>
     </div>
   );
+};
+
+// ── Rect-based nodes ──────────────────────────────────────────────────────────
+function makeRectNode(defaultColor: string, radius: number | string = 10, usePentagon = false) {
+  return function ModeNode({ data, selected }: NodeProps) {
+    const d = data as unknown as ModeNodeData;
+    const color = d.customColor ?? defaultColor;
+    const light = !!d.fillFull;
+    return (
+      <div style={{ width: '100%', height: '100%', minWidth: 110, minHeight: 44, position: 'relative' }}>
+        <NodeResizer minWidth={80} minHeight={36} isVisible={!!selected} color={color} />
+        <AllHandles />
+        <div style={{
+          width: '100%', height: '100%',
+          borderRadius: typeof radius === 'number' ? radius : undefined,
+          clipPath: usePentagon ? 'polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)' : undefined,
+          background: bgColor(color, d.filled, d.fillFull),
+          border: `2px solid ${selected ? 'var(--accent)' : color}`,
+          boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden',
+          padding: usePentagon ? '20% 10% 12% 10%' : undefined,
+        }}>
+          <NodeLabel label={d.label} note={d.note} light={light} />
+        </div>
+      </div>
+    );
+  };
 }
 
+export const CriticModeNode  = makeRectNode(TYPE_COLORS.critic,  3);
+export const CopingModeNode  = makeRectNode(TYPE_COLORS.coping,  0, true);
+export const HealthyModeNode = makeRectNode(TYPE_COLORS.healthy, 10);
+export const CustomModeNode  = makeRectNode(TYPE_COLORS.custom,  10);
+
 // ── Cloud node (trigger) ──────────────────────────────────────────────────────
-function CloudNode({ data, selected, color }: { data: ModeNodeData; selected?: boolean; color: string }) {
+export const TriggerNode = function TriggerNode({ data, selected }: NodeProps) {
+  const d = data as unknown as ModeNodeData;
+  const color = d.customColor ?? TYPE_COLORS.trigger;
+  const light = !!d.fillFull;
   const rgb = hexToRgb(color);
-  const fillOpacity = data.fillFull ? 0.85 : data.filled ? 0.18 : 0.08;
-  const bg = rgb ? `rgba(${rgb},${fillOpacity})` : 'rgba(var(--fg-rgb),0.08)';
+  const fill = rgb ? `rgba(${rgb},${d.fillFull ? 0.85 : d.filled ? 0.2 : 0.09})` : 'rgba(var(--fg-rgb),0.09)';
+  const stroke = selected ? 'var(--accent)' : color;
   return (
-    <div style={{ position: 'relative', width: 160, height: 90 }}>
-      <NodeResizer minWidth={120} minHeight={70} isVisible={!!selected} color={color} />
+    <div style={{ width: '100%', height: '100%', minWidth: 130, minHeight: 70, position: 'relative' }}>
+      <NodeResizer minWidth={100} minHeight={60} isVisible={!!selected} color={color} />
       <AllHandles />
-      <svg viewBox="0 0 160 90" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
-        <path
-          d="M30,70 Q10,70 10,55 Q10,42 22,40 Q20,28 32,26 Q34,14 48,14 Q56,8 66,12 Q72,6 82,8 Q94,4 102,14 Q116,12 122,24 Q136,24 138,38 Q150,40 150,54 Q150,70 132,70 Z"
-          fill={bg}
-          stroke={selected ? 'var(--accent)' : color}
-          strokeWidth="2"
-        />
+      <svg viewBox="0 0 100 60" preserveAspectRatio="none"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+        <path fill={fill} stroke={stroke} strokeWidth="2" vectorEffect="non-scaling-stroke"
+          d="M18,52 Q4,52 4,40 Q4,30 13,28 Q11,18 21,16 Q23,7 33,8 Q38,3 46,6 Q52,1 60,5 Q70,2 76,10 Q88,9 92,20 Q100,22 100,33 Q100,45 90,47 Q92,52 82,52 Z" />
       </svg>
       <div style={{
         position: 'absolute', inset: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '10px 18px',
+        padding: '12% 14% 10%',
       }}>
-        <NodeLabel label={data.label} note={data.note} />
+        <NodeLabel label={d.label} note={d.note} light={light} />
       </div>
     </div>
   );
-}
-
-// ── Node components ───────────────────────────────────────────────────────────
-function makeRectNode(defaultColor: string, shape: 'rounded' | 'sharp' | 'pentagon' = 'rounded') {
-  return function ModeNode({ data, selected }: NodeProps) {
-    const d = data as unknown as ModeNodeData;
-    return <RectNode data={d} selected={selected} color={d.customColor ?? defaultColor} shape={shape} />;
-  };
-}
-
-export const TriggerNode = function TriggerNode({ data, selected }: NodeProps) {
-  const d = data as unknown as ModeNodeData;
-  return <CloudNode data={d} selected={selected} color={d.customColor ?? TYPE_COLORS.trigger} />;
 };
-export const ChildModeNode   = function ChildModeNode({ data, selected }: NodeProps) {
-  const d = data as unknown as ModeNodeData;
-  return <CircleNode data={d} selected={selected} color={d.customColor ?? TYPE_COLORS.child} />;
-};
-export const CriticModeNode  = makeRectNode(TYPE_COLORS.critic,  'sharp');
-export const CopingModeNode  = makeRectNode(TYPE_COLORS.coping,  'pentagon');
-export const HealthyModeNode = makeRectNode(TYPE_COLORS.healthy, 'rounded');
-export const CustomModeNode  = makeRectNode(TYPE_COLORS.custom,  'rounded');
 
 export const NODE_TYPES = {
   trigger: TriggerNode,
