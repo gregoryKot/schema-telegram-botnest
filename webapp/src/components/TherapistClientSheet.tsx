@@ -1114,10 +1114,15 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               </div>
             )}
 
-            {/* ── MODE MAP ─────────────────────────────────────────────────────── */}
-            {clientTab === 'mode_map' && selectedClient != null && (
-              <div style={{ height: 'calc(100vh - 130px)', display: 'flex', flexDirection: 'column' }}>
+            {/* ── MODE MAP — keep mounted to preserve React Flow state across tab switches */}
+            {selectedClient != null && (
+              <div style={{
+                display: clientTab === 'mode_map' ? 'flex' : 'none',
+                height: 'calc(100vh - 130px)',
+                flexDirection: 'column',
+              }}>
                 <ModeMapEditor
+                  key={selectedClient.telegramId}
                   clientId={selectedClient.telegramId}
                   initial={concept ?? null}
                 />
