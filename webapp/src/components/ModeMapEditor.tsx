@@ -118,9 +118,11 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
 
   const onNodesChangeWithSave = useCallback((changes: Parameters<typeof onNodesChange>[0]) => {
     onNodesChange(changes);
-    if (changes.some(c => c.type === 'position' && !c.dragging)) scheduleSave(nodes, edges);
-    // Save resize changes
-    if (changes.some(c => c.type === 'dimensions')) scheduleSave(nodes, edges);
+    const shouldSave = changes.some(c =>
+      (c.type === 'position' && !c.dragging) ||
+      (c.type === 'dimensions' && c.resizing === false)
+    );
+    if (shouldSave) scheduleSave(nodes, edges);
   }, [onNodesChange, nodes, edges, scheduleSave]);
 
   return (
@@ -144,6 +146,7 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
         onEdgeClick={(_, edge) => { setSelectedEdgeId(edge.id); setSelectedNodeId(null); }}
         onPaneClick={() => { setSelectedNodeId(null); setSelectedEdgeId(null); }}
         fitView fitViewOptions={{ padding: 0.2 }} deleteKeyCode={null}
+        nodesDraggable nodeDragThreshold={1}
       >
         <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.18)" gap={22} size={1.5} />
         <Controls style={{ background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)' }} />
