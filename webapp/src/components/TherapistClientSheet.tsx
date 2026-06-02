@@ -10,6 +10,7 @@ import { ClientNotesTab } from './therapist/ClientNotesTab';
 import { ClientYSQTab } from './therapist/ClientYSQTab';
 import { useClientDetail } from './therapist/useClientDetail';
 import { useAddClient } from './therapist/useAddClient';
+import { ModeMapEditor } from './ModeMapEditor';
 
 interface Props {
   view: 'list' | 'client';
@@ -21,7 +22,7 @@ interface Props {
   onClientsChange?: (clients: TherapyClientSummary[]) => void;
 }
 
-type ClientTab = 'overview' | 'concept' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
+type ClientTab = 'overview' | 'concept' | 'mode_map' | 'sessions' | 'tasks' | 'ysq' | 'client_notes';
 
 const DAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
@@ -528,6 +529,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               {([
                 ['overview', 'Обзор', null],
                 ['concept', 'Концептуализация', null],
+                ['mode_map', 'Карта режимов', null],
                 ['sessions', 'Сессии', notes.length],
                 ['tasks', 'Задания', clientTasks.length],
                 ['ysq', 'YSQ', clientData?.ysqHistory?.length ?? 0],
@@ -1109,6 +1111,16 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     )}
                   </aside>
                 </div>
+              </div>
+            )}
+
+            {/* ── MODE MAP ─────────────────────────────────────────────────────── */}
+            {clientTab === 'mode_map' && openClientId != null && (
+              <div style={{ height: 'calc(100vh - 130px)', display: 'flex', flexDirection: 'column' }}>
+                <ModeMapEditor
+                  clientId={openClientId}
+                  initial={concept ?? null}
+                />
               </div>
             )}
 

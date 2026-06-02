@@ -160,6 +160,28 @@ export interface ConceptSnapshot {
   currentProblems: string | null;
   modeTransitions?: string | null;
 }
+export interface ModeMapNode {
+  id: string;
+  type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom';
+  position: { x: number; y: number };
+  data: {
+    modeId?: string;    // id из MODE_GROUPS, или отсутствует у custom/trigger
+    label: string;      // переопределённое имя или оригинальное
+    note?: string;      // заметка терапевта
+    unmetNeed?: string; // актуально для детских режимов
+  };
+}
+
+export interface ModeMapEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+  data?: {
+    edgeType?: 'activates' | 'protects' | 'suppresses' | 'leads_to';
+  };
+}
+
 export interface ClientConceptualization {
   id: number;
   therapistId: number;
@@ -173,6 +195,8 @@ export interface ClientConceptualization {
   goals: string | null;
   currentProblems: string | null;
   modeTransitions: string | null;
+  modeMapNodes: ModeMapNode[];
+  modeMapEdges: ModeMapEdge[];
   history: ConceptSnapshot[];
   updatedAt: string;
 }
@@ -271,8 +295,8 @@ export const api = {
   getTherapistNotes:    (clientId: number) => get<any[]>(`/api/therapy/notes/${clientId}`),
   createTherapistNote:  (clientId: number, date: string, text: string) => postJson<any>(`/api/therapy/notes/${clientId}`, { date, text }),
   deleteTherapistNote:  (noteId: number) => del(`/api/therapy/notes/${noteId}`),
-  getConceptualization: (clientId: number) => get<any | null>(`/api/therapy/conceptualization/${clientId}`),
-  saveConceptualization:(clientId: number, body: any) => postJson<any>(`/api/therapy/conceptualization/${clientId}`, body),
+  getConceptualization: (clientId: number) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
+  saveConceptualization: (clientId: number, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
   updateSessionInfo:    (clientId: number, body: any) => post(`/api/therapy/session-info/${clientId}`, body),
   getTherapyClientData: (clientId: number) => get<any>(`/api/therapy/client-data/${clientId}`),
   getTherapyClientHistory: (clientId: number) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
