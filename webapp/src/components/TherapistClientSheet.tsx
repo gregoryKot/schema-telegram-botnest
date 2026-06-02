@@ -10,7 +10,7 @@ import { ClientNotesTab } from './therapist/ClientNotesTab';
 import { ClientYSQTab } from './therapist/ClientYSQTab';
 import { useClientDetail } from './therapist/useClientDetail';
 import { useAddClient } from './therapist/useAddClient';
-import { ModeMapEditor } from './ModeMapEditor';
+import { ModeMapSelector } from './ModeMapSelector';
 
 interface Props {
   view: 'list' | 'client';
@@ -1121,11 +1121,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                 height: 'calc(100vh - 130px)',
                 flexDirection: 'column',
               }}>
-                <ModeMapEditor
-                  key={selectedClient.telegramId}
-                  clientId={selectedClient.telegramId}
-                  initial={concept ?? null}
-                />
+                <ModeMapSelector key={selectedClient.telegramId} clientId={selectedClient.telegramId} />
               </div>
             )}
 

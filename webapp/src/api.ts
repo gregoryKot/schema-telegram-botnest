@@ -60,6 +60,20 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
+async function patchJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetchWithTimeout(`${BASE}${path}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let msg = `API error: ${res.status}`;
+    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch {}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
 async function del(path: string): Promise<void> {
   const res = await fetchWithTimeout(`${BASE}${path}`, { method: 'DELETE', headers: authHeaders() });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -165,13 +179,16 @@ export interface ModeMapNode {
   type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom';
   position: { x: number; y: number };
   data: {
-    modeId?: string;       // id из MODE_GROUPS, или отсутствует у custom/trigger
-    label: string;         // переопределённое имя или оригинальное
-    note?: string;         // заметка терапевта
-    unmetNeed?: string;    // актуально для детских режимов
-    customColor?: string;  // hex, переопределяет цвет по умолчанию
-    filled?: boolean;      // более насыщенная заливка
+    modeId?: string;
+    label: string;
+    note?: string;
+    unmetNeed?: string;
+    customColor?: string;
+    filled?: boolean;
+    fillFull?: boolean;   // 100% непрозрачная заливка
   };
+  width?: number;
+  height?: number;
 }
 
 export type EdgeType = 'activates' | 'protects' | 'suppresses' | 'leads_to';
@@ -181,7 +198,19 @@ export interface ModeMapEdge {
   source: string;
   target: string;
   label?: string;
-  data?: { edgeType?: EdgeType };
+  data?: { edgeType?: EdgeType; bidirectional?: boolean };
+}
+
+export interface ModeMapMeta {
+  id: number;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ModeMapFull extends ModeMapMeta {
+  nodes: ModeMapNode[];
+  edges: ModeMapEdge[];
 }
 
 export interface ClientConceptualization {
@@ -321,4 +350,10 @@ export const api = {
   getClientModeNotes:   (clientId: number) => get<any[]>(`/api/therapy/client/${clientId}/mode-notes`),
   getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
   submitBooking:        (body: { name: string; contact: string; message?: string }) => postJson<{ ok: true }>('/api/booking', body),
+  // Mode Maps
+  listModeMaps:   (clientId: number) => get<ModeMapMeta[]>(`/api/therapy/mode-maps/${clientId}`),
+  getModeMap:     (mapId: number)    => get<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`),
+  createModeMap:  (clientId: number, title: string) => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title }),
+  updateModeMap:  (mapId: number, body: Partial<Pick<ModeMapFull, 'title' | 'nodes' | 'edges'>>) => patchJson<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`, body),
+  deleteModeMap:  (mapId: number) => del(`/api/therapy/mode-maps/map/${mapId}`),
 };

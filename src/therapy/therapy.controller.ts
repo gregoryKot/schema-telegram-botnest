@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, HttpException, Logger, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, HttpException, Logger, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { timingSafeEqual } from 'crypto';
 import { Request } from 'express';
@@ -331,5 +331,54 @@ export class TherapyController {
       throw new BadRequestException('invalid modeMapEdges');
     try { return await this.therapyService.saveConceptualization(uid(req), parseId(clientId), body); }
     catch (e: any) { if (e?.message === 'No active relation') throw new ForbiddenException('No active relation with this client'); throw e; }
+  }
+
+  // ─── Mode Maps ───────────────────────────────────────────────────────────────
+
+  @Get('mode-maps/:clientId')
+  async listModeMaps(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    const role = await this.botService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try { return await this.therapyService.listModeMaps(uid(req), parseId(clientId)); }
+    catch (e: any) { if (e?.message === 'No active relation') throw new ForbiddenException(); throw e; }
+  }
+
+  @Get('mode-maps/map/:mapId')
+  async getModeMap(@Req() req: AuthRequest, @Param('mapId') mapId: string) {
+    const role = await this.botService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try { return await this.therapyService.getModeMap(uid(req), parseId(mapId)); }
+    catch (e: any) { if (e?.message === 'Not found') throw new ForbiddenException(); throw e; }
+  }
+
+  @Post('mode-maps/:clientId')
+  async createModeMap(@Req() req: AuthRequest, @Param('clientId') clientId: string, @Body() body: { title?: string }) {
+    const role = await this.botService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    const title = (body.title ?? 'Карта режимов').slice(0, 120);
+    try { return await this.therapyService.createModeMap(uid(req), parseId(clientId), title); }
+    catch (e: any) { if (e?.message === 'No active relation') throw new ForbiddenException(); throw e; }
+  }
+
+  @Patch('mode-maps/map/:mapId')
+  async updateModeMap(@Req() req: AuthRequest, @Param('mapId') mapId: string, @Body() body: {
+    title?: string; nodes?: unknown[]; edges?: unknown[];
+  }) {
+    const role = await this.botService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    if (body.nodes !== undefined && (!Array.isArray(body.nodes) || body.nodes.length > 200))
+      throw new BadRequestException('invalid nodes');
+    if (body.edges !== undefined && (!Array.isArray(body.edges) || body.edges.length > 500))
+      throw new BadRequestException('invalid edges');
+    try { return await this.therapyService.updateModeMap(uid(req), parseId(mapId), body); }
+    catch (e: any) { if (e?.message === 'Not found') throw new ForbiddenException(); throw e; }
+  }
+
+  @Delete('mode-maps/map/:mapId')
+  async deleteModeMap(@Req() req: AuthRequest, @Param('mapId') mapId: string) {
+    const role = await this.botService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try { await this.therapyService.deleteModeMap(uid(req), parseId(mapId)); return { ok: true }; }
+    catch (e: any) { if (e?.message === 'Not found') throw new ForbiddenException(); throw e; }
   }
 }
