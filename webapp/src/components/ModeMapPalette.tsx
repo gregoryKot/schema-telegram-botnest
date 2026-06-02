@@ -14,6 +14,8 @@ const GROUP_TO_TYPE: Record<string, { type: NodeType; color: string }> = {
   healthy:                 { type: 'healthy', color: 'var(--accent-green)' },
 };
 
+export const DRAG_TYPE = 'application/modemap-node';
+
 interface Props {
   onAdd: (node: Omit<ModeMapNode, 'position'>) => void;
 }
@@ -26,6 +28,11 @@ export function ModeMapPalette({ onAdd }: Props) {
     type,
     data: { modeId, label },
   });
+
+  const onDragStart = (e: React.DragEvent, partial: Omit<ModeMapNode, 'position'>) => {
+    e.dataTransfer.setData(DRAG_TYPE, JSON.stringify(partial));
+    e.dataTransfer.effectAllowed = 'copy';
+  };
 
   const q = search.trim().toLowerCase();
 
@@ -65,6 +72,8 @@ export function ModeMapPalette({ onAdd }: Props) {
           <div style={groupLabelStyle('rgba(var(--fg-rgb),0.35)')}>Отправная точка</div>
           <button
             onClick={() => onAdd({ id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
+            draggable
+            onDragStart={e => onDragStart(e, { id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
             style={itemStyle}
             title="Внешняя ситуация или воспоминание, запускающее цикл"
           >
@@ -94,6 +103,8 @@ export function ModeMapPalette({ onAdd }: Props) {
               <button
                 key={item.id}
                 onClick={() => onAdd(makeNode(item.id, meta.type, item.name))}
+                draggable
+                onDragStart={e => onDragStart(e, makeNode(item.id, meta.type, item.name))}
                 style={itemStyle}
                 title={item.short}
               >
@@ -116,6 +127,8 @@ export function ModeMapPalette({ onAdd }: Props) {
           <div style={groupLabelStyle('var(--accent)')}>Свой режим</div>
           <button
             onClick={() => onAdd({ id: `custom_${Date.now()}`, type: 'custom', data: { label: 'Мой режим' } })}
+            draggable
+            onDragStart={e => onDragStart(e, { id: `custom_${Date.now()}`, type: 'custom', data: { label: 'Мой режим' } })}
             style={itemStyle}
           >
             <span style={{ fontSize: 14 }}>＋</span>
