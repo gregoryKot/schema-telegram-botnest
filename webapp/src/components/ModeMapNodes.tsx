@@ -106,7 +106,29 @@ function makeRectNode(defaultColor: string, radius: number | string = 10, usePen
   };
 }
 
-export const CriticModeNode  = makeRectNode(TYPE_COLORS.critic,  3);
+// Critic: chamfered octagon — rigid, institutional, cuts all corners
+export const CriticModeNode = function CriticModeNode({ data, selected }: NodeProps) {
+  const d = data as unknown as ModeNodeData;
+  const color = d.customColor ?? TYPE_COLORS.critic;
+  const light = !!d.fillFull;
+  return (
+    <div style={{ width: '100%', height: '100%', minWidth: 110, minHeight: 50, position: 'relative' }}>
+      <NodeResizer minWidth={80} minHeight={40} isVisible={!!selected} color={color} />
+      <AllHandles />
+      <div style={{
+        width: '100%', height: '100%',
+        clipPath: 'polygon(14% 0%,86% 0%,100% 14%,100% 86%,86% 100%,14% 100%,0% 86%,0% 14%)',
+        background: bgColor(color, d.filled, d.fillFull),
+        border: `2px solid ${selected ? 'var(--accent)' : color}`,
+        boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+        padding: '10% 12%',
+      }}>
+        <NodeLabel label={d.label} note={d.note} light={light} />
+      </div>
+    </div>
+  );
+};
 export const HealthyModeNode = makeRectNode(TYPE_COLORS.healthy, 10);
 export const CustomModeNode  = makeRectNode(TYPE_COLORS.custom,  10);
 
@@ -171,6 +193,13 @@ export const TriggerNode = function TriggerNode({ data, selected }: NodeProps) {
       </div>
     </div>
   );
+};
+
+// Default node dimensions — ensures circles start square, cloud has landscape ratio
+export const NODE_DEFAULT_SIZES: Partial<Record<string, { width: number; height: number }>> = {
+  child:   { width: 130, height: 130 },
+  trigger: { width: 160, height: 90  },
+  coping:  { width: 130, height: 100 },
 };
 
 export const NODE_TYPES = {

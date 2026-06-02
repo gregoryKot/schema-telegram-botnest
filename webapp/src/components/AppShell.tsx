@@ -178,6 +178,7 @@ export function AppShell() {
 
   // Therapist clients (for sidebar)
   const [therapistClients, setTherapistClients] = useState<TherapyClientSummary[]>([]);
+  const [clientSearch, setClientSearch] = useState('');
 
   // Therapist cabinet navigation helpers (URL-based)
   const therapistBackHandlerRef = useRef<() => void>(() => navigate('/cabinet'));
@@ -379,17 +380,39 @@ export function AppShell() {
             </NavLink>
             {therapistClients.length > 0 && (
               <div className="sb-clients">
-                {therapistClients.map(c => {
-                  const name = c.clientAlias ?? c.name ?? `#${c.telegramId}`;
-                  const activeToday = c.todayIndex != null;
-                  return (
-                    <NavLink key={c.telegramId} to={`/cabinet/${c.telegramId}`}
-                             className={({ isActive }) => `sb-item sb-client-item${isActive ? ' is-active' : ''}`}>
-                      {activeToday && <span className="sb-active-dot" />}
-                      <span className="sb-client-name">{name}</span>
-                    </NavLink>
-                  );
-                })}
+                {therapistClients.length > 4 && (
+                  <div style={{ padding: '4px 12px 6px' }}>
+                    <input
+                      value={clientSearch}
+                      onChange={e => setClientSearch(e.target.value)}
+                      placeholder="Поиск клиента…"
+                      style={{
+                        width: '100%', padding: '5px 9px', borderRadius: 6,
+                        border: '1px solid rgba(var(--fg-rgb),0.13)',
+                        background: 'rgba(var(--fg-rgb),0.05)',
+                        color: 'var(--text)', fontSize: 12.5, outline: 'none',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                )}
+                {therapistClients
+                  .filter(c => {
+                    if (!clientSearch.trim()) return true;
+                    const name = (c.clientAlias ?? c.name ?? '').toLowerCase();
+                    return name.includes(clientSearch.toLowerCase());
+                  })
+                  .map(c => {
+                    const name = c.clientAlias ?? c.name ?? `#${c.telegramId}`;
+                    const activeToday = c.todayIndex != null;
+                    return (
+                      <NavLink key={c.telegramId} to={`/cabinet/${c.telegramId}`}
+                               className={({ isActive }) => `sb-item sb-client-item${isActive ? ' is-active' : ''}`}>
+                        {activeToday && <span className="sb-active-dot" />}
+                        <span className="sb-client-name">{name}</span>
+                      </NavLink>
+                    );
+                  })}
               </div>
             )}
           </>)}
