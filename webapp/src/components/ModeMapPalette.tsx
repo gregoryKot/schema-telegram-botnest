@@ -37,6 +37,7 @@ export function ModeMapPalette({ onAdd, clientId }: Props) {
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
   const [customModes, setCustomModes] = useState<TherapistCustomMode[]>([]);
   const [clientModeIds, setClientModeIds] = useState<string[]>([]);
+  const [clientOpen, setClientOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmoji, setNewEmoji] = useState('⬡');
@@ -108,13 +109,16 @@ export function ModeMapPalette({ onAdd, clientId }: Props) {
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {/* Client's identified modes (from conceptualization) */}
+        {/* Client's identified modes (from conceptualization) — collapsible */}
         {!q && clientModeIds.length > 0 && (
-          <div style={{ background: 'var(--accent-soft)', paddingBottom: 4 }}>
-            <div style={{ padding: '7px 12px 4px', fontSize: 11, fontWeight: 600, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 5 }}>
-              ★ Режимы клиента
-            </div>
-            {clientModeIds.map(modeId => {
+          <div style={{ background: clientOpen ? 'var(--accent-soft)' : 'none', paddingBottom: clientOpen ? 4 : 0 }}>
+            <button onClick={() => setClientOpen(o => !o)}
+              style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '7px 12px',
+                background: 'none', border: 'none', cursor: 'pointer' }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', flex: 1, textAlign: 'left' }}>★ Режимы клиента</span>
+              <span style={{ fontSize: 10, color: 'var(--accent)' }}>{clientOpen ? '▲' : `▼ ${clientModeIds.length}`}</span>
+            </button>
+            {clientOpen && clientModeIds.map(modeId => {
               const meta = findModeMeta(modeId);
               const lib = getModeById(modeId);
               if (!meta && !lib) return null;

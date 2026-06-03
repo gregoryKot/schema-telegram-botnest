@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ReactFlow, Background, BackgroundVariant, MiniMap, Panel,
+  ReactFlow, Background, BackgroundVariant, Panel,
   addEdge, reconnectEdge, useReactFlow, ConnectionMode,
   type Connection, type NodeTypes, type Viewport,
   type useNodesState, type useEdgesState,
@@ -45,10 +45,15 @@ export function ModeMapCanvas({ clientId, mapId, nodes, edges, setNodes, setEdge
   const { screenToFlowPosition, zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
 
   const [snap, setSnap] = useState(false);
-  const [showLegend, setShowLegend] = useState(false);
+  const [showLegend, setShowLegend] = useState(() => localStorage.getItem('modemap_legend') === '1');
   const [tplOpen, setTplOpen] = useState(false);
+  const [dlOpen, setDlOpen] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const edgeReconnectOk = useRef(true);
+
+  const toggleLegend = useCallback(() => {
+    setShowLegend(s => { localStorage.setItem('modemap_legend', s ? '0' : '1'); return !s; });
+  }, []);
 
   // ── Viewport persistence (per map, localStorage) ────────────────────────────
   const vpKey = `modemap_vp_${mapId}`;
@@ -277,29 +282,29 @@ export function ModeMapCanvas({ clientId, mapId, nodes, edges, setNodes, setEdge
         nodesDraggable nodeDragThreshold={1}
       >
         <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.18)" gap={snap ? 20 : 22} size={1.5} />
-        <MiniMap style={{ background: 'var(--bg-elev)' }} nodeColor={() => 'rgba(var(--fg-rgb),0.15)'} pannable zoomable />
 
-        {/* Toolbar */}
+        {/* Toolbar — icons for universal actions, text labels for the rest */}
         <Panel position="top-left">
-          <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 9, alignItems: 'center',
+          <div style={{ display: 'flex', gap: 3, padding: 4, borderRadius: 9, alignItems: 'center', flexWrap: 'wrap',
             background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', maxWidth: 'calc(100vw - 480px)' }}>
+            {/* History */}
             <TbBtn label="Отменить (⌘Z)" disabled={!canUndo} onClick={onUndo}>↶</TbBtn>
             <TbBtn label="Вернуть (⌘⇧Z)" disabled={!canRedo} onClick={onRedo}>↷</TbBtn>
             <TbSep />
-            <TbBtn label="Приблизить" onClick={() => zoomIn()}>＋</TbBtn>
+            {/* Zoom */}
             <TbBtn label="Отдалить" onClick={() => zoomOut()}>－</TbBtn>
+            <TbBtn label="Приблизить" onClick={() => zoomIn()}>＋</TbBtn>
             <TbBtn label="Показать всё" onClick={() => fitView({ padding: 0.2 })}>⤢</TbBtn>
             <TbSep />
-            <TbBtn label="Авто-расположение" onClick={onAutoLayout} disabled={nodes.length === 0}>↺</TbBtn>
-            <TbBtn label="Привязка к сетке" onClick={() => setSnap(s => !s)} active={snap}>▦</TbBtn>
+            {/* Tools with labels */}
+            <TbText label="Разложить" title="Авто-расположение графа" icon="↻" onClick={onAutoLayout} disabled={nodes.length === 0} />
+            <TbText label="Сетка" title="Привязка к сетке" icon="▦" onClick={() => setSnap(s => !s)} active={snap} />
             <div style={{ position: 'relative' }}>
-              <TbBtn label="Шаблоны / генерация" onClick={() => setTplOpen(o => !o)} active={tplOpen}>＋▾</TbBtn>
+              <TbText label="Добавить" title="Шаблоны и генерация" icon="✚" onClick={() => { setTplOpen(o => !o); setDlOpen(false); }} active={tplOpen} caret />
               {tplOpen && (
-                <div style={{ position: 'absolute', top: 36, left: 0, zIndex: 20, minWidth: 220,
-                  background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 8,
-                  padding: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.16)' }}>
-                  <div style={{ padding: '4px 8px', fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase' }}>Шаблоны</div>
+                <Dropdown onClose={() => setTplOpen(false)}>
+                  <div style={dropHeadStyle}>Шаблоны</div>
                   {TEMPLATES.map(t => (
                     <button key={t.id} onClick={() => { const g = templateToGraph(t); insertGraph(g.nodes, g.edges); setTplOpen(false); }}
                       style={menuItemStyle}>{t.name}</button>
@@ -308,19 +313,27 @@ export function ModeMapCanvas({ clientId, mapId, nodes, edges, setNodes, setEdge
                   <button onClick={() => { onGenerateFromConcept(); setTplOpen(false); }} style={menuItemStyle}>
                     ✨ Из концептуализации клиента
                   </button>
-                </div>
+                </Dropdown>
               )}
             </div>
-            <TbBtn label="Легенда" onClick={() => setShowLegend(s => !s)} active={showLegend}>ⓘ</TbBtn>
+            <TbText label="Легенда" title="Расшифровка форм и цветов" icon="ⓘ" onClick={toggleLegend} active={showLegend} />
             <TbSep />
-            <TbBtn label="Скачать PNG" onClick={onExportPng} disabled={exporting || nodes.length === 0}>⤓</TbBtn>
-            <TbBtn label="Скачать PDF" onClick={onExportPdf} disabled={exporting || nodes.length === 0}>📄</TbBtn>
+            <div style={{ position: 'relative' }}>
+              <TbText label="Скачать" title="Скачать карту" icon="⬇" onClick={() => { setDlOpen(o => !o); setTplOpen(false); }}
+                active={dlOpen} caret disabled={nodes.length === 0} />
+              {dlOpen && (
+                <Dropdown onClose={() => setDlOpen(false)}>
+                  <button disabled={exporting} onClick={() => { onExportPng(); setDlOpen(false); }} style={menuItemStyle}>🖼 Картинка PNG</button>
+                  <button disabled={exporting} onClick={() => { onExportPdf(); setDlOpen(false); }} style={menuItemStyle}>📄 Документ PDF</button>
+                </Dropdown>
+              )}
+            </div>
           </div>
         </Panel>
 
         {showLegend && (
           <Panel position="bottom-left">
-            <ModeMapLegend onClose={() => setShowLegend(false)} />
+            <ModeMapLegend onClose={toggleLegend} />
           </Panel>
         )}
       </ReactFlow>
@@ -354,3 +367,37 @@ function TbBtn({ children, label, onClick, disabled, active }: {
 function TbSep() {
   return <div style={{ width: 1, background: 'rgba(var(--fg-rgb),0.1)', margin: '4px 2px' }} />;
 }
+
+// Labeled toolbar button (icon + text) — clearer than icon-only
+function TbText({ icon, label, title, onClick, disabled, active, caret }: {
+  icon: string; label: string; title: string; onClick: () => void; disabled?: boolean; active?: boolean; caret?: boolean;
+}) {
+  return (
+    <button onClick={onClick} disabled={disabled} title={title}
+      style={{ height: 30, padding: '0 9px', borderRadius: 6, border: 'none', cursor: disabled ? 'default' : 'pointer',
+        background: active ? 'var(--accent-soft)' : 'none', fontSize: 12.5, lineHeight: 1, whiteSpace: 'nowrap',
+        color: disabled ? 'var(--text-ghost)' : active ? 'var(--accent)' : 'var(--text-sub)',
+        display: 'flex', alignItems: 'center', gap: 5 }}
+      onMouseEnter={e => { if (!disabled && !active) e.currentTarget.style.background = 'rgba(var(--fg-rgb),0.07)'; }}
+      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'none'; }}>
+      <span style={{ fontSize: 14 }}>{icon}</span>{label}{caret && <span style={{ fontSize: 9, opacity: 0.7 }}>▾</span>}
+    </button>
+  );
+}
+
+function Dropdown({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 19 }} />
+      <div style={{ position: 'absolute', top: 36, left: 0, zIndex: 20, minWidth: 210,
+        background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 8,
+        padding: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.16)' }}>
+        {children}
+      </div>
+    </>
+  );
+}
+
+const dropHeadStyle: React.CSSProperties = {
+  padding: '4px 8px', fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase',
+};
