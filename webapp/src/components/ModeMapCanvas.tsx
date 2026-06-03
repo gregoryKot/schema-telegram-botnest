@@ -5,7 +5,7 @@ import {
   type Connection, type NodeTypes, type Viewport,
   type useNodesState, type useEdgesState,
 } from '@xyflow/react';
-import type { ModeMapNode, ModeMapEdge } from '../api';
+import type { ModeMapNode, ModeMapEdge, ModeMapKind } from '../api';
 import { api } from '../api';
 import { NODE_TYPES, NODE_DEFAULT_SIZES } from './ModeMapNodes';
 import { EDGE_TYPES } from './ModeMapFloatingEdge';
@@ -13,6 +13,7 @@ import { DRAG_TYPE, GROUP_TO_TYPE } from './ModeMapPalette';
 import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
 import { ModeMapContextMenu, type MenuItem } from './ModeMapContextMenu';
 import { ModeMapLegend } from './ModeMapLegend';
+import { ModeMapGuide } from './ModeMapGuide';
 import { NodeActionsContext, type NodeActions } from './modeMapActions';
 import { autoLayout, TEMPLATES, templateToGraph } from './modeMapLayout';
 import {
@@ -22,7 +23,7 @@ import {
 import { useModeMapExport } from './useModeMapExport';
 
 export interface CanvasProps {
-  clientId: number; mapId: number;
+  clientId: number; mapId: number; kind: ModeMapKind;
   nodes: FlowNode[]; edges: FlowEdge[];
   setNodes: ReturnType<typeof useNodesState<FlowNode>>[1];
   setEdges: ReturnType<typeof useEdgesState<FlowEdge>>[1];
@@ -39,13 +40,14 @@ export interface CanvasProps {
   canUndo: boolean; canRedo: boolean;
 }
 
-export function ModeMapCanvas({ clientId, mapId, nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange,
+export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange,
   setSelectedNodeId, setSelectedEdgeId, saveStatus, scheduleSave,
   pushHistory, nodesRef, edgesRef, onUndo, onRedo, canUndo, canRedo }: CanvasProps) {
   const { screenToFlowPosition, zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
 
   const [snap, setSnap] = useState(false);
   const [showLegend, setShowLegend] = useState(() => localStorage.getItem('modemap_legend') === '1');
+  const [showGuide, setShowGuide] = useState(() => localStorage.getItem('modemap_guide') !== '0');
   const [tplOpen, setTplOpen] = useState(false);
   const [dlOpen, setDlOpen] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
@@ -53,6 +55,9 @@ export function ModeMapCanvas({ clientId, mapId, nodes, edges, setNodes, setEdge
 
   const toggleLegend = useCallback(() => {
     setShowLegend(s => { localStorage.setItem('modemap_legend', s ? '0' : '1'); return !s; });
+  }, []);
+  const toggleGuide = useCallback(() => {
+    setShowGuide(s => { localStorage.setItem('modemap_guide', s ? '0' : '1'); return !s; });
   }, []);
 
   // ── Viewport persistence (per map, localStorage) ────────────────────────────
@@ -316,6 +321,7 @@ export function ModeMapCanvas({ clientId, mapId, nodes, edges, setNodes, setEdge
                 </Dropdown>
               )}
             </div>
+            <TbText label="Подсказки" title="Клиническая цепочка и советы" icon="💡" onClick={toggleGuide} active={showGuide} />
             <TbText label="Легенда" title="Расшифровка форм и цветов" icon="ⓘ" onClick={toggleLegend} active={showLegend} />
             <TbSep />
             <div style={{ position: 'relative' }}>
@@ -334,6 +340,11 @@ export function ModeMapCanvas({ clientId, mapId, nodes, edges, setNodes, setEdge
         {showLegend && (
           <Panel position="bottom-left">
             <ModeMapLegend onClose={toggleLegend} />
+          </Panel>
+        )}
+        {showGuide && (
+          <Panel position="bottom-right">
+            <ModeMapGuide nodes={nodes} edges={edges} kind={kind} onClose={toggleGuide} />
           </Panel>
         )}
       </ReactFlow>
