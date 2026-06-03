@@ -203,6 +203,8 @@ export interface ModeMapNode {
 
 export type EdgeType = 'activates' | 'protects' | 'suppresses' | 'leads_to';
 
+export type LineStyle = 'solid' | 'dashed' | 'dotted';
+
 export interface ModeMapEdge {
   id: string;
   source: string;
@@ -210,7 +212,7 @@ export interface ModeMapEdge {
   sourceHandle?: string | null;
   targetHandle?: string | null;
   label?: string;
-  data?: { edgeType?: EdgeType; bidirectional?: boolean; color?: string };
+  data?: { edgeType?: EdgeType; bidirectional?: boolean; color?: string; lineStyle?: LineStyle };
 }
 
 export interface ModeMapMeta {

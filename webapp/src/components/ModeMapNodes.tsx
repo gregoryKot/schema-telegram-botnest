@@ -100,15 +100,23 @@ function SvgShapeNode({ data, selected, color, svgPath, textPadding, minW = 110,
   );
 }
 
-// ── Rect-based nodes (rectangle, no clip-path) ────────────────────────────────
+// ── Rect-based nodes (rectangle) — auto-fit to text, or fixed when resized ────
+// If the node has explicit width (user dragged the resizer once → persisted),
+// fill it; otherwise size to content (max-content) so the box hugs the text.
 function makeRectNode(defaultColor: string, radius = 10) {
-  return function ModeNode({ data, selected }: NodeProps) {
+  return function ModeNode({ data, selected, width }: NodeProps) {
     const d = data as unknown as ModeNodeData;
     const color = d.customColor ?? defaultColor;
     const light = !!d.fillFull;
+    const sized = typeof width === 'number' && (d as { _resized?: boolean })._resized === true;
     return (
-      <div style={{ width: '100%', height: '100%', minWidth: 110, minHeight: 44, position: 'relative' }}>
-        <NodeResizer minWidth={80} minHeight={36} isVisible={!!selected} color={color} />
+      <div style={{
+        position: 'relative',
+        width: sized ? '100%' : 'max-content',
+        height: sized ? '100%' : 'auto',
+        minWidth: 110, maxWidth: sized ? undefined : 240, minHeight: 40,
+      }}>
+        <NodeResizer minWidth={90} minHeight={40} isVisible={!!selected} color={color} />
         <AllHandles />
         <div style={{
           width: '100%', height: '100%', borderRadius: radius,
@@ -116,7 +124,7 @@ function makeRectNode(defaultColor: string, radius = 10) {
           border: `2px solid ${selected ? 'var(--accent)' : color}`,
           boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          overflow: 'hidden', padding: '10px 14px',
+          overflow: 'hidden', padding: '10px 16px', boxSizing: 'border-box',
         }}>
           <NodeLabel label={d.label} note={d.note} unmetNeed={d.unmetNeed} light={light} />
         </div>

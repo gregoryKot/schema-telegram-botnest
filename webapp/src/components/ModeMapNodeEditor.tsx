@@ -10,6 +10,13 @@ const EDGE_TYPE_LABELS: Record<string, string> = {
   leads_to:   'ведёт к',
 };
 
+const EDGE_TYPE_COLORS: Record<string, string> = {
+  activates:  'rgba(var(--fg-rgb),0.45)',
+  protects:   'var(--accent-green)',
+  suppresses: 'var(--accent-red)',
+  leads_to:   'var(--accent-orange)',
+};
+
 const COLOR_PRESETS = [
   '#7aa3d4','#d47a7a','#d4a07a','#7ab87a',
   '#9f7ad4','#b07ab8','#7ab8b0','#94a3b8',
@@ -183,18 +190,44 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap }: EdgeEdit
     <div style={panelStyle}>
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Связь</div>
 
-      <label style={labelStyle}>Тип связи</label>
+      <label style={labelStyle}>Тип связи (задаёт цвет)</label>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
         {Object.entries(EDGE_TYPE_LABELS).map(([k, v]) => (
           <button key={k}
             onClick={() => onChange({ ...edge, data: { ...edge.data, edgeType: k as EdgeType } })}
-            style={{ padding: '7px 12px', borderRadius: 6, textAlign: 'left', fontSize: 12.5, cursor: 'pointer',
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 6, textAlign: 'left', fontSize: 12.5, cursor: 'pointer',
               border: `1px solid ${edgeType === k ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)'}`,
               background: edgeType === k ? 'var(--accent-soft)' : 'none',
               color: edgeType === k ? 'var(--accent)' : 'var(--text-sub)' }}>
+            <span style={{ width: 16, height: 3, borderRadius: 2, background: EDGE_TYPE_COLORS[k], flexShrink: 0 }} />
             {v}
           </button>
         ))}
+      </div>
+
+      <label style={labelStyle}>Стиль линии</label>
+      <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
+        {([
+          { k: 'solid'  as const, label: 'Сплошная', dash: 'none' },
+          { k: 'dashed' as const, label: 'Пунктир',  dash: '6 4' },
+          { k: 'dotted' as const, label: 'Точки',    dash: '1.5 4' },
+        ]).map(opt => {
+          const active = (edge.data?.lineStyle ?? 'solid') === opt.k;
+          return (
+            <button key={opt.k} onClick={() => onChange({ ...edge, data: { ...edge.data, lineStyle: opt.k } })}
+              title={opt.label}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                padding: '7px 4px', borderRadius: 6, cursor: 'pointer',
+                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                background: active ? 'var(--accent-soft)' : 'none' }}>
+              <svg width={36} height={6} viewBox="0 0 36 6">
+                <line x1={1} y1={3} x2={35} y2={3} stroke={active ? 'var(--accent)' : 'var(--text-sub)'}
+                  strokeWidth={2} strokeDasharray={opt.dash === 'none' ? undefined : opt.dash} strokeLinecap="round" />
+              </svg>
+              <span style={{ fontSize: 9, color: active ? 'var(--accent)' : 'var(--text-faint)' }}>{opt.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <label style={labelStyle}>Направление</label>
