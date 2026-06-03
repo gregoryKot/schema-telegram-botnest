@@ -215,9 +215,12 @@ export interface ModeMapEdge {
   data?: { edgeType?: EdgeType; bidirectional?: boolean; color?: string; lineStyle?: LineStyle };
 }
 
+export type ModeMapKind = 'personality' | 'problem';
+
 export interface ModeMapMeta {
   id: number;
   title: string;
+  kind: ModeMapKind;
   createdAt: string;
   updatedAt: string;
 }
@@ -371,7 +374,7 @@ export const api = {
   // Mode Maps
   listModeMaps:   (clientId: number) => get<ModeMapMeta[]>(`/api/therapy/mode-maps/${clientId}`),
   getModeMap:     (mapId: number)    => get<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`),
-  createModeMap:  (clientId: number, title: string) => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title }),
+  createModeMap:  (clientId: number, title: string, kind: ModeMapKind = 'problem') => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title, kind }),
   updateModeMap:  (mapId: number, body: Partial<Pick<ModeMapFull, 'title' | 'nodes' | 'edges'>>) => patchJson<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`, body),
   deleteModeMap:  (mapId: number) => del(`/api/therapy/mode-maps/map/${mapId}`),
 };

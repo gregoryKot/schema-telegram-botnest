@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, type ModeMapMeta, type ModeMapFull } from '../api';
+import { api, type ModeMapMeta, type ModeMapFull, type ModeMapKind } from '../api';
 import { ModeMapEditor } from './ModeMapEditor';
 
 interface Props {
   clientId: number;
 }
+
+const KIND_META: Record<ModeMapKind, { icon: string; label: string; hint: string }> = {
+  personality: { icon: '🧭', label: 'Карта личности', hint: 'Все основные режимы человека на одной странице — для общей ориентации' },
+  problem:     { icon: '🎯', label: 'Карта проблемы', hint: 'Конкретная цепочка: триггер → режимы → последствия' },
+};
 
 export function ModeMapSelector({ clientId }: Props) {
   const [maps, setMaps] = useState<ModeMapMeta[]>([]);
@@ -12,6 +17,7 @@ export function ModeMapSelector({ clientId }: Props) {
   const [activeMap, setActiveMap] = useState<ModeMapFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [pickKind, setPickKind] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const titleRef = useRef<HTMLInputElement>(null);
@@ -38,11 +44,12 @@ export function ModeMapSelector({ clientId }: Props) {
     } finally { setLoading(false); }
   }
 
-  async function createMap() {
-    setCreating(true);
+  async function createMap(kind: ModeMapKind) {
+    setCreating(true); setPickKind(false);
     try {
-      const m = await api.createModeMap(clientId, `Карта ${maps.length + 1}`);
-      setMaps(prev => [...prev, { id: m.id, title: m.title, createdAt: m.createdAt, updatedAt: m.updatedAt }]);
+      const title = kind === 'personality' ? 'Карта личности' : `Проблема ${maps.filter(m => m.kind === 'problem').length + 1}`;
+      const m = await api.createModeMap(clientId, title, kind);
+      setMaps(prev => [...prev, { id: m.id, title: m.title, kind: m.kind, createdAt: m.createdAt, updatedAt: m.updatedAt }]);
       setActiveId(m.id);
       setActiveMap(m);
     } finally { setCreating(false); }
@@ -106,14 +113,16 @@ export function ModeMapSelector({ clientId }: Props) {
                 <button
                   onClick={() => selectMap(m.id)}
                   onDoubleClick={() => startEdit(m)}
-                  title="Двойной клик — переименовать"
+                  title={`${KIND_META[m.kind]?.label ?? ''} · двойной клик — переименовать`}
                   style={{
                     padding: maps.length > 1 && activeId === m.id ? '4px 6px 4px 12px' : '4px 12px',
                     fontSize: 13, fontWeight: activeId === m.id ? 600 : 400,
                     cursor: 'pointer', whiteSpace: 'nowrap', background: 'none',
                     border: 'none', color: activeId === m.id ? 'var(--text)' : 'var(--text-sub)',
+                    display: 'flex', alignItems: 'center', gap: 5,
                   }}
                 >
+                  <span style={{ fontSize: 12 }}>{KIND_META[m.kind]?.icon ?? '🗺️'}</span>
                   {m.title}
                 </button>
                 {maps.length > 1 && activeId === m.id && (
@@ -130,14 +139,39 @@ export function ModeMapSelector({ clientId }: Props) {
             )}
           </div>
         ))}
-        <button onClick={createMap} disabled={creating}
-          style={{
-            padding: '4px 10px', borderRadius: 7, fontSize: 12.5, cursor: 'pointer', flexShrink: 0,
-            border: '1px dashed rgba(var(--fg-rgb),0.18)', background: 'none',
-            color: 'var(--text-faint)', whiteSpace: 'nowrap', marginLeft: 2,
-          }}>
-          {creating ? '…' : '+ Новая карта'}
-        </button>
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button onClick={() => setPickKind(o => !o)} disabled={creating}
+            style={{
+              padding: '4px 10px', borderRadius: 7, fontSize: 12.5, cursor: 'pointer',
+              border: '1px dashed rgba(var(--fg-rgb),0.18)', background: pickKind ? 'var(--accent-soft)' : 'none',
+              color: pickKind ? 'var(--accent)' : 'var(--text-faint)', whiteSpace: 'nowrap', marginLeft: 2,
+            }}>
+            {creating ? '…' : '+ Новая карта ▾'}
+          </button>
+          {pickKind && (
+            <>
+              <div onClick={() => setPickKind(false)} style={{ position: 'fixed', inset: 0, zIndex: 30 }} />
+              <div style={{
+                position: 'absolute', top: 34, left: 2, zIndex: 31, width: 260,
+                background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 8,
+                padding: 5, boxShadow: '0 4px 16px rgba(0,0,0,0.16)',
+              }}>
+                {(['personality', 'problem'] as ModeMapKind[]).map(k => (
+                  <button key={k} onClick={() => createMap(k)}
+                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px',
+                      borderRadius: 6, cursor: 'pointer', background: 'none', border: 'none' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--fg-rgb),0.06)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                      <span>{KIND_META[k].icon}</span>{KIND_META[k].label}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.35 }}>{KIND_META[k].hint}</div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Editor area */}
@@ -151,12 +185,20 @@ export function ModeMapSelector({ clientId }: Props) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12 }}>
             <div style={{ fontSize: 32 }}>🗺️</div>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Нет карт режимов</div>
-            <button onClick={createMap} style={{
-              padding: '10px 24px', borderRadius: 8, fontSize: 14, cursor: 'pointer',
-              background: 'var(--accent)', color: '#fff', border: 'none', fontWeight: 500,
-            }}>
-              Создать первую карту
-            </button>
+            <div style={{ fontSize: 13, color: 'var(--text-sub)', maxWidth: 360, textAlign: 'center', lineHeight: 1.45 }}>
+              Выбери тип первой карты
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+              {(['personality', 'problem'] as ModeMapKind[]).map(k => (
+                <button key={k} onClick={() => createMap(k)} disabled={creating}
+                  style={{ width: 200, padding: '14px 16px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                    background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)' }}>
+                  <div style={{ fontSize: 22, marginBottom: 6 }}>{KIND_META[k].icon}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{KIND_META[k].label}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 5, lineHeight: 1.4 }}>{KIND_META[k].hint}</div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {!loading && activeMap && (

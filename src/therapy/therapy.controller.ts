@@ -377,11 +377,11 @@ export class TherapyController {
   }
 
   @Post('mode-maps/:clientId')
-  async createModeMap(@Req() req: AuthRequest, @Param('clientId') clientId: string, @Body() body: { title?: string }) {
+  async createModeMap(@Req() req: AuthRequest, @Param('clientId') clientId: string, @Body() body: { title?: string; kind?: string }) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     const title = (body.title ?? 'Карта режимов').slice(0, 120);
-    try { return await this.therapyService.createModeMap(uid(req), parseId(clientId), title); }
+    try { return await this.therapyService.createModeMap(uid(req), parseId(clientId), title, body.kind); }
     catch (e: any) { if (e?.message === 'No active relation') throw new ForbiddenException(); throw e; }
   }
 

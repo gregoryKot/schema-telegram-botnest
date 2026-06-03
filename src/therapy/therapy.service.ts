@@ -60,6 +60,12 @@ function decryptConceptSnapshot(snap: Record<string, any>): Record<string, any> 
   return { ...snap, ...decryptConceptFields(snap) };
 }
 
+// Declarative encryption schemas — single source of truth, so a newly added
+// free-text field can't silently end up in plaintext (just add it here).
+const MODE_MAP_SCHEMA: EncryptSchema = { strings: ['title'], jsonArrays: ['nodes', 'edges'] };
+const CUSTOM_MODE_SCHEMA: EncryptSchema = { strings: ['name'] };
+const MODE_MAP_KINDS = ['personality', 'problem'] as const;
+
 import { localDate, localMidnightUTC } from '../utils/tz';
 import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
 
@@ -790,30 +796,25 @@ export class TherapyService {
     const rows = await (this.prisma.modeMap as any).findMany({
       where: { therapistId, clientId: BigInt(clientId) },
       orderBy: { createdAt: 'asc' },
-      select: { id: true, title: true, createdAt: true, updatedAt: true },
+      select: { id: true, title: true, kind: true, createdAt: true, updatedAt: true },
     });
-    // Title can carry clinical context → encrypted (plaintext-tolerant on read)
-    return rows.map((r: any) => ({ ...r, title: decrypt(r.title) ?? r.title }));
+    return rows.map((r: any) => decryptRecord(r, MODE_MAP_SCHEMA));
   }
 
   async getModeMap(therapistId: bigint, mapId: number) {
     const row = await (this.prisma.modeMap as any).findUnique({ where: { id: mapId } });
     if (!row || row.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
-    return {
-      ...row,
-      title: decrypt(row.title) ?? row.title,
-      nodes: this.decryptMapJson(row.nodes),
-      edges: this.decryptMapJson(row.edges),
-    };
+    return decryptRecord(row, MODE_MAP_SCHEMA);
   }
 
-  async createModeMap(therapistId: bigint, clientId: number, title: string) {
+  async createModeMap(therapistId: bigint, clientId: number, title: string, kind?: string) {
     await this.assertRelation(therapistId, clientId);
+    const k = MODE_MAP_KINDS.includes(kind as any) ? kind : 'problem';
     const row = await (this.prisma.modeMap as any).create({
-      data: { therapistId, clientId: BigInt(clientId), title: encrypt(title) ?? title },
+      data: { therapistId, clientId: BigInt(clientId), kind: k, ...encryptRecord({ title }, MODE_MAP_SCHEMA) },
     });
-    return { ...row, title, nodes: [], edges: [] };
+    return decryptRecord({ ...row, nodes: [], edges: [] }, MODE_MAP_SCHEMA);
   }
 
   async updateModeMap(therapistId: bigint, mapId: number, body: {
@@ -822,17 +823,14 @@ export class TherapyService {
     const existing = await (this.prisma.modeMap as any).findUnique({ where: { id: mapId } });
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
-    const data: Record<string, unknown> = {};
-    if (body.title !== undefined) data.title = encrypt(body.title) ?? body.title;
-    if (body.nodes !== undefined) data.nodes = encryptJson(body.nodes) ?? JSON.stringify(body.nodes);
-    if (body.edges !== undefined) data.edges = encryptJson(body.edges) ?? JSON.stringify(body.edges);
-    const row = await (this.prisma.modeMap as any).update({ where: { id: mapId }, data });
-    return {
-      ...row,
-      title: decrypt(row.title) ?? row.title,
-      nodes: this.decryptMapJson(row.nodes),
-      edges: this.decryptMapJson(row.edges),
-    };
+    const fields: Record<string, unknown> = {};
+    if (body.title !== undefined) fields.title = body.title;
+    if (body.nodes !== undefined) fields.nodes = body.nodes;
+    if (body.edges !== undefined) fields.edges = body.edges;
+    const row = await (this.prisma.modeMap as any).update({
+      where: { id: mapId }, data: encryptRecord(fields, MODE_MAP_SCHEMA),
+    });
+    return decryptRecord(row, MODE_MAP_SCHEMA);
   }
 
   async deleteModeMap(therapistId: bigint, mapId: number) {
@@ -849,34 +847,25 @@ export class TherapyService {
       where: { therapistId },
       orderBy: { createdAt: 'asc' },
     });
-    return rows.map((r: any) => ({ ...r, name: decrypt(r.name) ?? r.name }));
+    return rows.map((r: any) => decryptRecord(r, CUSTOM_MODE_SCHEMA));
   }
 
   async createCustomMode(therapistId: bigint, body: { name: string; emoji?: string; nodeType?: string }) {
     const allowed = ['trigger','child','critic','coping','healthy','custom'];
     const nodeType = allowed.includes(body.nodeType ?? '') ? body.nodeType : 'custom';
-    const name = body.name.slice(0, 80);
     const row = await (this.prisma.therapistCustomMode as any).create({
       data: {
-        therapistId,
-        name: encrypt(name) ?? name,
+        therapistId, nodeType,
         emoji: (body.emoji ?? '⬡').slice(0, 8),
-        nodeType,
+        ...encryptRecord({ name: body.name.slice(0, 80) }, CUSTOM_MODE_SCHEMA),
       },
     });
-    return { ...row, name };
+    return decryptRecord(row, CUSTOM_MODE_SCHEMA);
   }
 
   async deleteCustomMode(therapistId: bigint, modeId: number) {
     await (this.prisma.therapistCustomMode as any).deleteMany({
       where: { id: modeId, therapistId },
     });
-  }
-
-  private decryptMapJson(v: unknown): unknown[] {
-    if (v == null) return [];
-    if (typeof v === 'string') return decryptJson<unknown[]>(v) ?? [];
-    if (Array.isArray(v)) return v;
-    return [];
   }
 }
