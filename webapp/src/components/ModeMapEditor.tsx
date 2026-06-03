@@ -30,6 +30,16 @@ function makeMarker(color: string) {
   return { type: MarkerType.ArrowClosed, color, width: 16, height: 16 };
 }
 
+function dashArray(style?: string): string | undefined {
+  if (style === 'dashed') return '7 5';
+  if (style === 'dotted') return '1.5 5';
+  return undefined; // solid
+}
+
+function edgeStyle(color: string, lineStyle?: string): React.CSSProperties {
+  return { stroke: color, strokeWidth: 2, strokeDasharray: dashArray(lineStyle), strokeLinecap: 'round' };
+}
+
 function toFlowEdges(edges: ModeMapEdge[]): FlowEdge[] {
   return edges.map(e => {
     const d = e.data as ModeMapEdge['data'];
@@ -40,8 +50,8 @@ function toFlowEdges(edges: ModeMapEdge[]): FlowEdge[] {
       targetHandle: e.targetHandle ?? undefined,
       label: e.label || undefined,
       data: e.data as Record<string, unknown>,
-      type: 'smoothstep', animated: d?.edgeType === 'activates',
-      style: { stroke: color, strokeWidth: 2 },
+      type: 'smoothstep',
+      style: edgeStyle(color, d?.lineStyle),
       markerEnd: makeMarker(color),
       markerStart: d?.bidirectional ? makeMarker(color) : undefined,
       ...(e.label ? { labelStyle: { fontSize: 11, fill: 'var(--text-sub)' }, labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 } } : {}),
@@ -113,7 +123,7 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
     const newEdges = addEdge({
       ...conn, type: 'smoothstep',
       data: { edgeType: 'activates' } as Record<string, unknown>,
-      animated: true, style: { stroke: color, strokeWidth: 2 },
+      style: edgeStyle(color),
       markerEnd: makeMarker(color),
     }, edges);
     setEdges(newEdges); scheduleSave(nodes, newEdges);
@@ -135,35 +145,48 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
     } catch { /* ignore */ }
   }, [nodes, edges, setNodes, scheduleSave, screenToFlowPosition, pushHistory]);
 
-  // Export the whole map as a PNG (fits all nodes)
+  // Render the whole map to a PNG data URL (fits all nodes)
   const [exporting, setExporting] = useState(false);
-  const onExport = useCallback(async () => {
-    if (nodes.length === 0) return;
+  const renderPng = useCallback(async (): Promise<{ url: string; w: number; h: number } | null> => {
+    if (nodes.length === 0) return null;
+    const W = 1600, H = 1100;
+    const bounds = getNodesBounds(nodes);
+    const vp = getViewportForBounds(bounds, W, H, 0.4, 2.5, 0.12);
+    const viewportEl = document.querySelector('.react-flow__viewport') as HTMLElement | null;
+    if (!viewportEl) return null;
+    const bg = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#f5f2eb';
+    const url = await toPng(viewportEl, {
+      backgroundColor: bg, width: W, height: H, pixelRatio: 2,
+      style: { width: `${W}px`, height: `${H}px`, transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})` },
+      filter: (n) => !(n?.classList?.contains('react-flow__minimap')
+        || n?.classList?.contains('react-flow__controls')
+        || n?.classList?.contains('react-flow__panel')),
+    });
+    return { url, w: W, h: H };
+  }, [nodes]);
+
+  const onExportPng = useCallback(async () => {
     setExporting(true);
     try {
-      const W = 1600, H = 1100;
-      const bounds = getNodesBounds(nodes);
-      const vp = getViewportForBounds(bounds, W, H, 0.4, 2.5, 0.12);
-      const viewportEl = document.querySelector('.react-flow__viewport') as HTMLElement | null;
-      if (!viewportEl) return;
-      const bg = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#f5f2eb';
-      const dataUrl = await toPng(viewportEl, {
-        backgroundColor: bg,
-        width: W, height: H, pixelRatio: 2,
-        style: {
-          width: `${W}px`, height: `${H}px`,
-          transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
-        },
-        filter: (n) => !(n?.classList?.contains('react-flow__minimap')
-          || n?.classList?.contains('react-flow__controls')
-          || n?.classList?.contains('react-flow__panel')),
-      });
+      const png = await renderPng();
+      if (!png) return;
       const a = document.createElement('a');
       a.download = `karta-rezhimov-${new Date().toISOString().slice(0, 10)}.png`;
-      a.href = dataUrl;
-      a.click();
+      a.href = png.url; a.click();
     } catch { /* ignore */ } finally { setExporting(false); }
-  }, [nodes]);
+  }, [renderPng]);
+
+  const onExportPdf = useCallback(async () => {
+    setExporting(true);
+    try {
+      const png = await renderPng();
+      if (!png) return;
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [png.w, png.h] });
+      pdf.addImage(png.url, 'PNG', 0, 0, png.w, png.h);
+      pdf.save(`karta-rezhimov-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch { /* ignore */ } finally { setExporting(false); }
+  }, [renderPng]);
 
   // Apply changes; snapshot history at drag/resize start, save at end.
   const draggingRef = useRef(false);
@@ -174,6 +197,14 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
     );
     if (startMove && !draggingRef.current) { draggingRef.current = true; pushHistory(); }
     onNodesChange(changes);
+    // Mark nodes that were manually resized so rect nodes switch off auto-fit
+    const resizedIds = changes
+      .filter(c => c.type === 'dimensions' && c.resizing === true)
+      .map(c => (c as { id: string }).id);
+    if (resizedIds.length) {
+      setNodes(prev => prev.map(n => resizedIds.includes(n.id) && !(n.data as { _resized?: boolean })._resized
+        ? { ...n, data: { ...n.data, _resized: true } } : n));
+    }
     const endMove = changes.some(c =>
       (c.type === 'position' && c.dragging === false) ||
       (c.type === 'dimensions' && c.resizing === false)
@@ -183,7 +214,7 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
       // nodesRef updates on next render — defer save to read fresh positions
       setTimeout(() => scheduleSave(nodesRef.current, edgesRef.current), 0);
     }
-  }, [onNodesChange, scheduleSave, pushHistory, nodesRef, edgesRef]);
+  }, [onNodesChange, setNodes, scheduleSave, pushHistory, nodesRef, edgesRef]);
 
   return (
     <div style={{ flex: 1, position: 'relative' }}>
@@ -227,7 +258,8 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
             <TbBtn label="Отдалить" onClick={() => zoomOut()}>－</TbBtn>
             <TbBtn label="Показать всё" onClick={() => fitView({ padding: 0.2 })}>⤢</TbBtn>
             <TbSep />
-            <TbBtn label="Скачать PNG" onClick={onExport} disabled={exporting || nodes.length === 0}>⤓</TbBtn>
+            <TbBtn label="Скачать PNG" onClick={onExportPng} disabled={exporting || nodes.length === 0}>⤓</TbBtn>
+            <TbBtn label="Скачать PDF" onClick={onExportPdf} disabled={exporting || nodes.length === 0}>📄</TbBtn>
           </div>
         </Panel>
       </ReactFlow>
@@ -354,12 +386,11 @@ export function ModeMapEditor({ mapId, clientId, initialNodes, initialEdges }: P
     const newEdges = edges.map(e => {
       if (e.id !== updated.id) return e;
       // Rebuild edge from scratch so removed markers/labels don't linger
-      const { markerStart: _ms, label: _l, labelStyle: _ls, labelBgStyle: _lbg, ...base } = e;
+      const { markerStart: _ms, label: _l, labelStyle: _ls, labelBgStyle: _lbg, animated: _an, ...base } = e;
       const rebuilt: FlowEdge = {
         ...base,
         data: updated.data as Record<string, unknown>,
-        animated: d?.edgeType === 'activates',
-        style: { stroke: color, strokeWidth: 2 },
+        style: edgeStyle(color, d?.lineStyle),
         markerEnd: makeMarker(color),
       };
       if (d?.bidirectional) rebuilt.markerStart = makeMarker(color);
