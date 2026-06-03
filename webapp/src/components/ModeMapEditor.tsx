@@ -11,6 +11,7 @@ import { toPng } from 'html-to-image';
 import type { ModeMapNode, ModeMapEdge } from '../api';
 import { api } from '../api';
 import { NODE_TYPES, NODE_DEFAULT_SIZES } from './ModeMapNodes';
+import { EDGE_TYPES } from './ModeMapFloatingEdge';
 import { ModeMapPalette, DRAG_TYPE } from './ModeMapPalette';
 import { ModeMapNodeEditor, ModeMapEdgeEditor } from './ModeMapNodeEditor';
 
@@ -50,7 +51,7 @@ function toFlowEdges(edges: ModeMapEdge[]): FlowEdge[] {
       targetHandle: e.targetHandle ?? undefined,
       label: e.label || undefined,
       data: e.data as Record<string, unknown>,
-      type: 'smoothstep',
+      type: 'floating',
       style: edgeStyle(color, d?.lineStyle),
       markerEnd: makeMarker(color),
       markerStart: d?.bidirectional ? makeMarker(color) : undefined,
@@ -121,7 +122,7 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
     pushHistory();
     const color = edgeColor({ edgeType: 'activates' });
     const newEdges = addEdge({
-      ...conn, type: 'smoothstep',
+      ...conn, type: 'floating',
       data: { edgeType: 'activates' } as Record<string, unknown>,
       style: edgeStyle(color),
       markerEnd: makeMarker(color),
@@ -230,7 +231,7 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
           </div>
         </div>
       )}
-      <ReactFlow nodes={nodes} edges={edges} nodeTypes={NODE_TYPES as NodeTypes}
+      <ReactFlow nodes={nodes} edges={edges} nodeTypes={NODE_TYPES as NodeTypes} edgeTypes={EDGE_TYPES}
         onNodesChange={onNodesChangeWithSave} onEdgesChange={onEdgesChange}
         onConnect={onConnect} onDrop={onDrop} onDragOver={onDragOver}
         isValidConnection={isValidConnection}
