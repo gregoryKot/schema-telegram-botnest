@@ -637,6 +637,9 @@ export class BotService {
       this.prisma.clientConceptualization.deleteMany({ where: { therapistId: uid } }),
       this.prisma.therapistNote.deleteMany({ where: { therapistId: uid } }),
       this.prisma.therapyRelation.deleteMany({ where: { OR: [{ therapistId: uid }, { clientId: uid }] } }),
+      // Mode maps (about a client, created by a therapist) — remove if either side leaves.
+      (this.prisma as any).modeMap.deleteMany({ where: { OR: [{ therapistId: uid }, { clientId: uid }] } }),
+      (this.prisma as any).therapistCustomMode.deleteMany({ where: { therapistId: uid } }),
       // Pairs (two refs).
       this.prisma.pair.deleteMany({ where: { OR: [{ userId1: uid }, { userId2: uid }] } }),
       // Auth: providers + web sessions + therapist requests.
