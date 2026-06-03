@@ -14,6 +14,7 @@ import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
 import { ModeMapContextMenu, type MenuItem } from './ModeMapContextMenu';
 import { ModeMapLegend } from './ModeMapLegend';
 import { ModeMapGuide } from './ModeMapGuide';
+import { ModeMapZones } from './ModeMapZones';
 import { NodeActionsContext, type NodeActions } from './modeMapActions';
 import { autoLayout, TEMPLATES, templateToGraph } from './modeMapLayout';
 import {
@@ -48,6 +49,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   const [snap, setSnap] = useState(false);
   const [showLegend, setShowLegend] = useState(() => localStorage.getItem('modemap_legend') === '1');
   const [showGuide, setShowGuide] = useState(() => localStorage.getItem('modemap_guide') !== '0');
+  const [showZones, setShowZones] = useState(() => localStorage.getItem('modemap_zones') === '1');
   const [tplOpen, setTplOpen] = useState(false);
   const [dlOpen, setDlOpen] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
@@ -58,6 +60,9 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   }, []);
   const toggleGuide = useCallback(() => {
     setShowGuide(s => { localStorage.setItem('modemap_guide', s ? '0' : '1'); return !s; });
+  }, []);
+  const toggleZones = useCallback(() => {
+    setShowZones(s => { localStorage.setItem('modemap_zones', s ? '0' : '1'); return !s; });
   }, []);
 
   // ── Viewport persistence (per map, localStorage) ────────────────────────────
@@ -287,6 +292,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         nodesDraggable nodeDragThreshold={1}
       >
         <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.18)" gap={snap ? 20 : 22} size={1.5} />
+        {showZones && <ModeMapZones />}
 
         {/* Toolbar — icons for universal actions, text labels for the rest */}
         <Panel position="top-left">
@@ -305,6 +311,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
             {/* Tools with labels */}
             <TbText label="Разложить" title="Авто-расположение графа" icon="↻" onClick={onAutoLayout} disabled={nodes.length === 0} />
             <TbText label="Сетка" title="Привязка к сетке" icon="▦" onClick={() => setSnap(s => !s)} active={snap} />
+            <TbText label="Зоны" title="Зоны: здоровый взрослый / копинги / детские и критики" icon="▤" onClick={toggleZones} active={showZones} />
             <div style={{ position: 'relative' }}>
               <TbText label="Добавить" title="Шаблоны и генерация" icon="✚" onClick={() => { setTplOpen(o => !o); setDlOpen(false); }} active={tplOpen} caret />
               {tplOpen && (
