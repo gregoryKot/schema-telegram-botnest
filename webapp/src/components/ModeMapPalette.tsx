@@ -18,7 +18,7 @@ type NodeType = ModeMapNode['type'];
 
 export const DRAG_TYPE = 'application/modemap-node';
 
-const GROUP_TO_TYPE: Record<string, { type: NodeType; color: string; copingSubtype?: 'over' | 'avoid' | 'surr' }> = {
+export const GROUP_TO_TYPE: Record<string, { type: NodeType; color: string; copingSubtype?: 'over' | 'avoid' | 'surr' }> = {
   child:                   { type: 'child',   color: 'var(--accent-blue)' },
   coping_surrender:        { type: 'coping',  color: '#94a3b8', copingSubtype: 'surr' },
   coping_avoidance:        { type: 'coping',  color: 'var(--accent)', copingSubtype: 'avoid' },

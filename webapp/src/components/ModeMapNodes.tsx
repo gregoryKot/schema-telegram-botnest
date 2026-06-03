@@ -1,4 +1,5 @@
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
+import { Handle, Position, NodeResizer, NodeToolbar, type NodeProps } from '@xyflow/react';
+import { useNodeActions } from './modeMapActions';
 
 export interface ModeNodeData {
   label: string;
@@ -54,6 +55,27 @@ function AllHandles() {
   );
 }
 
+// Contextual toolbar shown above a selected node
+function NodeTools({ id, selected }: { id: string; selected?: boolean }) {
+  const actions = useNodeActions();
+  if (!actions) return null;
+  const btn: React.CSSProperties = {
+    border: 'none', background: 'none', cursor: 'pointer', fontSize: 13,
+    padding: '4px 8px', borderRadius: 5, color: 'var(--text-sub)', lineHeight: 1,
+  };
+  return (
+    <NodeToolbar isVisible={!!selected} position={Position.Top} offset={8}>
+      <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 8,
+        background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>
+        <button style={btn} title="Редактировать" onClick={() => actions.edit(id)}>✎</button>
+        <button style={btn} title="Дублировать" onClick={() => actions.duplicate(id)}>⧉</button>
+        <button style={{ ...btn, color: 'var(--accent-red)' }} title="Удалить" onClick={() => actions.remove(id)}>🗑</button>
+      </div>
+    </NodeToolbar>
+  );
+}
+
 function hexToRgb(hex: string) {
   const m = hex.replace('#', '').match(/.{2}/g);
   return m ? `${parseInt(m[0],16)},${parseInt(m[1],16)},${parseInt(m[2],16)}` : null;
@@ -80,8 +102,8 @@ function NodeLabel({ label, note, unmetNeed, light }: { label: string; note?: st
 
 // ── SVG-based shape node — clean borders, no clip-path/border conflicts ────────
 // Text sits in an absolutely positioned div, constrained to the safe inner area.
-function SvgShapeNode({ data, selected, color, svgPath, textPadding, minW = 110, minH = 60, keepRatio }: {
-  data: ModeNodeData; selected?: boolean; color: string;
+function SvgShapeNode({ id, data, selected, color, svgPath, textPadding, minW = 110, minH = 60, keepRatio }: {
+  id: string; data: ModeNodeData; selected?: boolean; color: string;
   svgPath: string;       // SVG path in "0 0 100 100" viewBox space
   textPadding: string;   // CSS padding for text container
   minW?: number; minH?: number;
@@ -92,6 +114,7 @@ function SvgShapeNode({ data, selected, color, svgPath, textPadding, minW = 110,
   const light = !!data.fillFull;
   return (
     <div style={{ width: '100%', height: '100%', minWidth: minW, minHeight: minH, position: 'relative' }}>
+      <NodeTools id={id} selected={selected} />
       <NodeResizer minWidth={minW - 30} minHeight={minH - 20} isVisible={!!selected} color={color}
         keepAspectRatio={!!keepRatio} />
       <AllHandles />
@@ -112,7 +135,7 @@ function SvgShapeNode({ data, selected, color, svgPath, textPadding, minW = 110,
 // If the node has explicit width (user dragged the resizer once → persisted),
 // fill it; otherwise size to content (max-content) so the box hugs the text.
 function makeRectNode(defaultColor: string, radius = 10) {
-  return function ModeNode({ data, selected, width }: NodeProps) {
+  return function ModeNode({ id, data, selected, width }: NodeProps) {
     const d = data as unknown as ModeNodeData;
     const color = d.customColor ?? defaultColor;
     const light = !!d.fillFull;
@@ -124,6 +147,7 @@ function makeRectNode(defaultColor: string, radius = 10) {
         height: sized ? '100%' : 'auto',
         minWidth: 110, maxWidth: sized ? undefined : 240, minHeight: 40,
       }}>
+        <NodeTools id={id} selected={selected} />
         <NodeResizer minWidth={90} minHeight={40} isVisible={!!selected} color={color} />
         <AllHandles />
         <div style={{
@@ -147,15 +171,15 @@ const PENTA_PATH    = 'M50,0 L100,38 L82,100 L18,100 L0,38 Z';
 const SHIELD_PATH   = 'M0,0 L100,0 L100,70 L50,100 L0,70 Z';
 
 // ── Exported nodes ────────────────────────────────────────────────────────────
-export const CriticModeNode = function CriticModeNode({ data, selected }: NodeProps) {
+export const CriticModeNode = function CriticModeNode({ id, data, selected }: NodeProps) {
   const d = data as unknown as ModeNodeData;
   // Octagon: corners are 12% chamfers — text safe within ~14% padding, free resize OK
-  return <SvgShapeNode data={d} selected={selected}
+  return <SvgShapeNode id={id} data={d} selected={selected}
     color={d.customColor ?? TYPE_COLORS.critic}
     svgPath={CRITIC_PATH} textPadding="16% 16%" minW={120} minH={60} />;
 };
 
-export const CopingModeNode = function CopingModeNode({ data, selected }: NodeProps) {
+export const CopingModeNode = function CopingModeNode({ id, data, selected }: NodeProps) {
   const d = data as unknown as ModeNodeData;
   const color = d.customColor ?? TYPE_COLORS.coping;
   const sub = d.copingSubtype ?? 'over';
@@ -165,6 +189,7 @@ export const CopingModeNode = function CopingModeNode({ data, selected }: NodePr
     const light = !!d.fillFull;
     return (
       <div style={{ width: '100%', height: '100%', minWidth: 110, minHeight: 44, position: 'relative' }}>
+        <NodeTools id={id} selected={selected} />
         <NodeResizer minWidth={80} minHeight={36} isVisible={!!selected} color={color} />
         <AllHandles />
         <div style={{
@@ -183,21 +208,22 @@ export const CopingModeNode = function CopingModeNode({ data, selected }: NodePr
 
   if (sub === 'avoid') {
     // Shield: point at bottom — text in upper rectangular zone, keep ratio
-    return <SvgShapeNode data={d} selected={selected} color={color}
+    return <SvgShapeNode id={id} data={d} selected={selected} color={color}
       svgPath={SHIELD_PATH} textPadding="14% 14% 32%" minW={120} minH={120} keepRatio />;
   }
 
   // 'over' — pentagon: apex at top, keep ratio so it doesn't flatten
-  return <SvgShapeNode data={d} selected={selected} color={color}
+  return <SvgShapeNode id={id} data={d} selected={selected} color={color}
     svgPath={PENTA_PATH} textPadding="32% 16% 12%" minW={120} minH={120} keepRatio />;
 };
 
-export const ChildModeNode = function ChildModeNode({ data, selected }: NodeProps) {
+export const ChildModeNode = function ChildModeNode({ id, data, selected }: NodeProps) {
   const d = data as unknown as ModeNodeData;
   const color = d.customColor ?? TYPE_COLORS.child;
   const light = !!d.fillFull;
   return (
     <div style={{ width: '100%', height: '100%', minWidth: 110, minHeight: 110, position: 'relative' }}>
+      <NodeTools id={id} selected={selected} />
       <NodeResizer minWidth={90} minHeight={90} isVisible={!!selected} color={color} keepAspectRatio />
       <AllHandles />
       <div style={{
@@ -215,7 +241,7 @@ export const ChildModeNode = function ChildModeNode({ data, selected }: NodeProp
   );
 };
 
-export const TriggerNode = function TriggerNode({ data, selected }: NodeProps) {
+export const TriggerNode = function TriggerNode({ id, data, selected }: NodeProps) {
   const d = data as unknown as ModeNodeData;
   const color = d.customColor ?? TYPE_COLORS.trigger;
   const rgb = hexToRgb(color);
@@ -224,6 +250,7 @@ export const TriggerNode = function TriggerNode({ data, selected }: NodeProps) {
   const light = !!d.fillFull;
   return (
     <div style={{ width: '100%', height: '100%', minWidth: 130, minHeight: 70, position: 'relative' }}>
+      <NodeTools id={id} selected={selected} />
       <NodeResizer minWidth={100} minHeight={60} isVisible={!!selected} color={color} />
       <AllHandles />
       <svg viewBox="0 0 100 60" preserveAspectRatio="none"
