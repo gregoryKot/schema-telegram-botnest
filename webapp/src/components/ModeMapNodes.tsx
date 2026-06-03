@@ -19,18 +19,26 @@ export const TYPE_COLORS: Record<string, string> = {
   custom:  '#9f7ad4',
 };
 
-const handleStyle = { width: 9, height: 9, background: 'rgba(var(--fg-rgb),0.25)', border: 'none' };
-const hiddenHandleStyle = { ...handleStyle, opacity: 0, pointerEvents: 'none' as const };
+// Invisible strip handles along each side. Floating edges attach to the border
+// automatically, so we don't need visible dots — the strips just give a grab
+// zone to START a connection from anywhere along a side. The node centre stays
+// free for dragging. Each side has source + target (same id) for loose mode.
+const STRIP: Record<string, React.CSSProperties> = {
+  l: { width: 16, height: '100%', left: -8,  top: 0, borderRadius: 0 },
+  r: { width: 16, height: '100%', right: -8, top: 0, borderRadius: 0 },
+  t: { width: '100%', height: 16, top: -8,  left: 0, borderRadius: 0 },
+  b: { width: '100%', height: 16, bottom: -8, left: 0, borderRadius: 0 },
+};
+const baseStrip: React.CSSProperties = {
+  background: 'transparent', border: 'none', opacity: 0, transform: 'none', minWidth: 0, minHeight: 0,
+};
 
-// Each of the 4 sides has BOTH a source and target handle with the same id.
-// This lets any side act as source OR target (needed for direction swap +
-// loose-mode dragging). The source handle is shown; the target is invisible
-// but stacked at the same spot.
 function SideHandles({ pos, id }: { pos: Position; id: string }) {
+  const s = { ...baseStrip, ...STRIP[id] };
   return (
     <>
-      <Handle type="target" position={pos} id={id} style={hiddenHandleStyle} />
-      <Handle type="source" position={pos} id={id} style={handleStyle} />
+      <Handle type="target" position={pos} id={id} style={s} />
+      <Handle type="source" position={pos} id={id} style={s} />
     </>
   );
 }
