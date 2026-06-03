@@ -206,6 +206,7 @@ export function ModeMapSelector({ clientId }: Props) {
             key={activeMap.id}
             mapId={activeMap.id}
             clientId={clientId}
+            kind={activeMap.kind}
             initialNodes={activeMap.nodes}
             initialEdges={activeMap.edges}
           />

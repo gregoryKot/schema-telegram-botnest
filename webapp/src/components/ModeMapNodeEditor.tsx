@@ -3,6 +3,47 @@ import { TYPE_COLORS } from './ModeMapNodes';
 
 type CopingSubtype = 'over' | 'avoid' | 'surr';
 
+// Type-specific clinical questions — keep the focus on the chain
+// (триггер → боль → защита → последствия → потребность), not on naming.
+function clinicalQuestions(node: ModeMapNode): string[] {
+  const sub = node.data.copingSubtype;
+  switch (node.type) {
+    case 'trigger':
+      return ['Что конкретно произошло?', 'Что клиент увидел, услышал, вспомнил?'];
+    case 'child':
+      return ['Что чувствует эта часть?', 'Какая детская потребность не удовлетворена?', 'Сколько ему лет в этот момент?'];
+    case 'critic':
+      return ['Чей это голос?', 'Что говорит дословно?', 'Чем грозит, если не послушаться?'];
+    case 'coping':
+      if (sub === 'avoid')  return ['От чего уводит?', 'Что отключает или избегает?', 'Какую боль ребёнка прячет?'];
+      if (sub === 'surr')   return ['Кому подчиняется?', 'Чего боится, если перестанет?', 'Какую боль ребёнка прячет?'];
+      return ['От какой боли защищает?', 'Что делает в поведении?', 'Какую цену клиент платит?'];
+    case 'healthy':
+      return ['Кого защищает?', 'Кому ставит границы?', 'Какие потребности удовлетворяет?'];
+    default:
+      return ['Как этот режим проявляется?', 'Что он делает в поведении?'];
+  }
+}
+
+function ClinicalHint({ node }: { node: ModeMapNode }) {
+  const qs = clinicalQuestions(node);
+  return (
+    <div style={{
+      background: 'var(--accent-soft)', borderRadius: 7, padding: '8px 10px', marginBottom: 14,
+      border: '1px solid var(--accent-line)',
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
+        💡 Спросить себя
+      </div>
+      <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {qs.map((q, i) => (
+          <li key={i} style={{ fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.35 }}>{q}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const EDGE_TYPE_LABELS: Record<string, string> = {
   activates:  'активирует',
   protects:   'защищает от',
@@ -155,6 +196,9 @@ export function ModeMapNodeEditor({ node, onChange, onDelete }: NodeEditorProps)
           );
         })}
       </div>
+
+      {/* Clinical questions — guide what to capture for this mode type */}
+      <ClinicalHint node={node} />
 
       <label style={labelStyle}>Заметка</label>
       <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 56 }} rows={3}

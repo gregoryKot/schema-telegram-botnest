@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ReactFlowProvider, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import type { ModeMapNode, ModeMapEdge } from '../api';
+import type { ModeMapNode, ModeMapEdge, ModeMapKind } from '../api';
 import { api } from '../api';
 import { NODE_DEFAULT_SIZES } from './ModeMapNodes';
 import { ModeMapPalette } from './ModeMapPalette';
@@ -21,11 +21,12 @@ import { useModeMapHistory } from './useModeMapHistory';
 interface Props {
   mapId: number;
   clientId: number;
+  kind: ModeMapKind;
   initialNodes: ModeMapNode[];
   initialEdges: ModeMapEdge[];
 }
 
-export function ModeMapEditor({ mapId, clientId, initialNodes, initialEdges }: Props) {
+export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdges }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(toFlowNodes(initialNodes));
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(toFlowEdges(initialEdges));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -188,7 +189,7 @@ export function ModeMapEditor({ mapId, clientId, initialNodes, initialEdges }: P
     <ReactFlowProvider>
       <div style={{ display: 'flex', height: '100%', background: 'var(--bg)' }}>
         <ModeMapPalette onAdd={handleAddNode} clientId={clientId} />
-        <ModeMapCanvas clientId={clientId} mapId={mapId} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
+        <ModeMapCanvas clientId={clientId} mapId={mapId} kind={kind} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
           setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId}
           saveStatus={saveStatus} scheduleSave={scheduleSave}
