@@ -20,14 +20,28 @@ export const TYPE_COLORS: Record<string, string> = {
 };
 
 const handleStyle = { width: 9, height: 9, background: 'rgba(var(--fg-rgb),0.25)', border: 'none' };
+const hiddenHandleStyle = { ...handleStyle, opacity: 0, pointerEvents: 'none' as const };
+
+// Each of the 4 sides has BOTH a source and target handle with the same id.
+// This lets any side act as source OR target (needed for direction swap +
+// loose-mode dragging). The source handle is shown; the target is invisible
+// but stacked at the same spot.
+function SideHandles({ pos, id }: { pos: Position; id: string }) {
+  return (
+    <>
+      <Handle type="target" position={pos} id={id} style={hiddenHandleStyle} />
+      <Handle type="source" position={pos} id={id} style={handleStyle} />
+    </>
+  );
+}
 
 function AllHandles() {
   return (
     <>
-      <Handle type="target" position={Position.Left}   style={handleStyle} id="l" />
-      <Handle type="source" position={Position.Right}  style={handleStyle} id="r" />
-      <Handle type="target" position={Position.Top}    style={handleStyle} id="t" />
-      <Handle type="source" position={Position.Bottom} style={handleStyle} id="b" />
+      <SideHandles pos={Position.Left}   id="l" />
+      <SideHandles pos={Position.Right}  id="r" />
+      <SideHandles pos={Position.Top}    id="t" />
+      <SideHandles pos={Position.Bottom} id="b" />
     </>
   );
 }
@@ -67,7 +81,7 @@ function SvgShapeNode({ data, selected, color, svgPath, textPadding, minW = 110,
   const light = !!data.fillFull;
   return (
     <div style={{ width: '100%', height: '100%', minWidth: minW, minHeight: minH, position: 'relative' }}>
-      {resizer && <NodeResizer minWidth={minW - 30} minHeight={minH - 20} isVisible={false} color={color} />}
+      {resizer && <NodeResizer minWidth={minW - 30} minHeight={minH - 20} isVisible={!!selected} color={color} />}
       <AllHandles />
       {/* SVG shape — fill + stroke, no clip-path issues */}
       <svg viewBox="0 0 100 100" preserveAspectRatio="none"

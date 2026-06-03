@@ -208,6 +208,18 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap }: EdgeEdit
         </button>
       </div>
 
+      <label style={labelStyle}>Цвет стрелки</label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+        {['#d47a7a','#7ab87a','#d4a07a','#7aa3d4','#9f7ad4','#94a3b8'].map(c => (
+          <button key={c} onClick={() => onChange({ ...edge, data: { ...edge.data, color: c } })}
+            style={{ width: 22, height: 22, borderRadius: '50%', background: c, cursor: 'pointer', padding: 0,
+              border: edge.data?.color === c ? '2px solid var(--text)' : '2px solid transparent' }} />
+        ))}
+        <button onClick={() => onChange({ ...edge, data: { ...edge.data, color: undefined } })} title="По типу связи"
+          style={{ width: 22, height: 22, borderRadius: '50%', background: 'none', cursor: 'pointer', padding: 0,
+            border: '2px dashed rgba(var(--fg-rgb),0.25)', fontSize: 10, color: 'var(--text-faint)' }}>✕</button>
+      </div>
+
       <label style={labelStyle}>Подпись (необязательно)</label>
       <input style={inputStyle}
         value={edge.label ?? ''}
