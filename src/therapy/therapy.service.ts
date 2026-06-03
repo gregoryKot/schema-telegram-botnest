@@ -792,7 +792,8 @@ export class TherapyService {
       orderBy: { createdAt: 'asc' },
       select: { id: true, title: true, createdAt: true, updatedAt: true },
     });
-    return rows;
+    // Title can carry clinical context → encrypted (plaintext-tolerant on read)
+    return rows.map((r: any) => ({ ...r, title: decrypt(r.title) ?? r.title }));
   }
 
   async getModeMap(therapistId: bigint, mapId: number) {
@@ -801,6 +802,7 @@ export class TherapyService {
       throw new Error('Not found');
     return {
       ...row,
+      title: decrypt(row.title) ?? row.title,
       nodes: this.decryptMapJson(row.nodes),
       edges: this.decryptMapJson(row.edges),
     };
@@ -809,9 +811,9 @@ export class TherapyService {
   async createModeMap(therapistId: bigint, clientId: number, title: string) {
     await this.assertRelation(therapistId, clientId);
     const row = await (this.prisma.modeMap as any).create({
-      data: { therapistId, clientId: BigInt(clientId), title },
+      data: { therapistId, clientId: BigInt(clientId), title: encrypt(title) ?? title },
     });
-    return { ...row, nodes: [], edges: [] };
+    return { ...row, title, nodes: [], edges: [] };
   }
 
   async updateModeMap(therapistId: bigint, mapId: number, body: {
@@ -821,12 +823,13 @@ export class TherapyService {
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
     const data: Record<string, unknown> = {};
-    if (body.title !== undefined) data.title = body.title;
+    if (body.title !== undefined) data.title = encrypt(body.title) ?? body.title;
     if (body.nodes !== undefined) data.nodes = encryptJson(body.nodes) ?? JSON.stringify(body.nodes);
     if (body.edges !== undefined) data.edges = encryptJson(body.edges) ?? JSON.stringify(body.edges);
     const row = await (this.prisma.modeMap as any).update({ where: { id: mapId }, data });
     return {
       ...row,
+      title: decrypt(row.title) ?? row.title,
       nodes: this.decryptMapJson(row.nodes),
       edges: this.decryptMapJson(row.edges),
     };
@@ -842,23 +845,26 @@ export class TherapyService {
   // ─── Therapist Custom Modes ──────────────────────────────────────────────────
 
   async listCustomModes(therapistId: bigint) {
-    return (this.prisma.therapistCustomMode as any).findMany({
+    const rows = await (this.prisma.therapistCustomMode as any).findMany({
       where: { therapistId },
       orderBy: { createdAt: 'asc' },
     });
+    return rows.map((r: any) => ({ ...r, name: decrypt(r.name) ?? r.name }));
   }
 
   async createCustomMode(therapistId: bigint, body: { name: string; emoji?: string; nodeType?: string }) {
     const allowed = ['trigger','child','critic','coping','healthy','custom'];
     const nodeType = allowed.includes(body.nodeType ?? '') ? body.nodeType : 'custom';
-    return (this.prisma.therapistCustomMode as any).create({
+    const name = body.name.slice(0, 80);
+    const row = await (this.prisma.therapistCustomMode as any).create({
       data: {
         therapistId,
-        name: body.name.slice(0, 80),
+        name: encrypt(name) ?? name,
         emoji: (body.emoji ?? '⬡').slice(0, 8),
         nodeType,
       },
     });
+    return { ...row, name };
   }
 
   async deleteCustomMode(therapistId: bigint, modeId: number) {
