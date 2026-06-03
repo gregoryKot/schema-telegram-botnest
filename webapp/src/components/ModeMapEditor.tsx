@@ -318,12 +318,24 @@ export function ModeMapEditor({ mapId, clientId, initialNodes, initialEdges }: P
     pushHistory();
     const d = updated.data;
     const color = edgeColor(d);
-    const newEdges = edges.map(e => e.id !== updated.id ? e : {
-      ...e, label: updated.label || undefined, data: updated.data as Record<string, unknown>,
-      animated: d?.edgeType === 'activates', style: { stroke: color, strokeWidth: 2 },
-      markerEnd: makeMarker(color),
-      markerStart: d?.bidirectional ? makeMarker(color) : undefined,
-      ...(updated.label ? { labelStyle: { fontSize: 11, fill: 'var(--text-sub)' }, labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 } } : { label: undefined }),
+    const newEdges = edges.map(e => {
+      if (e.id !== updated.id) return e;
+      // Rebuild edge from scratch so removed markers/labels don't linger
+      const { markerStart: _ms, label: _l, labelStyle: _ls, labelBgStyle: _lbg, ...base } = e;
+      const rebuilt: FlowEdge = {
+        ...base,
+        data: updated.data as Record<string, unknown>,
+        animated: d?.edgeType === 'activates',
+        style: { stroke: color, strokeWidth: 2 },
+        markerEnd: makeMarker(color),
+      };
+      if (d?.bidirectional) rebuilt.markerStart = makeMarker(color);
+      if (updated.label) {
+        rebuilt.label = updated.label;
+        rebuilt.labelStyle = { fontSize: 11, fill: 'var(--text-sub)' };
+        rebuilt.labelBgStyle = { fill: 'var(--bg-elev)', fillOpacity: 0.85 };
+      }
+      return rebuilt;
     });
     setEdges(newEdges); scheduleSave(nodes, newEdges);
   }, [nodes, edges, setEdges, scheduleSave, pushHistory]);

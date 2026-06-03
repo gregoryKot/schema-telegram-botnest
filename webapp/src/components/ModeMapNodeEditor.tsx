@@ -29,37 +29,46 @@ interface ShapeOption {
 }
 
 const SHAPE_OPTIONS: ShapeOption[] = [
-  { type: 'trigger', label: 'Триггер',        color: TYPE_COLORS.trigger, isCloud: true },
-  { type: 'child',   label: 'Детский',         color: TYPE_COLORS.child,   isCircle: true },
-  { type: 'critic',  label: 'Критик',          color: TYPE_COLORS.critic,
-    clip: 'polygon(14% 0%,86% 0%,100% 14%,100% 86%,86% 100%,14% 100%,0% 86%,0% 14%)' },
-  { type: 'coping',  label: 'Гиперкомп.',      color: '#d4a07a', copingSubtype: 'over',
-    clip: 'polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)' },
-  { type: 'coping',  label: 'Избегание',       color: '#7aa3d4', copingSubtype: 'avoid',
-    clip: 'polygon(0% 0%,100% 0%,100% 72%,50% 100%,0% 72%)' },
-  { type: 'coping',  label: 'Капитуляция',     color: '#94a3b8', copingSubtype: 'surr', radius: 9999 },
-  { type: 'healthy', label: 'Здоровый',        color: TYPE_COLORS.healthy, radius: 8 },
-  { type: 'custom',  label: 'Свой',            color: TYPE_COLORS.custom,  radius: 8 },
+  { type: 'trigger', label: 'Триггер', color: TYPE_COLORS.trigger, isCloud: true },
+  { type: 'child',   label: 'Детский', color: TYPE_COLORS.child,   isCircle: true },
+  { type: 'critic',  label: 'Критик',  color: TYPE_COLORS.critic },
+  { type: 'coping',  label: 'Гипер',   color: '#d4a07a', copingSubtype: 'over' },
+  { type: 'coping',  label: 'Избег',   color: '#7aa3d4', copingSubtype: 'avoid' },
+  { type: 'coping',  label: 'Капит',   color: '#94a3b8', copingSubtype: 'surr' },
+  { type: 'healthy', label: 'Здоров',  color: TYPE_COLORS.healthy },
+  { type: 'custom',  label: 'Свой',    color: TYPE_COLORS.custom },
 ];
 
+// All previews drawn in a fixed 24x24 box so picker borders align perfectly
 function ShapePreview({ opt, active }: { opt: ShapeOption; active: boolean }) {
-  const color = active ? 'var(--accent)' : opt.color;
-  const bg = `${opt.color}25`;
-  const w = 26; const h = opt.isCloud ? 18 : opt.isCircle ? 26 : 26;
+  const stroke = active ? 'var(--accent)' : opt.color;
+  const fill = `${opt.color}22`;
+  const sw = 1.6;
+  const paths: Record<string, string> = {
+    critic: 'M4,1 L20,1 L23,4 L23,20 L20,23 L4,23 L1,20 L1,4 Z',     // octagon
+    over:   'M12,1 L23,9 L19,23 L5,23 L1,9 Z',                        // pentagon
+    avoid:  'M2,2 L22,2 L22,16 L12,23 L2,16 Z',                       // shield
+  };
+  const key = opt.copingSubtype === 'over' ? 'over'
+    : opt.copingSubtype === 'avoid' ? 'avoid'
+    : opt.type === 'critic' ? 'critic' : null;
 
-  if (opt.isCloud) return (
-    <svg width={w} height={h} viewBox="0 0 28 18">
-      <path d="M5,14 Q1,14 1,10 Q1,6 5,6 Q4,1 9,1 Q12,0 15,2 Q19,0 22,3 Q27,3 27,8 Q27,14 22,14 Z"
-        fill={bg} stroke={color} strokeWidth={1.5} />
+  return (
+    <svg width={22} height={22} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+      {opt.isCloud ? (
+        <path d="M6,18 Q2,18 2,14 Q2,9 7,9 Q6,3 12,3 Q16,1 19,4 Q23,4 23,9 Q23,18 18,18 Z"
+          fill={fill} stroke={stroke} strokeWidth={sw} />
+      ) : opt.isCircle ? (
+        <circle cx={12} cy={12} r={10.5} fill={fill} stroke={stroke} strokeWidth={sw} />
+      ) : opt.copingSubtype === 'surr' ? (
+        <rect x={1} y={6} width={22} height={12} rx={6} fill={fill} stroke={stroke} strokeWidth={sw} />
+      ) : key ? (
+        <path d={paths[key]} fill={fill} stroke={stroke} strokeWidth={sw} />
+      ) : (
+        <rect x={2} y={4} width={20} height={16} rx={3} fill={fill} stroke={stroke} strokeWidth={sw} />
+      )}
     </svg>
   );
-
-  const style: React.CSSProperties = {
-    width: w, height: h, background: bg, border: `2px solid ${color}`, flexShrink: 0,
-    borderRadius: typeof opt.radius === 'number' ? opt.radius : opt.isCircle ? '50%' : undefined,
-    clipPath: opt.clip,
-  };
-  return <div style={style} />;
 }
 
 interface NodeEditorProps {
@@ -87,21 +96,20 @@ export function ModeMapNodeEditor({ node, onChange, onDelete }: NodeEditorProps)
         onChange={e => patchData({ label: e.target.value })} placeholder="Название режима" />
 
       <label style={labelStyle}>Форма и тип</label>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 14 }}>
         {SHAPE_OPTIONS.map((opt, i) => {
           const isActive = node.type === opt.type &&
-            (opt.copingSubtype ? node.data.copingSubtype === opt.copingSubtype : !opt.copingSubtype || node.type !== 'coping');
+            (node.type === 'coping' ? node.data.copingSubtype === opt.copingSubtype : true);
           return (
             <button key={i} onClick={() => patchShape(opt)} title={opt.label}
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: 3, width: 44, height: 44, borderRadius: 7, cursor: 'pointer',
+                gap: 3, height: 46, borderRadius: 7, cursor: 'pointer', boxSizing: 'border-box',
                 border: `1.5px solid ${isActive ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
-                background: isActive ? 'var(--accent-soft)' : 'none',
-                padding: 4,
+                background: isActive ? 'var(--accent-soft)' : 'none', padding: 2,
               }}>
               <ShapePreview opt={opt} active={isActive} />
-              <span style={{ fontSize: 9, color: isActive ? 'var(--accent)' : 'var(--text-faint)', lineHeight: 1, textAlign: 'center' }}>
+              <span style={{ fontSize: 8.5, color: isActive ? 'var(--accent)' : 'var(--text-faint)', lineHeight: 1, textAlign: 'center', whiteSpace: 'nowrap' }}>
                 {opt.label}
               </span>
             </button>
@@ -190,21 +198,26 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap }: EdgeEdit
       </div>
 
       <label style={labelStyle}>Направление</label>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-        <button onClick={() => onChange({ ...edge, data: { ...edge.data, bidirectional: !bidir } })}
-          style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '7px 10px', borderRadius: 6, fontSize: 12.5, cursor: 'pointer',
-            border: `1.5px solid ${bidir ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
-            background: bidir ? 'var(--accent-soft)' : 'none',
-            color: bidir ? 'var(--accent)' : 'var(--text-sub)' }}>
-          <span style={{ fontSize: 14 }}>{bidir ? '↔' : '→'}</span>
-          {bidir ? 'Двусторонняя' : 'Односторонняя'}
+      <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
+        {/* One-way (current direction) */}
+        <button onClick={() => onChange({ ...edge, data: { ...edge.data, bidirectional: false } })}
+          title="Одна стрелка"
+          style={dirBtnStyle(!bidir)}>
+          <span style={{ fontSize: 16, lineHeight: 1 }}>→</span>
+          <span style={{ fontSize: 9 }}>одна</span>
         </button>
-        <button onClick={onSwap} title="Поменять направление (откуда → куда)"
-          style={{ padding: '7px 10px', borderRadius: 6, fontSize: 13, cursor: 'pointer',
-            border: '1px solid rgba(var(--fg-rgb),0.14)', background: 'none',
-            color: 'var(--text-sub)' }}>
-          ⇄
+        {/* Both ways */}
+        <button onClick={() => onChange({ ...edge, data: { ...edge.data, bidirectional: true } })}
+          title="Две стрелки"
+          style={dirBtnStyle(bidir)}>
+          <span style={{ fontSize: 16, lineHeight: 1 }}>↔</span>
+          <span style={{ fontSize: 9 }}>обе</span>
+        </button>
+        {/* Reverse — swaps source/target */}
+        <button onClick={onSwap} title="Развернуть (поменять начало и конец)"
+          style={dirBtnStyle(false)}>
+          <span style={{ fontSize: 15, lineHeight: 1 }}>⤺</span>
+          <span style={{ fontSize: 9 }}>развернуть</span>
         </button>
       </div>
 
@@ -229,6 +242,16 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap }: EdgeEdit
       <button onClick={onDelete} style={deleteBtnStyle}>Удалить связь</button>
     </div>
   );
+}
+
+function dirBtnStyle(active: boolean): React.CSSProperties {
+  return {
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    gap: 2, padding: '6px 4px', borderRadius: 6, cursor: 'pointer',
+    border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+    background: active ? 'var(--accent-soft)' : 'none',
+    color: active ? 'var(--accent)' : 'var(--text-sub)',
+  };
 }
 
 const panelStyle: React.CSSProperties = {

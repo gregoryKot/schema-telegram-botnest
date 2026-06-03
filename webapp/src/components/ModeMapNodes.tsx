@@ -72,26 +72,26 @@ function NodeLabel({ label, note, unmetNeed, light }: { label: string; note?: st
 
 // ── SVG-based shape node — clean borders, no clip-path/border conflicts ────────
 // Text sits in an absolutely positioned div, constrained to the safe inner area.
-function SvgShapeNode({ data, selected, color, svgPath, textPadding, minW = 110, minH = 60, resizer = true }: {
+function SvgShapeNode({ data, selected, color, svgPath, textPadding, minW = 110, minH = 60, keepRatio }: {
   data: ModeNodeData; selected?: boolean; color: string;
-  svgPath: string;   // SVG path in "0 0 100 100" viewBox space
-  textPadding: string; // CSS padding for text container
-  minW?: number; minH?: number; resizer?: boolean;
+  svgPath: string;       // SVG path in "0 0 100 100" viewBox space
+  textPadding: string;   // CSS padding for text container
+  minW?: number; minH?: number;
+  keepRatio?: boolean;   // фиксировать пропорции при ресайзе
 }) {
   const stroke = selected ? 'var(--accent)' : color;
   const fill = fillColor(color, data.filled, data.fillFull);
   const light = !!data.fillFull;
   return (
     <div style={{ width: '100%', height: '100%', minWidth: minW, minHeight: minH, position: 'relative' }}>
-      {resizer && <NodeResizer minWidth={minW - 30} minHeight={minH - 20} isVisible={!!selected} color={color} />}
+      <NodeResizer minWidth={minW - 30} minHeight={minH - 20} isVisible={!!selected} color={color}
+        keepAspectRatio={!!keepRatio} />
       <AllHandles />
-      {/* SVG shape — fill + stroke, no clip-path issues */}
       <svg viewBox="0 0 100 100" preserveAspectRatio="none"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
         <path d={svgPath} fill={fill} stroke={stroke} strokeWidth="2" vectorEffect="non-scaling-stroke"
           filter={!selected ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' : undefined} />
       </svg>
-      {/* Text — not clipped, constrained by padding */}
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
         justifyContent: 'center', padding: textPadding, pointerEvents: 'none' }}>
         <NodeLabel label={data.label} note={data.note} light={light} />
@@ -133,9 +133,10 @@ const SHIELD_PATH   = 'M0,0 L100,0 L100,70 L50,100 L0,70 Z';
 // ── Exported nodes ────────────────────────────────────────────────────────────
 export const CriticModeNode = function CriticModeNode({ data, selected }: NodeProps) {
   const d = data as unknown as ModeNodeData;
+  // Octagon: corners are 12% chamfers — text safe within ~14% padding, free resize OK
   return <SvgShapeNode data={d} selected={selected}
     color={d.customColor ?? TYPE_COLORS.critic}
-    svgPath={CRITIC_PATH} textPadding="10% 14%" minW={110} minH={50} />;
+    svgPath={CRITIC_PATH} textPadding="16% 16%" minW={120} minH={60} />;
 };
 
 export const CopingModeNode = function CopingModeNode({ data, selected }: NodeProps) {
@@ -165,13 +166,14 @@ export const CopingModeNode = function CopingModeNode({ data, selected }: NodePr
   }
 
   if (sub === 'avoid') {
+    // Shield: point at bottom — text in upper rectangular zone, keep ratio
     return <SvgShapeNode data={d} selected={selected} color={color}
-      svgPath={SHIELD_PATH} textPadding="10% 12% 34%" minW={110} minH={80} />;
+      svgPath={SHIELD_PATH} textPadding="14% 14% 32%" minW={120} minH={120} keepRatio />;
   }
 
-  // 'over' — pentagon
+  // 'over' — pentagon: apex at top, keep ratio so it doesn't flatten
   return <SvgShapeNode data={d} selected={selected} color={color}
-    svgPath={PENTA_PATH} textPadding="26% 14% 10%" minW={110} minH={80} />;
+    svgPath={PENTA_PATH} textPadding="32% 16% 12%" minW={120} minH={120} keepRatio />;
 };
 
 export const ChildModeNode = function ChildModeNode({ data, selected }: NodeProps) {
@@ -180,7 +182,7 @@ export const ChildModeNode = function ChildModeNode({ data, selected }: NodeProp
   const light = !!d.fillFull;
   return (
     <div style={{ width: '100%', height: '100%', minWidth: 110, minHeight: 110, position: 'relative' }}>
-      <NodeResizer minWidth={80} minHeight={80} isVisible={!!selected} color={color} />
+      <NodeResizer minWidth={90} minHeight={90} isVisible={!!selected} color={color} keepAspectRatio />
       <AllHandles />
       <div style={{
         width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden',
@@ -188,6 +190,8 @@ export const ChildModeNode = function ChildModeNode({ data, selected }: NodeProp
         border: `2px solid ${selected ? 'var(--accent)' : color}`,
         boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        // Inscribed square: keep text off the curved edge
+        padding: '18%',
       }}>
         <NodeLabel label={d.label} note={d.note} unmetNeed={d.unmetNeed} light={light} />
       </div>
@@ -225,7 +229,8 @@ export const CustomModeNode  = makeRectNode(TYPE_COLORS.custom,  10);
 export const NODE_DEFAULT_SIZES: Partial<Record<string, { width: number; height: number }>> = {
   child:   { width: 130, height: 130 },
   trigger: { width: 160, height: 90  },
-  coping:  { width: 140, height: 110 },
+  coping:  { width: 150, height: 135 },
+  critic:  { width: 150, height: 80  },
 };
 
 export const NODE_TYPES = {
