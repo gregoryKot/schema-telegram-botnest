@@ -207,8 +207,10 @@ export interface ModeMapEdge {
   id: string;
   source: string;
   target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
   label?: string;
-  data?: { edgeType?: EdgeType; bidirectional?: boolean };
+  data?: { edgeType?: EdgeType; bidirectional?: boolean; color?: string };
 }
 
 export interface ModeMapMeta {
