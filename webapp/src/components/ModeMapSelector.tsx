@@ -163,6 +163,7 @@ export function ModeMapSelector({ clientId }: Props) {
           <ModeMapEditor
             key={activeMap.id}
             mapId={activeMap.id}
+            clientId={clientId}
             initialNodes={activeMap.nodes}
             initialEdges={activeMap.edges}
           />

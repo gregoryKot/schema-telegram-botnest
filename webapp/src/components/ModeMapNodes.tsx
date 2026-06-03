@@ -57,13 +57,15 @@ function fillColor(color: string, filled?: boolean, fillFull?: boolean) {
   return rgb ? `rgba(${rgb},${op})` : `rgba(var(--fg-rgb),${op})`;
 }
 
-function NodeLabel({ label, note, light }: { label: string; note?: string; light?: boolean }) {
+function NodeLabel({ label, note, unmetNeed, light }: { label: string; note?: string; unmetNeed?: string; light?: boolean }) {
   return (
     <div style={{ textAlign: 'center' }}>
       <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-word',
         color: light ? 'rgba(255,255,255,0.95)' : 'var(--text)' }}>{label}</div>
       {note && <div style={{ fontSize: 11, marginTop: 3, lineHeight: 1.3, wordBreak: 'break-word',
         color: light ? 'rgba(255,255,255,0.75)' : 'var(--text-sub)' }}>{note}</div>}
+      {unmetNeed && <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word', fontStyle: 'italic',
+        color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>нужда: {unmetNeed}</div>}
     </div>
   );
 }
@@ -116,7 +118,7 @@ function makeRectNode(defaultColor: string, radius = 10) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', padding: '10px 14px',
         }}>
-          <NodeLabel label={d.label} note={d.note} light={light} />
+          <NodeLabel label={d.label} note={d.note} unmetNeed={d.unmetNeed} light={light} />
         </div>
       </div>
     );
@@ -187,7 +189,7 @@ export const ChildModeNode = function ChildModeNode({ data, selected }: NodeProp
         boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <NodeLabel label={d.label} note={d.note} light={light} />
+        <NodeLabel label={d.label} note={d.note} unmetNeed={d.unmetNeed} light={light} />
       </div>
     </div>
   );
