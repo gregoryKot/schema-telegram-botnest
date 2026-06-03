@@ -397,6 +397,7 @@ model ModeMap {
   therapistId BigInt
   clientId    BigInt
   title       String   @default("Карта режимов")
+  kind        String   @default("problem")  // 'personality' | 'problem'
   nodes       Json     @default("[]")
   edges       Json     @default("[]")
   createdAt   DateTime @default(now())
