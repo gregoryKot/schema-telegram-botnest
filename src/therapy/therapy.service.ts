@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
-import { encrypt, decrypt, encryptJson, decryptJson, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { encrypt, decrypt, encryptJson, decryptJson, encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { randomBytes } from 'crypto';
 
 function randomCode(): string {
