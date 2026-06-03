@@ -1,5 +1,5 @@
 import {
-  BaseEdge, EdgeLabelRenderer, getBezierPath, useInternalNode,
+  BaseEdge, EdgeLabelRenderer, useInternalNode,
   Position, type EdgeProps, type InternalNode, type Node,
 } from '@xyflow/react';
 
@@ -57,26 +57,20 @@ export function FloatingEdge({ id, source, target, markerEnd, markerStart, style
   const targetNode = useInternalNode(target);
   if (!sourceNode || !targetNode) return null;
 
-  const params = getEdgeParams(sourceNode, targetNode);
-  let { sx, sy, tx, ty } = params;
-  const { sourcePos, targetPos } = params;
+  const { sx, sy, tx, ty } = getEdgeParams(sourceNode, targetNode);
 
-  // Spread parallel / reciprocal edges so they don't merge: shift the whole
-  // line perpendicular by a small id-derived offset (-12, 0, +12 …).
-  const off = ((hashId(id) % 5) - 2) * 9;
-  if (off !== 0) {
-    const dx = tx - sx, dy = ty - sy;
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len, ny = dx / len;
-    sx += nx * off; sy += ny * off;
-    tx += nx * off; ty += ny * off;
-  }
-
-  const [path, labelX, labelY] = getBezierPath({
-    sourceX: sx, sourceY: sy, sourcePosition: sourcePos,
-    targetX: tx, targetY: ty, targetPosition: targetPos,
-    curvature: 0.3,
-  });
+  // Endpoints stay ON the borders (no gap). To keep parallel / reciprocal
+  // edges from merging, bow only the MIDDLE of the curve perpendicular by a
+  // small id-derived offset.
+  const bow = ((hashId(id) % 5) - 2) * 16; // -32 … +32
+  const dx = tx - sx, dy = ty - sy;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len, ny = dx / len;
+  const mx = (sx + tx) / 2 + nx * bow;
+  const my = (sy + ty) / 2 + ny * bow;
+  const path = `M ${sx},${sy} Q ${mx},${my} ${tx},${ty}`;
+  const labelX = (sx + tx) / 2 + nx * bow * 0.5;
+  const labelY = (sy + ty) / 2 + ny * bow * 0.5;
 
   return (
     <>
