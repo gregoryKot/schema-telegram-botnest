@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Controls, MiniMap, Panel,
   addEdge, useNodesState, useEdgesState, useReactFlow,
-  MarkerType, ConnectionMode,
+  MarkerType, ConnectionMode, getNodesBounds, getViewportForBounds,
   type Connection, type Node, type Edge, type NodeTypes,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { toPng } from 'html-to-image';
 
 import type { ModeMapNode, ModeMapEdge } from '../api';
 import { api } from '../api';
@@ -134,6 +135,36 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
     } catch { /* ignore */ }
   }, [nodes, edges, setNodes, scheduleSave, screenToFlowPosition, pushHistory]);
 
+  // Export the whole map as a PNG (fits all nodes)
+  const [exporting, setExporting] = useState(false);
+  const onExport = useCallback(async () => {
+    if (nodes.length === 0) return;
+    setExporting(true);
+    try {
+      const W = 1600, H = 1100;
+      const bounds = getNodesBounds(nodes);
+      const vp = getViewportForBounds(bounds, W, H, 0.4, 2.5, 0.12);
+      const viewportEl = document.querySelector('.react-flow__viewport') as HTMLElement | null;
+      if (!viewportEl) return;
+      const bg = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#f5f2eb';
+      const dataUrl = await toPng(viewportEl, {
+        backgroundColor: bg,
+        width: W, height: H, pixelRatio: 2,
+        style: {
+          width: `${W}px`, height: `${H}px`,
+          transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
+        },
+        filter: (n) => !(n?.classList?.contains('react-flow__minimap')
+          || n?.classList?.contains('react-flow__controls')
+          || n?.classList?.contains('react-flow__panel')),
+      });
+      const a = document.createElement('a');
+      a.download = `karta-rezhimov-${new Date().toISOString().slice(0, 10)}.png`;
+      a.href = dataUrl;
+      a.click();
+    } catch { /* ignore */ } finally { setExporting(false); }
+  }, [nodes]);
+
   // Apply changes; snapshot history at drag/resize start, save at end.
   const draggingRef = useRef(false);
   const onNodesChangeWithSave = useCallback((changes: Parameters<typeof onNodesChange>[0]) => {
@@ -195,6 +226,8 @@ function ModeMapCanvas({ nodes, edges, setNodes, setEdges, onNodesChange, onEdge
             <TbBtn label="Приблизить" onClick={() => zoomIn()}>＋</TbBtn>
             <TbBtn label="Отдалить" onClick={() => zoomOut()}>－</TbBtn>
             <TbBtn label="Показать всё" onClick={() => fitView({ padding: 0.2 })}>⤢</TbBtn>
+            <TbSep />
+            <TbBtn label="Скачать PNG" onClick={onExport} disabled={exporting || nodes.length === 0}>⤓</TbBtn>
           </div>
         </Panel>
       </ReactFlow>
