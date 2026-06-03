@@ -225,13 +225,14 @@ function TbSep() {
 
 interface Props {
   mapId: number;
+  clientId: number;
   initialNodes: ModeMapNode[];
   initialEdges: ModeMapEdge[];
 }
 
 type Snapshot = { nodes: FlowNode[]; edges: FlowEdge[] };
 
-export function ModeMapEditor({ mapId, initialNodes, initialEdges }: Props) {
+export function ModeMapEditor({ mapId, clientId, initialNodes, initialEdges }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(toFlowNodes(initialNodes));
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(toFlowEdges(initialEdges));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -381,7 +382,7 @@ export function ModeMapEditor({ mapId, initialNodes, initialEdges }: Props) {
   return (
     <ReactFlowProvider>
       <div style={{ display: 'flex', height: '100%', background: 'var(--bg)' }}>
-        <ModeMapPalette onAdd={handleAddNode} />
+        <ModeMapPalette onAdd={handleAddNode} clientId={clientId} />
         <ModeMapCanvas nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
           setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId}

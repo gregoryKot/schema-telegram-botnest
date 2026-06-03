@@ -1,7 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { MODE_GROUPS } from '../schemaTherapyData';
+import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
 import type { ModeMapNode, TherapistCustomMode } from '../api';
 import { api } from '../api';
+
+// Maps a mode id → which palette group/type it belongs to (for client modes)
+function findModeMeta(modeId: string): { type: NodeType; copingSubtype?: 'over' | 'avoid' | 'surr'; emoji: string; name: string } | null {
+  for (const group of MODE_GROUPS) {
+    const meta = GROUP_TO_TYPE[group.id];
+    if (!meta) continue;
+    const item = group.items.find(i => i.id === modeId);
+    if (item) return { type: meta.type, copingSubtype: meta.copingSubtype, emoji: item.emoji, name: item.name };
+  }
+  return null;
+}
 
 type NodeType = ModeMapNode['type'];
 
@@ -18,12 +29,14 @@ const GROUP_TO_TYPE: Record<string, { type: NodeType; color: string; copingSubty
 
 interface Props {
   onAdd: (node: Omit<ModeMapNode, 'position'>) => void;
+  clientId: number;
 }
 
-export function ModeMapPalette({ onAdd }: Props) {
+export function ModeMapPalette({ onAdd, clientId }: Props) {
   const [search, setSearch] = useState('');
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
   const [customModes, setCustomModes] = useState<TherapistCustomMode[]>([]);
+  const [clientModeIds, setClientModeIds] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmoji, setNewEmoji] = useState('⬡');
@@ -34,6 +47,13 @@ export function ModeMapPalette({ onAdd }: Props) {
   useEffect(() => {
     api.listCustomModes().then(setCustomModes).catch(() => {});
   }, []);
+
+  // Modes already identified for this client (from conceptualization)
+  useEffect(() => {
+    api.getConceptualization(clientId)
+      .then(c => setClientModeIds(Array.isArray(c?.modeIds) ? c.modeIds : []))
+      .catch(() => {});
+  }, [clientId]);
 
   const q = search.trim().toLowerCase();
 
@@ -88,6 +108,33 @@ export function ModeMapPalette({ onAdd }: Props) {
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
+        {/* Client's identified modes (from conceptualization) */}
+        {!q && clientModeIds.length > 0 && (
+          <div style={{ background: 'var(--accent-soft)', paddingBottom: 4 }}>
+            <div style={{ padding: '7px 12px 4px', fontSize: 11, fontWeight: 600, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 5 }}>
+              ★ Режимы клиента
+            </div>
+            {clientModeIds.map(modeId => {
+              const meta = findModeMeta(modeId);
+              const lib = getModeById(modeId);
+              if (!meta && !lib) return null;
+              const name = meta?.name ?? lib?.name ?? modeId;
+              const emoji = meta?.emoji ?? lib?.emoji ?? '◆';
+              const type = meta?.type ?? 'custom';
+              const extra = meta?.copingSubtype ? { copingSubtype: meta.copingSubtype } : {};
+              return (
+                <button key={modeId}
+                  onClick={() => onAdd(makeNode(modeId, type, name, extra))}
+                  draggable onDragStart={e => onDragStart(e, makeNode(modeId, type, name, extra))}
+                  style={{ ...itemStyle, padding: '5px 14px' }} title="Из концептуализации клиента">
+                  <span style={{ fontSize: 12 }}>{emoji}</span>
+                  <span style={{ fontSize: 12, flex: 1 }}>{name}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Trigger */}
         {(!q || 'триггер ситуация'.includes(q)) && (
           <button onClick={() => onAdd({ id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
