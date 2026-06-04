@@ -321,7 +321,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         onConnect={onConnect} onDrop={onDrop} onDragOver={onDragOver}
         isValidConnection={isValidConnection}
         connectionMode={ConnectionMode.Loose}
-        connectionRadius={60}
+        connectionRadius={110}
         edgesReconnectable onReconnect={onReconnect} onReconnectStart={onReconnectStart} onReconnectEnd={onReconnectEnd}
         onNodeClick={(_, node) => { setSelectedNodeId(node.id); setSelectedEdgeId(null); }}
         onNodeDoubleClick={(_, node) => { setSelectedNodeId(node.id); setSelectedEdgeId(null); setTimeout(() => window.dispatchEvent(new CustomEvent('modemap-focus-name')), 30); }}
@@ -335,7 +335,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         fitView fitViewOptions={{ padding: 0.2 }} deleteKeyCode={null}
         nodesDraggable nodeDragThreshold={1}
       >
-        <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.09)" gap={snap ? 20 : 26} size={1.3} />
+        <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.16)" gap={snap ? 20 : 22} size={1.5} />
         {showZones && <ModeMapZones />}
 
         {/* Toolbar — icon-only with hover tooltips */}

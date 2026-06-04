@@ -8,14 +8,14 @@ export function edgeColor(d?: ModeMapEdge['data']): string {
   // Colour is set explicitly by the user; the connection type only drives the
   // text label now (not the colour). Neutral grey is the default.
   if (d?.color) return d.color;
-  return 'rgba(var(--fg-rgb),0.45)';
+  return 'rgba(var(--fg-rgb),0.55)';
 }
 
 export const EDGE_WIDTH_PX: Record<string, number> = { thin: 1.5, normal: 2.25, bold: 3.5 };
 
 export function makeMarker(color: string, width?: string) {
   const s = (EDGE_WIDTH_PX[width ?? 'normal'] ?? 2.25);
-  const m = 11 + s * 1.2;  // slim, proportional arrowhead (not oversized)
+  const m = 8.5 + s * 1.1;  // slim, proportional arrowhead
   return { type: MarkerType.ArrowClosed, color, width: m, height: m };
 }
 

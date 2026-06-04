@@ -185,8 +185,7 @@ function SvgShapeNode({ id, data, selected, color, svgPath, viewBox = '0 0 100 1
       <svg viewBox={viewBox} preserveAspectRatio="none"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
         <path d={svgPath} fill={fill} stroke={stroke} strokeWidth={strokePx(data)} vectorEffect="non-scaling-stroke"
-          strokeLinejoin="round" strokeLinecap="round" shapeRendering="geometricPrecision"
-          filter={!selected ? 'drop-shadow(0 2px 5px rgba(0,0,0,0.12))' : undefined} />
+          strokeLinejoin="round" strokeLinecap="round" shapeRendering="geometricPrecision" />
       </svg>
       <div style={{ position: 'relative', padding: textPadding, pointerEvents: 'none', boxSizing: 'border-box' }}>
         <NodeLabel id={id} data={data} light={light} />

@@ -1,6 +1,6 @@
 import {
-  BaseEdge, EdgeLabelRenderer, useInternalNode, getBezierPath,
-  Position, type EdgeProps, type InternalNode, type Node,
+  BaseEdge, EdgeLabelRenderer, useInternalNode, getStraightPath,
+  type EdgeProps, type InternalNode, type Node,
 } from '@xyflow/react';
 
 // ── Geometry: exact point where the REAL shape outline faces the other node ───
@@ -78,38 +78,22 @@ function getNodeIntersection(node: InternalNode<Node>, other: InternalNode<Node>
   return { x: p.x - (dx / len) * 1, y: p.y - (dy / len) * 1 };
 }
 
-// Which side the endpoint leaves from — derived from its direction off the centre,
-// so it works for polygon points sitting on a diagonal edge too.
-function getEdgePosition(node: InternalNode<Node>, p: { x: number; y: number }): Position {
-  const cx = node.internals.positionAbsolute.x + (node.measured.width ?? 0) / 2;
-  const cy = node.internals.positionAbsolute.y + (node.measured.height ?? 0) / 2;
-  const dx = p.x - cx, dy = p.y - cy;
-  if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? Position.Right : Position.Left;
-  return dy > 0 ? Position.Bottom : Position.Top;
-}
-
 function getEdgeParams(source: InternalNode<Node>, target: InternalNode<Node>) {
   const sp = getNodeIntersection(source, target);
   const tp = getNodeIntersection(target, source);
-  return {
-    sx: sp.x, sy: sp.y, tx: tp.x, ty: tp.y,
-    sourcePos: getEdgePosition(source, sp),
-    targetPos: getEdgePosition(target, tp),
-  };
+  return { sx: sp.x, sy: sp.y, tx: tp.x, ty: tp.y };
 }
 
-// ── Floating edge — clean bezier that attaches to the border facing the other node
+// ── Floating edge — clean straight line between the two shape borders ──────────
 export function FloatingEdge({ id, source, target, markerEnd, markerStart, style, label, labelStyle }: EdgeProps) {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
   if (!sourceNode || !targetNode) return null;
 
-  const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(sourceNode, targetNode);
+  const { sx, sy, tx, ty } = getEdgeParams(sourceNode, targetNode);
 
-  const [path, labelX, labelY] = getBezierPath({
-    sourceX: sx, sourceY: sy, sourcePosition: sourcePos,
-    targetX: tx, targetY: ty, targetPosition: targetPos,
-    curvature: 0.22,
+  const [path, labelX, labelY] = getStraightPath({
+    sourceX: sx, sourceY: sy, targetX: tx, targetY: ty,
   });
 
   return (
