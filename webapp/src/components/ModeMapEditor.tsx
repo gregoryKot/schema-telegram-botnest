@@ -14,6 +14,7 @@ import {
   toFlowEdges, toFlowNodes, fromFlowNodes, fromFlowEdges,
 } from './modeMapFlow';
 import { useModeMapHistory } from './useModeMapHistory';
+import { useIsMobile } from './useIsMobile';
 
 
 // ─── Public component ─────────────────────────────────────────────────────────
@@ -32,9 +33,12 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [paletteOpen, setPaletteOpen] = useState(() => localStorage.getItem('modemap_palette') !== '0');
+  const mobile = useIsMobile();
+  // On phones the palette starts hidden so the canvas gets the full width.
+  const [paletteOpen, setPaletteOpen] = useState(() =>
+    mobile ? false : localStorage.getItem('modemap_palette') !== '0');
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => { localStorage.setItem('modemap_palette', paletteOpen ? '1' : '0'); }, [paletteOpen]);
+  useEffect(() => { if (!mobile) localStorage.setItem('modemap_palette', paletteOpen ? '1' : '0'); }, [paletteOpen, mobile]);
 
   // Always-fresh refs (for deferred saves after React Flow internal updates)
   const nodesRef = useRef(nodes); nodesRef.current = nodes;
@@ -187,37 +191,69 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedNodeId, selectedEdgeId, nodes, edges, setNodes, setEdges, scheduleSave, pushHistory, undo, redo]);
 
+  // On mobile, the palette + side editor float over the canvas (drawers) so
+  // the canvas always has the full width; on desktop they're flex columns.
+  const overlay = (sideBtn: React.ReactNode, content: React.ReactNode, side: 'left' | 'right') => (
+    <>
+      <div onClick={() => { setPaletteOpen(false); setSelectedNodeId(null); setSelectedEdgeId(null); }}
+        style={{ position: 'absolute', inset: 0, zIndex: 39, background: 'rgba(0,0,0,0.25)' }} />
+      <div style={{ position: 'absolute', top: 0, bottom: 0, [side]: 0, zIndex: 40, display: 'flex',
+        boxShadow: side === 'left' ? '4px 0 16px rgba(0,0,0,0.15)' : '-4px 0 16px rgba(0,0,0,0.15)' }}>
+        {side === 'left' ? <>{content}{sideBtn}</> : <>{sideBtn}{content}</>}
+      </div>
+    </>
+  );
+
+  const nodeEditor = selectedNode && (
+    <ModeMapNodeEditor
+      node={{ id: selectedNode.id, type: selectedNode.type as ModeMapNode['type'], position: selectedNode.position, data: selectedNode.data as unknown as ModeMapNode['data'] }}
+      onChange={handleNodeChange} onDelete={handleDeleteNode}
+      onClose={() => setSelectedNodeId(null)} />
+  );
+  const edgeEditor = selectedEdge && !selectedNode && (
+    <ModeMapEdgeEditor
+      edge={{ id: selectedEdge.id, source: selectedEdge.source, target: selectedEdge.target, label: selectedEdge.label as string | undefined, data: selectedEdge.data as unknown as ModeMapEdge['data'] }}
+      onChange={handleEdgeChange} onDelete={handleDeleteEdge} onSwap={handleSwapEdge}
+      onClose={() => setSelectedEdgeId(null)} />
+  );
+
+  const paletteCol = (
+    <div style={{ position: 'relative', display: 'flex' }}>
+      <ModeMapPalette onAdd={handleAddNode} clientId={clientId} />
+      <button onClick={() => setPaletteOpen(false)} title="Скрыть панель режимов"
+        style={collapseBtnStyle('left')}>‹</button>
+    </div>
+  );
+
   return (
     <ReactFlowProvider>
       <div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
-        {paletteOpen ? (
-          <div style={{ position: 'relative', display: 'flex' }}>
-            <ModeMapPalette onAdd={handleAddNode} clientId={clientId} />
-            <button onClick={() => setPaletteOpen(false)} title="Скрыть панель режимов"
-              style={collapseBtnStyle('left')}>‹</button>
-          </div>
-        ) : (
+        {/* Palette: inline column (desktop) or floating drawer (mobile) */}
+        {paletteOpen && !mobile && paletteCol}
+        {!paletteOpen && (
           <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов"
-            style={{ ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>›</button>
+            style={mobile
+              ? { ...collapseBtnStyle('left'), position: 'absolute', top: 52, left: 8, zIndex: 30, borderRadius: 7, width: 30, height: 30, fontSize: 17 }
+              : { ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
+            {mobile ? '☰' : '›'}
+          </button>
         )}
+
         <ModeMapCanvas clientId={clientId} mapId={mapId} kind={kind} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
           setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId}
           saveStatus={saveStatus} scheduleSave={scheduleSave}
           pushHistory={pushHistory} nodesRef={nodesRef} edgesRef={edgesRef}
           onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
-        {selectedNode && (
-          <ModeMapNodeEditor
-            node={{ id: selectedNode.id, type: selectedNode.type as ModeMapNode['type'], position: selectedNode.position, data: selectedNode.data as unknown as ModeMapNode['data'] }}
-            onChange={handleNodeChange} onDelete={handleDeleteNode}
-            onClose={() => setSelectedNodeId(null)} />
-        )}
-        {selectedEdge && !selectedNode && (
-          <ModeMapEdgeEditor
-            edge={{ id: selectedEdge.id, source: selectedEdge.source, target: selectedEdge.target, label: selectedEdge.label as string | undefined, data: selectedEdge.data as unknown as ModeMapEdge['data'] }}
-            onChange={handleEdgeChange} onDelete={handleDeleteEdge} onSwap={handleSwapEdge}
-            onClose={() => setSelectedEdgeId(null)} />
-        )}
+
+        {/* Side editor: inline column (desktop) or floating drawer (mobile) */}
+        {!mobile && (nodeEditor || edgeEditor)}
+
+        {/* Mobile drawers */}
+        {mobile && paletteOpen && overlay(
+          <button onClick={() => setPaletteOpen(false)} title="Скрыть" style={collapseBtnStyle('left')}>‹</button>,
+          <ModeMapPalette onAdd={handleAddNode} clientId={clientId} />, 'left')}
+        {mobile && (nodeEditor || edgeEditor) && overlay(null, nodeEditor || edgeEditor, 'right')}
       </div>
     </ReactFlowProvider>
   );
