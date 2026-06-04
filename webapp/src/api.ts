@@ -198,6 +198,8 @@ export interface ModeMapNode {
     copingSubtype?: 'over' | 'avoid' | 'surr';
     display?: 'name' | 'note' | 'full';   // что показывать на фигуре
     healthyResponse?: string;             // что сказал бы Здоровый Взрослый
+    strokeWidth?: 'thin' | 'normal' | 'bold';  // толщина контура фигуры
+    fontSize?: 'sm' | 'md' | 'lg';        // размер текста в фигуре
   };
   width?: number;
   height?: number;
@@ -214,7 +216,7 @@ export interface ModeMapEdge {
   sourceHandle?: string | null;
   targetHandle?: string | null;
   label?: string;
-  data?: { edgeType?: EdgeType; bidirectional?: boolean; color?: string; lineStyle?: LineStyle };
+  data?: { edgeType?: EdgeType; bidirectional?: boolean; color?: string; lineStyle?: LineStyle; width?: 'thin' | 'normal' | 'bold' };
 }
 
 export type ModeMapKind = 'personality' | 'problem';

@@ -113,10 +113,10 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
       const rebuilt: FlowEdge = {
         ...base,
         data: updated.data as Record<string, unknown>,
-        style: edgeStyle(color, d?.lineStyle),
-        markerEnd: makeMarker(color),
+        style: edgeStyle(color, d?.lineStyle, d?.width),
+        markerEnd: makeMarker(color, d?.width),
       };
-      if (d?.bidirectional) rebuilt.markerStart = makeMarker(color);
+      if (d?.bidirectional) rebuilt.markerStart = makeMarker(color, d?.width);
       if (updated.label) {
         rebuilt.label = updated.label;
         rebuilt.labelStyle = { fontSize: 11, fill: 'var(--text-sub)' };
