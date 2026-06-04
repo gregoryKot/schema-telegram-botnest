@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow, Background, BackgroundVariant, Panel,
   addEdge, reconnectEdge, useReactFlow, ConnectionMode,
@@ -16,7 +16,7 @@ import { ModeMapLegend } from './ModeMapLegend';
 import { ModeMapGuide } from './ModeMapGuide';
 import { ModeMapZones } from './ModeMapZones';
 import { NodeActionsContext, type NodeActions } from './modeMapActions';
-import { autoLayout, TEMPLATES, templateToGraph } from './modeMapLayout';
+import { autoLayout, layoutByZones, TEMPLATES, templateToGraph } from './modeMapLayout';
 import {
   type FlowNode, type FlowEdge,
   edgeColor, makeMarker, edgeStyle, toFlowNodes, toFlowEdges,
@@ -55,6 +55,9 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   const [keysOpen, setKeysOpen] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const edgeReconnectOk = useRef(true);
+  const tplWrapRef = useRef<HTMLDivElement>(null);
+  const dlWrapRef = useRef<HTMLDivElement>(null);
+  const keysWrapRef = useRef<HTMLDivElement>(null);
   // Desktop (fine pointer) — keyboard hints only make sense there
   const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 900px) and (pointer: fine)').matches;
 
@@ -191,11 +194,12 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   const onAutoLayout = useCallback(() => {
     if (nodes.length === 0) return;
     pushHistory();
-    const laid = autoLayout(nodes, edges);
+    // With «Зоны» on, lay nodes out by type into the bands; otherwise dagre by edges.
+    const laid = showZones ? layoutByZones(nodes) : autoLayout(nodes, edges);
     setNodes(laid); scheduleSave(laid, edges);
     // Only zoom out to fit — never magnify (maxZoom 1) so layout doesn't blow up the scale
     setTimeout(() => fitView({ padding: 0.2, duration: 400, maxZoom: 1 }), 50);
-  }, [nodes, edges, setNodes, scheduleSave, pushHistory, fitView]);
+  }, [nodes, edges, setNodes, scheduleSave, pushHistory, fitView, showZones]);
 
   // ── Node actions (toolbar + context menu) ────────────────────────────────────
   const duplicateNode = useCallback((id: string) => {
@@ -345,10 +349,10 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
             <TbBtn label="Разложить автоматически" onClick={onAutoLayout} disabled={nodes.length === 0}>↻</TbBtn>
             <TbBtn label="Привязка к сетке" onClick={() => setSnap(s => !s)} active={snap}>▦</TbBtn>
             <TbBtn label="Зоны: здоровый взрослый / копинги / детские и критики" onClick={toggleZones} active={showZones}>▤</TbBtn>
-            <div style={{ position: 'relative' }}>
+            <div ref={tplWrapRef} style={{ position: 'relative' }}>
               <TbBtn label="Шаблоны и генерация" onClick={() => { setTplOpen(o => !o); setDlOpen(false); }} active={tplOpen} caret>✚</TbBtn>
               {tplOpen && (
-                <Dropdown onClose={() => setTplOpen(false)}>
+                <Dropdown anchorRef={tplWrapRef} onClose={() => setTplOpen(false)}>
                   <div style={dropHeadStyle}>Шаблоны</div>
                   {TEMPLATES.map(t => (
                     <button key={t.id} onClick={() => { const g = templateToGraph(t); insertGraph(g.nodes, g.edges); setTplOpen(false); }}
@@ -364,21 +368,21 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
             <TbBtn label="Подсказки: клиническая цепочка и советы" onClick={toggleGuide} active={showGuide}>💡</TbBtn>
             <TbBtn label="Легенда: формы и цвета" onClick={toggleLegend} active={showLegend}>ⓘ</TbBtn>
             <TbSep />
-            <div style={{ position: 'relative' }}>
+            <div ref={dlWrapRef} style={{ position: 'relative' }}>
               <TbBtn label="Скачать карту (PNG / PDF)" onClick={() => { setDlOpen(o => !o); setTplOpen(false); }}
                 active={dlOpen} caret disabled={nodes.length === 0}>⬇</TbBtn>
               {dlOpen && (
-                <Dropdown onClose={() => setDlOpen(false)}>
+                <Dropdown anchorRef={dlWrapRef} onClose={() => setDlOpen(false)}>
                   <button disabled={exporting} onClick={() => { onExportPng(); setDlOpen(false); }} style={menuItemStyle}>🖼 Картинка PNG</button>
                   <button disabled={exporting} onClick={() => { onExportPdf(); setDlOpen(false); }} style={menuItemStyle}>📄 Документ PDF</button>
                 </Dropdown>
               )}
             </div>
             {isDesktop && (
-              <div style={{ position: 'relative' }}>
+              <div ref={keysWrapRef} style={{ position: 'relative' }}>
                 <TbBtn label="Горячие клавиши" onClick={() => setKeysOpen(o => !o)} active={keysOpen}>⌨</TbBtn>
                 {keysOpen && (
-                  <Dropdown onClose={() => setKeysOpen(false)}>
+                  <Dropdown anchorRef={keysWrapRef} onClose={() => setKeysOpen(false)}>
                     <div style={dropHeadStyle}>Горячие клавиши</div>
                     {([
                       ['⌘Z / Ctrl+Z', 'Отменить'],
@@ -454,15 +458,31 @@ function TbSep() {
   return <div style={{ width: 1, background: 'rgba(var(--fg-rgb),0.1)', margin: '4px 2px' }} />;
 }
 
-function Dropdown({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+// Anchored to its trigger button and rendered fixed, clamped inside the viewport —
+// so it never gets clipped or pushed off-screen by the toolbar's position.
+function Dropdown({ children, onClose, anchorRef }: {
+  children: React.ReactNode; onClose: () => void; anchorRef: React.RefObject<HTMLElement | null>;
+}) {
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    const r = anchorRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const WIDTH = 220, MARGIN = 8;
+    let left = r.left;
+    if (left + WIDTH > window.innerWidth - MARGIN) left = window.innerWidth - MARGIN - WIDTH;
+    if (left < MARGIN) left = MARGIN;
+    setPos({ left, top: r.bottom + 4 });
+  }, [anchorRef]);
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 19 }} />
-      <div style={{ position: 'absolute', top: 36, left: 0, zIndex: 20, minWidth: 210,
-        background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 8,
-        padding: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.16)' }}>
-        {children}
-      </div>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 39 }} />
+      {pos && (
+        <div style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 40, width: 220,
+          background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 8,
+          padding: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.16)' }}>
+          {children}
+        </div>
+      )}
     </>
   );
 }

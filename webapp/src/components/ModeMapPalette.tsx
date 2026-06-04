@@ -32,10 +32,11 @@ export const GROUP_TO_TYPE: Record<string, { type: NodeType; color: string; copi
 
 interface Props {
   onAdd: (node: Omit<ModeMapNode, 'position'>) => void;
+  onAddMany?: (nodes: Omit<ModeMapNode, 'position'>[]) => void;
   clientId: number;
 }
 
-export function ModeMapPalette({ onAdd, clientId }: Props) {
+export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
   const [search, setSearch] = useState('');
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
   const [customModes, setCustomModes] = useState<TherapistCustomMode[]>([]);
@@ -63,8 +64,21 @@ export function ModeMapPalette({ onAdd, clientId }: Props) {
   const q = search.trim().toLowerCase();
 
   const makeNode = (modeId: string, type: NodeType, label: string, extra?: Partial<ModeMapNode['data']>): Omit<ModeMapNode, 'position'> => ({
-    id: `${modeId}_${Date.now()}`, type, data: { modeId, label, ...extra },
+    id: `${modeId}_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, type, data: { modeId, label, ...extra },
   });
+
+  // Build a node partial for a client's identified mode (library or grouped)
+  const clientModeNode = (modeId: string): Omit<ModeMapNode, 'position'> | null => {
+    const meta = findModeMeta(modeId);
+    const lib = getModeById(modeId);
+    if (!meta && !lib) return null;
+    const name = meta?.name ?? lib?.name ?? modeId;
+    const type = meta?.type ?? 'custom';
+    const extra = meta?.copingSubtype ? { copingSubtype: meta.copingSubtype } : {};
+    return makeNode(modeId, type, name, extra);
+  };
+  const clientModeEmoji = (modeId: string): string =>
+    findModeMeta(modeId)?.emoji ?? getModeById(modeId)?.emoji ?? '◆';
 
   const onDragStart = (e: React.DragEvent, partial: Omit<ModeMapNode, 'position'>) => {
     e.dataTransfer.setData(DRAG_TYPE, JSON.stringify(partial));
@@ -116,27 +130,31 @@ export function ModeMapPalette({ onAdd, clientId }: Props) {
         {/* Client's identified modes (from conceptualization) — collapsible */}
         {!q && clientModeIds.length > 0 && (
           <div style={{ background: clientOpen ? 'var(--accent-soft)' : 'none', paddingBottom: clientOpen ? 4 : 0 }}>
-            <button onClick={() => setClientOpen(o => !o)}
-              style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '7px 12px',
-                background: 'none', border: 'none', cursor: 'pointer' }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', flex: 1, textAlign: 'left' }}>★ Режимы клиента</span>
-              <span style={{ fontSize: 10, color: 'var(--accent)' }}>{clientOpen ? '▲' : `▼ ${clientModeIds.length}`}</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '7px 12px' }}>
+              <button onClick={() => setClientOpen(o => !o)}
+                style={{ display: 'flex', alignItems: 'center', flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', flex: 1, textAlign: 'left' }}>★ Режимы клиента</span>
+                <span style={{ fontSize: 10, color: 'var(--accent)' }}>{clientOpen ? '▲' : `▼ ${clientModeIds.length}`}</span>
+              </button>
+              {onAddMany && (
+                <button onClick={() => { const all = clientModeIds.map(clientModeNode).filter(Boolean) as Omit<ModeMapNode, 'position'>[]; if (all.length) onAddMany(all); }}
+                  title="Вынести все режимы клиента на карту"
+                  style={{ marginLeft: 8, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 5,
+                    cursor: 'pointer', fontSize: 10.5, fontWeight: 600, padding: '3px 8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                  ＋ все
+                </button>
+              )}
+            </div>
             {clientOpen && clientModeIds.map(modeId => {
-              const meta = findModeMeta(modeId);
-              const lib = getModeById(modeId);
-              if (!meta && !lib) return null;
-              const name = meta?.name ?? lib?.name ?? modeId;
-              const emoji = meta?.emoji ?? lib?.emoji ?? '◆';
-              const type = meta?.type ?? 'custom';
-              const extra = meta?.copingSubtype ? { copingSubtype: meta.copingSubtype } : {};
+              const node = clientModeNode(modeId);
+              if (!node) return null;
               return (
                 <button key={modeId}
-                  onClick={() => onAdd(makeNode(modeId, type, name, extra))}
-                  draggable onDragStart={e => onDragStart(e, makeNode(modeId, type, name, extra))}
+                  onClick={() => onAdd(node)}
+                  draggable onDragStart={e => onDragStart(e, node)}
                   style={{ ...itemStyle, padding: '5px 14px' }} title="Из концептуализации клиента">
-                  <span style={{ fontSize: 12 }}>{emoji}</span>
-                  <span style={{ fontSize: 12, flex: 1 }}>{name}</span>
+                  <span style={{ fontSize: 12 }}>{clientModeEmoji(modeId)}</span>
+                  <span style={{ fontSize: 12, flex: 1 }}>{node.data.label}</span>
                 </button>
               );
             })}
