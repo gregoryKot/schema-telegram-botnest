@@ -47,6 +47,7 @@ export function ModeMapPalette({ onAdd, clientId }: Props) {
   const [newType, setNewType] = useState<NodeType>('custom');
   const [newCopingSub, setNewCopingSub] = useState<'over' | 'avoid' | 'surr'>('over');
   const addInputRef = useRef<HTMLInputElement>(null);
+  const addFormRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api.listCustomModes().then(setCustomModes).catch(() => {});
@@ -199,13 +200,13 @@ export function ModeMapPalette({ onAdd, clientId }: Props) {
           <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', marginTop: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
               <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)', flex: 1 }}>Мои режимы</span>
-              <button onClick={() => { setAdding(a => !a); setTimeout(() => addInputRef.current?.focus(), 50); }}
+              <button onClick={() => { const next = !adding; setAdding(next); if (next) setTimeout(() => { addFormRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); addInputRef.current?.focus(); }, 60); }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: 'var(--accent)', padding: 0, lineHeight: 1 }}
                 title="Добавить свой режим">＋</button>
             </div>
 
             {adding && (
-              <div style={{ padding: '6px 10px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div ref={addFormRef} style={{ padding: '6px 10px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {/* Emoji + name */}
                 <div style={{ display: 'flex', gap: 6 }}>
                   <input ref={addInputRef} value={newEmoji} onChange={e => setNewEmoji(e.target.value)}
