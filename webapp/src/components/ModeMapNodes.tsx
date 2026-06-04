@@ -12,6 +12,8 @@ export interface ModeNodeData {
   copingSubtype?: 'over' | 'avoid' | 'surr';
   display?: 'name' | 'note' | 'full';
   healthyResponse?: string;
+  strokeWidth?: 'thin' | 'normal' | 'bold';
+  fontSize?: 'sm' | 'md' | 'lg';
 }
 
 export const TYPE_COLORS: Record<string, string> = {
@@ -96,6 +98,12 @@ function fillColor(color: string, filled?: boolean, fillFull?: boolean) {
   return rgb ? `rgba(${rgb},${op})` : `rgba(var(--fg-rgb),${op})`;
 }
 
+// Contour thickness + text size — minimal per-node settings
+const STROKE_PX: Record<string, number> = { thin: 1.5, normal: 2.5, bold: 4 };
+const strokePx = (d: ModeNodeData) => STROKE_PX[d.strokeWidth ?? 'normal'] ?? 2.5;
+const FONT_PX: Record<string, number> = { sm: 11.5, md: 13.5, lg: 16.5 };
+const fontPx = (d: ModeNodeData) => FONT_PX[d.fontSize ?? 'md'] ?? 13.5;
+
 function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light?: boolean }) {
   const actions = useNodeActions();
   const [editing, setEditing] = useState(false);
@@ -108,6 +116,8 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
 
   const startEdit = () => { if (id && actions) { setDraft(data.label); setEditing(true); } };
   const commit = () => { if (id && actions) actions.rename(id, draft.trim() || data.label); setEditing(false); };
+  const fs = fontPx(data);
+  const subFs = Math.max(10, fs - 2.5);
 
   return (
     <div style={{ textAlign: 'center', pointerEvents: 'all' }}>
@@ -119,19 +129,19 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
           onClick={e => e.stopPropagation()}
           onDoubleClick={e => e.stopPropagation()}
           className="nodrag"
-          style={{ width: '90%', fontSize: 13, fontWeight: 600, textAlign: 'center',
+          style={{ width: '90%', fontSize: fs, fontWeight: 600, textAlign: 'center',
             border: '1px solid var(--accent)', borderRadius: 4, background: 'var(--bg-elev)',
             color: 'var(--text)', outline: 'none', padding: '1px 4px' }} />
       ) : (
         <div onDoubleClick={(e) => { e.stopPropagation(); startEdit(); }}
-          style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-word', cursor: id ? 'text' : 'default',
+          style={{ fontSize: fs, fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-word', cursor: id ? 'text' : 'default',
             color: light ? 'rgba(255,255,255,0.95)' : 'var(--text)' }}>{data.label}</div>
       )}
-      {showNote && <div style={{ fontSize: 11, marginTop: 3, lineHeight: 1.3, wordBreak: 'break-word',
+      {showNote && <div style={{ fontSize: subFs, marginTop: 3, lineHeight: 1.3, wordBreak: 'break-word',
         color: light ? 'rgba(255,255,255,0.75)' : 'var(--text-sub)' }}>{data.note}</div>}
-      {showNeed && <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word', fontStyle: 'italic',
+      {showNeed && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word', fontStyle: 'italic',
         color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>потребность: {data.unmetNeed}</div>}
-      {showHealthy && <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.3, wordBreak: 'break-word',
+      {showHealthy && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.3, wordBreak: 'break-word',
         color: light ? 'rgba(255,255,255,0.8)' : '#5a9a5c' }}>🌿 {data.healthyResponse}</div>}
     </div>
   );
@@ -157,7 +167,7 @@ function SvgShapeNode({ id, data, selected, color, svgPath, textPadding, minW = 
       <AllHandles />
       <svg viewBox="0 0 100 100" preserveAspectRatio="none"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-        <path d={svgPath} fill={fill} stroke={stroke} strokeWidth="2.5" vectorEffect="non-scaling-stroke"
+        <path d={svgPath} fill={fill} stroke={stroke} strokeWidth={strokePx(data)} vectorEffect="non-scaling-stroke"
           strokeLinejoin="round" strokeLinecap="round"
           filter={!selected ? 'drop-shadow(0 2px 5px rgba(0,0,0,0.12))' : undefined} />
       </svg>
@@ -182,7 +192,7 @@ function makeRectNode(defaultColor: string, radius = 10) {
         <div style={{
           borderRadius: radius,
           background: fillColor(color, d.filled, d.fillFull),
-          border: `2px solid ${selected ? 'var(--accent)' : color}`,
+          border: `${strokePx(d)}px solid ${selected ? 'var(--accent)' : color}`,
           boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', padding: '10px 16px', boxSizing: 'border-box',
@@ -228,7 +238,7 @@ export const CopingModeNode = function CopingModeNode({ id, data, selected }: No
           position: 'absolute', top: '50%', left: 0, right: 0, transform: 'translateY(-50%)',
           height: '56%', borderRadius: 9999,
           background: fillColor(color, d.filled, d.fillFull),
-          border: `2.5px solid ${selected ? 'var(--accent)' : color}`,
+          border: `${strokePx(d)}px solid ${selected ? 'var(--accent)' : color}`,
           boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', padding: '0 16px', boxSizing: 'border-box',
@@ -262,7 +272,7 @@ export const ChildModeNode = function ChildModeNode({ id, data, selected }: Node
       <div style={{
         width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden',
         background: fillColor(color, d.filled, d.fillFull),
-        border: `2px solid ${selected ? 'var(--accent)' : color}`,
+        border: `${strokePx(d)}px solid ${selected ? 'var(--accent)' : color}`,
         boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         // Inscribed square: keep text off the curved edge
@@ -288,7 +298,8 @@ export const TriggerNode = function TriggerNode({ id, data, selected }: NodeProp
       <AllHandles />
       <svg viewBox="0 0 100 60" preserveAspectRatio="none"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-        <path fill={fill} stroke={stroke} strokeWidth="2" vectorEffect="non-scaling-stroke"
+        <path fill={fill} stroke={stroke} strokeWidth={strokePx(d)} vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round" strokeLinecap="round"
           d="M18,52 Q4,52 4,40 Q4,30 13,28 Q11,18 21,16 Q23,7 33,8 Q38,3 46,6 Q52,1 60,5 Q70,2 76,10 Q88,9 92,20 Q100,22 100,33 Q100,45 90,47 Q92,52 82,52 Z" />
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',

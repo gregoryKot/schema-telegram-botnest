@@ -256,6 +256,48 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
         })}
       </div>
 
+      <label style={labelStyle}>Толщина контура</label>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+        {([
+          { v: 'thin' as const,   label: 'Тонкий', h: 1.5 },
+          { v: 'normal' as const, label: 'Обычный', h: 2.5 },
+          { v: 'bold' as const,   label: 'Жирный', h: 4 },
+        ]).map(opt => {
+          const active = (node.data.strokeWidth ?? 'normal') === opt.v;
+          return (
+            <button key={opt.v} onClick={() => patchData({ strokeWidth: opt.v })} title={opt.label}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                padding: '8px 4px', borderRadius: 6, cursor: 'pointer',
+                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                background: active ? 'var(--accent-soft)' : 'none' }}>
+              <span style={{ width: 26, height: opt.h, borderRadius: opt.h, background: active ? 'var(--accent)' : 'var(--text-sub)' }} />
+              <span style={{ fontSize: 9, color: active ? 'var(--accent)' : 'var(--text-faint)' }}>{opt.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <label style={labelStyle}>Размер текста</label>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+        {([
+          { v: 'sm' as const, label: 'A', fs: 11 },
+          { v: 'md' as const, label: 'A', fs: 14 },
+          { v: 'lg' as const, label: 'A', fs: 18 },
+        ]).map(opt => {
+          const active = (node.data.fontSize ?? 'md') === opt.v;
+          return (
+            <button key={opt.v} onClick={() => patchData({ fontSize: opt.v })}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 38,
+                borderRadius: 6, cursor: 'pointer',
+                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                background: active ? 'var(--accent-soft)' : 'none',
+                color: active ? 'var(--accent)' : 'var(--text-sub)', fontSize: opt.fs, fontWeight: 600 }}>
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
       <label style={labelStyle}>Что показывать на фигуре</label>
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
         {([
@@ -405,6 +447,27 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
                 <line x1={1} y1={3} x2={35} y2={3} stroke={active ? 'var(--accent)' : 'var(--text-sub)'}
                   strokeWidth={2} strokeDasharray={opt.dash === 'none' ? undefined : opt.dash} strokeLinecap="round" />
               </svg>
+              <span style={{ fontSize: 9, color: active ? 'var(--accent)' : 'var(--text-faint)' }}>{opt.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <label style={labelStyle}>Толщина линии</label>
+      <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
+        {([
+          { v: 'thin' as const,   label: 'Тонкая', h: 2 },
+          { v: 'normal' as const, label: 'Обычная', h: 3 },
+          { v: 'bold' as const,   label: 'Жирная', h: 4.5 },
+        ]).map(opt => {
+          const active = (edge.data?.width ?? 'normal') === opt.v;
+          return (
+            <button key={opt.v} onClick={() => onChange({ ...edge, data: { ...edge.data, width: opt.v } })} title={opt.label}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                padding: '8px 4px', borderRadius: 6, cursor: 'pointer',
+                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                background: active ? 'var(--accent-soft)' : 'none' }}>
+              <span style={{ width: 28, height: opt.h, borderRadius: opt.h, background: active ? 'var(--accent)' : 'var(--text-sub)' }} />
               <span style={{ fontSize: 9, color: active ? 'var(--accent)' : 'var(--text-faint)' }}>{opt.label}</span>
             </button>
           );

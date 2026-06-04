@@ -11,8 +11,12 @@ export function edgeColor(d?: ModeMapEdge['data']): string {
   return 'rgba(var(--fg-rgb),0.45)';
 }
 
-export function makeMarker(color: string) {
-  return { type: MarkerType.ArrowClosed, color, width: 16, height: 16 };
+export const EDGE_WIDTH_PX: Record<string, number> = { thin: 2, normal: 3, bold: 4.5 };
+
+export function makeMarker(color: string, width?: string) {
+  const s = (EDGE_WIDTH_PX[width ?? 'normal'] ?? 3);
+  const m = 13 + s * 1.5;  // arrowhead grows with line thickness
+  return { type: MarkerType.ArrowClosed, color, width: m, height: m };
 }
 
 function dashArray(style?: string): string | undefined {
@@ -21,8 +25,9 @@ function dashArray(style?: string): string | undefined {
   return undefined; // solid
 }
 
-export function edgeStyle(color: string, lineStyle?: string): React.CSSProperties {
-  return { stroke: color, strokeWidth: 2, strokeDasharray: dashArray(lineStyle), strokeLinecap: 'round' };
+export function edgeStyle(color: string, lineStyle?: string, width?: string): React.CSSProperties {
+  const w = EDGE_WIDTH_PX[width ?? 'normal'] ?? 3;
+  return { stroke: color, strokeWidth: w, strokeDasharray: dashArray(lineStyle), strokeLinecap: 'round' };
 }
 
 export function toFlowEdges(edges: ModeMapEdge[]): FlowEdge[] {
@@ -36,9 +41,9 @@ export function toFlowEdges(edges: ModeMapEdge[]): FlowEdge[] {
       label: e.label || undefined,
       data: e.data as Record<string, unknown>,
       type: 'floating',
-      style: edgeStyle(color, d?.lineStyle),
-      markerEnd: makeMarker(color),
-      markerStart: d?.bidirectional ? makeMarker(color) : undefined,
+      style: edgeStyle(color, d?.lineStyle, d?.width),
+      markerEnd: makeMarker(color, d?.width),
+      markerStart: d?.bidirectional ? makeMarker(color, d?.width) : undefined,
       ...(e.label ? { labelStyle: { fontSize: 11, fill: 'var(--text-sub)' }, labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 } } : {}),
     };
   });
