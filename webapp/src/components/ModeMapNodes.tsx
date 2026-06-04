@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { Handle, Position, NodeToolbar, type NodeProps } from '@xyflow/react';
 import { useNodeActions } from './modeMapActions';
 
@@ -168,6 +168,12 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
 // ── SVG-based shape node — content-hug: the box sizes to the TEXT, the shape (SVG)
 // fills it, so the label is always inside. non-scaling-stroke keeps the border even
 // on any aspect. No fixed size / resizer → text can never overflow the figure.
+// Scale a path string (coords in a base viewBox) to pixel coords (x,y alternating).
+function scalePath(d: string, sx: number, sy: number): string {
+  let i = 0;
+  return d.replace(/-?\d+(\.\d+)?/g, n => (parseFloat(n) * (i++ % 2 === 0 ? sx : sy)).toFixed(2));
+}
+
 function SvgShapeNode({ id, data, selected, color, svgPath, viewBox = '0 0 100 100', textPadding, minW = 116, minH = 64, maxW = 210 }: {
   id: string; data: ModeNodeData; selected?: boolean; color: string;
   svgPath: string; viewBox?: string;
@@ -177,14 +183,31 @@ function SvgShapeNode({ id, data, selected, color, svgPath, viewBox = '0 0 100 1
   const stroke = selected ? 'var(--accent)' : color;
   const fill = fillColor(color, data.filled, data.fillFull);
   const light = !!data.fillFull;
+
+  // Render the contour 1:1 in real pixels (no non-uniform scaling) → the stroke is
+  // EXACTLY the same thickness on every side. We measure the box and rebuild the path.
+  const ref = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setSize({ w: el.offsetWidth, h: el.offsetHeight });   // measure before paint (no flicker)
+    const ro = new ResizeObserver(() => setSize({ w: el.offsetWidth, h: el.offsetHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const [, , bw, bh] = viewBox.split(/\s+/).map(Number);
+  const ready = size.w > 0 && size.h > 0;
+  const d = ready ? scalePath(svgPath, size.w / bw, size.h / bh) : svgPath;
+
   return (
-    <div style={{ position: 'relative', width: 'max-content', maxWidth: maxW, minWidth: minW, minHeight: minH,
+    <div ref={ref} style={{ position: 'relative', width: 'max-content', maxWidth: maxW, minWidth: minW, minHeight: minH,
       display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
       <NodeTools id={id} selected={selected} data={data} />
       <AllHandles />
-      <svg viewBox={viewBox} preserveAspectRatio="none"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-        <path d={svgPath} fill={fill} stroke={stroke} strokeWidth={strokePx(data)} vectorEffect="non-scaling-stroke"
+      <svg viewBox={ready ? `0 0 ${size.w} ${size.h}` : viewBox} preserveAspectRatio="none"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+        <path d={d} fill={fill} stroke={stroke} strokeWidth={strokePx(data)}
           strokeLinejoin="round" strokeLinecap="round" shapeRendering="geometricPrecision" />
       </svg>
       <div style={{ position: 'relative', padding: textPadding, pointerEvents: 'none', boxSizing: 'border-box' }}>
