@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ModeMapNode, ModeMapEdge, EdgeType } from '../api';
 import { TYPE_COLORS } from './ModeMapNodes';
 import { NEED_DATA, NEED_ORDER } from '../needData';
@@ -73,12 +73,23 @@ const EDGE_TYPE_LABELS: Record<string, string> = {
   leads_to:   'ведёт к',
 };
 
-const EDGE_TYPE_COLORS: Record<string, string> = {
-  activates:  'rgba(var(--fg-rgb),0.45)',
-  protects:   'var(--accent-green)',
-  suppresses: 'var(--accent-red)',
-  leads_to:   'var(--accent-orange)',
+// Suggested phrases per connection type — clicking a type drops a random one on the
+// line, and the «окошко» below lets you pick another or type your own.
+const EDGE_TYPE_PHRASES: Record<string, string[]> = {
+  activates:  ['активирует', 'запускает', 'будит', 'включает', 'провоцирует', 'пробуждает', 'цепляет', 'триггерит'],
+  protects:   ['защищает от', 'прикрывает', 'оберегает от', 'спасает от', 'отгораживает от', 'прячет'],
+  suppresses: ['подавляет', 'давит на', 'заглушает', 'наказывает', 'обесценивает', 'критикует', 'стыдит', 'требует от'],
+  leads_to:   ['ведёт к', 'приводит к', 'оборачивается', 'заканчивается', 'усиливает', 'подкрепляет'],
 };
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function pickPhrases(type: string, n: number): string[] {
+  return shuffle(EDGE_TYPE_PHRASES[type] ?? []).slice(0, n);
+}
 
 const COLOR_PRESETS = [
   '#7aa3d4','#d47a7a','#d4a07a','#7ab87a',
@@ -316,6 +327,16 @@ interface EdgeEditorProps {
 export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }: EdgeEditorProps) {
   const edgeType = (edge.data?.edgeType ?? 'activates') as string;
   const bidir = edge.data?.bidirectional ?? false;
+  // Suggestion box for the current type's phrases (refreshable)
+  const [suggestType, setSuggestType] = useState(edgeType);
+  const [suggestions, setSuggestions] = useState<string[]>(() => pickPhrases(edgeType, 4));
+
+  const chooseType = (k: string) => {
+    const phrase = pickPhrases(k, 1)[0] ?? '';
+    setSuggestType(k);
+    setSuggestions(pickPhrases(k, 4));
+    onChange({ ...edge, label: phrase || undefined, data: { ...edge.data, edgeType: k as EdgeType } });
+  };
 
   return (
     <div style={panelStyle}>
@@ -324,19 +345,45 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
         <button onClick={onClose} title="Закрыть" style={closeBtnStyle}>✕</button>
       </div>
 
-      <label style={labelStyle}>Тип связи (задаёт цвет)</label>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+      <label style={labelStyle}>Тип связи (вставит подпись)</label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
         {Object.entries(EDGE_TYPE_LABELS).map(([k, v]) => (
           <button key={k}
-            onClick={() => onChange({ ...edge, data: { ...edge.data, edgeType: k as EdgeType } })}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 6, textAlign: 'left', fontSize: 12.5, cursor: 'pointer',
-              border: `1px solid ${edgeType === k ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)'}`,
+            onClick={() => chooseType(k)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 14, textAlign: 'left', fontSize: 12, cursor: 'pointer',
+              border: `1px solid ${edgeType === k ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
               background: edgeType === k ? 'var(--accent-soft)' : 'none',
               color: edgeType === k ? 'var(--accent)' : 'var(--text-sub)' }}>
-            <span style={{ width: 16, height: 3, borderRadius: 2, background: EDGE_TYPE_COLORS[k], flexShrink: 0 }} />
+            <span style={{ fontSize: 11, opacity: 0.7 }}>→</span>
             {v}
           </button>
         ))}
+      </div>
+
+      {/* Suggestion box — pick a phrase for the line or refresh for more */}
+      <div style={{ marginBottom: 14, padding: '8px 9px', borderRadius: 8,
+        border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'rgba(var(--fg-rgb),0.03)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 7 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-faint)', flex: 1 }}>
+            Варианты подписи
+          </span>
+          <button onClick={() => setSuggestions(pickPhrases(suggestType, 4))} title="Другие варианты"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 13, padding: 0, lineHeight: 1 }}>↻</button>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+          {suggestions.map(p => {
+            const active = edge.label === p;
+            return (
+              <button key={p} onClick={() => onChange({ ...edge, label: p })}
+                style={{ padding: '4px 9px', borderRadius: 14, fontSize: 11.5, cursor: 'pointer',
+                  border: `1px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                  background: active ? 'var(--accent-soft)' : 'var(--bg-elev)',
+                  color: active ? 'var(--accent)' : 'var(--text-sub)' }}>
+                {p}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <label style={labelStyle}>Стиль линии</label>
@@ -395,7 +442,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
             style={{ width: 22, height: 22, borderRadius: '50%', background: c, cursor: 'pointer', padding: 0,
               border: edge.data?.color === c ? '2px solid var(--text)' : '2px solid transparent' }} />
         ))}
-        <button onClick={() => onChange({ ...edge, data: { ...edge.data, color: undefined } })} title="По типу связи"
+        <button onClick={() => onChange({ ...edge, data: { ...edge.data, color: undefined } })} title="Нейтральный (по умолчанию)"
           style={{ width: 22, height: 22, borderRadius: '50%', background: 'none', cursor: 'pointer', padding: 0,
             border: '2px dashed rgba(var(--fg-rgb),0.25)', fontSize: 10, color: 'var(--text-faint)' }}>✕</button>
       </div>
