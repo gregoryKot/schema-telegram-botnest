@@ -1357,20 +1357,37 @@ textarea:focus-visible {
 .mm-handle {
   opacity: 0;
   transition: opacity 0.12s ease;
+  cursor: crosshair;
 }
 /* Visible dot centred inside the larger (18px) invisible hit area */
 .mm-handle::after {
   content: '';
   position: absolute;
   top: 50%; left: 50%;
-  width: 11px; height: 11px;
+  width: 13px; height: 13px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: var(--accent);
   border: 2px solid var(--bg-elev);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: width 0.1s ease, height 0.1s ease, box-shadow 0.1s ease;
 }
-.mm-handle:hover::after { width: 15px; height: 15px; }
+/* Grow + soft glow on hover so it's obvious you can grab & pull a line from here */
+.mm-handle:hover::after {
+  width: 19px; height: 19px;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 22%, transparent);
+}
 .react-flow__node:hover .mm-handle,
 .react-flow__node.selected .mm-handle { opacity: 1; }
 /* While dragging a connection, reveal all handles so targets are obvious */
-.react-flow.connecting .mm-handle { opacity: 0.65; }
+.react-flow.connecting .mm-handle { opacity: 0.85; }
+
+/* Whole-node drop target: inert normally, active only while drawing a connection,
+   so you can drop the line anywhere on a node instead of aiming at a dot. */
+.mm-node-target { pointer-events: none !important; }
+.react-flow.connecting .mm-node-target { pointer-events: all !important; }
+.react-flow.connecting .react-flow__node:hover { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 8px; }
+
+/* Node body shows a grab hand, not the 4-arrow move cross (the confusing «крестик») */
+.react-flow__node { cursor: grab; }
+.react-flow__node:active { cursor: grabbing; }
