@@ -5,6 +5,7 @@ export interface NodeActions {
   remove: (id: string) => void;
   edit: (id: string) => void;     // open the side editor for this node
   rename: (id: string, label: string) => void;  // inline rename from the node
+  patchData: (id: string, partial: Record<string, unknown>) => void;  // quick prop tweak from the node toolbar
 }
 
 export const NodeActionsContext = createContext<NodeActions | null>(null);
