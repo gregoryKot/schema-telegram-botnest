@@ -406,4 +406,17 @@ export class TherapyController {
     try { await this.therapyService.deleteModeMap(uid(req), parseId(mapId)); return { ok: true }; }
     catch (e: any) { if (e?.message === 'Not found') throw new ForbiddenException(); throw e; }
   }
+
+  // ─── Client's read-only view (any authed user; only their own maps) ──────────
+
+  @Get('my-mode-maps')
+  async listMyModeMaps(@Req() req: AuthRequest) {
+    return this.therapyService.listMyModeMaps(uid(req));
+  }
+
+  @Get('my-mode-maps/:mapId')
+  async getMyModeMap(@Req() req: AuthRequest, @Param('mapId') mapId: string) {
+    try { return await this.therapyService.getMyModeMap(uid(req), parseId(mapId)); }
+    catch (e: any) { if (e?.message === 'Not found') throw new ForbiddenException(); throw e; }
+  }
 }

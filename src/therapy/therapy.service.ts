@@ -840,6 +840,24 @@ export class TherapyService {
     await (this.prisma.modeMap as any).delete({ where: { id: mapId } });
   }
 
+  // ─── Client's read-only view of their own maps ───────────────────────────────
+
+  async listMyModeMaps(userId: bigint) {
+    const rows = await (this.prisma.modeMap as any).findMany({
+      where: { clientId: userId },
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true, title: true, kind: true, updatedAt: true },
+    });
+    return rows.map((r: any) => decryptRecord(r, MODE_MAP_SCHEMA));
+  }
+
+  async getMyModeMap(userId: bigint, mapId: number) {
+    const row = await (this.prisma.modeMap as any).findUnique({ where: { id: mapId } });
+    if (!row || row.clientId.toString() !== userId.toString())
+      throw new Error('Not found');
+    return decryptRecord(row, MODE_MAP_SCHEMA);
+  }
+
   // ─── Therapist Custom Modes ──────────────────────────────────────────────────
 
   async listCustomModes(therapistId: bigint) {

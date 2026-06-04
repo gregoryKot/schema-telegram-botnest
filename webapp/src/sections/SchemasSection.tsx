@@ -11,6 +11,7 @@ import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 
 const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
+const ModeMapViewer = lazy(() => import('../components/ModeMapViewer').then(m => ({ default: m.ModeMapViewer })));
 
 /** color-mix: works with CSS vars AND hex. Replaces the old hex-alpha hack. */
 function cm(color: string, pct: number) {
@@ -63,6 +64,8 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
   const [detailNeedId, setDetailNeedId]   = useState<string | null>(null);
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
+  const [myMapCount, setMyMapCount]       = useState(0);
+  const [showMyMap, setShowMyMap]         = useState(false);
 
   useEffect(() => {
     Promise.all([api.getProfile(), api.getYsqHistory()]).then(([p, history]) => {
@@ -85,6 +88,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       }
       setProfileLoading(false);
     }).catch(() => setProfileLoading(false));
+    api.listMyModeMaps().then(list => setMyMapCount(list.length)).catch(() => {});
   }, []);
 
   const allSchemaIds = [...new Set([...ysqSchemaIds, ...manualSchemaIds])];
@@ -301,6 +305,29 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           )}
         </div>
 
+        {/* ══════════ КАРТА РЕЖИМОВ ОТ ТЕРАПЕВТА ══════════ */}
+        {myMapCount > 0 && (
+          <div className="section">
+            <button onClick={() => setShowMyMap(true)} style={{
+              width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', borderRadius: 14,
+              border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'rgba(var(--fg-rgb),0.04)',
+              WebkitTapHighlightColor: 'transparent',
+            }}>
+              <span style={{ fontSize: 26, flexShrink: 0 }}>🗺️</span>
+              <span style={{ flex: 1 }}>
+                <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
+                  Карта режимов с терапевтом
+                </span>
+                <span style={{ display: 'block', fontSize: 13, color: 'var(--text-sub)', marginTop: 2 }}>
+                  {myMapCount === 1 ? 'Схема того, как режимы развиваются на триггер' : `${myMapCount} карты · как режимы развиваются на триггер`}
+                </span>
+              </span>
+              <span style={{ fontSize: 18, color: 'var(--text-faint)', flexShrink: 0 }}>→</span>
+            </button>
+          </div>
+        )}
+
         {/* ══════════ ВСЕ РЕЖИМЫ (карта) ══════════ */}
         <div className="section">
           <div className="section-head">
@@ -438,6 +465,26 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           onClose={() => setDetailNeedId(null)}
         />
       )}
+
+      {showMyMap && <MyModeMapSheet onClose={() => setShowMyMap(false)} />}
+    </div>
+  );
+}
+
+function MyModeMapSheet({ onClose }: { onClose: () => void }) {
+  const goBack = useHistorySheet(onClose);
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexShrink: 0,
+        borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}>
+        <button onClick={goBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'var(--text)' }}>
+          <GlyphArrowLeft />
+        </button>
+        <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>Карта режимов</span>
+      </div>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <Suspense fallback={null}><ModeMapViewer /></Suspense>
+      </div>
     </div>
   );
 }

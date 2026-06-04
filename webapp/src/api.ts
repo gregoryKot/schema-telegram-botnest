@@ -379,4 +379,7 @@ export const api = {
   createModeMap:  (clientId: number, title: string, kind: ModeMapKind = 'problem') => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title, kind }),
   updateModeMap:  (mapId: number, body: Partial<Pick<ModeMapFull, 'title' | 'nodes' | 'edges'>>) => patchJson<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`, body),
   deleteModeMap:  (mapId: number) => del(`/api/therapy/mode-maps/map/${mapId}`),
+  // Client read-only view of their own maps
+  listMyModeMaps: () => get<ModeMapMeta[]>('/api/therapy/my-mode-maps'),
+  getMyModeMap:   (mapId: number) => get<ModeMapFull>(`/api/therapy/my-mode-maps/${mapId}`),
 };
