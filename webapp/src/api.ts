@@ -196,6 +196,7 @@ export interface ModeMapNode {
     filled?: boolean;
     fillFull?: boolean;
     copingSubtype?: 'over' | 'avoid' | 'surr';
+    display?: 'name' | 'note' | 'full';   // что показывать на фигуре
   };
   width?: number;
   height?: number;

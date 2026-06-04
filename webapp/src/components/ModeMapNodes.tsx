@@ -10,6 +10,7 @@ export interface ModeNodeData {
   filled?: boolean;
   fillFull?: boolean;
   copingSubtype?: 'over' | 'avoid' | 'surr';
+  display?: 'name' | 'note' | 'full';
 }
 
 export const TYPE_COLORS: Record<string, string> = {
@@ -26,8 +27,10 @@ export const TYPE_COLORS: Record<string, string> = {
 // (CSS rule .react-flow__node:hover .mm-handle in index.css) so it's obvious
 // you can drag from here to draw a line. connectionRadius makes the drop
 // forgiving. Each side has source + target (same id) for loose mode + swap.
+// Bigger hit area (18px) so it's easy to grab and start a line; the visible
+// dot is drawn via the ::after pseudo in index.css. Source on top of target.
 const dotStyle: React.CSSProperties = {
-  width: 11, height: 11, background: 'var(--accent)', border: '2px solid var(--bg-elev)',
+  width: 18, height: 18, background: 'transparent', border: 'none',
 };
 
 function SideHandles({ pos, id }: { pos: Position; id: string }) {
@@ -82,13 +85,17 @@ function fillColor(color: string, filled?: boolean, fillFull?: boolean) {
   return rgb ? `rgba(${rgb},${op})` : `rgba(var(--fg-rgb),${op})`;
 }
 
-function NodeLabel({ id, label, note, unmetNeed, light }: { id?: string; label: string; note?: string; unmetNeed?: string; light?: boolean }) {
+function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light?: boolean }) {
   const actions = useNodeActions();
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(label);
+  const [draft, setDraft] = useState(data.label);
 
-  const startEdit = () => { if (id && actions) { setDraft(label); setEditing(true); } };
-  const commit = () => { if (id && actions) actions.rename(id, draft.trim() || label); setEditing(false); };
+  const display = data.display ?? 'full';
+  const showNote = display !== 'name' && !!data.note;
+  const showNeed = display === 'full' && !!data.unmetNeed;
+
+  const startEdit = () => { if (id && actions) { setDraft(data.label); setEditing(true); } };
+  const commit = () => { if (id && actions) actions.rename(id, draft.trim() || data.label); setEditing(false); };
 
   return (
     <div style={{ textAlign: 'center', pointerEvents: 'all' }}>
@@ -106,12 +113,12 @@ function NodeLabel({ id, label, note, unmetNeed, light }: { id?: string; label: 
       ) : (
         <div onDoubleClick={(e) => { e.stopPropagation(); startEdit(); }}
           style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-word', cursor: id ? 'text' : 'default',
-            color: light ? 'rgba(255,255,255,0.95)' : 'var(--text)' }}>{label}</div>
+            color: light ? 'rgba(255,255,255,0.95)' : 'var(--text)' }}>{data.label}</div>
       )}
-      {note && <div style={{ fontSize: 11, marginTop: 3, lineHeight: 1.3, wordBreak: 'break-word',
-        color: light ? 'rgba(255,255,255,0.75)' : 'var(--text-sub)' }}>{note}</div>}
-      {unmetNeed && <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word', fontStyle: 'italic',
-        color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>нужда: {unmetNeed}</div>}
+      {showNote && <div style={{ fontSize: 11, marginTop: 3, lineHeight: 1.3, wordBreak: 'break-word',
+        color: light ? 'rgba(255,255,255,0.75)' : 'var(--text-sub)' }}>{data.note}</div>}
+      {showNeed && <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word', fontStyle: 'italic',
+        color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>нужда: {data.unmetNeed}</div>}
     </div>
   );
 }
@@ -141,7 +148,7 @@ function SvgShapeNode({ id, data, selected, color, svgPath, textPadding, minW = 
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
         justifyContent: 'center', padding: textPadding, pointerEvents: 'none' }}>
-        <NodeLabel id={id} label={data.label} note={data.note} light={light} />
+        <NodeLabel id={id} data={data} light={light} />
       </div>
     </div>
   );
@@ -165,7 +172,7 @@ function makeRectNode(defaultColor: string, radius = 10) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', padding: '10px 16px', boxSizing: 'border-box',
         }}>
-          <NodeLabel id={id} label={d.label} note={d.note} unmetNeed={d.unmetNeed} light={light} />
+          <NodeLabel id={id} data={d} light={light} />
         </div>
       </div>
     );
@@ -208,7 +215,7 @@ export const CopingModeNode = function CopingModeNode({ id, data, selected }: No
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', padding: '8px 18px',
         }}>
-          <NodeLabel id={id} label={d.label} note={d.note} light={light} />
+          <NodeLabel id={id} data={d} light={light} />
         </div>
       </div>
     );
@@ -243,7 +250,7 @@ export const ChildModeNode = function ChildModeNode({ id, data, selected }: Node
         // Inscribed square: keep text off the curved edge
         padding: '18%',
       }}>
-        <NodeLabel label={d.label} note={d.note} unmetNeed={d.unmetNeed} light={light} />
+        <NodeLabel id={id} data={d} light={light} />
       </div>
     </div>
   );
@@ -268,7 +275,7 @@ export const TriggerNode = function TriggerNode({ id, data, selected }: NodeProp
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
         justifyContent: 'center', padding: '12% 14% 10%', pointerEvents: 'none' }}>
-        <NodeLabel id={id} label={d.label} note={d.note} light={light} />
+        <NodeLabel id={id} data={d} light={light} />
       </div>
     </div>
   );

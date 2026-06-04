@@ -236,6 +236,26 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
         })}
       </div>
 
+      <label style={labelStyle}>Что показывать на фигуре</label>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+        {([
+          { v: 'name' as const, label: 'Имя' },
+          { v: 'note' as const, label: '+ Заметка' },
+          { v: 'full' as const, label: 'Всё' },
+        ]).map(opt => {
+          const active = (node.data.display ?? 'full') === opt.v;
+          return (
+            <button key={opt.v} onClick={() => patchData({ display: opt.v })}
+              style={{ flex: 1, padding: '6px 4px', borderRadius: 6, fontSize: 11.5, cursor: 'pointer',
+                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                background: active ? 'var(--accent-soft)' : 'none',
+                color: active ? 'var(--accent)' : 'var(--text-sub)' }}>
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Clinical questions — click a question to jump to the field it guides */}
       <ClinicalHint node={node}
         onPickNote={() => { noteRef.current?.focus(); }}
