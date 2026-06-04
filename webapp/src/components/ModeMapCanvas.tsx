@@ -117,6 +117,18 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     } catch { /* ignore */ }
   }, [nodes, edges, setNodes, scheduleSave, screenToFlowPosition, pushHistory]);
 
+  // Add a node from the guidance panel — drop it near the viewport centre
+  const addNodeFromGuide = useCallback((partial: Omit<ModeMapNode, 'position'>) => {
+    const el = document.querySelector('.react-flow') as HTMLElement | null;
+    const r = el?.getBoundingClientRect();
+    const pos = r ? screenToFlowPosition({ x: r.left + r.width / 2 + (Math.random() * 80 - 40), y: r.top + r.height / 2 + (Math.random() * 80 - 40) })
+      : { x: 200 + Math.random() * 200, y: 150 };
+    const defaultSize = NODE_DEFAULT_SIZES[partial.type] ?? {};
+    pushHistory();
+    const newNodes = [...nodesRef.current, { id: partial.id, type: partial.type, position: pos, data: partial.data as Record<string, unknown>, ...defaultSize }];
+    setNodes(newNodes); scheduleSave(newNodes, edgesRef.current);
+  }, [screenToFlowPosition, setNodes, scheduleSave, pushHistory, nodesRef, edgesRef]);
+
   // Export (PNG / PDF) via shared hook
   const { exporting, onExportPng, onExportPdf } = useModeMapExport(nodes);
 
@@ -387,7 +399,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         )}
         {showGuide && (
           <Panel position="bottom-right">
-            <ModeMapGuide nodes={nodes} kind={kind} onClose={toggleGuide} />
+            <ModeMapGuide nodes={nodes} kind={kind} onAdd={addNodeFromGuide} onClose={toggleGuide} />
           </Panel>
         )}
       </ReactFlow>

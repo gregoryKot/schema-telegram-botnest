@@ -7,8 +7,8 @@ interface Props {
 }
 
 const KIND_META: Record<ModeMapKind, { icon: string; label: string; hint: string }> = {
-  personality: { icon: '🧭', label: 'Карта личности', hint: 'Все основные режимы человека на одной странице — для общей ориентации' },
-  problem:     { icon: '🎯', label: 'Карта проблемы', hint: 'Конкретная цепочка: триггер → режимы → последствия' },
+  personality: { icon: '🧭', label: 'Карта личности',  hint: 'Все основные режимы человека на одной странице — для общей ориентации' },
+  problem:     { icon: '🎯', label: 'Карта ситуации',  hint: 'Конкретная цепочка: триггер → режимы → последствия' },
 };
 
 export function ModeMapSelector({ clientId }: Props) {
@@ -55,7 +55,7 @@ export function ModeMapSelector({ clientId }: Props) {
   async function createMap(kind: ModeMapKind) {
     setCreating(true); setPickKind(false);
     try {
-      const title = kind === 'personality' ? 'Карта личности' : `Проблема ${maps.filter(m => m.kind === 'problem').length + 1}`;
+      const title = kind === 'personality' ? 'Карта личности' : `Ситуация ${maps.filter(m => m.kind === 'problem').length + 1}`;
       const m = await api.createModeMap(clientId, title, kind);
       setMaps(prev => [...prev, { id: m.id, title: m.title, kind: m.kind, createdAt: m.createdAt, updatedAt: m.updatedAt }]);
       setActiveId(m.id);
