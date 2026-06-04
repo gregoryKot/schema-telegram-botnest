@@ -43,9 +43,19 @@ function SideHandles({ pos, id }: { pos: Position; id: string }) {
   );
 }
 
+// Full-node drop target — only catches pointer events while a connection is being
+// drawn (.react-flow.connecting in index.css). Lets you drop a line ANYWHERE on a
+// node instead of hunting for a dot. Normal dragging still works (pointer-events:none).
+const coverStyle: React.CSSProperties = {
+  position: 'absolute', inset: 0, width: '100%', height: '100%',
+  minWidth: 0, minHeight: 0, transform: 'none', borderRadius: 'inherit',
+  background: 'transparent', border: 'none',
+};
+
 function AllHandles() {
   return (
     <>
+      <Handle type="target" position={Position.Top} id="c" className="mm-node-target" style={coverStyle} />
       <SideHandles pos={Position.Left}   id="l" />
       <SideHandles pos={Position.Right}  id="r" />
       <SideHandles pos={Position.Top}    id="t" />
