@@ -13,12 +13,24 @@ function getNodeIntersection(node: InternalNode<Node>, other: InternalNode<Node>
   const y1 = other.internals.positionAbsolute.y + (other.measured.height ?? 0) / 2;
 
   if (w === 0 || h === 0) return { x: x2, y: y2 };
-  const xx1 = (x1 - x2) / (2 * w) - (y1 - y2) / (2 * h);
-  const yy1 = (x1 - x2) / (2 * w) + (y1 - y2) / (2 * h);
+
+  // Circle nodes: intersect the actual circle, not the bounding box (the box
+  // corners stick out → gap at diagonal angles). 1px inset so the arrow touches.
+  if (node.type === 'child') {
+    const r = Math.min(w, h) - 1;
+    const dx = x1 - x2, dy = y1 - y2;
+    const len = Math.hypot(dx, dy) || 1;
+    return { x: x2 + (dx / len) * r, y: y2 + (dy / len) * r };
+  }
+
+  // Box-based shapes — intersect the bounding box, inset 1px to avoid a hairline gap.
+  const iw = w - 1, ih = h - 1;
+  const xx1 = (x1 - x2) / (2 * iw) - (y1 - y2) / (2 * ih);
+  const yy1 = (x1 - x2) / (2 * iw) + (y1 - y2) / (2 * ih);
   const a = 1 / (Math.abs(xx1) + Math.abs(yy1) || 1);
   const xx3 = a * xx1;
   const yy3 = a * yy1;
-  return { x: w * (xx3 + yy3) + x2, y: h * (-xx3 + yy3) + y2 };
+  return { x: iw * (xx3 + yy3) + x2, y: ih * (-xx3 + yy3) + y2 };
 }
 
 function getEdgePosition(node: InternalNode<Node>, p: { x: number; y: number }): Position {

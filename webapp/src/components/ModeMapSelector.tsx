@@ -21,6 +21,14 @@ export function ModeMapSelector({ clientId }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const titleRef = useRef<HTMLInputElement>(null);
+  const newBtnRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+  function openKindPicker() {
+    const r = newBtnRef.current?.getBoundingClientRect();
+    if (r) setMenuPos({ x: r.left, y: r.bottom + 4 });
+    setPickKind(o => !o);
+  }
 
   // Load list on mount
   useEffect(() => {
@@ -139,40 +147,40 @@ export function ModeMapSelector({ clientId }: Props) {
             )}
           </div>
         ))}
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <button onClick={() => setPickKind(o => !o)} disabled={creating}
-            style={{
-              padding: '4px 10px', borderRadius: 7, fontSize: 12.5, cursor: 'pointer',
-              border: '1px dashed rgba(var(--fg-rgb),0.18)', background: pickKind ? 'var(--accent-soft)' : 'none',
-              color: pickKind ? 'var(--accent)' : 'var(--text-faint)', whiteSpace: 'nowrap', marginLeft: 2,
-            }}>
-            {creating ? '…' : '+ Новая карта ▾'}
-          </button>
-          {pickKind && (
-            <>
-              <div onClick={() => setPickKind(false)} style={{ position: 'fixed', inset: 0, zIndex: 30 }} />
-              <div style={{
-                position: 'absolute', top: 34, left: 2, zIndex: 31, width: 260,
-                background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 8,
-                padding: 5, boxShadow: '0 4px 16px rgba(0,0,0,0.16)',
-              }}>
-                {(['personality', 'problem'] as ModeMapKind[]).map(k => (
-                  <button key={k} onClick={() => createMap(k)}
-                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px',
-                      borderRadius: 6, cursor: 'pointer', background: 'none', border: 'none' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--fg-rgb),0.06)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-                      <span>{KIND_META[k].icon}</span>{KIND_META[k].label}
-                    </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.35 }}>{KIND_META[k].hint}</div>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+        <button ref={newBtnRef} onClick={openKindPicker} disabled={creating}
+          style={{
+            padding: '4px 10px', borderRadius: 7, fontSize: 12.5, cursor: 'pointer', flexShrink: 0,
+            border: '1px dashed rgba(var(--fg-rgb),0.18)', background: pickKind ? 'var(--accent-soft)' : 'none',
+            color: pickKind ? 'var(--accent)' : 'var(--text-faint)', whiteSpace: 'nowrap', marginLeft: 2,
+          }}>
+          {creating ? '…' : '+ Новая карта ▾'}
+        </button>
       </div>
+
+      {/* Kind picker — fixed so the tab bar's overflow can't clip it */}
+      {pickKind && menuPos && (
+        <>
+          <div onClick={() => setPickKind(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+          <div style={{
+            position: 'fixed', left: menuPos.x, top: menuPos.y, zIndex: 61, width: 280,
+            background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 8,
+            padding: 5, boxShadow: '0 4px 16px rgba(0,0,0,0.16)',
+          }}>
+            {(['personality', 'problem'] as ModeMapKind[]).map(k => (
+              <button key={k} onClick={() => createMap(k)}
+                style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px',
+                  borderRadius: 6, cursor: 'pointer', background: 'none', border: 'none' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--fg-rgb),0.06)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                  <span>{KIND_META[k].icon}</span>{KIND_META[k].label}
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-sub)', marginTop: 3, lineHeight: 1.35 }}>{KIND_META[k].hint}</div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Editor area */}
       <div style={{ flex: 1, overflow: 'hidden' }}>

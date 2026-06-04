@@ -43,7 +43,7 @@ export const TEMPLATES: Template[] = [
       { id: 't_critic', type: 'critic',  x: 240, y: 0,   data: { label: 'Критик' } },
       { id: 't_child',  type: 'child',   x: 240, y: 320, data: { label: 'Уязвимый Ребёнок' } },
       { id: 't_cope',   type: 'coping',  x: 520, y: 160, data: { label: 'Копинг', copingSubtype: 'avoid' } },
-      { id: 't_beh',    type: 'custom',  x: 800, y: 160, data: { label: 'Поведение' } },
+      { id: 't_beh',    type: 'behavior', x: 800, y: 160, data: { label: 'Поведение' } },
     ],
     edges: [
       { from: 0, to: 1, label: 'активирует' },

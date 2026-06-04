@@ -52,8 +52,11 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   const [showZones, setShowZones] = useState(() => localStorage.getItem('modemap_zones') === '1');
   const [tplOpen, setTplOpen] = useState(false);
   const [dlOpen, setDlOpen] = useState(false);
+  const [keysOpen, setKeysOpen] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const edgeReconnectOk = useRef(true);
+  // Desktop (fine pointer) — keyboard hints only make sense there
+  const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 900px) and (pointer: fine)').matches;
 
   const toggleLegend = useCallback(() => {
     setShowLegend(s => { localStorage.setItem('modemap_legend', s ? '0' : '1'); return !s; });
@@ -279,8 +282,10 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         onConnect={onConnect} onDrop={onDrop} onDragOver={onDragOver}
         isValidConnection={isValidConnection}
         connectionMode={ConnectionMode.Loose}
+        connectionRadius={60}
         edgesReconnectable onReconnect={onReconnect} onReconnectStart={onReconnectStart} onReconnectEnd={onReconnectEnd}
         onNodeClick={(_, node) => { setSelectedNodeId(node.id); setSelectedEdgeId(null); }}
+        onNodeDoubleClick={(_, node) => { setSelectedNodeId(node.id); setSelectedEdgeId(null); setTimeout(() => window.dispatchEvent(new CustomEvent('modemap-focus-name')), 30); }}
         onEdgeClick={(_, edge) => { setSelectedEdgeId(edge.id); setSelectedNodeId(null); }}
         onPaneClick={() => { setSelectedNodeId(null); setSelectedEdgeId(null); }}
         onPaneContextMenu={onPaneContextMenu} onNodeContextMenu={onNodeContextMenu}
@@ -341,6 +346,30 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                 </Dropdown>
               )}
             </div>
+            {isDesktop && (
+              <div style={{ position: 'relative' }}>
+                <TbBtn label="Горячие клавиши" onClick={() => setKeysOpen(o => !o)} active={keysOpen}>⌨</TbBtn>
+                {keysOpen && (
+                  <Dropdown onClose={() => setKeysOpen(false)}>
+                    <div style={dropHeadStyle}>Горячие клавиши</div>
+                    {([
+                      ['⌘Z / Ctrl+Z', 'Отменить'],
+                      ['⌘⇧Z / Ctrl+Y', 'Вернуть'],
+                      ['⌘D', 'Дублировать ноду'],
+                      ['Backspace', 'Удалить выбранное'],
+                      ['Shift + рамка', 'Выделить несколько'],
+                      ['Двойной клик', 'Переименовать'],
+                      ['Esc', 'Снять выделение'],
+                    ] as [string, string][]).map(([k, v]) => (
+                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 14, padding: '5px 10px', fontSize: 12 }}>
+                        <span style={{ color: 'var(--text-sub)' }}>{v}</span>
+                        <kbd style={{ color: 'var(--text)', fontFamily: 'inherit', fontSize: 11.5, background: 'rgba(var(--fg-rgb),0.07)', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' }}>{k}</kbd>
+                      </div>
+                    ))}
+                  </Dropdown>
+                )}
+              </div>
+            )}
           </div>
         </Panel>
 
@@ -351,7 +380,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         )}
         {showGuide && (
           <Panel position="bottom-right">
-            <ModeMapGuide nodes={nodes} edges={edges} kind={kind} onClose={toggleGuide} />
+            <ModeMapGuide nodes={nodes} kind={kind} onClose={toggleGuide} />
           </Panel>
         )}
       </ReactFlow>

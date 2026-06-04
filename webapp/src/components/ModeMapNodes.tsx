@@ -12,12 +12,13 @@ export interface ModeNodeData {
 }
 
 export const TYPE_COLORS: Record<string, string> = {
-  trigger: '#94a3b8',
-  child:   '#7aa3d4',
-  critic:  '#d47a7a',
-  coping:  '#d4a07a',
-  healthy: '#7ab87a',
-  custom:  '#9f7ad4',
+  trigger:  '#94a3b8',
+  child:    '#7aa3d4',
+  critic:   '#d47a7a',
+  coping:   '#d4a07a',
+  healthy:  '#7ab87a',
+  custom:   '#9f7ad4',
+  behavior: '#8a8f9e',
 };
 
 // Invisible strip handles along each side. Floating edges attach to the border
@@ -131,27 +132,18 @@ function SvgShapeNode({ id, data, selected, color, svgPath, textPadding, minW = 
   );
 }
 
-// ── Rect-based nodes (rectangle) — auto-fit to text, or fixed when resized ────
-// If the node has explicit width (user dragged the resizer once → persisted),
-// fill it; otherwise size to content (max-content) so the box hugs the text.
+// ── Rect-based nodes — always hug the text (no manual resize needed) ──────────
 function makeRectNode(defaultColor: string, radius = 10) {
-  return function ModeNode({ id, data, selected, width }: NodeProps) {
+  return function ModeNode({ id, data, selected }: NodeProps) {
     const d = data as unknown as ModeNodeData;
     const color = d.customColor ?? defaultColor;
     const light = !!d.fillFull;
-    const sized = typeof width === 'number' && (d as { _resized?: boolean })._resized === true;
     return (
-      <div style={{
-        position: 'relative',
-        width: sized ? '100%' : 'max-content',
-        height: sized ? '100%' : 'auto',
-        minWidth: 110, maxWidth: sized ? undefined : 240, minHeight: 40,
-      }}>
+      <div style={{ position: 'relative', width: 'max-content', minWidth: 110, maxWidth: 260, minHeight: 40 }}>
         <NodeTools id={id} selected={selected} />
-        <NodeResizer minWidth={90} minHeight={40} isVisible={!!selected} color={color} />
         <AllHandles />
         <div style={{
-          width: '100%', height: '100%', borderRadius: radius,
+          borderRadius: radius,
           background: fillColor(color, d.filled, d.fillFull),
           border: `2px solid ${selected ? 'var(--accent)' : color}`,
           boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
@@ -169,6 +161,7 @@ function makeRectNode(defaultColor: string, radius = 10) {
 const CRITIC_PATH   = 'M12,0 L88,0 L100,12 L100,88 L88,100 L12,100 L0,88 L0,12 Z';
 const PENTA_PATH    = 'M50,0 L100,38 L82,100 L18,100 L0,38 Z';
 const SHIELD_PATH   = 'M0,0 L100,0 L100,70 L50,100 L0,70 Z';
+const BEHAVIOR_PATH = 'M0,0 L82,0 L100,50 L82,100 L0,100 Z';  // right-pointing tag — outcome
 
 // ── Exported nodes ────────────────────────────────────────────────────────────
 export const CriticModeNode = function CriticModeNode({ id, data, selected }: NodeProps) {
@@ -269,18 +262,27 @@ export const TriggerNode = function TriggerNode({ id, data, selected }: NodeProp
 export const HealthyModeNode = makeRectNode(TYPE_COLORS.healthy, 10);
 export const CustomModeNode  = makeRectNode(TYPE_COLORS.custom,  10);
 
+export const BehaviorNode = function BehaviorNode({ id, data, selected }: NodeProps) {
+  const d = data as unknown as ModeNodeData;
+  return <SvgShapeNode id={id} data={d} selected={selected}
+    color={d.customColor ?? TYPE_COLORS.behavior}
+    svgPath={BEHAVIOR_PATH} textPadding="14% 22% 14% 12%" minW={120} minH={56} />;
+};
+
 export const NODE_DEFAULT_SIZES: Partial<Record<string, { width: number; height: number }>> = {
-  child:   { width: 130, height: 130 },
-  trigger: { width: 160, height: 90  },
-  coping:  { width: 150, height: 135 },
-  critic:  { width: 150, height: 80  },
+  child:    { width: 130, height: 130 },
+  trigger:  { width: 160, height: 90  },
+  coping:   { width: 150, height: 135 },
+  critic:   { width: 150, height: 80  },
+  behavior: { width: 150, height: 70  },
 };
 
 export const NODE_TYPES = {
-  trigger: TriggerNode,
-  child:   ChildModeNode,
-  critic:  CriticModeNode,
-  coping:  CopingModeNode,
-  healthy: HealthyModeNode,
-  custom:  CustomModeNode,
+  trigger:  TriggerNode,
+  child:    ChildModeNode,
+  critic:   CriticModeNode,
+  coping:   CopingModeNode,
+  healthy:  HealthyModeNode,
+  custom:   CustomModeNode,
+  behavior: BehaviorNode,
 };

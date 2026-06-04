@@ -185,7 +185,7 @@ export interface TherapistCustomMode {
 
 export interface ModeMapNode {
   id: string;
-  type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom';
+  type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom' | 'behavior';
   position: { x: number; y: number };
   data: {
     modeId?: string;
