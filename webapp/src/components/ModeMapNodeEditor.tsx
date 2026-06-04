@@ -8,7 +8,7 @@ const CORE_NEEDS = NEED_ORDER.map(id => NEED_DATA[id]?.name).filter(Boolean) as 
 
 type CopingSubtype = 'over' | 'avoid' | 'surr';
 
-type Question = { text: string; target: 'note' | 'need' };
+type Question = { text: string; target: 'note' | 'need' | 'healthy' };
 
 // Type-specific clinical questions. `target` says which field the question
 // guides — clicking it focuses that field.
@@ -16,17 +16,18 @@ function clinicalQuestions(node: ModeMapNode): Question[] {
   const sub = node.data.copingSubtype;
   const note = (text: string): Question => ({ text, target: 'note' });
   const need = (text: string): Question => ({ text, target: 'need' });
+  const heal = (text: string): Question => ({ text, target: 'healthy' });
   switch (node.type) {
     case 'trigger':
       return [note('Что конкретно произошло?'), note('Что клиент увидел, услышал, вспомнил?')];
     case 'child':
-      return [note('Что чувствует эта часть?'), need('Какая детская потребность не удовлетворена?'), note('Сколько ему лет в этот момент?')];
+      return [note('Что чувствует эта часть?'), need('Какая детская потребность не удовлетворена?'), heal('Что сказал бы ребёнку Здоровый Взрослый?')];
     case 'critic':
-      return [note('Чей это голос?'), note('Что говорит дословно?'), note('Чем грозит, если не послушаться?')];
+      return [note('Чей это голос?'), note('Что говорит дословно?'), heal('Что ответил бы критику Здоровый Взрослый?')];
     case 'coping':
-      if (sub === 'avoid')  return [note('От чего уводит?'), note('Что отключает или избегает?'), note('Какую боль ребёнка прячет?')];
-      if (sub === 'surr')   return [note('Кому подчиняется?'), note('Чего боится, если перестанет?'), note('Какую боль ребёнка прячет?')];
-      return [note('От какой боли защищает?'), note('Что делает в поведении?'), note('Какую цену клиент платит?')];
+      if (sub === 'avoid')  return [note('От чего уводит?'), note('Какую боль ребёнка прячет?'), heal('Что сказал бы Здоровый Взрослый?')];
+      if (sub === 'surr')   return [note('Кому подчиняется?'), note('Какую боль ребёнка прячет?'), heal('Что сказал бы Здоровый Взрослый?')];
+      return [note('От какой боли защищает?'), note('Какую цену клиент платит?'), heal('Что сказал бы Здоровый Взрослый?')];
     case 'healthy':
       return [note('Кого защищает?'), note('Кому ставит границы?'), need('Какие потребности удовлетворяет?')];
     case 'behavior':
@@ -36,8 +37,8 @@ function clinicalQuestions(node: ModeMapNode): Question[] {
   }
 }
 
-function ClinicalHint({ node, onPickNote, onPickNeed }: {
-  node: ModeMapNode; onPickNote: () => void; onPickNeed: () => void;
+function ClinicalHint({ node, onPickNote, onPickNeed, onPickHealthy }: {
+  node: ModeMapNode; onPickNote: () => void; onPickNeed: () => void; onPickHealthy: () => void;
 }) {
   const qs = clinicalQuestions(node);
   return (
@@ -51,7 +52,7 @@ function ClinicalHint({ node, onPickNote, onPickNeed }: {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {qs.map((q, i) => (
           <button key={i}
-            onClick={() => (q.target === 'need' ? onPickNeed() : onPickNote())}
+            onClick={() => (q.target === 'need' ? onPickNeed() : q.target === 'healthy' ? onPickHealthy() : onPickNote())}
             title="Нажми, чтобы заполнить поле"
             style={{ display: 'flex', gap: 6, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
               padding: '3px 4px', borderRadius: 5, fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.35 }}
@@ -154,6 +155,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
   const nameRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const needRef = useRef<HTMLInputElement>(null);
+  const healthyRef = useRef<HTMLTextAreaElement>(null);
 
   const patchData = (d: Partial<ModeMapNode['data']>) =>
     onChange({ ...node, data: { ...node.data, ...d } });
@@ -259,7 +261,8 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
       {/* Clinical questions — click a question to jump to the field it guides */}
       <ClinicalHint node={node}
         onPickNote={() => { noteRef.current?.focus(); }}
-        onPickNeed={() => { needRef.current?.focus(); }} />
+        onPickNeed={() => { needRef.current?.focus(); }}
+        onPickHealthy={() => { healthyRef.current?.focus(); healthyRef.current?.scrollIntoView({ block: 'nearest' }); }} />
 
       <label style={labelStyle}>Заметка</label>
       <textarea ref={noteRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 56 }} rows={3}
@@ -275,6 +278,18 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
           <datalist id="modemap-needs">
             {CORE_NEEDS.map(n => <option key={n} value={n} />)}
           </datalist>
+        </>
+      )}
+
+      {(node.type === 'child' || node.type === 'critic' || node.type === 'coping') && (
+        <>
+          <label style={{ ...labelStyle, color: 'var(--accent-green)' }}>🌿 Что сказал бы Здоровый Взрослый</label>
+          <textarea ref={healthyRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 48,
+            borderColor: 'rgba(120,184,122,0.4)' }} rows={2}
+            value={node.data.healthyResponse ?? ''} onChange={e => patchData({ healthyResponse: e.target.value || undefined })}
+            placeholder={node.type === 'critic' ? 'Ответ критику: «Ты не обязан быть идеальным…»'
+              : node.type === 'coping' ? 'Зачем защита? «Я могу выдержать эту боль…»'
+              : 'Поддержка ребёнку: «Я с тобой, ты в безопасности…»'} />
         </>
       )}
 

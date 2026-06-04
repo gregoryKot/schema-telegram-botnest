@@ -11,6 +11,7 @@ export interface ModeNodeData {
   fillFull?: boolean;
   copingSubtype?: 'over' | 'avoid' | 'surr';
   display?: 'name' | 'note' | 'full';
+  healthyResponse?: string;
 }
 
 export const TYPE_COLORS: Record<string, string> = {
@@ -93,6 +94,7 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
   const display = data.display ?? 'full';
   const showNote = display !== 'name' && !!data.note;
   const showNeed = display === 'full' && !!data.unmetNeed;
+  const showHealthy = display === 'full' && !!data.healthyResponse;
 
   const startEdit = () => { if (id && actions) { setDraft(data.label); setEditing(true); } };
   const commit = () => { if (id && actions) actions.rename(id, draft.trim() || data.label); setEditing(false); };
@@ -119,6 +121,8 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
         color: light ? 'rgba(255,255,255,0.75)' : 'var(--text-sub)' }}>{data.note}</div>}
       {showNeed && <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word', fontStyle: 'italic',
         color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>нужда: {data.unmetNeed}</div>}
+      {showHealthy && <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.3, wordBreak: 'break-word',
+        color: light ? 'rgba(255,255,255,0.8)' : '#5a9a5c' }}>🌿 {data.healthyResponse}</div>}
     </div>
   );
 }
