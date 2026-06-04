@@ -21,26 +21,19 @@ export const TYPE_COLORS: Record<string, string> = {
   behavior: '#8a8f9e',
 };
 
-// Invisible strip handles along each side. Floating edges attach to the border
-// automatically, so we don't need visible dots — the strips just give a grab
-// zone to START a connection from anywhere along a side. The node centre stays
-// free for dragging. Each side has source + target (same id) for loose mode.
-const STRIP: Record<string, React.CSSProperties> = {
-  l: { width: 16, height: '100%', left: -8,  top: 0, borderRadius: 0 },
-  r: { width: 16, height: '100%', right: -8, top: 0, borderRadius: 0 },
-  t: { width: '100%', height: 16, top: -8,  left: 0, borderRadius: 0 },
-  b: { width: '100%', height: 16, bottom: -8, left: 0, borderRadius: 0 },
-};
-const baseStrip: React.CSSProperties = {
-  background: 'transparent', border: 'none', opacity: 0, transform: 'none', minWidth: 0, minHeight: 0,
+// Connection dots at the 4 sides. Hidden by default, revealed on node hover
+// (CSS rule .react-flow__node:hover .mm-handle in index.css) so it's obvious
+// you can drag from here to draw a line. connectionRadius makes the drop
+// forgiving. Each side has source + target (same id) for loose mode + swap.
+const dotStyle: React.CSSProperties = {
+  width: 11, height: 11, background: 'var(--accent)', border: '2px solid var(--bg-elev)',
 };
 
 function SideHandles({ pos, id }: { pos: Position; id: string }) {
-  const s = { ...baseStrip, ...STRIP[id] };
   return (
     <>
-      <Handle type="target" position={pos} id={id} style={s} />
-      <Handle type="source" position={pos} id={id} style={s} />
+      <Handle type="target" position={pos} id={id} className="mm-handle" style={dotStyle} />
+      <Handle type="source" position={pos} id={id} className="mm-handle" style={dotStyle} />
     </>
   );
 }

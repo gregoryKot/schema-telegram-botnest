@@ -299,9 +299,9 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.18)" gap={snap ? 20 : 22} size={1.5} />
         {showZones && <ModeMapZones />}
 
-        {/* Toolbar — icons for universal actions, text labels for the rest */}
+        {/* Toolbar — icon-only with hover tooltips */}
         <Panel position="top-left">
-          <div style={{ display: 'flex', gap: 3, padding: 4, borderRadius: 9, alignItems: 'center', flexWrap: 'wrap',
+          <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 9, alignItems: 'center', flexWrap: 'wrap',
             background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)',
             boxShadow: '0 2px 8px rgba(0,0,0,0.08)', maxWidth: 'calc(100vw - 480px)' }}>
             {/* History */}
@@ -313,12 +313,12 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
             <TbBtn label="Приблизить" onClick={() => zoomIn()}>＋</TbBtn>
             <TbBtn label="Показать всё" onClick={() => fitView({ padding: 0.2 })}>⤢</TbBtn>
             <TbSep />
-            {/* Tools with labels */}
-            <TbText label="Разложить" title="Авто-расположение графа" icon="↻" onClick={onAutoLayout} disabled={nodes.length === 0} />
-            <TbText label="Сетка" title="Привязка к сетке" icon="▦" onClick={() => setSnap(s => !s)} active={snap} />
-            <TbText label="Зоны" title="Зоны: здоровый взрослый / копинги / детские и критики" icon="▤" onClick={toggleZones} active={showZones} />
+            {/* Tools */}
+            <TbBtn label="Разложить автоматически" onClick={onAutoLayout} disabled={nodes.length === 0}>↻</TbBtn>
+            <TbBtn label="Привязка к сетке" onClick={() => setSnap(s => !s)} active={snap}>▦</TbBtn>
+            <TbBtn label="Зоны: здоровый взрослый / копинги / детские и критики" onClick={toggleZones} active={showZones}>▤</TbBtn>
             <div style={{ position: 'relative' }}>
-              <TbText label="Добавить" title="Шаблоны и генерация" icon="✚" onClick={() => { setTplOpen(o => !o); setDlOpen(false); }} active={tplOpen} caret />
+              <TbBtn label="Шаблоны и генерация" onClick={() => { setTplOpen(o => !o); setDlOpen(false); }} active={tplOpen} caret>✚</TbBtn>
               {tplOpen && (
                 <Dropdown onClose={() => setTplOpen(false)}>
                   <div style={dropHeadStyle}>Шаблоны</div>
@@ -333,12 +333,12 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                 </Dropdown>
               )}
             </div>
-            <TbText label="Подсказки" title="Клиническая цепочка и советы" icon="💡" onClick={toggleGuide} active={showGuide} />
-            <TbText label="Легенда" title="Расшифровка форм и цветов" icon="ⓘ" onClick={toggleLegend} active={showLegend} />
+            <TbBtn label="Подсказки: клиническая цепочка и советы" onClick={toggleGuide} active={showGuide}>💡</TbBtn>
+            <TbBtn label="Легенда: формы и цвета" onClick={toggleLegend} active={showLegend}>ⓘ</TbBtn>
             <TbSep />
             <div style={{ position: 'relative' }}>
-              <TbText label="Скачать" title="Скачать карту" icon="⬇" onClick={() => { setDlOpen(o => !o); setTplOpen(false); }}
-                active={dlOpen} caret disabled={nodes.length === 0} />
+              <TbBtn label="Скачать карту (PNG / PDF)" onClick={() => { setDlOpen(o => !o); setTplOpen(false); }}
+                active={dlOpen} caret disabled={nodes.length === 0}>⬇</TbBtn>
               {dlOpen && (
                 <Dropdown onClose={() => setDlOpen(false)}>
                   <button disabled={exporting} onClick={() => { onExportPng(); setDlOpen(false); }} style={menuItemStyle}>🖼 Картинка PNG</button>
@@ -396,40 +396,34 @@ const menuItemStyle: React.CSSProperties = {
   borderRadius: 5, fontSize: 12.5, cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text)',
 };
 
-function TbBtn({ children, label, onClick, disabled, active }: {
-  children: React.ReactNode; label: string; onClick: () => void; disabled?: boolean; active?: boolean;
+// Icon-only toolbar button with a custom hover tooltip (no cramped text labels)
+function TbBtn({ children, label, onClick, disabled, active, caret }: {
+  children: React.ReactNode; label: string; onClick: () => void; disabled?: boolean; active?: boolean; caret?: boolean;
 }) {
+  const [hover, setHover] = useState(false);
   return (
-    <button onClick={onClick} disabled={disabled} title={label}
-      style={{ minWidth: 30, height: 30, padding: '0 6px', borderRadius: 6, border: 'none', cursor: disabled ? 'default' : 'pointer',
-        background: active ? 'var(--accent-soft)' : 'none', fontSize: 15, lineHeight: 1,
-        color: disabled ? 'var(--text-ghost)' : active ? 'var(--accent)' : 'var(--text-sub)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onMouseEnter={e => { if (!disabled && !active) e.currentTarget.style.background = 'rgba(var(--fg-rgb),0.07)'; }}
-      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'none'; }}>
-      {children}
-    </button>
+    <div style={{ position: 'relative', display: 'flex' }}>
+      <button onClick={onClick} disabled={disabled}
+        style={{ minWidth: 32, height: 30, padding: caret ? '0 6px 0 8px' : '0 7px', borderRadius: 6, border: 'none',
+          cursor: disabled ? 'default' : 'pointer', gap: 3,
+          background: active ? 'var(--accent-soft)' : hover && !disabled ? 'rgba(var(--fg-rgb),0.07)' : 'none', fontSize: 15, lineHeight: 1,
+          color: disabled ? 'var(--text-ghost)' : active ? 'var(--accent)' : 'var(--text-sub)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+        {children}{caret && <span style={{ fontSize: 9, opacity: 0.7 }}>▾</span>}
+      </button>
+      {hover && !disabled && (
+        <div style={{ position: 'absolute', top: 36, left: '50%', transform: 'translateX(-50%)', zIndex: 40,
+          background: 'var(--text)', color: 'var(--bg)', fontSize: 11, padding: '3px 7px', borderRadius: 5,
+          whiteSpace: 'nowrap', pointerEvents: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+          {label}
+        </div>
+      )}
+    </div>
   );
 }
 function TbSep() {
   return <div style={{ width: 1, background: 'rgba(var(--fg-rgb),0.1)', margin: '4px 2px' }} />;
-}
-
-// Labeled toolbar button (icon + text) — clearer than icon-only
-function TbText({ icon, label, title, onClick, disabled, active, caret }: {
-  icon: string; label: string; title: string; onClick: () => void; disabled?: boolean; active?: boolean; caret?: boolean;
-}) {
-  return (
-    <button onClick={onClick} disabled={disabled} title={title}
-      style={{ height: 30, padding: '0 9px', borderRadius: 6, border: 'none', cursor: disabled ? 'default' : 'pointer',
-        background: active ? 'var(--accent-soft)' : 'none', fontSize: 12.5, lineHeight: 1, whiteSpace: 'nowrap',
-        color: disabled ? 'var(--text-ghost)' : active ? 'var(--accent)' : 'var(--text-sub)',
-        display: 'flex', alignItems: 'center', gap: 5 }}
-      onMouseEnter={e => { if (!disabled && !active) e.currentTarget.style.background = 'rgba(var(--fg-rgb),0.07)'; }}
-      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'none'; }}>
-      <span style={{ fontSize: 14 }}>{icon}</span>{label}{caret && <span style={{ fontSize: 9, opacity: 0.7 }}>▾</span>}
-    </button>
-  );
 }
 
 function Dropdown({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {

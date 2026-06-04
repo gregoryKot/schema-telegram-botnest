@@ -1352,3 +1352,15 @@ input:focus-visible,
 textarea:focus-visible {
   outline: none;
 }
+
+/* ─── Mode map: connection dots hidden until you hover the node ─────────────── */
+.mm-handle {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.react-flow__node:hover .mm-handle,
+.react-flow__node.selected .mm-handle {
+  opacity: 0.85;
+}
+/* While dragging a connection, show all handles so targets are obvious */
+.react-flow.connecting .mm-handle { opacity: 0.5; }
