@@ -12,17 +12,21 @@ const SHAPE_POLY: Record<string, [number, number][]> = {
   pentagon: [[0.5, 0.02], [0.976, 0.366], [0.794, 0.924], [0.206, 0.924], [0.024, 0.366]],
   shield: [[0.04, 0.04], [0.96, 0.04], [0.96, 0.62], [0.73, 0.80], [0.5, 0.96], [0.27, 0.80], [0.04, 0.62]],
   behavior: [[0.02, 0.02], [0.80, 0.02], [0.98, 0.5], [0.80, 0.98], [0.02, 0.98]],
+  // Cloud outline (path is viewBox 100×60 → x/100, y/60)
+  trigger: [[0.18, 0.867], [0.04, 0.667], [0.13, 0.467], [0.21, 0.267], [0.33, 0.133],
+    [0.46, 0.10], [0.60, 0.083], [0.76, 0.167], [0.92, 0.333], [1.0, 0.55], [0.90, 0.783], [0.82, 0.867]],
 };
 
 function polyFor(node: InternalNode<Node>): [number, number][] | null {
   if (node.type === 'critic') return SHAPE_POLY.critic;
   if (node.type === 'behavior') return SHAPE_POLY.behavior;
+  if (node.type === 'trigger') return SHAPE_POLY.trigger;
   if (node.type === 'coping') {
     const sub = (node.data as { copingSubtype?: string } | undefined)?.copingSubtype ?? 'over';
     if (sub === 'over') return SHAPE_POLY.pentagon;
     if (sub === 'avoid') return SHAPE_POLY.shield;
   }
-  return null; // child → ellipse, rect/trigger/pill → box
+  return null; // child → ellipse, rect/pill → box
 }
 
 // Nearest exit point of the ray (cx,cy)+t·(dx,dy), t>0, through a polygon (actual coords).
