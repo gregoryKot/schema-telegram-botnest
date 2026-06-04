@@ -508,12 +508,13 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               )}
 
               {/* Actions — right */}
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 'auto' }}>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 'auto', alignItems: 'center' }}>
                 <button onClick={() => setShowAssign(true)} className="btn btn-primary">+ Задание</button>
                 <button onClick={() => setClientTab('sessions')} className="btn btn-secondary">+ Заметка</button>
-                <button onClick={deleteClient} disabled={deleteLoading}
-                  style={{ padding: '7px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--c-rose)', cursor: 'pointer' }}>
-                  {deleteLoading ? '…' : 'Удалить'}
+                <button onClick={deleteClient} disabled={deleteLoading} title="Удалить клиента"
+                  style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    borderRadius: 8, border: '1px solid var(--line)', background: 'transparent', fontSize: 14, color: 'var(--text-faint)', cursor: 'pointer' }}>
+                  {deleteLoading ? '…' : '🗑'}
                 </button>
               </div>
             </div>

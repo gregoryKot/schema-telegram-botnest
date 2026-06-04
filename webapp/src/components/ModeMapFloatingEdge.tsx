@@ -1,36 +1,35 @@
 import {
-  BaseEdge, EdgeLabelRenderer, useInternalNode,
+  BaseEdge, EdgeLabelRenderer, useInternalNode, getBezierPath,
   Position, type EdgeProps, type InternalNode, type Node,
 } from '@xyflow/react';
 
-// ── Geometry: intersection of border with the line to the other node ──────────
+// ── Geometry: exact point where the border faces the other node ───────────────
+// Ellipse for the round Child node, bounding box for everything else. The arrow
+// ends right ON the border (1px inset) → no gap, no overlap into the shape.
 function getNodeIntersection(node: InternalNode<Node>, other: InternalNode<Node>) {
   const w = (node.measured.width ?? 0) / 2;
   const h = (node.measured.height ?? 0) / 2;
-  const x2 = node.internals.positionAbsolute.x + w;
-  const y2 = node.internals.positionAbsolute.y + h;
-  const x1 = other.internals.positionAbsolute.x + (other.measured.width ?? 0) / 2;
-  const y1 = other.internals.positionAbsolute.y + (other.measured.height ?? 0) / 2;
+  const cx = node.internals.positionAbsolute.x + w;
+  const cy = node.internals.positionAbsolute.y + h;
+  const ox = other.internals.positionAbsolute.x + (other.measured.width ?? 0) / 2;
+  const oy = other.internals.positionAbsolute.y + (other.measured.height ?? 0) / 2;
 
-  if (w === 0 || h === 0) return { x: x2, y: y2 };
+  if (w === 0 || h === 0) return { x: cx, y: cy };
 
-  // Circle nodes: intersect the actual circle, not the bounding box (box corners
-  // stick out → gap at diagonal angles). 1px inset so the arrow touches.
+  const dx = ox - cx, dy = oy - cy;
+  if (dx === 0 && dy === 0) return { x: cx, y: cy };
+
+  // Ellipse (Child): true ellipse boundary in the direction of the other node.
   if (node.type === 'child') {
-    const r = Math.min(w, h) - 1;
-    const dx = x1 - x2, dy = y1 - y2;
-    const len = Math.hypot(dx, dy) || 1;
-    return { x: x2 + (dx / len) * r, y: y2 + (dy / len) * r };
+    const a = w - 1, b = h - 1;
+    const t = 1 / Math.sqrt((dx / a) ** 2 + (dy / b) ** 2);
+    return { x: cx + dx * t, y: cy + dy * t };
   }
 
-  // Box-based shapes — intersect the bounding box, inset 1px to avoid a hairline gap.
-  const iw = w - 1, ih = h - 1;
-  const xx1 = (x1 - x2) / (2 * iw) - (y1 - y2) / (2 * ih);
-  const yy1 = (x1 - x2) / (2 * iw) + (y1 - y2) / (2 * ih);
-  const a = 1 / (Math.abs(xx1) + Math.abs(yy1) || 1);
-  const xx3 = a * xx1;
-  const yy3 = a * yy1;
-  return { x: iw * (xx3 + yy3) + x2, y: ih * (-xx3 + yy3) + y2 };
+  // Rect / polygon: hit the nearest bounding-box edge in that direction.
+  const a = w - 1, b = h - 1;
+  const t = Math.min(a / (Math.abs(dx) || 1e-6), b / (Math.abs(dy) || 1e-6));
+  return { x: cx + dx * t, y: cy + dy * t };
 }
 
 function getEdgePosition(node: InternalNode<Node>, p: { x: number; y: number }): Position {
@@ -57,32 +56,19 @@ function getEdgeParams(source: InternalNode<Node>, target: InternalNode<Node>) {
   };
 }
 
-function hashId(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
-
-// ── Floating edge — attaches to the border facing the other node ──────────────
+// ── Floating edge — clean bezier that attaches to the border facing the other node
 export function FloatingEdge({ id, source, target, markerEnd, markerStart, style, label, labelStyle }: EdgeProps) {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
   if (!sourceNode || !targetNode) return null;
 
-  const { sx, sy, tx, ty } = getEdgeParams(sourceNode, targetNode);
+  const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(sourceNode, targetNode);
 
-  // Endpoints stay ON the borders (no gap). To keep parallel / reciprocal
-  // edges from merging, bow only the MIDDLE of the curve perpendicular by a
-  // small id-derived offset.
-  const bow = ((hashId(id) % 5) - 2) * 16; // -32 … +32
-  const dx = tx - sx, dy = ty - sy;
-  const len = Math.hypot(dx, dy) || 1;
-  const nx = -dy / len, ny = dx / len;
-  const mx = (sx + tx) / 2 + nx * bow;
-  const my = (sy + ty) / 2 + ny * bow;
-  const path = `M ${sx},${sy} Q ${mx},${my} ${tx},${ty}`;
-  const labelX = (sx + tx) / 2 + nx * bow * 0.5;
-  const labelY = (sy + ty) / 2 + ny * bow * 0.5;
+  const [path, labelX, labelY] = getBezierPath({
+    sourceX: sx, sourceY: sy, sourcePosition: sourcePos,
+    targetX: tx, targetY: ty, targetPosition: targetPos,
+    curvature: 0.22,
+  });
 
   return (
     <>
@@ -92,8 +78,9 @@ export function FloatingEdge({ id, source, target, markerEnd, markerStart, style
           <div style={{
             position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-            background: 'var(--bg-elev)', padding: '1px 6px', borderRadius: 4,
-            fontSize: 11, color: 'var(--text-sub)', pointerEvents: 'all',
+            background: 'var(--bg-elev)', padding: '2px 7px', borderRadius: 5,
+            border: '1px solid rgba(var(--fg-rgb),0.08)',
+            fontSize: 11, color: 'var(--text-sub)', pointerEvents: 'all', whiteSpace: 'nowrap',
             ...(labelStyle as React.CSSProperties),
           }}>
             {label as string}
