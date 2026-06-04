@@ -120,7 +120,7 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
       {showNote && <div style={{ fontSize: 11, marginTop: 3, lineHeight: 1.3, wordBreak: 'break-word',
         color: light ? 'rgba(255,255,255,0.75)' : 'var(--text-sub)' }}>{data.note}</div>}
       {showNeed && <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word', fontStyle: 'italic',
-        color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>нужда: {data.unmetNeed}</div>}
+        color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>потребность: {data.unmetNeed}</div>}
       {showHealthy && <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.3, wordBreak: 'break-word',
         color: light ? 'rgba(255,255,255,0.8)' : '#5a9a5c' }}>🌿 {data.healthyResponse}</div>}
     </div>

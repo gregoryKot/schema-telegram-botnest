@@ -1,10 +1,13 @@
+import { useMemo, useState } from 'react';
 import type { FlowNode } from './modeMapFlow';
 import type { ModeMapNode, ModeMapKind } from '../api';
+import { pickTips } from './modeMapTips';
 
 interface Props {
   nodes: FlowNode[];
   kind: ModeMapKind;
   onAdd: (node: Omit<ModeMapNode, 'position'>) => void;
+  onOpenNeed: () => void;
   onClose: () => void;
 }
 
@@ -16,14 +19,16 @@ type Step = {
   ok: boolean;
   label: string;
   desc: string;                                  // clinical meaning of this step
-  add: Omit<ModeMapNode, 'position'> | null;     // node to drop when clicked (null = a property)
+  add: Omit<ModeMapNode, 'position'> | null;     // node to drop when clicked
+  action?: () => void;                           // alternative click action (e.g. open a field)
+  actionReady?: boolean;                         // is the action available yet
 };
 
 function mk(type: ModeMapNode['type'], label: string, extra: Partial<ModeMapNode['data']> = {}): Omit<ModeMapNode, 'position'> {
   return { id: `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, type, data: { label, ...extra } };
 }
 
-export function ModeMapGuide({ nodes, kind, onAdd, onClose }: Props) {
+export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props) {
   const hasTrigger = has(nodes, 'trigger');
   const hasChild   = has(nodes, 'child');
   const hasCritic  = has(nodes, 'critic');
@@ -45,8 +50,10 @@ export function ModeMapGuide({ nodes, kind, onAdd, onClose }: Props) {
           add: mk('coping', 'Копинг', { copingSubtype: 'avoid' }) },
         { ok: hasBehavior, label: 'Поведение',         desc: 'Что человек реально делает — и к каким последствиям это ведёт',
           add: mk('behavior', 'Поведение') },
-        { ok: hasNeed,     label: 'Потребность',       desc: 'Что на самом деле было нужно ребёнку — это становится целью терапии',
-          add: null },
+        { ok: hasNeed,     label: 'Потребность',       desc: hasChild
+            ? 'Что на самом деле было нужно ребёнку — нажми, чтобы вписать на режиме Ребёнка'
+            : 'Что было нужно ребёнку — сначала добавь Уязвимого Ребёнка',
+          add: null, action: onOpenNeed, actionReady: hasChild },
       ]
     : [
         { ok: hasChild,   label: 'Детские режимы',     desc: 'Уязвимая, сердитая, импульсивная части — где живёт боль и потребности',
@@ -59,29 +66,23 @@ export function ModeMapGuide({ nodes, kind, onAdd, onClose }: Props) {
           add: mk('healthy', 'Здоровый Взрослый') },
       ];
 
-  // ── Advice — general principles + contextual nudges ─────────────────────────
-  const tips: string[] = [];
+  // ── Advice — contextual nudges + fresh random tips from the 50-tip base ──────
+  const [reroll, setReroll] = useState(0);
+  // Contextual nudges depend on the current map state
+  const contextual: string[] = [];
   if (hasCoping && !hasChild)
-    tips.push('За копингом обычно прячется боль Уязвимого Ребёнка. Какую эмоцию он транслирует?');
+    contextual.push('За копингом обычно прячется боль Уязвимого Ребёнка. Какую эмоцию он транслирует?');
   if (kind === 'problem' && hasChild && hasCoping && !hasNeed)
-    tips.push('Назови неудовлетворённую потребность ребёнка — именно она становится целью терапии.');
-  if (hasHealthy)
-    tips.push('Покажи Здорового Взрослого активным: кого защищает, кому ставит границы.');
+    contextual.push('Назови потребность ребёнка — именно она становится целью терапии.');
   if (nodes.length > 12)
-    tips.push('Многовато режимов. Карта показывает то, что участвует в ситуации, а не все режимы сразу.');
-  // Always-on principles (fill the rest so the panel stays informative)
-  const principles = kind === 'problem'
-    ? [
-        'Самая важная стрелка — между болью и защитой (боль → копинг).',
-        'Карта — живой черновик. Меняй её по мере понимания клиента.',
-        'Разбери конкретный недавний эпизод шаг за шагом — режимы найдутся сами.',
-      ]
-    : [
-        'Общую карту доставай каждую сессию: «как твои режимы проявлялись на неделе?».',
-        'Карта — живой черновик. Меняй её по мере понимания клиента.',
-        'Используй образы и свои названия («Критик → Генерал») — так режимы узнаются в жизни.',
-      ];
-  for (const p of principles) { if (tips.length < 3) tips.push(p); }
+    contextual.push('Многовато режимов. Карта показывает то, что участвует в ситуации, а не все режимы сразу.');
+  // Fresh random picks — new set each time the panel opens or you reroll
+  const random = useMemo(
+    () => pickTips(kind, Math.max(1, 4 - contextual.length), contextual),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [kind, reroll, contextual.length],
+  );
+  const tips = [...contextual, ...random];
 
   return (
     <div style={{
@@ -104,11 +105,11 @@ export function ModeMapGuide({ nodes, kind, onAdd, onClose }: Props) {
       {/* Numbered steps with clinical descriptions */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {steps.map((s, i) => {
-          const clickable = !s.ok && s.add;
+          const clickable = !s.ok && (!!s.add || (!!s.action && s.actionReady));
           return (
             <button key={i} disabled={!clickable}
-              onClick={() => clickable && s.add && onAdd(s.add)}
-              title={clickable ? 'Добавить на холст' : undefined}
+              onClick={() => { if (!clickable) return; if (s.add) onAdd(s.add); else s.action?.(); }}
+              title={clickable ? (s.add ? 'Добавить на холст' : 'Открыть поле') : undefined}
               style={{ display: 'flex', gap: 8, textAlign: 'left', width: '100%',
                 background: 'none', border: 'none', padding: '6px 5px', borderRadius: 6,
                 cursor: clickable ? 'pointer' : 'default', alignItems: 'flex-start' }}
@@ -118,7 +119,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onClose }: Props) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1,
                 background: s.ok ? 'var(--accent-green)' : clickable ? 'var(--accent-soft)' : 'rgba(var(--fg-rgb),0.06)',
                 color: s.ok ? '#fff' : clickable ? 'var(--accent)' : 'var(--text-faint)' }}>
-                {s.ok ? '✓' : clickable ? '＋' : i + 1}
+                {s.ok ? '✓' : clickable ? (s.add ? '＋' : '✎') : i + 1}
               </span>
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: s.ok ? 'var(--text)' : 'var(--text-sub)' }}>
@@ -135,8 +136,14 @@ export function ModeMapGuide({ nodes, kind, onAdd, onClose }: Props) {
 
       {/* Advice */}
       <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.08)', marginTop: 10, paddingTop: 10 }}>
-        <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)', marginBottom: 7 }}>
-          Советы
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
+            Советы
+          </span>
+          <button onClick={() => setReroll(r => r + 1)} title="Другие советы"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 13, padding: 0, lineHeight: 1 }}>
+            ↻
+          </button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {tips.map((t, i) => (

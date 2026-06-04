@@ -173,6 +173,13 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
     return () => window.removeEventListener('modemap-focus-name', h);
   }, []);
 
+  // Guide step «Потребность» → focus the unmet-need field
+  useEffect(() => {
+    const h = () => { needRef.current?.focus(); needRef.current?.scrollIntoView({ block: 'center' }); };
+    window.addEventListener('modemap-focus-need', h);
+    return () => window.removeEventListener('modemap-focus-need', h);
+  }, []);
+
   return (
     <div style={panelStyle}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>

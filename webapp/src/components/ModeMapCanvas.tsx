@@ -129,6 +129,14 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     setNodes(newNodes); scheduleSave(newNodes, edgesRef.current);
   }, [screenToFlowPosition, setNodes, scheduleSave, pushHistory, nodesRef, edgesRef]);
 
+  // Open the unmet-need field on the Vulnerable Child node (from the guide's step 6)
+  const onOpenNeed = useCallback(() => {
+    const child = nodesRef.current.find(n => n.type === 'child') ?? nodesRef.current.find(n => n.type === 'custom');
+    if (!child) return;
+    setSelectedNodeId(child.id); setSelectedEdgeId(null);
+    setTimeout(() => window.dispatchEvent(new CustomEvent('modemap-focus-need')), 40);
+  }, [nodesRef, setSelectedNodeId, setSelectedEdgeId]);
+
   // Export (PNG / PDF) via shared hook
   const { exporting, onExportPng, onExportPdf } = useModeMapExport(nodes);
 
@@ -323,7 +331,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         <Panel position="top-left">
           <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 9, alignItems: 'center', flexWrap: 'nowrap',
             background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', maxWidth: 'calc(100% - 16px)', overflowX: 'auto' }}>
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             {/* History */}
             <TbBtn label="Отменить (⌘Z)" disabled={!canUndo} onClick={onUndo}>↶</TbBtn>
             <TbBtn label="Вернуть (⌘⇧Z)" disabled={!canRedo} onClick={onRedo}>↷</TbBtn>
@@ -400,7 +408,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         )}
         {showGuide && (
           <Panel position="bottom-right">
-            <ModeMapGuide nodes={nodes} kind={kind} onAdd={addNodeFromGuide} onClose={toggleGuide} />
+            <ModeMapGuide nodes={nodes} kind={kind} onAdd={addNodeFromGuide} onOpenNeed={onOpenNeed} onClose={toggleGuide} />
           </Panel>
         )}
       </ReactFlow>
