@@ -14,9 +14,10 @@ function getNodeIntersection(node: InternalNode<Node>, other: InternalNode<Node>
 
   if (w === 0 || h === 0) return { x: x2, y: y2 };
 
-  // Circle nodes: intersect the actual circle, not the bounding box (the box
-  // corners stick out → gap at diagonal angles). 1px inset so the arrow touches.
-  if (node.type === 'child') {
+  // Circle / octagon: intersect the inscribed circle, not the bounding box (box
+  // corners stick out → gap at diagonal angles). Octagon ≈ circle, so this closes
+  // the gap at its chamfered corners too. 1px inset so the arrow touches.
+  if (node.type === 'child' || node.type === 'critic') {
     const r = Math.min(w, h) - 1;
     const dx = x1 - x2, dy = y1 - y2;
     const len = Math.hypot(dx, dy) || 1;

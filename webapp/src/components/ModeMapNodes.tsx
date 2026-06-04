@@ -66,20 +66,38 @@ function AllHandles() {
   );
 }
 
+const STROKE_CYCLE: ('thin' | 'normal' | 'bold')[] = ['thin', 'normal', 'bold'];
+const FONT_CYCLE: ('sm' | 'md' | 'lg')[] = ['sm', 'md', 'lg'];
+const next = <T,>(arr: T[], cur: T): T => arr[(arr.indexOf(cur) + 1) % arr.length];
+
 // Contextual toolbar shown above a selected node
-function NodeTools({ id, selected }: { id: string; selected?: boolean }) {
+function NodeTools({ id, selected, data }: { id: string; selected?: boolean; data?: ModeNodeData }) {
   const actions = useNodeActions();
   if (!actions) return null;
+  const sw = data?.strokeWidth ?? 'normal';
+  const fz = data?.fontSize ?? 'md';
   const btn: React.CSSProperties = {
     border: 'none', background: 'none', cursor: 'pointer', fontSize: 13,
     padding: '4px 8px', borderRadius: 5, color: 'var(--text-sub)', lineHeight: 1,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
   };
+  const sep = <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(var(--fg-rgb),0.12)', margin: '2px 1px' }} />;
   return (
     <NodeToolbar isVisible={!!selected} position={Position.Top} offset={8}>
-      <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 8,
+      <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 8, alignItems: 'center',
         background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)',
         boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>
         <button style={btn} title="Редактировать" onClick={() => actions.edit(id)}>✎</button>
+        {sep}
+        <button style={btn} title={`Толщина контура: ${({ thin: 'тонкий', normal: 'обычный', bold: 'жирный' } as const)[sw]} (нажми, чтобы сменить)`}
+          onClick={() => actions.patchData(id, { strokeWidth: next(STROKE_CYCLE, sw) })}>
+          <span style={{ display: 'inline-block', width: 16, height: sw === 'thin' ? 1.5 : sw === 'bold' ? 4 : 2.5,
+            borderRadius: 3, background: 'var(--text-sub)' }} />
+        </button>
+        <button style={{ ...btn, fontWeight: 700, fontSize: fz === 'sm' ? 11 : fz === 'lg' ? 17 : 14 }}
+          title={`Размер текста: ${({ sm: 'мелкий', md: 'средний', lg: 'крупный' } as const)[fz]} (нажми, чтобы сменить)`}
+          onClick={() => actions.patchData(id, { fontSize: next(FONT_CYCLE, fz) })}>A</button>
+        {sep}
         <button style={btn} title="Дублировать" onClick={() => actions.duplicate(id)}>⧉</button>
         <button style={{ ...btn, color: 'var(--accent-red)' }} title="Удалить" onClick={() => actions.remove(id)}>🗑</button>
       </div>
@@ -149,26 +167,31 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
 
 // ── SVG-based shape node — clean borders, no clip-path/border conflicts ────────
 // Text sits in an absolutely positioned div, constrained to the safe inner area.
-function SvgShapeNode({ id, data, selected, color, svgPath, textPadding, minW = 110, minH = 60, keepRatio }: {
+function SvgShapeNode({ id, data, selected, color, svgPath, textPadding, minW = 110, minH = 60, keepRatio, uniform }: {
   id: string; data: ModeNodeData; selected?: boolean; color: string;
   svgPath: string;       // SVG path in "0 0 100 100" viewBox space
   textPadding: string;   // CSS padding for text container
   minW?: number; minH?: number;
   keepRatio?: boolean;   // фиксировать пропорции при ресайзе
+  uniform?: boolean;     // square shape → scale uniformly (meet) so the stroke is EVEN on every side
 }) {
   const stroke = selected ? 'var(--accent)' : color;
   const fill = fillColor(color, data.filled, data.fillFull);
   const light = !!data.fillFull;
+  // Uniform shapes scale with the box → use viewBox-unit stroke; stretched shapes use device px
+  const STROKE_VB: Record<string, number> = { thin: 1.7, normal: 2.6, bold: 4 };
   return (
     <div style={{ width: '100%', height: '100%', minWidth: minW, minHeight: minH, position: 'relative' }}>
-      <NodeTools id={id} selected={selected} />
+      <NodeTools id={id} selected={selected} data={data} />
       <NodeResizer minWidth={minW - 30} minHeight={minH - 20} isVisible={!!selected} color={color}
         keepAspectRatio={!!keepRatio} />
       <AllHandles />
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none"
+      <svg viewBox="0 0 100 100" preserveAspectRatio={uniform ? 'xMidYMid meet' : 'none'}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-        <path d={svgPath} fill={fill} stroke={stroke} strokeWidth={strokePx(data)} vectorEffect="non-scaling-stroke"
-          strokeLinejoin="round" strokeLinecap="round"
+        <path d={svgPath} fill={fill} stroke={stroke}
+          strokeWidth={uniform ? (STROKE_VB[data.strokeWidth ?? 'normal'] ?? 2.6) : strokePx(data)}
+          vectorEffect={uniform ? undefined : 'non-scaling-stroke'}
+          strokeLinejoin="round" strokeLinecap="round" shapeRendering="geometricPrecision"
           filter={!selected ? 'drop-shadow(0 2px 5px rgba(0,0,0,0.12))' : undefined} />
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
@@ -187,7 +210,7 @@ function makeRectNode(defaultColor: string, radius = 10) {
     const light = !!d.fillFull;
     return (
       <div style={{ position: 'relative', width: 'max-content', minWidth: 110, maxWidth: 260, minHeight: 40 }}>
-        <NodeTools id={id} selected={selected} />
+        <NodeTools id={id} selected={selected} data={d} />
         <AllHandles />
         <div style={{
           borderRadius: radius,
@@ -218,7 +241,7 @@ export const CriticModeNode = function CriticModeNode({ id, data, selected }: No
   // Regular octagon — keep square so the 8 sides stay equal (no stretching)
   return <SvgShapeNode id={id} data={d} selected={selected}
     color={d.customColor ?? TYPE_COLORS.critic}
-    svgPath={CRITIC_PATH} textPadding="20% 16%" minW={120} minH={120} keepRatio />;
+    svgPath={CRITIC_PATH} textPadding="20% 16%" minW={120} minH={120} keepRatio uniform />;
 };
 
 export const CopingModeNode = function CopingModeNode({ id, data, selected }: NodeProps) {
@@ -231,7 +254,7 @@ export const CopingModeNode = function CopingModeNode({ id, data, selected }: No
     const light = !!d.fillFull;
     return (
       <div style={{ width: '100%', height: '100%', minWidth: 120, minHeight: 120, position: 'relative' }}>
-        <NodeTools id={id} selected={selected} />
+        <NodeTools id={id} selected={selected} data={d} />
         <NodeResizer minWidth={90} minHeight={90} isVisible={!!selected} color={color} keepAspectRatio />
         <AllHandles />
         <div style={{
@@ -252,12 +275,12 @@ export const CopingModeNode = function CopingModeNode({ id, data, selected }: No
   if (sub === 'avoid') {
     // Shield: point at bottom — text in upper rectangular zone, keep ratio
     return <SvgShapeNode id={id} data={d} selected={selected} color={color}
-      svgPath={SHIELD_PATH} textPadding="14% 14% 32%" minW={120} minH={120} keepRatio />;
+      svgPath={SHIELD_PATH} textPadding="14% 14% 32%" minW={120} minH={120} keepRatio uniform />;
   }
 
   // 'over' — pentagon: apex at top, keep ratio so it doesn't flatten
   return <SvgShapeNode id={id} data={d} selected={selected} color={color}
-    svgPath={PENTA_PATH} textPadding="32% 16% 12%" minW={120} minH={120} keepRatio />;
+    svgPath={PENTA_PATH} textPadding="32% 16% 12%" minW={120} minH={120} keepRatio uniform />;
 };
 
 export const ChildModeNode = function ChildModeNode({ id, data, selected }: NodeProps) {
@@ -266,7 +289,7 @@ export const ChildModeNode = function ChildModeNode({ id, data, selected }: Node
   const light = !!d.fillFull;
   return (
     <div style={{ width: '100%', height: '100%', minWidth: 110, minHeight: 110, position: 'relative' }}>
-      <NodeTools id={id} selected={selected} />
+      <NodeTools id={id} selected={selected} data={d} />
       <NodeResizer minWidth={90} minHeight={90} isVisible={!!selected} color={color} keepAspectRatio />
       <AllHandles />
       <div style={{
@@ -293,7 +316,7 @@ export const TriggerNode = function TriggerNode({ id, data, selected }: NodeProp
   const light = !!d.fillFull;
   return (
     <div style={{ width: '100%', height: '100%', minWidth: 130, minHeight: 70, position: 'relative' }}>
-      <NodeTools id={id} selected={selected} />
+      <NodeTools id={id} selected={selected} data={d} />
       <NodeResizer minWidth={100} minHeight={60} isVisible={!!selected} color={color} />
       <AllHandles />
       <svg viewBox="0 0 100 60" preserveAspectRatio="none"
