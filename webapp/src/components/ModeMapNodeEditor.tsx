@@ -147,9 +147,10 @@ interface NodeEditorProps {
   node: ModeMapNode;
   onChange: (updated: ModeMapNode) => void;
   onDelete: () => void;
+  onClose: () => void;
 }
 
-export function ModeMapNodeEditor({ node, onChange, onDelete }: NodeEditorProps) {
+export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEditorProps) {
   const nameRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const needRef = useRef<HTMLInputElement>(null);
@@ -172,7 +173,10 @@ export function ModeMapNodeEditor({ node, onChange, onDelete }: NodeEditorProps)
 
   return (
     <div style={panelStyle}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Режим</div>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>Режим</div>
+        <button onClick={onClose} title="Закрыть" style={closeBtnStyle}>✕</button>
+      </div>
 
       <label style={labelStyle}>Название</label>
       <input ref={nameRef} style={inputStyle} value={node.data.label}
@@ -264,15 +268,19 @@ interface EdgeEditorProps {
   onChange: (updated: ModeMapEdge) => void;
   onDelete: () => void;
   onSwap: () => void;
+  onClose: () => void;
 }
 
-export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap }: EdgeEditorProps) {
+export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }: EdgeEditorProps) {
   const edgeType = (edge.data?.edgeType ?? 'activates') as string;
   const bidir = edge.data?.bidirectional ?? false;
 
   return (
     <div style={panelStyle}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14 }}>Связь</div>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>Связь</div>
+        <button onClick={onClose} title="Закрыть" style={closeBtnStyle}>✕</button>
+      </div>
 
       <label style={labelStyle}>Тип связи (задаёт цвет)</label>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
@@ -370,6 +378,11 @@ function dirBtnStyle(active: boolean): React.CSSProperties {
     color: active ? 'var(--accent)' : 'var(--text-sub)',
   };
 }
+
+const closeBtnStyle: React.CSSProperties = {
+  background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)',
+  fontSize: 13, padding: '2px 4px', lineHeight: 1,
+};
 
 const panelStyle: React.CSSProperties = {
   width: 230, flexShrink: 0,

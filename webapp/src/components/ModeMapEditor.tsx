@@ -32,7 +32,9 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [paletteOpen, setPaletteOpen] = useState(() => localStorage.getItem('modemap_palette') !== '0');
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => { localStorage.setItem('modemap_palette', paletteOpen ? '1' : '0'); }, [paletteOpen]);
 
   // Always-fresh refs (for deferred saves after React Flow internal updates)
   const nodesRef = useRef(nodes); nodesRef.current = nodes;
@@ -187,8 +189,17 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
 
   return (
     <ReactFlowProvider>
-      <div style={{ display: 'flex', height: '100%', background: 'var(--bg)' }}>
-        <ModeMapPalette onAdd={handleAddNode} clientId={clientId} />
+      <div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
+        {paletteOpen ? (
+          <div style={{ position: 'relative', display: 'flex' }}>
+            <ModeMapPalette onAdd={handleAddNode} clientId={clientId} />
+            <button onClick={() => setPaletteOpen(false)} title="Скрыть панель режимов"
+              style={collapseBtnStyle('left')}>‹</button>
+          </div>
+        ) : (
+          <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов"
+            style={{ ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>›</button>
+        )}
         <ModeMapCanvas clientId={clientId} mapId={mapId} kind={kind} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
           setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId}
@@ -198,14 +209,25 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
         {selectedNode && (
           <ModeMapNodeEditor
             node={{ id: selectedNode.id, type: selectedNode.type as ModeMapNode['type'], position: selectedNode.position, data: selectedNode.data as unknown as ModeMapNode['data'] }}
-            onChange={handleNodeChange} onDelete={handleDeleteNode} />
+            onChange={handleNodeChange} onDelete={handleDeleteNode}
+            onClose={() => setSelectedNodeId(null)} />
         )}
         {selectedEdge && !selectedNode && (
           <ModeMapEdgeEditor
             edge={{ id: selectedEdge.id, source: selectedEdge.source, target: selectedEdge.target, label: selectedEdge.label as string | undefined, data: selectedEdge.data as unknown as ModeMapEdge['data'] }}
-            onChange={handleEdgeChange} onDelete={handleDeleteEdge} onSwap={handleSwapEdge} />
+            onChange={handleEdgeChange} onDelete={handleDeleteEdge} onSwap={handleSwapEdge}
+            onClose={() => setSelectedEdgeId(null)} />
         )}
       </div>
     </ReactFlowProvider>
   );
+}
+
+function collapseBtnStyle(side: 'left' | 'right'): React.CSSProperties {
+  return {
+    position: 'absolute', top: 8, [side === 'left' ? 'right' : 'left']: -11, zIndex: 6,
+    width: 22, height: 22, borderRadius: '50%', border: '1px solid rgba(var(--fg-rgb),0.15)',
+    background: 'var(--bg-elev)', color: 'var(--text-sub)', cursor: 'pointer', fontSize: 13, lineHeight: 1,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+  };
 }

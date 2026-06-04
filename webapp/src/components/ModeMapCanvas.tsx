@@ -200,11 +200,18 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     scheduleSave(newNodes, newEdges);
   }, [setNodes, setEdges, scheduleSave, pushHistory, nodesRef, edgesRef, setSelectedNodeId]);
 
+  const renameNode = useCallback((id: string, label: string) => {
+    pushHistory();
+    const newNodes = nodesRef.current.map(n => n.id === id ? { ...n, data: { ...n.data, label } } : n);
+    setNodes(newNodes); scheduleSave(newNodes, edgesRef.current);
+  }, [setNodes, scheduleSave, pushHistory, nodesRef, edgesRef]);
+
   const nodeActions = useMemo<NodeActions>(() => ({
     duplicate: duplicateNode,
     remove: removeNode,
     edit: (id) => { setSelectedNodeId(id); setSelectedEdgeId(null); },
-  }), [duplicateNode, removeNode, setSelectedNodeId, setSelectedEdgeId]);
+    rename: renameNode,
+  }), [duplicateNode, removeNode, renameNode, setSelectedNodeId, setSelectedEdgeId]);
 
   // ── Templates & generate from conceptualization ──────────────────────────────
   const insertGraph = useCallback((ns: ModeMapNode[], es: { id: string; source: string; target: string; label?: string; data: { edgeType: string } }[]) => {
