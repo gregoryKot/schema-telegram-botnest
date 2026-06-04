@@ -72,6 +72,20 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
     setNodes(newNodes); scheduleSave(newNodes, edges);
   }, [nodes, edges, setNodes, scheduleSave, pushHistory]);
 
+  // Add several nodes at once (e.g. "вынести все режимы клиента") in a tidy grid.
+  const handleAddMany = useCallback((partials: Omit<ModeMapNode, 'position'>[]) => {
+    if (!partials.length) return;
+    pushHistory();
+    const COLS = 4, GAPX = 210, GAPY = 150, x0 = 120, y0 = 80;
+    const added = partials.map((p, i) => ({
+      id: p.id, type: p.type,
+      position: { x: x0 + (i % COLS) * GAPX, y: y0 + Math.floor(i / COLS) * GAPY },
+      data: p.data as Record<string, unknown>, ...(NODE_DEFAULT_SIZES[p.type] ?? {}),
+    }));
+    const newNodes = [...nodes, ...added];
+    setNodes(newNodes); scheduleSave(newNodes, edges);
+  }, [nodes, edges, setNodes, scheduleSave, pushHistory]);
+
   const handleNodeChange = useCallback((updated: ModeMapNode) => {
     pushHistory();
     const newNodes = nodes.map(n => n.id === updated.id
@@ -219,7 +233,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
 
   const paletteCol = (
     <div style={{ position: 'relative', display: 'flex' }}>
-      <ModeMapPalette onAdd={handleAddNode} clientId={clientId} />
+      <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} clientId={clientId} />
       <button onClick={() => setPaletteOpen(false)} title="Скрыть панель режимов"
         style={collapseBtnStyle('left')}>‹</button>
     </div>
@@ -252,7 +266,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
         {/* Mobile drawers */}
         {mobile && paletteOpen && overlay(
           <button onClick={() => setPaletteOpen(false)} title="Скрыть" style={collapseBtnStyle('left')}>‹</button>,
-          <ModeMapPalette onAdd={handleAddNode} clientId={clientId} />, 'left')}
+          <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} clientId={clientId} />, 'left')}
         {mobile && (nodeEditor || edgeEditor) && overlay(null, nodeEditor || edgeEditor, 'right')}
       </div>
     </ReactFlowProvider>
