@@ -1357,13 +1357,18 @@ textarea:focus-visible {
 /* Custom "draw connection" cursor: an accent dot with an arrow (instead of the
    plain crosshair). White halo keeps it visible on any background. Hotspot at the dot. */
 :root {
-  --mm-connect-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6%2020L17%209'/%3E%3Cpath d='M17%209h-5M17%209v5'/%3E%3C/g%3E%3Cg fill='none' stroke='%234d4799' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6%2020L17%209'/%3E%3Cpath d='M17%209h-5M17%209v5'/%3E%3C/g%3E%3Ccircle cx='6' cy='20' r='4' fill='%23ffffff'/%3E%3Ccircle cx='6' cy='20' r='2.6' fill='%234d4799'/%3E%3C/svg%3E") 6 20, crosshair;
+  --mm-connect-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6%2020L17%209'/%3E%3Cpath d='M17%209h-5M17%209v5'/%3E%3C/g%3E%3Cg fill='none' stroke='%234d4799' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6%2020L17%209'/%3E%3Cpath d='M17%209h-5M17%209v5'/%3E%3C/g%3E%3Ccircle cx='6' cy='20' r='4' fill='%23ffffff'/%3E%3Ccircle cx='6' cy='20' r='2.6' fill='%234d4799'/%3E%3C/svg%3E") 6 20, grab;
 }
 .mm-handle {
   opacity: 0;
   transition: opacity 0.12s ease;
   cursor: var(--mm-connect-cursor);
 }
+/* React Flow forces `cursor: crosshair` on .react-flow__handle.connectionindicator
+   (more specific than .mm-handle) — override it hard so we never get the cross. */
+.react-flow__handle.mm-handle,
+.react-flow__handle.connectionindicator.mm-handle,
+.react-flow__handle.connectingfrom.mm-handle { cursor: var(--mm-connect-cursor) !important; }
 /* Visible dot centred inside the larger (18px) invisible hit area */
 .mm-handle::after {
   content: '';
