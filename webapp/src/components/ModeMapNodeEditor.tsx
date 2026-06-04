@@ -428,6 +428,12 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
         </div>
       </div>
 
+      <label style={labelStyle}>Подпись (необязательно)</label>
+      <input style={inputStyle}
+        value={edge.label ?? ''}
+        onChange={e => onChange({ ...edge, label: e.target.value || undefined })}
+        placeholder="Текст на стрелке" />
+
       <label style={labelStyle}>Стиль линии</label>
       <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
         {([
@@ -509,12 +515,6 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
           style={{ width: 22, height: 22, borderRadius: '50%', background: 'none', cursor: 'pointer', padding: 0,
             border: '2px dashed rgba(var(--fg-rgb),0.25)', fontSize: 10, color: 'var(--text-faint)' }}>✕</button>
       </div>
-
-      <label style={labelStyle}>Подпись (необязательно)</label>
-      <input style={inputStyle}
-        value={edge.label ?? ''}
-        onChange={e => onChange({ ...edge, label: e.target.value || undefined })}
-        placeholder="Текст на стрелке" />
 
       <button onClick={onDelete} style={deleteBtnStyle}>Удалить связь</button>
     </div>
