@@ -66,23 +66,22 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
           add: mk('healthy', 'Здоровый Взрослый') },
       ];
 
-  // ── Advice — contextual nudges + fresh random tips from the 50-tip base ──────
+  // ── Advice — contextual ALERTS (state-specific) kept apart from random tips ──
   const [reroll, setReroll] = useState(0);
-  // Contextual nudges depend on the current map state
-  const contextual: string[] = [];
-  if (hasCoping && !hasChild)
-    contextual.push('За копингом обычно прячется боль Уязвимого Ребёнка. Какую эмоцию он транслирует?');
-  if (kind === 'problem' && hasChild && hasCoping && !hasNeed)
-    contextual.push('Назови потребность ребёнка — именно она становится целью терапии.');
+  type Alert = { text: string; level: 'warn' | 'info' };
+  const alerts: Alert[] = [];
   if (nodes.length > 12)
-    contextual.push('Многовато режимов. Карта показывает то, что участвует в ситуации, а не все режимы сразу.');
+    alerts.push({ text: 'Многовато режимов. Карта показывает то, что участвует в ситуации, а не все режимы сразу.', level: 'warn' });
+  if (hasCoping && !hasChild)
+    alerts.push({ text: 'За копингом обычно прячется боль Уязвимого Ребёнка. Какую эмоцию он транслирует?', level: 'info' });
+  if (kind === 'problem' && hasChild && hasCoping && !hasNeed)
+    alerts.push({ text: 'Назови потребность ребёнка — именно она становится целью терапии.', level: 'info' });
   // Fresh random picks — new set each time the panel opens or you reroll
   const random = useMemo(
-    () => pickTips(kind, Math.max(1, 4 - contextual.length), contextual),
+    () => pickTips(kind, 3, []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [kind, reroll, contextual.length],
+    [kind, reroll],
   );
-  const tips = [...contextual, ...random];
 
   return (
     <div style={{
@@ -134,7 +133,25 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
         })}
       </div>
 
-      {/* Advice */}
+      {/* Contextual alerts — what THIS map needs right now (kept separate, colour-coded) */}
+      {alerts.length > 0 && (
+        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {alerts.map((a, i) => {
+            const c = a.level === 'warn' ? 'var(--accent-red)' : 'var(--accent-orange)';
+            return (
+              <div key={i} style={{ display: 'flex', gap: 7, fontSize: 11.5, lineHeight: 1.4,
+                color: 'var(--text)', padding: '7px 9px', borderRadius: 7,
+                background: `color-mix(in srgb, ${c} 10%, transparent)`,
+                border: `1px solid color-mix(in srgb, ${c} 35%, transparent)` }}>
+                <span style={{ flexShrink: 0, color: c, fontWeight: 700 }}>{a.level === 'warn' ? '!' : 'i'}</span>
+                <span>{a.text}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Random tips from the knowledge base */}
       <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.08)', marginTop: 10, paddingTop: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
           <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
@@ -146,7 +163,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
           </button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {tips.map((t, i) => (
+          {random.map((t, i) => (
             <div key={i} style={{ display: 'flex', gap: 6, fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.4 }}>
               <span style={{ flexShrink: 0 }}>💡</span><span>{t}</span>
             </div>

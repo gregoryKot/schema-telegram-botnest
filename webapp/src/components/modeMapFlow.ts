@@ -11,11 +11,11 @@ export function edgeColor(d?: ModeMapEdge['data']): string {
   return 'rgba(var(--fg-rgb),0.45)';
 }
 
-export const EDGE_WIDTH_PX: Record<string, number> = { thin: 2, normal: 3, bold: 4.5 };
+export const EDGE_WIDTH_PX: Record<string, number> = { thin: 1.5, normal: 2.25, bold: 3.5 };
 
 export function makeMarker(color: string, width?: string) {
-  const s = (EDGE_WIDTH_PX[width ?? 'normal'] ?? 3);
-  const m = 13 + s * 1.5;  // arrowhead grows with line thickness
+  const s = (EDGE_WIDTH_PX[width ?? 'normal'] ?? 2.25);
+  const m = 11 + s * 1.2;  // slim, proportional arrowhead (not oversized)
   return { type: MarkerType.ArrowClosed, color, width: m, height: m };
 }
 

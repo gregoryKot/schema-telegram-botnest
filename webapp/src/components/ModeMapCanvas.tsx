@@ -302,7 +302,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   }, [nodeActions, duplicateNode, removeNode]);
 
   return (
-    <div style={{ flex: 1, position: 'relative' }}>
+    <div style={{ flex: 1, position: 'relative', background: 'var(--bg-elev)' }}>
       <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, fontSize: 12, color: 'var(--text-faint)', pointerEvents: 'none' }}>
         {saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : ''}
       </div>
@@ -335,7 +335,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         fitView fitViewOptions={{ padding: 0.2 }} deleteKeyCode={null}
         nodesDraggable nodeDragThreshold={1}
       >
-        <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.18)" gap={snap ? 20 : 22} size={1.5} />
+        <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.09)" gap={snap ? 20 : 26} size={1.3} />
         {showZones && <ModeMapZones />}
 
         {/* Toolbar — icon-only with hover tooltips */}
