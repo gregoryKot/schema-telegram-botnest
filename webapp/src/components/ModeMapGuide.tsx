@@ -1,9 +1,8 @@
-import type { FlowNode, FlowEdge } from './modeMapFlow';
+import type { FlowNode } from './modeMapFlow';
 import type { ModeMapKind } from '../api';
 
 interface Props {
   nodes: FlowNode[];
-  edges: FlowEdge[];
   kind: ModeMapKind;
   onClose: () => void;
 }
@@ -12,24 +11,23 @@ function has(nodes: FlowNode[], type: string) {
   return nodes.some(n => n.type === type);
 }
 
-export function ModeMapGuide({ nodes, edges, kind, onClose }: Props) {
+export function ModeMapGuide({ nodes, kind, onClose }: Props) {
   const hasTrigger = has(nodes, 'trigger');
   const hasChild   = has(nodes, 'child');
   const hasCritic  = has(nodes, 'critic');
   const hasCoping  = has(nodes, 'coping');
   const hasHealthy = has(nodes, 'healthy');
   const hasNeed    = nodes.some(n => (n.data as { unmetNeed?: string }).unmetNeed);
-  const copingIds  = new Set(nodes.filter(n => n.type === 'coping').map(n => n.id));
-  const hasConsequence = edges.some(e => copingIds.has(e.source)); // behaviour follows the coping
+  const hasBehavior = has(nodes, 'behavior');
 
   // ── Chain checklist (problem map = the cycle; personality = main modes) ──────
   const chain = kind === 'problem'
     ? [
-        { ok: hasTrigger,     label: 'Триггер / ситуация' },
-        { ok: hasChild,       label: 'Боль — Уязвимый Ребёнок' },
-        { ok: hasCoping,      label: 'Защита — копинг' },
-        { ok: hasConsequence, label: 'Последствие / поведение' },
-        { ok: hasNeed,        label: 'Неудовлетворённая потребность' },
+        { ok: hasTrigger,  label: 'Триггер (что запустило)' },
+        { ok: hasChild,    label: 'Уязвимый Ребёнок (боль)' },
+        { ok: hasCoping,   label: 'Копинг (как защищается)' },
+        { ok: hasBehavior, label: 'Поведение (что сделал)' },
+        { ok: hasNeed,     label: 'Потребность ребёнка' },
       ]
     : [
         { ok: hasChild,   label: 'Детский режим' },
@@ -51,7 +49,8 @@ export function ModeMapGuide({ nodes, edges, kind, onClose }: Props) {
 
   return (
     <div style={{
-      width: 240, background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)',
+      width: 240, maxHeight: 'calc(100vh - 280px)', overflowY: 'auto',
+      background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)',
       borderRadius: 9, padding: '12px 14px', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', fontSize: 12.5,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>

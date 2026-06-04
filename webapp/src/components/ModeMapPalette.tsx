@@ -18,6 +18,9 @@ type NodeType = ModeMapNode['type'];
 
 export const DRAG_TYPE = 'application/modemap-node';
 
+// Clinical display order: child → critic → coping(×3) → healthy
+const GROUP_ORDER = ['child', 'critic', 'coping_overcompensation', 'coping_avoidance', 'coping_surrender', 'healthy'];
+
 export const GROUP_TO_TYPE: Record<string, { type: NodeType; color: string; copingSubtype?: 'over' | 'avoid' | 'surr' }> = {
   child:                   { type: 'child',   color: 'var(--accent-blue)' },
   coping_surrender:        { type: 'coping',  color: '#94a3b8', copingSubtype: 'surr' },
@@ -139,7 +142,7 @@ export function ModeMapPalette({ onAdd, clientId }: Props) {
           </div>
         )}
 
-        {/* Trigger */}
+        {/* Trigger + Behavior — the bookends of the cycle */}
         {(!q || 'триггер ситуация'.includes(q)) && (
           <button onClick={() => onAdd({ id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
             draggable onDragStart={e => onDragStart(e, { id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
@@ -148,9 +151,17 @@ export function ModeMapPalette({ onAdd, clientId }: Props) {
             <span style={{ fontSize: 12.5, flex: 1 }}>Триггер / Ситуация</span>
           </button>
         )}
+        {(!q || 'поведение последствие'.includes(q)) && (
+          <button onClick={() => onAdd({ id: `behavior_${Date.now()}`, type: 'behavior', data: { label: 'Поведение' } })}
+            draggable onDragStart={e => onDragStart(e, { id: `behavior_${Date.now()}`, type: 'behavior', data: { label: 'Поведение' } })}
+            style={itemStyle} title="Что человек делает / последствие">
+            <span style={{ fontSize: 12 }}>🎬</span>
+            <span style={{ fontSize: 12.5, flex: 1 }}>Поведение / Последствие</span>
+          </button>
+        )}
 
-        {/* Standard mode groups */}
-        {MODE_GROUPS.map(group => {
+        {/* Standard mode groups — child → critic → coping → healthy (clinical order) */}
+        {[...MODE_GROUPS].sort((a, b) => GROUP_ORDER.indexOf(a.id) - GROUP_ORDER.indexOf(b.id)).map(group => {
           const meta = GROUP_TO_TYPE[group.id];
           if (!meta) return null;
           const items = q
