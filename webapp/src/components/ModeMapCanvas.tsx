@@ -185,7 +185,8 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     pushHistory();
     const laid = autoLayout(nodes, edges);
     setNodes(laid); scheduleSave(laid, edges);
-    setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 50);
+    // Only zoom out to fit — never magnify (maxZoom 1) so layout doesn't blow up the scale
+    setTimeout(() => fitView({ padding: 0.2, duration: 400, maxZoom: 1 }), 50);
   }, [nodes, edges, setNodes, scheduleSave, pushHistory, fitView]);
 
   // ── Node actions (toolbar + context menu) ────────────────────────────────────
@@ -234,7 +235,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     const newEdges = [...edgesRef.current, ...flowEs];
     setNodes(newNodes); setEdges(newEdges);
     scheduleSave(newNodes, newEdges);
-    setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 50);
+    setTimeout(() => fitView({ padding: 0.2, duration: 400, maxZoom: 1 }), 50);
   }, [setNodes, setEdges, scheduleSave, pushHistory, nodesRef, edgesRef, fitView]);
 
   const onGenerateFromConcept = useCallback(async () => {
@@ -259,7 +260,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
       pushHistory();
       const merged = [...nodesRef.current, ...toFlowNodes(ns)];
       setNodes(merged); scheduleSave(merged, edgesRef.current);
-      setTimeout(() => { const laid = autoLayout(nodesRef.current, edgesRef.current); setNodes(laid); fitView({ padding: 0.2, duration: 400 }); }, 60);
+      setTimeout(() => { const laid = autoLayout(nodesRef.current, edgesRef.current); setNodes(laid); fitView({ padding: 0.2, duration: 400, maxZoom: 1 }); }, 60);
     } catch { /* ignore */ }
   }, [clientId, setNodes, scheduleSave, pushHistory, nodesRef, edgesRef, fitView]);
 
@@ -320,9 +321,9 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
 
         {/* Toolbar — icon-only with hover tooltips */}
         <Panel position="top-left">
-          <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 9, alignItems: 'center', flexWrap: 'wrap',
+          <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 9, alignItems: 'center', flexWrap: 'nowrap',
             background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', maxWidth: 'calc(100% - 16px)' }}>
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', maxWidth: 'calc(100% - 16px)', overflowX: 'auto' }}>
             {/* History */}
             <TbBtn label="Отменить (⌘Z)" disabled={!canUndo} onClick={onUndo}>↶</TbBtn>
             <TbBtn label="Вернуть (⌘⇧Z)" disabled={!canRedo} onClick={onRedo}>↷</TbBtn>
