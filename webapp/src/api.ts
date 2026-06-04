@@ -197,6 +197,7 @@ export interface ModeMapNode {
     fillFull?: boolean;
     copingSubtype?: 'over' | 'avoid' | 'surr';
     display?: 'name' | 'note' | 'full';   // что показывать на фигуре
+    healthyResponse?: string;             // что сказал бы Здоровый Взрослый
   };
   width?: number;
   height?: number;
