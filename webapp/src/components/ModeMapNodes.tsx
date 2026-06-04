@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Handle, Position, NodeResizer, NodeToolbar, type NodeProps } from '@xyflow/react';
+import { Handle, Position, NodeToolbar, type NodeProps } from '@xyflow/react';
 import { useNodeActions } from './modeMapActions';
 
 export interface ModeNodeData {
@@ -165,44 +165,37 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
   );
 }
 
-// ── SVG-based shape node — clean borders, no clip-path/border conflicts ────────
-// Text sits in an absolutely positioned div, constrained to the safe inner area.
-function SvgShapeNode({ id, data, selected, color, svgPath, textPadding, minW = 110, minH = 60, keepRatio, uniform }: {
+// ── SVG-based shape node — content-hug: the box sizes to the TEXT, the shape (SVG)
+// fills it, so the label is always inside. non-scaling-stroke keeps the border even
+// on any aspect. No fixed size / resizer → text can never overflow the figure.
+function SvgShapeNode({ id, data, selected, color, svgPath, viewBox = '0 0 100 100', textPadding, minW = 116, minH = 64, maxW = 210 }: {
   id: string; data: ModeNodeData; selected?: boolean; color: string;
-  svgPath: string;       // SVG path in "0 0 100 100" viewBox space
-  textPadding: string;   // CSS padding for text container
-  minW?: number; minH?: number;
-  keepRatio?: boolean;   // фиксировать пропорции при ресайзе
-  uniform?: boolean;     // square shape → scale uniformly (meet) so the stroke is EVEN on every side
+  svgPath: string; viewBox?: string;
+  textPadding: string;   // px padding so text stays off the angled/curved edges
+  minW?: number; minH?: number; maxW?: number;
 }) {
   const stroke = selected ? 'var(--accent)' : color;
   const fill = fillColor(color, data.filled, data.fillFull);
   const light = !!data.fillFull;
-  // Uniform shapes scale with the box → use viewBox-unit stroke; stretched shapes use device px
-  const STROKE_VB: Record<string, number> = { thin: 1.7, normal: 2.6, bold: 4 };
   return (
-    <div style={{ width: '100%', height: '100%', minWidth: minW, minHeight: minH, position: 'relative' }}>
+    <div style={{ position: 'relative', width: 'max-content', maxWidth: maxW, minWidth: minW, minHeight: minH,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
       <NodeTools id={id} selected={selected} data={data} />
-      <NodeResizer minWidth={minW - 30} minHeight={minH - 20} isVisible={!!selected} color={color}
-        keepAspectRatio={!!keepRatio} />
       <AllHandles />
-      <svg viewBox="0 0 100 100" preserveAspectRatio={uniform ? 'xMidYMid meet' : 'none'}
+      <svg viewBox={viewBox} preserveAspectRatio="none"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-        <path d={svgPath} fill={fill} stroke={stroke}
-          strokeWidth={uniform ? (STROKE_VB[data.strokeWidth ?? 'normal'] ?? 2.6) : strokePx(data)}
-          vectorEffect={uniform ? undefined : 'non-scaling-stroke'}
+        <path d={svgPath} fill={fill} stroke={stroke} strokeWidth={strokePx(data)} vectorEffect="non-scaling-stroke"
           strokeLinejoin="round" strokeLinecap="round" shapeRendering="geometricPrecision"
           filter={!selected ? 'drop-shadow(0 2px 5px rgba(0,0,0,0.12))' : undefined} />
       </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-        justifyContent: 'center', padding: textPadding, pointerEvents: 'none' }}>
+      <div style={{ position: 'relative', padding: textPadding, pointerEvents: 'none', boxSizing: 'border-box' }}>
         <NodeLabel id={id} data={data} light={light} />
       </div>
     </div>
   );
 }
 
-// ── Rect-based nodes — always hug the text (no manual resize needed) ──────────
+// ── Rect-based nodes — hug the text ───────────────────────────────────────────
 function makeRectNode(defaultColor: string, radius = 10) {
   return function ModeNode({ id, data, selected }: NodeProps) {
     const d = data as unknown as ModeNodeData;
@@ -227,21 +220,19 @@ function makeRectNode(defaultColor: string, radius = 10) {
   };
 }
 
-// ── Named SVG paths (viewBox 0 0 100 100) ─────────────────────────────────────
-// Regular octagon — equal sides (chamfer ≈ 29.3% gives a true octagon, not a chamfered square)
+// ── Named SVG paths (viewBox 0 0 100 100 unless noted) ────────────────────────
 const CRITIC_PATH   = 'M29.3,0 L70.7,0 L100,29.3 L100,70.7 L70.7,100 L29.3,100 L0,70.7 L0,29.3 Z';
-// Regular pentagon, apex up (vertices at 72° steps) — balanced sides
 const PENTA_PATH    = 'M50,2 L97.6,36.6 L79.4,92.4 L20.6,92.4 L2.4,36.6 Z';
-const SHIELD_PATH   = 'M4,4 L96,4 L96,62 Q96,78 50,96 Q4,78 4,62 Z';  // softer crest shield
+const SHIELD_PATH   = 'M4,4 L96,4 L96,62 Q96,78 50,96 Q4,78 4,62 Z';
 const BEHAVIOR_PATH = 'M2,2 L80,2 L98,50 L80,98 L2,98 Z';  // right-pointing tag — outcome
+const TRIGGER_PATH  = 'M18,52 Q4,52 4,40 Q4,30 13,28 Q11,18 21,16 Q23,7 33,8 Q38,3 46,6 Q52,1 60,5 Q70,2 76,10 Q88,9 92,20 Q100,22 100,33 Q100,45 90,47 Q92,52 82,52 Z';
 
 // ── Exported nodes ────────────────────────────────────────────────────────────
 export const CriticModeNode = function CriticModeNode({ id, data, selected }: NodeProps) {
   const d = data as unknown as ModeNodeData;
-  // Regular octagon — keep square so the 8 sides stay equal (no stretching)
   return <SvgShapeNode id={id} data={d} selected={selected}
     color={d.customColor ?? TYPE_COLORS.critic}
-    svgPath={CRITIC_PATH} textPadding="20% 16%" minW={120} minH={120} keepRatio uniform />;
+    svgPath={CRITIC_PATH} textPadding="16px 24px" minW={120} minH={86} maxW={210} />;
 };
 
 export const CopingModeNode = function CopingModeNode({ id, data, selected }: NodeProps) {
@@ -250,21 +241,19 @@ export const CopingModeNode = function CopingModeNode({ id, data, selected }: No
   const sub = d.copingSubtype ?? 'over';
 
   if (sub === 'surr') {
-    // Horizontal pill (capsule) centred in a square box — clearly a pill, not a circle
+    // Pill (capsule) — hugs text
     const light = !!d.fillFull;
     return (
-      <div style={{ width: '100%', height: '100%', minWidth: 120, minHeight: 120, position: 'relative' }}>
+      <div style={{ position: 'relative', width: 'max-content', maxWidth: 220, minWidth: 130 }}>
         <NodeTools id={id} selected={selected} data={d} />
-        <NodeResizer minWidth={90} minHeight={90} isVisible={!!selected} color={color} keepAspectRatio />
         <AllHandles />
         <div style={{
-          position: 'absolute', top: '50%', left: 0, right: 0, transform: 'translateY(-50%)',
-          height: '56%', borderRadius: 9999,
+          minWidth: 130, borderRadius: 9999,
           background: fillColor(color, d.filled, d.fillFull),
           border: `${strokePx(d)}px solid ${selected ? 'var(--accent)' : color}`,
           boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          overflow: 'hidden', padding: '0 16px', boxSizing: 'border-box',
+          overflow: 'hidden', padding: '10px 22px', boxSizing: 'border-box',
         }}>
           <NodeLabel id={id} data={d} light={light} />
         </div>
@@ -273,33 +262,32 @@ export const CopingModeNode = function CopingModeNode({ id, data, selected }: No
   }
 
   if (sub === 'avoid') {
-    // Shield: point at bottom — text in upper rectangular zone, keep ratio
+    // Shield: point at bottom — extra bottom padding
     return <SvgShapeNode id={id} data={d} selected={selected} color={color}
-      svgPath={SHIELD_PATH} textPadding="14% 14% 32%" minW={120} minH={120} keepRatio uniform />;
+      svgPath={SHIELD_PATH} textPadding="14px 18px 30px" minW={122} minH={120} maxW={200} />;
   }
 
-  // 'over' — pentagon: apex at top, keep ratio so it doesn't flatten
+  // 'over' — pentagon: apex at top — extra top padding
   return <SvgShapeNode id={id} data={d} selected={selected} color={color}
-    svgPath={PENTA_PATH} textPadding="32% 16% 12%" minW={120} minH={120} keepRatio uniform />;
+    svgPath={PENTA_PATH} textPadding="30px 20px 14px" minW={122} minH={116} maxW={200} />;
 };
 
 export const ChildModeNode = function ChildModeNode({ id, data, selected }: NodeProps) {
   const d = data as unknown as ModeNodeData;
   const color = d.customColor ?? TYPE_COLORS.child;
   const light = !!d.fillFull;
+  // Ellipse/circle (CSS border-radius) — hugs text; outer hosts handles (not clipped)
   return (
-    <div style={{ width: '100%', height: '100%', minWidth: 110, minHeight: 110, position: 'relative' }}>
+    <div style={{ position: 'relative', width: 'max-content', maxWidth: 200, minWidth: 118 }}>
       <NodeTools id={id} selected={selected} data={d} />
-      <NodeResizer minWidth={90} minHeight={90} isVisible={!!selected} color={color} keepAspectRatio />
       <AllHandles />
       <div style={{
-        width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden',
+        minWidth: 118, minHeight: 118, borderRadius: '50%', overflow: 'hidden',
         background: fillColor(color, d.filled, d.fillFull),
         border: `${strokePx(d)}px solid ${selected ? 'var(--accent)' : color}`,
         boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        // Inscribed square: keep text off the curved edge
-        padding: '18%',
+        padding: '20px 28px', boxSizing: 'border-box',
       }}>
         <NodeLabel id={id} data={d} light={light} />
       </div>
@@ -309,28 +297,9 @@ export const ChildModeNode = function ChildModeNode({ id, data, selected }: Node
 
 export const TriggerNode = function TriggerNode({ id, data, selected }: NodeProps) {
   const d = data as unknown as ModeNodeData;
-  const color = d.customColor ?? TYPE_COLORS.trigger;
-  const rgb = hexToRgb(color);
-  const fill = rgb ? `rgba(${rgb},${d.fillFull ? 0.85 : d.filled ? 0.2 : 0.09})` : 'rgba(var(--fg-rgb),0.09)';
-  const stroke = selected ? 'var(--accent)' : color;
-  const light = !!d.fillFull;
-  return (
-    <div style={{ width: '100%', height: '100%', minWidth: 130, minHeight: 70, position: 'relative' }}>
-      <NodeTools id={id} selected={selected} data={d} />
-      <NodeResizer minWidth={100} minHeight={60} isVisible={!!selected} color={color} />
-      <AllHandles />
-      <svg viewBox="0 0 100 60" preserveAspectRatio="none"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-        <path fill={fill} stroke={stroke} strokeWidth={strokePx(d)} vectorEffect="non-scaling-stroke"
-          strokeLinejoin="round" strokeLinecap="round"
-          d="M18,52 Q4,52 4,40 Q4,30 13,28 Q11,18 21,16 Q23,7 33,8 Q38,3 46,6 Q52,1 60,5 Q70,2 76,10 Q88,9 92,20 Q100,22 100,33 Q100,45 90,47 Q92,52 82,52 Z" />
-      </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-        justifyContent: 'center', padding: '12% 14% 10%', pointerEvents: 'none' }}>
-        <NodeLabel id={id} data={d} light={light} />
-      </div>
-    </div>
-  );
+  return <SvgShapeNode id={id} data={d} selected={selected}
+    color={d.customColor ?? TYPE_COLORS.trigger}
+    svgPath={TRIGGER_PATH} viewBox="0 0 100 60" textPadding="18px 22px 14px" minW={132} minH={76} maxW={210} />;
 };
 
 export const HealthyModeNode = makeRectNode(TYPE_COLORS.healthy, 10);
@@ -340,16 +309,11 @@ export const BehaviorNode = function BehaviorNode({ id, data, selected }: NodePr
   const d = data as unknown as ModeNodeData;
   return <SvgShapeNode id={id} data={d} selected={selected}
     color={d.customColor ?? TYPE_COLORS.behavior}
-    svgPath={BEHAVIOR_PATH} textPadding="14% 22% 14% 12%" minW={120} minH={56} />;
+    svgPath={BEHAVIOR_PATH} textPadding="12px 30px 12px 16px" minW={120} minH={56} maxW={220} />;
 };
 
-export const NODE_DEFAULT_SIZES: Partial<Record<string, { width: number; height: number }>> = {
-  child:    { width: 130, height: 130 },
-  trigger:  { width: 160, height: 90  },
-  coping:   { width: 134, height: 134 },
-  critic:   { width: 124, height: 124 },
-  behavior: { width: 150, height: 72  },
-};
+// Nodes auto-size to their content now — no fixed sizes.
+export const NODE_DEFAULT_SIZES: Partial<Record<string, { width: number; height: number }>> = {};
 
 export const NODE_TYPES = {
   trigger:  TriggerNode,

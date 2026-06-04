@@ -49,12 +49,12 @@ export function toFlowEdges(edges: ModeMapEdge[]): FlowEdge[] {
   });
 }
 
+// Nodes auto-size to their content (no fixed width/height) → text never overflows
+// the shape. Old saved width/height are intentionally ignored.
 export function toFlowNodes(nodes: ModeMapNode[]): FlowNode[] {
   return nodes.map(n => ({
     id: n.id, type: n.type, position: n.position,
     data: n.data as Record<string, unknown>,
-    ...(n.width  ? { width:  n.width  } : {}),
-    ...(n.height ? { height: n.height } : {}),
   }));
 }
 
@@ -62,8 +62,6 @@ export function fromFlowNodes(nodes: FlowNode[]): ModeMapNode[] {
   return nodes.map(n => ({
     id: n.id, type: n.type as ModeMapNode['type'], position: n.position,
     data: n.data as unknown as ModeMapNode['data'],
-    ...(n.width  ? { width:  n.width  } : {}),
-    ...(n.height ? { height: n.height } : {}),
   }));
 }
 
