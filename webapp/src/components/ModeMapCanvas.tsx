@@ -322,7 +322,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         <Panel position="top-left">
           <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 9, alignItems: 'center', flexWrap: 'wrap',
             background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', maxWidth: 'calc(100vw - 480px)' }}>
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', maxWidth: 'calc(100% - 16px)' }}>
             {/* History */}
             <TbBtn label="Отменить (⌘Z)" disabled={!canUndo} onClick={onUndo}>↶</TbBtn>
             <TbBtn label="Вернуть (⌘⇧Z)" disabled={!canRedo} onClick={onRedo}>↷</TbBtn>
