@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Handle, Position, NodeResizer, NodeToolbar, type NodeProps } from '@xyflow/react';
 import { useNodeActions } from './modeMapActions';
 
@@ -81,11 +82,32 @@ function fillColor(color: string, filled?: boolean, fillFull?: boolean) {
   return rgb ? `rgba(${rgb},${op})` : `rgba(var(--fg-rgb),${op})`;
 }
 
-function NodeLabel({ label, note, unmetNeed, light }: { label: string; note?: string; unmetNeed?: string; light?: boolean }) {
+function NodeLabel({ id, label, note, unmetNeed, light }: { id?: string; label: string; note?: string; unmetNeed?: string; light?: boolean }) {
+  const actions = useNodeActions();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(label);
+
+  const startEdit = () => { if (id && actions) { setDraft(label); setEditing(true); } };
+  const commit = () => { if (id && actions) actions.rename(id, draft.trim() || label); setEditing(false); };
+
   return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-word',
-        color: light ? 'rgba(255,255,255,0.95)' : 'var(--text)' }}>{label}</div>
+    <div style={{ textAlign: 'center', pointerEvents: 'all' }}>
+      {editing ? (
+        <input autoFocus value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); e.stopPropagation(); }}
+          onClick={e => e.stopPropagation()}
+          onDoubleClick={e => e.stopPropagation()}
+          className="nodrag"
+          style={{ width: '90%', fontSize: 13, fontWeight: 600, textAlign: 'center',
+            border: '1px solid var(--accent)', borderRadius: 4, background: 'var(--bg-elev)',
+            color: 'var(--text)', outline: 'none', padding: '1px 4px' }} />
+      ) : (
+        <div onDoubleClick={(e) => { e.stopPropagation(); startEdit(); }}
+          style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-word', cursor: id ? 'text' : 'default',
+            color: light ? 'rgba(255,255,255,0.95)' : 'var(--text)' }}>{label}</div>
+      )}
       {note && <div style={{ fontSize: 11, marginTop: 3, lineHeight: 1.3, wordBreak: 'break-word',
         color: light ? 'rgba(255,255,255,0.75)' : 'var(--text-sub)' }}>{note}</div>}
       {unmetNeed && <div style={{ fontSize: 10, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word', fontStyle: 'italic',
@@ -119,7 +141,7 @@ function SvgShapeNode({ id, data, selected, color, svgPath, textPadding, minW = 
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
         justifyContent: 'center', padding: textPadding, pointerEvents: 'none' }}>
-        <NodeLabel label={data.label} note={data.note} light={light} />
+        <NodeLabel id={id} label={data.label} note={data.note} light={light} />
       </div>
     </div>
   );
@@ -143,7 +165,7 @@ function makeRectNode(defaultColor: string, radius = 10) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', padding: '10px 16px', boxSizing: 'border-box',
         }}>
-          <NodeLabel label={d.label} note={d.note} unmetNeed={d.unmetNeed} light={light} />
+          <NodeLabel id={id} label={d.label} note={d.note} unmetNeed={d.unmetNeed} light={light} />
         </div>
       </div>
     );
@@ -186,7 +208,7 @@ export const CopingModeNode = function CopingModeNode({ id, data, selected }: No
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', padding: '8px 18px',
         }}>
-          <NodeLabel label={d.label} note={d.note} light={light} />
+          <NodeLabel id={id} label={d.label} note={d.note} light={light} />
         </div>
       </div>
     );
@@ -246,7 +268,7 @@ export const TriggerNode = function TriggerNode({ id, data, selected }: NodeProp
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
         justifyContent: 'center', padding: '12% 14% 10%', pointerEvents: 'none' }}>
-        <NodeLabel label={d.label} note={d.note} light={light} />
+        <NodeLabel id={id} label={d.label} note={d.note} light={light} />
       </div>
     </div>
   );
