@@ -157,8 +157,9 @@ function SvgShapeNode({ id, data, selected, color, svgPath, textPadding, minW = 
       <AllHandles />
       <svg viewBox="0 0 100 100" preserveAspectRatio="none"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-        <path d={svgPath} fill={fill} stroke={stroke} strokeWidth="2" vectorEffect="non-scaling-stroke"
-          filter={!selected ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' : undefined} />
+        <path d={svgPath} fill={fill} stroke={stroke} strokeWidth="2.5" vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round" strokeLinecap="round"
+          filter={!selected ? 'drop-shadow(0 2px 5px rgba(0,0,0,0.12))' : undefined} />
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
         justifyContent: 'center', padding: textPadding, pointerEvents: 'none' }}>
@@ -194,18 +195,20 @@ function makeRectNode(defaultColor: string, radius = 10) {
 }
 
 // ── Named SVG paths (viewBox 0 0 100 100) ─────────────────────────────────────
-const CRITIC_PATH   = 'M12,0 L88,0 L100,12 L100,88 L88,100 L12,100 L0,88 L0,12 Z';
-const PENTA_PATH    = 'M50,0 L100,38 L82,100 L18,100 L0,38 Z';
-const SHIELD_PATH   = 'M0,0 L100,0 L100,70 L50,100 L0,70 Z';
-const BEHAVIOR_PATH = 'M0,0 L82,0 L100,50 L82,100 L0,100 Z';  // right-pointing tag — outcome
+// Regular octagon — equal sides (chamfer ≈ 29.3% gives a true octagon, not a chamfered square)
+const CRITIC_PATH   = 'M29.3,0 L70.7,0 L100,29.3 L100,70.7 L70.7,100 L29.3,100 L0,70.7 L0,29.3 Z';
+// Regular pentagon, apex up (vertices at 72° steps) — balanced sides
+const PENTA_PATH    = 'M50,2 L97.6,36.6 L79.4,92.4 L20.6,92.4 L2.4,36.6 Z';
+const SHIELD_PATH   = 'M4,4 L96,4 L96,62 Q96,78 50,96 Q4,78 4,62 Z';  // softer crest shield
+const BEHAVIOR_PATH = 'M2,2 L80,2 L98,50 L80,98 L2,98 Z';  // right-pointing tag — outcome
 
 // ── Exported nodes ────────────────────────────────────────────────────────────
 export const CriticModeNode = function CriticModeNode({ id, data, selected }: NodeProps) {
   const d = data as unknown as ModeNodeData;
-  // Octagon: corners are 12% chamfers — text safe within ~14% padding, free resize OK
+  // Regular octagon — keep square so the 8 sides stay equal (no stretching)
   return <SvgShapeNode id={id} data={d} selected={selected}
     color={d.customColor ?? TYPE_COLORS.critic}
-    svgPath={CRITIC_PATH} textPadding="16% 16%" minW={120} minH={60} />;
+    svgPath={CRITIC_PATH} textPadding="20% 16%" minW={120} minH={120} keepRatio />;
 };
 
 export const CopingModeNode = function CopingModeNode({ id, data, selected }: NodeProps) {
@@ -214,20 +217,21 @@ export const CopingModeNode = function CopingModeNode({ id, data, selected }: No
   const sub = d.copingSubtype ?? 'over';
 
   if (sub === 'surr') {
-    // Capsule/ellipse — no SVG needed, border-radius handles it
+    // Horizontal pill (capsule) centred in a square box — clearly a pill, not a circle
     const light = !!d.fillFull;
     return (
-      <div style={{ width: '100%', height: '100%', minWidth: 110, minHeight: 44, position: 'relative' }}>
+      <div style={{ width: '100%', height: '100%', minWidth: 120, minHeight: 120, position: 'relative' }}>
         <NodeTools id={id} selected={selected} />
-        <NodeResizer minWidth={80} minHeight={36} isVisible={!!selected} color={color} />
+        <NodeResizer minWidth={90} minHeight={90} isVisible={!!selected} color={color} keepAspectRatio />
         <AllHandles />
         <div style={{
-          width: '100%', height: '100%', borderRadius: 9999,
+          position: 'absolute', top: '50%', left: 0, right: 0, transform: 'translateY(-50%)',
+          height: '56%', borderRadius: 9999,
           background: fillColor(color, d.filled, d.fillFull),
-          border: `2px solid ${selected ? 'var(--accent)' : color}`,
+          border: `2.5px solid ${selected ? 'var(--accent)' : color}`,
           boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          overflow: 'hidden', padding: '8px 18px',
+          overflow: 'hidden', padding: '0 16px', boxSizing: 'border-box',
         }}>
           <NodeLabel id={id} data={d} light={light} />
         </div>
@@ -308,9 +312,9 @@ export const BehaviorNode = function BehaviorNode({ id, data, selected }: NodePr
 export const NODE_DEFAULT_SIZES: Partial<Record<string, { width: number; height: number }>> = {
   child:    { width: 130, height: 130 },
   trigger:  { width: 160, height: 90  },
-  coping:   { width: 150, height: 135 },
-  critic:   { width: 150, height: 80  },
-  behavior: { width: 150, height: 70  },
+  coping:   { width: 134, height: 134 },
+  critic:   { width: 124, height: 124 },
+  behavior: { width: 150, height: 72  },
 };
 
 export const NODE_TYPES = {

@@ -226,6 +226,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   );
   const edgeEditor = selectedEdge && !selectedNode && (
     <ModeMapEdgeEditor
+      key={selectedEdge.id}
       edge={{ id: selectedEdge.id, source: selectedEdge.source, target: selectedEdge.target, label: selectedEdge.label as string | undefined, data: selectedEdge.data as unknown as ModeMapEdge['data'] }}
       onChange={handleEdgeChange} onDelete={handleDeleteEdge} onSwap={handleSwapEdge}
       onClose={() => setSelectedEdgeId(null)} />

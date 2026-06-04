@@ -5,11 +5,9 @@ export type FlowNode = Node<Record<string, unknown>>;
 export type FlowEdge = Edge<Record<string, unknown>>;
 
 export function edgeColor(d?: ModeMapEdge['data']): string {
-  if (d?.color) return d.color;            // explicit user color wins
-  const t = d?.edgeType;
-  if (t === 'suppresses') return 'var(--accent-red)';
-  if (t === 'protects')   return 'var(--accent-green)';
-  if (t === 'leads_to')   return 'var(--accent-orange)';
+  // Colour is set explicitly by the user; the connection type only drives the
+  // text label now (not the colour). Neutral grey is the default.
+  if (d?.color) return d.color;
   return 'rgba(var(--fg-rgb),0.45)';
 }
 
