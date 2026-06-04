@@ -17,7 +17,7 @@ function Canvas({ map }: { map: ModeMapFull }) {
       nodesDraggable={false} nodesConnectable={false} elementsSelectable={false}
       fitView fitViewOptions={{ padding: 0.2 }} minZoom={0.2} proOptions={{ hideAttribution: true }}
     >
-      <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.09)" gap={26} size={1.3} />
+      <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.16)" gap={22} size={1.5} />
       <Panel position="top-left">
         <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 9, background: 'var(--bg-elev)',
           border: '1px solid rgba(var(--fg-rgb),0.1)', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
