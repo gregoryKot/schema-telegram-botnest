@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow, Background, BackgroundVariant, Panel,
-  addEdge, reconnectEdge, useReactFlow, ConnectionMode,
+  addEdge, useReactFlow, ConnectionMode,
   type Connection, type NodeTypes, type Viewport,
   type useNodesState, type useEdgesState,
 } from '@xyflow/react';
@@ -54,7 +54,6 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   const [dlOpen, setDlOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
-  const edgeReconnectOk = useRef(true);
   const tplWrapRef = useRef<HTMLDivElement>(null);
   const dlWrapRef = useRef<HTMLDivElement>(null);
   const keysWrapRef = useRef<HTMLDivElement>(null);
@@ -171,24 +170,23 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     }
   }, [onNodesChange, setNodes, scheduleSave, pushHistory, nodesRef, edgesRef]);
 
-  // ── Edge reconnection (drag an endpoint to another node) ─────────────────────
-  const onReconnectStart = useCallback(() => { edgeReconnectOk.current = false; }, []);
-  const onReconnect = useCallback((oldEdge: FlowEdge, conn: Connection) => {
-    if (conn.source === conn.target) return;
-    edgeReconnectOk.current = true;
-    pushHistory();
-    const newEdges = reconnectEdge(oldEdge, conn, edges);
-    setEdges(newEdges); scheduleSave(nodes, newEdges);
-  }, [edges, nodes, setEdges, scheduleSave, pushHistory]);
-  const onReconnectEnd = useCallback((_: unknown, edge: FlowEdge) => {
-    if (!edgeReconnectOk.current) {
-      // dropped in empty space → delete the edge
+  // ── Edge reconnection — custom endpoint dots dispatch 'modemap-reconnect' ─────
+  useEffect(() => {
+    const h = (e: Event) => {
+      const { id, end, nodeId } = (e as CustomEvent).detail as { id: string; end: 'source' | 'target'; nodeId: string };
+      const ed = edgesRef.current.find(x => x.id === id);
+      if (!ed) return;
+      const otherEnd = end === 'source' ? ed.target : ed.source;
+      const current = end === 'source' ? ed.source : ed.target;
+      if (nodeId === otherEnd || nodeId === current) return; // self-loop or no change
       pushHistory();
-      const newEdges = edges.filter(e => e.id !== edge.id);
-      setEdges(newEdges); scheduleSave(nodes, newEdges);
-    }
-    edgeReconnectOk.current = true;
-  }, [edges, nodes, setEdges, scheduleSave, pushHistory]);
+      const newEdges = edgesRef.current.map(x => x.id === id
+        ? { ...x, [end]: nodeId, [`${end}Handle`]: 'c' } : x);
+      setEdges(newEdges); scheduleSave(nodesRef.current, newEdges);
+    };
+    window.addEventListener('modemap-reconnect', h);
+    return () => window.removeEventListener('modemap-reconnect', h);
+  }, [setEdges, scheduleSave, pushHistory, edgesRef, nodesRef]);
 
   // ── Auto layout ──────────────────────────────────────────────────────────────
   const onAutoLayout = useCallback(() => {
@@ -322,7 +320,6 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         isValidConnection={isValidConnection}
         connectionMode={ConnectionMode.Loose}
         connectionRadius={110}
-        edgesReconnectable onReconnect={onReconnect} onReconnectStart={onReconnectStart} onReconnectEnd={onReconnectEnd}
         onNodeClick={(_, node) => { setSelectedNodeId(node.id); setSelectedEdgeId(null); }}
         onNodeDoubleClick={(_, node) => { setSelectedNodeId(node.id); setSelectedEdgeId(null); setTimeout(() => window.dispatchEvent(new CustomEvent('modemap-focus-name')), 30); }}
         onEdgeClick={(_, edge) => { setSelectedEdgeId(edge.id); setSelectedNodeId(null); }}
