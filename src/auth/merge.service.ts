@@ -234,9 +234,10 @@ export class MergeService {
           AND (SELECT "disclaimerAccepted" FROM "User" WHERE id = ${sourceId})
       `);
       // Promote target to THERAPIST if source had that role — merge must not
-      // silently downgrade a user's access level.
+      // silently downgrade a user's access level. Also carry therapistMode flag
+      // (bot.service sets them together; merge should mirror that).
       await tx.$executeRaw(Prisma.sql`
-        UPDATE "User" SET "role" = 'THERAPIST'
+        UPDATE "User" SET "role" = 'THERAPIST', "therapistMode" = true
         WHERE id = ${targetId}
           AND (SELECT "role" FROM "User" WHERE id = ${sourceId}) = 'THERAPIST'
       `);

@@ -19,7 +19,7 @@ export function AuthCallback() {
 
     if (token) {
       setAccessToken(token, expiresIn);
-      const returnTo = sessionStorage.getItem('auth_return_to') ?? '/';
+      const returnTo = sessionStorage.getItem('auth_return_to') ?? '/today';
       sessionStorage.removeItem('auth_return_to');
       navigate(returnTo, { replace: true });
     } else {
