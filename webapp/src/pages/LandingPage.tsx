@@ -788,10 +788,13 @@ export function LandingPage() {
           .app-grid     { grid-template-columns:1fr; }
           .edu-grid     { grid-template-columns:1fr; gap:28px; }
         }
+        @media (max-width:900px) {
+          .hero-ctas  { flex-direction:column; align-items:flex-start; }
+          .hero-ctas > * { width:auto !important; }
+        }
         @media (max-width:600px) {
           .form-grid  { grid-template-columns:1fr; }
           .hero-wrap, section, footer { padding-left:20px !important; padding-right:20px !important; }
-          .hero-ctas  { flex-direction:column; }
           .hero-ctas > * { width:100% !important; }
         }
       `}</style>
