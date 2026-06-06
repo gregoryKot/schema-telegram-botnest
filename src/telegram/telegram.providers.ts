@@ -16,9 +16,14 @@ export const TELEGRAM_PROVIDERS: Provider[] = [
       }
 
       const bot = new Telegraf(token);
-      const me = await bot.telegram.getMe();
-      logger.log(`Bot authorized: @${me.username ?? me.id}`);
-
+      try {
+        const me = await bot.telegram.getMe();
+        logger.log(`Bot authorized: @${me.username ?? me.id}`);
+      } catch (err) {
+        // Network unreachable at startup (e.g. Amvera → Telegram timeout).
+        // Return the bot anyway — it will retry on the first update or launch().
+        logger.warn(`getMe failed at startup (bot may recover): ${(err as Error).message}`);
+      }
       return bot;
     },
     inject: [ConfigService],
