@@ -226,12 +226,19 @@ export class MergeService {
         DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
       `);
 
-      // 5. Propagate disclaimerAccepted: if source had accepted, mark target too.
-      //    Must happen before DELETE so we can still read source.disclaimerAccepted.
+      // 5. Propagate disclaimerAccepted and role from source → target.
+      //    Must happen before DELETE so we can still read source fields.
       await tx.$executeRaw(Prisma.sql`
         UPDATE "User" SET "disclaimerAccepted" = true
         WHERE id = ${targetId}
           AND (SELECT "disclaimerAccepted" FROM "User" WHERE id = ${sourceId})
+      `);
+      // Promote target to THERAPIST if source had that role — merge must not
+      // silently downgrade a user's access level.
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "User" SET "role" = 'THERAPIST'
+        WHERE id = ${targetId}
+          AND (SELECT "role" FROM "User" WHERE id = ${sourceId}) = 'THERAPIST'
       `);
 
       // 6. Finally, delete the now-empty source User.
