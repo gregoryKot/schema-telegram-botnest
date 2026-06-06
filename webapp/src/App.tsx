@@ -61,7 +61,8 @@ function Root() {
 }
 
 // ── Domain detection ──────────────────────────────────────────────────────────
-const isPersonalSite = window.location.hostname.includes('kotlarewski');
+const isPersonalSite = window.location.hostname.includes('kotlarewski')
+  || new URLSearchParams(window.location.search).get('site') === 'personal';
 
 if (isPersonalSite) {
   document.querySelectorAll("link[rel='icon']").forEach((el) => {

@@ -452,7 +452,7 @@ export function LandingPage() {
           </p>
 
           {/* ── Full-width headline – the centrepiece ── */}
-          <h1 style={{
+          <h1 className="hero-h1" style={{
             fontFamily: 'var(--serif)',
             fontSize: 'clamp(44px, 9vw, 120px)',
             fontWeight: 400, lineHeight: 1.0, letterSpacing: '-.025em',
@@ -756,6 +756,10 @@ export function LandingPage() {
         .hero-wrap    { max-width:1100px; width:100%; margin:0 auto; padding:0 40px; display:flex; flex-direction:column; justify-content:space-between; min-height:100dvh; box-sizing:border-box; }
         .hero-bottom  { display:flex; flex-direction:column; gap:0; }
         .hero-ctas    { display:flex; gap:12px; flex-wrap:wrap; }
+        @media (max-height:820px) {
+          .hero-h1   { font-size:clamp(36px, 7vh, 80px) !important; }
+          .hero-wrap { min-height:100dvh; }
+        }
 
 
         /* Grids */
