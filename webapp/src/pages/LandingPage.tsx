@@ -480,7 +480,7 @@ export function LandingPage() {
               <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, maxWidth: 440, margin: '0 0 36px' }}>
                 Мы снова и снова попадаем в одни и те же ситуации – в отношениях, самооценке, тревоге. Схема-терапия помогает понять почему – и найти выход.
               </p>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div className="hero-ctas">
                 <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
                 <Btn variant="ghost" size="lg" href="https://t.me/kotlarewski">Написать в Telegram ↗</Btn>
               </div>
@@ -753,8 +753,9 @@ export function LandingPage() {
         .reveal-section.revealed { opacity:1; transform:none; }
 
         /* Hero */
-        .hero-wrap    { max-width:1100px; width:100%; margin:0 auto; padding:0 40px; display:flex; flex-direction:column; min-height:100dvh; box-sizing:border-box; }
+        .hero-wrap    { max-width:1100px; width:100%; margin:0 auto; padding:0 40px; display:flex; flex-direction:column; justify-content:space-between; min-height:100dvh; box-sizing:border-box; }
         .hero-bottom  { display:flex; flex-direction:column; gap:0; }
+        .hero-ctas    { display:flex; gap:12px; flex-wrap:wrap; }
 
 
         /* Grids */
@@ -788,8 +789,10 @@ export function LandingPage() {
           .edu-grid     { grid-template-columns:1fr; gap:28px; }
         }
         @media (max-width:600px) {
-          .form-grid { grid-template-columns:1fr; }
+          .form-grid  { grid-template-columns:1fr; }
           .hero-wrap, section, footer { padding-left:20px !important; padding-right:20px !important; }
+          .hero-ctas  { flex-direction:column; }
+          .hero-ctas > * { width:100% !important; }
         }
       `}</style>
     </div>
