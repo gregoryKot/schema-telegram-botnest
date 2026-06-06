@@ -60,54 +60,69 @@ function Root() {
   );
 }
 
+// ── Domain detection ──────────────────────────────────────────────────────────
+const isPersonalSite = window.location.hostname.includes('kotlarewski');
+
+if (isPersonalSite) {
+  document.querySelectorAll("link[rel='icon']").forEach((el) => {
+    const link = el as HTMLLinkElement;
+    if (link.sizes?.value === '96x96') {
+      link.href = '/favicon-personal-32.png';
+    } else {
+      link.type = 'image/png';
+      link.href = '/favicon-personal-32.png';
+    }
+  });
+}
+
 // ── Router ─────────────────────────────────────────────────────────────────────
-const router = createBrowserRouter([
+const personalRoutes = [
+  { path: '/',               element: <LandingPage /> },
+  { path: '/articles',       element: <ArticlesListPage /> },
+  { path: '/articles/:slug', element: <ArticlePage /> },
+  { path: '/reviews',        element: <ReviewsPage /> },
+  { path: '/game',           element: <GamePage /> },
+  { path: '/privacy',        element: <PrivacyPage /> },
+  { path: '/offer',          element: <OfferPage /> },
+  { path: '*',               element: <Navigate to="/" replace /> },
+];
+
+const appRoutes = [
+  { path: '/',               element: <Navigate to="/login" replace /> },
+  { path: '/login',          element: <LoginPage /> },
+  { path: '/auth/callback',  element: <AuthCallback /> },
+  { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
+  { path: '/auth/recovery',         element: <RecoveryPage /> },
+  { path: '/auth/recovery/confirm', element: <RecoveryPage /> },
+  { path: '/auth/error',     element: <AuthError /> },
   {
-    element: <Root />,
+    element: <RequireAuth />,
     children: [
-      // Public
-      { path: '/',               element: <LandingPage /> },
-      { path: '/articles',       element: <ArticlesListPage /> },
-      { path: '/reviews',        element: <ReviewsPage /> },
-      { path: '/game',           element: <GamePage /> },
-      { path: '/articles/:slug', element: <ArticlePage /> },
-      { path: '/privacy',        element: <PrivacyPage /> },
-      { path: '/offer',          element: <OfferPage /> },
-      { path: '/login',          element: <LoginPage /> },
-      { path: '/auth/callback',  element: <AuthCallback /> },
-      { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
-      { path: '/auth/recovery',          element: <RecoveryPage /> },
-      { path: '/auth/recovery/confirm',  element: <RecoveryPage /> },
-      { path: '/auth/error',     element: <AuthError /> },
-
-      // Authenticated
+      { path: '/account',       element: <AccountPage /> },
+      { path: '/account/merge', element: <MergePage /> },
       {
-        element: <RequireAuth />,
+        element: <AppShell />,
         children: [
-          { path: '/account',       element: <AccountPage /> },
-          { path: '/account/merge', element: <MergePage /> },
-
-          // App shell – all app routes as children
-          {
-            element: <AppShell />,
-            children: [
-              { path: '/today',               element: null },
-              { path: '/diary',               element: null },
-              { path: '/schemas',             element: null },
-              { path: '/profile',             element: null },
-              { path: '/practice',            element: null },
-              // Legacy redirects
-              { path: '/help',                element: <Navigate to="/practice" replace /> },
-              { path: '/exercises',           element: <Navigate to="/practice" replace /> },
-              { path: '/cabinet',             element: null },
-              { path: '/cabinet/:clientId',   element: null },
-              // catch-all → redirect home
-              { path: '*',                    element: <Navigate to="/today" replace /> },
-            ],
-          },
+          { path: '/today',             element: null },
+          { path: '/diary',             element: null },
+          { path: '/schemas',           element: null },
+          { path: '/profile',           element: null },
+          { path: '/practice',          element: null },
+          { path: '/help',              element: <Navigate to="/practice" replace /> },
+          { path: '/exercises',         element: <Navigate to="/practice" replace /> },
+          { path: '/cabinet',           element: null },
+          { path: '/cabinet/:clientId', element: null },
+          { path: '*',                  element: <Navigate to="/today" replace /> },
         ],
       },
     ],
+  },
+];
+
+const router = createBrowserRouter([
+  {
+    element: <Root />,
+    children: isPersonalSite ? personalRoutes : appRoutes,
   },
 ]);
 

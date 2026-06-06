@@ -44,7 +44,7 @@ async function bootstrap() {
   // Production default is restrictive; localhost is dev-only.
   const isProd = process.env.NODE_ENV === 'production';
   const origins = process.env.ALLOWED_ORIGINS?.split(',') ?? (isProd
-    ? ['https://schemalab.ru']
+    ? ['https://schemalab.ru', 'https://kotlarewski.ru', 'https://kotlarewski.gr']
     : [
         'https://schema-miniapp.vercel.app',
         'https://diary-miniapp-sigma.vercel.app',
