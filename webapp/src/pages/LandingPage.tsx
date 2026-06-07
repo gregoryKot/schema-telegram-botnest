@@ -15,7 +15,7 @@ const BTN_FS:  Record<BtnSize, number> = { sm: 13, md: 14, lg: 15 };
 
 function Btn({
   children, variant = 'primary', size = 'md', radius = 'pill',
-  href, onClick, type = 'button', full = false, disabled = false, style,
+  href, onClick, type = 'button', full = false, disabled = false, style, newTab,
 }: {
   children: React.ReactNode;
   variant?: BtnVariant;
@@ -27,6 +27,8 @@ function Btn({
   full?: boolean;
   disabled?: boolean;
   style?: React.CSSProperties;
+  /** Override new-tab behaviour. Defaults to true for http links, false for relative. */
+  newTab?: boolean;
 }) {
   const variants: Record<BtnVariant, React.CSSProperties> = {
     primary: { background: 'var(--accent)', color: '#fff', boxShadow: '0 8px 28px rgba(77,71,153,.28)' },
@@ -59,7 +61,8 @@ function Btn({
   };
   if (href) {
     const ext = href.startsWith('http');
-    return <a href={href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined}
+    const openNewTab = newTab !== undefined ? newTab : ext;
+    return <a href={href} target={openNewTab ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined}
       style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</a>;
   }
   return <button type={type} onClick={onClick} disabled={disabled} style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</button>;
@@ -726,7 +729,7 @@ export function LandingPage() {
                 СхемаЛаб – бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Ведите дневник состояний, отслеживайте потребности, делайте упражнения. Всё сохраняется – динамика всегда перед глазами.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <Btn href="https://schemalab.ru">Попробовать бесплатно</Btn>
+                <Btn href="https://schemalab.ru" newTab={false}>Попробовать бесплатно</Btn>
                 <Btn variant="ghost" href="https://t.me/SchemaLabBot">Telegram-бот</Btn>
               </div>
             </div>
