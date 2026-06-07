@@ -8,8 +8,15 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { SecurityLogService } from './security-log.service';
+import { EmailService } from './email.service';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
+
+const EMAIL_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
+
+function isValidEmail(s: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
+}
 
 const ACCESS_TOKEN_TTL_S = 15 * 60;       // 15 minutes
 const REFRESH_TOKEN_TTL_S = 30 * 24 * 3600; // 30 days
@@ -40,6 +47,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly securityLog: SecurityLogService,
+    private readonly emailSvc: EmailService,
   ) {}
 
   // ─── Telegram WebApp initData ──────────────────────────────────────────────
@@ -88,8 +96,61 @@ export class AuthService {
 
   // ─── Find or create user ───────────────────────────────────────────────────
 
+  // ─── Email magic-link login ───────────────────────────────────────────────
+
+  async requestEmailLogin(email: string): Promise<{ ok: true }> {
+    if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
+    const lower = email.toLowerCase().trim();
+
+    // Find or create user — always succeeds so we don't leak existence
+    const userId = await this.findOrCreateUserByProvider('email', lower, lower.split('@')[0]);
+
+    const raw = crypto.randomBytes(32).toString('base64url');
+    const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
+    await (this.prisma as any).emailToken.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId,
+        tokenHash,
+        email: lower,
+        purpose: 'login',
+        expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
+      },
+    });
+
+    const base = this.config.getOrThrow<string>('WEBAPP_URL').replace(/\/$/, '');
+    const link = `${base}/api/auth/email/callback?token=${raw}`;
+    // Fire-and-forget — response is instant even if email delivery is slow
+    void this.emailSvc.sendLoginLink(lower, link).catch((err) =>
+      this.logger.error(`sendLoginLink failed: ${(err as Error).message}`),
+    );
+
+    return { ok: true };
+  }
+
+  async consumeEmailLoginToken(rawToken: string, ip?: string, userAgent?: string): Promise<TokenPair> {
+    if (!rawToken) throw new UnauthorizedException('Missing token');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const row = await (this.prisma as any).emailToken.findUnique({ where: { tokenHash } });
+
+    if (!row)                            throw new UnauthorizedException('Token not found');
+    if (row.usedAt)                      throw new UnauthorizedException('Token already used');
+    if (row.expiresAt < new Date())      throw new UnauthorizedException('Token expired');
+    if (row.purpose !== 'login')         throw new UnauthorizedException('Token purpose mismatch');
+    if (!row.userId)                     throw new UnauthorizedException('No user bound to token');
+
+    await (this.prisma as any).emailToken.update({
+      where: { id: row.id },
+      data: { usedAt: new Date() },
+    });
+
+    return this.issueTokens(row.userId as BigInt, ip, userAgent);
+  }
+
+  // ─── Find or create user ───────────────────────────────────────────────────
+
   async findOrCreateUserByProvider(
-    provider: 'telegram' | 'google',
+    provider: 'telegram' | 'google' | 'email',
     providerId: string,
     displayName?: string,
     email?: string,
@@ -109,7 +170,7 @@ export class AuthService {
     }
 
     // For Telegram: userId = telegramId (maintains backward compat with bot data)
-    // For Google: generate a web-only userId in the safe range
+    // For Google/email: generate a web-only userId in the safe range
     const userId = provider === 'telegram'
       ? BigInt(providerId)
       : this.generateWebUserId();

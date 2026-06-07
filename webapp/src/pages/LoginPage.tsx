@@ -5,6 +5,8 @@ import { useAuth } from '../auth/AuthContext';
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 const BOT_USERNAME = (import.meta.env.VITE_BOT_USERNAME as string | undefined) ?? 'SchemaLabBot';
 
+function isEmail(s: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+
 // Telegram Login Widget sends numbers for id/auth_date; backend expects strings.
 type TgWidgetUser = Record<string, string | number>;
 
@@ -13,6 +15,10 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [telegramLoading, setTelegramLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEmail, setShowEmail] = useState(false);
+  const [emailValue, setEmailValue] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
   const widgetRef = useRef<HTMLDivElement>(null);
   const isTelegramContext = !!(window as any).Telegram?.WebApp?.initData;
 
@@ -123,6 +129,26 @@ export function LoginPage() {
   const handleGoogle = () => { window.location.href = `${API_BASE}/api/auth/google`; };
   const handleVk    = () => { window.location.href = `${API_BASE}/api/auth/vk`; };
 
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isEmail(emailValue)) { setError('Введи корректный email'); return; }
+    setEmailLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/email/link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
+        body: JSON.stringify({ email: emailValue }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? `Ошибка ${res.status}`);
+      setEmailSent(true);
+    } catch (e) {
+      setError((e as Error).message || 'Не удалось отправить письмо');
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
   // Inside Telegram but auto-auth failed – show minimal retry UI
   if (isTelegramContext) {
     return (
@@ -199,6 +225,55 @@ export function LoginPage() {
             {/* Widget script renders a button inside this div */}
             <div ref={widgetRef} style={{ minHeight: 44 }} />
           </div>
+
+          {/* Email magic link */}
+          {!showEmail ? (
+            <p style={{ textAlign: 'center', marginTop: 12 }}>
+              <button
+                onClick={() => { setShowEmail(true); setError(null); }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+              >
+                Войти по email
+              </button>
+            </p>
+          ) : emailSent ? (
+            <div style={{ marginTop: 16, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 10, textAlign: 'center' }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>✉️</div>
+              <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, margin: '0 0 4px' }}>Письмо отправлено</p>
+              <p style={{ fontSize: 13, color: 'var(--text-sub)', margin: 0 }}>Проверь почту и перейди по ссылке — она действует 30 минут</p>
+              <button
+                onClick={() => { setEmailSent(false); setEmailValue(''); }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', marginTop: 10, textDecoration: 'underline', padding: 0 }}
+              >
+                Ввести другой email
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleEmailSubmit} style={{ marginTop: 16 }}>
+              <input
+                type="email"
+                autoFocus
+                placeholder="your@email.com"
+                value={emailValue}
+                onChange={e => setEmailValue(e.target.value)}
+                style={{ width: '100%', padding: '11px 14px', fontSize: 14, border: '1.5px solid var(--line)', borderRadius: 10, background: 'rgba(var(--fg-rgb),0.04)', color: 'var(--text)', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', marginBottom: 8 }}
+              />
+              <button
+                type="submit"
+                disabled={emailLoading}
+                style={{ width: '100%', padding: '11px', fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10, cursor: emailLoading ? 'default' : 'pointer', opacity: emailLoading ? 0.7 : 1 }}
+              >
+                {emailLoading ? 'Отправляем…' : 'Отправить ссылку'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowEmail(false); setError(null); }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: '6px 0 0', width: '100%' }}
+              >
+                Отмена
+              </button>
+            </form>
+          )}
 
           {error && (
             <p style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>{error}</p>
