@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, delay);
   }, []);
 
-  const doRefresh = useCallback(async (): Promise<boolean> => {
+  const doRefresh = useCallback(async (clearOnFailure = true): Promise<boolean> => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/refresh`, {
         method: 'POST',
@@ -35,8 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { 'x-requested-with': 'webapp', 'Content-Type': 'application/json' },
       });
       if (!res.ok) {
-        // 401 means token is invalid/revoked – clear state to stop retry loop
-        if (res.status === 401) setTokenState(null);
+        // 401 means token is invalid/revoked – clear state to stop retry loop.
+        // During initial load (clearOnFailure=false) we skip the clear so that
+        // a token already set by AuthCallback (flushSync) isn't wiped by a
+        // racing 401 from an expired / missing refresh cookie.
+        if (res.status === 401 && clearOnFailure) setTokenState(null);
         return false;
       }
       const { accessToken: token, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
@@ -75,7 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const init = async () => {
       const tgOk = await doTelegramWebAppAuth();
-      if (!tgOk) await doRefresh();
+      // clearOnFailure=false: don't wipe a token that AuthCallback may have
+      // already set via flushSync() while this refresh was in-flight.
+      if (!tgOk) await doRefresh(false);
       setIsLoading(false);
     };
     init();
