@@ -126,6 +126,16 @@ export class EmailService {
     return { userId: row.userId, email: row.email };
   }
 
+  // ─── Admin notification (e.g. new booking) ───────────────────────────────
+
+  async sendAdminNotification(subject: string, text: string): Promise<void> {
+    const to = process.env.ADMIN_EMAIL;
+    if (!to) return; // not configured — skip silently
+    await this.send(to, subject, text).catch((err) => {
+      this.logger.error(`sendAdminNotification failed: ${(err as Error).message}`);
+    });
+  }
+
   // ─── Resend SMTP wrapper ──────────────────────────────────────────────────
 
   private async send(to: string, subject: string, text: string): Promise<void> {

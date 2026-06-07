@@ -7,6 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { TelegramService } from '../telegram/telegram.service';
+import { EmailService } from '../auth/email.service';
 
 interface BookingDto {
   name: string;
@@ -25,7 +26,10 @@ function escapeHtml(s: string): string {
 export class BookingController {
   private readonly logger = new Logger(BookingController.name);
 
-  constructor(private readonly telegram: TelegramService) {}
+  constructor(
+    private readonly telegram: TelegramService,
+    private readonly email: EmailService,
+  ) {}
 
   @Post('booking')
   @HttpCode(HttpStatus.OK)
@@ -40,7 +44,7 @@ export class BookingController {
     const c = escapeHtml(contact.slice(0, 100).trim());
     const m = message?.trim() ? escapeHtml(message.slice(0, 500).trim()) : null;
 
-    const text = [
+    const tgText = [
       '📩 <b>Новая заявка с сайта</b>',
       '',
       `👤 <b>Имя:</b> ${n}`,
@@ -50,10 +54,22 @@ export class BookingController {
       .filter(Boolean)
       .join('\n');
 
+    const emailText = [
+      'Новая заявка с сайта',
+      '',
+      `Имя: ${name.trim()}`,
+      `Контакт: ${contact.trim()}`,
+      m ? `Запрос:\n${message!.trim()}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
     this.logger.log('New booking received');
-    // Fire-and-forget: don't block the HTTP response on Telegram delivery.
-    // If Telegram API is unreachable (e.g. ETIMEDOUT) the form still returns ok.
-    void this.telegram.notifyAdmin(text);
+
+    // Both channels are fire-and-forget — response is instant regardless of
+    // Telegram/Resend availability. Email is the fallback if Telegram fails.
+    void this.telegram.notifyAdmin(tgText);
+    void this.email.sendAdminNotification('📩 Новая заявка с сайта', emailText);
 
     return { ok: true };
   }
