@@ -351,10 +351,25 @@ function FaqList() {
   );
 }
 
+// ─── Theme toggle ─────────────────────────────────────────────────────────────
+function useTheme() {
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    return localStorage.getItem('app_theme') === 'dark' ? 'dark' : 'light';
+  });
+  const toggle = useCallback(() => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setThemeState(next);
+    localStorage.setItem('app_theme', next);
+    document.documentElement.setAttribute('data-theme', next);
+  }, [theme]);
+  return { theme, toggle };
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function LandingPage() {
   const bookingRef  = useRef<HTMLElement>(null);
   const [showBar, setShowBar] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const aboutRef    = useReveal() as React.RefObject<HTMLElement>;
   const quoteRef    = useReveal() as React.RefObject<HTMLElement>;
@@ -400,7 +415,7 @@ export function LandingPage() {
           <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)', whiteSpace: 'nowrap' }}>Григорий Котляревский</span>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <a href="/login" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
+          <a href="https://schemalab.ru" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
           <Btn size="sm" onClick={scrollToBooking}>Записаться</Btn>
         </div>
       </div>
@@ -437,13 +452,25 @@ export function LandingPage() {
                 <span style={{ fontSize: 11, fontWeight: 700, color: MOSS, letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
               </a>
             </div>
-            <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer"
-              className="nav-tg"
-              style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none', transition: 'color .15s', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 12 }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = ''; }}>
-              Написать ↗
-            </a>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 12 }}>
+              <button
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+                title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+                style={{ background: 'none', border: '1px solid var(--line)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: 'var(--text-sub)', transition: 'border-color .15s, color .15s', padding: 0 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--text-sub)'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-sub)'; }}
+              >
+                {theme === 'dark' ? '☀︎' : '☽'}
+              </button>
+              <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer"
+                className="nav-tg"
+                style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none', transition: 'color .15s', whiteSpace: 'nowrap' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = ''; }}>
+                Написать ↗
+              </a>
+            </div>
           </div>
 
           {/* ── Eyebrow ── */}
@@ -651,8 +678,8 @@ export function LandingPage() {
             </div>
             <Btn radius="btn" full onClick={scrollToBooking}>Записаться бесплатно →</Btn>
           </div>
-          {/* Session */}
-          <div style={{ background: 'var(--text)', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
+          {/* Session – always dark card so light text stays legible in any theme */}
+          <div style={{ background: '#1c1916', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,.12)', padding: '4px 12px', borderRadius: 100, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.7)' }}>Основной</div>
             <div>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(236,234,229,.45)' }}>Сессия</span>
@@ -699,7 +726,7 @@ export function LandingPage() {
                 СхемаЛаб – бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Ведите дневник состояний, отслеживайте потребности, делайте упражнения. Всё сохраняется – динамика всегда перед глазами.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <Btn href="/login">Попробовать бесплатно</Btn>
+                <Btn href="https://schemalab.ru">Попробовать бесплатно</Btn>
                 <Btn variant="ghost" href="https://t.me/SchemaLabBot">Telegram-бот</Btn>
               </div>
             </div>
@@ -732,7 +759,7 @@ export function LandingPage() {
             <a href="/privacy" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Политика конфиденциальности</a>
             <a href="/offer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
             <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Telegram</a>
-            <a href="/login" style={{ fontSize: 13, color: 'var(--text-sub)', textDecoration: 'none', fontWeight: 600 }}>Открыть СхемаЛаб →</a>
+            <a href="https://schemalab.ru" style={{ fontSize: 13, color: 'var(--text-sub)', textDecoration: 'none', fontWeight: 600 }}>Открыть СхемаЛаб →</a>
           </div>
         </div>
       </footer>
