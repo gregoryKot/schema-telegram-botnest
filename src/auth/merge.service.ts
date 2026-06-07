@@ -226,8 +226,29 @@ export class MergeService {
         DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
       `);
 
-      // 5. Propagate disclaimerAccepted and role from source → target.
+      // 5. Propagate recoveryEmail, disclaimerAccepted and role from source → target.
       //    Must happen before DELETE so we can still read source fields.
+      //    recoveryEmail is @unique — clear from source first, then set on target
+      //    (otherwise Postgres unique constraint fires within the transaction).
+      const srcEmailRows = await tx.$queryRaw<Array<{ re: string | null; rev: Date | null }>>(Prisma.sql`
+        SELECT "recoveryEmail" AS re, "recoveryEmailVerifiedAt" AS rev
+        FROM "User" WHERE id = ${sourceId}
+      `);
+      const srcEmail = srcEmailRows[0]?.re ?? null;
+      const srcEmailVerified = srcEmailRows[0]?.rev ?? null;
+      if (srcEmail) {
+        // Free the unique slot on source first
+        await tx.$executeRaw(Prisma.sql`
+          UPDATE "User" SET "recoveryEmail" = NULL, "recoveryEmailVerifiedAt" = NULL
+          WHERE id = ${sourceId}
+        `);
+        // Apply to target only if target has no email yet
+        await tx.$executeRaw(Prisma.sql`
+          UPDATE "User" SET "recoveryEmail" = ${srcEmail}, "recoveryEmailVerifiedAt" = ${srcEmailVerified}
+          WHERE id = ${targetId} AND "recoveryEmail" IS NULL
+        `);
+      }
+
       await tx.$executeRaw(Prisma.sql`
         UPDATE "User" SET "disclaimerAccepted" = true
         WHERE id = ${targetId}

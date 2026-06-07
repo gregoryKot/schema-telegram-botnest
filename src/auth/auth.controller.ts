@@ -405,6 +405,53 @@ export class AuthController {
     return { accessToken: outcome.tokens.accessToken, expiresIn: outcome.tokens.expiresIn };
   }
 
+  // ─── Telegram Login Widget — redirect flow ───────────────────────────────
+  // Full-page redirect to oauth.telegram.org (no iframe, no domain setup in
+  // BotFather required). User authorizes in Telegram's own page, then comes
+  // back to widget-redirect with the signed user data as query params.
+
+  @Get('telegram/redirect')
+  @UseGuards(OptionalJwtGuard)
+  telegramRedirect(@Req() req: any, @Res() res: any): void {
+    const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
+    const botId = botToken.split(':')[0]; // BOT_TOKEN format: 123456789:HASH
+    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL').replace(/\/$/, '');
+    const returnTo = `${frontendBase}/api/auth/telegram/widget-redirect`;
+    // Persist linkUserId in a short-lived cookie so we can restore it after redirect
+    const linkUserId = (req as any).webUser?.userId?.toString() ?? null;
+    if (linkUserId) {
+      res.cookie('tg_link_user', linkUserId, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+    }
+    const url = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(frontendBase)}&return_to=${encodeURIComponent(returnTo)}&request_access=write&lang=ru&embed=0`;
+    res.redirect(url);
+  }
+
+  @Get('telegram/widget-redirect')
+  async telegramWidgetRedirect(
+    @Query() query: Record<string, string>,
+    @Req() req: any,
+    @Res() res: any,
+  ): Promise<void> {
+    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+    try {
+      const telegramHandler = this.providers.get('telegram');
+      if (!telegramHandler.verifyClientData) throw new BadRequestException('Telegram provider missing');
+      const identity = telegramHandler.verifyClientData(query);
+
+      const savedLinkUserId = req.cookies?.['tg_link_user'] ?? null;
+      res.clearCookie('tg_link_user', { path: '/api/auth' });
+      const linkUserId = savedLinkUserId ? BigInt(savedLinkUserId) : null;
+
+      const outcome = await this.signInOrLinkOrMerge('telegram', identity, {
+        linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
+      });
+      this.finishOAuthRedirect(outcome, 'telegram', res, frontendBase);
+    } catch (err) {
+      this.logger.error(`telegram widget-redirect error: ${(err as Error).message}`);
+      res.redirect(`${frontendBase}/auth/error?reason=telegram_failed`);
+    }
+  }
+
   // ─── Email magic-link login ───────────────────────────────────────────────
 
   @Post('email/link')
@@ -426,13 +473,33 @@ export class AuthController {
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
-      const tokens = await this.auth.consumeEmailLoginToken(token, req.ip, req.headers['user-agent']);
+      const { tokens, purpose } = await this.auth.consumeEmailToken(token, req.ip, req.headers['user-agent']);
       res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
-      res.redirect(`${frontendBase}/auth/callback#access_token=${tokens.accessToken}&expires_in=${tokens.expiresIn}`);
+      if (purpose === 'link_email_auth') {
+        // Already logged in — go back to account with success banner
+        res.redirect(`${frontendBase}/account?linked=email`);
+      } else {
+        res.redirect(`${frontendBase}/auth/callback#access_token=${tokens.accessToken}&expires_in=${tokens.expiresIn}`);
+      }
     } catch (err) {
-      this.logger.error(`Email login callback: ${(err as Error).message}`);
+      this.logger.error(`Email callback: ${(err as Error).message}`);
       res.redirect(`${frontendBase}/auth/error?reason=email_link_expired`);
     }
+  }
+
+  // ─── Link email to existing account ──────────────────────────────────────
+
+  @Post('email/link-to-account')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 3_600_000 } })
+  @HttpCode(200)
+  async emailLinkToAccount(
+    @Body('email') email: string,
+    @Req() req: any,
+  ): Promise<{ ok: true }> {
+    this.requireCsrf(req, 'email/link-to-account');
+    const webUser: WebUser = req.webUser;
+    return this.auth.linkEmailToAccount(webUser.userId as bigint, email);
   }
 
   // ─── Telegram WebApp initData (mini-app auto-auth) ────────────────────────

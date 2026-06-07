@@ -128,23 +128,79 @@ export class AuthService {
     return { ok: true };
   }
 
-  async consumeEmailLoginToken(rawToken: string, ip?: string, userAgent?: string): Promise<TokenPair> {
+  // Consume a login or link_email_auth token.
+  // Returns tokens + purpose so the controller can decide where to redirect.
+  async consumeEmailToken(rawToken: string, ip?: string, userAgent?: string): Promise<{
+    tokens: TokenPair; purpose: string; userId: bigint;
+  }> {
     if (!rawToken) throw new UnauthorizedException('Missing token');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     const row = await (this.prisma as any).emailToken.findUnique({ where: { tokenHash } });
 
-    if (!row)                            throw new UnauthorizedException('Token not found');
-    if (row.usedAt)                      throw new UnauthorizedException('Token already used');
-    if (row.expiresAt < new Date())      throw new UnauthorizedException('Token expired');
-    if (row.purpose !== 'login')         throw new UnauthorizedException('Token purpose mismatch');
-    if (!row.userId)                     throw new UnauthorizedException('No user bound to token');
+    if (!row)                                                     throw new UnauthorizedException('Token not found');
+    if (row.usedAt)                                               throw new UnauthorizedException('Token already used');
+    if (row.expiresAt < new Date())                               throw new UnauthorizedException('Token expired');
+    if (!['login', 'link_email_auth'].includes(row.purpose))      throw new UnauthorizedException('Token purpose mismatch');
+    if (!row.userId)                                              throw new UnauthorizedException('No user bound to token');
 
     await (this.prisma as any).emailToken.update({
       where: { id: row.id },
       data: { usedAt: new Date() },
     });
 
-    return this.issueTokens(row.userId as BigInt, ip, userAgent);
+    if (row.purpose === 'link_email_auth') {
+      // Link email as auth provider to the existing (already-authed) user.
+      const result = await this.linkProviderToUser(
+        row.userId as bigint, 'email', row.email as string, row.email as string, row.email as string,
+      );
+      if (!result.ok) {
+        throw new ConflictException('Этот email уже привязан к другому аккаунту');
+      }
+    }
+
+    const tokens = await this.issueTokens(row.userId as bigint, ip, userAgent);
+    return { tokens, purpose: row.purpose as string, userId: row.userId as bigint };
+  }
+
+  // Send a magic link that links email as auth provider (not a new login).
+  // The token has purpose='link_email_auth' so the callback knows what to do.
+  async linkEmailToAccount(targetUserId: bigint, email: string): Promise<{ ok: true }> {
+    if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
+    const lower = email.toLowerCase().trim();
+
+    // Check if already linked to another user
+    const taken = await (this.prisma as any).authProvider.findUnique({
+      where: { provider_providerId: { provider: 'email', providerId: lower } },
+    });
+    if (taken && BigInt(taken.userId) !== targetUserId) {
+      throw new ConflictException('Этот email уже привязан к другому аккаунту');
+    }
+
+    const raw = crypto.randomBytes(32).toString('base64url');
+    const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
+    await (this.prisma as any).emailToken.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId: targetUserId,
+        tokenHash,
+        email: lower,
+        purpose: 'link_email_auth',
+        expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
+      },
+    });
+
+    const base = this.config.getOrThrow<string>('WEBAPP_URL').replace(/\/$/, '');
+    const link = `${base}/api/auth/email/callback?token=${raw}`;
+    void this.emailSvc.sendLoginLink(lower, link).catch((err) =>
+      this.logger.error(`linkEmailToAccount sendLoginLink failed: ${(err as Error).message}`),
+    );
+    return { ok: true };
+  }
+
+  // Keep the old name as an alias so nothing breaks if referenced elsewhere
+  async consumeEmailLoginToken(rawToken: string, ip?: string, userAgent?: string): Promise<TokenPair> {
+    const { tokens } = await this.consumeEmailToken(rawToken, ip, userAgent);
+    return tokens;
   }
 
   // ─── Find or create user ───────────────────────────────────────────────────
