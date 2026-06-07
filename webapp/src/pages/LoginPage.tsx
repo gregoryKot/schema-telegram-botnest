@@ -1,106 +1,29 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-const BOT_USERNAME = (import.meta.env.VITE_BOT_USERNAME as string | undefined) ?? 'SchemaLabBot';
 
 function isEmail(s: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
-
-// Telegram Login Widget sends numbers for id/auth_date; backend expects strings.
-type TgWidgetUser = Record<string, string | number>;
 
 export function LoginPage() {
   const { isAuthenticated, setAccessToken } = useAuth();
   const navigate = useNavigate();
-  const [telegramLoading, setTelegramLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showEmail, setShowEmail] = useState(false);
   const [emailValue, setEmailValue] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
-  const widgetRef = useRef<HTMLDivElement>(null);
   const isTelegramContext = !!(window as any).Telegram?.WebApp?.initData;
 
   useEffect(() => {
     if (isAuthenticated) navigate('/today', { replace: true });
   }, [isAuthenticated, navigate]);
 
-  // ── Telegram Login Widget callback ────────────────────────────────────────
-  // The widget script calls window.onTelegramAuth(user) after the user
-  // authenticates in the popup. We verify the hash on the backend locally
-  // (no outgoing calls to Telegram API needed — pure HMAC check).
-  const handleTelegramWidget = useCallback(async (user: TgWidgetUser) => {
-    setTelegramLoading(true);
-    setError(null);
-    try {
-      const body: Record<string, string> = {};
-      for (const [k, v] of Object.entries(user)) body[k] = String(v);
-
-      const res = await fetch(`${API_BASE}/api/auth/telegram/widget`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
-        credentials: 'include',
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        setError(`Ошибка ${res.status}: ${text.slice(0, 120)}`);
-        return;
-      }
-
-      const data = await res.json() as any;
-
-      if (data.merge) {
-        const params = new URLSearchParams({
-          token: data.mergeToken,
-          summary: JSON.stringify(data.summary),
-          provider: data.provider,
-          name: data.otherDisplay ?? '',
-        });
-        navigate(`/account/merge?${params}`, { replace: true });
-        return;
-      }
-      if (data.totp) {
-        navigate(`/auth/2fa?token=${encodeURIComponent(data.challengeToken)}`, { replace: true });
-        return;
-      }
-      setAccessToken(data.accessToken, data.expiresIn);
-      navigate('/today', { replace: true });
-    } catch {
-      setError('Не удалось войти. Попробуйте снова.');
-    } finally {
-      setTelegramLoading(false);
-    }
-  }, [setAccessToken, navigate]);
-
-  // Expose global callback for the Telegram widget script
-  useEffect(() => {
-    (window as any).onTelegramAuth = handleTelegramWidget;
-    return () => { delete (window as any).onTelegramAuth; };
-  }, [handleTelegramWidget]);
-
-  // Inject the Telegram Login Widget script into the container div
-  useEffect(() => {
-    const container = widgetRef.current;
-    if (!container || container.querySelector('script')) return; // already injected
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.async = true;
-    script.setAttribute('data-telegram-login', BOT_USERNAME);
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-radius', '10');
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    script.setAttribute('data-request-access', 'write');
-    script.setAttribute('data-lang', 'ru');
-    container.appendChild(script);
-    return () => { script.remove(); };
-  }, []);
-
   // ── Mini-app fallback ────────────────────────────────────────────────────
+  const [miniAppLoading, setMiniAppLoading] = useState(false);
   const retryTelegramAuth = async () => {
-    setTelegramLoading(true);
+    setMiniAppLoading(true);
     setError(null);
     try {
       const initData = (window as any).Telegram?.WebApp?.initData;
@@ -122,12 +45,13 @@ export function LoginPage() {
     } catch (e) {
       setError(String(e));
     } finally {
-      setTelegramLoading(false);
+      setMiniAppLoading(false);
     }
   };
 
-  const handleGoogle = () => { window.location.href = `${API_BASE}/api/auth/google`; };
-  const handleVk    = () => { window.location.href = `${API_BASE}/api/auth/vk`; };
+  const handleGoogle   = () => { window.location.href = `${API_BASE}/api/auth/google`; };
+  const handleVk       = () => { window.location.href = `${API_BASE}/api/auth/vk`; };
+  const handleTelegram = () => { window.location.href = `${API_BASE}/api/auth/telegram/redirect`; };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,10 +79,10 @@ export function LoginPage() {
       <div style={{ flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🧠</div>
         <p style={{ color: 'var(--text-sub)', marginBottom: 24, textAlign: 'center' }}>
-          {telegramLoading ? 'Загрузка...' : 'Не удалось войти автоматически'}
+          {miniAppLoading ? 'Загрузка...' : 'Не удалось войти автоматически'}
         </p>
         {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 16, textAlign: 'center', maxWidth: 320 }}>{error}</p>}
-        <button className="btn-outline" onClick={retryTelegramAuth} disabled={telegramLoading}>
+        <button className="btn-outline" onClick={retryTelegramAuth} disabled={miniAppLoading}>
           Попробовать снова
         </button>
       </div>
@@ -217,14 +141,13 @@ export function LoginPage() {
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
           </div>
 
-          {/* Telegram Login Widget */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            {telegramLoading && (
-              <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>Входим через Telegram…</p>
-            )}
-            {/* Widget script renders a button inside this div */}
-            <div ref={widgetRef} style={{ minHeight: 44 }} />
-          </div>
+          {/* Telegram — redirect flow (full-page, no iframe needed) */}
+          <button className="btn-outline" onClick={handleTelegram} style={{ marginBottom: 0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.93 6.89l-1.68 7.92c-.12.56-.45.7-.9.43l-2.5-1.84-1.2 1.16c-.13.13-.25.25-.5.25l.18-2.55 4.63-4.18c.2-.18-.04-.27-.31-.1l-5.72 3.6-2.46-.77c-.54-.17-.55-.54.11-.8l9.58-3.69c.45-.16.85.11.69.77z" fill="#2AABEE"/>
+            </svg>
+            Войти через Telegram
+          </button>
 
           {/* Email magic link */}
           {!showEmail ? (

@@ -1,18 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-const BOT_USERNAME = (import.meta.env.VITE_BOT_USERNAME as string | undefined) ?? 'SchemaLabBot';
-
-declare global {
-  interface Window {
-    onTelegramLink?: (user: Record<string, string>) => void;
-  }
-}
 
 interface Provider {
-  provider: 'google' | 'telegram' | 'vk';
+  provider: 'google' | 'telegram' | 'vk' | 'email';
   email: string | null;
   displayName: string | null;
 }
@@ -20,12 +13,15 @@ interface Provider {
 export function AccountPage() {
   const { accessToken, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [totp, setTotp] = useState<{ enabled: boolean; recoveryCodesLeft: number }>({ enabled: false, recoveryCodesLeft: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(
+    searchParams.get('linked') === 'email' ? '✓ Email успешно привязан' : null,
+  );
   const [busy, setBusy] = useState(false);
-  const tgRef = useRef<HTMLDivElement>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -46,54 +42,11 @@ export function AccountPage() {
 
   useEffect(() => { refresh(); }, [accessToken]);
 
-  // Inject Telegram Login Widget when user wants to link
-  const [showTgWidget, setShowTgWidget] = useState(false);
-  useEffect(() => {
-    if (!showTgWidget || !tgRef.current) return;
-    window.onTelegramLink = async (userData) => {
-      setBusy(true);
-      setError(null);
-      try {
-        const res = await fetch(`${API_BASE}/api/auth/link/telegram`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-          body: JSON.stringify(userData),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({ message: 'Link failed' }));
-          throw new Error(body.message ?? 'Link failed');
-        }
-        const data = await res.json() as { ok?: true } | { merge: true; mergeToken: string; summary: Record<string, number> };
-        if ('merge' in data) {
-          // Conflict – go to merge confirmation
-          const params = new URLSearchParams({
-            token: data.mergeToken,
-            summary: JSON.stringify(data.summary),
-            provider: 'telegram',
-            name: userData.first_name ?? '',
-          });
-          navigate(`/account/merge?${params.toString()}`);
-          return;
-        }
-        await refresh();
-        setShowTgWidget(false);
-      } catch (e) {
-        setError(String(e));
-      } finally {
-        setBusy(false);
-      }
-    };
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.async = true;
-    script.setAttribute('data-telegram-login', BOT_USERNAME);
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-onauth', 'onTelegramLink(user)');
-    script.setAttribute('data-request-access', 'write');
-    tgRef.current.appendChild(script);
-    return () => { delete window.onTelegramLink; };
-  }, [showTgWidget, accessToken]);
+  // Email link state
+  const [showEmailLink, setShowEmailLink] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [emailLinkSent, setEmailLinkSent] = useState(false);
+  const [emailLinkBusy, setEmailLinkBusy] = useState(false);
 
   const fetchLinkToken = async (): Promise<string> => {
     const res = await fetch(`${API_BASE}/api/auth/link-token`, {
@@ -112,6 +65,10 @@ export function AccountPage() {
     sessionStorage.setItem('auth_return_to', '/account');
     const token = await fetchLinkToken();
     window.location.href = `${API_BASE}/api/auth/vk?link_token=${encodeURIComponent(token)}`;
+  };
+  const linkTelegram = () => {
+    sessionStorage.setItem('auth_return_to', '/account');
+    window.location.href = `${API_BASE}/api/auth/telegram/redirect`;
   };
 
   const unlink = async (provider: 'google' | 'telegram' | 'vk') => {
@@ -136,13 +93,37 @@ export function AccountPage() {
     }
   };
 
+  const sendEmailLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailLinkBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/email/link-to-account`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ email: emailInput }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: 'Ошибка' }));
+        throw new Error(body.message ?? `Ошибка ${res.status}`);
+      }
+      setEmailLinkSent(true);
+    } catch (e) {
+      setError(String(e).replace('Error: ', ''));
+    } finally {
+      setEmailLinkBusy(false);
+    }
+  };
+
   const hasGoogle = providers.some(p => p.provider === 'google');
   const hasTelegram = providers.some(p => p.provider === 'telegram');
   const hasVk = providers.some(p => p.provider === 'vk');
+  const hasEmail = providers.some(p => p.provider === 'email');
 
   return (
     <div style={{ flex: 1, padding: 24, maxWidth: 480, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-      <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 15, marginBottom: 16, cursor: 'pointer', padding: 0 }}>
+      <button onClick={() => navigate('/today')} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 15, marginBottom: 16, cursor: 'pointer', padding: 0 }}>
         ← Назад
       </button>
 
@@ -150,6 +131,12 @@ export function AccountPage() {
       <p style={{ color: 'var(--text-sub)', fontSize: 14, marginBottom: 24 }}>
         Привязывай несколько способов входа – заходи откуда удобно
       </p>
+
+      {success && (
+        <div style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 12, padding: 12, marginBottom: 16, color: 'var(--accent-green)', fontSize: 13 }}>
+          {success}
+        </div>
+      )}
 
       {error && (
         <div style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 12, padding: 12, marginBottom: 16, color: 'var(--accent-red)', fontSize: 13 }}>
@@ -191,8 +178,10 @@ export function AccountPage() {
           {/* Telegram */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(34,158,217,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-                ✈️
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(34,158,217,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.93 6.89l-1.68 7.92c-.12.56-.45.7-.9.43l-2.5-1.84-1.2 1.16c-.13.13-.25.25-.5.25l.18-2.55 4.63-4.18c.2-.18-.04-.27-.31-.1l-5.72 3.6-2.46-.77c-.54-.17-.55-.54.11-.8l9.58-3.69c.45-.16.85.11.69.77z" fill="#2AABEE"/>
+                </svg>
               </div>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>Telegram</div>
@@ -204,20 +193,14 @@ export function AccountPage() {
                 Отвязать
               </button>
             ) : (
-              <button disabled={busy} onClick={() => setShowTgWidget(true)} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <button disabled={busy} onClick={linkTelegram} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                 Привязать
               </button>
             )}
           </div>
 
-          {showTgWidget && !hasTelegram && (
-            <div style={{ paddingTop: 12, display: 'flex', justifyContent: 'center', minHeight: 56 }}>
-              <div ref={tgRef} />
-            </div>
-          )}
-
           {/* VK */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderTop: '1px solid rgba(var(--fg-rgb),0.07)', borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: '#0077FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 14, fontWeight: 600 }}>
                 VK
@@ -235,6 +218,54 @@ export function AccountPage() {
               <button disabled={busy} onClick={linkVk} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                 Привязать
               </button>
+            )}
+          </div>
+
+          {/* Email */}
+          <div style={{ padding: '14px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(var(--fg-rgb),0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                  ✉️
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>Email</div>
+                  {hasEmail && <div style={{ color: 'var(--text-sub)', fontSize: 12 }}>{providers.find(p => p.provider === 'email')?.email ?? 'привязан'}</div>}
+                  {!hasEmail && <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>не привязан</div>}
+                </div>
+              </div>
+              {hasEmail ? (
+                <button disabled={busy} onClick={() => unlink('email' as any)} style={{ background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
+                  Отвязать
+                </button>
+              ) : (
+                <button disabled={busy} onClick={() => { setShowEmailLink(true); setEmailLinkSent(false); setEmailInput(''); }} style={{ background: 'var(--text)', border: 'none', color: 'var(--bg)', borderRadius: 6, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  Привязать
+                </button>
+              )}
+            </div>
+            {showEmailLink && !hasEmail && (
+              emailLinkSent ? (
+                <div style={{ marginTop: 12, padding: '12px 14px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 10, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+                  ✉️ Письмо отправлено на <b>{emailInput}</b>. Перейди по ссылке в письме — она привяжет email к аккаунту.
+                  <button onClick={() => { setEmailLinkSent(false); setEmailInput(''); }} style={{ display: 'block', marginTop: 8, background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>
+                    Ввести другой email
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={sendEmailLink} style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                  <input
+                    type="email" required autoFocus
+                    placeholder="your@email.com"
+                    value={emailInput}
+                    onChange={e => setEmailInput(e.target.value)}
+                    style={{ flex: 1, padding: '9px 12px', fontSize: 13, border: '1.5px solid var(--line)', borderRadius: 8, background: 'rgba(var(--fg-rgb),0.04)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }}
+                  />
+                  <button type="submit" disabled={emailLinkBusy} style={{ padding: '9px 14px', fontSize: 12, fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, cursor: emailLinkBusy ? 'default' : 'pointer', opacity: emailLinkBusy ? 0.7 : 1, whiteSpace: 'nowrap' }}>
+                    {emailLinkBusy ? '…' : 'Отправить'}
+                  </button>
+                </form>
+              )
             )}
           </div>
         </div>
