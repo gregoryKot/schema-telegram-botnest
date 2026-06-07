@@ -126,6 +126,16 @@ export class EmailService {
     return { userId: row.userId, email: row.email };
   }
 
+  // ─── Magic-link login ────────────────────────────────────────────────────
+
+  async sendLoginLink(to: string, link: string): Promise<void> {
+    await this.send(
+      to,
+      'Войти в СхемаЛаб',
+      `Привет!\n\nПерейди по ссылке чтобы войти в СхемаЛаб:\n\n${link}\n\nСсылка действует 30 минут. Если ты не запрашивал вход — просто проигнорируй это письмо.`,
+    );
+  }
+
   // ─── Admin notification (e.g. new booking) ───────────────────────────────
 
   async sendAdminNotification(subject: string, text: string): Promise<void> {

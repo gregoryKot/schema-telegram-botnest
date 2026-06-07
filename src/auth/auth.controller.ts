@@ -405,6 +405,36 @@ export class AuthController {
     return { accessToken: outcome.tokens.accessToken, expiresIn: outcome.tokens.expiresIn };
   }
 
+  // ─── Email magic-link login ───────────────────────────────────────────────
+
+  @Post('email/link')
+  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 3_600_000 } })
+  @HttpCode(200)
+  async emailLoginLink(
+    @Body('email') email: string,
+    @Req() req: any,
+  ): Promise<{ ok: true }> {
+    this.requireCsrf(req, 'email/link');
+    return this.auth.requestEmailLogin(email);
+  }
+
+  @Get('email/callback')
+  async emailLoginCallback(
+    @Query('token') token: string,
+    @Req() req: any,
+    @Res() res: any,
+  ): Promise<void> {
+    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+    try {
+      const tokens = await this.auth.consumeEmailLoginToken(token, req.ip, req.headers['user-agent']);
+      res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+      res.redirect(`${frontendBase}/auth/callback#access_token=${tokens.accessToken}&expires_in=${tokens.expiresIn}`);
+    } catch (err) {
+      this.logger.error(`Email login callback: ${(err as Error).message}`);
+      res.redirect(`${frontendBase}/auth/error?reason=email_link_expired`);
+    }
+  }
+
   // ─── Telegram WebApp initData (mini-app auto-auth) ────────────────────────
 
   @Throttle({ short: { limit: 5, ttl: 60_000 }, long: { limit: 30, ttl: 3_600_000 } })
