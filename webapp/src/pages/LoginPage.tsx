@@ -1,20 +1,98 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+const BOT_USERNAME = (import.meta.env.VITE_BOT_USERNAME as string | undefined) ?? 'SchemaLabBot';
+
+// Telegram Login Widget sends numbers for id/auth_date; backend expects strings.
+type TgWidgetUser = Record<string, string | number>;
 
 export function LoginPage() {
   const { isAuthenticated, setAccessToken } = useAuth();
   const navigate = useNavigate();
   const [telegramLoading, setTelegramLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
   const isTelegramContext = !!(window as any).Telegram?.WebApp?.initData;
 
   useEffect(() => {
     if (isAuthenticated) navigate('/today', { replace: true });
   }, [isAuthenticated, navigate]);
 
+  // ── Telegram Login Widget callback ────────────────────────────────────────
+  // The widget script calls window.onTelegramAuth(user) after the user
+  // authenticates in the popup. We verify the hash on the backend locally
+  // (no outgoing calls to Telegram API needed — pure HMAC check).
+  const handleTelegramWidget = useCallback(async (user: TgWidgetUser) => {
+    setTelegramLoading(true);
+    setError(null);
+    try {
+      const body: Record<string, string> = {};
+      for (const [k, v] of Object.entries(user)) body[k] = String(v);
+
+      const res = await fetch(`${API_BASE}/api/auth/telegram/widget`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        setError(`Ошибка ${res.status}: ${text.slice(0, 120)}`);
+        return;
+      }
+
+      const data = await res.json() as any;
+
+      if (data.merge) {
+        const params = new URLSearchParams({
+          token: data.mergeToken,
+          summary: JSON.stringify(data.summary),
+          provider: data.provider,
+          name: data.otherDisplay ?? '',
+        });
+        navigate(`/account/merge?${params}`, { replace: true });
+        return;
+      }
+      if (data.totp) {
+        navigate(`/auth/2fa?token=${encodeURIComponent(data.challengeToken)}`, { replace: true });
+        return;
+      }
+      setAccessToken(data.accessToken, data.expiresIn);
+      navigate('/today', { replace: true });
+    } catch {
+      setError('Не удалось войти. Попробуйте снова.');
+    } finally {
+      setTelegramLoading(false);
+    }
+  }, [setAccessToken, navigate]);
+
+  // Expose global callback for the Telegram widget script
+  useEffect(() => {
+    (window as any).onTelegramAuth = handleTelegramWidget;
+    return () => { delete (window as any).onTelegramAuth; };
+  }, [handleTelegramWidget]);
+
+  // Inject the Telegram Login Widget script into the container div
+  useEffect(() => {
+    const container = widgetRef.current;
+    if (!container || container.querySelector('script')) return; // already injected
+    const script = document.createElement('script');
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.async = true;
+    script.setAttribute('data-telegram-login', BOT_USERNAME);
+    script.setAttribute('data-size', 'large');
+    script.setAttribute('data-radius', '10');
+    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+    script.setAttribute('data-request-access', 'write');
+    script.setAttribute('data-lang', 'ru');
+    container.appendChild(script);
+    return () => { script.remove(); };
+  }, []);
+
+  // ── Mini-app fallback ────────────────────────────────────────────────────
   const retryTelegramAuth = async () => {
     setTelegramLoading(true);
     setError(null);
@@ -42,16 +120,8 @@ export function LoginPage() {
     }
   };
 
-  const handleGoogle = () => {
-    window.location.href = `${API_BASE}/api/auth/google`;
-  };
-  const handleVk = () => {
-    window.location.href = `${API_BASE}/api/auth/vk`;
-  };
-  const handleTelegram = () => {
-    setTelegramLoading(true);
-    window.location.href = `${API_BASE}/api/auth/telegram-oidc`;
-  };
+  const handleGoogle = () => { window.location.href = `${API_BASE}/api/auth/google`; };
+  const handleVk    = () => { window.location.href = `${API_BASE}/api/auth/vk`; };
 
   // Inside Telegram but auto-auth failed – show minimal retry UI
   if (isTelegramContext) {
@@ -71,52 +141,20 @@ export function LoginPage() {
 
   return (
     <div style={{
-      flex: 1,
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
-      position: 'relative',
-      overflow: 'hidden',
+      flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', padding: '24px',
+      position: 'relative', overflow: 'hidden',
     }}>
       {/* Ambient blobs */}
-      <div style={{
-        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-      }}>
-        <div style={{
-          position: 'absolute', width: 600, height: 600,
-          borderRadius: '50%', background: 'var(--blob-1)',
-          filter: 'blur(80px)', top: '-10%', left: '-15%',
-        }} />
-        <div style={{
-          position: 'absolute', width: 500, height: 500,
-          borderRadius: '50%', background: 'var(--blob-2)',
-          filter: 'blur(80px)', bottom: '-5%', right: '-10%',
-        }} />
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+        <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: 'var(--blob-1)', filter: 'blur(80px)', top: '-10%', left: '-15%' }} />
+        <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'var(--blob-2)', filter: 'blur(80px)', bottom: '-5%', right: '-10%' }} />
       </div>
 
-      <div style={{
-        width: '100%',
-        maxWidth: 400,
-        position: 'relative',
-        zIndex: 1,
-        animation: 'fade-in 0.4s ease both',
-      }}>
+      <div style={{ width: '100%', maxWidth: 400, position: 'relative', zIndex: 1, animation: 'fade-in 0.4s ease both' }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{
-            width: 72, height: 72,
-            background: 'linear-gradient(135deg, var(--accent-indigo), var(--accent))',
-            borderRadius: 20,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
-            fontSize: 36,
-            boxShadow: '0 8px 32px rgba(124, 114, 248, 0.35)',
-          }}>
-            🧠
-          </div>
+          <div style={{ width: 72, height: 72, background: 'linear-gradient(135deg, var(--accent-indigo), var(--accent))', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 36, boxShadow: '0 8px 32px rgba(124, 114, 248, 0.35)' }}>🧠</div>
           <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>СхемаЛаб</h1>
           <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
             Инструмент схема-терапии для работы с мыслями, эмоциями и паттернами
@@ -147,32 +185,23 @@ export function LoginPage() {
           </button>
 
           {/* Divider */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0',
-          }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
             <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>или</span>
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
           </div>
 
-          {/* Telegram OIDC */}
-          <button
-            className="btn-outline"
-            onClick={handleTelegram}
-            disabled={telegramLoading}
-            style={{ opacity: telegramLoading ? 0.6 : 1 }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z" fill="#2AABEE"/>
-              <path d="M5.491 11.74l11.57-4.461c.537-.194 1.006.131.832.943l-1.97 9.281c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.232 14.6 4.27 13.7c-.658-.204-.67-.658.136-.976z" fill="white"/>
-            </svg>
-            Войти через Telegram
-          </button>
+          {/* Telegram Login Widget */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            {telegramLoading && (
+              <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>Входим через Telegram…</p>
+            )}
+            {/* Widget script renders a button inside this div */}
+            <div ref={widgetRef} style={{ minHeight: 44 }} />
+          </div>
 
           {error && (
-            <p style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>
-              {error}
-            </p>
+            <p style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>{error}</p>
           )}
 
           <p style={{ textAlign: 'center', marginTop: 18 }}>
