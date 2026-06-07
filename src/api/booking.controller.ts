@@ -51,7 +51,9 @@ export class BookingController {
       .join('\n');
 
     this.logger.log('New booking received');
-    await this.telegram.notifyAdmin(text);
+    // Fire-and-forget: don't block the HTTP response on Telegram delivery.
+    // If Telegram API is unreachable (e.g. ETIMEDOUT) the form still returns ok.
+    void this.telegram.notifyAdmin(text);
 
     return { ok: true };
   }
