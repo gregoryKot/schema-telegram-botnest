@@ -22,5 +22,5 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
   },
-  "exclude": ["node_modules", "dist", "diary-miniapp", "schema-miniapp", "webapp", "schema-telegram-botnest"]
+  "exclude": ["node_modules", "dist", "diary-miniapp", "schema-miniapp", "webapp", "schema-telegram-botnest", "game"]
 }
