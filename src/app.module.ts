@@ -1,12 +1,12 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_GUARD } from '@nestjs/core';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { UserThrottlerGuard } from './api/throttler.guard';
-import { MetaController } from './meta.controller';
 import { TelegramModule } from './telegram/telegram.module';
 import { BotModule } from './bot/bot.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -14,6 +14,10 @@ import { ApiModule } from './api/api.module';
 import { NotificationModule } from './notification/notification.module';
 import { TherapyModule } from './therapy/therapy.module';
 import { AuthModule } from './auth/auth.module';
+
+// Domains that are aliases of schemalab.ru and need their own og:url / canonical
+// so Telegram generates a separate link preview card for each domain.
+const ALIAS_DOMAINS = new Set(['kotlarewski.ru', 'kotlarewski.gr']);
 
 @Module({
   imports: [
@@ -43,7 +47,26 @@ import { AuthModule } from './auth/auth.module';
     BotModule,
     ApiModule,
   ],
-  controllers: [MetaController],
   providers: [{ provide: APP_GUARD, useClass: UserThrottlerGuard }],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  // configure() runs before ServeStaticModule.onModuleInit(), so this
+  // middleware intercepts GET / before serve-static can respond.
+  configure(consumer: MiddlewareConsumer) {
+    const indexPath = join(__dirname, '..', 'webapp', 'dist', 'index.html');
+    const html = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : null;
+
+    consumer
+      .apply((req: any, res: any, next: () => void) => {
+        if (!html) return next();
+        if (!ALIAS_DOMAINS.has(req.hostname)) return next();
+        const domain = req.hostname;
+        const modified = html
+          .replace('href="https://schemalab.ru/"', `href="https://${domain}/"`)
+          .replace('content="https://schemalab.ru/"', `content="https://${domain}/"`);
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.send(modified);
+      })
+      .forRoutes({ path: '/', method: RequestMethod.GET });
+  }
+}
