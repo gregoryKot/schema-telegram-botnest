@@ -436,7 +436,28 @@ export class AuthController {
     try {
       const telegramHandler = this.providers.get('telegram');
       if (!telegramHandler.verifyClientData) throw new BadRequestException('Telegram provider missing');
-      const identity = telegramHandler.verifyClientData(query);
+
+      // oauth.telegram.org/auth?embed=0 returns data in one of two formats:
+      //   1. Direct query params: ?id=...&first_name=...&hash=...  (Login Widget style)
+      //   2. Wrapped:             ?tgAuthResult=BASE64URL_JSON      (oauth.telegram.org style)
+      // Detect and normalise to plain fields before passing to verifyClientData.
+      let fields: Record<string, string> = { ...query };
+      if (query['tgAuthResult']) {
+        try {
+          const decoded = JSON.parse(
+            Buffer.from(query['tgAuthResult'], 'base64url').toString('utf8'),
+          ) as Record<string, unknown>;
+          fields = {};
+          for (const [k, v] of Object.entries(decoded)) {
+            if (v != null) fields[k] = String(v);
+          }
+          this.logger.debug(`telegram widget-redirect: decoded tgAuthResult, id=${fields['id']}`);
+        } catch (e) {
+          throw new UnauthorizedException(`Failed to decode tgAuthResult: ${(e as Error).message}`);
+        }
+      }
+
+      const identity = telegramHandler.verifyClientData(fields);
 
       const savedLinkUserId = req.cookies?.['tg_link_user'] ?? null;
       res.clearCookie('tg_link_user', { path: '/api/auth' });
@@ -447,7 +468,7 @@ export class AuthController {
       });
       this.finishOAuthRedirect(outcome, 'telegram', res, frontendBase);
     } catch (err) {
-      this.logger.error(`telegram widget-redirect error: ${(err as Error).message}`);
+      this.logger.error(`telegram widget-redirect error: ${(err as Error).message} | query=${JSON.stringify(Object.keys(query))}`);
       res.redirect(`${frontendBase}/auth/error?reason=telegram_failed`);
     }
   }
