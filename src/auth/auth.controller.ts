@@ -508,8 +508,9 @@ try {
       });
       this.finishOAuthRedirect(outcome, 'telegram', res, frontendBase);
     } catch (err) {
-      this.logger.error(`telegram widget-redirect error: ${(err as Error).message} | query=${JSON.stringify(Object.keys(query))}`);
-      res.redirect(`${frontendBase}/auth/error?reason=telegram_failed`);
+      const msg = (err as Error).message ?? 'unknown';
+      this.logger.error(`telegram widget-redirect error: ${msg} | query keys=${JSON.stringify(Object.keys(query))}`);
+      res.redirect(`${frontendBase}/auth/error?reason=${encodeURIComponent(msg)}`);
     }
   }
 
