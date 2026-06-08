@@ -14,4 +14,5 @@ schema-miniapp/vite.config.ts
 schema-miniapp/package-lock.json
 schema-telegram-botnest
 webapp/node_modules
+game
 *.log
