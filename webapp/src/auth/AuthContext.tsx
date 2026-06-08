@@ -109,9 +109,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // source of truth, so nothing is lost on the next login.
     try {
       const theme = localStorage.getItem('app_theme');
+      const cookieConsent = localStorage.getItem('cookie_consent');
       localStorage.clear();
       sessionStorage.clear();
       if (theme) localStorage.setItem('app_theme', theme);
+      if (cookieConsent) localStorage.setItem('cookie_consent', cookieConsent);
     } catch { /* ignore */ }
   }, []);
 

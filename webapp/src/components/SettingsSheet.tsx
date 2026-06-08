@@ -545,7 +545,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               <div style={{ fontSize: 14, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 16, fontWeight: 500 }}>Точно? Восстановить невозможно.</div>
               <button disabled={deleting} onClick={async () => {
                 setDeleting(true);
-                try { await api.deleteAllUserData(); const t = localStorage.getItem('app_theme'); localStorage.clear(); sessionStorage.clear(); if (t) localStorage.setItem('app_theme', t); window.location.reload(); }
+                try { await api.deleteAllUserData(); const t = localStorage.getItem('app_theme'); const cc = localStorage.getItem('cookie_consent'); localStorage.clear(); sessionStorage.clear(); if (t) localStorage.setItem('app_theme', t); if (cc) localStorage.setItem('cookie_consent', cc); window.location.reload(); }
                 catch { setDeleting(false); setDeleteConfirm(false); }
               }} style={{ width: '100%', padding: '14px 0', borderRadius: 12, border: 'none', background: '#ef4444', color: '#fff', fontSize: 15, fontWeight: 700, cursor: deleting ? 'default' : 'pointer' }}>
                 {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
