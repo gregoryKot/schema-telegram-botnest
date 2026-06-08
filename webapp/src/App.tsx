@@ -130,6 +130,7 @@ const router = createBrowserRouter([
 ]);
 
 function AuthError() {
+  const reason = new URLSearchParams(window.location.search).get('reason') ?? '';
   return (
     <div style={{ flex: 1, minHeight: '100dvh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
       <div style={{ textAlign: 'center', maxWidth: 400 }}>
@@ -140,6 +141,11 @@ function AuthError() {
         <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 36px' }}>
           Авторизация не удалась. Попробуй снова или обратись к нам в Telegram.
         </p>
+        {reason && (
+          <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 24px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+            {reason}
+          </p>
+        )}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <a href="/login" style={{ display: 'inline-block', padding: '13px 28px', background: 'var(--text)', color: 'var(--bg)', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
             Попробовать снова
