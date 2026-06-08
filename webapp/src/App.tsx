@@ -16,6 +16,7 @@ import { AuthProvider, useAuth } from './auth/AuthContext';
 import { setTokenProvider } from './api';
 import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
+import { TelegramWidgetCallback } from './pages/TelegramWidgetCallback';
 import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
 import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
@@ -92,6 +93,7 @@ const appRoutes = [
   { path: '/',               element: <Navigate to="/login" replace /> },
   { path: '/login',          element: <LoginPage /> },
   { path: '/auth/callback',  element: <AuthCallback /> },
+  { path: '/auth/telegram',  element: <TelegramWidgetCallback /> },
   { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
   { path: '/auth/recovery',         element: <RecoveryPage /> },
   { path: '/auth/recovery/confirm', element: <RecoveryPage /> },

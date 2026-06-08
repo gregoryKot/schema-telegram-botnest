@@ -382,7 +382,16 @@ export class AuthController {
     const telegramHandler = this.providers.get('telegram');
     if (!telegramHandler.verifyClientData) throw new BadRequestException('Telegram provider does not support direct verification');
     const identity = telegramHandler.verifyClientData(body);
-    const linkUserId = (req as any).webUser?.userId ?? null;
+
+    // JWT-based link (inline widget inside the app) takes priority.
+    // Cookie-based link is used by the redirect flow: the user left the app
+    // to authenticate on oauth.telegram.org, so the access token is gone but
+    // the httpOnly tg_link_user cookie is still present.
+    let linkUserId = (req as any).webUser?.userId ?? null;
+    if (!linkUserId && req.cookies?.['tg_link_user']) {
+      try { linkUserId = BigInt(req.cookies['tg_link_user']); } catch { /* ignore */ }
+    }
+    res.clearCookie('tg_link_user', { path: '/api/auth' });
 
     const outcome = await this.signInOrLinkOrMerge('telegram', identity, {
       linkUserId: linkUserId ? BigInt(String(linkUserId)) : null,
@@ -416,7 +425,11 @@ export class AuthController {
     const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
     const botId = botToken.split(':')[0]; // BOT_TOKEN format: 123456789:HASH
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL').replace(/\/$/, '');
-    const returnTo = `${frontendBase}/api/auth/telegram/widget-redirect`;
+    // Return to the frontend SPA page that reads the hash fragment.
+    // oauth.telegram.org puts auth data in #tgAuthResult=BASE64URL_JSON (hash fragment),
+    // which browsers never send to the server. The frontend page reads window.location.hash
+    // and calls /api/auth/telegram/widget directly.
+    const returnTo = `${frontendBase}/auth/telegram`;
     // Persist linkUserId in a short-lived cookie so we can restore it after redirect
     const linkUserId = (req as any).webUser?.userId?.toString() ?? null;
     if (linkUserId) {
