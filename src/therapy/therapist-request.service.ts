@@ -18,12 +18,14 @@ export class TherapistRequestService {
 
   // Raw Telegram Bot API call. Avoids depending on Telegraf instance and
   // the circular-import that would create (TelegramModule ↔ TherapyModule).
+  // Uses HTML parse_mode to avoid legacy Markdown parse errors for arbitrary
+  // user input (names, contacts, etc. may contain *, _, ., -, (, ) etc.).
   private async sendTg(chatId: number, text: string, replyMarkup?: object): Promise<void> {
     const token = process.env.BOT_TOKEN;
-    if (!token) return;
-    const body: any = { chat_id: chatId, text, parse_mode: 'Markdown' };
+    if (!token) { this.logger.warn('sendTg: BOT_TOKEN not set'); return; }
+    const body: any = { chat_id: chatId, text, parse_mode: 'HTML' };
     if (replyMarkup) body.reply_markup = replyMarkup;
-    let res: Response | null = null;
+    let res: Response | undefined;
     try {
       res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
@@ -32,12 +34,12 @@ export class TherapistRequestService {
         signal: AbortSignal.timeout(10_000),
       });
     } catch (e: any) {
-      this.logger.warn(`sendTg network error: ${e.message}`);
+      this.logger.warn(`sendTg network error to chat_id=${chatId}: ${e.message}`);
       return;
     }
     if (!res.ok) {
       const err = await res.json().catch(() => ({})) as { description?: string };
-      this.logger.warn(`sendTg ${res.status} for chat_id=${chatId}: ${err.description ?? ''}`);
+      this.logger.warn(`sendTg HTTP ${res.status} for chat_id=${chatId}: ${err.description ?? '(no description)'}`);
     }
   }
 
@@ -78,7 +80,7 @@ export class TherapistRequestService {
           data: { userId, fullName, qualification, contacts, message, status: 'pending' },
         });
 
-    this.notifyAdmin(row).catch((e) => this.logger.warn(`notifyAdmin failed: ${e.message}`));
+    this.notifyAdmin(row).catch((e) => this.logger.warn(`notifyAdmin failed: ${e?.message ?? e}`));
     return { id: row.id, status: row.status };
   }
 
@@ -138,14 +140,15 @@ export class TherapistRequestService {
   // ─── Telegram notifications ───────────────────────────────────────────────
 
   private async notifyAdmin(req: { id: number; userId: bigint; fullName: string; qualification: string; contacts: string; message: string | null }) {
-    if (!this.adminId) return;
+    if (!this.adminId) { this.logger.warn('notifyAdmin: ADMIN_ID not set, skipping'); return; }
+    // HTML mode: escape user-supplied text to avoid parse errors.
     const text =
-      `🩺 *Заявка на роль терапевта* #${req.id}\n\n` +
-      `*Имя:* ${esc(req.fullName)}\n` +
-      `*Квалификация:* ${esc(req.qualification)}\n` +
-      `*Контакты:* ${esc(req.contacts)}\n` +
-      (req.message ? `*Сообщение:* ${esc(req.message)}\n` : '') +
-      `*Telegram ID:* \`${req.userId}\``;
+      `🩺 <b>Заявка на роль терапевта</b> #${req.id}\n\n` +
+      `<b>Имя:</b> ${he(req.fullName)}\n` +
+      `<b>Квалификация:</b> ${he(req.qualification)}\n` +
+      `<b>Контакты:</b> ${he(req.contacts)}\n` +
+      (req.message ? `<b>Сообщение:</b> ${he(req.message)}\n` : '') +
+      `<b>Telegram ID:</b> <code>${req.userId}</code>`;
     await this.sendTg(this.adminId, text, {
       inline_keyboard: [[
         { text: '✅ Approve', callback_data: `treq:approve:${req.id}` },
@@ -162,7 +165,7 @@ export class TherapistRequestService {
   }
 }
 
-function esc(s: string): string {
-  // Telegram legacy Markdown escape
-  return s.replace(/[_*`\[\]]/g, (m) => '\\' + m);
+function he(s: string): string {
+  // HTML-escape for Telegram parse_mode: 'HTML'
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
