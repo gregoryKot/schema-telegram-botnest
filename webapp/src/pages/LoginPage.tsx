@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
@@ -10,6 +10,7 @@ function isEmail(s: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
 export function LoginPage() {
   const { isAuthenticated, setAccessToken } = useAuth();
   const navigate = useNavigate();
+  const [telegramLoading, setTelegramLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showEmail, setShowEmail] = useState(false);
   const [emailValue, setEmailValue] = useState('');
@@ -22,21 +23,48 @@ export function LoginPage() {
     if (isAuthenticated) navigate('/today', { replace: true });
   }, [isAuthenticated, navigate]);
 
-  // Inject Telegram Login Widget using data-auth-url (redirect mode).
-  // After the user authenticates, Telegram redirects to widget-redirect
-  // with flat query params (?id=...&hash=...) — no JS eval needed, no
-  // window.onTelegramAuth callback, no eval CSP issues.
+  // Called by the Telegram widget script via window['onTelegramAuth'](user).
+  // No eval involved — widget JS does a simple property lookup on window.
+  const handleTelegramWidget = useCallback(async (user: Record<string, string | number>) => {
+    setTelegramLoading(true);
+    setError(null);
+    try {
+      const body: Record<string, string> = {};
+      for (const [k, v] of Object.entries(user)) body[k] = String(v);
+      const res = await fetch(`${API_BASE}/api/auth/telegram/widget`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) { setError(`Ошибка ${res.status}`); return; }
+      const data = await res.json() as any;
+      if (data.merge) {
+        const p = new URLSearchParams({ token: data.mergeToken, summary: JSON.stringify(data.summary), provider: data.provider, name: data.otherDisplay ?? '' });
+        navigate(`/account/merge?${p}`, { replace: true }); return;
+      }
+      if (data.totp) { navigate(`/auth/2fa?token=${encodeURIComponent(data.challengeToken)}`, { replace: true }); return; }
+      setAccessToken(data.accessToken, data.expiresIn);
+      navigate('/today', { replace: true });
+    } catch { setError('Не удалось войти'); }
+    finally { setTelegramLoading(false); }
+  }, [setAccessToken, navigate]);
+
+  useEffect(() => {
+    (window as any).onTelegramAuth = handleTelegramWidget;
+    return () => { delete (window as any).onTelegramAuth; };
+  }, [handleTelegramWidget]);
+
   useEffect(() => {
     const container = widgetRef.current;
     if (!container || container.querySelector('script')) return;
-    const authUrl = `${window.location.origin}/api/auth/telegram/widget-redirect`;
     const script = document.createElement('script');
     script.src = 'https://telegram.org/js/telegram-widget.js?22';
     script.async = true;
     script.setAttribute('data-telegram-login', BOT_USERNAME);
     script.setAttribute('data-size', 'large');
     script.setAttribute('data-radius', '10');
-    script.setAttribute('data-auth-url', authUrl);
+    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
     script.setAttribute('data-request-access', 'write');
     script.setAttribute('data-lang', 'ru');
     container.appendChild(script);
@@ -163,8 +191,9 @@ export function LoginPage() {
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
           </div>
 
-          {/* Telegram Login Widget (data-auth-url mode — no eval/CSP issues) */}
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
+          {/* Telegram Login Widget */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            {telegramLoading && <p style={{ color: 'var(--text-faint)', fontSize: 13, margin: 0 }}>Входим через Telegram…</p>}
             <div ref={widgetRef} style={{ minHeight: 44 }} />
           </div>
 
