@@ -338,6 +338,9 @@ export const api = {
   renameClient:         (clientId: number, alias: string) => post(`/api/therapy/rename-client/${clientId}`, { alias }),
   requestYsq:           (clientId: number) => post(`/api/therapy/request-ysq/${clientId}`, {}),
   becomeTherapist:      (code: string) => postJson<{ ok: boolean }>('/api/therapy/become-therapist', { code }),
+  getTherapistRequest:  () => get<{ id: number; status: string; rejectReason: string | null } | null>('/api/therapy/request'),
+  submitTherapistRequest: (body: { fullName: string; qualification: string; contacts: string; message?: string }) =>
+    postJson<{ ok: boolean }>('/api/therapy/request', body),
   createTask:           (body: any) => postJson<any>('/api/therapy/tasks', body),
   getTasks:             () => get<any[]>('/api/therapy/tasks'),
   getTaskHistory:       () => get<any[]>('/api/therapy/tasks/history'),
