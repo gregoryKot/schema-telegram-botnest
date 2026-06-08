@@ -16,6 +16,17 @@ const helmet = require('helmet');
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new AlertLogger() });
 
+  // Redirect HTTP → HTTPS for all domains (kotlarewski.ru, kotlarewski.gr, schemalab.ru).
+  // Amvera's reverse proxy sets x-forwarded-proto, so we can detect the original protocol.
+  if (process.env.NODE_ENV === 'production') {
+    app.use((req: any, res: any, next: any) => {
+      if (req.headers['x-forwarded-proto'] === 'http') {
+        return res.redirect(301, `https://${req.headers.host}${req.url}`);
+      }
+      next();
+    });
+  }
+
   app.use(cookieParser());
   app.use(helmet({
     contentSecurityPolicy: {
@@ -27,6 +38,8 @@ async function bootstrap() {
         // oauth.telegram.org needed for Telegram Login Widget iframe (button rendering)
         frameSrc: ['https://oauth.telegram.org'],
         objectSrc: ["'none'"],
+        // Upgrade any accidental HTTP sub-resource requests to HTTPS
+        upgradeInsecureRequests: [],
       },
     },
     crossOriginEmbedderPolicy: false,

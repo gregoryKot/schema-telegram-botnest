@@ -6,6 +6,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_GUARD } from '@nestjs/core';
 import { join } from 'path';
 import { UserThrottlerGuard } from './api/throttler.guard';
+import { MetaController } from './meta.controller';
 import { TelegramModule } from './telegram/telegram.module';
 import { BotModule } from './bot/bot.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -42,6 +43,7 @@ import { AuthModule } from './auth/auth.module';
     BotModule,
     ApiModule,
   ],
+  controllers: [MetaController],
   providers: [{ provide: APP_GUARD, useClass: UserThrottlerGuard }],
 })
 export class AppModule {}
