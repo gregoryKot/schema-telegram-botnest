@@ -29,6 +29,9 @@ async function bootstrap() {
 
   app.use(cookieParser());
   app.use(helmet({
+    // Allow cross-origin loading of static assets (og:image, fonts, etc.)
+    // so Telegram/VK/WhatsApp preview crawlers and tools like metatags.io can fetch them.
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
