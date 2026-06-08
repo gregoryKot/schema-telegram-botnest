@@ -433,13 +433,40 @@ export class AuthController {
     @Res() res: any,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+
+    // oauth.telegram.org/auth?embed=0 sends auth data in the URL *hash fragment*
+    // (#tgAuthResult=BASE64URL_JSON), which browsers never send to the server.
+    // When we receive a request with no query params, serve a tiny HTML trampoline
+    // that reads the hash client-side and bounces back with the data as a query param.
+    if (Object.keys(query).length === 0) {
+      res.type('text/html').send(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Вход через Telegram...</title></head><body>
+<script>
+try {
+  var h = window.location.hash.slice(1);
+  var p = new URLSearchParams(h);
+  var r = p.get('tgAuthResult');
+  if (r) {
+    window.location.replace(window.location.pathname + '?tgAuthResult=' + encodeURIComponent(r));
+  } else {
+    window.location.replace('/auth/error?reason=telegram_no_data');
+  }
+} catch(e) {
+  window.location.replace('/auth/error?reason=telegram_fragment_error');
+}
+</script>
+<p style="font-family:sans-serif;text-align:center;margin-top:40px">Загрузка...</p>
+</body></html>`);
+      return;
+    }
+
     try {
       const telegramHandler = this.providers.get('telegram');
       if (!telegramHandler.verifyClientData) throw new BadRequestException('Telegram provider missing');
 
-      // oauth.telegram.org/auth?embed=0 returns data in one of two formats:
-      //   1. Direct query params: ?id=...&first_name=...&hash=...  (Login Widget style)
-      //   2. Wrapped:             ?tgAuthResult=BASE64URL_JSON      (oauth.telegram.org style)
+      // oauth.telegram.org/auth?embed=0 may also return data as a query param:
+      //   ?tgAuthResult=BASE64URL_JSON  (wrapped format)
+      //   ?id=...&hash=...             (flat Login Widget format)
       // Detect and normalise to plain fields before passing to verifyClientData.
       let fields: Record<string, string> = { ...query };
       if (query['tgAuthResult']) {
