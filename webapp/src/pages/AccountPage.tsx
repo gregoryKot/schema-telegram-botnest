@@ -18,9 +18,7 @@ export function AccountPage() {
   const [totp, setTotp] = useState<{ enabled: boolean; recoveryCodesLeft: number }>({ enabled: false, recoveryCodesLeft: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(
-    searchParams.get('linked') === 'email' ? '✓ Email успешно привязан' : null,
-  );
+  const success = searchParams.get('linked') === 'email' ? '✓ Email успешно привязан' : null;
   const [busy, setBusy] = useState(false);
 
   const refresh = async () => {
