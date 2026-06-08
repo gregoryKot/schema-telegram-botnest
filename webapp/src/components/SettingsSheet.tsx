@@ -391,43 +391,47 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                               : <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 12 }}>Ещё не заполнил</div>
                             }
                             <button onClick={() => { api.leavePair(p.code).catch(() => {}); api.getPair().then(setPairData).catch(() => {}); }}
-                              style={{ padding: '9px 18px', border: 'none', borderRadius: 10, background: 'rgba(248,113,113,0.08)', color: 'var(--accent-red)', fontSize: 13, cursor: 'pointer' }}>
+                              style={{ padding: '7px 14px', border: '1px solid rgba(248,113,113,0.25)', borderRadius: 8, background: 'rgba(248,113,113,0.06)', color: 'var(--accent-red)', fontSize: 13, cursor: 'pointer' }}>
                               Выйти из пары
                             </button>
                           </div>
                         ))
                       ) : joinView === 'main' ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          <button onClick={handleCreateInvite} disabled={pairLoading}
-                            style={{ padding: '12px', border: 'none', borderRadius: 10, background: 'var(--accent)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: pairLoading ? 'default' : 'pointer' }}>
-                            {pairLoading ? '...' : pairData?.pendingCode ? 'Создать новую ссылку' : 'Пригласить друга'}
-                          </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <button onClick={handleCreateInvite} disabled={pairLoading}
+                              style={{ padding: '9px 16px', border: 'none', borderRadius: 8, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: pairLoading ? 'default' : 'pointer', opacity: pairLoading ? 0.7 : 1 }}>
+                              {pairLoading ? '...' : pairData?.pendingCode ? 'Новая ссылка' : 'Пригласить друга'}
+                            </button>
+                            <button onClick={() => setJoinView('join')}
+                              style={{ padding: '9px 16px', border: '1px solid rgba(var(--fg-rgb),0.14)', borderRadius: 8, background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
+                              Ввести код
+                            </button>
+                          </div>
                           {pairInviteUrl && (
                             <div style={{ background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 10, padding: '12px 14px' }}>
-                              <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 8 }}>Отправь другу:</div>
-                              <div style={{ fontSize: 12, color: 'var(--text-sub)', wordBreak: 'break-all', marginBottom: 10, userSelect: 'all' }}>{pairInviteUrl}</div>
+                              <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 6 }}>Отправь другу:</div>
+                              <div style={{ fontSize: 12, color: 'var(--text-sub)', wordBreak: 'break-all', marginBottom: 10, userSelect: 'all', fontFamily: 'monospace' }}>{pairInviteUrl}</div>
                               <button onClick={async () => { try { await navigator.clipboard.writeText(pairInviteUrl); setPairInviteCopied(true); setTimeout(() => setPairInviteCopied(false), 2000); } catch {} }}
-                                style={{ width: '100%', padding: '9px', border: 'none', borderRadius: 8, background: pairInviteCopied ? 'rgba(52,211,153,0.12)' : 'rgba(var(--fg-rgb),0.07)', color: pairInviteCopied ? 'var(--accent-green)' : 'var(--text-sub)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                                style={{ padding: '7px 14px', border: 'none', borderRadius: 8, background: pairInviteCopied ? 'rgba(52,211,153,0.12)' : 'rgba(var(--fg-rgb),0.08)', color: pairInviteCopied ? 'var(--accent-green)' : 'var(--text-sub)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                                 {pairInviteCopied ? '✓ Скопировано' : 'Скопировать ссылку'}
                               </button>
                             </div>
                           )}
-                          <button onClick={() => setJoinView('join')}
-                            style={{ padding: '12px', border: '1.5px solid rgba(var(--fg-rgb),0.1)', borderRadius: 10, background: 'transparent', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer' }}>
-                            Есть код приглашения
-                          </button>
                         </div>
                       ) : (
                         <div>
-                          <button onClick={() => setJoinView('main')} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 14, cursor: 'pointer', padding: '0 0 14px', fontFamily: 'inherit' }}>← Назад</button>
-                          <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="Код из приглашения"
-                            style={{ width: '100%', padding: '12px 14px', borderRadius: 10, background: 'rgba(var(--fg-rgb),0.05)', border: '1.5px solid rgba(var(--fg-rgb),0.1)', color: 'var(--text)', fontSize: 16, fontFamily: 'monospace', outline: 'none', letterSpacing: 4, textAlign: 'center', boxSizing: 'border-box', marginBottom: 10 }}
-                          />
-                          {joinError && <div style={{ fontSize: 12, color: 'var(--accent-red)', textAlign: 'center', marginBottom: 8 }}>Код не найден или уже использован</div>}
-                          <button onClick={handleJoin} disabled={!joinCode.trim() || pairLoading}
-                            style={{ width: '100%', padding: '12px', border: 'none', borderRadius: 10, background: joinCode.trim() ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.1)', color: joinCode.trim() ? '#fff' : 'var(--text-faint)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                            Присоединиться
-                          </button>
+                          <button onClick={() => setJoinView('main')} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: '0 0 14px', fontFamily: 'inherit' }}>← Назад</button>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                            <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="Код"
+                              style={{ flex: 1, padding: '10px 12px', borderRadius: 10, background: 'rgba(var(--fg-rgb),0.05)', border: `1.5px solid ${joinError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.1)'}`, color: 'var(--text)', fontSize: 15, fontFamily: 'monospace', outline: 'none', letterSpacing: 4, textAlign: 'center' }}
+                            />
+                            <button onClick={handleJoin} disabled={!joinCode.trim() || pairLoading}
+                              style={{ padding: '10px 16px', border: 'none', borderRadius: 10, background: joinCode.trim() ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.1)', color: joinCode.trim() ? '#fff' : 'var(--text-faint)', fontSize: 14, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                              Войти
+                            </button>
+                          </div>
+                          {joinError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 6 }}>Код не найден или уже использован</div>}
                         </div>
                       )}
                     </div>
