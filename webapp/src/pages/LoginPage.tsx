@@ -1,75 +1,24 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-const BOT_USERNAME = (import.meta.env.VITE_BOT_USERNAME as string | undefined) ?? 'SchemaLabBot';
 
 function isEmail(s: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
 
 export function LoginPage() {
   const { isAuthenticated, setAccessToken } = useAuth();
   const navigate = useNavigate();
-  const [telegramLoading, setTelegramLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showEmail, setShowEmail] = useState(false);
   const [emailValue, setEmailValue] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
-  const widgetRef = useRef<HTMLDivElement>(null);
   const isTelegramContext = !!(window as any).Telegram?.WebApp?.initData;
 
   useEffect(() => {
     if (isAuthenticated) navigate('/today', { replace: true });
   }, [isAuthenticated, navigate]);
-
-  // Called by the Telegram widget script via window['onTelegramAuth'](user).
-  // No eval involved — widget JS does a simple property lookup on window.
-  const handleTelegramWidget = useCallback(async (user: Record<string, string | number>) => {
-    setTelegramLoading(true);
-    setError(null);
-    try {
-      const body: Record<string, string> = {};
-      for (const [k, v] of Object.entries(user)) body[k] = String(v);
-      const res = await fetch(`${API_BASE}/api/auth/telegram/widget`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
-        credentials: 'include',
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) { setError(`Ошибка ${res.status}`); return; }
-      const data = await res.json() as any;
-      if (data.merge) {
-        const p = new URLSearchParams({ token: data.mergeToken, summary: JSON.stringify(data.summary), provider: data.provider, name: data.otherDisplay ?? '' });
-        navigate(`/account/merge?${p}`, { replace: true }); return;
-      }
-      if (data.totp) { navigate(`/auth/2fa?token=${encodeURIComponent(data.challengeToken)}`, { replace: true }); return; }
-      setAccessToken(data.accessToken, data.expiresIn);
-      navigate('/today', { replace: true });
-    } catch { setError('Не удалось войти'); }
-    finally { setTelegramLoading(false); }
-  }, [setAccessToken, navigate]);
-
-  useEffect(() => {
-    (window as any).onTelegramAuth = handleTelegramWidget;
-    return () => { delete (window as any).onTelegramAuth; };
-  }, [handleTelegramWidget]);
-
-  useEffect(() => {
-    const container = widgetRef.current;
-    if (!container || container.querySelector('script')) return;
-    const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.async = true;
-    script.setAttribute('data-telegram-login', BOT_USERNAME);
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-radius', '10');
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    script.setAttribute('data-request-access', 'write');
-    script.setAttribute('data-lang', 'ru');
-    container.appendChild(script);
-    return () => { script.remove(); };
-  }, []);
 
   // ── Mini-app fallback ────────────────────────────────────────────────────
   const [miniAppLoading, setMiniAppLoading] = useState(false);
@@ -191,11 +140,18 @@ export function LoginPage() {
             <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
           </div>
 
-          {/* Telegram Login Widget */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            {telegramLoading && <p style={{ color: 'var(--text-faint)', fontSize: 13, margin: 0 }}>Входим через Telegram…</p>}
-            <div ref={widgetRef} style={{ minHeight: 44 }} />
-          </div>
+          {/* Telegram */}
+          <button
+            className="btn-outline"
+            onClick={() => { window.location.href = `${API_BASE}/api/auth/telegram/redirect`; }}
+            style={{ marginBottom: 0 }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="12" fill="#29B6F6"/>
+              <path d="M17.47 7.27 5.26 11.84c-.82.3-.81.72-.15.91l3.12.97 7.21-4.55c.34-.21.65-.1.4.13L9.7 14.6l-.2 3.29c.3 0 .43-.13.59-.28l1.41-1.37 2.93 2.16c.54.3.93.15 1.07-.5l1.93-9.1c.2-.8-.3-1.16-.96-.53z" fill="white"/>
+            </svg>
+            Войти через Telegram
+          </button>
 
           {/* Email magic link */}
           {!showEmail ? (
