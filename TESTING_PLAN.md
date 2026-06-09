@@ -67,9 +67,9 @@
 # ВОЛНА 2 — P1: Ядро бизнес-логики бэкенда
 
 - [~] `src/bot/bot.service.ts` (658) — **критичное ядро покрыто** (22 теста): валидация оценок (0..10, целые), saveRating/getRatings, роли (setRole/getUserRole + therapistMode), registerUser (валидация tz), шифрование заметок, saveChildhoodRatings, **`deleteAllUserData`** (полнота каскада по всем USER_DATA_TABLES + therapist-side + auth + User + VACUUM, не-фатальность VACUUM). ⚠️ Покрытие ~25% — остаются ~40 тонких CRUD-обёрток (пары/практики/планы/письма/карточки/belief/safeplace/ysq/diary) — Волна 2 добор.
-- [ ] `src/bot/bot.analytics.service.ts` (399) — **дополнить** существующий спек до 100%: getWeeklyStats границы недели, getConsecutiveDays через смену месяца/года, getBestDayOfWeek (после фикса), getAdminStats.
-- [ ] `src/bot/diary.service.ts` (183) — создание записей дневника (schema/mode/gratitude); шифрование текста; чтение/листинг; удаление.
-- [ ] `src/bot/profile.service.ts` (77) — профиль CRUD; дефолты; таймзона.
+- [x] `src/bot/bot.analytics.service.ts` (399) ✅ — **87% строк**, 29 тестов: getStreakData (current/longest/слияние источников), getAchievements (first_day/high_day/all_above7/comeback/growth), getLowStreakNeeds, getHistoryRatings, getTotalDaysFilled, getWorstDayOfWeek, + ранее getWeekly/Consecutive/BestDay. ⚠️ Не покрыт `getAdminStats` (282-377, большой админ-форматтер строки, read-only, low-risk) — отложен.
+- [x] `src/bot/diary.service.ts` (183) ✅ — **100% строк/функций**, 13 тестов: schema/mode/gratitude дневники — шифрование на запись, плейнтекст наружу, расшифровка на чтение, legacy-массивы, scope по userId на delete.
+- [x] `src/bot/profile.service.ts` (77) ✅ — **100% строк/функций**, 5 тестов: дефолты для нового юзера, агрегация user+ysq+streak+last-activity, активные схемы YSQ, форматирование дат.
 - [x] `src/utils/tz.ts` (16) ✅ — **100% строк/функций**, 7 тестов: localDate (границы суток Токио/LA), localMidnightUTC (UTC/+9/-7).
 - [x] `src/utils/ysq.ts` (48) ✅ — **100% строк/функций**, 10 тестов: скоринг pct5plus, порог ≥5, неполные ответы, computeActiveSchemas (строгое >50%).
 - [ ] `src/notification/notification.service.ts` — *(спек есть)* добить ветки: расписание, пропуск отправки, ошибки.

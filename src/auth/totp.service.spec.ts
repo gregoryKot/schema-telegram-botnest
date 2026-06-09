@@ -18,6 +18,17 @@ function makePrisma() {
 }
 
 describe('TotpService', () => {
+  // Детерминизм: TOTP-коды привязаны к 30-сек окну реального времени. Без фикса
+  // под нагрузкой полного прогона generate и check могут попасть в разные окна → флак.
+  // Закрепляем epoch у otplib-синглтона (его же использует сервис) — НЕ через fake
+  // timers, иначе зависает QRCode.toDataURL. Тест и сервис видят один шаг времени.
+  beforeEach(() => {
+    authenticator.options = { window: 1, epoch: 1_750_000_000_000 };
+  });
+  afterEach(() => {
+    authenticator.options = { window: 1 };
+  });
+
   describe('startSetup', () => {
     it('генерирует секрет, otpauth-URL и QR; secret ещё не подтверждён', async () => {
       const prisma = makePrisma();
