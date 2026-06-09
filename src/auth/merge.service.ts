@@ -161,9 +161,14 @@ export class MergeService {
       `);
 
       // 4. TherapyRelation (therapistId / clientId).
+      // NOTE: use IS DISTINCT FROM instead of <> so that NULL clientId
+      // (virtual / offline clients) is handled correctly. With plain <>,
+      // NULL <> targetId evaluates to NULL, skipping the UPDATE; those rows
+      // then get caught by the DELETE below and are lost permanently.
       await tx.$executeRaw(Prisma.sql`
         UPDATE "TherapyRelation" SET "therapistId" = ${targetId}
-        WHERE "therapistId" = ${sourceId} AND "clientId" <> ${targetId}
+        WHERE "therapistId" = ${sourceId}
+          AND "clientId" IS DISTINCT FROM ${targetId}
       `);
       await tx.$executeRaw(Prisma.sql`
         UPDATE "TherapyRelation" SET "clientId" = ${targetId}
@@ -174,9 +179,12 @@ export class MergeService {
       `);
 
       // 4b. TherapistNote (therapistId, clientId — no FK, no unique).
+      // Same IS DISTINCT FROM fix for virtual-client notes (clientId can be NULL
+      // for virtual clients stored as negative BigInt, but also plain NULL rows).
       await tx.$executeRaw(Prisma.sql`
         UPDATE "TherapistNote" SET "therapistId" = ${targetId}
-        WHERE "therapistId" = ${sourceId} AND "clientId" <> ${targetId}
+        WHERE "therapistId" = ${sourceId}
+          AND "clientId" IS DISTINCT FROM ${targetId}
       `);
       await tx.$executeRaw(Prisma.sql`
         UPDATE "TherapistNote" SET "clientId" = ${targetId}
@@ -224,6 +232,24 @@ export class MergeService {
       // a self-loop (therapist === client) — drop.
       await tx.$executeRaw(Prisma.sql`
         DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
+      `);
+
+      // Step D: clean up orphaned virtual-client conceptualizations.
+      // Virtual clients are identified by negative clientId (-TherapyRelation.id).
+      // If the corresponding TherapyRelation was deleted (e.g. by a previous buggy
+      // merge), the conceptualization row becomes a "ghost" and can pollute a
+      // newly created virtual client that happens to get the same relation id.
+      // Delete any such orphans for the target therapist.
+      await tx.$executeRaw(Prisma.sql`
+        DELETE FROM "ClientConceptualization" cc
+        WHERE cc."therapistId" = ${targetId}
+          AND cc."clientId" < 0
+          AND NOT EXISTS (
+            SELECT 1 FROM "TherapyRelation" tr
+            WHERE tr.id = -cc."clientId"
+              AND tr."therapistId" = ${targetId}
+              AND tr.status = 'active'
+          )
       `);
 
       // 5. Propagate recoveryEmail, disclaimerAccepted and role from source → target.
