@@ -45,7 +45,9 @@
 - [x] `src/api/telegram-auth.guard.ts` ✅ — **100% строк/функций**, 11 тестов: JWT-путь, валидный initData→canonical id, подделка подписи→алерт админу+401, missing/битый user, user.id не number, SKIP_AUTH (вкл в dev / выключен в prod), устойчивость к падению fetch-алерта.
 - [x] `src/auth/jwt.guard.ts` ✅ — **100%**, 9 тестов: валидный/missing/не-Bearer/невалидный токен; OptionalJwtGuard (анонимный fallback, link_token, приоритет Bearer).
 - [ ] `src/auth/auth.service.ts` (495 строк) — выпуск access/refresh/merge токенов; ротация refresh; ревокация; срок жизни; неверные креды.
-- [x] `src/auth/merge.service.ts` (272) ✅ — **100% строк/функций**, 11 тестов: early-return на source==target, всё в одной транзакции, порядок фаз (WebSession→…→DELETE User), Pair/TherapyRelation/ClientConceptualization, повышение роли THERAPIST, перенос recoveryEmail, `summarize` (агрегация/skip-zero/устойчивость к ошибке). ⚠️ **Корректность самого SQL (коллизии unique, FK-порядок) — только через DB-интеграционный тест (Волна 7).**
+- [x] `src/auth/merge.service.ts` (272) ✅ — **100% строк/функций**, 11 тестов (оркестрация): early-return на source==target, всё в одной транзакции, порядок фаз (WebSession→…→DELETE User), Pair/TherapyRelation/ClientConceptualization, повышение роли THERAPIST, перенос recoveryEmail, `summarize`.
+  - ✅ **SQL-safety regression** (добавлено на `main`, влить при rebase): assert `IS DISTINCT FROM` вместо `<>` на nullable `clientId` + orphan-cleanup виртуальных клиентов. Ловит реальный баг: `NULL <> x → NULL` (строка молча теряется при merge).
+  - ⚠️ Полная корректность SQL (коллизии unique, FK-порядок) — DB-интеграционный тест (Волна 7).
 - [x] `src/auth/totp.service.ts` ✅ — **100% строк/функций**, 19 тестов: setup→confirm с валидным TOTP (реальный otplib), recovery-коды (генерация/расход/legacy-массив), disable/regenerate с проверкой кода, isEnabled/getStatus, Conflict/BadRequest/Unauthorized.
 - [ ] `src/auth/security-log.service.ts` — пишет событие + DM админу на каждый аудит-тип (merge_confirmed, role_changed, csrf_blocked, suspicious_initdata); не падает если DM не доставлен.
 - [x] `src/auth/providers/google.provider.ts` ✅ — **100% строк**, мок `jose`: валидный id_token, провал подписи/aud/iss, nonce mismatch, email не verified, fallback displayName.
@@ -157,6 +159,15 @@
 - [ ] Webapp: регистрация → привязка Telegram → данные подтянулись из миниаппа (общий userId).
 
 ---
+
+## Правило: мультиключевые таблицы и merge (ОБЯЗАТЕЛЬНО)
+
+Любая новая таблица с **двумя ссылками на User** (`therapistId`+`clientId`, `userId1`+`userId2`):
+1. Проверить и обновить `src/auth/merge.service.ts` — такие таблицы НЕ покрываются общим bulk UPDATE по `userId`, им нужен отдельный блок.
+2. Написать **regression-тест** в `merge.service.spec.ts` со строковым assert на SQL.
+3. **NULL-ловушка:** если колонка nullable (напр. `clientId`=NULL у виртуальных клиентов) — только `IS DISTINCT FROM`, никогда `<>` (в SQL `NULL <> x → NULL` → строка молча теряется при merge). Тест ассертит `IS DISTINCT FROM` и `.not.toMatch(/"clientId"\s*<>/)`.
+
+Подробно — память `project_merge_rules.md` и чеклист «Новая таблица» в `CLAUDE.md`.
 
 ## Покрытие и храповик
 
