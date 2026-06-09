@@ -901,7 +901,35 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   .mobile-nav { display: none !important; }
   /* Settings overlay: don't cover the sidebar on desktop */
   .settings-overlay { left: var(--sidebar-w) !important; }
+  /* Settings left nav: visible on desktop */
+  .settings-sidenav { display: flex !important; }
 }
+
+/* ─── Settings side nav ──────────────────────────────────────────────────── */
+.settings-sidenav {
+  display: none; /* hidden on mobile */
+  flex-direction: column;
+  width: 180px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--line);
+  padding: 32px 0;
+  overflow-y: auto;
+  gap: 1px;
+}
+.settings-sidenav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 20px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: color 0.1s;
+}
+.settings-sidenav-item:hover { color: var(--text); }
 
 /* ─── BottomSheet → Modal on desktop ────────────────────────────────────── */
 @keyframes modal-in {
