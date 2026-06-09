@@ -151,13 +151,25 @@ describe('BotAnalyticsService', () => {
       expect(await svc.getBestDayOfWeek(1)).toBeNull();
     });
 
-    it('returns day name of highest-sum day', async () => {
+    it('returns null when fewer than 3 distinct weekdays have data', async () => {
       const prisma = makePrisma();
-      // d(0) = 2025-06-11 = Wednesday (среда)
+      // только 2 разных дня недели — гард sumByDow.size < 3 не даёт делать вывод
       prisma.rating.findMany.mockResolvedValue([
-        { date: d(0), value: 8 },
         { date: d(0), value: 9 },
         { date: d(1), value: 3 },
+      ]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getBestDayOfWeek(1)).toBeNull();
+    });
+
+    it('returns day name of highest-average weekday (≥3 weekdays)', async () => {
+      const prisma = makePrisma();
+      // d(0)=среда(2025-06-11), d(1)=вторник, d(2)=понедельник
+      prisma.rating.findMany.mockResolvedValue([
+        { date: d(0), value: 8 },
+        { date: d(0), value: 9 }, // среда: сумма по дате 17, avg по дню недели 17
+        { date: d(1), value: 3 }, // вторник: avg 3
+        { date: d(2), value: 2 }, // понедельник: avg 2
       ]);
       const svc = new BotAnalyticsService(prisma);
       expect(await svc.getBestDayOfWeek(1)).toBe('среда');
