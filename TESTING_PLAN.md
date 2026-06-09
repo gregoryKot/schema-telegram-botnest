@@ -59,8 +59,8 @@
 - [ ] `src/utils/encrypt-migration.ts` (118) — перешифровка старый→новый ключ; идемпотентность; не трогает уже-новые записи.
 
 ### Therapy (авторизация доступа к чужим данным)
-- [ ] `src/therapy/therapy.service.ts` (889) — терапевт видит ТОЛЬКО своих клиентов; клиент не видит чужого; выдача/отзыв доступа; запрос на связь.
-- [ ] `src/therapy/therapist-request.service.ts` (171) — submit заявки; статусы; защита от дублей; аудит-событие.
+- [~] `src/therapy/therapy.service.ts` (889) — **P0 authz-ядро покрыто** (26 тестов): `assertRelation` (active/нет/виртуальный клиент), подключение (`createInvite`/`joinAsClient` — self-join, занятый код, идемпотентность), заметки (гейтинг + scope по therapistId), карты режимов и кастомные режимы (проверка владельца → 'Not found', IDOR закрыт), createModeMap/CustomMode валидация. ⚠️ Покрытие файла ~21% — **остаются data-методы** (Волна 2): `getClients`/`getClientData`/`getClientHistory`/`getClientDiaryEntries` (14-дн история, шифрование), задачи (`createTask`/`getTasks`/`completeTask`/стрики), `get/saveConceptualization`, `requestYsq`, `renameClient`/`removeClient`, `updateSessionInfo`.
+- [x] `src/therapy/therapist-request.service.ts` (171) ✅ — **100% строк**, 23 теста: submit-валидация, conflict-состояния, assertAdmin, повышение роли в транзакции, HTML-escape, не-фатальные уведомления.
 
 ---
 
