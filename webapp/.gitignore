@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Сборка Phaser-игры — генерится Dockerfile при деплое (как и dist), в git не хранится
+public/phaser-game/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

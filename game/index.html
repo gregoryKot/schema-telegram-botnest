@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Schema Runner</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #1a0800;
+      width: 100vw;
+      height: 100dvh;
+      overflow: hidden;
+      font-family: 'Courier New', monospace;
+    }
+    #game-container {
+      width: 100%;
+      height: 100%;
+    }
+    #game-container canvas {
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* ── Card overlay ───────────────────────────────────────────────────── */
+    #card-overlay {
+      position: fixed; inset: 0;
+      background: rgba(5, 5, 20, 0.93);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+      backdrop-filter: blur(3px);
+    }
+    #card-overlay.visible { display: flex; }
+
+    .card {
+      background: #0f0f2e;
+      border: 2px solid #4a3f8f;
+      max-width: 420px;
+      width: 100%;
+      padding: 28px 28px 24px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 0 60px rgba(100, 80, 200, 0.25), inset 0 0 30px rgba(80,60,160,0.08);
+      position: relative;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: 20%; right: 20%; height: 2px;
+      background: linear-gradient(90deg, transparent, #a08fff, transparent);
+    }
+
+    #card-emoji {
+      font-size: 56px; display: block;
+      margin-bottom: 12px; line-height: 1;
+    }
+    #card-title {
+      font-size: 18px; color: #e8e0ff;
+      letter-spacing: 4px; text-transform: uppercase;
+      font-weight: bold; margin-bottom: 14px;
+    }
+    #card-quote {
+      font-size: 14px; color: #c0b8e8;
+      font-style: italic; line-height: 1.55;
+      border-left: 2px solid #5a4faf;
+      padding-left: 12px; margin-bottom: 14px;
+      white-space: pre-wrap;
+    }
+    #card-text {
+      font-size: 13px; color: #a0a0c8;
+      line-height: 1.65; margin-bottom: 12px;
+    }
+    #card-tip {
+      font-size: 12px; color: #a08fff;
+      letter-spacing: 1px; padding: 8px 12px;
+      border: 1px solid #2a2060;
+      margin-bottom: 16px;
+    }
+    #card-counter {
+      font-size: 10px; color: #3a306a;
+      letter-spacing: 2px; margin-bottom: 14px;
+      text-align: center;
+    }
+    #card-btn {
+      width: 100%;
+      background: transparent; border: 1px solid #6a5aff;
+      color: #a08fff; padding: 11px 24px;
+      font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+      cursor: pointer; font-family: 'Courier New', monospace;
+      transition: all 0.15s; margin-bottom: 0;
+    }
+    #card-btn:hover { background: rgba(106,90,255,0.15); color: #e0d8ff; }
+    #card-btn-sec {
+      width: 100%; margin-top: 8px;
+      background: transparent; border: 1px solid #2a2060;
+      color: #4a406a; padding: 8px; font-size: 10px;
+      letter-spacing: 2px; cursor: pointer;
+      font-family: 'Courier New', monospace; transition: color 0.15s;
+    }
+    #card-btn-sec:hover { color: #7a6aaa; }
+
+    /* ── Touch controls ─────────────────────────────────────────────────── */
+    #touch-controls {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 90px;
+      display: none;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 20px 14px;
+      pointer-events: none;
+      z-index: 50;
+    }
+    #touch-controls.visible { display: flex; }
+    .dpad { display: flex; gap: 8px; pointer-events: all; }
+    .tbtn {
+      width: 52px; height: 52px;
+      background: rgba(106,90,255,0.15);
+      border: 1px solid rgba(106,90,255,0.4);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: rgba(160,143,255,0.7);
+      user-select: none; -webkit-user-select: none;
+      touch-action: none;
+      transition: background 0.1s;
+    }
+    .tbtn.pressed {
+      background: rgba(106,90,255,0.35);
+      border-color: rgba(160,143,255,0.7);
+      color: #e0d8ff;
+    }
+    #tbtn-jump {
+      width: 62px; height: 62px; border-radius: 50%;
+      background: rgba(106,90,255,0.18);
+      border: 1px solid rgba(106,90,255,0.5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: rgba(160,143,255,0.8);
+      user-select: none; touch-action: none;
+      pointer-events: all;
+      transition: background 0.1s;
+    }
+    #tbtn-jump.pressed {
+      background: rgba(106,90,255,0.4);
+      box-shadow: 0 0 16px rgba(106,90,255,0.4);
+      color: #e0d8ff;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container"></div>
+
+  <!-- Card overlay (HTML, outside Phaser canvas) -->
+  <div id="card-overlay">
+    <div class="card">
+      <span id="card-emoji">😰</span>
+      <div id="card-title">ТРЕВОГА</div>
+      <div id="card-quote"></div>
+      <div id="card-text"></div>
+      <div id="card-tip"></div>
+      <div id="card-counter"></div>
+      <button id="card-btn">ПРОДОЛЖИТЬ</button>
+    </div>
+  </div>
+
+  <!-- Mobile touch controls -->
+  <div id="touch-controls">
+    <div class="dpad">
+      <div class="tbtn" id="tbtn-left">◀</div>
+      <div class="tbtn" id="tbtn-right">▶</div>
+    </div>
+    <div id="tbtn-jump">▲</div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
