@@ -899,6 +899,8 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 }
 @media (min-width: 768px) {
   .mobile-nav { display: none !important; }
+  /* Settings overlay: don't cover the sidebar on desktop */
+  .settings-overlay { left: var(--sidebar-w) !important; }
 }
 
 /* ─── BottomSheet → Modal on desktop ────────────────────────────────────── */
