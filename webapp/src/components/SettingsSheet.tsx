@@ -124,7 +124,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
   if (!settings) {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="settings-overlay" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Loader minHeight="40vh" />
       </div>
     );
@@ -135,7 +135,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
   return (
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="settings-overlay" style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
         {/* ── Sticky nav bar ── */}
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 16, padding: '14px 24px', borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', background: 'var(--bg)' }}>
@@ -155,7 +155,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
         {/* ── Scrollable content ── */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          <div style={{ maxWidth: 640, margin: '0 auto', padding: '32px 24px 80px' }}>
+          <div style={{ maxWidth: 780, margin: '0 auto', padding: '32px 24px 80px' }}>
 
             {/* ── TIME VIEW ── */}
             {subView === 'time' && (
