@@ -143,10 +143,11 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   } = detail;
 
   const {
-    addMode, addInput, setAddInput, addLoading, addError,
-    inviteUrl, inviteCopied, inviteLoading, inviteInputRef,
-    openAddMode, createInvite, copyInvite, shareInvite,
-    addByTelegramId, addVirtualClient,
+    name: addName, setName: setAddName,
+    withInvite, setWithInvite,
+    created: addCreated, submitting: addSubmitting, error: addError, copied: addCopied, valid: addValid,
+    inputRef: addInputRef,
+    submit: submitAddClient, reset: resetAddClient, copyInvite: copyAddInvite,
   } = addClient;
 
   // ─── Render ───────────────────────────────────────────────────────────────────
@@ -159,20 +160,113 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
         <div key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'auto' }}>
           <div className="page-inner-wide">
 
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40 }}>
+            {/* ── Add client form (editorial style) ──────────────────────── */}
+            <div style={{ paddingBottom: 48, borderBottom: '1px solid var(--line)', marginBottom: 48 }}>
+              {addCreated ? (
+                /* Success state */
+                <div style={{ animation: 'fade-in 0.25s ease' }}>
+                  <div className="eyebrow" style={{ marginBottom: 20, color: 'var(--c-moss)' }}>Клиент добавлен</div>
+                  <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 400, letterSpacing: '-0.02em', margin: '0 0 20px', lineHeight: 1.1, color: 'var(--text)' }}>
+                    {addCreated.name}
+                  </h2>
+                  {addCreated.inviteUrl ? (
+                    <div style={{ marginBottom: 24, maxWidth: 520 }}>
+                      <div className="eyebrow" style={{ marginBottom: 10 }}>Ссылка-приглашение</div>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <code style={{ flex: 1, minWidth: 200, fontSize: 12.5, color: 'var(--text-sub)', background: 'rgba(var(--fg-rgb),0.05)', padding: '9px 13px', borderRadius: 8, wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                          {addCreated.inviteUrl}
+                        </code>
+                        <button
+                          onClick={copyAddInvite}
+                          style={{ padding: '9px 18px', borderRadius: 20, border: 'none', background: addCopied ? 'var(--c-moss)' : 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'background 0.2s' }}
+                        >
+                          {addCopied ? '✓ Скопировано' : 'Скопировать'}
+                        </button>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8 }}>
+                        Клиент перейдёт по ссылке и автоматически подключится через бот
+                      </div>
+                    </div>
+                  ) : (
+                    <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.6, marginBottom: 24, maxWidth: 440 }}>
+                      Добавлен как оффлайн-клиент — записи и концептуализация без привязки к боту.
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={resetAddClient}
+                      style={{ padding: '9px 20px', borderRadius: 20, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                    >
+                      Добавить ещё
+                    </button>
+                    <button
+                      onClick={resetAddClient}
+                      style={{ padding: '9px 20px', borderRadius: 20, border: '1px solid var(--line)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}
+                    >
+                      к списку
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Form state */
+                <div>
+                  <div className="eyebrow" style={{ marginBottom: 16 }}>Новый клиент</div>
+                  <h1 className="hub-title" style={{ marginBottom: 8 }}>Добавить клиента</h1>
+                  <p className="hub-sub" style={{ marginBottom: 28 }}>
+                    Введи имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.
+                  </p>
+
+                  {/* Underline field */}
+                  <div style={{ borderBottom: `1.5px solid ${addName.length >= 2 ? 'var(--text)' : 'rgba(var(--fg-rgb),0.2)'}`, display: 'flex', alignItems: 'center', gap: 16, maxWidth: 480, marginBottom: 20, transition: 'border-color 0.2s' }}>
+                    <input
+                      ref={addInputRef}
+                      value={addName}
+                      onChange={e => setAddName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && submitAddClient()}
+                      placeholder="Имя клиента"
+                      autoComplete="off"
+                      style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 22, fontFamily: 'var(--serif)', color: 'var(--text)', padding: '6px 0', letterSpacing: '-0.01em' }}
+                    />
+                    <button
+                      onClick={submitAddClient}
+                      disabled={!addValid || addSubmitting}
+                      style={{ padding: '7px 18px', borderRadius: 20, border: 'none', background: addValid ? 'var(--text)' : 'rgba(var(--fg-rgb),0.1)', color: addValid ? 'var(--bg)' : 'var(--text-faint)', fontSize: 13, fontWeight: 500, cursor: addValid ? 'pointer' : 'default', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.15s' }}
+                    >
+                      {addSubmitting ? '...' : 'Добавить'}
+                    </button>
+                  </div>
+
+                  {/* Invite toggle */}
+                  <button
+                    onClick={() => setWithInvite(v => !v)}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: 480, background: 'none', border: 'none', padding: '11px 0', cursor: 'pointer', borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}
+                  >
+                    <span style={{ fontSize: 14, color: 'var(--text-sub)' }}>Создать ссылку-приглашение</span>
+                    <div style={{ width: 38, height: 20, borderRadius: 10, background: withInvite ? 'var(--accent)' : 'var(--surface-3)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                      <div style={{ position: 'absolute', top: 3, left: withInvite ? 19 : 3, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
+                    </div>
+                  </button>
+                  {withInvite && (
+                    <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8, maxWidth: 440 }}>
+                      После добавления появится ссылка — клиент перейдёт по ней и подключится через Telegram-бот
+                    </p>
+                  )}
+
+                  {addError && <div style={{ marginTop: 12, fontSize: 13, color: 'var(--c-rose)' }}>{addError}</div>}
+                </div>
+              )}
+            </div>
+
+            {/* Clients section header */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
               <div>
-                <h1 className="hub-title" style={{ marginBottom: 8 }}>Кабинет</h1>
-                <div style={{ fontSize: 15, color: 'var(--text-sub)', marginTop: 0 }}>
-                  {clients.length} {clients.length === 1 ? 'клиент' : clients.length < 5 ? 'клиента' : 'клиентов'} · {clients.filter(c => c.lastActiveDate === todayStr()).length} активны сегодня
+                <div className="eyebrow" style={{ marginBottom: 6 }}>Все клиенты</div>
+                <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                  {clients.length} <span style={{ fontSize: 15, fontWeight: 400, color: 'var(--text-sub)' }}>
+                    {clients.length === 1 ? 'клиент' : clients.length < 5 ? 'клиента' : 'клиентов'} · {clients.filter(c => c.lastActiveDate === todayStr()).length} активны сегодня
+                  </span>
                 </div>
               </div>
-              <button
-                onClick={() => openAddMode(addMode ? null : 'invite')}
-                className={addMode ? 'btn btn-secondary' : 'btn btn-primary'}
-              >
-                {addMode ? '✕ Закрыть' : '+ Добавить клиента'}
-              </button>
             </div>
 
             {/* Filter bar */}
@@ -210,63 +304,6 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               </>)}
             </div>
 
-            {/* Add client panel */}
-            {addMode && (
-              <div style={{ background: 'var(--surface-2)', borderRadius: 12, padding: '24px', marginBottom: 36 }}>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-                  {(['invite', 'telegram', 'virtual'] as const).map(m => (
-                    <button key={m} onClick={() => openAddMode(m)} style={{ padding: '6px 14px', borderRadius: 6, border: `1px solid ${addMode === m ? 'var(--text)' : 'var(--line)'}`, background: addMode === m ? 'var(--text)' : 'transparent', color: addMode === m ? 'var(--bg)' : 'var(--text-faint)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}>
-                      {{ invite: '🔗 Пригласить', telegram: '🔢 Telegram ID', virtual: '👤 Оффлайн' }[m]}
-                    </button>
-                  ))}
-                </div>
-
-                {addMode === 'invite' && (
-                  <div>
-                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Отправь клиенту ссылку – он перейдёт и автоматически подключится.</div>
-                    {!inviteUrl ? (
-                      <button onClick={createInvite} disabled={inviteLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                        {inviteLoading ? 'Создаю...' : 'Создать ссылку'}
-                      </button>
-                    ) : (
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <input ref={inviteInputRef} readOnly value={inviteUrl} style={{ flex: 1, minWidth: 200, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 12, color: 'var(--text-sub)', fontFamily: 'monospace' }} />
-                        <button onClick={copyInvite} style={{ padding: '8px 14px', borderRadius: 6, border: 'none', background: inviteCopied ? 'var(--c-moss)' : 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                          {inviteCopied ? '✓ Скопировано' : 'Скопировать'}
-                        </button>
-                        <button onClick={shareInvite} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid var(--line)', background: 'transparent', fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>Поделиться</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {addMode === 'telegram' && (
-                  <div>
-                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Числовой Telegram ID клиента (узнать у клиента или через @userinfobot)</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input type="number" value={addInput} onChange={e => setAddInput(e.target.value)} placeholder="123456789" style={{ width: 180, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }} />
-                      <button onClick={addByTelegramId} disabled={addLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                        {addLoading ? '...' : 'Добавить'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {addMode === 'virtual' && (
-                  <div>
-                    <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>Для клиентов без Telegram – концептуализация и заметки без привязки к боту</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input value={addInput} onChange={e => setAddInput(e.target.value)} placeholder="Имя клиента" style={{ width: 240, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--line)', background: 'var(--bg)', fontSize: 13 }} />
-                      <button onClick={addVirtualClient} disabled={addLoading} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                        {addLoading ? '...' : 'Создать'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {addError && <div style={{ marginTop: 12, fontSize: 13, color: 'var(--c-rose)' }}>{addError}</div>}
-              </div>
-            )}
 
             {/* Today dashboard – только если есть РЕАЛЬНЫЕ сегодняшние данные */}
             {!loading && clients.length > 0 && (() => {
@@ -345,16 +382,8 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               loading ? (
                 <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>
               ) : clients.length === 0 ? (
-                <div className="section" style={{ borderTop: '1px solid var(--line)', paddingTop: 32 }}>
-                  <h3 style={{ marginBottom: 8 }}>Добавь первого клиента</h3>
-                  <div className="text-md muted" style={{ maxWidth: 560, lineHeight: 1.6, marginBottom: 20 }}>
-                    Через кнопку «+ Добавить клиента» вверху. Три варианта:
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 600 }}>
-                    <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Ссылка</div><div className="text-sm muted" style={{ marginTop: 3 }}>клиент подключается через Telegram-бот по приглашению</div></div></div>
-                    <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Telegram ID</div><div className="text-sm muted" style={{ marginTop: 3 }}>если знаешь его ID – добавишь сразу</div></div></div>
-                    <div className="list-line"><div style={{ flex: 1 }}><div className="text-md" style={{ fontWeight: 500 }}>Оффлайн</div><div className="text-sm muted" style={{ marginTop: 3 }}>клиент без Telegram – заметки и концептуализация без бота</div></div></div>
-                  </div>
+                <div style={{ padding: '24px 0', color: 'var(--text-faint)', fontSize: 14 }}>
+                  Введи имя клиента выше, чтобы добавить первую карточку
                 </div>
               ) : (() => {
                 const today = todayStr();
