@@ -34,6 +34,20 @@
 - Если `editMessageText` / `reply` могут упасть внутри catch, добавляй `.catch(() => null)`.
 - Ошибки логируются через `this.logger.error(...)`, не через `console.log`.
 
+## Тесты — ОБЯЗАТЕЛЬНО
+
+> **Любой новый или изменённый код приходит с тестом в том же изменении.** Без исключений.
+
+- Раннер — **Jest** (`npm test`). Конфиг — в `package.json` (`jest`), e2e — `test/jest-e2e.json` (`npm run test:e2e`).
+- Тест лежит рядом с кодом: `bot.service.ts` → `bot.service.spec.ts`. Эталон стиля — `src/bot/bot.analytics.service.spec.ts`.
+- **Бизнес-логику тестируй как чистый unit:** сервис создаётся напрямую с замоканным Prisma (`makePrisma()`-хелпер), без поднятия Nest-модуля. Время — `jest.useFakeTimers()` + `setSystemTime`, всегда возвращай реальное в `afterEach`.
+- Приоритет покрытия: `bot.service.ts` и аналитика (оценки, потребности, стрики), `auth/` (merge, валидация initData, JWT), `utils/` (шифрование) — цель 100%.
+- Telegram-хендлеры: проверяй, что `answerCbQuery()` вызывается до БД, что callback_data валидируется, что ошибки не роняют хендлер (try/catch).
+- Фикс бага = сначала падающий тест, потом фикс. Перед коммитом `npm test` зелёный. `.skip` без тикета — нельзя.
+- **Безопасность:** при изменении auth/api/therapy — тест на негативные кейсы (поддельный initData, чужой userId, отсутствие ADMIN_ID). См. [SECURITY.md](SECURITY.md).
+
+Фронтенд миниаппа тестируется отдельно (Vitest) — см. `schema-miniapp/TESTING.md`.
+
 ## Безопасность
 
 > Полный security-плейбук — модель угроз, инварианты аутентификации/авторизации,

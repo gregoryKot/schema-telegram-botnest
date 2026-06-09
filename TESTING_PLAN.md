@@ -1,0 +1,172 @@
+# Мастер-план покрытия тестами
+
+Цель — **каждая строчка логики под тестом** во всех трёх частях проекта: бэкенд (NestJS),
+миниапп (Vitest) и webapp. Достигаем не разом, а волнами по приоритету **риска**.
+
+Этот файл — живой бэклог тестера. Отмечай `[x]` по мере закрытия. Правила написания
+тестов — в `CLAUDE.md` (бэк), `schema-miniapp/TESTING.md` (фронт).
+
+## Текущее состояние (старт, 2026-06-08)
+
+| Часть | Раннер | Файлов логики | Покрыто | Дыра |
+|-------|--------|--------------:|--------:|------|
+| Бэкенд `src/` | Jest ✅ | ~49 | 3 спека | auth, crypto, merge, therapy — **0** |
+| Миниапп `schema-miniapp/` | Vitest ✅ | ~55 | 3 утилиты | api, хуки, компоненты |
+| Webapp `webapp/` | ❌ нет | ~70 | 0 | **всё + нет инфры** |
+
+## Принцип приоритизации
+
+Сортируем по `риск × вероятность бага × дешевизна теста`:
+
+- **P0 — Безопасность и целостность данных.** Баг = утечка, чужие данные, потеря/порча зашифрованного. Тестируем первым, с негативными кейсами.
+- **P1 — Ядро бизнес-логики + чистые функции.** Оценки, потребности, удаление аккаунта, шифрование-утилиты, форматтеры. Дёшево и часто меняется.
+- **P2 — API-слой (контроллеры + клиенты).** Контракты запрос/ответ, авторизация на эндпоинтах, обработка ошибок.
+- **P3 — Компоненты и UI-логика.** Поведение глазами пользователя, по убыванию риска фичи.
+- **P4 — E2E smoke.** Сквозные критические сценарии.
+
+---
+
+# ВОЛНА 0 — Инфраструктура (разблокирует остальное)
+
+- [x] **Webapp: поднять Vitest** ✅ — Vitest 4 (под Vite 8), jsdom, `src/test/setup.ts` (jest-dom, cleanup, mock matchMedia + `setMatchMedia`), скрипты, `coverage` в gitignore, тесты исключены из прод-`tsc -b`. 28 тестов зелёные.
+  - [ ] `webapp/TESTING.md` (раздел про роутер) — осталось
+- [ ] **Бэкенд: включить порог покрытия** в jest-конфиге (`coverageThreshold`) по политике храповика; добавить `npm run test:cov` в pre-commit-привычку.
+- [x] **Починить красный базлайн бэкенда** ✅ — было **5 красных** (предсуществующих, не от моих правок):
+  - `getBestDayOfWeek` — обновил под гард `sumByDow.size < 3` + добавил кейс на сам гард.
+  - 4× `notification.service` — сервис отрефакторили (userId → `bigint`, `markSent` → идемпотентный `updateMany`), спек устарел. Обновил под текущее поведение + усилил тест `getDue` (проверка конверсии bigint→number). Теперь **75/75 зелёных**.
+
+---
+
+# ВОЛНА 1 — P0: Безопасность бэкенда (КРИТИЧНО)
+
+> Здесь баг стоит дороже всего. Обязательны **негативные кейсы** (см. SECURITY.md).
+
+### Аутентификация / авторизация
+- [x] `src/api/telegram-auth.guard.ts` ✅ — **100% строк/функций**, 11 тестов: JWT-путь, валидный initData→canonical id, подделка подписи→алерт админу+401, missing/битый user, user.id не number, SKIP_AUTH (вкл в dev / выключен в prod), устойчивость к падению fetch-алерта.
+- [x] `src/auth/jwt.guard.ts` ✅ — **100%**, 9 тестов: валидный/missing/не-Bearer/невалидный токен; OptionalJwtGuard (анонимный fallback, link_token, приоритет Bearer).
+- [ ] `src/auth/auth.service.ts` (495 строк) — выпуск access/refresh/merge токенов; ротация refresh; ревокация; срок жизни; неверные креды.
+- [x] `src/auth/merge.service.ts` (272) ✅ — **100% строк/функций**, 11 тестов: early-return на source==target, всё в одной транзакции, порядок фаз (WebSession→…→DELETE User), Pair/TherapyRelation/ClientConceptualization, повышение роли THERAPIST, перенос recoveryEmail, `summarize` (агрегация/skip-zero/устойчивость к ошибке). ⚠️ **Корректность самого SQL (коллизии unique, FK-порядок) — только через DB-интеграционный тест (Волна 7).**
+- [x] `src/auth/totp.service.ts` ✅ — **100% строк/функций**, 19 тестов: setup→confirm с валидным TOTP (реальный otplib), recovery-коды (генерация/расход/legacy-массив), disable/regenerate с проверкой кода, isEnabled/getStatus, Conflict/BadRequest/Unauthorized.
+- [ ] `src/auth/security-log.service.ts` — пишет событие + DM админу на каждый аудит-тип (merge_confirmed, role_changed, csrf_blocked, suspicious_initdata); не падает если DM не доставлен.
+- [x] `src/auth/providers/google.provider.ts` ✅ — **100% строк**, мок `jose`: валидный id_token, провал подписи/aud/iss, nonce mismatch, email не verified, fallback displayName.
+- [x] `src/auth/providers/telegram.provider.ts` ✅ **100%** + `telegram-oidc.provider.ts` ✅ — реальная HMAC-подпись (валид/missing/malformed hash/expired/подделка/missing id); OIDC: PKCE, обмен кода, сетевые ошибки token/userinfo, fallback'и displayName.
+- [x] `src/auth/providers/vk.provider.ts` ✅ — **100% строк**: PKCE buildAuthUrl, одноразовый verifier, обмен кода (мок fetch), ошибки VK, non-fatal user_info.
+- [x] `src/auth/providers/registry.ts` ✅ — **100%**: резолв по id, NotFound на неизвестный, list().
+- [ ] `src/api/throttler.guard.ts` — лимит срабатывает; ключ по userId/IP; сброс окна.
+
+### Шифрование / данные
+- [x] `src/utils/crypto.ts` (134) ✅ — **98.46% строк / 100% функций**, 23 теста. round-trip, ротация ключей (OLD fallback), reencrypt, tamper/чужой ключ, encryptRecord/decryptRecord, prod-гарды. Непокрыта 1 защитная строка (недостижима по типовому контракту).
+- [ ] `src/utils/encrypt-migration.ts` (118) — перешифровка старый→новый ключ; идемпотентность; не трогает уже-новые записи.
+
+### Therapy (авторизация доступа к чужим данным)
+- [ ] `src/therapy/therapy.service.ts` (889) — терапевт видит ТОЛЬКО своих клиентов; клиент не видит чужого; выдача/отзыв доступа; запрос на связь.
+- [ ] `src/therapy/therapist-request.service.ts` (171) — submit заявки; статусы; защита от дублей; аудит-событие.
+
+---
+
+# ВОЛНА 2 — P1: Ядро бизнес-логики бэкенда
+
+- [ ] `src/bot/bot.service.ts` (658) — оценки/потребности CRUD; `deleteAllUserData` (**hard delete** по всем USER_DATA_TABLES + VACUUM-триггер; ничего не остаётся); валидация needId/value; апсёрт оценки за день.
+- [ ] `src/bot/bot.analytics.service.ts` (399) — **дополнить** существующий спек до 100%: getWeeklyStats границы недели, getConsecutiveDays через смену месяца/года, getBestDayOfWeek (после фикса), getAdminStats.
+- [ ] `src/bot/diary.service.ts` (183) — создание записей дневника (schema/mode/gratitude); шифрование текста; чтение/листинг; удаление.
+- [ ] `src/bot/profile.service.ts` (77) — профиль CRUD; дефолты; таймзона.
+- [ ] `src/utils/tz.ts` (16) — конвертация таймзон; границы суток; невалидная tz → дефолт.
+- [ ] `src/utils/ysq.ts` (48) — **цель 100%.** скоринг YSQ-теста; границы шкал; неполные ответы.
+- [ ] `src/notification/notification.service.ts` — *(спек есть)* добить ветки: расписание, пропуск отправки, ошибки.
+- [ ] `src/notification/notification.templates.ts` — *(спек есть)* проверить все шаблоны/склонения.
+- [ ] `src/telegram/telegram.settings.service.ts` (189) — настройки уведомлений; таймзона; вкл/выкл.
+- [ ] `src/telegram/telegram.schedule.service.ts` (352) — крон-логика рассылок; кого выбирает; idempotent за день; уважает таймзону/настройки.
+
+---
+
+# ВОЛНА 3 — P1: Чистые функции фронтендов (дёшево, ценно)
+
+### Миниапп (`schema-miniapp/src/`)
+- [x] `utils/format.ts` ✅
+- [x] `utils/drafts.ts` ✅
+- [x] `utils/theme.ts` ✅
+- [ ] `utils/therapistContact.ts` (50) — формирование контакта/ссылки; пустые поля.
+- [ ] `utils/safezone.ts` (59) — `useSafeTop` через `renderHook`: чтение insets, iOS-fallback 56px, реакция на события Telegram, очистка слушателей.
+
+### Webapp (`webapp/src/`) — после Волны 0
+- [ ] `utils/format.ts`, `utils/drafts.ts`, `utils/theme.ts`, `utils/therapistContact.ts`, `utils/storageKeys.ts`, `utils/safezone.ts` — **почти дубль миниаппа**, тесты клонируются с правками.
+- [x] `hooks/useHistorySheet.ts` (46) ✅ — 3 теста через `MemoryRouter`+`renderHook`: монтирование не закрывает, `goBack` → `onClose`.
+- [x] `utils/format.ts`, `utils/drafts.ts`, `utils/theme.ts`, `utils/storageKeys.ts` ✅ — покрыты (theme — дефолт light + `setMatchMedia`; storageKeys — `shouldShowChildhoodWheel`).
+- [ ] `game/engine.ts` (177) — тик игры, коллизии, счёт, состояние game-over. Чистая логика — 100%.
+- [ ] `game/obstacles.ts` (163) — генерация препятствий, спавн, границы.
+- [ ] `game/draw.ts` (245) — низкий приоритет (canvas-рисование), можно отложить.
+
+---
+
+# ВОЛНА 4 — P2: API-слой
+
+### Бэкенд-контроллеры (integration / e2e через supertest)
+- [ ] `src/api/api.controller.ts` (693) — все эндпоинты: 200 на валидном initData, 401 без, нельзя читать/писать чужой userId.
+- [ ] `src/api/diary.controller.ts` (143) — CRUD дневника через API; авторизация.
+- [ ] `src/api/booking.controller.ts` (76) — booking-флоу.
+- [ ] `src/auth/auth.controller.ts` (903) — login/refresh/logout/merge-эндпоинты; CSRF; rate-limit; негативные кейсы.
+- [ ] `src/therapy/therapy.controller.ts` (422) — доступ терапевта; 403 на чужое.
+- [ ] `src/meta.controller.ts` (32) — health/meta.
+- [ ] `src/filters/prisma-exception.filter.ts` + `src/prisma/prisma-exception.filter.ts` — маппинг ошибок Prisma в HTTP-коды; не течёт стектрейс.
+
+### Клиенты API фронтендов (мок `fetch`)
+- [ ] `schema-miniapp/src/api.ts` (362) — **цель 100%.** правильный URL/метод/тело; заголовок initData; обработка не-2xx; парсинг; таймауты.
+- [ ] `webapp/src/api.ts` (390) — то же + JWT-заголовки, refresh при 401.
+
+---
+
+# ВОЛНА 5 — P2/P3: Хуки и stateful-логика фронтендов
+
+- [ ] `schema-miniapp/src/useUserFlags.ts` (115) — чтение/запись флагов; дефолты; синхронизация.
+- [ ] `webapp/src/components/therapist/useClientDetail.ts` (328) — загрузка данных клиента; состояния loading/error; авторизация.
+- [ ] Вынести логику из крупных компонентов в хуки/хелперы, где она сейчас вшита (см. правило ~200 строк) → затем покрыть.
+
+---
+
+# ВОЛНА 6 — P3: Компоненты (по убыванию риска фичи)
+
+> Тестировать поведение: что рендерится, какие колбэки зовутся, состояния пустое/ошибка/загрузка. Не стили.
+
+### Высокий риск (логика расчётов/ввод данных)
+- [ ] `YSQTestSheet.tsx` (миниапп 954 / webapp 966) — прохождение теста, подсчёт, навигация по вопросам, неполные ответы.
+- [ ] `NeedSlider.tsx` / `NeedDial.tsx` — ввод значения, границы 0–10, колбэк сохранения.
+- [ ] `CheckInSheet.tsx` / `NeedTodaySheet.tsx` — ежедневная отметка, сохранение оценок.
+- [ ] `components/diary/*` (SchemaEntrySheet, ModeEntrySheet, GratitudeEntrySheet, DiaryListView) — создание/листинг записей, черновики.
+- [ ] `ChildhoodWheelSheet.tsx` (568) — колесо потребностей, ввод.
+- [ ] `TherapistClientSheet.tsx` (~1.3k, есть в обоих) — **разбить и покрыть**; доступ к данным клиента.
+- [ ] webapp `ModeMap*` (Canvas, NodeEditor, Nodes, Palette, Editor) — редактор карты режимов: добавление/связи/удаление узлов.
+
+### Средний риск (навигация/состояние экранов)
+- [ ] `sections/*` (Today, Schemas, Profile, Help, Diary, Practice) — рендер, переключение, пустые состояния.
+- [ ] `HistoryView.tsx`, `TodayView.tsx`, `PlansScreen.tsx`, `PracticesScreen.tsx`.
+- [ ] `SettingsSheet.tsx` — смена настроек, темы, таймзоны.
+- [ ] `App.tsx` (миниапп 978) / `AppShell.tsx` (webapp 730) — корневой роутинг по boolean-state; **сначала вынести логику** видимости экранов в хелпер/редьюсер, потом покрыть.
+
+### Низкий риск (презентационные)
+- [ ] `Loader`, `Celebration`, `FloatingPill`, `BottomNav`, `Flashcard`, `*IntroSheet`, `*InfoSheet` — smoke-рендер + ключевой колбэк. Низкий приоритет.
+
+### Webapp-страницы (контент-лендинги)
+- [ ] `pages/LandingPage`, `ArticlesPage`, `OfferPage`, `PrivacyPage`, `LoginPage`, `AccountPage` — рендер без падений, ключевые CTA/ссылки, `AccountPage` — «Привязать Telegram»/merge-флоу.
+
+---
+
+# ВОЛНА 7 — P4: E2E smoke (сквозные сценарии)
+
+- [ ] Бэкенд e2e (`test/`, supertest): полный auth-флоу (login → access → refresh → logout); merge Google→Telegram; удаление аккаунта стирает все данные.
+- [ ] Миниапп: первый вход → отметка потребности → запись дневника → история.
+- [ ] Webapp: регистрация → привязка Telegram → данные подтянулись из миниаппа (общий userId).
+
+---
+
+## Покрытие и храповик
+
+- Цель по типам: чистые функции (`utils/`, `crypto`, `ysq`, `api.ts`, `game/engine`) → **100%**; auth/merge/therapy → **100% + негативные кейсы**; хуки → 100% логики; компоненты → ключевые сценарии.
+- Пороги в конфигах только **растут**. Понизить = откатить дисциплину.
+- `npm run test:cov` в каждой части = бэклог незакрытых строк.
+
+## Порядок исполнения (рекомендация)
+
+1. Волна 0 (инфра webapp + пороги) — разблокирует.
+2. Волна 1 (P0 безопасность бэка) — наибольший риск.
+3. Волна 3 (чистые функции фронтов) — параллельно, дёшево, поднимает мораль/проценты.
+4. Волна 2 (ядро бэка) → Волна 4 (API) → Волна 5 (хуки) → Волна 6 (компоненты) → Волна 7 (e2e).
