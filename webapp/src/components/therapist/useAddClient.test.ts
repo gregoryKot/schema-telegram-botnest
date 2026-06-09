@@ -12,7 +12,7 @@ vi.mock('../../api', () => ({
 
 import { api } from '../../api';
 
-const mockApi = api as {
+const mockApi = api as unknown as {
   addVirtualClient: ReturnType<typeof vi.fn>;
   createTherapyInvite: ReturnType<typeof vi.fn>;
 };
