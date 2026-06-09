@@ -10,17 +10,10 @@ RUN npm install
 COPY webapp/package*.json ./webapp/
 RUN npm install --prefix webapp
 
-# ── Phaser game dependencies ────────────────────────────────────────────────
-COPY game/package*.json ./game/
-RUN npm install --prefix game
-
 # ── Copy source and build ──────────────────────────────────────────────────
 COPY . .
 RUN npx prisma generate
 RUN npm run build
-
-# Build Phaser game → webapp/public/phaser-game/ (included in webapp build)
-RUN npm run build --prefix game -- --outDir ../webapp/public/phaser-game
 
 # Build webapp (website) — output → webapp/dist/ → served at /
 # VITE_BOT_USERNAME is baked into the bundle so the Telegram Login Widget works
