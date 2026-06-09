@@ -52,11 +52,11 @@
 - [x] `src/auth/providers/telegram.provider.ts` ✅ **100%** + `telegram-oidc.provider.ts` ✅ — реальная HMAC-подпись (валид/missing/malformed hash/expired/подделка/missing id); OIDC: PKCE, обмен кода, сетевые ошибки token/userinfo, fallback'и displayName.
 - [x] `src/auth/providers/vk.provider.ts` ✅ — **100% строк**: PKCE buildAuthUrl, одноразовый verifier, обмен кода (мок fetch), ошибки VK, non-fatal user_info.
 - [x] `src/auth/providers/registry.ts` ✅ — **100%**: резолв по id, NotFound на неизвестный, list().
-- [ ] `src/api/throttler.guard.ts` — лимит срабатывает; ключ по userId/IP; сброс окна.
+- [x] `src/api/throttler.guard.ts` ✅ — **100% строк/функций**, 10 тестов: ключ per-user (telegramUserId / JWT sub / initData user.id), приоритет, fallback на IP/"unknown", битые токены.
 
 ### Шифрование / данные
 - [x] `src/utils/crypto.ts` (134) ✅ — **98.46% строк / 100% функций**, 23 теста. round-trip, ротация ключей (OLD fallback), reencrypt, tamper/чужой ключ, encryptRecord/decryptRecord, prod-гарды. Непокрыта 1 защитная строка (недостижима по типовому контракту).
-- [ ] `src/utils/encrypt-migration.ts` (118) — перешифровка старый→новый ключ; идемпотентность; не трогает уже-новые записи.
+- [x] `src/utils/encrypt-migration.ts` (118) ✅ — **100% строк/функций**, 7 тестов: bail без ключа, шифрование плейнтекста по всем моделям (Note/User/diary/concept+history), идемпотентность (уже зашифрованное не трогается).
 
 ### Therapy (авторизация доступа к чужим данным)
 - [~] `src/therapy/therapy.service.ts` (889) — **P0 authz-ядро покрыто** (26 тестов): `assertRelation` (active/нет/виртуальный клиент), подключение (`createInvite`/`joinAsClient` — self-join, занятый код, идемпотентность), заметки (гейтинг + scope по therapistId), карты режимов и кастомные режимы (проверка владельца → 'Not found', IDOR закрыт), createModeMap/CustomMode валидация. ⚠️ Покрытие файла ~21% — **остаются data-методы** (Волна 2): `getClients`/`getClientData`/`getClientHistory`/`getClientDiaryEntries` (14-дн история, шифрование), задачи (`createTask`/`getTasks`/`completeTask`/стрики), `get/saveConceptualization`, `requestYsq`, `renameClient`/`removeClient`, `updateSessionInfo`.
