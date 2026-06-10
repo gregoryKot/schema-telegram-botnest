@@ -44,7 +44,7 @@
 ### Аутентификация / авторизация
 - [x] `src/api/telegram-auth.guard.ts` ✅ — **100% строк/функций**, 11 тестов: JWT-путь, валидный initData→canonical id, подделка подписи→алерт админу+401, missing/битый user, user.id не number, SKIP_AUTH (вкл в dev / выключен в prod), устойчивость к падению fetch-алерта.
 - [x] `src/auth/jwt.guard.ts` ✅ — **100%**, 9 тестов: валидный/missing/не-Bearer/невалидный токен; OptionalJwtGuard (анонимный fallback, link_token, приоритет Bearer).
-- [ ] `src/auth/auth.service.ts` (495 строк) — выпуск access/refresh/merge токенов; ротация refresh; ревокация; срок жизни; неверные креды.
+- [x] `src/auth/auth.service.ts` (495) ✅ — **97% строк**, 37 тестов: initData HMAC (валид/подделка/expired/битый user), JWT round-trips (access/link/merge/totp-challenge, чужой тип/kind), **ротация refresh с детекцией кражи** (reuse → отзыв family + аудит), revoke session/all, findOrCreate (telegram=id / web-range), link/unlink (последний провайдер → Conflict), email magic-link (login + link_email_auth + конфликты), getUserProviders.
 - [x] `src/auth/merge.service.ts` (272) ✅ — **100% строк/функций**, 11 тестов (оркестрация): early-return на source==target, всё в одной транзакции, порядок фаз (WebSession→…→DELETE User), Pair/TherapyRelation/ClientConceptualization, повышение роли THERAPIST, перенос recoveryEmail, `summarize`.
   - ✅ **SQL-safety regression** (влито с main): assert `IS DISTINCT FROM` вместо `<>` на nullable `clientId` + orphan-cleanup виртуальных клиентов. Ловит реальный баг: `NULL <> x → NULL` (строка молча теряется при merge). Объединённый спек = **16 тестов** (5 SQL-safety + 8 оркестрация + 3 summarize).
   - ⚠️ Полная корректность SQL (коллизии unique, FK-порядок) — DB-интеграционный тест (Волна 7).
