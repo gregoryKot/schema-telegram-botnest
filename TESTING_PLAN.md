@@ -106,7 +106,7 @@
 - [~] `src/api/api.controller.ts` (693) — **integration (supertest) на сквозные инварианты** (6 тестов): гвард `TelegramAuthGuard` реально навешан (401 без креды / на невалидный токен), `userId` берётся из верифицированного токена а не из тела, **анти-эскалация** `therapistMode` (не в белом списке user-flags). Остальные ~60 эндпоинтов — тонкие делегации в покрытые сервисы; добор по необходимости.
 - [ ] `src/api/diary.controller.ts` (143) — CRUD дневника через API; авторизация.
 - [ ] `src/api/booking.controller.ts` (76) — booking-флоу.
-- [ ] `src/auth/auth.controller.ts` (903) — login/refresh/logout/merge-эндпоинты; CSRF; rate-limit; негативные кейсы.
+- [~] `src/auth/auth.controller.ts` (903) — **integration (supertest) на security-механизм** (8 тестов): CSRF-защита refresh/logout (нет заголовка/не-JSON → 401 + аудит `csrf_blocked`), refresh-cookie флаги (HttpOnly/Secure/SameSite=Strict/Path), ротация по cookie, logout-отзыв (+all=true → revokeAllSessions), `JwtAuthGuard` навешан на `/me`. ⏳ OAuth-callback'и (google/vk/telegram-oidc redirect-флоу) — провайдеры покрыты юнитами, сами callback'и — кандидаты на e2e (Волна 7).
 - [ ] `src/therapy/therapy.controller.ts` (422) — доступ терапевта; 403 на чужое.
 - [ ] `src/meta.controller.ts` (32) — health/meta.
 - [ ] `src/filters/prisma-exception.filter.ts` + `src/prisma/prisma-exception.filter.ts` — маппинг ошибок Prisma в HTTP-коды; не течёт стектрейс.
