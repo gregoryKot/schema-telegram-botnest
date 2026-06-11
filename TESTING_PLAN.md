@@ -103,7 +103,7 @@
 # ВОЛНА 4 — P2: API-слой
 
 ### Бэкенд-контроллеры (integration / e2e через supertest)
-- [ ] `src/api/api.controller.ts` (693) — все эндпоинты: 200 на валидном initData, 401 без, нельзя читать/писать чужой userId.
+- [~] `src/api/api.controller.ts` (693) — **integration (supertest) на сквозные инварианты** (6 тестов): гвард `TelegramAuthGuard` реально навешан (401 без креды / на невалидный токен), `userId` берётся из верифицированного токена а не из тела, **анти-эскалация** `therapistMode` (не в белом списке user-flags). Остальные ~60 эндпоинтов — тонкие делегации в покрытые сервисы; добор по необходимости.
 - [ ] `src/api/diary.controller.ts` (143) — CRUD дневника через API; авторизация.
 - [ ] `src/api/booking.controller.ts` (76) — booking-флоу.
 - [ ] `src/auth/auth.controller.ts` (903) — login/refresh/logout/merge-эндпоинты; CSRF; rate-limit; негативные кейсы.
