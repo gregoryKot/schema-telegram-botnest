@@ -3,6 +3,10 @@ import { BootScene } from './scenes/BootScene';
 import { StartScene } from './scenes/StartScene';
 import { IntroScene } from './scenes/IntroScene';
 import { GameScene } from './scenes/GameScene';
+import { CemeteryScene } from './scenes/CemeteryScene';
+import { DungeonScene } from './scenes/DungeonScene';
+import { Level1Scene } from './scenes/Level1Scene';
+import { setupMenu } from './menu';
 import { W, H, PHYS } from './constants';
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -11,7 +15,7 @@ const config: Phaser.Types.Core.GameConfig = {
   height: H,
   parent: 'game-container',
   pixelArt: true,
-  backgroundColor: '#1a0800',
+  backgroundColor: '#0a0a14',
   physics: {
     default: 'arcade',
     arcade: {
@@ -20,11 +24,14 @@ const config: Phaser.Types.Core.GameConfig = {
     },
   },
   scale: {
-    mode: Phaser.Scale.EXPAND,
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
     width: W,
     height: H,
   },
-  scene: [BootScene, StartScene, IntroScene, GameScene],
+  scene: [BootScene, StartScene, IntroScene, GameScene, CemeteryScene, DungeonScene, Level1Scene],
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+(window as any).__game = game;
+setupMenu(game);

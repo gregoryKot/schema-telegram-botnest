@@ -149,6 +149,56 @@
       box-shadow: 0 0 16px rgba(106,90,255,0.4);
       color: #e0d8ff;
     }
+
+    /* ── Menu ───────────────────────────────────────────────────────────── */
+    /* 8-bit / Dendy-style button: sharp corners, hard pixel bevel, no blur */
+    #menu-btn {
+      position: fixed; top: 14px; right: 16px; z-index: 60;
+      width: 48px; height: 42px;
+      background: #4a3a72; color: #ffe9c0;
+      border: 0; border-radius: 0;
+      font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold;
+      line-height: 1; letter-spacing: 1px; cursor: pointer;
+      image-rendering: pixelated;
+      display: flex; align-items: center; justify-content: center;
+      text-shadow: 2px 2px 0 #1a1030;
+      box-shadow:
+        0 0 0 3px #120a1e,
+        inset 4px 4px 0 0 #7a63b0,
+        inset -4px -4px 0 0 #2a1c48;
+      transition: none;
+    }
+    #menu-btn:hover { background: #5a4788; color: #fff4d8; }
+    #menu-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow:
+        0 0 0 3px #120a1e,
+        inset 4px 4px 0 0 #2a1c48,
+        inset -4px -4px 0 0 #7a63b0;
+    }
+    #menu-overlay {
+      position: fixed; inset: 0; z-index: 110;
+      background: rgba(5,5,16,0.88); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    #menu-overlay.visible { display: flex; }
+    .menu-panel {
+      background: #18102e; border: 0;
+      width: 100%; max-width: 360px; padding: 24px;
+      image-rendering: pixelated;
+      box-shadow: 0 0 0 3px #120a1e, inset 4px 4px 0 0 #3a2c5e, inset -4px -4px 0 0 #0e0820, 0 0 50px rgba(100,80,200,0.2);
+    }
+    .menu-title { color: #e8e0ff; letter-spacing: 5px; font-size: 16px; text-align: center; margin-bottom: 22px; }
+    .menu-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; color: #c0b8e0; font-size: 13px; letter-spacing: 1px; }
+    .menu-toggle { background: transparent; border: 1px solid #6a5aff; color: #a08fff; padding: 5px 16px; font-size: 11px; letter-spacing: 2px; cursor: pointer; font-family: 'Courier New', monospace; min-width: 74px; transition: all 0.15s; }
+    .menu-toggle.off { border-color: #3a3060; color: #5a4f7a; }
+    .menu-toggle:hover { background: rgba(106,90,255,0.15); }
+    .menu-section { color: #6a5f9a; font-size: 10px; letter-spacing: 3px; margin: 20px 0 10px; border-top: 1px solid #2a2050; padding-top: 14px; }
+    .menu-level { display: block; width: 100%; text-align: left; background: transparent; border: 1px solid #2a2060; color: #c0b8e0; padding: 9px 12px; margin-bottom: 7px; font-size: 12px; cursor: pointer; font-family: 'Courier New', monospace; transition: all 0.15s; }
+    .menu-level:hover:not(:disabled) { background: rgba(106,90,255,0.12); border-color: #6a5aff; }
+    .menu-level:disabled { color: #4a4068; border-color: #1e1840; cursor: default; }
+    .menu-close { width: 100%; margin-top: 16px; background: transparent; border: 1px solid #4a3f8f; color: #8a7faa; padding: 9px; font-size: 11px; letter-spacing: 3px; cursor: pointer; font-family: 'Courier New', monospace; }
+    .menu-close:hover { color: #e0d8ff; }
   </style>
 </head>
 <body>
@@ -174,6 +224,19 @@
       <div class="tbtn" id="tbtn-right">▶</div>
     </div>
     <div id="tbtn-jump">▲</div>
+  </div>
+
+  <!-- Menu -->
+  <button id="menu-btn" aria-label="Меню">☰</button>
+  <div id="menu-overlay">
+    <div class="menu-panel">
+      <div class="menu-title">М Е Н Ю</div>
+      <div class="menu-row"><span>Музыка</span><button id="menu-music" class="menu-toggle">ВКЛ</button></div>
+      <div class="menu-row"><span>Звуки</span><button id="menu-sfx" class="menu-toggle">ВКЛ</button></div>
+      <div class="menu-section">Г Л А В Ы</div>
+      <div id="menu-levels"></div>
+      <button id="menu-close" class="menu-close">ЗАКРЫТЬ</button>
+    </div>
   </div>
 
   <script type="module" src="/src/main.ts"></script>

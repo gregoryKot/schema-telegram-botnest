@@ -7,8 +7,26 @@ export class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
 
   preload() {
+    // Level 1 — morning
     this.load.image('bg-mountains', 'assets/bg-mountains.png');
-    this.load.image('bg-moon', 'assets/bg-moon.png');
+    this.load.image('bg-moon',      'assets/bg-moon.png');
+
+    // Level 2 — cemetery
+    this.load.image('bg_night_sky',    'assets/bg_night_sky.png');
+    this.load.image('bg_cemetery_mid', 'assets/bg_cemetery_mid.png');
+    this.load.image('bg_graves1',      'assets/bg_graves1.png');
+    this.load.image('bg_graves2',      'assets/bg_graves2.png');
+    this.load.image('cem_ground',      'assets/cem_ground.png');
+    this.load.image('cem_wall',        'assets/cem_wall.png');
+    this.load.image('cem_bush',        'assets/cem_bush.png');
+    this.load.image('cem_statue',      'assets/cem_statue.png');
+
+    // Level 3 — dungeon
+    this.load.image('dun_ground', 'assets/dun_ground.png');
+    this.load.image('dun_wall',   'assets/dun_wall.png');
+    this.load.image('dun_room',   'assets/dun_room.png');
+
+    // Cat sprites
     this.load.spritesheet('cat_run',  'assets/cat_run.png',  { frameWidth: 48, frameHeight: 48 });
     this.load.spritesheet('cat_idle', 'assets/cat_idle.png', { frameWidth: 48, frameHeight: 48 });
   }
@@ -22,7 +40,9 @@ export class BootScene extends Phaser.Scene {
     this.tex('selfcritic',      20, 10, g => this.drawSelfcritic(g));
     this.tex('plat',            16, 10, g => this.drawPlat(g));
     this.tex('ground',          16, 16, g => this.drawGround(g));
-    this.scene.start('Start');
+    // Debug: jump to scene via URL hash (e.g. /#Cemetery, /#Dungeon)
+    const target = window.location.hash.slice(1) || 'Start';
+    this.scene.start(target);
   }
 
   private tex(key: string, vw: number, vh: number, draw: (g: G) => void) {
@@ -114,53 +134,85 @@ export class BootScene extends Phaser.Scene {
     g.fillTriangle(9 * u, 8 * u, 10 * u, 8 * u, 9.5 * u, 9.5 * u);
   }
 
-  // ── Sage ──────────────────────────────────────────────────────────────
+  // ── Sage — serene seated robed figure, soft green glow ────────────────
   private drawSage(g: G) {
     const u = S;
-    g.fillStyle(C.sage, 0.04); g.fillEllipse(13*u, 30*u, 34*u, 55*u);
-    g.fillStyle(C.sage, 0.06); g.fillEllipse(13*u, 30*u, 26*u, 46*u);
-    g.fillStyle(C.sageDk, 1);
-    g.fillRoundedRect(1*u, 2*u, 3*u, 46*u, 2);
-    g.fillStyle(C.sage, 0.3); g.fillCircle(2*u, 2*u, 4*u);
-    g.fillStyle(C.sage, 0.6); g.fillCircle(2*u, 2*u, 3*u);
-    g.fillStyle(0xffffff, 0.9); g.fillCircle(2*u, 2*u, 1.5*u);
-    g.fillStyle(C.sageDk, 1);
-    g.fillRoundedRect(2*u, 28*u, 22*u, 20*u, 4);
-    g.fillRoundedRect(0*u, 36*u, 26*u, 12*u, 3);
-    g.fillRoundedRect(4*u, 14*u, 18*u, 15*u, 5);
-    g.fillStyle(C.sage, 0.12); g.fillRoundedRect(8*u, 14*u, 10*u, 34*u, 3);
-    g.fillStyle(C.sage, 0.15);
-    g.fillRect(7*u, 28*u, 2*u, 16*u); g.fillRect(17*u, 28*u, 2*u, 16*u);
-    g.fillStyle(C.sageDk, 1);
-    g.fillRoundedRect(3*u, 2*u, 20*u, 15*u, 8);
-    g.fillRoundedRect(2*u, 7*u, 22*u, 10*u, 4);
-    g.fillStyle(0xc0e8d0, 1); g.fillCircle(13*u, 12*u, 7*u);
-    g.fillStyle(0x0f2a1a, 0.6); g.fillCircle(13*u, 9*u, 7*u);
-    g.fillStyle(C.sage, 1);
-    g.fillCircle(10*u, 12*u, 2.5*u); g.fillCircle(16*u, 12*u, 2.5*u);
-    g.fillStyle(0xffffff, 0.95);
-    g.fillCircle(10*u, 12*u, 1.2*u); g.fillCircle(16*u, 12*u, 1.2*u);
-    g.fillStyle(C.sage, 0.25);
-    g.fillRoundedRect(3*u, 2*u, 3*u, 13*u, 2);
-    g.fillRoundedRect(20*u, 2*u, 3*u, 13*u, 2);
-    g.fillStyle(C.sageDk, 1);
-    g.fillRoundedRect(3*u, 22*u, 5*u, 4*u, 2);
-    g.fillRoundedRect(18*u, 22*u, 5*u, 4*u, 2);
-    g.fillStyle(C.sage, 0.5);
-    g.fillCircle(5*u, 27*u, 2.5*u); g.fillCircle(21*u, 27*u, 2.5*u);
+    const pt = (x: number, y: number) => ({ x: x * u, y: y * u });
+
+    // Soft aura behind the figure (calm green)
+    g.fillStyle(0x66ffbb, 0.05); g.fillCircle(13*u, 26*u, 24*u);
+    g.fillStyle(0x66ffbb, 0.07); g.fillCircle(13*u, 24*u, 16*u);
+
+    // Robe — a calm trapezoid (broad, grounded base)
+    g.fillStyle(0x16382a, 1);
+    g.fillPoints([pt(8,17), pt(18,17), pt(24,47), pt(2,47)], true);
+    // Robe inner highlight (subtle vertical light)
+    g.fillStyle(0x245a40, 1);
+    g.fillPoints([pt(11,18), pt(15,18), pt(17,47), pt(9,47)], true);
+    // Folded hands at center (meditation)
+    g.fillStyle(0xbfe8cf, 0.9); g.fillEllipse(13*u, 33*u, 7*u, 4*u);
+    g.fillStyle(0x16382a, 1);   g.fillRect(12.4*u, 31*u, 1.2*u, 4*u);
+
+    // Hood / shoulders
+    g.fillStyle(0x16382a, 1);
+    g.fillRoundedRect(5*u, 14*u, 16*u, 8*u, 4*u);
+
+    // Halo behind head
+    g.fillStyle(0x88ffcc, 0.18); g.fillCircle(13*u, 10*u, 8*u);
+    g.fillStyle(0x88ffcc, 0.30); g.fillCircle(13*u, 10*u, 6*u);
+
+    // Head — soft glowing orb
+    g.fillStyle(0xd6f2e0, 1); g.fillCircle(13*u, 10*u, 5.5*u);
+    g.fillStyle(0xeefff6, 0.9); g.fillCircle(13*u, 9*u, 3.5*u);
+
+    // Hood brim over head
+    g.fillStyle(0x16382a, 1);
+    g.fillRoundedRect(6*u, 3*u, 14*u, 6*u, 3*u);
+
+    // Calm closed eyes (two gentle arcs)
+    g.fillStyle(0x2a4a38, 1);
+    g.fillRect(9.5*u, 11*u, 2.5*u, 0.8*u);
+    g.fillRect(14*u, 11*u, 2.5*u, 0.8*u);
+
+    // Tiny floating leaf accent (the 🌿 motif)
+    g.fillStyle(0x7fffb0, 0.8);
+    g.fillEllipse(21*u, 24*u, 3*u, 1.6*u);
   }
 
   // ── Platform / Ground ─────────────────────────────────────────────────
   private drawPlat(g: G) {
-    g.fillStyle(C.platH); g.fillRect(0, 0, 16*S, 3*S);
-    g.fillStyle(C.plat);  g.fillRect(0, 3*S, 16*S, 7*S);
-    g.fillStyle(0x6a5aff, 0.2); g.fillRect(2*S, 5*S, 12*S, 2*S);
+    const TW = 16*S, TH = 10*S;
+    g.fillStyle(0x8B4513, 1); g.fillRect(0, 0, TW, TH);
+    g.fillStyle(0xD2691E, 1); g.fillRect(0, 0, TW, 1*S);
+    g.fillStyle(0xA0522D, 1); g.fillRect(0, 1*S, TW, 2*S);
+    g.fillStyle(0x3d1a05, 1); g.fillRect(0, TH-1*S, TW, 1*S);
+    g.fillStyle(0x5C2E0A, 1); g.fillRect(0, TH-2*S, TW, 1*S);
+    g.fillStyle(0x5C2E0A, 0.55);
+    g.fillRect(4*S,  1*S, 1, TH-2*S);
+    g.fillRect(8*S,  1*S, 1, TH-2*S);
+    g.fillRect(12*S, 1*S, 1, TH-2*S);
+    g.fillStyle(0x3d1a05, 0.6); g.fillEllipse(6*S, 5*S, 2*S, 3*S);
+    g.fillStyle(0xffd080, 0.6);
+    g.fillRect(2*S, 2*S, 1, 1);
+    g.fillRect(10*S, 2*S, 1, 1);
   }
 
   private drawGround(g: G) {
-    g.fillStyle(C.groundH); g.fillRect(0, 0, 16*S, 3*S);
-    g.fillStyle(C.ground);  g.fillRect(0, 3*S, 16*S, 13*S);
-    g.fillStyle(0x2a2060, 0.4); g.fillRect(3*S, 7*S, 2*S, 2*S);
-    g.fillStyle(0x2a2060, 0.2); g.fillRect(9*S, 5*S, 2*S, 2*S);
+    const TW = 16*S, TH = 16*S;
+    g.fillStyle(0x3d1a08, 1); g.fillRect(0, 0, TW, TH);
+    g.fillStyle(0x5a2a12, 1); g.fillRect(0, 3*S, TW, TH-3*S);
+    g.fillStyle(0x2d6614, 1); g.fillRect(0, 0, TW, 3*S);
+    g.fillStyle(0x4a9a22, 1); g.fillRect(0, 0, TW, 1*S);
+    g.fillStyle(0x5ab82a, 1);
+    for (let x = 1; x < 15; x += 3) g.fillRect(x*S, 0, 1, 1*S);
+    g.fillStyle(0x1a0e06, 0.5); g.fillRect(0, 3*S, TW, 1*S);
+    g.fillStyle(0x2a1008, 0.55);
+    g.fillRect(2*S, 6*S, 2*S, 1*S);
+    g.fillRect(8*S, 9*S, 2*S, 1*S);
+    g.fillRect(13*S, 5*S, 1*S, 1*S);
+    g.fillRect(5*S, 12*S, 2*S, 1*S);
+    g.fillStyle(0x4a2010, 0.2);
+    g.fillRect(0, 7*S, TW, 1*S);
+    g.fillRect(0, 12*S, TW, 1*S);
   }
 }

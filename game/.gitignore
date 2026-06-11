@@ -1,6 +1,7 @@
 node_modules
 dist
 *.tsbuildinfo
+.claude/
 
 # Стрэй-артефакты компиляции (проект на noEmit, исходники — только .ts).
 # Все .ts в src/ — исходные; .js/.d.ts/.map рядом с ними генерятся случайным tsc.
