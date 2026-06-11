@@ -136,7 +136,7 @@ export function FloatingEdge({ id, source, target, selected, markerEnd, markerSt
             position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             background: 'var(--bg-elev)', padding: '2px 7px', borderRadius: 5,
-            border: '1px solid rgba(var(--fg-rgb),0.08)',
+            border: '1px solid var(--line)',
             fontSize: 11, color: 'var(--text-sub)', pointerEvents: 'all', whiteSpace: 'nowrap',
             ...(labelStyle as React.CSSProperties),
           }}>

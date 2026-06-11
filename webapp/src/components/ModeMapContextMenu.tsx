@@ -18,9 +18,9 @@ export function ModeMapContextMenu({ x, y, items, onClose }: Props) {
         style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
       <div style={{
         position: 'fixed', left: x, top: y, zIndex: 1000,
-        background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)',
+        background: 'var(--bg-elev)', border: '1px solid var(--line)',
         borderRadius: 8, padding: 4, minWidth: 170,
-        boxShadow: '0 4px 16px rgba(0,0,0,0.16)',
+        boxShadow: 'var(--shadow-2)',
       }}>
         {items.map((it, i) => (
           <button key={i}
@@ -31,7 +31,7 @@ export function ModeMapContextMenu({ x, y, items, onClose }: Props) {
               background: 'none', border: 'none',
               color: it.danger ? 'var(--accent-red)' : 'var(--text)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--fg-rgb),0.06)'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
             {it.label}
           </button>
