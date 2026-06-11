@@ -3,9 +3,6 @@ import { BootScene } from './scenes/BootScene';
 import { StartScene } from './scenes/StartScene';
 import { IntroScene } from './scenes/IntroScene';
 import { GameScene } from './scenes/GameScene';
-import { CemeteryScene } from './scenes/CemeteryScene';
-import { DungeonScene } from './scenes/DungeonScene';
-import { Level1Scene } from './scenes/Level1Scene';
 import { setupMenu } from './menu';
 import { W, H, PHYS } from './constants';
 
@@ -29,7 +26,7 @@ const config: Phaser.Types.Core.GameConfig = {
     width: W,
     height: H,
   },
-  scene: [BootScene, StartScene, IntroScene, GameScene, CemeteryScene, DungeonScene, Level1Scene],
+  scene: [BootScene, StartScene, IntroScene, GameScene],
 };
 
 const game = new Phaser.Game(config);
