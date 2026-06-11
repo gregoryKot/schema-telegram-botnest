@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ModeMapNode, ModeMapEdge, EdgeType } from '../api';
 import { TYPE_COLORS } from './ModeMapNodes';
+import { MMIcon } from './modeMapIcons';
 import { NEED_DATA, NEED_ORDER } from '../needData';
+
+// Preview fill — token-aware (color-mix) with a legacy-hex fallback.
+const previewFill = (c: string) => c.startsWith('#') ? `${c}22` : `color-mix(in srgb, ${c} 14%, transparent)`;
 
 // 5 core emotional needs (schema therapy) — datalist options for unmet need
 const CORE_NEEDS = NEED_ORDER.map(id => NEED_DATA[id]?.name).filter(Boolean) as string[];
@@ -46,8 +50,8 @@ function ClinicalHint({ node, onPickNote, onPickNeed, onPickHealthy }: {
       background: 'var(--accent-soft)', borderRadius: 7, padding: '8px 10px', marginBottom: 14,
       border: '1px solid var(--accent-line)',
     }}>
-      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
-        💡 Спросить себя
+      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <MMIcon name="bulb" size={13} /> Спросить себя
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {qs.map((q, i) => (
@@ -56,7 +60,7 @@ function ClinicalHint({ node, onPickNote, onPickNeed, onPickHealthy }: {
             title="Нажми, чтобы заполнить поле"
             style={{ display: 'flex', gap: 6, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
               padding: '3px 4px', borderRadius: 5, fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.35 }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--fg-rgb),0.05)'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
             <span style={{ color: 'var(--accent)', flexShrink: 0 }}>→</span>{q.text}
           </button>
@@ -92,8 +96,8 @@ function pickPhrases(type: string, n: number): string[] {
 }
 
 const COLOR_PRESETS = [
-  '#7aa3d4','#d47a7a','#d4a07a','#7ab87a',
-  '#9f7ad4','#b07ab8','#7ab8b0','#94a3b8',
+  'var(--c-teal)','var(--c-rose)','var(--c-clay)','var(--c-moss)',
+  'var(--c-plum)','var(--c-ochre)','var(--c-slate)','var(--c-amber)',
 ];
 
 type NodeType = ModeMapNode['type'];
@@ -113,18 +117,18 @@ const SHAPE_OPTIONS: ShapeOption[] = [
   { type: 'trigger',  label: 'Триггер', color: TYPE_COLORS.trigger, isCloud: true },
   { type: 'child',    label: 'Детский', color: TYPE_COLORS.child,   isCircle: true },
   { type: 'critic',   label: 'Критик',  color: TYPE_COLORS.critic },
-  { type: 'coping',   label: 'Гипер',   color: '#d4a07a', copingSubtype: 'over' },
-  { type: 'coping',   label: 'Избег',   color: '#7aa3d4', copingSubtype: 'avoid' },
-  { type: 'coping',   label: 'Капит',   color: '#94a3b8', copingSubtype: 'surr' },
+  { type: 'coping',   label: 'Гипер',   color: TYPE_COLORS.coping, copingSubtype: 'over' },
+  { type: 'coping',   label: 'Избег',   color: TYPE_COLORS.coping, copingSubtype: 'avoid' },
+  { type: 'coping',   label: 'Капит',   color: TYPE_COLORS.coping, copingSubtype: 'surr' },
   { type: 'healthy',  label: 'Здоров',  color: TYPE_COLORS.healthy },
-  { type: 'behavior', label: 'Повед.',  color: '#8a8f9e' },
+  { type: 'behavior', label: 'Повед.',  color: TYPE_COLORS.behavior },
   { type: 'custom',   label: 'Свой',    color: TYPE_COLORS.custom },
 ];
 
 // All previews drawn in a fixed 24x24 box so picker borders align perfectly
 function ShapePreview({ opt, active }: { opt: ShapeOption; active: boolean }) {
   const stroke = active ? 'var(--accent)' : opt.color;
-  const fill = `${opt.color}22`;
+  const fill = previewFill(opt.color);
   const sw = 1.6;
   const paths: Record<string, string> = {
     critic: 'M4,1 L20,1 L23,4 L23,20 L20,23 L4,23 L1,20 L1,4 Z',     // octagon
@@ -195,7 +199,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
     <div style={panelStyle}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>Режим</div>
-        <button onClick={onClose} title="Закрыть" style={closeBtnStyle}>✕</button>
+        <button onClick={onClose} title="Закрыть" style={closeBtnStyle}><MMIcon name="close" size={15} /></button>
       </div>
 
       <label style={labelStyle}>Название</label>
@@ -212,7 +216,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 gap: 3, height: 46, borderRadius: 7, cursor: 'pointer', boxSizing: 'border-box',
-                border: `1.5px solid ${isActive ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                border: `1.5px solid ${isActive ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: isActive ? 'var(--accent-soft)' : 'none', padding: 2,
               }}>
               <ShapePreview opt={opt} active={isActive} />
@@ -233,7 +237,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
         ))}
         <button onClick={() => patchData({ customColor: undefined })} title="Сбросить"
           style={{ width: 22, height: 22, borderRadius: '50%', background: 'none', cursor: 'pointer', padding: 0,
-            border: '2px dashed rgba(var(--fg-rgb),0.25)', fontSize: 10, color: 'var(--text-faint)' }}>✕</button>
+            border: '2px dashed var(--line-strong)', color: 'var(--text-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MMIcon name="close" size={11} /></button>
       </div>
 
       <label style={labelStyle}>Заливка</label>
@@ -247,7 +251,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
           return (
             <button key={opt.label} onClick={() => patchData({ filled: opt.filled, fillFull: opt.fillFull })}
               style={{ flex: 1, padding: '6px 4px', borderRadius: 6, fontSize: 11.5, cursor: 'pointer',
-                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none',
                 color: active ? 'var(--accent)' : 'var(--text-sub)' }}>
               {opt.label}
@@ -268,7 +272,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
             <button key={opt.v} onClick={() => patchData({ strokeWidth: opt.v })} title={opt.label}
               style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                 padding: '8px 4px', borderRadius: 6, cursor: 'pointer',
-                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none' }}>
               <span style={{ width: 26, height: opt.h, borderRadius: opt.h, background: active ? 'var(--accent)' : 'var(--text-sub)' }} />
               <span style={{ fontSize: 9, color: active ? 'var(--accent)' : 'var(--text-faint)' }}>{opt.label}</span>
@@ -289,7 +293,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
             <button key={opt.v} onClick={() => patchData({ fontSize: opt.v })}
               style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 38,
                 borderRadius: 6, cursor: 'pointer',
-                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none',
                 color: active ? 'var(--accent)' : 'var(--text-sub)', fontSize: opt.fs, fontWeight: 600 }}>
               {opt.label}
@@ -309,7 +313,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
           return (
             <button key={opt.v} onClick={() => patchData({ display: opt.v })}
               style={{ flex: 1, padding: '6px 4px', borderRadius: 6, fontSize: 11.5, cursor: 'pointer',
-                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none',
                 color: active ? 'var(--accent)' : 'var(--text-sub)' }}>
               {opt.label}
@@ -345,7 +349,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
         <>
           <label style={{ ...labelStyle, color: 'var(--accent-green)' }}>🌿 Что сказал бы Здоровый Взрослый</label>
           <textarea ref={healthyRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 48,
-            borderColor: 'rgba(120,184,122,0.4)' }} rows={2}
+            borderColor: 'color-mix(in srgb, var(--c-moss) 45%, transparent)' }} rows={2}
             value={node.data.healthyResponse ?? ''} onChange={e => patchData({ healthyResponse: e.target.value || undefined })}
             placeholder={node.type === 'critic' ? 'Ответ критику: «Ты не обязан быть идеальным…»'
               : node.type === 'coping' ? 'Зачем защита? «Я могу выдержать эту боль…»'
@@ -384,7 +388,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
     <div style={panelStyle}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>Связь</div>
-        <button onClick={onClose} title="Закрыть" style={closeBtnStyle}>✕</button>
+        <button onClick={onClose} title="Закрыть" style={closeBtnStyle}><MMIcon name="close" size={15} /></button>
       </div>
 
       <label style={labelStyle}>Тип связи (вставит подпись)</label>
@@ -393,7 +397,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
           <button key={k}
             onClick={() => chooseType(k)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 14, textAlign: 'left', fontSize: 12, cursor: 'pointer',
-              border: `1px solid ${edgeType === k ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+              border: `1px solid ${edgeType === k ? 'var(--accent)' : 'var(--line-strong)'}`,
               background: edgeType === k ? 'var(--accent-soft)' : 'none',
               color: edgeType === k ? 'var(--accent)' : 'var(--text-sub)' }}>
             <span style={{ fontSize: 11, opacity: 0.7 }}>→</span>
@@ -404,7 +408,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
 
       {/* Suggestion box — pick a phrase for the line or refresh for more */}
       <div style={{ marginBottom: 14, padding: '8px 9px', borderRadius: 8,
-        border: '1px solid rgba(var(--fg-rgb),0.1)', background: 'rgba(var(--fg-rgb),0.03)' }}>
+        border: '1px solid var(--line)', background: 'var(--surface-2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 7 }}>
           <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-faint)', flex: 1 }}>
             Варианты подписи
@@ -418,7 +422,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
             return (
               <button key={p} onClick={() => onChange({ ...edge, label: p })}
                 style={{ padding: '4px 9px', borderRadius: 14, fontSize: 11.5, cursor: 'pointer',
-                  border: `1px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                  border: `1px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                   background: active ? 'var(--accent-soft)' : 'var(--bg-elev)',
                   color: active ? 'var(--accent)' : 'var(--text-sub)' }}>
                 {p}
@@ -447,7 +451,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
               title={opt.label}
               style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                 padding: '7px 4px', borderRadius: 6, cursor: 'pointer',
-                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none' }}>
               <svg width={36} height={6} viewBox="0 0 36 6">
                 <line x1={1} y1={3} x2={35} y2={3} stroke={active ? 'var(--accent)' : 'var(--text-sub)'}
@@ -471,7 +475,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
             <button key={opt.v} onClick={() => onChange({ ...edge, data: { ...edge.data, width: opt.v } })} title={opt.label}
               style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                 padding: '8px 4px', borderRadius: 6, cursor: 'pointer',
-                border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                 background: active ? 'var(--accent-soft)' : 'none' }}>
               <span style={{ width: 28, height: opt.h, borderRadius: opt.h, background: active ? 'var(--accent)' : 'var(--text-sub)' }} />
               <span style={{ fontSize: 9, color: active ? 'var(--accent)' : 'var(--text-faint)' }}>{opt.label}</span>
@@ -506,14 +510,14 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
 
       <label style={labelStyle}>Цвет стрелки</label>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-        {['#d47a7a','#7ab87a','#d4a07a','#7aa3d4','#9f7ad4','#94a3b8'].map(c => (
+        {['var(--c-rose)','var(--c-moss)','var(--c-clay)','var(--c-teal)','var(--c-plum)','var(--c-slate)'].map(c => (
           <button key={c} onClick={() => onChange({ ...edge, data: { ...edge.data, color: c } })}
             style={{ width: 22, height: 22, borderRadius: '50%', background: c, cursor: 'pointer', padding: 0,
               border: edge.data?.color === c ? '2px solid var(--text)' : '2px solid transparent' }} />
         ))}
         <button onClick={() => onChange({ ...edge, data: { ...edge.data, color: undefined } })} title="Нейтральный (по умолчанию)"
           style={{ width: 22, height: 22, borderRadius: '50%', background: 'none', cursor: 'pointer', padding: 0,
-            border: '2px dashed rgba(var(--fg-rgb),0.25)', fontSize: 10, color: 'var(--text-faint)' }}>✕</button>
+            border: '2px dashed var(--line-strong)', color: 'var(--text-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MMIcon name="close" size={11} /></button>
       </div>
 
       <button onClick={onDelete} style={deleteBtnStyle}>Удалить связь</button>
@@ -525,7 +529,7 @@ function dirBtnStyle(active: boolean): React.CSSProperties {
   return {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     gap: 2, padding: '6px 4px', borderRadius: 6, cursor: 'pointer',
-    border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+    border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
     background: active ? 'var(--accent-soft)' : 'none',
     color: active ? 'var(--accent)' : 'var(--text-sub)',
   };
@@ -538,9 +542,9 @@ const closeBtnStyle: React.CSSProperties = {
 
 const panelStyle: React.CSSProperties = {
   width: 230, flexShrink: 0,
-  borderLeft: '1px solid rgba(var(--fg-rgb),0.07)',
+  borderLeft: '1px solid var(--line)',
   padding: '16px 14px', overflowY: 'auto',
-  background: 'rgba(var(--fg-rgb),0.02)',
+  background: 'var(--surface-2)',
   display: 'flex', flexDirection: 'column',
 };
 const labelStyle: React.CSSProperties = {
@@ -549,12 +553,12 @@ const labelStyle: React.CSSProperties = {
 };
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '8px 10px', borderRadius: 6,
-  border: '1px solid rgba(var(--fg-rgb),0.15)',
+  border: '1px solid var(--line-strong)',
   background: 'var(--bg-elev)', color: 'var(--text)',
   fontSize: 13, marginBottom: 14, boxSizing: 'border-box', outline: 'none',
 };
 const deleteBtnStyle: React.CSSProperties = {
   marginTop: 'auto', padding: '8px 12px', borderRadius: 6,
-  border: '1px solid rgba(var(--fg-rgb),0.12)',
+  border: '1px solid var(--line)',
   background: 'none', color: 'var(--accent-red)', fontSize: 12.5, cursor: 'pointer',
 };
