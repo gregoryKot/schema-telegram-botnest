@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
 import type { ModeMapNode, TherapistCustomMode } from '../api';
 import { api } from '../api';
+import { MMIcon } from './modeMapIcons';
 
 // Maps a mode id → which palette group/type it belongs to (for client modes)
 function findModeMeta(modeId: string): { type: NodeType; copingSubtype?: 'over' | 'avoid' | 'surr'; emoji: string; name: string } | null {
@@ -22,12 +23,12 @@ export const DRAG_TYPE = 'application/modemap-node';
 const GROUP_ORDER = ['child', 'critic', 'coping_overcompensation', 'coping_avoidance', 'coping_surrender', 'healthy'];
 
 export const GROUP_TO_TYPE: Record<string, { type: NodeType; color: string; copingSubtype?: 'over' | 'avoid' | 'surr' }> = {
-  child:                   { type: 'child',   color: 'var(--accent-blue)' },
-  coping_surrender:        { type: 'coping',  color: '#94a3b8', copingSubtype: 'surr' },
-  coping_avoidance:        { type: 'coping',  color: 'var(--accent)', copingSubtype: 'avoid' },
-  coping_overcompensation: { type: 'coping',  color: 'var(--accent-orange)', copingSubtype: 'over' },
-  critic:                  { type: 'critic',  color: 'var(--accent-red)' },
-  healthy:                 { type: 'healthy', color: 'var(--accent-green)' },
+  child:                   { type: 'child',   color: 'var(--c-teal)' },
+  coping_surrender:        { type: 'coping',  color: 'var(--c-clay)', copingSubtype: 'surr' },
+  coping_avoidance:        { type: 'coping',  color: 'var(--c-clay)', copingSubtype: 'avoid' },
+  coping_overcompensation: { type: 'coping',  color: 'var(--c-clay)', copingSubtype: 'over' },
+  critic:                  { type: 'critic',  color: 'var(--c-rose)' },
+  healthy:                 { type: 'healthy', color: 'var(--c-moss)' },
 };
 
 interface Props {
@@ -115,14 +116,14 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
   return (
     <div style={{
       width: 210, flexShrink: 0, display: 'flex', flexDirection: 'column',
-      borderRight: '1px solid rgba(var(--fg-rgb),0.07)',
-      background: 'rgba(var(--fg-rgb),0.015)',
+      borderRight: '1px solid var(--line)',
+      background: 'var(--surface-2)',
     }}>
       {/* Search */}
-      <div style={{ padding: '10px 10px 8px', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)', flexShrink: 0 }}>
+      <div style={{ padding: '10px 10px 8px', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск режима…"
           style={{ width: '100%', padding: '6px 10px', borderRadius: 6, boxSizing: 'border-box',
-            border: '1px solid rgba(var(--fg-rgb),0.14)', background: 'var(--bg-elev)',
+            border: '1px solid var(--line-strong)', background: 'var(--bg-elev)',
             color: 'var(--text)', fontSize: 12.5, outline: 'none' }} />
       </div>
 
@@ -139,9 +140,9 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
               {onAddMany && (
                 <button onClick={() => { const all = clientModeIds.map(clientModeNode).filter(Boolean) as Omit<ModeMapNode, 'position'>[]; if (all.length) onAddMany(all); }}
                   title="Вынести все режимы клиента на карту"
-                  style={{ marginLeft: 8, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 5,
+                  style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 3, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 5,
                     cursor: 'pointer', fontSize: 10.5, fontWeight: 600, padding: '3px 8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                  ＋ все
+                  <MMIcon name="plus" size={11} /> все
                 </button>
               )}
             </div>
@@ -193,7 +194,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
               <button onClick={() => !q && toggleGroup(group.id)}
                 style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '6px 12px',
                   background: 'none', border: 'none', cursor: q ? 'default' : 'pointer',
-                  borderTop: '1px solid rgba(var(--fg-rgb),0.05)' }}>
+                  borderTop: '1px solid var(--line)' }}>
                 <GroupDot type={meta.type} color={group.color} />
                 <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)', flex: 1, textAlign: 'left', marginLeft: 7 }}>
                   {group.group}
@@ -215,12 +216,12 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
 
         {/* Custom therapist modes */}
         {!q && (
-          <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', marginTop: 4 }}>
+          <div style={{ borderTop: '1px solid var(--line)', marginTop: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
               <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)', flex: 1 }}>Мои режимы</span>
               <button onClick={() => { const next = !adding; setAdding(next); if (next) setTimeout(() => { addFormRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); addInputRef.current?.focus(); }, 60); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, color: 'var(--accent)', padding: 0, lineHeight: 1 }}
-                title="Добавить свой режим">＋</button>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', padding: 0, lineHeight: 1, display: 'flex', alignItems: 'center' }}
+                title="Добавить свой режим"><MMIcon name="plus" size={15} /></button>
             </div>
 
             {adding && (
@@ -246,7 +247,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                       title={opt.label}
                       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                         padding: '4px 6px', borderRadius: 5, cursor: 'pointer', fontSize: 9,
-                        border: `1.5px solid ${newType === opt.type && !(newType === 'coping') ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                        border: `1.5px solid ${newType === opt.type && !(newType === 'coping') ? 'var(--accent)' : 'var(--line-strong)'}`,
                         background: newType === opt.type && !(newType === 'coping') ? 'var(--accent-soft)' : 'none',
                         color: newType === opt.type && !(newType === 'coping') ? 'var(--accent)' : 'var(--text-faint)',
                       }}>
@@ -266,7 +267,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                         title={opt.label}
                         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                           padding: '4px 6px', borderRadius: 5, cursor: 'pointer', fontSize: 9,
-                          border: `1.5px solid ${active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.14)'}`,
+                          border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
                           background: active ? 'var(--accent-soft)' : 'none',
                           color: active ? 'var(--accent)' : 'var(--text-faint)',
                         }}>
@@ -281,7 +282,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                   <button onClick={saveCustomMode} style={{ ...miniInputStyle, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, flex: 1 }}>
                     Сохранить
                   </button>
-                  <button onClick={() => setAdding(false)} style={{ ...miniInputStyle, cursor: 'pointer', flex: 0, padding: '5px 10px' }}>✕</button>
+                  <button onClick={() => setAdding(false)} style={{ ...miniInputStyle, cursor: 'pointer', flex: 0, padding: '5px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MMIcon name="close" size={13} /></button>
                 </div>
               </div>
             )}
@@ -296,8 +297,8 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                   <span style={{ fontSize: 12.5, flex: 1 }}>{m.name}</span>
                 </button>
                 <button onClick={() => removeCustomMode(m.id)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 11, padding: '0 10px', flexShrink: 0 }}
-                  title="Удалить">✕</button>
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: '0 10px', flexShrink: 0, display: 'flex', alignItems: 'center' }}
+                  title="Удалить"><MMIcon name="close" size={11} /></button>
               </div>
             ))}
 
@@ -338,7 +339,7 @@ const itemStyle: React.CSSProperties = {
 
 const miniInputStyle: React.CSSProperties = {
   padding: '5px 8px', borderRadius: 5, fontSize: 12.5,
-  border: '1px solid rgba(var(--fg-rgb),0.15)',
+  border: '1px solid var(--line-strong)',
   color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
 };
 
