@@ -1,15 +1,15 @@
 import Phaser from 'phaser';
 import { audio } from './audio';
 
-interface LevelEntry { key: string; label: string; enabled: boolean; }
+interface LevelEntry { scene: string; chapter?: string; label: string; enabled: boolean; }
 
-// Chapters. New-direction game = Level1+. Old scenes kept as "архив".
+// Player-facing chapters. Internally everything is the one `Game` scene + a chapter config.
 const LEVELS: LevelEntry[] = [
-  { key: 'Start',  label: 'Главное меню',                 enabled: true  },
-  { key: 'Level1', label: 'Глава 1 · Обычный день',       enabled: true  },
-  { key: 'Level2', label: 'Глава 2 · Дома · скоро',        enabled: false },
-  { key: 'Level3', label: 'Глава 3 · Стыд · скоро',        enabled: false },
-  { key: 'Level4', label: 'Глава 4 · Зависть · скоро',     enabled: false },
+  { scene: 'Start',                       label: 'Главное меню',             enabled: true  },
+  { scene: 'Game', chapter: 'chapter1',   label: 'Глава 1 · Обычный день',   enabled: true  },
+  { scene: 'Game', chapter: 'chapter2',   label: 'Глава 2 · Дома',           enabled: true  },
+  { scene: 'Game', chapter: 'chapter3',   label: 'Глава 3 · Стыд · скоро',   enabled: false },
+  { scene: 'Game', chapter: 'chapter4',   label: 'Глава 4 · Зависть · скоро', enabled: false },
 ];
 
 const RUNNING = 5, PAUSED = 6, SLEEPING = 7;
@@ -44,7 +44,7 @@ export function setupMenu(game: Phaser.Game) {
     for (const k of pausedKeys) game.scene.resume(k);
     pausedKeys = [];
   };
-  const goto = (key: string) => {
+  const goto = (scene: string, chapter?: string) => {
     overlay.classList.remove('visible');
     pausedKeys = [];
     game.scene.scenes.forEach(s => {
@@ -52,11 +52,14 @@ export function setupMenu(game: Phaser.Game) {
       if (st === RUNNING || st === PAUSED || st === SLEEPING) game.scene.stop(s.scene.key);
     });
     audio.ensure();
-    game.scene.start(key);
+    game.scene.start(scene, chapter ? { chapter } : undefined);
   };
 
   btn.addEventListener('click', () => overlay.classList.contains('visible') ? close() : open());
   closeBtn.addEventListener('click', close);
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); overlay.classList.contains('visible') ? close() : open(); }
+  });
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   musicBtn.addEventListener('click', () => { audio.setMusicEnabled(!audio.isMusicEnabled()); syncToggles(); });
   sfxBtn.addEventListener('click',   () => { audio.setSfxEnabled(!audio.isSfxEnabled()); syncToggles(); });
@@ -66,7 +69,7 @@ export function setupMenu(game: Phaser.Game) {
     b.className = 'menu-level';
     b.textContent = lv.label;
     b.disabled = !lv.enabled;
-    if (lv.enabled) b.addEventListener('click', () => goto(lv.key));
+    if (lv.enabled) b.addEventListener('click', () => goto(lv.scene, lv.chapter));
     levelsEl.appendChild(b);
   }
 }

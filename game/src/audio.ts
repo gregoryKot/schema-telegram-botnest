@@ -13,6 +13,7 @@ class AudioEngine {
   private timer: number | null = null;
   private musicEnabled = true;
   private sfxEnabled = true;
+  private mode: 'day' | 'home' = 'day';
 
   ensure() {
     if (!this.ctx) {
@@ -71,7 +72,15 @@ class AudioEngine {
   pickup() { this.sfx(d => { this.tone(660, 0.10, 'triangle', 0.20, d, 990); this.tone(990, 0.14, 'sine', 0.14, d); }); }
   toll()   { this.sfx(d => this.tone(110, 1.6, 'sine', 0.20, d, 90)); } // deep realization bell
 
-  // ── Music — slow melancholic A-minor arpeggio (Am · F · C · G) ─────────────
+  // ── Music — per-chapter mood ────────────────────────────────────────────────
+  // day:  slow melancholic A-minor arpeggio (Am · F · C · G)
+  // home: lower, slower, heavier — D-minor an octave down (Dm · B♭ · Gm · A)
+  setMode(m: 'day' | 'home') {
+    if (this.mode === m) return;
+    this.mode = m;
+    this.step = 0;
+  }
+
   startMusic() {
     if (!this.musicEnabled) return;
     this.ensure();
@@ -91,18 +100,33 @@ class AudioEngine {
   }
   private loop() {
     if (!this.playing || !this.ctx || !this.musicGain) return;
-    const chords = [
-      [220.00, 261.63, 329.63, 261.63], // Am
-      [174.61, 220.00, 261.63, 220.00], // F
-      [261.63, 329.63, 392.00, 329.63], // C
-      [196.00, 246.94, 293.66, 246.94], // G
-    ];
+    const MODES = {
+      day: {
+        chords: [
+          [220.00, 261.63, 329.63, 261.63], // Am
+          [174.61, 220.00, 261.63, 220.00], // F
+          [261.63, 329.63, 392.00, 329.63], // C
+          [196.00, 246.94, 293.66, 246.94], // G
+        ],
+        tempo: 470,
+      },
+      home: {
+        chords: [
+          [146.83, 174.61, 220.00, 174.61], // Dm
+          [116.54, 146.83, 174.61, 146.83], // B♭
+          [98.00,  116.54, 146.83, 116.54], // Gm
+          [110.00, 138.59, 164.81, 138.59], // A
+        ],
+        tempo: 560,
+      },
+    };
+    const { chords, tempo } = MODES[this.mode];
     const ci = Math.floor(this.step / 4) % chords.length;
     const ni = this.step % 4;
     this.tone(chords[ci][ni], 1.5, 'triangle', 0.15, this.musicGain);
     if (ni === 0) this.tone(chords[ci][0] / 2, 2.4, 'sine', 0.13, this.musicGain); // soft bass
     this.step++;
-    this.timer = window.setTimeout(() => this.loop(), 470);
+    this.timer = window.setTimeout(() => this.loop(), tempo);
   }
 }
 
