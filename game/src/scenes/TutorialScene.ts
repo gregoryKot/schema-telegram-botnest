@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { W, H, GROUND_Y, PHYS } from '../constants';
 import { audio } from '../audio';
 import { touch, IS_TOUCH } from '../controls';
+import { track } from '../analytics';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  ПРОЛОГ — знакомство с Йоськой и управлением. Три сценки, у каждой одна
@@ -88,7 +89,7 @@ export class TutorialScene extends Phaser.Scene {
       .setOrigin(1, 0).setDepth(60).setInteractive({ useHandCursor: true });
     skip.on('pointerover', () => skip.setColor('#fff0d8'));
     skip.on('pointerout', () => skip.setColor('#6a5f8a'));
-    skip.on('pointerdown', () => this.scene.start('Game', { chapter: 'chapter1' }));
+    skip.on('pointerdown', () => { track('tutorial_skip'); this.scene.start('Game', { chapter: 'chapter1' }); });
 
     this.input.keyboard!.resetKeys(); // залипшие клавиши после смены сцены/alt-tab
     this.cursors = this.input.keyboard!.createCursorKeys();
@@ -354,6 +355,7 @@ export class TutorialScene extends Phaser.Scene {
 
   private finish() {
     this.step = 'done';
+    track('tutorial_done');
     this.narr.setText('БЕЙ. ЗАМРИ. БЕГИ.\nТри способа на все случаи жизни.\n\n...должно же хватать. да?');
     this.prompt.setText(IS_TOUCH ? 'тапни — начать обычный день' : 'E / клик — начать обычный день');
     this.input.once('pointerdown', () => this.scene.start('Game', { chapter: 'chapter1' }));

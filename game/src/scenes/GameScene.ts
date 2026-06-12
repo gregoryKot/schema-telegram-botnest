@@ -6,11 +6,15 @@ import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation, makeHomeTexture
 import { buildDecor } from '../decor';
 import { touch, IS_TOUCH } from '../controls';
 import { makeCommonTextures } from '../textures';
+import { unlockChapter } from '../progress';
+import { track } from '../analytics';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  GAME — the gameplay engine. A "chapter" (config in chapters.ts) supplies the
 //  level data; this scene just runs it. Core: fight / freeze / flee.
 // ════════════════════════════════════════════════════════════════════════════
+
+const trackedStarts = new Set<string>(); // chapter_start один раз за загрузку страницы
 
 const RUN_SPEED = 250;
 const DASH_SPEED = 560;
@@ -112,6 +116,11 @@ export class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, -H, ARENA_W, H * 3);
     this.cameras.main.fadeIn(600, 8, 6, 16);
     this.showTitleCard();
+    unlockChapter(this.chapter.id);
+    if (!trackedStarts.has(this.chapter.id)) { // рестарты после смерти — не «старт»
+      trackedStarts.add(this.chapter.id);
+      track('chapter_start', { chapter: this.chapter.id });
+    }
 
     // start music on the first input (browsers require a gesture)
     audio.setMode(this.chapter.music);
@@ -635,12 +644,15 @@ export class GameScene extends Phaser.Scene {
 
   private showRealization() {
     this.dead = true;
+    track('chapter_done', { chapter: this.chapter.id });
+    if (this.chapter.next) unlockChapter(this.chapter.next);
     audio.stopMusic(); audio.toll();
     this.cameras.main.resetFX();
     this.add.rectangle(W / 2, H / 2, W, H, 0x06040e).setScrollFactor(0).setDepth(150);
 
+    const ky = H / 540; // y развязок написаны под десктопную высоту
     const line = (text: string, y: number, color: string, size: number, delay: number) => {
-      const t = this.add.text(W / 2, y, text, {
+      const t = this.add.text(W / 2, y * ky, text, {
         fontFamily: 'Courier New', fontSize: `${size}px`, color, align: 'center', lineSpacing: 6,
       }).setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0);
       this.tweens.add({ targets: t, alpha: 1, duration: 900, delay });
@@ -678,6 +690,7 @@ export class GameScene extends Phaser.Scene {
 
   private gameOver() {
     this.dead = true;
+    track('game_over', { chapter: this.chapter.id });
     const txt = this.add.text(W/2, H/2, 'так больше нельзя...', { fontFamily: 'Courier New', fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
     this.tweens.add({ targets: txt, alpha: 1, duration: 800 });
