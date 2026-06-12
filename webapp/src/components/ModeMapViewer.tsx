@@ -85,7 +85,7 @@ export function ModeMapViewer() {
                 border: active?.id === m.id ? '1px solid var(--line)' : '1px solid transparent',
                 background: active?.id === m.id ? 'var(--surface-3)' : 'none',
                 color: active?.id === m.id ? 'var(--text)' : 'var(--text-sub)' }}>
-              {m.kind === 'personality' ? '🧭' : '🎯'} {m.title}
+              {m.kind === 'personality' ? '🧭' : m.kind === 'couple' ? '💞' : '🎯'} {m.title}
             </button>
           ))}
         </div>

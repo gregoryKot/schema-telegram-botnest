@@ -164,9 +164,10 @@ interface NodeEditorProps {
   onChange: (updated: ModeMapNode) => void;
   onDelete: () => void;
   onClose: () => void;
+  coupleMode?: boolean;   // карта пары → показать выбор партнёра
 }
 
-export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEditorProps) {
+export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMode }: NodeEditorProps) {
   const nameRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const needRef = useRef<HTMLInputElement>(null);
@@ -205,6 +206,31 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose }: NodeEdi
       <label style={labelStyle}>Название</label>
       <input ref={nameRef} style={inputStyle} value={node.data.label}
         onChange={e => patchData({ label: e.target.value })} placeholder="Название режима" />
+
+      {coupleMode && (
+        <>
+          <label style={labelStyle}>Чей режим</label>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+            {([
+              { v: 'A' as const, label: 'Партнёр А', color: 'var(--accent-blue)' },
+              { v: 'B' as const, label: 'Партнёр Б', color: 'var(--accent-orange)' },
+            ]).map(opt => {
+              const active = node.data.side === opt.v;
+              return (
+                <button key={opt.v} onClick={() => patchData({ side: active ? undefined : opt.v })}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '7px 4px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+                    border: `1.5px solid ${active ? opt.color : 'rgba(var(--fg-rgb),0.14)'}`,
+                    background: active ? `color-mix(in srgb, ${opt.color} 14%, transparent)` : 'none',
+                    color: active ? opt.color : 'var(--text-sub)', fontWeight: active ? 600 : 400 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: opt.color }} />
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       <label style={labelStyle}>Форма и тип</label>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 14 }}>

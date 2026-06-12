@@ -200,6 +200,7 @@ export interface ModeMapNode {
     healthyResponse?: string;             // что сказал бы Здоровый Взрослый
     strokeWidth?: 'thin' | 'normal' | 'bold';  // толщина контура фигуры
     fontSize?: 'sm' | 'md' | 'lg';        // размер текста в фигуре
+    side?: 'A' | 'B';                      // чей режим на карте пары (Партнёр А / Б)
   };
   width?: number;
   height?: number;
@@ -219,7 +220,7 @@ export interface ModeMapEdge {
   data?: { edgeType?: EdgeType; bidirectional?: boolean; color?: string; lineStyle?: LineStyle; width?: 'thin' | 'normal' | 'bold' };
 }
 
-export type ModeMapKind = 'personality' | 'problem';
+export type ModeMapKind = 'personality' | 'problem' | 'couple';
 
 export interface ModeMapMeta {
   id: number;

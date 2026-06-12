@@ -10,7 +10,9 @@ interface Props {
 const KIND_META: Record<ModeMapKind, { icon: string; label: string; hint: string }> = {
   personality: { icon: '🧭', label: 'Карта личности',  hint: 'Все основные режимы человека на одной странице — для общей ориентации' },
   problem:     { icon: '🎯', label: 'Карта ситуации',  hint: 'Конкретная цепочка: триггер → режимы → последствия' },
+  couple:      { icon: '💞', label: 'Карта пары',      hint: 'Цикл-клэш: как копинг одного партнёра запускает боль другого' },
 };
+const KINDS: ModeMapKind[] = ['personality', 'problem', 'couple'];
 
 export function ModeMapSelector({ clientId }: Props) {
   const [maps, setMaps] = useState<ModeMapMeta[]>([]);
@@ -56,7 +58,9 @@ export function ModeMapSelector({ clientId }: Props) {
   async function createMap(kind: ModeMapKind) {
     setCreating(true); setPickKind(false);
     try {
-      const title = kind === 'personality' ? 'Карта личности' : `Ситуация ${maps.filter(m => m.kind === 'problem').length + 1}`;
+      const title = kind === 'personality' ? 'Карта личности'
+        : kind === 'couple' ? `Пара ${maps.filter(m => m.kind === 'couple').length + 1}`
+        : `Ситуация ${maps.filter(m => m.kind === 'problem').length + 1}`;
       const m = await api.createModeMap(clientId, title, kind);
       setMaps(prev => [...prev, { id: m.id, title: m.title, kind: m.kind, createdAt: m.createdAt, updatedAt: m.updatedAt }]);
       setActiveId(m.id);
@@ -171,7 +175,7 @@ export function ModeMapSelector({ clientId }: Props) {
             background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8,
             padding: 5, boxShadow: 'var(--shadow-2)',
           }}>
-            {(['personality', 'problem'] as ModeMapKind[]).map(k => (
+            {KINDS.map(k => (
               <button key={k} onClick={() => createMap(k)}
                 style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px',
                   borderRadius: 6, cursor: 'pointer', background: 'none', border: 'none' }}
@@ -201,8 +205,8 @@ export function ModeMapSelector({ clientId }: Props) {
             <div style={{ fontSize: 13, color: 'var(--text-sub)', maxWidth: 360, textAlign: 'center', lineHeight: 1.45 }}>
               Выбери тип первой карты
             </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
-              {(['personality', 'problem'] as ModeMapKind[]).map(k => (
+            <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {KINDS.map(k => (
                 <button key={k} onClick={() => createMap(k)} disabled={creating}
                   style={{ width: 200, padding: '14px 16px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
                     background: 'var(--bg-elev)', border: '1px solid var(--line)' }}>
