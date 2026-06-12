@@ -24,6 +24,10 @@ RUN npm run build --prefix webapp
 # ServeStaticModule at /app (built locally with vite base '/app/')
 RUN mkdir -p webapp/dist/app && cp -r schema-miniapp/dist/* webapp/dist/app/
 
+# Copy pre-built game into webapp/dist/game — served at /game
+# (built locally with vite base '/game/', dist committed like the miniapp)
+RUN mkdir -p webapp/dist/game && cp -r game/dist/* webapp/dist/game/
+
 # ── Prune dev deps (backend only) ──────────────────────────────────────────
 RUN npm prune --production
 

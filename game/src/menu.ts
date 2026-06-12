@@ -6,6 +6,7 @@ interface LevelEntry { scene: string; chapter?: string; label: string; enabled: 
 // Player-facing chapters. Internally everything is the one `Game` scene + a chapter config.
 const LEVELS: LevelEntry[] = [
   { scene: 'Start',                       label: 'Главное меню',             enabled: true  },
+  { scene: 'Tutorial',                    label: 'Пролог · Знакомство',      enabled: true  },
   { scene: 'Game', chapter: 'chapter1',   label: 'Глава 1 · Обычный день',   enabled: true  },
   { scene: 'Game', chapter: 'chapter2',   label: 'Глава 2 · Дома',           enabled: true  },
   { scene: 'Game', chapter: 'chapter3',   label: 'Глава 3 · Стыд · скоро',   enabled: false },

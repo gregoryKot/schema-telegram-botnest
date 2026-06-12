@@ -14,5 +14,13 @@ schema-miniapp/vite.config.ts
 schema-miniapp/package-lock.json
 schema-telegram-botnest
 webapp/node_modules
-game
+game/node_modules
+game/src
+game/public
+game/.claude
+game/index.html
+game/tsconfig.json
+game/vite.config.ts
+game/package-lock.json
+game/package.json
 *.log

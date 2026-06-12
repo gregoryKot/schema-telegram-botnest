@@ -4,6 +4,7 @@ import { audio } from '../audio';
 import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
 import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation, makeHomeTextures } from '../enemies/home';
 import { buildDecor } from '../decor';
+import { touch, IS_TOUCH } from '../controls';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  GAME — the gameplay engine. A "chapter" (config in chapters.ts) supplies the
@@ -359,19 +360,24 @@ export class GameScene extends Phaser.Scene {
     this.heartsText = this.add.text(18, 14, '', { fontFamily: 'Courier New', fontSize: '24px', color: '#ff5577' })
       .setScrollFactor(0).setDepth(100);
     this.updateHearts();
-    this.add.text(W / 2, H - 20, 'J удар   ·   K замри   ·   SHIFT рывок', { fontFamily: 'Courier New', fontSize: '11px', color: '#6a5f8a' })
-      .setOrigin(0.5, 1).setScrollFactor(0).setDepth(100);
+    if (!IS_TOUCH)
+      this.add.text(W / 2, H - 20, 'J/X — удар   ·   K/C/↓ — замри   ·   SHIFT/Z — рывок', { fontFamily: 'Courier New', fontSize: '11px', color: '#6a5f8a' })
+        .setOrigin(0.5, 1).setScrollFactor(0).setDepth(100);
   }
   private updateHearts() {
     this.heartsText.setText('♥'.repeat(Math.max(0, this.hearts)) + '·'.repeat(Math.max(0, 3 - this.hearts)));
   }
 
   private setupInput() {
+    this.input.keyboard!.resetKeys(); // залипшие клавиши после смены сцены/alt-tab
     this.cursors = this.input.keyboard!.createCursorKeys();
+    // две раскладки: стрелки + Z/X/C и WASD + J/K
     this.keys = {
       A: this.input.keyboard!.addKey('A'), D: this.input.keyboard!.addKey('D'),
       W: this.input.keyboard!.addKey('W'), J: this.input.keyboard!.addKey('J'),
       K: this.input.keyboard!.addKey('K'), SHIFT: this.input.keyboard!.addKey('SHIFT'),
+      X: this.input.keyboard!.addKey('X'), C: this.input.keyboard!.addKey('C'),
+      Z: this.input.keyboard!.addKey('Z'),
     };
   }
 
@@ -441,12 +447,14 @@ export class GameScene extends Phaser.Scene {
   private updateMoves(dt: number) {
     const b = this.player.body as Phaser.Physics.Arcade.Body;
     const onGround = b.blocked.down;
-    const left  = this.cursors.left.isDown  || this.keys.A.isDown;
-    const right = this.cursors.right.isDown || this.keys.D.isDown;
-    const jump  = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.space) || Phaser.Input.Keyboard.JustDown(this.keys.W);
-    const hit   = Phaser.Input.Keyboard.JustDown(this.keys.J);
-    const dash  = Phaser.Input.Keyboard.JustDown(this.keys.SHIFT);
-    this.frozen = this.keys.K.isDown && onGround && !this.dashing && !this.attacking;
+    const left  = this.cursors.left.isDown  || this.keys.A.isDown || touch.left;
+    const right = this.cursors.right.isDown || this.keys.D.isDown || touch.right;
+    const jump  = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.space)
+               || Phaser.Input.Keyboard.JustDown(this.keys.W) || touch.consume('jump');
+    const hit   = Phaser.Input.Keyboard.JustDown(this.keys.J) || Phaser.Input.Keyboard.JustDown(this.keys.X) || touch.consume('hit');
+    const dash  = Phaser.Input.Keyboard.JustDown(this.keys.SHIFT) || Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('dash');
+    const freezeHeld = this.keys.K.isDown || this.keys.C.isDown || this.cursors.down.isDown || touch.freeze;
+    this.frozen = freezeHeld && onGround && !this.dashing && !this.attacking;
     if (this.frozen && !this.wasFrozen) audio.freeze();
     this.wasFrozen = this.frozen;
 
@@ -665,7 +673,10 @@ export class GameScene extends Phaser.Scene {
     // not a soft-lock: let the player restart after it settles
     this.time.delayedCall(14000, () => {
       const next = this.chapter.next;
-      const label = next && CHAPTERS[next] ? `дальше — «${CHAPTERS[next].title}». нажми любую клавишу` : 'нажми любую клавишу';
+      const act = IS_TOUCH ? 'тапни' : 'нажми любую клавишу';
+      const label = next && CHAPTERS[next]
+        ? `дальше — «${CHAPTERS[next].title}». ${act}`
+        : `продолжение следует... ${act} — в меню`;
       const hint = this.add.text(W / 2, H - 28, label, { fontFamily: 'Courier New', fontSize: '11px', color: '#5a4f7a' })
         .setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0);
       this.tweens.add({ targets: hint, alpha: 0.8, duration: 800 });
