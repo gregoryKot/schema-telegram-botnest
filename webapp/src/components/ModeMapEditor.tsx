@@ -257,7 +257,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
 
         <ModeMapCanvas clientId={clientId} mapId={mapId} kind={kind} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
-          setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId}
+          setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId} selectedNodeId={selectedNodeId}
           saveStatus={saveStatus} scheduleSave={scheduleSave}
           pushHistory={pushHistory} nodesRef={nodesRef} edgesRef={edgesRef}
           onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />

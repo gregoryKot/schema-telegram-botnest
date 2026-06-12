@@ -2,6 +2,7 @@ import { useState, useRef, useLayoutEffect } from 'react';
 import { Handle, Position, NodeToolbar, type NodeProps } from '@xyflow/react';
 import { useNodeActions } from './modeMapActions';
 import { MMIcon } from './modeMapIcons';
+import { getSchemaById } from '../schemaTherapyData';
 
 export interface ModeNodeData {
   label: string;
@@ -16,6 +17,7 @@ export interface ModeNodeData {
   strokeWidth?: 'thin' | 'normal' | 'bold';
   fontSize?: 'sm' | 'md' | 'lg';
   side?: 'A' | 'B';
+  schemaId?: string;
 }
 
 // Node colours now come from the site's earthy palette tokens (index.css --c-*),
@@ -156,6 +158,8 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
   const showNote = display !== 'name' && !!data.note;
   const showNeed = display === 'full' && !!data.unmetNeed;
   const showHealthy = display === 'full' && !!data.healthyResponse;
+  const schema = data.schemaId ? getSchemaById(data.schemaId) : undefined;
+  const showSchema = display !== 'name' && !!schema;
 
   const startEdit = () => { if (id && actions) { setDraft(data.label); setEditing(true); } };
   const commit = () => { if (id && actions) actions.rename(id, draft.trim() || data.label); setEditing(false); };
@@ -186,6 +190,16 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
         color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>потребность: {data.unmetNeed}</div>}
       {showHealthy && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.3, wordBreak: 'break-word',
         color: light ? 'rgba(255,255,255,0.8)' : 'var(--c-moss)' }}>🌿 {data.healthyResponse}</div>}
+      {showSchema && schema && (
+        <div style={{ marginTop: 5, display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: '100%',
+          padding: '2px 7px', borderRadius: 999, fontSize: subFs - 1.5, lineHeight: 1.2,
+          background: light ? 'rgba(255,255,255,0.18)' : `color-mix(in srgb, ${schema.domainColor} 14%, transparent)`,
+          border: `1px solid ${light ? 'rgba(255,255,255,0.3)' : `color-mix(in srgb, ${schema.domainColor} 40%, transparent)`}`,
+          color: light ? 'rgba(255,255,255,0.92)' : schema.domainColor }}>
+          <span style={{ fontSize: subFs - 1 }}>{schema.emoji}</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{schema.name}</span>
+        </div>
+      )}
     </div>
   );
 }

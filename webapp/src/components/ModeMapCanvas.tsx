@@ -10,7 +10,7 @@ import { api } from '../api';
 import { NODE_TYPES, NODE_DEFAULT_SIZES } from './ModeMapNodes';
 import { EDGE_TYPES } from './ModeMapFloatingEdge';
 import { DRAG_TYPE, GROUP_TO_TYPE } from './ModeMapPalette';
-import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
+import { MODE_GROUPS, getModeById, getSchemaById } from '../schemaTherapyData';
 import { ModeMapContextMenu, type MenuItem } from './ModeMapContextMenu';
 import { ModeMapLegend } from './ModeMapLegend';
 import { ModeMapGuide } from './ModeMapGuide';
@@ -34,6 +34,7 @@ export interface CanvasProps {
   onEdgesChange: ReturnType<typeof useEdgesState<FlowEdge>>[2];
   setSelectedNodeId: (id: string | null) => void;
   setSelectedEdgeId: (id: string | null) => void;
+  selectedNodeId: string | null;
   saveStatus: 'idle' | 'saving' | 'saved';
   scheduleSave: (ns: FlowNode[], es: FlowEdge[]) => void;
   pushHistory: () => void;
@@ -44,7 +45,7 @@ export interface CanvasProps {
 }
 
 export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange,
-  setSelectedNodeId, setSelectedEdgeId, saveStatus, scheduleSave,
+  setSelectedNodeId, setSelectedEdgeId, selectedNodeId, saveStatus, scheduleSave,
   pushHistory, nodesRef, edgesRef, onUndo, onRedo, canUndo, canRedo }: CanvasProps) {
   const { screenToFlowPosition, zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
 
@@ -55,10 +56,23 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   const [tplOpen, setTplOpen] = useState(false);
   const [dlOpen, setDlOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
+  const [schemasOpen, setSchemasOpen] = useState(false);
+  const [clientSchemaIds, setClientSchemaIds] = useState<string[] | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const tplWrapRef = useRef<HTMLDivElement>(null);
   const dlWrapRef = useRef<HTMLDivElement>(null);
   const keysWrapRef = useRef<HTMLDivElement>(null);
+  const schemasWrapRef = useRef<HTMLDivElement>(null);
+
+  // Lazy-load the client's identified schemas the first time the panel opens
+  const openSchemas = useCallback(() => {
+    setSchemasOpen(o => !o); setTplOpen(false); setDlOpen(false);
+    if (clientSchemaIds === null) {
+      api.getConceptualization(clientId)
+        .then(c => setClientSchemaIds(Array.isArray(c?.schemaIds) ? c!.schemaIds : []))
+        .catch(() => setClientSchemaIds([]));
+    }
+  }, [clientId, clientSchemaIds]);
   // Desktop (fine pointer) — keyboard hints only make sense there
   const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 900px) and (pointer: fine)').matches;
 
@@ -372,6 +386,31 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                   <button onClick={() => { onGenerateFromConcept(); setTplOpen(false); }} style={menuItemStyle}>
                     Из концептуализации клиента
                   </button>
+                </Dropdown>
+              )}
+            </div>
+            <div ref={schemasWrapRef} style={{ position: 'relative' }}>
+              <TbBtn label="Схемы клиента — привязать к выбранному режиму" onClick={openSchemas} active={schemasOpen} caret><MMIcon name="target" size={17} /></TbBtn>
+              {schemasOpen && (
+                <Dropdown anchorRef={schemasWrapRef} onClose={() => setSchemasOpen(false)}>
+                  <div style={dropHeadStyle}>Схемы клиента</div>
+                  <div style={{ padding: '0 10px 6px', fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.35 }}>
+                    {selectedNodeId ? 'Нажми, чтобы привязать к выбранному режиму' : 'Сначала выбери режим на холсте'}
+                  </div>
+                  {clientSchemaIds === null && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>Загрузка…</div>}
+                  {clientSchemaIds?.length === 0 && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>У клиента пока нет отмеченных схем</div>}
+                  {clientSchemaIds?.map(sid => {
+                    const s = getSchemaById(sid);
+                    if (!s) return null;
+                    return (
+                      <button key={sid} disabled={!selectedNodeId}
+                        onClick={() => { if (selectedNodeId) { patchNodeData(selectedNodeId, { schemaId: sid }); setSchemasOpen(false); } }}
+                        style={{ ...menuItemStyle, display: 'flex', alignItems: 'center', gap: 8, opacity: selectedNodeId ? 1 : 0.55 }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.domainColor, flexShrink: 0 }} />
+                        <span>{s.emoji} {s.name}</span>
+                      </button>
+                    );
+                  })}
                 </Dropdown>
               )}
             </div>
