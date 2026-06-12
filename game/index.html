@@ -170,6 +170,21 @@
       color: #e0d8ff;
     }
 
+    /* ── Поверни телефон: в портрете канвас 800×450 нечитаем ─────────────── */
+    #rotate-hint {
+      position: fixed; inset: 0; z-index: 200;
+      background: #120a1e;
+      display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 18px; color: #a08fff; font-size: 13px; letter-spacing: 1px;
+      text-align: center;
+    }
+    #rotate-hint .phone-icon { font-size: 44px; animation: rot 1.6s ease-in-out infinite; }
+    @keyframes rot { 0%, 30% { transform: rotate(0deg); } 70%, 100% { transform: rotate(90deg); } }
+    @media (orientation: portrait) and (pointer: coarse) {
+      #rotate-hint { display: flex; }
+    }
+
     /* ── Menu ───────────────────────────────────────────────────────────── */
     /* 8-bit / Dendy-style button: sharp corners, hard pixel bevel, no blur */
     #menu-btn {
@@ -235,6 +250,12 @@
       <div id="card-counter"></div>
       <button id="card-btn">ПРОДОЛЖИТЬ</button>
     </div>
+  </div>
+
+  <!-- Поверни телефон (только тач + портрет) -->
+  <div id="rotate-hint">
+    <div class="phone-icon">📱</div>
+    <div>ПОВЕРНИ ТЕЛЕФОН<br>играем в альбомной</div>
   </div>
 
   <!-- Mobile touch controls -->

@@ -7,6 +7,7 @@ import { buildDecor } from '../decor';
 import { touch, IS_TOUCH } from '../controls';
 import { makeCommonTextures } from '../textures';
 import { unlockChapter } from '../progress';
+import { drawYarnPlay, fawnDroop } from '../catFx';
 import { track } from '../analytics';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -384,9 +385,10 @@ export class GameScene extends Phaser.Scene {
     this.critic = { img, size: 1, struck: 0, alive: true };
     // важный новый враг — представляем стоп-кадром, иначе «просто какой-то кот»
     this.storyFrame('ВНУТРЕННИЙ КРИТИК',
-      'тень Йоськи. ходит следом и бьёт больнее всех.\n\n' +
-      'бить — он только громче.\nубегать — догонит: он же ты.\n\n' +
-      'не вовлекайся. иди вперёд — и он затихнет.');
+      'тень Йоськи. ходит следом и зудит под лапу.\n\n' +
+      'единственный, кого НАДО гнать: рявкай (X)!\n' +
+      'убегать — догонит и вырастет.\n' +
+      'отвлечёшься на клубок — сожрёт с потрохами.');
   }
 
   // Стоп-кадр посреди главы: пауза, затемнение, текст, продолжение по тапу
@@ -417,7 +419,7 @@ export class GameScene extends Phaser.Scene {
     audio.freeze();
     this.cameras.main.flash(160, 80, 50, 110);
     this.burst(this.player.x, this.player.y - 24, 0xb08fd0, 12, 150);
-    this.player.setScale(1.7, 1.15); // прогнулся
+    fawnDroop(this, this.player); // голова понуро, вздох
     for (const m of this.anx) { if (m.alive) { m.vx = Math.sign(m.img.x - this.player.x) * 320; m.vy = -120; m.cd = 2600; } }
     if (this.critic?.alive) this.critic.struck = 4000;
     this.sayOnce('fawn', '«ладно-ладно, как скажете...» — и правда отстали. но чего это стоило.', 3400);
@@ -508,7 +510,7 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.calmRing.clear();
       this.yarnImg.setVisible(false);
-      this.player.setScale(1.5, 1.5);
+      if (!this.tweens.isTweening(this.player)) { this.player.setScale(1.5, 1.5); this.player.setAngle(0); }
     }
 
     // ── РЫВОК (dash) — i-frames + afterimage ──
@@ -603,14 +605,22 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  // ── Self-critic: fighting it only makes it bigger ───────────────────────────
+  // ── Self-critic: ЕГО — гнать. Рявкаешь — сжимается; бегаешь — растёт ───────
   private hitCritic() {
-    if (!this.critic) return;
+    const c = this.critic;
+    if (!c) return;
     this.doHitstop(50); this.cameras.main.shake(90, 0.006); audio.hit();
-    this.critic.size = Math.min(2.4, this.critic.size + 0.22);
-    this.critic.img.setScale(1.5 * this.critic.size);
-    this.burst(this.critic.img.x, this.critic.img.y - 20, 0x6a2a8a, 6, 90);
-    this.sayOnce('critic_hit', 'споришь с собой? он только громче.', 2800);
+    c.size = c.size - 0.35;
+    this.burst(c.img.x, c.img.y - 20, 0x6a2a8a, 8, 110);
+    if (c.size <= 0.6) {
+      c.alive = false;
+      this.tweens.add({ targets: c.img, alpha: 0, scaleX: 0.2, scaleY: 0.2, duration: 420, onComplete: () => c.img.destroy() });
+      this.say('ПОШЁЛ ВОН!! ...и он ушёл. надо же.', 3000);
+      this.critic = null;
+    } else {
+      c.img.setScale(1.5 * c.size);
+      this.sayOnce('critic_hit', 'вот так! рявкай — он сжимается!', 2600);
+    }
   }
 
   private updateAnx(dt: number) {
@@ -659,7 +669,7 @@ export class GameScene extends Phaser.Scene {
     this.anx = this.anx.filter(m => m.alive || m.img.active);
   }
 
-  // Self-critic mirrors your path with delay; it catches you when you falter.
+  // Критик ходит тенью за тобой. Бег от него и клубок его КОРМЯТ.
   private updateCritic(dt: number) {
     const c = this.critic; if (!c || !c.alive) return;
     const target = this.trail[0];   // oldest = ~1.5s behind
@@ -669,13 +679,22 @@ export class GameScene extends Phaser.Scene {
       c.img.setFlipX(target.flip);
       c.img.play(Math.abs(target.x - c.img.x) > 4 ? 'p-walk' : 'p-idle', true);
     }
-    // shrink slowly when you DON'T engage (keep moving, ignore it)
-    if (c.size > 1 && !this.attacking) { c.size = Math.max(1, c.size - dt * 0.00018); c.img.setScale(1.5 * c.size); }
     const dist = Phaser.Math.Distance.Between(c.img.x, c.img.y - 20, this.player.x, this.player.y - 20);
+    // убегаешь — он растёт за спиной
+    if (this.dashing || dist > 320) {
+      c.size = Math.min(2.4, c.size + dt * 0.00012);
+      if (c.size > 1.6) this.sayOnce('critic_grow', 'убегаю — а он за спиной только громче...', 2800);
+    }
+    // отвлёкся на клубок при нём — кормишь его ещё быстрее
+    if (this.frozen && dist < 300) {
+      c.size = Math.min(2.4, c.size + dt * 0.0005);
+      this.sayOnce('critic_frz', 'клубок?! он же прямо ЗА тобой!', 2800);
+    }
+    c.img.setScale(1.5 * c.size);
     c.struck -= dt;
     if (dist < 34 && this.invuln <= 0 && c.struck <= 0) {
       c.struck = 1200; this.damage(c.img.x);
-      this.sayOnce('critic_catch', '«ты опять не справился»', 2800);
+      this.sayOnce('critic_catch', '«ты опять не справился» — РЯВКНИ на него (X)!', 3000);
     }
   }
 
@@ -767,17 +786,9 @@ export class GameScene extends Phaser.Scene {
   // «Отвлечься» = Йоська играет с клубком; мысли теряют к нему интерес
   private drawCalmRing() {
     this.calmRing.clear();
-    const dir = this.player.flipX ? -1 : 1;
-    const t = this.freezePulseT * 0.006;
-    const bx = this.player.x + dir * 26 + Math.sin(t * 1.7) * 8;
-    const by = this.player.y - 7 - Math.abs(Math.sin(t * 2.3)) * 14;
-    // клубок скачет под лапой
-    this.calmRing.fillStyle(0x000000, 0.18);
-    this.calmRing.fillEllipse(bx, this.player.y - 2, 16, 4);
-    this.yarnImg.setVisible(true).setPosition(bx, by).setAngle(t * 180);
-    // лёгкое кольцо спокойствия осталось, но едва заметное
+    drawYarnPlay(this.calmRing, this.yarnImg, this.player, this.freezePulseT * 0.006);
     this.calmRing.lineStyle(1, 0x88ccff, 0.15);
-    this.calmRing.strokeCircle(this.player.x, this.player.y - 22, 36 + Math.sin(t) * 8);
+    this.calmRing.strokeCircle(this.player.x, this.player.y - 22, 36 + Math.sin(this.freezePulseT * 0.006) * 8);
   }
 
   // ── Cat voice ──────────────────────────────────────────────────────────────
