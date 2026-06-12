@@ -38,13 +38,13 @@ export class IntroScene extends Phaser.Scene {
 
     // Заголовок главы
     this.add.text(W / 2, 70, slide.title.toUpperCase(), {
-      fontFamily: 'Courier New', fontSize: '11px',
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px',
       color: '#aa4411', letterSpacing: 6,
     }).setOrigin(0.5);
 
     // Подзаголовок
     this.add.text(W / 2, 105, slide.subtitle, {
-      fontFamily: 'Courier New', fontSize: '18px',
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '18px',
       color: '#fff0d8', letterSpacing: 1,
     }).setOrigin(0.5);
 
@@ -58,7 +58,7 @@ export class IntroScene extends Phaser.Scene {
 
     slide.lines.forEach((text, i) => {
       const t = this.add.text(W / 2, startY + i * lineH, text, {
-        fontFamily: 'Courier New', fontSize: '14px',
+        fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px',
         color: text === '' ? '#000' : '#e8c8a0',
         letterSpacing: 0.5, align: 'center',
       }).setOrigin(0.5).setAlpha(0);
@@ -80,7 +80,7 @@ export class IntroScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true })
       .setAlpha(0);
     const btnTxt = this.add.text(W / 2, H - 80, 'Начать путь  →', {
-      fontFamily: 'Courier New', fontSize: '15px',
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '15px',
       color: '#ff7733', letterSpacing: 3,
     }).setOrigin(0.5).setAlpha(0);
 
@@ -88,10 +88,10 @@ export class IntroScene extends Phaser.Scene {
 
     btn.on('pointerover', () => { btn.fillColor = 0x3a2a8f; btnTxt.setColor('#fff0d8'); });
     btn.on('pointerout',  () => { btn.fillColor = 0x3a1500; btnTxt.setColor('#ff7733'); });
-    btn.on('pointerdown', () => this.scene.start('Tutorial'));
+    btn.on('pointerdown', () => this.scene.start('Game'));
 
     // Пропуск по пробелу/клику на фон
-    this.input.keyboard!.once('keydown-SPACE', () => this.scene.start('Tutorial'));
-    this.input.keyboard!.once('keydown-ENTER', () => this.scene.start('Tutorial'));
+    this.input.keyboard!.once('keydown-SPACE', () => this.scene.start('Game'));
+    this.input.keyboard!.once('keydown-ENTER', () => this.scene.start('Game'));
   }
 }

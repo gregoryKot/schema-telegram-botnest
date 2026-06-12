@@ -10,7 +10,7 @@ import { track } from '../analytics';
 //  Неверная реакция не наказывает — даёт честный фидбэк репликой.
 // ════════════════════════════════════════════════════════════════════════════
 
-type Step = 'meet' | 'walk' | 'dash' | 'freeze' | 'fight' | 'done';
+type Step = 'meet' | 'walk' | 'dash' | 'freeze' | 'fight' | 'fawn' | 'done';
 
 export class TutorialScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
@@ -41,7 +41,11 @@ export class TutorialScene extends Phaser.Scene {
   private attackT = 0; private attackCd = 0;
   private slash!: Phaser.GameObjects.Graphics;
   private calmRing!: Phaser.GameObjects.Graphics;
+  private yarnImg!: Phaser.GameObjects.Image;
   private freezePulseT = 0;
+  // fawn (сценка «уступи»)
+  private neighbor: Phaser.GameObjects.Sprite | null = null;
+  private neiBubble: Phaser.GameObjects.Text | null = null;
 
   constructor() { super('Tutorial'); }
 
@@ -49,6 +53,7 @@ export class TutorialScene extends Phaser.Scene {
     this.step = 'meet'; this.t = 0; this.said = new Set();
     this.moved = 0; this.jumped = false; this.pile = null; this.dashed = false;
     this.worries = []; this.calmT = 0; this.colleague = null; this.colBubble = null;
+    this.neighbor = null; this.neiBubble = null;
 
     // сцена-«прихожая»: тёплый полумрак, пятно света на котике
     const bg = this.add.graphics();
@@ -74,18 +79,19 @@ export class TutorialScene extends Phaser.Scene {
 
     this.slash = this.add.graphics().setDepth(11);
     this.calmRing = this.add.graphics().setDepth(8);
+    this.yarnImg = this.add.image(0, 0, 'yarn').setDepth(9).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
     this.contHint = this.add.text(W / 2, H - 96, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
-      { fontFamily: 'Courier New', fontSize: '12px', color: '#88ffcc' }).setOrigin(0.5).setDepth(50).setAlpha(0);
-    this.narr = this.add.text(W / 2, 96, '', { fontFamily: 'Courier New', fontSize: '17px', color: '#fff0d8', align: 'center', lineSpacing: 8 })
+      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#88ffcc' }).setOrigin(0.5).setDepth(50).setAlpha(0);
+    this.narr = this.add.text(W / 2, 96, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '13px', color: '#fff0d8', align: 'center', lineSpacing: 12 })
       .setOrigin(0.5, 0).setDepth(50);
-    this.prompt = this.add.text(W / 2, H - 64, '', { fontFamily: 'Courier New', fontSize: '14px', color: '#88ffcc', align: 'center' })
+    this.prompt = this.add.text(W / 2, H - 64, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#88ffcc', align: 'center' })
       .setOrigin(0.5).setDepth(50);
-    this.bubble = this.add.text(0, 0, '', { fontFamily: 'Courier New', fontSize: '14px', color: '#fff0d8',
+    this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 8, y: 5 } }).setOrigin(0.5, 1).setDepth(45).setAlpha(0);
 
-    const skip = this.add.text(W - 20, 16, 'пропустить →', { fontFamily: 'Courier New', fontSize: '11px', color: '#6a5f8a' })
+    const skip = this.add.text(W - 20, 16, 'пропустить →', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
       .setOrigin(1, 0).setDepth(60).setInteractive({ useHandCursor: true });
     skip.on('pointerover', () => skip.setColor('#fff0d8'));
     skip.on('pointerout', () => skip.setColor('#6a5f8a'));
@@ -93,13 +99,12 @@ export class TutorialScene extends Phaser.Scene {
 
     this.input.keyboard!.resetKeys(); // залипшие клавиши после смены сцены/alt-tab
     this.cursors = this.input.keyboard!.createCursorKeys();
+    // одна схема: движение — стрелки/WASD, действия — Z X C V
     this.keys = {
       A: this.input.keyboard!.addKey('A'), D: this.input.keyboard!.addKey('D'),
-      W: this.input.keyboard!.addKey('W'), J: this.input.keyboard!.addKey('J'),
-      K: this.input.keyboard!.addKey('K'), E: this.input.keyboard!.addKey('E'),
-      SHIFT: this.input.keyboard!.addKey('SHIFT'),
+      W: this.input.keyboard!.addKey('W'), E: this.input.keyboard!.addKey('E'),
       X: this.input.keyboard!.addKey('X'), C: this.input.keyboard!.addKey('C'),
-      Z: this.input.keyboard!.addKey('Z'),
+      Z: this.input.keyboard!.addKey('Z'), V: this.input.keyboard!.addKey('V'),
     };
     const begin = () => { audio.ensure(); audio.startMusic(); };
     this.input.keyboard!.once('keydown', begin);
@@ -115,7 +120,7 @@ export class TutorialScene extends Phaser.Scene {
       '...правда, почти все силы уходят на борьбу.\nС чем? Да вроде бы и ни с чем.',
       () => {
         this.step = 'walk';
-        this.narr.setText('У Йоськи на любую беду — три способа:\nБЕЙ. ЗАМРИ. БЕГИ.\nСейчас попробуем все.');
+        this.narr.setText('У Йоськи на любую беду — четыре способа:\nБЕЙ. БЕГИ. ОТВЛЕКИСЬ. УСТУПИ.\nСейчас попробуем все.');
         this.prompt.setText(IS_TOUCH ? '◀ ▶ — идти      ▲ — прыгнуть' : '← → / A D — идти      ↑ / W / ПРОБЕЛ — прыгнуть');
       });
   }
@@ -157,7 +162,8 @@ export class TutorialScene extends Phaser.Scene {
       case 'dash':   this.updatePile(dt); break;
       case 'freeze': this.updateWorries(dt); break;
       case 'fight':  this.updateColleague(dt); break;
-      case 'done':   if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.scene.start('Game', { chapter: 'chapter1' }); break;
+      case 'fawn':   this.updateNeighbor(); break;
+      case 'done':   if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.scene.start('Intro'); break;
     }
   }
 
@@ -169,10 +175,12 @@ export class TutorialScene extends Phaser.Scene {
     const right = this.cursors.right.isDown || this.keys.D.isDown || touch.right;
     const jump = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.space)
               || Phaser.Input.Keyboard.JustDown(this.keys.W) || touch.consume('jump');
-    const dash = Phaser.Input.Keyboard.JustDown(this.keys.SHIFT) || Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('dash');
-    const hit = Phaser.Input.Keyboard.JustDown(this.keys.J) || Phaser.Input.Keyboard.JustDown(this.keys.X) || touch.consume('hit');
-    const freezeHeld = this.keys.K.isDown || this.keys.C.isDown || this.cursors.down.isDown || touch.freeze;
+    const dash = Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('dash');
+    const hit = Phaser.Input.Keyboard.JustDown(this.keys.X) || touch.consume('hit');
+    const fawn = Phaser.Input.Keyboard.JustDown(this.keys.V) || touch.consume('fawn');
+    const freezeHeld = this.keys.C.isDown || this.cursors.down.isDown || touch.freeze;
     this.frozen = freezeHeld && onGround && this.dashT <= 0;
+    if (fawn) this.onFawn();
 
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.attackCd > 0) this.attackCd -= dt;
@@ -193,14 +201,18 @@ export class TutorialScene extends Phaser.Scene {
       b.setVelocityX(0);
       this.player.setScale(1.65, 1.35).play('p-idle', true);
       this.freezePulseT += dt;
+      // Йоська играет с клубком — отвлёкся
+      const t = this.freezePulseT * 0.006;
+      const dir = this.player.flipX ? -1 : 1;
+      const bx = this.player.x + dir * 26 + Math.sin(t * 1.7) * 8;
+      const by = this.player.y - 7 - Math.abs(Math.sin(t * 2.3)) * 14;
       this.calmRing.clear();
-      const r = 30 + Math.sin(this.freezePulseT * 0.006) * 14;
-      this.calmRing.lineStyle(2, 0x88ccff, 0.4);
-      this.calmRing.strokeCircle(this.player.x, this.player.y - 22, r);
-      this.calmRing.lineStyle(1, 0x88ccff, 0.2);
-      this.calmRing.strokeCircle(this.player.x, this.player.y - 22, r + 14);
+      this.calmRing.fillStyle(0x000000, 0.18);
+      this.calmRing.fillEllipse(bx, this.player.y - 2, 16, 4);
+      this.yarnImg.setVisible(true).setPosition(bx, by).setAngle(t * 180);
     } else {
       this.calmRing.clear();
+      this.yarnImg.setVisible(false);
       this.player.setScale(1.5, 1.5);
       if (right) { b.setVelocityX(250); this.player.setFlipX(false); this.moved += dt; }
       else if (left) { b.setVelocityX(-250); this.player.setFlipX(true); this.moved += dt; }
@@ -216,10 +228,16 @@ export class TutorialScene extends Phaser.Scene {
       this.attackT -= dt;
       const dir = this.player.flipX ? -1 : 1;
       const prog = 1 - this.attackT / 170;
-      this.slash.lineStyle(5, 0xfff0d8, 1 - prog * 0.8);
-      this.slash.beginPath();
-      this.slash.arc(this.player.x + dir * 34, this.player.y - 22, 28, (-0.8 + prog * 1.4) * dir, (0.8 + prog * 1.4) * dir, dir < 0);
-      this.slash.strokePath();
+      // выпад с выгнутой спиной + три следа когтей
+      this.player.setScale(1.5 + 0.25 * Math.sin(prog * Math.PI), 1.5 - 0.2 * Math.sin(prog * Math.PI));
+      const cx = this.player.x + dir * 30, cy = this.player.y - 34;
+      const len = 34 * Math.min(1, prog * 1.6);
+      const a = 1 - Math.max(0, prog - 0.45) * 1.8;
+      for (let i = 0; i < 3; i++) {
+        const ox = i * 7 * dir, oy = i * 9 - 6;
+        this.slash.lineStyle(3, i === 1 ? 0xff4455 : 0xd92b3d, Math.max(0, a));
+        this.slash.lineBetween(cx + ox, cy + oy, cx + ox + len * dir, cy + oy + len * 0.55);
+      }
     }
   }
 
@@ -228,7 +246,7 @@ export class TutorialScene extends Phaser.Scene {
     if (this.moved > 900 && this.jumped) {
       this.step = 'dash';
       this.narrTell('Понедельник. На Йоську едет\nкуча несделанных дел.', () => {
-        this.prompt.setText(IS_TOUCH ? 'РЫВОК — любимый способ Йоськи: быть где-то ещё' : 'SHIFT / Z — рывок. любимый способ Йоськи: быть где-то ещё');
+        this.prompt.setText(IS_TOUCH ? 'РЫВОК — любимый способ Йоськи: быть где-то ещё' : 'Z — рывок. любимый способ Йоськи: быть где-то ещё');
         this.spawnPile();
       });
     }
@@ -247,7 +265,7 @@ export class TutorialScene extends Phaser.Scene {
     g.fillStyle(0xfff0d8, 0.7);
     g.fillRect(-38, -28, 18, 2); g.fillRect(-26, -54, 18, 2); g.fillRect(-14, -78, 16, 2);
     c.add(g);
-    const lbl = this.add.text(0, -96, 'ДЕЛА', { fontFamily: 'Courier New', fontSize: '11px', color: '#9a90b8' }).setOrigin(0.5, 1);
+    const lbl = this.add.text(0, -96, 'ДЕЛА', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#9a90b8' }).setOrigin(0.5, 1);
     c.add(lbl);
     this.pile = c;
   }
@@ -278,8 +296,8 @@ export class TutorialScene extends Phaser.Scene {
   private beginFreeze() {
     if (this.step !== 'dash') return;
     this.step = 'freeze';
-    this.narrTell('Ночь. Завтра важный день.\nВ голову лезут переживания.', () => {
-      this.prompt.setText(IS_TOUCH ? 'ЗАМРИ (удерживай) — переждать' : 'K / C / ↓ (удерживай) — замереть и переждать');
+    this.narrTell('Ночь. Завтра важный день.\nВ голову лезут переживания.\nИх не ударить и от них не убежать — они внутри.', () => {
+      this.prompt.setText(IS_TOUCH ? 'ИГРАЙ (удерживай) — отвлечься, и они отстанут' : 'C (удерживай) — отвлечься на клубок, и они отстанут');
       for (let i = 0; i < 3; i++) this.worries.push(this.add.image(this.player.x, this.player.y - 60, 'anxmob').setDepth(7).setScale(0.8));
       audio.anx();
     });
@@ -299,7 +317,7 @@ export class TutorialScene extends Phaser.Scene {
       this.worries.forEach(w => w.setAlpha(Math.max(0.15, 1 - this.calmT / 1900)));
       if (this.calmT > 2000 && this.worries.some(w => w.active)) {
         this.worries.forEach(w => { this.tweens.add({ targets: w, alpha: 0, scale: 0, duration: 400, onComplete: () => w.destroy() }); });
-        this.say('выдохнул — и они растаяли.', 2600);
+        this.say('клубок важнее. а мысли... отстали?', 2600);
         audio.freeze();
         this.time.delayedCall(1600, () => this.beginFight());
       }
@@ -314,10 +332,10 @@ export class TutorialScene extends Phaser.Scene {
     if (this.step !== 'freeze') return;
     this.step = 'fight';
     this.narrTell('Утро. Коллега «по-дружески» просит\nсделать его работу. Снова. Бесплатно.', () => {
-      this.prompt.setText(IS_TOUCH ? 'БЕЙ — рявкнуть. Йоська это не любит. но иначе сядут на шею' : 'J / X — рявкнуть. Йоська это не любит. но иначе сядут на шею');
+      this.prompt.setText(IS_TOUCH ? 'БЕЙ — Йоська не умеет отказывать спокойно. только так' : 'X — Йоська не умеет отказывать спокойно. только так');
       this.colleague = this.add.sprite(W - 80, GROUND_Y, 'cat_idle').setOrigin(0.5, 1).setScale(1.5)
         .setTint(0xc8a060).setFlipX(true).setDepth(8).play('p-walk');
-      this.colBubble = this.add.text(0, 0, 'ну ты же можешь!', { fontFamily: 'Courier New', fontSize: '13px', color: '#1a1020',
+      this.colBubble = this.add.text(0, 0, 'ну ты же можешь!', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
         backgroundColor: '#e8c890', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });
   }
@@ -343,22 +361,63 @@ export class TutorialScene extends Phaser.Scene {
     const dx = this.colleague.x - this.player.x;
     if (dx * dir < -12 || Math.abs(dx) > 80) return;
     audio.hit();
-    this.cameras.main.shake(80, 0.005);
+    this.cameras.main.shake(180, 0.012);
     const c = this.colleague; this.colleague = null;
     this.colBubble?.destroy();
-    const no = this.add.text(this.player.x + dir * 50, this.player.y - 70, 'НЕТ.', { fontFamily: 'Courier New', fontSize: '22px', color: '#ff8866', fontStyle: 'bold' }).setOrigin(0.5).setDepth(46);
-    this.tweens.add({ targets: no, y: no.y - 26, alpha: 0, duration: 1300, onComplete: () => no.destroy() });
-    this.tweens.add({ targets: c, x: c.x + dir * 240, alpha: 0, duration: 700, onComplete: () => c.destroy() });
-    this.say('...неприятно. но по-другому он не слышит.', 3000);
-    this.time.delayedCall(2200, () => this.finish());
+    // Йоська не говорит «нет» — он срывается. в этом и проблема.
+    const yells = ['ДА ХВАТИТ УЖЕ!!', '#@$%!!', 'ОТСТАНЬ ОТ МЕНЯ!!'];
+    yells.forEach((y, i) => this.time.delayedCall(i * 260, () => {
+      const t = this.add.text(this.player.x + dir * 50, this.player.y - 66 - i * 22, y,
+        { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${15 - i * 2}px`, color: i === 1 ? '#ffaa44' : '#ff5544' })
+        .setOrigin(0.5).setDepth(46).setAngle(Phaser.Math.Between(-6, 6));
+      this.tweens.add({ targets: t, y: t.y - 24, alpha: 0, duration: 1200, onComplete: () => t.destroy() });
+    }));
+    this.tweens.add({ targets: c, x: c.x + dir * 280, alpha: 0, duration: 600, onComplete: () => c.destroy() });
+    this.say('...сорвался. опять. а хотел просто сказать «нет».', 3200);
+    this.time.delayedCall(2600, () => this.beginFawn());
+  }
+
+  // ── Шаг 5: УСТУПИ — соседка, которой нельзя ни рявкнуть, ни сбежать ────────
+  private beginFawn() {
+    if (this.step !== 'fight') return;
+    this.step = 'fawn';
+    this.narrTell('Вечер. Соседка просит присмотреть за её фикусом.\nВ пятый раз за месяц.\nРявкнуть — неудобно. Сбежать — она у двери.', () => {
+      this.prompt.setText(IS_TOUCH ? 'УСТУПИ — Йоська так умеет лучше всего' : 'V — уступить. Йоська так умеет лучше всего');
+      this.neighbor = this.add.sprite(W - 90, GROUND_Y, 'cat_idle').setOrigin(0.5, 1).setScale(1.45)
+        .setTint(0xd08fb0).setFlipX(true).setDepth(8).play('p-idle');
+      this.neiBubble = this.add.text(0, 0, 'ты же не откажешь?', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
+        backgroundColor: '#e8b8d0', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
+    });
+  }
+
+  private updateNeighbor() {
+    const n = this.neighbor; if (!n || !n.active) return;
+    if (this.neiBubble?.active) { this.neiBubble.x = n.x; this.neiBubble.y = n.y - 54; }
+    const d = Math.abs(this.player.x - n.x);
+    if (this.frozen && d < 200) this.sayOnce('nei_frz', 'играю, не вижу... а она всё ждёт.', 2600);
+    if (this.dashT > 0 && d < 240) this.sayOnce('nei_dash', 'сбежать? она же соседка...', 2600);
+  }
+
+  private onFawn() {
+    if (this.step !== 'fawn' || !this.neighbor?.active) return;
+    const n = this.neighbor; this.neighbor = null;
+    this.neiBubble?.destroy();
+    audio.freeze();
+    this.player.setScale(1.7, 1.1); // прогнулся
+    const ok = this.add.text(this.player.x, this.player.y - 66, '«конечно... давайте ваш фикус»',
+      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#b8a8d0' }).setOrigin(0.5).setDepth(46);
+    this.tweens.add({ targets: ok, y: ok.y - 20, alpha: 0, duration: 1800, onComplete: () => ok.destroy() });
+    this.tweens.add({ targets: n, x: n.x + 200, alpha: 0, duration: 900, delay: 500, onComplete: () => n.destroy() });
+    this.say('все довольны. кроме Йоськи.', 3000);
+    this.time.delayedCall(2400, () => this.finish());
   }
 
   private finish() {
     this.step = 'done';
     track('tutorial_done');
-    this.narr.setText('БЕЙ. ЗАМРИ. БЕГИ.\nТри способа на все случаи жизни.\n\n...должно же хватать. да?');
-    this.prompt.setText(IS_TOUCH ? 'тапни — начать обычный день' : 'E / клик — начать обычный день');
-    this.input.once('pointerdown', () => this.scene.start('Game', { chapter: 'chapter1' }));
+    this.narr.setText('БЕЙ. БЕГИ. ОТВЛЕКИСЬ. УСТУПИ.\nЧетыре способа на все случаи жизни.\n\n...должно же хватать. да?');
+    this.prompt.setText(IS_TOUCH ? 'тапни — дальше' : 'E / клик — дальше');
+    this.input.once('pointerdown', () => this.scene.start('Intro'));
   }
 
   // ── Реплики ────────────────────────────────────────────────────────────────

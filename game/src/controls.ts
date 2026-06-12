@@ -7,13 +7,13 @@ export const IS_TOUCH =
   (typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches) ||
   'ontouchstart' in window;
 
-type JustAction = 'jump' | 'hit' | 'dash';
+type JustAction = 'jump' | 'hit' | 'dash' | 'fawn';
 
 class TouchState {
   left = false;
   right = false;
   freeze = false;
-  private just: Record<JustAction, boolean> = { jump: false, hit: false, dash: false };
+  private just: Record<JustAction, boolean> = { jump: false, hit: false, dash: false, fawn: false };
 
   press(a: JustAction) { this.just[a] = true; }
   /** just-pressed: вернёт true один раз на нажатие */
@@ -48,4 +48,5 @@ export function initTouchControls() {
   tap('tbtn-jump', 'jump');
   tap('tbtn-hit', 'hit');
   tap('tbtn-dash', 'dash');
+  tap('tbtn-fawn', 'fawn');
 }
