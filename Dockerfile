@@ -10,6 +10,10 @@ RUN npm install
 COPY webapp/package*.json ./webapp/
 RUN npm install --prefix webapp
 
+# ── Game dependencies ───────────────────────────────────────────────────────
+COPY game/package*.json ./game/
+RUN npm install --prefix game
+
 # ── Copy source and build ──────────────────────────────────────────────────
 COPY . .
 RUN npx prisma generate
@@ -24,8 +28,8 @@ RUN npm run build --prefix webapp
 # ServeStaticModule at /app (built locally with vite base '/app/')
 RUN mkdir -p webapp/dist/app && cp -r schema-miniapp/dist/* webapp/dist/app/
 
-# Copy pre-built game into webapp/dist/game — served at /game
-# (built locally with vite base '/game/', dist committed like the miniapp)
+# Build the game (vite base '/game/') → served at /game by the same ServeStatic
+RUN npm run build --prefix game
 RUN mkdir -p webapp/dist/game && cp -r game/dist/* webapp/dist/game/
 
 # ── Prune dev deps (backend only) ──────────────────────────────────────────
