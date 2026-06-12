@@ -3,6 +3,7 @@ import type { ModeMapNode, ModeMapEdge, EdgeType } from '../api';
 import { TYPE_COLORS } from './ModeMapNodes';
 import { MMIcon } from './modeMapIcons';
 import { NEED_DATA, NEED_ORDER } from '../needData';
+import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 
 // Preview fill — token-aware (color-mix) with a legacy-hex fallback.
 const previewFill = (c: string) => c.startsWith('#') ? `${c}22` : `color-mix(in srgb, ${c} 14%, transparent)`;
@@ -358,6 +359,17 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
       <textarea ref={noteRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 56 }} rows={3}
         value={node.data.note ?? ''} onChange={e => patchData({ note: e.target.value || undefined })}
         placeholder="Как этот режим проявляется у клиента" />
+
+      <label style={labelStyle}>Связанная схема</label>
+      <select value={node.data.schemaId ?? ''} onChange={e => patchData({ schemaId: e.target.value || undefined })}
+        style={{ ...inputStyle, appearance: 'auto', cursor: 'pointer' }}>
+        <option value="">— не выбрана —</option>
+        {SCHEMA_DOMAINS.map(d => (
+          <optgroup key={d.id} label={d.domain}>
+            {d.schemas.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </optgroup>
+        ))}
+      </select>
 
       {(node.type === 'child' || node.type === 'custom') && (
         <>

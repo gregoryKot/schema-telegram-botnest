@@ -201,6 +201,7 @@ export interface ModeMapNode {
     strokeWidth?: 'thin' | 'normal' | 'bold';  // толщина контура фигуры
     fontSize?: 'sm' | 'md' | 'lg';        // размер текста в фигуре
     side?: 'A' | 'B';                      // чей режим на карте пары (Партнёр А / Б)
+    schemaId?: string;                     // связанная схема (из списка схем клиента)
   };
   width?: number;
   height?: number;
