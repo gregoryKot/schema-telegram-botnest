@@ -88,10 +88,10 @@ export class IntroScene extends Phaser.Scene {
 
     btn.on('pointerover', () => { btn.fillColor = 0x3a2a8f; btnTxt.setColor('#fff0d8'); });
     btn.on('pointerout',  () => { btn.fillColor = 0x3a1500; btnTxt.setColor('#ff7733'); });
-    btn.on('pointerdown', () => this.scene.start('Game'));
+    btn.on('pointerdown', () => this.scene.start('Tutorial'));
 
     // Пропуск по пробелу/клику на фон
-    this.input.keyboard!.once('keydown-SPACE', () => this.scene.start('Game'));
-    this.input.keyboard!.once('keydown-ENTER', () => this.scene.start('Game'));
+    this.input.keyboard!.once('keydown-SPACE', () => this.scene.start('Tutorial'));
+    this.input.keyboard!.once('keydown-ENTER', () => this.scene.start('Tutorial'));
   }
 }

@@ -21,6 +21,8 @@ export class BootScene extends Phaser.Scene {
     const hash = window.location.hash.slice(1).toLowerCase();
     if (hash === 'game' || hash.startsWith('chapter'))
       this.scene.start('Game', { chapter: hash.startsWith('chapter') ? hash : 'chapter1' });
+    else if (hash === 'tutorial')
+      this.scene.start('Tutorial');
     else
       this.scene.start('Start');
   }
