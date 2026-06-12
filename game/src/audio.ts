@@ -71,6 +71,7 @@ class AudioEngine {
   anx()    { this.sfx(d => this.tone(120, 0.22, 'square', 0.15, d, 320)); }
   pickup() { this.sfx(d => { this.tone(660, 0.10, 'triangle', 0.20, d, 990); this.tone(990, 0.14, 'sine', 0.14, d); }); }
   toll()   { this.sfx(d => this.tone(110, 1.6, 'sine', 0.20, d, 90)); } // deep realization bell
+  gate()   { this.sfx(d => { this.tone(520, 0.5, 'sine', 0.16, d, 130); this.tone(780, 0.35, 'triangle', 0.12, d, 260); }); } // стена растворяется
 
   // ── Music — per-chapter mood ────────────────────────────────────────────────
   // day:  slow melancholic A-minor arpeggio (Am · F · C · G)

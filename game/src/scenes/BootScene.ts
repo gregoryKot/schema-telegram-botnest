@@ -15,6 +15,8 @@ export class BootScene extends Phaser.Scene {
     // Generated tile textures used by the Game engine
     this.tex('plat',   16, 10, g => this.drawPlat(g));
     this.tex('ground', 16, 16, g => this.drawGround(g));
+    this.tex('plat_room',   16, 10, g => this.drawPlatRoom(g));
+    this.tex('ground_room', 16, 16, g => this.drawGroundRoom(g));
     // Flow: Start → Intro → Game. Dev shortcut: #game jumps straight to a chapter.
     const hash = window.location.hash.slice(1).toLowerCase();
     if (hash === 'game' || hash.startsWith('chapter'))
@@ -46,6 +48,38 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0xffd080, 0.6);
     g.fillRect(2*S, 2*S, 1, 1);
     g.fillRect(10*S, 2*S, 1, 1);
+  }
+
+  // Комната: полка (книжный стеллаж) и дощатый пол — без травы
+  private drawPlatRoom(g: G) {
+    const TW = 16*S, TH = 10*S;
+    g.fillStyle(0x6b4a2e, 1); g.fillRect(0, 0, TW, TH);
+    g.fillStyle(0x9a6f44, 1); g.fillRect(0, 0, TW, 1*S);
+    g.fillStyle(0x7d5836, 1); g.fillRect(0, 1*S, TW, 1*S);
+    g.fillStyle(0x2e1d10, 1); g.fillRect(0, TH-1*S, TW, 1*S);
+    g.fillStyle(0x462c18, 1); g.fillRect(0, TH-3*S, TW, 2*S);
+    g.fillStyle(0x2e1d10, 0.6);
+    g.fillRect(5*S, 1*S, 1, TH-3*S);
+    g.fillRect(11*S, 1*S, 1, TH-3*S);
+  }
+
+  private drawGroundRoom(g: G) {
+    const TW = 16*S, TH = 16*S;
+    g.fillStyle(0x4a3220, 1); g.fillRect(0, 0, TW, TH);
+    g.fillStyle(0x6b4a2e, 1); g.fillRect(0, 0, TW, 3*S);
+    g.fillStyle(0x8a6238, 1); g.fillRect(0, 0, TW, 1*S);
+    // стыки досок
+    g.fillStyle(0x2e1d10, 0.8);
+    g.fillRect(7*S, 0, 1, 3*S);
+    g.fillRect(0, 3*S, TW, 1*S);
+    g.fillStyle(0x3a2816, 0.7);
+    g.fillRect(0, 8*S, TW, 1*S);
+    g.fillRect(0, 13*S, TW, 1*S);
+    g.fillRect(4*S, 4*S, 1, 4*S);
+    g.fillRect(12*S, 9*S, 1, 4*S);
+    g.fillStyle(0x9a7244, 0.35);
+    g.fillRect(2*S, 1*S, 4*S, 1);
+    g.fillRect(10*S, 2*S, 3*S, 1);
   }
 
   private drawGround(g: G) {

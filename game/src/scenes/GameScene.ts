@@ -3,6 +3,7 @@ import { W, H, GROUND_Y, S, PHYS } from '../constants';
 import { audio } from '../audio';
 import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
 import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation, makeHomeTextures } from '../enemies/home';
+import { buildDecor } from '../decor';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  GAME — the gameplay engine. A "chapter" (config in chapters.ts) supplies the
@@ -25,6 +26,12 @@ interface Anx {
 interface Critic {
   img: Phaser.GameObjects.Sprite; size: number; struck: number; alive: boolean;
 }
+// Боевой гейт: стена «не пройти, пока не разобрался» — падает, когда все
+// привязанные враги разрешены (убиты / успокоены / выключены).
+interface Gate {
+  x: number; col: Phaser.GameObjects.Rectangle; gfx: Phaser.GameObjects.Graphics;
+  mobs: { alive: boolean }[]; open: boolean; t: number;
+}
 
 export class GameScene extends Phaser.Scene {
   private chapter!: ChapterConfig;
@@ -35,6 +42,7 @@ export class GameScene extends Phaser.Scene {
   private anx: Anx[] = [];
   private critic: Critic | null = null;
   private homeMobs: HomeMob[] = [];
+  private gates: Gate[] = [];
   private speedMult = 1;
   private trail: { x: number; y: number; flip: boolean }[] = [];
 
@@ -81,10 +89,11 @@ export class GameScene extends Phaser.Scene {
     });
     this.said = new Set();
     this.attackHit = new Set();
-    this.triggers = [];
+    this.triggers = []; this.gates = [];
     this.floorColliders = []; this.platColliders = []; this.spikeRects = []; this.heartPickups = [];
 
     this.buildBackground();
+    buildDecor(this, this.chapter);
     this.buildGround();
     this.buildPlatforms();
     this.buildSpikes();
@@ -100,6 +109,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.physics.world.setBounds(0, -H, ARENA_W, H * 3);
     this.cameras.main.fadeIn(600, 8, 6, 16);
+    this.showTitleCard();
 
     // start music on the first input (browsers require a gesture)
     audio.setMode(this.chapter.music);
@@ -107,6 +117,17 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard!.once('keydown', begin);
     this.input.once('pointerdown', begin);
     audio.startMusic(); // in case the context is already unlocked (came from menu)
+  }
+
+  // Титульная карточка: где ты и какое у этого места настроение
+  private showTitleCard() {
+    const mk = (y: number, text: string, size: number, color: string) =>
+      this.add.text(W / 2, y, text, { fontFamily: 'Courier New', fontSize: `${size}px`, color, letterSpacing: 3, align: 'center' })
+        .setOrigin(0.5).setScrollFactor(0).setDepth(120).setAlpha(0);
+    const t1 = mk(170, this.chapter.title.toUpperCase(), 30, '#fff0d8');
+    const t2 = mk(208, this.chapter.tagline, 13, '#9a8fb8');
+    this.tweens.add({ targets: [t1, t2], alpha: 1, duration: 700, delay: 350 });
+    this.tweens.add({ targets: [t1, t2], alpha: 0, duration: 800, delay: 3200, onComplete: () => { t1.destroy(); t2.destroy(); } });
   }
 
   // ── Atmosphere — inside a restless mind ─────────────────────────────────────
@@ -152,7 +173,8 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < n; i++) {
       const tx = i * tw;
       if (pits.some(p => tx < p.e && tx + tw > p.s)) continue;
-      this.add.image(tx + tw / 2, GROUND_Y + th / 2, 'ground').setDepth(2).setTint(this.chapter.palette.groundTint);
+      const groundTex = this.chapter.theme === 'room' ? 'ground_room' : 'ground';
+      this.add.image(tx + tw / 2, GROUND_Y + th / 2, groundTex).setDepth(2).setTint(this.chapter.palette.groundTint);
     }
     const edges = [0, ...pits.flatMap(p => [p.s, p.e]), ARENA_W];
     for (let i = 0; i < edges.length - 1; i += 2) {
@@ -167,10 +189,11 @@ export class GameScene extends Phaser.Scene {
   private buildPlatforms() {
     const tw = 16 * S, th = 10 * S;
     const P = this.chapter.platforms;
+    const platTex = this.chapter.theme === 'room' ? 'plat_room' : 'plat';
     for (const p of P) {
       const cols = Math.ceil(p.w / tw);
       for (let i = 0; i < cols; i++)
-        this.add.image(p.x + i * tw + tw / 2, p.y + th / 2, 'plat').setDepth(2).setTint(0x9a8fb8);
+        this.add.image(p.x + i * tw + tw / 2, p.y + th / 2, platTex).setDepth(2).setTint(this.chapter.palette.platTint);
       const r = this.add.rectangle(p.x + p.w / 2, p.y + 5 * S, p.w, th, 0, 0);
       this.physics.add.existing(r, true);
       this.platColliders.push(r);
@@ -208,12 +231,14 @@ export class GameScene extends Phaser.Scene {
     this.triggers = this.chapter.triggers.map(t => ({
       x: t.x, done: false,
       fn: () => {
+        const beforeA = this.anx.length, beforeH = this.homeMobs.length;
         if (t.anx) for (let i = 0; i < t.anx; i++) this.spawnAnx(this.player.x + 360 + i * 120, 1);
         if (t.critic) this.spawnCritic();
-        if (t.proc) this.homeMobs.push(new Procrastination(this.mobCtx(), t.proc));
+        if (t.proc) this.homeMobs.push(new Procrastination(this.mobCtx(), t.proc, t.seat ? GROUND_Y - t.seat : undefined));
         if (t.phone) this.homeMobs.push(new PhoneMob(this.mobCtx(), t.phone));
         if (t.irrit) this.homeMobs.push(new Irritation(this.mobCtx(), t.irrit));
         if (t.say) { this.say(t.say, 2400); if (t.anx) audio.anx(); }
+        if (t.gate) this.makeGate(t.gate, [...this.anx.slice(beforeA), ...this.homeMobs.slice(beforeH)]);
         if (t.overwhelm) this.beginOverwhelm();
       },
     }));
@@ -237,6 +262,48 @@ export class GameScene extends Phaser.Scene {
     for (const t of this.triggers) {
       if (!t.done && this.player.x > t.x) { t.done = true; t.fn(); }
     }
+  }
+
+  // ── Гейты: дальше нельзя, пока не разобрался с тем, что навалилось ─────────
+  private makeGate(x: number, mobs: { alive: boolean }[]) {
+    const col = this.add.rectangle(x, GROUND_Y / 2, 18, GROUND_Y + 40, 0, 0);
+    this.physics.add.existing(col, true);
+    this.physics.add.collider(this.player, col, () =>
+      this.sayOnce('gate', 'не пройти... сначала разберись с этим.', 2600));
+    const gfx = this.add.graphics().setDepth(5);
+    this.gates.push({ x, col, gfx, mobs, open: false, t: Math.random() * 1000 });
+  }
+
+  private updateGates(dt: number) {
+    const color = this.chapter.palette.glow2;
+    for (const g of this.gates) {
+      if (g.open) continue;
+      g.t += dt;
+      if (g.mobs.length && g.mobs.every(m => !m.alive)) { this.openGate(g); continue; }
+      g.gfx.clear();
+      for (let y = 26; y < GROUND_Y - 6; y += 26) {
+        const a = 0.30 + 0.18 * Math.sin(g.t * 0.005 + y * 0.35);
+        g.gfx.fillStyle(color, a);
+        g.gfx.fillRect(g.x - 7 + Math.sin(g.t * 0.003 + y) * 3, y, 14, 18);
+      }
+      g.gfx.fillStyle(color, 0.12);
+      g.gfx.fillEllipse(g.x, GROUND_Y - 2, 70, 12);
+    }
+  }
+
+  private openGate(g: Gate) {
+    g.open = true;
+    g.gfx.clear();
+    g.col.destroy();
+    for (let y = 60; y < GROUND_Y; y += 90) this.burst(g.x, y, this.chapter.palette.glow2, 6, 120);
+    audio.gate();
+    this.sayOnce('gate_open', '...прошло. можно идти дальше.', 2400);
+  }
+
+  // тревога, отколовшаяся от «гейтовой», тоже держит стену
+  private adoptIntoGate(parent: object, child: object) {
+    const g = this.gates.find(g => !g.open && g.mobs.includes(parent as { alive: boolean }));
+    if (g) g.mobs.push(child as { alive: boolean });
   }
 
   private makeTextures() {
@@ -335,6 +402,7 @@ export class GameScene extends Phaser.Scene {
     this.updateAnx(dt);
     this.updateCritic(dt);
     this.updateTriggers();
+    this.updateGates(dt);
     this.updateHazards();
     this.updateBubble(dt);
     if (this.invuln > 0) this.invuln -= dt;
@@ -479,6 +547,7 @@ export class GameScene extends Phaser.Scene {
       m.size *= 0.7; m.img.setScale(m.size);
       this.spawnAnx(m.img.x, m.size);
       const nb = this.anx[this.anx.length - 1]; nb.vx = -dir * 220; nb.vy = -110;
+      this.adoptIntoGate(m, nb);
       audio.split();
       this.sayOnce('hit', 'бить бесполезно — их только больше!', 2600);
     } else {
