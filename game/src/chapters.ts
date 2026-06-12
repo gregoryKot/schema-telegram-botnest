@@ -5,15 +5,20 @@ export interface TriggerDef {
   x: number; anx?: number; critic?: boolean; say?: string; overwhelm?: boolean;
   // враги главы 2 — значение = координата спавна
   proc?: number; phone?: number; irrit?: number;
+  seat?: number;  // высота посадки прокрастинации (диван): y = GROUND_Y - seat
+  gate?: number;  // боевой гейт: стена на этой x, падает когда враги триггера разрешены
 }
 export interface EndingLine { text: string; y: number; color: string; size: number; delay: number; }
 export interface ChapterPalette {
   skyTop: number; skyBot: number; glow1: number; glow2: number;
-  groundTint: number; fog: number; mote: number;
+  groundTint: number; platTint: number; fog: number; mote: number;
 }
 export interface ChapterConfig {
   id: string;
   title: string;
+  tagline: string;                       // строка-настроение на титульной карточке
+  theme: 'street' | 'room';             // декорации (см. decor.ts) и текстуры пола/платформ
+  decor?: { couch?: number; tv?: number; lamps?: number[] };
   arenaW: number;
   pits: { s: number; e: number }[];
   checkpoints: number[];
@@ -35,6 +40,8 @@ const G = GROUND_Y;
 const chapter1: ChapterConfig = {
   id: 'chapter1',
   title: 'Обычный день',
+  tagline: 'вечер. просто дойти до дома.',
+  theme: 'street',
   arenaW: 4700,
   pits: [
     { s: 760, e: 900 }, { s: 1300, e: 1520 }, { s: 2050, e: 2210 },
@@ -66,10 +73,10 @@ const chapter1: ChapterConfig = {
     { x: 2850, y: G - 252 }, { x: 3110, y: G - 180 }, { x: 4040, y: G - 132 },
   ],
   triggers: [
-    { x: 280,  anx: 1, say: '...это ещё что?' },
+    { x: 280,  anx: 1, say: '...это ещё что?', gate: 690 },   // не пройти, пока не понял тревогу
     { x: 1780, anx: 1 },
     { x: 2520, critic: true },
-    { x: 3520, anx: 1, say: 'сколько можно...' },
+    { x: 3520, anx: 1, say: 'сколько можно...', gate: 3960 }, // спавн ~3880 — стена за ним
     { x: 4320, overwhelm: true },
   ],
   ending: [
@@ -84,7 +91,7 @@ const chapter1: ChapterConfig = {
   ],
   palette: {
     skyTop: 0x161228, skyBot: 0x3a2c4e, glow1: 0x7a4a8a, glow2: 0x8a5a9a,
-    groundTint: 0xa49abf, fog: 0x1a1226, mote: 0x8a7aaa,
+    groundTint: 0xa49abf, platTint: 0x9a8fb8, fog: 0x1a1226, mote: 0x8a7aaa,
   },
   music: 'day',
   overwhelmAnx: 3,
@@ -99,6 +106,9 @@ const chapter1: ChapterConfig = {
 const chapter2: ChapterConfig = {
   id: 'chapter2',
   title: 'Дома',
+  tagline: 'наконец-то дома. но и тут не отдых.',
+  theme: 'room',
+  decor: { couch: 1560, tv: 3000, lamps: [400, 2450, 4300] },
   arenaW: 4700,
   pits: [{ s: 900, e: 1060 }, { s: 1980, e: 2160 }, { s: 3120, e: 3300 }],
   checkpoints: [100, 1120, 2220, 3360, 4100],
@@ -128,12 +138,12 @@ const chapter2: ChapterConfig = {
   ],
   triggers: [
     { x: 240,  say: 'дома. наконец можно выдохнуть... да?' },
-    { x: 540,  phone: 800 },   // на ровном участке: тяга не сбрасывает в яму
-    { x: 1180, proc: 1560 },
+    { x: 540,  phone: 800, gate: 878 },           // телефон надо выключить, мимо не пройти
+    { x: 1180, proc: 1560, seat: 64, gate: 1940 }, // сидит на диване; гейт до ямы
     { x: 2240, say: 'почему дома — тяжелее всего?' },
-    { x: 2380, irrit: 2760 },
-    { x: 3340, phone: 3720 },
-    { x: 3640, irrit: 4080 },  // за полосой шипов, драка на ровном
+    { x: 2380, irrit: 2760, gate: 3080 },
+    { x: 3340, phone: 3720, gate: 3866 },
+    { x: 3640, irrit: 4080 },                      // финальный участок — без гейта
     { x: 4420, overwhelm: true },
   ],
   ending: [
@@ -146,8 +156,8 @@ const chapter2: ChapterConfig = {
     { text: 'Туда, где это началось.',                            y: 442, color: '#88ffcc', size: 14, delay: 11800 },
   ],
   palette: {
-    skyTop: 0x0c0e1a, skyBot: 0x232a3e, glow1: 0x2a4a6a, glow2: 0x3a5a7a,
-    groundTint: 0x8a93ad, fog: 0x0c1018, mote: 0x5a7a9a,
+    skyTop: 0x141625, skyBot: 0x2a2438, glow1: 0x3a4a6a, glow2: 0x4a5a7a,
+    groundTint: 0xc8b090, platTint: 0xd0b890, fog: 0x0c1018, mote: 0x5a7a9a,
   },
   music: 'home',
   overwhelmAnx: 0,

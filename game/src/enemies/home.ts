@@ -77,9 +77,12 @@ export class Procrastination implements HomeMob {
   private t = 0;
   private frozenT = 0;
   private wob = Math.random() * 6;
+  private homeX: number;
+  private seatY: number;
 
-  constructor(private ctx: MobCtx, x: number) {
-    this.img = ctx.scene.add.image(x, GROUND_Y - 20, 'procmob').setDepth(6);
+  constructor(private ctx: MobCtx, x: number, seatY = GROUND_Y - 20) {
+    this.homeX = x; this.seatY = seatY;
+    this.img = ctx.scene.add.image(x, seatY, 'procmob').setDepth(6);
   }
 
   update(dt: number) {
@@ -92,6 +95,9 @@ export class Procrastination implements HomeMob {
         const d = Phaser.Math.Distance.Between(this.img.x, this.img.y, p.x, p.y - 20);
         // медленно подползает, когда ты рядом и не в рывке
         if (d < 220 && !this.ctx.dashing()) this.img.x += Math.sign(p.x - this.img.x) * dt * 0.022;
+        // на диване сидит выше; сполз с него — оседает на пол
+        const targetY = Math.abs(this.img.x - this.homeX) < 70 ? this.seatY : GROUND_Y - 20;
+        this.img.y += (targetY - this.img.y) * 0.06;
         if (d < 56 && !this.ctx.dashing()) {
           this.state = 'latched'; this.frozenT = 0;
           audio.anx();
@@ -166,23 +172,31 @@ export class Procrastination implements HomeMob {
 }
 
 // ── Телефон — уютная ловушка; выключается ударом ────────────────────────────
-const PHONE_R = 150;
+const PHONE_R = 160;
+const PHONE_Y = GROUND_Y - 96; // парит над столиком
 export class PhoneMob implements HomeMob {
   alive = true;
   private img: Phaser.GameObjects.Image;
   private glow: Phaser.GameObjects.Graphics;
   private drain = 0;
   private bob = Math.random() * 6;
+  private ping = 0;
 
   constructor(private ctx: MobCtx, private x: number) {
-    this.img = ctx.scene.add.image(x, GROUND_Y - 120, 'phonemob').setDepth(6);
+    // столик — телефон лежит «дома», а не висит в воздухе
+    const t = ctx.scene.add.graphics().setDepth(4);
+    t.fillStyle(0x4a3220, 1); t.fillRect(x - 38, GROUND_Y - 62, 76, 7);
+    t.fillStyle(0x2e1d10, 1); t.fillRect(x - 30, GROUND_Y - 55, 6, 55); t.fillRect(x + 24, GROUND_Y - 55, 6, 55);
+    this.img = ctx.scene.add.image(x, PHONE_Y, 'phonemob').setDepth(6).setScale(1.4);
     this.glow = ctx.scene.add.graphics().setDepth(4);
   }
 
   update(dt: number) {
     if (!this.alive) return;
     this.bob += dt * 0.002;
-    this.img.y = GROUND_Y - 120 + Math.sin(this.bob) * 10;
+    this.img.y = PHONE_Y + Math.sin(this.bob) * 6;
+    this.img.setAngle(Math.sin(this.bob * 3.1) * 4); // дёргается — требует внимания
+    this.notify(dt);
     const p = this.ctx.player();
     const d = Phaser.Math.Distance.Between(this.img.x, this.img.y, p.x, p.y - 20);
     const inZone = d < PHONE_R;
@@ -206,6 +220,20 @@ export class PhoneMob implements HomeMob {
         this.ctx.sayOnce('phone_drain', '...два часа?! куда они делись?', 2800);
       }
     } else this.drain = Math.max(0, this.drain - dt * 1.5);
+  }
+
+  // «уведомления» летят к котику — телефон сам зовёт в зону
+  private notify(dt: number) {
+    this.ping += dt;
+    const p = this.ctx.player();
+    if (this.ping < 800 || Math.abs(p.x - this.img.x) > 460) return;
+    this.ping = 0;
+    const s = this.ctx.scene;
+    const dot = s.add.rectangle(this.img.x, this.img.y - 18, 5, 5, 0x9fd0ff).setDepth(7);
+    s.tweens.add({
+      targets: dot, x: p.x + Phaser.Math.Between(-12, 12), y: p.y - 40,
+      alpha: { from: 1, to: 0 }, duration: 700, ease: 'Sine.In', onComplete: () => dot.destroy(),
+    });
   }
 
   tryHit(dir: number, range: number): boolean {
