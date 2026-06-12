@@ -8,11 +8,21 @@ export class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
 
   preload() {
+    const cx = Number(this.game.config.width) / 2, cy = Number(this.game.config.height) / 2;
+    const loading = this.add.text(cx, cy, 'ЗАГРУЗКА...', {
+      fontFamily: 'Courier New', fontSize: '16px', color: '#8a7faa', letterSpacing: 4,
+    }).setOrigin(0.5);
+    // сеть оборвалась (например, в момент деплоя) — говорим честно, а не молчим
+    this.load.on('loaderror', () => {
+      loading.setText('НЕ ЗАГРУЗИЛОСЬ\nобнови страницу').setColor('#ff8866').setAlign('center');
+    });
     this.load.spritesheet('cat_run',  'assets/cat_run.png',  { frameWidth: 48, frameHeight: 48 });
     this.load.spritesheet('cat_idle', 'assets/cat_idle.png', { frameWidth: 48, frameHeight: 48 });
   }
 
   create() {
+    // битая загрузка — остаёмся на экране с сообщением, дальше только хуже
+    if (!this.textures.exists('cat_run') || !this.textures.exists('cat_idle')) return;
     // Generated tile textures used by the Game engine
     this.tex('plat',   16, 10, g => this.drawPlat(g));
     this.tex('ground', 16, 16, g => this.drawGround(g));

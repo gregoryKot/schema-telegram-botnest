@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 import { W, H } from '../constants';
+import { getContinueChapter } from '../progress';
+import { track } from '../analytics';
+import { CHAPTERS } from '../chapters';
 
 export class StartScene extends Phaser.Scene {
   constructor() { super('Start'); }
@@ -43,7 +46,18 @@ export class StartScene extends Phaser.Scene {
       btnTxt.setColor('#ff7733');
       cat.setScale(4);
     });
-    btn.on('pointerdown', () => this.scene.start('Intro'));
+    btn.on('pointerdown', () => { track('game_start'); this.scene.start('Intro'); });
+
+    // вернулся — продолжай с достигнутой главы, не с нуля
+    const cont = getContinueChapter();
+    if (cont && CHAPTERS[cont]) {
+      const cbtn = this.add.text(W / 2, H / 2 + 178, `продолжить — «${CHAPTERS[cont].title}» →`, {
+        fontFamily: 'Courier New', fontSize: '13px', color: '#88ffcc', letterSpacing: 1,
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      cbtn.on('pointerover', () => cbtn.setColor('#fff0d8'));
+      cbtn.on('pointerout', () => cbtn.setColor('#88ffcc'));
+      cbtn.on('pointerdown', () => { track('game_continue', { chapter: cont }); this.scene.start('Game', { chapter: cont }); });
+    }
 
     this.add.text(W / 2, H - 40, 'стрелки / WASD / тач для управления', {
       fontFamily: 'Courier New', fontSize: '11px', color: '#7a3a10', letterSpacing: 1,
