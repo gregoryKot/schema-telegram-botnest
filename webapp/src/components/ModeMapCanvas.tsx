@@ -15,8 +15,9 @@ import { ModeMapContextMenu, type MenuItem } from './ModeMapContextMenu';
 import { ModeMapLegend } from './ModeMapLegend';
 import { ModeMapGuide } from './ModeMapGuide';
 import { ModeMapZones } from './ModeMapZones';
+import { ModeMapCoupleLanes } from './ModeMapCoupleLanes';
 import { NodeActionsContext, type NodeActions } from './modeMapActions';
-import { autoLayout, layoutByZones, TEMPLATES, templateToGraph } from './modeMapLayout';
+import { autoLayout, layoutByZones, layoutCouple, TEMPLATES, templateToGraph } from './modeMapLayout';
 import {
   type FlowNode, type FlowEdge,
   edgeColor, makeMarker, edgeStyle, toFlowNodes, toFlowEdges,
@@ -194,11 +195,12 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     if (nodes.length === 0) return;
     pushHistory();
     // With «Зоны» on, lay nodes out by type into the bands; otherwise dagre by edges.
-    const laid = showZones ? layoutByZones(nodes) : autoLayout(nodes, edges);
+    const laid = kind === 'couple' ? layoutCouple(nodes)
+      : showZones ? layoutByZones(nodes) : autoLayout(nodes, edges);
     setNodes(laid); scheduleSave(laid, edges);
     // Only zoom out to fit — never magnify (maxZoom 1) so layout doesn't blow up the scale
     setTimeout(() => fitView({ padding: 0.2, duration: 400, maxZoom: 1 }), 50);
-  }, [nodes, edges, setNodes, scheduleSave, pushHistory, fitView, showZones]);
+  }, [nodes, edges, setNodes, scheduleSave, pushHistory, fitView, showZones, kind]);
 
   // ── Node actions (toolbar + context menu) ────────────────────────────────────
   const duplicateNode = useCallback((id: string) => {
@@ -337,7 +339,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         nodesDraggable nodeDragThreshold={1}
       >
         <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.16)" gap={snap ? 20 : 22} size={1.5} />
-        {showZones && <ModeMapZones />}
+        {kind === 'couple' ? <ModeMapCoupleLanes mapId={mapId} /> : showZones && <ModeMapZones />}
 
         {/* Toolbar — icon-only with hover tooltips */}
         <Panel position="top-left">

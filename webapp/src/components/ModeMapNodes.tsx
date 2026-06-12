@@ -15,6 +15,7 @@ export interface ModeNodeData {
   healthyResponse?: string;
   strokeWidth?: 'thin' | 'normal' | 'bold';
   fontSize?: 'sm' | 'md' | 'lg';
+  side?: 'A' | 'B';
 }
 
 // Node colours now come from the site's earthy palette tokens (index.css --c-*),
@@ -106,6 +107,20 @@ function NodeTools({ id, selected, data }: { id: string; selected?: boolean; dat
         <button style={{ ...btn, color: 'var(--accent-red)' }} title="Удалить" onClick={() => actions.remove(id)}><MMIcon name="trash" size={15} /></button>
       </div>
     </NodeToolbar>
+  );
+}
+
+// Partner badge for couple maps (А / Б) — small corner chip
+function SideBadge({ side }: { side?: 'A' | 'B' }) {
+  if (!side) return null;
+  const color = side === 'A' ? 'var(--accent-blue)' : 'var(--accent-orange)';
+  return (
+    <div style={{ position: 'absolute', top: -8, left: -8, zIndex: 4, width: 19, height: 19, borderRadius: '50%',
+      background: color, color: '#fff', fontSize: 11, fontWeight: 700, lineHeight: 1,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      border: '2px solid var(--bg-elev)', pointerEvents: 'none' }}>
+      {side === 'A' ? 'А' : 'Б'}
+    </div>
   );
 }
 
@@ -214,6 +229,7 @@ function SvgShapeNode({ id, data, selected, color, svgPath, viewBox = '0 0 100 1
     <div ref={ref} style={{ position: 'relative', width: 'max-content', maxWidth: maxW, minWidth: minW, minHeight: minH,
       display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
       <NodeTools id={id} selected={selected} data={data} />
+      <SideBadge side={data.side} />
       <AllHandles />
       <svg viewBox={ready ? `0 0 ${size.w} ${size.h}` : viewBox} preserveAspectRatio="none"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
@@ -236,6 +252,7 @@ function makeRectNode(defaultColor: string, radius = 10) {
     return (
       <div style={{ position: 'relative', width: 'max-content', minWidth: 110, maxWidth: 260, minHeight: 40 }}>
         <NodeTools id={id} selected={selected} data={d} />
+        <SideBadge side={d.side} />
         <AllHandles />
         <div style={{
           borderRadius: radius,
@@ -278,6 +295,7 @@ export const CopingModeNode = function CopingModeNode({ id, data, selected }: No
     return (
       <div style={{ position: 'relative', width: 'max-content', maxWidth: 220, minWidth: 130 }}>
         <NodeTools id={id} selected={selected} data={d} />
+        <SideBadge side={d.side} />
         <AllHandles />
         <div style={{
           minWidth: 130, borderRadius: 9999,
@@ -312,6 +330,7 @@ export const ChildModeNode = function ChildModeNode({ id, data, selected }: Node
   return (
     <div style={{ position: 'relative', width: 'max-content', maxWidth: 200, minWidth: 118 }}>
       <NodeTools id={id} selected={selected} data={d} />
+      <SideBadge side={d.side} />
       <AllHandles />
       <div style={{
         minWidth: 118, minHeight: 118, borderRadius: '50%', overflow: 'hidden',

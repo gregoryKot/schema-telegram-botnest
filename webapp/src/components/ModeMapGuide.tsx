@@ -37,9 +37,26 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
   const hasHealthy = has(nodes, 'healthy');
   const hasBehavior = has(nodes, 'behavior');
   const hasNeed    = nodes.some(n => (n.data as { unmetNeed?: string }).unmetNeed);
+  const hasSide = (type: string, side: 'A' | 'B') =>
+    nodes.some(n => n.type === type && (n.data as { side?: string }).side === side);
 
   // ── Steps with clinical descriptions ────────────────────────────────────────
-  const steps: Step[] = kind === 'problem'
+  const steps: Step[] = kind === 'couple'
+    ? [
+        { ok: hasSide('trigger', 'A'), label: 'Триггер',            desc: 'Что произошло между вами — момент, с которого закрутился цикл',
+          add: mk('trigger', 'Триггер', { side: 'A' }) },
+        { ok: hasSide('child', 'A'),   label: 'Боль Партнёра А',     desc: 'Что задело А под поверхностью: страх, стыд, покинутость',
+          add: mk('child', 'Уязвимый Ребёнок', { side: 'A' }) },
+        { ok: hasSide('coping', 'A'),  label: 'Копинг А → бьёт по Б', desc: 'Как защищается А — именно это видит и чувствует партнёр Б',
+          add: mk('coping', 'Копинг', { copingSubtype: 'over', side: 'A' }) },
+        { ok: hasSide('child', 'B'),   label: 'Боль Партнёра Б',     desc: 'Копинг А задевает рану Б — активируется его Уязвимый Ребёнок',
+          add: mk('child', 'Уязвимый Ребёнок', { side: 'B' }) },
+        { ok: hasSide('coping', 'B'),  label: 'Копинг Б → бьёт по А', desc: 'Как защищается Б — и круг замыкается, снова запуская А',
+          add: mk('coping', 'Копинг', { copingSubtype: 'avoid', side: 'B' }) },
+        { ok: hasSide('healthy', 'A') || hasSide('healthy', 'B'), label: 'Здоровые Взрослые', desc: 'Кто первым замечает цикл и выходит из него — точка разрыва',
+          add: mk('healthy', 'Здоровый Взрослый', { side: 'A' }) },
+      ]
+    : kind === 'problem'
     ? [
         { ok: hasTrigger,  label: 'Триггер',          desc: 'Что запустило цикл: ситуация, слова, воспоминание, ощущение в теле',
           add: mk('trigger', 'Триггер') },
@@ -92,12 +109,14 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
-          {kind === 'problem' ? 'Цепочка цикла' : 'Карта личности'}
+          {kind === 'couple' ? 'Цикл-клэш пары' : kind === 'problem' ? 'Цепочка цикла' : 'Карта личности'}
         </span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 0, display: 'flex' }}><MMIcon name="close" size={14} /></button>
       </div>
       <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 10, lineHeight: 1.4 }}>
-        {kind === 'problem'
+        {kind === 'couple'
+          ? 'Копинг А ранит Б → копинг Б ранит А — порочный круг. Помечай режимы партнёром (А/Б). Нажми на шаг, чтобы добавить его.'
+          : kind === 'problem'
           ? 'Триггер → боль → защита → последствия → потребность. Нажми на шаг, чтобы добавить его на холст.'
           : 'Основные группы режимов клиента. Нажми, чтобы добавить недостающий.'}
       </div>
