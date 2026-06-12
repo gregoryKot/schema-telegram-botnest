@@ -5,6 +5,7 @@ import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
 import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation, makeHomeTextures } from '../enemies/home';
 import { buildDecor } from '../decor';
 import { touch, IS_TOUCH } from '../controls';
+import { makeCommonTextures } from '../textures';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  GAME — the gameplay engine. A "chapter" (config in chapters.ts) supplies the
@@ -98,7 +99,7 @@ export class GameScene extends Phaser.Scene {
     this.buildGround();
     this.buildPlatforms();
     this.buildSpikes();
-    this.makeTextures();
+    makeCommonTextures(this);
     makeHomeTextures(this);
     this.buildHearts();
     this.spawnPlayer();
@@ -305,27 +306,6 @@ export class GameScene extends Phaser.Scene {
   private adoptIntoGate(parent: object, child: object) {
     const g = this.gates.find(g => !g.open && g.mobs.includes(parent as { alive: boolean }));
     if (g) g.mobs.push(child as { alive: boolean });
-  }
-
-  private makeTextures() {
-    if (!this.textures.exists('anxmob')) {
-      const g = this.add.graphics(); const u = S, R = 11;
-      g.fillStyle(0x6a2a8a, 0.35); g.fillCircle(R*u, R*u, R*u);
-      g.fillStyle(0x3a1050, 1);    g.fillCircle(R*u, R*u, (R-2)*u);
-      g.fillStyle(0x551a78, 1);    g.fillCircle(R*u, (R-1.5)*u, (R-4)*u);
-      g.fillStyle(0xffe066, 1);    g.fillCircle((R-3)*u, R*u, 2*u); g.fillCircle((R+3)*u, R*u, 2*u);
-      g.fillStyle(0x1a0010, 1);    g.fillCircle((R-3)*u, R*u, 1*u); g.fillCircle((R+3)*u, R*u, 1*u);
-      g.generateTexture('anxmob', R*2*u, R*2*u); g.destroy();
-    }
-    if (!this.textures.exists('heartpk')) {
-      const g = this.add.graphics(); const u = S;
-      g.fillStyle(0xff5577, 0.25); g.fillCircle(7*u, 7*u, 8*u);  // glow
-      g.fillStyle(0xff3366, 1);
-      g.fillCircle(4.5*u, 5*u, 3*u); g.fillCircle(9.5*u, 5*u, 3*u);
-      g.fillTriangle(1.5*u, 6*u, 12.5*u, 6*u, 7*u, 12.5*u);
-      g.fillStyle(0xffaacc, 0.9); g.fillCircle(5*u, 4.5*u, 1.2*u); // highlight
-      g.generateTexture('heartpk', 14*u, 14*u); g.destroy();
-    }
   }
 
   // ── Player ───────────────────────────────────────────────────────────────--

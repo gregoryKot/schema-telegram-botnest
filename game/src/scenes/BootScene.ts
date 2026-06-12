@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { S } from '../constants';
+import { makeCommonTextures } from '../textures';
 
 type G = Phaser.GameObjects.Graphics;
 
@@ -17,6 +18,7 @@ export class BootScene extends Phaser.Scene {
     this.tex('ground', 16, 16, g => this.drawGround(g));
     this.tex('plat_room',   16, 10, g => this.drawPlatRoom(g));
     this.tex('ground_room', 16, 16, g => this.drawGroundRoom(g));
+    makeCommonTextures(this); // anxmob, heartpk — нужны и прологу, и главам
     // Flow: Start → Intro → Game. Dev shortcut: #game jumps straight to a chapter.
     const hash = window.location.hash.slice(1).toLowerCase();
     if (hash === 'game' || hash.startsWith('chapter'))
