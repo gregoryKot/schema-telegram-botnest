@@ -70,6 +70,7 @@ export class GameScene extends Phaser.Scene {
   private frozen = false; private freezePulseT = 0;
   private slash!: Phaser.GameObjects.Graphics;
   private calmRing!: Phaser.GameObjects.Graphics;
+  private yarnImg!: Phaser.GameObjects.Image;
   private playerLight!: Phaser.GameObjects.Graphics;
 
   private hitstop = 0;
@@ -133,10 +134,10 @@ export class GameScene extends Phaser.Scene {
   // Титульная карточка: где ты и какое у этого места настроение
   private showTitleCard() {
     const mk = (y: number, text: string, size: number, color: string) =>
-      this.add.text(W / 2, y, text, { fontFamily: 'Courier New', fontSize: `${size}px`, color, letterSpacing: 3, align: 'center' })
+      this.add.text(W / 2, y, text, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${size}px`, color, letterSpacing: 3, align: 'center' })
         .setOrigin(0.5).setScrollFactor(0).setDepth(120).setAlpha(0);
-    const t1 = mk(170, this.chapter.title.toUpperCase(), 30, '#fff0d8');
-    const t2 = mk(208, this.chapter.tagline, 13, '#9a8fb8');
+    const t1 = mk(170, this.chapter.title.toUpperCase(), 24, '#fff0d8');
+    const t2 = mk(208, this.chapter.tagline, 11, '#9a8fb8');
     this.tweens.add({ targets: [t1, t2], alpha: 1, duration: 700, delay: 350 });
     this.tweens.add({ targets: [t1, t2], alpha: 0, duration: 800, delay: 3200, onComplete: () => { t1.destroy(); t2.destroy(); } });
   }
@@ -340,17 +341,18 @@ export class GameScene extends Phaser.Scene {
 
     this.slash = this.add.graphics().setDepth(11);
     this.calmRing = this.add.graphics().setDepth(8);
-    this.bubble = this.add.text(0, 0, '', { fontFamily: 'Courier New', fontSize: '15px', color: '#fff0d8',
+    this.yarnImg = this.add.image(0, 0, 'yarn').setDepth(9).setVisible(false);
+    this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 9, y: 5 }, align: 'center' })
       .setOrigin(0.5, 1).setDepth(45).setAlpha(0);
   }
 
   private buildHUD() {
-    this.heartsText = this.add.text(18, 14, '', { fontFamily: 'Courier New', fontSize: '24px', color: '#ff5577' })
+    this.heartsText = this.add.text(18, 14, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '24px', color: '#ff5577' })
       .setScrollFactor(0).setDepth(100);
     this.updateHearts();
     if (!IS_TOUCH)
-      this.add.text(W / 2, H - 20, 'J/X — удар   ·   K/C/↓ — замри   ·   SHIFT/Z — рывок', { fontFamily: 'Courier New', fontSize: '11px', color: '#6a5f8a' })
+      this.add.text(W / 2, H - 20, 'X бей · C отвлекись · Z рывок · V уступи', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
         .setOrigin(0.5, 1).setScrollFactor(0).setDepth(100);
   }
   private updateHearts() {
@@ -360,13 +362,12 @@ export class GameScene extends Phaser.Scene {
   private setupInput() {
     this.input.keyboard!.resetKeys(); // залипшие клавиши после смены сцены/alt-tab
     this.cursors = this.input.keyboard!.createCursorKeys();
-    // две раскладки: стрелки + Z/X/C и WASD + J/K
+    // одна схема: движение — стрелки/WASD, действия — Z X C V (как на Денди)
     this.keys = {
       A: this.input.keyboard!.addKey('A'), D: this.input.keyboard!.addKey('D'),
-      W: this.input.keyboard!.addKey('W'), J: this.input.keyboard!.addKey('J'),
-      K: this.input.keyboard!.addKey('K'), SHIFT: this.input.keyboard!.addKey('SHIFT'),
+      W: this.input.keyboard!.addKey('W'),
       X: this.input.keyboard!.addKey('X'), C: this.input.keyboard!.addKey('C'),
-      Z: this.input.keyboard!.addKey('Z'),
+      Z: this.input.keyboard!.addKey('Z'), V: this.input.keyboard!.addKey('V'),
     };
   }
 
@@ -381,7 +382,46 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 1).setScale(1.5).setDepth(9).setTint(0x1a0030).setAlpha(0).play('p-walk');
     this.tweens.add({ targets: img, alpha: 0.82, duration: 600 });
     this.critic = { img, size: 1, struck: 0, alive: true };
-    this.say('...а это — я? за спиной?', 2600);
+    // важный новый враг — представляем стоп-кадром, иначе «просто какой-то кот»
+    this.storyFrame('ВНУТРЕННИЙ КРИТИК',
+      'тень Йоськи. ходит следом и бьёт больнее всех.\n\n' +
+      'бить — он только громче.\nубегать — догонит: он же ты.\n\n' +
+      'не вовлекайся. иди вперёд — и он затихнет.');
+  }
+
+  // Стоп-кадр посреди главы: пауза, затемнение, текст, продолжение по тапу
+  private storyFrame(title: string, text: string) {
+    this.hitstop = 9e9; // update() стоит, пока не отпустим
+    const deep = 130;
+    const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0.78).setScrollFactor(0).setDepth(deep);
+    const t1 = this.add.text(W / 2, 120, title, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '18px', color: '#ff8aa6', align: 'center' })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 1);
+    const t2 = this.add.text(W / 2, 175, text, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#d8c8ec', align: 'center', lineSpacing: 10 })
+      .setOrigin(0.5, 0).setScrollFactor(0).setDepth(deep + 1);
+    const hint = this.add.text(W / 2, H - 60, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
+      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#88ffcc' })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
+    this.tweens.add({ targets: hint, alpha: 0.9, duration: 400, delay: 800 });
+    this.time.delayedCall(700, () => {
+      const go = () => { this.hitstop = 0; [dim, t1, t2, hint].forEach(o => o.destroy()); };
+      this.input.keyboard!.once('keydown', go);
+      this.input.once('pointerdown', go);
+    });
+  }
+
+  // ── УСТУПИ (fawn): купить мир ценой себя — враги отстают, сердце уходит ────
+  private doFawn() {
+    if (this.invuln > 0) return; // не спамить
+    this.hearts -= 1; this.updateHearts();
+    this.invuln = 3500;
+    audio.freeze();
+    this.cameras.main.flash(160, 80, 50, 110);
+    this.burst(this.player.x, this.player.y - 24, 0xb08fd0, 12, 150);
+    this.player.setScale(1.7, 1.15); // прогнулся
+    for (const m of this.anx) { if (m.alive) { m.vx = Math.sign(m.img.x - this.player.x) * 320; m.vy = -120; m.cd = 2600; } }
+    if (this.critic?.alive) this.critic.struck = 4000;
+    this.sayOnce('fawn', '«ладно-ладно, как скажете...» — и правда отстали. но чего это стоило.', 3400);
+    if (this.hearts <= 0) this.gameOver();
   }
 
   // ── Main loop ────────────────────────────────────────────────────────────--
@@ -440,10 +480,12 @@ export class GameScene extends Phaser.Scene {
     const right = this.cursors.right.isDown || this.keys.D.isDown || touch.right;
     const jump  = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.space)
                || Phaser.Input.Keyboard.JustDown(this.keys.W) || touch.consume('jump');
-    const hit   = Phaser.Input.Keyboard.JustDown(this.keys.J) || Phaser.Input.Keyboard.JustDown(this.keys.X) || touch.consume('hit');
-    const dash  = Phaser.Input.Keyboard.JustDown(this.keys.SHIFT) || Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('dash');
-    const freezeHeld = this.keys.K.isDown || this.keys.C.isDown || this.cursors.down.isDown || touch.freeze;
+    const hit   = Phaser.Input.Keyboard.JustDown(this.keys.X) || touch.consume('hit');
+    const dash  = Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('dash');
+    const fawn  = Phaser.Input.Keyboard.JustDown(this.keys.V) || touch.consume('fawn');
+    const freezeHeld = this.keys.C.isDown || this.cursors.down.isDown || touch.freeze;
     this.frozen = freezeHeld && onGround && !this.dashing && !this.attacking;
+    if (fawn && !this.dead) this.doFawn();
     if (this.frozen && !this.wasFrozen) audio.freeze();
     this.wasFrozen = this.frozen;
 
@@ -465,6 +507,7 @@ export class GameScene extends Phaser.Scene {
       this.drawCalmRing();
     } else {
       this.calmRing.clear();
+      this.yarnImg.setVisible(false);
       this.player.setScale(1.5, 1.5);
     }
 
@@ -510,12 +553,19 @@ export class GameScene extends Phaser.Scene {
     if (!this.attacking) return;
     this.attackT -= dt;
     const dir = this.player.flipX ? -1 : 1;
-    const cx = this.player.x + dir * 34, cy = this.player.y - 22;
     const prog = 1 - this.attackT / ATTACK_MS;
-    this.slash.lineStyle(5, 0xfff0d8, 1 - prog * 0.8);
-    this.slash.beginPath();
-    this.slash.arc(cx, cy, 28, (-0.8 + prog * 1.4) * dir, (0.8 + prog * 1.4) * dir, dir < 0);
-    this.slash.strokePath();
+    // выпад: спина выгибается, корпус подаётся вперёд
+    this.player.setScale(1.5 + 0.25 * Math.sin(prog * Math.PI), 1.5 - 0.2 * Math.sin(prog * Math.PI));
+    // три следа когтей — растут по диагонали и наливаются красным
+    const cx = this.player.x + dir * 30, cy = this.player.y - 34;
+    const len = 34 * Math.min(1, prog * 1.6);
+    const a = 1 - Math.max(0, prog - 0.45) * 1.8;
+    for (let i = 0; i < 3; i++) {
+      const ox = i * 7 * dir, oy = i * 9 - 6;
+      this.slash.lineStyle(3, i === 1 ? 0xff4455 : 0xd92b3d, Math.max(0, a));
+      this.slash.lineBetween(cx + ox, cy + oy, cx + ox + len * dir, cy + oy + len * 0.55);
+    }
+    if (prog > 0.4 && prog < 0.6) this.burst(cx + len * dir * 0.7, cy + 12, 0xff4455, 2, 60);
 
     for (const m of this.anx) {
       if (!m.alive || this.attackHit.has(m)) continue;
@@ -535,21 +585,21 @@ export class GameScene extends Phaser.Scene {
     if (this.attackT <= 0) this.attacking = false;
   }
 
-  // ── Anxiety: fighting splits it, freezing calms it ──────────────────────────
+  // ── Anxiety: бить = их только больше; растворяет лишь спокойствие ──────────
   private hitAnx(m: Anx, dir: number) {
     m.vx = dir * 300; m.vy = -140; m.state = 'chase'; m.cd = 600;
     this.doHitstop(55); this.cameras.main.shake(70, 0.005); audio.hit();
     this.burst(m.img.x, m.img.y, 0xaa55cc, 8, 130);
-    if (m.size > 0.55) {
-      m.size *= 0.7; m.img.setScale(m.size);
+    const aliveCount = this.anx.filter(a => a.alive).length;
+    if (aliveCount < 7) {
+      m.size = Math.max(0.6, m.size * 0.85); m.img.setScale(m.size);
       this.spawnAnx(m.img.x, m.size);
       const nb = this.anx[this.anx.length - 1]; nb.vx = -dir * 220; nb.vy = -110;
       this.adoptIntoGate(m, nb);
       audio.split();
       this.sayOnce('hit', 'бить бесполезно — их только больше!', 2600);
     } else {
-      m.alive = false;
-      this.tweens.add({ targets: m.img, alpha: 0, scale: 0, duration: 180, onComplete: () => m.img.destroy() });
+      this.sayOnce('hit_many', 'их уже толпа... может, хватит драться?', 2800);
     }
   }
 
@@ -653,7 +703,7 @@ export class GameScene extends Phaser.Scene {
     const ky = H / 540; // y развязок написаны под десктопную высоту
     const line = (text: string, y: number, color: string, size: number, delay: number) => {
       const t = this.add.text(W / 2, y * ky, text, {
-        fontFamily: 'Courier New', fontSize: `${size}px`, color, align: 'center', lineSpacing: 6,
+        fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${size}px`, color, align: 'center', lineSpacing: 6,
       }).setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0);
       this.tweens.add({ targets: t, alpha: 1, duration: 900, delay });
     };
@@ -669,7 +719,7 @@ export class GameScene extends Phaser.Scene {
       const label = next && CHAPTERS[next]
         ? `дальше — «${CHAPTERS[next].title}». ${act}`
         : `продолжение следует... ${act} — в меню`;
-      const hint = this.add.text(W / 2, H - 28, label, { fontFamily: 'Courier New', fontSize: '11px', color: '#5a4f7a' })
+      const hint = this.add.text(W / 2, H - 28, label, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#5a4f7a' })
         .setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0);
       this.tweens.add({ targets: hint, alpha: 0.8, duration: 800 });
       const go = () => next && CHAPTERS[next] ? this.scene.restart({ chapter: next }) : this.scene.start('Start');
@@ -691,7 +741,7 @@ export class GameScene extends Phaser.Scene {
   private gameOver() {
     this.dead = true;
     track('game_over', { chapter: this.chapter.id });
-    const txt = this.add.text(W/2, H/2, 'так больше нельзя...', { fontFamily: 'Courier New', fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
+    const txt = this.add.text(W/2, H/2, 'так больше нельзя...', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
     this.tweens.add({ targets: txt, alpha: 1, duration: 800 });
     this.cameras.main.fade(1800, 6, 4, 12);
@@ -714,13 +764,20 @@ export class GameScene extends Phaser.Scene {
       .setTint(0x9fd0ff).setAlpha(0.5).setDepth(9);
     this.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.destroy() });
   }
+  // «Отвлечься» = Йоська играет с клубком; мысли теряют к нему интерес
   private drawCalmRing() {
     this.calmRing.clear();
-    const r = 30 + Math.sin(this.freezePulseT * 0.006) * 14;
-    this.calmRing.lineStyle(2, 0x88ccff, 0.4);
-    this.calmRing.strokeCircle(this.player.x, this.player.y - 22, r);
-    this.calmRing.lineStyle(1, 0x88ccff, 0.2);
-    this.calmRing.strokeCircle(this.player.x, this.player.y - 22, r + 14);
+    const dir = this.player.flipX ? -1 : 1;
+    const t = this.freezePulseT * 0.006;
+    const bx = this.player.x + dir * 26 + Math.sin(t * 1.7) * 8;
+    const by = this.player.y - 7 - Math.abs(Math.sin(t * 2.3)) * 14;
+    // клубок скачет под лапой
+    this.calmRing.fillStyle(0x000000, 0.18);
+    this.calmRing.fillEllipse(bx, this.player.y - 2, 16, 4);
+    this.yarnImg.setVisible(true).setPosition(bx, by).setAngle(t * 180);
+    // лёгкое кольцо спокойствия осталось, но едва заметное
+    this.calmRing.lineStyle(1, 0x88ccff, 0.15);
+    this.calmRing.strokeCircle(this.player.x, this.player.y - 22, 36 + Math.sin(t) * 8);
   }
 
   // ── Cat voice ──────────────────────────────────────────────────────────────

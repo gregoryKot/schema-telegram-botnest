@@ -10,25 +10,28 @@ export class BootScene extends Phaser.Scene {
   preload() {
     const cx = Number(this.game.config.width) / 2, cy = Number(this.game.config.height) / 2;
     const loading = this.add.text(cx, cy, 'ЗАГРУЗКА...', {
-      fontFamily: 'Courier New', fontSize: '16px', color: '#8a7faa', letterSpacing: 4,
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#8a7faa', letterSpacing: 4,
     }).setOrigin(0.5);
-    // сеть оборвалась (например, в момент деплоя) — говорим честно, а не молчим
+    // сеть оборвалась (например, в момент деплоя) — говорим честно и даём повторить
     this.load.on('loaderror', () => {
-      loading.setText('НЕ ЗАГРУЗИЛОСЬ\nобнови страницу').setColor('#ff8866').setAlign('center');
+      loading.setText('НЕ ЗАГРУЗИЛОСЬ\nтапни — повторить').setColor('#ff8866').setAlign('center');
+      this.input.once('pointerdown', () => window.location.reload());
+      this.input.keyboard?.once('keydown', () => window.location.reload());
     });
     this.load.spritesheet('cat_run',  'assets/cat_run.png',  { frameWidth: 48, frameHeight: 48 });
     this.load.spritesheet('cat_idle', 'assets/cat_idle.png', { frameWidth: 48, frameHeight: 48 });
   }
 
   create() {
-    // битая загрузка — остаёмся на экране с сообщением, дальше только хуже
-    if (!this.textures.exists('cat_run') || !this.textures.exists('cat_idle')) return;
-    // Generated tile textures used by the Game engine
+    // Процедурные текстуры не зависят от сети — генерим ВСЕГДА, чтобы мир был
+    // целым, даже если кто-то зайдёт в главу через меню при битой загрузке.
     this.tex('plat',   16, 10, g => this.drawPlat(g));
     this.tex('ground', 16, 16, g => this.drawGround(g));
     this.tex('plat_room',   16, 10, g => this.drawPlatRoom(g));
     this.tex('ground_room', 16, 16, g => this.drawGroundRoom(g));
-    makeCommonTextures(this); // anxmob, heartpk — нужны и прологу, и главам
+    makeCommonTextures(this); // anxmob, heartpk, yarn — нужны и прологу, и главам
+    // спрайты кота не доехали — остаёмся на экране «тапни — повторить»
+    if (!this.textures.exists('cat_run') || !this.textures.exists('cat_idle')) return;
     // Flow: Start → Intro → Game. Dev shortcut: #game jumps straight to a chapter.
     const hash = window.location.hash.slice(1).toLowerCase();
     if (hash === 'game' || hash.startsWith('chapter'))

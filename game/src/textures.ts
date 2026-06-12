@@ -14,6 +14,18 @@ export function makeCommonTextures(scene: Phaser.Scene) {
     g.fillStyle(0x1a0010, 1);    g.fillCircle((R - 3) * u, R * u, 1 * u); g.fillCircle((R + 3) * u, R * u, 1 * u);
     g.generateTexture('anxmob', R * 2 * u, R * 2 * u); g.destroy();
   }
+  if (!scene.textures.exists('yarn')) {
+    // клубок — Йоська отвлекается игрой, и мысли теряют к нему интерес
+    const g = scene.make.graphics({ x: 0, y: 0 });
+    const u = S, R = 6;
+    g.fillStyle(0xff8aa6, 1); g.fillCircle(R * u, R * u, R * u);
+    g.lineStyle(1.5, 0xd05a78, 1);
+    g.beginPath(); g.arc(R * u, R * u, R * u * 0.65, 0.4, 2.6); g.strokePath();
+    g.beginPath(); g.arc(R * u, R * u, R * u * 0.8, 3.4, 5.6); g.strokePath();
+    g.beginPath(); g.arc(R * u * 1.2, R * u * 0.8, R * u * 0.5, 1.2, 3.6); g.strokePath();
+    g.fillStyle(0xffc8d6, 1); g.fillCircle(R * u * 0.7, R * u * 0.7, 1.4 * u);
+    g.generateTexture('yarn', R * 2 * u, R * 2 * u); g.destroy();
+  }
   if (!scene.textures.exists('heartpk')) {
     const g = scene.make.graphics({ x: 0, y: 0 });
     const u = S;

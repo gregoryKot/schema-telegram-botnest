@@ -32,8 +32,21 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [BootScene, StartScene, IntroScene, TutorialScene, GameScene],
 };
 
-const game = new Phaser.Game(config);
-(window as any).__game = game;
-setupMenu(game);
-initTouchControls();
-initAnalytics();
+// Стартуем после загрузки пиксельного шрифта — иначе Phaser отрендерит
+// тексты системным. Страховка по таймауту: без шрифта, но не висим.
+let started = false;
+function start() {
+  if (started) return;
+  started = true;
+  const game = new Phaser.Game(config);
+  (window as any).__game = game;
+  setupMenu(game);
+  initTouchControls();
+  initAnalytics();
+}
+
+Promise.all([
+  document.fonts.load('16px "Press Start 2P"', 'Йо'),
+  document.fonts.load('16px "Press Start 2P"', 'RUN'),
+]).then(start, start);
+setTimeout(start, 2000);

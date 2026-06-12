@@ -11,12 +11,12 @@ export class StartScene extends Phaser.Scene {
     this.add.rectangle(W / 2, H / 2, W, H, 0x1a0800);
 
     this.add.text(W / 2, 90, 'RUN THROUGH', {
-      fontFamily: 'Courier New', fontSize: '34px', color: '#fff0d8',
-      fontStyle: 'bold', letterSpacing: 4,
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '26px', color: '#fff0d8',
+      letterSpacing: 4,
     }).setOrigin(0.5);
     this.add.text(W / 2, 130, 'YOUR MIND', {
-      fontFamily: 'Courier New', fontSize: '34px', color: '#ff7733',
-      fontStyle: 'bold', letterSpacing: 4,
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '26px', color: '#ff7733',
+      letterSpacing: 4,
     }).setOrigin(0.5);
 
     // Анимация котика для превью
@@ -33,7 +33,7 @@ export class StartScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xa08fff)
       .setInteractive({ useHandCursor: true });
     const btnTxt = this.add.text(W / 2, H / 2 + 130, 'Н А Ч А Т Ь', {
-      fontFamily: 'Courier New', fontSize: '16px', color: '#ff7733', letterSpacing: 4,
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#ff7733', letterSpacing: 4,
     }).setOrigin(0.5);
 
     btn.on('pointerover', () => {
@@ -46,13 +46,13 @@ export class StartScene extends Phaser.Scene {
       btnTxt.setColor('#ff7733');
       cat.setScale(4);
     });
-    btn.on('pointerdown', () => { track('game_start'); this.scene.start('Intro'); });
+    btn.on('pointerdown', () => { track('game_start'); this.scene.start('Tutorial'); });
 
     // вернулся — продолжай с достигнутой главы, не с нуля
     const cont = getContinueChapter();
     if (cont && CHAPTERS[cont]) {
       const cbtn = this.add.text(W / 2, H / 2 + 178, `продолжить — «${CHAPTERS[cont].title}» →`, {
-        fontFamily: 'Courier New', fontSize: '13px', color: '#88ffcc', letterSpacing: 1,
+        fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '13px', color: '#88ffcc', letterSpacing: 1,
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
       cbtn.on('pointerover', () => cbtn.setColor('#fff0d8'));
       cbtn.on('pointerout', () => cbtn.setColor('#88ffcc'));
@@ -60,7 +60,7 @@ export class StartScene extends Phaser.Scene {
     }
 
     this.add.text(W / 2, H - 40, 'стрелки / WASD / тач для управления', {
-      fontFamily: 'Courier New', fontSize: '11px', color: '#7a3a10', letterSpacing: 1,
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#7a3a10', letterSpacing: 1,
     }).setOrigin(0.5);
   }
 }
