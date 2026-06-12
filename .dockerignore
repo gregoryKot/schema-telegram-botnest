@@ -15,12 +15,6 @@ schema-miniapp/package-lock.json
 schema-telegram-botnest
 webapp/node_modules
 game/node_modules
-game/src
-game/public
+game/dist
 game/.claude
-game/index.html
-game/tsconfig.json
-game/vite.config.ts
-game/package-lock.json
-game/package.json
 *.log

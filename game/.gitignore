@@ -1,9 +1,7 @@
 node_modules
+dist
 *.tsbuildinfo
 .claude/
-
-# dist КОММИТИТСЯ (как schema-miniapp/dist): собираем локально, Dockerfile
-# копирует его в webapp/dist/game — Amvera не собирает игру сама.
 
 # Стрэй-артефакты компиляции (проект на noEmit, исходники — только .ts).
 # Все .ts в src/ — исходные; .js/.d.ts/.map рядом с ними генерятся случайным tsc.
