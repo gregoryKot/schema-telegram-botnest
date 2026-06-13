@@ -26,6 +26,45 @@ export function makeCommonTextures(scene: Phaser.Scene) {
     g.fillStyle(0xffc8d6, 1); g.fillCircle(R * u * 0.7, R * u * 0.7, 1.4 * u);
     g.generateTexture('yarn', R * 2 * u, R * 2 * u); g.destroy();
   }
+  // Позы Йоськи, которых нет в спрайт-листах: сидит и играет лапой (2 кадра)
+  // и понурая поза для «уступил». Рисуем в 48×48, низ как у cat_idle.
+  const BLACK = 0x141418, EYE = 0xffaa33;
+  const drawSitCat = (g: Phaser.GameObjects.Graphics, pawDown: boolean) => {
+    g.fillStyle(BLACK, 1);
+    g.fillEllipse(17, 36, 17, 19);                 // задняя часть, сидит
+    g.fillEllipse(25, 28, 12, 16);                 // грудь, корпус приподнят
+    g.fillCircle(29, 16, 7);                       // голова
+    g.fillTriangle(23, 12, 27, 3, 29, 11);         // ухо
+    g.fillTriangle(30, 11, 34, 4, 35, 13);         // ухо
+    g.fillRect(14, 32, 5, 14);                     // задняя лапа
+    g.fillRect(22, 34, 4, 12);                     // опорная передняя
+    // хвост обёрнут вокруг
+    g.fillEllipse(8, 43, 12, 5); g.fillEllipse(5, 40, 5, 8);
+    // играющая лапа
+    if (pawDown) { g.fillRect(30, 32, 4, 13); g.fillEllipse(33, 44, 6, 4); }
+    else { g.fillEllipse(34, 27, 10, 4); g.fillEllipse(38, 26, 5, 5); }
+    g.fillStyle(EYE, 1); g.fillRect(31, 14, 3, 3); // глаз — смотрит на клубок
+    g.fillStyle(BLACK, 1); g.fillRect(32, 15, 1.6, 1.6);
+  };
+  if (!scene.textures.exists('cat_play0')) {
+    let g = scene.make.graphics({ x: 0, y: 0 });
+    drawSitCat(g, false); g.generateTexture('cat_play0', 48, 48); g.destroy();
+    g = scene.make.graphics({ x: 0, y: 0 });
+    drawSitCat(g, true); g.generateTexture('cat_play1', 48, 48); g.destroy();
+  }
+  if (!scene.textures.exists('cat_droop')) {
+    // понуро: корпус низкий, голова опущена ниже плеч, уши прижаты, хвост висит
+    const g = scene.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(BLACK, 1);
+    g.fillEllipse(22, 36, 26, 13);                 // низкий корпус
+    g.fillCircle(34, 38, 6.4);                     // голова опущена
+    g.fillTriangle(29, 35, 30, 30, 33, 33);        // прижатое ухо
+    g.fillTriangle(35, 32, 38, 30, 38, 35);
+    g.fillRect(13, 40, 4, 7); g.fillRect(29, 41, 4, 6); // лапы
+    g.fillEllipse(8, 41, 10, 4);                   // хвост лежит
+    g.fillStyle(EYE, 0.8); g.fillRect(36, 37, 2.4, 2); // полузакрытый глаз
+    g.generateTexture('cat_droop', 48, 48); g.destroy();
+  }
   if (!scene.textures.exists('dog_col')) {
     // пёс-коллега: рыжий, крупный, вислые уши — точно не второй Йоська
     const g = scene.make.graphics({ x: 0, y: 0 });

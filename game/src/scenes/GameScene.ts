@@ -7,7 +7,7 @@ import { buildDecor } from '../decor';
 import { touch, IS_TOUCH } from '../controls';
 import { makeCommonTextures } from '../textures';
 import { unlockChapter } from '../progress';
-import { drawYarnPlay, fawnDroop } from '../catFx';
+import { drawYarnPlay, fawnDroop, endPose } from '../catFx';
 import { track } from '../analytics';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -421,8 +421,13 @@ export class GameScene extends Phaser.Scene {
     this.burst(this.player.x, this.player.y - 24, 0xb08fd0, 12, 150);
     fawnDroop(this, this.player); // голова понуро, вздох
     for (const m of this.anx) { if (m.alive) { m.vx = Math.sign(m.img.x - this.player.x) * 320; m.vy = -120; m.cd = 2600; } }
-    if (this.critic?.alive) this.critic.struck = 4000;
-    this.sayOnce('fawn', '«ладно-ладно, как скажете...» — и правда отстали. но чего это стоило.', 3400);
+    if (this.critic?.alive) {
+      // уступка — единственное, что прогоняет тень… временно
+      this.critic.struck = 8000;
+      this.say('уступил — и тень отстала. пока что.', 3000);
+    } else {
+      this.sayOnce('fawn', '«ладно-ладно, как скажете...» — и правда отстали. но чего это стоило.', 3400);
+    }
     if (this.hearts <= 0) this.gameOver();
   }
 
@@ -500,17 +505,16 @@ export class GameScene extends Phaser.Scene {
 
     if (this.dashCd > 0) this.dashCd -= dt;
 
-    // ── ЗАМРИ ──
+    // ── ОТВЛЕКИСЬ: сидит и играет с клубком (рисованные кадры) ──
     if (this.frozen) {
       b.setVelocityX(0);
-      this.player.setScale(1.65, 1.35);
-      this.player.play('p-idle', true);
+      this.player.setScale(1.5, 1.5);
       this.freezePulseT += dt;
       this.drawCalmRing();
     } else {
       this.calmRing.clear();
-      this.yarnImg.setVisible(false);
-      if (!this.tweens.isTweening(this.player)) { this.player.setScale(1.5, 1.5); this.player.setAngle(0); }
+      if (this.yarnImg.visible) { this.yarnImg.setVisible(false); endPose(this.player); }
+      this.player.setScale(1.5, 1.5);
     }
 
     // ── РЫВОК (dash) — i-frames + afterimage ──
@@ -672,6 +676,15 @@ export class GameScene extends Phaser.Scene {
   // Критик ходит тенью за тобой. Бег от него и клубок его КОРМЯТ.
   private updateCritic(dt: number) {
     const c = this.critic; if (!c || !c.alive) return;
+    // уступка прогнала его — стоит вдалеке, выцветший, и ждёт своего часа
+    if (c.struck > 1500) {
+      c.struck -= dt;
+      c.img.setAlpha(0.22);
+      c.img.play('p-idle', true);
+      if (c.struck <= 1500) this.sayOnce('critic_back', '...вернулся. они всегда возвращаются.', 2800);
+      return;
+    }
+    c.img.setAlpha(0.82);
     const target = this.trail[0];   // oldest = ~1.5s behind
     if (target) {
       c.img.x += (target.x - c.img.x) * 0.12;
