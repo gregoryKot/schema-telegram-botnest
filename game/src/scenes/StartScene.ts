@@ -3,11 +3,13 @@ import { W, H } from '../constants';
 import { getContinueChapter } from '../progress';
 import { track } from '../analytics';
 import { CHAPTERS } from '../chapters';
+import { setTouchControls } from '../controls';
 
 export class StartScene extends Phaser.Scene {
   constructor() { super('Start'); }
 
   create() {
+    setTouchControls(false); // титул — тач-кнопки перекрывали «НАЧАТЬ»
     this.add.rectangle(W / 2, H / 2, W, H, 0x1a0800);
 
     this.add.text(W / 2, 90, 'RUN THROUGH', {
