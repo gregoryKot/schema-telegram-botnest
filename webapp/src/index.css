@@ -943,6 +943,18 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
   .page { overflow: visible; height: auto; }
+  /* Fixed fullscreen overlays (.ex-screen) need their own scroll — the global
+     overflow:visible override above would clip content behind ex-screen's
+     overflow:hidden. Re-enable scroll for .page inside fixed overlays. */
+  .ex-screen .page { overflow-y: auto !important; }
+  /* Reduce ex-body padding and font for narrow screens */
+  .ex-body { padding: 24px 20px 120px !important; gap: 24px !important; }
+  .ex-title { font-size: 36px !important; }
+  .ex-lede { font-size: 15px !important; }
+  /* Hide aside on mobile: ex-foot has the same actions */
+  .ex-aside { display: none; }
+  /* Mobile-only utility */
+  .desktop-only { display: none !important; }
 }
 @media (min-width: 768px) {
   .mobile-nav { display: none !important; }
@@ -950,6 +962,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   .settings-overlay { left: var(--sidebar-w) !important; }
   /* Settings left nav: visible on desktop */
   .settings-sidenav { display: flex !important; }
+  .mobile-only { display: none !important; }
 }
 
 /* ─── Settings side nav ──────────────────────────────────────────────────── */

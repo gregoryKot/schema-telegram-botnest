@@ -349,7 +349,7 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
+    <div className="ex-screen" style={{ zIndex: 80 }}>
       <div className="ex-topbar">
         <button className="ex-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад

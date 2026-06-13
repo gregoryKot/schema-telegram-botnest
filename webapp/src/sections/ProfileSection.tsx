@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import type { Achievement, TherapyRelationInfo } from '../api';
 import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
+import { useAuth } from '../auth/AuthContext';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
@@ -42,7 +44,9 @@ interface Props {
   displayName?: string | null;
 }
 
-export function ProfileSection({ onOpenTracker, refreshKey, displayName }: Props) {
+export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, displayName }: Props) {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const firstName = displayName || '';
 
   const [streak, setStreak]             = useState<StreakData | null>(null);
@@ -473,6 +477,32 @@ export function ProfileSection({ onOpenTracker, refreshKey, displayName }: Props
 
         <div>
           <TherapyNote compact />
+        </div>
+
+        {/* ── Настройки и аккаунт (только мобайл, на десктопе есть в сайдбаре) ── */}
+        <div className="mobile-only section" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {onOpenSettings && (
+            <button
+              onClick={onOpenSettings}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '13px 0', background: 'none', border: 'none', borderBottom: '1px solid var(--line)', color: 'var(--text)', fontSize: 15, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <span>Настройки</span>
+              <span style={{ color: 'var(--text-sub)', fontSize: 18 }}>›</span>
+            </button>
+          )}
+          <button
+            onClick={() => navigate('/account')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '13px 0', background: 'none', border: 'none', borderBottom: '1px solid var(--line)', color: 'var(--text)', fontSize: 15, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}
+          >
+            <span>Аккаунт и привязки</span>
+            <span style={{ color: 'var(--text-sub)', fontSize: 18 }}>›</span>
+          </button>
+          <button
+            onClick={() => logout()}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '13px 0', background: 'none', border: 'none', borderBottom: '1px solid var(--line)', color: 'var(--c-rose)', fontSize: 15, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}
+          >
+            <span>Выйти</span>
+          </button>
         </div>
 
         {/* ── Удаление аккаунта – discreet link ── */}
