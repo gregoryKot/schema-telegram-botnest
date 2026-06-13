@@ -4,19 +4,24 @@ import { makeCommonTextures } from '../textures';
 
 type G = Phaser.GameObjects.Graphics;
 
-// Спрайт-листы кота: ключ → ожидаемые размеры PNG (для проверки целостности).
-const CAT_SHEETS: Record<string, { w: number; h: number; fw: number; fh: number }> = {
-  cat_run:   { w: 288,  h: 48,  fw: 48,  fh: 48 },
-  cat_idle:  { w: 576,  h: 48,  fw: 48,  fh: 48 },
-  cat_play:  { w: 1542, h: 257, fw: 257, fh: 257 },
-  cat_sleep: { w: 1140, h: 190, fw: 190, fh: 190 },
+// Спрайт-листы кота: ключ → размеры кадра. Только cat_run/cat_idle обязательны
+// для старта (меню, пролог, базовое движение). cat_play/cat_sleep — для отдельных
+// анимаций; если они не доехали, игра всё равно играбельна (сцены guard'ят анимации).
+const CAT_SHEETS: Record<string, { fw: number; fh: number }> = {
+  cat_run:   { fw: 48,  fh: 48 },
+  cat_idle:  { fw: 48,  fh: 48 },
+  cat_play:  { fw: 257, fh: 257 },
+  cat_sleep: { fw: 190, fh: 190 },
 };
+const ESSENTIAL = ['cat_run', 'cat_idle'];
 
 export class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
 
   private loading!: Phaser.GameObjects.Text;
   private retryArmed = false;
+  private advanced = false;
+  private watchdog?: number;
 
   preload() {
     const cx = Number(this.game.config.width) / 2, cy = Number(this.game.config.height) / 2;
@@ -25,6 +30,9 @@ export class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
     // сеть оборвалась (например, в момент деплоя) — говорим честно и даём повторить
     this.load.on('loaderror', () => this.armRetry());
+    // Страховка от вечной «ЗАГРУЗКА...»: если за 12с не уехали (висящий запрос,
+    // битый ассет и т.п.) — показываем честный экран с перезагрузкой.
+    this.watchdog = window.setTimeout(() => { if (!this.advanced) this.armRetry(); }, 12000);
     // Абсолютный путь от base ('/game/'), а не относительный 'assets/...'.
     // Без слэша на конце URL ('/game' вместо '/game/') относительный путь ушёл бы
     // в корень '/assets/...' → SPA-фоллбэк отдаёт index.html, iOS Safari глотает
@@ -42,8 +50,10 @@ export class BootScene extends Phaser.Scene {
     this.tex('plat_room',   16, 10, g => this.drawPlatRoom(g));
     this.tex('ground_room', 16, 16, g => this.drawGroundRoom(g));
     makeCommonTextures(this); // anxmob, heartpk, yarn — нужны и прологу, и главам
-    // спрайты кота не доехали (или доехали битыми) — остаёмся на экране «тапни — повторить»
-    if (!this.catsReady()) { this.armRetry(); return; }
+    // обязательные спрайты кота не доехали (или доехали битыми) — экран «тапни — повторить»
+    if (!this.essentialsReady()) { this.armRetry(); return; }
+    this.advanced = true;
+    if (this.watchdog) clearTimeout(this.watchdog);
     // Flow: Start → Intro → Game. Dev shortcut: #game jumps straight to a chapter.
     const hash = window.location.hash.slice(1).toLowerCase();
     if (hash === 'game' || hash.startsWith('chapter'))
@@ -55,11 +65,13 @@ export class BootScene extends Phaser.Scene {
   }
 
   // Текстура существует И реально декодировалась (а не пришла HTML-заглушкой 0×0).
-  private catsReady(): boolean {
-    return Object.entries(CAT_SHEETS).every(([key, s]) => {
+  private essentialsReady(): boolean {
+    return ESSENTIAL.every(key => {
       if (!this.textures.exists(key)) return false;
-      const img = this.textures.get(key).getSourceImage() as { width: number; height: number };
-      return !!img && img.width >= s.w && img.height >= s.h;
+      try {
+        const img = this.textures.get(key).getSourceImage() as { width?: number };
+        return !!img && !!img.width; // 0×0 ⇒ пришёл не PNG, а HTML-заглушка
+      } catch { return false; }
     });
   }
 
