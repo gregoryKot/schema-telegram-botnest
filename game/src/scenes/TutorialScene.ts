@@ -83,6 +83,12 @@ export class TutorialScene extends Phaser.Scene {
     this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.24).setDepth(10).setVisible(false);
     if (!this.anims.exists('p-sleep'))
       this.anims.create({ key: 'p-sleep', frames: this.anims.generateFrameNumbers('cat_sleep', { start: 0, end: 5 }), frameRate: 6, repeat: 0 });
+    if (!this.anims.exists('dog-idle'))
+      this.anims.create({ key: 'dog-idle', frames: this.anims.generateFrameNumbers('dog_idle', { start: 0, end: 3 }), frameRate: 6, repeat: -1 });
+    if (!this.anims.exists('dog-walk'))
+      this.anims.create({ key: 'dog-walk', frames: this.anims.generateFrameNumbers('dog_walk', { start: 0, end: 5 }), frameRate: 12, repeat: -1 });
+    if (!this.anims.exists('nei-idle'))
+      this.anims.create({ key: 'nei-idle', frames: this.anims.generateFrameNumbers('nei_idle', { start: 0, end: 3 }), frameRate: 6, repeat: -1 });
     this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
@@ -329,9 +335,8 @@ export class TutorialScene extends Phaser.Scene {
     this.step = 'fight';
     this.narrTell('Утро. Коллега «по-дружески» просит\nсделать его работу. Снова. Бесплатно.', () => {
       this.prompt.setText(IS_TOUCH ? 'БЕЙ — Йоська не умеет отказывать спокойно. только так' : 'X — Йоська не умеет отказывать спокойно. только так');
-      this.colleague = this.add.sprite(W - 80, GROUND_Y, 'dog_col').setOrigin(0.5, 1).setScale(1.3)
-        .setFlipX(true).setDepth(8);
-      this.tweens.add({ targets: this.colleague, scaleY: 1.36, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' }); // дышит
+      this.colleague = this.add.sprite(W - 80, GROUND_Y, 'dog_idle').setOrigin(0.5, 1).setScale(1.5)
+        .setFlipX(true).setDepth(8).play('dog-idle');
       this.colBubble = this.add.text(0, 0, 'ну ты же можешь!', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
         backgroundColor: '#e8c890', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });
@@ -340,8 +345,8 @@ export class TutorialScene extends Phaser.Scene {
   private updateColleague(dt: number) {
     const c = this.colleague; if (!c || !c.active) return;
     const d = this.player.x - c.x;
-    if (Math.abs(d) > 70) { c.x += Math.sign(d) * dt * 0.12; c.setAngle(Math.sin(this.t * 0.02) * 4); } // семенит
-    else c.setAngle(0);
+    if (Math.abs(d) > 70) { c.x += Math.sign(d) * dt * 0.12; if (c.anims.currentAnim?.key !== 'dog-walk') c.play('dog-walk'); }
+    else if (c.anims.currentAnim?.key !== 'dog-idle') c.play('dog-idle');
     c.setFlipX(d > 0); // нарисован мордой вправо
     if (this.colBubble?.active) {
       this.colBubble.x = c.x; this.colBubble.y = c.y - 56;
@@ -380,9 +385,8 @@ export class TutorialScene extends Phaser.Scene {
     this.step = 'fawn';
     this.narrTell('Вечер. Соседка просит присмотреть за её фикусом.\nВ пятый раз за месяц.\nРявкнуть — неудобно. Сбежать — она у двери.', () => {
       this.prompt.setText(IS_TOUCH ? 'УСТУПИ — Йоська так умеет лучше всего' : 'V — уступить. Йоська так умеет лучше всего');
-      this.neighbor = this.add.sprite(W - 90, GROUND_Y, 'cat_nei').setOrigin(0.5, 1).setScale(1.35)
-        .setFlipX(true).setDepth(8);
-      this.tweens.add({ targets: this.neighbor, scaleY: 1.4, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.neighbor = this.add.sprite(W - 90, GROUND_Y, 'nei_idle').setOrigin(0.5, 1).setScale(1.5)
+        .setFlipX(true).setDepth(8).play('nei-idle');
       this.neiBubble = this.add.text(0, 0, 'ты же не откажешь?', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
         backgroundColor: '#e8b8d0', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });

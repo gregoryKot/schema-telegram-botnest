@@ -10,17 +10,23 @@ import catRunUrl   from '../assets/cat_run.png';
 import catIdleUrl  from '../assets/cat_idle.png';
 import catPlayUrl  from '../assets/cat_play.png';
 import catSleepUrl from '../assets/cat_sleep.png';
+import dogIdleUrl  from '../assets/dog_idle.png';
+import dogWalkUrl  from '../assets/dog_walk.png';
+import neiIdleUrl  from '../assets/nei_idle.png';
 
 type G = Phaser.GameObjects.Graphics;
 
-// Спрайт-листы кота. Только cat_run/cat_idle обязательны для старта (меню,
-// пролог, базовое движение). cat_play/cat_sleep — для отдельных анимаций;
-// если они не доехали, игра всё равно играбельна (сцены guard'ят анимации).
+// Спрайт-листы. Только cat_run/cat_idle обязательны для старта (меню, пролог,
+// базовое движение). Остальные — для отдельных анимаций; если не доехали,
+// игра всё равно играбельна (сцены guard'ят анимации).
 const CAT_SHEETS: Record<string, { url: string; fw: number; fh: number }> = {
   cat_run:   { url: catRunUrl,   fw: 48,  fh: 48 },
   cat_idle:  { url: catIdleUrl,  fw: 48,  fh: 48 },
   cat_play:  { url: catPlayUrl,  fw: 257, fh: 257 },
   cat_sleep: { url: catSleepUrl, fw: 190, fh: 190 },
+  dog_idle:  { url: dogIdleUrl,  fw: 48,  fh: 48 },
+  dog_walk:  { url: dogWalkUrl,  fw: 48,  fh: 48 },
+  nei_idle:  { url: neiIdleUrl,  fw: 48,  fh: 48 },
 };
 const ESSENTIAL = ['cat_run', 'cat_idle'];
 
