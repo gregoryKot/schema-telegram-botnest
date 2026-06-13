@@ -1,17 +1,26 @@
 import Phaser from 'phaser';
 import { S } from '../constants';
 import { makeCommonTextures } from '../textures';
+// Импортируем спрайты через Vite, а не из /public по стабильному имени:
+// Vite впекает абсолютный КОНТЕНТ-ХЕШИРОВАННЫЙ URL (кэш сам сбрасывается при
+// смене файла), а мелкие cat_run/cat_idle вообще инлайнятся как data-URI прямо
+// в бандл — их физически нельзя «не загрузить». Это убирает и битый путь, и
+// застрявший кэш зелёного __MISSING-квадрата.
+import catRunUrl   from '../assets/cat_run.png';
+import catIdleUrl  from '../assets/cat_idle.png';
+import catPlayUrl  from '../assets/cat_play.png';
+import catSleepUrl from '../assets/cat_sleep.png';
 
 type G = Phaser.GameObjects.Graphics;
 
-// Спрайт-листы кота: ключ → размеры кадра. Только cat_run/cat_idle обязательны
-// для старта (меню, пролог, базовое движение). cat_play/cat_sleep — для отдельных
-// анимаций; если они не доехали, игра всё равно играбельна (сцены guard'ят анимации).
-const CAT_SHEETS: Record<string, { fw: number; fh: number }> = {
-  cat_run:   { fw: 48,  fh: 48 },
-  cat_idle:  { fw: 48,  fh: 48 },
-  cat_play:  { fw: 257, fh: 257 },
-  cat_sleep: { fw: 190, fh: 190 },
+// Спрайт-листы кота. Только cat_run/cat_idle обязательны для старта (меню,
+// пролог, базовое движение). cat_play/cat_sleep — для отдельных анимаций;
+// если они не доехали, игра всё равно играбельна (сцены guard'ят анимации).
+const CAT_SHEETS: Record<string, { url: string; fw: number; fh: number }> = {
+  cat_run:   { url: catRunUrl,   fw: 48,  fh: 48 },
+  cat_idle:  { url: catIdleUrl,  fw: 48,  fh: 48 },
+  cat_play:  { url: catPlayUrl,  fw: 257, fh: 257 },
+  cat_sleep: { url: catSleepUrl, fw: 190, fh: 190 },
 };
 const ESSENTIAL = ['cat_run', 'cat_idle'];
 
@@ -33,13 +42,8 @@ export class BootScene extends Phaser.Scene {
     // Страховка от вечной «ЗАГРУЗКА...»: если за 12с не уехали (висящий запрос,
     // битый ассет и т.п.) — показываем честный экран с перезагрузкой.
     this.watchdog = window.setTimeout(() => { if (!this.advanced) this.armRetry(); }, 12000);
-    // Абсолютный путь от base ('/game/'), а не относительный 'assets/...'.
-    // Без слэша на конце URL ('/game' вместо '/game/') относительный путь ушёл бы
-    // в корень '/assets/...' → SPA-фоллбэк отдаёт index.html, iOS Safari глотает
-    // его как «картинку» 0×0, и спрайт превращается в зелёный __MISSING-квадрат.
-    this.load.setPath(import.meta.env.BASE_URL);
     for (const [key, s] of Object.entries(CAT_SHEETS))
-      this.load.spritesheet(key, `assets/${key}.png`, { frameWidth: s.fw, frameHeight: s.fh });
+      this.load.spritesheet(key, s.url, { frameWidth: s.fw, frameHeight: s.fh });
   }
 
   create() {
