@@ -7,7 +7,7 @@ import { buildDecor } from '../decor';
 import { touch, IS_TOUCH } from '../controls';
 import { makeCommonTextures } from '../textures';
 import { unlockChapter } from '../progress';
-import { drawYarnPlay, fawnDroop, endPose } from '../catFx';
+import { fawnDroop } from '../catFx';
 import { track } from '../analytics';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -70,8 +70,7 @@ export class GameScene extends Phaser.Scene {
   private dashing = false; private dashT = 0; private dashCd = 0; private dashDir = 1;
   private frozen = false; private freezePulseT = 0;
   private slash!: Phaser.GameObjects.Graphics;
-  private calmRing!: Phaser.GameObjects.Graphics;
-  private yarnImg!: Phaser.GameObjects.Image;
+  private playSprite!: Phaser.GameObjects.Sprite;
   private playerLight!: Phaser.GameObjects.Graphics;
 
   private hitstop = 0;
@@ -341,8 +340,9 @@ export class GameScene extends Phaser.Scene {
     this.playerLight.fillStyle(0xffe9c0, 0.07); this.playerLight.fillCircle(0, 0, 130);
 
     this.slash = this.add.graphics().setDepth(11);
-    this.calmRing = this.add.graphics().setDepth(8);
-    this.yarnImg = this.add.image(0, 0, 'yarn').setDepth(9).setVisible(false);
+    if (!this.anims.exists('p-play'))
+      this.anims.create({ key: 'p-play', frames: this.anims.generateFrameNumbers('cat_play', { start: 0, end: 5 }), frameRate: 7, repeat: -1 });
+    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.42).setDepth(10).setVisible(false);
     this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 9, y: 5 }, align: 'center' })
       .setOrigin(0.5, 1).setDepth(45).setAlpha(0);
@@ -414,6 +414,7 @@ export class GameScene extends Phaser.Scene {
   // ── УСТУПИ (fawn): купить мир ценой себя — враги отстают, сердце уходит ────
   private doFawn() {
     if (this.invuln > 0) return; // не спамить
+    this.hidePlay();
     this.hearts -= 1; this.updateHearts();
     this.invuln = 3500;
     audio.freeze();
@@ -505,15 +506,13 @@ export class GameScene extends Phaser.Scene {
 
     if (this.dashCd > 0) this.dashCd -= dt;
 
-    // ── ОТВЛЕКИСЬ: сидит и играет с клубком (рисованные кадры) ──
+    // ── ОТВЛЕКИСЬ: показываем спрайт «играет с клубком» ──
     if (this.frozen) {
       b.setVelocityX(0);
       this.player.setScale(1.5, 1.5);
-      this.freezePulseT += dt;
-      this.drawCalmRing();
+      this.showPlay();
     } else {
-      this.calmRing.clear();
-      if (this.yarnImg.visible) { this.yarnImg.setVisible(false); endPose(this.player); }
+      this.hidePlay();
       this.player.setScale(1.5, 1.5);
     }
 
@@ -762,6 +761,7 @@ export class GameScene extends Phaser.Scene {
 
   // ── Damage / lives ─────────────────────────────────────────────────────────
   private damage(fromX: number) {
+    this.hidePlay();
     this.invuln = 1100; this.hearts -= 1; this.updateHearts();
     this.doHitstop(70); this.cameras.main.shake(220, 0.014); this.cameras.main.flash(140, 120, 20, 40); audio.hurt();
     const b = this.player.body as Phaser.Physics.Arcade.Body;
@@ -797,11 +797,15 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.destroy() });
   }
   // «Отвлечься» = Йоська играет с клубком; мысли теряют к нему интерес
-  private drawCalmRing() {
-    this.calmRing.clear();
-    drawYarnPlay(this.calmRing, this.yarnImg, this.player, this.freezePulseT * 0.006);
-    this.calmRing.lineStyle(1, 0x88ccff, 0.15);
-    this.calmRing.strokeCircle(this.player.x, this.player.y - 22, 36 + Math.sin(this.freezePulseT * 0.006) * 8);
+  private showPlay() {
+    if (!this.playSprite.visible) {
+      this.playSprite.setVisible(true).play('p-play');
+      this.player.setVisible(false);
+    }
+    this.playSprite.setPosition(this.player.x, this.player.y).setFlipX(this.player.flipX);
+  }
+  private hidePlay() {
+    if (this.playSprite.visible) { this.playSprite.setVisible(false); this.player.setVisible(true); }
   }
 
   // ── Cat voice ──────────────────────────────────────────────────────────────
