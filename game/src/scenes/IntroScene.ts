@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { W, H } from '../constants';
+import { setTouchControls } from '../controls';
 
 // Текст появляется построчно, затем кнопка «Начать путь»
 const SLIDES = [
@@ -26,6 +27,7 @@ export class IntroScene extends Phaser.Scene {
   constructor() { super('Intro'); }
 
   create() {
+    setTouchControls(false); // катсцена — тач-кнопки не нужны и мешают
     const slide = SLIDES[0];
 
     // Фон

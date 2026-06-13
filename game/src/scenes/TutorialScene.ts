@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { W, H, GROUND_Y, PHYS } from '../constants';
 import { audio } from '../audio';
-import { touch, IS_TOUCH } from '../controls';
+import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { track } from '../analytics';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -49,6 +49,7 @@ export class TutorialScene extends Phaser.Scene {
   constructor() { super('Tutorial'); }
 
   create() {
+    setTouchControls(true); // геймплей — тач-кнопки нужны
     this.step = 'meet'; this.t = 0; this.said = new Set();
     this.moved = 0; this.jumped = false; this.pile = null; this.dashed = false;
     this.worries = []; this.calmT = 0; this.colleague = null; this.colBubble = null;

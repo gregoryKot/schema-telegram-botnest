@@ -4,7 +4,7 @@ import { audio } from '../audio';
 import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
 import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation, makeHomeTextures } from '../enemies/home';
 import { buildDecor } from '../decor';
-import { touch, IS_TOUCH } from '../controls';
+import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { makeCommonTextures } from '../textures';
 import { unlockChapter } from '../progress';
 import { track } from '../analytics';
@@ -88,6 +88,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    setTouchControls(true); // геймплей — тач-кнопки нужны
     const ARENA_W = this.chapter.arenaW;
     Object.assign(this, {
       anx: [], critic: null, homeMobs: [], speedMult: 1, trail: [], hearts: 3, invuln: 0, checkpointX: 100,

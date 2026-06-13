@@ -26,10 +26,17 @@ class TouchState {
 
 export const touch = new TouchState();
 
+// Тач-кнопки нужны только в геймплее (Game/Tutorial). На титуле и в катсценах
+// они перекрывали кнопку «НАЧАТЬ» и сбивали тапы — поэтому показываем точечно.
+export function setTouchControls(visible: boolean) {
+  const root = document.getElementById('touch-controls');
+  if (!root || !IS_TOUCH) return;
+  root.classList.toggle('visible', visible);
+}
+
 export function initTouchControls() {
   const root = document.getElementById('touch-controls');
   if (!root || !IS_TOUCH) return;
-  root.classList.add('visible');
 
   const hold = (id: string, on: () => void, off: () => void) => {
     const el = document.getElementById(id)!;
