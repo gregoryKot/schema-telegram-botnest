@@ -21,6 +21,7 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet('cat_run',  'assets/cat_run.png',  { frameWidth: 48, frameHeight: 48 });
     this.load.spritesheet('cat_idle', 'assets/cat_idle.png', { frameWidth: 48, frameHeight: 48 });
     this.load.spritesheet('cat_play', 'assets/cat_play.png', { frameWidth: 257, frameHeight: 257 });
+    this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', { frameWidth: 190, frameHeight: 190 });
   }
 
   create() {

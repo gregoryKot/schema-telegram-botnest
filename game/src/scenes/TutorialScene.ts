@@ -3,7 +3,6 @@ import { W, H, GROUND_Y, PHYS } from '../constants';
 import { audio } from '../audio';
 import { touch, IS_TOUCH } from '../controls';
 import { track } from '../analytics';
-import { fawnDroop } from '../catFx';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  ПРОЛОГ — знакомство с Йоськой и управлением. Четыре сценки, у каждой одна
@@ -42,6 +41,7 @@ export class TutorialScene extends Phaser.Scene {
   private attackT = 0; private attackCd = 0;
   private slash!: Phaser.GameObjects.Graphics;
   private playSprite!: Phaser.GameObjects.Sprite;
+  private sleepSprite!: Phaser.GameObjects.Sprite;
   // fawn (сценка «уступи»)
   private neighbor: Phaser.GameObjects.Sprite | null = null;
   private neiBubble: Phaser.GameObjects.Text | null = null;
@@ -80,6 +80,9 @@ export class TutorialScene extends Phaser.Scene {
     if (!this.anims.exists('p-play'))
       this.anims.create({ key: 'p-play', frames: this.anims.generateFrameNumbers('cat_play', { start: 0, end: 5 }), frameRate: 7, repeat: -1 });
     this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.24).setDepth(10).setVisible(false);
+    if (!this.anims.exists('p-sleep'))
+      this.anims.create({ key: 'p-sleep', frames: this.anims.generateFrameNumbers('cat_sleep', { start: 0, end: 5 }), frameRate: 6, repeat: 0 });
+    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
     this.contHint = this.add.text(W / 2, H - 96, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
@@ -397,7 +400,10 @@ export class TutorialScene extends Phaser.Scene {
     const n = this.neighbor; this.neighbor = null;
     this.neiBubble?.destroy();
     audio.freeze();
-    fawnDroop(this, this.player); // голова понуро, вздох
+    // свернулся калачиком — сдался
+    this.player.setVisible(false);
+    this.sleepSprite.setVisible(true).setPosition(this.player.x, this.player.y).setFlipX(this.player.flipX).play('p-sleep');
+    this.time.delayedCall(2200, () => { this.sleepSprite.setVisible(false); this.player.setVisible(true); });
     const ok = this.add.text(this.player.x, this.player.y - 66, '«конечно... давайте ваш фикус»',
       { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#b8a8d0' }).setOrigin(0.5).setDepth(46);
     this.tweens.add({ targets: ok, y: ok.y - 20, alpha: 0, duration: 1800, onComplete: () => ok.destroy() });
