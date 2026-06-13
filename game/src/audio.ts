@@ -15,6 +15,25 @@ class AudioEngine {
   private sfxEnabled = true;
   private mode: 'day' | 'home' = 'day';
 
+  // Мобилки: тач-кнопки — это HTML-оверлей вне канваса Phaser, поэтому
+  // this.input.once('pointerdown') внутри сцен на них не срабатывает и звук
+  // никогда не разблокируется. Ловим ПЕРВЫЙ жест на уровне документа.
+  private unlocked = false;
+  unlockOnFirstGesture() {
+    const go = () => {
+      if (this.unlocked) return;
+      this.unlocked = true;
+      this.ensure();      // resume() обязан случиться внутри жеста — иначе iOS держит ctx suspended
+      this.startMusic();
+      window.removeEventListener('pointerdown', go);
+      window.removeEventListener('touchend', go);
+      window.removeEventListener('keydown', go);
+    };
+    window.addEventListener('pointerdown', go);
+    window.addEventListener('touchend', go);
+    window.addEventListener('keydown', go);
+  }
+
   ensure() {
     if (!this.ctx) {
       const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
