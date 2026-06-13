@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 
-// Процедурные анимации Йоськи поверх спрайта — кадры не рисуем, двигаем кодом.
+// Анимации Йоськи на рисованных кадрах (textures.ts: cat_play0/1, cat_droop).
 
-/** Игра с клубком: кот наклонён, лапа машет, клубок скачет и получает шлепки */
+/** Игра с клубком: кот сидит и бьёт лапой (2 кадра), клубок скачет в ритме */
 export function drawYarnPlay(
   gfx: Phaser.GameObjects.Graphics,
   yarn: Phaser.GameObjects.Image,
@@ -10,33 +10,32 @@ export function drawYarnPlay(
   t: number,
 ) {
   const dir = player.flipX ? -1 : 1;
-  player.setAngle(dir * 8); // наклонился к клубку
-  const swing = Math.max(0, Math.sin(t * 2.6)); // 0..1 — замах и удар лапой
-  const bx = player.x + dir * (24 + swing * 14) + Math.sin(t * 1.7) * 6;
-  const by = player.y - 6 - Math.abs(Math.sin(t * 2.3)) * (10 + swing * 10);
+  const swing = Math.sin(t * 2.6);            // >0 — лапа замахнулась, <0 — ударила
+  player.anims.stop();
+  player.setTexture(swing > 0 ? 'cat_play0' : 'cat_play1');
+  // клубок: отлетает от удара и прикатывается обратно
+  const bx = player.x + dir * (20 + Math.max(0, -swing) * 16) + Math.sin(t * 1.3) * 4;
+  const by = player.y - 6 - Math.max(0, Math.sin(t * 2.6 + 2.2)) * 12;
   gfx.fillStyle(0x000000, 0.18);
   gfx.fillEllipse(bx, player.y - 2, 16, 4);
   yarn.setVisible(true).setPosition(bx, by).setAngle(t * 220);
-  // лапа: от груди к клубку, машет вниз при ударе
-  const px = player.x + dir * 12, py = player.y - 18;
-  const ang = -0.7 + swing * 1.3;
-  const ex = px + dir * Math.cos(ang) * 17, ey = py + Math.sin(ang) * 15;
-  gfx.lineStyle(5, 0x16161c, 1);
-  gfx.lineBetween(px, py, ex, ey);
-  gfx.fillStyle(0x16161c, 1); gfx.fillCircle(ex, ey, 3.4);
-  // шлепок по клубку — искорка
-  if (swing > 0.9 && Math.abs(ex - bx) < 16) {
-    gfx.fillStyle(0xffc8d6, 0.8); gfx.fillCircle(bx + dir * 4, by - 5, 2.2);
-  }
+  // шлепок — искорка
+  if (swing < -0.85) { gfx.fillStyle(0xffc8d6, 0.8); gfx.fillCircle(bx + dir * 3, by - 6, 2.2); }
 }
 
-/** «Уступил»: голова опускается понуро, вздох «...» */
+/** Вышел из игры с клубком — вернуть обычные кадры */
+export function endPose(player: Phaser.Physics.Arcade.Sprite) {
+  if (player.texture.key !== 'cat_idle' && player.texture.key !== 'cat_run')
+    player.play('p-idle', true);
+}
+
+/** «Уступил»: понурая поза (рисованный кадр) + вздох «...» */
 export function fawnDroop(scene: Phaser.Scene, player: Phaser.Physics.Arcade.Sprite) {
   const dir = player.flipX ? -1 : 1;
-  scene.tweens.add({
-    targets: player, angle: dir * 14, scaleX: 1.6, scaleY: 1.3,
-    duration: 260, ease: 'Sine.Out', yoyo: true, hold: 1000,
-    onComplete: () => { player.setAngle(0); player.setScale(1.5, 1.5); },
+  player.anims.stop();
+  player.setTexture('cat_droop');
+  scene.time.delayedCall(1400, () => {
+    if (player.active && player.texture.key === 'cat_droop') player.play('p-idle', true);
   });
   const sigh = scene.add.text(player.x - dir * 12, player.y - 48, '...', {
     fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '12px', color: '#8a8a98',

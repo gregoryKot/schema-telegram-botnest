@@ -3,7 +3,7 @@ import { W, H, GROUND_Y, PHYS } from '../constants';
 import { audio } from '../audio';
 import { touch, IS_TOUCH } from '../controls';
 import { track } from '../analytics';
-import { drawYarnPlay, fawnDroop } from '../catFx';
+import { drawYarnPlay, fawnDroop, endPose } from '../catFx';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  ПРОЛОГ — знакомство с Йоськой и управлением. Четыре сценки, у каждой одна
@@ -200,15 +200,14 @@ export class TutorialScene extends Phaser.Scene {
       this.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.destroy() });
     } else if (this.frozen) {
       b.setVelocityX(0);
-      this.player.setScale(1.65, 1.35).play('p-idle', true);
+      this.player.setScale(1.5, 1.5);
       this.freezePulseT += dt;
-      // Йоська играет с клубком — лапа машет, клубок скачет
+      // Йоська сидит и бьёт лапой по клубку (рисованные кадры)
       this.calmRing.clear();
       drawYarnPlay(this.calmRing, this.yarnImg, this.player, this.freezePulseT * 0.006);
     } else {
       this.calmRing.clear();
-      this.yarnImg.setVisible(false);
-      if (!this.tweens.isTweening(this.player)) this.player.setAngle(0);
+      if (this.yarnImg.visible) { this.yarnImg.setVisible(false); endPose(this.player); }
       this.player.setScale(1.5, 1.5);
       if (right) { b.setVelocityX(250); this.player.setFlipX(false); this.moved += dt; }
       else if (left) { b.setVelocityX(-250); this.player.setFlipX(true); this.moved += dt; }
