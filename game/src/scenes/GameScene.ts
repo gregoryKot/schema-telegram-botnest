@@ -342,7 +342,7 @@ export class GameScene extends Phaser.Scene {
     this.slash = this.add.graphics().setDepth(11);
     if (!this.anims.exists('p-play'))
       this.anims.create({ key: 'p-play', frames: this.anims.generateFrameNumbers('cat_play', { start: 0, end: 5 }), frameRate: 7, repeat: -1 });
-    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.42).setDepth(10).setVisible(false);
+    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.24).setDepth(10).setVisible(false);
     this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 9, y: 5 }, align: 'center' })
       .setOrigin(0.5, 1).setDepth(45).setAlpha(0);

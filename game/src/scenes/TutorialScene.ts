@@ -79,7 +79,7 @@ export class TutorialScene extends Phaser.Scene {
     this.slash = this.add.graphics().setDepth(11);
     if (!this.anims.exists('p-play'))
       this.anims.create({ key: 'p-play', frames: this.anims.generateFrameNumbers('cat_play', { start: 0, end: 5 }), frameRate: 7, repeat: -1 });
-    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.42).setDepth(10).setVisible(false);
+    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.24).setDepth(10).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
     this.contHint = this.add.text(W / 2, H - 96, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
