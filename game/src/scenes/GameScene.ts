@@ -7,7 +7,6 @@ import { buildDecor } from '../decor';
 import { touch, IS_TOUCH } from '../controls';
 import { makeCommonTextures } from '../textures';
 import { unlockChapter } from '../progress';
-import { fawnDroop } from '../catFx';
 import { track } from '../analytics';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -71,6 +70,7 @@ export class GameScene extends Phaser.Scene {
   private frozen = false; private freezePulseT = 0;
   private slash!: Phaser.GameObjects.Graphics;
   private playSprite!: Phaser.GameObjects.Sprite;
+  private sleepSprite!: Phaser.GameObjects.Sprite;
   private playerLight!: Phaser.GameObjects.Graphics;
 
   private hitstop = 0;
@@ -342,7 +342,10 @@ export class GameScene extends Phaser.Scene {
     this.slash = this.add.graphics().setDepth(11);
     if (!this.anims.exists('p-play'))
       this.anims.create({ key: 'p-play', frames: this.anims.generateFrameNumbers('cat_play', { start: 0, end: 5 }), frameRate: 7, repeat: -1 });
+    if (!this.anims.exists('p-sleep'))
+      this.anims.create({ key: 'p-sleep', frames: this.anims.generateFrameNumbers('cat_sleep', { start: 0, end: 5 }), frameRate: 6, repeat: 0 });
     this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.24).setDepth(10).setVisible(false);
+    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
     this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 9, y: 5 }, align: 'center' })
       .setOrigin(0.5, 1).setDepth(45).setAlpha(0);
@@ -420,7 +423,7 @@ export class GameScene extends Phaser.Scene {
     audio.freeze();
     this.cameras.main.flash(160, 80, 50, 110);
     this.burst(this.player.x, this.player.y - 24, 0xb08fd0, 12, 150);
-    fawnDroop(this, this.player); // голова понуро, вздох
+    this.curlUp(); // свернулся калачиком, сдался — вздох
     for (const m of this.anx) { if (m.alive) { m.vx = Math.sign(m.img.x - this.player.x) * 320; m.vy = -120; m.cd = 2600; } }
     if (this.critic?.alive) {
       // уступка — единственное, что прогоняет тень… временно
@@ -430,6 +433,22 @@ export class GameScene extends Phaser.Scene {
       this.sayOnce('fawn', '«ладно-ладно, как скажете...» — и правда отстали. но чего это стоило.', 3400);
     }
     if (this.hearts <= 0) this.gameOver();
+  }
+
+  // Йоська сворачивается калачиком (сдался), держит позу, потом встаёт
+  private curlUp() {
+    this.player.setVisible(false);
+    this.sleepSprite.setVisible(true).setPosition(this.player.x, this.player.y)
+      .setFlipX(this.player.flipX).play('p-sleep');
+    const sigh = this.add.text(this.player.x, this.player.y - 30, '...',
+      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '12px', color: '#8a8a98' })
+      .setOrigin(0.5).setDepth(46);
+    this.tweens.add({ targets: sigh, y: sigh.y - 16, alpha: 0, duration: 1600, onComplete: () => sigh.destroy() });
+    this.time.delayedCall(1500, () => {
+      if (this.dead) return;
+      this.sleepSprite.setVisible(false);
+      this.player.setVisible(true);
+    });
   }
 
   // ── Main loop ────────────────────────────────────────────────────────────--
