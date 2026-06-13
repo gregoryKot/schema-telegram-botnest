@@ -4,20 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Schema Runner</title>
-  <link rel="preload" href="./fonts/ps2p-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="./fonts/ps2p-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/game/fonts/ps2p-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/game/fonts/ps2p-latin.woff2" as="font" type="font/woff2" crossorigin>
   <style>
     /* Пиксельный шрифт (NES-классика, есть кириллица). Self-host — без внешних CDN. */
     @font-face {
       font-family: 'Press Start 2P';
       font-style: normal; font-weight: 400; font-display: swap;
-      src: url('./fonts/ps2p-cyrillic.woff2') format('woff2');
+      src: url('/game/fonts/ps2p-cyrillic.woff2') format('woff2');
       unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
     }
     @font-face {
       font-family: 'Press Start 2P';
       font-style: normal; font-weight: 400; font-display: swap;
-      src: url('./fonts/ps2p-latin.woff2') format('woff2');
+      src: url('/game/fonts/ps2p-latin.woff2') format('woff2');
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
