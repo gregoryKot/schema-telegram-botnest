@@ -8,3 +8,5 @@ dist
 src/**/*.js
 src/**/*.d.ts
 src/**/*.map
+# …кроме настоящего исходника: типы Vite (import.meta.env) нужны и сборке в Docker.
+!src/vite-env.d.ts
