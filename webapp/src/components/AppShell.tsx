@@ -492,21 +492,25 @@ export function AppShell() {
 
         {/* Therapist mode */}
         {therapistMode && location.pathname === '/cabinet/today' && (
-          <TherapistTodaySection
-            displayName={displayName}
-            onOpenClient={(id) => navigate('/cabinet/' + id)}
-          />
+          <ErrorBoundary section="Кабинет" key="cabinet-today-boundary">
+            <TherapistTodaySection
+              displayName={displayName}
+              onOpenClient={(id) => navigate('/cabinet/' + id)}
+            />
+          </ErrorBoundary>
         )}
         {therapistMode && location.pathname !== '/cabinet/today' && (
-          <TherapistClientSheet
-            view={openClientId ? 'client' : 'list'}
-            openClientId={openClientId}
-            onViewChange={(v) => v === 'list' ? navigate('/cabinet') : null}
-            onOpenClient={(id) => navigate('/cabinet/' + id)}
-            onClose={() => switchTherapistMode(false)}
-            backHandlerRef={therapistBackHandlerRef}
-            onClientsChange={setTherapistClients}
-          />
+          <ErrorBoundary section="Кабинет" key="cabinet-client-boundary">
+            <TherapistClientSheet
+              view={openClientId ? 'client' : 'list'}
+              openClientId={openClientId}
+              onViewChange={(v) => v === 'list' ? navigate('/cabinet') : null}
+              onOpenClient={(id) => navigate('/cabinet/' + id)}
+              onClose={() => switchTherapistMode(false)}
+              backHandlerRef={therapistBackHandlerRef}
+              onClientsChange={setTherapistClients}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Regular sections */}
