@@ -188,7 +188,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
           {/* Scrollable content */}
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            <div style={{ maxWidth: 600, padding: subView !== 'main' ? '32px 48px 80px' : '0 48px 80px' }}>
+            <div className="settings-content-inner" style={{ padding: subView !== 'main' ? '32px 48px 80px' : '0 48px 80px' }}>
 
               {/* ── TIME VIEW ── */}
               {subView === 'time' && (
@@ -609,9 +609,9 @@ function ChevronVal({ text, small }: { text: string; small?: boolean }) {
 
 function InfoModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '16px 16px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
+    <div className="settings-modal" onClick={onClose}>
+      <div className="settings-modal-box" onClick={e => e.stopPropagation()}>
+        <div className="settings-modal-handle" />
         {children}
       </div>
     </div>
