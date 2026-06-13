@@ -864,8 +864,18 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
    screen. Flatten the inline overflow/flex so it flows in normal document
    flow like the regular .page sections. */
 @media (max-width: 767px) {
-  .therapist-sheet { overflow: visible !important; }
-  .therapist-scroll { overflow: visible !important; display: block !important; }
+  /* Root container: inline flex:1 collapses to 0 when canvas is display:block.
+     Force block flow so height comes from content, not flex context. */
+  .therapist-sheet {
+    display: block !important;
+    flex: none !important;
+    overflow: visible !important;
+  }
+  .therapist-scroll {
+    display: block !important;
+    flex: none !important;
+    overflow: visible !important;
+  }
   .therapist-client-header { padding: 16px 16px 0 !important; }
   .tabs {
     padding: 0 16px;
