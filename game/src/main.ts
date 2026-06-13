@@ -7,6 +7,7 @@ import { GameScene } from './scenes/GameScene';
 import { setupMenu } from './menu';
 import { initTouchControls } from './controls';
 import { initAnalytics } from './analytics';
+import { audio } from './audio';
 import { W, H, PHYS } from './constants';
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -43,6 +44,7 @@ function start() {
   setupMenu(game);
   initTouchControls();
   initAnalytics();
+  audio.unlockOnFirstGesture(); // тач-кнопки — HTML вне канваса; ловим жест на документе
 }
 
 Promise.all([

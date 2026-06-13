@@ -4,24 +4,34 @@ import { makeCommonTextures } from '../textures';
 
 type G = Phaser.GameObjects.Graphics;
 
+// Спрайт-листы кота: ключ → ожидаемые размеры PNG (для проверки целостности).
+const CAT_SHEETS: Record<string, { w: number; h: number; fw: number; fh: number }> = {
+  cat_run:   { w: 288,  h: 48,  fw: 48,  fh: 48 },
+  cat_idle:  { w: 576,  h: 48,  fw: 48,  fh: 48 },
+  cat_play:  { w: 1542, h: 257, fw: 257, fh: 257 },
+  cat_sleep: { w: 1140, h: 190, fw: 190, fh: 190 },
+};
+
 export class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
 
+  private loading!: Phaser.GameObjects.Text;
+  private retryArmed = false;
+
   preload() {
     const cx = Number(this.game.config.width) / 2, cy = Number(this.game.config.height) / 2;
-    const loading = this.add.text(cx, cy, 'ЗАГРУЗКА...', {
+    this.loading = this.add.text(cx, cy, 'ЗАГРУЗКА...', {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#8a7faa', letterSpacing: 4,
     }).setOrigin(0.5);
     // сеть оборвалась (например, в момент деплоя) — говорим честно и даём повторить
-    this.load.on('loaderror', () => {
-      loading.setText('НЕ ЗАГРУЗИЛОСЬ\nтапни — повторить').setColor('#ff8866').setAlign('center');
-      this.input.once('pointerdown', () => window.location.reload());
-      this.input.keyboard?.once('keydown', () => window.location.reload());
-    });
-    this.load.spritesheet('cat_run',  'assets/cat_run.png',  { frameWidth: 48, frameHeight: 48 });
-    this.load.spritesheet('cat_idle', 'assets/cat_idle.png', { frameWidth: 48, frameHeight: 48 });
-    this.load.spritesheet('cat_play', 'assets/cat_play.png', { frameWidth: 257, frameHeight: 257 });
-    this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', { frameWidth: 190, frameHeight: 190 });
+    this.load.on('loaderror', () => this.armRetry());
+    // Абсолютный путь от base ('/game/'), а не относительный 'assets/...'.
+    // Без слэша на конце URL ('/game' вместо '/game/') относительный путь ушёл бы
+    // в корень '/assets/...' → SPA-фоллбэк отдаёт index.html, iOS Safari глотает
+    // его как «картинку» 0×0, и спрайт превращается в зелёный __MISSING-квадрат.
+    this.load.setPath(import.meta.env.BASE_URL);
+    for (const [key, s] of Object.entries(CAT_SHEETS))
+      this.load.spritesheet(key, `assets/${key}.png`, { frameWidth: s.fw, frameHeight: s.fh });
   }
 
   create() {
@@ -32,8 +42,8 @@ export class BootScene extends Phaser.Scene {
     this.tex('plat_room',   16, 10, g => this.drawPlatRoom(g));
     this.tex('ground_room', 16, 16, g => this.drawGroundRoom(g));
     makeCommonTextures(this); // anxmob, heartpk, yarn — нужны и прологу, и главам
-    // спрайты кота не доехали — остаёмся на экране «тапни — повторить»
-    if (!this.textures.exists('cat_run') || !this.textures.exists('cat_idle')) return;
+    // спрайты кота не доехали (или доехали битыми) — остаёмся на экране «тапни — повторить»
+    if (!this.catsReady()) { this.armRetry(); return; }
     // Flow: Start → Intro → Game. Dev shortcut: #game jumps straight to a chapter.
     const hash = window.location.hash.slice(1).toLowerCase();
     if (hash === 'game' || hash.startsWith('chapter'))
@@ -42,6 +52,24 @@ export class BootScene extends Phaser.Scene {
       this.scene.start('Tutorial');
     else
       this.scene.start('Start');
+  }
+
+  // Текстура существует И реально декодировалась (а не пришла HTML-заглушкой 0×0).
+  private catsReady(): boolean {
+    return Object.entries(CAT_SHEETS).every(([key, s]) => {
+      if (!this.textures.exists(key)) return false;
+      const img = this.textures.get(key).getSourceImage() as { width: number; height: number };
+      return !!img && img.width >= s.w && img.height >= s.h;
+    });
+  }
+
+  // Честный экран ошибки + перезагрузка по тапу/клавише (ставим один раз).
+  private armRetry() {
+    this.loading.setText('НЕ ЗАГРУЗИЛОСЬ\nтапни — повторить').setColor('#ff8866').setAlign('center');
+    if (this.retryArmed) return;
+    this.retryArmed = true;
+    this.input.once('pointerdown', () => window.location.reload());
+    this.input.keyboard?.once('keydown', () => window.location.reload());
   }
 
   private tex(key: string, vw: number, vh: number, draw: (g: G) => void) {
