@@ -7,7 +7,21 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Yandex.Metrika loaded conditionally after cookie consent (see CookieBanner.tsx) -->
+    <!-- Apply theme BEFORE any rendering to prevent white flash -->
+    <script>
+      (function(){
+        var t = localStorage.getItem('app_theme');
+        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        var bg = t === 'dark' ? '#14141a' : '#f5f2eb';
+        document.documentElement.style.background = bg;
+        document.documentElement.style.colorScheme = t === 'dark' ? 'dark' : 'light';
+      })();
+    </script>
+
+    <!-- Address bar / status bar color (updates via JS after load) -->
+    <meta name="theme-color" content="#f5f2eb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#14141a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" id="theme-color-meta" content="#f5f2eb" />
 
     <!-- ── Primary SEO ──────────────────────────────────────────────────────── -->
     <title>Григорий Котляревский – схема-терапия онлайн | schemalab.ru</title>
