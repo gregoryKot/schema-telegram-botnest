@@ -153,11 +153,11 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
+    <div className="therapist-sheet" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
 
       {/* ── LIST VIEW ──────────────────────────────────────────────────────────── */}
       {view === 'list' && (
-        <div key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'auto' }}>
+        <div className="therapist-scroll" key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'auto' }}>
           <div className="page-inner-wide">
 
             {/* ── Add client form (editorial style) ──────────────────────── */}
@@ -478,10 +478,10 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
       {/* ── CLIENT VIEW ────────────────────────────────────────────────────────── */}
       {view === 'client' && selectedClient && (
-        <div key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="therapist-scroll" key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
           {/* Client header — moderately compact */}
-          <div style={{ borderBottom: '1px solid var(--line)', padding: '24px 48px 0', flexShrink: 0 }}>
+          <div className="therapist-client-header" style={{ borderBottom: '1px solid var(--line)', padding: '24px 48px 0', flexShrink: 0 }}>
             {/* Row 1: back + name + actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
               <button onClick={() => switchView('list')}
@@ -572,7 +572,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           </div>
 
           {/* Tab content */}
-          <div style={{ flex: 1, overflow: 'auto' }} key={clientTab}>
+          <div className="therapist-scroll" style={{ flex: 1, overflow: 'auto' }} key={clientTab}>
 
             {/* Loading state */}
             {tabLoading ? (
