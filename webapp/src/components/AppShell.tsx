@@ -10,7 +10,6 @@ import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, shouldShowChil
 import { CommandPalette } from './CommandPalette';
 import { Loader } from './Loader';
 import { ErrorBoundary } from './ErrorBoundary';
-import { FloatingPill } from './FloatingPill';
 
 // – always-needed small helpers (no heavy data deps) –
 import { NoteSheet } from './NoteSheet';
@@ -35,9 +34,6 @@ const SchemaInfoSheet      = lazy(() => import('./SchemaInfoSheet').then(m => ({
 const ChildhoodWheelEx     = lazy(() => import('./exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
 const TherapistClientSheet  = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
 const TherapistTodaySection = lazy(() => import('../sections/TherapistTodaySection').then(m => ({ default: m.TherapistTodaySection })));
-const SchemaEntrySheet     = lazy(() => import('./diary/SchemaEntrySheet').then(m => ({ default: m.SchemaEntrySheet })));
-const ModeEntrySheet       = lazy(() => import('./diary/ModeEntrySheet').then(m => ({ default: m.ModeEntrySheet })));
-const GratitudeEntrySheet  = lazy(() => import('./diary/GratitudeEntrySheet').then(m => ({ default: m.GratitudeEntrySheet })));
 const PracticesOnboarding  = lazy(() => import('./PracticesOnboarding').then(m => ({ default: m.PracticesOnboarding })));
 
 const LazyLoader = () => <Loader minHeight="100dvh" />;
@@ -55,9 +51,8 @@ const NAV_ITEMS: { id: Section; label: string }[] = [
   { id: 'diary',    label: 'Дневник' },
   { id: 'schemas',  label: 'Схемы' },
   { id: 'practice', label: 'Практика' },
+  { id: 'profile',  label: 'Профиль' },
 ];
-// Note: 'profile' removed from nav – accessible via sidebar footer avatar block.
-// Mobile bottom-nav still includes it (см. ниже).
 
 const SECTION_LABELS: Record<Section, string> = {
   today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', practice: 'Практика',
@@ -98,6 +93,34 @@ function fillHistoryGaps(h: DayHistory[]): DayHistory[] {
   return filled;
 }
 
+function MobileNavIcon({ id }: { id: Section }) {
+  const a = { fill: 'none' as const, stroke: 'currentColor', strokeWidth: '1.8', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (id === 'today') return (
+    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
+      <rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  );
+  if (id === 'diary') return (
+    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+  );
+  if (id === 'schemas') return (
+    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+    </svg>
+  );
+  if (id === 'practice') return (
+    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  );
+  return (
+    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+  );
+}
 
 export function AppShell() {
   const { logout } = useAuth();
@@ -151,7 +174,6 @@ export function AppShell() {
   const [_helpPlanCount, setHelpPlanCount] = useState<number | null>(null);
   const [_helpTasks, setHelpTasks] = useState<UserTask[] | null>(null);
   const [helpTasksKey, setHelpTasksKey] = useState(0);
-  const [diaryActiveSchemaIds, setDiaryActiveSchemaIds] = useState<string[] | undefined>(undefined);
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(null);
   const [childhoodWheelPending, setChildhoodWheelPending] = useState(false);
   const [todayRefreshKey, setTodayRefreshKey] = useState(0);
@@ -173,7 +195,6 @@ export function AppShell() {
   const [showDiaries, setShowDiaries] = useState(false);
   const [showChildhoodWheel, setShowChildhoodWheel] = useState(false);
   const [showTodayNote, setShowTodayNote] = useState(false);
-  const [newDiaryEntry, setNewDiaryEntry] = useState<'schema' | 'mode' | 'gratitude' | null>(null);
   const [showPracticesOnboarding, setShowPracticesOnboarding] = useState(false);
 
   // Therapist clients (for sidebar)
@@ -258,7 +279,6 @@ export function AppShell() {
       }
     }).catch(() => {});
     api.getProfile().then(p => {
-      setDiaryActiveSchemaIds(p.ysq.activeSchemaIds);
       setUserRole(p.role);
       // Auto-redirect therapists to cabinet on first login
       if (p.role === 'THERAPIST' && localStorage.getItem('therapist_mode') === null) {
@@ -324,8 +344,6 @@ export function AppShell() {
       if (streak.totalDays >= 5 && shouldShowChildhoodWheel()) setChildhoodWheelPending(true);
     }
   }, []);
-
-  const anyOverlayOpen = !!(newDiaryEntry || showTrackerOverlay || showTracker || showDiaries || showSchemaInfo || showSettings || showPractices || showPlans || showChildhoodWheel || showTodayNote);
 
   if (loading) {
     return <Loader minHeight="100vh" />;
@@ -663,38 +681,6 @@ export function AppShell() {
           <Celebration streak={celebrationStreak} onDone={() => { setCelebrationStreak(null); setShowTodayNote(true); }} />
         )}
 
-        {/* ── Diary entry sheets (floating pill) ── */}
-        {newDiaryEntry === 'schema' && (
-          <SchemaEntrySheet
-            activeSchemaIds={diaryActiveSchemaIds}
-            onClose={() => setNewDiaryEntry(null)}
-            onSave={async (data) => { await api.createSchemaDiary(data); }}
-          />
-        )}
-        {newDiaryEntry === 'mode' && (
-          <ModeEntrySheet
-            onClose={() => setNewDiaryEntry(null)}
-            onSave={async (data) => { await api.createModeDiary(data); }}
-          />
-        )}
-        {newDiaryEntry === 'gratitude' && (
-          <GratitudeEntrySheet
-            onClose={() => setNewDiaryEntry(null)}
-            date={TODAY_DATE}
-            onSave={async (date, items) => { await api.createGratitudeDiary(date, items); }}
-          />
-        )}
-
-        {/* ── Floating pill ── */}
-        {!therapistMode && !anyOverlayOpen && (
-          <FloatingPill
-            onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-            onOpenSchemaDiary={() => setNewDiaryEntry('schema')}
-            onOpenModeDiary={() => setNewDiaryEntry('mode')}
-            onOpenGratitude={() => setNewDiaryEntry('gratitude')}
-          />
-        )}
-
         </Suspense>
         </div>{/* end canvas */}
       </div>{/* end main */}
@@ -707,6 +693,7 @@ export function AppShell() {
             to={'/' + item.id}
             className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}`}
           >
+            <MobileNavIcon id={item.id} />
             {item.label}
           </NavLink>
         ))}

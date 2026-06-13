@@ -799,9 +799,22 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   .r-row-head > *:nth-child(2), .r-row-head > *:nth-child(3) { display: none; }
 }
 
-/* ─── Today aside: hide on mobile ────────────────────────────────────────── */
+/* ─── Today aside: compact card on mobile ────────────────────────────────── */
 @media (max-width: 767px) {
-  .today-aside { display: none; }
+  .today-aside {
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .today-aside > * {
+    flex: 1 1 140px;
+  }
+  .today-aside hr {
+    display: none;
+  }
 }
 
 /* ─── Therapist cabinet two-column layout ───────────────────────────────── */
@@ -870,12 +883,16 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 }
 .mobile-nav-item {
   flex: 1; display: flex; flex-direction: column;
-  align-items: center; gap: 3px;
-  padding: 6px 0;
-  color: var(--text-faint); font-size: 10px; font-weight: 500;
+  align-items: center; gap: 2px;
+  padding: 5px 0;
+  color: var(--text-faint); font-size: 9.5px; font-weight: 500;
   cursor: pointer; transition: color .15s; border: none; background: none;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .mobile-nav-item.active { color: var(--accent); font-weight: 600; }
+.mobile-nav-item svg { transition: opacity .15s; }
+.mobile-nav-item:not(.active) svg { opacity: 0.5; }
 
 /* ─── Responsive breakpoints ─────────────────────────────────────────────── */
 @media (max-width: 767px) {
