@@ -389,7 +389,7 @@ export class GameScene extends Phaser.Scene {
     this.critic = { img, size: 1, struck: 0, alive: true };
     // важный новый враг — представляем стоп-кадром, иначе «просто какой-то кот»
     this.storyFrame('ВНУТРЕННИЙ КРИТИК',
-      'тень Йоськи. ходит следом и зудит под лапу.\n\n' +
+      'тень Мистера. ходит следом и зудит под лапу.\n\n' +
       'единственный, кого НАДО гнать: рявкай (X)!\n' +
       'убегать — догонит и вырастет.\n' +
       'отвлечёшься на клубок — сожрёт с потрохами.');
@@ -436,7 +436,7 @@ export class GameScene extends Phaser.Scene {
     if (this.hearts <= 0) this.gameOver();
   }
 
-  // Йоська сворачивается калачиком (сдался), держит позу, потом встаёт
+  // Мистер сворачивается калачиком (сдался), держит позу, потом встаёт
   private curlUp() {
     this.player.setVisible(false);
     this.sleepSprite.setVisible(true).setPosition(this.player.x, this.player.y)
@@ -816,7 +816,7 @@ export class GameScene extends Phaser.Scene {
       .setTint(0x9fd0ff).setAlpha(0.5).setDepth(9);
     this.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.destroy() });
   }
-  // «Отвлечься» = Йоська играет с клубком; мысли теряют к нему интерес
+  // «Отвлечься» = Мистер играет с клубком; мысли теряют к нему интерес
   private showPlay() {
     if (!this.playSprite.visible) {
       this.playSprite.setVisible(true).play('p-play');
