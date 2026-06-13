@@ -3,7 +3,7 @@ import { W, H, GROUND_Y, PHYS } from '../constants';
 import { audio } from '../audio';
 import { touch, IS_TOUCH } from '../controls';
 import { track } from '../analytics';
-import { drawYarnPlay, fawnDroop, endPose } from '../catFx';
+import { fawnDroop } from '../catFx';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  ПРОЛОГ — знакомство с Йоськой и управлением. Четыре сценки, у каждой одна
@@ -41,9 +41,7 @@ export class TutorialScene extends Phaser.Scene {
   private colBubble: Phaser.GameObjects.Text | null = null;
   private attackT = 0; private attackCd = 0;
   private slash!: Phaser.GameObjects.Graphics;
-  private calmRing!: Phaser.GameObjects.Graphics;
-  private yarnImg!: Phaser.GameObjects.Image;
-  private freezePulseT = 0;
+  private playSprite!: Phaser.GameObjects.Sprite;
   // fawn (сценка «уступи»)
   private neighbor: Phaser.GameObjects.Sprite | null = null;
   private neiBubble: Phaser.GameObjects.Text | null = null;
@@ -79,8 +77,9 @@ export class TutorialScene extends Phaser.Scene {
     this.physics.add.collider(this.player, floor);
 
     this.slash = this.add.graphics().setDepth(11);
-    this.calmRing = this.add.graphics().setDepth(8);
-    this.yarnImg = this.add.image(0, 0, 'yarn').setDepth(9).setVisible(false);
+    if (!this.anims.exists('p-play'))
+      this.anims.create({ key: 'p-play', frames: this.anims.generateFrameNumbers('cat_play', { start: 0, end: 5 }), frameRate: 7, repeat: -1 });
+    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.42).setDepth(10).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
     this.contHint = this.add.text(W / 2, H - 96, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
@@ -193,7 +192,7 @@ export class TutorialScene extends Phaser.Scene {
       this.onDash();
     }
     if (this.dashT > 0) {
-      this.calmRing.clear();
+      if (this.playSprite.visible) { this.playSprite.setVisible(false); this.player.setVisible(true); }
       this.dashT -= dt; b.setVelocityX(this.dashDir * 560);
       const g = this.add.image(this.player.x, this.player.y, this.player.texture.key, this.player.frame.name)
         .setOrigin(0.5, 1).setScale(1.5).setFlipX(this.player.flipX).setTint(0x9fd0ff).setAlpha(0.5).setDepth(9);
@@ -201,13 +200,11 @@ export class TutorialScene extends Phaser.Scene {
     } else if (this.frozen) {
       b.setVelocityX(0);
       this.player.setScale(1.5, 1.5);
-      this.freezePulseT += dt;
-      // Йоська сидит и бьёт лапой по клубку (рисованные кадры)
-      this.calmRing.clear();
-      drawYarnPlay(this.calmRing, this.yarnImg, this.player, this.freezePulseT * 0.006);
+      // Йоська играет с клубком — настоящая анимация
+      if (!this.playSprite.visible) { this.playSprite.setVisible(true).play('p-play'); this.player.setVisible(false); }
+      this.playSprite.setPosition(this.player.x, this.player.y).setFlipX(this.player.flipX);
     } else {
-      this.calmRing.clear();
-      if (this.yarnImg.visible) { this.yarnImg.setVisible(false); endPose(this.player); }
+      if (this.playSprite.visible) { this.playSprite.setVisible(false); this.player.setVisible(true); }
       this.player.setScale(1.5, 1.5);
       if (right) { b.setVelocityX(250); this.player.setFlipX(false); this.moved += dt; }
       else if (left) { b.setVelocityX(-250); this.player.setFlipX(true); this.moved += dt; }
