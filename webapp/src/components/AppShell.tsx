@@ -550,6 +550,7 @@ export function AppShell() {
             )}
             {section === 'profile' && (
               <ProfileSection
+                onOpenSettings={() => setShowSettings(true)}
                 onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
                 refreshKey={profileRefreshKey}
                 displayName={displayName}
