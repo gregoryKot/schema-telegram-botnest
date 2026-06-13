@@ -30,13 +30,14 @@ export class StartScene extends Phaser.Scene {
 
     const cat = this.add.sprite(W / 2, H / 2 + 20, 'cat_idle').setScale(4).play('s-cat-idle');
 
-    // Кнопка запуска
-    const btn = this.add.rectangle(W / 2, H / 2 + 130, 200, 48, 0x3a1500)
+    // Кнопка запуска — рамка подгоняется под текст, чтобы он не вылезал
+    const btnTxt = this.add.text(W / 2, H / 2 + 130, 'НАЧАТЬ', {
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#ff7733', letterSpacing: 6,
+    }).setOrigin(0.5);
+    const btn = this.add.rectangle(W / 2, H / 2 + 130, btnTxt.width + 48, 48, 0x3a1500)
       .setStrokeStyle(2, 0xa08fff)
       .setInteractive({ useHandCursor: true });
-    const btnTxt = this.add.text(W / 2, H / 2 + 130, 'Н А Ч А Т Ь', {
-      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#ff7733', letterSpacing: 4,
-    }).setOrigin(0.5);
+    btnTxt.setDepth(1); // текст поверх рамки
 
     btn.on('pointerover', () => {
       btn.fillColor = 0xcc5522;
