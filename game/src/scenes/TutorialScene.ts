@@ -80,17 +80,16 @@ export class TutorialScene extends Phaser.Scene {
     this.physics.add.collider(this.player, floor);
 
     this.slash = this.add.graphics().setDepth(11);
-    if (!this.anims.exists('p-play'))
-      this.anims.create({ key: 'p-play', frames: this.anims.generateFrameNumbers('cat_play', { start: 0, end: 5 }), frameRate: 7, repeat: -1 });
+    // Необязательные спрайты (cat_play/cat_sleep/dog/nei) грузятся отдельными
+    // запросами и могут не доехать по сети. Анимацию создаём ТОЛЬКО если текстура
+    // реально загрузилась — иначе .play() по пустой анимации роняет update-цикл
+    // и игра «зависает» (так вешалось ОТВЛЕКИСЬ без клубка).
+    this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
     this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.24).setDepth(10).setVisible(false);
-    if (!this.anims.exists('p-sleep'))
-      this.anims.create({ key: 'p-sleep', frames: this.anims.generateFrameNumbers('cat_sleep', { start: 0, end: 5 }), frameRate: 6, repeat: 0 });
-    if (!this.anims.exists('dog-idle'))
-      this.anims.create({ key: 'dog-idle', frames: this.anims.generateFrameNumbers('dog_idle', { start: 0, end: 3 }), frameRate: 6, repeat: -1 });
-    if (!this.anims.exists('dog-walk'))
-      this.anims.create({ key: 'dog-walk', frames: this.anims.generateFrameNumbers('dog_walk', { start: 0, end: 5 }), frameRate: 12, repeat: -1 });
-    if (!this.anims.exists('nei-idle'))
-      this.anims.create({ key: 'nei-idle', frames: this.anims.generateFrameNumbers('nei_idle', { start: 0, end: 3 }), frameRate: 6, repeat: -1 });
+    this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
+    this.safeAnim('dog-idle', 'dog_idle', 0, 3, 6, -1);
+    this.safeAnim('dog-walk', 'dog_walk', 0, 5, 12, -1);
+    this.safeAnim('nei-idle', 'nei_idle', 0, 3, 6, -1);
     this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
@@ -126,6 +125,12 @@ export class TutorialScene extends Phaser.Scene {
     this.input.once('pointerdown', begin);
 
     this.meet();
+  }
+
+  // Создать анимацию только если её спрайт-лист реально загрузился.
+  private safeAnim(key: string, sheet: string, start: number, end: number, frameRate: number, repeat: number) {
+    if (this.anims.exists(key) || !this.textures.exists(sheet)) return;
+    this.anims.create({ key, frames: this.anims.generateFrameNumbers(sheet, { start, end }), frameRate, repeat });
   }
 
   // ── Знакомство ──────────────────────────────────────────────────────────────
@@ -219,9 +224,14 @@ export class TutorialScene extends Phaser.Scene {
     } else if (this.frozen) {
       b.setVelocityX(0);
       this.player.setScale(1.5, 1.5);
-      // Мистер играет с клубком — настоящая анимация
-      if (!this.playSprite.visible) { this.playSprite.setVisible(true).play('p-play'); this.player.setVisible(false); }
-      this.playSprite.setPosition(this.player.x, this.player.y).setFlipX(this.player.flipX);
+      // Мистер играет с клубком. Если спрайт клубка не доехал — просто стоим (idle),
+      // без переключения: .play() по отсутствующей анимации повесил бы игру.
+      if (this.anims.exists('p-play')) {
+        if (!this.playSprite.visible) { this.playSprite.setVisible(true).play('p-play'); this.player.setVisible(false); }
+        this.playSprite.setPosition(this.player.x, this.player.y).setFlipX(this.player.flipX);
+      } else {
+        this.player.play('p-idle', true);
+      }
     } else {
       if (this.playSprite.visible) { this.playSprite.setVisible(false); this.player.setVisible(true); }
       this.player.setScale(1.5, 1.5);
@@ -460,7 +470,8 @@ export class TutorialScene extends Phaser.Scene {
       this.narr.setText('УСТУПИ — лишь бы отстали');
       this.prompt.setText(IS_TOUCH ? 'УСТУПИ — сдайся' : 'V — уступи, сдайся');
       this.neighbor = this.add.sprite(W - 90, GROUND_Y, 'nei_idle').setOrigin(0.5, 1).setScale(1.5)
-        .setFlipX(true).setDepth(8).play('nei-idle');
+        .setFlipX(true).setDepth(8);
+      if (this.anims.exists('nei-idle')) this.neighbor.play('nei-idle');
       this.neiBubble = this.add.text(0, 0, 'ты же не откажешь?', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
         backgroundColor: '#e8b8d0', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });
@@ -479,10 +490,12 @@ export class TutorialScene extends Phaser.Scene {
     const n = this.neighbor; this.neighbor = null;
     this.neiBubble?.destroy();
     audio.freeze();
-    // свернулся калачиком — сдался
-    this.player.setVisible(false);
-    this.sleepSprite.setVisible(true).setPosition(this.player.x, this.player.y).setFlipX(this.player.flipX).play('p-sleep');
-    this.time.delayedCall(2200, () => { this.sleepSprite.setVisible(false); this.player.setVisible(true); });
+    // свернулся калачиком — сдался (если спрайт «сна» не доехал — остаёмся стоять)
+    if (this.anims.exists('p-sleep')) {
+      this.player.setVisible(false);
+      this.sleepSprite.setVisible(true).setPosition(this.player.x, this.player.y).setFlipX(this.player.flipX).play('p-sleep');
+      this.time.delayedCall(2200, () => { this.sleepSprite.setVisible(false); this.player.setVisible(true); });
+    }
     const ok = this.add.text(this.player.x, this.player.y - 66, '«конечно... давайте ваш фикус»',
       { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#b8a8d0' }).setOrigin(0.5).setDepth(46);
     this.tweens.add({ targets: ok, y: ok.y - 20, alpha: 0, duration: 1800, onComplete: () => ok.destroy() });
