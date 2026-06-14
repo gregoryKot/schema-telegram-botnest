@@ -53,6 +53,8 @@ const NAV_ITEMS: { id: Section; label: string }[] = [
   { id: 'practice', label: 'Практика' },
   { id: 'profile',  label: 'Профиль' },
 ];
+// Desktop sidebar omits Profile — it's accessible via the footer account link
+const SIDEBAR_NAV_ITEMS = NAV_ITEMS.filter(i => i.id !== 'profile');
 
 const SECTION_LABELS: Record<Section, string> = {
   today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', practice: 'Практика',
@@ -381,7 +383,7 @@ export function AppShell() {
         )}
 
         <nav className="sb-nav">
-          {!therapistMode && NAV_ITEMS.map(item => (
+          {!therapistMode && SIDEBAR_NAV_ITEMS.map(item => (
             <NavLink key={item.id} to={'/' + item.id}
                      className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
               <span>{item.label}</span>
@@ -436,6 +438,32 @@ export function AppShell() {
           </>)}
         </nav>
 
+        <div className="sb-foot-wrap">
+          {/* Today's index widget — fills the empty space and gives at-a-glance status */}
+          {!therapistMode && (() => {
+            const vals = Object.values(ratings);
+            const allFilled = needs.length > 0 && vals.length >= needs.length;
+            const idx = allFilled ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+            return (
+              <div className="sb-today">
+                <div className="sb-today-label">Сегодня</div>
+                {idx !== null ? (
+                  <>
+                    <div className="sb-today-index">
+                      <span className="sb-today-num">{idx.toFixed(1)}</span>
+                      <span className="sb-today-denom">/10</span>
+                    </div>
+                    <div className="sb-today-sub">индекс дня</div>
+                  </>
+                ) : (
+                  <button className="sb-today-cta"
+                          onClick={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}>
+                    Заполнить дневник →
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         <div className="sb-foot">
           <NavLink to="/profile" className={({ isActive }) => `sb-account${isActive ? ' is-active' : ''}`}>
             <div className="sb-avatar">{(displayName ?? '?')[0].toUpperCase()}</div>
@@ -459,6 +487,7 @@ export function AppShell() {
             <a href="/offer" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
           </div>
         </div>
+        </div>{/* end sb-foot-wrap */}
       </aside>
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
