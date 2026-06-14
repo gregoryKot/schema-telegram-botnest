@@ -71,7 +71,7 @@ export class GameScene extends Phaser.Scene {
   private slash!: Phaser.GameObjects.Graphics;
   private playSprite!: Phaser.GameObjects.Sprite;
   private sleepSprite!: Phaser.GameObjects.Sprite;
-  private dashSprite!: Phaser.GameObjects.Sprite;
+  private lungeSprite!: Phaser.GameObjects.Sprite; // атака — выпад с красными штрихами
   private playerLight!: Phaser.GameObjects.Graphics;
 
   private hitstop = 0;
@@ -348,9 +348,9 @@ export class GameScene extends Phaser.Scene {
       this.anims.create({ key: 'p-sleep', frames: this.anims.generateFrameNumbers('cat_sleep', { start: 0, end: 5 }), frameRate: 6, repeat: 0 });
     this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.24).setDepth(10).setVisible(false);
     this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
-    if (!this.anims.exists('p-dash'))
-      this.anims.create({ key: 'p-dash', frames: this.anims.generateFrameNumbers('cat_dash', { start: 0, end: 5 }), frameRate: 18, repeat: -1 });
-    this.dashSprite = this.add.sprite(0, 0, 'cat_dash', 0).setOrigin(0.5, 1).setScale(0.26).setDepth(10).setVisible(false);
+    if (!this.anims.exists('p-lunge'))
+      this.anims.create({ key: 'p-lunge', frames: this.anims.generateFrameNumbers('cat_dash', { start: 1, end: 5 }), frameRate: 24, repeat: 0 });
+    this.lungeSprite = this.add.sprite(0, 0, 'cat_dash', 5).setOrigin(0.5, 1).setScale(0.26).setDepth(11).setVisible(false);
     this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 9, y: 5 }, align: 'center' })
       .setOrigin(0.5, 1).setDepth(45).setAlpha(0);
@@ -553,9 +553,8 @@ export class GameScene extends Phaser.Scene {
     if (this.dashing) {
       this.dashT -= dt;
       b.setVelocityX(this.dashDir * DASH_SPEED);
-      if (!this.dashSprite.visible) { this.dashSprite.setVisible(true).play('p-dash'); this.player.setVisible(false); }
-      this.dashSprite.setPosition(this.player.x, this.player.y).setFlipX(this.dashDir < 0);
-      if (this.dashT <= 0) { this.dashing = false; b.setAllowGravity(true); this.dashSprite.setVisible(false); this.player.setVisible(true); }
+      this.ghost(); // синий шлейф i-кадров — рывок как был
+      if (this.dashT <= 0) { this.dashing = false; b.setAllowGravity(true); }
     } else if (!this.frozen) {
       // ── БЕГИ ──
       const run = RUN_SPEED * this.speedMult;
@@ -584,9 +583,10 @@ export class GameScene extends Phaser.Scene {
     this.attackT -= dt;
     const dir = this.player.flipX ? -1 : 1;
     const prog = 1 - this.attackT / ATTACK_MS;
-    // выпад: спина выгибается, корпус подаётся вперёд
-    this.player.setScale(1.5 + 0.25 * Math.sin(prog * Math.PI), 1.5 - 0.2 * Math.sin(prog * Math.PI));
-    // три следа когтей — растут по диагонали и наливаются красным
+    // выпад с красными штрихами (спрайт), на время атаки прячем обычного кота
+    if (!this.lungeSprite.visible) { this.lungeSprite.setVisible(true).play('p-lunge'); this.player.setVisible(false); }
+    this.lungeSprite.setPosition(this.player.x, this.player.y).setFlipX(dir < 0);
+    // следы когтей поверх — продают удар
     const cx = this.player.x + dir * 30, cy = this.player.y - 34;
     const len = 34 * Math.min(1, prog * 1.6);
     const a = 1 - Math.max(0, prog - 0.45) * 1.8;
@@ -612,7 +612,10 @@ export class GameScene extends Phaser.Scene {
         this.attackHit.add(this.critic); this.hitCritic();
       }
     }
-    if (this.attackT <= 0) this.attacking = false;
+    if (this.attackT <= 0) {
+      this.attacking = false;
+      this.lungeSprite.setVisible(false); this.player.setVisible(true);
+    }
   }
 
   // ── Anxiety: бить = их только больше; растворяет лишь спокойствие ──────────
