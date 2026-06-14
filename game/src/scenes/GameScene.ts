@@ -374,7 +374,7 @@ export class GameScene extends Phaser.Scene {
       .setScrollFactor(0).setDepth(100);
     this.updateHearts();
     if (!IS_TOUCH)
-      this.add.text(W / 2, H - 20, 'X бей · C отвлекись · Z рывок · V уступи', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
+      this.add.text(W / 2, H - 20, 'X бей · Z избегай (тап рывок / держи залипни) · V уступи', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
         .setOrigin(0.5, 1).setScrollFactor(0).setDepth(100);
   }
   private updateHearts() {
@@ -535,10 +535,12 @@ export class GameScene extends Phaser.Scene {
                || Phaser.Input.Keyboard.JustDown(this.keys.W) || touch.consume('jump');
     const jumpHeld = this.cursors.up.isDown || this.cursors.space.isDown || this.keys.W.isDown || touch.jumpHeld;
     const hit   = Phaser.Input.Keyboard.JustDown(this.keys.X) || touch.consume('hit');
-    const dash  = Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('dash');
     const fawn  = Phaser.Input.Keyboard.JustDown(this.keys.V) || touch.consume('fawn');
-    const freezeHeld = this.keys.C.isDown || this.cursors.down.isDown || touch.freeze;
-    this.frozen = freezeHeld && onGround && !this.dashing && !this.attacking;
+    // ИЗБЕГАНИЕ — один копинг, одна кнопка: тап = рывок, удержание = залипнуть
+    const avoidPress = Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('avoid');
+    const avoidHeld  = this.keys.Z.isDown || touch.avoidHeld;
+    const dash = avoidPress;
+    this.frozen = avoidHeld && onGround && !this.dashing && !this.attacking;
     if (fawn && !this.dead) this.doFawn();
     if (this.frozen && !this.wasFrozen) audio.freeze();
     this.wasFrozen = this.frozen;

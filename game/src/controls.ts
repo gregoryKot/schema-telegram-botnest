@@ -11,14 +11,14 @@ export const IS_TOUCH =
   // Но мультитач есть всегда (maxTouchPoints>0), по нему и ловим планшет.
   (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
 
-type JustAction = 'jump' | 'hit' | 'dash' | 'fawn';
+type JustAction = 'jump' | 'hit' | 'avoid' | 'fawn';
 
 class TouchState {
   left = false;
   right = false;
-  freeze = false;
-  jumpHeld = false; // удержание прыжка — для вариативной высоты
-  private just: Record<JustAction, boolean> = { jump: false, hit: false, dash: false, fawn: false };
+  jumpHeld = false;  // удержание прыжка — для вариативной высоты
+  avoidHeld = false; // удержание «избегай» — тап рывок, держишь залипаешь
+  private just: Record<JustAction, boolean> = { jump: false, hit: false, avoid: false, fawn: false };
 
   press(a: JustAction) { this.just[a] = true; }
   /** just-pressed: вернёт true один раз на нажатие */
@@ -68,9 +68,9 @@ export function initTouchControls() {
 
   hold('tbtn-left',  () => { touch.left = true; },  () => { touch.left = false; });
   hold('tbtn-right', () => { touch.right = true; }, () => { touch.right = false; });
-  hold('tbtn-freeze', () => { touch.freeze = true; }, () => { touch.freeze = false; });
   hold('tbtn-jump', () => { touch.press('jump'); touch.jumpHeld = true; }, () => { touch.jumpHeld = false; });
+  // избегай: тап = рывок (press), удержание = залипнуть (avoidHeld)
+  hold('tbtn-avoid', () => { touch.press('avoid'); touch.avoidHeld = true; }, () => { touch.avoidHeld = false; });
   tap('tbtn-hit', 'hit');
-  tap('tbtn-dash', 'dash');
   tap('tbtn-fawn', 'fawn');
 }

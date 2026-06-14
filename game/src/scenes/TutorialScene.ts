@@ -140,7 +140,7 @@ export class TutorialScene extends Phaser.Scene {
       'Это кот Мистер.\nЖивёт, всем доволен.\n\nТолько вечно с чем-то борется.',
       () => {
         this.step = 'walk';
-        this.narr.setText('4 способа справляться:\nБЕЙ · БЕГИ · ОТВЛЕКИСЬ · УСТУПИ');
+        this.narr.setText('3 способа справляться:\nБЕЙ · ИЗБЕГАЙ · УСТУПИ');
         this.prompt.setText(IS_TOUCH ? '◀ ▶ идти · ▲ прыжок' : 'A D идти · W прыжок');
       });
   }
@@ -186,7 +186,7 @@ export class TutorialScene extends Phaser.Scene {
       // Тач-кнопки — HTML вне канваса, их тап не доходит до Phaser-инпута. Без
       // этого на экране-подсказке нажатие кнопки действия (напр. УСТУПИ) не
       // листало текст — казалось, что кнопка «не работает».
-      if (this.narrContinue && (touch.consume('jump') || touch.consume('hit') || touch.consume('dash') || touch.consume('fawn')))
+      if (this.narrContinue && (touch.consume('jump') || touch.consume('hit') || touch.consume('avoid') || touch.consume('fawn')))
         this.narrContinue();
       this.updateBubble(dt);
       return;
@@ -211,11 +211,12 @@ export class TutorialScene extends Phaser.Scene {
     const right = this.cursors.right.isDown || this.keys.D.isDown || touch.right;
     const jump = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.space)
               || Phaser.Input.Keyboard.JustDown(this.keys.W) || touch.consume('jump');
-    const dash = Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('dash');
     const hit = Phaser.Input.Keyboard.JustDown(this.keys.X) || touch.consume('hit');
     const fawn = Phaser.Input.Keyboard.JustDown(this.keys.V) || touch.consume('fawn');
-    const freezeHeld = this.keys.C.isDown || this.cursors.down.isDown || touch.freeze;
-    this.frozen = freezeHeld && onGround && this.dashT <= 0;
+    // ИЗБЕГАНИЕ — одна кнопка: тап = рывок, удержание = залипнуть
+    const dash = Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('avoid');
+    const avoidHeld = this.keys.Z.isDown || touch.avoidHeld;
+    this.frozen = avoidHeld && onGround && this.dashT <= 0;
     if (fawn) this.onFawn();
 
     if (this.dashCd > 0) this.dashCd -= dt;
@@ -334,8 +335,8 @@ export class TutorialScene extends Phaser.Scene {
       this.narrTell('Понедельник.\nНа Мистера летят дела.', () => {
         this.clearBeat();
         this.setScene('office');
-        this.narr.setText('БЕГИ — быть где-то ещё');
-        this.prompt.setText(IS_TOUCH ? 'БЕГИ — увернись' : 'Z — рывок, увернись');
+        this.narr.setText('ИЗБЕГАЙ — быть где-то ещё');
+        this.prompt.setText(IS_TOUCH ? 'ИЗБЕГАЙ (тап) — рывок' : 'Z (тап) — рывок, увернись');
         this.spawnPile();
       });
     }
@@ -388,8 +389,8 @@ export class TutorialScene extends Phaser.Scene {
     this.narrTell('Ночь. Лезут тревоги.\nИх не побить и не обогнать.', () => {
       this.clearBeat();
       this.setScene('night');
-      this.narr.setText('ОТВЛЕКИСЬ — и отстанут');
-      this.prompt.setText(IS_TOUCH ? 'ОТВЛЕКИСЬ (держи) — отвлекись' : 'C (держи) — отвлекись');
+      this.narr.setText('ИЗБЕГАЙ (держи) — залипни, и отстанут');
+      this.prompt.setText(IS_TOUCH ? 'ИЗБЕГАЙ (держи) — залипни' : 'Z (держи) — залипни, отвлекись');
       for (let i = 0; i < 3; i++) this.worries.push(this.add.image(this.player.x, this.player.y - 60, 'anxmob').setDepth(7).setScale(0.8));
       audio.anx();
     });
@@ -522,7 +523,7 @@ export class TutorialScene extends Phaser.Scene {
   private finish() {
     this.step = 'done';
     track('tutorial_done');
-    this.narr.setText('БЕЙ · БЕГИ · ОТВЛЕКИСЬ · УСТУПИ\n\n...должно хватать. да?');
+    this.narr.setText('БЕЙ · ИЗБЕГАЙ · УСТУПИ\n\n...должно хватать. да?');
     this.prompt.setText(IS_TOUCH ? 'тапни — дальше' : 'E / клик — дальше');
     this.input.once('pointerdown', () => this.scene.start('Intro'));
   }
