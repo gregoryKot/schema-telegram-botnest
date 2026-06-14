@@ -454,6 +454,7 @@ export class GameScene extends Phaser.Scene {
 
   // Мистер сворачивается калачиком (сдался), держит позу, потом встаёт
   private curlUp() {
+    this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0); // спрайт грузится в фоне — создаём при первом использовании
     if (!this.anims.exists('p-sleep')) return; // спрайт «сна» не доехал — без позы, кот остаётся стоять
     this.player.setVisible(false);
     this.sleepSprite.setVisible(true).setPosition(this.player.x, this.player.y)
@@ -597,7 +598,8 @@ export class GameScene extends Phaser.Scene {
     const dir = this.player.flipX ? -1 : 1;
     const prog = 1 - this.attackT / ATTACK_MS;
     // выпад с красными штрихами (спрайт), на время атаки прячем обычного кота.
-    // нет спрайта выпада — атакуем обычным котом, видны только штрихи когтей.
+    // спрайт грузится в фоне; нет — атакуем обычным котом, видны только штрихи.
+    this.safeAnim('p-lunge', 'cat_dash', 1, 5, 24, 0);
     if (this.anims.exists('p-lunge')) {
       if (!this.lungeSprite.visible) { this.lungeSprite.setVisible(true).play('p-lunge'); this.player.setVisible(false); }
       this.lungeSprite.setPosition(this.player.x, this.player.y).setFlipX(dir < 0);
@@ -842,6 +844,7 @@ export class GameScene extends Phaser.Scene {
   }
   // «Отвлечься» = Мистер играет с клубком; мысли теряют к нему интерес
   private showPlay() {
+    this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1); // спрайт грузится в фоне — создаём при первом использовании
     if (!this.anims.exists('p-play')) return; // клубок не доехал — кот просто стоит, без анимации
     if (!this.playSprite.visible) {
       this.playSprite.setVisible(true).play('p-play');

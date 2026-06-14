@@ -1,34 +1,20 @@
 import Phaser from 'phaser';
 import { S } from '../constants';
 import { makeCommonTextures } from '../textures';
-// Импортируем спрайты через Vite, а не из /public по стабильному имени:
-// Vite впекает абсолютный КОНТЕНТ-ХЕШИРОВАННЫЙ URL (кэш сам сбрасывается при
-// смене файла), а мелкие cat_run/cat_idle вообще инлайнятся как data-URI прямо
-// в бандл — их физически нельзя «не загрузить». Это убирает и битый путь, и
-// застрявший кэш зелёного __MISSING-квадрата.
+// Только обязательные спрайты (меню, пролог, базовое движение) — мелкие, их
+// Vite инлайнит data-URI прямо в главный бандл, так что они физически не могут
+// «не загрузиться». Тяжёлые спрайты (клубок/сон/выпад) едут отдельным async-
+// чанком и догружаются в фоне (main.ts) — меню стартует не дожидаясь их.
 import catRunUrl   from '../assets/cat_run.png';
 import catIdleUrl  from '../assets/cat_idle.png';
-import catPlayUrl  from '../assets/cat_play.png';
-import catSleepUrl from '../assets/cat_sleep.png';
-import catDashUrl  from '../assets/cat_dash.png';
-import dogIdleUrl  from '../assets/dog_idle.png';
-import dogWalkUrl  from '../assets/dog_walk.png';
-import neiIdleUrl  from '../assets/nei_idle.png';
 
 type G = Phaser.GameObjects.Graphics;
 
-// Спрайт-листы. Только cat_run/cat_idle обязательны для старта (меню, пролог,
-// базовое движение). Остальные — для отдельных анимаций; если не доехали,
-// игра всё равно играбельна (сцены guard'ят анимации).
+// Только cat_run/cat_idle обязательны для старта. Остальные подгружаются в фоне;
+// сцены guard'ят анимации, поэтому игра играбельна даже пока они не доехали.
 const CAT_SHEETS: Record<string, { url: string; fw: number; fh: number }> = {
   cat_run:   { url: catRunUrl,   fw: 48,  fh: 48 },
   cat_idle:  { url: catIdleUrl,  fw: 48,  fh: 48 },
-  cat_play:  { url: catPlayUrl,  fw: 257, fh: 257 },
-  cat_sleep: { url: catSleepUrl, fw: 190, fh: 190 },
-  cat_dash:  { url: catDashUrl,  fw: 269, fh: 269 },
-  dog_idle:  { url: dogIdleUrl,  fw: 48,  fh: 48 },
-  dog_walk:  { url: dogWalkUrl,  fw: 48,  fh: 48 },
-  nei_idle:  { url: neiIdleUrl,  fw: 48,  fh: 48 },
 };
 const ESSENTIAL = ['cat_run', 'cat_idle'];
 
