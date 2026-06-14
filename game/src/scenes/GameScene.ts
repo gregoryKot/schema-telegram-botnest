@@ -320,6 +320,12 @@ export class GameScene extends Phaser.Scene {
     if (g) g.mobs.push(child as { alive: boolean });
   }
 
+  // Создать анимацию только если её спрайт-лист реально загрузился.
+  private safeAnim(key: string, sheet: string, start: number, end: number, frameRate: number, repeat: number) {
+    if (this.anims.exists(key) || !this.textures.exists(sheet)) return;
+    this.anims.create({ key, frames: this.anims.generateFrameNumbers(sheet, { start, end }), frameRate, repeat });
+  }
+
   // ── Player ───────────────────────────────────────────────────────────────--
   private spawnPlayer() {
     if (!this.anims.exists('p-idle'))
@@ -342,14 +348,14 @@ export class GameScene extends Phaser.Scene {
     this.playerLight.fillStyle(0xffe9c0, 0.07); this.playerLight.fillCircle(0, 0, 130);
 
     this.slash = this.add.graphics().setDepth(11);
-    if (!this.anims.exists('p-play'))
-      this.anims.create({ key: 'p-play', frames: this.anims.generateFrameNumbers('cat_play', { start: 0, end: 5 }), frameRate: 7, repeat: -1 });
-    if (!this.anims.exists('p-sleep'))
-      this.anims.create({ key: 'p-sleep', frames: this.anims.generateFrameNumbers('cat_sleep', { start: 0, end: 5 }), frameRate: 6, repeat: 0 });
+    // cat_play/cat_sleep/cat_dash — необязательные спрайты (грузятся отдельными
+    // запросами и могут не доехать). Анимацию создаём ТОЛЬКО если текстура есть —
+    // иначе .play() по пустой анимации роняет update-цикл и игра «зависает».
+    this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
+    this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
     this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.24).setDepth(10).setVisible(false);
     this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
-    if (!this.anims.exists('p-lunge'))
-      this.anims.create({ key: 'p-lunge', frames: this.anims.generateFrameNumbers('cat_dash', { start: 1, end: 5 }), frameRate: 24, repeat: 0 });
+    this.safeAnim('p-lunge', 'cat_dash', 1, 5, 24, 0);
     this.lungeSprite = this.add.sprite(0, 0, 'cat_dash', 5).setOrigin(0.5, 1).setScale(0.26).setDepth(11).setVisible(false);
     this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 9, y: 5 }, align: 'center' })
@@ -448,6 +454,7 @@ export class GameScene extends Phaser.Scene {
 
   // Мистер сворачивается калачиком (сдался), держит позу, потом встаёт
   private curlUp() {
+    if (!this.anims.exists('p-sleep')) return; // спрайт «сна» не доехал — без позы, кот остаётся стоять
     this.player.setVisible(false);
     this.sleepSprite.setVisible(true).setPosition(this.player.x, this.player.y)
       .setFlipX(this.player.flipX).play('p-sleep');
@@ -589,9 +596,12 @@ export class GameScene extends Phaser.Scene {
     this.attackT -= dt;
     const dir = this.player.flipX ? -1 : 1;
     const prog = 1 - this.attackT / ATTACK_MS;
-    // выпад с красными штрихами (спрайт), на время атаки прячем обычного кота
-    if (!this.lungeSprite.visible) { this.lungeSprite.setVisible(true).play('p-lunge'); this.player.setVisible(false); }
-    this.lungeSprite.setPosition(this.player.x, this.player.y).setFlipX(dir < 0);
+    // выпад с красными штрихами (спрайт), на время атаки прячем обычного кота.
+    // нет спрайта выпада — атакуем обычным котом, видны только штрихи когтей.
+    if (this.anims.exists('p-lunge')) {
+      if (!this.lungeSprite.visible) { this.lungeSprite.setVisible(true).play('p-lunge'); this.player.setVisible(false); }
+      this.lungeSprite.setPosition(this.player.x, this.player.y).setFlipX(dir < 0);
+    }
     // следы когтей поверх — продают удар
     const cx = this.player.x + dir * 30, cy = this.player.y - 34;
     const len = 34 * Math.min(1, prog * 1.6);
@@ -832,6 +842,7 @@ export class GameScene extends Phaser.Scene {
   }
   // «Отвлечься» = Мистер играет с клубком; мысли теряют к нему интерес
   private showPlay() {
+    if (!this.anims.exists('p-play')) return; // клубок не доехал — кот просто стоит, без анимации
     if (!this.playSprite.visible) {
       this.playSprite.setVisible(true).play('p-play');
       this.player.setVisible(false);
