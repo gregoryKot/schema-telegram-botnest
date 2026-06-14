@@ -422,6 +422,12 @@ export class GameScene extends Phaser.Scene {
   // ── УСТУПИ (fawn): купить мир ценой себя — враги отстают, сердце уходит ────
   private doFawn() {
     if (this.invuln > 0) return; // не спамить
+    // уступать только когда есть кому — иначе V «внезапно» съедал сердце впустую
+    const nearThreat =
+      this.anx.some(m => m.alive && Phaser.Math.Distance.Between(m.img.x, m.img.y, this.player.x, this.player.y) < 260) ||
+      (this.critic?.alive && Phaser.Math.Distance.Between(this.critic.img.x, this.critic.img.y, this.player.x, this.player.y) < 280) ||
+      this.homeMobs.some(m => m.alive);
+    if (!nearThreat) { this.sayOnce('fawn_none', 'уступать... да некому пока.', 1600); return; }
     this.hidePlay();
     this.hearts -= 1; this.updateHearts();
     this.invuln = 3500;
