@@ -893,25 +893,40 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   .therapist-back-btn { display: flex !important; }
 }
 
-/* ─── Therapist cabinet (TherapistClientSheet): mobile adaptation ────────────
-   On desktop the sheet fills the canvas via a flex-fill chain with
-   overflow:hidden/auto. On mobile .canvas switches to display:block, so that
-   chain has no height to fill and the cabinet collapses to zero → white
-   screen. Flatten the inline overflow/flex so it flows in normal document
-   flow like the regular .page sections. */
-@media (max-width: 767px) {
-  /* Root container: inline flex:1 collapses to 0 when canvas is display:block.
-     Force block flow so height comes from content, not flex context. */
+/* ─── Therapist cabinet (TherapistClientSheet) ───────────────────────────────
+   Desktop: fill canvas via a flex chain. Mobile: natural block flow so the
+   whole page scrolls like a regular section. Layout is kept in CSS (not inline
+   styles) so mobile breakpoint can cleanly override without !important hacks. */
+@media (min-width: 768px) {
   .therapist-sheet {
-    display: block !important;
-    flex: none !important;
-    overflow: visible !important;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
-  .therapist-scroll {
-    display: block !important;
-    flex: none !important;
-    overflow: visible !important;
+  /* List view: fills sheet, scrolls internally */
+  .therapist-scroll--list {
+    flex: 1;
+    overflow: auto;
   }
+  /* Client view outer: fixed header + scrollable tab area */
+  .therapist-scroll--client {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* Tab content: scrolls independently inside the client view */
+  .therapist-scroll--tabs {
+    flex: 1;
+    overflow: auto;
+  }
+}
+
+/* Mobile: header padding + horizontal tab scroll */
+@media (max-width: 767px) {
   .therapist-client-header { padding: 16px 16px 0 !important; }
   .tabs {
     padding: 0 16px;
