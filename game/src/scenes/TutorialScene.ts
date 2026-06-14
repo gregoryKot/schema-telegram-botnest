@@ -92,11 +92,15 @@ export class TutorialScene extends Phaser.Scene {
     this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
-    this.contHint = this.add.text(W / 2, H - 96, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
-      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#88ffcc' }).setOrigin(0.5).setDepth(50).setAlpha(0);
-    this.narr = this.add.text(W / 2, 110, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '13px', color: '#fff0d8', align: 'center', lineSpacing: 14, wordWrap: { width: W - 70 } })
+    // Везде тёмная подложка под текстом — иначе на пёстром фоне не прочитать
+    this.contHint = this.add.text(W / 2, H - 100, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
+      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#88ffcc',
+        backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 8, y: 5 } }).setOrigin(0.5).setDepth(50).setAlpha(0);
+    this.narr = this.add.text(W / 2, 104, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '13px', color: '#fff0d8', align: 'center', lineSpacing: 14, wordWrap: { width: W - 90 },
+      backgroundColor: 'rgba(8,6,18,0.82)', padding: { x: 16, y: 12 } })
       .setOrigin(0.5, 0).setDepth(50);
-    this.prompt = this.add.text(W / 2, H - 58, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#88ffcc', align: 'center', wordWrap: { width: W - 60 } })
+    this.prompt = this.add.text(W / 2, H - 56, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#88ffcc', align: 'center', wordWrap: { width: W - 80 },
+      backgroundColor: 'rgba(8,6,18,0.82)', padding: { x: 12, y: 8 } })
       .setOrigin(0.5).setDepth(50);
     this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 8, y: 5 } }).setOrigin(0.5, 1).setDepth(45).setAlpha(0);
@@ -165,6 +169,9 @@ export class TutorialScene extends Phaser.Scene {
 
   update(_: number, dt: number) {
     this.t += dt;
+    // пустую строку не показываем — иначе подложка рисует пустую плашку
+    this.narr.setVisible(this.narr.text.length > 0);
+    this.prompt.setVisible(this.prompt.text.length > 0);
     if (this.paused) { this.updateBubble(dt); return; }
     this.updateMoves(dt);
     this.updateBubble(dt);
