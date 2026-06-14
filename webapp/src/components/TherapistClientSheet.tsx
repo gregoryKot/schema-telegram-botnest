@@ -153,11 +153,11 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="therapist-sheet" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
+    <div className="therapist-sheet" style={{ background: 'var(--bg)' }}>
 
       {/* ── LIST VIEW ──────────────────────────────────────────────────────────── */}
       {view === 'list' && (
-        <div className="therapist-scroll" key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'auto' }}>
+        <div className="therapist-scroll therapist-scroll--list" key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
           <div className="page-inner-wide">
 
             {/* ── Add client form (editorial style) ──────────────────────── */}
@@ -478,7 +478,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
       {/* ── CLIENT VIEW ────────────────────────────────────────────────────────── */}
       {view === 'client' && selectedClient && (
-        <div className="therapist-scroll" key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="therapist-scroll therapist-scroll--client" key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
 
           {/* Client header — moderately compact */}
           <div className="therapist-client-header" style={{ borderBottom: '1px solid var(--line)', padding: '24px 48px 0', flexShrink: 0 }}>
@@ -572,7 +572,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           </div>
 
           {/* Tab content */}
-          <div className="therapist-scroll" style={{ flex: 1, overflow: 'auto' }} key={clientTab}>
+          <div className="therapist-scroll therapist-scroll--tabs" key={clientTab}>
 
             {/* Loading state */}
             {tabLoading ? (
