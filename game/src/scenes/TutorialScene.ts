@@ -94,9 +94,9 @@ export class TutorialScene extends Phaser.Scene {
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
     this.contHint = this.add.text(W / 2, H - 96, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
       { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#88ffcc' }).setOrigin(0.5).setDepth(50).setAlpha(0);
-    this.narr = this.add.text(W / 2, 96, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px', color: '#fff0d8', align: 'center', lineSpacing: 12 })
+    this.narr = this.add.text(W / 2, 110, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '13px', color: '#fff0d8', align: 'center', lineSpacing: 14, wordWrap: { width: W - 70 } })
       .setOrigin(0.5, 0).setDepth(50);
-    this.prompt = this.add.text(W / 2, H - 64, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '12px', color: '#88ffcc', align: 'center' })
+    this.prompt = this.add.text(W / 2, H - 58, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#88ffcc', align: 'center', wordWrap: { width: W - 60 } })
       .setOrigin(0.5).setDepth(50);
     this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 8, y: 5 } }).setOrigin(0.5, 1).setDepth(45).setAlpha(0);
@@ -126,12 +126,11 @@ export class TutorialScene extends Phaser.Scene {
   // ── Знакомство ──────────────────────────────────────────────────────────────
   private meet() {
     this.narrTell(
-      'Это Мистер. Обычный кот.\nЖивёт обычной жизнью. Всем доволен.\n\n' +
-      '...правда, почти все силы уходят на борьбу.\nС чем? Да вроде бы и ни с чем.',
+      'Это кот Мистер.\nЖивёт, всем доволен.\n\nТолько вечно с чем-то борется.',
       () => {
         this.step = 'walk';
-        this.narr.setText('У Мистера на любую беду — четыре способа:\nБЕЙ. БЕГИ. ОТВЛЕКИСЬ. УСТУПИ.\nСейчас попробуем все.');
-        this.prompt.setText(IS_TOUCH ? '◀ ▶ — идти      ▲ — прыгнуть' : '← → / A D — идти      ↑ / W / ПРОБЕЛ — прыгнуть');
+        this.narr.setText('4 способа справляться:\nБЕЙ · БЕГИ · ОТВЛЕКИСЬ · УСТУПИ');
+        this.prompt.setText(IS_TOUCH ? '◀ ▶ идти · ▲ прыжок' : 'A D идти · W прыжок');
       });
   }
 
@@ -151,7 +150,9 @@ export class TutorialScene extends Phaser.Scene {
       this.physics.resume();
       this.player.anims.resume();
       this.tweens.add({ targets: this.dim, fillAlpha: 0, duration: 250 });
+      this.tweens.killTweensOf(this.contHint); // иначе отложенный твин показа перебьёт сброс альфы
       this.contHint.setAlpha(0);
+      this.narr.setText(''); // иначе нарезка висит поверх геймплея и наезжает на подсказку
       onContinue();
     };
     // небольшая задержка, чтобы случайный зажатый input не проскочил текст
@@ -256,9 +257,10 @@ export class TutorialScene extends Phaser.Scene {
   private checkWalk() {
     if (this.moved > 900 && this.jumped) {
       this.step = 'dash';
-      this.narrTell('Понедельник. На Мистера едет\nкуча несделанных дел.', () => {
+      this.narrTell('Понедельник.\nНа Мистера летят дела.', () => {
         this.clearBeat();
-        this.prompt.setText(IS_TOUCH ? 'РЫВОК — любимый способ Мистера: быть где-то ещё' : 'Z — рывок. любимый способ Мистера: быть где-то ещё');
+        this.narr.setText('БЕГИ — быть где-то ещё');
+        this.prompt.setText(IS_TOUCH ? 'РЫВОК — увернись' : 'Z — рывок, увернись');
         this.spawnPile();
       });
     }
@@ -308,9 +310,10 @@ export class TutorialScene extends Phaser.Scene {
   private beginFreeze() {
     if (this.step !== 'dash') return;
     this.step = 'freeze';
-    this.narrTell('Ночь. Завтра важный день.\nВ голову лезут переживания.\nИх не ударить и от них не убежать — они внутри.', () => {
+    this.narrTell('Ночь. Лезут тревоги.\nИх не побить и не обогнать.', () => {
       this.clearBeat();
-      this.prompt.setText(IS_TOUCH ? 'ИГРАЙ (удерживай) — отвлечься, и они отстанут' : 'C (удерживай) — отвлечься на клубок, и они отстанут');
+      this.narr.setText('ОТВЛЕКИСЬ — и отстанут');
+      this.prompt.setText(IS_TOUCH ? 'ИГРАЙ (держи) — отвлекись' : 'C (держи) — отвлекись');
       for (let i = 0; i < 3; i++) this.worries.push(this.add.image(this.player.x, this.player.y - 60, 'anxmob').setDepth(7).setScale(0.8));
       audio.anx();
     });
@@ -344,9 +347,10 @@ export class TutorialScene extends Phaser.Scene {
   private beginFight() {
     if (this.step !== 'freeze') return;
     this.step = 'fight';
-    this.narrTell('Утро. Коллега «по-дружески» просит\nсделать его работу. Снова. Бесплатно.', () => {
+    this.narrTell('Утро. Коллега снова свалил\nсвою работу на тебя.', () => {
       this.clearBeat();
-      this.prompt.setText(IS_TOUCH ? 'БЕЙ — Мистер не умеет отказывать спокойно. только так' : 'X — Мистер не умеет отказывать спокойно. только так');
+      this.narr.setText('БЕЙ — рявкни «нет»');
+      this.prompt.setText(IS_TOUCH ? 'БЕЙ — рявкни' : 'X — рявкни «нет»');
       this.colleague = this.add.sprite(W - 80, GROUND_Y, 'dog_idle').setOrigin(0.5, 1).setScale(1.5)
         .setFlipX(true).setDepth(8).play('dog-idle');
       this.colBubble = this.add.text(0, 0, 'ну ты же можешь!', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
@@ -370,6 +374,11 @@ export class TutorialScene extends Phaser.Scene {
   }
 
   private onHit() {
+    // на соседку рявкнуть «язык не повернулся» — даём реакцию, а не тишину
+    if (this.step === 'fawn' && this.neighbor?.active) {
+      this.sayOnce('nei_hit', 'рявкнуть на соседку? ...не смог.', 2600);
+      return;
+    }
     if (this.step !== 'fight' || !this.colleague?.active) return;
     const dir = this.player.flipX ? -1 : 1;
     const dx = this.colleague.x - this.player.x;
@@ -395,9 +404,10 @@ export class TutorialScene extends Phaser.Scene {
   private beginFawn() {
     if (this.step !== 'fight') return;
     this.step = 'fawn';
-    this.narrTell('Вечер. Соседка просит присмотреть за её фикусом.\nВ пятый раз за месяц.\nРявкнуть — неудобно. Сбежать — она у двери.', () => {
+    this.narrTell('Вечер. Соседка опять просит\nпосидеть с её фикусом.', () => {
       this.clearBeat();
-      this.prompt.setText(IS_TOUCH ? 'УСТУПИ — Мистер так умеет лучше всего' : 'V — уступить. Мистер так умеет лучше всего');
+      this.narr.setText('УСТУПИ — лишь бы отстали');
+      this.prompt.setText(IS_TOUCH ? 'УСТУПИ — сдайся' : 'V — уступи, сдайся');
       this.neighbor = this.add.sprite(W - 90, GROUND_Y, 'nei_idle').setOrigin(0.5, 1).setScale(1.5)
         .setFlipX(true).setDepth(8).play('nei-idle');
       this.neiBubble = this.add.text(0, 0, 'ты же не откажешь?', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
@@ -433,7 +443,7 @@ export class TutorialScene extends Phaser.Scene {
   private finish() {
     this.step = 'done';
     track('tutorial_done');
-    this.narr.setText('БЕЙ. БЕГИ. ОТВЛЕКИСЬ. УСТУПИ.\nЧетыре способа на все случаи жизни.\n\n...должно же хватать. да?');
+    this.narr.setText('БЕЙ · БЕГИ · ОТВЛЕКИСЬ · УСТУПИ\n\n...должно хватать. да?');
     this.prompt.setText(IS_TOUCH ? 'тапни — дальше' : 'E / клик — дальше');
     this.input.once('pointerdown', () => this.scene.start('Intro'));
   }
