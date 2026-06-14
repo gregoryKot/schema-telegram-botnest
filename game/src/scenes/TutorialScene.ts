@@ -350,34 +350,31 @@ export class TutorialScene extends Phaser.Scene {
       this.sayOnce('worry_run', 'от своей головы не убежишь...', 2600);
   }
 
-  // ── Шаг 4: БЕЙ — коллега, которому можно только рявкнуть «нет» ─────────────
+  // ── Шаг 4: БЕЙ — будильник орёт и не затыкается, только вырубить ───────────
   private beginFight() {
     if (this.step !== 'freeze') return;
     this.step = 'fight';
-    this.narrTell('Утро. Коллега снова свалил\nсвою работу на тебя.', () => {
+    this.narrTell('Утро. Будильник орёт.\nИ не затыкается.', () => {
       this.clearBeat();
-      this.narr.setText('БЕЙ — рявкни «нет»');
-      this.prompt.setText(IS_TOUCH ? 'БЕЙ — рявкни' : 'X — рявкни «нет»');
-      this.colleague = this.add.sprite(W - 80, GROUND_Y, 'dog_idle').setOrigin(0.5, 1).setScale(1.5)
-        .setFlipX(true).setDepth(8).play('dog-idle');
-      this.colBubble = this.add.text(0, 0, 'ну ты же можешь!', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
-        backgroundColor: '#e8c890', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
+      this.narr.setText('БЕЙ — вырубить');
+      this.prompt.setText(IS_TOUCH ? 'БЕЙ — по будильнику' : 'X — вырубить будильник');
+      // будильник на тумбочке справа — Мистер подходит и бьёт
+      this.colleague = this.add.sprite(W - 100, GROUND_Y - 6, 'alarm').setOrigin(0.5, 1).setScale(1.7).setDepth(8);
+      this.colBubble = this.add.text(0, 0, 'ДЗЗ-ДЗЗ-ДЗЗ!', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
+        backgroundColor: '#ffd870', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });
   }
 
   private updateColleague(dt: number) {
     const c = this.colleague; if (!c || !c.active) return;
-    const d = this.player.x - c.x;
-    if (Math.abs(d) > 70) { c.x += Math.sign(d) * dt * 0.12; if (c.anims.currentAnim?.key !== 'dog-walk') c.play('dog-walk'); }
-    else if (c.anims.currentAnim?.key !== 'dog-idle') c.play('dog-idle');
-    c.setFlipX(d < 0); // спрайт смотрит вправо → флип, когда Мистер слева
+    c.setAngle(Math.sin(this.t * 0.04) * 9); // трясётся от звона
+    const d = Math.abs(this.player.x - c.x);
     if (this.colBubble?.active) {
-      this.colBubble.x = c.x; this.colBubble.y = c.y - 56;
-      const phrases = ['ну ты же можешь!', 'тебе же не сложно?', 'я бы для тебя сделал!'];
-      this.colBubble.setText(phrases[Math.floor(this.t / 2600) % phrases.length]);
+      this.colBubble.x = c.x; this.colBubble.y = c.y - 70 + Math.sin(this.t * 0.04) * 3;
+      this.colBubble.setText(['ДЗЗ-ДЗЗ-ДЗЗ!', 'ВСТАВАЙ!', 'ДЗЗЗЗ!'][Math.floor(this.t / 1400) % 3]);
     }
-    if (this.frozen && Math.abs(d) < 140) this.sayOnce('col_frz', 'замер... а он всё ещё тут. и ждёт.', 2600);
-    if (this.dashT > 0 && Math.abs(d) < 200) this.sayOnce('col_dash', 'убежал... он уже написал в чат. дважды.', 2800);
+    if (this.frozen && d < 160) this.sayOnce('col_frz', 'отвлечься? оно ОРЁТ прямо в ухо.', 2600);
+    if (this.dashT > 0 && d < 220) this.sayOnce('col_dash', 'убежал в другую комнату — всё равно слышно.', 2800);
   }
 
   private onHit() {
@@ -389,22 +386,21 @@ export class TutorialScene extends Phaser.Scene {
     if (this.step !== 'fight' || !this.colleague?.active) return;
     const dir = this.player.flipX ? -1 : 1;
     const dx = this.colleague.x - this.player.x;
-    if (dx * dir < -12 || Math.abs(dx) > 80) return;
+    if (dx * dir < -12 || Math.abs(dx) > 90) return;
     audio.hit();
-    this.cameras.main.shake(180, 0.012);
+    this.cameras.main.shake(220, 0.015);
     const c = this.colleague; this.colleague = null;
     this.colBubble?.destroy();
-    // Мистер не говорит «нет» — он срывается. в этом и проблема.
-    const yells = ['ДА ХВАТИТ УЖЕ!!', '#@$%!!', 'ОТСТАНЬ ОТ МЕНЯ!!'];
-    yells.forEach((y, i) => this.time.delayedCall(i * 260, () => {
-      const t = this.add.text(this.player.x + dir * 50, this.player.y - 66 - i * 22, y,
-        { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${15 - i * 2}px`, color: i === 1 ? '#ffaa44' : '#ff5544' })
-        .setOrigin(0.5).setDepth(46).setAngle(Phaser.Math.Between(-6, 6));
-      this.tweens.add({ targets: t, y: t.y - 24, alpha: 0, duration: 1200, onComplete: () => t.destroy() });
-    }));
-    this.tweens.add({ targets: c, x: c.x + dir * 280, alpha: 0, duration: 600, onComplete: () => c.destroy() });
-    this.say('...сорвался. опять. а хотел просто сказать «нет».', 3200);
-    this.time.delayedCall(2600, () => this.beginFawn());
+    // ХРЯСЬ! — лупит по будильнику, тот замолкает
+    const smash = this.add.text(c.x, c.y - 60, 'ХРЯСЬ!',
+      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#ff5544' })
+      .setOrigin(0.5).setDepth(46).setAngle(Phaser.Math.Between(-8, 8));
+    this.tweens.add({ targets: smash, scale: 1.4, alpha: 0, duration: 900, onComplete: () => smash.destroy() });
+    for (let i = 0; i < 8; i++) { const p = this.add.rectangle(c.x, c.y - 20, 3, 3, 0xd8a020).setDepth(46);
+      const a = Math.random() * 6.28; this.tweens.add({ targets: p, x: c.x + Math.cos(a) * 80, y: c.y - 20 + Math.sin(a) * 60, alpha: 0, duration: 600, onComplete: () => p.destroy() }); }
+    this.tweens.add({ targets: c, angle: 80, y: c.y + 14, alpha: 0, duration: 500, onComplete: () => c.destroy() });
+    this.say('ХРЯСЬ! ...тишина. наконец-то.', 3000);
+    this.time.delayedCall(2400, () => this.beginFawn());
   }
 
   // ── Шаг 5: УСТУПИ — соседка, которой нельзя ни рявкнуть, ни сбежать ────────

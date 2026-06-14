@@ -77,14 +77,15 @@ export class IntroScene extends Phaser.Scene {
     // Кнопка появляется после всего текста
     const totalDelay = 300 + slide.lines.length * 180 + 400;
 
-    const btn = this.add.rectangle(W / 2, H - 80, 220, 48, 0x3a1500)
+    const btnTxt = this.add.text(W / 2, H - 80, 'Начать путь →', {
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px',
+      color: '#ff7733', letterSpacing: 2,
+    }).setOrigin(0.5).setAlpha(0);
+    const btn = this.add.rectangle(W / 2, H - 80, btnTxt.width + 40, 48, 0x3a1500)
       .setStrokeStyle(1, 0xff7733)
       .setInteractive({ useHandCursor: true })
       .setAlpha(0);
-    const btnTxt = this.add.text(W / 2, H - 80, 'Начать путь  →', {
-      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '15px',
-      color: '#ff7733', letterSpacing: 3,
-    }).setOrigin(0.5).setAlpha(0);
+    btnTxt.setDepth(1);
 
     this.tweens.add({ targets: [btn, btnTxt], alpha: 1, duration: 600, delay: totalDelay });
 
