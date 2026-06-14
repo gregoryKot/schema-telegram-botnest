@@ -5,7 +5,11 @@
 
 export const IS_TOUCH =
   (typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches) ||
-  'ontouchstart' in window;
+  'ontouchstart' in window ||
+  // iPad Safari по умолчанию работает в desktop-режиме: pointer:fine и нет
+  // ontouchstart — IS_TOUCH ложно становился false и тач-кнопки не показывались.
+  // Но мультитач есть всегда (maxTouchPoints>0), по нему и ловим планшет.
+  (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
 
 type JustAction = 'jump' | 'hit' | 'dash' | 'fawn';
 
