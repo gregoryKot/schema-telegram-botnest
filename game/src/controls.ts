@@ -40,12 +40,24 @@ export function initTouchControls() {
 
   const hold = (id: string, on: () => void, off: () => void) => {
     const el = document.getElementById(id)!;
-    const down = (e: Event) => { e.preventDefault(); el.classList.add('pressed'); on(); };
-    const up = () => { el.classList.remove('pressed'); off(); };
+    let pid: number | null = null;
+    // setPointerCapture: палец, начавший на кнопке, гарантированно получит
+    // pointerup на ней же, даже если соскользнул на соседнюю — иначе
+    // «удержание» (ОТВЛЕКИСЬ) залипало и игра казалась зависшей.
+    const down = (e: PointerEvent) => {
+      e.preventDefault();
+      pid = e.pointerId;
+      try { el.setPointerCapture(e.pointerId); } catch { /* not supported — ok */ }
+      el.classList.add('pressed'); on();
+    };
+    const up = (e: PointerEvent) => {
+      if (pid !== null && e.pointerId !== pid) return; // чужой палец (мультитач) — не трогаем
+      pid = null;
+      el.classList.remove('pressed'); off();
+    };
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointerup', up);
     el.addEventListener('pointercancel', up);
-    el.addEventListener('pointerleave', up);
   };
   const tap = (id: string, a: JustAction) => hold(id, () => touch.press(a), () => undefined);
 

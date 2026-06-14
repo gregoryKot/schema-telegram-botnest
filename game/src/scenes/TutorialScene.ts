@@ -94,14 +94,13 @@ export class TutorialScene extends Phaser.Scene {
     this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
-    // Везде тёмная подложка под текстом — иначе на пёстром фоне не прочитать
-    this.contHint = this.add.text(W / 2, H - 100, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
+    this.contHint = this.add.text(W / 2, IS_TOUCH ? H - 210 : H - 100, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
       { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#88ffcc',
         backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 8, y: 5 } }).setOrigin(0.5).setDepth(50).setAlpha(0);
     this.narr = this.add.text(W / 2, 104, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '13px', color: '#fff0d8', align: 'center', lineSpacing: 14, wordWrap: { width: W - 90 },
       backgroundColor: 'rgba(8,6,18,0.82)', padding: { x: 16, y: 12 } })
       .setOrigin(0.5, 0).setDepth(50);
-    this.prompt = this.add.text(W / 2, H - 56, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#88ffcc', align: 'center', wordWrap: { width: W - 80 },
+    this.prompt = this.add.text(W / 2, IS_TOUCH ? H - 250 : H - 56, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#88ffcc', align: 'center', wordWrap: { width: W - 80 },
       backgroundColor: 'rgba(8,6,18,0.82)', padding: { x: 12, y: 8 } })
       .setOrigin(0.5).setDepth(50);
     this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
@@ -313,7 +312,7 @@ export class TutorialScene extends Phaser.Scene {
         this.clearBeat();
         this.setScene('office');
         this.narr.setText('БЕГИ — быть где-то ещё');
-        this.prompt.setText(IS_TOUCH ? 'РЫВОК — увернись' : 'Z — рывок, увернись');
+        this.prompt.setText(IS_TOUCH ? 'БЕГИ — увернись' : 'Z — рывок, увернись');
         this.spawnPile();
       });
     }
@@ -367,7 +366,7 @@ export class TutorialScene extends Phaser.Scene {
       this.clearBeat();
       this.setScene('night');
       this.narr.setText('ОТВЛЕКИСЬ — и отстанут');
-      this.prompt.setText(IS_TOUCH ? 'ИГРАЙ (держи) — отвлекись' : 'C (держи) — отвлекись');
+      this.prompt.setText(IS_TOUCH ? 'ОТВЛЕКИСЬ (держи) — отвлекись' : 'C (держи) — отвлекись');
       for (let i = 0; i < 3; i++) this.worries.push(this.add.image(this.player.x, this.player.y - 60, 'anxmob').setDepth(7).setScale(0.8));
       audio.anx();
     });
