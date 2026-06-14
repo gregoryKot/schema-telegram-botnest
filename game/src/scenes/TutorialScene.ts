@@ -26,6 +26,7 @@ export class TutorialScene extends Phaser.Scene {
   private step: Step = 'meet';
   private t = 0;
   private said = new Set<string>();
+  private narrContinue: (() => void) | null = null; // листать текст по тач-кнопке
 
   // walk
   private moved = 0; private jumped = false;
@@ -155,7 +156,9 @@ export class TutorialScene extends Phaser.Scene {
     this.tweens.add({ targets: this.dim, fillAlpha: 0.55, duration: 350 });
     this.tweens.add({ targets: this.contHint, alpha: 0.9, duration: 400, delay: 600 });
     const go = () => {
+      if (!this.paused) return;
       this.input.keyboard!.off('keydown', go);
+      this.narrContinue = null;
       this.paused = false;
       this.physics.resume();
       this.player.anims.resume();
@@ -170,6 +173,7 @@ export class TutorialScene extends Phaser.Scene {
       if (!this.paused) return;
       this.input.keyboard!.once('keydown', go);
       this.input.once('pointerdown', go);
+      this.narrContinue = go; // тап по тач-кнопке (HTML вне канваса) тоже листает
     });
   }
 
@@ -178,7 +182,15 @@ export class TutorialScene extends Phaser.Scene {
     // пустую строку не показываем — иначе подложка рисует пустую плашку
     this.narr.setVisible(this.narr.text.length > 0);
     this.prompt.setVisible(this.prompt.text.length > 0);
-    if (this.paused) { this.updateBubble(dt); return; }
+    if (this.paused) {
+      // Тач-кнопки — HTML вне канваса, их тап не доходит до Phaser-инпута. Без
+      // этого на экране-подсказке нажатие кнопки действия (напр. УСТУПИ) не
+      // листало текст — казалось, что кнопка «не работает».
+      if (this.narrContinue && (touch.consume('jump') || touch.consume('hit') || touch.consume('dash') || touch.consume('fawn')))
+        this.narrContinue();
+      this.updateBubble(dt);
+      return;
+    }
     this.updateMoves(dt);
     this.updateBubble(dt);
     switch (this.step) {
@@ -224,8 +236,9 @@ export class TutorialScene extends Phaser.Scene {
     } else if (this.frozen) {
       b.setVelocityX(0);
       this.player.setScale(1.5, 1.5);
-      // Мистер играет с клубком. Если спрайт клубка не доехал — просто стоим (idle),
-      // без переключения: .play() по отсутствующей анимации повесил бы игру.
+      // Мистер играет с клубком. Спрайт грузится в фоне — создаём анимацию при
+      // первом использовании. Если ещё не доехал — просто стоим (idle).
+      this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
       if (this.anims.exists('p-play')) {
         if (!this.playSprite.visible) { this.playSprite.setVisible(true).play('p-play'); this.player.setVisible(false); }
         this.playSprite.setPosition(this.player.x, this.player.y).setFlipX(this.player.flipX);
@@ -471,6 +484,7 @@ export class TutorialScene extends Phaser.Scene {
       this.prompt.setText(IS_TOUCH ? 'УСТУПИ — сдайся' : 'V — уступи, сдайся');
       this.neighbor = this.add.sprite(W - 90, GROUND_Y, 'nei_idle').setOrigin(0.5, 1).setScale(1.5)
         .setFlipX(true).setDepth(8);
+      this.safeAnim('nei-idle', 'nei_idle', 0, 3, 6, -1);
       if (this.anims.exists('nei-idle')) this.neighbor.play('nei-idle');
       this.neiBubble = this.add.text(0, 0, 'ты же не откажешь?', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
         backgroundColor: '#e8b8d0', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
@@ -490,7 +504,8 @@ export class TutorialScene extends Phaser.Scene {
     const n = this.neighbor; this.neighbor = null;
     this.neiBubble?.destroy();
     audio.freeze();
-    // свернулся калачиком — сдался (если спрайт «сна» не доехал — остаёмся стоять)
+    // свернулся калачиком — сдался (спрайт «сна» грузится в фоне; нет — стоим)
+    this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
     if (this.anims.exists('p-sleep')) {
       this.player.setVisible(false);
       this.sleepSprite.setVisible(true).setPosition(this.player.x, this.player.y).setFlipX(this.player.flipX).play('p-sleep');
