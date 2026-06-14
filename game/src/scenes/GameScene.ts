@@ -23,6 +23,11 @@ const DASH_CD   = 480;
 const ATTACK_MS = 170;
 const ATTACK_CD = 300;
 const ATTACK_RANGE = 72;
+// game feel
+const COYOTE_MS = 90;        // прыжок прощается N мс после схода с платформы
+const JUMP_BUFFER_MS = 130;  // прыжок, нажатый до приземления, срабатывает при касании
+const RISE_GRAVITY = -210;   // при удержании прыжка — легче (плавный взлёт)
+const FALL_GRAVITY = 520;    // при падении — тяжелее (быстрое, чёткое приземление)
 
 type AnxState = 'chase' | 'windup' | 'lunge' | 'calm';
 interface Anx {
@@ -68,6 +73,7 @@ export class GameScene extends Phaser.Scene {
   private attackHit = new Set<object>();
   private dashing = false; private dashT = 0; private dashCd = 0; private dashDir = 1;
   private frozen = false; private freezePulseT = 0;
+  private coyoteT = 0; private jumpBufferT = 0; private wasOnGround = true; private jumping = false;
   private slash!: Phaser.GameObjects.Graphics;
   private playSprite!: Phaser.GameObjects.Sprite;
   private sleepSprite!: Phaser.GameObjects.Sprite;
@@ -95,6 +101,7 @@ export class GameScene extends Phaser.Scene {
       anx: [], critic: null, homeMobs: [], speedMult: 1, trail: [], hearts: 3, invuln: 0, checkpointX: 100,
       dead: false, attacking: false, attackCd: 0, dashing: false, dashCd: 0,
       frozen: false, hitstop: 0, overwhelmed: false, wasFrozen: false,
+      coyoteT: 0, jumpBufferT: 0, wasOnGround: true, jumping: false,
     });
     this.said = new Set();
     this.attackHit = new Set();
@@ -526,6 +533,7 @@ export class GameScene extends Phaser.Scene {
     const right = this.cursors.right.isDown || this.keys.D.isDown || touch.right;
     const jump  = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.space)
                || Phaser.Input.Keyboard.JustDown(this.keys.W) || touch.consume('jump');
+    const jumpHeld = this.cursors.up.isDown || this.cursors.space.isDown || this.keys.W.isDown || touch.jumpHeld;
     const hit   = Phaser.Input.Keyboard.JustDown(this.keys.X) || touch.consume('hit');
     const dash  = Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('dash');
     const fawn  = Phaser.Input.Keyboard.JustDown(this.keys.V) || touch.consume('fawn');
@@ -547,11 +555,9 @@ export class GameScene extends Phaser.Scene {
     // ── ОТВЛЕКИСЬ: показываем спрайт «играет с клубком» ──
     if (this.frozen) {
       b.setVelocityX(0);
-      this.player.setScale(1.5, 1.5);
       this.showPlay();
     } else {
       this.hidePlay();
-      this.player.setScale(1.5, 1.5);
     }
 
     // ── РЫВОК (dash) — i-frames + afterimage ──
@@ -576,10 +582,30 @@ export class GameScene extends Phaser.Scene {
       else if (right) { b.setVelocityX(run); this.player.setFlipX(false); }
       else if (left)  { b.setVelocityX(-run); this.player.setFlipX(true); }
       else            { b.setVelocityX(b.velocity.x * 0.7); }
-      if (jump && onGround) { b.setVelocityY(PHYS.jumpVel); this.player.setScale(1.35, 1.7); audio.jump(); }
+
+      // ── ПРЫЖОК: coyote time + jump buffer + вариативная высота + дуга ──
+      if (onGround) { this.coyoteT = COYOTE_MS; if (!this.wasOnGround) this.onLand(); }
+      else this.coyoteT = Math.max(0, this.coyoteT - dt);
+      this.jumpBufferT = jump ? JUMP_BUFFER_MS : Math.max(0, this.jumpBufferT - dt);
+      if (this.jumpBufferT > 0 && this.coyoteT > 0) {
+        b.setVelocityY(PHYS.jumpVel); audio.jump();
+        this.player.setScale(1.3, 1.75); // вытягивается на отрыве, плавно к норме
+        this.tweens.add({ targets: this.player, scaleX: 1.5, scaleY: 1.5, duration: 220, ease: 'Quad.Out' });
+        this.jumping = true; this.coyoteT = 0; this.jumpBufferT = 0;
+      }
+      // отпустил на взлёте — короткий подскок
+      if (this.jumping && !jumpHeld && b.velocity.y < 0) { b.setVelocityY(b.velocity.y * 0.45); this.jumping = false; }
+      if (b.velocity.y >= 0) this.jumping = false;
+      // непараболическая дуга: вверх с удержанием — легче, вниз — тяжелее
+      if (!onGround) b.setGravityY(b.velocity.y < 0 && jumpHeld ? RISE_GRAVITY : FALL_GRAVITY);
+      else b.setGravityY(0);
+      this.wasOnGround = onGround;
+
       if (!onGround) { if (this.player.anims.currentAnim?.key !== 'p-jump') this.player.play('p-jump', true); }
       else if (Math.abs(b.velocity.x) > 20) this.player.play('p-walk', true);
       else this.player.play('p-idle', true);
+      // на земле в покое и без активного твина — вернуть базовый масштаб
+      if (onGround && !this.jumping && !this.tweens.isTweening(this.player)) this.player.setScale(1.5, 1.5);
     }
 
     // ── БЕЙ ──
@@ -824,6 +850,17 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: txt, alpha: 1, duration: 800 });
     this.cameras.main.fade(1800, 6, 4, 12);
     this.time.delayedCall(2400, () => this.scene.restart());
+  }
+
+  // приземление: облачко пыли + лёгкий squash — вес и тактильность
+  private onLand() {
+    this.player.setScale(1.7, 1.3);
+    this.tweens.add({ targets: this.player, scaleX: 1.5, scaleY: 1.5, duration: 110, ease: 'Quad.Out' });
+    for (let i = 0; i < 5; i++) {
+      const dx = (Math.random() - 0.5) * 28;
+      const p = this.add.rectangle(this.player.x + dx, this.player.y - 2, 3, 3, 0xc8bcd8, 0.7).setDepth(9);
+      this.tweens.add({ targets: p, x: p.x + dx * 1.5, y: p.y - Math.random() * 8, alpha: 0, duration: 280, onComplete: () => p.destroy() });
+    }
   }
 
   // ── Juice helpers ────────────────────────────────────────────────────────--

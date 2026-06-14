@@ -17,6 +17,7 @@ class TouchState {
   left = false;
   right = false;
   freeze = false;
+  jumpHeld = false; // удержание прыжка — для вариативной высоты
   private just: Record<JustAction, boolean> = { jump: false, hit: false, dash: false, fawn: false };
 
   press(a: JustAction) { this.just[a] = true; }
@@ -68,7 +69,7 @@ export function initTouchControls() {
   hold('tbtn-left',  () => { touch.left = true; },  () => { touch.left = false; });
   hold('tbtn-right', () => { touch.right = true; }, () => { touch.right = false; });
   hold('tbtn-freeze', () => { touch.freeze = true; }, () => { touch.freeze = false; });
-  tap('tbtn-jump', 'jump');
+  hold('tbtn-jump', () => { touch.press('jump'); touch.jumpHeld = true; }, () => { touch.jumpHeld = false; });
   tap('tbtn-hit', 'hit');
   tap('tbtn-dash', 'dash');
   tap('tbtn-fawn', 'fawn');
