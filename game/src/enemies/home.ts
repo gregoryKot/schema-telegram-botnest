@@ -143,8 +143,8 @@ export class Procrastination implements HomeMob {
     this.img.y = GROUND_Y - 20;
     this.ctx.burst(this.img.x, this.img.y, 0x6a7a4a, 8, 120);
     audio.split();
-    if (this.size <= 0.5) this.ctx.sayOnce('proc_off', 'движение! вот что его снимает.', 2600);
-    else this.ctx.sayOnce('proc_dash', 'рывок — и оно отлипло!', 2400);
+    if (this.size <= 0.5) this.ctx.sayOnce('proc_off', 'оторвался... пока опять не накатит.', 2600);
+    else this.ctx.sayOnce('proc_dash', 'рывок — и отлипло. на чуть-чуть.', 2400);
   }
 
   private die() {
@@ -246,7 +246,7 @@ export class PhoneMob implements HomeMob {
       this.ctx.burst(this.img.x, this.img.y, 0x9fd0ff, 12, 150);
       this.glow.clear(); this.glow.destroy();
       this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, angle: 70, y: GROUND_Y - 10, duration: 360, onComplete: () => this.img.destroy() });
-      this.ctx.sayOnce('phone_break', 'выключил. ...как тихо стало.', 2600);
+      this.ctx.sayOnce('phone_break', 'выключил... до следующего «дзынь».', 2600);
       return true;
     }
     return false;
@@ -326,7 +326,7 @@ export class Irritation implements HomeMob {
       if (this.lives <= 0) {
         this.alive = false;
         this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, scale: 0, duration: 220, onComplete: () => this.img.destroy() });
-        this.ctx.sayOnce('irrit_dead', 'фух... отпустило. наконец-то.', 2600);
+        this.ctx.sayOnce('irrit_dead', 'выдохся... отпустило. до следующего раза.', 2600);
       } else {
         this.size *= 0.78;
         this.state = 'gone'; this.t = 0;
