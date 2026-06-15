@@ -540,7 +540,8 @@ export class GameScene extends Phaser.Scene {
     const avoidPress = Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('avoid');
     const avoidHeld  = this.keys.Z.isDown || touch.avoidHeld;
     const dash = avoidPress;
-    this.frozen = avoidHeld && onGround && !this.dashing && !this.attacking;
+    // на кадре нажатия — это рывок, не залипание (иначе frozen гасит рывок)
+    this.frozen = avoidHeld && !avoidPress && onGround && !this.dashing && !this.attacking;
     if (fawn && !this.dead) this.doFawn();
     if (this.frozen && !this.wasFrozen) audio.freeze();
     this.wasFrozen = this.frozen;
