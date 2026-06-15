@@ -448,7 +448,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.flash(160, 80, 50, 110);
     this.burst(this.player.x, this.player.y - 24, 0xb08fd0, 12, 150);
     this.curlUp(); // свернулся калачиком, сдался — вздох
-    for (const m of this.anx) { if (m.alive) { m.vx = Math.sign(m.img.x - this.player.x) * 320; m.vy = -120; m.cd = 2600; } }
+    for (const m of this.anx) { if (m.alive) { m.vx = Math.sign(m.img.x - this.player.x) * 320; m.vy = -120; m.cd = 2600; m.calm += 1000; } }
     if (this.critic?.alive) {
       // уступка — единственное, что прогоняет тень… временно
       this.critic.struck = 8000;
@@ -671,7 +671,8 @@ export class GameScene extends Phaser.Scene {
     this.doHitstop(55); this.cameras.main.shake(70, 0.005); audio.hit();
     this.burst(m.img.x, m.img.y, 0xaa55cc, 8, 130);
     const aliveCount = this.anx.filter(a => a.alive).length;
-    if (aliveCount < 7) {
+    if (aliveCount < 7 && m.size > 0.6) {
+      // удар по тревоге — она делится (хуже). Ловушка.
       m.size = Math.max(0.6, m.size * 0.85); m.img.setScale(m.size);
       this.spawnAnx(m.img.x, m.size);
       const nb = this.anx[this.anx.length - 1]; nb.vx = -dir * 220; nb.vy = -110;
@@ -679,26 +680,22 @@ export class GameScene extends Phaser.Scene {
       audio.split();
       this.sayOnce('hit', 'бить бесполезно — их только больше!', 2600);
     } else {
-      this.sayOnce('hit_many', 'их уже толпа... может, хватит драться?', 2800);
+      // делиться больше некуда — измотал, оседает (но любой способ это лишь оттянет)
+      m.calm += 600;
+      this.sayOnce('hit_many', 'задолбал... оседает. но это ненадолго.', 2800);
     }
   }
 
-  // ── Self-critic: ЕГО — гнать. Рявкаешь — сжимается; бегаешь — растёт ───────
+  // ── Self-critic: его не победить. Рявкнул — притих на миг и вырос. Он же ты.
   private hitCritic() {
     const c = this.critic;
     if (!c) return;
     this.doHitstop(50); this.cameras.main.shake(90, 0.006); audio.hit();
-    c.size = c.size - 0.35;
     this.burst(c.img.x, c.img.y - 20, 0x6a2a8a, 8, 110);
-    if (c.size <= 0.6) {
-      c.alive = false;
-      this.tweens.add({ targets: c.img, alpha: 0, scaleX: 0.2, scaleY: 0.2, duration: 420, onComplete: () => c.img.destroy() });
-      this.say('ПОШЁЛ ВОН!! ...и он ушёл. надо же.', 3000);
-      this.critic = null;
-    } else {
-      c.img.setScale(1.5 * c.size);
-      this.sayOnce('critic_hit', 'вот так! рявкай — он сжимается!', 2600);
-    }
+    c.struck = 1600;                              // огрызнулся — притих на секунду
+    c.size = Math.min(2.4, c.size + 0.18);        // ...и в ответ стал больше
+    c.img.setScale(1.5 * c.size);
+    this.sayOnce('critic_hit', 'рявкнул — притих. и стал громче. с собой не поспоришь.', 3200);
   }
 
   private updateAnx(dt: number) {
@@ -707,10 +704,12 @@ export class GameScene extends Phaser.Scene {
       if (!m.alive) continue;
       m.jit += dt * 0.02; m.cd -= dt;
       const dist = Phaser.Math.Distance.Between(m.img.x, m.img.y, px, py);
-      if (this.frozen && dist < 240) {
-        m.calm += dt;
-        if (m.calm > 800 && m.state !== 'calm') { m.state = 'calm'; m.t = 0; this.sayOnce('freeze', 'замираю... и она отступает?', 2600); }
-      } else if (m.state !== 'calm') m.calm = Math.max(0, m.calm - dt * 0.5);
+      // любой копинг копит «передышку»: залипание рядом — быстрее всего,
+      // проскок рывком сквозь неё — чуть-чуть. Накопил — отступает (на время).
+      if (this.frozen && dist < 240) m.calm += dt;
+      else if (this.dashing && dist < 64) m.calm += dt * 2;
+      else if (m.state !== 'calm') m.calm = Math.max(0, m.calm - dt * 0.3);
+      if (m.calm > 800 && m.state !== 'calm') { m.state = 'calm'; m.t = 0; this.sayOnce('freeze', 'отступает... но она вернётся.', 2600); }
 
       switch (m.state) {
         case 'chase': {
@@ -781,7 +780,7 @@ export class GameScene extends Phaser.Scene {
     c.struck -= dt;
     if (dist < 34 && this.invuln <= 0 && c.struck <= 0) {
       c.struck = 1200; this.damage(c.img.x);
-      this.sayOnce('critic_catch', '«ты опять не справился» — РЯВКНИ на него (X)!', 3000);
+      this.sayOnce('critic_catch', '«ты опять не справился». чем ни ответь — он рядом.', 3000);
     }
   }
 
