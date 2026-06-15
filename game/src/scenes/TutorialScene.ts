@@ -216,7 +216,8 @@ export class TutorialScene extends Phaser.Scene {
     // ИЗБЕГАНИЕ — одна кнопка: тап = рывок, удержание = залипнуть
     const dash = Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('avoid');
     const avoidHeld = this.keys.Z.isDown || touch.avoidHeld;
-    this.frozen = avoidHeld && onGround && this.dashT <= 0;
+    // на кадре нажатия — это рывок, не залипание (иначе frozen гасит рывок)
+    this.frozen = avoidHeld && !dash && onGround && this.dashT <= 0;
     if (fawn) this.onFawn();
 
     if (this.dashCd > 0) this.dashCd -= dt;
