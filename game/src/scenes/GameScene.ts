@@ -415,6 +415,9 @@ export class GameScene extends Phaser.Scene {
   // Стоп-кадр посреди главы: пауза, затемнение, текст, продолжение по тапу
   private storyFrame(title: string, text: string) {
     this.hitstop = 9e9; // update() стоит, пока не отпустим
+    // update стоит, но физика Phaser — нет: тормозим игрока, иначе он улетает
+    const pb = this.player.body as Phaser.Physics.Arcade.Body;
+    pb.setVelocity(0, 0); pb.setAllowGravity(false); pb.moves = false;
     const deep = 130;
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0.78).setScrollFactor(0).setDepth(deep);
     const t1 = this.add.text(W / 2, 120, title, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '18px', color: '#ff8aa6', align: 'center' })
@@ -426,7 +429,7 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
     this.tweens.add({ targets: hint, alpha: 0.9, duration: 400, delay: 800 });
     this.time.delayedCall(700, () => {
-      const go = () => { this.hitstop = 0; [dim, t1, t2, hint].forEach(o => o.destroy()); };
+      const go = () => { this.hitstop = 0; pb.setAllowGravity(true); pb.moves = true; [dim, t1, t2, hint].forEach(o => o.destroy()); };
       this.input.keyboard!.once('keydown', go);
       this.input.once('pointerdown', go);
     });
@@ -611,9 +614,10 @@ export class GameScene extends Phaser.Scene {
       if (onGround && !this.jumping && !this.tweens.isTweening(this.player)) this.player.setScale(1.5, 1.5);
     }
 
-    // ── БЕЙ ──
+    // ── БЕЙ ── (короткие i-кадры на замах — копинг сохраняет в моменте)
     if (hit && this.attackCd <= 0 && !this.frozen && !this.dashing) {
       this.attacking = true; this.attackT = ATTACK_MS; this.attackCd = ATTACK_CD; this.attackHit.clear();
+      this.invuln = Math.max(this.invuln, ATTACK_MS);
     }
 
     this.player.setAlpha(this.invuln > 0 && !this.dashing ? (Math.sin(this.invuln * 0.05) * 0.5 + 0.5) : 1);
@@ -835,6 +839,8 @@ export class GameScene extends Phaser.Scene {
 
   // ── Damage / lives ─────────────────────────────────────────────────────────
   private damage(fromX: number) {
+    // копинг «сохраняет в моменте»: пока залип (зона) — урон не проходит
+    if (this.frozen) { this.sayOnce('frz_safe', 'пока залип — не достают. но и не уйду.', 2600); return; }
     this.hidePlay();
     this.invuln = 1100; this.hearts -= 1; this.updateHearts();
     this.doHitstop(70); this.cameras.main.shake(220, 0.014); this.cameras.main.flash(140, 120, 20, 40); audio.hurt();
