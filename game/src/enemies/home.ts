@@ -3,13 +3,15 @@ import { GROUND_Y, S } from '../constants';
 import { audio } from '../audio';
 
 // ════════════════════════════════════════════════════════════════════════════
-//  Глава 2 «Дома» — враги. Каждый — головоломка на читаемость:
-//  · Прокрастинация — липнет и замедляет. Бить бесполезно, ЗАМРИ = ловушка
-//    (растёт и бьёт). Снимается только рывком — движение лечит.
-//  · Телефон — зона «уюта» затягивает и съедает время (сердце). Замер в зоне —
-//    утекает быстрее. Здесь БЕЙ — верный ответ: выключить требует усилия.
-//  · Раздражение — быстрое, жжёт при касании, замирание не спасает. Лопается
-//    от удара, но возвращается меньше; либо переждать паузу «выдохся» и уйти.
+//  Глава 2 «Дома». Единый закон (как в гл.1): любой копинг копит «передышку»
+//  (relief) → на максимуме враг ОТСТУПАЕТ (не убит, вернётся позже). Разница
+//  только в текстуре — у каждого свой лучший копинг и свой копинг-ловушка:
+//  · Прокрастинация — липнет, замедляет. Рывок снимает быстро; удар — слабо;
+//    ЗАЛИПАНИЕ = ловушка (вязнешь глубже, передышка тает).
+//  · Телефон — зона «уюта» тянет и съедает время. Удар (выключить) — быстро;
+//    рывок из зоны — средне; ЗАЛИПНУТЬ в зоне = ловушка (доскролл).
+//  · Раздражение — вспышка, жжёт. Удар (выпустить пар) — но вспыхивает обратно;
+//    рывок прочь и игнор тоже остужают. Возвращается всегда.
 // ════════════════════════════════════════════════════════════════════════════
 
 export interface MobCtx {
@@ -79,6 +81,7 @@ export class Procrastination implements HomeMob {
   private wob = Math.random() * 6;
   private homeX: number;
   private seatY: number;
+  private relief = 0; // любой копинг копит передышку; ловушка — залипание
 
   constructor(private ctx: MobCtx, x: number, seatY = GROUND_Y - 20) {
     this.homeX = x; this.seatY = seatY;
@@ -113,42 +116,41 @@ export class Procrastination implements HomeMob {
         this.ctx.slow(this.size > 1.5 ? 0.35 : 0.5);
         this.size = Math.min(2.0, this.size + dt * 0.00006); // тяжелеет со временем
         if (this.ctx.frozen()) {
+          // ЗАЛИПАНИЕ — ловушка: вязнешь глубже, передышка тает
           this.frozenT += dt;
-          this.size = Math.min(2.0, this.size + dt * 0.0004); // замер — растёт быстро
-          if (this.frozenT > 1100) {
-            this.frozenT = 0;
-            this.ctx.damage(this.img.x);
-            this.ctx.sayOnce('proc_freeze', 'замер — и залип ещё глубже!', 2800);
-          }
+          this.size = Math.min(2.0, this.size + dt * 0.0004);
+          this.relief = Math.max(0, this.relief - dt * 0.0004);
+          if (this.frozenT > 1100) { this.frozenT = 0; this.ctx.sayOnce('proc_freeze', 'залип ещё глубже — вот что её кормит.', 2800); }
         } else this.frozenT = 0;
-        if (this.ctx.dashing()) this.shakeOff(p);
+        if (this.ctx.dashing()) this.shakeOff(p);  // рывок — лучший копинг
         break;
       }
       case 'stunned': {
         this.t -= dt;
         this.img.setAlpha(0.55).setScale(this.size * 1.1, this.size * 0.7);
-        if (this.t <= 0) {
-          if (this.size <= 0.5) this.die();
-          else { this.state = 'idle'; this.img.setAlpha(1); this.img.y = GROUND_Y - 20; }
-        }
+        // не добита — отлежится и снова налипнет (возвращается)
+        if (this.t <= 0) { this.state = 'idle'; this.img.setAlpha(1); this.img.y = GROUND_Y - 20; }
         break;
       }
     }
   }
 
   private shakeOff(p: Phaser.Physics.Arcade.Sprite) {
-    this.state = 'stunned'; this.t = 1500;
-    this.size *= 0.62;
+    this.state = 'stunned'; this.t = 900;
+    this.size = Math.max(0.5, this.size * 0.7);
+    this.relief += 0.4;                                   // рывок — крупная передышка
     this.img.x = p.x - (p.flipX ? -1 : 1) * 70;
     this.img.y = GROUND_Y - 20;
     this.ctx.burst(this.img.x, this.img.y, 0x6a7a4a, 8, 120);
     audio.split();
-    if (this.size <= 0.5) this.ctx.sayOnce('proc_off', 'оторвался... пока опять не накатит.', 2600);
+    if (this.relief >= 1) this.standDown('оторвался. но лень ещё вернётся.');
     else this.ctx.sayOnce('proc_dash', 'рывок — и отлипло. на чуть-чуть.', 2400);
   }
 
-  private die() {
+  // отступает «на время» — не убита; гейт откроется, но она вернётся позже
+  private standDown(line: string) {
     this.alive = false;
+    this.ctx.sayOnce('proc_off', line, 2600);
     this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, scale: 0, duration: 320, onComplete: () => this.img.destroy() });
   }
 
@@ -156,15 +158,17 @@ export class Procrastination implements HomeMob {
     if (!this.alive) return false;
     const p = this.ctx.player();
     if (this.state === 'latched') {
-      this.ctx.sayOnce('proc_hit', 'оно на мне — себя же не ударишь.', 2600);
+      // бить по налипшему — слабая, но передышка (себя же лупишь)
+      this.relief += 0.12;
+      if (this.relief >= 1) this.standDown('оторвался. но лень ещё вернётся.');
+      else this.ctx.sayOnce('proc_hit', 'лупишь по ней — чуть отпускает. себя же бьёшь.', 2600);
       return true;
     }
     const dx = this.img.x - p.x;
     if (dx * dir > -12 && Math.abs(dx) < range && Math.abs(this.img.y - (p.y - 20)) < 56) {
-      // мягкое: удар проваливается, только колышется
       this.img.x += dir * 16;
       this.ctx.burst(this.img.x, this.img.y, 0x4a5a3a, 4, 60);
-      this.ctx.sayOnce('proc_soft', 'мягкое... бить бесполезно.', 2400);
+      this.ctx.sayOnce('proc_soft', 'мягкая... удар вязнет. лучше движение.', 2400);
       return true;
     }
     return false;
@@ -181,6 +185,7 @@ export class PhoneMob implements HomeMob {
   private drain = 0;
   private bob = Math.random() * 6;
   private ping = 0;
+  private relief = 0; // удар выключает быстро, рывок из зоны — средне; ловушка — залипнуть в зоне
 
   constructor(private ctx: MobCtx, private x: number) {
     // столик — телефон лежит «дома», а не висит в воздухе
@@ -213,13 +218,17 @@ export class PhoneMob implements HomeMob {
       const b = p.body as Phaser.Physics.Arcade.Body;
       b.velocity.x += Math.sign(this.img.x - p.x) * dt * 0.45;
       this.drain += dt * (this.ctx.frozen() ? 3 : 1); // залип = время летит втрое
+      this.relief = Math.max(0, this.relief - dt * 0.0003); // в зоне передышка тает — ловушка
       this.ctx.sayOnce('phone_zone', 'одну минутку, только гляну...', 2400);
       if (this.drain > 2300) {
         this.drain = 0;
         this.ctx.damage(this.img.x);
         this.ctx.sayOnce('phone_drain', '...два часа?! куда они делись?', 2800);
       }
-    } else this.drain = Math.max(0, this.drain - dt * 1.5);
+    } else {
+      this.drain = Math.max(0, this.drain - dt * 1.5);
+      if (this.ctx.dashing() && d < PHONE_R + 60) this.relief += dt * 0.0014; // вырвался рывком — передышка
+    }
   }
 
   // «уведомления» летят к котику — телефон сам зовёт в зону
@@ -241,12 +250,18 @@ export class PhoneMob implements HomeMob {
     const p = this.ctx.player();
     const dx = this.img.x - p.x;
     if (dx * dir > -12 && Math.abs(dx) < range && Math.abs(this.img.y - (p.y - 20)) < 110) {
-      this.alive = false;
       this.ctx.hitstop(60); audio.hit();
-      this.ctx.burst(this.img.x, this.img.y, 0x9fd0ff, 12, 150);
-      this.glow.clear(); this.glow.destroy();
-      this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, angle: 70, y: GROUND_Y - 10, duration: 360, onComplete: () => this.img.destroy() });
-      this.ctx.sayOnce('phone_break', 'выключил... до следующего «дзынь».', 2600);
+      this.ctx.burst(this.img.x, this.img.y, 0x9fd0ff, 8, 130);
+      this.relief += 0.55;                                  // удар — выключить, крупная передышка
+      if (this.relief >= 1) {
+        this.alive = false;
+        this.glow.clear(); this.glow.destroy();
+        this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, angle: 70, y: GROUND_Y - 10, duration: 360, onComplete: () => this.img.destroy() });
+        this.ctx.sayOnce('phone_break', 'выключил... до следующего «дзынь».', 2600);
+      } else {
+        this.img.setAngle(40); this.ctx.scene.tweens.add({ targets: this.img, angle: 0, duration: 250 });
+        this.ctx.sayOnce('phone_hit', 'погас... и снова загорелся. рука сама тянется.', 2600);
+      }
       return true;
     }
     return false;
@@ -258,7 +273,7 @@ export class Irritation implements HomeMob {
   alive = true;
   private img: Phaser.GameObjects.Image;
   private state: 'chase' | 'tired' | 'gone' = 'chase';
-  private lives = 3;
+  private relief = 0; // удар выпускает пар (но вспыхивает), рывок прочь и игнор — тоже передышка
   private size = 1;
   private t = 0;
   private cd = 0;
@@ -274,6 +289,13 @@ export class Irritation implements HomeMob {
     const p = this.ctx.player();
     const px = p.x, py = p.y - 24;
     this.jit += dt * 0.03; this.cd -= dt; this.t += dt;
+    // рывок прочь или игнор (залипание) рядом — тоже остужают (медленнее удара)
+    const near = Phaser.Math.Distance.Between(this.img.x, this.img.y, px, py) < 220;
+    if (this.state !== 'gone' && near) {
+      if (this.ctx.dashing()) this.relief += dt * 0.0010;
+      else if (this.ctx.frozen()) this.relief += dt * 0.0008;
+    }
+    if (this.relief >= 1 && this.state !== 'gone') this.standDown();
     switch (this.state) {
       case 'chase': {
         this.vx += Math.sign(px - this.img.x) * 22;
@@ -315,6 +337,13 @@ export class Irritation implements HomeMob {
     this.img.y = Math.min(this.img.y, GROUND_Y - 18);
   }
 
+  // выдохся «на время» — не убит, вернётся позже (общий закон главы)
+  private standDown() {
+    this.alive = false;
+    this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, scale: 0, duration: 260, onComplete: () => this.img.destroy() });
+    this.ctx.sayOnce('irrit_dead', 'выдохся... отпустило. до следующего раза.', 2600);
+  }
+
   tryHit(dir: number, range: number): boolean {
     if (!this.alive || this.state === 'gone') return false;
     const p = this.ctx.player();
@@ -322,16 +351,14 @@ export class Irritation implements HomeMob {
     if (dx * dir > -12 && Math.abs(dx) < range && Math.abs(this.img.y - (p.y - 22)) < 54) {
       this.ctx.hitstop(55); audio.hit();
       this.ctx.burst(this.img.x, this.img.y, 0xff7733, 10, 140);
-      this.lives -= 1;
-      if (this.lives <= 0) {
-        this.alive = false;
-        this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, scale: 0, duration: 220, onComplete: () => this.img.destroy() });
-        this.ctx.sayOnce('irrit_dead', 'выдохся... отпустило. до следующего раза.', 2600);
-      } else {
-        this.size *= 0.78;
+      this.relief += 0.34;                                  // выпустил пар — передышка
+      if (this.relief >= 1) { this.standDown(); }
+      else {
+        // вспыхивает обратно (возвращается) — текстура злости
+        this.size = Math.max(0.6, this.size * 0.82);
         this.state = 'gone'; this.t = 0;
         this.img.setVisible(false);
-        this.ctx.sayOnce('irrit_pop', 'выпустил пар! ...надолго ли?', 2400);
+        this.ctx.sayOnce('irrit_pop', 'выпустил пар! ...а оно снова вскипает.', 2400);
       }
       return true;
     }
