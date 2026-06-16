@@ -406,10 +406,10 @@ export class GameScene extends Phaser.Scene {
     this.critic = { img, size: 1, struck: 0, alive: true };
     // важный новый враг — представляем стоп-кадром, иначе «просто какой-то кот»
     this.storyFrame('ВНУТРЕННИЙ КРИТИК',
-      'тень Мистера. ходит следом и зудит под лапу.\n\n' +
-      'единственный, кого НАДО гнать: рявкай (X)!\n' +
-      'убегать — догонит и вырастет.\n' +
-      'отвлечёшься на клубок — сожрёт с потрохами.');
+      'тень Мистера. ходит следом, не отстаёт.\n\n' +
+      'рявкнешь (X) — притихнет на миг и станет громче.\n' +
+      'убегаешь — растёт за спиной.\n' +
+      'это ты сам. от себя не отмахнуться.');
   }
 
   // Стоп-кадр посреди главы: пауза, затемнение, текст, продолжение по тапу
@@ -617,7 +617,7 @@ export class GameScene extends Phaser.Scene {
     // ── БЕЙ ── (короткие i-кадры на замах — копинг сохраняет в моменте)
     if (hit && this.attackCd <= 0 && !this.frozen && !this.dashing) {
       this.attacking = true; this.attackT = ATTACK_MS; this.attackCd = ATTACK_CD; this.attackHit.clear();
-      this.invuln = Math.max(this.invuln, ATTACK_MS);
+      this.invuln = Math.max(this.invuln, ATTACK_CD + 40); // копинг сохраняет в моменте — пробить нельзя
     }
 
     this.player.setAlpha(this.invuln > 0 && !this.dashing ? (Math.sin(this.invuln * 0.05) * 0.5 + 0.5) : 1);
