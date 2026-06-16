@@ -821,20 +821,47 @@ export class GameScene extends Phaser.Scene {
     for (const l of this.chapter.ending) line(l.text, l.y, l.color, l.size, l.delay);
     this.time.delayedCall(10600, () => audio.toll());
 
-    // not a soft-lock: let the player restart after it settles
+    // not a soft-lock: let the player continue after it settles
     this.time.delayedCall(14000, () => {
       const next = this.chapter.next;
-      const act = IS_TOUCH ? 'тапни' : 'нажми любую клавишу';
-      const label = next && CHAPTERS[next]
-        ? `дальше — «${CHAPTERS[next].title}». ${act}`
-        : `продолжение следует... ${act} — в меню`;
-      const hint = this.add.text(W / 2, H - 28, label, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#5a4f7a' })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0);
-      this.tweens.add({ targets: hint, alpha: 0.8, duration: 800 });
-      const go = () => next && CHAPTERS[next] ? this.scene.restart({ chapter: next }) : this.scene.start('Start');
-      this.input.keyboard!.once('keydown', go);
-      this.input.once('pointerdown', go);
+      if (next && CHAPTERS[next]) {
+        const act = IS_TOUCH ? 'тапни' : 'нажми любую клавишу';
+        const hint = this.add.text(W / 2, H - 28, `дальше — «${CHAPTERS[next].title}». ${act}`,
+          { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#5a4f7a' })
+          .setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0);
+        this.tweens.add({ targets: hint, alpha: 0.8, duration: 800 });
+        const go = () => this.scene.restart({ chapter: next });
+        this.input.keyboard!.once('keydown', go);
+        this.input.once('pointerdown', go);
+      } else {
+        this.showCta();
+      }
     });
+  }
+
+  // Мост в реальную терапию — мягкий CTA в конце демо (воронка schemalab)
+  private showCta() {
+    track('demo_end', { chapter: this.chapter.id });
+    const ky = H / 540, font = '"Press Start 2P", "Courier New", monospace';
+    const top = this.add.text(W / 2, 300 * ky, 'дальше — терапия.\nеё не проходят в одиночку.',
+      { fontFamily: font, fontSize: '13px', color: '#a8e8d0', align: 'center', lineSpacing: 10 })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(152).setAlpha(0);
+    const ctaTxt = this.add.text(W / 2, 382 * ky, 'узнать про схема-терапию →',
+      { fontFamily: font, fontSize: '12px', color: '#88ffcc' })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(153).setAlpha(0);
+    const cta = this.add.rectangle(W / 2, 382 * ky, ctaTxt.width + 36, 40, 0x153028)
+      .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(152).setAlpha(0)
+      .setInteractive({ useHandCursor: true });
+    const menu = this.add.text(W / 2, 436 * ky, 'или — в меню',
+      { fontFamily: font, fontSize: '9px', color: '#5a4f7a' })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
+    this.tweens.add({ targets: top, alpha: 1, duration: 900 });
+    this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 800, delay: 400 });
+    this.tweens.add({ targets: menu, alpha: 0.7, duration: 800, delay: 1400 });
+    cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
+    cta.on('pointerout', () => cta.setFillStyle(0x153028));
+    cta.on('pointerdown', () => { track('cta_click'); window.open('https://schemalab.ru', '_blank'); });
+    menu.on('pointerdown', () => this.scene.start('Start'));
   }
 
   // ── Damage / lives ─────────────────────────────────────────────────────────
