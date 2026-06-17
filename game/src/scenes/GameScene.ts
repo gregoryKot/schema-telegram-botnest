@@ -878,6 +878,11 @@ export class GameScene extends Phaser.Scene {
     if (this.chapter.id === 'chapter2') return 'это — Отстранённый Защитник.\nуводил в телефон, лишь бы не чувствовать.\n\n';
     return '';
   }
+  private modeShort(): string {
+    if (this.chapter.id === 'chapter1') return 'Карающий Родитель';
+    if (this.chapter.id === 'chapter2') return 'Отстранённый Защитник';
+    return 'Тревога';
+  }
 
   // ── КОНТАКТ-проблеск: впервые не бей/беги/уступи, а останься рядом ──────────
   private contactGlimpse(onDone: () => void) {
@@ -925,28 +930,46 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  // Мост в реальную терапию — мягкий CTA в конце демо (воронка schemalab)
+  // Мост в реальную терапию — карточка-результат + воронка + виральность
   private showCta() {
     track('demo_end', { chapter: this.chapter.id });
     const ky = H / 540, font = '"Press Start 2P", "Courier New", monospace';
-    const top = this.add.text(W / 2, 300 * ky, 'дальше — терапия.\nеё не проходят в одиночку.',
-      { fontFamily: font, fontSize: '13px', color: '#a8e8d0', align: 'center', lineSpacing: 10 })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(152).setAlpha(0);
-    const ctaTxt = this.add.text(W / 2, 382 * ky, 'узнать про схема-терапию →',
-      { fontFamily: font, fontSize: '12px', color: '#88ffcc' })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(153).setAlpha(0);
-    const cta = this.add.rectangle(W / 2, 382 * ky, ctaTxt.width + 36, 40, 0x153028)
-      .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(152).setAlpha(0)
-      .setInteractive({ useHandCursor: true });
-    const menu = this.add.text(W / 2, 436 * ky, 'или — в меню',
-      { fontFamily: font, fontSize: '9px', color: '#5a4f7a' })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    this.tweens.add({ targets: top, alpha: 1, duration: 900 });
-    this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 800, delay: 400 });
-    this.tweens.add({ targets: menu, alpha: 0.7, duration: 800, delay: 1400 });
+    const mk = (y: number, text: string, size: number, color: string, depth = 153) =>
+      this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
+        .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
+
+    // Карточка-результат: «твой главный враг» = режим (виральный крючок, п.7)
+    const top  = mk(196, '🐈‍⬛  ты прошёл сквозь свою голову.', 12, '#d8c8ec');
+    const lbl  = mk(244, 'твой главный враг —', 10, '#9a8fb8');
+    const mode = mk(282, this.modeShort(), 16, '#ff8aa6');
+    const sub  = mk(336, 'его не одолеть в одиночку.\nно рядом — можно. дальше — терапия.', 11, '#a8e8d0');
+
+    const ctaTxt = mk(404, 'узнать про схема-терапию →', 11, '#88ffcc', 154);
+    const cta = this.add.rectangle(W / 2, 404 * ky, ctaTxt.width + 34, 38, 0x153028)
+      .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
+    const shareTxt = mk(452, 'поделиться →', 10, '#c0b8e8', 154);
+    const share = this.add.rectangle(W / 2, 452 * ky, shareTxt.width + 30, 34, 0x241d3a)
+      .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
+    const menu = mk(498, 'или — в меню', 9, '#5a4f7a', 154).setInteractive({ useHandCursor: true });
+
+    this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
+    this.tweens.add({ targets: [lbl, mode], alpha: 1, duration: 700, delay: 500 });
+    this.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 1100 });
+    this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 1600 });
+    this.tweens.add({ targets: [shareTxt, share], alpha: 1, duration: 700, delay: 2000 });
+    this.tweens.add({ targets: menu, alpha: 0.7, duration: 700, delay: 2400 });
+
     cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
     cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => { track('cta_click'); window.open('https://schemalab.ru', '_blank'); });
+    cta.on('pointerdown', () => { track('cta_click'); window.open('https://schemalab.ru/?from=game', '_blank'); });
+    share.on('pointerover', () => share.setFillStyle(0x322a52));
+    share.on('pointerout', () => share.setFillStyle(0x241d3a));
+    share.on('pointerdown', () => {
+      track('cta_share');
+      const url = 'https://schemalab.ru/game/';
+      const text = `Прошёл сквозь собственную голову в этой игре. Мой главный враг — ${this.modeShort()}. А твой?`;
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+    });
     menu.on('pointerdown', () => this.scene.start('Start'));
   }
 
