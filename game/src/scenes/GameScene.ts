@@ -855,7 +855,7 @@ export class GameScene extends Phaser.Scene {
 
     // Дверь, а не тупик: после безнадёжности — проблеск четвёртого хода.
     // Игрок ЖМЁТ контакт и чувствует «рядом, а не сверху» → надежда-с-направлением.
-    this.time.delayedCall(13000, () => this.contactGlimpse(() => {
+    this.time.delayedCall(13500, () => this.contactGlimpse(() => {
       const next = this.chapter.next;
       if (next && CHAPTERS[next]) {
         const act = IS_TOUCH ? 'тапни' : 'нажми любую клавишу';
@@ -967,11 +967,18 @@ export class GameScene extends Phaser.Scene {
   private gameOver() {
     this.dead = true;
     track('game_over', { chapter: this.chapter.id });
+    audio.stopMusic();
     const txt = this.add.text(W/2, H/2, 'так больше нельзя...', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
     this.tweens.add({ targets: txt, alpha: 1, duration: 800 });
-    this.cameras.main.fade(1800, 6, 4, 12);
-    this.time.delayedCall(2400, () => this.scene.restart());
+    this.cameras.main.fade(1400, 6, 4, 12);
+    // «дно» — момент, когда дверь нужнее всего: даём контакт, не просто рестарт
+    this.time.delayedCall(2200, () => {
+      this.cameras.main.resetFX();
+      this.add.rectangle(W / 2, H / 2, W, H, 0x06040e).setScrollFactor(0).setDepth(150);
+      txt.destroy();
+      this.contactGlimpse(() => this.scene.restart());
+    });
   }
 
   // приземление: облачко пыли + лёгкий squash — вес и тактильность
