@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from './audio';
+import { getAssist, setAssist } from './assist';
 
 interface LevelEntry { scene: string; chapter?: string; label: string; enabled: boolean; }
 
@@ -22,6 +23,8 @@ export function setupMenu(game: Phaser.Game) {
   const sfxBtn   = document.getElementById('menu-sfx')!;
   const closeBtn = document.getElementById('menu-close')!;
   const levelsEl = document.getElementById('menu-levels')!;
+  const livesBtn = document.getElementById('menu-lives')!;
+  const invulnBtn = document.getElementById('menu-invuln')!;
 
   let pausedKeys: string[] = [];
 
@@ -29,6 +32,9 @@ export function setupMenu(game: Phaser.Game) {
     const m = audio.isMusicEnabled(), s = audio.isSfxEnabled();
     musicBtn.textContent = m ? 'ВКЛ' : 'ВЫКЛ'; musicBtn.classList.toggle('off', !m);
     sfxBtn.textContent   = s ? 'ВКЛ' : 'ВЫКЛ'; sfxBtn.classList.toggle('off', !s);
+    const a = getAssist();
+    livesBtn.textContent  = a.extraLives ? 'ВКЛ' : 'ВЫКЛ'; livesBtn.classList.toggle('off', !a.extraLives);
+    invulnBtn.textContent = a.invuln ? 'ВКЛ' : 'ВЫКЛ'; invulnBtn.classList.toggle('off', !a.invuln);
   };
 
   const open = () => {
@@ -64,6 +70,8 @@ export function setupMenu(game: Phaser.Game) {
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   musicBtn.addEventListener('click', () => { audio.setMusicEnabled(!audio.isMusicEnabled()); syncToggles(); });
   sfxBtn.addEventListener('click',   () => { audio.setSfxEnabled(!audio.isSfxEnabled()); syncToggles(); });
+  livesBtn.addEventListener('click',  () => { setAssist('lives', !getAssist().extraLives); syncToggles(); });
+  invulnBtn.addEventListener('click', () => { setAssist('invuln', !getAssist().invuln); syncToggles(); });
 
   for (const lv of LEVELS) {
     const b = document.createElement('button');

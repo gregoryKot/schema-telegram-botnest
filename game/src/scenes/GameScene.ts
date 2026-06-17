@@ -7,6 +7,7 @@ import { buildDecor } from '../decor';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { makeCommonTextures } from '../textures';
 import { unlockChapter } from '../progress';
+import { getAssist } from '../assist';
 import { track } from '../analytics';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -81,6 +82,9 @@ export class GameScene extends Phaser.Scene {
   private playerLight!: Phaser.GameObjects.Graphics;
 
   private hitstop = 0;
+  private exhaustion = 0;                          // спираль: копинг + время → мир враждебнее
+  private exhaustOverlay!: Phaser.GameObjects.Graphics;
+  private assistInvuln = false;                    // ассист-режим: «не умирать»
   private overwhelmed = false;
   private triggers: { x: number; done: boolean; fn: () => void }[] = [];
   private wasFrozen = false;
@@ -100,7 +104,7 @@ export class GameScene extends Phaser.Scene {
     Object.assign(this, {
       anx: [], critic: null, homeMobs: [], speedMult: 1, trail: [], hearts: 3, invuln: 0, checkpointX: 100,
       dead: false, attacking: false, attackCd: 0, dashing: false, dashCd: 0,
-      frozen: false, hitstop: 0, overwhelmed: false, wasFrozen: false,
+      frozen: false, hitstop: 0, exhaustion: 0, overwhelmed: false, wasFrozen: false,
       coyoteT: 0, jumpBufferT: 0, wasOnGround: true, jumping: false,
     });
     this.said = new Set();
@@ -109,6 +113,7 @@ export class GameScene extends Phaser.Scene {
     this.floorColliders = []; this.platColliders = []; this.spikeRects = []; this.heartPickups = [];
 
     this.buildBackground();
+    this.exhaustOverlay = this.add.graphics().setScrollFactor(0).setDepth(59); // виньетка истощения
     buildDecor(this, this.chapter);
     this.buildGround();
     this.buildPlatforms();
@@ -120,6 +125,11 @@ export class GameScene extends Phaser.Scene {
     this.buildHUD();
     this.setupInput();
     this.setupTriggers();
+
+    // Ассист-режим (этика для ЦА в дистрессе): больше жизней / бессмертие
+    const assist = getAssist();
+    if (assist.extraLives) { this.hearts = this.MAX_HEARTS; this.updateHearts(); }
+    this.assistInvuln = assist.invuln;
 
     this.cameras.main.setBounds(0, 0, ARENA_W, H);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
@@ -395,8 +405,9 @@ export class GameScene extends Phaser.Scene {
 
   // ── Spawns ───────────────────────────────────────────────────────────────--
   private spawnAnx(x: number, size: number) {
-    const img = this.add.image(x, GROUND_Y - 44, 'anxmob').setDepth(6).setScale(size);
-    this.anx.push({ img, state: 'chase', t: 0, size, vx: 0, vy: 0, jit: Math.random()*6, calm: 0, cd: 0, alive: true });
+    const s2 = size * (1 + this.exhaustion * 0.6); // спираль: чем выжатее — тем крупнее возвращается
+    const img = this.add.image(x, GROUND_Y - 44, 'anxmob').setDepth(6).setScale(s2);
+    this.anx.push({ img, state: 'chase', t: 0, size: s2, vx: 0, vy: 0, jit: Math.random()*6, calm: 0, cd: 0, alive: true });
   }
   private spawnCritic() {
     if (this.critic) return;
@@ -496,8 +507,29 @@ export class GameScene extends Phaser.Scene {
     this.updateGates(dt);
     this.updateHazards();
     this.updateBubble(dt);
+    this.updateSpiral(dt);
     if (this.invuln > 0) this.invuln -= dt;
     if (this.player.y > H + 70) this.fallRespawn();
+  }
+
+  // ── СПИРАЛЬ (не цикл): копинг и время копят истощение → мир враждебнее ──────
+  private updateSpiral(dt: number) {
+    const coping = this.frozen || this.dashing || this.attacking;
+    this.exhaustion = Math.min(1, this.exhaustion + dt * (coping ? 0.00011 : 0.000022));
+    audio.setDetune(1 - this.exhaustion * 0.06); // музыка чуть ниже = «расстроеннее»
+    // виньетка темнеет к краям
+    const g = this.exhaustOverlay; g.clear();
+    const a = this.exhaustion;
+    if (a > 0.02) {
+      const band = 24 + 70 * a, t = 0.5 * a;
+      g.fillStyle(0x080510, t);
+      g.fillRect(0, 0, W, band); g.fillRect(0, H - band, W, band);
+      g.fillRect(0, 0, band * 0.7, H); g.fillRect(W - band * 0.7, 0, band * 0.7, H);
+    }
+    // состояние пальцами: рядом угрозы — экран подрагивает (п.4)
+    let threats = this.anx.filter(a2 => a2.alive && Phaser.Math.Distance.Between(a2.img.x, a2.img.y, this.player.x, this.player.y) < 150).length;
+    if (this.critic?.alive && Phaser.Math.Distance.Between(this.critic.img.x, this.critic.img.y, this.player.x, this.player.y) < 150) threats++;
+    if (threats > 0 && !this.dashing) this.cameras.main.shake(50, 0.0012 * Math.min(threats, 3), false);
   }
 
   private updateHazards() {
@@ -840,6 +872,13 @@ export class GameScene extends Phaser.Scene {
     }));
   }
 
+  // Враг = режим схема-терапии — называем в момент узнавания (без лекции)
+  private modeName(): string {
+    if (this.chapter.id === 'chapter1') return 'это — Карающий Родитель.\nчужой голос, что тебя стыдил.\n\n';
+    if (this.chapter.id === 'chapter2') return 'это — Отстранённый Защитник.\nуводил в телефон, лишь бы не чувствовать.\n\n';
+    return '';
+  }
+
   // ── КОНТАКТ-проблеск: впервые не бей/беги/уступи, а останься рядом ──────────
   private contactGlimpse(onDone: () => void) {
     const cx = W / 2, cy = H / 2, font = '"Press Start 2P", "Courier New", monospace';
@@ -871,9 +910,9 @@ export class GameScene extends Phaser.Scene {
       // тень не исчезает — становится маленькой и садится рядом, а не сверху
       this.tweens.add({ targets: shadow, scale: 1, x: cx + 70, y: cy + 50, duration: 900, ease: 'Quad.Out' });
       this.tweens.add({ targets: warm, alpha: 1.6, duration: 900, yoyo: true });
-      ask.setText(last
-        ? 'оно не исчезло. но впервые — рядом, а не сверху.\nне один. вот это и есть терапия.'
-        : 'на миг — рядом, а не сверху. будто можно иначе.\n...но этому ещё надо научиться.');
+      ask.setText(this.modeName() + (last
+        ? 'оно не исчезло — но впервые рядом, а не сверху.\nне один. вот это и есть терапия.'
+        : 'на миг — рядом, а не сверху. будто можно иначе.'));
       this.time.delayedCall(last ? 3200 : 2600, () => {
         this.tweens.add({ targets: [warm, shadow, ask], alpha: 0, duration: 700,
           onComplete: () => { [warm, shadow, ask, prompt].forEach(o => o.destroy()); onDone(); } });
@@ -913,6 +952,7 @@ export class GameScene extends Phaser.Scene {
 
   // ── Damage / lives ─────────────────────────────────────────────────────────
   private damage(fromX: number) {
+    if (this.assistInvuln) return; // ассист «не умирать»
     // копинг «сохраняет в моменте»: пока залип (зона) — урон не проходит
     if (this.frozen) { this.sayOnce('frz_safe', 'пока залип — не достают. но и не уйду.', 2600); return; }
     this.hidePlay();

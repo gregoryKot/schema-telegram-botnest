@@ -118,6 +118,9 @@ class AudioEngine {
     // x 0..1 — music swells as overwhelm builds
     if (this.musicGain && this.ctx) this.musicGain.gain.setTargetAtTime(0.5 + x * 0.35, this.ctx.currentTime, 0.6);
   }
+  // спираль истощения: музыка чуть «расстраивается» (ниже по высоте)
+  private detune = 1;
+  setDetune(mult: number) { this.detune = Math.max(0.9, Math.min(1, mult)); }
   private loop() {
     if (!this.playing || !this.ctx || !this.musicGain) return;
     const MODES = {
@@ -143,8 +146,8 @@ class AudioEngine {
     const { chords, tempo } = MODES[this.mode];
     const ci = Math.floor(this.step / 4) % chords.length;
     const ni = this.step % 4;
-    this.tone(chords[ci][ni], 1.5, 'triangle', 0.15, this.musicGain);
-    if (ni === 0) this.tone(chords[ci][0] / 2, 2.4, 'sine', 0.13, this.musicGain); // soft bass
+    this.tone(chords[ci][ni] * this.detune, 1.5, 'triangle', 0.15, this.musicGain);
+    if (ni === 0) this.tone(chords[ci][0] / 2 * this.detune, 2.4, 'sine', 0.13, this.musicGain); // soft bass
     this.step++;
     this.timer = window.setTimeout(() => this.loop(), tempo);
   }
