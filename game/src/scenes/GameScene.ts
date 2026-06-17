@@ -821,14 +821,15 @@ export class GameScene extends Phaser.Scene {
     for (const l of this.chapter.ending) line(l.text, l.y, l.color, l.size, l.delay);
     this.time.delayedCall(10600, () => audio.toll());
 
-    // not a soft-lock: let the player continue after it settles
-    this.time.delayedCall(14000, () => {
+    // Дверь, а не тупик: после безнадёжности — проблеск четвёртого хода.
+    // Игрок ЖМЁТ контакт и чувствует «рядом, а не сверху» → надежда-с-направлением.
+    this.time.delayedCall(13000, () => this.contactGlimpse(() => {
       const next = this.chapter.next;
       if (next && CHAPTERS[next]) {
         const act = IS_TOUCH ? 'тапни' : 'нажми любую клавишу';
         const hint = this.add.text(W / 2, H - 28, `дальше — «${CHAPTERS[next].title}». ${act}`,
           { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#5a4f7a' })
-          .setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0);
+          .setOrigin(0.5).setScrollFactor(0).setDepth(160).setAlpha(0);
         this.tweens.add({ targets: hint, alpha: 0.8, duration: 800 });
         const go = () => this.scene.restart({ chapter: next });
         this.input.keyboard!.once('keydown', go);
@@ -836,6 +837,52 @@ export class GameScene extends Phaser.Scene {
       } else {
         this.showCta();
       }
+    }));
+  }
+
+  // ── КОНТАКТ-проблеск: впервые не бей/беги/уступи, а останься рядом ──────────
+  private contactGlimpse(onDone: () => void) {
+    const cx = W / 2, cy = H / 2, font = '"Press Start 2P", "Courier New", monospace';
+    const last = !this.chapter.next; // финал — дверь распахнута; иначе короткий проблеск-семя
+    // тёплый проблеск + силуэт «тени» (критика) рядом
+    const warm = this.add.graphics().setScrollFactor(0).setDepth(154).setAlpha(0);
+    warm.fillStyle(0xffd9a0, 0.12); warm.fillCircle(cx, cy + 30, 220);
+    warm.fillStyle(0xffd9a0, 0.08); warm.fillCircle(cx, cy + 30, 320);
+    const shadow = this.add.sprite(cx, cy + 60, 'cat_idle').setOrigin(0.5, 1).setScale(2).setTint(0x2a1d3a).setAlpha(0).setScrollFactor(0).setDepth(155).play('p-idle');
+    const ask = this.add.text(cx, 120, 'а если впервые — не бить, не бежать?\nпросто подойти и остаться рядом.',
+      { fontFamily: font, fontSize: '12px', color: '#ffe0b0', align: 'center', lineSpacing: 10,
+        backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 14, y: 10 } })
+      .setOrigin(0.5, 0).setScrollFactor(0).setDepth(156).setAlpha(0);
+    const prompt = this.add.text(cx, H - 70, IS_TOUCH ? 'тапни — ВСТРЕТИТЬ' : 'E / клик — ВСТРЕТИТЬ',
+      { fontFamily: font, fontSize: '11px', color: '#88ffcc', backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 10, y: 7 } })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(156).setAlpha(0);
+    this.tweens.add({ targets: [warm, shadow], alpha: { from: 0, to: 1 }, duration: 1000 });
+    this.tweens.add({ targets: ask, alpha: 1, duration: 900, delay: 600 });
+    this.tweens.add({ targets: prompt, alpha: 0.9, duration: 600, delay: 1600 });
+
+    let done = false;
+    const meet = () => {
+      if (done) return; done = true;
+      track('contact_glimpse', { chapter: this.chapter.id }); // «дошёл до момента узнавания»
+      this.input.keyboard!.off('keydown', meet);
+      audio.pickup();
+      this.cameras.main.flash(500, 60, 50, 30);
+      this.tweens.add({ targets: prompt, alpha: 0, duration: 300 });
+      // тень не исчезает — становится маленькой и садится рядом, а не сверху
+      this.tweens.add({ targets: shadow, scale: 1, x: cx + 70, y: cy + 50, duration: 900, ease: 'Quad.Out' });
+      this.tweens.add({ targets: warm, alpha: 1.6, duration: 900, yoyo: true });
+      ask.setText(last
+        ? 'оно не исчезло. но впервые — рядом, а не сверху.\nне один. вот это и есть терапия.'
+        : 'на миг — рядом, а не сверху. будто можно иначе.\n...но этому ещё надо научиться.');
+      this.time.delayedCall(last ? 3200 : 2600, () => {
+        this.tweens.add({ targets: [warm, shadow, ask], alpha: 0, duration: 700,
+          onComplete: () => { [warm, shadow, ask, prompt].forEach(o => o.destroy()); onDone(); } });
+      });
+    };
+    // даём прочитать, потом ловим ввод
+    this.time.delayedCall(1700, () => {
+      this.input.keyboard!.once('keydown', meet);
+      this.input.once('pointerdown', meet);
     });
   }
 
