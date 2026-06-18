@@ -91,6 +91,7 @@ export class GameScene extends Phaser.Scene {
 
   private bubble!: Phaser.GameObjects.Text; private bubbleT = 0;
   private said = new Set<string>();
+  private introduced = new Set<string>(); // каждого врага представляем стоп-кадром один раз
 
   constructor() { super('Game'); }
 
@@ -108,6 +109,7 @@ export class GameScene extends Phaser.Scene {
       coyoteT: 0, jumpBufferT: 0, wasOnGround: true, jumping: false,
     });
     this.said = new Set();
+    this.introduced = new Set();
     this.attackHit = new Set();
     this.triggers = []; this.gates = [];
     this.floorColliders = []; this.platColliders = []; this.spikeRects = []; this.heartPickups = [];
@@ -263,17 +265,28 @@ export class GameScene extends Phaser.Scene {
       x: t.x, done: false,
       fn: () => {
         const beforeA = this.anx.length, beforeH = this.homeMobs.length;
-        if (t.anx) for (let i = 0; i < t.anx; i++) this.spawnAnx(this.player.x + 360 + i * 120, 1);
-        if (t.critic) this.spawnCritic();
-        if (t.proc) this.homeMobs.push(new Procrastination(this.mobCtx(), t.proc, t.seat ? GROUND_Y - t.seat : undefined));
-        if (t.phone) this.homeMobs.push(new PhoneMob(this.mobCtx(), t.phone));
-        if (t.irrit) this.homeMobs.push(new Irritation(this.mobCtx(), t.irrit));
+        if (t.anx) { for (let i = 0; i < t.anx; i++) this.spawnAnx(this.player.x + 360 + i * 120, 1);
+          this.introOnce('anx', 'ТРЕВОГА', 'бьёшь — делится. избегаешь — отступит.\nно совсем не уходит.'); }
+        if (t.critic) this.spawnCritic(); // у критика свой стоп-кадр
+        if (t.proc) { this.homeMobs.push(new Procrastination(this.mobCtx(), t.proc, t.seat ? GROUND_Y - t.seat : undefined));
+          this.introOnce('proc', 'ПРОКРАСТИНАЦИЯ', 'липнет, тянет вниз.\nрывок снимает — на время.'); }
+        if (t.phone) { this.homeMobs.push(new PhoneMob(this.mobCtx(), t.phone));
+          this.introOnce('phone', 'ТЕЛЕФОН', 'тянет в уют, крадёт время.\nвырубишь ударом — загорится снова.'); }
+        if (t.irrit) { this.homeMobs.push(new Irritation(this.mobCtx(), t.irrit));
+          this.introOnce('irrit', 'РАЗДРАЖЕНИЕ', 'вспыхивает из ничего.\nвыпустишь пар — вскипит опять.'); }
         if (t.say) { this.say(t.say, 2400); if (t.anx) audio.anx(); }
         if (t.gate) this.makeGate(t.gate, [...this.anx.slice(beforeA), ...this.homeMobs.slice(beforeH)]);
         if (t.overwhelm) this.beginOverwhelm();
       },
     }));
   }
+  // «привет, это —» : представляем врага стоп-кадром при первой встрече
+  private introOnce(key: string, name: string, line: string) {
+    if (this.introduced.has(key)) return;
+    this.introduced.add(key);
+    this.storyFrame(name, line);
+  }
+
   // shared context the home-chapter mobs use to read/affect the player
   private mobCtx(): MobCtx {
     return {
@@ -1050,8 +1063,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ── Cat voice ──────────────────────────────────────────────────────────────
-  private say(text: string, dur: number) { this.bubble.setText(text).setAlpha(1); this.bubbleT = dur; }
-  private sayOnce(key: string, text: string, dur: number) { if (this.said.has(key)) return; this.said.add(key); this.say(text, dur); }
+  // не перебиваем читаемую реплику — иначе мельтешат и не прочитать
+  private say(text: string, dur: number): boolean {
+    if (this.bubbleT > 900) return false;
+    this.bubble.setText(text).setAlpha(1); this.bubbleT = dur; return true;
+  }
+  private sayOnce(key: string, text: string, dur: number) {
+    if (this.said.has(key)) return;
+    if (this.say(text, dur)) this.said.add(key); // не «съедаем» ключ, если реплику не показали
+  }
   private updateBubble(dt: number) {
     if (this.bubbleT <= 0) return;
     this.bubble.x = this.player.x; this.bubble.y = this.player.y - 52;
