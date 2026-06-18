@@ -88,8 +88,6 @@ export class TutorialScene extends Phaser.Scene {
     this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
     this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.24).setDepth(10).setVisible(false);
     this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
-    this.safeAnim('dog-idle', 'dog_idle', 0, 3, 6, -1);
-    this.safeAnim('dog-walk', 'dog_walk', 0, 5, 12, -1);
     this.safeAnim('nei-idle', 'nei_idle', 0, 3, 6, -1);
     this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
     this.paused = false;

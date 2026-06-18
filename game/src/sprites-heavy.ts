@@ -6,15 +6,11 @@
 import catPlayUrl  from './assets/cat_play.png';
 import catSleepUrl from './assets/cat_sleep.png';
 import catDashUrl  from './assets/cat_dash.png';
-import dogIdleUrl  from './assets/dog_idle.png';
-import dogWalkUrl  from './assets/dog_walk.png';
 import neiIdleUrl  from './assets/nei_idle.png';
 
 export const HEAVY_SHEETS: Record<string, { url: string; fw: number; fh: number }> = {
   cat_play:  { url: catPlayUrl,  fw: 257, fh: 257 },
   cat_sleep: { url: catSleepUrl, fw: 190, fh: 190 },
   cat_dash:  { url: catDashUrl,  fw: 269, fh: 269 },
-  dog_idle:  { url: dogIdleUrl,  fw: 48,  fh: 48 },
-  dog_walk:  { url: dogWalkUrl,  fw: 48,  fh: 48 },
-  nei_idle:  { url: neiIdleUrl,  fw: 48,  fh: 48 },
+  nei_idle:  { url: neiIdleUrl,  fw: 48,  fh: 48 }, // соседка (пёс-коллега заменён будильником)
 };

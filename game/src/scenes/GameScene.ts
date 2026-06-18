@@ -842,11 +842,13 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(W / 2, H / 2, W, H, 0x06040e).setScrollFactor(0).setDepth(150);
 
     const ky = H / 540; // y развязок написаны под десктопную высоту
+    const lines: Phaser.GameObjects.Text[] = [];
     const line = (text: string, y: number, color: string, size: number, delay: number) => {
       const t = this.add.text(W / 2, y * ky, text, {
         fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${size}px`, color, align: 'center', lineSpacing: 6,
       }).setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0);
       this.tweens.add({ targets: t, alpha: 1, duration: 900, delay });
+      lines.push(t);
     };
 
     // What just happened — supplied by the chapter (cat's reckoning).
@@ -854,8 +856,10 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(10600, () => audio.toll());
 
     // Дверь, а не тупик: после безнадёжности — проблеск четвёртого хода.
-    // Игрок ЖМЁТ контакт и чувствует «рядом, а не сверху» → надежда-с-направлением.
-    this.time.delayedCall(13500, () => this.contactGlimpse(() => {
+    // Сначала ГАСИМ текст развязки, иначе он наезжает на контакт/карточку.
+    this.time.delayedCall(13200, () => this.tweens.add({ targets: lines, alpha: 0, duration: 700,
+      onComplete: () => lines.forEach(t => t.destroy()) }));
+    this.time.delayedCall(14100, () => this.contactGlimpse(() => {
       const next = this.chapter.next;
       if (next && CHAPTERS[next]) {
         const act = IS_TOUCH ? 'тапни' : 'нажми любую клавишу';
