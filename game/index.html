@@ -22,15 +22,19 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       margin: 0;
-      background: #1a0800;
+      background: #0a0510;
       width: 100vw;
       height: 100dvh;
       overflow: hidden;
       font-family: 'Press Start 2P', 'Courier New', monospace;
+      /* центрируем игру — на огромных экранах она в рамке, а не растянута до абсурда */
+      display: flex; align-items: center; justify-content: center;
     }
     #game-container {
-      width: 100%;
-      height: 100%;
+      /* кадр 16:9; ширина = наименьшее из (ширина окна, высота·16/9, потолок 1920px) */
+      width: min(100vw, 177.8vh, 1920px);
+      aspect-ratio: 16 / 9;
+      max-height: 100dvh;
     }
     #game-container canvas {
       display: block;
