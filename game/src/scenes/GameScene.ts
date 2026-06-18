@@ -303,8 +303,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateTriggers() {
+    // не больше одного триггера за кадр: первый ставит стоп-кадр (hitstop), и
+    // следующие дождутся своего кадра — иначе два стоп-кадра наложатся
     for (const t of this.triggers) {
-      if (!t.done && this.player.x > t.x) { t.done = true; t.fn(); }
+      if (!t.done && this.player.x > t.x) { t.done = true; t.fn(); return; }
     }
   }
 
@@ -313,7 +315,7 @@ export class GameScene extends Phaser.Scene {
     const col = this.add.rectangle(x, GROUND_Y / 2, 18, GROUND_Y + 40, 0, 0);
     this.physics.add.existing(col, true);
     this.physics.add.collider(this.player, col, () =>
-      this.sayOnce('gate', 'не пройти... сначала разберись с этим.', 2600));
+      this.sayOnce('gate', 'не пройти. сначала — с этим.', 2600));
     const gfx = this.add.graphics().setDepth(5);
     this.gates.push({ x, col, gfx, mobs, open: false, t: Math.random() * 1000 });
   }
@@ -341,7 +343,8 @@ export class GameScene extends Phaser.Scene {
     g.col.destroy();
     for (let y = 60; y < GROUND_Y; y += 90) this.burst(g.x, y, this.chapter.palette.glow2, 6, 120);
     audio.gate();
-    this.sayOnce('gate_open', '...прошло. можно идти дальше.', 2400);
+    // важная правда главы: копинг = передышка, не решение — отпустило НЕНАДОЛГО
+    this.say('...отпустило. ненадолго.', 2400);
   }
 
   // тревога, отколовшаяся от «гейтовой», тоже держит стену
