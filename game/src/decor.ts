@@ -30,16 +30,13 @@ function buildStreet(scene: Phaser.Scene, ch: ChapterConfig) {
     far.add(g);
     x += bw + Phaser.Math.Between(24, 80);
   }
-  // фонари — тёплые островки света на тёмной улице
+  // фонари — настоящий спрайт + тёплый островок света
   for (let lx = 330; lx < ch.arenaW - 200; lx += 540) {
-    const g = scene.add.graphics().setDepth(4);
-    g.fillStyle(0x3a3052, 1);
-    g.fillRect(lx - 3, GROUND_Y - 152, 6, 152);
-    g.fillRect(lx - 17, GROUND_Y - 154, 34, 7);
-    g.fillStyle(0xffd9a0, 1); g.fillEllipse(lx, GROUND_Y - 142, 18, 11);
+    placeProp(scene, 'prop_streetlamp', lx, GROUND_Y, 46, 4);
+    const g = scene.add.graphics().setDepth(3);
     g.fillStyle(0xffd9a0, 0.07);
-    g.fillTriangle(lx - 10, GROUND_Y - 138, lx + 10, GROUND_Y - 138, lx + 56, GROUND_Y);
-    g.fillTriangle(lx - 10, GROUND_Y - 138, lx + 10, GROUND_Y - 138, lx - 56, GROUND_Y);
+    g.fillTriangle(lx - 10, GROUND_Y - 150, lx + 10, GROUND_Y - 150, lx + 56, GROUND_Y);
+    g.fillTriangle(lx - 10, GROUND_Y - 150, lx + 10, GROUND_Y - 150, lx - 56, GROUND_Y);
     g.fillStyle(0xffd9a0, 0.10); g.fillEllipse(lx, GROUND_Y - 2, 124, 16);
   }
   // дорожная разметка-бордюр
@@ -59,7 +56,13 @@ function buildRoom(scene: Phaser.Scene, ch: ChapterConfig) {
 
   let moon = true;
   for (let wx = 560; wx < ch.arenaW - 280; wx += 1150) { windowFrame(scene, wx, moon); moon = false; }
-  for (let px = 980; px < ch.arenaW - 300; px += 1700) picture(scene, px);
+  // фоновая мебель — настоящие спрайты вдоль стены (стеллаж / растение через раз)
+  let alt = 0;
+  for (let px = 880; px < ch.arenaW - 300; px += 760) {
+    if (alt % 2 === 0) placeProp(scene, 'prop_bookshelf', px, GROUND_Y, 96, 1);
+    else placeProp(scene, 'prop_plant', px, GROUND_Y, 70, 1);
+    alt++;
+  }
 
   const d = ch.decor ?? {};
   if (d.couch) couch(scene, d.couch);
@@ -82,14 +85,6 @@ function windowFrame(scene: Phaser.Scene, x: number, moon: boolean) {
   // подоконник + лунная дорожка на пол
   g.fillStyle(0x444e6e, 1); g.fillRect(x - w / 2 - 8, top + h, w + 16, 7);
   g.fillStyle(0x9fb6e0, 0.05); g.fillTriangle(x - w / 2, top + h, x + w / 2, top + h, x, GROUND_Y);
-}
-
-function picture(scene: Phaser.Scene, x: number) {
-  const g = scene.add.graphics().setDepth(-5);
-  g.fillStyle(0x1a2236, 1); g.fillRect(x - 26, GROUND_Y - 248, 52, 40);
-  g.lineStyle(4, 0x4a3a28, 1); g.strokeRect(x - 26, GROUND_Y - 248, 52, 40);
-  g.fillStyle(0x6a7a9a, 0.8); g.fillTriangle(x - 18, GROUND_Y - 216, x - 2, GROUND_Y - 236, x + 12, GROUND_Y - 216); // «горы»
-  g.fillStyle(0xfff2cc, 0.7); g.fillCircle(x + 14, GROUND_Y - 240, 4);
 }
 
 function couch(scene: Phaser.Scene, x: number) {

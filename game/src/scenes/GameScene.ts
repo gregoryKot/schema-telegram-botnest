@@ -5,7 +5,7 @@ import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
 import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation, makeHomeTextures } from '../enemies/home';
 import { buildDecor } from '../decor';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
-import { makeCommonTextures } from '../textures';
+import { ensureEnemyAnims } from '../props';
 import { unlockChapter } from '../progress';
 import { getAssist } from '../assist';
 import { track } from '../analytics';
@@ -120,7 +120,7 @@ export class GameScene extends Phaser.Scene {
     this.buildGround();
     this.buildPlatforms();
     this.buildSpikes();
-    makeCommonTextures(this);
+    ensureEnemyAnims(this);
     makeHomeTextures(this);
     this.buildHearts();
     this.spawnPlayer();
@@ -253,7 +253,7 @@ export class GameScene extends Phaser.Scene {
   private buildHearts() {
     const spots = this.chapter.hearts;
     for (const s of spots) {
-      const img = this.add.image(s.x, s.y, 'heartpk').setDepth(7);
+      const img = this.add.image(s.x, s.y, 'heartpk').setDepth(7).setScale(0.8);
       this.tweens.add({ targets: img, y: s.y - 8, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
       this.heartPickups.push(img);
     }
@@ -422,7 +422,7 @@ export class GameScene extends Phaser.Scene {
   // ── Spawns ───────────────────────────────────────────────────────────────--
   private spawnAnx(x: number, size: number) {
     const s2 = size * (1 + this.exhaustion * 0.6); // спираль: чем выжатее — тем крупнее возвращается
-    const img = this.add.image(x, GROUND_Y - 44, 'anxmob').setDepth(6).setScale(s2);
+    const img = this.add.sprite(x, GROUND_Y - 44, 'anxmob').setDepth(6).setScale(s2).play('anx-fly');
     this.anx.push({ img, state: 'chase', t: 0, size: s2, vx: 0, vy: 0, jit: Math.random()*6, calm: 0, cd: 0, alive: true });
   }
   private spawnCritic() {
