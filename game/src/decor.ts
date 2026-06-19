@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GROUND_Y, W } from './constants';
 import { ChapterConfig } from './chapters';
+import { placeProp } from './props';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Декорации — характер уровня. Глава 1 — вечерняя улица (дома, фонари),
@@ -92,35 +93,24 @@ function picture(scene: Phaser.Scene, x: number) {
 }
 
 function couch(scene: Phaser.Scene, x: number) {
-  const g = scene.add.graphics().setDepth(4);
-  // ковёр
-  g.fillStyle(0x6a3a50, 0.35); g.fillEllipse(x, GROUND_Y - 4, 300, 22);
-  // спинка → сиденье → подлокотники → подушки
-  g.fillStyle(0x4a2f4e, 1); g.fillRoundedRect(x - 88, GROUND_Y - 100, 176, 56, 10);
-  g.fillStyle(0x5a3a5e, 1); g.fillRoundedRect(x - 88, GROUND_Y - 56, 176, 56, 8);
-  g.fillStyle(0x6a466e, 1);
-  g.fillRoundedRect(x - 104, GROUND_Y - 76, 26, 76, 9);
-  g.fillRoundedRect(x + 78, GROUND_Y - 76, 26, 76, 9);
-  g.fillStyle(0x66406a, 1);
-  g.fillRoundedRect(x - 76, GROUND_Y - 60, 72, 18, 6);
-  g.fillRoundedRect(x + 4, GROUND_Y - 60, 72, 18, 6);
-  g.fillStyle(0x2e1d33, 1); g.fillRect(x - 80, GROUND_Y - 6, 10, 6); g.fillRect(x + 70, GROUND_Y - 6, 10, 6);
+  const g = scene.add.graphics().setDepth(3);
+  g.fillStyle(0x6a3a50, 0.35); g.fillEllipse(x, GROUND_Y - 4, 300, 22);             // ковёр под диваном
+  placeProp(scene, 'prop_couch', x, GROUND_Y, 210, 4);
 }
 
 function tv(scene: Phaser.Scene, x: number) {
-  const g = scene.add.graphics().setDepth(4);
-  g.fillStyle(0x2a2030, 1); g.fillRect(x - 56, GROUND_Y - 46, 112, 46);            // тумба
-  g.fillStyle(0x14101c, 1); g.fillRect(x - 50, GROUND_Y - 118, 100, 66);           // корпус
-  const screen = scene.add.rectangle(x, GROUND_Y - 85, 88, 54, 0x9fd0ff, 0.55).setDepth(4);
-  scene.tweens.add({ targets: screen, alpha: { from: 0.35, to: 0.65 }, duration: 380, yoyo: true, repeat: -1 });
+  placeProp(scene, 'prop_tv', x, GROUND_Y, 140, 4);
+  // мерцание экрана + отблеск на пол — поверх спрайта
+  const screen = scene.add.rectangle(x, GROUND_Y - 64, 64, 38, 0x9fd0ff, 0.4).setDepth(4);
+  scene.tweens.add({ targets: screen, alpha: { from: 0.18, to: 0.42 }, duration: 380, yoyo: true, repeat: -1 });
   const glow = scene.add.graphics().setDepth(3);
-  glow.fillStyle(0x9fd0ff, 0.06); glow.fillTriangle(x - 44, GROUND_Y - 85, x + 44, GROUND_Y - 85, x, GROUND_Y + 40);
+  glow.fillStyle(0x9fd0ff, 0.06); glow.fillTriangle(x - 44, GROUND_Y - 64, x + 44, GROUND_Y - 64, x, GROUND_Y + 40);
 }
 
 function lamp(scene: Phaser.Scene, x: number) {
-  const g = scene.add.graphics().setDepth(4);
-  g.fillStyle(0x3a3052, 1); g.fillRect(x - 3, GROUND_Y - 138, 6, 138);
-  g.fillStyle(0xffc878, 1); g.fillTriangle(x - 22, GROUND_Y - 132, x + 22, GROUND_Y - 132, x, GROUND_Y - 168);
-  g.fillStyle(0xffd9a0, 0.08); g.fillTriangle(x - 14, GROUND_Y - 130, x + 14, GROUND_Y - 130, x, GROUND_Y);
+  placeProp(scene, 'prop_lamp', x, GROUND_Y, 56, 4);
+  // тёплый ореол от абажура
+  const g = scene.add.graphics().setDepth(3);
+  g.fillStyle(0xffd9a0, 0.08); g.fillTriangle(x - 16, GROUND_Y - 150, x + 16, GROUND_Y - 150, x, GROUND_Y);
   g.fillStyle(0xffd9a0, 0.10); g.fillEllipse(x, GROUND_Y - 2, 110, 14);
 }
