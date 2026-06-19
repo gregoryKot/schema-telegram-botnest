@@ -3,6 +3,7 @@ import { W, H, GROUND_Y, PHYS } from '../constants';
 import { audio } from '../audio';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { track } from '../analytics';
+import { placeProp } from '../props';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  ПРОЛОГ — знакомство с Мистером и управлением. Четыре сценки, у каждой одна
@@ -295,35 +296,31 @@ export class TutorialScene extends Phaser.Scene {
     const rect = (x: number, y: number, w: number, h: number, col: number, a = 1) => { g.fillStyle(col, a); g.fillRect(x, y, w, h); };
     const label = (x: number, t: string) => { const tx = this.add.text(x, G - 8, t, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '8px', color: '#6a5f8a' }).setOrigin(0.5, 1); c.add(tx); };
 
+    // мягкий островок света из окна — атмосфера, на фоне спрайтов реквизита
+    const windowGlow = (cx: number, warm: boolean) => {
+      rect(cx - 76, G - 256, 152, 168, warm ? 0x6a4a2a : 0x10182e, 0.55);
+      g.fillStyle(warm ? 0xffd070 : 0xeaeaff, warm ? 0.45 : 0.85);
+      g.fillCircle(cx + 50, G - 214, warm ? 20 : 15);                    // солнце / луна
+      rect(cx - 80, G - 88, 160, 7, 0x4a4060);                           // подоконник
+      g.fillStyle(warm ? 0xffd9a0 : 0x9fb6e0, 0.06);
+      g.fillTriangle(cx - 76, G - 88, cx + 76, G - 88, cx, G);           // дорожка света на пол
+    };
+
+    const prop = (key: string, x: number, w: number) => {
+      const p = placeProp(this, key, x, G, w, 3); if (p) c.add(p);
+    };
     if (kind === 'office') {
-      rect(W * 0.5, G - 230, W * 0.5, 150, 0x3a4a7a, 0.5);            // окно-день
-      rect(W * 0.5, G - 230, W * 0.5, 8, 0x5a6a9a, 0.6);
-      rect(60, G - 70, 150, 12, 0x4a3a2e);                            // стол
-      rect(70, G - 58, 10, 58, 0x3a2c22); rect(190, G - 58, 10, 58, 0x3a2c22);
-      rect(95, G - 116, 64, 46, 0x14101c); rect(101, G - 110, 52, 34, 0x3a5a8a, 0.8); // монитор
-      rect(120, G - 70, 14, 14, 0x2a2030);                            // стопка бумаг под монитором
-      label(135, 'ОФИС');
+      windowGlow(W * 0.62, true);
+      prop('prop_desk', 150, 190);
+      label(150, 'ОФИС');
     } else if (kind === 'night' || kind === 'morning') {
       const warm = kind === 'morning';
-      rect(W * 0.34, G - 250, 150, 170, warm ? 0x6a4a2a : 0x10182e, 0.7); // окно
-      g.fillStyle(warm ? 0xffd070 : 0xeaeaff, warm ? 0.5 : 0.9);
-      g.fillCircle(W * 0.34 + 110, G - 210, warm ? 22 : 16);             // солнце / луна
-      rect(W * 0.34, G - 80, 158, 8, 0x4a4060);                          // подоконник
-      // кровать слева
-      rect(60, G - 46, 190, 46, 0x4a3a5a);                              // матрас
-      rect(60, G - 70, 44, 24, 0x6a5a7a);                               // изголовье
-      rect(108, G - 58, 56, 18, 0xc8b8d8, 0.9);                         // подушка
-      rect(164, G - 40, 86, 12, 0x6a4a6a);                              // одеяло
-      if (warm) { rect(W - 132, G - 40, 56, 40, 0x3a2c22); rect(W - 130, G - 44, 52, 6, 0x4a3a2e); label(W - 104, 'ТУМБА'); } // тумбочка под будильник
-      else label(155, 'НОЧЬ');
+      windowGlow(W * 0.36, warm);
+      prop('prop_bed', 165, 230);
+      if (!warm) label(165, 'НОЧЬ');
     } else { // door
-      const dx = W - 110;
-      rect(dx - 60, G - 200, 120, 200, 0x2a2438);                       // дверной проём
-      rect(dx - 52, G - 192, 104, 192, 0x4a3a2e);                       // дверь
-      rect(dx - 40, G - 100, 8, 8, 0xd8c020);                           // ручка
-      rect(dx - 70, G - 200, 140, 8, 0x3a2c22);                         // косяк
-      rect(dx - 44, G - 6, 88, 6, 0x6a3a50, 0.6);                       // коврик
-      label(dx, 'ДВЕРЬ');
+      prop('prop_door', W - 110, 150);
+      label(W - 110, 'ДВЕРЬ');
     }
   }
 
@@ -429,7 +426,7 @@ export class TutorialScene extends Phaser.Scene {
       this.narr.setText('БЕЙ — вырубить');
       this.prompt.setText(IS_TOUCH ? 'БЕЙ — по будильнику' : 'X — вырубить будильник');
       // будильник на тумбочке справа — Мистер подходит и бьёт
-      this.colleague = this.add.sprite(W - 100, GROUND_Y - 6, 'alarm').setOrigin(0.5, 1).setScale(1.7).setDepth(8);
+      this.colleague = this.add.sprite(W - 100, GROUND_Y - 6, 'prop_alarm').setOrigin(0.5, 1).setScale(0.23).setDepth(8);
       this.colBubble = this.add.text(0, 0, 'ДЗЗ-ДЗЗ-ДЗЗ!', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
         backgroundColor: '#ffd870', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });

@@ -14,24 +14,7 @@ export function makeCommonTextures(scene: Phaser.Scene) {
     g.fillStyle(0x1a0010, 1);    g.fillCircle((R - 3) * u, R * u, 1 * u); g.fillCircle((R + 3) * u, R * u, 1 * u);
     g.generateTexture('anxmob', R * 2 * u, R * 2 * u); g.destroy();
   }
-  if (!scene.textures.exists('alarm')) {
-    // будильник: латунный корпус, два колокольчика, молоточек, циферблат, ножки
-    const g = scene.make.graphics({ x: 0, y: 0 });
-    const u = S;
-    g.fillStyle(0x1a0e06, 1);                                   // ножки
-    g.fillRect(5 * u, 26 * u, 3 * u, 4 * u); g.fillRect(20 * u, 26 * u, 3 * u, 4 * u);
-    g.fillStyle(0xd8a020, 1); g.fillCircle(14 * u, 16 * u, 11 * u);  // корпус
-    g.fillStyle(0xb07a10, 1); g.fillCircle(14 * u, 16 * u, 11 * u); g.fillCircle(14 * u, 16 * u, 9.5 * u);
-    g.fillStyle(0xf0e8d0, 1); g.fillCircle(14 * u, 16 * u, 8 * u);   // циферблат
-    g.fillStyle(0x2a1d10, 1);                                        // стрелки
-    g.fillRect(13.2 * u, 10 * u, 1.6 * u, 7 * u); g.fillRect(14 * u, 15 * u, 5 * u, 1.6 * u);
-    g.fillStyle(0x2a1d10, 1); g.fillCircle(14 * u, 16 * u, 1.2 * u);
-    g.fillStyle(0xd8a020, 1);                                        // колокольчики
-    g.fillCircle(6 * u, 5 * u, 4 * u); g.fillCircle(22 * u, 5 * u, 4 * u);
-    g.fillStyle(0xf0d870, 1); g.fillCircle(5 * u, 4 * u, 1.4 * u); g.fillCircle(21 * u, 4 * u, 1.4 * u);
-    g.fillStyle(0x1a0e06, 1); g.fillRect(13 * u, 1 * u, 2 * u, 4 * u); // молоточек
-    g.generateTexture('alarm', 28 * u, 32 * u); g.destroy();
-  }
+  // 'alarm' теперь настоящий спрайт prop_alarm (см. props.ts)
   if (!scene.textures.exists('heartpk')) {
     const g = scene.make.graphics({ x: 0, y: 0 });
     const u = S;

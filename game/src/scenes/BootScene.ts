@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { S } from '../constants';
 import { makeCommonTextures } from '../textures';
+import { loadProps } from '../props';
 // Только обязательные спрайты (меню, пролог, базовое движение) — мелкие, их
 // Vite инлайнит data-URI прямо в главный бандл, так что они физически не могут
 // «не загрузиться». Тяжёлые спрайты (клубок/сон/выпад) едут отдельным async-
@@ -38,6 +39,7 @@ export class BootScene extends Phaser.Scene {
     this.watchdog = window.setTimeout(() => { if (!this.advanced) this.armRetry(); }, 12000);
     for (const [key, s] of Object.entries(CAT_SHEETS))
       this.load.spritesheet(key, s.url, { frameWidth: s.fw, frameHeight: s.fh });
+    loadProps(this); // реквизит (будильник, кровать, диван…) — data-URI, не по сети
   }
 
   create() {
