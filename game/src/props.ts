@@ -57,5 +57,7 @@ export function placeProp(
   if (!scene.textures.exists(key)) return null;
   const img = scene.add.image(x, groundY, key).setOrigin(0.5, 1).setDepth(depth);
   img.setScale(targetW / img.width);
+  // утопить «ножки» в пол: у спрайтов снизу мягкая тень-поля — иначе предмет висит
+  img.y = groundY + Math.min(10, img.displayHeight * 0.05);
   return img;
 }
