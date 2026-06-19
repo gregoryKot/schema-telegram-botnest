@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { S } from '../constants';
-import { makeCommonTextures } from '../textures';
-import { loadProps } from '../props';
+import { loadProps, ensureEnemyAnims } from '../props';
 // Только обязательные спрайты (меню, пролог, базовое движение) — мелкие, их
 // Vite инлайнит data-URI прямо в главный бандл, так что они физически не могут
 // «не загрузиться». Тяжёлые спрайты (клубок/сон/выпад) едут отдельным async-
@@ -49,7 +48,7 @@ export class BootScene extends Phaser.Scene {
     this.tex('ground', 16, 16, g => this.drawGround(g));
     this.tex('plat_room',   16, 10, g => this.drawPlatRoom(g));
     this.tex('ground_room', 16, 16, g => this.drawGroundRoom(g));
-    makeCommonTextures(this); // anxmob, heartpk, yarn — нужны и прологу, и главам
+    ensureEnemyAnims(this);   // idle-циклы тревоги/прокрастинации/телефона
     // обязательные спрайты кота не доехали (или доехали битыми) — экран «тапни — повторить»
     if (!this.essentialsReady()) { this.armRetry(); return; }
     this.advanced = true;

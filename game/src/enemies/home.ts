@@ -73,7 +73,7 @@ export function makeHomeTextures(scene: Phaser.Scene) {
 // ── Прокрастинация — липкая масса; снимается только рывком ──────────────────
 export class Procrastination implements HomeMob {
   alive = true;
-  private img: Phaser.GameObjects.Image;
+  private img: Phaser.GameObjects.Sprite;
   private state: 'idle' | 'latched' | 'stunned' = 'idle';
   private size = 1;
   private t = 0;
@@ -85,7 +85,7 @@ export class Procrastination implements HomeMob {
 
   constructor(private ctx: MobCtx, x: number, seatY = GROUND_Y - 20) {
     this.homeX = x; this.seatY = seatY;
-    this.img = ctx.scene.add.image(x, seatY, 'procmob').setDepth(6);
+    this.img = ctx.scene.add.sprite(x, seatY, 'procmob').setDepth(6).play('proc-idle');
   }
 
   update(dt: number) {
@@ -177,10 +177,10 @@ export class Procrastination implements HomeMob {
 
 // ── Телефон — уютная ловушка; выключается ударом ────────────────────────────
 const PHONE_R = 160;
-const PHONE_Y = GROUND_Y - 96; // парит над столиком
+const PHONE_Y = GROUND_Y - 30; // телефон-монстрик стоит на полу (ножки у земли)
 export class PhoneMob implements HomeMob {
   alive = true;
-  private img: Phaser.GameObjects.Image;
+  private img: Phaser.GameObjects.Sprite;
   private glow: Phaser.GameObjects.Graphics;
   private drain = 0;
   private bob = Math.random() * 6;
@@ -188,11 +188,7 @@ export class PhoneMob implements HomeMob {
   private relief = 0; // удар выключает быстро, рывок из зоны — средне; ловушка — залипнуть в зоне
 
   constructor(private ctx: MobCtx, private x: number) {
-    // столик — телефон лежит «дома», а не висит в воздухе
-    const t = ctx.scene.add.graphics().setDepth(4);
-    t.fillStyle(0x4a3220, 1); t.fillRect(x - 38, GROUND_Y - 62, 76, 7);
-    t.fillStyle(0x2e1d10, 1); t.fillRect(x - 30, GROUND_Y - 55, 6, 55); t.fillRect(x + 24, GROUND_Y - 55, 6, 55);
-    this.img = ctx.scene.add.image(x, PHONE_Y, 'phonemob').setDepth(6).setScale(1.4);
+    this.img = ctx.scene.add.sprite(x, PHONE_Y, 'phonemob').setDepth(6).play('phone-walk');
     this.glow = ctx.scene.add.graphics().setDepth(4);
   }
 
