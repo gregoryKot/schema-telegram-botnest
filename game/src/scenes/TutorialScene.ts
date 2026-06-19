@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { W, H, GROUND_Y, PHYS } from '../constants';
+import { W, H, GROUND_Y, PHYS, S } from '../constants';
 import { audio } from '../audio';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { track } from '../analytics';
@@ -64,8 +64,11 @@ export class TutorialScene extends Phaser.Scene {
     bg.fillGradientStyle(0x18142a, 0x18142a, 0x2e2440, 0x2e2440, 1, 1, 1, 1);
     bg.fillRect(0, 0, W, H);
     bg.fillStyle(0xffe9c0, 0.07); bg.fillEllipse(W / 2, GROUND_Y, 520, 250);
-    bg.fillStyle(0x4a3c60, 1); bg.fillRect(0, GROUND_Y, W, H - GROUND_Y);
-    bg.fillStyle(0x6a5a80, 1); bg.fillRect(0, GROUND_Y, W, 4);
+    // пол — деревянная текстура (как дома в главах), а не плоский прямоугольник
+    const TW = 16 * S;
+    for (let fx = -TW; fx <= W + TW; fx += TW)
+      this.add.image(fx, GROUND_Y, 'ground_room').setOrigin(0, 0).setDepth(1);
+    bg.fillStyle(0x2e1d10, 1); bg.fillRect(0, GROUND_Y + TW, W, H - GROUND_Y - TW);
 
     const floor = this.add.rectangle(W / 2, GROUND_Y + 20, W, 40, 0, 0);
     this.physics.add.existing(floor, true);
@@ -387,7 +390,7 @@ export class TutorialScene extends Phaser.Scene {
       this.setScene('night');
       this.narr.setText('ИЗБЕГАЙ (держи) — залипни, и отстанут');
       this.prompt.setText(IS_TOUCH ? 'ИЗБЕГАЙ (держи) — залипни' : 'Z (держи) — залипни, отвлекись');
-      for (let i = 0; i < 3; i++) this.worries.push(this.add.image(this.player.x, this.player.y - 60, 'anxmob').setDepth(7).setScale(0.8));
+      for (let i = 0; i < 3; i++) this.worries.push(this.add.sprite(this.player.x, this.player.y - 60, 'anxmob').setDepth(7).setScale(0.42).play('anx-fly'));
       audio.anx();
     });
   }
