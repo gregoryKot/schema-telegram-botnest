@@ -91,8 +91,9 @@ const chapter1: ChapterConfig = {
     { text: 'И не нужно. Этому учит терапия.',          y: 372, color: '#88ffcc', size: 15, delay: 8200 },
   ],
   palette: {
-    skyTop: 0x161228, skyBot: 0x3a2c4e, glow1: 0x7a4a8a, glow2: 0x8a5a9a,
-    groundTint: 0xa49abf, platTint: 0x9a8fb8, fog: 0x1a1226, mote: 0x8a7aaa,
+    // сумеречная улица, но не чёрная — мягкий фиолетовый вечер
+    skyTop: 0x2c2348, skyBot: 0x5e4878, glow1: 0x9a6aaa, glow2: 0xb07ab2,
+    groundTint: 0xc4b8d8, platTint: 0xbaaed0, fog: 0x2a2040, mote: 0xa898c8,
   },
   music: 'day',
   overwhelmAnx: 3,
@@ -156,8 +157,9 @@ const chapter2: ChapterConfig = {
     { text: 'Дальше — туда, где это началось.',     y: 408, color: '#88ffcc', size: 15, delay: 9800 },
   ],
   palette: {
-    skyTop: 0x141625, skyBot: 0x2a2438, glow1: 0x3a4a6a, glow2: 0x4a5a7a,
-    groundTint: 0xc8b090, platTint: 0xd0b890, fog: 0x0c1018, mote: 0x5a7a9a,
+    // тёплая «вечерняя комната при лампе», не подземелье — чтобы тёплый реквизит читался
+    skyTop: 0x342b3e, skyBot: 0x5a4a52, glow1: 0x7a5a5e, glow2: 0x9a6e54,
+    groundTint: 0xe8cda0, platTint: 0xeacf9a, fog: 0x241a26, mote: 0x8a7a8a,
   },
   music: 'home',
   overwhelmAnx: 0,
