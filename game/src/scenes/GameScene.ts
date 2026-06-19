@@ -24,6 +24,7 @@ const DASH_CD   = 480;
 const ATTACK_MS = 170;
 const ATTACK_CD = 300;
 const ATTACK_RANGE = 72;
+const ATTACK_AURA = 104; // радиус удара вокруг кота — бьёт всё рядом, не только спереди
 // game feel
 const COYOTE_MS = 90;        // прыжок прощается N мс после схода с платформы
 const JUMP_BUFFER_MS = 130;  // прыжок, нажатый до приземления, срабатывает при касании
@@ -32,7 +33,8 @@ const FALL_GRAVITY = 520;    // при падении — тяжелее (быс
 
 type AnxState = 'chase' | 'windup' | 'lunge' | 'calm';
 interface Anx {
-  img: Phaser.GameObjects.Image; state: AnxState; t: number; size: number;
+  img: Phaser.GameObjects.Image; halo: Phaser.GameObjects.Ellipse;
+  state: AnxState; t: number; size: number;
   vx: number; vy: number; jit: number; calm: number; cd: number; alive: boolean;
 }
 interface Critic {
@@ -422,8 +424,10 @@ export class GameScene extends Phaser.Scene {
   // ── Spawns ───────────────────────────────────────────────────────────────--
   private spawnAnx(x: number, size: number) {
     const s2 = size * (1 + this.exhaustion * 0.6); // спираль: чем выжатее — тем крупнее возвращается
+    // ореол позади — отделяет тёмную тучу от чёрного кота и «дышит»
+    const halo = this.add.ellipse(x, GROUND_Y - 44, 104, 78, 0x9a5ad0, 0.22).setDepth(5);
     const img = this.add.sprite(x, GROUND_Y - 44, 'anxmob').setDepth(6).setScale(s2).play('anx-fly');
-    this.anx.push({ img, state: 'chase', t: 0, size: s2, vx: 0, vy: 0, jit: Math.random()*6, calm: 0, cd: 0, alive: true });
+    this.anx.push({ img, halo, state: 'chase', t: 0, size: s2, vx: 0, vy: 0, jit: Math.random()*6, calm: 0, cd: 0, alive: true });
   }
   private spawnCritic() {
     if (this.critic) return;
@@ -695,19 +699,22 @@ export class GameScene extends Phaser.Scene {
       this.slash.lineBetween(cx + ox, cy + oy, cx + ox + len * dir, cy + oy + len * 0.55);
     }
     if (prog > 0.4 && prog < 0.6) this.burst(cx + len * dir * 0.7, cy + 12, 0xff4455, 2, 60);
+    // ударная волна — кольцо ауры вокруг кота (бьёт во все стороны)
+    this.slash.lineStyle(3, 0xff5566, Math.max(0, 1 - prog) * 0.7);
+    this.slash.strokeCircle(this.player.x, this.player.y - 22, ATTACK_AURA * (0.45 + prog * 0.6));
 
+    // удар — аура вокруг кота: задевает всё в радиусе, не только спереди
+    const px = this.player.x, py = this.player.y - 22;
     for (const m of this.anx) {
       if (!m.alive || this.attackHit.has(m)) continue;
-      const dx = m.img.x - this.player.x, dy = m.img.y - (this.player.y - 22);
-      if (dx * dir > -12 && Math.abs(dx) < ATTACK_RANGE && Math.abs(dy) < 52) { this.attackHit.add(m); this.hitAnx(m, dir); }
+      if (Math.hypot(m.img.x - px, m.img.y - py) < ATTACK_AURA) { this.attackHit.add(m); this.hitAnx(m, dir); }
     }
     for (const m of this.homeMobs) {
       if (!m.alive || this.attackHit.has(m)) continue;
-      if (m.tryHit(dir, ATTACK_RANGE)) this.attackHit.add(m);
+      if (m.tryHit(dir, ATTACK_AURA)) this.attackHit.add(m);
     }
     if (this.critic && this.critic.alive && !this.attackHit.has(this.critic)) {
-      const dx = this.critic.img.x - this.player.x;
-      if (dx * dir > -12 && Math.abs(dx) < ATTACK_RANGE && Math.abs(this.critic.img.y - this.player.y) < 60) {
+      if (Math.hypot(this.critic.img.x - px, this.critic.img.y - py) < ATTACK_AURA + 20) {
         this.attackHit.add(this.critic); this.hitCritic();
       }
     }
@@ -787,15 +794,21 @@ export class GameScene extends Phaser.Scene {
           m.t += dt; m.vx += Math.sign(m.img.x - px) * 8; m.vy -= 2;
           m.size = Math.max(0.2, m.size - dt * 0.0004); m.img.setScale(m.size).setAlpha(0.6);
           if (!this.frozen && dist > 360) { m.state = 'chase'; m.calm = 0; m.img.setAlpha(1); }
-          if (m.size <= 0.2) { m.alive = false; this.tweens.add({ targets: m.img, alpha: 0, duration: 350, onComplete: () => m.img.destroy() }); }
+          if (m.size <= 0.2) { m.alive = false; this.tweens.add({ targets: [m.img, m.halo], alpha: 0, duration: 350, onComplete: () => m.img.destroy() }); }
           break;
         }
       }
       m.img.x += m.vx * dt / 1000; m.img.y += m.vy * dt / 1000; m.vx *= 0.96; m.vy *= 0.98;
       m.img.x += Math.sin(m.jit * 3) * 0.8; m.img.y += Math.cos(m.jit * 4) * 0.8;
       m.img.y = Math.min(m.img.y, GROUND_Y - 12);
+      // ореол следует и пульсирует (ярче на замахе)
+      m.halo.setPosition(m.img.x, m.img.y).setScale(m.size * (1 + Math.sin(m.jit * 2) * 0.12))
+        .setAlpha((m.state === 'calm' ? 0.1 : 0.22) + (m.state === 'windup' ? 0.18 : 0));
     }
-    this.anx = this.anx.filter(m => m.alive || m.img.active);
+    this.anx = this.anx.filter(m => {
+      if (!m.alive && !m.img.active) { m.halo.destroy(); return false; }
+      return true;
+    });
   }
 
   // Критик ходит тенью за тобой. Бег от него и клубок его КОРМЯТ.

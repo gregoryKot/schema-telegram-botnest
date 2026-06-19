@@ -164,8 +164,7 @@ export class Procrastination implements HomeMob {
       else this.ctx.sayOnce('proc_hit', 'лупишь по ней — чуть отпускает. себя же бьёшь.', 2600);
       return true;
     }
-    const dx = this.img.x - p.x;
-    if (dx * dir > -12 && Math.abs(dx) < range && Math.abs(this.img.y - (p.y - 20)) < 56) {
+    if (Math.hypot(this.img.x - p.x, this.img.y - (p.y - 20)) < range) {
       this.img.x += dir * 16;
       this.ctx.burst(this.img.x, this.img.y, 0x4a5a3a, 4, 60);
       this.ctx.sayOnce('proc_soft', 'мягкая... удар вязнет. лучше движение.', 2400);
@@ -194,9 +193,12 @@ export class PhoneMob implements HomeMob {
 
   update(dt: number) {
     if (!this.alive) return;
-    this.bob += dt * 0.002;
-    this.img.y = PHONE_Y + Math.sin(this.bob) * 6;
-    this.img.setAngle(Math.sin(this.bob * 3.1) * 4); // дёргается — требует внимания
+    this.bob += dt * 0.004;
+    // расхаживает у своего места: ножки шагают, повёрнут по ходу, не левитирует
+    this.img.x = this.x + Math.sin(this.bob * 0.8) * 48;
+    this.img.setFlipX(Math.cos(this.bob * 0.8) < 0);
+    this.img.y = PHONE_Y - Math.abs(Math.sin(this.bob * 4)) * 3; // лёгкий шаговый подскок, ноги у пола
+    this.img.setAngle(0);
     this.notify(dt);
     const p = this.ctx.player();
     const d = Phaser.Math.Distance.Between(this.img.x, this.img.y, p.x, p.y - 20);
@@ -244,8 +246,7 @@ export class PhoneMob implements HomeMob {
   tryHit(dir: number, range: number): boolean {
     if (!this.alive) return false;
     const p = this.ctx.player();
-    const dx = this.img.x - p.x;
-    if (dx * dir > -12 && Math.abs(dx) < range && Math.abs(this.img.y - (p.y - 20)) < 110) {
+    if (Math.hypot(this.img.x - p.x, this.img.y - (p.y - 20)) < range) {
       this.ctx.hitstop(60); audio.hit();
       this.ctx.burst(this.img.x, this.img.y, 0x9fd0ff, 8, 130);
       this.relief += 0.55;                                  // удар — выключить, крупная передышка
@@ -343,8 +344,7 @@ export class Irritation implements HomeMob {
   tryHit(dir: number, range: number): boolean {
     if (!this.alive || this.state === 'gone') return false;
     const p = this.ctx.player();
-    const dx = this.img.x - p.x;
-    if (dx * dir > -12 && Math.abs(dx) < range && Math.abs(this.img.y - (p.y - 22)) < 54) {
+    if (Math.hypot(this.img.x - p.x, this.img.y - (p.y - 22)) < range) {
       this.ctx.hitstop(55); audio.hit();
       this.ctx.burst(this.img.x, this.img.y, 0xff7733, 10, 140);
       this.relief += 0.34;                                  // выпустил пар — передышка
