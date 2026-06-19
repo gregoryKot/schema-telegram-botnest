@@ -25,6 +25,13 @@ const ATTACK_MS = 170;
 const ATTACK_CD = 300;
 const ATTACK_RANGE = 72;
 const ATTACK_AURA = 104; // радиус удара вокруг кота — бьёт всё рядом, не только спереди
+const ANX_SCALE = 0.62;  // спрайт тучи широкий — ужимаем до соразмерного коту
+// тень-критик выкрикивает это постоянно (голос Карающего Родителя)
+const CRITIC_LINES = [
+  'ты опять не справился.', 'все смогли. кроме тебя.', 'я же говорил — не выйдет.',
+  'и так каждый раз.', 'соберись уже.', 'кому ты такой нужен.',
+  'опять всё испортил.', 'стыдно должно быть.',
+];
 // game feel
 const COYOTE_MS = 90;        // прыжок прощается N мс после схода с платформы
 const JUMP_BUFFER_MS = 130;  // прыжок, нажатый до приземления, срабатывает при касании
@@ -55,6 +62,8 @@ export class GameScene extends Phaser.Scene {
 
   private anx: Anx[] = [];
   private critic: Critic | null = null;
+  private criticBubble: Phaser.GameObjects.Text | null = null;
+  private criticSayT = 0; private criticLine = 0;
   private homeMobs: HomeMob[] = [];
   private gates: Gate[] = [];
   private speedMult = 1;
@@ -105,7 +114,8 @@ export class GameScene extends Phaser.Scene {
     setTouchControls(true); // геймплей — тач-кнопки нужны
     const ARENA_W = this.chapter.arenaW;
     Object.assign(this, {
-      anx: [], critic: null, homeMobs: [], speedMult: 1, trail: [], hearts: 3, invuln: 0, checkpointX: 100,
+      anx: [], critic: null, criticBubble: null, criticSayT: 0, criticLine: 0,
+      homeMobs: [], speedMult: 1, trail: [], hearts: 3, invuln: 0, checkpointX: 100,
       dead: false, attacking: false, attackCd: 0, dashing: false, dashCd: 0,
       frozen: false, hitstop: 0, exhaustion: 0, overwhelmed: false, wasFrozen: false,
       coyoteT: 0, jumpBufferT: 0, wasOnGround: true, jumping: false,
@@ -423,10 +433,10 @@ export class GameScene extends Phaser.Scene {
 
   // ── Spawns ───────────────────────────────────────────────────────────────--
   private spawnAnx(x: number, size: number) {
-    const s2 = size * (1 + this.exhaustion * 0.6); // спираль: чем выжатее — тем крупнее возвращается
+    const s2 = size * (1 + this.exhaustion * 0.3); // спираль: чем выжатее — тем крупнее возвращается
     // ореол позади — отделяет тёмную тучу от чёрного кота и «дышит»
     const halo = this.add.ellipse(x, GROUND_Y - 44, 104, 78, 0x9a5ad0, 0.22).setDepth(5);
-    const img = this.add.sprite(x, GROUND_Y - 44, 'anxmob').setDepth(6).setScale(s2).play('anx-fly');
+    const img = this.add.sprite(x, GROUND_Y - 44, 'anxmob').setDepth(6).setScale(s2 * ANX_SCALE).play('anx-fly');
     this.anx.push({ img, halo, state: 'chase', t: 0, size: s2, vx: 0, vy: 0, jit: Math.random()*6, calm: 0, cd: 0, alive: true });
   }
   private spawnCritic() {
@@ -435,6 +445,12 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5, 1).setScale(1.5).setDepth(9).setTint(0x1a0030).setAlpha(0).play('p-walk');
     this.tweens.add({ targets: img, alpha: 0.82, duration: 600 });
     this.critic = { img, size: 1, struck: 0, alive: true };
+    // тень постоянно выкрикивает упрёки — её не заткнуть
+    this.criticBubble = this.add.text(0, 0, '', {
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '8px',
+      color: '#ff8aa6', backgroundColor: 'rgba(18,6,18,0.72)', padding: { x: 6, y: 4 }, align: 'center',
+    }).setOrigin(0.5, 1).setDepth(46).setAlpha(0);
+    this.criticSayT = 2200; // первый упрёк почти сразу
     // важный новый враг — представляем стоп-кадром, иначе «просто какой-то кот»
     this.storyFrame('ВНУТРЕННИЙ КРИТИК',
       'тень Мистера. ходит следом, не отстаёт.\n\n' +
@@ -732,7 +748,7 @@ export class GameScene extends Phaser.Scene {
     const aliveCount = this.anx.filter(a => a.alive).length;
     if (aliveCount < 7 && m.size > 0.6) {
       // удар по тревоге — она делится (хуже). Ловушка.
-      m.size = Math.max(0.6, m.size * 0.85); m.img.setScale(m.size);
+      m.size = Math.max(0.6, m.size * 0.85); m.img.setScale(m.size * ANX_SCALE);
       this.spawnAnx(m.img.x, m.size);
       const nb = this.anx[this.anx.length - 1]; nb.vx = -dir * 220; nb.vy = -110;
       this.adoptIntoGate(m, nb);
@@ -780,8 +796,8 @@ export class GameScene extends Phaser.Scene {
         case 'windup': {
           m.t += dt; m.vx *= 0.85; m.vy *= 0.85;
           m.img.setTint(m.t % 150 < 75 ? 0xff4466 : 0xffffff);
-          m.img.setScale(m.size * (1 + Math.sin(m.t * 0.04) * 0.12));
-          if (m.t > 460) { m.state = 'lunge'; m.t = 0; m.img.clearTint().setScale(m.size); audio.anx();
+          m.img.setScale(m.size * ANX_SCALE * (1 + Math.sin(m.t * 0.04) * 0.12));
+          if (m.t > 460) { m.state = 'lunge'; m.t = 0; m.img.clearTint().setScale(m.size * ANX_SCALE); audio.anx();
             const a = Math.atan2(py - m.img.y, px - m.img.x); m.vx = Math.cos(a) * 450; m.vy = Math.sin(a) * 450; }
           break;
         }
@@ -792,7 +808,7 @@ export class GameScene extends Phaser.Scene {
         }
         case 'calm': {
           m.t += dt; m.vx += Math.sign(m.img.x - px) * 8; m.vy -= 2;
-          m.size = Math.max(0.2, m.size - dt * 0.0004); m.img.setScale(m.size).setAlpha(0.6);
+          m.size = Math.max(0.2, m.size - dt * 0.0004); m.img.setScale(m.size * ANX_SCALE).setAlpha(0.6);
           if (!this.frozen && dist > 360) { m.state = 'chase'; m.calm = 0; m.img.setAlpha(1); }
           if (m.size <= 0.2) { m.alive = false; this.tweens.add({ targets: [m.img, m.halo], alpha: 0, duration: 350, onComplete: () => m.img.destroy() }); }
           break;
@@ -819,8 +835,20 @@ export class GameScene extends Phaser.Scene {
       c.struck -= dt;
       c.img.setAlpha(0.22);
       c.img.play('p-idle', true);
+      this.criticBubble?.setAlpha(0); // притих, пока выцветший
       if (c.struck <= 1500) this.sayOnce('critic_back', '...вернулся. они всегда возвращаются.', 2800);
       return;
+    }
+    // постоянный поток упрёков над тенью — её не заткнуть
+    if (this.criticBubble) {
+      this.criticSayT += dt;
+      this.criticBubble.x = c.img.x;
+      this.criticBubble.y = c.img.y - 66 * c.size;
+      if (this.criticSayT > 2300) {
+        this.criticSayT = 0;
+        this.criticBubble.setText(CRITIC_LINES[this.criticLine++ % CRITIC_LINES.length]).setAlpha(0).setScale(0.85);
+        this.tweens.add({ targets: this.criticBubble, alpha: 0.95, scale: 1, duration: 260, ease: 'Back.Out' });
+      }
     }
     c.img.setAlpha(0.82);
     const target = this.trail[0];   // oldest = ~1.5s behind
@@ -1021,17 +1049,18 @@ export class GameScene extends Phaser.Scene {
   }
 
   private gameOver() {
+    if (this.dead) return;            // не запускать дважды (смерть во время overwhelm)
     this.dead = true;
     track('game_over', { chapter: this.chapter.id });
     audio.stopMusic();
-    const txt = this.add.text(W/2, H/2, 'так больше нельзя...', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
+    // сразу гасим хаос (огромные тучи и пр.) чёрной шторой — иначе он лезет в кадр
+    const cover = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e).setScrollFactor(0).setDepth(150).setAlpha(0);
+    this.tweens.add({ targets: cover, alpha: 1, duration: 700 });
+    const txt = this.add.text(W / 2, H / 2, 'так больше нельзя...', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
-    this.tweens.add({ targets: txt, alpha: 1, duration: 800 });
-    this.cameras.main.fade(1400, 6, 4, 12);
+    this.tweens.add({ targets: txt, alpha: 1, duration: 800, delay: 400 });
     // «дно» — момент, когда дверь нужнее всего: даём контакт, не просто рестарт
     this.time.delayedCall(2200, () => {
-      this.cameras.main.resetFX();
-      this.add.rectangle(W / 2, H / 2, W, H, 0x06040e).setScrollFactor(0).setDepth(150);
       txt.destroy();
       this.contactGlimpse(() => this.scene.restart());
     });
