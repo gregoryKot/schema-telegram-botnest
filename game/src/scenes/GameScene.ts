@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { W, H, GROUND_Y, S, PHYS } from '../constants';
 import { audio } from '../audio';
 import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
-import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation, makeHomeTextures } from '../enemies/home';
+import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation } from '../enemies/home';
 import { buildDecor } from '../decor';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { ensureEnemyAnims } from '../props';
@@ -133,7 +133,6 @@ export class GameScene extends Phaser.Scene {
     this.buildPlatforms();
     this.buildSpikes();
     ensureEnemyAnims(this);
-    makeHomeTextures(this);
     this.buildHearts();
     this.spawnPlayer();
     this.buildHUD();

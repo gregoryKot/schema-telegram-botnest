@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GROUND_Y, S } from '../constants';
+import { GROUND_Y } from '../constants';
 import { audio } from '../audio';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -33,42 +33,7 @@ export interface HomeMob {
   tryHit(dir: number, range: number): boolean;
 }
 
-export function makeHomeTextures(scene: Phaser.Scene) {
-  const u = S;
-  if (!scene.textures.exists('procmob')) {
-    const g = scene.make.graphics({ x: 0, y: 0 });
-    g.fillStyle(0x4a5a3a, 0.4); g.fillEllipse(13 * u, 11 * u, 26 * u, 18 * u);
-    g.fillStyle(0x39482e, 1);   g.fillEllipse(13 * u, 12 * u, 22 * u, 14 * u);
-    g.fillStyle(0x4f6040, 1);   g.fillEllipse(13 * u, 11 * u, 16 * u, 10 * u);
-    g.fillStyle(0xc8d8a8, 1);   g.fillEllipse(9 * u, 10 * u, 3.4 * u, 2 * u); g.fillEllipse(17 * u, 10 * u, 3.4 * u, 2 * u);
-    g.fillStyle(0x141a0c, 1);   g.fillEllipse(9 * u, 10.4 * u, 1.6 * u, 1.2 * u); g.fillEllipse(17 * u, 10.4 * u, 1.6 * u, 1.2 * u);
-    g.generateTexture('procmob', 26 * u, 22 * u); g.destroy();
-  }
-  if (!scene.textures.exists('phonemob')) {
-    const g = scene.make.graphics({ x: 0, y: 0 });
-    g.fillStyle(0x6ab4ff, 0.30); g.fillCircle(8 * u, 12 * u, 11 * u);
-    g.fillStyle(0x14182a, 1);    g.fillRoundedRect(2 * u, 2 * u, 12 * u, 20 * u, 2 * u);
-    g.fillStyle(0x9fd0ff, 1);    g.fillRoundedRect(3.2 * u, 4 * u, 9.6 * u, 15 * u, 1 * u);
-    g.fillStyle(0xd8ecff, 1);    g.fillRect(4.4 * u, 6 * u, 7.2 * u, 1.4 * u);
-    g.fillRect(4.4 * u, 9 * u, 5.4 * u, 1.4 * u); g.fillRect(4.4 * u, 12 * u, 6.6 * u, 1.4 * u);
-    g.generateTexture('phonemob', 16 * u, 24 * u); g.destroy();
-  }
-  if (!scene.textures.exists('irritmob')) {
-    const g = scene.make.graphics({ x: 0, y: 0 });
-    const cx = 10 * u, cy = 10 * u;
-    g.fillStyle(0xff7733, 0.35); g.fillCircle(cx, cy, 9.5 * u);
-    g.fillStyle(0xcc3a10, 1);
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2;
-      g.fillTriangle(cx + Math.cos(a) * 4 * u, cy + Math.sin(a) * 4 * u,
-        cx + Math.cos(a + 0.45) * 4 * u, cy + Math.sin(a + 0.45) * 4 * u,
-        cx + Math.cos(a + 0.22) * 9 * u, cy + Math.sin(a + 0.22) * 9 * u);
-    }
-    g.fillStyle(0xff8a3a, 1); g.fillCircle(cx, cy, 5 * u);
-    g.fillStyle(0xffe0a0, 1); g.fillCircle(cx - 1.6 * u, cy - 0.6 * u, 1.1 * u); g.fillCircle(cx + 1.6 * u, cy - 0.6 * u, 1.1 * u);
-    g.generateTexture('irritmob', 20 * u, 20 * u); g.destroy();
-  }
-}
+// процедурные текстуры мобов удалены — теперь это настоящие спрайты (props.ts)
 
 // ── Прокрастинация — липкая масса; снимается только рывком ──────────────────
 export class Procrastination implements HomeMob {
@@ -268,7 +233,7 @@ export class PhoneMob implements HomeMob {
 // ── Раздражение — вспышка; лопается, но возвращается меньше ─────────────────
 export class Irritation implements HomeMob {
   alive = true;
-  private img: Phaser.GameObjects.Image;
+  private img: Phaser.GameObjects.Sprite;
   private state: 'chase' | 'tired' | 'gone' = 'chase';
   private relief = 0; // удар выпускает пар (но вспыхивает), рывок прочь и игнор — тоже передышка
   private size = 1;
@@ -278,7 +243,7 @@ export class Irritation implements HomeMob {
   private vx = 0; private vy = 0;
 
   constructor(private ctx: MobCtx, x: number) {
-    this.img = ctx.scene.add.image(x, GROUND_Y - 50, 'irritmob').setDepth(6);
+    this.img = ctx.scene.add.sprite(x, GROUND_Y - 50, 'irritmob').setDepth(6).play('irrit-flicker');
   }
 
   update(dt: number) {

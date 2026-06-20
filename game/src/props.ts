@@ -13,6 +13,8 @@ import heartUrl from './assets/spr_heart.png';
 import anxUrl   from './assets/enemy_anx.png';
 import procUrl  from './assets/enemy_proc.png';
 import phoneUrl from './assets/enemy_phone.png';
+import irritUrl from './assets/enemy_irrit.png';
+import workUrl  from './assets/prop_workload.png';
 
 // Настоящие пиксель-арт спрайты (заменили код-рисованные прямоугольники/кружки).
 // Файлы мелкие → Vite инлайнит data-URI в бандл: грузятся мгновенно, упасть
@@ -25,10 +27,12 @@ export const PROP_IMAGES: Record<string, string> = {
 };
 
 // Анимированные враги: спрайт-лист → ключ текстуры + размеры кадра.
-export const ENEMY_SHEETS: Record<string, { url: string; fw: number; fh: number }> = {
-  anxmob:   { url: anxUrl,   fw: 124, fh: 64 },
-  procmob:  { url: procUrl,  fw: 110, fh: 56 },
-  phonemob: { url: phoneUrl, fw: 79,  fh: 60 },
+export const ENEMY_SHEETS: Record<string, { url: string; fw: number; fh: number; frames: number }> = {
+  anxmob:   { url: anxUrl,   fw: 124, fh: 64, frames: 3 },
+  procmob:  { url: procUrl,  fw: 110, fh: 56, frames: 3 },
+  phonemob: { url: phoneUrl, fw: 79,  fh: 60, frames: 3 },
+  irritmob: { url: irritUrl, fw: 59,  fh: 60, frames: 4 },
+  workload: { url: workUrl,  fw: 86,  fh: 96, frames: 4 },
 };
 
 export function loadProps(scene: Phaser.Scene) {
@@ -42,11 +46,14 @@ export function loadProps(scene: Phaser.Scene) {
 export function ensureEnemyAnims(scene: Phaser.Scene) {
   const mk = (key: string, sheet: string, fps: number) => {
     if (scene.anims.exists(key) || !scene.textures.exists(sheet)) return;
-    scene.anims.create({ key, frames: scene.anims.generateFrameNumbers(sheet, { start: 0, end: 2 }), frameRate: fps, repeat: -1 });
+    const end = (ENEMY_SHEETS[sheet]?.frames ?? 3) - 1;
+    scene.anims.create({ key, frames: scene.anims.generateFrameNumbers(sheet, { start: 0, end }), frameRate: fps, repeat: -1 });
   };
   mk('anx-fly', 'anxmob', 5);
   mk('proc-idle', 'procmob', 4);
   mk('phone-walk', 'phonemob', 6);
+  mk('irrit-flicker', 'irritmob', 8);
+  mk('workload-wobble', 'workload', 6);
 }
 
 // Поставить реквизит на пол: origin (0.5, 1) в точке (x, groundY), масштаб — по
