@@ -25,7 +25,7 @@ const ATTACK_MS = 170;
 const ATTACK_CD = 300;
 const ATTACK_RANGE = 72;
 const ATTACK_AURA = 104; // радиус удара вокруг кота — бьёт всё рядом, не только спереди
-const ANX_SCALE = 0.62;  // спрайт тучи широкий — ужимаем до соразмерного коту
+const ANX_SCALE = 0.42;  // спрайт тучи широкий — ужимаем до размера как в обучении
 // тень-критик выкрикивает это постоянно (голос Карающего Родителя)
 const CRITIC_LINES = [
   'ты опять не справился.', 'все смогли. кроме тебя.', 'я же говорил — не выйдет.',
@@ -594,6 +594,12 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.shake(160, 0.008);
     this.player.setAlpha(0.35);
     this.tweens.add({ targets: this.player, alpha: 1, duration: 450 });
+    // падение в пропасть — реальная потеря: минус жизнь (иначе «ничего не меняется»)
+    if (this.assistInvuln) return;
+    this.hearts -= 1; this.updateHearts();
+    this.cameras.main.flash(120, 80, 20, 40);
+    this.say('сорвался... −1 жизнь.', 1800);
+    if (this.hearts <= 0) this.gameOver();
   }
 
   private updateMoves(dt: number) {
@@ -777,6 +783,11 @@ export class GameScene extends Phaser.Scene {
     for (const m of this.anx) {
       if (!m.alive) continue;
       m.jit += dt * 0.02; m.cd -= dt;
+      // критик рядом — тревога подпитывается и растёт (мысли громче под его голос)
+      if (this.critic?.alive && m.state !== 'calm'
+        && Phaser.Math.Distance.Between(m.img.x, m.img.y, this.critic.img.x, this.critic.img.y) < 220) {
+        m.size = Math.min(2.0, m.size + dt * 0.0002); m.img.setScale(m.size * ANX_SCALE);
+      }
       const dist = Phaser.Math.Distance.Between(m.img.x, m.img.y, px, py);
       // любой копинг копит «передышку»: залипание рядом — быстрее всего,
       // проскок рывком сквозь неё — чуть-чуть. Накопил — отступает (на время).
@@ -953,11 +964,11 @@ export class GameScene extends Phaser.Scene {
     warm.fillStyle(0xffd9a0, 0.12); warm.fillCircle(cx, cy + 30, 220);
     warm.fillStyle(0xffd9a0, 0.08); warm.fillCircle(cx, cy + 30, 320);
     const shadow = this.add.sprite(cx, cy + 60, 'cat_idle').setOrigin(0.5, 1).setScale(2).setTint(0x2a1d3a).setAlpha(0).setScrollFactor(0).setDepth(155).play('p-idle');
-    const ask = this.add.text(cx, 120, 'а если впервые — не бить, не бежать?\nпросто подойти и остаться рядом.',
+    const ask = this.add.text(cx, 120, 'бил, бежал, уступал — он всё равно тут.\nостался один ход: повернуться к нему.',
       { fontFamily: font, fontSize: '12px', color: '#ffe0b0', align: 'center', lineSpacing: 10,
         backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 14, y: 10 } })
       .setOrigin(0.5, 0).setScrollFactor(0).setDepth(156).setAlpha(0);
-    const prompt = this.add.text(cx, H - 70, IS_TOUCH ? 'тапни — ВСТРЕТИТЬ' : 'E / клик — ВСТРЕТИТЬ',
+    const prompt = this.add.text(cx, H - 70, IS_TOUCH ? 'тапни — ПОВЕРНУТЬСЯ' : 'E / клик — ПОВЕРНУТЬСЯ',
       { fontFamily: font, fontSize: '11px', color: '#88ffcc', backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 10, y: 7 } })
       .setOrigin(0.5).setScrollFactor(0).setDepth(156).setAlpha(0);
     this.tweens.add({ targets: [warm, shadow], alpha: { from: 0, to: 1 }, duration: 1000 });
@@ -976,8 +987,8 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: shadow, scale: 1, x: cx + 70, y: cy + 50, duration: 900, ease: 'Quad.Out' });
       this.tweens.add({ targets: warm, alpha: 1.6, duration: 900, yoyo: true });
       ask.setText(this.modeName() + (last
-        ? 'оно не исчезло — но впервые рядом, а не сверху.\nне один. вот это и есть терапия.'
-        : 'на миг — рядом, а не сверху. будто можно иначе.'));
+        ? 'ты повернулся — и он сел рядом, а не навис.\nодному так не суметь. этому учит терапия.'
+        : 'ты повернулся — и он рядом, а не сверху.\nна миг, но по-другому.'));
       this.time.delayedCall(last ? 3200 : 2600, () => {
         this.tweens.add({ targets: [warm, shadow, ask], alpha: 0, duration: 700,
           onComplete: () => { [warm, shadow, ask, prompt].forEach(o => o.destroy()); onDone(); } });
