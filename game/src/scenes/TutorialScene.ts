@@ -19,6 +19,30 @@ const NEI_LINES = [
   'все бы согласились.', 'ну что тебе стоит.', 'я ведь обижусь.',
 ];
 
+// «не та кнопка» в сценке: почему этот способ тут не сработает (много вариантов)
+const WRONG: Record<string, Record<string, string[]>> = {
+  dash: { // сценка ДЕЛА — верно ИЗБЕГАЙ
+    hit: ['по делам не ударишь — их только больше.', 'бить бумаги? их не убавится.', 'злись не злись — задачи не разбегутся.', 'кулаком отчёт не сдашь.', 'агрессия их не уберёт, только вымотает.', 'дела не дерутся в ответ — просто ждут.'],
+    fawn: ['сдаться делам? они и так на тебе.', 'кому уступать — стопке бумаг?', 'покорно сесть под ними — раздавят.', 'это не человек, уступать некому.', 'смирение дедлайн не подвинет.'],
+    freeze: ['замрёшь — дела сами себя не сделают.', 'залипнешь — гора только вырастет.', 'отвлечёшься — дедлайн ближе.', 'спрячешься в телефон — они дождутся.', 'застынешь — завтра их вдвое.'],
+  },
+  freeze: { // сценка ТРЕВОГИ — верно ИЗБЕГАЙ (держать)
+    hit: ['тревогу не ударишь — она внутри.', 'бить свои мысли? станет хуже.', 'кулаком страх не выгонишь.', 'злость на тревогу — та же тревога.', 'по переживаниям не попасть.'],
+    fawn: ['сдаться страху — он накроет с головой.', 'уступишь тревоге — она будет править.', 'покорность мыслям их не уймёт.', 'кому уступать — голосу в голове?', 'согласишься с тревогой — поверишь ей.'],
+    dash: ['от своей головы не убежишь.', 'бежишь — а мысли бегут с тобой.', 'рывок? тревога догонит на месте.', 'сменишь комнату — мысли те же.', 'быстрее ног они всё равно в голове.'],
+  },
+  fight: { // сценка БУДИЛЬНИК — верно БЕЙ
+    dash: ['убежал в другую комнату — всё равно слышно.', 'рывком звон не выключишь.', 'спрячешься — орёт дальше.', 'от будильника не убегают — он везде.', 'сбежишь — опоздаешь ещё и проспав.'],
+    freeze: ['отвлечься? оно ОРЁТ прямо в ухо.', 'залипнешь — звонит и звонит.', 'замри хоть весь — звон не стихнет.', 'в телефон? будильник громче.', 'переждать не выйдет — он не устаёт.'],
+    fawn: ['уступить будильнику? это как?', 'сдаться звону — он не человек.', 'покориться железке — звенит дальше.', 'смирение его не выключит.'],
+  },
+  fawn: { // сценка СОСЕДКА — верно УСТУПИ
+    hit: ['рявкнуть на соседку? ...язык не повернулся.', 'нагрубить ей — потом стыдно неделю.', 'злость на неё — не смог, воспитанный же.', 'накричать? а жить с ней дальше.', 'огрызнуться — рука не поднялась.', 'сорвёшься — будешь виноват сам.'],
+    dash: ['сбежать? она догонит — она же соседка.', 'захлопнуть дверь — неудобно как-то.', 'улизнуть — а завтра в лифте встречать.', 'рывок? она просто придёт снова.', 'спрячешься — постучит ещё раз.'],
+    freeze: ['играю, не вижу... а она всё ждёт.', 'сделать вид что нет дома — она слышит.', 'залипнуть в телефон — не уйдёт.', 'отвернуться — стоит и смотрит.', 'тянуть время — она терпеливее.'],
+  },
+};
+
 export class TutorialScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -42,8 +66,10 @@ export class TutorialScene extends Phaser.Scene {
   // dash
   private pile: Phaser.GameObjects.Container | null = null;
   private pileSpr: Phaser.GameObjects.Sprite | null = null;
+  private pileEngaged = false;
   private dashed = false; private dashT = 0; private dashCd = 0; private dashDir = 1;
   private neiSayT = 0; private neiLine = 0;
+  private wrongCd = 0; private lastWrong = -1; // объяснения «не та кнопка» — троттлинг + без повтора
   // freeze
   private worries: Phaser.GameObjects.Image[] = [];
   private frozen = false; private calmT = 0; private orbit = 0;
@@ -214,6 +240,7 @@ export class TutorialScene extends Phaser.Scene {
   update(_: number, dt: number) {
     this.t += dt;
     if (this.hurtT > 0) this.hurtT -= dt;
+    if (this.wrongCd > 0) this.wrongCd -= dt;
     // пустую строку не показываем — иначе подложка рисует пустую плашку
     this.narr.setVisible(this.narr.text.length > 0);
     this.prompt.setVisible(this.prompt.text.length > 0);
@@ -253,6 +280,8 @@ export class TutorialScene extends Phaser.Scene {
     const avoidHeld = this.keys.Z.isDown || touch.avoidHeld;
     // на кадре нажатия — это рывок, не залипание (иначе frozen гасит рывок)
     this.frozen = avoidHeld && !dash && onGround && this.dashT <= 0;
+    // залип (ИЗБЕГАЙ держать) там, где это не работает — объясняем почему
+    if (this.frozen && (this.step === 'dash' || this.step === 'fight' || this.step === 'fawn')) this.wrongTry('freeze');
     if (fawn) this.onFawn();
 
     if (this.dashCd > 0) this.dashCd -= dt;
@@ -375,7 +404,8 @@ export class TutorialScene extends Phaser.Scene {
 
   // ── Шаг 2: БЕГИ — куча дел, от которой можно только увернуться ─────────────
   private spawnPile() {
-    const c = this.add.container(-80, GROUND_Y).setDepth(8);
+    this.pileEngaged = false;
+    const c = this.add.container(110, GROUND_Y).setDepth(8); // на экране слева, наступает
     // настоящий спрайт «пачка дел» (дрожит), origin снизу — стоит на полу
     this.pileSpr = this.add.sprite(0, 0, 'workload').setOrigin(0.5, 1).setScale(0.9);
     if (this.anims.exists('workload-wobble')) this.pileSpr.play('workload-wobble');
@@ -389,18 +419,19 @@ export class TutorialScene extends Phaser.Scene {
     p.x += Math.sign(d) * dt * 0.06;       // ползёт к Мистеру, но медленнее шага — можно убежать
     p.y = GROUND_Y + Math.sin(this.t * 0.01) * 2;
     this.pileSpr?.setFlipX(d < 0);          // повёрнута к Мистеру
+    if (Math.abs(d) < 140) this.pileEngaged = true; // подпустил — теперь они «навалились»
     if (Math.abs(d) < 60 && this.dashT <= 0) {
       // навалились — будто ударили: толчок назад + минус жизнь
       (this.player.body as Phaser.Physics.Arcade.Body).velocity.x = Math.sign(d || 1) * 280;
       this.loseHeart('дела навалились! рывок (Z) или убегай.');
     }
-    // убежал далеко в другую сторону — тоже спасение (но завтра вернутся)
-    if (!this.dashed && Math.abs(d) > 340) this.clearPile('убежал... но завтра они снова тут.');
-    if (this.frozen && Math.abs(d) < 160) this.sayOnce('pile_frz', 'замереть? дела сами себя не сделают.', 2600);
+    // убежал далеко в другую сторону — тоже спасение (но только если они уже наступали)
+    if (this.pileEngaged && !this.dashed && Math.abs(d) > 360) this.clearPile('убежал... но завтра они снова тут.');
   }
   private onDash() {
-    if (this.step !== 'dash' || this.dashed || !this.pile) return;
-    if (Math.abs(this.player.x - this.pile.x) > 280) { this.sayOnce('dash_far', 'рывок! ...но дела были не там.', 2200); return; }
+    if (this.step !== 'dash') { this.wrongTry('dash'); return; }
+    if (this.dashed || !this.pile) return;
+    if (Math.abs(this.player.x - this.pile.x) > 280) { this.say('рывок! ...но дела были не там.', 2200); return; }
     this.clearPile('...фух. пронесло. (нет)');
   }
   private clearPile(line: string) {
@@ -445,9 +476,9 @@ export class TutorialScene extends Phaser.Scene {
         this.time.delayedCall(1600, () => this.beginFight());
       }
     } else this.calmT = Math.max(0, this.calmT - dt * 2);
-    // движение не спасает
+    // бег не спасает — разные объяснения почему
     if (!this.frozen && Math.abs((this.player.body as Phaser.Physics.Arcade.Body).velocity.x) > 200)
-      this.sayOnce('worry_run', 'от своей головы не убежишь...', 2600);
+      this.wrongTry('dash');
   }
 
   // ── Шаг 4: БЕЙ — будильник орёт и не затыкается, только вырубить ───────────
@@ -472,19 +503,14 @@ export class TutorialScene extends Phaser.Scene {
     const d = Math.abs(this.player.x - c.x);
     if (this.colBubble?.active) {
       this.colBubble.x = c.x; this.colBubble.y = c.y - 70 + Math.sin(this.t * 0.04) * 3;
+      this.colBubble.setAlpha(this.bubbleT > 600 ? 0 : 1); // не наезжать на реплику Мистера
       this.colBubble.setText(['ДЗЗ-ДЗЗ-ДЗЗ!', 'ВСТАВАЙ!', 'ДЗЗЗЗ!'][Math.floor(this.t / 1400) % 3]);
     }
-    if (this.frozen && d < 160) this.sayOnce('col_frz', 'отвлечься? оно ОРЁТ прямо в ухо.', 2600);
-    if (this.dashT > 0 && d < 220) this.sayOnce('col_dash', 'убежал в другую комнату — всё равно слышно.', 2800);
   }
 
   private onHit() {
-    // на соседку рявкнуть «язык не повернулся» — даём реакцию, а не тишину
-    if (this.step === 'fawn' && this.neighbor?.active) {
-      this.sayOnce('nei_hit', 'рявкнуть на соседку? ...не смог.', 2600);
-      return;
-    }
-    if (this.step !== 'fight' || !this.colleague?.active) return;
+    if (this.step !== 'fight') { this.wrongTry('hit'); return; }
+    if (!this.colleague?.active) return;
     // удар — аура вокруг кота (как в игре), а не узкий конус спереди
     if (Math.hypot(this.colleague.x - this.player.x, this.colleague.y - (this.player.y - 22)) > 104) return;
     audio.hit();
@@ -529,15 +555,16 @@ export class TutorialScene extends Phaser.Scene {
     if (Math.abs(d) > 66) { n.x += Math.sign(d) * dt * 0.13; n.setFlipX(d > 0); }
     if (this.neiBubble?.active) {
       this.neiBubble.x = n.x; this.neiBubble.y = n.y - 54;
+      // прячем её реплику, пока говорит Мистер — иначе пузыри наезжают
+      this.neiBubble.setAlpha(this.bubbleT > 600 ? 0 : 1);
       this.neiSayT += dt;
-      if (this.neiSayT > 2000) { this.neiSayT = 0; this.neiBubble.setText(NEI_LINES[this.neiLine++ % NEI_LINES.length]); }
+      if (this.neiSayT > 2200) { this.neiSayT = 0; this.neiBubble.setText(NEI_LINES[this.neiLine++ % NEI_LINES.length]); }
     }
-    if (this.frozen && Math.abs(d) < 220) this.sayOnce('nei_frz', 'играю, не вижу... а она всё ближе.', 2600);
-    if (this.dashT > 0) this.sayOnce('nei_dash', 'сбежал? она догонит — она же соседка.', 2600);
   }
 
   private onFawn() {
-    if (this.step !== 'fawn' || !this.neighbor?.active) return;
+    if (this.step !== 'fawn') { this.wrongTry('fawn'); return; }
+    if (!this.neighbor?.active) return;
     const n = this.neighbor; this.neighbor = null;
     this.neiBubble?.destroy();
     audio.freeze();
@@ -570,9 +597,19 @@ export class TutorialScene extends Phaser.Scene {
   // ── Реплики ────────────────────────────────────────────────────────────────
   private say(text: string, dur: number) { this.bubble.setText(text).setAlpha(1); this.bubbleT = dur; }
   private sayOnce(key: string, text: string, dur: number) { if (this.said.has(key)) return; this.said.add(key); this.say(text, dur); }
+  // нажал «не ту» кнопку в этой сценке — объясняем, почему не сработает (разные варианты)
+  private wrongTry(action: string) {
+    if (this.wrongCd > 0 || this.bubbleT > 800) return;
+    const pool = WRONG[this.step]?.[action];
+    if (!pool || !pool.length) return;
+    let i = Math.floor(Math.random() * pool.length);
+    if (pool.length > 1 && i === this.lastWrong) i = (i + 1) % pool.length;
+    this.lastWrong = i; this.wrongCd = 1500;
+    this.say(pool[i], 2400);
+  }
   private updateBubble(dt: number) {
     if (this.bubbleT <= 0) return;
-    this.bubble.x = this.player.x; this.bubble.y = this.player.y - 52;
+    this.bubble.x = this.player.x; this.bubble.y = this.player.y - 64;
     this.bubbleT -= dt;
     if (this.bubbleT < 300) this.bubble.setAlpha(Math.max(0, this.bubbleT / 300));
   }
