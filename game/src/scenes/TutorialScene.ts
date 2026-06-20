@@ -344,17 +344,11 @@ export class TutorialScene extends Phaser.Scene {
   // ── Шаг 2: БЕГИ — куча дел, от которой можно только увернуться ─────────────
   private spawnPile() {
     const c = this.add.container(-80, GROUND_Y).setDepth(8);
-    const g = this.add.graphics();
-    g.fillStyle(0x4a4458, 1);
-    g.fillRect(-46, -34, 92, 34);
-    g.fillRect(-34, -62, 68, 28);
-    g.fillRect(-22, -84, 44, 22);
-    g.fillStyle(0x6a6480, 1);
-    g.fillRect(-46, -34, 92, 4); g.fillRect(-34, -62, 68, 4); g.fillRect(-22, -84, 44, 4);
-    g.fillStyle(0xfff0d8, 0.7);
-    g.fillRect(-38, -28, 18, 2); g.fillRect(-26, -54, 18, 2); g.fillRect(-14, -78, 16, 2);
-    c.add(g);
-    const lbl = this.add.text(0, -96, 'ДЕЛА', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#9a90b8' }).setOrigin(0.5, 1);
+    // настоящий спрайт «пачка дел» (дрожит), origin снизу — стоит на полу
+    const spr = this.add.sprite(0, 0, 'workload').setOrigin(0.5, 1).setScale(0.9);
+    if (this.anims.exists('workload-wobble')) spr.play('workload-wobble');
+    c.add(spr);
+    const lbl = this.add.text(0, -92, 'ДЕЛА', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#9a90b8' }).setOrigin(0.5, 1);
     c.add(lbl);
     this.pile = c;
   }
