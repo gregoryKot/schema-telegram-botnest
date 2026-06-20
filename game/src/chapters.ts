@@ -25,6 +25,7 @@ export interface ChapterConfig {
   platforms: { x: number; w: number; y: number }[];
   spikes: { x: number; w: number }[];
   hearts: { x: number; y: number }[];
+  memories?: { x: number; y: number }[]; // тёплые воспоминания — коллектиблы, часть на секретных маршрутах
   triggers: TriggerDef[];
   ending: EndingLine[];
   palette: ChapterPalette;
@@ -74,6 +75,10 @@ const chapter1: ChapterConfig = {
   hearts: [
     { x: 420,  y: G - 116 }, { x: 1460, y: G - 188 }, { x: 1900, y: G - 188 },
     { x: 2850, y: G - 252 }, { x: 3110, y: G - 180 }, { x: 4040, y: G - 132 },
+  ],
+  memories: [
+    { x: 560,  y: G - 130 }, { x: 1120, y: G - 132 }, { x: 1700, y: G - 138 },
+    { x: 2560, y: G - 168 }, { x: 2850, y: G - 262 }, { x: 3780, y: G - 138 },
   ],
   triggers: [
     { x: 280,  anx: 1, say: 'опять это чувство...', gate: 690 }, // учим базовый цикл
@@ -137,6 +142,10 @@ const chapter2: ChapterConfig = {
   hearts: [
     { x: 440,  y: G - 160 }, { x: 1540, y: G - 190 }, { x: 2180, y: G - 190 },
     { x: 2600, y: G - 180 }, { x: 3320, y: G - 190 }, { x: 4210, y: G - 130 },
+  ],
+  memories: [
+    { x: 700,  y: G - 150 }, { x: 1240, y: G - 130 }, { x: 1480, y: G - 200 },
+    { x: 2540, y: G - 190 }, { x: 3140, y: G - 130 }, { x: 3690, y: G - 210 },
   ],
   triggers: [
     { x: 240,  say: 'дома. наконец выдохнуть... да?' },

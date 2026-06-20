@@ -78,6 +78,9 @@ export class GameScene extends Phaser.Scene {
   private floorColliders: Phaser.GameObjects.Rectangle[] = [];
   private spikeRects: { x: number; w: number }[] = [];
   private heartPickups: Phaser.GameObjects.Image[] = [];
+  private memories: Phaser.GameObjects.Sprite[] = [];
+  private memText!: Phaser.GameObjects.Text;
+  private memGot = 0; private memTotal = 0;
   private readonly MAX_HEARTS = 5;
 
   // moves
@@ -125,6 +128,7 @@ export class GameScene extends Phaser.Scene {
     this.attackHit = new Set();
     this.triggers = []; this.gates = [];
     this.floorColliders = []; this.platColliders = []; this.spikeRects = []; this.heartPickups = [];
+    this.memories = []; this.memGot = 0; this.memTotal = 0;
 
     this.buildBackground();
     this.exhaustOverlay = this.add.graphics().setScrollFactor(0).setDepth(59); // виньетка истощения
@@ -134,6 +138,7 @@ export class GameScene extends Phaser.Scene {
     this.buildSpikes();
     ensureEnemyAnims(this);
     this.buildHearts();
+    this.buildMemories();
     this.spawnPlayer();
     this.buildHUD();
     this.setupInput();
@@ -267,6 +272,18 @@ export class GameScene extends Phaser.Scene {
       const img = this.add.image(s.x, s.y, 'heartpk').setDepth(7).setScale(0.8);
       this.tweens.add({ targets: img, y: s.y - 8, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
       this.heartPickups.push(img);
+    }
+  }
+
+  // Тёплые воспоминания — коллектиблы; часть на секретных верхних маршрутах
+  private buildMemories() {
+    const spots = this.chapter.memories ?? [];
+    this.memTotal = spots.length;
+    for (const s of spots) {
+      const img = this.add.sprite(s.x, s.y, 'memory').setDepth(7).setScale(0.9);
+      if (this.anims.exists('memory-twinkle')) img.play('memory-twinkle');
+      this.tweens.add({ targets: img, y: s.y - 7, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.memories.push(img);
     }
   }
 
@@ -410,6 +427,9 @@ export class GameScene extends Phaser.Scene {
     this.heartsText = this.add.text(18, 14, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '24px', color: '#ff5577' })
       .setScrollFactor(0).setDepth(100);
     this.updateHearts();
+    // счётчик воспоминаний — только если они есть в главе
+    this.memText = this.add.text(18, 48, this.memTotal ? `✦ 0/${this.memTotal}` : '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '12px', color: '#ffd870' })
+      .setScrollFactor(0).setDepth(100);
     if (!IS_TOUCH)
       this.add.text(W / 2, H - 20, 'X бей · Z избегай (тап рывок / держи залипни) · V уступи', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
         .setOrigin(0.5, 1).setScrollFactor(0).setDepth(100);
@@ -584,6 +604,29 @@ export class GameScene extends Phaser.Scene {
         audio.pickup();
         this.burst(h.x, h.y, 0xff6688, 8, 110);
       }
+    }
+    // тёплые воспоминания
+    for (const m of this.memories) {
+      if (!m.active) continue;
+      if (Phaser.Math.Distance.Between(px, py - 22, m.x, m.y) < 34) {
+        this.collectMemory(m);
+      }
+    }
+  }
+
+  private collectMemory(m: Phaser.GameObjects.Sprite) {
+    this.memGot++;
+    audio.pickup();
+    this.burst(m.x, m.y, 0xffd870, 10, 120);
+    this.tweens.add({ targets: m, y: m.y - 24, alpha: 0, scale: 1.6, duration: 380, onComplete: () => m.destroy() });
+    this.memText?.setText(`✦ ${this.memGot}/${this.memTotal}`);
+    if (this.memGot >= this.memTotal && this.memTotal > 0) {
+      // все собраны — награда: тёплая строка + полное здоровье
+      this.hearts = this.MAX_HEARTS; this.updateHearts();
+      this.cameras.main.flash(300, 80, 70, 30);
+      this.say('все тёплые мысли с тобой. их тоже стоит замечать.', 3200);
+    } else {
+      this.sayOnce('mem_first', 'тёплое... хорошее тоже есть. собери их.', 2400);
     }
   }
 
