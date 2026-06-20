@@ -13,6 +13,12 @@ import { placeProp } from '../props';
 
 type Step = 'meet' | 'walk' | 'dash' | 'freeze' | 'fight' | 'fawn' | 'done';
 
+// соседка идёт по пятам и давит на вину, лишь бы согласился
+const NEI_LINES = [
+  'ты же не откажешь?', 'я на тебя рассчитываю...', 'тебе что, трудно?',
+  'все бы согласились.', 'ну что тебе стоит.', 'я ведь обижусь.',
+];
+
 export class TutorialScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -29,11 +35,15 @@ export class TutorialScene extends Phaser.Scene {
   private said = new Set<string>();
   private narrContinue: (() => void) | null = null; // листать текст по тач-кнопке
 
+  // жизни (как в игре — учим, что копинг их тратит)
+  private hearts = 3; private heartsText!: Phaser.GameObjects.Text; private hurtT = 0;
   // walk
   private moved = 0; private jumped = false;
   // dash
   private pile: Phaser.GameObjects.Container | null = null;
+  private pileSpr: Phaser.GameObjects.Sprite | null = null;
   private dashed = false; private dashT = 0; private dashCd = 0; private dashDir = 1;
+  private neiSayT = 0; private neiLine = 0;
   // freeze
   private worries: Phaser.GameObjects.Image[] = [];
   private frozen = false; private calmT = 0; private orbit = 0;
@@ -108,6 +118,12 @@ export class TutorialScene extends Phaser.Scene {
     this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 8, y: 5 } }).setOrigin(0.5, 1).setDepth(45).setAlpha(0);
 
+    // жизни — как в игре; учим, что каждый «способ справиться» их тратит
+    this.hearts = 3; this.hurtT = 0;
+    this.heartsText = this.add.text(16, 14, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px', color: '#ff5577' })
+      .setScrollFactor(0).setDepth(60);
+    this.updateHearts();
+
     const skip = this.add.text(W - 20, 16, 'пропустить →', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
       .setOrigin(1, 0).setDepth(60).setInteractive({ useHandCursor: true });
     skip.on('pointerover', () => skip.setColor('#fff0d8'));
@@ -136,10 +152,26 @@ export class TutorialScene extends Phaser.Scene {
     this.anims.create({ key, frames: this.anims.generateFrameNumbers(sheet, { start, end }), frameRate, repeat });
   }
 
+  private updateHearts() {
+    this.heartsText.setText('♥'.repeat(Math.max(0, this.hearts)) + '·'.repeat(Math.max(0, 3 - this.hearts)));
+  }
+  // в обучении жизнь не падает до конца (clamp 1), но убыль показываем — учим цену
+  private loseHeart(msg: string) {
+    if (this.hurtT > 0) return;
+    this.hurtT = 1300;
+    this.hearts = Math.max(1, this.hearts - 1);
+    this.updateHearts();
+    this.cameras.main.shake(180, 0.01); this.cameras.main.flash(120, 120, 20, 40);
+    audio.hurt();
+    this.player.setTint(0xff5555);
+    this.time.delayedCall(180, () => this.player.clearTint());
+    this.say(msg, 2600);
+  }
+
   // ── Знакомство ──────────────────────────────────────────────────────────────
   private meet() {
     this.narrTell(
-      'Это кот Мистер.\nЖивёт, всем доволен.\n\nТолько вечно с чем-то борется.',
+      'Это кот Мистер.\nЖивёт, всем доволен.\n\nТолько вечно с чем-то борется.\n\n♥ слева — его силы. борьба их тратит.',
       () => {
         this.step = 'walk';
         this.narr.setText('3 способа справляться:\nБЕЙ · ИЗБЕГАЙ · УСТУПИ');
@@ -181,6 +213,7 @@ export class TutorialScene extends Phaser.Scene {
 
   update(_: number, dt: number) {
     this.t += dt;
+    if (this.hurtT > 0) this.hurtT -= dt;
     // пустую строку не показываем — иначе подложка рисует пустую плашку
     this.narr.setVisible(this.narr.text.length > 0);
     this.prompt.setVisible(this.prompt.text.length > 0);
@@ -200,7 +233,7 @@ export class TutorialScene extends Phaser.Scene {
       case 'dash':   this.updatePile(dt); break;
       case 'freeze': this.updateWorries(dt); break;
       case 'fight':  this.updateColleague(dt); break;
-      case 'fawn':   this.updateNeighbor(); break;
+      case 'fawn':   this.updateNeighbor(dt); break;
       case 'done':   if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.scene.start('Intro'); break;
     }
   }
@@ -276,6 +309,9 @@ export class TutorialScene extends Phaser.Scene {
         this.slash.lineStyle(3, i === 1 ? 0xff4455 : 0xd92b3d, Math.max(0, a));
         this.slash.lineBetween(cx + ox, cy + oy, cx + ox + len * dir, cy + oy + len * 0.55);
       }
+      // ударная волна-кольцо вокруг кота — как в игре (бьёт во все стороны)
+      this.slash.lineStyle(3, 0xff5566, Math.max(0, 1 - prog) * 0.7);
+      this.slash.strokeCircle(this.player.x, this.player.y - 22, 104 * (0.45 + prog * 0.6));
     }
   }
 
@@ -297,7 +333,6 @@ export class TutorialScene extends Phaser.Scene {
     const G = GROUND_Y;
     const g = this.add.graphics(); c.add(g);
     const rect = (x: number, y: number, w: number, h: number, col: number, a = 1) => { g.fillStyle(col, a); g.fillRect(x, y, w, h); };
-    const label = (x: number, t: string) => { const tx = this.add.text(x, G - 8, t, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '8px', color: '#6a5f8a' }).setOrigin(0.5, 1); c.add(tx); };
 
     // мягкий островок света из окна — атмосфера, на фоне спрайтов реквизита
     const windowGlow = (cx: number, warm: boolean) => {
@@ -315,15 +350,12 @@ export class TutorialScene extends Phaser.Scene {
     if (kind === 'office') {
       windowGlow(W * 0.62, true);
       prop('prop_desk', 150, 190);
-      label(150, 'ОФИС');
     } else if (kind === 'night' || kind === 'morning') {
       const warm = kind === 'morning';
       windowGlow(W * 0.36, warm);
       prop('prop_bed', 165, 230);
-      if (!warm) label(165, 'НОЧЬ');
     } else { // door
       prop('prop_door', W - 110, 150);
-      label(W - 110, 'ДВЕРЬ');
     }
   }
 
@@ -345,33 +377,38 @@ export class TutorialScene extends Phaser.Scene {
   private spawnPile() {
     const c = this.add.container(-80, GROUND_Y).setDepth(8);
     // настоящий спрайт «пачка дел» (дрожит), origin снизу — стоит на полу
-    const spr = this.add.sprite(0, 0, 'workload').setOrigin(0.5, 1).setScale(0.9);
-    if (this.anims.exists('workload-wobble')) spr.play('workload-wobble');
-    c.add(spr);
-    const lbl = this.add.text(0, -92, 'ДЕЛА', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#9a90b8' }).setOrigin(0.5, 1);
-    c.add(lbl);
+    this.pileSpr = this.add.sprite(0, 0, 'workload').setOrigin(0.5, 1).setScale(0.9);
+    if (this.anims.exists('workload-wobble')) this.pileSpr.play('workload-wobble');
+    c.add(this.pileSpr);
     this.pile = c;
   }
 
   private updatePile(dt: number) {
     const p = this.pile; if (!p) return;
     const d = this.player.x - p.x;
-    p.x += Math.sign(d) * dt * 0.07; // ползёт к Мистеру — мимо не проедет
+    p.x += Math.sign(d) * dt * 0.06;       // ползёт к Мистеру, но медленнее шага — можно убежать
     p.y = GROUND_Y + Math.sin(this.t * 0.01) * 2;
-    if (Math.abs(d) < 70 && this.dashT <= 0) {
-      // дела «наезжают» — мягко толкают; рывок — единственный чистый выход
-      (this.player.body as Phaser.Physics.Arcade.Body).velocity.x += dt * 0.5 * Math.sign(d || 1);
-      this.sayOnce('pile_push', 'ну вот, уже наседают...', 2200);
+    this.pileSpr?.setFlipX(d < 0);          // повёрнута к Мистеру
+    if (Math.abs(d) < 60 && this.dashT <= 0) {
+      // навалились — будто ударили: толчок назад + минус жизнь
+      (this.player.body as Phaser.Physics.Arcade.Body).velocity.x = Math.sign(d || 1) * 280;
+      this.loseHeart('дела навалились! рывок (Z) или убегай.');
     }
+    // убежал далеко в другую сторону — тоже спасение (но завтра вернутся)
+    if (!this.dashed && Math.abs(d) > 340) this.clearPile('убежал... но завтра они снова тут.');
     if (this.frozen && Math.abs(d) < 160) this.sayOnce('pile_frz', 'замереть? дела сами себя не сделают.', 2600);
   }
   private onDash() {
     if (this.step !== 'dash' || this.dashed || !this.pile) return;
     if (Math.abs(this.player.x - this.pile.x) > 280) { this.sayOnce('dash_far', 'рывок! ...но дела были не там.', 2200); return; }
+    this.clearPile('...фух. пронесло. (нет)');
+  }
+  private clearPile(line: string) {
+    if (this.dashed || !this.pile) return;
     this.dashed = true;
     const p = this.pile; this.pile = null;
     this.tweens.add({ targets: p, alpha: 0, y: p.y + 40, duration: 700, onComplete: () => p.destroy() });
-    this.say('...фух. пронесло. (нет)', 2600);
+    this.say(line, 2600);
     this.time.delayedCall(1500, () => this.beginFreeze());
   }
 
@@ -422,8 +459,8 @@ export class TutorialScene extends Phaser.Scene {
       this.setScene('morning');
       this.narr.setText('БЕЙ — вырубить');
       this.prompt.setText(IS_TOUCH ? 'БЕЙ — по будильнику' : 'X — вырубить будильник');
-      // будильник на тумбочке справа — Мистер подходит и бьёт
-      this.colleague = this.add.sprite(W - 100, GROUND_Y - 6, 'prop_alarm').setOrigin(0.5, 1).setScale(0.23).setDepth(8);
+      // будильник рядом с кроватью, поменьше — Мистер подходит и бьёт
+      this.colleague = this.add.sprite(305, GROUND_Y - 4, 'prop_alarm').setOrigin(0.5, 1).setScale(0.15).setDepth(8);
       this.colBubble = this.add.text(0, 0, 'ДЗЗ-ДЗЗ-ДЗЗ!', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
         backgroundColor: '#ffd870', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });
@@ -448,9 +485,8 @@ export class TutorialScene extends Phaser.Scene {
       return;
     }
     if (this.step !== 'fight' || !this.colleague?.active) return;
-    const dir = this.player.flipX ? -1 : 1;
-    const dx = this.colleague.x - this.player.x;
-    if (dx * dir < -12 || Math.abs(dx) > 90) return;
+    // удар — аура вокруг кота (как в игре), а не узкий конус спереди
+    if (Math.hypot(this.colleague.x - this.player.x, this.colleague.y - (this.player.y - 22)) > 104) return;
     audio.hit();
     this.cameras.main.shake(220, 0.015);
     const c = this.colleague; this.colleague = null;
@@ -474,8 +510,9 @@ export class TutorialScene extends Phaser.Scene {
     this.narrTell('Вечер. Соседка опять просит\nпосидеть с её фикусом.', () => {
       this.clearBeat();
       this.setScene('door');
-      this.narr.setText('УСТУПИ — лишь бы отстали');
+      this.narr.setText('УСТУПИ — лишь бы отстали (но это твои силы)');
       this.prompt.setText(IS_TOUCH ? 'УСТУПИ — сдайся' : 'V — уступи, сдайся');
+      this.neiSayT = 0;
       this.neighbor = this.add.sprite(W - 90, GROUND_Y, 'nei_idle').setOrigin(0.5, 1).setScale(1.5)
         .setFlipX(true).setDepth(8);
       this.safeAnim('nei-idle', 'nei_idle', 0, 3, 6, -1);
@@ -485,12 +522,18 @@ export class TutorialScene extends Phaser.Scene {
     });
   }
 
-  private updateNeighbor() {
+  private updateNeighbor(dt: number) {
     const n = this.neighbor; if (!n || !n.active) return;
-    if (this.neiBubble?.active) { this.neiBubble.x = n.x; this.neiBubble.y = n.y - 54; }
-    const d = Math.abs(this.player.x - n.x);
-    if (this.frozen && d < 200) this.sayOnce('nei_frz', 'играю, не вижу... а она всё ждёт.', 2600);
-    if (this.dashT > 0 && d < 240) this.sayOnce('nei_dash', 'сбежать? она же соседка...', 2600);
+    // ходит по пятам — догоняет, не отстаёт
+    const d = this.player.x - n.x;
+    if (Math.abs(d) > 66) { n.x += Math.sign(d) * dt * 0.13; n.setFlipX(d > 0); }
+    if (this.neiBubble?.active) {
+      this.neiBubble.x = n.x; this.neiBubble.y = n.y - 54;
+      this.neiSayT += dt;
+      if (this.neiSayT > 2000) { this.neiSayT = 0; this.neiBubble.setText(NEI_LINES[this.neiLine++ % NEI_LINES.length]); }
+    }
+    if (this.frozen && Math.abs(d) < 220) this.sayOnce('nei_frz', 'играю, не вижу... а она всё ближе.', 2600);
+    if (this.dashT > 0) this.sayOnce('nei_dash', 'сбежал? она догонит — она же соседка.', 2600);
   }
 
   private onFawn() {
@@ -509,7 +552,10 @@ export class TutorialScene extends Phaser.Scene {
       { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#b8a8d0' }).setOrigin(0.5).setDepth(46);
     this.tweens.add({ targets: ok, y: ok.y - 20, alpha: 0, duration: 1800, onComplete: () => ok.destroy() });
     this.tweens.add({ targets: n, x: n.x + 200, alpha: 0, duration: 900, delay: 500, onComplete: () => n.destroy() });
-    this.say('все довольны. кроме Мистера.', 3000);
+    // уступка тоже стоит сил — показываем минус жизни
+    this.hearts = Math.max(1, this.hearts - 1); this.updateHearts();
+    this.player.setTint(0x8a7aaa); this.time.delayedCall(320, () => this.player.clearTint());
+    this.say('уступил. все довольны — кроме Мистера. −1 жизнь.', 3200);
     this.time.delayedCall(2400, () => this.finish());
   }
 
