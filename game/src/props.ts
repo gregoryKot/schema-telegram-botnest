@@ -15,6 +15,7 @@ import procUrl  from './assets/enemy_proc.png';
 import phoneUrl from './assets/enemy_phone.png';
 import irritUrl from './assets/enemy_irrit.png';
 import workUrl  from './assets/prop_workload.png';
+import memUrl   from './assets/spr_memory.png';
 
 // Настоящие пиксель-арт спрайты (заменили код-рисованные прямоугольники/кружки).
 // Файлы мелкие → Vite инлайнит data-URI в бандл: грузятся мгновенно, упасть
@@ -33,6 +34,7 @@ export const ENEMY_SHEETS: Record<string, { url: string; fw: number; fh: number;
   phonemob: { url: phoneUrl, fw: 79,  fh: 60, frames: 3 },
   irritmob: { url: irritUrl, fw: 59,  fh: 60, frames: 4 },
   workload: { url: workUrl,  fw: 86,  fh: 96, frames: 4 },
+  memory:   { url: memUrl,   fw: 30,  fh: 30, frames: 4 },
 };
 
 export function loadProps(scene: Phaser.Scene) {
@@ -54,6 +56,7 @@ export function ensureEnemyAnims(scene: Phaser.Scene) {
   mk('phone-walk', 'phonemob', 6);
   mk('irrit-flicker', 'irritmob', 8);
   mk('workload-wobble', 'workload', 6);
+  mk('memory-twinkle', 'memory', 7);
 }
 
 // Поставить реквизит на пол: origin (0.5, 1) в точке (x, groundY), масштаб — по
