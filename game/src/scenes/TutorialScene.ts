@@ -200,13 +200,15 @@ export class TutorialScene extends Phaser.Scene {
 
   // ── Знакомство ──────────────────────────────────────────────────────────────
   private meet() {
-    this.narrTell(
-      'Это кот Мистер.\nЖивёт, всем доволен.\n\nТолько вечно с чем-то борется.\n\n♥ слева — его силы. борьба их тратит.',
-      () => {
-        this.step = 'walk';
-        this.narr.setText('3 способа справляться:\nБЕЙ · ИЗБЕГАЙ · УСТУПИ');
-        this.prompt.setText(IS_TOUCH ? '◀ ▶ идти · ▲ прыжок' : 'A D идти · W прыжок');
-      });
+    this.narrTell('Это кот Мистер.\nЖивёт, всем доволен.', () => {
+      this.narrTell(
+        'Когда накрывает, Мистер справляется\nтремя способами. Так научили —\nи это нормально.\n\n♥ слева — его силы. борьба их тратит.',
+        () => {
+          this.step = 'walk';
+          this.narr.setText('пойдём — посмотрим на эти три способа');
+          this.prompt.setText(IS_TOUCH ? '◀ ▶ идти · ▲ прыжок' : 'A D идти · W прыжок');
+        });
+    });
   }
 
   // Стоп-кадр для текста: мир замирает и темнеет, читаешь спокойно,
@@ -410,10 +412,10 @@ export class TutorialScene extends Phaser.Scene {
   private checkWalk() {
     if (this.moved > 900 && this.jumped) {
       this.step = 'dash';
-      this.narrTell('Понедельник.\nНа Мистера летят дела.', () => {
+      this.narrTell('Понедельник. Дел — целая гора.\nМистер боится, что не успеет.\n\nКогда наваливается — можно увернуться.', () => {
         this.clearBeat();
         this.setScene('office');
-        this.narr.setText('ИЗБЕГАЙ — быть где-то ещё');
+        this.narr.setText('ИЗБЕГАЙ — рывком проскользнуть мимо');
         this.prompt.setText(IS_TOUCH ? 'ИЗБЕГАЙ (тап) — рывок' : 'Z (тап) — рывок, увернись');
         this.spawnPile();
       });
@@ -443,9 +445,8 @@ export class TutorialScene extends Phaser.Scene {
   }
   private onDash() {
     if (this.step !== 'dash') { this.wrongTry('dash'); return; }
-    if (this.dashed || !this.pile) return;
-    if (Math.abs(this.player.x - this.pile.x) > 280) { this.say('рывок! ...но дела были не там.', 2200); return; }
-    this.clearPile('...фух. пронесло. (нет)');
+    // рывок — и есть способ уйти от дел: уводит мимо в любом случае
+    this.clearPile('...фух. рывком — мимо. (но завтра снова)');
   }
   private clearPile(line: string) {
     if (this.dashed || !this.pile) return;
@@ -460,10 +461,10 @@ export class TutorialScene extends Phaser.Scene {
   private beginFreeze() {
     if (this.step !== 'dash') return;
     this.step = 'freeze';
-    this.narrTell('Ночь. Лезут тревоги.\nИх не побить и не обогнать.', () => {
+    this.narrTell('Ночь. В голове крутятся тревоги —\nне уснуть. Их не побить и не обогнать.\n\nМожно отвлечься, переждать.', () => {
       this.clearBeat();
       this.setScene('night');
-      this.narr.setText('ИЗБЕГАЙ (держи) — залипни, и отстанут');
+      this.narr.setText('ИЗБЕГАЙ (держи) — отвлечься, и отступят');
       this.prompt.setText(IS_TOUCH ? 'ИЗБЕГАЙ (держи) — залипни' : 'Z (держи) — залипни, отвлекись');
       for (let i = 0; i < 3; i++) this.worries.push(this.add.sprite(this.player.x, this.player.y - 60, 'anxmob').setDepth(7).setScale(0.42).play('anx-fly'));
       audio.anx();
@@ -498,10 +499,10 @@ export class TutorialScene extends Phaser.Scene {
   private beginFight() {
     if (this.step !== 'freeze') return;
     this.step = 'fight';
-    this.narrTell('Утро. Будильник орёт.\nИ не затыкается.', () => {
+    this.narrTell('Утро. Будильник орёт и не унимается.\nЖуть как бесит.\n\nИногда хочется просто врезать.', () => {
       this.clearBeat();
       this.setScene('morning');
-      this.narr.setText('БЕЙ — вырубить');
+      this.narr.setText('БЕЙ — вырубить, дать отпор');
       this.prompt.setText(IS_TOUCH ? 'БЕЙ — по будильнику' : 'X — вырубить будильник');
       // будильник рядом с кроватью, поменьше — Мистер подходит и бьёт
       this.colleague = this.add.sprite(305, GROUND_Y - 4, 'prop_alarm').setOrigin(0.5, 1).setScale(0.15).setDepth(8);
@@ -545,10 +546,10 @@ export class TutorialScene extends Phaser.Scene {
   private beginFawn() {
     if (this.step !== 'fight') return;
     this.step = 'fawn';
-    this.narrTell('Вечер. Соседка опять просит\nпосидеть с её фикусом.', () => {
+    this.narrTell('Вечер. Соседка снова просит об одолжении.\nОтказать — неловко.\n\nПроще согласиться, лишь бы отстали.', () => {
       this.clearBeat();
       this.setScene('door');
-      this.narr.setText('УСТУПИ — лишь бы отстали (но это твои силы)');
+      this.narr.setText('УСТУПИ — согласиться, лишь бы отстали');
       this.prompt.setText(IS_TOUCH ? 'УСТУПИ — сдайся' : 'V — уступи, сдайся');
       this.neiSayT = 0;
       this.neighbor = this.add.sprite(W - 90, GROUND_Y, 'nei_idle').setOrigin(0.5, 1).setScale(1.5)
