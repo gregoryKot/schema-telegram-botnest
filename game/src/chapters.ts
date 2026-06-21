@@ -5,7 +5,7 @@ export interface TriggerDef {
   x: number; anx?: number; critic?: boolean; say?: string; overwhelm?: boolean;
   // враги главы 2 — значение = координата спавна
   proc?: number; phone?: number; irrit?: number;
-  soothe?: number; // Акт II: Само-Пройдёт (сирена-колыбельная)
+  soothe?: number; mirror?: number; // Акт II: Само-Пройдёт, Кривое зеркало
   seat?: number;  // высота посадки прокрастинации (диван): y = GROUND_Y - seat
   gate?: number;  // боевой гейт: стена на этой x, падает когда враги триггера разрешены
 }
@@ -199,7 +199,7 @@ const chapter3: ChapterConfig = {
     { x: 240,  say: 'надо что-то менять... или нет?' },
     { x: 600,  soothe: 820 },
     { x: 1500, say: 'ну вот, уже легче. может, само и пройдёт?' },
-    { x: 1750, soothe: 2000 },
+    { x: 1700, mirror: 1950 },   // поворот: ЗАМРИ = посмотреть честно
     { x: 2350, overwhelm: true },
   ],
   ending: [
