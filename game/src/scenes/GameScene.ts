@@ -642,6 +642,7 @@ export class GameScene extends Phaser.Scene {
     if (this.assistInvuln || this.invuln > 0) return;
     this.invuln = 900;
     this.hearts -= 1; this.updateHearts();
+    audio.hurt(); // звук падения — раньше его не было
     this.cameras.main.flash(120, 80, 20, 40);
     this.say('сорвался... −1 жизнь.', 1800);
     if (this.hearts <= 0) this.gameOver();
