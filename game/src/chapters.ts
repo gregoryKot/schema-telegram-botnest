@@ -5,6 +5,7 @@ export interface TriggerDef {
   x: number; anx?: number; critic?: boolean; say?: string; overwhelm?: boolean;
   // враги главы 2 — значение = координата спавна
   proc?: number; phone?: number; irrit?: number;
+  soothe?: number; // Акт II: Само-Пройдёт (сирена-колыбельная)
   seat?: number;  // высота посадки прокрастинации (диван): y = GROUND_Y - seat
   gate?: number;  // боевой гейт: стена на этой x, падает когда враги триггера разрешены
 }
@@ -175,5 +176,46 @@ const chapter2: ChapterConfig = {
   overwhelmSay: 'весь вечер... опять в никуда.',
 };
 
-export const CHAPTERS: Record<string, ChapterConfig> = { chapter1, chapter2 };
+// ── Глава 3 · «Само пройдёт» (Акт II — дорога в терапию) ────────────────────
+// Понял, что так нельзя — и тут же начал себя отговаривать. Враги не нападают,
+// а УБАЮКИВАЮТ: Само-Пройдёт замедляет и темнит экран, шепчет «да всё норм».
+const chapter3: ChapterConfig = {
+  id: 'chapter3',
+  title: 'Само пройдёт',
+  tagline: 'понял, что так нельзя. и тут же — «да ладно, не сегодня».',
+  theme: 'street',
+  arenaW: 2600,
+  pits: [{ s: 1250, e: 1400 }],
+  checkpoints: [100, 1450],
+  platforms: [
+    { x: 360,  w: 120, y: G - 84  }, { x: 700,  w: 110, y: G - 140 },
+    { x: 1050, w: 120, y: G - 90  }, { x: 1500, w: 120, y: G - 100 },
+    { x: 1800, w: 120, y: G - 150 }, { x: 2150, w: 130, y: G - 90  },
+  ],
+  spikes: [],
+  hearts: [{ x: 420, y: G - 120 }, { x: 1800, y: G - 188 }, { x: 2300, y: G - 120 }],
+  memories: [{ x: 560, y: G - 130 }, { x: 1500, y: G - 138 }],
+  triggers: [
+    { x: 240,  say: 'надо что-то менять... или нет?' },
+    { x: 600,  soothe: 820 },
+    { x: 1500, say: 'ну вот, уже легче. может, само и пройдёт?' },
+    { x: 1750, soothe: 2000 },
+    { x: 2350, overwhelm: true },
+  ],
+  ending: [
+    { text: 'Самый хитрый враг не нападал.',       y: 120, color: '#d8c8ec', size: 17, delay: 700  },
+    { text: 'Он просто шептал: не сегодня.',       y: 156, color: '#bfe0ff', size: 15, delay: 2200 },
+    { text: 'И день за днём — мимо.',              y: 226, color: '#d8c8ec', size: 16, delay: 4000 },
+    { text: 'Пока не скажешь честно: пора.',       y: 320, color: '#88ffcc', size: 15, delay: 6200 },
+  ],
+  palette: {
+    skyTop: 0x3a3458, skyBot: 0x6a5a82, glow1: 0x8a7aba, glow2: 0xa890c8,
+    groundTint: 0xc8bcdc, platTint: 0xc0b4d4, fog: 0x342a4a, mote: 0xb0a0d0,
+  },
+  music: 'home',
+  overwhelmAnx: 0,
+  overwhelmSay: 'опять отговорил себя. ещё один день — мимо.',
+};
+
+export const CHAPTERS: Record<string, ChapterConfig> = { chapter1, chapter2, chapter3 };
 export const DEFAULT_CHAPTER = 'chapter1';

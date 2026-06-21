@@ -10,8 +10,8 @@ const LEVELS: LevelEntry[] = [
   { scene: 'Tutorial',                    label: 'Пролог · Знакомство',      enabled: true  },
   { scene: 'Game', chapter: 'chapter1',   label: 'Глава 1 · Обычный день',   enabled: true  },
   { scene: 'Game', chapter: 'chapter2',   label: 'Глава 2 · Дома',           enabled: true  },
-  { scene: 'Game', chapter: 'chapter3',   label: 'Глава 3 · Стыд · скоро',   enabled: false },
-  { scene: 'Game', chapter: 'chapter4',   label: 'Глава 4 · Зависть · скоро', enabled: false },
+  { scene: 'Game', chapter: 'chapter3',   label: 'Глава 3 · Само пройдёт',    enabled: true  },
+  { scene: 'Game', chapter: 'chapter4',   label: 'Глава 4 · Выбор · скоро',   enabled: false },
 ];
 
 const RUNNING = 5, PAUSED = 6, SLEEPING = 7;
