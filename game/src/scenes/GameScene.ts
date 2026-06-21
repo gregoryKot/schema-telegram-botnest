@@ -615,6 +615,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private collectMemory(m: Phaser.GameObjects.Sprite) {
+    m.setActive(false); // сразу снимаем с учёта — иначе твин-исчезновение даёт двойной счёт
     this.memGot++;
     audio.pickup();
     this.burst(m.x, m.y, 0xffd870, 10, 120);
