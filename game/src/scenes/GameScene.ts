@@ -5,7 +5,7 @@ import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
 import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation } from '../enemies/home';
 import { buildDecor } from '../decor';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
-import { ensureEnemyAnims } from '../props';
+import { ensureEnemyAnims, LEDGE } from '../props';
 import { unlockChapter } from '../progress';
 import { getAssist } from '../assist';
 import { track } from '../analytics';
@@ -238,11 +238,18 @@ export class GameScene extends Phaser.Scene {
   private buildPlatforms() {
     const tw = 16 * S, th = 10 * S;
     const P = this.chapter.platforms;
+    const ledge = this.chapter.theme === 'room' ? LEDGE.room : LEDGE.street;
     const platTex = this.chapter.theme === 'room' ? 'plat_room' : 'plat';
+    const H = 24; // высота карниза; верх совпадает с поверхностью (p.y)
     for (const p of P) {
-      const cols = Math.ceil(p.w / tw);
-      for (let i = 0; i < cols; i++)
-        this.add.image(p.x + i * tw + tw / 2, p.y + th / 2, platTex).setDepth(2).setTint(this.chapter.palette.platTint);
+      if (this.textures.exists(ledge.key)) {
+        // настоящий карниз: торцы не тянутся, середина растягивается под ширину
+        this.add.nineslice(p.x + p.w / 2, p.y + H / 2, ledge.key, undefined, p.w, H, ledge.cap, ledge.cap, 0, 0).setDepth(2);
+      } else {
+        const cols = Math.ceil(p.w / tw); // запасной процедурный тайл
+        for (let i = 0; i < cols; i++)
+          this.add.image(p.x + i * tw + tw / 2, p.y + th / 2, platTex).setDepth(2).setTint(this.chapter.palette.platTint);
+      }
       const r = this.add.rectangle(p.x + p.w / 2, p.y + 5 * S, p.w, th, 0, 0);
       this.physics.add.existing(r, true);
       this.platColliders.push(r);
