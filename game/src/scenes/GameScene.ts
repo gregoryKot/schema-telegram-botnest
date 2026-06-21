@@ -638,8 +638,9 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.shake(160, 0.008);
     this.player.setAlpha(0.35);
     this.tweens.add({ targets: this.player, alpha: 1, duration: 450 });
-    // падение в пропасть — реальная потеря: минус жизнь (иначе «ничего не меняется»)
-    if (this.assistInvuln) return;
+    // падение в пропасть — реальная потеря: минус жизнь (i-кадры от двойного списания)
+    if (this.assistInvuln || this.invuln > 0) return;
+    this.invuln = 900;
     this.hearts -= 1; this.updateHearts();
     this.cameras.main.flash(120, 80, 20, 40);
     this.say('сорвался... −1 жизнь.', 1800);

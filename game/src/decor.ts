@@ -56,13 +56,13 @@ function buildRoom(scene: Phaser.Scene, ch: ChapterConfig) {
 
   let moon = true;
   for (let wx = 560; wx < ch.arenaW - 280; wx += 1150) { windowFrame(scene, wx, moon); moon = false; }
-  // фоновая мебель — настоящие спрайты вдоль стены (стеллаж / растение через раз)
-  let alt = 0;
-  for (let px = 880; px < ch.arenaW - 300; px += 760) {
-    if (alt % 2 === 0) placeProp(scene, 'prop_bookshelf', px, GROUND_Y, 96, 1);
-    else placeProp(scene, 'prop_plant', px, GROUND_Y, 70, 1);
-    alt++;
-  }
+  // фоновая мебель — в ПРОСВЕТАХ между платформами и не над ямами (иначе
+  // платформы «закрывают» интерьер). Координаты подобраны под раскладку главы 2.
+  const furniture: [string, number, number][] = [
+    ['prop_bookshelf', 545, 96], ['prop_plant', 1115, 70], ['prop_bookshelf', 2690, 96],
+    ['prop_plant', 3580, 70], ['prop_bookshelf', 4010, 96],
+  ];
+  for (const [key, fx, w] of furniture) if (fx < ch.arenaW - 80) placeProp(scene, key, fx, GROUND_Y, w, 1);
 
   const d = ch.decor ?? {};
   if (d.couch) couch(scene, d.couch);
