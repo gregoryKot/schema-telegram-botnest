@@ -3,7 +3,7 @@ import { W, H, GROUND_Y, S, PHYS } from '../constants';
 import { audio } from '../audio';
 import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
 import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation } from '../enemies/home';
-import { SelfSoothe } from '../enemies/road';
+import { SelfSoothe, CrookedMirror } from '../enemies/road';
 import { buildDecor } from '../decor';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { ensureEnemyAnims, LEDGE } from '../props';
@@ -312,6 +312,8 @@ export class GameScene extends Phaser.Scene {
           this.introOnce('irrit', 'РАЗДРАЖЕНИЕ', 'вспыхивает из ничего.\nвыпустишь пар — вскипит опять.'); }
         if (t.soothe) { this.homeMobs.push(new SelfSoothe(this.mobCtx(), t.soothe));
           this.introOnce('soothe', 'САМО ПРОЙДЁТ', 'не нападает — убаюкивает.\nзалипнешь рядом — уснёшь, −сердце.\nне слушай, просто пройди мимо.'); }
+        if (t.mirror) { this.homeMobs.push(new CrookedMirror(this.mobCtx(), t.mirror));
+          this.introOnce('mirror', 'КРИВОЕ ЗЕРКАЛО', 'показывает приукрашенного тебя:\n«да всё норм». перегораживает путь.\nЗАМРИ (держи Z) — посмотри честно.'); }
         if (t.say) { this.say(t.say, 2400); if (t.anx) audio.anx(); }
         if (t.gate) this.makeGate(t.gate, [...this.anx.slice(beforeA), ...this.homeMobs.slice(beforeH)]);
         if (t.overwhelm) this.beginOverwhelm();

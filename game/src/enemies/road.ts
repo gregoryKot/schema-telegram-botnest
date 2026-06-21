@@ -68,3 +68,73 @@ export class SelfSoothe implements HomeMob {
     this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, scale: 0, duration: 420, onComplete: () => this.img.destroy() });
   }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Кривое зеркало («не настолько плохо, у других хуже»). Показывает приукрашенного
+//  тебя и шепчет «да всё норм». ПЕРЕГОРАЖИВАЕТ путь. Пройти можно только ЗАМЕРЕВ
+//  перед ним — посмотреть честно: зеркало трескается. Здесь ЗАМРИ = смелость, а
+//  не бегство (поворотная точка к терапии). Удар/рывок — не работают.
+// ════════════════════════════════════════════════════════════════════════════
+
+export class CrookedMirror implements HomeMob {
+  alive = true;
+  private frame: Phaser.GameObjects.Image;
+  private fake: Phaser.GameObjects.Sprite;
+  private bar: Phaser.GameObjects.Graphics;
+  private barrier: Phaser.GameObjects.Rectangle;
+  private look = 0;
+
+  constructor(private ctx: MobCtx, private x: number) {
+    const s = ctx.scene;
+    // временный визуал: дверь-спрайт как «рама» + приукрашенный двойник внутри
+    this.frame = s.add.image(x, GROUND_Y, 'prop_door').setOrigin(0.5, 1).setScale(0.85).setTint(0x9fd8ff).setDepth(6);
+    this.fake = s.add.sprite(x, GROUND_Y - 26, 'cat_idle').setOrigin(0.5, 1).setScale(1.2).setTint(0xe6ccff).setAlpha(0.85).setDepth(7);
+    if (s.anims.exists('p-idle')) this.fake.play('p-idle');
+    this.bar = s.add.graphics().setDepth(46);
+    // барьер: дальше нельзя, пока не посмотрел честно
+    this.barrier = s.add.rectangle(x, GROUND_Y / 2, 14, GROUND_Y + 40, 0, 0);
+    s.physics.add.existing(this.barrier, true);
+    s.physics.add.collider(ctx.player(), this.barrier, () =>
+      this.ctx.sayOnce('mirror_block', 'мимо не пройти. ЗАМРИ (держи Z) — посмотри честно.', 2800));
+  }
+
+  update(dt: number) {
+    if (!this.alive) return;
+    this.fake.x = this.x; // двойник «отражает» — стоит в раме
+    const p = this.ctx.player();
+    const d = Math.abs(p.x - this.x);
+    this.bar.clear();
+    if (d < 170) {
+      this.ctx.sayOnce('mirror_zone', '«да всё же норм. ты в порядке»...', 2800);
+      if (this.ctx.frozen()) {
+        this.look += dt;
+        const k = Math.min(1, this.look / 1700);
+        // явный прогресс «честного взгляда»
+        this.bar.fillStyle(0x0a0814, 0.7); this.bar.fillRect(this.x - 34, GROUND_Y - 156, 68, 12);
+        this.bar.fillStyle(0x88ffcc, 1);   this.bar.fillRect(this.x - 31, GROUND_Y - 153, 62 * k, 6);
+        this.bar.fillStyle(0xffffff, 0.9); this.bar.fillRect(this.x - 31, GROUND_Y - 145, 62, 2);
+        this.ctx.sayOnce('mirror_look', 'смотрю честно... и правда не так уж «норм».', 2400);
+        if (this.look >= 1700) this.crack();
+      } else {
+        this.look = Math.max(0, this.look - dt * 0.6);
+        if (this.ctx.dashing()) this.ctx.sayOnce('mirror_dash', 'отвернулся — и снова поверил, что норм.', 2600);
+      }
+    }
+  }
+
+  tryHit(): boolean {
+    this.ctx.sayOnce('mirror_hit', 'разбить зеркало? будешь врать себе и дальше.', 2400);
+    return true;
+  }
+
+  private crack() {
+    this.alive = false;
+    audio.split();
+    this.barrier.destroy();
+    this.bar.clear(); this.bar.destroy();
+    this.ctx.burst(this.x, GROUND_Y - 80, 0x9fd8ff, 14, 140);
+    this.ctx.sayOnce('mirror_crack', 'увидел честно. остановиться и посмотреть —\nэто не слабость, а смелость. вот с этого и начинается.', 3600);
+    const s = this.ctx.scene;
+    s.tweens.add({ targets: [this.frame, this.fake], alpha: 0, y: '+=12', angle: 4, duration: 650, onComplete: () => { this.frame.destroy(); this.fake.destroy(); } });
+  }
+}
