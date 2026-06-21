@@ -1109,13 +1109,20 @@ export class GameScene extends Phaser.Scene {
     // сразу гасим хаос (огромные тучи и пр.) чёрной шторой — иначе он лезет в кадр
     const cover = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e).setScrollFactor(0).setDepth(150).setAlpha(0);
     this.tweens.add({ targets: cover, alpha: 1, duration: 700 });
-    const txt = this.add.text(W / 2, H / 2, 'так больше нельзя...', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
+    const font = '"Press Start 2P", "Courier New", monospace';
+    const txt = this.add.text(W / 2, H / 2 - 16, 'так больше нельзя...', { fontFamily: font, fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
     this.tweens.add({ targets: txt, alpha: 1, duration: 800, delay: 400 });
-    // «дно» — момент, когда дверь нужнее всего: даём контакт, не просто рестарт
-    this.time.delayedCall(2200, () => {
-      txt.destroy();
-      this.contactGlimpse(() => this.scene.restart());
+    // простой, понятный ретрай — без абстрактной сцены «повернуться» (она только в финале главы)
+    this.time.delayedCall(1900, () => {
+      const t2 = this.add.text(W / 2, H / 2 + 26, 'но это лишь попытка. вставай.', { fontFamily: font, fontSize: '12px', color: '#a8e8d0' })
+        .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
+      const hint = this.add.text(W / 2, H - 56, IS_TOUCH ? 'тапни — ещё раз' : 'клавиша / клик — ещё раз', { fontFamily: font, fontSize: '11px', color: '#88ffcc' })
+        .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
+      this.tweens.add({ targets: [t2, hint], alpha: 0.9, duration: 600 });
+      const go = () => this.scene.restart();
+      this.input.keyboard!.once('keydown', go);
+      this.input.once('pointerdown', go);
     });
   }
 

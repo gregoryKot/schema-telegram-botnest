@@ -66,7 +66,6 @@ export class TutorialScene extends Phaser.Scene {
   // dash
   private pile: Phaser.GameObjects.Container | null = null;
   private pileSpr: Phaser.GameObjects.Sprite | null = null;
-  private pileEngaged = false;
   private dashed = false; private dashT = 0; private dashCd = 0; private dashDir = 1;
   private neiSayT = 0; private neiLine = 0;
   private wrongCd = 0; private lastWrong = -1; // объяснения «не та кнопка» — троттлинг + без повтора
@@ -80,6 +79,7 @@ export class TutorialScene extends Phaser.Scene {
   private slash!: Phaser.GameObjects.Graphics;
   private playSprite!: Phaser.GameObjects.Sprite;
   private sleepSprite!: Phaser.GameObjects.Sprite;
+  private lungeSprite!: Phaser.GameObjects.Sprite; // выпад атаки — как в игре
   // fawn (сценка «уступи»)
   private neighbor: Phaser.GameObjects.Sprite | null = null;
   private neiBubble: Phaser.GameObjects.Text | null = null;
@@ -130,6 +130,9 @@ export class TutorialScene extends Phaser.Scene {
     this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
     this.safeAnim('nei-idle', 'nei_idle', 0, 3, 6, -1);
     this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
+    // выпад атаки — тот же спрайт, что в игре (cat_dash), грузится в фоне
+    this.safeAnim('p-lunge', 'cat_dash', 1, 5, 24, 0);
+    this.lungeSprite = this.add.sprite(0, 0, this.textures.exists('cat_dash') ? 'cat_dash' : 'cat_idle', 0).setOrigin(0.5, 1).setScale(0.26).setDepth(11).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
     this.contHint = this.add.text(W / 2, IS_TOUCH ? H - 210 : H - 100, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
@@ -145,8 +148,9 @@ export class TutorialScene extends Phaser.Scene {
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 8, y: 5 } }).setOrigin(0.5, 1).setDepth(45).setAlpha(0);
 
     // жизни — как в игре; учим, что каждый «способ справиться» их тратит
+    // жизни — В ТОЧНОСТИ как в игре (тот же размер/цвет/позиция)
     this.hearts = 3; this.hurtT = 0;
-    this.heartsText = this.add.text(16, 14, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px', color: '#ff5577' })
+    this.heartsText = this.add.text(18, 14, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '24px', color: '#ff5577' })
       .setScrollFactor(0).setDepth(60);
     this.updateHearts();
 
@@ -328,8 +332,11 @@ export class TutorialScene extends Phaser.Scene {
       this.attackT -= dt;
       const dir = this.player.flipX ? -1 : 1;
       const prog = 1 - this.attackT / 170;
-      // выпад с выгнутой спиной + три следа когтей
-      this.player.setScale(1.5 + 0.25 * Math.sin(prog * Math.PI), 1.5 - 0.2 * Math.sin(prog * Math.PI));
+      // ВЫПАД — один в один как в игре: спрайт cat_dash, прячем обычного кота
+      if (this.anims.exists('p-lunge')) {
+        if (!this.lungeSprite.visible) { this.lungeSprite.setVisible(true).play('p-lunge'); this.player.setVisible(false); }
+        this.lungeSprite.setPosition(this.player.x, this.player.y).setFlipX(dir < 0);
+      }
       const cx = this.player.x + dir * 30, cy = this.player.y - 34;
       const len = 34 * Math.min(1, prog * 1.6);
       const a = 1 - Math.max(0, prog - 0.45) * 1.8;
@@ -338,9 +345,20 @@ export class TutorialScene extends Phaser.Scene {
         this.slash.lineStyle(3, i === 1 ? 0xff4455 : 0xd92b3d, Math.max(0, a));
         this.slash.lineBetween(cx + ox, cy + oy, cx + ox + len * dir, cy + oy + len * 0.55);
       }
+      if (prog > 0.4 && prog < 0.6) this.burstAt(cx + len * dir * 0.7, cy + 12, 0xff4455);
       // ударная волна-кольцо вокруг кота — как в игре (бьёт во все стороны)
       this.slash.lineStyle(3, 0xff5566, Math.max(0, 1 - prog) * 0.7);
       this.slash.strokeCircle(this.player.x, this.player.y - 22, 104 * (0.45 + prog * 0.6));
+      if (this.attackT <= 0) { this.lungeSprite.setVisible(false); this.player.setVisible(true); }
+    }
+  }
+
+  // мелкие частицы (как burst в игре) — для удара
+  private burstAt(x: number, y: number, color: number) {
+    for (let i = 0; i < 4; i++) {
+      const p = this.add.rectangle(x, y, 3, 3, color).setDepth(12);
+      const ang = Math.random() * 6.28, s = 60 * (0.5 + Math.random());
+      this.tweens.add({ targets: p, x: x + Math.cos(ang) * s, y: y + Math.sin(ang) * s, alpha: 0, scale: 0, duration: 300, onComplete: () => p.destroy() });
     }
   }
 
@@ -404,7 +422,6 @@ export class TutorialScene extends Phaser.Scene {
 
   // ── Шаг 2: БЕГИ — куча дел, от которой можно только увернуться ─────────────
   private spawnPile() {
-    this.pileEngaged = false;
     const c = this.add.container(110, GROUND_Y).setDepth(8); // на экране слева, наступает
     // настоящий спрайт «пачка дел» (дрожит), origin снизу — стоит на полу
     this.pileSpr = this.add.sprite(0, 0, 'workload').setOrigin(0.5, 1).setScale(0.9);
@@ -416,17 +433,13 @@ export class TutorialScene extends Phaser.Scene {
   private updatePile(dt: number) {
     const p = this.pile; if (!p) return;
     const d = this.player.x - p.x;
-    p.x += Math.sign(d) * dt * 0.06;       // ползёт к Мистеру, но медленнее шага — можно убежать
+    p.x += Math.sign(d) * dt * 0.06;       // ползёт к Мистеру (фронтальный спрайт — без флипа)
     p.y = GROUND_Y + Math.sin(this.t * 0.01) * 2;
-    this.pileSpr?.setFlipX(d < 0);          // повёрнута к Мистеру
-    if (Math.abs(d) < 140) this.pileEngaged = true; // подпустил — теперь они «навалились»
     if (Math.abs(d) < 60 && this.dashT <= 0) {
-      // навалились — будто ударили: толчок назад + минус жизнь
+      // навалились — будто ударили: толчок назад + минус жизнь. Уйти можно только рывком
       (this.player.body as Phaser.Physics.Arcade.Body).velocity.x = Math.sign(d || 1) * 280;
-      this.loseHeart('дела навалились! рывок (Z) или убегай.');
+      this.loseHeart('дела навалились! только рывок (Z) спасает.');
     }
-    // убежал далеко в другую сторону — тоже спасение (но только если они уже наступали)
-    if (this.pileEngaged && !this.dashed && Math.abs(d) > 360) this.clearPile('убежал... но завтра они снова тут.');
   }
   private onDash() {
     if (this.step !== 'dash') { this.wrongTry('dash'); return; }
@@ -503,7 +516,6 @@ export class TutorialScene extends Phaser.Scene {
     const d = Math.abs(this.player.x - c.x);
     if (this.colBubble?.active) {
       this.colBubble.x = c.x; this.colBubble.y = c.y - 70 + Math.sin(this.t * 0.04) * 3;
-      this.colBubble.setAlpha(this.bubbleT > 600 ? 0 : 1); // не наезжать на реплику Мистера
       this.colBubble.setText(['ДЗЗ-ДЗЗ-ДЗЗ!', 'ВСТАВАЙ!', 'ДЗЗЗЗ!'][Math.floor(this.t / 1400) % 3]);
     }
   }
@@ -550,13 +562,12 @@ export class TutorialScene extends Phaser.Scene {
 
   private updateNeighbor(dt: number) {
     const n = this.neighbor; if (!n || !n.active) return;
-    // ходит по пятам — догоняет, не отстаёт
+    // ходит по пятам — догоняет, лицом к Мистеру (flipX true = смотрит влево)
     const d = this.player.x - n.x;
-    if (Math.abs(d) > 66) { n.x += Math.sign(d) * dt * 0.13; n.setFlipX(d > 0); }
+    if (Math.abs(d) > 66) n.x += Math.sign(d) * dt * 0.13;
+    n.setFlipX(d < 0); // кот слева → смотрит влево
     if (this.neiBubble?.active) {
       this.neiBubble.x = n.x; this.neiBubble.y = n.y - 54;
-      // прячем её реплику, пока говорит Мистер — иначе пузыри наезжают
-      this.neiBubble.setAlpha(this.bubbleT > 600 ? 0 : 1);
       this.neiSayT += dt;
       if (this.neiSayT > 2200) { this.neiSayT = 0; this.neiBubble.setText(NEI_LINES[this.neiLine++ % NEI_LINES.length]); }
     }
@@ -599,17 +610,20 @@ export class TutorialScene extends Phaser.Scene {
   private sayOnce(key: string, text: string, dur: number) { if (this.said.has(key)) return; this.said.add(key); this.say(text, dur); }
   // нажал «не ту» кнопку в этой сценке — объясняем, почему не сработает (разные варианты)
   private wrongTry(action: string) {
-    if (this.wrongCd > 0 || this.bubbleT > 800) return;
     const pool = WRONG[this.step]?.[action];
     if (!pool || !pool.length) return;
+    if (this.wrongCd > 0) return; // троттлинг от спама, но реагируем почти сразу
     let i = Math.floor(Math.random() * pool.length);
     if (pool.length > 1 && i === this.lastWrong) i = (i + 1) % pool.length;
-    this.lastWrong = i; this.wrongCd = 1500;
+    this.lastWrong = i; this.wrongCd = 900;
     this.say(pool[i], 2400);
   }
   private updateBubble(dt: number) {
     if (this.bubbleT <= 0) return;
-    this.bubble.x = this.player.x; this.bubble.y = this.player.y - 64;
+    // если рядом говорит NPC (соседка/будильник) — реплику кота поднимаем ВЫШЕ,
+    // чтобы пузыри стояли стопкой, а не наезжали (и ничего не «исчезало»)
+    const npcTalking = (this.neiBubble?.active) || (this.colBubble?.active);
+    this.bubble.x = this.player.x; this.bubble.y = this.player.y - (npcTalking ? 104 : 64);
     this.bubbleT -= dt;
     if (this.bubbleT < 300) this.bubble.setAlpha(Math.max(0, this.bubbleT / 300));
   }
