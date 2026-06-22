@@ -723,52 +723,23 @@ export function LandingPage() {
           {/* ── Divider ── */}
           <div style={{ height: 1, background: 'var(--line-strong)', margin: '36px 0', animation: 'hero-in .5s .7s both' }} />
 
-          {/* ── Below divider: description left / price typography right ── */}
-          <div className="hero-bottom" style={{ animation: 'hero-in .7s .8s both' }}>
-
-            {/* Left: description + CTAs */}
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, maxWidth: 440, margin: '0 0 28px' }}>
-                Мы снова и снова попадаем в одни и те же ситуации – в отношениях, самооценке, тревоге. Схема-терапия помогает понять почему – и найти выход.
-              </p>
-              <div style={{ marginBottom: 18 }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 12px', background: 'rgba(74,99,53,.1)', border: '1px solid rgba(74,99,53,.25)', borderRadius: 100 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: MOSS, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: MOSS, letterSpacing: '.04em' }}>Принимаю новых клиентов</span>
-                </span>
-              </div>
-              <div className="hero-ctas">
-                <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
-              </div>
-              <div style={{ margin: '18px 0 0' }}>
-                <TgLink label="Написать в Telegram" size="lg" />
-              </div>
-              <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '14px 0 0' }}>
-                Первая встреча – бесплатно, 15 минут, без обязательств
-              </p>
+          {/* ── Below divider: single editorial column, generous whitespace ── */}
+          <div style={{ maxWidth: 460, animation: 'hero-in .7s .8s both' }}>
+            <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 28px' }}>
+              Мы снова и снова попадаем в одни и те же ситуации – в отношениях, самооценке, тревоге. Схема-терапия помогает понять почему – и найти выход.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap' }}>
+              <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
+              <TgLink label="Написать в Telegram" size="lg" />
             </div>
-
-            {/* Right: editorial price stats */}
-            <div className="hero-stats">
-              <div style={{ borderTop: '1px solid var(--line-strong)', paddingTop: 20, marginBottom: 24 }}>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(36px, 3.5vw, 52px)', fontWeight: 400, color: 'var(--text)', lineHeight: 1, letterSpacing: '-.03em', margin: '0 0 6px' }}>4 000 ₽</p>
-                <p style={{ fontSize: 13, color: 'var(--text-faint)', letterSpacing: '.02em' }}>сессия · 50 мин · онлайн</p>
-              </div>
-              <div>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 2.8vw, 40px)', fontWeight: 400, color: 'var(--accent)', lineHeight: 1, letterSpacing: '-.02em', margin: '0 0 6px', fontStyle: 'italic' }}>0 ₽</p>
-                <p style={{ fontSize: 13, color: 'var(--text-faint)', letterSpacing: '.02em' }}>первая встреча · 15 мин</p>
-              </div>
-            </div>
-
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '18px 0 0' }}>
+              Первая встреча бесплатно · 15 минут · без обязательств
+            </p>
           </div>
 
-          {/* ── Bottom strip ── */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '32px 0 28px', animation: 'hero-in .5s 1.1s both' }}>
-            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0, letterSpacing: '.02em' }}>Схема-терапевт · КПТ · Онлайн</p>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.12em', textTransform: 'uppercase' }}>Далее</span>
-              <div style={{ width: 1, height: 28, background: 'var(--line-strong)', animation: 'scroll-bar 2s ease-in-out infinite' }} />
-            </div>
+          {/* ── Subtle scroll cue ── */}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0 28px', animation: 'hero-in .5s 1.1s both' }}>
+            <div style={{ width: 1, height: 28, background: 'var(--line-strong)', animation: 'scroll-bar 2s ease-in-out infinite' }} />
           </div>
 
         </div>
@@ -1136,9 +1107,6 @@ export function LandingPage() {
 
         /* Hero */
         .hero-wrap    { max-width:1100px; width:100%; margin:0 auto; padding:0 40px; display:flex; flex-direction:column; justify-content:space-between; min-height:100dvh; box-sizing:border-box; }
-        .hero-bottom  { display:grid; grid-template-columns:1.4fr 1fr; gap:60px; align-items:end; }
-        .hero-stats   { display:flex; flex-direction:column; justify-content:flex-end; }
-        .hero-ctas    { display:flex; gap:12px; flex-wrap:wrap; }
         @media (max-height:820px) {
           .hero-h1   { font-size:clamp(36px, 7vh, 80px) !important; }
           .hero-wrap { min-height:100dvh; }
@@ -1166,8 +1134,6 @@ export function LandingPage() {
         }
 
         @media (max-width:900px) {
-          .hero-bottom  { grid-template-columns:1fr; gap:32px; }
-          .hero-stats   { display:none; }
           .about-inner  { grid-template-columns:1fr; }
           .bento-grid   { grid-template-columns:1fr; }
           .bento-tall   { grid-row:auto; }
@@ -1184,14 +1150,9 @@ export function LandingPage() {
         @media (min-width:601px) and (max-width:900px) {
           .work-grid    { grid-template-columns:1fr 1fr; }
         }
-        @media (max-width:900px) {
-          .hero-ctas  { flex-direction:column; align-items:flex-start; }
-          .hero-ctas > * { width:auto !important; }
-        }
         @media (max-width:600px) {
           .form-grid  { grid-template-columns:1fr; }
           .hero-wrap, section, footer { padding-left:20px !important; padding-right:20px !important; }
-          .hero-ctas > * { width:100% !important; }
         }
       `}</style>
     </div>
