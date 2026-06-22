@@ -1,11 +1,20 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '../api';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 // ─── Design tokens (local to landing) ────────────────────────────────────────
 const R = { pill: 100, card: 24, btn: 12, badge: 14 } as const;          // radius
 const MOSS = '#4a6335';        // green status (passes WCAG AA on paper bg)
 const DARK_BG = '#1c1916';     // intentional always-dark sections
 const INK_ON_DARK = '#eceae5'; // text on dark sections
+
+// Hamburger button (mobile nav trigger) – shown only via .menu-btn CSS
+const menuBtnStyle: React.CSSProperties = {
+  display: 'none', flexDirection: 'column', justifyContent: 'center', gap: 4,
+  width: 38, height: 38, borderRadius: 9, border: '1px solid var(--line)',
+  background: 'transparent', cursor: 'pointer', padding: 0, alignItems: 'center',
+};
+const burgerLine: React.CSSProperties = { width: 16, height: 1.6, background: 'var(--text)', borderRadius: 2, display: 'block' };
 
 // ─── Button – single source for all CTAs ─────────────────────────────────────
 type BtnVariant = 'primary' | 'ghost' | 'dark';
@@ -70,13 +79,13 @@ function Btn({
 
 // ─── Section nav – one source for in-page links to every section ──────────────
 const NAV_LINKS: { label: string; href: string }[] = [
-  { label: 'Обо мне',     href: '#about' },
-  { label: 'Образование', href: '#education' },
-  { label: 'Подход',      href: '#approach' },
-  { label: 'Как начать',  href: '#process' },
-  { label: 'Цены',        href: '#prices' },
-  { label: 'СхемаЛаб',    href: '#schemalab' },
-  { label: 'Вопросы',     href: '#faq' },
+  { label: 'Обо мне',      href: '#about' },
+  { label: 'С чем работаю', href: '#work' },
+  { label: 'Подход',       href: '#approach' },
+  { label: 'Как начать',   href: '#process' },
+  { label: 'Цены',         href: '#prices' },
+  { label: 'СхемаЛаб',     href: '#schemalab' },
+  { label: 'Вопросы',      href: '#faq' },
 ];
 
 function SectionNav({ className, color = 'var(--text-sub)', active = '' }: { className?: string; color?: string; active?: string }) {
@@ -94,6 +103,56 @@ function SectionNav({ className, color = 'var(--text-sub)', active = '' }: { cla
         );
       })}
     </nav>
+  );
+}
+
+// ─── Mobile menu – fullscreen overlay (uses useHistorySheet per project rule) ─
+const MOBILE_LINKS: { label: string; href: string }[] = [
+  ...NAV_LINKS,
+  { label: 'Образование', href: '#education' },
+  { label: 'Отзывы',      href: '/reviews' },
+  { label: 'Статьи',      href: '/articles' },
+];
+
+function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: string; onBook: () => void }) {
+  const goBack = useHistorySheet(onClose);
+  const go = (href: string) => {
+    if (href.startsWith('#')) {
+      goBack();
+      // wait for overlay to unmount before scrolling to the anchor
+      setTimeout(() => document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 60);
+    } else {
+      window.location.href = href;
+    }
+  };
+  return (
+    <div role="dialog" aria-modal="true" aria-label="Меню" style={{
+      position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)',
+      display: 'flex', flexDirection: 'column', padding: '20px 24px calc(28px + env(safe-area-inset-bottom,0px))',
+      animation: 'menu-in .28s cubic-bezier(.16,1,.3,1) both',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <span style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)' }}>Меню</span>
+        <button onClick={goBack} aria-label="Закрыть меню" style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid var(--line)', background: 'transparent', color: 'var(--text)', fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+      </div>
+      <nav style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        {MOBILE_LINKS.map((l, i) => {
+          const isActive = active === l.href.slice(1);
+          return (
+            <button key={l.href} onClick={() => go(l.href)} style={{
+              textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
+              padding: '16px 0', borderBottom: i === MOBILE_LINKS.length - 1 ? 'none' : '1px solid var(--line)',
+              fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400,
+              color: isActive ? 'var(--accent)' : 'var(--text)',
+              fontStyle: isActive ? 'italic' : 'normal',
+            }}>{l.label}</button>
+          );
+        })}
+      </nav>
+      <div style={{ marginTop: 20 }}>
+        <Btn full size="lg" radius="btn" onClick={() => { goBack(); setTimeout(onBook, 60); }}>Записаться на знакомство →</Btn>
+      </div>
+    </div>
   );
 }
 
@@ -169,9 +228,9 @@ function MarqueeStrip({ reverse = false, bg = 'var(--bg-rail)', italic = false, 
     <div style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', overflow: 'hidden', padding: '14px 0', background: bg }}>
       <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
         {[0, 1, 2].map(i => (
-          <span key={i} style={{ display: 'inline-flex', flexShrink: 0, animation: `${anim} ${dur} linear infinite` }}>
+          <span key={i} aria-hidden={i > 0} style={{ display: 'inline-flex', flexShrink: 0, animation: `${anim} ${dur} linear infinite` }}>
             {topics.map(w => (
-              <a key={w.label} href={w.href}
+              <a key={w.label} href={w.href} tabIndex={i > 0 ? -1 : undefined}
                 style={{ fontSize: 14, fontWeight: 500, fontStyle: italic ? 'italic' : 'normal', color: 'var(--text-sub)', padding: '8px 20px', textDecoration: 'none', transition: 'color .15s', display: 'inline-flex', alignItems: 'center' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-sub)'; }}>
@@ -278,6 +337,30 @@ const EDUCATION: { year: string; title: string; place: string; placeUrl?: string
     placeUrl: 'https://mindfulness-school.ru',
     note: 'инструкторская программа MMTTP, 275 часов · в процессе',
   },
+];
+
+// ─── Work themes (что приносят на сессии) ────────────────────────────────────
+const WORK_THEMES: { title: string; text: string }[] = [
+  { title: 'Отношения', text: 'Снова и снова один сценарий: выбираю недоступных, боюсь близости, растворяюсь в партнёре или держу всех на расстоянии.' },
+  { title: 'Самооценка', text: 'Внутренний критик, ощущение «со мной что-то не так», обесценивание своих успехов, перфекционизм, который не даёт выдохнуть.' },
+  { title: 'Тревога и контроль', text: 'Хроническое напряжение, тревога о будущем, гиперконтроль и невозможность просто расслабиться и быть.' },
+  { title: 'Чувства', text: 'Эмоции будто отключены — или, наоборот, захлёстывают. Трудно понять, что я чувствую и что с этим делать.' },
+  { title: 'Идентичность', text: '«Кто я и чего хочу на самом деле» — за чужими ожиданиями и ролями потерялся собственный голос.' },
+  { title: 'Повторяющиеся паттерны', text: 'Понимаю умом, но всё равно наступаю на те же грабли. Хочу добраться до корня, а не бороться с симптомом.' },
+];
+
+// ─── Boundaries (когда нужен другой специалист) ──────────────────────────────
+const BOUNDARIES: string[] = [
+  'Острое состояние, мысли о причинении вреда себе, самоповреждение — это повод за неотложной помощью, а не за консультацией.',
+  'Подозрение на психическое расстройство (тяжёлая депрессия, биполярное, РПП, психоз) — нужна диагностика и, возможно, медикаменты у врача-психиатра.',
+  'Зависимости (алкоголь, ПАВ) — здесь эффективнее профильная помощь.',
+];
+
+// ─── Trust (этика и качество практики) ───────────────────────────────────────
+const TRUST: { title: string; text: string }[] = [
+  { title: 'Супервизия с 2021 года', text: 'Регулярно разбираю свою работу с супервизором. Это профессиональная норма и гарантия, что метод применяется корректно и в ваших интересах.' },
+  { title: 'Личная терапия с 2021 года', text: 'Сам постоянно в личной терапии. Убеждён: сопровождать другого можно, только зная этот путь изнутри.' },
+  { title: 'Конфиденциальность', text: 'Всё, что вы рассказываете, остаётся между нами. Поэтому на сайте нет отзывов клиентов — это вопрос этики, а не отсутствия практики.' },
 ];
 
 // ─── App features ─────────────────────────────────────────────────────────────
@@ -410,13 +493,17 @@ export function LandingPage() {
   const [showBar, setShowBar] = useState(false);
   const [scrollPct, setScrollPct] = useState(0);
   const [activeSection, setActiveSection] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
 
   const aboutRef    = useReveal() as React.RefObject<HTMLElement>;
+  const workRef     = useReveal() as React.RefObject<HTMLElement>;
   const quoteRef    = useReveal() as React.RefObject<HTMLElement>;
+  const trustRef    = useReveal() as React.RefObject<HTMLElement>;
   const approachRef = useReveal() as React.RefObject<HTMLElement>;
   const processRef  = useReveal() as React.RefObject<HTMLElement>;
   const priceRef    = useReveal() as React.RefObject<HTMLElement>;
+  const boundRef    = useReveal() as React.RefObject<HTMLElement>;
   const formRef     = useReveal() as React.RefObject<HTMLElement>;
 
   const scrollToBooking = useCallback(() => {
@@ -424,13 +511,20 @@ export function LandingPage() {
   }, []);
 
   useEffect(() => {
+    let ticking = false;
     const fn = () => {
-      const y = window.scrollY;
-      setShowBar(y > window.innerHeight * 0.75);
-      const max = document.body.scrollHeight - window.innerHeight;
-      setScrollPct(max > 0 ? (y / max) * 100 : 0);
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        setShowBar(y > window.innerHeight * 0.75);
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        setScrollPct(max > 0 ? (y / max) * 100 : 0);
+        ticking = false;
+      });
     };
     window.addEventListener('scroll', fn, { passive: true });
+    fn();
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
@@ -450,6 +544,9 @@ export function LandingPage() {
 
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden' }}>
+
+      {/* ── MOBILE MENU ─────────────────────────────────────────────────── */}
+      {menuOpen && <MobileMenu onClose={() => setMenuOpen(false)} active={activeSection} onBook={scrollToBooking} />}
 
       {/* ── SCROLL PROGRESS ─────────────────────────────────────────────── */}
       <div aria-hidden style={{ position: 'fixed', top: 0, left: 0, zIndex: 102, height: 2, width: `${scrollPct}%`, background: 'var(--accent)', pointerEvents: 'none', transition: 'width .1s linear' }} />
@@ -473,14 +570,17 @@ export function LandingPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ position: 'relative', width: 30, height: 30, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 13, color: 'var(--text-sub)' }}>Г</span>
-            <img src="/gregory.jpg" alt="Григорий Котляревский" style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            <img src="/gregory.jpg" alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           </div>
           <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)', whiteSpace: 'nowrap' }}>Григорий Котляревский</span>
         </div>
         <SectionNav className="sticky-nav" active={activeSection} />
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <a href="https://schemalab.ru" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
+          <a href="https://schemalab.ru" className="desktop-inline" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
           <Btn size="sm" onClick={scrollToBooking}>Записаться</Btn>
+          <button className="menu-btn" aria-label="Открыть меню" onClick={() => setMenuOpen(true)} style={menuBtnStyle}>
+            <span style={burgerLine} /><span style={burgerLine} /><span style={burgerLine} />
+          </button>
         </div>
       </div>
 
@@ -504,7 +604,7 @@ export function LandingPage() {
                 onMouseLeave={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--text)'; }}>
                 <div style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--text-sub)' }}>Г</span>
-                  <img src="/gregory.jpg" alt="Григорий Котляревский" style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                  <img src="/gregory.jpg" alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                 </div>
                 <span className="nav-name" style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color .15s' }}>Григорий Котляревский</span>
               </a>
@@ -535,6 +635,9 @@ export function LandingPage() {
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = ''; }}>
                 Написать ↗
               </a>
+              <button className="menu-btn" aria-label="Открыть меню" onClick={() => setMenuOpen(true)} style={menuBtnStyle}>
+                <span style={burgerLine} /><span style={burgerLine} /><span style={burgerLine} />
+              </button>
             </div>
           </div>
 
@@ -615,7 +718,7 @@ export function LandingPage() {
         <div className="about-inner">
           <div style={{ position: 'relative' }}>
             <div style={{ aspectRatio: '3/4', borderRadius: 24, overflow: 'hidden', background: 'var(--surface-2)', boxShadow: '0 24px 80px rgba(28,25,20,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/gregory.jpg" alt="Григорий Котляревский" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
+              <img src="/gregory.jpg" alt="Григорий Котляревский — схема-терапевт" loading="lazy" decoding="async" width={600} height={800} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
                 onError={e => {
                   const img = e.currentTarget as HTMLImageElement;
                   img.style.display = 'none';
@@ -657,6 +760,27 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── WORK THEMES ─────────────────────────────────────────────────── */}
+      <section id="work" ref={workRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)', padding: '80px 40px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>С чем я работаю</p>
+          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 16px', letterSpacing: '-.01em' }}>
+            Если узнаёте <span style={{ fontStyle: 'italic' }}>себя</span>
+          </h2>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 44px', maxWidth: 560 }}>
+            Эти темы чаще всего приносят на сессии. Не обязательно формулировать запрос идеально — достаточно ощущения «это про меня».
+          </p>
+          <div className="work-grid">
+            {WORK_THEMES.map(t => (
+              <div key={t.title} style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 16, padding: '24px 22px' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>{t.title}</h3>
+                <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65, margin: 0 }}>{t.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── EDUCATION ───────────────────────────────────────────────────── */}
       <section id="education" ref={quoteRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 40px' }}>
         <div className="edu-grid" style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -687,6 +811,25 @@ export function LandingPage() {
                     {' · '}{item.note}
                   </p>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TRUST ───────────────────────────────────────────────────────── */}
+      <section ref={trustRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ padding: '80px 40px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Этика и качество практики</p>
+          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>
+            Почему мне можно <span style={{ fontStyle: 'italic' }}>доверять</span>
+          </h2>
+          <div className="trust-grid">
+            {TRUST.map((t, i) => (
+              <div key={t.title} style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 22, borderTop: '1px solid var(--line-strong)' }}>
+                <span style={{ fontFamily: 'var(--serif)', fontSize: 28, fontStyle: 'italic', color: 'var(--accent)', lineHeight: 1 }}>0{i + 1}</span>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{t.title}</h3>
+                <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>{t.text}</p>
               </div>
             ))}
           </div>
@@ -771,6 +914,34 @@ export function LandingPage() {
               ))}
             </div>
             <Btn variant="dark" radius="btn" full onClick={scrollToBooking}>Начать работу →</Btn>
+          </div>
+        </div>
+      </section>
+
+      {/* ── BOUNDARIES ──────────────────────────────────────────────────── */}
+      <section ref={boundRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 40px 80px' }}>
+        <div style={{ border: '1px solid var(--line)', borderRadius: 24, padding: 'clamp(28px, 4vw, 48px)', background: 'var(--bg-elev)' }}>
+          <div className="bound-grid">
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Честно</p>
+              <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 16px', lineHeight: 1.2, letterSpacing: '-.01em' }}>
+                Когда нужен<br /><span style={{ fontStyle: 'italic' }}>другой специалист</span>
+              </h2>
+              <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>
+                Это психологическое консультирование, а не медицинская психотерапия по ФЗ-323. Есть ситуации, где эффективнее и безопаснее другая помощь — и я честно об этом скажу.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {BOUNDARIES.map(b => (
+                <div key={b} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <span style={{ color: 'var(--c-clay)', fontSize: 15, flexShrink: 0, lineHeight: 1.6 }}>→</span>
+                  <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{b}</span>
+                </div>
+              ))}
+              <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.7, margin: '8px 0 0', paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+                Если на знакомстве станет ясно, что вам нужен врач, — помогу сориентироваться. Бесплатный телефон доверия в кризисной ситуации: <a href="tel:88002000122" style={{ color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>8 800 2000 122</a>.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -860,10 +1031,25 @@ export function LandingPage() {
         /* Anchored sections clear the 58px sticky bar when jumped to */
         section[id] { scroll-margin-top: 74px; }
 
-        /* Section nav – shown only where the full row fits */
+        /* Section nav (desktop) ⇄ hamburger (mobile/tablet) */
         .sticky-nav, .hero-nav { display: flex; }
-        @media (max-width: 1100px) {
+        .menu-btn { display: none !important; }
+        @media (max-width: 1200px) {
           .sticky-nav, .hero-nav { display: none !important; }
+          .menu-btn { display: flex !important; }
+          .desktop-inline { display: none !important; }
+        }
+        @keyframes menu-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+        /* Respect reduced-motion: kill looping/entrance animation, keep content visible */
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after {
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .15s !important;
+            scroll-behavior: auto !important;
+          }
+          .reveal-section { opacity: 1 !important; transform: none !important; }
         }
 
         @keyframes hero-in    { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:none } }
@@ -898,6 +1084,9 @@ export function LandingPage() {
         .app-grid     { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
         .form-grid    { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
         .edu-grid     { display:grid; grid-template-columns:1fr 2fr; gap:60px; align-items:start; }
+        .work-grid    { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+        .trust-grid   { display:grid; grid-template-columns:repeat(3,1fr); gap:40px; }
+        .bound-grid   { display:grid; grid-template-columns:1fr 1.2fr; gap:48px; align-items:start; }
 
         input:focus, textarea:focus { border-color:var(--accent) !important; box-shadow:0 0 0 4px var(--accent-soft); }
 
@@ -918,6 +1107,12 @@ export function LandingPage() {
           .price-grid   { grid-template-columns:1fr; }
           .app-grid     { grid-template-columns:1fr; }
           .edu-grid     { grid-template-columns:1fr; gap:28px; }
+          .work-grid    { grid-template-columns:1fr; }
+          .trust-grid   { grid-template-columns:1fr; gap:32px; }
+          .bound-grid   { grid-template-columns:1fr; gap:28px; }
+        }
+        @media (min-width:601px) and (max-width:900px) {
+          .work-grid    { grid-template-columns:1fr 1fr; }
         }
         @media (max-width:900px) {
           .hero-ctas  { flex-direction:column; align-items:flex-start; }
