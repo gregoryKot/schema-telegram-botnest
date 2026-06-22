@@ -8,7 +8,6 @@ const MOSS = '#4a6335';        // green status (passes WCAG AA on paper bg)
 const DARK_BG = '#1c1916';     // intentional always-dark sections
 const INK_ON_DARK = '#eceae5'; // text on dark sections
 const TG_URL = 'https://t.me/kotlarewski';
-const TG_BLUE = '#27a2d7';     // Telegram brand blue
 
 // Hamburger button (mobile nav trigger) – shown only via .menu-btn CSS
 const menuBtnStyle: React.CSSProperties = {
@@ -79,20 +78,20 @@ function Btn({
   return <button type={type} onClick={onClick} disabled={disabled} style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</button>;
 }
 
-// ─── Telegram link – icon pill, single source for the @kotlarewski CTA ───────
+// ─── Telegram link – quiet ghost pill matching the Btn ghost variant ─────────
 function TgLink({ label, size = 'sm', style }: { label: string; size?: 'lg' | 'sm'; style?: React.CSSProperties }) {
   const lg = size === 'lg';
   return (
     <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{
-      display: 'inline-flex', alignItems: 'center', gap: lg ? 8 : 7,
-      padding: lg ? '15px 30px' : '9px 18px', fontSize: lg ? 15 : 14, fontWeight: 600, fontFamily: 'inherit',
-      borderRadius: R.pill, textDecoration: 'none',
-      background: 'rgba(39,162,215,.12)', border: '1.5px solid rgba(39,162,215,.35)',
-      color: TG_BLUE, transition: 'background .15s, border-color .15s', ...style,
+      display: 'inline-flex', alignItems: 'center', gap: lg ? 9 : 7,
+      padding: lg ? '15px 28px' : '9px 16px', fontSize: lg ? 15 : 13, fontWeight: lg ? 600 : 500, fontFamily: 'inherit',
+      borderRadius: R.pill, textDecoration: 'none', boxSizing: 'border-box',
+      background: 'transparent', border: '1.5px solid var(--line-strong)',
+      color: 'var(--text-sub)', transition: 'border-color .15s, color .15s', ...style,
     }}
-      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.2)'; el.style.borderColor = 'rgba(39,162,215,.6)'; }}
-      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.12)'; el.style.borderColor = 'rgba(39,162,215,.35)'; }}>
-      <svg width={lg ? 17 : 15} height={lg ? 17 : 15} viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M11.944 0A12 12 0 1 0 24 12 12 12 0 0 0 11.944 0ZM18.33 7.67l-2.3 10.84c-.165.73-.6.91-1.22.57l-3.36-2.47-1.62 1.56a.85.85 0 0 1-.68.33l.24-3.4 6.2-5.6c.27-.24-.06-.37-.41-.13L6.27 13.9 3 13.01c-.73-.2-.74-.73.15-1.08l13.93-5.37c.61-.22 1.14.15.95 1.11Z"/></svg>
+      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--text)'; el.style.color = 'var(--text)'; }}
+      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--line-strong)'; el.style.color = 'var(--text-sub)'; }}>
+      <svg width={lg ? 16 : 14} height={lg ? 16 : 14} viewBox="0 0 24 24" fill="currentColor" aria-hidden style={{ opacity: .75 }}><path d="M11.944 0A12 12 0 1 0 24 12 12 12 0 0 0 11.944 0ZM18.33 7.67l-2.3 10.84c-.165.73-.6.91-1.22.57l-3.36-2.47-1.62 1.56a.85.85 0 0 1-.68.33l.24-3.4 6.2-5.6c.27-.24-.06-.37-.41-.13L6.27 13.9 3 13.01c-.73-.2-.74-.73.15-1.08l13.93-5.37c.61-.22 1.14.15.95 1.11Z"/></svg>
       {label}
     </a>
   );
@@ -178,7 +177,7 @@ function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 0', marginBottom: 12, borderTop: '1px solid var(--line)' }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: MOSS, flexShrink: 0, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
           <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>Принимаю клиентов · </span>
-          <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: TG_BLUE, textDecoration: 'none', fontWeight: 600 }}>@kotlarewski</a>
+          <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>@kotlarewski</a>
         </div>
         <Btn full size="lg" radius="btn" onClick={() => { goBack(); setTimeout(onBook, 60); }}>Записаться на знакомство →</Btn>
       </div>
