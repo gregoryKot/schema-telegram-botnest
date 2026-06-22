@@ -1,6 +1,6 @@
 export const TELEGRAF_BOT = 'TELEGRAF_BOT';
 export const CHANNEL = '@SchemeHappens';
-export const BOOKING_URL = 'https://cal.com/kotlarewski';
+export const BOOKING_URL = 'https://kotlarewski.gr';
 export const BOT_USERNAME = process.env.BOT_USERNAME ?? 'SchemaLabBot';
 export const MINIAPP_APP_NAME = process.env.MINIAPP_APP_NAME ?? 'diary';
 /** Base URL for webApp buttons (can be Vercel or custom domain) */

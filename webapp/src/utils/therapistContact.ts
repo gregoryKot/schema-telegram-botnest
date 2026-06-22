@@ -2,7 +2,7 @@
 // App.tsx writes to localStorage on init; all components read from here.
 
 const AUTHOR_TG = 'https://t.me/kotlarewski';
-const AUTHOR_BOOKING = 'https://cal.com/kotlarewski';
+const AUTHOR_BOOKING = 'https://kotlarewski.gr';
 const AUTHOR_NAME = 'автору';
 
 export interface TherapistContact {
