@@ -96,6 +96,20 @@ function TgLink({ label, size = 'sm', style }: { label: string; size?: 'lg' | 's
   );
 }
 
+// ─── Theme toggle icon – crisp sun/moon (no unicode glyph rendering issues) ──
+function ThemeIcon({ dark }: { dark: boolean }) {
+  return dark ? (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="4.2" />
+      <path d="M12 2v2.2M12 19.8V22M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2 12h2.2M19.8 12H22M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6" />
+    </svg>
+  ) : (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </svg>
+  );
+}
+
 // ─── Section nav – one source for in-page links to every section ──────────────
 const NAV_LINKS: { label: string; href: string }[] = [
   { label: 'Обо мне',      href: '#about' },
@@ -646,23 +660,16 @@ export function LandingPage() {
 
           {/* ── Nav ── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '26px 0', animation: 'hero-in .5s both' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
               {/* Имя + фото → Обо мне */}
-              <a href="#about" style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, textDecoration: 'none', color: 'inherit' }}
+              <a href="#about" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}
                 onMouseEnter={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--accent)'; }}
                 onMouseLeave={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--text)'; }}>
                 <div style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--text-sub)' }}>Г</span>
                   <img src="/gregory.jpg" alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                 </div>
-                <span className="nav-name" style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color .15s' }}>Григорий Котляревский</span>
-              </a>
-              {/* Бейдж → Запись (скрыт на мобиле) */}
-              <a href="#booking" className="nav-badge" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: 'rgba(74,99,53,.1)', border: '1px solid rgba(74,99,53,.25)', borderRadius: 100, flexShrink: 0, textDecoration: 'none', transition: 'background .15s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(74,99,53,.18)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(74,99,53,.1)'; }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: MOSS, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: MOSS, letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
+                <span className="nav-name" style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', transition: 'color .15s' }}>Григорий Котляревский</span>
               </a>
             </div>
             <SectionNav className="hero-nav" active={activeSection} />
@@ -671,11 +678,11 @@ export function LandingPage() {
                 onClick={toggleTheme}
                 aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
                 title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-                style={{ background: 'none', border: '1px solid var(--line)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: 'var(--text-sub)', transition: 'border-color .15s, color .15s', padding: 0 }}
+                style={{ background: 'none', border: '1px solid var(--line)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-sub)', transition: 'border-color .15s, color .15s', padding: 0 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--text-sub)'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-sub)'; }}
               >
-                {theme === 'dark' ? '☀︎' : '☽'}
+                <ThemeIcon dark={theme === 'dark'} />
               </button>
               <a href={TG_URL} target="_blank" rel="noopener noreferrer"
                 className="nav-tg"
@@ -721,9 +728,15 @@ export function LandingPage() {
 
             {/* Left: description + CTAs */}
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, maxWidth: 440, margin: '0 0 36px' }}>
+              <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, maxWidth: 440, margin: '0 0 28px' }}>
                 Мы снова и снова попадаем в одни и те же ситуации – в отношениях, самооценке, тревоге. Схема-терапия помогает понять почему – и найти выход.
               </p>
+              <div style={{ marginBottom: 18 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 12px', background: 'rgba(74,99,53,.1)', border: '1px solid rgba(74,99,53,.25)', borderRadius: 100 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: MOSS, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: MOSS, letterSpacing: '.04em' }}>Принимаю новых клиентов</span>
+                </span>
+              </div>
               <div className="hero-ctas">
                 <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
               </div>
@@ -1149,7 +1162,6 @@ export function LandingPage() {
         input:focus, textarea:focus { border-color:var(--accent) !important; box-shadow:0 0 0 4px var(--accent-soft); }
 
         @media (max-width:600px) {
-          .nav-badge  { display:none !important; }
           .nav-tg     { font-size:12px; }
         }
 
