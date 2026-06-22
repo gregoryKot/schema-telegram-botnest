@@ -519,7 +519,9 @@ function useTheme() {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function LandingPage() {
-  const bookingRef  = useRef<HTMLElement>(null);
+  const bookingRef          = useRef<HTMLElement>(null);
+  const activeSectionRef    = useRef('');
+  const scrollspyReadyRef   = useRef(false);
   const [showBar, setShowBar] = useState(false);
   const [scrollPct, setScrollPct] = useState(0);
   const [activeSection, setActiveSection] = useState('');
@@ -541,9 +543,9 @@ export function LandingPage() {
   }, []);
 
   useEffect(() => {
-    // Every block that owns a URL hash, in DOM order
     const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'schemalab', 'faq'];
     let ticking = false;
+    let firstRun = true;
     const fn = () => {
       if (ticking) return;
       ticking = true;
@@ -552,23 +554,21 @@ export function LandingPage() {
         setShowBar(y > window.innerHeight * 0.75);
         const max = document.documentElement.scrollHeight - window.innerHeight;
         setScrollPct(max > 0 ? (y / max) * 100 : 0);
-
-        // Scrollspy: the active block is the last one whose top crossed the
-        // 35%-of-viewport line. Deterministic – never gets stuck on one section.
-        const line = window.innerHeight * 0.35;
-        let current = '';
-        for (const id of ids) {
-          const el = document.getElementById(id);
-          if (el && el.getBoundingClientRect().top <= line) current = id;
+        if (!firstRun) {
+          // Scrollspy: last section whose top has crossed 35% of viewport.
+          const line = window.innerHeight * 0.35;
+          let current = '';
+          for (const id of ids) {
+            const el = document.getElementById(id);
+            if (el && el.getBoundingClientRect().top <= line) current = id;
+          }
+          if (current !== activeSectionRef.current) {
+            activeSectionRef.current = current;
+            scrollspyReadyRef.current = true;
+            setActiveSection(current);
+          }
         }
-        setActiveSection(current);
-
-        // Mirror the active block into the address bar – no scroll, no history
-        // entries (replaceState), keep history.state so React Router stays intact.
-        const target = current ? `#${current}` : '';
-        if (window.location.hash !== target) {
-          window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search + target);
-        }
+        firstRun = false;
         ticking = false;
       });
     };
@@ -576,6 +576,14 @@ export function LandingPage() {
     fn();
     return () => window.removeEventListener('scroll', fn);
   }, []);
+
+  // Mirror active section into the address bar without creating history entries.
+  // Guard prevents clearing any initial hash before the user has actually scrolled.
+  useEffect(() => {
+    if (!scrollspyReadyRef.current) return;
+    const hash = activeSection ? `#${activeSection}` : '';
+    window.history.replaceState(window.history.state, '', window.location.pathname + hash);
+  }, [activeSection]);
 
   // On first load with a hash (e.g. shared /#prices) jump to that block
   useEffect(() => {
