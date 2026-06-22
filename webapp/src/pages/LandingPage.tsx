@@ -538,17 +538,34 @@ export function LandingPage() {
   }, []);
 
   useEffect(() => {
-    const ids = NAV_LINKS.map(l => l.href.slice(1));
+    // Every block that should own a URL hash, in DOM order
+    const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'schemalab', 'faq'];
+
     const obs = new IntersectionObserver(
       entries => {
         for (const e of entries) {
-          if (e.isIntersecting) setActiveSection(e.target.id);
+          if (!e.isIntersecting) continue;
+          const id = e.target.id;
+          setActiveSection(id);
+          // Reflect the current block in the address bar — no scroll, no history
+          // entries (replaceState), and keep history.state so React Router is intact.
+          if (window.location.hash !== `#${id}`) {
+            window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#${id}`);
+          }
         }
       },
       { rootMargin: '-30% 0px -60% 0px' },
     );
     ids.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
     return () => obs.disconnect();
+  }, []);
+
+  // On first load with a hash (e.g. shared /#prices) jump to that block
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+    const el = document.getElementById(id);
+    if (el) setTimeout(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }), 0);
   }, []);
 
   return (
