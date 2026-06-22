@@ -541,6 +541,8 @@ export function LandingPage() {
   }, []);
 
   useEffect(() => {
+    // Every block that owns a URL hash, in DOM order
+    const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'schemalab', 'faq'];
     let ticking = false;
     const fn = () => {
       if (ticking) return;
@@ -550,9 +552,22 @@ export function LandingPage() {
         setShowBar(y > window.innerHeight * 0.75);
         const max = document.documentElement.scrollHeight - window.innerHeight;
         setScrollPct(max > 0 ? (y / max) * 100 : 0);
-        // In the hero (no section yet) clear the hash so the address is /
-        if (y < window.innerHeight * 0.5 && window.location.hash) {
-          window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+
+        // Scrollspy: the active block is the last one whose top crossed the
+        // 35%-of-viewport line. Deterministic – never gets stuck on one section.
+        const line = window.innerHeight * 0.35;
+        let current = '';
+        for (const id of ids) {
+          const el = document.getElementById(id);
+          if (el && el.getBoundingClientRect().top <= line) current = id;
+        }
+        setActiveSection(current);
+
+        // Mirror the active block into the address bar – no scroll, no history
+        // entries (replaceState), keep history.state so React Router stays intact.
+        const target = current ? `#${current}` : '';
+        if (window.location.hash !== target) {
+          window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search + target);
         }
         ticking = false;
       });
@@ -560,29 +575,6 @@ export function LandingPage() {
     window.addEventListener('scroll', fn, { passive: true });
     fn();
     return () => window.removeEventListener('scroll', fn);
-  }, []);
-
-  useEffect(() => {
-    // Every block that should own a URL hash, in DOM order
-    const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'schemalab', 'faq'];
-
-    const obs = new IntersectionObserver(
-      entries => {
-        for (const e of entries) {
-          if (!e.isIntersecting) continue;
-          const id = e.target.id;
-          setActiveSection(id);
-          // Reflect the current block in the address bar – no scroll, no history
-          // entries (replaceState), and keep history.state so React Router is intact.
-          if (window.location.hash !== `#${id}`) {
-            window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#${id}`);
-          }
-        }
-      },
-      { rootMargin: '-30% 0px -60% 0px' },
-    );
-    ids.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
-    return () => obs.disconnect();
   }, []);
 
   // On first load with a hash (e.g. shared /#prices) jump to that block
