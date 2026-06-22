@@ -79,17 +79,20 @@ const NAV_LINKS: { label: string; href: string }[] = [
   { label: 'Вопросы',     href: '#faq' },
 ];
 
-function SectionNav({ className, color = 'var(--text-sub)' }: { className?: string; color?: string }) {
+function SectionNav({ className, color = 'var(--text-sub)', active = '' }: { className?: string; color?: string; active?: string }) {
   return (
     <nav className={className} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      {NAV_LINKS.map(l => (
-        <a key={l.href} href={l.href}
-          style={{ fontSize: 13, fontWeight: 500, color, textDecoration: 'none', padding: '6px 10px', borderRadius: 8, whiteSpace: 'nowrap', transition: 'color .15s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = color; }}>
-          {l.label}
-        </a>
-      ))}
+      {NAV_LINKS.map(l => {
+        const isActive = active === l.href.slice(1);
+        return (
+          <a key={l.href} href={l.href}
+            style={{ fontSize: 13, fontWeight: isActive ? 600 : 500, color: isActive ? 'var(--accent)' : color, textDecoration: 'none', padding: '6px 10px', borderRadius: 8, whiteSpace: 'nowrap', transition: 'color .15s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isActive ? 'var(--accent)' : color; }}>
+            {l.label}
+          </a>
+        );
+      })}
     </nav>
   );
 }
@@ -311,7 +314,7 @@ function BentoCard({ num, title, text, accent = false }: { num: string; title: s
       cursor: 'default', willChange: 'transform',
     }}>
       <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.12em', opacity: accent ? .65 : 1, color: accent ? 'white' : 'var(--text-faint)' }}>{num}</span>
-      <h3 style={{ fontFamily: 'var(--serif)', fontSize: accent ? 28 : 21, fontWeight: 400, lineHeight: 1.2, margin: 0, color: accent ? 'white' : 'var(--text)' }}>{title}</h3>
+      <h3 style={{ fontFamily: 'var(--serif)', fontSize: accent ? 28 : 21, fontWeight: 400, lineHeight: 1.2, margin: 0, color: accent ? 'white' : 'var(--text)', whiteSpace: 'pre-line' }}>{title}</h3>
       <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0, opacity: accent ? .85 : 1, color: accent ? 'white' : 'var(--text-sub)' }}>{text}</p>
     </div>
   );
@@ -349,33 +352,40 @@ function FaqList() {
   const [open, setOpen] = useState<number | null>(null);
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {FAQ_ITEMS.map((item, i) => (
-        <div key={i} style={{ borderTop: '1px solid var(--line)', borderBottom: i === FAQ_ITEMS.length - 1 ? '1px solid var(--line)' : 'none' }}>
-          <button
-            onClick={() => setOpen(open === i ? null : i)}
-            style={{
-              width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              gap: 16, padding: '22px 0', background: 'none', border: 'none', cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>{item.q}</span>
-            <span style={{
-              flexShrink: 0, width: 28, height: 28, borderRadius: '50%',
-              background: open === i ? 'var(--accent)' : 'rgba(var(--fg-rgb),.07)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, color: open === i ? 'white' : 'var(--text-sub)',
-              transition: 'background .2s, transform .2s',
-              transform: open === i ? 'rotate(45deg)' : 'none',
-            }}>+</span>
-          </button>
-          {open === i && (
-            <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 22px', maxWidth: 660 }}>
-              {item.a}
-            </p>
-          )}
-        </div>
-      ))}
+      {FAQ_ITEMS.map((item, i) => {
+        const isOpen = open === i;
+        return (
+          <div key={i} style={{ borderTop: '1px solid var(--line)', borderBottom: i === FAQ_ITEMS.length - 1 ? '1px solid var(--line)' : 'none' }}>
+            <button
+              onClick={() => setOpen(isOpen ? null : i)}
+              style={{
+                width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                gap: 16, padding: '22px 0', background: 'none', border: 'none', cursor: 'pointer',
+                textAlign: 'left', transition: 'opacity .15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '.8'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+            >
+              <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>{item.q}</span>
+              <span style={{
+                flexShrink: 0, width: 28, height: 28, borderRadius: '50%',
+                background: isOpen ? 'var(--accent)' : 'rgba(var(--fg-rgb),.07)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, color: isOpen ? 'white' : 'var(--text-sub)',
+                transition: 'background .2s, transform .2s',
+                transform: isOpen ? 'rotate(45deg)' : 'none',
+              }}>+</span>
+            </button>
+            <div style={{ display: 'grid', gridTemplateRows: isOpen ? '1fr' : '0fr', transition: 'grid-template-rows .32s ease', overflow: 'hidden' }}>
+              <div style={{ overflow: 'hidden' }}>
+                <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 22px', maxWidth: 660 }}>
+                  {item.a}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -398,6 +408,8 @@ function useTheme() {
 export function LandingPage() {
   const bookingRef  = useRef<HTMLElement>(null);
   const [showBar, setShowBar] = useState(false);
+  const [scrollPct, setScrollPct] = useState(0);
+  const [activeSection, setActiveSection] = useState('');
   const { theme, toggle: toggleTheme } = useTheme();
 
   const aboutRef    = useReveal() as React.RefObject<HTMLElement>;
@@ -412,13 +424,35 @@ export function LandingPage() {
   }, []);
 
   useEffect(() => {
-    const fn = () => setShowBar(window.scrollY > window.innerHeight * 0.75);
+    const fn = () => {
+      const y = window.scrollY;
+      setShowBar(y > window.innerHeight * 0.75);
+      const max = document.body.scrollHeight - window.innerHeight;
+      setScrollPct(max > 0 ? (y / max) * 100 : 0);
+    };
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
+  useEffect(() => {
+    const ids = NAV_LINKS.map(l => l.href.slice(1));
+    const obs = new IntersectionObserver(
+      entries => {
+        for (const e of entries) {
+          if (e.isIntersecting) setActiveSection(e.target.id);
+        }
+      },
+      { rootMargin: '-30% 0px -60% 0px' },
+    );
+    ids.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden' }}>
+
+      {/* ── SCROLL PROGRESS ─────────────────────────────────────────────── */}
+      <div aria-hidden style={{ position: 'fixed', top: 0, left: 0, zIndex: 102, height: 2, width: `${scrollPct}%`, background: 'var(--accent)', pointerEvents: 'none', transition: 'width .1s linear' }} />
 
       {/* ── GRAIN OVERLAY ───────────────────────────────────────────────── */}
       <div aria-hidden style={{
@@ -431,7 +465,7 @@ export function LandingPage() {
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px',
-        background: 'rgba(245,242,235,0.92)', backdropFilter: 'blur(20px)',
+        background: 'var(--nav-bg)', backdropFilter: 'blur(20px)',
         borderBottom: '1px solid var(--line)',
         transform: showBar ? 'translateY(0)' : 'translateY(-100%)',
         transition: 'transform .4s cubic-bezier(.4,0,.2,1)',
@@ -443,7 +477,7 @@ export function LandingPage() {
           </div>
           <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)', whiteSpace: 'nowrap' }}>Григорий Котляревский</span>
         </div>
-        <SectionNav className="sticky-nav" />
+        <SectionNav className="sticky-nav" active={activeSection} />
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <a href="https://schemalab.ru" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
           <Btn size="sm" onClick={scrollToBooking}>Записаться</Btn>
@@ -482,7 +516,7 @@ export function LandingPage() {
                 <span style={{ fontSize: 11, fontWeight: 700, color: MOSS, letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
               </a>
             </div>
-            <SectionNav className="hero-nav" />
+            <SectionNav className="hero-nav" active={activeSection} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 12 }}>
               <button
                 onClick={toggleTheme}
@@ -545,6 +579,18 @@ export function LandingPage() {
               <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '16px 0 0' }}>
                 Первая встреча – бесплатно, 15 минут, без обязательств
               </p>
+            </div>
+
+            {/* Right: editorial price stats */}
+            <div className="hero-stats">
+              <div style={{ borderTop: '1px solid var(--line-strong)', paddingTop: 20, marginBottom: 24 }}>
+                <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(36px, 3.5vw, 52px)', fontWeight: 400, color: 'var(--text)', lineHeight: 1, letterSpacing: '-.03em', margin: '0 0 6px' }}>4 000 ₽</p>
+                <p style={{ fontSize: 13, color: 'var(--text-faint)', letterSpacing: '.02em' }}>сессия · 50 мин · онлайн</p>
+              </div>
+              <div>
+                <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 2.8vw, 40px)', fontWeight: 400, color: 'var(--accent)', lineHeight: 1, letterSpacing: '-.02em', margin: '0 0 6px', fontStyle: 'italic' }}>0 ₽</p>
+                <p style={{ fontSize: 13, color: 'var(--text-faint)', letterSpacing: '.02em' }}>первая встреча · 15 мин</p>
+              </div>
             </div>
 
           </div>
@@ -780,6 +826,18 @@ export function LandingPage() {
       {/* ── MARQUEE #4 ───────────────────────────────────────────────────── */}
       <MarqueeStrip reverse bg="var(--bg-rail)" topics={TOPICS_A} />
 
+      {/* ── PRE-FOOTER CTA ──────────────────────────────────────────────── */}
+      <section style={{ background: DARK_BG, padding: '96px 40px', textAlign: 'center' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(236,234,229,.28)', margin: '0 0 24px' }}>Начать</p>
+          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(40px, 5.5vw, 72px)', fontWeight: 400, color: INK_ON_DARK, lineHeight: 1.05, margin: '0 0 36px', letterSpacing: '-.025em' }}>
+            Первая встреча —<br /><span style={{ fontStyle: 'italic', color: 'rgba(144,137,224,.85)' }}>бесплатно</span>
+          </h2>
+          <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
+          <p style={{ fontSize: 13, color: 'rgba(236,234,229,.28)', marginTop: 20 }}>15 минут · без обязательств · онлайн</p>
+        </div>
+      </section>
+
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: '1px solid var(--line)', padding: '28px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
@@ -821,7 +879,8 @@ export function LandingPage() {
 
         /* Hero */
         .hero-wrap    { max-width:1100px; width:100%; margin:0 auto; padding:0 40px; display:flex; flex-direction:column; justify-content:space-between; min-height:100dvh; box-sizing:border-box; }
-        .hero-bottom  { display:flex; flex-direction:column; gap:0; }
+        .hero-bottom  { display:grid; grid-template-columns:1.4fr 1fr; gap:60px; align-items:end; }
+        .hero-stats   { display:flex; flex-direction:column; justify-content:flex-end; }
         .hero-ctas    { display:flex; gap:12px; flex-wrap:wrap; }
         @media (max-height:820px) {
           .hero-h1   { font-size:clamp(36px, 7vh, 80px) !important; }
@@ -849,6 +908,7 @@ export function LandingPage() {
 
         @media (max-width:900px) {
           .hero-bottom  { grid-template-columns:1fr; gap:32px; }
+          .hero-stats   { display:none; }
           .about-inner  { grid-template-columns:1fr; }
           .bento-grid   { grid-template-columns:1fr; }
           .bento-tall   { grid-row:auto; }
