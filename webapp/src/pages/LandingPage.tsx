@@ -677,7 +677,18 @@ export function LandingPage() {
               </p>
               <div className="hero-ctas">
                 <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
-                <Btn variant="ghost" size="lg" href="https://t.me/kotlarewski">Написать в Telegram ↗</Btn>
+                <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '15px 30px', fontSize: 15, fontWeight: 600, fontFamily: 'inherit',
+                  borderRadius: R.pill, textDecoration: 'none',
+                  background: 'rgba(39,162,215,.12)', border: '1.5px solid rgba(39,162,215,.35)',
+                  color: '#27a2d7', transition: 'background .15s, border-color .15s',
+                }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.2)'; el.style.borderColor = 'rgba(39,162,215,.6)'; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.12)'; el.style.borderColor = 'rgba(39,162,215,.35)'; }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M11.944 0A12 12 0 1 0 24 12 12 12 0 0 0 11.944 0ZM18.33 7.67l-2.3 10.84c-.165.73-.6.91-1.22.57l-3.36-2.47-1.62 1.56a.85.85 0 0 1-.68.33l.24-3.4 6.2-5.6c.27-.24-.06-.37-.41-.13L6.27 13.9 3 13.01c-.73-.2-.74-.73.15-1.08l13.93-5.37c.61-.22 1.14.15.95 1.11Z"/></svg>
+                  Написать в Telegram
+                </a>
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '16px 0 0' }}>
                 Первая встреча – бесплатно, 15 минут, без обязательств
@@ -955,6 +966,21 @@ export function LandingPage() {
           </h2>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Оставьте имя и контакт – свяжусь в течение дня, договоримся о времени.</p>
           <BookingForm />
+          <div style={{ marginTop: 32, paddingTop: 28, borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>Или напишите напрямую:</span>
+            <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '9px 18px', fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
+              borderRadius: R.pill, textDecoration: 'none',
+              background: 'rgba(39,162,215,.1)', border: '1.5px solid rgba(39,162,215,.3)',
+              color: '#27a2d7', transition: 'background .15s, border-color .15s',
+            }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.18)'; el.style.borderColor = 'rgba(39,162,215,.55)'; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.1)'; el.style.borderColor = 'rgba(39,162,215,.3)'; }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M11.944 0A12 12 0 1 0 24 12 12 12 0 0 0 11.944 0ZM18.33 7.67l-2.3 10.84c-.165.73-.6.91-1.22.57l-3.36-2.47-1.62 1.56a.85.85 0 0 1-.68.33l.24-3.4 6.2-5.6c.27-.24-.06-.37-.41-.13L6.27 13.9 3 13.01c-.73-.2-.74-.73.15-1.08l13.93-5.37c.61-.22 1.14.15.95 1.11Z"/></svg>
+              @kotlarewski
+            </a>
+          </div>
         </section>
       </section>
 
