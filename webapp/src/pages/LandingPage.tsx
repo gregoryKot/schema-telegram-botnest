@@ -78,20 +78,19 @@ function Btn({
   return <button type={type} onClick={onClick} disabled={disabled} style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</button>;
 }
 
-// ─── Telegram link – quiet ghost pill matching the Btn ghost variant ─────────
+// ─── Telegram link – quiet editorial text link (matches nav "Написать ↗") ────
 function TgLink({ label, size = 'sm', style }: { label: string; size?: 'lg' | 'sm'; style?: React.CSSProperties }) {
   const lg = size === 'lg';
   return (
     <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{
-      display: 'inline-flex', alignItems: 'center', gap: lg ? 9 : 7,
-      padding: lg ? '15px 28px' : '9px 16px', fontSize: lg ? 15 : 13, fontWeight: lg ? 600 : 500, fontFamily: 'inherit',
-      borderRadius: R.pill, textDecoration: 'none', boxSizing: 'border-box',
-      background: 'transparent', border: '1.5px solid var(--line-strong)',
-      color: 'var(--text-sub)', transition: 'border-color .15s, color .15s', ...style,
+      display: 'inline-flex', alignItems: 'center', gap: 7,
+      fontSize: lg ? 15 : 14, fontWeight: 600, fontFamily: 'inherit',
+      color: 'var(--text-sub)', textDecoration: 'none',
+      transition: 'color .15s', ...style,
     }}
-      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--text)'; el.style.color = 'var(--text)'; }}
-      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--line-strong)'; el.style.color = 'var(--text-sub)'; }}>
-      <svg width={lg ? 16 : 14} height={lg ? 16 : 14} viewBox="0 0 24 24" fill="currentColor" aria-hidden style={{ opacity: .75 }}><path d="M11.944 0A12 12 0 1 0 24 12 12 12 0 0 0 11.944 0ZM18.33 7.67l-2.3 10.84c-.165.73-.6.91-1.22.57l-3.36-2.47-1.62 1.56a.85.85 0 0 1-.68.33l.24-3.4 6.2-5.6c.27-.24-.06-.37-.41-.13L6.27 13.9 3 13.01c-.73-.2-.74-.73.15-1.08l13.93-5.37c.61-.22 1.14.15.95 1.11Z"/></svg>
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-sub)'; }}>
+      <svg width={lg ? 16 : 14} height={lg ? 16 : 14} viewBox="0 0 24 24" fill="currentColor" aria-hidden style={{ opacity: .7 }}><path d="M11.944 0A12 12 0 1 0 24 12 12 12 0 0 0 11.944 0ZM18.33 7.67l-2.3 10.84c-.165.73-.6.91-1.22.57l-3.36-2.47-1.62 1.56a.85.85 0 0 1-.68.33l.24-3.4 6.2-5.6c.27-.24-.06-.37-.41-.13L6.27 13.9 3 13.01c-.73-.2-.74-.73.15-1.08l13.93-5.37c.61-.22 1.14.15.95 1.11Z"/></svg>
       {label}
     </a>
   );
@@ -727,9 +726,11 @@ export function LandingPage() {
               </p>
               <div className="hero-ctas">
                 <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
+              </div>
+              <div style={{ margin: '18px 0 0' }}>
                 <TgLink label="Написать в Telegram" size="lg" />
               </div>
-              <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '16px 0 0' }}>
+              <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '14px 0 0' }}>
                 Первая встреча – бесплатно, 15 минут, без обязательств
               </p>
             </div>
@@ -1082,8 +1083,10 @@ export function LandingPage() {
       <style>{`
         html { scroll-behavior: smooth; }
 
-        /* Anchored sections clear the 58px sticky bar when jumped to */
-        section[id] { scroll-margin-top: 74px; }
+        /* Sections already carry 64–88px of top padding which clears the
+           58px sticky bar; only a small margin is needed so the heading
+           isn't flush against the bar. */
+        section[id] { scroll-margin-top: 12px; }
 
         /* Section nav (desktop) ⇄ hamburger (mobile/tablet) */
         .sticky-nav, .hero-nav { display: flex; }
