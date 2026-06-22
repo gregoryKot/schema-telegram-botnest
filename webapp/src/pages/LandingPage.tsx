@@ -7,6 +7,8 @@ const R = { pill: 100, card: 24, btn: 12, badge: 14 } as const;          // radi
 const MOSS = '#4a6335';        // green status (passes WCAG AA on paper bg)
 const DARK_BG = '#1c1916';     // intentional always-dark sections
 const INK_ON_DARK = '#eceae5'; // text on dark sections
+const TG_URL = 'https://t.me/kotlarewski';
+const TG_BLUE = '#27a2d7';     // Telegram brand blue
 
 // Hamburger button (mobile nav trigger) – shown only via .menu-btn CSS
 const menuBtnStyle: React.CSSProperties = {
@@ -75,6 +77,25 @@ function Btn({
       style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</a>;
   }
   return <button type={type} onClick={onClick} disabled={disabled} style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</button>;
+}
+
+// ─── Telegram link – icon pill, single source for the @kotlarewski CTA ───────
+function TgLink({ label, size = 'sm', style }: { label: string; size?: 'lg' | 'sm'; style?: React.CSSProperties }) {
+  const lg = size === 'lg';
+  return (
+    <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{
+      display: 'inline-flex', alignItems: 'center', gap: lg ? 8 : 7,
+      padding: lg ? '15px 30px' : '9px 18px', fontSize: lg ? 15 : 14, fontWeight: 600, fontFamily: 'inherit',
+      borderRadius: R.pill, textDecoration: 'none',
+      background: 'rgba(39,162,215,.12)', border: '1.5px solid rgba(39,162,215,.35)',
+      color: TG_BLUE, transition: 'background .15s, border-color .15s', ...style,
+    }}
+      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.2)'; el.style.borderColor = 'rgba(39,162,215,.6)'; }}
+      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.12)'; el.style.borderColor = 'rgba(39,162,215,.35)'; }}>
+      <svg width={lg ? 17 : 15} height={lg ? 17 : 15} viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M11.944 0A12 12 0 1 0 24 12 12 12 0 0 0 11.944 0ZM18.33 7.67l-2.3 10.84c-.165.73-.6.91-1.22.57l-3.36-2.47-1.62 1.56a.85.85 0 0 1-.68.33l.24-3.4 6.2-5.6c.27-.24-.06-.37-.41-.13L6.27 13.9 3 13.01c-.73-.2-.74-.73.15-1.08l13.93-5.37c.61-.22 1.14.15.95 1.11Z"/></svg>
+      {label}
+    </a>
+  );
 }
 
 // ─── Section nav – one source for in-page links to every section ──────────────
@@ -157,7 +178,7 @@ function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 0', marginBottom: 12, borderTop: '1px solid var(--line)' }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: MOSS, flexShrink: 0, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
           <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>Принимаю клиентов · </span>
-          <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: '#27a2d7', textDecoration: 'none', fontWeight: 600 }}>@kotlarewski</a>
+          <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: TG_BLUE, textDecoration: 'none', fontWeight: 600 }}>@kotlarewski</a>
         </div>
         <Btn full size="lg" radius="btn" onClick={() => { goBack(); setTimeout(onBook, 60); }}>Записаться на знакомство →</Btn>
       </div>
@@ -307,7 +328,7 @@ function BookingForm() {
           Я ознакомился(ась) с{' '}<a href="/privacy" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Политикой конфиденциальности</a>{' '}и даю согласие на обработку данных
         </span>
       </label>
-      {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Что-то не отправилось. Напишите мне напрямую в Telegram – отвечу лично: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
+      {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Что-то не отправилось. Напишите мне напрямую в Telegram – отвечу лично: <a href={TG_URL} style={{ color: 'inherit' }}>@kotlarewski</a></p>}
       <Btn type="submit" size="lg" radius="btn" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent} style={{ alignSelf: 'flex-start' }}>
         {status === 'loading' ? 'Отправляю…' : 'Записаться на знакомство →'}
       </Btn>
@@ -353,23 +374,23 @@ const WORK_THEMES: { title: string; text: string }[] = [
   { title: 'Отношения', text: 'Снова и снова один сценарий: выбираю недоступных, боюсь близости, растворяюсь в партнёре или держу всех на расстоянии.' },
   { title: 'Самооценка', text: 'Внутренний критик, ощущение «со мной что-то не так», обесценивание своих успехов, перфекционизм, который не даёт выдохнуть.' },
   { title: 'Тревога и контроль', text: 'Хроническое напряжение, тревога о будущем, гиперконтроль и невозможность просто расслабиться и быть.' },
-  { title: 'Чувства', text: 'Эмоции будто отключены — или, наоборот, захлёстывают. Трудно понять, что я чувствую и что с этим делать.' },
-  { title: 'Идентичность', text: '«Кто я и чего хочу на самом деле» — за чужими ожиданиями и ролями потерялся собственный голос.' },
+  { title: 'Чувства', text: 'Эмоции будто отключены – или, наоборот, захлёстывают. Трудно понять, что я чувствую и что с этим делать.' },
+  { title: 'Идентичность', text: '«Кто я и чего хочу на самом деле» – за чужими ожиданиями и ролями потерялся собственный голос.' },
   { title: 'Повторяющиеся паттерны', text: 'Понимаю умом, но всё равно наступаю на те же грабли. Хочу добраться до корня, а не бороться с симптомом.' },
 ];
 
 // ─── Boundaries (когда нужен другой специалист) ──────────────────────────────
 const BOUNDARIES: string[] = [
-  'Острое состояние, мысли о причинении вреда себе, самоповреждение — это повод за неотложной помощью, а не за консультацией.',
-  'Подозрение на психическое расстройство (тяжёлая депрессия, биполярное, РПП, психоз) — нужна диагностика и, возможно, медикаменты у врача-психиатра.',
-  'Зависимости (алкоголь, ПАВ) — здесь эффективнее профильная помощь.',
+  'Острое состояние, мысли о причинении вреда себе, самоповреждение – это повод за неотложной помощью, а не за консультацией.',
+  'Подозрение на психическое расстройство (тяжёлая депрессия, биполярное, РПП, психоз) – нужна диагностика и, возможно, медикаменты у врача-психиатра.',
+  'Зависимости (алкоголь, ПАВ) – здесь эффективнее профильная помощь.',
 ];
 
 // ─── Trust (этика и качество практики) ───────────────────────────────────────
 const TRUST: { title: string; text: string }[] = [
   { title: 'Работаю под супервизией', text: 'Регулярно разбираю свою работу с супервизором. Это профессиональная норма и гарантия, что метод применяется корректно и в ваших интересах.' },
-  { title: 'Личная терапия с 2021 года', text: 'Сам постоянно в личной терапии — для меня это часть профессиональной гигиены и условие, без которого не берусь сопровождать других.' },
-  { title: 'Конфиденциальность', text: 'Всё, что вы рассказываете, остаётся между нами. Поэтому на сайте нет отзывов клиентов — это вопрос этики, а не отсутствия практики.' },
+  { title: 'Личная терапия с 2021 года', text: 'Сам постоянно в личной терапии – для меня это часть профессиональной гигиены и условие, без которого не берусь сопровождать других.' },
+  { title: 'Конфиденциальность', text: 'Всё, что вы рассказываете, остаётся между нами. Поэтому на сайте нет отзывов клиентов – это вопрос этики, а не отсутствия практики.' },
 ];
 
 // ─── App features ─────────────────────────────────────────────────────────────
@@ -529,6 +550,10 @@ export function LandingPage() {
         setShowBar(y > window.innerHeight * 0.75);
         const max = document.documentElement.scrollHeight - window.innerHeight;
         setScrollPct(max > 0 ? (y / max) * 100 : 0);
+        // In the hero (no section yet) clear the hash so the address is /
+        if (y < window.innerHeight * 0.5 && window.location.hash) {
+          window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+        }
         ticking = false;
       });
     };
@@ -547,7 +572,7 @@ export function LandingPage() {
           if (!e.isIntersecting) continue;
           const id = e.target.id;
           setActiveSection(id);
-          // Reflect the current block in the address bar — no scroll, no history
+          // Reflect the current block in the address bar – no scroll, no history
           // entries (replaceState), and keep history.state so React Router is intact.
           if (window.location.hash !== `#${id}`) {
             window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#${id}`);
@@ -654,7 +679,7 @@ export function LandingPage() {
               >
                 {theme === 'dark' ? '☀︎' : '☽'}
               </button>
-              <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer"
+              <a href={TG_URL} target="_blank" rel="noopener noreferrer"
                 className="nav-tg"
                 style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-sub)', textDecoration: 'none', transition: 'color .15s', whiteSpace: 'nowrap' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
@@ -703,18 +728,7 @@ export function LandingPage() {
               </p>
               <div className="hero-ctas">
                 <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
-                <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '15px 30px', fontSize: 15, fontWeight: 600, fontFamily: 'inherit',
-                  borderRadius: R.pill, textDecoration: 'none',
-                  background: 'rgba(39,162,215,.12)', border: '1.5px solid rgba(39,162,215,.35)',
-                  color: '#27a2d7', transition: 'background .15s, border-color .15s',
-                }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.2)'; el.style.borderColor = 'rgba(39,162,215,.6)'; }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.12)'; el.style.borderColor = 'rgba(39,162,215,.35)'; }}>
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M11.944 0A12 12 0 1 0 24 12 12 12 0 0 0 11.944 0ZM18.33 7.67l-2.3 10.84c-.165.73-.6.91-1.22.57l-3.36-2.47-1.62 1.56a.85.85 0 0 1-.68.33l.24-3.4 6.2-5.6c.27-.24-.06-.37-.41-.13L6.27 13.9 3 13.01c-.73-.2-.74-.73.15-1.08l13.93-5.37c.61-.22 1.14.15.95 1.11Z"/></svg>
-                  Написать в Telegram
-                </a>
+                <TgLink label="Написать в Telegram" size="lg" />
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '16px 0 0' }}>
                 Первая встреча – бесплатно, 15 минут, без обязательств
@@ -755,7 +769,7 @@ export function LandingPage() {
         <div className="about-inner">
           <div style={{ position: 'relative' }}>
             <div style={{ aspectRatio: '3/4', borderRadius: 24, overflow: 'hidden', background: 'var(--surface-2)', boxShadow: '0 24px 80px rgba(28,25,20,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/gregory.jpg" alt="Григорий Котляревский — схема-терапевт" loading="lazy" decoding="async" width={600} height={800} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
+              <img src="/gregory.jpg" alt="Григорий Котляревский – схема-терапевт" loading="lazy" decoding="async" width={600} height={800} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
                 onError={e => {
                   const img = e.currentTarget as HTMLImageElement;
                   img.style.display = 'none';
@@ -805,7 +819,7 @@ export function LandingPage() {
             Если узнаёте <span style={{ fontStyle: 'italic' }}>себя</span>
           </h2>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 44px', maxWidth: 560 }}>
-            Эти темы чаще всего приносят на сессии. Не обязательно формулировать запрос идеально — достаточно ощущения «это про меня».
+            Эти темы чаще всего приносят на сессии. Не обязательно формулировать запрос идеально – достаточно ощущения «это про меня».
           </p>
           <div className="work-grid">
             {WORK_THEMES.map(t => (
@@ -960,12 +974,12 @@ export function LandingPage() {
         <div style={{ border: '1px solid var(--line)', borderRadius: 24, padding: 'clamp(28px, 4vw, 48px)', background: 'var(--bg-elev)' }}>
           <div className="bound-grid">
             <div>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Честно</p>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Границы помощи</p>
               <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 16px', lineHeight: 1.2, letterSpacing: '-.01em' }}>
                 Когда нужен<br /><span style={{ fontStyle: 'italic' }}>другой специалист</span>
               </h2>
               <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>
-                Это психологическое консультирование, а не медицинская психотерапия по ФЗ-323. Есть ситуации, где эффективнее и безопаснее другая помощь — и я честно об этом скажу.
+                Это психологическое консультирование, а не медицинская психотерапия по ФЗ-323. Есть ситуации, где эффективнее и безопаснее другая помощь – и я сразу об этом скажу.
               </p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -976,7 +990,7 @@ export function LandingPage() {
                 </div>
               ))}
               <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.7, margin: '8px 0 0', paddingTop: 16, borderTop: '1px solid var(--line)' }}>
-                Если на знакомстве станет ясно, что вам нужен врач, — помогу сориентироваться. Бесплатный телефон доверия в кризисной ситуации: <a href="tel:88002000122" style={{ color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>8 800 2000 122</a>.
+                Если на знакомстве станет ясно, что вам нужен врач, – помогу сориентироваться. Бесплатный телефон доверия в кризисной ситуации: <a href="tel:88002000122" style={{ color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>8 800 2000 122</a>.
               </p>
             </div>
           </div>
@@ -994,18 +1008,7 @@ export function LandingPage() {
           <BookingForm />
           <div style={{ marginTop: 32, paddingTop: 28, borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>Или напишите напрямую:</span>
-            <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 7,
-              padding: '9px 18px', fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
-              borderRadius: R.pill, textDecoration: 'none',
-              background: 'rgba(39,162,215,.1)', border: '1.5px solid rgba(39,162,215,.3)',
-              color: '#27a2d7', transition: 'background .15s, border-color .15s',
-            }}
-            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.18)'; el.style.borderColor = 'rgba(39,162,215,.55)'; }}
-            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.1)'; el.style.borderColor = 'rgba(39,162,215,.3)'; }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M11.944 0A12 12 0 1 0 24 12 12 12 0 0 0 11.944 0ZM18.33 7.67l-2.3 10.84c-.165.73-.6.91-1.22.57l-3.36-2.47-1.62 1.56a.85.85 0 0 1-.68.33l.24-3.4 6.2-5.6c.27-.24-.06-.37-.41-.13L6.27 13.9 3 13.01c-.73-.2-.74-.73.15-1.08l13.93-5.37c.61-.22 1.14.15.95 1.11Z"/></svg>
-              @kotlarewski
-            </a>
+            <TgLink label="@kotlarewski" />
           </div>
         </section>
       </section>
@@ -1054,7 +1057,7 @@ export function LandingPage() {
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(236,234,229,.28)', margin: '0 0 24px' }}>Начать</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(40px, 5.5vw, 72px)', fontWeight: 400, color: INK_ON_DARK, lineHeight: 1.05, margin: '0 0 36px', letterSpacing: '-.025em' }}>
-            Первая встреча —<br /><span style={{ fontStyle: 'italic', color: 'rgba(144,137,224,.85)' }}>бесплатно</span>
+            Первая встреча –<br /><span style={{ fontStyle: 'italic', color: 'rgba(144,137,224,.85)' }}>бесплатно</span>
           </h2>
           <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
           <p style={{ fontSize: 13, color: 'rgba(236,234,229,.28)', marginTop: 20 }}>15 минут · без обязательств · онлайн</p>
@@ -1070,7 +1073,7 @@ export function LandingPage() {
             <a href="/reviews" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Отзывы</a>
             <a href="/privacy" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Политика конфиденциальности</a>
             <a href="/offer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
-            <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Telegram</a>
+            <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Telegram</a>
             <a href="https://schemalab.ru" style={{ fontSize: 13, color: 'var(--text-sub)', textDecoration: 'none', fontWeight: 600 }}>Открыть СхемаЛаб →</a>
           </div>
         </div>
