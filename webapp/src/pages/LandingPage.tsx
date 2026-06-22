@@ -1,11 +1,20 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '../api';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 // ─── Design tokens (local to landing) ────────────────────────────────────────
 const R = { pill: 100, card: 24, btn: 12, badge: 14 } as const;          // radius
 const MOSS = '#4a6335';        // green status (passes WCAG AA on paper bg)
 const DARK_BG = '#1c1916';     // intentional always-dark sections
 const INK_ON_DARK = '#eceae5'; // text on dark sections
+
+// Hamburger button (mobile nav trigger) – shown only via .menu-btn CSS
+const menuBtnStyle: React.CSSProperties = {
+  display: 'none', flexDirection: 'column', justifyContent: 'center', gap: 4,
+  width: 38, height: 38, borderRadius: 9, border: '1px solid var(--line)',
+  background: 'transparent', cursor: 'pointer', padding: 0, alignItems: 'center',
+};
+const burgerLine: React.CSSProperties = { width: 16, height: 1.6, background: 'var(--text)', borderRadius: 2, display: 'block' };
 
 // ─── Button – single source for all CTAs ─────────────────────────────────────
 type BtnVariant = 'primary' | 'ghost' | 'dark';
@@ -66,6 +75,85 @@ function Btn({
       style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</a>;
   }
   return <button type={type} onClick={onClick} disabled={disabled} style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</button>;
+}
+
+// ─── Section nav – one source for in-page links to every section ──────────────
+const NAV_LINKS: { label: string; href: string }[] = [
+  { label: 'Обо мне',      href: '#about' },
+  { label: 'С чем работаю', href: '#work' },
+  { label: 'Подход',       href: '#approach' },
+  { label: 'Как начать',   href: '#process' },
+  { label: 'Цены',         href: '#prices' },
+  { label: 'СхемаЛаб',     href: '#schemalab' },
+  { label: 'Вопросы',      href: '#faq' },
+];
+
+function SectionNav({ className, color = 'var(--text-sub)', active = '' }: { className?: string; color?: string; active?: string }) {
+  return (
+    <nav className={className} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      {NAV_LINKS.map(l => {
+        const isActive = active === l.href.slice(1);
+        return (
+          <a key={l.href} href={l.href}
+            style={{ fontSize: 13, fontWeight: isActive ? 600 : 500, color: isActive ? 'var(--accent)' : color, textDecoration: 'none', padding: '6px 10px', borderRadius: 8, whiteSpace: 'nowrap', transition: 'color .15s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isActive ? 'var(--accent)' : color; }}>
+            {l.label}
+          </a>
+        );
+      })}
+    </nav>
+  );
+}
+
+// ─── Mobile menu – fullscreen overlay (uses useHistorySheet per project rule) ─
+const MOBILE_LINKS: { label: string; href: string }[] = [
+  ...NAV_LINKS,
+  { label: 'Образование', href: '#education' },
+  { label: 'Отзывы',      href: '/reviews' },
+  { label: 'Статьи',      href: '/articles' },
+];
+
+function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: string; onBook: () => void }) {
+  const goBack = useHistorySheet(onClose);
+  const go = (href: string) => {
+    if (href.startsWith('#')) {
+      goBack();
+      // wait for overlay to unmount before scrolling to the anchor
+      setTimeout(() => document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 60);
+    } else {
+      window.location.href = href;
+    }
+  };
+  return (
+    <div role="dialog" aria-modal="true" aria-label="Меню" style={{
+      position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)',
+      display: 'flex', flexDirection: 'column', padding: '20px 24px calc(28px + env(safe-area-inset-bottom,0px))',
+      animation: 'menu-in .28s cubic-bezier(.16,1,.3,1) both',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <span style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)' }}>Меню</span>
+        <button onClick={goBack} aria-label="Закрыть меню" style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid var(--line)', background: 'transparent', color: 'var(--text)', fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+      </div>
+      <nav style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        {MOBILE_LINKS.map((l, i) => {
+          const isActive = active === l.href.slice(1);
+          return (
+            <button key={l.href} onClick={() => go(l.href)} style={{
+              textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
+              padding: '16px 0', borderBottom: i === MOBILE_LINKS.length - 1 ? 'none' : '1px solid var(--line)',
+              fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400,
+              color: isActive ? 'var(--accent)' : 'var(--text)',
+              fontStyle: isActive ? 'italic' : 'normal',
+            }}>{l.label}</button>
+          );
+        })}
+      </nav>
+      <div style={{ marginTop: 20 }}>
+        <Btn full size="lg" radius="btn" onClick={() => { goBack(); setTimeout(onBook, 60); }}>Записаться на знакомство →</Btn>
+      </div>
+    </div>
+  );
 }
 
 // ─── Scroll reveal via CSS scroll-driven (with IntersectionObserver fallback) ─
@@ -140,9 +228,9 @@ function MarqueeStrip({ reverse = false, bg = 'var(--bg-rail)', italic = false, 
     <div style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', overflow: 'hidden', padding: '14px 0', background: bg }}>
       <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
         {[0, 1, 2].map(i => (
-          <span key={i} style={{ display: 'inline-flex', flexShrink: 0, animation: `${anim} ${dur} linear infinite` }}>
+          <span key={i} aria-hidden={i > 0} style={{ display: 'inline-flex', flexShrink: 0, animation: `${anim} ${dur} linear infinite` }}>
             {topics.map(w => (
-              <a key={w.label} href={w.href}
+              <a key={w.label} href={w.href} tabIndex={i > 0 ? -1 : undefined}
                 style={{ fontSize: 14, fontWeight: 500, fontStyle: italic ? 'italic' : 'normal', color: 'var(--text-sub)', padding: '8px 20px', textDecoration: 'none', transition: 'color .15s', display: 'inline-flex', alignItems: 'center' }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-sub)'; }}>
@@ -251,6 +339,30 @@ const EDUCATION: { year: string; title: string; place: string; placeUrl?: string
   },
 ];
 
+// ─── Work themes (что приносят на сессии) ────────────────────────────────────
+const WORK_THEMES: { title: string; text: string }[] = [
+  { title: 'Отношения', text: 'Снова и снова один сценарий: выбираю недоступных, боюсь близости, растворяюсь в партнёре или держу всех на расстоянии.' },
+  { title: 'Самооценка', text: 'Внутренний критик, ощущение «со мной что-то не так», обесценивание своих успехов, перфекционизм, который не даёт выдохнуть.' },
+  { title: 'Тревога и контроль', text: 'Хроническое напряжение, тревога о будущем, гиперконтроль и невозможность просто расслабиться и быть.' },
+  { title: 'Чувства', text: 'Эмоции будто отключены — или, наоборот, захлёстывают. Трудно понять, что я чувствую и что с этим делать.' },
+  { title: 'Идентичность', text: '«Кто я и чего хочу на самом деле» — за чужими ожиданиями и ролями потерялся собственный голос.' },
+  { title: 'Повторяющиеся паттерны', text: 'Понимаю умом, но всё равно наступаю на те же грабли. Хочу добраться до корня, а не бороться с симптомом.' },
+];
+
+// ─── Boundaries (когда нужен другой специалист) ──────────────────────────────
+const BOUNDARIES: string[] = [
+  'Острое состояние, мысли о причинении вреда себе, самоповреждение — это повод за неотложной помощью, а не за консультацией.',
+  'Подозрение на психическое расстройство (тяжёлая депрессия, биполярное, РПП, психоз) — нужна диагностика и, возможно, медикаменты у врача-психиатра.',
+  'Зависимости (алкоголь, ПАВ) — здесь эффективнее профильная помощь.',
+];
+
+// ─── Trust (этика и качество практики) ───────────────────────────────────────
+const TRUST: { title: string; text: string }[] = [
+  { title: 'Супервизия с 2021 года', text: 'Регулярно разбираю свою работу с супервизором. Это профессиональная норма и гарантия, что метод применяется корректно и в ваших интересах.' },
+  { title: 'Личная терапия с 2021 года', text: 'Сам постоянно в личной терапии. Убеждён: сопровождать другого можно, только зная этот путь изнутри.' },
+  { title: 'Конфиденциальность', text: 'Всё, что вы рассказываете, остаётся между нами. Поэтому на сайте нет отзывов клиентов — это вопрос этики, а не отсутствия практики.' },
+];
+
 // ─── App features ─────────────────────────────────────────────────────────────
 const APP_FEATURES = [
   { num: '01', title: 'Дневник состояний', text: 'Каждый день – короткая оценка восьми базовых потребностей. Появляется картина того, что происходит.' },
@@ -285,7 +397,7 @@ function BentoCard({ num, title, text, accent = false }: { num: string; title: s
       cursor: 'default', willChange: 'transform',
     }}>
       <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.12em', opacity: accent ? .65 : 1, color: accent ? 'white' : 'var(--text-faint)' }}>{num}</span>
-      <h3 style={{ fontFamily: 'var(--serif)', fontSize: accent ? 28 : 21, fontWeight: 400, lineHeight: 1.2, margin: 0, color: accent ? 'white' : 'var(--text)' }}>{title}</h3>
+      <h3 style={{ fontFamily: 'var(--serif)', fontSize: accent ? 28 : 21, fontWeight: 400, lineHeight: 1.2, margin: 0, color: accent ? 'white' : 'var(--text)', whiteSpace: 'pre-line' }}>{title}</h3>
       <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0, opacity: accent ? .85 : 1, color: accent ? 'white' : 'var(--text-sub)' }}>{text}</p>
     </div>
   );
@@ -323,33 +435,40 @@ function FaqList() {
   const [open, setOpen] = useState<number | null>(null);
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {FAQ_ITEMS.map((item, i) => (
-        <div key={i} style={{ borderTop: '1px solid var(--line)', borderBottom: i === FAQ_ITEMS.length - 1 ? '1px solid var(--line)' : 'none' }}>
-          <button
-            onClick={() => setOpen(open === i ? null : i)}
-            style={{
-              width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              gap: 16, padding: '22px 0', background: 'none', border: 'none', cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>{item.q}</span>
-            <span style={{
-              flexShrink: 0, width: 28, height: 28, borderRadius: '50%',
-              background: open === i ? 'var(--accent)' : 'rgba(var(--fg-rgb),.07)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, color: open === i ? 'white' : 'var(--text-sub)',
-              transition: 'background .2s, transform .2s',
-              transform: open === i ? 'rotate(45deg)' : 'none',
-            }}>+</span>
-          </button>
-          {open === i && (
-            <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 22px', maxWidth: 660 }}>
-              {item.a}
-            </p>
-          )}
-        </div>
-      ))}
+      {FAQ_ITEMS.map((item, i) => {
+        const isOpen = open === i;
+        return (
+          <div key={i} style={{ borderTop: '1px solid var(--line)', borderBottom: i === FAQ_ITEMS.length - 1 ? '1px solid var(--line)' : 'none' }}>
+            <button
+              onClick={() => setOpen(isOpen ? null : i)}
+              style={{
+                width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                gap: 16, padding: '22px 0', background: 'none', border: 'none', cursor: 'pointer',
+                textAlign: 'left', transition: 'opacity .15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '.8'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+            >
+              <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>{item.q}</span>
+              <span style={{
+                flexShrink: 0, width: 28, height: 28, borderRadius: '50%',
+                background: isOpen ? 'var(--accent)' : 'rgba(var(--fg-rgb),.07)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, color: isOpen ? 'white' : 'var(--text-sub)',
+                transition: 'background .2s, transform .2s',
+                transform: isOpen ? 'rotate(45deg)' : 'none',
+              }}>+</span>
+            </button>
+            <div style={{ display: 'grid', gridTemplateRows: isOpen ? '1fr' : '0fr', transition: 'grid-template-rows .32s ease', overflow: 'hidden' }}>
+              <div style={{ overflow: 'hidden' }}>
+                <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 22px', maxWidth: 660 }}>
+                  {item.a}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -372,13 +491,19 @@ function useTheme() {
 export function LandingPage() {
   const bookingRef  = useRef<HTMLElement>(null);
   const [showBar, setShowBar] = useState(false);
+  const [scrollPct, setScrollPct] = useState(0);
+  const [activeSection, setActiveSection] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
 
   const aboutRef    = useReveal() as React.RefObject<HTMLElement>;
+  const workRef     = useReveal() as React.RefObject<HTMLElement>;
   const quoteRef    = useReveal() as React.RefObject<HTMLElement>;
+  const trustRef    = useReveal() as React.RefObject<HTMLElement>;
   const approachRef = useReveal() as React.RefObject<HTMLElement>;
   const processRef  = useReveal() as React.RefObject<HTMLElement>;
   const priceRef    = useReveal() as React.RefObject<HTMLElement>;
+  const boundRef    = useReveal() as React.RefObject<HTMLElement>;
   const formRef     = useReveal() as React.RefObject<HTMLElement>;
 
   const scrollToBooking = useCallback(() => {
@@ -386,13 +511,45 @@ export function LandingPage() {
   }, []);
 
   useEffect(() => {
-    const fn = () => setShowBar(window.scrollY > window.innerHeight * 0.75);
+    let ticking = false;
+    const fn = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        setShowBar(y > window.innerHeight * 0.75);
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        setScrollPct(max > 0 ? (y / max) * 100 : 0);
+        ticking = false;
+      });
+    };
     window.addEventListener('scroll', fn, { passive: true });
+    fn();
     return () => window.removeEventListener('scroll', fn);
+  }, []);
+
+  useEffect(() => {
+    const ids = NAV_LINKS.map(l => l.href.slice(1));
+    const obs = new IntersectionObserver(
+      entries => {
+        for (const e of entries) {
+          if (e.isIntersecting) setActiveSection(e.target.id);
+        }
+      },
+      { rootMargin: '-30% 0px -60% 0px' },
+    );
+    ids.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
+    return () => obs.disconnect();
   }, []);
 
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)', overflowX: 'hidden' }}>
+
+      {/* ── MOBILE MENU ─────────────────────────────────────────────────── */}
+      {menuOpen && <MobileMenu onClose={() => setMenuOpen(false)} active={activeSection} onBook={scrollToBooking} />}
+
+      {/* ── SCROLL PROGRESS ─────────────────────────────────────────────── */}
+      <div aria-hidden style={{ position: 'fixed', top: 0, left: 0, zIndex: 102, height: 2, width: `${scrollPct}%`, background: 'var(--accent)', pointerEvents: 'none', transition: 'width .1s linear' }} />
 
       {/* ── GRAIN OVERLAY ───────────────────────────────────────────────── */}
       <div aria-hidden style={{
@@ -405,7 +562,7 @@ export function LandingPage() {
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px',
-        background: 'rgba(245,242,235,0.92)', backdropFilter: 'blur(20px)',
+        background: 'var(--nav-bg)', backdropFilter: 'blur(20px)',
         borderBottom: '1px solid var(--line)',
         transform: showBar ? 'translateY(0)' : 'translateY(-100%)',
         transition: 'transform .4s cubic-bezier(.4,0,.2,1)',
@@ -413,13 +570,17 @@ export function LandingPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ position: 'relative', width: 30, height: 30, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 13, color: 'var(--text-sub)' }}>Г</span>
-            <img src="/gregory.jpg" alt="Григорий Котляревский" style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            <img src="/gregory.jpg" alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           </div>
           <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)', whiteSpace: 'nowrap' }}>Григорий Котляревский</span>
         </div>
+        <SectionNav className="sticky-nav" active={activeSection} />
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <a href="https://schemalab.ru" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
+          <a href="https://schemalab.ru" className="desktop-inline" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
           <Btn size="sm" onClick={scrollToBooking}>Записаться</Btn>
+          <button className="menu-btn" aria-label="Открыть меню" onClick={() => setMenuOpen(true)} style={menuBtnStyle}>
+            <span style={burgerLine} /><span style={burgerLine} /><span style={burgerLine} />
+          </button>
         </div>
       </div>
 
@@ -443,7 +604,7 @@ export function LandingPage() {
                 onMouseLeave={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--text)'; }}>
                 <div style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--text-sub)' }}>Г</span>
-                  <img src="/gregory.jpg" alt="Григорий Котляревский" style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                  <img src="/gregory.jpg" alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                 </div>
                 <span className="nav-name" style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color .15s' }}>Григорий Котляревский</span>
               </a>
@@ -455,6 +616,7 @@ export function LandingPage() {
                 <span style={{ fontSize: 11, fontWeight: 700, color: MOSS, letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
               </a>
             </div>
+            <SectionNav className="hero-nav" active={activeSection} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 12 }}>
               <button
                 onClick={toggleTheme}
@@ -473,6 +635,9 @@ export function LandingPage() {
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = ''; }}>
                 Написать ↗
               </a>
+              <button className="menu-btn" aria-label="Открыть меню" onClick={() => setMenuOpen(true)} style={menuBtnStyle}>
+                <span style={burgerLine} /><span style={burgerLine} /><span style={burgerLine} />
+              </button>
             </div>
           </div>
 
@@ -519,6 +684,18 @@ export function LandingPage() {
               </p>
             </div>
 
+            {/* Right: editorial price stats */}
+            <div className="hero-stats">
+              <div style={{ borderTop: '1px solid var(--line-strong)', paddingTop: 20, marginBottom: 24 }}>
+                <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(36px, 3.5vw, 52px)', fontWeight: 400, color: 'var(--text)', lineHeight: 1, letterSpacing: '-.03em', margin: '0 0 6px' }}>4 000 ₽</p>
+                <p style={{ fontSize: 13, color: 'var(--text-faint)', letterSpacing: '.02em' }}>сессия · 50 мин · онлайн</p>
+              </div>
+              <div>
+                <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 2.8vw, 40px)', fontWeight: 400, color: 'var(--accent)', lineHeight: 1, letterSpacing: '-.02em', margin: '0 0 6px', fontStyle: 'italic' }}>0 ₽</p>
+                <p style={{ fontSize: 13, color: 'var(--text-faint)', letterSpacing: '.02em' }}>первая встреча · 15 мин</p>
+              </div>
+            </div>
+
           </div>
 
           {/* ── Bottom strip ── */}
@@ -541,7 +718,7 @@ export function LandingPage() {
         <div className="about-inner">
           <div style={{ position: 'relative' }}>
             <div style={{ aspectRatio: '3/4', borderRadius: 24, overflow: 'hidden', background: 'var(--surface-2)', boxShadow: '0 24px 80px rgba(28,25,20,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/gregory.jpg" alt="Григорий Котляревский" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
+              <img src="/gregory.jpg" alt="Григорий Котляревский — схема-терапевт" loading="lazy" decoding="async" width={600} height={800} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
                 onError={e => {
                   const img = e.currentTarget as HTMLImageElement;
                   img.style.display = 'none';
@@ -583,8 +760,29 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── WORK THEMES ─────────────────────────────────────────────────── */}
+      <section id="work" ref={workRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)', padding: '80px 40px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>С чем я работаю</p>
+          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 16px', letterSpacing: '-.01em' }}>
+            Если узнаёте <span style={{ fontStyle: 'italic' }}>себя</span>
+          </h2>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 44px', maxWidth: 560 }}>
+            Эти темы чаще всего приносят на сессии. Не обязательно формулировать запрос идеально — достаточно ощущения «это про меня».
+          </p>
+          <div className="work-grid">
+            {WORK_THEMES.map(t => (
+              <div key={t.title} style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 16, padding: '24px 22px' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>{t.title}</h3>
+                <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65, margin: 0 }}>{t.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── EDUCATION ───────────────────────────────────────────────────── */}
-      <section ref={quoteRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 40px' }}>
+      <section id="education" ref={quoteRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 40px' }}>
         <div className="edu-grid" style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Образование</p>
@@ -619,6 +817,25 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── TRUST ───────────────────────────────────────────────────────── */}
+      <section ref={trustRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ padding: '80px 40px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Этика и качество практики</p>
+          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>
+            Почему мне можно <span style={{ fontStyle: 'italic' }}>доверять</span>
+          </h2>
+          <div className="trust-grid">
+            {TRUST.map((t, i) => (
+              <div key={t.title} style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 22, borderTop: '1px solid var(--line-strong)' }}>
+                <span style={{ fontFamily: 'var(--serif)', fontSize: 28, fontStyle: 'italic', color: 'var(--accent)', lineHeight: 1 }}>0{i + 1}</span>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{t.title}</h3>
+                <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>{t.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── MARQUEE #2 (reverse) ────────────────────────────────────────── */}
       <MarqueeStrip reverse bg="var(--bg)" italic topics={TOPICS_B} />
 
@@ -637,7 +854,7 @@ export function LandingPage() {
       </section>
 
       {/* ── PROCESS ─────────────────────────────────────────────────────── */}
-      <section ref={processRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: DARK_BG, padding: '80px 40px' }}>
+      <section id="process" ref={processRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: DARK_BG, padding: '80px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(236,234,229,.4)', margin: '0 0 10px' }}>Как начать</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 400, color: INK_ON_DARK, margin: '0 0 56px', letterSpacing: '-.01em' }}>Три шага до первой встречи</h2>
@@ -701,6 +918,34 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── BOUNDARIES ──────────────────────────────────────────────────── */}
+      <section ref={boundRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 40px 80px' }}>
+        <div style={{ border: '1px solid var(--line)', borderRadius: 24, padding: 'clamp(28px, 4vw, 48px)', background: 'var(--bg-elev)' }}>
+          <div className="bound-grid">
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Честно</p>
+              <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(26px, 3vw, 38px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 16px', lineHeight: 1.2, letterSpacing: '-.01em' }}>
+                Когда нужен<br /><span style={{ fontStyle: 'italic' }}>другой специалист</span>
+              </h2>
+              <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>
+                Это психологическое консультирование, а не медицинская психотерапия по ФЗ-323. Есть ситуации, где эффективнее и безопаснее другая помощь — и я честно об этом скажу.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {BOUNDARIES.map(b => (
+                <div key={b} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <span style={{ color: 'var(--c-clay)', fontSize: 15, flexShrink: 0, lineHeight: 1.6 }}>→</span>
+                  <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{b}</span>
+                </div>
+              ))}
+              <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.7, margin: '8px 0 0', paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+                Если на знакомстве станет ясно, что вам нужен врач, — помогу сориентироваться. Бесплатный телефон доверия в кризисной ситуации: <a href="tel:88002000122" style={{ color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>8 800 2000 122</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── BOOKING ─────────────────────────────────────────────────────── */}
       <section id="booking" ref={bookingRef as any} style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)' }}>
         <section ref={formRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 660, margin: '0 auto', padding: '80px 40px 96px' }}>
@@ -752,6 +997,18 @@ export function LandingPage() {
       {/* ── MARQUEE #4 ───────────────────────────────────────────────────── */}
       <MarqueeStrip reverse bg="var(--bg-rail)" topics={TOPICS_A} />
 
+      {/* ── PRE-FOOTER CTA ──────────────────────────────────────────────── */}
+      <section style={{ background: DARK_BG, padding: '96px 40px', textAlign: 'center' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(236,234,229,.28)', margin: '0 0 24px' }}>Начать</p>
+          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(40px, 5.5vw, 72px)', fontWeight: 400, color: INK_ON_DARK, lineHeight: 1.05, margin: '0 0 36px', letterSpacing: '-.025em' }}>
+            Первая встреча —<br /><span style={{ fontStyle: 'italic', color: 'rgba(144,137,224,.85)' }}>бесплатно</span>
+          </h2>
+          <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
+          <p style={{ fontSize: 13, color: 'rgba(236,234,229,.28)', marginTop: 20 }}>15 минут · без обязательств · онлайн</p>
+        </div>
+      </section>
+
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer style={{ borderTop: '1px solid var(--line)', padding: '28px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
@@ -771,6 +1028,30 @@ export function LandingPage() {
       <style>{`
         html { scroll-behavior: smooth; }
 
+        /* Anchored sections clear the 58px sticky bar when jumped to */
+        section[id] { scroll-margin-top: 74px; }
+
+        /* Section nav (desktop) ⇄ hamburger (mobile/tablet) */
+        .sticky-nav, .hero-nav { display: flex; }
+        .menu-btn { display: none !important; }
+        @media (max-width: 1200px) {
+          .sticky-nav, .hero-nav { display: none !important; }
+          .menu-btn { display: flex !important; }
+          .desktop-inline { display: none !important; }
+        }
+        @keyframes menu-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+        /* Respect reduced-motion: kill looping/entrance animation, keep content visible */
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after {
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .15s !important;
+            scroll-behavior: auto !important;
+          }
+          .reveal-section { opacity: 1 !important; transform: none !important; }
+        }
+
         @keyframes hero-in    { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:none } }
         @keyframes line-in    { from { transform:translateY(110%) } to { transform:none } }
         @keyframes blob-float { 0%,100% { transform:translate(0,0) scale(1) } 50% { transform:translate(2%,2%) scale(1.03) } }
@@ -784,7 +1065,8 @@ export function LandingPage() {
 
         /* Hero */
         .hero-wrap    { max-width:1100px; width:100%; margin:0 auto; padding:0 40px; display:flex; flex-direction:column; justify-content:space-between; min-height:100dvh; box-sizing:border-box; }
-        .hero-bottom  { display:flex; flex-direction:column; gap:0; }
+        .hero-bottom  { display:grid; grid-template-columns:1.4fr 1fr; gap:60px; align-items:end; }
+        .hero-stats   { display:flex; flex-direction:column; justify-content:flex-end; }
         .hero-ctas    { display:flex; gap:12px; flex-wrap:wrap; }
         @media (max-height:820px) {
           .hero-h1   { font-size:clamp(36px, 7vh, 80px) !important; }
@@ -802,6 +1084,9 @@ export function LandingPage() {
         .app-grid     { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
         .form-grid    { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
         .edu-grid     { display:grid; grid-template-columns:1fr 2fr; gap:60px; align-items:start; }
+        .work-grid    { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+        .trust-grid   { display:grid; grid-template-columns:repeat(3,1fr); gap:40px; }
+        .bound-grid   { display:grid; grid-template-columns:1fr 1.2fr; gap:48px; align-items:start; }
 
         input:focus, textarea:focus { border-color:var(--accent) !important; box-shadow:0 0 0 4px var(--accent-soft); }
 
@@ -812,6 +1097,7 @@ export function LandingPage() {
 
         @media (max-width:900px) {
           .hero-bottom  { grid-template-columns:1fr; gap:32px; }
+          .hero-stats   { display:none; }
           .about-inner  { grid-template-columns:1fr; }
           .bento-grid   { grid-template-columns:1fr; }
           .bento-tall   { grid-row:auto; }
@@ -821,6 +1107,12 @@ export function LandingPage() {
           .price-grid   { grid-template-columns:1fr; }
           .app-grid     { grid-template-columns:1fr; }
           .edu-grid     { grid-template-columns:1fr; gap:28px; }
+          .work-grid    { grid-template-columns:1fr; }
+          .trust-grid   { grid-template-columns:1fr; gap:32px; }
+          .bound-grid   { grid-template-columns:1fr; gap:28px; }
+        }
+        @media (min-width:601px) and (max-width:900px) {
+          .work-grid    { grid-template-columns:1fr 1fr; }
         }
         @media (max-width:900px) {
           .hero-ctas  { flex-direction:column; align-items:flex-start; }
