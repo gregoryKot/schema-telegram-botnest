@@ -110,15 +110,13 @@ function ThemeIcon({ dark }: { dark: boolean }) {
   );
 }
 
-// ─── Section nav – one source for in-page links to every section ──────────────
+// ─── Section nav – compact desktop set (≤5 per 2026 nav guidance) ─────────────
 const NAV_LINKS: { label: string; href: string }[] = [
-  { label: 'Обо мне',      href: '#about' },
-  { label: 'С чем работаю', href: '#work' },
-  { label: 'Подход',       href: '#approach' },
-  { label: 'Как начать',   href: '#process' },
-  { label: 'Цены',         href: '#prices' },
-  { label: 'СхемаЛаб',     href: '#schemalab' },
-  { label: 'Вопросы',      href: '#faq' },
+  { label: 'Обо мне', href: '#about' },
+  { label: 'Подход',  href: '#approach' },
+  { label: 'Цены',    href: '#prices' },
+  { label: 'Запись',  href: '#booking' },
+  { label: 'Вопросы', href: '#faq' },
 ];
 
 function SectionNav({ className, color = 'var(--text-sub)', active = '' }: { className?: string; color?: string; active?: string }) {
@@ -140,11 +138,18 @@ function SectionNav({ className, color = 'var(--text-sub)', active = '' }: { cla
 }
 
 // ─── Mobile menu – fullscreen overlay (uses useHistorySheet per project rule) ─
+// Fuller list than the compact desktop nav – the dedicated menu has room.
 const MOBILE_LINKS: { label: string; href: string }[] = [
-  ...NAV_LINKS,
-  { label: 'Образование', href: '#education' },
-  { label: 'Отзывы',      href: '/reviews' },
-  { label: 'Статьи',      href: '/articles' },
+  { label: 'Обо мне',      href: '#about' },
+  { label: 'С чем работаю', href: '#work' },
+  { label: 'Подход',       href: '#approach' },
+  { label: 'Как начать',   href: '#process' },
+  { label: 'Цены',         href: '#prices' },
+  { label: 'Запись',       href: '#booking' },
+  { label: 'СхемаЛаб',     href: '#schemalab' },
+  { label: 'Вопросы',      href: '#faq' },
+  { label: 'Отзывы',       href: '/reviews' },
+  { label: 'Статьи',       href: '/articles' },
 ];
 
 function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: string; onBook: () => void }) {
