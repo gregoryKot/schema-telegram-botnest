@@ -68,6 +68,32 @@ function Btn({
   return <button type={type} onClick={onClick} disabled={disabled} style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</button>;
 }
 
+// ─── Section nav – one source for in-page links to every section ──────────────
+const NAV_LINKS: { label: string; href: string }[] = [
+  { label: 'Обо мне',     href: '#about' },
+  { label: 'Образование', href: '#education' },
+  { label: 'Подход',      href: '#approach' },
+  { label: 'Как начать',  href: '#process' },
+  { label: 'Цены',        href: '#prices' },
+  { label: 'СхемаЛаб',    href: '#schemalab' },
+  { label: 'Вопросы',     href: '#faq' },
+];
+
+function SectionNav({ className, color = 'var(--text-sub)' }: { className?: string; color?: string }) {
+  return (
+    <nav className={className} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      {NAV_LINKS.map(l => (
+        <a key={l.href} href={l.href}
+          style={{ fontSize: 13, fontWeight: 500, color, textDecoration: 'none', padding: '6px 10px', borderRadius: 8, whiteSpace: 'nowrap', transition: 'color .15s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = color; }}>
+          {l.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 // ─── Scroll reveal via CSS scroll-driven (with IntersectionObserver fallback) ─
 function useReveal() {
   const ref = useRef<HTMLElement>(null);
@@ -417,6 +443,7 @@ export function LandingPage() {
           </div>
           <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)', whiteSpace: 'nowrap' }}>Григорий Котляревский</span>
         </div>
+        <SectionNav className="sticky-nav" />
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <a href="https://schemalab.ru" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
           <Btn size="sm" onClick={scrollToBooking}>Записаться</Btn>
@@ -455,6 +482,7 @@ export function LandingPage() {
                 <span style={{ fontSize: 11, fontWeight: 700, color: MOSS, letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
               </a>
             </div>
+            <SectionNav className="hero-nav" />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 12 }}>
               <button
                 onClick={toggleTheme}
@@ -584,7 +612,7 @@ export function LandingPage() {
       </section>
 
       {/* ── EDUCATION ───────────────────────────────────────────────────── */}
-      <section ref={quoteRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 40px' }}>
+      <section id="education" ref={quoteRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '64px 40px' }}>
         <div className="edu-grid" style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Образование</p>
@@ -637,7 +665,7 @@ export function LandingPage() {
       </section>
 
       {/* ── PROCESS ─────────────────────────────────────────────────────── */}
-      <section ref={processRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: DARK_BG, padding: '80px 40px' }}>
+      <section id="process" ref={processRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: DARK_BG, padding: '80px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(236,234,229,.4)', margin: '0 0 10px' }}>Как начать</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 400, color: INK_ON_DARK, margin: '0 0 56px', letterSpacing: '-.01em' }}>Три шага до первой встречи</h2>
@@ -770,6 +798,15 @@ export function LandingPage() {
       {/* ── GLOBAL STYLES ───────────────────────────────────────────────── */}
       <style>{`
         html { scroll-behavior: smooth; }
+
+        /* Anchored sections clear the 58px sticky bar when jumped to */
+        section[id] { scroll-margin-top: 74px; }
+
+        /* Section nav – shown only where the full row fits */
+        .sticky-nav, .hero-nav { display: flex; }
+        @media (max-width: 1100px) {
+          .sticky-nav, .hero-nav { display: none !important; }
+        }
 
         @keyframes hero-in    { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:none } }
         @keyframes line-in    { from { transform:translateY(110%) } to { transform:none } }
