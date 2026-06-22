@@ -119,7 +119,6 @@ function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: 
   const go = (href: string) => {
     if (href.startsWith('#')) {
       goBack();
-      // wait for overlay to unmount before scrolling to the anchor
       setTimeout(() => document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 60);
     } else {
       window.location.href = href;
@@ -145,11 +144,21 @@ function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: 
               fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400,
               color: isActive ? 'var(--accent)' : 'var(--text)',
               fontStyle: isActive ? 'italic' : 'normal',
-            }}>{l.label}</button>
+              display: 'flex', alignItems: 'center', gap: 12,
+              animation: `menu-item-in .32s cubic-bezier(.16,1,.3,1) ${i * 35}ms both`,
+            }}>
+              {isActive && <span aria-hidden style={{ width: 3, height: 22, borderRadius: 2, background: 'var(--accent)', flexShrink: 0, display: 'inline-block' }} />}
+              {l.label}
+            </button>
           );
         })}
       </nav>
-      <div style={{ marginTop: 20 }}>
+      <div style={{ animation: `menu-item-in .32s cubic-bezier(.16,1,.3,1) ${MOBILE_LINKS.length * 35}ms both` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 0', marginBottom: 12, borderTop: '1px solid var(--line)' }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: MOSS, flexShrink: 0, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
+          <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>Принимаю клиентов · </span>
+          <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: '#27a2d7', textDecoration: 'none', fontWeight: 600 }}>@kotlarewski</a>
+        </div>
         <Btn full size="lg" radius="btn" onClick={() => { goBack(); setTimeout(onBook, 60); }}>Записаться на знакомство →</Btn>
       </div>
     </div>
@@ -1065,7 +1074,8 @@ export function LandingPage() {
           .menu-btn { display: flex !important; }
           .desktop-inline { display: none !important; }
         }
-        @keyframes menu-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+        @keyframes menu-in      { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+        @keyframes menu-item-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
 
         /* Respect reduced-motion: kill looping/entrance animation, keep content visible */
         @media (prefers-reduced-motion: reduce) {
