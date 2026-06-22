@@ -203,12 +203,20 @@ function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: 
   );
 }
 
-// ─── Scroll reveal via CSS scroll-driven (with IntersectionObserver fallback) ─
+// ─── Scroll reveal – IntersectionObserver with deep-link / in-view failsafe ──
 function useReveal() {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Failsafe: if we loaded via a hash (deep link jumps past sections) or the
+    // section is already on screen, reveal now. Otherwise the observer's first
+    // callback can fail to arrive until the user scrolls, leaving content hidden.
+    const r = el.getBoundingClientRect();
+    if (window.location.hash || (r.top < window.innerHeight && r.bottom > 0)) {
+      el.classList.add('revealed');
+      return;
+    }
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { el.classList.add('revealed'); obs.disconnect(); } },
       { threshold: 0.08 },
