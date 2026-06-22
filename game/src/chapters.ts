@@ -34,6 +34,7 @@ export interface ChapterConfig {
   overwhelmAnx: number;     // сколько тревог высыпает финал (0 — только текст)
   overwhelmSay: string;
   next?: string;            // глава после развязки; нет — в начало
+  branch?: string;          // конец Акта I: экран-развилка (CTA в терапию ИЛИ продолжить в эту главу)
 }
 
 const G = GROUND_Y;
@@ -174,6 +175,7 @@ const chapter2: ChapterConfig = {
   music: 'home',
   overwhelmAnx: 0,
   overwhelmSay: 'весь вечер... опять в никуда.',
+  branch: 'chapter3', // конец Акта I: воронка-CTA ИЛИ продолжить в Дорогу (гл.3)
 };
 
 // ── Глава 3 · «Само пройдёт» (Акт II — дорога в терапию) ────────────────────
