@@ -77,7 +77,7 @@
 - [ ] `src/notification/notification.service.ts` — *(спек есть)* добить ветки: расписание, пропуск отправки, ошибки.
 - [ ] `src/notification/notification.templates.ts` — *(спек есть)* проверить все шаблоны/склонения.
 - [ ] `src/telegram/telegram.settings.service.ts` (189) — настройки уведомлений; таймзона; вкл/выкл.
-- [ ] `src/telegram/telegram.schedule.service.ts` (352) — крон-логика рассылок; кого выбирает; idempotent за день; уважает таймзону/настройки.
+- [x] `src/telegram/telegram.schedule.service.ts` (352) ✅ — **79% строк**, 18 тестов: rescheduleForUser (вкл/выкл), processQueue (отправка+markSent, **permanent 403 → markSent+blocked, transient → НЕ markSent/ретрай, нет шаблона → skip**), onDiaryComplete (отмена reminder-семейства + summary + стрик-вехи без дублей), scheduleDailyReminders (lapsing-детекция, не переуведомляет), scheduleWeeklySummaries (пропуск дормантных/дублей).
 
 ---
 
