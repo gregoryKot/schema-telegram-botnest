@@ -52,9 +52,16 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [contact, setContact] = useState('');
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'payment_fail'>('idle');
   const [cancelToken, setCancelToken] = useState('');
   const [cancelled, setCancelled] = useState(false);
+
+  // Handle ?payment=ok / ?payment=fail redirect back from Robokassa
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('payment') === 'ok') { setStatus('done'); window.history.replaceState({}, '', window.location.pathname + window.location.hash); }
+    if (p.get('payment') === 'fail') { setStatus('payment_fail'); window.history.replaceState({}, '', window.location.pathname + window.location.hash); }
+  }, []);
 
   useEffect(() => {
     api.getSlots()
@@ -80,6 +87,17 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
     return <>{fallback}</>;
   }
 
+  if (status === 'payment_fail') return (
+    <div style={{ textAlign: 'center', padding: '48px 0' }}>
+      <div style={{ fontSize: 56, marginBottom: 20 }}>😕</div>
+      <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Оплата не прошла</h3>
+      <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>Слот был освобождён. Попробуйте выбрать время снова или напишите напрямую.</p>
+      <button type="button" onClick={() => setStatus('idle')} style={{ padding: '13px 28px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer' }}>
+        Выбрать другое время
+      </button>
+    </div>
+  );
+
   if (status === 'done') return (
     <div style={{ textAlign: 'center', padding: '48px 0' }}>
       <div style={{ fontSize: 56, marginBottom: 20 }}>{cancelled ? '🗓' : '✅'}</div>
@@ -89,7 +107,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       {!cancelled && slot && (
         <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 8px' }}>
           {dayLabel(slot.startsAt)}, {timeLabel(slot.startsAt)} МСК.<br />
-          Я свяжусь с вами для подтверждения и пришлю ссылку на встречу.
+          Пришлю ссылку на встречу в день сессии.
         </p>
       )}
       {!cancelled && cancelToken && (
@@ -111,8 +129,13 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
         clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
       });
       setCancelToken(res.cancelToken);
-      setStatus('done');
       (window as Window & { ym?: (...a: unknown[]) => void }).ym?.(109568051, 'reachGoal', 'booking_submit');
+      if (res.paymentUrl) {
+        // Paid session: redirect to Robokassa payment page
+        window.location.href = res.paymentUrl;
+        return;
+      }
+      setStatus('done');
     } catch { setStatus('error'); }
   };
 

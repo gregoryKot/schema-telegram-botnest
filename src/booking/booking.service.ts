@@ -1,10 +1,17 @@
 import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { BookingNotifyService } from './booking-notify.service';
+import { RobokassaService } from './robokassa.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { randomUUID } from 'crypto';
+
+const SESSION_PRICE: Record<SessionType, number> = {
+  [SessionType.INTRO_15]: 0,
+  [SessionType.SESSION_50]: 3500,
+};
 
 export interface CreateBookingDto {
   startsAt: Date;
@@ -25,19 +32,25 @@ const HOLD_MINUTES = 15;
 @Injectable()
 export class BookingService {
   private readonly logger = new Logger(BookingService.name);
+  private readonly siteUrl: string;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly notify: BookingNotifyService,
-  ) {}
+    private readonly robokassa: RobokassaService,
+    config: ConfigService,
+  ) {
+    this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://schemalab.ru').replace(/\/$/, '');
+  }
 
   /**
-   * Create a booking for a free slot.
+   * Create a booking.
    *
-   * Free intro (INTRO_15) has no payment, so it is CONFIRMED immediately and the
-   * admin/CalDAV are notified. Paid sessions (SESSION_50) are created as HELD
-   * with a 15-min window for the upcoming payment step (Phase 2); the expiry
-   * cron releases the slot if payment never completes.
+   * INTRO_15 (free): confirmed immediately, admin + CalDAV notified.
+   * SESSION_50 (paid): created as HELD for 15 min. If Robokassa is configured,
+   * returns a paymentUrl the client must visit to complete payment. On webhook,
+   * PaymentController calls confirm(). If Robokassa is not configured, also
+   * confirms immediately (useful for dev / manual-payment flow).
    */
   async book(dto: CreateBookingDto) {
     if (!dto.clientName || !dto.clientContact) {
@@ -70,8 +83,27 @@ export class BookingService {
 
     if (isFree) {
       await this.notify.onConfirmed(decryptRecord(booking, SCHEMA) as any);
+      return { id: booking.id, cancelToken, heldUntil: null, status: BookingStatus.CONFIRMED, paymentUrl: null };
     }
-    return { id: booking.id, cancelToken, heldUntil, status: booking.status };
+
+    // Paid session — build Robokassa payment URL if configured.
+    let paymentUrl: string | null = null;
+    if (this.robokassa.enabled) {
+      const price = SESSION_PRICE[dto.type];
+      paymentUrl = this.robokassa.buildPaymentUrl({
+        invId: booking.id,
+        amount: price,
+        desc: `Психологическая сессия ${new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' }).format(dto.startsAt)} МСК`,
+        successUrl: `${this.siteUrl}/api/payment/success`,
+        failUrl: `${this.siteUrl}/api/payment/fail`,
+      });
+    } else {
+      // Robokassa not configured (dev): auto-confirm so slot isn't stuck in HELD.
+      await this.prisma.booking.update({ where: { id: booking.id }, data: { status: BookingStatus.CONFIRMED, heldUntil: null } });
+      await this.notify.onConfirmed(decryptRecord(booking, SCHEMA) as any);
+    }
+
+    return { id: booking.id, cancelToken, heldUntil, status: booking.status, paymentUrl };
   }
 
   /** Confirm a HELD booking (e.g. after payment or manual admin action). */
