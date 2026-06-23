@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { BookingPicker } from '../components/BookingPicker';
 
 // ─── Design tokens (local to landing) ────────────────────────────────────────
 const R = { pill: 100, card: 24, btn: 12, badge: 14 } as const;          // radius
@@ -996,8 +997,8 @@ export function LandingPage() {
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 12px', letterSpacing: '-.01em' }}>
             Записаться<br /><span style={{ fontStyle: 'italic' }}>на первую встречу</span>
           </h2>
-          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Оставьте имя и контакт – свяжусь в течение дня, договоримся о времени.</p>
-          <BookingForm />
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Выберите удобное время – забронирую слот сразу, пришлю подтверждение и ссылку на встречу.</p>
+          <BookingPicker fallback={<BookingForm />} />
           <div style={{ marginTop: 32, paddingTop: 28, borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>Или напишите напрямую:</span>
             <TgLink label="@kotlarewski" />

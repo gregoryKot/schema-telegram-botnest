@@ -31,14 +31,22 @@ export class BookingService {
     private readonly notify: BookingNotifyService,
   ) {}
 
-  /** Reserve a slot (HELD) without confirming. Returns booking id + cancelToken. */
-  async hold(dto: CreateBookingDto) {
+  /**
+   * Create a booking for a free slot.
+   *
+   * Free intro (INTRO_15) has no payment, so it is CONFIRMED immediately and the
+   * admin/CalDAV are notified. Paid sessions (SESSION_50) are created as HELD
+   * with a 15-min window for the upcoming payment step (Phase 2); the expiry
+   * cron releases the slot if payment never completes.
+   */
+  async book(dto: CreateBookingDto) {
     if (!dto.clientName || !dto.clientContact) {
       throw new BadRequestException('Name and contact required');
     }
     await this.assertSlotFree(dto.startsAt, dto.durationMin);
 
-    const heldUntil = new Date(Date.now() + HOLD_MINUTES * 60_000);
+    const isFree = dto.type === SessionType.INTRO_15;
+    const heldUntil = isFree ? null : new Date(Date.now() + HOLD_MINUTES * 60_000);
     const cancelToken = randomUUID();
 
     const data: any = encryptRecord(
@@ -50,7 +58,7 @@ export class BookingService {
         clientContact: dto.clientContact,
         message: dto.message ?? null,
         clientTelegramId: dto.clientTelegramId ?? null,
-        status: BookingStatus.HELD,
+        status: isFree ? BookingStatus.CONFIRMED : BookingStatus.HELD,
         heldUntil,
         cancelToken,
       },
@@ -58,8 +66,12 @@ export class BookingService {
     );
 
     const booking = await this.prisma.booking.create({ data });
-    this.logger.log(`Booking ${booking.id} HELD until ${heldUntil.toISOString()}`);
-    return { id: booking.id, cancelToken, heldUntil };
+    this.logger.log(`Booking ${booking.id} created (${isFree ? 'CONFIRMED' : 'HELD'})`);
+
+    if (isFree) {
+      await this.notify.onConfirmed(decryptRecord(booking, SCHEMA) as any);
+    }
+    return { id: booking.id, cancelToken, heldUntil, status: booking.status };
   }
 
   /** Confirm a HELD booking (e.g. after payment or manual admin action). */
