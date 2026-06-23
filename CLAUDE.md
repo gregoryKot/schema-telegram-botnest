@@ -8,8 +8,8 @@
 
 ## Два фронтенда — один бэк
 
-- `webapp/` — сайт `schemalab.ru` (логин Google/Telegram, JWT)
-- `schema-miniapp/` — Telegram мини-апп `schemalab.ru/app/` (initData)
+- `webapp/` — сайт `schemehappens.ru` (логин Google/Telegram, JWT)
+- `schema-miniapp/` — Telegram мини-апп `schemehappens.ru/app/` (initData)
 - Оба ходят в один NestJS API. Данные **общие** если `userId` совпадает.
 
 Когда совпадает:

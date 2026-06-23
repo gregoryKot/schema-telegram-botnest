@@ -117,7 +117,7 @@ function Disclaimer({ onAccept }: { onAccept: () => void }) {
     <div key={0}>
       <div style={{ textAlign: 'center', marginBottom: 24, paddingTop: 4 }}>
         <div style={{ width: 68, height: 68, borderRadius: 22, margin: '0 auto 14px', background: 'linear-gradient(135deg, var(--accent), #60a5fa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}>🧠</div>
-        <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>СхемаЛаб</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Всё по схеме</div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 20, padding: '3px 12px', fontSize: 10, fontWeight: 700, color: 'var(--accent-yellow)', letterSpacing: '0.1em' }}>
           БЕТА-ВЕРСИЯ
         </div>
@@ -129,7 +129,7 @@ function Disclaimer({ onAccept }: { onAccept: () => void }) {
       </div>
       <div className='card' style={{ borderRadius: 16, padding: '16px 18px' }}>
         <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-          СхемаЛаб — инструмент самопознания: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.
+          «Всё по схеме» — инструмент самопознания: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.
           <br /><br />
           Если чувствуешь, что что-то важное требует внимания — терапия это место, где можно разобраться по-настоящему.
         </div>
@@ -145,7 +145,7 @@ function Disclaimer({ onAccept }: { onAccept: () => void }) {
           <br /><br />
           Удалить все данные можно прямо в приложении — Настройки → «Удалить все данные».
           <br /><br />
-          <a href="https://schemalab.ru/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
+          <a href="https://schemehappens.ru/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
             Политика конфиденциальности →
           </a>
         </div>
@@ -162,7 +162,7 @@ function Disclaimer({ onAccept }: { onAccept: () => void }) {
       <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Важно знать</div>
       <div className='card' style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 16 }}>
         <div style={{ fontSize: 13, color: 'rgba(var(--fg-rgb),0.7)', lineHeight: 1.7, marginBottom: 16 }}>
-          СхемаЛаб — инструмент самоисследования. Оценки, тесты и упражнения внутри <strong style={{ color: 'var(--text)' }}>не являются клинической диагностикой</strong> и не заменяют работу с психологом.
+          «Всё по схеме» — инструмент самоисследования. Оценки, тесты и упражнения внутри <strong style={{ color: 'var(--text)' }}>не являются клинической диагностикой</strong> и не заменяют работу с психологом.
         </div>
         <Checkbox
           checked={c1}

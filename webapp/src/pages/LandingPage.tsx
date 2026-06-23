@@ -146,7 +146,7 @@ const MOBILE_LINKS: { label: string; href: string }[] = [
   { label: 'Как начать',   href: '#process' },
   { label: 'Цены',         href: '#prices' },
   { label: 'Запись',       href: '#booking' },
-  { label: 'СхемаЛаб',     href: '#schemalab' },
+  { label: 'Всё по схеме', href: '#app' },
   { label: 'Вопросы',      href: '#faq' },
   { label: 'Отзывы',       href: '/reviews' },
   { label: 'Статьи',       href: '/articles' },
@@ -481,8 +481,8 @@ const FAQ_ITEMS = [
     a: 'Нет. Психологическое консультирование – отдельный вид помощи, не требующий медицинского образования и лицензии. Это не медицинская психотерапия по ФЗ-323. Если у вас есть симптомы психического расстройства – я порекомендую обратиться к врачу-психиатру или психотерапевту с медицинским дипломом.',
   },
   {
-    q: 'Что такое СхемаЛаб и зачем он нужен?',
-    a: 'СхемаЛаб – бесплатное веб-приложение, которое я создал для самостоятельной работы между сессиями. Дневник состояний, диагностика схем (тест ЯСО), упражнения из схема-терапии и КПТ, отслеживание динамики. Работает в браузере и через Telegram-бот @SchemaLabBot.',
+    q: 'Что такое «Всё по схеме» и зачем оно нужно?',
+    a: '«Всё по схеме» – бесплатное веб-приложение, которое я создал для самостоятельной работы между сессиями. Дневник состояний, диагностика схем (тест ЯСО), упражнения из схема-терапии и КПТ, отслеживание динамики. Работает в браузере и через Telegram-бот @SchemaLabBot.',
   },
 ];
 
@@ -568,7 +568,7 @@ export function LandingPage() {
   }, []);
 
   useEffect(() => {
-    const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'schemalab', 'faq'];
+    const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'app', 'faq'];
     let ticking = false;
     let firstRun = true;
     const fn = () => {
@@ -652,7 +652,7 @@ export function LandingPage() {
         </div>
         <SectionNav className="sticky-nav" active={activeSection} />
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <a href="https://schemalab.ru" className="desktop-inline" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
+          <a href="https://schemehappens.ru" className="desktop-inline" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
           <Btn size="sm" onClick={scrollToBooking}>Записаться</Btn>
           <button className="menu-btn" aria-label="Открыть меню" onClick={() => setMenuOpen(true)} style={menuBtnStyle}>
             <span style={burgerLine} /><span style={burgerLine} /><span style={burgerLine} />
@@ -1010,23 +1010,23 @@ export function LandingPage() {
         </section>
       </section>
 
-      {/* ── SCHEMALAB ───────────────────────────────────────────────────── */}
-      <section id="schemalab" style={{ borderTop: '1px solid var(--line)' }}>
+      {/* ── ВСЁ ПО СХЕМЕ ────────────────────────────────────────────────── */}
+      <section id="app" style={{ borderTop: '1px solid var(--line)' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '88px 40px' }}>
           <div className="app-grid">
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 100, marginBottom: 22 }}>
                 <span style={{ fontSize: 14 }}>🧠</span>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>СхемаЛаб</span>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>Всё по схеме</span>
               </div>
               <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 18px', lineHeight: 1.1, letterSpacing: '-.01em' }}>
 Помогите себе сами.<br /><span style={{ fontStyle: 'italic' }}>Между сессиями.</span>
               </h2>
               <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
-                СхемаЛаб – бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Ведите дневник состояний, отслеживайте потребности, делайте упражнения. Всё сохраняется – динамика всегда перед глазами.
+                «Всё по схеме» – бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Ведите дневник состояний, отслеживайте потребности, делайте упражнения. Всё сохраняется – динамика всегда перед глазами.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <Btn href="https://schemalab.ru" newTab={false}>Попробовать бесплатно</Btn>
+                <Btn href="https://schemehappens.ru" newTab={false}>Попробовать бесплатно</Btn>
                 <Btn variant="ghost" href="https://t.me/SchemaLabBot">Telegram-бот</Btn>
               </div>
             </div>
@@ -1071,7 +1071,7 @@ export function LandingPage() {
             <a href="/privacy" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Политика конфиденциальности</a>
             <a href="/offer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
             <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Telegram</a>
-            <a href="https://schemalab.ru" style={{ fontSize: 13, color: 'var(--text-sub)', textDecoration: 'none', fontWeight: 600 }}>Открыть СхемаЛаб →</a>
+            <a href="https://schemehappens.ru" style={{ fontSize: 13, color: 'var(--text-sub)', textDecoration: 'none', fontWeight: 600 }}>Открыть «Всё по схеме» →</a>
           </div>
         </div>
       </footer>

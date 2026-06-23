@@ -16,7 +16,7 @@ const helmet = require('helmet');
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new AlertLogger() });
 
-  // Redirect HTTP → HTTPS for all domains (kotlarewski.ru, kotlarewski.gr, schemalab.ru).
+  // Redirect HTTP → HTTPS for all domains (kotlarewski.ru, kotlarewski.gr, schemehappens.ru).
   // Amvera's reverse proxy sets x-forwarded-proto, so we can detect the original protocol.
   if (process.env.NODE_ENV === 'production') {
     app.use((req: any, res: any, next: any) => {
@@ -61,7 +61,7 @@ async function bootstrap() {
   // Production default is restrictive; localhost is dev-only.
   const isProd = process.env.NODE_ENV === 'production';
   const origins = process.env.ALLOWED_ORIGINS?.split(',') ?? (isProd
-    ? ['https://schemalab.ru', 'https://kotlarewski.ru', 'https://kotlarewski.gr']
+    ? ['https://schemehappens.ru', 'https://kotlarewski.ru', 'https://kotlarewski.gr']
     : [
         'https://schema-miniapp.vercel.app',
         'https://diary-miniapp-sigma.vercel.app',
