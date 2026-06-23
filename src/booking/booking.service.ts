@@ -82,12 +82,14 @@ export class BookingService {
     this.logger.log(`Booking ${booking.id} created (${isFree ? 'CONFIRMED' : 'HELD'})`);
 
     if (isFree) {
-      await this.notify.onConfirmed(decryptRecord(booking, SCHEMA) as any);
-      return { id: booking.id, cancelToken, heldUntil: null, status: BookingStatus.CONFIRMED, paymentUrl: null };
+      const plain = decryptRecord(booking, SCHEMA) as any;
+      await this.notify.onConfirmed(plain);
+      return { id: booking.id, cancelToken, heldUntil: null, status: BookingStatus.CONFIRMED, paymentUrl: null, meetingUrl: plain.meetingUrl ?? null };
     }
 
     // Paid session — build Robokassa payment URL if configured.
     let paymentUrl: string | null = null;
+    let meetingUrl: string | null = null;
     if (this.robokassa.enabled) {
       const price = SESSION_PRICE[dto.type];
       paymentUrl = this.robokassa.buildPaymentUrl({
@@ -100,10 +102,12 @@ export class BookingService {
     } else {
       // Robokassa not configured (dev): auto-confirm so slot isn't stuck in HELD.
       await this.prisma.booking.update({ where: { id: booking.id }, data: { status: BookingStatus.CONFIRMED, heldUntil: null } });
-      await this.notify.onConfirmed(decryptRecord(booking, SCHEMA) as any);
+      const plain = decryptRecord(booking, SCHEMA) as any;
+      await this.notify.onConfirmed(plain);
+      meetingUrl = plain.meetingUrl ?? null;
     }
 
-    return { id: booking.id, cancelToken, heldUntil, status: booking.status, paymentUrl };
+    return { id: booking.id, cancelToken, heldUntil, status: booking.status, paymentUrl, meetingUrl };
   }
 
   /** Confirm a HELD booking (e.g. after payment or manual admin action). */
