@@ -1026,7 +1026,7 @@ export class GameScene extends Phaser.Scene {
 
     cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
     cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => { track('cta_click', { from: 'act1' }); window.open('https://schemalab.ru/?from=game', '_blank'); });
+    cta.on('pointerdown', () => { track('cta_click', { from: 'act1' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
     goTxt.on('pointerover', () => goTxt.setColor('#d8c8ec'));
     goTxt.on('pointerout', () => goTxt.setColor('#8a7faa'));
     goTxt.on('pointerdown', () => { track('continue', { to: nextChapter }); this.scene.restart({ chapter: nextChapter }); });
@@ -1121,12 +1121,12 @@ export class GameScene extends Phaser.Scene {
 
     cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
     cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => { track('cta_click'); window.open('https://schemalab.ru/?from=game', '_blank'); });
+    cta.on('pointerdown', () => { track('cta_click'); window.open('https://schemehappens.ru/?from=game', '_blank'); });
     share.on('pointerover', () => share.setFillStyle(0x322a52));
     share.on('pointerout', () => share.setFillStyle(0x241d3a));
     share.on('pointerdown', () => {
       track('cta_share');
-      const url = 'https://schemalab.ru/game/';
+      const url = 'https://schemehappens.ru/game/';
       const text = `Прошёл сквозь собственную голову в этой игре. Мой главный враг — ${this.modeShort()}. А твой?`;
       window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
     });
