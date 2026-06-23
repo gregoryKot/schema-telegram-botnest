@@ -100,6 +100,20 @@ export interface StreakData {
 }
 export interface Achievement { id: string; earned: boolean; }
 export interface BookingSlot { startsAt: string; endsAt: string; durationMin: number; }
+export interface AvailabilityRule {
+  id: number; dayOfWeek: number; startHour: number; startMinute: number;
+  endHour: number; endMinute: number; sessionDuration: number; bufferMin: number;
+  timezone: string; isActive: boolean;
+}
+export type NewAvailabilityRule = {
+  dayOfWeek: number; startHour: number; endHour: number;
+  startMinute?: number; endMinute?: number; sessionDuration?: number; bufferMin?: number; timezone?: string;
+};
+export interface AdminBooking {
+  id: number; startsAt: string; durationMin: number; type: string; status: string;
+  clientName: string; clientContact: string; message: string | null;
+  cancelToken: string; meetingUrl: string | null;
+}
 export interface UserPractice { id: number; needId: string; text: string; }
 export interface PartnerInfo {
   code: string;
@@ -388,6 +402,13 @@ export const api = {
   bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string }) =>
     postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string }>('/api/booking/book', body),
   cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),
+  // Booking admin (gated by ADMIN_BOOKING_KEY)
+  adminListRules:    (key: string) => get<AvailabilityRule[]>(`/api/booking/admin/rules?key=${encodeURIComponent(key)}`),
+  adminCreateRule:   (key: string, rule: NewAvailabilityRule) => postJson<AvailabilityRule>('/api/booking/admin/rules', { ...rule, adminKey: key }),
+  adminToggleRule:   (key: string, id: number, isActive: boolean) => patchJson<AvailabilityRule>(`/api/booking/admin/rules/${id}`, { isActive, adminKey: key }),
+  adminDeleteRule:   (key: string, id: number) => del(`/api/booking/admin/rules/${id}?key=${encodeURIComponent(key)}`),
+  adminListBookings: (key: string) => get<AdminBooking[]>(`/api/booking/admin/list?key=${encodeURIComponent(key)}`),
+  adminConfirm:      (key: string, id: number) => postJson<{ ok: true }>(`/api/booking/admin/confirm/${id}`, { adminKey: key }),
   // Therapist custom modes
   listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),

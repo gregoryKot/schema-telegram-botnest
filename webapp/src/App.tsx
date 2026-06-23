@@ -29,6 +29,7 @@ import { OfferPage } from './pages/OfferPage';
 import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { ReviewsPage } from './pages/ReviewsPage';
 import { GamePage } from './pages/GamePage';
+import { BookingAdminPage } from './pages/BookingAdminPage';
 
 // Apply saved theme before first render
 const savedTheme = localStorage.getItem('app_theme');
@@ -84,6 +85,7 @@ const personalRoutes = [
   { path: '/articles/:slug', element: <ArticlePage /> },
   { path: '/reviews',        element: <ReviewsPage /> },
   { path: '/game',           element: <GamePage /> },
+  { path: '/booking-admin',  element: <BookingAdminPage /> },
   { path: '/privacy',        element: <PrivacyPage /> },
   { path: '/offer',          element: <OfferPage /> },
   { path: '*',               element: <Navigate to="/" replace /> },
