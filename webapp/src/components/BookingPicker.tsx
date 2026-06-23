@@ -55,6 +55,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'payment_fail'>('idle');
   const [cancelToken, setCancelToken] = useState('');
   const [cancelled, setCancelled] = useState(false);
+  const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
 
   // Handle ?payment=ok / ?payment=fail redirect back from Robokassa
   useEffect(() => {
@@ -106,9 +107,17 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       </h3>
       {!cancelled && slot && (
         <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 8px' }}>
-          {dayLabel(slot.startsAt)}, {timeLabel(slot.startsAt)} МСК.<br />
-          Пришлю ссылку на встречу в день сессии.
+          {dayLabel(slot.startsAt)}, {timeLabel(slot.startsAt)} МСК.
         </p>
+      )}
+      {!cancelled && meetingUrl && (
+        <div style={{ margin: '14px auto 4px', maxWidth: 420, padding: '14px 16px', background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 12 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '0 0 6px' }}>Ваша персональная ссылка на встречу — она же для всех будущих сессий:</p>
+          <a href={meetingUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: 15, fontWeight: 600, wordBreak: 'break-all', textDecoration: 'none' }}>{meetingUrl}</a>
+        </div>
+      )}
+      {!cancelled && !meetingUrl && (
+        <p style={{ color: 'var(--text-faint)', fontSize: 14, margin: '0 0 8px' }}>Пришлю ссылку на встречу до начала сессии.</p>
       )}
       {!cancelled && cancelToken && (
         <button type="button" onClick={async () => { try { await api.cancelBooking(cancelToken); setCancelled(true); } catch { /* ignore */ } }}
@@ -135,6 +144,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
         window.location.href = res.paymentUrl;
         return;
       }
+      setMeetingUrl(res.meetingUrl ?? null);
       setStatus('done');
     } catch { setStatus('error'); }
   };
@@ -171,6 +181,9 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
             <div><label style={labelSt}>Имя *</label><input style={field} placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} /></div>
             <div><label style={labelSt}>Telegram / телефон *</label><input style={field} placeholder="@username или телефон" value={contact} onChange={(e) => setContact(e.target.value)} required maxLength={100} /></div>
           </div>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '-6px 0 0' }}>
+            Если вы уже занимались со мной — укажите, пожалуйста, тот же контакт, что и раньше. Так я узнаю вас и дам вашу постоянную ссылку на встречу: одна и та же комната для всех наших сессий, чтобы не искать новую ссылку каждый раз. 🙂
+          </p>
           <div>
             <label style={labelSt}>Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
             <textarea style={{ ...field, resize: 'vertical', minHeight: 84 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />

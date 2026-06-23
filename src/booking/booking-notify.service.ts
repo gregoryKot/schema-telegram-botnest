@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CalDavService } from './caldav.service';
+import { MeetingService } from './meeting.service';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { sessionLabel } from './caldav-event.util';
 import { BookingStatus, SessionType } from '@prisma/client';
@@ -32,13 +33,21 @@ export class BookingNotifyService {
     private readonly prisma: PrismaService,
     private readonly telegram: TelegramService,
     private readonly calDav: CalDavService,
+    private readonly meeting: MeetingService,
     config: ConfigService,
   ) {
     this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://schemalab.ru').replace(/\/$/, '');
   }
 
-  /** Push to Apple Calendar + notify admin when a booking is confirmed. */
+  /**
+   * On confirmation: ensure a meeting link, push to Apple Calendar, notify admin.
+   * Mutates b.meetingUrl so callers can return it to the client.
+   */
   async onConfirmed(b: PlainBooking): Promise<void> {
+    if (!b.meetingUrl) {
+      b.meetingUrl = await this.meeting.createMeeting(b);
+      await this.prisma.booking.update({ where: { id: b.id }, data: { meetingUrl: b.meetingUrl } });
+    }
     const uid = await this.calDav.pushEvent({
       uid: `booking-${b.id}@schemalab.ru`,
       startsAt: b.startsAt,

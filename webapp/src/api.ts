@@ -400,7 +400,7 @@ export const api = {
     return get<BookingSlot[]>(`/api/booking/slots${qs ? `?${qs}` : ''}`);
   },
   bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string }) =>
-    postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string }>('/api/booking/book', body),
+    postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null; meetingUrl?: string | null }>('/api/booking/book', body),
   cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),
   // Booking admin (gated by ADMIN_BOOKING_KEY)
   adminListRules:    (key: string) => get<AvailabilityRule[]>(`/api/booking/admin/rules?key=${encodeURIComponent(key)}`),

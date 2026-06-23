@@ -550,3 +550,13 @@ model Booking {
   @@index([startsAt, status])
   @@index([heldUntil, status])
 }
+
+// Persistent per-client video room. A returning client (same contact) reuses
+// the same Zoom meeting link across all their sessions. clientKey is a SHA-256
+// hash of the normalised contact — pseudonymised, not reversible.
+model ClientMeeting {
+  clientKey     String   @id          // sha256(normalised contact)
+  meetingUrl    String                // join_url reused for all sessions
+  zoomMeetingId String?               // Zoom meeting id (for future updates/deletes)
+  createdAt     DateTime @default(now())
+}
