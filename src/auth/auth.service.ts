@@ -25,8 +25,8 @@ const REFRESH_TOKEN_TTL_S = 30 * 24 * 3600; // 30 days
 // happen to share JWT_SECRET. Existing in-flight access tokens (issued
 // before this change) will fail verification once → frontend will hit
 // /api/auth/refresh which is DB-backed and continues to work.
-const JWT_ISSUER = 'schemalab.ru';
-const JWT_AUDIENCE = 'schemalab.ru';
+const JWT_ISSUER = 'schemehappens.ru';
+const JWT_AUDIENCE = 'schemehappens.ru';
 
 // Telegram user IDs are at most ~10 digits. Web-only users get IDs
 // starting from 10^15 to avoid any collision.
