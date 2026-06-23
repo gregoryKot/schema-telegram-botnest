@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
-import { TelegramService } from '../telegram/telegram.service';
+import { BookingNotifyService } from './booking-notify.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { randomUUID } from 'crypto';
@@ -28,11 +28,14 @@ export class BookingService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly telegram: TelegramService,
+    private readonly notify: BookingNotifyService,
   ) {}
 
   /** Reserve a slot (HELD) without confirming. Returns booking id + cancelToken. */
   async hold(dto: CreateBookingDto) {
+    if (!dto.clientName || !dto.clientContact) {
+      throw new BadRequestException('Name and contact required');
+    }
     await this.assertSlotFree(dto.startsAt, dto.durationMin);
 
     const heldUntil = new Date(Date.now() + HOLD_MINUTES * 60_000);
@@ -72,8 +75,7 @@ export class BookingService {
       data: { status: BookingStatus.CONFIRMED, heldUntil: null },
     });
 
-    const plain = decryptRecord(booking, SCHEMA);
-    await this.notifyConfirmed(plain);
+    await this.notify.onConfirmed(decryptRecord(booking, SCHEMA) as any);
     this.logger.log(`Booking ${id} CONFIRMED`);
     return { ok: true };
   }
@@ -92,8 +94,7 @@ export class BookingService {
       data: { status: BookingStatus.CANCELLED, heldUntil: null },
     });
 
-    const plain = decryptRecord(booking, SCHEMA);
-    await this.notifyCancelled(plain);
+    await this.notify.onCancelled(decryptRecord(booking, SCHEMA) as any, booking.calDavUid);
     this.logger.log(`Booking ${booking.id} CANCELLED`);
     return { ok: true };
   }
@@ -126,55 +127,21 @@ export class BookingService {
 
   // ── private ────────────────────────────────────────────────────────────────
 
+  // Overlap test: an existing HELD/CONFIRMED booking collides when
+  // existing.startsAt < newEnd AND existing.end > newStart. Prisma can't add
+  // durationMin to startsAt in a filter, so we narrow by startsAt then check
+  // the computed end in JS.
   private async assertSlotFree(startsAt: Date, durationMin: number) {
     const endsAt = new Date(startsAt.getTime() + durationMin * 60_000);
-    const conflict = await this.prisma.booking.findFirst({
+    const candidates = await this.prisma.booking.findMany({
       where: {
         status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] },
         startsAt: { lt: endsAt },
-        // startsAt + durationMin > newStartsAt is checked by endsAt > existing.startsAt
-        // Prisma can't express "startsAt + durationMin > x" directly, so we use a raw check below
       },
     });
-    // Precise overlap check: existing.startsAt < endsAt AND existing.endsAt > startsAt
-    if (conflict) {
-      const conflictEnd = new Date(conflict.startsAt.getTime() + conflict.durationMin * 60_000);
-      if (conflictEnd > startsAt) throw new ConflictException('Slot already taken');
+    for (const c of candidates) {
+      const cEnd = new Date(c.startsAt.getTime() + c.durationMin * 60_000);
+      if (cEnd > startsAt) throw new ConflictException('Slot already taken');
     }
   }
-
-  private async notifyConfirmed(booking: any) {
-    const at = formatBookingTime(booking.startsAt);
-    const text = [
-      '✅ <b>Запись подтверждена</b>',
-      '',
-      `👤 ${booking.clientName}`,
-      `📬 ${booking.clientContact}`,
-      `🗓 ${at}`,
-      booking.message ? `💬 ${booking.message}` : null,
-    ].filter(Boolean).join('\n');
-    await this.telegram.notifyAdmin(text).catch(() => null);
-  }
-
-  private async notifyCancelled(booking: any) {
-    const at = formatBookingTime(booking.startsAt);
-    const text = [
-      '❌ <b>Запись отменена</b>',
-      '',
-      `👤 ${booking.clientName}`,
-      `🗓 ${at}`,
-    ].join('\n');
-    await this.telegram.notifyAdmin(text).catch(() => null);
-  }
-}
-
-function formatBookingTime(date: Date): string {
-  return new Intl.DateTimeFormat('ru-RU', {
-    timeZone: 'Europe/Moscow',
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date) + ' МСК';
 }
