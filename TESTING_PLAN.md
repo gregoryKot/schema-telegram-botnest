@@ -113,7 +113,7 @@
 
 ### Клиенты API фронтендов (мок `fetch`)
 - [ ] `schema-miniapp/src/api.ts` (362) — **цель 100%.** правильный URL/метод/тело; заголовок initData; обработка не-2xx; парсинг; таймауты.
-- [ ] `webapp/src/api.ts` (390) — то же + JWT-заголовки, refresh при 401.
+- [~] `webapp/src/api.ts` (390) — **ядро покрыто** (14 тестов): Bearer-заголовок через `setTokenProvider`, `Content-Type`, `credentials:include`, обработка не-2xx (+парсинг `{message}` / фолбэк), методы/тело GET/POST/postJson/DELETE, кодирование query, `saveRating`. ~80 однострочных обёрток (`()=>get('/api/x')`) — тривиальные делегации без логики, добор по желанию.
 
 ---
 
