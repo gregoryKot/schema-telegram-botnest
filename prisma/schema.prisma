@@ -494,3 +494,59 @@ model ScheduledNotification {
   @@index([sendAt, sentAt, cancelledAt])
   @@index([userId, type, sentAt])
 }
+
+// ── Booking system ───────────────────────────────────────────────────────────
+
+// Therapist's recurring availability rules (e.g. Mon 10:00–19:00, 50 min sessions)
+model AvailabilityRule {
+  id              Int      @id @default(autoincrement())
+  dayOfWeek       Int      // 0=Sun … 6=Sat (JS convention)
+  startHour       Int      // local hour, e.g. 10
+  startMinute     Int      @default(0)
+  endHour         Int      // local hour, e.g. 19
+  endMinute       Int      @default(0)
+  sessionDuration Int      @default(50)  // minutes
+  bufferMin       Int      @default(10)  // gap between sessions
+  timezone        String   @default("Europe/Moscow")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+enum BookingStatus {
+  HELD        // slot reserved, not yet confirmed (hold expires in 15 min)
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum SessionType {
+  INTRO_15    // free intro call
+  SESSION_50  // full session
+}
+
+// One booked (or pending) session. PII fields are AES-256-GCM encrypted.
+model Booking {
+  id              Int           @id @default(autoincrement())
+  startsAt        DateTime      // UTC
+  durationMin     Int
+  type            SessionType   @default(SESSION_50)
+  status          BookingStatus @default(HELD)
+  heldUntil       DateTime?     // non-null while status=HELD
+  // PII — stored encrypted
+  clientName      String
+  clientContact   String        // phone or telegram @handle
+  message         String?
+  clientTelegramId BigInt?      // if client came from Telegram
+  cancelToken     String        @unique  // random UUID for self-cancel link
+  meetingUrl      String?       // Zoom/Телемост link, set after confirmation
+  // CalDAV sync
+  calDavUid       String?       @unique  // iCloud event UID
+  // Reminders
+  reminder24SentAt DateTime?
+  reminder2SentAt  DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([startsAt, status])
+  @@index([heldUntil, status])
+}
