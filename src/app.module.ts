@@ -15,7 +15,7 @@ import { NotificationModule } from './notification/notification.module';
 import { TherapyModule } from './therapy/therapy.module';
 import { AuthModule } from './auth/auth.module';
 
-// Domains that are aliases of schemalab.ru and need their own og:url / canonical
+// Domains that are aliases of schemehappens.ru and need their own og:url / canonical
 // so Telegram generates a separate link preview card for each domain.
 const ALIAS_DOMAINS = new Set(['kotlarewski.ru', 'kotlarewski.gr']);
 
@@ -62,10 +62,10 @@ export class AppModule implements NestModule {
         if (!ALIAS_DOMAINS.has(req.hostname)) return next();
         const domain = req.hostname;
         const modified = html
-          .replace('href="https://schemalab.ru/"', `href="https://${domain}/"`)
-          .replace('content="https://schemalab.ru/"', `content="https://${domain}/"`)
+          .replace('href="https://schemehappens.ru/"', `href="https://${domain}/"`)
+          .replace('content="https://schemehappens.ru/"', `content="https://${domain}/"`)
           // og:image and twitter:image — keep them on the same domain as the page
-          .replaceAll('https://schemalab.ru/og-cover-v2.jpg', `https://${domain}/og-cover-v2.jpg`);
+          .replaceAll('https://schemehappens.ru/og-cover-v2.jpg', `https://${domain}/og-cover-v2.jpg`);
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         return res.send(modified);
       })

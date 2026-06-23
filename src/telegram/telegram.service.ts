@@ -37,7 +37,7 @@ const WELCOME_TEXT = `Привет!
 
 Бывает, что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
 
-Дело почти всегда в потребностях. Схемалаб помогает это увидеть — трекер, дневники схема-терапии и YSQ-тест в одном месте.`;
+Дело почти всегда в потребностях. «Всё по схеме» помогает это увидеть — трекер, дневники схема-терапии и YSQ-тест в одном месте.`;
 
 const CONSENT_TEXT = `🔐 Соглашение об обработке данных
 
@@ -53,7 +53,7 @@ const CONSENT_TEXT = `🔐 Соглашение об обработке данн
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function buildWelcomeKeyboard(): any {
   return Markup.inlineKeyboard([
-    [Markup.button.webApp('🧠 Открыть СхемаЛаб', MINIAPP_URL)],
+    [Markup.button.webApp('🧠 Открыть «Всё по схеме»', MINIAPP_URL)],
   ]);
 }
 
@@ -152,7 +152,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('start command failed', err);
-        await ctx.reply('Что-то пошло не так. Попробуй открыть СхемаЛаб через кнопку ниже.',
+        await ctx.reply('Что-то пошло не так. Попробуй открыть «Всё по схеме» через кнопку ниже.',
           Markup.inlineKeyboard([[Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)]])).catch(() => null);
       }
     });
@@ -363,7 +363,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     this.bot.command('about', async (ctx) => {
       try {
         const text = [
-          '🧠 <b>СхемаЛаб</b>',
+          '🧠 <b>Всё по схеме</b>',
           '',
           'Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.',
           '',
@@ -379,13 +379,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     await this.bot.telegram.setMyCommands([
-      { command: 'start', description: 'Открыть СхемаЛаб' },
+      { command: 'start', description: 'Открыть «Всё по схеме»' },
       { command: 'settings', description: 'Настройки уведомлений' },
       { command: 'about', description: 'О приложении и авторе' },
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
 
     await this.bot.telegram.callApi('setChatMenuButton' as any, {
-      menu_button: { type: 'web_app', text: 'Схемалаб', web_app: { url: MINIAPP_URL } },
+      menu_button: { type: 'web_app', text: 'Всё по схеме', web_app: { url: MINIAPP_URL } },
     }).catch((err: unknown) => this.logger.warn('setChatMenuButton failed', err));
 
     this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
