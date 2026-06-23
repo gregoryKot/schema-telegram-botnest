@@ -1092,6 +1092,7 @@ export function LandingPage() {
           .sticky-nav, .hero-nav { display: none !important; }
           .menu-btn { display: flex !important; }
           .desktop-inline { display: none !important; }
+          .nav-tg { display: none !important; }
         }
         @keyframes menu-in      { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
         @keyframes menu-item-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
