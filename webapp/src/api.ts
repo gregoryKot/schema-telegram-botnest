@@ -99,6 +99,7 @@ export interface StreakData {
   weekDots: boolean[];
 }
 export interface Achievement { id: string; earned: boolean; }
+export interface BookingSlot { startsAt: string; endsAt: string; durationMin: number; }
 export interface UserPractice { id: number; needId: string; text: string; }
 export interface PartnerInfo {
   code: string;
@@ -376,6 +377,17 @@ export const api = {
   getClientModeNotes:   (clientId: number) => get<any[]>(`/api/therapy/client/${clientId}/mode-notes`),
   getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
   submitBooking:        (body: { name: string; contact: string; message?: string }) => postJson<{ ok: true }>('/api/booking', body),
+  // Slot-based booking
+  getSlots:             (from?: string, to?: string) => {
+    const q = new URLSearchParams();
+    if (from) q.set('from', from);
+    if (to) q.set('to', to);
+    const qs = q.toString();
+    return get<BookingSlot[]>(`/api/booking/slots${qs ? `?${qs}` : ''}`);
+  },
+  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string }) =>
+    postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string }>('/api/booking/book', body),
+  cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),
   // Therapist custom modes
   listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),

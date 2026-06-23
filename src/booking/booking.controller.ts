@@ -12,7 +12,7 @@ import { BookingService, CreateBookingDto } from './booking.service';
 import { SlotService } from './slot.service';
 import { SessionType } from '@prisma/client';
 
-interface HoldDto {
+interface BookDto {
   startsAt: string;      // ISO string
   durationMin?: number;
   type?: SessionType;
@@ -22,7 +22,7 @@ interface HoldDto {
   clientTelegramId?: string;
 }
 
-/** Public booking endpoints: browse slots, hold one, self-cancel. */
+/** Public booking endpoints: browse slots, book one, self-cancel. */
 @Controller('api/booking')
 export class BookingController {
   constructor(
@@ -43,20 +43,20 @@ export class BookingController {
     }));
   }
 
-  /** POST /api/booking/hold — reserve a slot (15 min window) */
-  @Post('hold')
+  /** POST /api/booking/book — book a slot (free intro confirms immediately) */
+  @Post('book')
   @HttpCode(HttpStatus.OK)
-  async holdSlot(@Body() dto: HoldDto) {
+  async bookSlot(@Body() dto: BookDto) {
     const payload: CreateBookingDto = {
       startsAt: new Date(dto.startsAt),
       durationMin: dto.durationMin ?? 50,
-      type: dto.type ?? SessionType.SESSION_50,
+      type: dto.type ?? SessionType.INTRO_15,
       clientName: dto.clientName?.trim(),
       clientContact: dto.clientContact?.trim(),
       message: dto.message?.trim(),
       clientTelegramId: dto.clientTelegramId ? BigInt(dto.clientTelegramId) : undefined,
     };
-    return this.booking.hold(payload);
+    return this.booking.book(payload);
   }
 
   /** POST /api/booking/cancel/:token — client self-cancel */
