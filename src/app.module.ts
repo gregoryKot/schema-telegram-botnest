@@ -14,6 +14,7 @@ import { ApiModule } from './api/api.module';
 import { NotificationModule } from './notification/notification.module';
 import { TherapyModule } from './therapy/therapy.module';
 import { AuthModule } from './auth/auth.module';
+import { BookingModule } from './booking/booking.module';
 
 // Domains that are aliases of schemalab.ru and need their own og:url / canonical
 // so Telegram generates a separate link preview card for each domain.
@@ -46,6 +47,7 @@ const ALIAS_DOMAINS = new Set(['kotlarewski.ru', 'kotlarewski.gr']);
     TelegramModule,
     BotModule,
     ApiModule,
+    BookingModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: UserThrottlerGuard }],
 })
