@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { BookingService, CreateBookingDto } from './booking.service';
 import { SlotService } from './slot.service';
+import { SESSION_OPTIONS } from './booking.config';
 import { SessionType } from '@prisma/client';
 
 interface BookDto {
@@ -30,6 +31,12 @@ export class BookingController {
     private readonly slots: SlotService,
     private readonly booking: BookingService,
   ) {}
+
+  /** GET /api/booking/options — session types, durations and prices for the UI. */
+  @Get('options')
+  getOptions() {
+    return SESSION_OPTIONS;
+  }
 
   /** GET /api/booking/slots?from=2026-06-23&to=2026-06-30 */
   @Get('slots')
