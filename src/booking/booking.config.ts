@@ -6,7 +6,7 @@ import { SessionType } from '@prisma/client';
 
 export const SESSION_PRICE: Record<SessionType, number> = {
   [SessionType.INTRO_15]: 0,
-  [SessionType.SESSION_50]: 3500,
+  [SessionType.SESSION_50]: 4000,  // matches the price shown on the site (#prices + FAQ)
 };
 
 export interface SessionOption {
