@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useUserFlags, setFlag as setServerFlag } from './useUserFlags';
 import { applyTheme, getTheme } from './utils/theme';
 import { Need, DayHistory, COLORS } from './types';
 
@@ -272,6 +273,7 @@ function formatHeaderDate(): string {
 const SECTIONS: Section[] = ['today', 'help', 'schemas', 'profile'];
 
 export default function App() {
+  const { flags: serverFlags } = useUserFlags();
   const [section, setSection] = useState<Section>(getInitialSection);
   const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
   const [disclaimerDone, setDisclaimerDone] = useState(
@@ -309,6 +311,11 @@ export default function App() {
   const [childhoodRatings, setChildhoodRatings] = useState<Record<string, number>>({});
   const [therapistMode, setTherapistMode] = useState(() => localStorage.getItem('therapist_mode') === '1');
   const switchTherapistMode = (on: boolean) => { localStorage.setItem('therapist_mode', on ? '1' : '0'); setTherapistMode(on); };
+
+  // Sync therapistMode from server when flags load (read-only flag, server is source of truth)
+  useEffect(() => {
+    if (serverFlags.therapistMode && !therapistMode) switchTherapistMode(true);
+  }, [serverFlags.therapistMode]);
   const [cabinetView, setCabinetView] = useState<'list' | 'client'>('list');
   const therapistBackHandlerRef = useRef<() => void>(() => setCabinetView('list'));
   const [userRole, setUserRole] = useState<'CLIENT' | 'THERAPIST'>('CLIENT');
@@ -320,6 +327,14 @@ export default function App() {
   const [showYsqBanner, setShowYsqBanner] = useState(
     () => !!localStorage.getItem(YSQ_PROGRESS_KEY) && !localStorage.getItem(YSQ_RESULT_KEY) && !localStorage.getItem('ysq_banner_dismissed')
   );
+  // Hide banner if server says it was already dismissed on another device
+  useEffect(() => {
+    if (serverFlags.ysqBannerDismissed) { setShowYsqBanner(false); localStorage.setItem(YSQ_BANNER_DISMISSED_KEY, '1'); }
+  }, [serverFlags.ysqBannerDismissed]);
+  // Sync childhoodWheelDone from server → localStorage
+  useEffect(() => {
+    if (serverFlags.childhoodWheelDone) localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
+  }, [serverFlags.childhoodWheelDone]);
   const [needs, setNeeds] = useState<Need[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [saved, setSaved] = useState<Record<string, boolean>>({});
@@ -417,6 +432,7 @@ export default function App() {
       if (Object.keys(r).length > 0) {
         setChildhoodRatings(r);
         localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
+        setServerFlag('childhoodWheelDone', true).catch(() => {});
       }
     }).catch(e => console.error('getChildhoodRatings failed', e));
     Promise.all([api.getYsqProgress(), api.getYsqResult()]).then(([prog, result]) => {
