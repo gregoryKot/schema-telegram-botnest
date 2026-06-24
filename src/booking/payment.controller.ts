@@ -11,8 +11,10 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import { ConflictException } from '@nestjs/common';
 import { RobokassaService } from './robokassa.service';
 import { BookingService } from './booking.service';
+import { BookingNotifyService } from './booking-notify.service';
 
 /**
  * Robokassa payment lifecycle endpoints.
@@ -29,6 +31,7 @@ export class PaymentController {
   constructor(
     private readonly robokassa: RobokassaService,
     private readonly booking: BookingService,
+    private readonly notify: BookingNotifyService,
     config: ConfigService,
   ) {
     this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://schemalab.ru').replace(/\/$/, '');
@@ -49,7 +52,8 @@ export class PaymentController {
     this.logger.log(`Payment webhook InvId=${invId} OutSum=${outSum}`);
 
     if (!this.robokassa.validateWebhook(outSum, invId, sig)) {
-      this.logger.warn(`Invalid Robokassa signature for InvId=${invId}`);
+      // Stable message text so AlertLogger's per-message throttle dedupes bot noise.
+      this.logger.error('Robokassa webhook: invalid signature');
       return `FAIL${invId}`;
     }
 
@@ -59,8 +63,18 @@ export class PaymentController {
     try {
       await this.booking.confirm(id);
     } catch (e) {
-      // booking.confirm throws ConflictException if already confirmed — idempotent
-      this.logger.warn(`Confirm booking ${id}: ${(e as Error).message}`);
+      // Already confirmed/cancelled → benign double-delivery, ack so Robokassa stops.
+      if (e instanceof ConflictException) {
+        this.logger.warn(`Confirm booking ${id}: ${(e as Error).message}`);
+        return `OK${invId}`;
+      }
+      // Real failure: the client PAID but the booking didn't confirm. Alert loudly
+      // and return FAIL so Robokassa retries later.
+      this.logger.error(`PAID but confirm failed for booking ${id}: ${(e as Error).message}`);
+      await this.notify.alertAdmin(
+        `🚨 <b>Оплата прошла, но бронь #${id} не подтвердилась</b>\n${(e as Error).message}\nПроверьте вручную в админке.`,
+      );
+      return `FAIL${invId}`;
     }
 
     return `OK${invId}`;

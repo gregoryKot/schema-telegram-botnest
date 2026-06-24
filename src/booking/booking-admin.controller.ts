@@ -42,9 +42,11 @@ export class BookingAdminController {
   }
 
   @Get('list')
-  async list(@Query('key') key: string) {
+  async list(@Query('key') key: string, @Query('filter') filter?: string) {
     assertAdminKey(key, this.adminKey);
-    return this.booking.listUpcoming();
+    const allowed = ['upcoming', 'past', 'cancelled', 'all'] as const;
+    const f = (allowed as readonly string[]).includes(filter ?? '') ? (filter as typeof allowed[number]) : 'upcoming';
+    return this.booking.list(f);
   }
 
   // ── Availability rules ────────────────────────────────────────────────────
