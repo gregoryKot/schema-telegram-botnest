@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { BookingNotifyService } from './booking-notify.service';
+import { MeetingService } from './meeting.service';
 import { RobokassaService } from './robokassa.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { BookingStatus, SessionType } from '@prisma/client';
@@ -21,6 +22,8 @@ export interface CreateBookingDto {
   clientContact: string;
   message?: string;
   clientTelegramId?: bigint;
+  /** Client ticked "returning visit" — require an existing personal meeting. */
+  returning?: boolean;
 }
 
 const SCHEMA: EncryptSchema = {
@@ -37,6 +40,7 @@ export class BookingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notify: BookingNotifyService,
+    private readonly meeting: MeetingService,
     private readonly robokassa: RobokassaService,
     config: ConfigService,
   ) {
@@ -55,6 +59,12 @@ export class BookingService {
   async book(dto: CreateBookingDto) {
     if (!dto.clientName || !dto.clientContact) {
       throw new BadRequestException('Name and contact required');
+    }
+    // Returning client: the contact must match an existing personal meeting,
+    // otherwise we'd silently create a duplicate room. Reject with a code the
+    // frontend turns into a friendly "check your contact" message.
+    if (dto.returning && !(await this.meeting.hasMeetingForContact(dto.clientContact))) {
+      throw new BadRequestException('CLIENT_NOT_FOUND');
     }
     await this.assertSlotFree(dto.startsAt, dto.durationMin);
 

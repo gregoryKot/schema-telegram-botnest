@@ -48,6 +48,12 @@ export class MeetingService {
     return Boolean(this.zoomAccountId && this.zoomClientId && this.zoomClientSecret);
   }
 
+  /** True if this contact already has a personal meeting (i.e. a returning client). */
+  async hasMeetingForContact(contact: string): Promise<boolean> {
+    const found = await this.prisma.clientMeeting.findUnique({ where: { clientKey: clientKey(contact) } });
+    return found !== null;
+  }
+
   /** Returns this client's personal meeting URL, creating it on first session. */
   async createMeeting(b: MeetingTarget): Promise<string> {
     if (this.staticUrl) return this.staticUrl;
