@@ -16,12 +16,20 @@ const helmet = require('helmet');
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new AlertLogger() });
 
-  // Redirect HTTP → HTTPS for all domains (kotlarewski.ru, kotlarewski.gr, schemalab.ru).
-  // Amvera's reverse proxy sets x-forwarded-proto, so we can detect the original protocol.
+  // Domain + protocol redirects (production only). Amvera's reverse proxy sets
+  // x-forwarded-proto, so we can detect the original protocol.
+  //   • Legacy domain schemalab.ru → 301 to schemehappens.ru (keeps old links/SEO)
+  //   • www.schemehappens.ru → 301 to apex schemehappens.ru (single canonical host)
+  //   • everything else (incl. kotlarewski.ru/.gr aliases) → just force HTTPS
   if (process.env.NODE_ENV === 'production') {
+    const LEGACY_HOSTS = new Set(['schemalab.ru', 'www.schemalab.ru']);
     app.use((req: any, res: any, next: any) => {
+      const host = (req.headers.host ?? '').toLowerCase();
+      if (LEGACY_HOSTS.has(host) || host === 'www.schemehappens.ru') {
+        return res.redirect(301, `https://schemehappens.ru${req.url}`);
+      }
       if (req.headers['x-forwarded-proto'] === 'http') {
-        return res.redirect(301, `https://${req.headers.host}${req.url}`);
+        return res.redirect(301, `https://${host}${req.url}`);
       }
       next();
     });
@@ -37,7 +45,7 @@ async function bootstrap() {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", 'https://telegram.org', 'https://mc.yandex.ru'],
         connectSrc: ["'self'", 'https://mc.yandex.ru', 'https://oauth.telegram.org'],
-        imgSrc: ["'self'", 'data:', 'https://mc.yandex.ru', 'https://t.me'],
+        imgSrc: ["'self'", 'data:', 'https://mc.yandex.ru', 'https://t.me', 'https://cdn.jsdelivr.net'],
         // oauth.telegram.org needed for Telegram Login Widget iframe (button rendering)
         frameSrc: ['https://oauth.telegram.org'],
         objectSrc: ["'none'"],
@@ -61,7 +69,7 @@ async function bootstrap() {
   // Production default is restrictive; localhost is dev-only.
   const isProd = process.env.NODE_ENV === 'production';
   const origins = process.env.ALLOWED_ORIGINS?.split(',') ?? (isProd
-    ? ['https://schemalab.ru', 'https://kotlarewski.ru', 'https://kotlarewski.gr']
+    ? ['https://schemehappens.ru', 'https://kotlarewski.ru', 'https://kotlarewski.gr']
     : [
         'https://schema-miniapp.vercel.app',
         'https://diary-miniapp-sigma.vercel.app',

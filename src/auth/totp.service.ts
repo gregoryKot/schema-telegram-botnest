@@ -5,7 +5,7 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
 
-const ISSUER = 'SchemaLab';
+const ISSUER = 'Schema Happens';
 const RECOVERY_CODES = 10;
 const RECOVERY_CODE_BYTES = 5; // 10 hex chars per code
 

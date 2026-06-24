@@ -11,7 +11,7 @@
 # Run via cron OR systemd timer. For Amvera: add a cron task in the panel
 # that hits a /api/admin/run-backup endpoint OR runs this script directly.
 #
-# Output: bucket://<B2_BUCKET>/schemalab-YYYY-MM-DD.sql.gz.enc
+# Output: bucket://<B2_BUCKET>/schemehappens-YYYY-MM-DD.sql.gz.enc
 # Retention: keep last 30 days locally (B2 itself retains forever; rotate via
 # B2 lifecycle rule if you want — Settings → Lifecycle Settings).
 
@@ -27,7 +27,7 @@ DATE=$(date -u +%Y-%m-%d)
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-DUMP_FILE="$TMP_DIR/schemalab-$DATE.sql"
+DUMP_FILE="$TMP_DIR/schemehappens-$DATE.sql"
 ENC_FILE="$DUMP_FILE.gz.enc"
 
 echo "[backup] dumping database..."
@@ -49,23 +49,23 @@ echo "[backup] uploading to B2..."
 # Use B2 native CLI if installed, else fall back to S3-compatible via aws cli.
 if command -v b2 >/dev/null 2>&1; then
   b2 account authorize "$B2_KEY_ID" "$B2_APP_KEY" >/dev/null
-  b2 file upload "$B2_BUCKET" "$ENC_FILE" "schemalab-$DATE.sql.gz.enc"
+  b2 file upload "$B2_BUCKET" "$ENC_FILE" "schemehappens-$DATE.sql.gz.enc"
 elif command -v aws >/dev/null 2>&1; then
   # B2 exposes an S3-compatible endpoint at https://s3.us-east-005.backblazeb2.com
   : "${B2_ENDPOINT:=https://s3.us-east-005.backblazeb2.com}"
   AWS_ACCESS_KEY_ID="$B2_KEY_ID" \
   AWS_SECRET_ACCESS_KEY="$B2_APP_KEY" \
   aws --endpoint-url "$B2_ENDPOINT" \
-    s3 cp "$ENC_FILE" "s3://$B2_BUCKET/schemalab-$DATE.sql.gz.enc"
+    s3 cp "$ENC_FILE" "s3://$B2_BUCKET/schemehappens-$DATE.sql.gz.enc"
 else
   echo "[backup] ERROR: neither 'b2' nor 'aws' CLI is installed" >&2
   exit 1
 fi
 
-echo "[backup] done — schemalab-$DATE.sql.gz.enc"
+echo "[backup] done — schemehappens-$DATE.sql.gz.enc"
 
 # To decrypt locally:
-#   FILE=schemalab-2026-06-01.sql.gz.enc
+#   FILE=schemehappens-2026-06-01.sql.gz.enc
 #   IV=$(head -c 32 "$FILE")  # first 32 hex chars = 16 byte IV
 #   tail -c +33 "$FILE" \
 #     | openssl enc -d -aes-256-cbc -K "$ENCRYPTION_KEY" -iv "$IV" \

@@ -2,7 +2,6 @@ import { StrictMode, Component, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
-import { ensureUserFlagsLoaded } from './useUserFlags';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state: { error: Error | null } = { error: null };
@@ -24,9 +23,6 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
     );
   }
 }
-
-// Pre-fetch server state in parallel with first render
-ensureUserFlagsLoaded();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
