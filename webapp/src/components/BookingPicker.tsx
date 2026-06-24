@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { api } from '../api';
-import type { BookingSlot } from '../api';
+import type { BookingSlot, SessionOption } from '../api';
 
 const MSK = 'Europe/Moscow';
 const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: MSK, year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -57,6 +57,8 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [cancelToken, setCancelToken] = useState('');
   const [cancelled, setCancelled] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
+  const [options, setOptions] = useState<SessionOption[]>([]);
+  const [sessionType, setSessionType] = useState<'INTRO_15' | 'SESSION_50'>('INTRO_15');
 
   // Handle ?payment=ok / ?payment=fail redirect back from Robokassa
   useEffect(() => {
@@ -69,7 +71,10 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
     api.getSlots()
       .then((s) => { setSlots(s); if (s.length) setDay(dayKey(s[0].startsAt)); })
       .catch(() => setLoadFailed(true));
+    api.getBookingOptions().then(setOptions).catch(() => setOptions([]));
   }, []);
+
+  const chosen = options.find((o) => o.type === sessionType);
 
   // Group slots by MSK day, preserving chronological order.
   const days = useMemo(() => {
@@ -135,7 +140,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
     setStatus('loading');
     try {
       const res = await api.bookSlot({
-        startsAt: slot.startsAt, durationMin: slot.durationMin, type: 'INTRO_15',
+        startsAt: slot.startsAt, durationMin: slot.durationMin, type: sessionType,
         clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
         returning,
       });
@@ -157,6 +162,29 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
 
   return (
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+      {options.length > 1 && (
+        <div>
+          <label style={labelSt}>Формат встречи</label>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {options.map((o) => {
+              const active = o.type === sessionType;
+              return (
+                <button key={o.type} type="button" onClick={() => setSessionType(o.type)} style={{
+                  flex: '1 1 180px', textAlign: 'left', padding: '14px 16px', cursor: 'pointer',
+                  borderRadius: 12, fontFamily: 'inherit', transition: 'all .15s',
+                  background: active ? 'rgba(var(--accent-rgb,77,71,153),0.08)' : 'transparent',
+                  border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
+                }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+                    {o.label} {o.price > 0 ? `· ${o.price.toLocaleString('ru-RU')} ₽` : '· бесплатно'}
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 2 }}>{o.note}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div>
         <label style={labelSt}>Выберите день</label>
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
@@ -215,9 +243,17 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
               cursor: 'pointer', opacity: status === 'loading' || !name.trim() || !contact.trim() || !consent ? 0.4 : 1,
               boxShadow: '0 8px 28px rgba(77,71,153,.28)',
             }}>
-            {status === 'loading' ? 'Бронирую…' : `Записаться на ${dayLabel(slot.startsAt).toLowerCase()}, ${timeLabel(slot.startsAt)} →`}
+            {status === 'loading'
+              ? (chosen && chosen.price > 0 ? 'Перехожу к оплате…' : 'Бронирую…')
+              : chosen && chosen.price > 0
+                ? `Оплатить ${chosen.price.toLocaleString('ru-RU')} ₽ и записаться →`
+                : `Записаться на ${dayLabel(slot.startsAt).toLowerCase()}, ${timeLabel(slot.startsAt)} →`}
           </button>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Первая встреча 15 минут — бесплатно. Никаких обязательств.</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>
+            {chosen && chosen.price > 0
+              ? 'Оплата картой или СБП через Robokassa. Чек придёт автоматически.'
+              : 'Первая встреча 15 минут — бесплатно. Никаких обязательств.'}
+          </p>
         </>
       )}
     </form>

@@ -100,6 +100,7 @@ export interface StreakData {
 }
 export interface Achievement { id: string; earned: boolean; }
 export interface BookingSlot { startsAt: string; endsAt: string; durationMin: number; }
+export interface SessionOption { type: 'INTRO_15' | 'SESSION_50'; label: string; durationMin: number; price: number; note: string; }
 export interface AvailabilityRule {
   id: number; dayOfWeek: number; startHour: number; startMinute: number;
   endHour: number; endMinute: number; sessionDuration: number; bufferMin: number;
@@ -392,6 +393,7 @@ export const api = {
   getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
   submitBooking:        (body: { name: string; contact: string; message?: string }) => postJson<{ ok: true }>('/api/booking', body),
   // Slot-based booking
+  getBookingOptions:    () => get<SessionOption[]>('/api/booking/options'),
   getSlots:             (from?: string, to?: string) => {
     const q = new URLSearchParams();
     if (from) q.set('from', from);

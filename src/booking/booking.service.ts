@@ -6,13 +6,9 @@ import { BookingNotifyService } from './booking-notify.service';
 import { MeetingService } from './meeting.service';
 import { RobokassaService } from './robokassa.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { SESSION_PRICE } from './booking.config';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { randomUUID } from 'crypto';
-
-const SESSION_PRICE: Record<SessionType, number> = {
-  [SessionType.INTRO_15]: 0,
-  [SessionType.SESSION_50]: 3500,
-};
 
 export interface CreateBookingDto {
   startsAt: Date;
