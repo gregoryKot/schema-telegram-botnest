@@ -20,6 +20,7 @@ interface BookDto {
   clientContact: string;
   message?: string;
   clientTelegramId?: string;
+  returning?: boolean;
 }
 
 /** Public booking endpoints: browse slots, book one, self-cancel. */
@@ -55,6 +56,7 @@ export class BookingController {
       clientContact: dto.clientContact?.trim(),
       message: dto.message?.trim(),
       clientTelegramId: dto.clientTelegramId ? BigInt(dto.clientTelegramId) : undefined,
+      returning: dto.returning ?? false,
     };
     return this.booking.book(payload);
   }

@@ -52,7 +52,8 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [contact, setContact] = useState('');
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'payment_fail'>('idle');
+  const [returning, setReturning] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'not_found' | 'payment_fail'>('idle');
   const [cancelToken, setCancelToken] = useState('');
   const [cancelled, setCancelled] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
@@ -136,6 +137,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       const res = await api.bookSlot({
         startsAt: slot.startsAt, durationMin: slot.durationMin, type: 'INTRO_15',
         clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
+        returning,
       });
       setCancelToken(res.cancelToken);
       (window as Window & { ym?: (...a: unknown[]) => void }).ym?.(109568051, 'reachGoal', 'booking_submit');
@@ -146,7 +148,9 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       }
       setMeetingUrl(res.meetingUrl ?? null);
       setStatus('done');
-    } catch { setStatus('error'); }
+    } catch (err) {
+      setStatus(err instanceof Error && err.message === 'CLIENT_NOT_FOUND' ? 'not_found' : 'error');
+    }
   };
 
   const dayList = [...days.keys()];
@@ -181,8 +185,16 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
             <div><label style={labelSt}>Имя *</label><input style={field} placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} /></div>
             <div><label style={labelSt}>Telegram / телефон *</label><input style={field} placeholder="@username или телефон" value={contact} onChange={(e) => setContact(e.target.value)} required maxLength={100} /></div>
           </div>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '-6px 0 0' }}>
-            Если вы уже занимались со мной — укажите, пожалуйста, тот же контакт, что и раньше. Так я узнаю вас и дам вашу постоянную ссылку на встречу: одна и та же комната для всех наших сессий, чтобы не искать новую ссылку каждый раз. 🙂
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+            <input type="checkbox" checked={returning} onChange={(e) => { setReturning(e.target.checked); if (status === 'not_found') setStatus('idle'); }} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+            <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
+              Мы уже занимались — это повторная встреча
+            </span>
+          </label>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '-8px 0 0' }}>
+            {returning
+              ? 'Хорошо! Укажите, пожалуйста, тот же контакт, что и в прошлый раз — я узнаю вас и открою вашу постоянную комнату для встречи, ту же, что и всегда. Если контакт не совпадёт, я не смогу вас найти и попрошу проверить.'
+              : 'Если занимаемся впервые — я заведу для вас персональную комнату для встреч. Она будет одна и та же для всех наших будущих сессий, чтобы не искать новую ссылку каждый раз. 🙂'}
           </p>
           <div>
             <label style={labelSt}>Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
@@ -194,6 +206,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
               Я ознакомился(ась) с <a href="/privacy" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Политикой конфиденциальности</a> и даю согласие на обработку данных
             </span>
           </label>
+          {status === 'not_found' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>Не нашёл вас по этому контакту. Проверьте, что ввели тот же Telegram или телефон, что и в прошлый раз. Если занимаетесь впервые — снимите галочку «повторная встреча».</p>}
           {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Не удалось забронировать — возможно, время только что заняли. Обновите страницу или напишите в Telegram: <a href="https://t.me/kotlarewski" style={{ color: 'inherit' }}>@kotlarewski</a></p>}
           <button type="submit" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent}
             style={{
