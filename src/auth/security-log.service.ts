@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { notifyAdminWithFallback } from '../utils/admin-alert';
 
 // Lightweight audit channel: posts security-relevant events to the admin
-// Telegram chat, plus structured server logs. Use sparingly — admin will
-// mute everything if we spam.
+// Telegram chat (with e-mail fallback), plus structured server logs. Use
+// sparingly — admin will mute everything if we spam.
 
 export type SecurityEvent =
   | 'login_success'
@@ -59,22 +60,11 @@ export class SecurityLogService {
   }
 
   private async alertAdmin(event: SecurityEvent, data: Record<string, unknown>): Promise<void> {
-    const token = process.env.BOT_TOKEN;
-    const adminId = process.env.ADMIN_ID;
-    if (!token || !adminId) return;
     const redacted = this.redact(data);
     const text =
-      `🔐 *${event}*\n` +
-      Object.entries(redacted).map(([k, v]) => `${k}: \`${String(v).slice(0, 80)}\``).join('\n');
-    try {
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: adminId, text, parse_mode: 'Markdown' }),
-        signal: AbortSignal.timeout(8_000),
-      });
-    } catch (e) {
-      this.logger.warn(`Admin alert failed: ${(e as Error).message}`);
-    }
+      `🔐 ${event}\n` +
+      Object.entries(redacted).map(([k, v]) => `${k}: ${String(v).slice(0, 80)}`).join('\n');
+    // Telegram first, e-mail fallback so security events are never lost.
+    await notifyAdminWithFallback(text, `🔐 Security: ${event}`);
   }
 }

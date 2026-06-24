@@ -28,6 +28,16 @@ SITE_URL=https://schemalab.ru
 Плюс применить миграции БД (`20260623000001_add_booking_system`,
 `20260623000002_add_client_meeting`) — на проде применяются автоматически при деплое.
 
+### Резерв уведомлений на почту (рекомендуется)
+Все админ-уведомления (записи, ошибки сервера, security-события) идут в Telegram,
+а **если Telegram недоступен — дублируются на email** через Resend:
+```
+RESEND_API_KEY=...                 # ключ Resend (resend.com)
+ADMIN_EMAIL=ты@example.com         # куда слать резервные уведомления
+EMAIL_FROM=SchemaLab <no-reply@schemalab.ru>
+```
+Без `ADMIN_EMAIL`/`RESEND_API_KEY` резерв просто не сработает (Telegram продолжит работать).
+
 ## 2. Zoom (персональная ссылка на клиента)
 
 Создать **Server-to-Server OAuth** app: marketplace.zoom.us → Develop → Build App.
