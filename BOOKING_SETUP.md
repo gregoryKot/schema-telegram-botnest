@@ -20,10 +20,10 @@
 
 ```
 ADMIN_BOOKING_KEY=<любая длинная случайная строка>
-SITE_URL=https://schemalab.ru
+SITE_URL=https://kotlarewski.gr
 ```
 - `ADMIN_BOOKING_KEY` — пароль для входа в админку `/booking-admin` (расписание, брони).
-- `SITE_URL` — база для ссылок возврата после оплаты и для CalDAV.
+- `SITE_URL` — домен, где открывается страница записи (#booking). Это **личный сайт `kotlarewski.gr`** (или `.ru`), а не `schemehappens.ru` (там приложение). На этот адрес ведёт редирект после оплаты.
 
 Плюс применить миграции БД (`20260623000001_add_booking_system`,
 `20260623000002_add_client_meeting`) — на проде применяются автоматически при деплое.
@@ -34,7 +34,7 @@ SITE_URL=https://schemalab.ru
 ```
 RESEND_API_KEY=...                 # ключ Resend (resend.com)
 ADMIN_EMAIL=ты@example.com         # куда слать резервные уведомления
-EMAIL_FROM=SchemaLab <no-reply@schemalab.ru>
+EMAIL_FROM=SchemeHappens <no-reply@schemehappens.ru>
 ```
 Без `ADMIN_EMAIL`/`RESEND_API_KEY` резерв просто не сработает (Telegram продолжит работать).
 
@@ -81,7 +81,7 @@ ROBOKASSA_PASSWORD1=...
 ROBOKASSA_PASSWORD2=...
 ROBOKASSA_IS_TEST=true   # на время тестов; убрать/false для боевого режима
 ```
-В кабинете Robokassa указать ResultURL → `https://schemalab.ru/api/payment/result`.
+В кабинете Robokassa указать ResultURL → `https://kotlarewski.gr/api/payment/result`.
 Без переменных платная сессия подтверждается сразу (dev-режим), деньги не списываются.
 
 ---

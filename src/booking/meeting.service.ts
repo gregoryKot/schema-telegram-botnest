@@ -122,5 +122,5 @@ function clientKey(contact: string): string {
 }
 
 function jitsiRoom(key: string): string {
-  return `https://meet.jit.si/schemalab-${key.slice(0, 12)}`;
+  return `https://meet.jit.si/schemehappens-${key.slice(0, 12)}`;
 }

@@ -38,7 +38,7 @@ export class BookingNotifyService {
     private readonly email: EmailService,
     config: ConfigService,
   ) {
-    this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://schemalab.ru').replace(/\/$/, '');
+    this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr').replace(/\/$/, '');
   }
 
   /**
@@ -51,7 +51,7 @@ export class BookingNotifyService {
       await this.prisma.booking.update({ where: { id: b.id }, data: { meetingUrl: b.meetingUrl } });
     }
     const uid = await this.calDav.pushEvent({
-      uid: `booking-${b.id}@schemalab.ru`,
+      uid: `booking-${b.id}@schemehappens.ru`,
       startsAt: b.startsAt,
       durationMin: b.durationMin,
       summary: `${sessionLabel(b.type)} — ${b.clientName}`,
