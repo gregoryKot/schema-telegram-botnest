@@ -49,12 +49,19 @@ MEETING_STATIC_URL=https://...   # напр. постоянная комната
 ## 3. Apple Calendar (CalDAV)
 
 App-specific password: appleid.apple.com → Sign-In & Security → App-Specific Passwords.
+Нужны всего два значения — URL календаря **обнаруживается автоматически**:
 ```
-APPLE_CALDAV_URL=https://pXX-caldav.icloud.com/<id>/calendars/<имя>/
 APPLE_ID=твой@icloud.com
 APPLE_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx
 ```
-Без них подтверждённые брони просто не пишутся в календарь (всё остальное работает).
+Опционально:
+```
+APPLE_CALENDAR_NAME=Работа          # какой календарь использовать (по имени);
+                                    # по умолчанию — первый, поддерживающий события
+APPLE_CALDAV_URL=https://pXX-...     # если авто-обнаружение не сработало — задать вручную
+```
+Без `APPLE_*` подтверждённые брони просто не пишутся в календарь (всё остальное работает).
+Если в логах увидишь «CalDAV auto-discovery found no calendar» — задай `APPLE_CALDAV_URL` вручную.
 
 ## 4. Robokassa (оплата платных сессий)
 
