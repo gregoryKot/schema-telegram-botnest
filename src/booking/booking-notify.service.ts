@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
+import { EmailService } from '../auth/email.service';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { sessionLabel } from './caldav-event.util';
 import { BookingStatus, SessionType } from '@prisma/client';
@@ -34,6 +35,7 @@ export class BookingNotifyService {
     private readonly telegram: TelegramService,
     private readonly calDav: CalDavService,
     private readonly meeting: MeetingService,
+    private readonly email: EmailService,
     config: ConfigService,
   ) {
     this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://schemalab.ru').replace(/\/$/, '');
@@ -60,12 +62,32 @@ export class BookingNotifyService {
       await this.prisma.booking.update({ where: { id: b.id }, data: { calDavUid: uid } });
     }
     await this.sendAdmin('✅ <b>Запись подтверждена</b>', b);
+    // CalDAV is configured but the write failed — the session won't appear in
+    // the calendar, so surface it explicitly instead of hiding it in logs.
+    if (this.calDav.enabled && !uid) {
+      await this.notifyAdminText(
+        `⚠️ <b>Бронь подтверждена, но НЕ попала в Apple Calendar</b>\n` +
+        `${formatTime(b.startsAt)} · ${b.clientName}\nДобавьте в календарь вручную.`,
+      );
+    }
   }
 
   /** Remove from Apple Calendar + notify admin when cancelled. */
   async onCancelled(b: PlainBooking, calDavUid: string | null): Promise<void> {
     if (calDavUid) await this.calDav.removeEvent(calDavUid);
     await this.sendAdmin('❌ <b>Запись отменена</b>', b);
+  }
+
+  /** Notify admin that HELD bookings expired without payment (so they're not lost silently). */
+  async notifyExpired(bookings: PlainBooking[]): Promise<void> {
+    for (const b of bookings) {
+      await this.sendAdmin('⌛ <b>Бронь истекла без оплаты</b>', b);
+    }
+  }
+
+  /** Generic critical alert to admin (Telegram, with e-mail fallback). */
+  async alertAdmin(text: string): Promise<void> {
+    await this.notifyAdminText(text);
   }
 
   /** Send confirmation/cancellation reminders. Runs every 5 minutes. */
@@ -102,7 +124,16 @@ export class BookingNotifyService {
       b.message ? `💬 ${b.message}` : null,
       b.meetingUrl ? `🔗 ${b.meetingUrl}` : null,
     ].filter(Boolean).join('\n');
-    await this.telegram.notifyAdmin(text).catch(() => null);
+    await this.notifyAdminText(text);
+  }
+
+  /** Send to admin via Telegram; if that fails, fall back to e-mail so alerts are never lost. */
+  private async notifyAdminText(html: string): Promise<void> {
+    const ok = await this.telegram.notifyAdmin(html);
+    if (ok) return;
+    this.logger.warn('Admin Telegram notify failed — falling back to e-mail');
+    const plain = html.replace(/<[^>]+>/g, '');
+    await this.email.sendAdminNotification('Уведомление о записи', plain).catch(() => null);
   }
 }
 

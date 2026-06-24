@@ -29,11 +29,9 @@ export function BookingAdminPage() {
   const [keyInput, setKeyInput] = useState('');
   const [keyError, setKeyError] = useState(false);
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
-  const [bookings, setBookings] = useState<AdminBooking[]>([]);
 
   const reload = useCallback(async (k: string) => {
-    const [r, b] = await Promise.all([api.adminListRules(k), api.adminListBookings(k)]);
-    setRules(r); setBookings(b);
+    setRules(await api.adminListRules(k));
   }, []);
 
   useEffect(() => {
@@ -67,7 +65,7 @@ export function BookingAdminPage() {
     <div style={{ maxWidth: 760, margin: '40px auto', padding: '0 20px 80px', fontFamily: 'var(--sans)' }}>
       <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>Админка записи</h1>
       <ScheduleManager rules={rules} onChange={() => reload(key)} adminKey={key} />
-      <BookingsManager bookings={bookings} onChange={() => reload(key)} adminKey={key} />
+      <BookingsManager adminKey={key} />
     </div>
   );
 }
@@ -124,10 +122,35 @@ function ScheduleManager({ rules, onChange, adminKey }: { rules: AvailabilityRul
 
 // ── Bookings ───────────────────────────────────────────────────────────────
 
-function BookingsManager({ bookings, onChange, adminKey }: { bookings: AdminBooking[]; onChange: () => void; adminKey: string }) {
+type Filter = 'upcoming' | 'cancelled' | 'past' | 'all';
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: 'upcoming', label: 'Будущие' },
+  { id: 'cancelled', label: 'Отменённые' },
+  { id: 'past', label: 'Прошедшие' },
+  { id: 'all', label: 'Все' },
+];
+
+function BookingsManager({ adminKey }: { adminKey: string }) {
+  const [filter, setFilter] = useState<Filter>('upcoming');
+  const [bookings, setBookings] = useState<AdminBooking[]>([]);
+
+  const load = useCallback(() => {
+    api.adminListBookings(adminKey, filter).then(setBookings).catch(() => setBookings([]));
+  }, [adminKey, filter]);
+  useEffect(() => { load(); }, [load]);
+
   return (
     <section style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 16 }}>Ближайшие записи</h2>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Записи</h2>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+        {FILTERS.map(f => (
+          <button key={f.id} onClick={() => setFilter(f.id)} style={{
+            padding: '6px 14px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 100,
+            background: filter === f.id ? 'var(--accent)' : 'transparent', color: filter === f.id ? '#fff' : 'var(--text-sub)',
+            border: `1.5px solid ${filter === f.id ? 'var(--accent)' : 'var(--line-strong)'}`,
+          }}>{f.label}</button>
+        ))}
+      </div>
       {bookings.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 14 }}>Записей нет.</p>}
       {bookings.map(b => (
         <div key={b.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--line)' }}>
@@ -135,8 +158,8 @@ function BookingsManager({ bookings, onChange, adminKey }: { bookings: AdminBook
             <strong style={{ color: 'var(--text)', fontSize: 14 }}>{fmtTime.format(new Date(b.startsAt))} МСК</strong>
             <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: statusBg(b.status), color: '#fff' }}>{statusLabel(b.status)}</span>
             <span style={{ flex: 1 }} />
-            {b.status === 'HELD' && <button style={{ ...btn, padding: '5px 12px', fontSize: 13 }} onClick={() => api.adminConfirm(adminKey, b.id).then(onChange)}>Подтвердить</button>}
-            {b.status !== 'CANCELLED' && <button style={{ ...btnGhost, padding: '5px 12px', fontSize: 13, color: 'var(--accent-red)' }} onClick={() => api.cancelBooking(b.cancelToken).then(onChange)}>Отменить</button>}
+            {b.status === 'HELD' && <button style={{ ...btn, padding: '5px 12px', fontSize: 13 }} onClick={() => api.adminConfirm(adminKey, b.id).then(load)}>Подтвердить</button>}
+            {b.status !== 'CANCELLED' && b.status !== 'COMPLETED' && <button style={{ ...btnGhost, padding: '5px 12px', fontSize: 13, color: 'var(--accent-red)' }} onClick={() => api.cancelBooking(b.cancelToken).then(load)}>Отменить</button>}
           </div>
           <div style={{ fontSize: 14, color: 'var(--text-sub)', marginTop: 6 }}>
             {b.clientName} · {b.clientContact}{b.message ? ` · «${b.message}»` : ''}

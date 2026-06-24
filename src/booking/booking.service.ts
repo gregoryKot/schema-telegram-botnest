@@ -157,10 +157,24 @@ export class BookingService {
     return { ok: true };
   }
 
-  async listUpcoming() {
+  /**
+   * List bookings for the admin panel.
+   *   upcoming  — future HELD + CONFIRMED (default)
+   *   past      — anything already started
+   *   cancelled — cancelled/expired
+   *   all       — everything, most recent first
+   */
+  async list(filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') {
+    const now = new Date();
+    const where =
+      filter === 'past'      ? { startsAt: { lt: now } } :
+      filter === 'cancelled' ? { status: BookingStatus.CANCELLED } :
+      filter === 'all'       ? {} :
+      { startsAt: { gte: now }, status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] } };
     const rows = await this.prisma.booking.findMany({
-      where: { startsAt: { gte: new Date() }, status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] } },
-      orderBy: { startsAt: 'asc' },
+      where,
+      orderBy: { startsAt: filter === 'upcoming' ? 'asc' : 'desc' },
+      take: 200,
     });
     return rows.map((r) => decryptRecord(r, SCHEMA));
   }
@@ -174,13 +188,16 @@ export class BookingService {
   /** Expire HELD bookings whose hold window has passed. Runs every minute. */
   @Cron('* * * * *')
   async expireHolds() {
-    const expired = await this.prisma.booking.updateMany({
+    const expiring = await this.prisma.booking.findMany({
       where: { status: BookingStatus.HELD, heldUntil: { lte: new Date() } },
+    });
+    if (!expiring.length) return;
+    await this.prisma.booking.updateMany({
+      where: { id: { in: expiring.map((b) => b.id) } },
       data: { status: BookingStatus.CANCELLED, heldUntil: null },
     });
-    if (expired.count > 0) {
-      this.logger.log(`Expired ${expired.count} HELD booking(s)`);
-    }
+    this.logger.log(`Expired ${expiring.length} HELD booking(s)`);
+    await this.notify.notifyExpired(expiring.map((b) => decryptRecord(b, SCHEMA) as any));
   }
 
   // ── private ────────────────────────────────────────────────────────────────

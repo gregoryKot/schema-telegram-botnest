@@ -407,7 +407,8 @@ export const api = {
   adminCreateRule:   (key: string, rule: NewAvailabilityRule) => postJson<AvailabilityRule>('/api/booking/admin/rules', { ...rule, adminKey: key }),
   adminToggleRule:   (key: string, id: number, isActive: boolean) => patchJson<AvailabilityRule>(`/api/booking/admin/rules/${id}`, { isActive, adminKey: key }),
   adminDeleteRule:   (key: string, id: number) => del(`/api/booking/admin/rules/${id}?key=${encodeURIComponent(key)}`),
-  adminListBookings: (key: string) => get<AdminBooking[]>(`/api/booking/admin/list?key=${encodeURIComponent(key)}`),
+  adminListBookings: (key: string, filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') =>
+    get<AdminBooking[]>(`/api/booking/admin/list?key=${encodeURIComponent(key)}&filter=${filter}`),
   adminConfirm:      (key: string, id: number) => postJson<{ ok: true }>(`/api/booking/admin/confirm/${id}`, { adminKey: key }),
   // Therapist custom modes
   listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),

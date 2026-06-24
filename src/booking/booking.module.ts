@@ -10,9 +10,10 @@ import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
 import { RobokassaService } from './robokassa.service';
 import { TelegramModule } from '../telegram/telegram.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TelegramModule],
+  imports: [TelegramModule, AuthModule],
   controllers: [BookingController, BookingAdminController, PaymentController],
   providers: [BookingService, BookingNotifyService, SlotService, AvailabilityService, CalDavService, MeetingService, RobokassaService],
   exports: [BookingService, SlotService],
