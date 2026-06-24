@@ -45,7 +45,7 @@ async function bootstrap() {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", 'https://telegram.org', 'https://mc.yandex.ru'],
         connectSrc: ["'self'", 'https://mc.yandex.ru', 'https://oauth.telegram.org'],
-        imgSrc: ["'self'", 'data:', 'https://mc.yandex.ru', 'https://t.me'],
+        imgSrc: ["'self'", 'data:', 'https://mc.yandex.ru', 'https://t.me', 'https://cdn.jsdelivr.net'],
         // oauth.telegram.org needed for Telegram Login Widget iframe (button rendering)
         frameSrc: ['https://oauth.telegram.org'],
         objectSrc: ["'none'"],

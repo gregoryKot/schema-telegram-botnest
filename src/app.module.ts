@@ -63,9 +63,7 @@ export class AppModule implements NestModule {
         const domain = req.hostname;
         const modified = html
           .replace('href="https://schemehappens.ru/"', `href="https://${domain}/"`)
-          .replace('content="https://schemehappens.ru/"', `content="https://${domain}/"`)
-          // og:image and twitter:image — keep them on the same domain as the page
-          .replaceAll('https://schemehappens.ru/og-cover-v2.jpg', `https://${domain}/og-cover-v2.jpg`);
+          .replace('content="https://schemehappens.ru/"', `content="https://${domain}/"`);
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         return res.send(modified);
       })
