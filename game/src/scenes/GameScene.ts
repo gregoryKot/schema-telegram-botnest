@@ -985,8 +985,10 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(13200, () => this.tweens.add({ targets: lines, alpha: 0, duration: 700,
       onComplete: () => lines.forEach(t => t.destroy()) }));
     this.time.delayedCall(14100, () => this.contactGlimpse(() => {
-      const next = this.chapter.next;
-      if (next && CHAPTERS[next]) {
+      const branch = this.chapter.branch, next = this.chapter.next;
+      if (branch && CHAPTERS[branch]) {
+        this.showBranch(branch);                 // конец Акта I — развилка: терапия ИЛИ дальше
+      } else if (next && CHAPTERS[next]) {
         const act = IS_TOUCH ? 'тапни' : 'нажми любую клавишу';
         const hint = this.add.text(W / 2, H - 28, `дальше — «${CHAPTERS[next].title}». ${act}`,
           { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#5a4f7a' })
@@ -999,6 +1001,35 @@ export class GameScene extends Phaser.Scene {
         this.showCta();
       }
     }));
+  }
+
+  // Развилка конца Акта I: уйти в терапию сейчас (воронка) ИЛИ идти дальше (игра).
+  private showBranch(nextChapter: string) {
+    track('act1_end', { chapter: this.chapter.id });
+    const ky = H / 540, font = '"Press Start 2P", "Courier New", monospace';
+    const mk = (y: number, text: string, size: number, color: string, depth = 153) =>
+      this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
+        .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
+
+    const top = mk(150, 'так дальше — нельзя.', 16, '#ff8aa6');
+    const sub = mk(208, 'и Мистер впервые подумал:\n«может... пора за помощью?»', 12, '#d8c8ec');
+
+    const ctaTxt = mk(300, 'узнать про схема-терапию →', 12, '#88ffcc', 154);
+    const cta = this.add.rectangle(W / 2, 300 * ky, ctaTxt.width + 40, 42, 0x153028)
+      .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
+    const goTxt = mk(372, 'или — идти дальше за Мистером →', 10, '#8a7faa', 154).setInteractive({ useHandCursor: true });
+
+    this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
+    this.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 600 });
+    this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 1400 });
+    this.tweens.add({ targets: goTxt, alpha: 0.8, duration: 700, delay: 2200 });
+
+    cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
+    cta.on('pointerout', () => cta.setFillStyle(0x153028));
+    cta.on('pointerdown', () => { track('cta_click', { from: 'act1' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
+    goTxt.on('pointerover', () => goTxt.setColor('#d8c8ec'));
+    goTxt.on('pointerout', () => goTxt.setColor('#8a7faa'));
+    goTxt.on('pointerdown', () => { track('continue', { to: nextChapter }); this.scene.restart({ chapter: nextChapter }); });
   }
 
   // Враг = режим схема-терапии — называем в момент узнавания (без лекции)
@@ -1090,12 +1121,12 @@ export class GameScene extends Phaser.Scene {
 
     cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
     cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => { track('cta_click'); window.open('https://schemalab.ru/?from=game', '_blank'); });
+    cta.on('pointerdown', () => { track('cta_click'); window.open('https://schemehappens.ru/?from=game', '_blank'); });
     share.on('pointerover', () => share.setFillStyle(0x322a52));
     share.on('pointerout', () => share.setFillStyle(0x241d3a));
     share.on('pointerdown', () => {
       track('cta_share');
-      const url = 'https://schemalab.ru/game/';
+      const url = 'https://schemehappens.ru/game/';
       const text = `Прошёл сквозь собственную голову в этой игре. Мой главный враг — ${this.modeShort()}. А твой?`;
       window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
     });

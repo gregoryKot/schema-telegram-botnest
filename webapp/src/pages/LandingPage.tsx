@@ -9,7 +9,6 @@ const MOSS = '#4a6335';        // green status (passes WCAG AA on paper bg)
 const DARK_BG = '#1c1916';     // intentional always-dark sections
 const INK_ON_DARK = '#eceae5'; // text on dark sections
 const TG_URL = 'https://t.me/kotlarewski';
-const TG_BLUE = '#27a2d7';     // Telegram brand blue
 
 // Hamburger button (mobile nav trigger) – shown only via .menu-btn CSS
 const menuBtnStyle: React.CSSProperties = {
@@ -80,34 +79,45 @@ function Btn({
   return <button type={type} onClick={onClick} disabled={disabled} style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</button>;
 }
 
-// ─── Telegram link – icon pill, single source for the @kotlarewski CTA ───────
+// ─── Telegram link – quiet editorial text link (matches nav "Написать ↗") ────
 function TgLink({ label, size = 'sm', style }: { label: string; size?: 'lg' | 'sm'; style?: React.CSSProperties }) {
   const lg = size === 'lg';
   return (
     <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{
-      display: 'inline-flex', alignItems: 'center', gap: lg ? 8 : 7,
-      padding: lg ? '15px 30px' : '9px 18px', fontSize: lg ? 15 : 14, fontWeight: 600, fontFamily: 'inherit',
-      borderRadius: R.pill, textDecoration: 'none',
-      background: 'rgba(39,162,215,.12)', border: '1.5px solid rgba(39,162,215,.35)',
-      color: TG_BLUE, transition: 'background .15s, border-color .15s', ...style,
+      display: 'inline-flex', alignItems: 'center', gap: 7,
+      fontSize: lg ? 15 : 14, fontWeight: 600, fontFamily: 'inherit',
+      color: 'var(--text-sub)', textDecoration: 'none',
+      transition: 'color .15s', ...style,
     }}
-      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.2)'; el.style.borderColor = 'rgba(39,162,215,.6)'; }}
-      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(39,162,215,.12)'; el.style.borderColor = 'rgba(39,162,215,.35)'; }}>
-      <svg width={lg ? 17 : 15} height={lg ? 17 : 15} viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M11.944 0A12 12 0 1 0 24 12 12 12 0 0 0 11.944 0ZM18.33 7.67l-2.3 10.84c-.165.73-.6.91-1.22.57l-3.36-2.47-1.62 1.56a.85.85 0 0 1-.68.33l.24-3.4 6.2-5.6c.27-.24-.06-.37-.41-.13L6.27 13.9 3 13.01c-.73-.2-.74-.73.15-1.08l13.93-5.37c.61-.22 1.14.15.95 1.11Z"/></svg>
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-sub)'; }}>
+      <svg width={lg ? 16 : 14} height={lg ? 16 : 14} viewBox="0 0 24 24" fill="currentColor" aria-hidden style={{ opacity: .7 }}><path d="M11.944 0A12 12 0 1 0 24 12 12 12 0 0 0 11.944 0ZM18.33 7.67l-2.3 10.84c-.165.73-.6.91-1.22.57l-3.36-2.47-1.62 1.56a.85.85 0 0 1-.68.33l.24-3.4 6.2-5.6c.27-.24-.06-.37-.41-.13L6.27 13.9 3 13.01c-.73-.2-.74-.73.15-1.08l13.93-5.37c.61-.22 1.14.15.95 1.11Z"/></svg>
       {label}
     </a>
   );
 }
 
-// ─── Section nav – one source for in-page links to every section ──────────────
+// ─── Theme toggle icon – crisp sun/moon (no unicode glyph rendering issues) ──
+function ThemeIcon({ dark }: { dark: boolean }) {
+  return dark ? (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="4.2" />
+      <path d="M12 2v2.2M12 19.8V22M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2 12h2.2M19.8 12H22M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6" />
+    </svg>
+  ) : (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </svg>
+  );
+}
+
+// ─── Section nav – compact desktop set (≤5 per 2026 nav guidance) ─────────────
 const NAV_LINKS: { label: string; href: string }[] = [
-  { label: 'Обо мне',      href: '#about' },
-  { label: 'С чем работаю', href: '#work' },
-  { label: 'Подход',       href: '#approach' },
-  { label: 'Как начать',   href: '#process' },
-  { label: 'Цены',         href: '#prices' },
-  { label: 'СхемаЛаб',     href: '#schemalab' },
-  { label: 'Вопросы',      href: '#faq' },
+  { label: 'Обо мне', href: '#about' },
+  { label: 'Подход',  href: '#approach' },
+  { label: 'Цены',    href: '#prices' },
+  { label: 'Запись',  href: '#booking' },
+  { label: 'Вопросы', href: '#faq' },
 ];
 
 function SectionNav({ className, color = 'var(--text-sub)', active = '' }: { className?: string; color?: string; active?: string }) {
@@ -129,11 +139,18 @@ function SectionNav({ className, color = 'var(--text-sub)', active = '' }: { cla
 }
 
 // ─── Mobile menu – fullscreen overlay (uses useHistorySheet per project rule) ─
+// Fuller list than the compact desktop nav – the dedicated menu has room.
 const MOBILE_LINKS: { label: string; href: string }[] = [
-  ...NAV_LINKS,
-  { label: 'Образование', href: '#education' },
-  { label: 'Отзывы',      href: '/reviews' },
-  { label: 'Статьи',      href: '/articles' },
+  { label: 'Обо мне',      href: '#about' },
+  { label: 'С чем работаю', href: '#work' },
+  { label: 'Подход',       href: '#approach' },
+  { label: 'Как начать',   href: '#process' },
+  { label: 'Цены',         href: '#prices' },
+  { label: 'Запись',       href: '#booking' },
+  { label: 'Всё по схеме', href: '#app' },
+  { label: 'Вопросы',      href: '#faq' },
+  { label: 'Отзывы',       href: '/reviews' },
+  { label: 'Статьи',       href: '/articles' },
 ];
 
 function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: string; onBook: () => void }) {
@@ -179,7 +196,7 @@ function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 0', marginBottom: 12, borderTop: '1px solid var(--line)' }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: MOSS, flexShrink: 0, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
           <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>Принимаю клиентов · </span>
-          <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: TG_BLUE, textDecoration: 'none', fontWeight: 600 }}>@kotlarewski</a>
+          <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>@kotlarewski</a>
         </div>
         <Btn full size="lg" radius="btn" onClick={() => { goBack(); setTimeout(onBook, 60); }}>Записаться на знакомство →</Btn>
       </div>
@@ -187,12 +204,20 @@ function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: 
   );
 }
 
-// ─── Scroll reveal via CSS scroll-driven (with IntersectionObserver fallback) ─
+// ─── Scroll reveal – IntersectionObserver with deep-link / in-view failsafe ──
 function useReveal() {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Failsafe: if we loaded via a hash (deep link jumps past sections) or the
+    // section is already on screen, reveal now. Otherwise the observer's first
+    // callback can fail to arrive until the user scrolls, leaving content hidden.
+    const r = el.getBoundingClientRect();
+    if (window.location.hash || (r.top < window.innerHeight && r.bottom > 0)) {
+      el.classList.add('revealed');
+      return;
+    }
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { el.classList.add('revealed'); obs.disconnect(); } },
       { threshold: 0.08 },
@@ -457,8 +482,8 @@ const FAQ_ITEMS = [
     a: 'Нет. Психологическое консультирование – отдельный вид помощи, не требующий медицинского образования и лицензии. Это не медицинская психотерапия по ФЗ-323. Если у вас есть симптомы психического расстройства – я порекомендую обратиться к врачу-психиатру или психотерапевту с медицинским дипломом.',
   },
   {
-    q: 'Что такое СхемаЛаб и зачем он нужен?',
-    a: 'СхемаЛаб – бесплатное веб-приложение, которое я создал для самостоятельной работы между сессиями. Дневник состояний, диагностика схем (тест ЯСО), упражнения из схема-терапии и КПТ, отслеживание динамики. Работает в браузере и через Telegram-бот @SchemaLabBot.',
+    q: 'Что такое «Всё по схеме» и зачем оно нужно?',
+    a: '«Всё по схеме» – бесплатное веб-приложение, которое я создал для самостоятельной работы между сессиями. Дневник состояний, диагностика схем (тест ЯСО), упражнения из схема-терапии и КПТ, отслеживание динамики. Работает в браузере и через Telegram-бот @SchemaLabBot.',
   },
 ];
 
@@ -520,7 +545,9 @@ function useTheme() {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function LandingPage() {
-  const bookingRef  = useRef<HTMLElement>(null);
+  const bookingRef          = useRef<HTMLElement>(null);
+  const activeSectionRef    = useRef('');
+  const scrollspyReadyRef   = useRef(false);
   const [showBar, setShowBar] = useState(false);
   const [scrollPct, setScrollPct] = useState(0);
   const [activeSection, setActiveSection] = useState('');
@@ -542,9 +569,9 @@ export function LandingPage() {
   }, []);
 
   useEffect(() => {
-    // Every block that owns a URL hash, in DOM order
-    const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'schemalab', 'faq'];
+    const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'app', 'faq'];
     let ticking = false;
+    let firstRun = true;
     const fn = () => {
       if (ticking) return;
       ticking = true;
@@ -553,23 +580,21 @@ export function LandingPage() {
         setShowBar(y > window.innerHeight * 0.75);
         const max = document.documentElement.scrollHeight - window.innerHeight;
         setScrollPct(max > 0 ? (y / max) * 100 : 0);
-
-        // Scrollspy: the active block is the last one whose top crossed the
-        // 35%-of-viewport line. Deterministic – never gets stuck on one section.
-        const line = window.innerHeight * 0.35;
-        let current = '';
-        for (const id of ids) {
-          const el = document.getElementById(id);
-          if (el && el.getBoundingClientRect().top <= line) current = id;
+        if (!firstRun) {
+          // Scrollspy: last section whose top has crossed 35% of viewport.
+          const line = window.innerHeight * 0.35;
+          let current = '';
+          for (const id of ids) {
+            const el = document.getElementById(id);
+            if (el && el.getBoundingClientRect().top <= line) current = id;
+          }
+          if (current !== activeSectionRef.current) {
+            activeSectionRef.current = current;
+            scrollspyReadyRef.current = true;
+            setActiveSection(current);
+          }
         }
-        setActiveSection(current);
-
-        // Mirror the active block into the address bar – no scroll, no history
-        // entries (replaceState), keep history.state so React Router stays intact.
-        const target = current ? `#${current}` : '';
-        if (window.location.hash !== target) {
-          window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search + target);
-        }
+        firstRun = false;
         ticking = false;
       });
     };
@@ -577,6 +602,14 @@ export function LandingPage() {
     fn();
     return () => window.removeEventListener('scroll', fn);
   }, []);
+
+  // Mirror active section into the address bar without creating history entries.
+  // Guard prevents clearing any initial hash before the user has actually scrolled.
+  useEffect(() => {
+    if (!scrollspyReadyRef.current) return;
+    const hash = activeSection ? `#${activeSection}` : '';
+    window.history.replaceState(window.history.state, '', window.location.pathname + hash);
+  }, [activeSection]);
 
   // On first load with a hash (e.g. shared /#prices) jump to that block
   useEffect(() => {
@@ -620,7 +653,7 @@ export function LandingPage() {
         </div>
         <SectionNav className="sticky-nav" active={activeSection} />
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <a href="https://schemalab.ru" className="desktop-inline" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
+          <a href="https://schemehappens.ru" className="desktop-inline" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Войти</a>
           <Btn size="sm" onClick={scrollToBooking}>Записаться</Btn>
           <button className="menu-btn" aria-label="Открыть меню" onClick={() => setMenuOpen(true)} style={menuBtnStyle}>
             <span style={burgerLine} /><span style={burgerLine} /><span style={burgerLine} />
@@ -641,23 +674,16 @@ export function LandingPage() {
 
           {/* ── Nav ── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '26px 0', animation: 'hero-in .5s both' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
               {/* Имя + фото → Обо мне */}
-              <a href="#about" style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, textDecoration: 'none', color: 'inherit' }}
+              <a href="#about" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}
                 onMouseEnter={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--accent)'; }}
                 onMouseLeave={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--text)'; }}>
                 <div style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--text-sub)' }}>Г</span>
                   <img src="/gregory.jpg" alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                 </div>
-                <span className="nav-name" style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color .15s' }}>Григорий Котляревский</span>
-              </a>
-              {/* Бейдж → Запись (скрыт на мобиле) */}
-              <a href="#booking" className="nav-badge" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', background: 'rgba(74,99,53,.1)', border: '1px solid rgba(74,99,53,.25)', borderRadius: 100, flexShrink: 0, textDecoration: 'none', transition: 'background .15s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(74,99,53,.18)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(74,99,53,.1)'; }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: MOSS, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: MOSS, letterSpacing: '.05em', whiteSpace: 'nowrap' }}>Принимаю клиентов</span>
+                <span className="nav-name" style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', transition: 'color .15s' }}>Григорий Котляревский</span>
               </a>
             </div>
             <SectionNav className="hero-nav" active={activeSection} />
@@ -666,11 +692,11 @@ export function LandingPage() {
                 onClick={toggleTheme}
                 aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
                 title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-                style={{ background: 'none', border: '1px solid var(--line)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: 'var(--text-sub)', transition: 'border-color .15s, color .15s', padding: 0 }}
+                style={{ background: 'none', border: '1px solid var(--line)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-sub)', transition: 'border-color .15s, color .15s', padding: 0 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--text-sub)'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-sub)'; }}
               >
-                {theme === 'dark' ? '☀︎' : '☽'}
+                <ThemeIcon dark={theme === 'dark'} />
               </button>
               <a href={TG_URL} target="_blank" rel="noopener noreferrer"
                 className="nav-tg"
@@ -711,44 +737,23 @@ export function LandingPage() {
           {/* ── Divider ── */}
           <div style={{ height: 1, background: 'var(--line-strong)', margin: '36px 0', animation: 'hero-in .5s .7s both' }} />
 
-          {/* ── Below divider: description left / price typography right ── */}
-          <div className="hero-bottom" style={{ animation: 'hero-in .7s .8s both' }}>
-
-            {/* Left: description + CTAs */}
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, maxWidth: 440, margin: '0 0 36px' }}>
-                Мы снова и снова попадаем в одни и те же ситуации – в отношениях, самооценке, тревоге. Схема-терапия помогает понять почему – и найти выход.
-              </p>
-              <div className="hero-ctas">
-                <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
-                <TgLink label="Написать в Telegram" size="lg" />
-              </div>
-              <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '16px 0 0' }}>
-                Первая встреча – бесплатно, 15 минут, без обязательств
-              </p>
+          {/* ── Below divider: single editorial column, generous whitespace ── */}
+          <div style={{ maxWidth: 460, animation: 'hero-in .7s .8s both' }}>
+            <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 28px' }}>
+              Мы снова и снова попадаем в одни и те же ситуации – в отношениях, самооценке, тревоге. Схема-терапия помогает понять почему – и найти выход.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap' }}>
+              <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
+              <TgLink label="Написать в Telegram" size="lg" />
             </div>
-
-            {/* Right: editorial price stats */}
-            <div className="hero-stats">
-              <div style={{ borderTop: '1px solid var(--line-strong)', paddingTop: 20, marginBottom: 24 }}>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(36px, 3.5vw, 52px)', fontWeight: 400, color: 'var(--text)', lineHeight: 1, letterSpacing: '-.03em', margin: '0 0 6px' }}>4 000 ₽</p>
-                <p style={{ fontSize: 13, color: 'var(--text-faint)', letterSpacing: '.02em' }}>сессия · 50 мин · онлайн</p>
-              </div>
-              <div>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 2.8vw, 40px)', fontWeight: 400, color: 'var(--accent)', lineHeight: 1, letterSpacing: '-.02em', margin: '0 0 6px', fontStyle: 'italic' }}>0 ₽</p>
-                <p style={{ fontSize: 13, color: 'var(--text-faint)', letterSpacing: '.02em' }}>первая встреча · 15 мин</p>
-              </div>
-            </div>
-
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '18px 0 0' }}>
+              Первая встреча бесплатно · 15 минут · без обязательств
+            </p>
           </div>
 
-          {/* ── Bottom strip ── */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '32px 0 28px', animation: 'hero-in .5s 1.1s both' }}>
-            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0, letterSpacing: '.02em' }}>Схема-терапевт · КПТ · Онлайн</p>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 10, color: 'var(--text-faint)', letterSpacing: '.12em', textTransform: 'uppercase' }}>Далее</span>
-              <div style={{ width: 1, height: 28, background: 'var(--line-strong)', animation: 'scroll-bar 2s ease-in-out infinite' }} />
-            </div>
+          {/* ── Subtle scroll cue ── */}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0 28px', animation: 'hero-in .5s 1.1s both' }}>
+            <div style={{ width: 1, height: 28, background: 'var(--line-strong)', animation: 'scroll-bar 2s ease-in-out infinite' }} />
           </div>
 
         </div>
@@ -1006,23 +1011,23 @@ export function LandingPage() {
         </section>
       </section>
 
-      {/* ── SCHEMALAB ───────────────────────────────────────────────────── */}
-      <section id="schemalab" style={{ borderTop: '1px solid var(--line)' }}>
+      {/* ── ВСЁ ПО СХЕМЕ ────────────────────────────────────────────────── */}
+      <section id="app" style={{ borderTop: '1px solid var(--line)' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '88px 40px' }}>
           <div className="app-grid">
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 100, marginBottom: 22 }}>
                 <span style={{ fontSize: 14 }}>🧠</span>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>СхемаЛаб</span>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>Всё по схеме</span>
               </div>
               <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 18px', lineHeight: 1.1, letterSpacing: '-.01em' }}>
 Помогите себе сами.<br /><span style={{ fontStyle: 'italic' }}>Между сессиями.</span>
               </h2>
               <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
-                СхемаЛаб – бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Ведите дневник состояний, отслеживайте потребности, делайте упражнения. Всё сохраняется – динамика всегда перед глазами.
+                «Всё по схеме» – бесплатное веб-приложение для самостоятельной работы в подходе схема-терапии. Ведите дневник состояний, отслеживайте потребности, делайте упражнения. Всё сохраняется – динамика всегда перед глазами.
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <Btn href="https://schemalab.ru" newTab={false}>Попробовать бесплатно</Btn>
+                <Btn href="https://schemehappens.ru" newTab={false}>Попробовать бесплатно</Btn>
                 <Btn variant="ghost" href="https://t.me/SchemaLabBot">Telegram-бот</Btn>
               </div>
             </div>
@@ -1067,7 +1072,7 @@ export function LandingPage() {
             <a href="/privacy" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Политика конфиденциальности</a>
             <a href="/offer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
             <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' }}>Telegram</a>
-            <a href="https://schemalab.ru" style={{ fontSize: 13, color: 'var(--text-sub)', textDecoration: 'none', fontWeight: 600 }}>Открыть СхемаЛаб →</a>
+            <a href="https://schemehappens.ru" style={{ fontSize: 13, color: 'var(--text-sub)', textDecoration: 'none', fontWeight: 600 }}>Открыть «Всё по схеме» →</a>
           </div>
         </div>
       </footer>
@@ -1076,8 +1081,10 @@ export function LandingPage() {
       <style>{`
         html { scroll-behavior: smooth; }
 
-        /* Anchored sections clear the 58px sticky bar when jumped to */
-        section[id] { scroll-margin-top: 74px; }
+        /* Sections already carry 64–88px of top padding which clears the
+           58px sticky bar; only a small margin is needed so the heading
+           isn't flush against the bar. */
+        section[id] { scroll-margin-top: 12px; }
 
         /* Section nav (desktop) ⇄ hamburger (mobile/tablet) */
         .sticky-nav, .hero-nav { display: flex; }
@@ -1086,6 +1093,7 @@ export function LandingPage() {
           .sticky-nav, .hero-nav { display: none !important; }
           .menu-btn { display: flex !important; }
           .desktop-inline { display: none !important; }
+          .nav-tg { display: none !important; }
         }
         @keyframes menu-in      { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
         @keyframes menu-item-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
@@ -1114,9 +1122,6 @@ export function LandingPage() {
 
         /* Hero */
         .hero-wrap    { max-width:1100px; width:100%; margin:0 auto; padding:0 40px; display:flex; flex-direction:column; justify-content:space-between; min-height:100dvh; box-sizing:border-box; }
-        .hero-bottom  { display:grid; grid-template-columns:1.4fr 1fr; gap:60px; align-items:end; }
-        .hero-stats   { display:flex; flex-direction:column; justify-content:flex-end; }
-        .hero-ctas    { display:flex; gap:12px; flex-wrap:wrap; }
         @media (max-height:820px) {
           .hero-h1   { font-size:clamp(36px, 7vh, 80px) !important; }
           .hero-wrap { min-height:100dvh; }
@@ -1140,13 +1145,10 @@ export function LandingPage() {
         input:focus, textarea:focus { border-color:var(--accent) !important; box-shadow:0 0 0 4px var(--accent-soft); }
 
         @media (max-width:600px) {
-          .nav-badge  { display:none !important; }
           .nav-tg     { font-size:12px; }
         }
 
         @media (max-width:900px) {
-          .hero-bottom  { grid-template-columns:1fr; gap:32px; }
-          .hero-stats   { display:none; }
           .about-inner  { grid-template-columns:1fr; }
           .bento-grid   { grid-template-columns:1fr; }
           .bento-tall   { grid-row:auto; }
@@ -1163,14 +1165,9 @@ export function LandingPage() {
         @media (min-width:601px) and (max-width:900px) {
           .work-grid    { grid-template-columns:1fr 1fr; }
         }
-        @media (max-width:900px) {
-          .hero-ctas  { flex-direction:column; align-items:flex-start; }
-          .hero-ctas > * { width:auto !important; }
-        }
         @media (max-width:600px) {
           .form-grid  { grid-template-columns:1fr; }
           .hero-wrap, section, footer { padding-left:20px !important; padding-right:20px !important; }
-          .hero-ctas > * { width:100% !important; }
         }
       `}</style>
     </div>

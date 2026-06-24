@@ -61,7 +61,7 @@ export const SAGE_CONTENT = {
   name: 'М У Д Р Е Ц',
   text: 'Ты быстро бегаешь.\nОни всегда возвращаются.\n\nЕсть другой путь —\nне убегать, а встретиться.',
   tip: 'Это называется терапия.',
-  ctaUrl: 'https://schemalab.ru',
+  ctaUrl: 'https://schemehappens.ru',
   ctaLabel: 'Узнать о терапии →',
 };
 

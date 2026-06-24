@@ -369,8 +369,8 @@ export function AppShell() {
       {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
       <aside className="sidebar">
         <div className="sb-brand">
-          <div className="sb-logo">СЛ</div>
-          <div className="sb-name">СхемаЛаб</div>
+          <div className="sb-logo">ВС</div>
+          <div className="sb-name">Всё по схеме</div>
         </div>
 
         {userRole === 'THERAPIST' && (
