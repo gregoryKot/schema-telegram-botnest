@@ -19,7 +19,7 @@ export function buildVcalendar(events: CalEvent[], calName = 'Запись на 
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//schemalab//booking//RU',
+    'PRODID:-//schemehappens//booking//RU',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${escapeText(calName)}`,
