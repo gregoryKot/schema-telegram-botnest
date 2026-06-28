@@ -79,6 +79,23 @@ async function del(path: string): Promise<void> {
   if (!res.ok) throw new Error(`API error: ${res.status}`);
 }
 
+// Admin booking requests: the admin key goes in the x-admin-key header so it
+// never appears in URLs or server access logs.
+async function adminReq<T>(method: string, path: string, key: string, body?: unknown): Promise<T> {
+  const res = await fetchWithTimeout(`${BASE}${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+  if (!res.ok) {
+    let msg = `API error: ${res.status}`;
+    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch {}
+    throw new Error(msg);
+  }
+  if (res.status === 204) return undefined as T;
+  return res.json().catch(() => undefined as T);
+}
+
 // ─── Shared types (mirrored from miniapp, same backend) ──────────────────────
 export interface UserSettings {
   notifyEnabled: boolean;
@@ -401,17 +418,17 @@ export const api = {
     const qs = q.toString();
     return get<BookingSlot[]>(`/api/booking/slots${qs ? `?${qs}` : ''}`);
   },
-  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean }) =>
+  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; website?: string }) =>
     postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null; meetingUrl?: string | null }>('/api/booking/book', body),
   cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),
-  // Booking admin (gated by ADMIN_BOOKING_KEY)
-  adminListRules:    (key: string) => get<AvailabilityRule[]>(`/api/booking/admin/rules?key=${encodeURIComponent(key)}`),
-  adminCreateRule:   (key: string, rule: NewAvailabilityRule) => postJson<AvailabilityRule>('/api/booking/admin/rules', { ...rule, adminKey: key }),
-  adminToggleRule:   (key: string, id: number, isActive: boolean) => patchJson<AvailabilityRule>(`/api/booking/admin/rules/${id}`, { isActive, adminKey: key }),
-  adminDeleteRule:   (key: string, id: number) => del(`/api/booking/admin/rules/${id}?key=${encodeURIComponent(key)}`),
+  // Booking admin — key travels in the x-admin-key header (never in URL/logs)
+  adminListRules:    (key: string) => adminReq<AvailabilityRule[]>('GET', '/api/booking/admin/rules', key),
+  adminCreateRule:   (key: string, rule: NewAvailabilityRule) => adminReq<AvailabilityRule>('POST', '/api/booking/admin/rules', key, rule),
+  adminToggleRule:   (key: string, id: number, isActive: boolean) => adminReq<AvailabilityRule>('PATCH', `/api/booking/admin/rules/${id}`, key, { isActive }),
+  adminDeleteRule:   (key: string, id: number) => adminReq<void>('DELETE', `/api/booking/admin/rules/${id}`, key),
   adminListBookings: (key: string, filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') =>
-    get<AdminBooking[]>(`/api/booking/admin/list?key=${encodeURIComponent(key)}&filter=${filter}`),
-  adminConfirm:      (key: string, id: number) => postJson<{ ok: true }>(`/api/booking/admin/confirm/${id}`, { adminKey: key }),
+    adminReq<AdminBooking[]>('GET', `/api/booking/admin/list?filter=${filter}`, key),
+  adminConfirm:      (key: string, id: number) => adminReq<{ ok: true }>('POST', `/api/booking/admin/confirm/${id}`, key),
   // Therapist custom modes
   listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),
