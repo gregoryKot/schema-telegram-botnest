@@ -59,6 +59,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
   const [options, setOptions] = useState<SessionOption[]>([]);
   const [sessionType, setSessionType] = useState<'INTRO_15' | 'SESSION_50'>('INTRO_15');
+  const [website, setWebsite] = useState(''); // honeypot — stays empty for humans
 
   // Handle ?payment=ok / ?payment=fail redirect back from Robokassa
   useEffect(() => {
@@ -142,7 +143,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       const res = await api.bookSlot({
         startsAt: slot.startsAt, durationMin: slot.durationMin, type: sessionType,
         clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
-        returning,
+        returning, website,
       });
       setCancelToken(res.cancelToken);
       (window as Window & { ym?: (...a: unknown[]) => void }).ym?.(109568051, 'reachGoal', 'booking_submit');
@@ -213,6 +214,9 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
             <div><label style={labelSt}>Имя *</label><input style={field} placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} /></div>
             <div><label style={labelSt}>Telegram / телефон *</label><input style={field} placeholder="@username или телефон" value={contact} onChange={(e) => setContact(e.target.value)} required maxLength={100} /></div>
           </div>
+          {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
+          <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
+            aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
             <input type="checkbox" checked={returning} onChange={(e) => { setReturning(e.target.checked); if (status === 'not_found') setStatus('idle'); }} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
             <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>

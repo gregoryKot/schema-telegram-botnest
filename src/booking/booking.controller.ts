@@ -7,7 +7,9 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { BookingService, CreateBookingDto } from './booking.service';
 import { SlotService } from './slot.service';
 import { SESSION_OPTIONS } from './booking.config';
@@ -22,6 +24,8 @@ interface BookDto {
   message?: string;
   clientTelegramId?: string;
   returning?: boolean;
+  /** Honeypot — must stay empty. Bots fill hidden fields; humans never see it. */
+  website?: string;
 }
 
 /** Public booking endpoints: browse slots, book one, self-cancel. */
@@ -51,10 +55,15 @@ export class BookingController {
     }));
   }
 
-  /** POST /api/booking/book — book a slot (free intro confirms immediately) */
+  /**
+   * POST /api/booking/book — book a slot (free intro confirms immediately).
+   * Anti-spam: per-IP rate limit (max 6/hour via the 'long' bucket) + honeypot.
+   */
   @Post('book')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ long: { limit: 6, ttl: 3_600_000 } })
   async bookSlot(@Body() dto: BookDto) {
+    if (dto.website) throw new BadRequestException('rejected'); // honeypot tripped
     const payload: CreateBookingDto = {
       startsAt: new Date(dto.startsAt),
       durationMin: dto.durationMin ?? 50,
