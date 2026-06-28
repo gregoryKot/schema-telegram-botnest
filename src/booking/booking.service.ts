@@ -110,10 +110,10 @@ export class BookingService {
       await this.prisma.booking.update({ where: { id: booking.id }, data: { status: BookingStatus.CONFIRMED, heldUntil: null } });
       const plain = decryptRecord(booking, SCHEMA) as any;
       await this.notify.onConfirmed(plain);
-      meetingUrl = plain.meetingUrl ?? null;
+      return { id: booking.id, cancelToken, heldUntil: null, status: BookingStatus.CONFIRMED, paymentUrl: null, meetingUrl: plain.meetingUrl ?? null };
     }
 
-    return { id: booking.id, cancelToken, heldUntil, status: booking.status, paymentUrl, meetingUrl };
+    return { id: booking.id, cancelToken, heldUntil, status: BookingStatus.HELD, paymentUrl, meetingUrl };
   }
 
   /** Confirm a HELD booking (e.g. after payment or manual admin action). */
