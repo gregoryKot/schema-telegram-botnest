@@ -21,6 +21,6 @@ export class AlertLogger extends ConsoleLogger {
     this.seen.set(key, now);
 
     // Telegram first, e-mail fallback. Fire-and-forget — never throws.
-    void notifyAdminWithFallback(`🚨 Ошибка на сервере\n${message.slice(0, 300)}`, '🚨 Ошибка на сервере SchemaLab');
+    void notifyAdminWithFallback(`🚨 Ошибка на сервере\n${message.slice(0, 300)}`, '🚨 Ошибка на сервере SchemeHappens');
   }
 }
