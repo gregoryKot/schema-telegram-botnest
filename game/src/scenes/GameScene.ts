@@ -7,6 +7,7 @@ import { SelfSoothe, CrookedMirror } from '../enemies/road';
 import { buildDecor } from '../decor';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { ensureEnemyAnims, LEDGE } from '../props';
+import { t } from '../i18n';
 import { unlockChapter } from '../progress';
 import { getAssist } from '../assist';
 import { track } from '../analytics';
@@ -1011,13 +1012,13 @@ export class GameScene extends Phaser.Scene {
       this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
         .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
 
-    const top = mk(150, 'так дальше — нельзя.', 16, '#ff8aa6');
-    const sub = mk(208, 'и Мистер впервые подумал:\n«может... пора за помощью?»', 12, '#d8c8ec');
+    const top = mk(150, t('так дальше — нельзя.', "this can't go on."), 16, '#ff8aa6');
+    const sub = mk(208, t('и Мистер впервые подумал:\n«может... пора за помощью?»', 'and for the first time Mister thought:\n"maybe... it\'s time to get help?"'), 12, '#d8c8ec');
 
-    const ctaTxt = mk(300, 'узнать про схема-терапию →', 12, '#88ffcc', 154);
+    const ctaTxt = mk(300, t('узнать про схема-терапию →', 'learn about schema therapy →'), 12, '#88ffcc', 154);
     const cta = this.add.rectangle(W / 2, 300 * ky, ctaTxt.width + 40, 42, 0x153028)
       .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    const goTxt = mk(372, 'или — идти дальше за Мистером →', 10, '#8a7faa', 154).setInteractive({ useHandCursor: true });
+    const goTxt = mk(372, t('или — идти дальше за Мистером →', 'or — keep going with Mister →'), 10, '#8a7faa', 154).setInteractive({ useHandCursor: true });
 
     this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
     this.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 600 });
@@ -1034,14 +1035,14 @@ export class GameScene extends Phaser.Scene {
 
   // Враг = режим схема-терапии — называем в момент узнавания (без лекции)
   private modeName(): string {
-    if (this.chapter.id === 'chapter1') return 'это — Карающий Родитель.\nчужой голос, что тебя стыдил.\n\n';
-    if (this.chapter.id === 'chapter2') return 'это — Отстранённый Защитник.\nуводил в телефон, лишь бы не чувствовать.\n\n';
+    if (this.chapter.id === 'chapter1') return t('это — Карающий Родитель.\nчужой голос, что тебя стыдил.\n\n', 'this is the Punitive Parent.\na borrowed voice that shamed you.\n\n');
+    if (this.chapter.id === 'chapter2') return t('это — Отстранённый Защитник.\nуводил в телефон, лишь бы не чувствовать.\n\n', 'this is the Detached Protector.\nit pulled you into the phone, anything but feeling.\n\n');
     return '';
   }
   private modeShort(): string {
-    if (this.chapter.id === 'chapter1') return 'Карающий Родитель';
-    if (this.chapter.id === 'chapter2') return 'Отстранённый Защитник';
-    return 'Тревога';
+    if (this.chapter.id === 'chapter1') return t('Карающий Родитель', 'Punitive Parent');
+    if (this.chapter.id === 'chapter2') return t('Отстранённый Защитник', 'Detached Protector');
+    return t('Тревога', 'Anxiety');
   }
 
   // ── КОНТАКТ-проблеск: впервые не бей/беги/уступи, а останься рядом ──────────
@@ -1099,18 +1100,18 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
 
     // Карточка-результат: «твой главный враг» = режим (виральный крючок, п.7)
-    const top  = mk(196, '🐈‍⬛  ты прошёл сквозь свою голову.', 12, '#d8c8ec');
-    const lbl  = mk(244, 'твой главный враг —', 10, '#9a8fb8');
+    const top  = mk(196, t('🐈‍⬛  ты прошёл сквозь свою голову.', '🐈‍⬛  you ran through your own mind.'), 12, '#d8c8ec');
+    const lbl  = mk(244, t('твой главный враг —', 'your biggest enemy —'), 10, '#9a8fb8');
     const mode = mk(282, this.modeShort(), 16, '#ff8aa6');
-    const sub  = mk(336, 'его не одолеть в одиночку.\nно рядом — можно. дальше — терапия.', 11, '#a8e8d0');
+    const sub  = mk(336, t('его не одолеть в одиночку.\nно рядом — можно. дальше — терапия.', "you can't beat it alone.\nbut with someone — you can. next: therapy."), 11, '#a8e8d0');
 
-    const ctaTxt = mk(404, 'узнать про схема-терапию →', 11, '#88ffcc', 154);
+    const ctaTxt = mk(404, t('узнать про схема-терапию →', 'learn about schema therapy →'), 11, '#88ffcc', 154);
     const cta = this.add.rectangle(W / 2, 404 * ky, ctaTxt.width + 34, 38, 0x153028)
       .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    const shareTxt = mk(452, 'поделиться →', 10, '#c0b8e8', 154);
+    const shareTxt = mk(452, t('поделиться →', 'share →'), 10, '#c0b8e8', 154);
     const share = this.add.rectangle(W / 2, 452 * ky, shareTxt.width + 30, 34, 0x241d3a)
       .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    const menu = mk(498, 'или — в меню', 9, '#5a4f7a', 154).setInteractive({ useHandCursor: true });
+    const menu = mk(498, t('или — в меню', 'or — back to menu'), 9, '#5a4f7a', 154).setInteractive({ useHandCursor: true });
 
     this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
     this.tweens.add({ targets: [lbl, mode], alpha: 1, duration: 700, delay: 500 });
@@ -1127,7 +1128,8 @@ export class GameScene extends Phaser.Scene {
     share.on('pointerdown', () => {
       track('cta_share');
       const url = 'https://schemehappens.ru/game/';
-      const text = `Прошёл сквозь собственную голову в этой игре. Мой главный враг — ${this.modeShort()}. А твой?`;
+      const text = t(`Прошёл сквозь собственную голову в этой игре. Мой главный враг — ${this.modeShort()}. А твой?`,
+        `I ran through my own mind in this game. My biggest enemy — ${this.modeShort()}. What's yours?`);
       window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
     });
     menu.on('pointerdown', () => this.scene.start('Start'));
