@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { DonateSheet } from './DonateSheet';
 import { api } from '../api';
 import type { UserSettings, PairsData, TherapyRelationInfo } from '../api';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
@@ -46,6 +47,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [exportText, setExportText] = useState<string | null>(null);
   const [exportCopied, setExportCopied] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showDonate, setShowDonate] = useState(false);
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting]     = useState(false);
@@ -461,6 +463,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
                       Записаться на сессию → <span style={{ color: 'var(--accent)' }}>@kotlarewski</span>
                     </a>
+                    <button onClick={() => setShowDonate(true)} style={{ textAlign: 'left', background: 'none', border: 'none', padding: 0, fontSize: 14, color: 'var(--text-sub)', fontFamily: 'inherit', cursor: 'pointer' }}>
+                      Поддержать проект → <span style={{ color: 'var(--accent)' }}>донат 💛</span>
+                    </button>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.5, marginTop: 14 }}>
                     Разработано для образовательных целей. Не является медицинским или психологическим сервисом.
@@ -514,6 +519,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
           <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>Разработано для образовательных целей.</div>
         </InfoModal>
       )}
+
+      {showDonate && <DonateSheet onClose={() => setShowDonate(false)} source="app" />}
 
       {/* ── Delete modal ── */}
       {showDeleteSheet && (

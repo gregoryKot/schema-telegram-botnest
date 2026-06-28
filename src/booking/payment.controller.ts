@@ -15,6 +15,7 @@ import { ConflictException } from '@nestjs/common';
 import { RobokassaService } from './robokassa.service';
 import { BookingService } from './booking.service';
 import { BookingNotifyService } from './booking-notify.service';
+import { DonationService } from '../donation/donation.service';
 
 /**
  * Robokassa payment lifecycle endpoints.
@@ -32,6 +33,7 @@ export class PaymentController {
     private readonly robokassa: RobokassaService,
     private readonly booking: BookingService,
     private readonly notify: BookingNotifyService,
+    private readonly donation: DonationService,
     config: ConfigService,
   ) {
     this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr').replace(/\/$/, '');
@@ -59,6 +61,17 @@ export class PaymentController {
 
     const id = parseInt(invId, 10);
     if (isNaN(id)) return `FAIL${invId}`;
+
+    // Donations live in a separate InvId range and share this one webhook.
+    if (DonationService.isDonationInvId(id)) {
+      try {
+        await this.donation.markPaidByInvId(id);
+      } catch (e) {
+        this.logger.error(`Donation mark-paid failed for InvId ${id}: ${(e as Error).message}`);
+        return `FAIL${invId}`;
+      }
+      return `OK${invId}`;
+    }
 
     try {
       await this.booking.confirm(id);

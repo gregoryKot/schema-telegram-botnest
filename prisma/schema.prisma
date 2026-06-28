@@ -560,3 +560,17 @@ model ClientMeeting {
   zoomMeetingId String?               // Zoom meeting id (for future updates/deletes)
   createdAt     DateTime @default(now())
 }
+
+// Voluntary donation (app / game), paid via Robokassa. email/comment encrypted.
+model Donation {
+  id        Int       @id @default(autoincrement())
+  amount    Int                          // rubles
+  status    String    @default("pending") // pending | paid
+  source    String    @default("app")     // app | game
+  email     String?
+  comment   String?
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+
+  @@index([status, createdAt])
+}
