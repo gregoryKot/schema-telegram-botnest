@@ -43,9 +43,17 @@ export class BookingAdminController {
 
   /** GET /admin/status — which integrations the running server actually sees (no secrets). */
   @Get('status')
-  status(@Headers('x-admin-key') key: string) {
+  async status(@Headers('x-admin-key') key: string) {
     assertAdminKey(key, this.adminKey);
     const meeting = this.meeting.status;
+    // How many busy intervals CalDAV returns for the next 14 days (diagnoses
+    // over-blocking of slots). Fail-open inside getBusyTimes.
+    let calendarBusyCount: number | null = null;
+    if (this.calDav.enabled) {
+      const now = new Date();
+      const busy = await this.calDav.getBusyTimes(now, new Date(now.getTime() + 14 * 86_400_000));
+      calendarBusyCount = busy.length;
+    }
     return {
       siteUrl: this.config.get<string>('SITE_URL') ?? '(default kotlarewski.gr)',
       appUrl: this.config.get<string>('APP_URL') ?? '(default schemehappens.ru)',
@@ -55,6 +63,7 @@ export class BookingAdminController {
       zoomVars: meeting.zoomVars,
       meetingStaticUrl: meeting.staticUrl,
       appleCalendar: this.calDav.enabled,
+      calendarBusyCount,
       emailFallback: !!this.config.get<string>('RESEND_API_KEY') && !!this.config.get<string>('ADMIN_EMAIL'),
     };
   }
