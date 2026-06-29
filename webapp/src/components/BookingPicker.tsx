@@ -53,7 +53,8 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
   const [returning, setReturning] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'not_found' | 'payment_fail'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'not_found' | 'payment_fail' | 'await_payment'>('idle');
+  const [payUrl, setPayUrl] = useState<string | null>(null);
   const [cancelToken, setCancelToken] = useState('');
   const [cancelled, setCancelled] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState<string | null>(null);
@@ -81,7 +82,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   // the result renders above the submit button and was easy to miss.
   const resultRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (status === 'done' || status === 'payment_fail') {
+    if (status === 'done' || status === 'payment_fail' || status === 'await_payment') {
       resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [status]);
@@ -103,6 +104,27 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   if (loadFailed || slots!.length === 0) {
     return <>{fallback}</>;
   }
+
+  if (status === 'await_payment') return (
+    <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
+      <div style={{ fontSize: 56, marginBottom: 20 }}>⏳</div>
+      <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Слот зарезервирован</h3>
+      {slot && (
+        <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 6px' }}>
+          {dayLabel(slot.startsAt)}, {timeLabel(slot.startsAt)} МСК — держу за вами 15 минут.
+        </p>
+      )}
+      <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>
+        Для подтверждения нужна оплата{chosen && chosen.price > 0 ? ` ${chosen.price.toLocaleString('ru-RU')} ₽` : ''}.
+      </p>
+      <a href={payUrl ?? '#'} style={{ display: 'inline-block', padding: '15px 32px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', borderRadius: 12, textDecoration: 'none', boxShadow: '0 8px 28px rgba(77,71,153,.28)' }}>
+        Перейти к оплате →
+      </a>
+      <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '20px auto 0', maxWidth: 420 }}>
+        Если оплата не открылась или возникла ошибка — не волнуйтесь: я уже вижу вашу заявку и свяжусь с вами в Telegram. Можно также написать напрямую: <a href="https://t.me/kotlarewski" style={{ color: 'var(--accent)' }}>@kotlarewski</a>.
+      </p>
+    </div>
+  );
 
   if (status === 'payment_fail') return (
     <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
@@ -157,8 +179,11 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       setCancelToken(res.cancelToken);
       (window as Window & { ym?: (...a: unknown[]) => void }).ym?.(109568051, 'reachGoal', 'booking_submit');
       if (res.paymentUrl) {
-        // Paid session: redirect to Robokassa payment page
-        window.location.href = res.paymentUrl;
+        // Paid session: show a "reserved, go to pay" screen first (so the client
+        // always sees the booking is registered even if Robokassa fails), then
+        // they tap through to payment.
+        setPayUrl(res.paymentUrl);
+        setStatus('await_payment');
         return;
       }
       setMeetingUrl(res.meetingUrl ?? null);

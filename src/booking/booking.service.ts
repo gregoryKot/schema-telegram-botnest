@@ -105,6 +105,10 @@ export class BookingService {
         successUrl: `${this.siteUrl}/api/payment/success`,
         failUrl: `${this.siteUrl}/api/payment/fail`,
       });
+      // Tell the admin a slot is reserved & awaiting payment — so even if the
+      // client's payment fails (or Robokassa is misconfigured), the request and
+      // contact are never lost.
+      await this.notify.onAwaitingPayment(decryptRecord(booking, SCHEMA) as any);
     } else {
       // Robokassa not configured (dev): auto-confirm so slot isn't stuck in HELD.
       await this.prisma.booking.update({ where: { id: booking.id }, data: { status: BookingStatus.CONFIRMED, heldUntil: null } });
