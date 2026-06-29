@@ -26,6 +26,8 @@ function localizeMenu() {
   set('lbl-lives', 'Больше жизней', 'Extra lives');
   set('lbl-invuln', 'Не умирать', 'Invincible');
   set('menu-sec-levels', 'Г Л А В Ы', 'C H A P T E R S');
+  set('menu-sec-support', 'П О Д Д Е Р Ж А Т Ь', 'S U P P O R T');
+  set('menu-donate', 'Поддержать проект 💛', 'Support the project 💛');
   set('menu-close', 'ЗАКРЫТЬ', 'CLOSE');
   const langBtn = document.getElementById('menu-lang');
   if (langBtn) {
@@ -86,6 +88,9 @@ export function setupMenu(game: Phaser.Game) {
 
   btn.addEventListener('click', () => overlay.classList.contains('visible') ? close() : open());
   closeBtn.addEventListener('click', close);
+  document.getElementById('menu-donate')?.addEventListener('click', () => {
+    window.location.href = 'https://schemehappens.ru/donate';
+  });
   window.addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.preventDefault(); overlay.classList.contains('visible') ? close() : open(); }
   });

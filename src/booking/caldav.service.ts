@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { buildVcalendar, CalEvent } from './caldav-event.util';
 import { discoverCalendarUrl } from './caldav-discovery';
+import { busyQueryXml, parseBusy, Interval } from './caldav-busy';
 
 /**
  * One-way push of confirmed bookings into the therapist's Apple Calendar via CalDAV.
@@ -25,6 +26,7 @@ export class CalDavService {
   private readonly auth: string;
   private resolvedBase: string | null = null;
   private discovery: Promise<string | null> | null = null;
+  private busyCache: { key: string; val: Interval[]; exp: number } | null = null;
 
   constructor(config: ConfigService) {
     this.configuredBase = (config.get<string>('APPLE_CALDAV_URL') ?? '').replace(/\/?$/, '/').replace(/^\/$/, '');
@@ -79,6 +81,38 @@ export class CalDavService {
     } catch (e) {
       this.logger.error(`CalDAV PUT failed: ${(e as Error).message}`);
       return null;
+    }
+  }
+
+  /**
+   * Busy intervals from the therapist's calendar in [from, to], so the slot
+   * engine can hide times that are already occupied by real calendar events.
+   * Cached 60s. Fail-open: returns [] on any problem (slots still show).
+   */
+  async getBusyTimes(from: Date, to: Date): Promise<Interval[]> {
+    if (!this.enabled) return [];
+    const key = `${from.getTime()}_${to.getTime()}`;
+    if (this.busyCache && this.busyCache.key === key && Date.now() < this.busyCache.exp) {
+      return this.busyCache.val;
+    }
+    const base = await this.getBase();
+    if (!base) return [];
+    try {
+      const res = await fetch(base, {
+        method: 'REPORT',
+        headers: { Authorization: this.auth, 'Content-Type': 'application/xml; charset=utf-8', Depth: '1' },
+        body: busyQueryXml(from, to),
+      });
+      if (res.status !== 207 && !res.ok) {
+        this.logger.warn(`CalDAV busy REPORT ${res.status}`);
+        return [];
+      }
+      const val = parseBusy(await res.text());
+      this.busyCache = { key, val, exp: Date.now() + 60_000 };
+      return val;
+    } catch (e) {
+      this.logger.warn(`CalDAV busy read failed: ${(e as Error).message}`);
+      return [];
     }
   }
 

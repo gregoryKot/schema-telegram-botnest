@@ -225,9 +225,12 @@
     .menu-panel {
       background: #18102e; border: 0;
       width: 100%; max-width: 360px; padding: 24px;
+      max-height: calc(100dvh - 32px); overflow-y: auto;
       image-rendering: pixelated;
       box-shadow: 0 0 0 3px #120a1e, inset 4px 4px 0 0 #3a2c5e, inset -4px -4px 0 0 #0e0820, 0 0 50px rgba(100,80,200,0.2);
     }
+    .menu-donate { display: block; width: 100%; text-align: center; background: rgba(216,184,74,0.10); border: 1px solid #8a7322; color: #ffd86a; padding: 11px; font-size: 12px; letter-spacing: 1px; cursor: pointer; font-family: 'Press Start 2P', 'Courier New', monospace; transition: all 0.15s; }
+    .menu-donate:hover { background: rgba(216,184,74,0.2); color: #fff0d8; }
     .menu-title { color: #e8e0ff; letter-spacing: 5px; font-size: 16px; text-align: center; margin-bottom: 22px; }
     .menu-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; color: #c0b8e0; font-size: 13px; letter-spacing: 1px; }
     .menu-toggle { background: transparent; border: 1px solid #6a5aff; color: #a08fff; padding: 5px 16px; font-size: 11px; letter-spacing: 2px; cursor: pointer; font-family: 'Press Start 2P', 'Courier New', monospace; min-width: 74px; transition: all 0.15s; }
@@ -290,6 +293,8 @@
       <div class="menu-row"><span id="lbl-invuln">Не умирать</span><button id="menu-invuln" class="menu-toggle off">ВЫКЛ</button></div>
       <div class="menu-section" id="menu-sec-levels">Г Л А В Ы</div>
       <div id="menu-levels"></div>
+      <div class="menu-section" id="menu-sec-support">П О Д Д Е Р Ж А Т Ь</div>
+      <button id="menu-donate" class="menu-donate">Поддержать проект 💛</button>
       <button id="menu-close" class="menu-close">ЗАКРЫТЬ</button>
     </div>
   </div>

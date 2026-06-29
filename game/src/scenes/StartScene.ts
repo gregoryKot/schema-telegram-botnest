@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { W, H } from '../constants';
 import { getContinueChapter } from '../progress';
 import { track } from '../analytics';
-import { donate } from '../donate';
 import { CHAPTERS } from '../chapters';
 import { setTouchControls } from '../controls';
 import { t, tr } from '../i18n';
@@ -63,23 +62,6 @@ export class StartScene extends Phaser.Scene {
       cbtn.on('pointerout', () => cbtn.setColor('#88ffcc'));
       cbtn.on('pointerdown', () => { track('game_continue', { chapter: cont }); this.scene.start('Game', { chapter: cont }); });
     }
-
-    // ── Поддержать проект (донат) ──────────────────────────────────────────
-    const fontPS = '"Press Start 2P", "Courier New", monospace';
-    this.add.text(W / 2, H - 104, t('поддержать проект 💛', 'support the project 💛'), {
-      fontFamily: fontPS, fontSize: '10px', color: '#d8b84a', letterSpacing: 1,
-    }).setOrigin(0.5);
-    const amounts = [200, 500, 1000];
-    const gap = 92;
-    amounts.forEach((amt, i) => {
-      const x = W / 2 + (i - 1) * gap;
-      const bt = this.add.text(x, H - 78, `${amt} ₽`, {
-        fontFamily: fontPS, fontSize: '11px', color: amt === 500 ? '#ffd86a' : '#9a8a4a', letterSpacing: 1,
-      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-      bt.on('pointerover', () => bt.setColor('#fff0d8'));
-      bt.on('pointerout', () => bt.setColor(amt === 500 ? '#ffd86a' : '#9a8a4a'));
-      bt.on('pointerdown', () => { void donate(amt); });
-    });
 
     this.add.text(W / 2, H - 40, t('стрелки / WASD / тач для управления', 'arrows / WASD / tap to play'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#7a3a10', letterSpacing: 1,
