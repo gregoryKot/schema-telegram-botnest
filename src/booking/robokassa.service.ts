@@ -10,11 +10,12 @@ import { createHash } from 'crypto';
  *   ROBOKASSA_PASSWORD1       — password 1 (for payment URL signing)
  *   ROBOKASSA_PASSWORD2       — password 2 (for webhook signature validation)
  *   ROBOKASSA_IS_TEST         — "true" to use test mode (default: false)
- *   ROBOKASSA_FISCAL          — "true" to send an ОФД Receipt (default: false).
- *                               Self-employed (НПД) issue cheques via «Мой налог»,
- *                               NOT through Robokassa's ОФД — so this stays OFF.
- *                               Sending a Receipt also changes the signature
- *                               formula, so the two must always move together.
+ *   ROBOKASSA_FISCAL          — "false" to NOT send a Receipt (default: true).
+ *                               Robokassa's "Робочеки СМЗ" auto-registers the
+ *                               income in «Мой налог» (ФНС) for self-employed —
+ *                               for that it REQUIRES the Receipt, and the Receipt
+ *                               is part of the payment signature. Only turn this
+ *                               off if the shop has no fiscalization at all.
  */
 @Injectable()
 export class RobokassaService {
@@ -30,7 +31,7 @@ export class RobokassaService {
     this.pass1  = config.get<string>('ROBOKASSA_PASSWORD1') ?? '';
     this.pass2  = config.get<string>('ROBOKASSA_PASSWORD2') ?? '';
     this.isTest = config.get<string>('ROBOKASSA_IS_TEST') === 'true';
-    this.fiscal = config.get<string>('ROBOKASSA_FISCAL') === 'true';
+    this.fiscal = config.get<string>('ROBOKASSA_FISCAL') !== 'false'; // default ON
   }
 
   get enabled(): boolean {
@@ -106,10 +107,15 @@ function md5(input: string): string {
   return createHash('md5').update(input, 'utf8').digest('hex');
 }
 
-/** Receipt object per Robokassa fiscalization spec. SNO 'patent' covers НПД/самозанятый. */
+/**
+ * Receipt for Robokassa fiscalization. For self-employed (НПД / Робочеки СМЗ)
+ * the `sno` field is intentionally omitted — it's only needed to distinguish
+ * tax systems, and there is no НПД value (the old 'patent' was simply wrong and
+ * could make Robokassa reject the cheque). Robokassa registers the income in
+ * «Мой налог» automatically from these items.
+ */
 function buildReceipt(name: string, amount: number) {
   return {
-    sno: 'patent',
     items: [{
       name: name.slice(0, 128),
       quantity: 1,
