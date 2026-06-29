@@ -48,6 +48,15 @@ export class MeetingService {
     return Boolean(this.zoomAccountId && this.zoomClientId && this.zoomClientSecret);
   }
 
+  /** Public, secret-free view for the admin diagnostics panel. */
+  get status() {
+    return {
+      zoom: this.zoomEnabled,
+      zoomVars: { accountId: !!this.zoomAccountId, clientId: !!this.zoomClientId, clientSecret: !!this.zoomClientSecret },
+      staticUrl: !!this.staticUrl,
+    };
+  }
+
   /** True if this contact already has a personal meeting (i.e. a returning client). */
   async hasMeetingForContact(contact: string): Promise<boolean> {
     const found = await this.prisma.clientMeeting.findUnique({ where: { clientKey: clientKey(contact) } });
@@ -61,10 +70,21 @@ export class MeetingService {
     const key = clientKey(b.clientContact);
     const existing = await this.prisma.clientMeeting.findUnique({ where: { clientKey: key } });
     if (existing) {
+      // Upgrade a previously-issued Jitsi room to Zoom once Zoom is configured,
+      // so links created during testing/before Zoom setup don't stay on Jitsi.
+      if (this.zoomEnabled && !existing.zoomMeetingId && existing.meetingUrl.includes('meet.jit.si')) {
+        const z = await this.createZoom(b).catch((e) => { this.logger.error(`Zoom upgrade failed: ${(e as Error).message}`); return null; });
+        if (z) {
+          await this.prisma.clientMeeting.update({ where: { clientKey: key }, data: { meetingUrl: z.url, zoomMeetingId: z.id } });
+          this.logger.log(`Upgraded client ${key.slice(0, 8)}… Jitsi → Zoom`);
+          return z.url;
+        }
+      }
       this.logger.log(`Reusing personal meeting for client ${key.slice(0, 8)}…`);
       return existing.meetingUrl;
     }
 
+    if (!this.zoomEnabled) this.logger.warn('Zoom not configured (ZOOM_* env) — using Jitsi for new client');
     const zoom = this.zoomEnabled ? await this.createZoom(b).catch((e) => {
       this.logger.error(`Zoom create failed, falling back to Jitsi: ${(e as Error).message}`);
       return null;

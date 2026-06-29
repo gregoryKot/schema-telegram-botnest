@@ -253,11 +253,21 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
                 ? `Оплатить ${chosen.price.toLocaleString('ru-RU')} ₽ и записаться →`
                 : `Записаться на ${dayLabel(slot.startsAt).toLowerCase()}, ${timeLabel(slot.startsAt)} →`}
           </button>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>
-            {chosen && chosen.price > 0
-              ? 'Оплата картой или СБП через Robokassa. Чек придёт автоматически.'
-              : 'Первая встреча 15 минут — бесплатно. Никаких обязательств.'}
-          </p>
+          {(!name.trim() || !contact.trim() || !consent) ? (
+            <p style={{ fontSize: 13, color: 'var(--accent-red)', margin: 0 }}>
+              Чтобы записаться, заполните: {[
+                !name.trim() && 'имя',
+                !contact.trim() && 'Telegram или телефон',
+                !consent && 'согласие на обработку данных',
+              ].filter(Boolean).join(', ')}.
+            </p>
+          ) : (
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>
+              {chosen && chosen.price > 0
+                ? 'Оплата картой или СБП через Robokassa. Чек придёт автоматически.'
+                : 'Первая встреча 15 минут — бесплатно. Никаких обязательств.'}
+            </p>
+          )}
         </>
       )}
     </form>

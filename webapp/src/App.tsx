@@ -30,6 +30,7 @@ import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { ReviewsPage } from './pages/ReviewsPage';
 import { GamePage } from './pages/GamePage';
 import { BookingAdminPage } from './pages/BookingAdminPage';
+import { DonatePage } from './pages/DonatePage';
 
 // Apply saved theme before first render
 const savedTheme = localStorage.getItem('app_theme');
@@ -86,6 +87,7 @@ const personalRoutes = [
   { path: '/reviews',        element: <ReviewsPage /> },
   { path: '/game',           element: <GamePage /> },
   { path: '/booking-admin',  element: <BookingAdminPage /> },
+  { path: '/donate',         element: <DonatePage /> },
   { path: '/privacy',        element: <PrivacyPage /> },
   { path: '/offer',          element: <OfferPage /> },
   { path: '*',               element: <Navigate to="/" replace /> },
@@ -93,6 +95,7 @@ const personalRoutes = [
 
 const appRoutes = [
   { path: '/',               element: <Navigate to="/login" replace /> },
+  { path: '/donate',         element: <DonatePage /> },
   { path: '/login',          element: <LoginPage /> },
   { path: '/auth/callback',  element: <AuthCallback /> },
   { path: '/auth/telegram',  element: <TelegramWidgetCallback /> },

@@ -15,6 +15,6 @@ export async function donate(amount = 500): Promise<void> {
     });
     const j = await r.json();
     if (j?.paymentUrl) { window.location.href = j.paymentUrl; return; }
-  } catch { /* fall through to app */ }
-  window.open('https://schemehappens.ru/?from=game', '_blank');
+  } catch { /* fall through to public donate page */ }
+  window.open('https://schemehappens.ru/donate', '_blank');
 }

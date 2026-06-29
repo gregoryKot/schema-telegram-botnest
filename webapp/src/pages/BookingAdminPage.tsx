@@ -64,9 +64,46 @@ export function BookingAdminPage() {
   return (
     <div style={{ maxWidth: 760, margin: '40px auto', padding: '0 20px 80px', fontFamily: 'var(--sans)' }}>
       <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>Админка записи</h1>
+      <IntegrationStatus adminKey={key} />
       <ScheduleManager rules={rules} onChange={() => reload(key)} adminKey={key} />
       <BookingsManager adminKey={key} />
     </div>
+  );
+}
+
+// ── Integration status ──────────────────────────────────────────────────────
+
+function IntegrationStatus({ adminKey }: { adminKey: string }) {
+  const [s, setS] = useState<Record<string, any> | null>(null);
+  useEffect(() => { api.adminStatus(adminKey).then(setS).catch(() => setS(null)); }, [adminKey]);
+  if (!s) return null;
+  const dot = (on: boolean) => (
+    <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: 9, marginRight: 7, background: on ? '#4a6335' : '#b8860b' }} />
+  );
+  const Row = ({ label, on, note }: { label: string; on: boolean; note?: string }) => (
+    <div style={{ display: 'flex', alignItems: 'center', fontSize: 14, padding: '5px 0' }}>
+      {dot(on)}<span style={{ color: 'var(--text)' }}>{label}</span>
+      <span style={{ flex: 1 }} />
+      <span style={{ color: on ? 'var(--text-sub)' : '#b8860b', fontSize: 13 }}>{on ? (note ?? 'вкл') : 'выкл'}</span>
+    </div>
+  );
+  return (
+    <section style={card}>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 12 }}>Интеграции</h2>
+      <Row label="Zoom (видео-ссылки)" on={!!s.zoom} note="вкл" />
+      {!s.zoom && (
+        <div style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 8px 16px', lineHeight: 1.5 }}>
+          Без Zoom выдаётся Jitsi-комната. Проверьте переменные:
+          ACCOUNT_ID {s.zoomVars?.accountId ? '✓' : '✗'} · CLIENT_ID {s.zoomVars?.clientId ? '✓' : '✗'} · CLIENT_SECRET {s.zoomVars?.clientSecret ? '✓' : '✗'}
+        </div>
+      )}
+      <Row label="Robokassa (оплата)" on={!!s.robokassa} note={s.robokassaTest ? 'тест-режим' : 'боевой'} />
+      <Row label="Apple Calendar" on={!!s.appleCalendar} />
+      <Row label="Резерв уведомлений на почту" on={!!s.emailFallback} />
+      <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 10 }}>
+        Запись: {s.siteUrl} · Приложение: {s.appUrl}
+      </div>
+    </section>
   );
 }
 
