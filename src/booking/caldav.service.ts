@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { buildVcalendar, CalEvent } from './caldav-event.util';
-import { discoverCalendarUrl } from './caldav-discovery';
+import { discoverCalendarUrl, listCalendars } from './caldav-discovery';
 import { busyQueryXml, parseBusy, Interval } from './caldav-busy';
 
 /**
@@ -27,6 +27,7 @@ export class CalDavService {
   private resolvedBase: string | null = null;
   private discovery: Promise<string | null> | null = null;
   private busyCache: { key: string; val: Interval[]; exp: number } | null = null;
+  private busyUrls: Promise<string[]> | null = null;
 
   constructor(config: ConfigService) {
     this.configuredBase = (config.get<string>('APPLE_CALDAV_URL') ?? '').replace(/\/?$/, '/').replace(/^\/$/, '');
@@ -86,8 +87,28 @@ export class CalDavService {
   }
 
   /**
-   * Busy intervals from the therapist's calendar in [from, to], so the slot
-   * engine can hide times that are already occupied by real calendar events.
+   * Every VEVENT calendar to scan for busy times. If APPLE_CALDAV_URL is set
+   * explicitly, only that one is used; otherwise all calendars in the account
+   * are scanned (so a meeting in any calendar — Home, Work, etc. — blocks the
+   * slot, not just the one we write bookings into). Discovered once and cached.
+   */
+  private async getBusyUrls(): Promise<string[]> {
+    if (this.configuredBase) return [this.configuredBase];
+    if (!this.busyUrls) {
+      this.busyUrls = listCalendars(this.auth)
+        .then((cals) => {
+          const urls = cals.map((c) => c.url);
+          this.logger.log(`CalDAV busy-scan calendars: ${cals.map((c) => c.name || c.url).join(', ') || 'none'}`);
+          return urls;
+        })
+        .catch((e) => { this.logger.error(`CalDAV calendar list failed: ${(e as Error).message}`); return []; });
+    }
+    return this.busyUrls;
+  }
+
+  /**
+   * Busy intervals from ALL of the therapist's calendars in [from, to], so the
+   * slot engine can hide times already occupied by real calendar events.
    * Cached 60s. Fail-open: returns [] on any problem (slots still show).
    */
   async getBusyTimes(from: Date, to: Date): Promise<Interval[]> {
@@ -96,26 +117,33 @@ export class CalDavService {
     if (this.busyCache && this.busyCache.key === key && Date.now() < this.busyCache.exp) {
       return this.busyCache.val;
     }
-    const base = await this.getBase();
-    if (!base) return [];
-    try {
-      const res = await fetch(base, {
-        method: 'REPORT',
-        headers: { Authorization: this.auth, 'Content-Type': 'application/xml; charset=utf-8', Depth: '1' },
-        body: busyQueryXml(from, to),
-        signal: AbortSignal.timeout(7_000),
-      });
-      if (res.status !== 207 && !res.ok) {
-        this.logger.warn(`CalDAV busy REPORT ${res.status}`);
-        return [];
-      }
-      const val = parseBusy(await res.text());
-      this.busyCache = { key, val, exp: Date.now() + 60_000 };
-      return val;
-    } catch (e) {
-      this.logger.warn(`CalDAV busy read failed: ${(e as Error).message}`);
-      return [];
-    }
+    const urls = await this.getBusyUrls();
+    if (!urls.length) return [];
+    const body = busyQueryXml(from, to);
+    const all: Interval[] = [];
+    const results = await Promise.all(
+      urls.map(async (url) => {
+        try {
+          const res = await fetch(url, {
+            method: 'REPORT',
+            headers: { Authorization: this.auth, 'Content-Type': 'application/xml; charset=utf-8', Depth: '1' },
+            body,
+            signal: AbortSignal.timeout(7_000),
+          });
+          if (res.status !== 207 && !res.ok) {
+            this.logger.warn(`CalDAV busy REPORT ${res.status} for ${url}`);
+            return [] as Interval[];
+          }
+          return parseBusy(await res.text());
+        } catch (e) {
+          this.logger.warn(`CalDAV busy read failed for ${url}: ${(e as Error).message}`);
+          return [] as Interval[];
+        }
+      }),
+    );
+    for (const r of results) all.push(...r);
+    this.busyCache = { key, val: all, exp: Date.now() + 60_000 };
+    return all;
   }
 
   /** Delete the calendar event for a cancelled booking. */

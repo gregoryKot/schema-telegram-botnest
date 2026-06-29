@@ -100,6 +100,17 @@ function IntegrationStatus({ adminKey }: { adminKey: string }) {
       )}
       <Row label="Robokassa (оплата)" on={!!s.robokassa} note={s.robokassaTest ? 'тест-режим' : 'боевой'} />
       <Row label="Apple Calendar" on={!!s.appleCalendar} note={s.appleCalendar ? `вкл · занято: ${s.calendarBusyCount ?? '?'}` : undefined} />
+      {s.appleCalendar && !s.calendarBlocking && (s.calendarBusyCount ?? 0) > 0 && (
+        <div style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 8px 16px', lineHeight: 1.5 }}>
+          Календарь видит {s.calendarBusyCount} занятых интервалов, но слоты пока НЕ блокируются.
+          Включите переменную CALENDAR_BLOCK_SLOTS=true, чтобы нельзя было записаться поверх встреч.
+        </div>
+      )}
+      {s.appleCalendar && s.calendarBlocking && (
+        <div style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 8px 16px', lineHeight: 1.5 }}>
+          Блокировка слотов по календарю включена — занятое время скрывается из записи.
+        </div>
+      )}
       <Row label="Резерв уведомлений на почту" on={!!s.emailFallback} />
       <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 10 }}>
         Запись: {s.siteUrl} · Приложение: {s.appUrl}
