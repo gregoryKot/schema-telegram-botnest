@@ -74,7 +74,7 @@ export function DonateSheet({ onClose, source = 'app' }: { onClose: () => void; 
             }}>
               {status === 'loading' ? 'Перехожу к оплате…' : `Поддержать ${amount.toLocaleString('ru-RU')} ₽`}
             </button>
-            <p style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', marginTop: 12 }}>Оплата картой или СБП через Robokassa</p>
+            <p style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>Оплата картой или СБП через Robokassa.<br />Добровольное пожертвование, возврату не подлежит.</p>
           </>
         )}
       </div>
