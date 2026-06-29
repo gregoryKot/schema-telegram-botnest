@@ -11,7 +11,7 @@
 
 export async function notifyAdminWithFallback(
   text: string,
-  subject = 'Уведомление SchemaLab',
+  subject = 'Уведомление SchemeHappens',
 ): Promise<void> {
   if (await sendTelegram(text)) return;
   await sendEmail(subject, text);
@@ -37,7 +37,7 @@ async function sendTelegram(text: string): Promise<boolean> {
 async function sendEmail(subject: string, text: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.ADMIN_EMAIL;
-  const from = process.env.EMAIL_FROM ?? 'SchemaLab <no-reply@schemalab.ru>';
+  const from = process.env.EMAIL_FROM ?? 'SchemeHappens <no-reply@schemehappens.ru>';
   if (!apiKey || !to) return;
   try {
     await fetch('https://api.resend.com/emails', {
