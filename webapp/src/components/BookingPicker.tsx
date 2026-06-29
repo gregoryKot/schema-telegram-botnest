@@ -244,7 +244,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
             <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
-              Я ознакомился(ась) с <a href="/privacy" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Политикой конфиденциальности</a> и даю согласие на обработку данных
+              Я принимаю условия <a href="/offer" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Публичной оферты</a>{chosen && chosen.price > 0 ? ' (договора оказания услуг)' : ''} и <a href="/privacy" target="_blank" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Политики конфиденциальности</a>, даю согласие на обработку данных
             </span>
           </label>
           {status === 'not_found' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>Не нашёл вас по этому контакту. Проверьте, что ввели тот же Telegram или телефон, что и в прошлый раз. Если занимаетесь впервые — снимите галочку «повторная встреча».</p>}
@@ -267,7 +267,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
               Чтобы записаться, заполните: {[
                 !name.trim() && 'имя',
                 !contact.trim() && 'Telegram или телефон',
-                !consent && 'согласие на обработку данных',
+                !consent && 'согласие с офертой',
               ].filter(Boolean).join(', ')}.
             </p>
           ) : (
