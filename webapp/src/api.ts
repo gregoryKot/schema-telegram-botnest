@@ -424,6 +424,7 @@ export const api = {
   donate:               (body: { amount: number; source?: 'app' | 'game'; email?: string; comment?: string; website?: string }) =>
     postJson<{ id: number; paymentUrl: string | null }>('/api/donation', body),
   // Booking admin — key travels in the x-admin-key header (never in URL/logs)
+  adminStatus:       (key: string) => adminReq<Record<string, any>>('GET', '/api/booking/admin/status', key),
   adminListRules:    (key: string) => adminReq<AvailabilityRule[]>('GET', '/api/booking/admin/rules', key),
   adminCreateRule:   (key: string, rule: NewAvailabilityRule) => adminReq<AvailabilityRule>('POST', '/api/booking/admin/rules', key, rule),
   adminToggleRule:   (key: string, id: number, isActive: boolean) => adminReq<AvailabilityRule>('PATCH', `/api/booking/admin/rules/${id}`, key, { isActive }),

@@ -61,7 +61,8 @@ export class DonationService {
       return { id: row.id, paymentUrl: null as string | null };
     }
 
-    const ret = `${this.appUrl}${source === 'game' ? '/game/' : '/'}`;
+    // Return to the PUBLIC /donate page (the app root forces login for guests).
+    const ret = `${this.appUrl}/donate`;
     const paymentUrl = this.robokassa.buildPaymentUrl({
       invId: DONATION_INVID_BASE + row.id,
       amount,

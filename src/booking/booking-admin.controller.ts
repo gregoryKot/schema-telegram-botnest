@@ -16,6 +16,9 @@ import { ConfigService } from '@nestjs/config';
 import { BookingService } from './booking.service';
 import { AvailabilityService } from './availability.service';
 import type { CreateRuleDto } from './availability.service';
+import { RobokassaService } from './robokassa.service';
+import { MeetingService } from './meeting.service';
+import { CalDavService } from './caldav.service';
 import { assertAdminKey } from './admin-key.util';
 
 /**
@@ -30,9 +33,30 @@ export class BookingAdminController {
   constructor(
     private readonly booking: BookingService,
     private readonly availability: AvailabilityService,
-    config: ConfigService,
+    private readonly robokassa: RobokassaService,
+    private readonly meeting: MeetingService,
+    private readonly calDav: CalDavService,
+    private readonly config: ConfigService,
   ) {
     this.adminKey = config.get<string>('ADMIN_BOOKING_KEY') ?? '';
+  }
+
+  /** GET /admin/status — which integrations the running server actually sees (no secrets). */
+  @Get('status')
+  status(@Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    const meeting = this.meeting.status;
+    return {
+      siteUrl: this.config.get<string>('SITE_URL') ?? '(default kotlarewski.gr)',
+      appUrl: this.config.get<string>('APP_URL') ?? '(default schemehappens.ru)',
+      robokassa: this.robokassa.enabled,
+      robokassaTest: this.config.get<string>('ROBOKASSA_IS_TEST') === 'true',
+      zoom: meeting.zoom,
+      zoomVars: meeting.zoomVars,
+      meetingStaticUrl: meeting.staticUrl,
+      appleCalendar: this.calDav.enabled,
+      emailFallback: !!this.config.get<string>('RESEND_API_KEY') && !!this.config.get<string>('ADMIN_EMAIL'),
+    };
   }
 
   // ── Bookings ──────────────────────────────────────────────────────────────
