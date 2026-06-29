@@ -7,9 +7,13 @@ export interface Interval { start: Date; end: Date; }
 
 export function busyQueryXml(from: Date, to: Date): string {
   const f = fmtUtc(from), t = fmtUtc(to);
+  // <c:expand> asks the server to return each recurring event as concrete
+  // instances within [from,to] (no RRULE), so weekly/repeating meetings count
+  // as busy. If iCloud ignores expand it just returns the master event, which
+  // we then skip — fail-open, no regression.
   return `<?xml version="1.0" encoding="utf-8"?>
 <c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
-  <d:prop><c:calendar-data/></d:prop>
+  <d:prop><c:calendar-data><c:expand start="${f}" end="${t}"/></c:calendar-data></d:prop>
   <c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT">
     <c:time-range start="${f}" end="${t}"/>
   </c:comp-filter></c:comp-filter></c:filter>
