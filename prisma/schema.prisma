@@ -561,6 +561,14 @@ model ClientMeeting {
   createdAt     DateTime @default(now())
 }
 
+// Editable key/value settings for the booking module (e.g. session prices),
+// so the therapist can change them in the admin panel without code/env edits.
+model BookingSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 // Voluntary donation (app / game), paid via Robokassa. email/comment encrypted.
 model Donation {
   id        Int       @id @default(autoincrement())

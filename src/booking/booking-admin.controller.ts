@@ -19,7 +19,9 @@ import type { CreateRuleDto } from './availability.service';
 import { RobokassaService } from './robokassa.service';
 import { MeetingService } from './meeting.service';
 import { CalDavService } from './caldav.service';
+import { PricingService } from './pricing.service';
 import { assertAdminKey } from './admin-key.util';
+import { SessionType } from '@prisma/client';
 
 /**
  * Admin booking endpoints, guarded by ADMIN_BOOKING_KEY. The key is passed in
@@ -36,9 +38,25 @@ export class BookingAdminController {
     private readonly robokassa: RobokassaService,
     private readonly meeting: MeetingService,
     private readonly calDav: CalDavService,
+    private readonly pricing: PricingService,
     private readonly config: ConfigService,
   ) {
     this.adminKey = config.get<string>('ADMIN_BOOKING_KEY') ?? '';
+  }
+
+  /** GET /admin/prices — current session prices (for the admin form). */
+  @Get('prices')
+  async prices(@Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    return this.pricing.getOptions();
+  }
+
+  /** PATCH /admin/price — set a session price (rubles). */
+  @Patch('price')
+  async setPrice(@Body() body: { type: SessionType; amount: number }, @Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    await this.pricing.setPrice(body.type, Number(body.amount));
+    return { ok: true };
   }
 
   /** GET /admin/status — which integrations the running server actually sees (no secrets). */

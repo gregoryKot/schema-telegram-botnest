@@ -12,7 +12,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { BookingService, CreateBookingDto } from './booking.service';
 import { SlotService } from './slot.service';
-import { SESSION_OPTIONS } from './booking.config';
+import { PricingService } from './pricing.service';
 import { SessionType } from '@prisma/client';
 
 interface BookDto {
@@ -34,12 +34,13 @@ export class BookingController {
   constructor(
     private readonly slots: SlotService,
     private readonly booking: BookingService,
+    private readonly pricing: PricingService,
   ) {}
 
   /** GET /api/booking/options — session types, durations and prices for the UI. */
   @Get('options')
   getOptions() {
-    return SESSION_OPTIONS;
+    return this.pricing.getOptions();
   }
 
   /** GET /api/booking/slots?from=2026-06-23&to=2026-06-30 */

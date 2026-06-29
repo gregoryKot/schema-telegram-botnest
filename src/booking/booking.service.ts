@@ -6,7 +6,7 @@ import { BookingNotifyService } from './booking-notify.service';
 import { MeetingService } from './meeting.service';
 import { RobokassaService } from './robokassa.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
-import { SESSION_PRICE } from './booking.config';
+import { PricingService } from './pricing.service';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
@@ -38,6 +38,7 @@ export class BookingService {
     private readonly notify: BookingNotifyService,
     private readonly meeting: MeetingService,
     private readonly robokassa: RobokassaService,
+    private readonly pricing: PricingService,
     config: ConfigService,
   ) {
     this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr').replace(/\/$/, '');
@@ -97,7 +98,7 @@ export class BookingService {
     let paymentUrl: string | null = null;
     let meetingUrl: string | null = null;
     if (this.robokassa.enabled) {
-      const price = SESSION_PRICE[dto.type];
+      const price = await this.pricing.getPrice(dto.type);
       paymentUrl = this.robokassa.buildPaymentUrl({
         invId: booking.id,
         amount: price,
