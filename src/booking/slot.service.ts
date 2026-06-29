@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CalDavService } from './caldav.service';
 import { BookingStatus } from '@prisma/client';
 
 export interface Slot {
@@ -11,11 +12,15 @@ export interface Slot {
 /** Compute free slots for a date range from AvailabilityRules minus existing bookings. */
 @Injectable()
 export class SlotService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly calDav: CalDavService,
+  ) {}
 
   /**
    * Return available slots between fromDate and toDate (inclusive).
-   * Uses therapist's active AvailabilityRules. Excludes HELD and CONFIRMED bookings.
+   * Uses therapist's active AvailabilityRules. Excludes HELD/CONFIRMED bookings
+   * AND busy times from the therapist's Apple Calendar (if CalDAV configured).
    */
   async getSlots(fromDate: Date, toDate: Date): Promise<Slot[]> {
     const rules = await this.prisma.availabilityRule.findMany({
@@ -31,6 +36,9 @@ export class SlotService {
       },
       select: { startsAt: true, durationMin: true },
     });
+
+    // Busy intervals from the therapist's real calendar (fail-open → []).
+    const calBusy = await this.calDav.getBusyTimes(fromDate, toDate);
 
     const slots: Slot[] = [];
     const cursor = new Date(fromDate);
@@ -52,6 +60,7 @@ export class SlotService {
           const start = new Date(t);
           const finish = new Date(t + rule.sessionDuration * 60_000);
           if (isOccupied(start, finish, busyBookings)) continue;
+          if (overlapsBusy(start, finish, calBusy)) continue; // therapist's calendar
           if (start <= new Date()) continue; // no past slots
           slots.push({ startsAt: start, endsAt: finish, durationMin: rule.sessionDuration });
         }
@@ -65,6 +74,13 @@ export class SlotService {
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+
+function overlapsBusy(start: Date, end: Date, busy: { start: Date; end: Date }[]): boolean {
+  for (const b of busy) {
+    if (start.getTime() < b.end.getTime() && end.getTime() > b.start.getTime()) return true;
+  }
+  return false;
+}
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
