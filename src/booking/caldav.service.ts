@@ -70,6 +70,7 @@ export class CalDavService {
           'Content-Type': 'text/calendar; charset=utf-8',
         },
         body: buildVcalendar([ev]),
+        signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
@@ -102,6 +103,7 @@ export class CalDavService {
         method: 'REPORT',
         headers: { Authorization: this.auth, 'Content-Type': 'application/xml; charset=utf-8', Depth: '1' },
         body: busyQueryXml(from, to),
+        signal: AbortSignal.timeout(7_000),
       });
       if (res.status !== 207 && !res.ok) {
         this.logger.warn(`CalDAV busy REPORT ${res.status}`);
@@ -126,6 +128,7 @@ export class CalDavService {
       const res = await fetch(url, {
         method: 'DELETE',
         headers: { Authorization: this.auth },
+        signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok && res.status !== 404) {
         this.logger.warn(`CalDAV DELETE ${res.status} for ${uid}`);

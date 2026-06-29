@@ -98,7 +98,7 @@ function IntegrationStatus({ adminKey }: { adminKey: string }) {
         </div>
       )}
       <Row label="Robokassa (оплата)" on={!!s.robokassa} note={s.robokassaTest ? 'тест-режим' : 'боевой'} />
-      <Row label="Apple Calendar" on={!!s.appleCalendar} />
+      <Row label="Apple Calendar" on={!!s.appleCalendar} note={s.appleCalendar ? `вкл · занято: ${s.calendarBusyCount ?? '?'}` : undefined} />
       <Row label="Резерв уведомлений на почту" on={!!s.emailFallback} />
       <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 10 }}>
         Запись: {s.siteUrl} · Приложение: {s.appUrl}

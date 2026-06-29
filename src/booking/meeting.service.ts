@@ -111,6 +111,7 @@ export class MeetingService {
         timezone: 'Europe/Moscow',
         settings: { join_before_host: true, waiting_room: true },
       }),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => '');
@@ -126,7 +127,7 @@ export class MeetingService {
     const basic = Buffer.from(`${this.zoomClientId}:${this.zoomClientSecret}`).toString('base64');
     const res = await fetch(
       `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${this.zoomAccountId}`,
-      { method: 'POST', headers: { Authorization: `Basic ${basic}` } },
+      { method: 'POST', headers: { Authorization: `Basic ${basic}` }, signal: AbortSignal.timeout(10_000) },
     );
     if (!res.ok) {
       const body = await res.text().catch(() => '');

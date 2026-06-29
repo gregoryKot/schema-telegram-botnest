@@ -21,6 +21,7 @@ async function propfind(url: string, auth: string, body: string, depth = '0'): P
       Depth: depth,
     },
     body,
+    signal: AbortSignal.timeout(8_000),
   });
   if (res.status !== 207 && !res.ok) {
     const body = await res.text().catch(() => '');
