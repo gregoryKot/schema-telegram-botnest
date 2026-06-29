@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { W, H } from '../constants';
 import { setTouchControls } from '../controls';
+import { tr } from '../i18n';
 
 // Текст появляется построчно, затем кнопка «Начать путь»
 const SLIDES = [
@@ -39,13 +40,13 @@ export class IntroScene extends Phaser.Scene {
     line.fillRect(W / 2 - 80, 50, 160, 1);
 
     // Заголовок главы
-    this.add.text(W / 2, 70, slide.title.toUpperCase(), {
+    this.add.text(W / 2, 70, tr(slide.title).toUpperCase(), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px',
       color: '#aa4411', letterSpacing: 6,
     }).setOrigin(0.5);
 
     // Подзаголовок
-    this.add.text(W / 2, 105, slide.subtitle, {
+    this.add.text(W / 2, 105, tr(slide.subtitle), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '18px',
       color: '#fff0d8', letterSpacing: 1,
     }).setOrigin(0.5);
@@ -59,7 +60,7 @@ export class IntroScene extends Phaser.Scene {
     const lineH = 26;
 
     slide.lines.forEach((text, i) => {
-      const t = this.add.text(W / 2, startY + i * lineH, text, {
+      const t = this.add.text(W / 2, startY + i * lineH, tr(text), {
         fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px',
         color: text === '' ? '#000' : '#e8c8a0',
         letterSpacing: 0.5, align: 'center',
@@ -77,7 +78,7 @@ export class IntroScene extends Phaser.Scene {
     // Кнопка появляется после всего текста
     const totalDelay = 300 + slide.lines.length * 180 + 400;
 
-    const btnTxt = this.add.text(W / 2, H - 80, 'Начать путь →', {
+    const btnTxt = this.add.text(W / 2, H - 80, tr('Начать путь →'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px',
       color: '#ff7733', letterSpacing: 2,
     }).setOrigin(0.5).setAlpha(0);

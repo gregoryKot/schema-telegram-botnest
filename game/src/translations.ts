@@ -4,6 +4,19 @@
 // нарратив/развязки) пропущены через tr(), поэтому реплики врагов тоже переводятся.
 
 export const EN: Record<string, string> = {
+  // ── Интро (Часть I) ──
+  'Часть I': 'Part I',
+  'Что мешает жить': 'What gets in the way',
+  'Каждый день мы сталкиваемся с тем,': 'Every day we run into things',
+  'что тянет нас вниз.': 'that drag us down.',
+  'Тревога, которая не отпускает.': "Anxiety that won't let go.",
+  'Раздражение без причины.': 'Irritation out of nowhere.',
+  'Прокрастинация, которую не остановить.': "Procrastination you can't stop.",
+  'Мы привыкли с этим бороться.': "We're used to fighting it.",
+  'Или убегать.': 'Or running away.',
+  'Но что если просто — пройти сквозь?': 'But what if you just — pass through it?',
+  'Начать путь →': 'Begin the journey →',
+
   // ── Пролог: управление и подсказки ──
   'A D идти · W прыжок': 'A D move · W jump',
   '◀ ▶ идти · ▲ прыжок': '◀ ▶ move · ▲ jump',
@@ -166,6 +179,50 @@ export const EN: Record<string, string> = {
   'Тревога': 'Anxiety',
   'Карающий Родитель': 'Punitive Parent',
   'Отстранённый Защитник': 'Detached Protector',
+
+  // ── Карточки врагов (что узнаёшь, когда понял врага) ──
+  'САМОКРИТИК': 'THE SELF-CRITIC',
+  // anxiety
+  '«А вдруг что-то пойдёт не так?\nНадо проверить ещё раз»':
+    '"What if something goes wrong?\nBetter check one more time"',
+  'Тревога пытается тебя защитить — сканирует горизонт в поисках угрозы даже там, где её нет. Чем больше избегаешь тревожных ситуаций, тем сильнее она разрастается.':
+    'Anxiety is trying to protect you — it scans the horizon for danger even where there is none. The more you avoid anxious situations, the bigger it grows.',
+  '→ Тревога — это сигнал, а не факт о будущем.':
+    '→ Anxiety is a signal, not a fact about the future.',
+  // procrastination
+  '«Начну, как только\nпочувствую себя готовым»':
+    '"I\'ll start as soon as\nI feel ready"',
+  'Прокрастинация — это не лень. Это избегание неприятного чувства: страха провала, скуки, тревоги. Мозг выбирает временное облегчение вместо долгосрочного результата.':
+    "Procrastination isn't laziness. It's avoiding an unpleasant feeling: fear of failure, boredom, anxiety. The brain picks short-term relief over a long-term result.",
+  '→ Чувство готовности не приходит до начала. Только после.':
+    '→ The feeling of being ready never comes before you start. Only after.',
+  // phone
+  '«Ещё пять минут...\nЕщё одна лента...»':
+    '"Just five more minutes...\nOne more feed..."',
+  'Бесконечный скроллинг — это не отдых. Это побег от дискомфорта, которому не дают выйти. Чувства остаются на паузе. Они никуда не уходят.':
+    "Endless scrolling isn't rest. It's an escape from discomfort that's never let out. The feelings stay on pause. They don't go anywhere.",
+  '→ От чего ты сейчас убегаешь?':
+    '→ What are you running from right now?',
+  // irritation
+  '«Почему всё не так?!\nЭто невыносимо»':
+    '"Why is everything wrong?!\nThis is unbearable"',
+  'Когда раздражение 8 из 10 на ситуацию 2 из 10 — это не про сегодня. Где-то внутри копится что-то старое: боль, бессилие, несправедливость.':
+    "When the irritation is an 8 out of 10 over a 2-out-of-10 situation — it's not about today. Something old is building up inside: pain, helplessness, injustice.",
+  '→ Интенсивность гнева подсказывает, насколько давно эта рана.':
+    '→ The intensity of the anger hints at how old the wound is.',
+  // self-critic
+  '«Ты мог сделать лучше.\nТы всегда так»':
+    '"You could have done better.\nYou always do this"',
+  'Внутренний критик звучит как твой голос — но это чужие слова, усвоенные давно. Самокритика не делает тебя лучше. Она только делает тебя меньше.':
+    'The inner critic sounds like your own voice — but these are borrowed words, learned long ago. Self-criticism never makes you better. It only makes you smaller.',
+  '→ Скажи себе то, что сказал бы другу в похожей ситуации.':
+    '→ Tell yourself what you would tell a friend in the same spot.',
+  // sage (финал)
+  'М У Д Р Е Ц': 'T H E   S A G E',
+  'Ты быстро бегаешь.\nОни всегда возвращаются.\n\nЕсть другой путь —\nне убегать, а встретиться.':
+    'You run fast.\nThey always come back.\n\nThere is another way —\nnot to run, but to meet them.',
+  'Это называется терапия.': 'It\'s called therapy.',
+  'Узнать о терапии →': 'Learn about therapy →',
 
   // ── Враги: интро-описания и реплики ──
   'бьёшь — делится. избегаешь — отступит.\nно совсем не уходит.':

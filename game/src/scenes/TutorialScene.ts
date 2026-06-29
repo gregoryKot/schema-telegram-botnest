@@ -136,7 +136,7 @@ export class TutorialScene extends Phaser.Scene {
     this.lungeSprite = this.add.sprite(0, 0, this.textures.exists('cat_dash') ? 'cat_dash' : 'cat_idle', 0).setOrigin(0.5, 1).setScale(0.26).setDepth(11).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
-    this.contHint = this.add.text(W / 2, IS_TOUCH ? H - 210 : H - 100, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
+    this.contHint = this.add.text(W / 2, IS_TOUCH ? H - 210 : H - 100, tr(IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше'),
       { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#88ffcc',
         backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 8, y: 5 } }).setOrigin(0.5).setDepth(50).setAlpha(0);
     this.narr = this.add.text(W / 2, 104, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '13px', color: '#fff0d8', align: 'center', lineSpacing: 14, wordWrap: { width: W - 90 },
@@ -155,7 +155,7 @@ export class TutorialScene extends Phaser.Scene {
       .setScrollFactor(0).setDepth(60);
     this.updateHearts();
 
-    const skip = this.add.text(W - 20, 16, 'пропустить →', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
+    const skip = this.add.text(W - 20, 16, tr('пропустить →'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
       .setOrigin(1, 0).setDepth(60).setInteractive({ useHandCursor: true });
     skip.on('pointerover', () => skip.setColor('#fff0d8'));
     skip.on('pointerout', () => skip.setColor('#6a5f8a'));

@@ -29,6 +29,7 @@ function localizeMenu() {
   set('menu-sec-support', 'П О Д Д Е Р Ж А Т Ь', 'S U P P O R T');
   set('menu-donate', 'Поддержать проект 💛', 'Support the project 💛');
   set('menu-close', 'ЗАКРЫТЬ', 'CLOSE');
+  document.getElementById('menu-btn')?.setAttribute('aria-label', t('Меню', 'Menu'));
   const langBtn = document.getElementById('menu-lang');
   if (langBtn) {
     langBtn.textContent = lang === 'en' ? 'EN' : 'РУ';
