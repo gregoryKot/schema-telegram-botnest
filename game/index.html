@@ -126,30 +126,30 @@
     /* ── Touch controls ─────────────────────────────────────────────────── */
     #touch-controls {
       position: fixed; bottom: 0; left: 0; right: 0;
-      height: 84px;
+      height: 110px;
       padding-bottom: env(safe-area-inset-bottom, 0);
       display: none;
       align-items: flex-end;
       justify-content: space-between;
-      padding: 0 16px 10px;
+      padding: 0 18px 14px;
       pointer-events: none;
       z-index: 50;
     }
     #touch-controls.visible { display: flex; }
-    .dpad { display: flex; gap: 8px; pointer-events: all; }
-    .action-pad { display: flex; gap: 6px; align-items: flex-end; pointer-events: all; }
+    .dpad { display: flex; gap: 10px; pointer-events: all; }
+    .action-pad { display: flex; gap: 9px; align-items: flex-end; pointer-events: all; }
     .tbtn.act {
-      width: 54px; height: 42px; border-radius: 10px;
-      font-size: 6px; letter-spacing: 0; overflow: hidden;
+      width: 78px; height: 58px; border-radius: 12px;
+      font-size: 10px; letter-spacing: 0; overflow: hidden;
       line-height: 1.3; word-break: break-word; text-align: center;
     }
     .tbtn {
-      width: 46px; height: 46px;
+      width: 58px; height: 58px;
       background: rgba(106,90,255,0.15);
       border: 1px solid rgba(106,90,255,0.4);
-      border-radius: 6px;
+      border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; color: rgba(160,143,255,0.7);
+      font-size: 22px; color: rgba(160,143,255,0.7);
       user-select: none; -webkit-user-select: none;
       touch-action: none;
       transition: background 0.1s;
@@ -160,11 +160,11 @@
       color: #e0d8ff;
     }
     #tbtn-jump {
-      width: 48px; height: 48px; border-radius: 50%;
+      width: 62px; height: 62px; border-radius: 50%;
       background: rgba(106,90,255,0.18);
       border: 1px solid rgba(106,90,255,0.5);
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; color: rgba(160,143,255,0.8);
+      font-size: 24px; color: rgba(160,143,255,0.8);
       user-select: none; touch-action: none;
       pointer-events: all;
       transition: background 0.1s;

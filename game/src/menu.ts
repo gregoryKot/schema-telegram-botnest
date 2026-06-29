@@ -29,6 +29,9 @@ function localizeMenu() {
   set('menu-sec-support', 'm_s_u_p_p_o_r');
   set('menu-donate', 'm_support_the_project');
   set('menu-close', 'm_close');
+  set('tbtn-hit', 'm_fight');
+  set('tbtn-avoid', 'm_avoid');
+  set('tbtn-fawn', 'm_surrender');
   document.getElementById('menu-btn')?.setAttribute('aria-label', t('m_menu'));
   const langBtn = document.getElementById('menu-lang');
   if (langBtn) {
