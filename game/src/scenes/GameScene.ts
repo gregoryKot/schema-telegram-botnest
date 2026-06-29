@@ -990,8 +990,9 @@ export class GameScene extends Phaser.Scene {
       if (branch && CHAPTERS[branch]) {
         this.showBranch(branch);                 // конец Акта I — развилка: терапия ИЛИ дальше
       } else if (next && CHAPTERS[next]) {
-        const act = IS_TOUCH ? 'тапни' : 'нажми любую клавишу';
-        const hint = this.add.text(W / 2, H - 28, `дальше — «${CHAPTERS[next].title}». ${act}`,
+        const act = IS_TOUCH ? t('тапни', 'tap') : t('нажми любую клавишу', 'press any key');
+        const title = tr(CHAPTERS[next].title);
+        const hint = this.add.text(W / 2, H - 28, t(`дальше — «${title}». ${act}`, `next — "${title}". ${act}`),
           { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#5a4f7a' })
           .setOrigin(0.5).setScrollFactor(0).setDepth(160).setAlpha(0);
         this.tweens.add({ targets: hint, alpha: 0.8, duration: 800 });

@@ -3,6 +3,8 @@
 //  Сцены читают состояние через touch.* и свои Key-объекты.
 // ════════════════════════════════════════════════════════════════════════════
 
+import { t } from './i18n';
+
 export const IS_TOUCH =
   (typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches) ||
   'ontouchstart' in window ||
@@ -39,9 +41,26 @@ export function setTouchControls(visible: boolean) {
   root.classList.toggle('visible', visible);
 }
 
+// Подписи статичны в HTML по-русски — переводим их на текущий язык один раз при
+// инициализации (язык переключается через reload, так что пересборки не нужно).
+function localizeTouchUI() {
+  const set = (id: string, ru: string, en: string) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = t(ru, en);
+  };
+  set('tbtn-fawn',  'УСТУПИ', 'SURRENDER');
+  set('tbtn-avoid', 'ИЗБЕГАЙ', 'AVOID');
+  set('tbtn-hit',   'БЕЙ', 'FIGHT');
+  const rotate = document.getElementById('rotate-hint');
+  if (rotate) rotate.innerHTML =
+    `<div class="phone-icon">📱</div><div>${t('ПОВЕРНИ ТЕЛЕФОН', 'ROTATE PHONE')}<br>${t('играем в альбомной', 'play in landscape')}</div>`;
+}
+
 export function initTouchControls() {
   const root = document.getElementById('touch-controls');
   if (!root || !IS_TOUCH) return;
+
+  localizeTouchUI();
 
   const hold = (id: string, on: () => void, off: () => void) => {
     const el = document.getElementById(id)!;
