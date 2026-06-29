@@ -78,6 +78,11 @@ export class BookingNotifyService {
     await this.sendAdmin('❌ <b>Запись отменена</b>', b);
   }
 
+  /** Notify admin a paid slot is reserved and awaiting payment (so a failed/abandoned payment isn't lost). */
+  async onAwaitingPayment(b: PlainBooking): Promise<void> {
+    await this.sendAdmin('⏳ <b>Бронь ожидает оплаты</b> (слот зарезервирован на 15 мин)', b);
+  }
+
   /** Notify admin that HELD bookings expired without payment (so they're not lost silently). */
   async notifyExpired(bookings: PlainBooking[]): Promise<void> {
     for (const b of bookings) {
