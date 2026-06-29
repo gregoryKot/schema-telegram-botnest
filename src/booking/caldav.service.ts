@@ -70,7 +70,8 @@ export class CalDavService {
         body: buildVcalendar([ev]),
       });
       if (!res.ok) {
-        this.logger.warn(`CalDAV PUT ${res.status} for ${ev.uid}`);
+        const body = await res.text().catch(() => '');
+        this.logger.error(`CalDAV PUT ${res.status} to ${url}: ${body.slice(0, 300)}`);
         return null;
       }
       this.logger.log(`CalDAV event pushed: ${ev.uid}`);
