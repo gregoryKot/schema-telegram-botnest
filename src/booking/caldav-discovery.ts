@@ -22,7 +22,10 @@ async function propfind(url: string, auth: string, body: string, depth = '0'): P
     },
     body,
   });
-  if (res.status !== 207 && !res.ok) throw new Error(`PROPFIND ${res.status} ${url}`);
+  if (res.status !== 207 && !res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`PROPFIND ${res.status} ${url} — ${body.slice(0, 200)}`);
+  }
   return res.text();
 }
 

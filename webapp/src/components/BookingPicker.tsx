@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '../api';
 import type { BookingSlot, SessionOption } from '../api';
 
@@ -77,6 +77,15 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
 
   const chosen = options.find((o) => o.type === sessionType);
 
+  // On a terminal screen (done / payment failed), scroll it into view — on mobile
+  // the result renders above the submit button and was easy to miss.
+  const resultRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (status === 'done' || status === 'payment_fail') {
+      resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [status]);
+
   // Group slots by MSK day, preserving chronological order.
   const days = useMemo(() => {
     const map = new Map<string, BookingSlot[]>();
@@ -96,7 +105,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   }
 
   if (status === 'payment_fail') return (
-    <div style={{ textAlign: 'center', padding: '48px 0' }}>
+    <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
       <div style={{ fontSize: 56, marginBottom: 20 }}>😕</div>
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Оплата не прошла</h3>
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>Слот был освобождён. Попробуйте выбрать время снова или напишите напрямую.</p>
@@ -107,7 +116,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   );
 
   if (status === 'done') return (
-    <div style={{ textAlign: 'center', padding: '48px 0' }}>
+    <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
       <div style={{ fontSize: 56, marginBottom: 20 }}>{cancelled ? '🗓' : '✅'}</div>
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>
         {cancelled ? 'Запись отменена' : 'Время забронировано'}

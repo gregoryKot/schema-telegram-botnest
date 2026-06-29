@@ -113,7 +113,8 @@ export class MeetingService {
       }),
     });
     if (!res.ok) {
-      this.logger.warn(`Zoom API ${res.status}`);
+      const body = await res.text().catch(() => '');
+      this.logger.error(`Zoom create meeting ${res.status}: ${body.slice(0, 300)}`);
       return null;
     }
     const data = (await res.json()) as { join_url?: string; id?: number };
@@ -127,7 +128,11 @@ export class MeetingService {
       `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${this.zoomAccountId}`,
       { method: 'POST', headers: { Authorization: `Basic ${basic}` } },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      this.logger.error(`Zoom token ${res.status}: ${body.slice(0, 300)}`);
+      return null;
+    }
     const data = (await res.json()) as { access_token?: string };
     return data.access_token ?? null;
   }
