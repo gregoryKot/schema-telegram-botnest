@@ -475,7 +475,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Сколько стоит и как оплатить?',
-    a: 'Вводная встреча (15 минут) – бесплатно. Каждая следующая сессия (50 минут) – 4 000 ₽. Реквизиты для оплаты я отправляю перед сессией. После оплаты вы получаете чек самозанятого через приложение «Мой налог».',
+    a: 'Вводная встреча (15 минут) – бесплатно. Каждая следующая сессия (50 минут) – {PRICE} ₽. Оплата картой или СБП при записи. После оплаты вы получаете чек самозанятого через приложение «Мой налог».',
   },
   {
     q: 'Это то же самое, что психотерапия?',
@@ -487,7 +487,7 @@ const FAQ_ITEMS = [
   },
 ];
 
-function FaqList() {
+function FaqList({ price }: { price: string }) {
   const [open, setOpen] = useState<number | null>(null);
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -518,7 +518,7 @@ function FaqList() {
             <div style={{ display: 'grid', gridTemplateRows: isOpen ? '1fr' : '0fr', transition: 'grid-template-rows .32s ease', overflow: 'hidden' }}>
               <div style={{ overflow: 'hidden' }}>
                 <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 22px', maxWidth: 660 }}>
-                  {item.a}
+                  {item.a.replace('{PRICE}', price)}
                 </p>
               </div>
             </div>
@@ -552,6 +552,14 @@ export function LandingPage() {
   const [scrollPct, setScrollPct] = useState(0);
   const [activeSection, setActiveSection] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  // Live session price (editable in admin) — keep the landing in sync with checkout.
+  const [sessionPrice, setSessionPrice] = useState(4000);
+  useEffect(() => {
+    api.getBookingOptions()
+      .then((o) => { const s = o.find((x) => x.type === 'SESSION_50'); if (s) setSessionPrice(s.price); })
+      .catch(() => {});
+  }, []);
+  const priceStr = sessionPrice.toLocaleString('ru-RU');
   const { theme, toggle: toggleTheme } = useTheme();
 
   const aboutRef    = useReveal() as React.RefObject<HTMLElement>;
@@ -952,7 +960,7 @@ export function LandingPage() {
             <div style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,.12)', padding: '4px 12px', borderRadius: 100, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.7)' }}>Основной</div>
             <div>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(236,234,229,.45)' }}>Сессия</span>
-              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>4 000 ₽</p>
+              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{priceStr} ₽</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['50 минут онлайн (видео)', 'Индивидуальная работа', 'Схема-терапия и КПТ', 'Регулярные встречи'].map(f => (
@@ -1044,7 +1052,7 @@ export function LandingPage() {
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 48px', letterSpacing: '-.01em' }}>
           Что нужно знать
         </h2>
-        <FaqList />
+        <FaqList price={priceStr} />
       </section>
 
       {/* ── MARQUEE #4 ───────────────────────────────────────────────────── */}
