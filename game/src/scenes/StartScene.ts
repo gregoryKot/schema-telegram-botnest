@@ -5,6 +5,7 @@ import { track } from '../analytics';
 import { donate } from '../donate';
 import { CHAPTERS } from '../chapters';
 import { setTouchControls } from '../controls';
+import { t } from '../i18n';
 
 export class StartScene extends Phaser.Scene {
   constructor() { super('Start'); }
@@ -32,7 +33,7 @@ export class StartScene extends Phaser.Scene {
     const cat = this.add.sprite(W / 2, H / 2 + 20, 'cat_idle').setScale(4).play('s-cat-idle');
 
     // Кнопка запуска — рамка подгоняется под текст, чтобы он не вылезал
-    const btnTxt = this.add.text(W / 2, H / 2 + 130, 'НАЧАТЬ', {
+    const btnTxt = this.add.text(W / 2, H / 2 + 130, t('НАЧАТЬ', 'START'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#ff7733', letterSpacing: 6,
     }).setOrigin(0.5);
     const btn = this.add.rectangle(W / 2, H / 2 + 130, btnTxt.width + 48, 48, 0x3a1500)
@@ -55,7 +56,7 @@ export class StartScene extends Phaser.Scene {
     // вернулся — продолжай с достигнутой главы, не с нуля
     const cont = getContinueChapter();
     if (cont && CHAPTERS[cont]) {
-      const cbtn = this.add.text(W / 2, H / 2 + 178, `продолжить — «${CHAPTERS[cont].title}» →`, {
+      const cbtn = this.add.text(W / 2, H / 2 + 178, t('продолжить', 'continue') + ` — «${CHAPTERS[cont].title}» →`, {
         fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#88ffcc', letterSpacing: 0,
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
       cbtn.on('pointerover', () => cbtn.setColor('#fff0d8'));
@@ -65,22 +66,22 @@ export class StartScene extends Phaser.Scene {
 
     // ── Поддержать проект (донат) ──────────────────────────────────────────
     const fontPS = '"Press Start 2P", "Courier New", monospace';
-    this.add.text(W / 2, H - 104, 'поддержать проект 💛', {
+    this.add.text(W / 2, H - 104, t('поддержать проект 💛', 'support the project 💛'), {
       fontFamily: fontPS, fontSize: '10px', color: '#d8b84a', letterSpacing: 1,
     }).setOrigin(0.5);
     const amounts = [200, 500, 1000];
     const gap = 92;
     amounts.forEach((amt, i) => {
       const x = W / 2 + (i - 1) * gap;
-      const t = this.add.text(x, H - 78, `${amt} ₽`, {
+      const bt = this.add.text(x, H - 78, `${amt} ₽`, {
         fontFamily: fontPS, fontSize: '11px', color: amt === 500 ? '#ffd86a' : '#9a8a4a', letterSpacing: 1,
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-      t.on('pointerover', () => t.setColor('#fff0d8'));
-      t.on('pointerout', () => t.setColor(amt === 500 ? '#ffd86a' : '#9a8a4a'));
-      t.on('pointerdown', () => { void donate(amt); });
+      bt.on('pointerover', () => bt.setColor('#fff0d8'));
+      bt.on('pointerout', () => bt.setColor(amt === 500 ? '#ffd86a' : '#9a8a4a'));
+      bt.on('pointerdown', () => { void donate(amt); });
     });
 
-    this.add.text(W / 2, H - 40, 'стрелки / WASD / тач для управления', {
+    this.add.text(W / 2, H - 40, t('стрелки / WASD / тач для управления', 'arrows / WASD / tap to play'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#7a3a10', letterSpacing: 1,
     }).setOrigin(0.5);
   }
