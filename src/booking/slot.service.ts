@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { CalDavService } from './caldav.service';
 import { BookingStatus } from '@prisma/client';
@@ -12,10 +13,19 @@ export interface Slot {
 /** Compute free slots for a date range from AvailabilityRules minus existing bookings. */
 @Injectable()
 export class SlotService {
+  // Excluding the therapist's calendar busy-times is OPT-IN: a misbehaving or
+  // slow calendar must never be able to zero out the whole booking funnel.
+  // Turn on with CALENDAR_BLOCK_SLOTS=true once the admin panel shows a sane
+  // "занято: N" count.
+  private readonly blockBusy: boolean;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly calDav: CalDavService,
-  ) {}
+    config: ConfigService,
+  ) {
+    this.blockBusy = config.get<string>('CALENDAR_BLOCK_SLOTS') === 'true';
+  }
 
   /**
    * Return available slots between fromDate and toDate (inclusive).
@@ -37,8 +47,9 @@ export class SlotService {
       select: { startsAt: true, durationMin: true },
     });
 
-    // Busy intervals from the therapist's real calendar (fail-open → []).
-    const calBusy = await this.calDav.getBusyTimes(fromDate, toDate);
+    // Busy intervals from the therapist's real calendar — only when explicitly
+    // enabled, so /slots never depends on (or hangs on) CalDAV by default.
+    const calBusy = this.blockBusy ? await this.calDav.getBusyTimes(fromDate, toDate) : [];
 
     const slots: Slot[] = [];
     const cursor = new Date(fromDate);
