@@ -7,7 +7,7 @@ import { SelfSoothe, CrookedMirror } from '../enemies/road';
 import { buildDecor } from '../decor';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { ensureEnemyAnims, LEDGE } from '../props';
-import { t } from '../i18n';
+import { t, tr } from '../i18n';
 import { unlockChapter } from '../progress';
 import { getAssist } from '../assist';
 import { track } from '../analytics';
@@ -175,8 +175,8 @@ export class GameScene extends Phaser.Scene {
     const mk = (y: number, text: string, size: number, color: string) =>
       this.add.text(W / 2, y, text, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${size}px`, color, letterSpacing: 3, align: 'center' })
         .setOrigin(0.5).setScrollFactor(0).setDepth(120).setAlpha(0);
-    const t1 = mk(170, this.chapter.title.toUpperCase(), 24, '#fff0d8');
-    const t2 = mk(208, this.chapter.tagline, 11, '#9a8fb8');
+    const t1 = mk(170, tr(this.chapter.title).toUpperCase(), 24, '#fff0d8');
+    const t2 = mk(208, tr(this.chapter.tagline), 11, '#9a8fb8');
     this.tweens.add({ targets: [t1, t2], alpha: 1, duration: 700, delay: 350 });
     this.tweens.add({ targets: [t1, t2], alpha: 0, duration: 800, delay: 3200, onComplete: () => { t1.destroy(); t2.destroy(); } });
   }
@@ -444,7 +444,7 @@ export class GameScene extends Phaser.Scene {
     this.memText = this.add.text(18, 48, this.memTotal ? `✦ 0/${this.memTotal}` : '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '12px', color: '#ffd870' })
       .setScrollFactor(0).setDepth(100);
     if (!IS_TOUCH)
-      this.add.text(W / 2, H - 20, 'X бей · Z избегай (тап рывок / держи залипни) · V уступи', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
+      this.add.text(W / 2, H - 20, tr('X бей · Z избегай (тап рывок / держи залипни) · V уступи'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
         .setOrigin(0.5, 1).setScrollFactor(0).setDepth(100);
   }
   private updateHearts() {
@@ -499,11 +499,11 @@ export class GameScene extends Phaser.Scene {
     pb.setVelocity(0, 0); pb.setAllowGravity(false); pb.moves = false;
     const deep = 130;
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0.78).setScrollFactor(0).setDepth(deep);
-    const t1 = this.add.text(W / 2, 120, title, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '18px', color: '#ff8aa6', align: 'center' })
+    const t1 = this.add.text(W / 2, 120, tr(title), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '18px', color: '#ff8aa6', align: 'center' })
       .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 1);
-    const t2 = this.add.text(W / 2, 175, text, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#d8c8ec', align: 'center', lineSpacing: 10 })
+    const t2 = this.add.text(W / 2, 175, tr(text), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#d8c8ec', align: 'center', lineSpacing: 10 })
       .setOrigin(0.5, 0).setScrollFactor(0).setDepth(deep + 1);
-    const hint = this.add.text(W / 2, H - 60, IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше',
+    const hint = this.add.text(W / 2, H - 60, tr(IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше'),
       { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#88ffcc' })
       .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
     this.tweens.add({ targets: hint, alpha: 0.9, duration: 400, delay: 800 });
@@ -970,7 +970,7 @@ export class GameScene extends Phaser.Scene {
     const ky = H / 540; // y развязок написаны под десктопную высоту
     const lines: Phaser.GameObjects.Text[] = [];
     const line = (text: string, y: number, color: string, size: number, delay: number) => {
-      const t = this.add.text(W / 2, y * ky, text, {
+      const t = this.add.text(W / 2, y * ky, tr(text), {
         fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${size}px`, color, align: 'center', lineSpacing: 6,
       }).setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0);
       this.tweens.add({ targets: t, alpha: 1, duration: 900, delay });
@@ -1054,11 +1054,11 @@ export class GameScene extends Phaser.Scene {
     warm.fillStyle(0xffd9a0, 0.12); warm.fillCircle(cx, cy + 30, 220);
     warm.fillStyle(0xffd9a0, 0.08); warm.fillCircle(cx, cy + 30, 320);
     const shadow = this.add.sprite(cx, cy + 60, 'cat_idle').setOrigin(0.5, 1).setScale(2).setTint(0x2a1d3a).setAlpha(0).setScrollFactor(0).setDepth(155).play('p-idle');
-    const ask = this.add.text(cx, 120, 'бил, бежал, уступал — он всё равно тут.\nостался один ход: повернуться к нему.',
+    const ask = this.add.text(cx, 120, tr('бил, бежал, уступал — он всё равно тут.\nостался один ход: повернуться к нему.'),
       { fontFamily: font, fontSize: '12px', color: '#ffe0b0', align: 'center', lineSpacing: 10,
         backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 14, y: 10 } })
       .setOrigin(0.5, 0).setScrollFactor(0).setDepth(156).setAlpha(0);
-    const prompt = this.add.text(cx, H - 70, IS_TOUCH ? 'тапни — ПОВЕРНУТЬСЯ' : 'E / клик — ПОВЕРНУТЬСЯ',
+    const prompt = this.add.text(cx, H - 70, tr(IS_TOUCH ? 'тапни — ПОВЕРНУТЬСЯ' : 'E / клик — ПОВЕРНУТЬСЯ'),
       { fontFamily: font, fontSize: '11px', color: '#88ffcc', backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 10, y: 7 } })
       .setOrigin(0.5).setScrollFactor(0).setDepth(156).setAlpha(0);
     this.tweens.add({ targets: [warm, shadow], alpha: { from: 0, to: 1 }, duration: 1000 });
@@ -1076,7 +1076,7 @@ export class GameScene extends Phaser.Scene {
       // тень не исчезает — становится маленькой и садится рядом, а не сверху
       this.tweens.add({ targets: shadow, scale: 1, x: cx + 70, y: cy + 50, duration: 900, ease: 'Quad.Out' });
       this.tweens.add({ targets: warm, alpha: 1.6, duration: 900, yoyo: true });
-      ask.setText(this.modeName() + (last
+      ask.setText(this.modeName() + tr(last
         ? 'ты повернулся — и он сел рядом, а не навис.\nодному так не суметь. этому учит терапия.'
         : 'ты повернулся — и он рядом, а не сверху.\nна миг, но по-другому.'));
       this.time.delayedCall(last ? 3200 : 2600, () => {
@@ -1158,14 +1158,14 @@ export class GameScene extends Phaser.Scene {
     const cover = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e).setScrollFactor(0).setDepth(150).setAlpha(0);
     this.tweens.add({ targets: cover, alpha: 1, duration: 700 });
     const font = '"Press Start 2P", "Courier New", monospace';
-    const txt = this.add.text(W / 2, H / 2 - 16, 'так больше нельзя...', { fontFamily: font, fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
+    const txt = this.add.text(W / 2, H / 2 - 16, tr('так больше нельзя...'), { fontFamily: font, fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
     this.tweens.add({ targets: txt, alpha: 1, duration: 800, delay: 400 });
     // простой, понятный ретрай — без абстрактной сцены «повернуться» (она только в финале главы)
     this.time.delayedCall(1900, () => {
-      const t2 = this.add.text(W / 2, H / 2 + 26, 'но это лишь попытка. вставай.', { fontFamily: font, fontSize: '12px', color: '#a8e8d0' })
+      const t2 = this.add.text(W / 2, H / 2 + 26, tr('но это лишь попытка. вставай.'), { fontFamily: font, fontSize: '12px', color: '#a8e8d0' })
         .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
-      const hint = this.add.text(W / 2, H - 56, IS_TOUCH ? 'тапни — ещё раз' : 'клавиша / клик — ещё раз', { fontFamily: font, fontSize: '11px', color: '#88ffcc' })
+      const hint = this.add.text(W / 2, H - 56, tr(IS_TOUCH ? 'тапни — ещё раз' : 'клавиша / клик — ещё раз'), { fontFamily: font, fontSize: '11px', color: '#88ffcc' })
         .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
       this.tweens.add({ targets: [t2, hint], alpha: 0.9, duration: 600 });
       const go = () => this.scene.restart();
@@ -1219,7 +1219,7 @@ export class GameScene extends Phaser.Scene {
   // не перебиваем читаемую реплику — иначе мельтешат и не прочитать
   private say(text: string, dur: number): boolean {
     if (this.bubbleT > 900) return false;
-    this.bubble.setText(text).setAlpha(1); this.bubbleT = dur; return true;
+    this.bubble.setText(tr(text)).setAlpha(1); this.bubbleT = dur; return true;
   }
   private sayOnce(key: string, text: string, dur: number) {
     if (this.said.has(key)) return;
