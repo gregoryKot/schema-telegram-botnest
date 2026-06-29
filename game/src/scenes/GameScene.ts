@@ -977,11 +977,12 @@ export class GameScene extends Phaser.Scene {
     for (const l of this.chapter.ending) line(l.text, l.y, l.color, l.size, l.delay);
     this.time.delayedCall(10600, () => audio.toll());
 
-    // Дверь, а не тупик: после безнадёжности — проблеск четвёртого хода.
-    // Сначала ГАСИМ текст развязки, иначе он наезжает на контакт/карточку.
+    // После безнадёжности — сразу к выбору/продолжению. БЕЗ абстрактного
+    // «повернуться»: контакт/ВСТРЕТИТЬ принадлежит Акту III (терапевт открывает
+    // его), а на конце Акта I он только путал. Сначала ГАСИМ текст развязки.
     this.time.delayedCall(13200, () => this.tweens.add({ targets: lines, alpha: 0, duration: 700,
       onComplete: () => lines.forEach(t => t.destroy()) }));
-    this.time.delayedCall(14100, () => this.contactGlimpse(() => {
+    this.time.delayedCall(14000, () => {
       const branch = this.chapter.branch, next = this.chapter.next;
       if (branch && CHAPTERS[branch]) {
         this.showBranch(branch);                 // конец Акта I — развилка: терапия ИЛИ дальше
@@ -998,7 +999,7 @@ export class GameScene extends Phaser.Scene {
       } else {
         this.showCta();
       }
-    }));
+    });
   }
 
   // Развилка конца Акта I: уйти в терапию сейчас (воронка) ИЛИ идти дальше (игра).
