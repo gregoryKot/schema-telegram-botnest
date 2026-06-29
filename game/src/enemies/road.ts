@@ -41,11 +41,11 @@ export class SelfSoothe implements HomeMob {
       const k = 1 - d / ZONE;                       // ближе — глубже дрёма
       this.dim.fillStyle(0x0a0a16, 0.5 * k); this.dim.fillRect(0, 0, W, H);
       this.ctx.slow(0.55);                          // всё вязнет, тянет постоять
-      this.ctx.sayOnce('soothe_zone', 'да всё нормально... у других хуже.', 2800);
+      this.ctx.sayOnce('soothe_zone', 'm_it_s_all_fine_others_have', 2800);
       if (this.ctx.frozen()) {                      // залип = засыпаешь (ловушка)
         this.sleep += dt;
         this.relief = Math.max(0, this.relief - dt * 0.0006);
-        if (this.sleep > 1500) { this.sleep = 0; this.ctx.damage(this.img.x); this.ctx.sayOnce('soothe_sleep', '...задремал. и день прошёл.', 2800); }
+        if (this.sleep > 1500) { this.sleep = 0; this.ctx.damage(this.img.x); this.ctx.sayOnce('soothe_sleep', 'm_dozed_off_and_the_day_was', 2800); }
       } else {
         this.sleep = Math.max(0, this.sleep - dt);
       }
@@ -56,7 +56,7 @@ export class SelfSoothe implements HomeMob {
   }
 
   tryHit(): boolean {
-    this.ctx.sayOnce('soothe_hit', 'по ней не ударишь — она просто баюкает.', 2400);
+    this.ctx.sayOnce('soothe_hit', 'm_you_can_t_hit_it_it', 2400);
     return true;
   }
 
@@ -64,7 +64,7 @@ export class SelfSoothe implements HomeMob {
     this.alive = false;
     audio.freeze();
     this.dim.clear(); this.dim.destroy();
-    this.ctx.sayOnce('soothe_off', 'прошёл мимо, не уснул. идём дальше.', 2600);
+    this.ctx.sayOnce('soothe_off', 'm_walked_past_didn_t_fall_asleep', 2600);
     this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, scale: 0, duration: 420, onComplete: () => this.img.destroy() });
   }
 }
@@ -95,7 +95,7 @@ export class CrookedMirror implements HomeMob {
     this.barrier = s.add.rectangle(x, GROUND_Y / 2, 14, GROUND_Y + 40, 0, 0);
     s.physics.add.existing(this.barrier, true);
     s.physics.add.collider(ctx.player(), this.barrier, () =>
-      this.ctx.sayOnce('mirror_block', 'мимо не пройти. ЗАМРИ (держи Z) — посмотри честно.', 2800));
+      this.ctx.sayOnce('mirror_block', 'm_can_t_get_past_freeze_hold', 2800));
   }
 
   update(dt: number) {
@@ -105,7 +105,7 @@ export class CrookedMirror implements HomeMob {
     const d = Math.abs(p.x - this.x);
     this.bar.clear();
     if (d < 170) {
-      this.ctx.sayOnce('mirror_zone', '«да всё же норм. ты в порядке»...', 2800);
+      this.ctx.sayOnce('mirror_zone', 'm_come_on_it_s_fine_you', 2800);
       if (this.ctx.frozen()) {
         this.look += dt;
         const k = Math.min(1, this.look / 1700);
@@ -113,17 +113,17 @@ export class CrookedMirror implements HomeMob {
         this.bar.fillStyle(0x0a0814, 0.7); this.bar.fillRect(this.x - 34, GROUND_Y - 156, 68, 12);
         this.bar.fillStyle(0x88ffcc, 1);   this.bar.fillRect(this.x - 31, GROUND_Y - 153, 62 * k, 6);
         this.bar.fillStyle(0xffffff, 0.9); this.bar.fillRect(this.x - 31, GROUND_Y - 145, 62, 2);
-        this.ctx.sayOnce('mirror_look', 'смотрю честно... и правда не так уж «норм».', 2400);
+        this.ctx.sayOnce('mirror_look', 'm_looking_honestly_and_it_s_really', 2400);
         if (this.look >= 1700) this.crack();
       } else {
         this.look = Math.max(0, this.look - dt * 0.6);
-        if (this.ctx.dashing()) this.ctx.sayOnce('mirror_dash', 'отвернулся — и снова поверил, что норм.', 2600);
+        if (this.ctx.dashing()) this.ctx.sayOnce('mirror_dash', 'm_turned_away_and_believed_again_it', 2600);
       }
     }
   }
 
   tryHit(): boolean {
-    this.ctx.sayOnce('mirror_hit', 'разбить зеркало? будешь врать себе и дальше.', 2400);
+    this.ctx.sayOnce('mirror_hit', 'm_smash_the_mirror_you_ll_keep', 2400);
     return true;
   }
 
@@ -133,7 +133,7 @@ export class CrookedMirror implements HomeMob {
     this.barrier.destroy();
     this.bar.clear(); this.bar.destroy();
     this.ctx.burst(this.x, GROUND_Y - 80, 0x9fd8ff, 14, 140);
-    this.ctx.sayOnce('mirror_crack', 'увидел честно. остановиться и посмотреть —\nэто не слабость, а смелость. вот с этого и начинается.', 3600);
+    this.ctx.sayOnce('mirror_crack', 'm_saw_it_honestly_to_stop_and', 3600);
     const s = this.ctx.scene;
     s.tweens.add({ targets: [this.frame, this.fake], alpha: 0, y: '+=12', angle: 4, duration: 650, onComplete: () => { this.frame.destroy(); this.fake.destroy(); } });
   }

@@ -4,7 +4,7 @@ import { getContinueChapter } from '../progress';
 import { track } from '../analytics';
 import { CHAPTERS } from '../chapters';
 import { setTouchControls } from '../controls';
-import { t, tr } from '../i18n';
+import { t } from '../i18n';
 
 export class StartScene extends Phaser.Scene {
   constructor() { super('Start'); }
@@ -32,7 +32,7 @@ export class StartScene extends Phaser.Scene {
     const cat = this.add.sprite(W / 2, H / 2 + 20, 'cat_idle').setScale(4).play('s-cat-idle');
 
     // Кнопка запуска — рамка подгоняется под текст, чтобы он не вылезал
-    const btnTxt = this.add.text(W / 2, H / 2 + 130, t('НАЧАТЬ', 'START'), {
+    const btnTxt = this.add.text(W / 2, H / 2 + 130, t('m_start'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#ff7733', letterSpacing: 6,
     }).setOrigin(0.5);
     const btn = this.add.rectangle(W / 2, H / 2 + 130, btnTxt.width + 48, 48, 0x3a1500)
@@ -55,7 +55,7 @@ export class StartScene extends Phaser.Scene {
     // вернулся — продолжай с достигнутой главы, не с нуля
     const cont = getContinueChapter();
     if (cont && CHAPTERS[cont]) {
-      const cbtn = this.add.text(W / 2, H / 2 + 178, t('продолжить', 'continue') + ` — «${tr(CHAPTERS[cont].title)}» →`, {
+      const cbtn = this.add.text(W / 2, H / 2 + 178, t('m_continue') + ` — «${t(CHAPTERS[cont].title)}» →`, {
         fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#88ffcc', letterSpacing: 0,
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
       cbtn.on('pointerover', () => cbtn.setColor('#fff0d8'));
@@ -63,7 +63,7 @@ export class StartScene extends Phaser.Scene {
       cbtn.on('pointerdown', () => { track('game_continue', { chapter: cont }); this.scene.start('Game', { chapter: cont }); });
     }
 
-    this.add.text(W / 2, H - 40, t('стрелки / WASD / тач для управления', 'arrows / WASD / tap to play'), {
+    this.add.text(W / 2, H - 40, t('m_arrows_wasd_tap_to_play'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#7a3a10', letterSpacing: 1,
     }).setOrigin(0.5);
   }

@@ -29,7 +29,7 @@ export class BootScene extends Phaser.Scene {
 
   preload() {
     const cx = Number(this.game.config.width) / 2, cy = Number(this.game.config.height) / 2;
-    this.loading = this.add.text(cx, cy, t('ЗАГРУЗКА...', 'LOADING...'), {
+    this.loading = this.add.text(cx, cy, t('m_loading'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#8a7faa', letterSpacing: 4,
     }).setOrigin(0.5);
     // сеть оборвалась (например, в момент деплоя) — говорим честно и даём повторить
@@ -77,7 +77,7 @@ export class BootScene extends Phaser.Scene {
 
   // Честный экран ошибки + перезагрузка по тапу/клавише (ставим один раз).
   private armRetry() {
-    this.loading.setText(t('НЕ ЗАГРУЗИЛОСЬ\nтапни — повторить', 'FAILED TO LOAD\ntap — retry')).setColor('#ff8866').setAlign('center');
+    this.loading.setText(t('m_failed_to_load_tap_retry')).setColor('#ff8866').setAlign('center');
     if (this.retryArmed) return;
     this.retryArmed = true;
     this.input.once('pointerdown', () => window.location.reload());

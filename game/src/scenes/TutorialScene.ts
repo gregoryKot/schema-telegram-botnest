@@ -3,7 +3,7 @@ import { W, H, GROUND_Y, PHYS, S } from '../constants';
 import { audio } from '../audio';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { track } from '../analytics';
-import { tr } from '../i18n';
+import { t, type MsgKey } from '../i18n';
 import { placeProp } from '../props';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -15,32 +15,32 @@ import { placeProp } from '../props';
 type Step = 'meet' | 'walk' | 'dash' | 'freeze' | 'fight' | 'fawn' | 'done';
 
 // соседка идёт по пятам и давит на вину, лишь бы согласился
-const NEI_LINES = [
-  'ты же не откажешь?', 'я на тебя рассчитываю...', 'тебе что, трудно?',
-  'все бы согласились.', 'ну что тебе стоит.', 'я ведь обижусь.',
+const NEI_LINES: MsgKey[] = [
+  'm_you_won_t_refuse_will_you', 'm_i_m_counting_on_you', 'm_is_it_really_so_hard_for',
+  'm_anyone_would_say_yes', 'm_it_s_no_trouble_for_you', 'm_i_ll_be_hurt_you_know',
 ];
 
 // «не та кнопка» в сценке: почему этот способ тут не сработает (много вариантов)
-const WRONG: Record<string, Record<string, string[]>> = {
+const WRONG: Record<string, Record<string, MsgKey[]>> = {
   dash: { // сценка ДЕЛА — верно ИЗБЕГАЙ
-    hit: ['по делам не ударишь — их только больше.', 'бить бумаги? их не убавится.', 'злись не злись — задачи не разбегутся.', 'кулаком отчёт не сдашь.', 'агрессия их не уберёт, только вымотает.', 'дела не дерутся в ответ — просто ждут.'],
-    fawn: ['сдаться делам? они и так на тебе.', 'кому уступать — стопке бумаг?', 'покорно сесть под ними — раздавят.', 'это не человек, уступать некому.', 'смирение дедлайн не подвинет.'],
-    freeze: ['замрёшь — дела сами себя не сделают.', 'залипнешь — гора только вырастет.', 'отвлечёшься — дедлайн ближе.', 'спрячешься в телефон — они дождутся.', 'застынешь — завтра их вдвое.'],
+    hit: ['m_you_can_t_punch_tasks_there', 'm_hit_the_papers_they_won_t', 'm_angry_or_not_the_tasks_won', 'm_you_can_t_fist_your_way', 'm_aggression_won_t_clear_them_just', 'm_tasks_don_t_fight_back_they'],
+    fawn: ['m_surrender_to_the_tasks_they_re', 'm_give_in_to_a_stack_of', 'm_sit_meekly_under_them_they_ll', 'm_it_s_not_a_person_no', 'm_surrender_won_t_move_the_deadline'],
+    freeze: ['m_freeze_and_tasks_won_t_do', 'm_zone_out_the_pile_only_grows', 'm_distract_yourself_the_deadline_gets_closer', 'm_hide_in_the_phone_they_ll', 'm_freeze_up_twice_as_many_tomorrow'],
   },
   freeze: { // сценка ТРЕВОГИ — верно ИЗБЕГАЙ (держать)
-    hit: ['тревогу не ударишь — она внутри.', 'бить свои мысли? станет хуже.', 'кулаком страх не выгонишь.', 'злость на тревогу — та же тревога.', 'по переживаниям не попасть.'],
-    fawn: ['сдаться страху — он накроет с головой.', 'уступишь тревоге — она будет править.', 'покорность мыслям их не уймёт.', 'кому уступать — голосу в голове?', 'согласишься с тревогой — поверишь ей.'],
-    dash: ['от своей головы не убежишь.', 'бежишь — а мысли бегут с тобой.', 'рывок? тревога догонит на месте.', 'сменишь комнату — мысли те же.', 'быстрее ног они всё равно в голове.'],
+    hit: ['m_you_can_t_hit_anxiety_it', 'm_fight_your_own_thoughts_it_gets', 'm_you_can_t_punch_out_fear', 'm_anger_at_anxiety_is_just_more', 'm_you_can_t_land_a_hit'],
+    fawn: ['m_surrender_to_fear_it_swallows_you', 'm_give_in_to_anxiety_it_takes', 'm_submission_won_t_quiet_the_thoughts', 'm_give_in_to_a_voice_in', 'm_agree_with_anxiety_and_you_ll'],
+    dash: ['m_you_can_t_outrun_your_own', 'm_you_run_the_thoughts_run_with', 'm_dash_anxiety_catches_you_where_you', 'm_change_rooms_same_thoughts', 'm_faster_than_your_legs_they_re'],
   },
   fight: { // сценка БУДИЛЬНИК — верно БЕЙ
-    dash: ['убежал в другую комнату — всё равно слышно.', 'рывком звон не выключишь.', 'спрячешься — орёт дальше.', 'от будильника не убегают — он везде.', 'сбежишь — опоздаешь ещё и проспав.'],
-    freeze: ['отвлечься? оно ОРЁТ прямо в ухо.', 'залипнешь — звонит и звонит.', 'замри хоть весь — звон не стихнет.', 'в телефон? будильник громче.', 'переждать не выйдет — он не устаёт.'],
-    fawn: ['уступить будильнику? это как?', 'сдаться звону — он не человек.', 'покориться железке — звенит дальше.', 'смирение его не выключит.'],
+    dash: ['m_ran_to_another_room_still_hear', 'm_a_dash_won_t_switch_off', 'm_hide_it_keeps_blaring', 'm_you_don_t_run_from_an', 'm_run_and_you_ll_oversleep_and'],
+    freeze: ['m_distract_yourself_it_s_screaming_in', 'm_zone_out_it_rings_and_rings', 'm_freeze_all_you_like_the_ringing', 'm_into_the_phone_the_alarm_is', 'm_you_can_t_wait_it_out'],
+    fawn: ['m_surrender_to_an_alarm_how_exactly', 'm_give_in_to_the_ringing_it', 'm_submit_to_a_gadget_it_keeps', 'm_surrender_won_t_turn_it_off'],
   },
   fawn: { // сценка СОСЕДКА — верно УСТУПИ
-    hit: ['рявкнуть на соседку? ...язык не повернулся.', 'нагрубить ей — потом стыдно неделю.', 'злость на неё — не смог, воспитанный же.', 'накричать? а жить с ней дальше.', 'огрызнуться — рука не поднялась.', 'сорвёшься — будешь виноват сам.'],
-    dash: ['сбежать? она догонит — она же соседка.', 'захлопнуть дверь — неудобно как-то.', 'улизнуть — а завтра в лифте встречать.', 'рывок? она просто придёт снова.', 'спрячешься — постучит ещё раз.'],
-    freeze: ['играю, не вижу... а она всё ждёт.', 'сделать вид что нет дома — она слышит.', 'залипнуть в телефон — не уйдёт.', 'отвернуться — стоит и смотрит.', 'тянуть время — она терпеливее.'],
+    hit: ['m_snap_at_the_neighbour_couldn_t', 'm_be_rude_to_her_then_ashamed', 'm_anger_at_her_couldn_t_too', 'm_yell_at_her_but_we_still', 'm_snap_back_just_couldn_t', 'm_lose_it_and_you_ll_be'],
+    dash: ['m_run_she_ll_catch_up_she', 'm_slam_the_door_feels_rude_somehow', 'm_slip_away_meet_her_in_the', 'm_dash_she_ll_just_come_back', 'm_hide_she_ll_knock_again'],
+    freeze: ['m_playing_not_looking_but_she_keeps', 'm_pretend_you_re_out_she_can', 'm_zone_into_the_phone_she_won', 'm_turn_away_she_stands_and_stares', 'm_stall_she_s_more_patient'],
   },
 };
 
@@ -136,7 +136,7 @@ export class TutorialScene extends Phaser.Scene {
     this.lungeSprite = this.add.sprite(0, 0, this.textures.exists('cat_dash') ? 'cat_dash' : 'cat_idle', 0).setOrigin(0.5, 1).setScale(0.26).setDepth(11).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
-    this.contHint = this.add.text(W / 2, IS_TOUCH ? H - 210 : H - 100, tr(IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше'),
+    this.contHint = this.add.text(W / 2, IS_TOUCH ? H - 210 : H - 100, t(IS_TOUCH ? 'm_tap_next' : 'm_any_key_next'),
       { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#88ffcc',
         backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 8, y: 5 } }).setOrigin(0.5).setDepth(50).setAlpha(0);
     this.narr = this.add.text(W / 2, 104, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '13px', color: '#fff0d8', align: 'center', lineSpacing: 14, wordWrap: { width: W - 90 },
@@ -155,7 +155,7 @@ export class TutorialScene extends Phaser.Scene {
       .setScrollFactor(0).setDepth(60);
     this.updateHearts();
 
-    const skip = this.add.text(W - 20, 16, tr('пропустить →'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
+    const skip = this.add.text(W - 20, 16, t('m_skip'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
       .setOrigin(1, 0).setDepth(60).setInteractive({ useHandCursor: true });
     skip.on('pointerover', () => skip.setColor('#fff0d8'));
     skip.on('pointerout', () => skip.setColor('#6a5f8a'));
@@ -187,7 +187,7 @@ export class TutorialScene extends Phaser.Scene {
     this.heartsText.setText('♥'.repeat(Math.max(0, this.hearts)) + '·'.repeat(Math.max(0, 3 - this.hearts)));
   }
   // в обучении жизнь не падает до конца (clamp 1), но убыль показываем — учим цену
-  private loseHeart(msg: string) {
+  private loseHeart(msg: MsgKey) {
     if (this.hurtT > 0) return;
     this.hurtT = 1300;
     this.hearts = Math.max(1, this.hearts - 1);
@@ -201,20 +201,20 @@ export class TutorialScene extends Phaser.Scene {
 
   // ── Знакомство ──────────────────────────────────────────────────────────────
   private meet() {
-    this.narrTell('Это кот Мистер.\nЖивёт, всем доволен.', () => {
+    this.narrTell('m_this_is_mister_the_cat_lives', () => {
       this.narrTell(
-        'Когда накрывает, Мистер справляется\nтремя способами. Так научили —\nи это нормально.\n\n♥ слева — его силы. борьба их тратит.',
+        'm_when_it_hits_mister_copes_in',
         () => {
           this.step = 'walk';
-          this.setNarr('пойдём — посмотрим на эти три способа');
-          this.setPrompt(IS_TOUCH ? '◀ ▶ идти · ▲ прыжок' : 'A D идти · W прыжок');
+          this.setNarr('m_let_s_go_see_those_three');
+          this.setPrompt(IS_TOUCH ? 'm_move_jump' : 'm_a_d_move_w_jump');
         });
     });
   }
 
   // Стоп-кадр для текста: мир замирает и темнеет, читаешь спокойно,
   // дальше — по тапу/клавише. Иначе внимание на коте и текст теряется.
-  private narrTell(text: string, onContinue: () => void) {
+  private narrTell(text: MsgKey, onContinue: () => void) {
     this.paused = true;
     this.physics.pause();
     this.player.anims.pause();
@@ -413,11 +413,11 @@ export class TutorialScene extends Phaser.Scene {
   private checkWalk() {
     if (this.moved > 900 && this.jumped) {
       this.step = 'dash';
-      this.narrTell('Понедельник. Дел — целая гора.\nМистер боится, что не успеет.\n\nКогда наваливается — можно увернуться.', () => {
+      this.narrTell('m_monday_a_mountain_of_tasks_mister', () => {
         this.clearBeat();
         this.setScene('office');
-        this.setNarr('ИЗБЕГАЙ — рывком проскользнуть мимо');
-        this.setPrompt(IS_TOUCH ? 'ИЗБЕГАЙ (тап) — рывок' : 'Z (тап) — рывок, увернись');
+        this.setNarr('m_avoid_dash_past_it');
+        this.setPrompt(IS_TOUCH ? 'm_avoid_tap_dash' : 'm_z_tap_dash_dodge');
         this.spawnPile();
       });
     }
@@ -441,15 +441,15 @@ export class TutorialScene extends Phaser.Scene {
     if (Math.abs(d) < 60 && this.dashT <= 0) {
       // навалились — будто ударили: толчок назад + минус жизнь. Уйти можно только рывком
       (this.player.body as Phaser.Physics.Arcade.Body).velocity.x = Math.sign(d || 1) * 280;
-      this.loseHeart('дела навалились! только рывок (Z) спасает.');
+      this.loseHeart('m_the_tasks_piled_on_only_a');
     }
   }
   private onDash() {
     if (this.step !== 'dash') { this.wrongTry('dash'); return; }
     // рывок — и есть способ уйти от дел: уводит мимо в любом случае
-    this.clearPile('...фух. рывком — мимо. (но завтра снова)');
+    this.clearPile('m_phew_dashed_past_but_again_tomorrow');
   }
-  private clearPile(line: string) {
+  private clearPile(line: MsgKey) {
     if (this.dashed || !this.pile) return;
     this.dashed = true;
     const p = this.pile; this.pile = null;
@@ -462,11 +462,11 @@ export class TutorialScene extends Phaser.Scene {
   private beginFreeze() {
     if (this.step !== 'dash') return;
     this.step = 'freeze';
-    this.narrTell('Ночь. В голове крутятся тревоги —\nне уснуть. Их не побить и не обогнать.\n\nМожно отвлечься, переждать.', () => {
+    this.narrTell('m_night_worries_spin_in_his_head', () => {
       this.clearBeat();
       this.setScene('night');
-      this.setNarr('ИЗБЕГАЙ (держи) — отвлечься, и отступят');
-      this.setPrompt(IS_TOUCH ? 'ИЗБЕГАЙ (держи) — залипни' : 'Z (держи) — залипни, отвлекись');
+      this.setNarr('m_avoid_hold_distract_and_they_back');
+      this.setPrompt(IS_TOUCH ? 'm_avoid_hold_zone_out' : 'm_z_hold_zone_out_distract');
       for (let i = 0; i < 3; i++) this.worries.push(this.add.sprite(this.player.x, this.player.y - 60, 'anxmob').setDepth(7).setScale(0.42).play('anx-fly'));
       audio.anx();
     });
@@ -486,7 +486,7 @@ export class TutorialScene extends Phaser.Scene {
       this.worries.forEach(w => w.setAlpha(Math.max(0.15, 1 - this.calmT / 1900)));
       if (this.calmT > 2000 && this.worries.some(w => w.active)) {
         this.worries.forEach(w => { this.tweens.add({ targets: w, alpha: 0, scale: 0, duration: 400, onComplete: () => w.destroy() }); });
-        this.say('клубок важнее. а мысли... отстали?', 2600);
+        this.say('m_the_yarn_matters_more_and_the', 2600);
         audio.freeze();
         this.time.delayedCall(1600, () => this.beginFight());
       }
@@ -500,14 +500,14 @@ export class TutorialScene extends Phaser.Scene {
   private beginFight() {
     if (this.step !== 'freeze') return;
     this.step = 'fight';
-    this.narrTell('Утро. Будильник орёт и не унимается.\nЖуть как бесит.\n\nИногда хочется просто врезать.', () => {
+    this.narrTell('m_morning_the_alarm_screams_on_and', () => {
       this.clearBeat();
       this.setScene('morning');
-      this.setNarr('БЕЙ — вырубить, дать отпор');
-      this.setPrompt(IS_TOUCH ? 'БЕЙ — по будильнику' : 'X — вырубить будильник');
+      this.setNarr('m_fight_smash_it_push_back');
+      this.setPrompt(IS_TOUCH ? 'm_fight_hit_the_alarm' : 'm_x_smash_the_alarm');
       // будильник рядом с кроватью, поменьше — Мистер подходит и бьёт
       this.colleague = this.add.sprite(305, GROUND_Y - 4, 'prop_alarm').setOrigin(0.5, 1).setScale(0.15).setDepth(8);
-      this.colBubble = this.add.text(0, 0, tr('ДЗЗ-ДЗЗ-ДЗЗ!'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
+      this.colBubble = this.add.text(0, 0, t('m_ring_ring_ring'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
         backgroundColor: '#ffd870', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });
   }
@@ -518,7 +518,7 @@ export class TutorialScene extends Phaser.Scene {
     const d = Math.abs(this.player.x - c.x);
     if (this.colBubble?.active) {
       this.colBubble.x = c.x; this.colBubble.y = c.y - 70 + Math.sin(this.t * 0.04) * 3;
-      this.colBubble.setText(tr(['ДЗЗ-ДЗЗ-ДЗЗ!', 'ВСТАВАЙ!', 'ДЗЗЗЗ!'][Math.floor(this.t / 1400) % 3]));
+      this.colBubble.setText(t((['m_ring_ring_ring', 'm_wake_up', 'm_riiing'] as const)[Math.floor(this.t / 1400) % 3]));
     }
   }
 
@@ -532,14 +532,14 @@ export class TutorialScene extends Phaser.Scene {
     const c = this.colleague; this.colleague = null;
     this.colBubble?.destroy();
     // ХРЯСЬ! — лупит по будильнику, тот замолкает
-    const smash = this.add.text(c.x, c.y - 60, tr('ХРЯСЬ!'),
+    const smash = this.add.text(c.x, c.y - 60, t('m_wham'),
       { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#ff5544' })
       .setOrigin(0.5).setDepth(46).setAngle(Phaser.Math.Between(-8, 8));
     this.tweens.add({ targets: smash, scale: 1.4, alpha: 0, duration: 900, onComplete: () => smash.destroy() });
     for (let i = 0; i < 8; i++) { const p = this.add.rectangle(c.x, c.y - 20, 3, 3, 0xd8a020).setDepth(46);
       const a = Math.random() * 6.28; this.tweens.add({ targets: p, x: c.x + Math.cos(a) * 80, y: c.y - 20 + Math.sin(a) * 60, alpha: 0, duration: 600, onComplete: () => p.destroy() }); }
     this.tweens.add({ targets: c, angle: 80, y: c.y + 14, alpha: 0, duration: 500, onComplete: () => c.destroy() });
-    this.say('ХРЯСЬ! ...тишина. наконец-то.', 3000);
+    this.say('m_wham_silence_finally', 3000);
     this.time.delayedCall(2400, () => this.beginFawn());
   }
 
@@ -547,17 +547,17 @@ export class TutorialScene extends Phaser.Scene {
   private beginFawn() {
     if (this.step !== 'fight') return;
     this.step = 'fawn';
-    this.narrTell('Вечер. Соседка снова просит об одолжении.\nОтказать — неловко.\n\nПроще согласиться, лишь бы отстали.', () => {
+    this.narrTell('m_evening_the_neighbour_asks_for_a', () => {
       this.clearBeat();
       this.setScene('door');
-      this.setNarr('УСТУПИ — согласиться, лишь бы отстали');
-      this.setPrompt(IS_TOUCH ? 'УСТУПИ — сдайся' : 'V — уступи, сдайся');
+      this.setNarr('m_surrender_just_say_yes_so_they');
+      this.setPrompt(IS_TOUCH ? 'm_surrender_give_in' : 'm_v_give_in_surrender');
       this.neiSayT = 0;
       this.neighbor = this.add.sprite(W - 90, GROUND_Y, 'nei_idle').setOrigin(0.5, 1).setScale(1.5)
         .setFlipX(true).setDepth(8);
       this.safeAnim('nei-idle', 'nei_idle', 0, 3, 6, -1);
       if (this.anims.exists('nei-idle')) this.neighbor.play('nei-idle');
-      this.neiBubble = this.add.text(0, 0, tr('ты же не откажешь?'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
+      this.neiBubble = this.add.text(0, 0, t('m_you_won_t_refuse_will_you'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
         backgroundColor: '#e8b8d0', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });
   }
@@ -571,7 +571,7 @@ export class TutorialScene extends Phaser.Scene {
     if (this.neiBubble?.active) {
       this.neiBubble.x = n.x; this.neiBubble.y = n.y - 54;
       this.neiSayT += dt;
-      if (this.neiSayT > 2200) { this.neiSayT = 0; this.neiBubble.setText(tr(NEI_LINES[this.neiLine++ % NEI_LINES.length])); }
+      if (this.neiSayT > 2200) { this.neiSayT = 0; this.neiBubble.setText(t(NEI_LINES[this.neiLine++ % NEI_LINES.length])); }
     }
   }
 
@@ -588,30 +588,30 @@ export class TutorialScene extends Phaser.Scene {
       this.sleepSprite.setVisible(true).setPosition(this.player.x, this.player.y).setFlipX(this.player.flipX).play('p-sleep');
       this.time.delayedCall(2200, () => { this.sleepSprite.setVisible(false); this.player.setVisible(true); });
     }
-    const ok = this.add.text(this.player.x, this.player.y - 66, tr('«конечно... давайте ваш фикус»'),
+    const ok = this.add.text(this.player.x, this.player.y - 66, t('m_sure_bring_your_plant_over'),
       { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#b8a8d0' }).setOrigin(0.5).setDepth(46);
     this.tweens.add({ targets: ok, y: ok.y - 20, alpha: 0, duration: 1800, onComplete: () => ok.destroy() });
     this.tweens.add({ targets: n, x: n.x + 200, alpha: 0, duration: 900, delay: 500, onComplete: () => n.destroy() });
     // уступка тоже стоит сил — показываем минус жизни
     this.hearts = Math.max(1, this.hearts - 1); this.updateHearts();
     this.player.setTint(0x8a7aaa); this.time.delayedCall(320, () => this.player.clearTint());
-    this.say('уступил. все довольны — кроме Мистера. −1 жизнь.', 3200);
+    this.say('m_gave_in_everyone_happy_except_mister', 3200);
     this.time.delayedCall(2400, () => this.finish());
   }
 
   private finish() {
     this.step = 'done';
     track('tutorial_done');
-    this.setNarr('БЕЙ · ИЗБЕГАЙ · УСТУПИ\n\n...должно хватать. да?');
-    this.setPrompt(IS_TOUCH ? 'тапни — дальше' : 'E / клик — дальше');
+    this.setNarr('m_fight_avoid_surrender_should_be_enough');
+    this.setPrompt(IS_TOUCH ? 'm_tap_next' : 'm_e_click_next');
     this.input.once('pointerdown', () => this.scene.start('Intro'));
   }
 
   // ── Реплики ────────────────────────────────────────────────────────────────
-  private setNarr(s: string) { this.narr.setText(tr(s)); }
-  private setPrompt(s: string) { this.prompt.setText(tr(s)); }
-  private say(text: string, dur: number) { this.bubble.setText(tr(text)).setAlpha(1); this.bubbleT = dur; }
-  private sayOnce(key: string, text: string, dur: number) { if (this.said.has(key)) return; this.said.add(key); this.say(text, dur); }
+  private setNarr(s: MsgKey | '') { this.narr.setText(s === '' ? '' : t(s)); }
+  private setPrompt(s: MsgKey | '') { this.prompt.setText(s === '' ? '' : t(s)); }
+  private say(text: MsgKey, dur: number) { this.bubble.setText(t(text)).setAlpha(1); this.bubbleT = dur; }
+  private sayOnce(key: string, text: MsgKey, dur: number) { if (this.said.has(key)) return; this.said.add(key); this.say(text, dur); }
   // нажал «не ту» кнопку в этой сценке — объясняем, почему не сработает (разные варианты)
   private wrongTry(action: string) {
     const pool = WRONG[this.step]?.[action];

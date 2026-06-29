@@ -1,5 +1,5 @@
 import { ENEMIES, SAGE_CONTENT, contentMap } from '../data/content';
-import { t, tr } from '../i18n';
+import { t } from '../i18n';
 
 export class CardOverlay {
   private overlay = document.getElementById('card-overlay')!;
@@ -19,16 +19,14 @@ export class CardOverlay {
     const d = contentMap[id];
     if (!d) { cb(); return; } // контент не найден — не зависаем
     this.emojiEl.textContent  = d.emoji;
-    this.titleEl.textContent  = tr(d.name);
-    this.quoteEl.textContent  = tr(d.quote);
-    this.textEl.textContent   = tr(d.text);
-    this.tipEl.textContent    = tr(d.tip);
+    this.titleEl.textContent  = t(d.name);
+    this.quoteEl.textContent  = t(d.quote);
+    this.textEl.textContent   = t(d.text);
+    this.tipEl.textContent    = t(d.tip);
     this.counterEl.textContent = returnCount > 0
-      ? t(`вернулась ${returnCount}× · ${understood}/${ENEMIES.length} понято`,
-          `came back ${returnCount}× · ${understood}/${ENEMIES.length} understood`)
-      : t(`${understood}/${ENEMIES.length} понято`,
-          `${understood}/${ENEMIES.length} understood`);
-    this.btnEl.textContent = t('ПРОДОЛЖИТЬ', 'CONTINUE');
+      ? t('m_hud_returned', { n: returnCount, u: understood, tot: ENEMIES.length })
+      : t('m_hud_understood', { u: understood, tot: ENEMIES.length });
+    this.btnEl.textContent = t('m_continue_2');
     this.btnEl.onclick = () => { this.hide(); cb(); };
     this.overlay.classList.add('visible');
   }
@@ -36,17 +34,17 @@ export class CardOverlay {
   showSage(cb: () => void) {
     const d = SAGE_CONTENT;
     this.emojiEl.textContent  = d.emoji;
-    this.titleEl.textContent  = tr(d.name);
+    this.titleEl.textContent  = t(d.name);
     this.quoteEl.textContent  = '';
-    this.textEl.textContent   = tr(d.text);
-    this.tipEl.textContent    = tr(d.tip);
+    this.textEl.textContent   = t(d.text);
+    this.tipEl.textContent    = t(d.tip);
     this.counterEl.textContent = '';
-    this.btnEl.textContent = tr(d.ctaLabel);
+    this.btnEl.textContent = t(d.ctaLabel);
     this.btnEl.onclick = () => window.open(d.ctaUrl, '_blank');
     // secondary button
     const sec = document.createElement('button');
     sec.id = 'card-btn-sec';
-    sec.textContent = t('продолжить игру', 'keep playing');
+    sec.textContent = t('m_keep_playing');
     sec.onclick = () => { sec.remove(); this.hide(); cb(); };
     this.btnEl.after(sec);
     this.overlay.classList.add('visible');

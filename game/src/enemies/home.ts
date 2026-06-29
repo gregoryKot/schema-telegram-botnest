@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { MsgKey } from '../i18n';
 import { GROUND_Y } from '../constants';
 import { audio } from '../audio';
 
@@ -20,7 +21,7 @@ export interface MobCtx {
   frozen(): boolean;
   dashing(): boolean;
   damage(fromX: number): void;
-  sayOnce(key: string, text: string, dur: number): void;
+  sayOnce(key: string, text: MsgKey, dur: number): void;
   burst(x: number, y: number, color: number, n: number, sp: number): void;
   hitstop(ms: number): void;
   slow(mult: number): void; // вызывается каждый кадр, пока враг держит игрока
@@ -69,7 +70,7 @@ export class Procrastination implements HomeMob {
         if (d < 56 && !this.ctx.dashing()) {
           this.state = 'latched'; this.frozenT = 0;
           audio.anx();
-          this.ctx.sayOnce('proc_latch', 'что-то... тянет вниз. двигаться лень.', 2600);
+          this.ctx.sayOnce('proc_latch', 'm_something_drags_you_down_too_lazy', 2600);
         }
         break;
       }
@@ -85,7 +86,7 @@ export class Procrastination implements HomeMob {
           this.frozenT += dt;
           this.size = Math.min(2.0, this.size + dt * 0.0004);
           this.relief = Math.max(0, this.relief - dt * 0.0004);
-          if (this.frozenT > 1100) { this.frozenT = 0; this.ctx.sayOnce('proc_freeze', 'залип ещё глубже — вот что её кормит.', 2800); }
+          if (this.frozenT > 1100) { this.frozenT = 0; this.ctx.sayOnce('proc_freeze', 'm_stuck_even_deeper_that_s_what', 2800); }
         } else this.frozenT = 0;
         if (this.ctx.dashing()) this.shakeOff(p);  // рывок — лучший копинг
         break;
@@ -108,12 +109,12 @@ export class Procrastination implements HomeMob {
     this.img.y = GROUND_Y - 20;
     this.ctx.burst(this.img.x, this.img.y, 0x6a7a4a, 8, 120);
     audio.split();
-    if (this.relief >= 1) this.standDown('оторвался. но лень ещё вернётся.');
-    else this.ctx.sayOnce('proc_dash', 'рывок — и отлипло. на чуть-чуть.', 2400);
+    if (this.relief >= 1) this.standDown('m_broke_free_but_the_laziness_will');
+    else this.ctx.sayOnce('proc_dash', 'm_a_dash_and_unstuck_for_a', 2400);
   }
 
   // отступает «на время» — не убита; гейт откроется, но она вернётся позже
-  private standDown(line: string) {
+  private standDown(line: MsgKey) {
     this.alive = false;
     this.ctx.sayOnce('proc_off', line, 2600);
     this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, scale: 0, duration: 320, onComplete: () => this.img.destroy() });
@@ -125,14 +126,14 @@ export class Procrastination implements HomeMob {
     if (this.state === 'latched') {
       // бить по налипшему — слабая, но передышка (себя же лупишь)
       this.relief += 0.12;
-      if (this.relief >= 1) this.standDown('оторвался. но лень ещё вернётся.');
-      else this.ctx.sayOnce('proc_hit', 'лупишь по ней — чуть отпускает. себя же бьёшь.', 2600);
+      if (this.relief >= 1) this.standDown('m_broke_free_but_the_laziness_will');
+      else this.ctx.sayOnce('proc_hit', 'm_you_beat_at_it_eases_a', 2600);
       return true;
     }
     if (Math.hypot(this.img.x - p.x, this.img.y - (p.y - 20)) < range) {
       this.img.x += dir * 16;
       this.ctx.burst(this.img.x, this.img.y, 0x4a5a3a, 4, 60);
-      this.ctx.sayOnce('proc_soft', 'мягкая... удар вязнет. лучше движение.', 2400);
+      this.ctx.sayOnce('proc_soft', 'm_soft_the_hit_sinks_in_movement', 2400);
       return true;
     }
     return false;
@@ -182,11 +183,11 @@ export class PhoneMob implements HomeMob {
       b.velocity.x += Math.sign(this.img.x - p.x) * dt * 0.45;
       this.drain += dt * (this.ctx.frozen() ? 3 : 1); // залип = время летит втрое
       this.relief = Math.max(0, this.relief - dt * 0.0003); // в зоне передышка тает — ловушка
-      this.ctx.sayOnce('phone_zone', 'одну минутку, только гляну...', 2400);
+      this.ctx.sayOnce('phone_zone', 'm_just_a_minute_only_a_quick', 2400);
       if (this.drain > 2300) {
         this.drain = 0;
         this.ctx.damage(this.img.x);
-        this.ctx.sayOnce('phone_drain', '...два часа?! куда они делись?', 2800);
+        this.ctx.sayOnce('phone_drain', 'm_two_hours_where_did_they_go', 2800);
       }
     } else {
       this.drain = Math.max(0, this.drain - dt * 1.5);
@@ -219,10 +220,10 @@ export class PhoneMob implements HomeMob {
         this.alive = false;
         this.glow.clear(); this.glow.destroy();
         this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, angle: 70, y: GROUND_Y - 10, duration: 360, onComplete: () => this.img.destroy() });
-        this.ctx.sayOnce('phone_break', 'выключил... до следующего «дзынь».', 2600);
+        this.ctx.sayOnce('phone_break', 'm_switched_off_until_the_next_ping', 2600);
       } else {
         this.img.setAngle(40); this.ctx.scene.tweens.add({ targets: this.img, angle: 0, duration: 250 });
-        this.ctx.sayOnce('phone_hit', 'погас... и снова загорелся. рука сама тянется.', 2600);
+        this.ctx.sayOnce('phone_hit', 'm_went_dark_and_lit_up_again', 2600);
       }
       return true;
     }
@@ -270,8 +271,8 @@ export class Irritation implements HomeMob {
           this.cd = 900;
           this.ctx.damage(this.img.x);
           this.vx = -Math.sign(px - this.img.x) * 260;
-          if (this.ctx.frozen()) this.ctx.sayOnce('irrit_freeze', 'замер — а оно всё равно жжёт!', 2800);
-          else this.ctx.sayOnce('irrit_burn', 'жжётся! откуда столько злости?', 2600);
+          if (this.ctx.frozen()) this.ctx.sayOnce('irrit_freeze', 'm_froze_and_still_it_burns', 2800);
+          else this.ctx.sayOnce('irrit_burn', 'm_it_burns_where_s_all_this', 2600);
         }
         if (this.t > 2600) { this.state = 'tired'; this.t = 0; this.vx *= 0.1; }
         break;
@@ -289,7 +290,7 @@ export class Irritation implements HomeMob {
           this.img.setVisible(true).setAlpha(0).setScale(this.size);
           this.img.x = px + 240; this.img.y = GROUND_Y - 60;
           this.ctx.scene.tweens.add({ targets: this.img, alpha: 1, duration: 300 });
-          this.ctx.sayOnce('irrit_back', 'опять?! я же только что выдохнул...', 2600);
+          this.ctx.sayOnce('irrit_back', 'm_again_i_just_caught_my_breath', 2600);
         }
         break;
       }
@@ -303,7 +304,7 @@ export class Irritation implements HomeMob {
   private standDown() {
     this.alive = false;
     this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, scale: 0, duration: 260, onComplete: () => this.img.destroy() });
-    this.ctx.sayOnce('irrit_dead', 'выдохся... отпустило. до следующего раза.', 2600);
+    this.ctx.sayOnce('irrit_dead', 'm_spent_it_let_go_until_next', 2600);
   }
 
   tryHit(dir: number, range: number): boolean {
@@ -319,7 +320,7 @@ export class Irritation implements HomeMob {
         this.size = Math.max(0.6, this.size * 0.82);
         this.state = 'gone'; this.t = 0;
         this.img.setVisible(false);
-        this.ctx.sayOnce('irrit_pop', 'выпустил пар! ...а оно снова вскипает.', 2400);
+        this.ctx.sayOnce('irrit_pop', 'm_let_off_steam_and_it_boils', 2400);
       }
       return true;
     }

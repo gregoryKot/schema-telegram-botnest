@@ -3,7 +3,7 @@
 //  Сцены читают состояние через touch.* и свои Key-объекты.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { t } from './i18n';
+import { t, type MsgKey } from './i18n';
 
 export const IS_TOUCH =
   (typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches) ||
@@ -44,16 +44,16 @@ export function setTouchControls(visible: boolean) {
 // Подписи статичны в HTML по-русски — переводим их на текущий язык один раз при
 // инициализации (язык переключается через reload, так что пересборки не нужно).
 function localizeTouchUI() {
-  const set = (id: string, ru: string, en: string) => {
+  const set = (id: string, key: MsgKey) => {
     const el = document.getElementById(id);
-    if (el) el.textContent = t(ru, en);
+    if (el) el.textContent = t(key);
   };
-  set('tbtn-fawn',  'УСТУПИ', 'SURRENDER');
-  set('tbtn-avoid', 'ИЗБЕГАЙ', 'AVOID');
-  set('tbtn-hit',   'БЕЙ', 'FIGHT');
+  set('tbtn-fawn', 'm_surrender');
+  set('tbtn-avoid', 'm_avoid');
+  set('tbtn-hit', 'm_fight');
   const rotate = document.getElementById('rotate-hint');
   if (rotate) rotate.innerHTML =
-    `<div class="phone-icon">📱</div><div>${t('ПОВЕРНИ ТЕЛЕФОН', 'ROTATE PHONE')}<br>${t('играем в альбомной', 'play in landscape')}</div>`;
+    `<div class="phone-icon">📱</div><div>${t('m_rotate_phone')}<br>${t('m_play_in_landscape')}</div>`;
 }
 
 export function initTouchControls() {
