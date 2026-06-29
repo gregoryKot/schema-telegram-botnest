@@ -42,17 +42,17 @@ function abs(origin: string, pathOrUrl: string): string {
   return /^https?:\/\//i.test(pathOrUrl) ? pathOrUrl : origin + pathOrUrl;
 }
 
-export async function discoverCalendarUrl(
-  auth: string,
-  preferredName = '',
-): Promise<string | null> {
+export interface CalendarRef { url: string; name: string; }
+
+/** Enumerate every VEVENT-capable calendar collection for the account. */
+export async function listCalendars(auth: string): Promise<CalendarRef[]> {
   // 1. principal
   const principalXml = await propfind(
     `${BOOTSTRAP}/`, auth,
     `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="DAV:"><d:prop><d:current-user-principal/></d:prop></d:propfind>`,
   );
   const principalPath = innerHref(principalXml, 'current-user-principal');
-  if (!principalPath) return null;
+  if (!principalPath) return [];
   const principalUrl = abs(BOOTSTRAP, principalPath);
 
   // 2. calendar-home-set
@@ -61,11 +61,11 @@ export async function discoverCalendarUrl(
     `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop><c:calendar-home-set/></d:prop></d:propfind>`,
   );
   const homeHref = innerHref(homeXml, 'calendar-home-set');
-  if (!homeHref) return null;
+  if (!homeHref) return [];
   const homeUrl = abs(new URL(principalUrl).origin, homeHref).replace(/\/?$/, '/');
   const homeOrigin = new URL(homeUrl).origin;
 
-  // 3. list calendars, pick one that supports VEVENT
+  // 3. list every calendar that supports VEVENT
   const listXml = await propfind(
     homeUrl, auth,
     `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop><d:displayname/><d:resourcetype/><c:supported-calendar-component-set/></d:prop></d:propfind>`,
@@ -73,15 +73,28 @@ export async function discoverCalendarUrl(
   );
 
   const responses = listXml.split(/<[^>]*response[\s>]/i).slice(1);
-  let fallback: string | null = null;
+  const out: CalendarRef[] = [];
   for (const r of responses) {
     const href = (r.match(/<[^>]*href[^>]*>\s*([^<]+?)\s*</i)?.[1] ?? '').trim();
     if (!href || !/VEVENT/i.test(r)) continue;
     if (/inbox|outbox|notification/i.test(href)) continue;
     const url = abs(homeOrigin, href).replace(/\/?$/, '/');
     const name = (r.match(/<[^>]*displayname[^>]*>\s*([^<]*?)\s*</i)?.[1] ?? '').trim();
-    if (preferredName && name.toLowerCase() === preferredName.toLowerCase()) return url;
-    if (!fallback) fallback = url; // first VEVENT calendar = default
+    out.push({ url, name });
   }
-  return fallback;
+  return out;
+}
+
+/** Pick the single calendar to write booking events into. */
+export async function discoverCalendarUrl(
+  auth: string,
+  preferredName = '',
+): Promise<string | null> {
+  const cals = await listCalendars(auth);
+  if (!cals.length) return null;
+  if (preferredName) {
+    const match = cals.find((c) => c.name.toLowerCase() === preferredName.toLowerCase());
+    if (match) return match.url;
+  }
+  return cals[0].url; // first VEVENT calendar = default
 }

@@ -82,6 +82,7 @@ export class BookingAdminController {
       meetingStaticUrl: meeting.staticUrl,
       appleCalendar: this.calDav.enabled,
       calendarBusyCount,
+      calendarBlocking: this.config.get<string>('CALENDAR_BLOCK_SLOTS') === 'true',
       emailFallback: !!this.config.get<string>('RESEND_API_KEY') && !!this.config.get<string>('ADMIN_EMAIL'),
     };
   }
