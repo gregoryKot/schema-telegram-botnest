@@ -2,6 +2,8 @@
 // localStorage. Переключатель в меню вызывает setLang + reload — все тексты
 // пересобираются на новом языке. t(ru, en) вызывается в момент создания строки.
 
+import { EN } from './translations';
+
 const KEY = 'rtym_lang';
 export type Lang = 'ru' | 'en';
 
@@ -26,4 +28,10 @@ export function setLang(l: Lang) {
 /** Вернуть строку текущего языка. t('русский', 'english'). */
 export function t(ru: string, en: string): string {
   return lang === 'en' ? en : ru;
+}
+
+/** Перевести игровую строку по словарю. Нет в словаре / lang ru → как есть. */
+export function tr(ru: string): string {
+  if (lang !== 'en') return ru;
+  return EN[ru] ?? ru;
 }

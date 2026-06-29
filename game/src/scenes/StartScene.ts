@@ -5,7 +5,7 @@ import { track } from '../analytics';
 import { donate } from '../donate';
 import { CHAPTERS } from '../chapters';
 import { setTouchControls } from '../controls';
-import { t } from '../i18n';
+import { t, tr } from '../i18n';
 
 export class StartScene extends Phaser.Scene {
   constructor() { super('Start'); }
@@ -56,7 +56,7 @@ export class StartScene extends Phaser.Scene {
     // вернулся — продолжай с достигнутой главы, не с нуля
     const cont = getContinueChapter();
     if (cont && CHAPTERS[cont]) {
-      const cbtn = this.add.text(W / 2, H / 2 + 178, t('продолжить', 'continue') + ` — «${CHAPTERS[cont].title}» →`, {
+      const cbtn = this.add.text(W / 2, H / 2 + 178, t('продолжить', 'continue') + ` — «${tr(CHAPTERS[cont].title)}» →`, {
         fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#88ffcc', letterSpacing: 0,
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
       cbtn.on('pointerover', () => cbtn.setColor('#fff0d8'));
