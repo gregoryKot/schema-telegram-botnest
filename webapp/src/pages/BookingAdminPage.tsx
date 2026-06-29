@@ -100,6 +100,13 @@ function IntegrationStatus({ adminKey }: { adminKey: string }) {
       )}
       <Row label="Robokassa (оплата)" on={!!s.robokassa} note={s.robokassaTest ? 'тест-режим' : 'боевой'} />
       <Row label="Apple Calendar" on={!!s.appleCalendar} note={s.appleCalendar ? `вкл · занято: ${s.calendarBusyCount ?? '?'}` : undefined} />
+      {s.appleCalendar && (
+        <div style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 8px 16px', lineHeight: 1.5 }}>
+          {Array.isArray(s.calendarNames) && s.calendarNames.length > 0
+            ? <>Календари в скане: {s.calendarNames.join(', ')}</>
+            : <>Календари не найдены — проверьте APPLE_ID / APPLE_APP_PASSWORD.</>}
+        </div>
+      )}
       {s.appleCalendar && !s.calendarBlocking && (s.calendarBusyCount ?? 0) > 0 && (
         <div style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 8px 16px', lineHeight: 1.5 }}>
           Календарь видит {s.calendarBusyCount} занятых интервалов, но слоты пока НЕ блокируются.

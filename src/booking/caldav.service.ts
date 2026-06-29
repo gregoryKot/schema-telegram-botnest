@@ -146,6 +146,18 @@ export class CalDavService {
     return all;
   }
 
+  /** Diagnostics for the admin panel: which calendars we actually see. */
+  async debugCalendars(): Promise<string[]> {
+    if (!this.enabled) return [];
+    if (this.configuredBase) return [this.configuredBase];
+    try {
+      return (await listCalendars(this.auth)).map((c) => c.name || c.url);
+    } catch (e) {
+      this.logger.warn(`CalDAV debug list failed: ${(e as Error).message}`);
+      return [];
+    }
+  }
+
   /** Delete the calendar event for a cancelled booking. */
   async removeEvent(uid: string): Promise<void> {
     if (!this.enabled || !uid) return;

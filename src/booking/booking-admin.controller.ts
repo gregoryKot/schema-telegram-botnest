@@ -67,10 +67,15 @@ export class BookingAdminController {
     // How many busy intervals CalDAV returns for the next 14 days (diagnoses
     // over-blocking of slots). Fail-open inside getBusyTimes.
     let calendarBusyCount: number | null = null;
+    let calendarNames: string[] = [];
     if (this.calDav.enabled) {
       const now = new Date();
-      const busy = await this.calDav.getBusyTimes(now, new Date(now.getTime() + 14 * 86_400_000));
+      const [busy, names] = await Promise.all([
+        this.calDav.getBusyTimes(now, new Date(now.getTime() + 14 * 86_400_000)),
+        this.calDav.debugCalendars(),
+      ]);
       calendarBusyCount = busy.length;
+      calendarNames = names;
     }
     return {
       siteUrl: this.config.get<string>('SITE_URL') ?? '(default kotlarewski.gr)',
@@ -82,6 +87,7 @@ export class BookingAdminController {
       meetingStaticUrl: meeting.staticUrl,
       appleCalendar: this.calDav.enabled,
       calendarBusyCount,
+      calendarNames,
       calendarBlocking: this.config.get<string>('CALENDAR_BLOCK_SLOTS') === 'true',
       emailFallback: !!this.config.get<string>('RESEND_API_KEY') && !!this.config.get<string>('ADMIN_EMAIL'),
     };

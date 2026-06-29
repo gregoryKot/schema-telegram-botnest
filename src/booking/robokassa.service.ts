@@ -10,6 +10,11 @@ import { createHash } from 'crypto';
  *   ROBOKASSA_PASSWORD1       — password 1 (for payment URL signing)
  *   ROBOKASSA_PASSWORD2       — password 2 (for webhook signature validation)
  *   ROBOKASSA_IS_TEST         — "true" to use test mode (default: false)
+ *   ROBOKASSA_FISCAL          — "true" to send an ОФД Receipt (default: false).
+ *                               Self-employed (НПД) issue cheques via «Мой налог»,
+ *                               NOT through Robokassa's ОФД — so this stays OFF.
+ *                               Sending a Receipt also changes the signature
+ *                               formula, so the two must always move together.
  */
 @Injectable()
 export class RobokassaService {
@@ -18,12 +23,14 @@ export class RobokassaService {
   private readonly pass1: string;
   private readonly pass2: string;
   private readonly isTest: boolean;
+  private readonly fiscal: boolean;
 
   constructor(config: ConfigService) {
     this.login = config.get<string>('ROBOKASSA_MERCHANT_LOGIN') ?? '';
     this.pass1  = config.get<string>('ROBOKASSA_PASSWORD1') ?? '';
     this.pass2  = config.get<string>('ROBOKASSA_PASSWORD2') ?? '';
     this.isTest = config.get<string>('ROBOKASSA_IS_TEST') === 'true';
+    this.fiscal = config.get<string>('ROBOKASSA_FISCAL') === 'true';
   }
 
   get enabled(): boolean {
@@ -49,10 +56,22 @@ export class RobokassaService {
   }): string {
     const { invId, amount, desc, email, successUrl, failUrl } = params;
     const outSum = amount.toFixed(2);
-    const sig = md5(`${this.login}:${outSum}:${invId}:${this.pass1}`);
 
-    const receipt = buildReceipt(desc, amount);
-    const receiptEncoded = encodeURIComponent(Buffer.from(JSON.stringify(receipt)).toString('base64'));
+    // Optional ОФД fiscalization. When a Receipt is sent it MUST be part of the
+    // signature, URL-encoded, between InvId and Password1:
+    //   MD5(MerchantLogin:OutSum:InvId:Receipt:Password1)
+    // Self-employed don't fiscalize via Robokassa, so this is off by default and
+    // the signature is the plain MD5(MerchantLogin:OutSum:InvId:Password1).
+    let receiptParam: string | null = null;
+    let sig: string;
+    if (this.fiscal) {
+      const base64Receipt = Buffer.from(JSON.stringify(buildReceipt(desc, amount))).toString('base64');
+      receiptParam = base64Receipt; // URLSearchParams encodes it once for the URL
+      const receiptForSig = encodeURIComponent(base64Receipt); // signature uses the URL-encoded form
+      sig = md5(`${this.login}:${outSum}:${invId}:${receiptForSig}:${this.pass1}`);
+    } else {
+      sig = md5(`${this.login}:${outSum}:${invId}:${this.pass1}`);
+    }
 
     const base = 'https://auth.robokassa.ru/Merchant/Index.aspx';
     const qs = new URLSearchParams({
@@ -61,13 +80,13 @@ export class RobokassaService {
       InvId: String(invId),
       Description: desc,
       SignatureValue: sig,
-      Receipt: receiptEncoded,
+      ...(receiptParam ? { Receipt: receiptParam } : {}),
       ...(email ? { Email: email } : {}),
       SuccessURL: successUrl,
       FailURL: failUrl,
       IsTest: this.isTest ? '1' : '0',
     });
-    this.logger.debug(`Payment URL built for InvId=${invId}`);
+    this.logger.debug(`Payment URL built for InvId=${invId} (fiscal=${this.fiscal})`);
     return `${base}?${qs}`;
   }
 
