@@ -1,23 +1,24 @@
 import { GROUND_Y } from './constants';
+import type { MsgKey } from './i18n';
 
 // A chapter = pure data. The Game scene is the engine; chapters are config.
 export interface TriggerDef {
-  x: number; anx?: number; critic?: boolean; say?: string; overwhelm?: boolean;
+  x: number; anx?: number; critic?: boolean; say?: MsgKey; overwhelm?: boolean;
   // враги главы 2 — значение = координата спавна
   proc?: number; phone?: number; irrit?: number;
   soothe?: number; mirror?: number; // Акт II: Само-Пройдёт, Кривое зеркало
   seat?: number;  // высота посадки прокрастинации (диван): y = GROUND_Y - seat
   gate?: number;  // боевой гейт: стена на этой x, падает когда враги триггера разрешены
 }
-export interface EndingLine { text: string; y: number; color: string; size: number; delay: number; }
+export interface EndingLine { text: MsgKey; y: number; color: string; size: number; delay: number; }
 export interface ChapterPalette {
   skyTop: number; skyBot: number; glow1: number; glow2: number;
   groundTint: number; platTint: number; fog: number; mote: number;
 }
 export interface ChapterConfig {
   id: string;
-  title: string;
-  tagline: string;                       // строка-настроение на титульной карточке
+  title: MsgKey;
+  tagline: MsgKey;                       // строка-настроение на титульной карточке
   theme: 'street' | 'room';             // декорации (см. decor.ts) и текстуры пола/платформ
   decor?: { couch?: number; tv?: number; lamps?: number[] };
   arenaW: number;
@@ -32,7 +33,7 @@ export interface ChapterConfig {
   palette: ChapterPalette;
   music: 'day' | 'home';
   overwhelmAnx: number;     // сколько тревог высыпает финал (0 — только текст)
-  overwhelmSay: string;
+  overwhelmSay: MsgKey;
   next?: string;            // глава после развязки; нет — в начало
   branch?: string;          // конец Акта I: экран-развилка (CTA в терапию ИЛИ продолжить в эту главу)
 }
@@ -42,8 +43,8 @@ const G = GROUND_Y;
 // ── Глава 1 · Обычный день ─────────────────────────────────────────────────
 const chapter1: ChapterConfig = {
   id: 'chapter1',
-  title: 'Обычный день',
-  tagline: 'вечер. просто дойти до дома.',
+  title: 'm_an_ordinary_day',
+  tagline: 'm_evening_just_make_it_home',
   theme: 'street',
   arenaW: 4700,
   // Враги — не «тревога ×3», а разные триггеры дня: тревога, раздражение,
@@ -83,19 +84,19 @@ const chapter1: ChapterConfig = {
     { x: 2560, y: G - 168 }, { x: 2850, y: G - 262 }, { x: 3780, y: G - 138 },
   ],
   triggers: [
-    { x: 280,  anx: 1, say: 'опять это чувство...', gate: 690 }, // учим базовый цикл
+    { x: 280,  anx: 1, say: 'm_that_feeling_again', gate: 690 }, // учим базовый цикл
     { x: 1180, irrit: 1620, gate: 1760 },                        // вариант: раздражение на улице
     { x: 1980, critic: true },                                   // тень появляется и идёт следом
-    { x: 2520, anx: 1, say: 'всё ещё за спиной.' },              // критик растёт за плечом
+    { x: 2520, anx: 1, say: 'm_still_right_behind_you' },              // критик растёт за плечом
     { x: 3260, anx: 2, irrit: 3520, gate: 3680 },                // навалилось разом — эскалация
     { x: 4320, overwhelm: true },
   ],
   ending: [
-    { text: 'Ты дрался. Бежал. Замирал.',               y: 120, color: '#d8c8ec', size: 17, delay: 700  },
-    { text: 'Критик всё равно догонял.',                y: 156, color: '#ff8aa6', size: 16, delay: 2200 },
-    { text: 'Он — твоя же тень.\nИ бил больнее всех.',  y: 226, color: '#e8b8c8', size: 16, delay: 4000 },
-    { text: 'Одному с этим не справиться.',             y: 320, color: '#e8d0dc', size: 16, delay: 6200 },
-    { text: 'И не нужно. Этому учит терапия.',          y: 372, color: '#88ffcc', size: 15, delay: 8200 },
+    { text: 'm_you_fought_ran_froze',               y: 120, color: '#d8c8ec', size: 17, delay: 700  },
+    { text: 'm_the_critic_caught_up_anyway',                y: 156, color: '#ff8aa6', size: 16, delay: 2200 },
+    { text: 'm_it_s_your_own_shadow_and',  y: 226, color: '#e8b8c8', size: 16, delay: 4000 },
+    { text: 'm_you_can_t_handle_this_alone',             y: 320, color: '#e8d0dc', size: 16, delay: 6200 },
+    { text: 'm_and_you_don_t_have_to',          y: 372, color: '#88ffcc', size: 15, delay: 8200 },
   ],
   palette: {
     // сумеречная улица, но не чёрная — мягкий фиолетовый вечер
@@ -104,7 +105,7 @@ const chapter1: ChapterConfig = {
   },
   music: 'day',
   overwhelmAnx: 3,
-  overwhelmSay: 'сколько можно... я так больше не могу.',
+  overwhelmSay: 'm_how_long_can_this_go_on',
   next: 'chapter2',
 };
 
@@ -114,8 +115,8 @@ const chapter1: ChapterConfig = {
 // прокрастинация снимается только движением (рывок).
 const chapter2: ChapterConfig = {
   id: 'chapter2',
-  title: 'Дома',
-  tagline: 'дома. но отдыха нет.',
+  title: 'm_home',
+  tagline: 'm_home_but_no_rest',
   theme: 'room',
   decor: { couch: 1560, tv: 3000, lamps: [400, 2450, 4300] },
   arenaW: 4700,
@@ -150,22 +151,22 @@ const chapter2: ChapterConfig = {
     { x: 2540, y: G - 190 }, { x: 3140, y: G - 130 }, { x: 3690, y: G - 210 },
   ],
   triggers: [
-    { x: 240,  say: 'дома. наконец выдохнуть... да?' },
+    { x: 240,  say: 'm_home_finally_a_breath_right' },
     { x: 540,  phone: 820, gate: 900 },             // телефон сразу у входа — мимо не пройти
     { x: 1180, proc: 1560, seat: 64, gate: 1760 },  // диван (couch 1560) держит
     { x: 1760, irrit: 1860 },                       // раздражение в бывшем пустом участке
-    { x: 2300, say: 'почему дома — тяжелее всего?' },
+    { x: 2300, say: 'm_why_is_home_the_hardest_of' },
     { x: 2520, phone: 2820, gate: 3040 },           // телефон возвращается — у TV (3000)
     { x: 3360, irrit: 3640, phone: 3820, gate: 3980 }, // финал: всё разом
     { x: 4420, overwhelm: true },
   ],
   ending: [
-    { text: 'Дом должен был быть отдыхом.',         y: 120, color: '#c8d4ec', size: 17, delay: 700  },
-    { text: 'Но вечер сожрал телефон.',             y: 156, color: '#9fb6d6', size: 15, delay: 2200 },
-    { text: 'Диван держал. Злость жгла.',           y: 226, color: '#c8d4ec', size: 16, delay: 4000 },
-    { text: 'Ты не ленивый. Не сломанный.',         y: 300, color: '#e8c8a0', size: 16, delay: 6000 },
-    { text: 'Просто слишком давно — один.',         y: 338, color: '#e8d0dc', size: 15, delay: 7800 },
-    { text: 'Дальше — туда, где это началось.',     y: 408, color: '#88ffcc', size: 15, delay: 9800 },
+    { text: 'm_home_was_supposed_to_be_rest',         y: 120, color: '#c8d4ec', size: 17, delay: 700  },
+    { text: 'm_but_the_phone_ate_the_evening',             y: 156, color: '#9fb6d6', size: 15, delay: 2200 },
+    { text: 'm_the_couch_held_on_anger_burned',           y: 226, color: '#c8d4ec', size: 16, delay: 4000 },
+    { text: 'm_you_re_not_lazy_not_broken',         y: 300, color: '#e8c8a0', size: 16, delay: 6000 },
+    { text: 'm_just_alone_for_far_too_long',         y: 338, color: '#e8d0dc', size: 15, delay: 7800 },
+    { text: 'm_onward_to_where_it_began',     y: 408, color: '#88ffcc', size: 15, delay: 9800 },
   ],
   palette: {
     // тёплая «вечерняя комната при лампе», не подземелье — чтобы тёплый реквизит читался
@@ -174,7 +175,7 @@ const chapter2: ChapterConfig = {
   },
   music: 'home',
   overwhelmAnx: 0,
-  overwhelmSay: 'весь вечер... опять в никуда.',
+  overwhelmSay: 'm_the_whole_evening_wasted_again',
   branch: 'chapter3', // конец Акта I: воронка-CTA ИЛИ продолжить в Дорогу (гл.3)
 };
 
@@ -183,8 +184,8 @@ const chapter2: ChapterConfig = {
 // а УБАЮКИВАЮТ: Само-Пройдёт замедляет и темнит экран, шепчет «да всё норм».
 const chapter3: ChapterConfig = {
   id: 'chapter3',
-  title: 'Само пройдёт',
-  tagline: 'понял, что так нельзя. и тут же — «да ладно, не сегодня».',
+  title: 'm_it_ll_pass',
+  tagline: 'm_realised_this_can_t_go_on',
   theme: 'street',
   arenaW: 2600,
   pits: [{ s: 1250, e: 1400 }],
@@ -198,17 +199,17 @@ const chapter3: ChapterConfig = {
   hearts: [{ x: 420, y: G - 120 }, { x: 1800, y: G - 188 }, { x: 2300, y: G - 120 }],
   memories: [{ x: 560, y: G - 130 }, { x: 1500, y: G - 138 }],
   triggers: [
-    { x: 240,  say: 'надо что-то менять... или нет?' },
+    { x: 240,  say: 'm_i_need_to_change_something_or' },
     { x: 600,  soothe: 820 },
-    { x: 1500, say: 'ну вот, уже легче. может, само и пройдёт?' },
+    { x: 1500, say: 'm_see_easier_already_maybe_it_ll' },
     { x: 1700, mirror: 1950 },   // поворот: ЗАМРИ = посмотреть честно
     { x: 2350, overwhelm: true },
   ],
   ending: [
-    { text: 'Самый хитрый враг не нападал.',       y: 120, color: '#d8c8ec', size: 17, delay: 700  },
-    { text: 'Он просто шептал: не сегодня.',       y: 156, color: '#bfe0ff', size: 15, delay: 2200 },
-    { text: 'И день за днём — мимо.',              y: 226, color: '#d8c8ec', size: 16, delay: 4000 },
-    { text: 'Пока не скажешь честно: пора.',       y: 320, color: '#88ffcc', size: 15, delay: 6200 },
+    { text: 'm_the_slyest_enemy_never_attacked',       y: 120, color: '#d8c8ec', size: 17, delay: 700  },
+    { text: 'm_it_just_whispered_not_today',       y: 156, color: '#bfe0ff', size: 15, delay: 2200 },
+    { text: 'm_and_day_after_day_slips_by',              y: 226, color: '#d8c8ec', size: 16, delay: 4000 },
+    { text: 'm_until_you_say_it_honestly_it',       y: 320, color: '#88ffcc', size: 15, delay: 6200 },
   ],
   palette: {
     skyTop: 0x3a3458, skyBot: 0x6a5a82, glow1: 0x8a7aba, glow2: 0xa890c8,
@@ -216,7 +217,7 @@ const chapter3: ChapterConfig = {
   },
   music: 'home',
   overwhelmAnx: 0,
-  overwhelmSay: 'опять отговорил себя. ещё один день — мимо.',
+  overwhelmSay: 'm_talked_myself_out_again_another_day',
 };
 
 export const CHAPTERS: Record<string, ChapterConfig> = { chapter1, chapter2, chapter3 };

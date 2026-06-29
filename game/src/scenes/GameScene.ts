@@ -7,7 +7,7 @@ import { SelfSoothe, CrookedMirror } from '../enemies/road';
 import { buildDecor } from '../decor';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { ensureEnemyAnims, LEDGE } from '../props';
-import { t, tr } from '../i18n';
+import { t, type MsgKey } from '../i18n';
 import { unlockChapter } from '../progress';
 import { getAssist } from '../assist';
 import { track } from '../analytics';
@@ -30,9 +30,9 @@ const ATTACK_AURA = 104; // радиус удара вокруг кота — б
 const ANX_SCALE = 0.42;  // спрайт тучи широкий — ужимаем до размера как в обучении
 // тень-критик выкрикивает это постоянно (голос Карающего Родителя)
 const CRITIC_LINES = [
-  'ты опять не справился.', 'все смогли. кроме тебя.', 'я же говорил — не выйдет.',
-  'и так каждый раз.', 'соберись уже.', 'кому ты такой нужен.',
-  'опять всё испортил.', 'стыдно должно быть.',
+  'm_you_failed_again', 'm_everyone_managed_except_you', 'm_told_you_it_won_t_work',
+  'm_every_single_time', 'm_pull_yourself_together', 'm_who_needs_you_like_this',
+  'm_ruined_it_again', 'm_you_should_be_ashamed',
 ];
 // game feel
 const COYOTE_MS = 90;        // прыжок прощается N мс после схода с платформы
@@ -175,8 +175,8 @@ export class GameScene extends Phaser.Scene {
     const mk = (y: number, text: string, size: number, color: string) =>
       this.add.text(W / 2, y, text, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${size}px`, color, letterSpacing: 3, align: 'center' })
         .setOrigin(0.5).setScrollFactor(0).setDepth(120).setAlpha(0);
-    const t1 = mk(170, tr(this.chapter.title).toUpperCase(), 24, '#fff0d8');
-    const t2 = mk(208, tr(this.chapter.tagline), 11, '#9a8fb8');
+    const t1 = mk(170, t(this.chapter.title).toUpperCase(), 24, '#fff0d8');
+    const t2 = mk(208, t(this.chapter.tagline), 11, '#9a8fb8');
     this.tweens.add({ targets: [t1, t2], alpha: 1, duration: 700, delay: 350 });
     this.tweens.add({ targets: [t1, t2], alpha: 0, duration: 800, delay: 3200, onComplete: () => { t1.destroy(); t2.destroy(); } });
   }
@@ -303,18 +303,18 @@ export class GameScene extends Phaser.Scene {
       fn: () => {
         const beforeA = this.anx.length, beforeH = this.homeMobs.length;
         if (t.anx) { for (let i = 0; i < t.anx; i++) this.spawnAnx(this.player.x + 360 + i * 120, 1);
-          this.introOnce('anx', 'ТРЕВОГА', 'бьёшь — делится. избегаешь — отступит.\nно совсем не уходит.'); }
+          this.introOnce('anx', 'm_anxiety', 'm_hit_it_it_splits_avoid_it'); }
         if (t.critic) this.spawnCritic(); // у критика свой стоп-кадр
         if (t.proc) { this.homeMobs.push(new Procrastination(this.mobCtx(), t.proc, t.seat ? GROUND_Y - t.seat : undefined));
-          this.introOnce('proc', 'ПРОКРАСТИНАЦИЯ', 'липнет, тянет вниз.\nрывок снимает — на время.'); }
+          this.introOnce('proc', 'm_procrastination', 'm_it_clings_drags_you_down_a'); }
         if (t.phone) { this.homeMobs.push(new PhoneMob(this.mobCtx(), t.phone));
-          this.introOnce('phone', 'ТЕЛЕФОН', 'тянет в уют, крадёт время.\nвырубишь ударом — загорится снова.'); }
+          this.introOnce('phone', 'm_the_phone', 'm_lures_you_into_comfort_steals_time'); }
         if (t.irrit) { this.homeMobs.push(new Irritation(this.mobCtx(), t.irrit));
-          this.introOnce('irrit', 'РАЗДРАЖЕНИЕ', 'вспыхивает из ничего.\nвыпустишь пар — вскипит опять.'); }
+          this.introOnce('irrit', 'm_irritation', 'm_flares_out_of_nowhere_blow_off'); }
         if (t.soothe) { this.homeMobs.push(new SelfSoothe(this.mobCtx(), t.soothe));
-          this.introOnce('soothe', 'САМО ПРОЙДЁТ', 'не нападает — убаюкивает.\nзалипнешь рядом — уснёшь, −сердце.\nне слушай, просто пройди мимо.'); }
+          this.introOnce('soothe', 'm_it_ll_pass_2', 'm_it_doesn_t_attack_it_lulls'); }
         if (t.mirror) { this.homeMobs.push(new CrookedMirror(this.mobCtx(), t.mirror));
-          this.introOnce('mirror', 'КРИВОЕ ЗЕРКАЛО', 'показывает приукрашенного тебя:\n«да всё норм». перегораживает путь.\nЗАМРИ (держи Z) — посмотри честно.'); }
+          this.introOnce('mirror', 'm_the_crooked_mirror', 'm_shows_a_flattering_you_all_fine'); }
         if (t.say) { this.say(t.say, 2400); if (t.anx) audio.anx(); }
         if (t.gate) this.makeGate(t.gate, [...this.anx.slice(beforeA), ...this.homeMobs.slice(beforeH)]);
         if (t.overwhelm) this.beginOverwhelm();
@@ -322,7 +322,7 @@ export class GameScene extends Phaser.Scene {
     }));
   }
   // «привет, это —» : представляем врага стоп-кадром при первой встрече
-  private introOnce(key: string, name: string, line: string) {
+  private introOnce(key: string, name: MsgKey, line: MsgKey) {
     if (this.introduced.has(key)) return;
     this.introduced.add(key);
     this.storyFrame(name, line);
@@ -356,7 +356,7 @@ export class GameScene extends Phaser.Scene {
     const col = this.add.rectangle(x, GROUND_Y / 2, 18, GROUND_Y + 40, 0, 0);
     this.physics.add.existing(col, true);
     this.physics.add.collider(this.player, col, () =>
-      this.sayOnce('gate', 'не пройти. сначала — с этим.', 2600));
+      this.sayOnce('gate', 'm_can_t_pass_deal_with_this', 2600));
     const gfx = this.add.graphics().setDepth(5);
     this.gates.push({ x, col, gfx, mobs, open: false, t: Math.random() * 1000 });
   }
@@ -385,7 +385,7 @@ export class GameScene extends Phaser.Scene {
     for (let y = 60; y < GROUND_Y; y += 90) this.burst(g.x, y, this.chapter.palette.glow2, 6, 120);
     audio.gate();
     // важная правда главы: копинг = передышка, не решение — отпустило НЕНАДОЛГО
-    this.say('...отпустило. ненадолго.', 2400);
+    this.say('m_it_let_go_not_for_long', 2400);
   }
 
   // тревога, отколовшаяся от «гейтовой», тоже держит стену
@@ -444,7 +444,7 @@ export class GameScene extends Phaser.Scene {
     this.memText = this.add.text(18, 48, this.memTotal ? `✦ 0/${this.memTotal}` : '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '12px', color: '#ffd870' })
       .setScrollFactor(0).setDepth(100);
     if (!IS_TOUCH)
-      this.add.text(W / 2, H - 20, tr('X бей · Z избегай (тап рывок / держи залипни) · V уступи'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
+      this.add.text(W / 2, H - 20, t('m_x_fight_z_avoid_tap_dash'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
         .setOrigin(0.5, 1).setScrollFactor(0).setDepth(100);
   }
   private updateHearts() {
@@ -484,26 +484,22 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5, 1).setDepth(46).setAlpha(0);
     this.criticSayT = 2200; // первый упрёк почти сразу
     // важный новый враг — представляем стоп-кадром, иначе «просто какой-то кот»
-    this.storyFrame('ВНУТРЕННИЙ КРИТИК',
-      'тень Мистера. ходит следом, не отстаёт.\n\n' +
-      'рявкнешь (X) — притихнет на миг и станет громче.\n' +
-      'убегаешь — растёт за спиной.\n' +
-      'это ты сам. от себя не отмахнуться.');
+    this.storyFrame('m_the_inner_critic', 'm_critic_story');
   }
 
   // Стоп-кадр посреди главы: пауза, затемнение, текст, продолжение по тапу
-  private storyFrame(title: string, text: string) {
+  private storyFrame(title: MsgKey, text: MsgKey) {
     this.hitstop = 9e9; // update() стоит, пока не отпустим
     // update стоит, но физика Phaser — нет: тормозим игрока, иначе он улетает
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
     pb.setVelocity(0, 0); pb.setAllowGravity(false); pb.moves = false;
     const deep = 130;
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0.78).setScrollFactor(0).setDepth(deep);
-    const t1 = this.add.text(W / 2, 120, tr(title), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '18px', color: '#ff8aa6', align: 'center' })
+    const t1 = this.add.text(W / 2, 120, t(title), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '18px', color: '#ff8aa6', align: 'center' })
       .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 1);
-    const t2 = this.add.text(W / 2, 175, tr(text), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#d8c8ec', align: 'center', lineSpacing: 10 })
+    const t2 = this.add.text(W / 2, 175, t(text), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#d8c8ec', align: 'center', lineSpacing: 10 })
       .setOrigin(0.5, 0).setScrollFactor(0).setDepth(deep + 1);
-    const hint = this.add.text(W / 2, H - 60, tr(IS_TOUCH ? 'тапни — дальше' : 'любая клавиша — дальше'),
+    const hint = this.add.text(W / 2, H - 60, t(IS_TOUCH ? 'm_tap_next' : 'm_any_key_next'),
       { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#88ffcc' })
       .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
     this.tweens.add({ targets: hint, alpha: 0.9, duration: 400, delay: 800 });
@@ -522,7 +518,7 @@ export class GameScene extends Phaser.Scene {
       this.anx.some(m => m.alive && Phaser.Math.Distance.Between(m.img.x, m.img.y, this.player.x, this.player.y) < 260) ||
       (this.critic?.alive && Phaser.Math.Distance.Between(this.critic.img.x, this.critic.img.y, this.player.x, this.player.y) < 280) ||
       this.homeMobs.some(m => m.alive);
-    if (!nearThreat) { this.sayOnce('fawn_none', 'уступать... да некому пока.', 1600); return; }
+    if (!nearThreat) { this.sayOnce('fawn_none', 'm_surrender_but_there_s_no_one', 1600); return; }
     this.hidePlay();
     this.hearts -= 1; this.updateHearts();
     this.invuln = 3500;
@@ -534,9 +530,9 @@ export class GameScene extends Phaser.Scene {
     if (this.critic?.alive) {
       // уступка — единственное, что прогоняет тень… временно
       this.critic.struck = 8000;
-      this.say('уступил — и тень отстала. пока что.', 3000);
+      this.say('m_gave_in_and_the_shadow_backed', 3000);
     } else {
-      this.sayOnce('fawn', '«ладно-ладно, как скажете...» — и правда отстали. но чего это стоило.', 3400);
+      this.sayOnce('fawn', 'm_fine_fine_whatever_you_say_and', 3400);
     }
     if (this.hearts <= 0) this.gameOver();
   }
@@ -638,9 +634,9 @@ export class GameScene extends Phaser.Scene {
       // все собраны — награда: тёплая строка + полное здоровье
       this.hearts = this.MAX_HEARTS; this.updateHearts();
       this.cameras.main.flash(300, 80, 70, 30);
-      this.say('все тёплые мысли с тобой. их тоже стоит замечать.', 3200);
+      this.say('m_every_warm_thought_is_with_you', 3200);
     } else {
-      this.sayOnce('mem_first', 'тёплое... хорошее тоже есть. собери их.', 2400);
+      this.sayOnce('mem_first', 'm_warm_good_things_exist_too_gather', 2400);
     }
   }
 
@@ -657,7 +653,7 @@ export class GameScene extends Phaser.Scene {
     this.hearts -= 1; this.updateHearts();
     audio.hurt(); // звук падения — раньше его не было
     this.cameras.main.flash(120, 80, 20, 40);
-    this.say('сорвался... −1 жизнь.', 1800);
+    this.say('m_fell_1_life', 1800);
     if (this.hearts <= 0) this.gameOver();
   }
 
@@ -817,11 +813,11 @@ export class GameScene extends Phaser.Scene {
       const nb = this.anx[this.anx.length - 1]; nb.vx = -dir * 220; nb.vy = -110;
       this.adoptIntoGate(m, nb);
       audio.split();
-      this.sayOnce('hit', 'бить бесполезно — их только больше!', 2600);
+      this.sayOnce('hit', 'm_hitting_is_useless_there_s_only', 2600);
     } else {
       // делиться больше некуда — измотал, оседает (но любой способ это лишь оттянет)
       m.calm += 600;
-      this.sayOnce('hit_many', 'задолбал... оседает. но это ненадолго.', 2800);
+      this.sayOnce('hit_many', 'm_worn_out_it_settles_but_not', 2800);
     }
   }
 
@@ -834,7 +830,7 @@ export class GameScene extends Phaser.Scene {
     c.struck = 1600;                              // огрызнулся — притих на секунду
     c.size = Math.min(2.4, c.size + 0.18);        // ...и в ответ стал больше
     c.img.setScale(1.5 * c.size);
-    this.sayOnce('critic_hit', 'рявкнул — притих. и стал громче. с собой не поспоришь.', 3200);
+    this.sayOnce('critic_hit', 'm_snapped_it_hushed_then_grew_louder', 3200);
   }
 
   private updateAnx(dt: number) {
@@ -853,7 +849,7 @@ export class GameScene extends Phaser.Scene {
       if (this.frozen && dist < 240) m.calm += dt;
       else if (this.dashing && dist < 64) m.calm += dt * 2;
       else if (m.state !== 'calm') m.calm = Math.max(0, m.calm - dt * 0.3);
-      if (m.calm > 800 && m.state !== 'calm') { m.state = 'calm'; m.t = 0; this.sayOnce('freeze', 'отступает... но она вернётся.', 2600); }
+      if (m.calm > 800 && m.state !== 'calm') { m.state = 'calm'; m.t = 0; this.sayOnce('freeze', 'm_it_backs_off_but_it_will', 2600); }
 
       switch (m.state) {
         case 'chase': {
@@ -905,7 +901,7 @@ export class GameScene extends Phaser.Scene {
       c.img.setAlpha(0.22);
       c.img.play('p-idle', true);
       this.criticBubble?.setAlpha(0); // притих, пока выцветший
-      if (c.struck <= 1500) this.sayOnce('critic_back', '...вернулся. они всегда возвращаются.', 2800);
+      if (c.struck <= 1500) this.sayOnce('critic_back', 'm_it_came_back_they_always_come', 2800);
       return;
     }
     // постоянный поток упрёков над тенью — её не заткнуть
@@ -931,18 +927,18 @@ export class GameScene extends Phaser.Scene {
     // убегаешь — он растёт за спиной
     if (this.dashing || dist > 320) {
       c.size = Math.min(2.4, c.size + dt * 0.00012);
-      if (c.size > 1.6) this.sayOnce('critic_grow', 'убегаю — а он за спиной только громче...', 2800);
+      if (c.size > 1.6) this.sayOnce('critic_grow', 'm_i_run_and_behind_me_it', 2800);
     }
     // отвлёкся на клубок при нём — кормишь его ещё быстрее
     if (this.frozen && dist < 300) {
       c.size = Math.min(2.4, c.size + dt * 0.0005);
-      this.sayOnce('critic_frz', 'клубок?! он же прямо ЗА тобой!', 2800);
+      this.sayOnce('critic_frz', 'm_the_yarn_it_s_right_behind', 2800);
     }
     c.img.setScale(1.5 * c.size);
     c.struck -= dt;
     if (dist < 34 && this.invuln <= 0 && c.struck <= 0) {
       c.struck = 1200; this.damage(c.img.x);
-      this.sayOnce('critic_catch', '«ты опять не справился». чем ни ответь — он рядом.', 3000);
+      this.sayOnce('critic_catch', 'm_you_failed_again_whatever_you_do', 3000);
     }
   }
 
@@ -969,12 +965,12 @@ export class GameScene extends Phaser.Scene {
 
     const ky = H / 540; // y развязок написаны под десктопную высоту
     const lines: Phaser.GameObjects.Text[] = [];
-    const line = (text: string, y: number, color: string, size: number, delay: number) => {
-      const t = this.add.text(W / 2, y * ky, tr(text), {
+    const line = (text: MsgKey, y: number, color: string, size: number, delay: number) => {
+      const ln = this.add.text(W / 2, y * ky, t(text), {
         fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${size}px`, color, align: 'center', lineSpacing: 6,
       }).setOrigin(0.5).setScrollFactor(0).setDepth(151).setAlpha(0);
-      this.tweens.add({ targets: t, alpha: 1, duration: 900, delay });
-      lines.push(t);
+      this.tweens.add({ targets: ln, alpha: 1, duration: 900, delay });
+      lines.push(ln);
     };
 
     // What just happened — supplied by the chapter (cat's reckoning).
@@ -990,9 +986,9 @@ export class GameScene extends Phaser.Scene {
       if (branch && CHAPTERS[branch]) {
         this.showBranch(branch);                 // конец Акта I — развилка: терапия ИЛИ дальше
       } else if (next && CHAPTERS[next]) {
-        const act = IS_TOUCH ? t('тапни', 'tap') : t('нажми любую клавишу', 'press any key');
-        const title = tr(CHAPTERS[next].title);
-        const hint = this.add.text(W / 2, H - 28, t(`дальше — «${title}». ${act}`, `next — "${title}". ${act}`),
+        const act = IS_TOUCH ? t('m_tap') : t('m_press_any_key');
+        const title = t(CHAPTERS[next].title);
+        const hint = this.add.text(W / 2, H - 28, t('m_next_chapter', { title, act }),
           { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#5a4f7a' })
           .setOrigin(0.5).setScrollFactor(0).setDepth(160).setAlpha(0);
         this.tweens.add({ targets: hint, alpha: 0.8, duration: 800 });
@@ -1013,13 +1009,13 @@ export class GameScene extends Phaser.Scene {
       this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
         .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
 
-    const top = mk(150, t('так дальше — нельзя.', "this can't go on."), 16, '#ff8aa6');
-    const sub = mk(208, t('и Мистер впервые подумал:\n«может... пора за помощью?»', 'and for the first time Mister thought:\n"maybe... it\'s time to get help?"'), 12, '#d8c8ec');
+    const top = mk(150, t('m_this_can_t_go_on_2'), 16, '#ff8aa6');
+    const sub = mk(208, t('m_and_for_the_first_time_mister'), 12, '#d8c8ec');
 
-    const ctaTxt = mk(300, t('узнать про схема-терапию →', 'learn about schema therapy →'), 12, '#88ffcc', 154);
+    const ctaTxt = mk(300, t('m_learn_about_schema_therapy'), 12, '#88ffcc', 154);
     const cta = this.add.rectangle(W / 2, 300 * ky, ctaTxt.width + 40, 42, 0x153028)
       .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    const goTxt = mk(372, t('или — идти дальше за Мистером →', 'or — keep going with Mister →'), 10, '#8a7faa', 154).setInteractive({ useHandCursor: true });
+    const goTxt = mk(372, t('m_or_keep_going_with_mister'), 10, '#8a7faa', 154).setInteractive({ useHandCursor: true });
 
     this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
     this.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 600 });
@@ -1036,14 +1032,14 @@ export class GameScene extends Phaser.Scene {
 
   // Враг = режим схема-терапии — называем в момент узнавания (без лекции)
   private modeName(): string {
-    if (this.chapter.id === 'chapter1') return t('это — Карающий Родитель.\nчужой голос, что тебя стыдил.\n\n', 'this is the Punitive Parent.\na borrowed voice that shamed you.\n\n');
-    if (this.chapter.id === 'chapter2') return t('это — Отстранённый Защитник.\nуводил в телефон, лишь бы не чувствовать.\n\n', 'this is the Detached Protector.\nit pulled you into the phone, anything but feeling.\n\n');
+    if (this.chapter.id === 'chapter1') return t('m_this_is_the_punitive_parent_a');
+    if (this.chapter.id === 'chapter2') return t('m_this_is_the_detached_protector_it');
     return '';
   }
   private modeShort(): string {
-    if (this.chapter.id === 'chapter1') return t('Карающий Родитель', 'Punitive Parent');
-    if (this.chapter.id === 'chapter2') return t('Отстранённый Защитник', 'Detached Protector');
-    return t('Тревога', 'Anxiety');
+    if (this.chapter.id === 'chapter1') return t('m_punitive_parent');
+    if (this.chapter.id === 'chapter2') return t('m_detached_protector');
+    return t('m_anxiety_2');
   }
 
   // ── КОНТАКТ-проблеск: впервые не бей/беги/уступи, а останься рядом ──────────
@@ -1055,11 +1051,11 @@ export class GameScene extends Phaser.Scene {
     warm.fillStyle(0xffd9a0, 0.12); warm.fillCircle(cx, cy + 30, 220);
     warm.fillStyle(0xffd9a0, 0.08); warm.fillCircle(cx, cy + 30, 320);
     const shadow = this.add.sprite(cx, cy + 60, 'cat_idle').setOrigin(0.5, 1).setScale(2).setTint(0x2a1d3a).setAlpha(0).setScrollFactor(0).setDepth(155).play('p-idle');
-    const ask = this.add.text(cx, 120, tr('бил, бежал, уступал — он всё равно тут.\nостался один ход: повернуться к нему.'),
+    const ask = this.add.text(cx, 120, t('m_fought_ran_gave_in_it_s'),
       { fontFamily: font, fontSize: '12px', color: '#ffe0b0', align: 'center', lineSpacing: 10,
         backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 14, y: 10 } })
       .setOrigin(0.5, 0).setScrollFactor(0).setDepth(156).setAlpha(0);
-    const prompt = this.add.text(cx, H - 70, tr(IS_TOUCH ? 'тапни — ПОВЕРНУТЬСЯ' : 'E / клик — ПОВЕРНУТЬСЯ'),
+    const prompt = this.add.text(cx, H - 70, t(IS_TOUCH ? 'm_tap_turn_to_it' : 'm_e_click_turn_to_it'),
       { fontFamily: font, fontSize: '11px', color: '#88ffcc', backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 10, y: 7 } })
       .setOrigin(0.5).setScrollFactor(0).setDepth(156).setAlpha(0);
     this.tweens.add({ targets: [warm, shadow], alpha: { from: 0, to: 1 }, duration: 1000 });
@@ -1077,9 +1073,9 @@ export class GameScene extends Phaser.Scene {
       // тень не исчезает — становится маленькой и садится рядом, а не сверху
       this.tweens.add({ targets: shadow, scale: 1, x: cx + 70, y: cy + 50, duration: 900, ease: 'Quad.Out' });
       this.tweens.add({ targets: warm, alpha: 1.6, duration: 900, yoyo: true });
-      ask.setText(this.modeName() + tr(last
-        ? 'ты повернулся — и он сел рядом, а не навис.\nодному так не суметь. этому учит терапия.'
-        : 'ты повернулся — и он рядом, а не сверху.\nна миг, но по-другому.'));
+      ask.setText(this.modeName() + t(last
+        ? 'm_you_turned_and_it_sat_beside'
+        : 'm_you_turned_and_it_s_beside'));
       this.time.delayedCall(last ? 3200 : 2600, () => {
         this.tweens.add({ targets: [warm, shadow, ask], alpha: 0, duration: 700,
           onComplete: () => { [warm, shadow, ask, prompt].forEach(o => o.destroy()); onDone(); } });
@@ -1101,18 +1097,18 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
 
     // Карточка-результат: «твой главный враг» = режим (виральный крючок, п.7)
-    const top  = mk(196, t('🐈‍⬛  ты прошёл сквозь свою голову.', '🐈‍⬛  you ran through your own mind.'), 12, '#d8c8ec');
-    const lbl  = mk(244, t('твой главный враг —', 'your biggest enemy —'), 10, '#9a8fb8');
+    const top  = mk(196, t('m_you_ran_through_your_own_mind'), 12, '#d8c8ec');
+    const lbl  = mk(244, t('m_your_biggest_enemy'), 10, '#9a8fb8');
     const mode = mk(282, this.modeShort(), 16, '#ff8aa6');
-    const sub  = mk(336, t('его не одолеть в одиночку.\nно рядом — можно. дальше — терапия.', "you can't beat it alone.\nbut with someone — you can. next: therapy."), 11, '#a8e8d0');
+    const sub  = mk(336, t('m_you_can_t_beat_it_alone'), 11, '#a8e8d0');
 
-    const ctaTxt = mk(404, t('узнать про схема-терапию →', 'learn about schema therapy →'), 11, '#88ffcc', 154);
+    const ctaTxt = mk(404, t('m_learn_about_schema_therapy'), 11, '#88ffcc', 154);
     const cta = this.add.rectangle(W / 2, 404 * ky, ctaTxt.width + 34, 38, 0x153028)
       .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    const shareTxt = mk(452, t('поделиться →', 'share →'), 10, '#c0b8e8', 154);
+    const shareTxt = mk(452, t('m_share'), 10, '#c0b8e8', 154);
     const share = this.add.rectangle(W / 2, 452 * ky, shareTxt.width + 30, 34, 0x241d3a)
       .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    const menu = mk(498, t('или — в меню', 'or — back to menu'), 9, '#5a4f7a', 154).setInteractive({ useHandCursor: true });
+    const menu = mk(498, t('m_or_back_to_menu'), 9, '#5a4f7a', 154).setInteractive({ useHandCursor: true });
 
     this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
     this.tweens.add({ targets: [lbl, mode], alpha: 1, duration: 700, delay: 500 });
@@ -1129,8 +1125,7 @@ export class GameScene extends Phaser.Scene {
     share.on('pointerdown', () => {
       track('cta_share');
       const url = 'https://schemehappens.ru/game/';
-      const text = t(`Прошёл сквозь собственную голову в этой игре. Мой главный враг — ${this.modeShort()}. А твой?`,
-        `I ran through my own mind in this game. My biggest enemy — ${this.modeShort()}. What's yours?`);
+      const text = t('m_share_text', { enemy: this.modeShort() });
       window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
     });
     menu.on('pointerdown', () => this.scene.start('Start'));
@@ -1140,13 +1135,13 @@ export class GameScene extends Phaser.Scene {
   private damage(fromX: number) {
     if (this.assistInvuln) return; // ассист «не умирать»
     // копинг «сохраняет в моменте»: пока залип (зона) — урон не проходит
-    if (this.frozen) { this.sayOnce('frz_safe', 'пока залип — не достают. но и не уйду.', 2600); return; }
+    if (this.frozen) { this.sayOnce('frz_safe', 'm_while_zoned_out_they_can_t', 2600); return; }
     this.hidePlay();
     this.invuln = 1100; this.hearts -= 1; this.updateHearts();
     this.doHitstop(70); this.cameras.main.shake(220, 0.014); this.cameras.main.flash(140, 120, 20, 40); audio.hurt();
     const b = this.player.body as Phaser.Physics.Arcade.Body;
     b.setVelocity(Math.sign(this.player.x - fromX) * 240, -210);
-    this.sayOnce('firsthit', 'ай! да я ничего не могу — только бежать!', 2800);
+    this.sayOnce('firsthit', 'm_ow_i_can_t_do_anything', 2800);
     if (this.hearts <= 0) this.gameOver();
   }
 
@@ -1159,14 +1154,14 @@ export class GameScene extends Phaser.Scene {
     const cover = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e).setScrollFactor(0).setDepth(150).setAlpha(0);
     this.tweens.add({ targets: cover, alpha: 1, duration: 700 });
     const font = '"Press Start 2P", "Courier New", monospace';
-    const txt = this.add.text(W / 2, H / 2 - 16, tr('так больше нельзя...'), { fontFamily: font, fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
+    const txt = this.add.text(W / 2, H / 2 - 16, t('m_this_can_t_go_on'), { fontFamily: font, fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
     this.tweens.add({ targets: txt, alpha: 1, duration: 800, delay: 400 });
     // простой, понятный ретрай — без абстрактной сцены «повернуться» (она только в финале главы)
     this.time.delayedCall(1900, () => {
-      const t2 = this.add.text(W / 2, H / 2 + 26, tr('но это лишь попытка. вставай.'), { fontFamily: font, fontSize: '12px', color: '#a8e8d0' })
+      const t2 = this.add.text(W / 2, H / 2 + 26, t('m_but_it_s_only_a_try'), { fontFamily: font, fontSize: '12px', color: '#a8e8d0' })
         .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
-      const hint = this.add.text(W / 2, H - 56, tr(IS_TOUCH ? 'тапни — ещё раз' : 'клавиша / клик — ещё раз'), { fontFamily: font, fontSize: '11px', color: '#88ffcc' })
+      const hint = this.add.text(W / 2, H - 56, t(IS_TOUCH ? 'm_tap_try_again' : 'm_key_click_try_again'), { fontFamily: font, fontSize: '11px', color: '#88ffcc' })
         .setOrigin(0.5).setScrollFactor(0).setDepth(200).setAlpha(0);
       this.tweens.add({ targets: [t2, hint], alpha: 0.9, duration: 600 });
       const go = () => this.scene.restart();
@@ -1218,11 +1213,11 @@ export class GameScene extends Phaser.Scene {
 
   // ── Cat voice ──────────────────────────────────────────────────────────────
   // не перебиваем читаемую реплику — иначе мельтешат и не прочитать
-  private say(text: string, dur: number): boolean {
+  private say(text: MsgKey, dur: number): boolean {
     if (this.bubbleT > 900) return false;
-    this.bubble.setText(tr(text)).setAlpha(1); this.bubbleT = dur; return true;
+    this.bubble.setText(t(text)).setAlpha(1); this.bubbleT = dur; return true;
   }
-  private sayOnce(key: string, text: string, dur: number) {
+  private sayOnce(key: string, text: MsgKey, dur: number) {
     if (this.said.has(key)) return;
     if (this.say(text, dur)) this.said.add(key); // не «съедаем» ключ, если реплику не показали
   }

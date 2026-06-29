@@ -1,35 +1,35 @@
 import Phaser from 'phaser';
 import { audio } from './audio';
 import { getAssist, setAssist } from './assist';
-import { t, lang, setLang } from './i18n';
+import { t, lang, setLang, type MsgKey } from './i18n';
 
 interface LevelEntry { scene: string; chapter?: string; label: string; enabled: boolean; }
 
 // Player-facing chapters. Internally everything is the one `Game` scene + a chapter config.
 const LEVELS: LevelEntry[] = [
-  { scene: 'Start',                       label: t('Главное меню', 'Main menu'),               enabled: true  },
-  { scene: 'Tutorial',                    label: t('Пролог · Знакомство', 'Prologue · Intro'), enabled: true  },
-  { scene: 'Game', chapter: 'chapter1',   label: t('Глава 1 · Обычный день', 'Ch. 1 · Ordinary Day'), enabled: true  },
-  { scene: 'Game', chapter: 'chapter2',   label: t('Глава 2 · Дома', 'Ch. 2 · Home'),          enabled: true  },
-  { scene: 'Game', chapter: 'chapter3',   label: t('Глава 3 · Само пройдёт', 'Ch. 3 · It\'ll Pass'), enabled: true  },
-  { scene: 'Game', chapter: 'chapter4',   label: t('Глава 4 · Выбор · скоро', 'Ch. 4 · Choice · soon'), enabled: false },
+  { scene: 'Start',                       label: t('m_main_menu'),               enabled: true  },
+  { scene: 'Tutorial',                    label: t('m_prologue_intro'), enabled: true  },
+  { scene: 'Game', chapter: 'chapter1',   label: t('m_ch_1_ordinary_day'), enabled: true  },
+  { scene: 'Game', chapter: 'chapter2',   label: t('m_ch_2_home'),          enabled: true  },
+  { scene: 'Game', chapter: 'chapter3',   label: t('m_ch_3_it_ll_pass'), enabled: true  },
+  { scene: 'Game', chapter: 'chapter4',   label: t('m_ch_4_choice_soon'), enabled: false },
 ];
 
 // Перевод статичных подписей меню + переключатель языка (reload пересобирает тексты)
 function localizeMenu() {
-  const set = (id: string, ru: string, en: string) => { const el = document.getElementById(id); if (el) el.textContent = t(ru, en); };
-  set('menu-title', 'М Е Н Ю', 'M E N U');
-  set('lbl-lang', 'Язык', 'Language');
-  set('lbl-music', 'Музыка', 'Music');
-  set('lbl-sfx', 'Звуки', 'Sound');
-  set('menu-sec-help', 'П О М О Щ Ь', 'A S S I S T');
-  set('lbl-lives', 'Больше жизней', 'Extra lives');
-  set('lbl-invuln', 'Не умирать', 'Invincible');
-  set('menu-sec-levels', 'Г Л А В Ы', 'C H A P T E R S');
-  set('menu-sec-support', 'П О Д Д Е Р Ж А Т Ь', 'S U P P O R T');
-  set('menu-donate', 'Поддержать проект 💛', 'Support the project 💛');
-  set('menu-close', 'ЗАКРЫТЬ', 'CLOSE');
-  document.getElementById('menu-btn')?.setAttribute('aria-label', t('Меню', 'Menu'));
+  const set = (id: string, key: MsgKey) => { const el = document.getElementById(id); if (el) el.textContent = t(key); };
+  set('menu-title', 'm_m_e_n_u');
+  set('lbl-lang', 'm_language');
+  set('lbl-music', 'm_music');
+  set('lbl-sfx', 'm_sound');
+  set('menu-sec-help', 'm_a_s_s_i_s_t');
+  set('lbl-lives', 'm_extra_lives');
+  set('lbl-invuln', 'm_invincible');
+  set('menu-sec-levels', 'm_c_h_a_p_t_e');
+  set('menu-sec-support', 'm_s_u_p_p_o_r');
+  set('menu-donate', 'm_support_the_project');
+  set('menu-close', 'm_close');
+  document.getElementById('menu-btn')?.setAttribute('aria-label', t('m_menu'));
   const langBtn = document.getElementById('menu-lang');
   if (langBtn) {
     langBtn.textContent = lang === 'en' ? 'EN' : 'РУ';
@@ -51,7 +51,7 @@ export function setupMenu(game: Phaser.Game) {
 
   let pausedKeys: string[] = [];
   localizeMenu();
-  const ON = t('ВКЛ', 'ON'), OFF = t('ВЫКЛ', 'OFF');
+  const ON = t('m_on'), OFF = t('m_off');
 
   const syncToggles = () => {
     const m = audio.isMusicEnabled(), s = audio.isSfxEnabled();
