@@ -24,6 +24,8 @@ interface BookDto {
   message?: string;
   clientTelegramId?: string;
   returning?: boolean;
+  /** Client accepted the public offer (consent checkbox). */
+  acceptedOffer?: boolean;
   /** Honeypot — must stay empty. Bots fill hidden fields; humans never see it. */
   website?: string;
 }
@@ -74,6 +76,7 @@ export class BookingController {
       message: dto.message?.trim(),
       clientTelegramId: dto.clientTelegramId ? BigInt(dto.clientTelegramId) : undefined,
       returning: dto.returning ?? false,
+      acceptedOffer: dto.acceptedOffer ?? false,
     };
     return this.booking.book(payload);
   }

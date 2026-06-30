@@ -174,7 +174,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       const res = await api.bookSlot({
         startsAt: slot.startsAt, durationMin: slot.durationMin, type: sessionType,
         clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
-        returning, website,
+        returning, acceptedOffer: consent, website,
       });
       setCancelToken(res.cancelToken);
       (window as Window & { ym?: (...a: unknown[]) => void }).ym?.(109568051, 'reachGoal', 'booking_submit');

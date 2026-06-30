@@ -541,6 +541,9 @@ model Booking {
   meetingUrl      String?       // Zoom/Телемост link, set after confirmation
   // CalDAV sync
   calDavUid       String?       @unique  // iCloud event UID
+  // Legal: when the client accepted the public offer (consent checkbox) — proof
+  // of the basis on which payment is taken. Not encrypted (a timestamp only).
+  acceptedOfferAt  DateTime?
   // Reminders
   reminder24SentAt DateTime?
   reminder2SentAt  DateTime?
