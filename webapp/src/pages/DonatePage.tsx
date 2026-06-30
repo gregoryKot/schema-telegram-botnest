@@ -31,7 +31,7 @@ export function DonatePage() {
   };
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
+    <div style={{ flex: 1, width: '100%', boxSizing: 'border-box', background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
       <div style={{ maxWidth: 460, margin: '0 auto', padding: '48px 20px 60px' }}>
         <a href="/" style={{ color: 'var(--text-sub)', fontSize: 15, textDecoration: 'none' }}>← На главную</a>
 

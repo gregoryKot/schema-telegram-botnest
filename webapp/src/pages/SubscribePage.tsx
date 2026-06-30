@@ -122,7 +122,9 @@ export function SubscribePage() {
 }
 
 // ── styles ───────────────────────────────────────────────────────────────────
-const page: React.CSSProperties = { background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' };
+// #root is a flex row — must fill it (flex:1 + width:100%) or the column
+// shrinks to content width and pins to the left edge on desktop.
+const page: React.CSSProperties = { flex: 1, width: '100%', background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', boxSizing: 'border-box' };
 const inner: React.CSSProperties = { width: '100%', maxWidth: 400, textAlign: 'center' };
 const icon: React.CSSProperties = { width: 56, height: 56, margin: '0 auto 20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(var(--accent-rgb,77,71,153),0.10)', color: 'var(--accent)', fontSize: 26 };
 const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(26px,6vw,32px)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-.01em', margin: '0 0 10px' };
