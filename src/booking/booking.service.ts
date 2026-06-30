@@ -30,6 +30,11 @@ const SCHEMA: EncryptSchema = {
 
 const HOLD_MINUTES = 15;
 
+/** Loose e-mail check — enough to decide whether to forward it to Robokassa. */
+function isEmail(s: string): boolean {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
+}
+
 @Injectable()
 export class BookingService {
   private readonly logger = new Logger(BookingService.name);
@@ -111,6 +116,9 @@ export class BookingService {
         invId: booking.id,
         amount: price,
         desc: `Психологическая сессия ${new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' }).format(dto.startsAt)} МСК`,
+        // Pass the client's e-mail so Robokassa / «Мой налог» can send the cheque.
+        // Only when the contact actually is an e-mail (could be a phone / @handle).
+        email: isEmail(dto.clientContact) ? dto.clientContact : undefined,
         successUrl: `${this.siteUrl}/api/payment/success`,
         failUrl: `${this.siteUrl}/api/payment/fail`,
       });

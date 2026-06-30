@@ -3,10 +3,12 @@ import { api } from '../api';
 
 type Booking = { status: string; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number; meetingUrl: string | null };
 
-const fmt = (iso: string) =>
-  new Intl.DateTimeFormat('ru-RU', {
+const fmt = (iso: string) => {
+  const s = new Intl.DateTimeFormat('ru-RU', {
     timeZone: 'Europe/Moscow', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
-  }).format(new Date(iso)) + ' МСК';
+  }).format(new Date(iso));
+  return s.charAt(0).toUpperCase() + s.slice(1) + ' МСК'; // only the first letter, not every word
+};
 
 const typeLabel = (t: string) => (t === 'INTRO_15' ? 'Вводная встреча' : 'Сессия');
 
@@ -85,11 +87,11 @@ export function BookingPaidPage() {
 
         <div style={{ background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)', borderRadius: 14, padding: '18px 18px', marginBottom: 20 }}>
           <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 4 }}>{typeLabel(booking.type)} · {booking.durationMin} мин</div>
-          <div style={{ fontSize: 18, fontWeight: 700, textTransform: 'capitalize' }}>{fmt(booking.startsAt)}</div>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(booking.startsAt)}</div>
         </div>
 
         {booking.meetingUrl ? (
-          <a href={booking.meetingUrl} target="_blank" rel="noreferrer" style={{ ...btn, marginBottom: 12 }}>Ссылка на встречу</a>
+          <a href={booking.meetingUrl} target="_blank" rel="noreferrer" style={{ ...btn, marginBottom: 12 }}>Подключиться к встрече</a>
         ) : (
           <div style={{ textAlign: 'center', marginBottom: 12 }}>
             <p style={{ color: 'var(--text-sub)', fontSize: 14, lineHeight: 1.6, margin: '0 0 10px' }}>
