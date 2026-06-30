@@ -16,6 +16,11 @@ export const SESSION_DEFAULT_PRICE: Record<SessionType, number> = {
 export const MIN_BOOK_LEAD_HOURS = 12;
 export const MIN_CANCEL_LEAD_HOURS = 24;
 
+// Subscription (recurring support). Prices editable in admin (BookingSetting
+// keys sub:month / sub:year); these are the initial defaults.
+export type SubPeriod = 'month' | 'year';
+export const SUB_DEFAULT_PRICE: Record<SubPeriod, number> = { month: 500, year: 5000 };
+
 export interface SessionMeta {
   type: SessionType;
   label: string;

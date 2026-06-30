@@ -17,6 +17,7 @@ import { RobokassaService } from './robokassa.service';
 import { BookingService } from './booking.service';
 import { BookingNotifyService } from './booking-notify.service';
 import { DonationService } from '../donation/donation.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 
 /**
  * Robokassa payment lifecycle endpoints.
@@ -37,6 +38,7 @@ export class PaymentController {
     private readonly booking: BookingService,
     private readonly notify: BookingNotifyService,
     private readonly donation: DonationService,
+    private readonly subscription: SubscriptionService,
     config: ConfigService,
   ) {
     this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr').replace(/\/$/, '');
@@ -66,7 +68,17 @@ export class PaymentController {
     const id = parseInt(invId, 10);
     if (isNaN(id)) return `FAIL${invId}`;
 
-    // Donations live in a separate InvId range and share this one webhook.
+    // Subscriptions and donations live in their own InvId ranges and share this
+    // one webhook. Check subscriptions first (highest range).
+    if (SubscriptionService.isSubscriptionInvId(id)) {
+      try {
+        await this.subscription.markChargePaidByInvId(id);
+      } catch (e) {
+        this.logger.error(`Subscription mark-paid failed for InvId ${id}: ${(e as Error).message}`);
+        return `FAIL${invId}`;
+      }
+      return `OK${invId}`;
+    }
     if (DonationService.isDonationInvId(id)) {
       try {
         await this.donation.markPaidByInvId(id);
@@ -116,6 +128,11 @@ export class PaymentController {
       // Can't trust the InvId — show a generic "payment received" page.
       return res.redirect(`${this.siteUrl}/booking/paid`);
     }
+    if (SubscriptionService.isSubscriptionInvId(id)) {
+      // The subscribe page reads ?sub=ok; the token came through on our own
+      // successUrl, but Robokassa may use the cabinet URL — so add it back.
+      return res.redirect(`${this.appUrl}/subscribe?sub=ok`);
+    }
     if (DonationService.isDonationInvId(id)) {
       return res.redirect(`${this.appUrl}/donate?donation=ok`);
     }
@@ -131,6 +148,9 @@ export class PaymentController {
   @Get('fail')
   failRedirect(@Query('InvId') invId: string, @Res() res: Response) {
     const id = parseInt(invId, 10);
+    if (!isNaN(id) && SubscriptionService.isSubscriptionInvId(id)) {
+      return res.redirect(`${this.appUrl}/subscribe?sub=fail`);
+    }
     if (!isNaN(id) && DonationService.isDonationInvId(id)) {
       return res.redirect(`${this.appUrl}/donate?donation=fail`);
     }
