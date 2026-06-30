@@ -51,9 +51,9 @@ export const ENEMY_SHEETS: Record<string, { url: string; fw: number; fh: number;
   irritmob: { url: irritUrl, fw: 59,  fh: 60, frames: 4 },
   workload: { url: workUrl,  fw: 86,  fh: 96, frames: 4 },
   memory:   { url: memUrl,   fw: 30,  fh: 30, frames: 4 },
-  soothe:   { url: sootheUrl, fw: 66, fh: 64, frames: 4 },
-  bargainer:{ url: bargUrl,   fw: 70, fh: 70, frames: 4 },
-  crookedmirror:{ url: mirrorUrl, fw: 170, fh: 98, frames: 4 },
+  soothe:   { url: sootheUrl, fw: 42,  fh: 78,  frames: 4 },
+  bargainer:{ url: bargUrl,   fw: 106, fh: 98,  frames: 4 },
+  crookedmirror:{ url: mirrorUrl, fw: 107, fh: 156, frames: 4 },
 };
 
 export function loadProps(scene: Phaser.Scene) {
