@@ -463,8 +463,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
                       Записаться на сессию → <span style={{ color: 'var(--accent)' }}>@kotlarewski</span>
                     </a>
+                    <a href="/subscribe" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
+                      Подписка на проект → <span style={{ color: 'var(--accent)' }}>оформить ★</span>
+                    </a>
                     <button onClick={() => setShowDonate(true)} style={{ textAlign: 'left', background: 'none', border: 'none', padding: 0, fontSize: 14, color: 'var(--text-sub)', fontFamily: 'inherit', cursor: 'pointer' }}>
-                      Поддержать проект → <span style={{ color: 'var(--accent)' }}>донат 💛</span>
+                      Поддержать проект → <span style={{ color: 'var(--accent)' }}>разовый донат 💛</span>
                     </button>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.5, marginTop: 14 }}>

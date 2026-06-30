@@ -1,6 +1,10 @@
 export const TELEGRAF_BOT = 'TELEGRAF_BOT';
 export const CHANNEL = '@SchemeHappens';
 export const BOOKING_URL = 'https://kotlarewski.gr/#booking';
+/** App base URL for support links (donate / subscribe). */
+export const APP_URL = (process.env.APP_URL ?? 'https://schemehappens.ru').replace(/\/$/, '');
+export const SUBSCRIBE_URL = `${APP_URL}/subscribe`;
+export const DONATE_URL = `${APP_URL}/donate`;
 export const BOT_USERNAME = process.env.BOT_USERNAME ?? 'SchemaLabBot';
 export const MINIAPP_APP_NAME = process.env.MINIAPP_APP_NAME ?? 'diary';
 /** Base URL for webApp buttons (can be Vercel or custom domain) */
