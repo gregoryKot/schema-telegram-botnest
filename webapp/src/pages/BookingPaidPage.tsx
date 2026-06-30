@@ -7,7 +7,7 @@ const fmt = (iso: string) => {
   const s = new Intl.DateTimeFormat('ru-RU', {
     timeZone: 'Europe/Moscow', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
   }).format(new Date(iso));
-  return s.charAt(0).toUpperCase() + s.slice(1) + ' МСК'; // only the first letter, not every word
+  return s.charAt(0).toUpperCase() + s.slice(1) + ' МСК'; // first letter only, not every word
 };
 
 const typeLabel = (t: string) => (t === 'INTRO_15' ? 'Вводная встреча' : 'Сессия');
@@ -40,105 +40,106 @@ export function BookingPaidPage() {
     setConfirmCancel(false);
   };
 
-  const wrap: React.CSSProperties = { background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' };
-  const inner: React.CSSProperties = { maxWidth: 460, margin: '0 auto', padding: '48px 20px 60px' };
-  const btn: React.CSSProperties = {
-    display: 'block', width: '100%', boxSizing: 'border-box', textAlign: 'center', padding: '15px',
-    fontSize: 16, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff',
-    border: 'none', borderRadius: 12, cursor: 'pointer', textDecoration: 'none',
-  };
-
   let body: React.ReactNode;
 
   if (failed) {
     body = (
-      <div style={{ textAlign: 'center', padding: '40px 0' }}>
-        <div style={{ fontSize: 52, marginBottom: 16 }}>😕</div>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, margin: '0 0 10px' }}>Оплата не прошла</h1>
-        <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.6, margin: '0 0 28px' }}>
-          Деньги не списаны. Слот держится за вами ещё несколько минут — можно попробовать снова.
-        </p>
-        <a href="/#booking" style={btn}>Вернуться к записи</a>
-      </div>
+      <>
+        <div style={icon}>😕</div>
+        <h1 style={h1}>Оплата не прошла</h1>
+        <p style={sub}>Деньги не списаны. Слот держится за вами ещё несколько минут — можно попробовать снова.</p>
+        <a href="/#booking" style={primaryBtn}>Вернуться к записи</a>
+      </>
     );
   } else if (!loaded) {
-    body = <p style={{ color: 'var(--text-sub)', textAlign: 'center', padding: '48px 0' }}>Загружаем…</p>;
+    body = <p style={{ ...sub, marginTop: 40 }}>Загружаем…</p>;
   } else if (cancelled) {
     body = (
-      <div style={{ textAlign: 'center', padding: '40px 0' }}>
-        <div style={{ fontSize: 52, marginBottom: 16 }}>✓</div>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, margin: '0 0 10px' }}>Запись отменена</h1>
-        <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.6, margin: '0 0 28px' }}>
-          Если оплата уже прошла — напишите мне, верну средства.
-        </p>
-        <a href="/#booking" style={btn}>Записаться снова</a>
-      </div>
+      <>
+        <div style={icon}>✓</div>
+        <h1 style={h1}>Запись отменена</h1>
+        <p style={sub}>Если оплата уже прошла — напишите мне, верну средства.</p>
+        <a href="/#booking" style={primaryBtn}>Записаться снова</a>
+      </>
     );
   } else if (booking) {
     body = (
-      <div style={{ paddingTop: 16 }}>
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontSize: 52, marginBottom: 12 }}>✅</div>
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, margin: '0 0 8px' }}>Оплата прошла</h1>
-          <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.6, margin: 0 }}>
-            Встреча подтверждена. Чек придёт от «Мой налог».
-          </p>
-        </div>
+      <>
+        <div style={icon}>✓</div>
+        <h1 style={h1}>Оплата прошла</h1>
+        <p style={sub}>Встреча подтверждена. Чек придёт от «Мой налог».</p>
 
-        <div style={{ background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)', borderRadius: 14, padding: '18px 18px', marginBottom: 20 }}>
+        <div style={card}>
           <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 4 }}>{typeLabel(booking.type)} · {booking.durationMin} мин</div>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(booking.startsAt)}</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{fmt(booking.startsAt)}</div>
         </div>
 
         {booking.meetingUrl ? (
-          <a href={booking.meetingUrl} target="_blank" rel="noreferrer" style={{ ...btn, marginBottom: 12 }}>Подключиться к встрече</a>
+          <a href={booking.meetingUrl} target="_blank" rel="noreferrer" style={primaryBtn}>Подключиться к встрече</a>
         ) : (
-          <div style={{ textAlign: 'center', marginBottom: 12 }}>
-            <p style={{ color: 'var(--text-sub)', fontSize: 14, lineHeight: 1.6, margin: '0 0 10px' }}>
-              Ссылку на видеовстречу готовим — обновите страницу через минуту.
-            </p>
-            <button onClick={load} style={{ ...btn, background: 'transparent', color: 'var(--accent)', border: '1.5px solid var(--accent)' }}>Обновить</button>
-          </div>
+          <>
+            <p style={{ ...sub, fontSize: 14, margin: '0 0 10px' }}>Ссылку на видеовстречу готовим — обновите через минуту.</p>
+            <button onClick={load} style={ghostBtn}>Обновить</button>
+          </>
         )}
-        <p style={{ fontSize: 13, color: 'var(--text-faint)', textAlign: 'center', lineHeight: 1.6, margin: '4px 0 24px' }}>
-          Эту же ссылку я продублирую перед сессией. Сохраните страницу в закладки.
-        </p>
+        <p style={hint}>Эту же ссылку я продублирую перед сессией.</p>
 
         {!confirmCancel ? (
-          <button onClick={() => setConfirmCancel(true)} style={{ display: 'block', margin: '0 auto', background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}>
-            Отменить запись
-          </button>
+          <button onClick={() => setConfirmCancel(true)} style={textLink}>Отменить запись</button>
         ) : (
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', margin: '0 0 12px' }}>Точно отменить эту встречу?</p>
+          <div style={{ marginTop: 4 }}>
+            <p style={{ ...sub, fontSize: 14, margin: '0 0 12px' }}>Точно отменить эту встречу?</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-              <button onClick={doCancel} style={{ padding: '10px 18px', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 10, border: '1.5px solid var(--accent-red, #c0392b)', background: 'transparent', color: 'var(--accent-red, #c0392b)' }}>Да, отменить</button>
-              <button onClick={() => setConfirmCancel(false)} style={{ padding: '10px 18px', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 10, border: '1.5px solid var(--line-strong)', background: 'transparent', color: 'var(--text-sub)' }}>Оставить</button>
+              <button onClick={doCancel} style={dangerBtn}>Да, отменить</button>
+              <button onClick={() => setConfirmCancel(false)} style={ghostSmall}>Оставить</button>
             </div>
           </div>
         )}
-      </div>
+      </>
     );
   } else {
-    // No / unknown token — generic reassurance.
     body = (
-      <div style={{ textAlign: 'center', padding: '40px 0' }}>
-        <div style={{ fontSize: 52, marginBottom: 16 }}>✅</div>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, margin: '0 0 10px' }}>Оплата принята</h1>
-        <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.6, margin: '0 0 28px' }}>
-          Спасибо! Я свяжусь с вами и пришлю ссылку на встречу.
-        </p>
-        <a href="/" style={btn}>На главную</a>
-      </div>
+      <>
+        <div style={icon}>✓</div>
+        <h1 style={h1}>Оплата принята</h1>
+        <p style={sub}>Спасибо! Я свяжусь с вами и пришлю ссылку на встречу.</p>
+        <a href="/" style={primaryBtn}>На главную</a>
+      </>
     );
   }
 
   return (
-    <div style={wrap}>
+    <div style={page}>
       <div style={inner}>
-        <a href="/" style={{ color: 'var(--text-sub)', fontSize: 15, textDecoration: 'none' }}>← На главную</a>
         {body}
+        <a href="/" style={backLink}>← На главную</a>
       </div>
     </div>
   );
 }
+
+// ── styles (match the site's tokens) ─────────────────────────────────────────
+const page: React.CSSProperties = {
+  background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px',
+};
+const inner: React.CSSProperties = { width: '100%', maxWidth: 400, textAlign: 'center' };
+const icon: React.CSSProperties = {
+  width: 56, height: 56, margin: '0 auto 20px', borderRadius: '50%',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  background: 'rgba(var(--accent-rgb,77,71,153),0.10)', color: 'var(--accent)', fontSize: 28,
+};
+const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(26px,6vw,34px)', fontWeight: 400, lineHeight: 1.15, letterSpacing: '-.01em', margin: '0 0 10px' };
+const sub: React.CSSProperties = { fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 24px' };
+const card: React.CSSProperties = { background: 'rgba(var(--fg-rgb),0.04)', border: '1px solid var(--line)', borderRadius: 14, padding: '16px 18px', margin: '0 0 18px' };
+const primaryBtn: React.CSSProperties = {
+  display: 'block', width: '100%', boxSizing: 'border-box', textAlign: 'center', padding: '14px',
+  fontSize: 15, fontWeight: 600, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff',
+  border: 'none', borderRadius: 12, cursor: 'pointer', textDecoration: 'none',
+};
+const ghostBtn: React.CSSProperties = { ...primaryBtn, background: 'transparent', color: 'var(--accent)', border: '1.5px solid var(--accent)' };
+const hint: React.CSSProperties = { fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '14px 0 22px' };
+const textLink: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'underline' };
+const dangerBtn: React.CSSProperties = { padding: '10px 18px', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 10, border: '1.5px solid var(--accent-red, #c0392b)', background: 'transparent', color: 'var(--accent-red, #c0392b)' };
+const ghostSmall: React.CSSProperties = { padding: '10px 18px', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 10, border: '1.5px solid var(--line-strong)', background: 'transparent', color: 'var(--text-sub)' };
+const backLink: React.CSSProperties = { display: 'inline-block', marginTop: 32, fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none' };
