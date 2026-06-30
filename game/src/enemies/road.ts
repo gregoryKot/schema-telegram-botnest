@@ -22,7 +22,7 @@ export class SelfSoothe implements HomeMob {
 
   constructor(private ctx: MobCtx, x: number) {
     const s = ctx.scene;
-    this.img = s.add.sprite(x, GROUND_Y - 46, 'soothe').setScale(1.1).setDepth(6);
+    this.img = s.add.sprite(x, GROUND_Y - 52, 'soothe').setScale(0.82).setDepth(6);
     if (s.anims.exists('soothe-idle')) this.img.play('soothe-idle');
     this.dim = s.add.graphics().setScrollFactor(0).setDepth(40);
   }
@@ -30,7 +30,7 @@ export class SelfSoothe implements HomeMob {
   update(dt: number) {
     if (!this.alive) return;
     this.bob += dt * 0.004;
-    this.img.y = GROUND_Y - 46 + Math.sin(this.bob) * 5;
+    this.img.y = GROUND_Y - 52 + Math.sin(this.bob) * 5;
     const p = this.ctx.player();
     const d = Phaser.Math.Distance.Between(this.img.x, this.img.y, p.x, p.y - 20);
     const inZone = d < ZONE;
@@ -84,7 +84,7 @@ export class CrookedMirror implements HomeMob {
 
   constructor(private ctx: MobCtx, private x: number) {
     const s = ctx.scene;
-    this.frame = s.add.sprite(x, GROUND_Y, 'crookedmirror').setOrigin(0.5, 1).setScale(0.95).setDepth(6);
+    this.frame = s.add.sprite(x, GROUND_Y, 'crookedmirror').setOrigin(0.5, 1).setScale(0.92).setDepth(6);
     if (s.anims.exists('mirror-shimmer')) this.frame.play('mirror-shimmer');
     this.bar = s.add.graphics().setDepth(46);
     // барьер: дальше нельзя, пока не посмотрел честно
@@ -145,6 +145,7 @@ const BARG_ZONE = 200;
 export class Bargainer implements HomeMob {
   alive = true;
   private img: Phaser.GameObjects.Sprite;
+  private base = 0.82; // базовый масштаб спрайта; size — множитель «дорожает» при ударе
   private size = 1;
   private relief = 0;
   private throwT = 0;
@@ -152,7 +153,7 @@ export class Bargainer implements HomeMob {
 
   constructor(private ctx: MobCtx, private x: number) {
     const s = ctx.scene;
-    this.img = s.add.sprite(x, GROUND_Y, 'bargainer').setOrigin(0.5, 1).setScale(1).setDepth(6);
+    this.img = s.add.sprite(x, GROUND_Y, 'bargainer').setOrigin(0.5, 1).setScale(this.base).setDepth(6);
     if (s.anims.exists('bargainer-idle')) this.img.play('bargainer-idle');
   }
 
@@ -193,7 +194,7 @@ export class Bargainer implements HomeMob {
   }
 
   tryHit(): boolean {
-    this.size = Math.min(1.6, this.size + 0.12); this.img.setScale(this.size);
+    this.size = Math.min(1.6, this.size + 0.12); this.img.setScale(this.base * this.size);
     this.relief = Math.max(0, this.relief - 0.3);
     this.ctx.hitstop(40); this.ctx.burst(this.img.x, GROUND_Y - 30, 0xffd86a, 6, 90);
     this.ctx.sayOnce('barg_hit', 'm_barg_hit', 2600);
