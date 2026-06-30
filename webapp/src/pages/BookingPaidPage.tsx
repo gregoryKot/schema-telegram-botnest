@@ -132,6 +132,9 @@ export function BookingPaidPage() {
 
 // ── styles (match the site's tokens) ─────────────────────────────────────────
 const page: React.CSSProperties = {
+  // #root is a flex row — fill it (flex:1 + width:100%), else the column shrinks
+  // to content width and pins left on desktop.
+  flex: 1, width: '100%', boxSizing: 'border-box',
   background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh',
   display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px',
 };
