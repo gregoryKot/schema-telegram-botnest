@@ -58,18 +58,19 @@ export class RobokassaService {
     const { invId, amount, desc, email, successUrl, failUrl } = params;
     const outSum = amount.toFixed(2);
 
-    // Optional ОФД fiscalization. When a Receipt is sent it MUST be part of the
-    // signature, URL-encoded, between InvId and Password1:
+    // Optional ОФД fiscalization. Per Robokassa docs, when a Receipt is sent it
+    // MUST be part of the signature between InvId and Password1:
     //   MD5(MerchantLogin:OutSum:InvId:Receipt:Password1)
-    // Self-employed don't fiscalize via Robokassa, so this is off by default and
-    // the signature is the plain MD5(MerchantLogin:OutSum:InvId:Password1).
+    // The Receipt here is the URL-encoded minified JSON (NOT base64), and the
+    // SAME url-encoded string is used both in the signature and as the Receipt
+    // value. URLSearchParams then encodes it once more for the wire; Robokassa
+    // decodes once → gets back this url-encoded string → signature matches, then
+    // decodes again to parse the JSON. Mismatching these two is exactly error 29.
     let receiptParam: string | null = null;
     let sig: string;
     if (this.fiscal) {
-      const base64Receipt = Buffer.from(JSON.stringify(buildReceipt(desc, amount))).toString('base64');
-      receiptParam = base64Receipt; // URLSearchParams encodes it once for the URL
-      const receiptForSig = encodeURIComponent(base64Receipt); // signature uses the URL-encoded form
-      sig = md5(`${this.login}:${outSum}:${invId}:${receiptForSig}:${this.pass1}`);
+      receiptParam = encodeURIComponent(JSON.stringify(buildReceipt(desc, amount)));
+      sig = md5(`${this.login}:${outSum}:${invId}:${receiptParam}:${this.pass1}`);
     } else {
       sig = md5(`${this.login}:${outSum}:${invId}:${this.pass1}`);
     }
