@@ -9,6 +9,13 @@ export const SESSION_DEFAULT_PRICE: Record<SessionType, number> = {
   [SessionType.SESSION_50]: 4000,
 };
 
+// Booking window rules.
+//   MIN_BOOK_LEAD_HOURS   — a slot must start at least this many hours from now
+//                           (no last-minute bookings the therapist can't prepare for).
+//   MIN_CANCEL_LEAD_HOURS — a client may self-cancel only this far ahead.
+export const MIN_BOOK_LEAD_HOURS = 12;
+export const MIN_CANCEL_LEAD_HOURS = 24;
+
 export interface SessionMeta {
   type: SessionType;
   label: string;
