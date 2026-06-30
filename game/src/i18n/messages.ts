@@ -316,6 +316,10 @@ export const M = {
   m_barg_zone: { ru: "это дорого... может, потом?", en: "it's pricey... maybe later?" },
   m_barg_hit: { ru: "споришь о цене — она только растёт.", en: "haggle over the price — it only climbs." },
   m_barg_off: { ru: "прошёл мимо. цена — не главное.", en: "walked past. the price isn't the point." },
+  // подсказки-действия над дорожными врагами (как Мистер их проходит)
+  m_hint_walk_past: { ru: "ИДИ МИМО →", en: "WALK PAST →" },
+  m_hint_dash_past: { ru: "РЫВКОМ →", en: "DASH PAST →" },
+  m_hint_freeze_look: { ru: "ЗАМРИ — СМОТРИ", en: "FREEZE — LOOK" },
 } satisfies Record<string, Msg>;
 
 export type MsgKey = keyof typeof M;

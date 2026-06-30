@@ -1,7 +1,24 @@
 import Phaser from 'phaser';
 import { GROUND_Y, W, H } from '../constants';
 import { audio } from '../audio';
+import { t, type MsgKey } from '../i18n';
 import { MobCtx, HomeMob } from './home';
+
+// ── Подсказка-действие над врагом ───────────────────────────────────────────
+// Дорожные враги не очевидны (бить нельзя / замри = смелость), поэтому над
+// каждым висит короткая подсказка КАК его пройти — проявляется, когда подходишь.
+function makeHint(scene: Phaser.Scene, x: number, y: number, key: MsgKey, color: string): Phaser.GameObjects.Text {
+  const h = scene.add.text(x, y, t(key), {
+    fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px',
+    color, backgroundColor: 'rgba(10,8,20,0.72)', padding: { x: 5, y: 4 }, align: 'center',
+  }).setOrigin(0.5, 1).setDepth(9).setAlpha(0);
+  scene.tweens.add({ targets: h, y: y - 4, duration: 720, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+  return h;
+}
+// плавно проявить/спрятать по близости игрока (y ведёт bob-tween — не трогаем)
+function fadeHint(h: Phaser.GameObjects.Text, near: boolean) {
+  h.setAlpha(Phaser.Math.Linear(h.alpha, near ? 0.95 : 0, 0.12));
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Акт II «Дорога в терапию». Враги тут не нападают — ОТГОВАРИВАЮТ идти.
@@ -16,6 +33,7 @@ export class SelfSoothe implements HomeMob {
   alive = true;
   private img: Phaser.GameObjects.Sprite;
   private dim: Phaser.GameObjects.Graphics;
+  private hint: Phaser.GameObjects.Text;
   private sleep = 0;
   private bob = Math.random() * 6;
   private relief = 0; // прошёл мимо, не слушал → передышка → отступает
@@ -25,6 +43,8 @@ export class SelfSoothe implements HomeMob {
     this.img = s.add.sprite(x, GROUND_Y - 52, 'soothe').setScale(0.82).setDepth(6);
     if (s.anims.exists('soothe-idle')) this.img.play('soothe-idle');
     this.dim = s.add.graphics().setScrollFactor(0).setDepth(40);
+    // подсказка: не слушай, просто иди мимо (замри = ловушка-сон)
+    this.hint = makeHint(s, x, GROUND_Y - 96, 'm_hint_walk_past', '#bfe0ff');
   }
 
   update(dt: number) {
@@ -34,6 +54,7 @@ export class SelfSoothe implements HomeMob {
     const p = this.ctx.player();
     const d = Phaser.Math.Distance.Between(this.img.x, this.img.y, p.x, p.y - 20);
     const inZone = d < ZONE;
+    fadeHint(this.hint, d < ZONE + 80);
 
     this.dim.clear();
     if (inZone) {
@@ -63,6 +84,7 @@ export class SelfSoothe implements HomeMob {
     this.alive = false;
     audio.freeze();
     this.dim.clear(); this.dim.destroy();
+    this.hint.destroy();
     this.ctx.sayOnce('soothe_off', 'm_walked_past_didn_t_fall_asleep', 2600);
     this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, scale: 0, duration: 420, onComplete: () => this.img.destroy() });
   }
@@ -80,6 +102,7 @@ export class CrookedMirror implements HomeMob {
   private frame: Phaser.GameObjects.Sprite;
   private bar: Phaser.GameObjects.Graphics;
   private barrier: Phaser.GameObjects.Rectangle;
+  private hint: Phaser.GameObjects.Text;
   private look = 0;
 
   constructor(private ctx: MobCtx, private x: number) {
@@ -87,6 +110,8 @@ export class CrookedMirror implements HomeMob {
     this.frame = s.add.sprite(x, GROUND_Y, 'crookedmirror').setOrigin(0.5, 1).setScale(0.92).setDepth(6);
     if (s.anims.exists('mirror-shimmer')) this.frame.play('mirror-shimmer');
     this.bar = s.add.graphics().setDepth(46);
+    // подсказка-инверсия: здесь ЗАМРИ = смелость (посмотреть честно), не бегство
+    this.hint = makeHint(s, x, GROUND_Y - 168, 'm_hint_freeze_look', '#88ffcc');
     // барьер: дальше нельзя, пока не посмотрел честно
     this.barrier = s.add.rectangle(x, GROUND_Y / 2, 14, GROUND_Y + 40, 0, 0);
     s.physics.add.existing(this.barrier, true);
@@ -99,6 +124,7 @@ export class CrookedMirror implements HomeMob {
     const p = this.ctx.player();
     const d = Math.abs(p.x - this.x);
     this.bar.clear();
+    fadeHint(this.hint, d < 230 && !this.ctx.frozen()); // подсказка гаснет, как только замер
     if (d < 170) {
       this.ctx.sayOnce('mirror_zone', 'm_come_on_it_s_fine_you', 2800);
       if (this.ctx.frozen()) {
@@ -127,6 +153,7 @@ export class CrookedMirror implements HomeMob {
     audio.split();
     this.barrier.destroy();
     this.bar.clear(); this.bar.destroy();
+    this.hint.destroy();
     this.ctx.burst(this.x, GROUND_Y - 80, 0x9fd8ff, 14, 140);
     this.ctx.sayOnce('mirror_crack', 'm_saw_it_honestly_to_stop_and', 3600);
     const s = this.ctx.scene;
@@ -149,12 +176,15 @@ export class Bargainer implements HomeMob {
   private size = 1;
   private relief = 0;
   private throwT = 0;
+  private hint: Phaser.GameObjects.Text;
   private tags: Phaser.GameObjects.Text[] = [];
 
   constructor(private ctx: MobCtx, private x: number) {
     const s = ctx.scene;
     this.img = s.add.sprite(x, GROUND_Y, 'bargainer').setOrigin(0.5, 1).setScale(this.base).setDepth(6);
     if (s.anims.exists('bargainer-idle')) this.img.play('bargainer-idle');
+    // подсказка: не бей (дорожает) — рывком сквозь ценники
+    this.hint = makeHint(s, x, GROUND_Y - 104, 'm_hint_dash_past', '#ffd86a');
   }
 
   update(dt: number) {
@@ -170,6 +200,7 @@ export class Bargainer implements HomeMob {
       }
     }
     this.tags = this.tags.filter(g => g.active && Math.abs(g.x - this.x) < 420);
+    fadeHint(this.hint, d < BARG_ZONE + 90);
     if (d < BARG_ZONE) {
       this.ctx.sayOnce('barg_zone', 'm_barg_zone', 2600);
       this.throwT += dt;
@@ -205,6 +236,7 @@ export class Bargainer implements HomeMob {
     this.alive = false;
     audio.freeze();
     this.tags.forEach(g => g.destroy());
+    this.hint.destroy();
     this.ctx.sayOnce('barg_off', 'm_barg_off', 2600);
     this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, scale: 0, duration: 380, onComplete: () => this.img.destroy() });
   }
