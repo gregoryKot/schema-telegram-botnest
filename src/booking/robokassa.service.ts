@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHash } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 
 /**
  * Robokassa payment integration.
@@ -102,7 +102,7 @@ export class RobokassaService {
    */
   validateWebhook(outSum: string, invId: string, sigReceived: string): boolean {
     const expected = md5(`${outSum}:${invId}:${this.pass2}`);
-    return expected.toLowerCase() === sigReceived.toLowerCase();
+    return safeEqualHex(expected, sigReceived);
   }
 
   /**
@@ -113,7 +113,7 @@ export class RobokassaService {
   validateSuccess(outSum: string, invId: string, sigReceived: string): boolean {
     if (!outSum || !invId || !sigReceived) return false;
     const expected = md5(`${outSum}:${invId}:${this.pass1}`);
-    return expected.toLowerCase() === sigReceived.toLowerCase();
+    return safeEqualHex(expected, sigReceived);
   }
 
   /**
@@ -160,6 +160,14 @@ export class RobokassaService {
 
 function md5(input: string): string {
   return createHash('md5').update(input, 'utf8').digest('hex');
+}
+
+/** Constant-time comparison of two hex signatures (case-insensitive). */
+function safeEqualHex(a: string, b: string): boolean {
+  const x = Buffer.from((a ?? '').toLowerCase(), 'utf8');
+  const y = Buffer.from((b ?? '').toLowerCase(), 'utf8');
+  if (x.length !== y.length) return false;
+  return timingSafeEqual(x, y);
 }
 
 /**
