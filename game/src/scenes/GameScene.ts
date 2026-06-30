@@ -29,7 +29,7 @@ const ATTACK_RANGE = 72;
 const ATTACK_AURA = 104; // радиус удара вокруг кота — бьёт всё рядом, не только спереди
 const ANX_SCALE = 0.42;  // спрайт тучи широкий — ужимаем до размера как в обучении
 // тень-критик выкрикивает это постоянно (голос Карающего Родителя)
-const CRITIC_LINES = [
+const CRITIC_LINES: MsgKey[] = [
   'm_you_failed_again', 'm_everyone_managed_except_you', 'm_told_you_it_won_t_work',
   'm_every_single_time', 'm_pull_yourself_together', 'm_who_needs_you_like_this',
   'm_ruined_it_again', 'm_you_should_be_ashamed',
@@ -913,7 +913,7 @@ export class GameScene extends Phaser.Scene {
       this.criticBubble.y = c.img.y - 66 * c.size;
       if (this.criticSayT > 2300) {
         this.criticSayT = 0;
-        this.criticBubble.setText(CRITIC_LINES[this.criticLine++ % CRITIC_LINES.length]).setAlpha(0).setScale(0.85);
+        this.criticBubble.setText(t(CRITIC_LINES[this.criticLine++ % CRITIC_LINES.length])).setAlpha(0).setScale(0.85);
         this.tweens.add({ targets: this.criticBubble, alpha: 0.95, scale: 1, duration: 260, ease: 'Back.Out' });
       }
     }
@@ -1012,25 +1012,33 @@ export class GameScene extends Phaser.Scene {
       this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
         .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
 
-    const top = mk(150, t('m_this_can_t_go_on_2'), 16, '#ff8aa6');
-    const sub = mk(208, t('m_and_for_the_first_time_mister'), 12, '#d8c8ec');
+    const top = mk(138, t('m_this_can_t_go_on_2'), 16, '#ff8aa6');
+    const sub = mk(196, t('m_and_for_the_first_time_mister'), 11, '#d8c8ec');
 
-    const ctaTxt = mk(300, t('m_learn_about_schema_therapy'), 12, '#88ffcc', 154);
-    const cta = this.add.rectangle(W / 2, 300 * ky, ctaTxt.width + 40, 42, 0x153028)
+    // Главная кнопка — записаться в терапию (честно: справиться можно, но одному долго)
+    const ctaTxt = mk(286, t('m_learn_about_schema_therapy'), 12, '#88ffcc', 154);
+    const cta = this.add.rectangle(W / 2, 286 * ky, ctaTxt.width + 40, 42, 0x153028)
       .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    const goTxt = mk(372, t('m_or_keep_going_with_mister'), 10, '#8a7faa', 154).setInteractive({ useHandCursor: true });
+    // Продолжить — смотреть путь Мистера дальше
+    const goTxt = mk(346, t('m_or_keep_going_with_mister'), 10, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+    // Поддержать игру донатом
+    const donTxt = mk(388, t('m_support_game'), 9, '#7a6fa0', 154).setInteractive({ useHandCursor: true });
 
     this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
     this.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 600 });
     this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 1400 });
-    this.tweens.add({ targets: goTxt, alpha: 0.8, duration: 700, delay: 2200 });
+    this.tweens.add({ targets: goTxt, alpha: 0.85, duration: 700, delay: 2200 });
+    this.tweens.add({ targets: donTxt, alpha: 0.8, duration: 700, delay: 2700 });
 
     cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
     cta.on('pointerout', () => cta.setFillStyle(0x153028));
     cta.on('pointerdown', () => { track('cta_click', { from: 'act1' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
     goTxt.on('pointerover', () => goTxt.setColor('#d8c8ec'));
-    goTxt.on('pointerout', () => goTxt.setColor('#8a7faa'));
+    goTxt.on('pointerout', () => goTxt.setColor('#9b8fbf'));
     goTxt.on('pointerdown', () => { track('continue', { to: nextChapter }); this.scene.restart({ chapter: nextChapter }); });
+    donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
+    donTxt.on('pointerout', () => donTxt.setColor('#7a6fa0'));
+    donTxt.on('pointerdown', () => { track('donate_click', { source: 'act1_branch' }); window.open('https://schemehappens.ru/donate', '_blank'); });
   }
 
   // Враг = режим схема-терапии — называем в момент узнавания (без лекции)
