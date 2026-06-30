@@ -5,6 +5,7 @@ import {
   Get,
   Res,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   Logger,
@@ -29,6 +30,8 @@ export class PaymentController {
   private readonly logger = new Logger(PaymentController.name);
   private readonly siteUrl: string;
 
+  private readonly appUrl: string;
+
   constructor(
     private readonly robokassa: RobokassaService,
     private readonly booking: BookingService,
@@ -37,6 +40,7 @@ export class PaymentController {
     config: ConfigService,
   ) {
     this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr').replace(/\/$/, '');
+    this.appUrl = (config.get<string>('APP_URL') ?? 'https://schemehappens.ru').replace(/\/$/, '');
   }
 
   /**
@@ -93,15 +97,43 @@ export class PaymentController {
     return `OK${invId}`;
   }
 
-  /** Robokassa SuccessURL — redirect to the booking section with confirmed state. */
+  /**
+   * Robokassa SuccessURL — the client's browser returns here after paying.
+   * We validate the success signature, then send them to a real confirmation
+   * page: bookings → /booking/paid?token=… (shows the meeting link), donations →
+   * the donate page. Handles both InvId ranges so it works even when a single
+   * fixed SuccessURL is configured in the cabinet.
+   */
   @Get('success')
-  successRedirect(@Res() res: Response) {
-    res.redirect(`${this.siteUrl}/#booking?payment=ok`);
+  async successRedirect(
+    @Query('InvId') invId: string,
+    @Query('OutSum') outSum: string,
+    @Query('SignatureValue') sig: string,
+    @Res() res: Response,
+  ) {
+    const id = parseInt(invId, 10);
+    if (isNaN(id) || !this.robokassa.validateSuccess(outSum, invId, sig)) {
+      // Can't trust the InvId — show a generic "payment received" page.
+      return res.redirect(`${this.siteUrl}/booking/paid`);
+    }
+    if (DonationService.isDonationInvId(id)) {
+      return res.redirect(`${this.appUrl}/donate?donation=ok`);
+    }
+    try {
+      const b = await this.booking.getById(id);
+      return res.redirect(`${this.siteUrl}/booking/paid?token=${(b as { cancelToken: string }).cancelToken}`);
+    } catch {
+      return res.redirect(`${this.siteUrl}/booking/paid`);
+    }
   }
 
   /** Robokassa FailURL — redirect back so the user can retry. */
   @Get('fail')
-  failRedirect(@Res() res: Response) {
-    res.redirect(`${this.siteUrl}/#booking?payment=fail`);
+  failRedirect(@Query('InvId') invId: string, @Res() res: Response) {
+    const id = parseInt(invId, 10);
+    if (!isNaN(id) && DonationService.isDonationInvId(id)) {
+      return res.redirect(`${this.appUrl}/donate?donation=fail`);
+    }
+    return res.redirect(`${this.siteUrl}/booking/paid?fail=1`);
   }
 }

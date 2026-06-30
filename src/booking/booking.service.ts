@@ -194,6 +194,23 @@ export class BookingService {
     return decryptRecord(booking, SCHEMA);
   }
 
+  /**
+   * Public booking view by self-cancel token (used by the post-payment page).
+   * Returns only non-PII session fields — never the client's name/contact.
+   */
+  async getPublicByToken(token: string) {
+    const b = await this.prisma.booking.findUnique({ where: { cancelToken: token } });
+    if (!b) throw new NotFoundException('Booking not found');
+    return {
+      status: b.status,
+      type: b.type,
+      startsAt: b.startsAt.toISOString(),
+      endsAt: new Date(b.startsAt.getTime() + b.durationMin * 60_000).toISOString(),
+      durationMin: b.durationMin,
+      meetingUrl: b.meetingUrl,
+    };
+  }
+
   /** Expire HELD bookings whose hold window has passed. Runs every minute. */
   @Cron('* * * * *')
   async expireHolds() {

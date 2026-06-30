@@ -100,6 +100,17 @@ export class RobokassaService {
     const expected = md5(`${outSum}:${invId}:${this.pass2}`);
     return expected.toLowerCase() === sigReceived.toLowerCase();
   }
+
+  /**
+   * Validate the SuccessURL redirect signature (browser returns from Robokassa).
+   * Expected formula: MD5(OutSum:InvId:Password1). Lets us trust the InvId before
+   * handing the client their booking link.
+   */
+  validateSuccess(outSum: string, invId: string, sigReceived: string): boolean {
+    if (!outSum || !invId || !sigReceived) return false;
+    const expected = md5(`${outSum}:${invId}:${this.pass1}`);
+    return expected.toLowerCase() === sigReceived.toLowerCase();
+  }
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
