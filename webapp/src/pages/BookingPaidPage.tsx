@@ -16,15 +16,22 @@ const typeLabel = (t: string) => (t === 'INTRO_15' ? 'Вводная встре�
 // validates the signature and redirects here with ?token=… (the booking's
 // self-cancel token), so we can show the confirmed session + meeting link.
 export function BookingPaidPage() {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
-  const failed = params.get('fail') === '1';
+  // Capture query params once — we strip the token from the URL below, so we
+  // must not re-read it from window.location on later renders.
+  const [token] = useState<string | null>(() => new URLSearchParams(window.location.search).get('token'));
+  const [failed] = useState<boolean>(() => new URLSearchParams(window.location.search).get('fail') === '1');
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+
+  // The token is a capability (view + cancel). Drop it from the visible URL so
+  // it doesn't linger in browser history or leak via the Referer to analytics.
+  useEffect(() => {
+    if (token) window.history.replaceState(window.history.state, '', window.location.pathname);
+  }, [token]);
 
   const load = () => {
     if (!token) { setLoaded(true); return; }
