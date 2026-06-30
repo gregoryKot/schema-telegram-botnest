@@ -35,8 +35,10 @@ export class DonationService {
     this.appUrl = (config.get<string>('APP_URL') ?? 'https://schemehappens.ru').replace(/\/$/, '');
   }
 
+  // Donations occupy [1e9, 2e9); subscriptions start at 2e9. Bounded so a
+  // subscription InvId is never mistaken for a donation.
   static isDonationInvId(invId: number): boolean {
-    return invId >= DONATION_INVID_BASE;
+    return invId >= DONATION_INVID_BASE && invId < 2_000_000_000;
   }
 
   /** Create a donation and return a Robokassa payment URL (or null in dev). */

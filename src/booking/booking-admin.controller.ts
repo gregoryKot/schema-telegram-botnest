@@ -20,6 +20,7 @@ import { RobokassaService } from './robokassa.service';
 import { MeetingService } from './meeting.service';
 import { CalDavService } from './caldav.service';
 import { PricingService } from './pricing.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { assertAdminKey } from './admin-key.util';
 import { SessionType } from '@prisma/client';
 
@@ -39,6 +40,7 @@ export class BookingAdminController {
     private readonly meeting: MeetingService,
     private readonly calDav: CalDavService,
     private readonly pricing: PricingService,
+    private readonly subs: SubscriptionService,
     private readonly config: ConfigService,
   ) {
     this.adminKey = config.get<string>('ADMIN_BOOKING_KEY') ?? '';
@@ -108,6 +110,23 @@ export class BookingAdminController {
     const allowed = ['upcoming', 'past', 'cancelled', 'all'] as const;
     const f = (allowed as readonly string[]).includes(filter ?? '') ? (filter as typeof allowed[number]) : 'upcoming';
     return this.booking.list(f);
+  }
+
+  // ── Subscriptions ─────────────────────────────────────────────────────────
+
+  /** GET /admin/sub-prices — current subscription prices (month/year). */
+  @Get('sub-prices')
+  async subPrices(@Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    return this.subs.getOptions();
+  }
+
+  /** PATCH /admin/sub-price — set a subscription price (rubles). */
+  @Patch('sub-price')
+  async setSubPrice(@Body() body: { period: 'month' | 'year'; amount: number }, @Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    await this.subs.setPrice(body.period === 'year' ? 'year' : 'month', Number(body.amount));
+    return { ok: true };
   }
 
   // ── Availability rules ────────────────────────────────────────────────────

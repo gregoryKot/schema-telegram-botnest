@@ -54,8 +54,10 @@ export class RobokassaService {
     email?: string;
     successUrl: string;
     failUrl: string;
+    /** First payment of a recurring series — tokenises the card for later MIT charges. */
+    recurring?: boolean;
   }): string {
-    const { invId, amount, desc, email, successUrl, failUrl } = params;
+    const { invId, amount, desc, email, successUrl, failUrl, recurring } = params;
     const outSum = amount.toFixed(2);
 
     // Optional ОФД fiscalization. Per Robokassa docs, when a Receipt is sent it
@@ -84,6 +86,8 @@ export class RobokassaService {
       SignatureValue: sig,
       ...(receiptParam ? { Receipt: receiptParam } : {}),
       ...(email ? { Email: email } : {}),
+      // Recurring is NOT a signature modifier — plain optional param.
+      ...(recurring ? { Recurring: 'true' } : {}),
       SuccessURL: successUrl,
       FailURL: failUrl,
       IsTest: this.isTest ? '1' : '0',
@@ -110,6 +114,45 @@ export class RobokassaService {
     if (!outSum || !invId || !sigReceived) return false;
     const expected = md5(`${outSum}:${invId}:${this.pass1}`);
     return expected.toLowerCase() === sigReceived.toLowerCase();
+  }
+
+  /**
+   * Charge a recurring (MIT) payment server-to-server, reusing the card the
+   * client tokenised on the first payment. The actual confirmation arrives on
+   * the usual ResultURL webhook. Requires the recurring service to be enabled
+   * for the shop by Robokassa support (otherwise error 34).
+   *   SignatureValue = MD5(MerchantLogin:OutSum:InvId:Password1)
+   *   PreviousInvoiceID is sent but NOT part of the signature.
+   * Returns { ok, body } — ok=true when Robokassa accepted the charge request.
+   */
+  async chargeRecurring(params: { invId: number; previousInvId: number; amount: number; desc: string }): Promise<{ ok: boolean; body: string }> {
+    const { invId, previousInvId, amount, desc } = params;
+    const outSum = amount.toFixed(2);
+    const sig = md5(`${this.login}:${outSum}:${invId}:${this.pass1}`);
+    const form = new URLSearchParams({
+      MerchantLogin: this.login,
+      InvoiceID: String(invId),
+      PreviousInvoiceID: String(previousInvId),
+      OutSum: outSum,
+      Description: desc,
+      SignatureValue: sig,
+    });
+    try {
+      const res = await fetch('https://auth.robokassa.ru/Merchant/Recurring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: form.toString(),
+        signal: AbortSignal.timeout(15_000),
+      });
+      const body = (await res.text().catch(() => '')).trim();
+      // Robokassa replies "OK<InvId>" on success, otherwise an error code/text.
+      const ok = res.ok && /^OK/i.test(body);
+      if (!ok) this.logger.error(`Recurring charge InvId=${invId} failed: ${res.status} ${body.slice(0, 200)}`);
+      return { ok, body };
+    } catch (e) {
+      this.logger.error(`Recurring charge InvId=${invId} error: ${(e as Error).message}`);
+      return { ok: false, body: (e as Error).message };
+    }
   }
 }
 
