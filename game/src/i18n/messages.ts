@@ -310,6 +310,11 @@ export const M = {
     ru: "Прошёл сквозь собственную голову в этой игре. Мой главный враг — {enemy}. А твой?",
     en: "I ran through my own mind in this game. My biggest enemy — {enemy}. What's yours?",
   },
+  m_too_expensive: { ru: "ЭТО ДОРОГО", en: "TOO EXPENSIVE" },
+  m_barg_intro: { ru: "швыряет ценники.\nбьёшь — только дорожает.\nрывком мимо, не торгуйся.", en: "hurls price tags.\nhit it — it only gets pricier.\ndash past, don't haggle." },
+  m_barg_zone: { ru: "это дорого... может, потом?", en: "it's pricey... maybe later?" },
+  m_barg_hit: { ru: "споришь о цене — она только растёт.", en: "haggle over the price — it only climbs." },
+  m_barg_off: { ru: "прошёл мимо. цена — не главное.", en: "walked past. the price isn't the point." },
 } satisfies Record<string, Msg>;
 
 export type MsgKey = keyof typeof M;
