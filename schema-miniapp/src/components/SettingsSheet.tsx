@@ -630,6 +630,14 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       Записаться на сессию —{' '}
                       <a href="https://t.me/kotlarewski" style={{ color: 'var(--accent)', textDecoration: 'none' }}>@kotlarewski</a>
                     </div>
+                    <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
+                      Подписка на проект —{' '}
+                      <a href="https://schemehappens.ru/subscribe" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>оформить ★</a>
+                    </div>
+                    <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
+                      Поддержать проект —{' '}
+                      <a href="https://schemehappens.ru/donate" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>разовый донат 💛</a>
+                    </div>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.5 }}>
                     Разработано для образовательных целей. Не является медицинским или психологическим сервисом.

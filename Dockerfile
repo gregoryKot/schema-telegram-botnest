@@ -10,6 +10,10 @@ RUN npm install
 COPY webapp/package*.json ./webapp/
 RUN npm install --prefix webapp
 
+# ── Mini-app dependencies ───────────────────────────────────────────────────
+COPY schema-miniapp/package*.json ./schema-miniapp/
+RUN npm install --prefix schema-miniapp
+
 # ── Game dependencies ───────────────────────────────────────────────────────
 COPY game/package*.json ./game/
 RUN npm install --prefix game
@@ -24,8 +28,9 @@ RUN npm run build
 ENV VITE_BOT_USERNAME=SchemaLabBot
 RUN npm run build --prefix webapp
 
-# Copy pre-built schema-miniapp into webapp/dist/app so it's served by the same
-# ServeStaticModule at /app (built locally with vite base '/app/')
+# Build the Telegram mini-app (vite base '/app/') → served at /app by the same
+# ServeStaticModule. Built from source here so it stays in sync with the code.
+RUN npm run build --prefix schema-miniapp
 RUN mkdir -p webapp/dist/app && cp -r schema-miniapp/dist/* webapp/dist/app/
 
 # Build the game (vite base '/game/') → served at /game by the same ServeStatic
