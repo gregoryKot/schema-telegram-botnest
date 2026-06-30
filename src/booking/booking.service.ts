@@ -20,6 +20,8 @@ export interface CreateBookingDto {
   clientTelegramId?: bigint;
   /** Client ticked "returning visit" — require an existing personal meeting. */
   returning?: boolean;
+  /** Client ticked the public-offer consent checkbox. Required to take payment. */
+  acceptedOffer?: boolean;
 }
 
 const SCHEMA: EncryptSchema = {
@@ -57,6 +59,11 @@ export class BookingService {
     if (!dto.clientName || !dto.clientContact) {
       throw new BadRequestException('Name and contact required');
     }
+    // The public offer must be accepted before we take any booking — this is the
+    // legal basis for the (paid) session. Enforced server-side, not just in UI.
+    if (!dto.acceptedOffer) {
+      throw new BadRequestException('OFFER_NOT_ACCEPTED');
+    }
     // Returning client: the contact must match an existing personal meeting,
     // otherwise we'd silently create a duplicate room. Reject with a code the
     // frontend turns into a friendly "check your contact" message.
@@ -81,6 +88,7 @@ export class BookingService {
         status: isFree ? BookingStatus.CONFIRMED : BookingStatus.HELD,
         heldUntil,
         cancelToken,
+        acceptedOfferAt: new Date(),
       },
       SCHEMA,
     );
