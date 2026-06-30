@@ -81,6 +81,12 @@ export class BookingController {
     return this.booking.book(payload);
   }
 
+  /** GET /api/booking/by-token/:token — public booking view (no PII) for the post-payment page. */
+  @Get('by-token/:token')
+  async getByToken(@Param('token') token: string) {
+    return this.booking.getPublicByToken(token);
+  }
+
   /** POST /api/booking/cancel/:token — client self-cancel */
   @Post('cancel/:token')
   @HttpCode(HttpStatus.OK)
