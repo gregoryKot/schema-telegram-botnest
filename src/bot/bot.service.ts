@@ -25,6 +25,7 @@ const USER_DATA_TABLES = [
   'appActivity',
   'userTask',
   'diaryDraft',
+  'emailToken',
 ] as const;
 // Compile-time check: any invalid table name above becomes a TS error here.
 type _VerifyTables = { [K in typeof USER_DATA_TABLES[number]]: PrismaService[K] };
@@ -646,6 +647,11 @@ export class BotService {
       (this.prisma as any).authProvider.deleteMany({ where: { userId: uid } }),
       (this.prisma as any).webSession.deleteMany({ where: { userId: uid } }),
       (this.prisma as any).therapistRequest.deleteMany({ where: { userId: uid } }),
+      // Recurring subscriptions: for Telegram users userId === telegramId, so
+      // remove (and stop billing) any subscription tied to this person. Charges
+      // cascade-delete via the FK. (Web-only subs without telegramId aren't
+      // account-linked — managed by their own cancel token.)
+      (this.prisma as any).subscription.deleteMany({ where: { telegramId: uid } }),
       // Finally — the user row itself.
       this.prisma.user.delete({ where: { id: uid } }),
     ]);

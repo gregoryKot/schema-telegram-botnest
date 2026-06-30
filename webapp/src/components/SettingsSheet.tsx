@@ -461,9 +461,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
                       Записаться на сессию → <span style={{ color: 'var(--accent)' }}>@kotlarewski</span>
                     </a>
-                    <a href="/subscribe" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
-                      Подписка на проект → <span style={{ color: 'var(--accent)' }}>оформить ★</span>
-                    </a>
+                    {/* Подписка скрыта до подключения рекуррента у Robokassa — вернуть ссылку на /subscribe, когда заработает */}
                     <a href="/donate" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
                       Поддержать проект → <span style={{ color: 'var(--accent)' }}>разовый донат 💛</span>
                     </a>

@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT, MINIAPP_URL, SUBSCRIBE_URL, DONATE_URL } from './telegram.constants';
+import { TELEGRAF_BOT, MINIAPP_URL, DONATE_URL } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
@@ -166,20 +166,17 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    // Subscription is hidden until Robokassa's recurring service is live, so this
+    // command currently offers only a one-off donation. Re-add the subscribe
+    // button (SUBSCRIBE_URL) when subscriptions go live.
     this.bot.command('subscribe', async (ctx) => {
       try {
         await ctx.reply(
-          '💛 <b>Подписка на SchemeHappens</b>\n\n' +
-          'Приложение бесплатное. Регулярная поддержка помогает его развивать — ' +
-          'можно оформить ежемесячную или годовую подписку, отписаться в любой момент.',
+          '💛 <b>Поддержать SchemeHappens</b>\n\n' +
+          'Приложение бесплатное. Если оно полезно — можно поддержать проект разовым донатом.',
           {
             parse_mode: 'HTML',
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: 'Оформить подписку', url: SUBSCRIBE_URL }],
-                [{ text: 'Разовый донат', url: DONATE_URL }],
-              ],
-            },
+            reply_markup: { inline_keyboard: [[{ text: 'Разовый донат', url: DONATE_URL }]] },
           },
         );
       } catch (err) {
@@ -402,7 +399,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     await this.bot.telegram.setMyCommands([
       { command: 'start', description: 'Открыть «Всё по схеме»' },
       { command: 'settings', description: 'Настройки уведомлений' },
-      { command: 'subscribe', description: 'Подписка и поддержка проекта' },
+      { command: 'subscribe', description: 'Поддержать проект' },
       { command: 'about', description: 'О приложении и авторе' },
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
 

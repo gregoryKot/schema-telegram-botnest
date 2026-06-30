@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -19,12 +19,15 @@ export interface CreateSubscriptionDto {
   period: SubPeriod;
   email?: string;
   telegramId?: bigint;
+  /** Consent to recurring auto-charges — required to start a subscription. */
+  acceptedOffer?: boolean;
 }
 
 @Injectable()
 export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
   private readonly appUrl: string;
+  private readonly enabled: boolean;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -33,6 +36,13 @@ export class SubscriptionService {
     config: ConfigService,
   ) {
     this.appUrl = (config.get<string>('APP_URL') ?? 'https://schemehappens.ru').replace(/\/$/, '');
+    // Hidden until Robokassa enables the recurring service. Flip with
+    // SUBSCRIPTION_ENABLED=true once auto-charge actually works.
+    this.enabled = config.get<string>('SUBSCRIPTION_ENABLED') === 'true';
+  }
+
+  isEnabled(): boolean {
+    return this.enabled;
   }
 
   static isSubscriptionInvId(invId: number): boolean {
@@ -65,13 +75,16 @@ export class SubscriptionService {
 
   /** Start a subscription: create it + the first (CIT) charge, return a payment URL. */
   async subscribe(dto: CreateSubscriptionDto) {
+    if (!this.enabled) throw new ServiceUnavailableException('SUBSCRIPTION_DISABLED');
+    // Explicit consent to recurring auto-charges is required (auto-renewal).
+    if (!dto.acceptedOffer) throw new BadRequestException('OFFER_NOT_ACCEPTED');
     const period: SubPeriod = dto.period === 'year' ? 'year' : 'month';
     const amount = await this.getPrice(period);
     const cancelToken = randomUUID();
 
     const sub = await this.prisma.subscription.create({
       data: encryptRecord(
-        { period, amount, email: dto.email?.trim() || null, telegramId: dto.telegramId ?? null, status: 'pending', cancelToken },
+        { period, amount, email: dto.email?.trim() || null, telegramId: dto.telegramId ?? null, status: 'pending', cancelToken, acceptedOfferAt: new Date() },
         SCHEMA,
       ) as any,
     });
@@ -173,7 +186,7 @@ export class SubscriptionService {
   /** Charge subscriptions whose next charge is due. Runs hourly. */
   @Cron('0 * * * *')
   async chargeDue() {
-    if (!this.robokassa.enabled) return;
+    if (!this.enabled || !this.robokassa.enabled) return;
     const due = await this.prisma.subscription.findMany({
       where: { status: { in: ['active', 'past_due'] }, nextChargeAt: { lte: new Date() }, firstInvId: { not: null } },
       take: 50,

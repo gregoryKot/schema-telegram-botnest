@@ -22,8 +22,14 @@ export function SubscribePage() {
 
   const [sub, setSub] = useState<Sub | null>(null);
   const [cancelled, setCancelled] = useState(false);
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [consent, setConsent] = useState(false);
 
-  useEffect(() => { api.getSubscriptionOptions().then(setOpts).catch(() => setOpts([])); }, []);
+  useEffect(() => {
+    api.getSubscriptionOptions()
+      .then((r) => { setEnabled(r.enabled); setOpts(r.options); })
+      .catch(() => { setEnabled(false); setOpts([]); });
+  }, []);
   useEffect(() => {
     if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch(() => setSub(null));
   }, [token]);
@@ -31,9 +37,10 @@ export function SubscribePage() {
   const price = opts.find((o) => o.period === period)?.price;
 
   const submit = async () => {
+    if (!consent) return;
     setStatus('loading');
     try {
-      const res = await api.subscribe({ period, email: email.trim() || undefined, website });
+      const res = await api.subscribe({ period, email: email.trim() || undefined, acceptedOffer: consent, website });
       if (res.paymentUrl) { window.location.href = res.paymentUrl; return; }
       window.location.search = '?sub=ok'; // dev / unconfigured
     } catch { setStatus('error'); }
@@ -75,6 +82,18 @@ export function SubscribePage() {
         <a href="/" style={primaryBtn}>На главную</a>
       </>
     );
+  } else if (enabled === false) {
+    // Hidden until Robokassa's recurring service is live.
+    body = (
+      <>
+        <div style={icon}>🔜</div>
+        <h1 style={h1}>Подписка скоро</h1>
+        <p style={sub_}>Регулярная поддержка пока в разработке. А поддержать проект разово уже можно. 💛</p>
+        <a href="/donate" style={primaryBtn}>Разовый донат</a>
+      </>
+    );
+  } else if (enabled === null) {
+    body = <p style={{ ...sub_, marginTop: 40 }}>Загружаем…</p>;
   } else {
     body = (
       <>
@@ -102,8 +121,15 @@ export function SubscribePage() {
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" style={field} />
         <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
 
+        <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', textAlign: 'left', margin: '16px 0 0', cursor: 'pointer' }}>
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
+          <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
+            Согласен на <b>регулярные автосписания</b> раз в {periodLabel(period)}. Отменить можно в любой момент.
+          </span>
+        </label>
+
         {status === 'error' && <p style={{ ...sub_, color: 'var(--accent-red,#c0392b)', fontSize: 13, margin: '12px 0 0' }}>Не получилось. Попробуйте ещё раз.</p>}
-        <button onClick={submit} disabled={status === 'loading' || !price} style={{ ...primaryBtn, marginTop: 16, opacity: status === 'loading' || !price ? 0.5 : 1 }}>
+        <button onClick={submit} disabled={status === 'loading' || !price || !consent} style={{ ...primaryBtn, marginTop: 14, opacity: status === 'loading' || !price || !consent ? 0.5 : 1 }}>
           {status === 'loading' ? 'Перехожу к оплате…' : price ? `Оформить за ${price.toLocaleString('ru-RU')} ₽/${periodLabel(period)}` : 'Оформить'}
         </button>
         <p style={hint}>Оплата картой через Robokassa, автосписание раз в {periodLabel(period)}. Чек — от «Мой налог».</p>
