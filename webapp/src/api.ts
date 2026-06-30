@@ -425,8 +425,8 @@ export const api = {
   donate:               (body: { amount: number; source?: 'app' | 'game'; email?: string; comment?: string; website?: string }) =>
     postJson<{ id: number; paymentUrl: string | null }>('/api/donation', body),
   // Subscription (recurring support)
-  getSubscriptionOptions: () => get<{ period: 'month' | 'year'; price: number }[]>('/api/subscription/options'),
-  subscribe:            (body: { period: 'month' | 'year'; email?: string; website?: string }) =>
+  getSubscriptionOptions: () => get<{ enabled: boolean; options: { period: 'month' | 'year'; price: number }[] }>('/api/subscription/options'),
+  subscribe:            (body: { period: 'month' | 'year'; email?: string; acceptedOffer?: boolean; website?: string }) =>
     postJson<{ id: number; cancelToken: string; paymentUrl: string | null }>('/api/subscription', body),
   getSubscriptionByToken: (token: string) => get<{ status: string; period: string; amount: number; nextChargeAt: string | null }>(`/api/subscription/by-token/${token}`),
   cancelSubscription:   (token: string) => postJson<{ ok: true }>(`/api/subscription/cancel/${token}`, {}),

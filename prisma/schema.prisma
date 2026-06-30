@@ -597,6 +597,7 @@ model Subscription {
   email          String?                       // encrypted
   telegramId     BigInt?                       // if subscribed from Telegram — for management
   firstInvId     Int?                          // InvId of the establishing charge (PreviousInvoiceID source)
+  acceptedOfferAt DateTime?                    // when the client consented to recurring auto-charges
   nextChargeAt   DateTime?                     // when the next recurring charge is due
   lastChargeAt   DateTime?
   failedAttempts Int      @default(0)
