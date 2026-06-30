@@ -6,7 +6,7 @@ export interface TriggerDef {
   x: number; anx?: number; critic?: boolean; say?: MsgKey; overwhelm?: boolean;
   // враги главы 2 — значение = координата спавна
   proc?: number; phone?: number; irrit?: number;
-  soothe?: number; mirror?: number; // Акт II: Само-Пройдёт, Кривое зеркало
+  soothe?: number; mirror?: number; bargainer?: number; // Акт II: Само-Пройдёт, Кривое зеркало, Это-Дорого
   seat?: number;  // высота посадки прокрастинации (диван): y = GROUND_Y - seat
   gate?: number;  // боевой гейт: стена на этой x, падает когда враги триггера разрешены
 }
@@ -187,23 +187,25 @@ const chapter3: ChapterConfig = {
   title: 'm_it_ll_pass',
   tagline: 'm_realised_this_can_t_go_on',
   theme: 'street',
-  arenaW: 2600,
-  pits: [{ s: 1250, e: 1400 }],
-  checkpoints: [100, 1450],
+  arenaW: 3500,
+  pits: [{ s: 1250, e: 1400 }, { s: 2350, e: 2500 }],
+  checkpoints: [100, 1450, 2550],
   platforms: [
     { x: 360,  w: 120, y: G - 84  }, { x: 700,  w: 110, y: G - 140 },
     { x: 1050, w: 120, y: G - 90  }, { x: 1500, w: 120, y: G - 100 },
     { x: 1800, w: 120, y: G - 150 }, { x: 2150, w: 130, y: G - 90  },
+    { x: 2700, w: 120, y: G - 100 }, { x: 3050, w: 120, y: G - 150 },
   ],
   spikes: [],
-  hearts: [{ x: 420, y: G - 120 }, { x: 1800, y: G - 188 }, { x: 2300, y: G - 120 }],
-  memories: [{ x: 560, y: G - 130 }, { x: 1500, y: G - 138 }],
+  hearts: [{ x: 420, y: G - 120 }, { x: 1800, y: G - 188 }, { x: 2700, y: G - 150 }, { x: 3300, y: G - 120 }],
+  memories: [{ x: 560, y: G - 130 }, { x: 1500, y: G - 138 }, { x: 3050, y: G - 188 }],
   triggers: [
     { x: 240,  say: 'm_i_need_to_change_something_or' },
     { x: 600,  soothe: 820 },
-    { x: 1500, say: 'm_see_easier_already_maybe_it_ll' },
-    { x: 1700, mirror: 1950 },   // поворот: ЗАМРИ = посмотреть честно
-    { x: 2350, overwhelm: true },
+    { x: 1300, bargainer: 1620 },   // Это-Дорого: швыряет ценники, бить → дорожает
+    { x: 2100, say: 'm_see_easier_already_maybe_it_ll' },
+    { x: 2350, mirror: 2620 },      // поворот: ЗАМРИ = посмотреть честно
+    { x: 3250, overwhelm: true },
   ],
   ending: [
     { text: 'm_the_slyest_enemy_never_attacked',       y: 120, color: '#d8c8ec', size: 17, delay: 700  },

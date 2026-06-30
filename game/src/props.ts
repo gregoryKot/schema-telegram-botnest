@@ -20,6 +20,9 @@ import lStreetUrl from './assets/ledge_street.png';
 import lRoomUrl   from './assets/ledge_room.png';
 import lStageUrl  from './assets/ledge_stage.png';
 import lGlassUrl  from './assets/ledge_glass.png';
+import sootheUrl from './assets/enemy_soothe.png';
+import bargUrl   from './assets/enemy_bargainer.png';
+import mirrorUrl from './assets/enemy_mirror.png';
 
 // Настоящие пиксель-арт спрайты (заменили код-рисованные прямоугольники/кружки).
 // Файлы мелкие → Vite инлайнит data-URI в бандл: грузятся мгновенно, упасть
@@ -48,6 +51,9 @@ export const ENEMY_SHEETS: Record<string, { url: string; fw: number; fh: number;
   irritmob: { url: irritUrl, fw: 59,  fh: 60, frames: 4 },
   workload: { url: workUrl,  fw: 86,  fh: 96, frames: 4 },
   memory:   { url: memUrl,   fw: 30,  fh: 30, frames: 4 },
+  soothe:   { url: sootheUrl, fw: 66, fh: 64, frames: 4 },
+  bargainer:{ url: bargUrl,   fw: 70, fh: 70, frames: 4 },
+  crookedmirror:{ url: mirrorUrl, fw: 170, fh: 98, frames: 4 },
 };
 
 export function loadProps(scene: Phaser.Scene) {
@@ -70,6 +76,9 @@ export function ensureEnemyAnims(scene: Phaser.Scene) {
   mk('irrit-flicker', 'irritmob', 8);
   mk('workload-wobble', 'workload', 6);
   mk('memory-twinkle', 'memory', 7);
+  mk('soothe-idle', 'soothe', 5);
+  mk('bargainer-idle', 'bargainer', 6);
+  mk('mirror-shimmer', 'crookedmirror', 5);
 }
 
 // Поставить реквизит на пол: origin (0.5, 1) в точке (x, groundY), масштаб — по

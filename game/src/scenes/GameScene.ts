@@ -3,7 +3,7 @@ import { W, H, GROUND_Y, S, PHYS } from '../constants';
 import { audio } from '../audio';
 import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
 import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation } from '../enemies/home';
-import { SelfSoothe, CrookedMirror } from '../enemies/road';
+import { SelfSoothe, CrookedMirror, Bargainer } from '../enemies/road';
 import { buildDecor } from '../decor';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { ensureEnemyAnims, LEDGE } from '../props';
@@ -315,6 +315,8 @@ export class GameScene extends Phaser.Scene {
           this.introOnce('soothe', 'm_it_ll_pass_2', 'm_it_doesn_t_attack_it_lulls'); }
         if (t.mirror) { this.homeMobs.push(new CrookedMirror(this.mobCtx(), t.mirror));
           this.introOnce('mirror', 'm_the_crooked_mirror', 'm_shows_a_flattering_you_all_fine'); }
+        if (t.bargainer) { this.homeMobs.push(new Bargainer(this.mobCtx(), t.bargainer));
+          this.introOnce('bargainer', 'm_too_expensive', 'm_barg_intro'); }
         if (t.say) { this.say(t.say, 2400); if (t.anx) audio.anx(); }
         if (t.gate) this.makeGate(t.gate, [...this.anx.slice(beforeA), ...this.homeMobs.slice(beforeH)]);
         if (t.overwhelm) this.beginOverwhelm();
