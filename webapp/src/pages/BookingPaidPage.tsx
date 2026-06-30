@@ -24,6 +24,7 @@ export function BookingPaidPage() {
   const [loaded, setLoaded] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   const load = () => {
     if (!token) { setLoaded(true); return; }
@@ -36,8 +37,18 @@ export function BookingPaidPage() {
 
   const doCancel = async () => {
     if (!token) return;
-    try { await api.cancelBooking(token); setCancelled(true); } catch { /* ignore */ }
-    setConfirmCancel(false);
+    try {
+      await api.cancelBooking(token);
+      setCancelled(true);
+      setConfirmCancel(false);
+    } catch (err) {
+      setConfirmCancel(false);
+      setCancelError(
+        err instanceof Error && err.message === 'CANCEL_TOO_LATE'
+          ? 'Отменить онлайн можно не позднее чем за 24 часа до встречи. Напишите мне в Telegram — решим.'
+          : 'Не получилось отменить. Попробуйте ещё раз или напишите мне.',
+      );
+    }
   };
 
   let body: React.ReactNode;
@@ -84,6 +95,7 @@ export function BookingPaidPage() {
         )}
         <p style={hint}>Эту же ссылку я продублирую перед сессией.</p>
 
+        {cancelError && <p style={{ ...sub, fontSize: 13, color: 'var(--accent-red, #c0392b)', margin: '0 0 14px' }}>{cancelError}</p>}
         {!confirmCancel ? (
           <button onClick={() => setConfirmCancel(true)} style={textLink}>Отменить запись</button>
         ) : (

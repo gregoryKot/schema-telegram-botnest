@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { CalDavService } from './caldav.service';
 import { BookingStatus } from '@prisma/client';
+import { MIN_BOOK_LEAD_HOURS } from './booking.config';
 
 export interface Slot {
   startsAt: Date;
@@ -51,6 +52,9 @@ export class SlotService {
     // enabled, so /slots never depends on (or hangs on) CalDAV by default.
     const calBusy = this.blockBusy ? await this.calDav.getBusyTimes(fromDate, toDate) : [];
 
+    // Earliest bookable instant: now + minimum lead time.
+    const earliest = Date.now() + MIN_BOOK_LEAD_HOURS * 3_600_000;
+
     const slots: Slot[] = [];
     const cursor = new Date(fromDate);
     cursor.setUTCHours(0, 0, 0, 0);
@@ -72,7 +76,7 @@ export class SlotService {
           const finish = new Date(t + rule.sessionDuration * 60_000);
           if (isOccupied(start, finish, busyBookings)) continue;
           if (overlapsBusy(start, finish, calBusy)) continue; // therapist's calendar
-          if (start <= new Date()) continue; // no past slots
+          if (start.getTime() <= earliest) continue; // past + min lead time (no last-minute)
           slots.push({ startsAt: start, endsAt: finish, durationMin: rule.sessionDuration });
         }
       }

@@ -7,6 +7,7 @@ import { MeetingService } from './meeting.service';
 import { RobokassaService } from './robokassa.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { PricingService } from './pricing.service';
+import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
@@ -74,6 +75,10 @@ export class BookingService {
     // frontend turns into a friendly "check your contact" message.
     if (dto.returning && !(await this.meeting.hasMeetingForContact(dto.clientContact))) {
       throw new BadRequestException('CLIENT_NOT_FOUND');
+    }
+    // No last-minute bookings: the slot must be at least MIN_BOOK_LEAD_HOURS away.
+    if (dto.startsAt.getTime() < Date.now() + MIN_BOOK_LEAD_HOURS * 3_600_000) {
+      throw new BadRequestException('TOO_SOON');
     }
     await this.assertSlotFree(dto.startsAt, dto.durationMin);
 
@@ -155,13 +160,21 @@ export class BookingService {
     return { ok: true };
   }
 
-  /** Cancel via self-service token (client link) or by admin. */
-  async cancel(cancelToken: string) {
+  /**
+   * Cancel via self-service token (client link).
+   * @param enforceCutoff  when true (client path), block cancellation inside the
+   *                       MIN_CANCEL_LEAD_HOURS window. Admin flows can pass false.
+   */
+  async cancel(cancelToken: string, enforceCutoff = true) {
     const booking = await this.prisma.booking.findUnique({ where: { cancelToken } });
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.status === BookingStatus.CANCELLED) return { ok: true };
     if (booking.status === BookingStatus.COMPLETED) {
       throw new BadRequestException('Cannot cancel completed session');
+    }
+    // Too late to self-cancel — the client must contact the therapist directly.
+    if (enforceCutoff && booking.startsAt.getTime() < Date.now() + MIN_CANCEL_LEAD_HOURS * 3_600_000) {
+      throw new BadRequestException('CANCEL_TOO_LATE');
     }
 
     await this.prisma.booking.update({
