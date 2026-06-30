@@ -32,6 +32,7 @@ import { GamePage } from './pages/GamePage';
 import { BookingAdminPage } from './pages/BookingAdminPage';
 import { DonatePage } from './pages/DonatePage';
 import { BookingPaidPage } from './pages/BookingPaidPage';
+import { SubscribePage } from './pages/SubscribePage';
 
 // Apply saved theme before first render
 const savedTheme = localStorage.getItem('app_theme');
@@ -89,6 +90,7 @@ const personalRoutes = [
   { path: '/game',           element: <GamePage /> },
   { path: '/booking-admin',  element: <BookingAdminPage /> },
   { path: '/booking/paid',   element: <BookingPaidPage /> },
+  { path: '/subscribe',      element: <SubscribePage /> },
   { path: '/donate',         element: <DonatePage /> },
   { path: '/privacy',        element: <PrivacyPage /> },
   { path: '/offer',          element: <OfferPage /> },
@@ -97,6 +99,7 @@ const personalRoutes = [
 
 const appRoutes = [
   { path: '/',               element: <Navigate to="/login" replace /> },
+  { path: '/subscribe',      element: <SubscribePage /> },
   { path: '/donate',         element: <DonatePage /> },
   { path: '/login',          element: <LoginPage /> },
   { path: '/auth/callback',  element: <AuthCallback /> },

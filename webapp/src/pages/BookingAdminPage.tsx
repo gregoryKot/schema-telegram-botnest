@@ -66,6 +66,7 @@ export function BookingAdminPage() {
       <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>Админка записи</h1>
       <IntegrationStatus adminKey={key} />
       <PricesManager adminKey={key} />
+      <SubPricesManager adminKey={key} />
       <ScheduleManager rules={rules} onChange={() => reload(key)} adminKey={key} />
       <BookingsManager adminKey={key} />
     </div>
@@ -164,6 +165,45 @@ function PricesManager({ adminKey }: { adminKey: string }) {
       ))}
       {saved && <p style={{ fontSize: 13, color: '#4a6335', margin: '8px 0 0' }}>Цена сохранена ✓</p>}
       <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 10 }}>Знакомство всегда бесплатное. Цена применяется к новым записям сразу.</p>
+    </section>
+  );
+}
+
+// ── Subscription prices ──────────────────────────────────────────────────────
+
+function SubPricesManager({ adminKey }: { adminKey: string }) {
+  const [opts, setOpts] = useState<{ period: 'month' | 'year'; price: number }[]>([]);
+  const [draft, setDraft] = useState<Record<string, number>>({});
+  const [saved, setSaved] = useState(false);
+
+  const load = useCallback(() => {
+    api.adminGetSubPrices(adminKey).then((o) => {
+      setOpts(o);
+      setDraft(Object.fromEntries(o.map((x) => [x.period, x.price])));
+    }).catch(() => setOpts([]));
+  }, [adminKey]);
+  useEffect(() => { load(); }, [load]);
+
+  const save = async (period: 'month' | 'year') => {
+    await api.adminSetSubPrice(adminKey, period, draft[period] ?? 0);
+    setSaved(true); setTimeout(() => setSaved(false), 1500); load();
+  };
+
+  return (
+    <section style={card}>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Подписка</h2>
+      {opts.map((o) => (
+        <div key={o.period} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', flexWrap: 'wrap' }}>
+          <span style={{ flex: 1, color: 'var(--text)', fontSize: 14 }}>{o.period === 'year' ? 'Год' : 'Месяц'}</span>
+          <input type="number" min={1} value={draft[o.period] ?? 0}
+            onChange={(e) => setDraft({ ...draft, [o.period]: Math.max(1, Math.round(Number(e.target.value))) })}
+            style={{ ...input, width: 110 }} />
+          <span style={{ color: 'var(--text-faint)' }}>₽</span>
+          <button style={btn} onClick={() => save(o.period)}>Сохранить</button>
+        </div>
+      ))}
+      {saved && <p style={{ fontSize: 13, color: '#4a6335', margin: '8px 0 0' }}>Цена сохранена ✓</p>}
+      <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 10 }}>Авто-списание раз в период. Требует подключения услуги рекуррентных платежей у Robokassa.</p>
     </section>
   );
 }
