@@ -55,6 +55,7 @@ const CONSENT_TEXT = `🔐 Соглашение об обработке данн
 export function buildWelcomeKeyboard(): any {
   return Markup.inlineKeyboard([
     [Markup.button.webApp('🧠 Открыть «Всё по схеме»', MINIAPP_URL)],
+    [Markup.button.url('💛 Поддержать проект', DONATE_URL)],
   ]);
 }
 
@@ -182,6 +183,21 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         );
       } catch (err) {
         this.logger.error('subscribe command failed', err);
+      }
+    });
+
+    this.bot.command('donate', async (ctx) => {
+      try {
+        await ctx.reply(
+          '💛 <b>Поддержать SchemeHappens</b>\n\n' +
+          'Приложение бесплатное и без рекламы. Если оно тебе помогает — поддержи проект любой суммой. Спасибо 🙏',
+          {
+            parse_mode: 'HTML',
+            reply_markup: { inline_keyboard: [[{ text: '💛 Поддержать проект', url: DONATE_URL }]] },
+          },
+        );
+      } catch (err) {
+        this.logger.error('donate command failed', err);
       }
     });
 
@@ -402,8 +418,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           '<b>Об авторе</b>',
           'Канал о схема-терапии — @SchemeHappens',
           'Записаться на сессию — @kotlarewski',
+          '',
+          'Приложение бесплатное 💛 Поддержать проект можно донатом ниже.',
         ].join('\n');
-        await ctx.reply(text, { parse_mode: 'HTML' });
+        await ctx.reply(text, {
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: [[{ text: '💛 Поддержать проект', url: DONATE_URL }]] },
+        });
       } catch (err) {
         this.logger.error('about command failed', err);
         await ctx.reply('Не удалось загрузить информацию.').catch(() => null);
@@ -413,7 +434,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     await this.bot.telegram.setMyCommands([
       { command: 'start', description: 'Открыть «Всё по схеме»' },
       { command: 'settings', description: 'Настройки уведомлений' },
-      { command: 'subscribe', description: 'Поддержать проект' },
+      { command: 'donate', description: 'Поддержать проект 💛' },
       { command: 'about', description: 'О приложении и авторе' },
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
 

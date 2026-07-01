@@ -14,6 +14,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 // – always-needed small helpers (no heavy data deps) –
 import { NoteSheet } from './NoteSheet';
 import { Celebration } from './Celebration';
+import { DonateNudge } from './DonateNudge';
 import { TaskCreateSheet } from './TaskCreateSheet';
 
 // – lazy: sections (each can pull in schemaTherapyData / needData on demand) –
@@ -746,6 +747,9 @@ export function AppShell() {
           onNewDiaryEntry={() => { navigate('/diary'); }}
         />
       )}
+
+      {/* Periodic donate nudge (once ~monthly, dismissible) */}
+      <DonateNudge />
     </div>
   );
 }

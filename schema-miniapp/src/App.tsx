@@ -18,6 +18,7 @@ import { TrackerOverlay } from './components/TrackerOverlay';
 import { HistoryView } from './components/HistoryView';
 import { BottomSheet } from './components/BottomSheet';
 import { SettingsSheet } from './components/SettingsSheet';
+import { DonateNudge } from './components/DonateNudge';
 import { TherapistClientSheet } from './components/TherapistClientSheet';
 import { PracticesScreen } from './components/PracticesScreen';
 import { PlansScreen } from './components/PlansScreen';
@@ -949,6 +950,8 @@ export default function App() {
       )}
 
       {showSettings && <SettingsSheet onClose={() => setShowSettings(false)} userRole={userRole} displayName={displayName} onNameChanged={setDisplayName} onOpenTherapistCabinet={() => { setShowSettings(false); setTherapistMode(true); }} therapistMode={therapistMode} onToggleTherapistMode={() => switchTherapistMode(!therapistMode)} />}
+      <DonateNudge />
+
       {/* therapistMode renders inline in main flow, not as overlay — see below */}
       {showPractices && <PracticesScreen onClose={() => setShowPractices(false)} onOpenTracker={() => { setShowPractices(false); setTrackerNeedId(null); setShowTrackerOverlay(true); }} />}
       {showPlans && <PlansScreen onClose={() => setShowPlans(false)} onOpenTracker={() => { setShowPlans(false); setTrackerNeedId(null); setShowTrackerOverlay(true); }} />}
