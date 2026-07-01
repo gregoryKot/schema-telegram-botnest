@@ -1,75 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api } from '../api';
-import type { AvailabilityRule, AdminBooking, SessionOption } from '../api';
+import { api } from '../../api';
+import type { AvailabilityRule, AdminBooking, SessionOption } from '../../api';
+import { card, btn, btnGhost, input } from './shared';
 
 const DAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 const DAYS_FULL = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-const KEY_STORE = 'booking_admin_key';
-
-const card: React.CSSProperties = {
-  background: 'var(--bg-rail)', border: '1px solid var(--line)', borderRadius: 14, padding: 20, marginBottom: 16,
-};
-const btn: React.CSSProperties = {
-  padding: '9px 16px', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
-  background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10,
-};
-const btnGhost: React.CSSProperties = {
-  ...btn, background: 'transparent', color: 'var(--text-sub)', border: '1.5px solid var(--line-strong)',
-};
-const input: React.CSSProperties = {
-  padding: '8px 12px', fontSize: 14, fontFamily: 'inherit', background: 'rgba(var(--fg-rgb),0.04)',
-  border: '1.5px solid var(--line)', borderRadius: 8, color: 'var(--text)', outline: 'none',
-};
-
 const fmtTime = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-export function BookingAdminPage() {
-  const [key, setKey] = useState<string>(() => localStorage.getItem(KEY_STORE) ?? '');
-  const [authed, setAuthed] = useState(false);
-  const [keyInput, setKeyInput] = useState('');
-  const [keyError, setKeyError] = useState(false);
+/** Booking admin tab: integrations status, prices, schedule, bookings list. */
+export function BookingSection({ adminKey }: { adminKey: string }) {
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
-
-  const reload = useCallback(async (k: string) => {
-    setRules(await api.adminListRules(k));
-  }, []);
-
-  useEffect(() => {
-    if (!key) return;
-    reload(key).then(() => setAuthed(true)).catch(() => { setAuthed(false); localStorage.removeItem(KEY_STORE); setKey(''); });
-  }, [key, reload]);
-
-  const tryKey = async () => {
-    setKeyError(false);
-    try {
-      await api.adminListRules(keyInput);
-      localStorage.setItem(KEY_STORE, keyInput);
-      setKey(keyInput);
-    } catch { setKeyError(true); }
-  };
-
-  if (!authed) return (
-    <div style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--sans)' }}>
-      <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)' }}>Админка записи</h1>
-      <p style={{ color: 'var(--text-sub)', fontSize: 15 }}>Введите ключ доступа (ADMIN_BOOKING_KEY).</p>
-      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <input style={{ ...input, flex: 1 }} type="password" value={keyInput} onChange={e => setKeyInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && tryKey()} placeholder="Ключ" />
-        <button style={btn} onClick={tryKey}>Войти</button>
-      </div>
-      {keyError && <p style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 8 }}>Неверный ключ</p>}
-    </div>
-  );
+  const reload = useCallback(async () => { setRules(await api.adminListRules(adminKey)); }, [adminKey]);
+  useEffect(() => { reload(); }, [reload]);
 
   return (
-    <div style={{ maxWidth: 760, margin: '40px auto', padding: '0 20px 80px', fontFamily: 'var(--sans)' }}>
-      <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>Админка записи</h1>
-      <IntegrationStatus adminKey={key} />
-      <PricesManager adminKey={key} />
-      <SubPricesManager adminKey={key} />
-      <ScheduleManager rules={rules} onChange={() => reload(key)} adminKey={key} />
-      <BookingsManager adminKey={key} />
-    </div>
+    <>
+      <IntegrationStatus adminKey={adminKey} />
+      <PricesManager adminKey={adminKey} />
+      <SubPricesManager adminKey={adminKey} />
+      <ScheduleManager rules={rules} onChange={reload} adminKey={adminKey} />
+      <BookingsManager adminKey={adminKey} />
+    </>
   );
 }
 

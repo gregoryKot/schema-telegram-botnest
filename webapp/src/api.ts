@@ -137,6 +137,8 @@ export interface ArticleSummary {
 }
 export interface Article extends ArticleSummary { content: string; }
 export type ArticleDto = { slug: string; title: string; description: string; content: string; date: string; readMin: number; };
+export interface MarqueeTopic { label: string; href: string; }
+export interface SiteContent { heroPhoto: string | null; marqueeTopicsA: MarqueeTopic[]; marqueeTopicsB: MarqueeTopic[]; }
 export interface UserPractice { id: number; needId: string; text: string; }
 export interface PartnerInfo {
   code: string;
@@ -455,6 +457,10 @@ export const api = {
   adminCreateArticle: (key: string, dto: ArticleDto) => adminReq<Article>('POST', '/api/articles/admin', key, dto),
   adminUpdateArticle: (key: string, id: number, dto: Partial<ArticleDto>) => adminReq<Article>('PATCH', `/api/articles/admin/${id}`, key, dto),
   adminDeleteArticle: (key: string, id: number) => adminReq<void>('DELETE', `/api/articles/admin/${id}`, key),
+  // Site content (hero photo, marquee topics)
+  getSiteContent:    () => get<SiteContent>('/api/site-content'),
+  adminSetHeroPhoto: (key: string, dataUri: string) => adminReq<{ ok: true }>('PATCH', '/api/site-content/admin/hero-photo', key, { dataUri }),
+  adminSetMarquee:   (key: string, group: 'A' | 'B', topics: MarqueeTopic[]) => adminReq<{ ok: true }>('PATCH', '/api/site-content/admin/marquee', key, { group, topics }),
   // Therapist custom modes
   listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),
