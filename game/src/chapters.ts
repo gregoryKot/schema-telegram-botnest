@@ -36,6 +36,7 @@ export interface ChapterConfig {
   overwhelmSay: MsgKey;
   next?: string;            // глава после развязки; нет — в начало
   branch?: string;          // конец Акта I: экран-развилка (CTA в терапию ИЛИ продолжить в эту главу)
+  act2End?: boolean;        // конец отрезка Акта II (дорога): «дорога продолжается» + воронка, но НЕ финал истории
 }
 
 const G = GROUND_Y;
@@ -232,8 +233,8 @@ const chapter3: ChapterConfig = {
   ending: [
     { text: 'm_the_slyest_enemy_never_attacked',       y: 120, color: '#d8c8ec', size: 17, delay: 700  },
     { text: 'm_it_just_whispered_not_today',       y: 156, color: '#bfe0ff', size: 15, delay: 2200 },
-    { text: 'm_and_day_after_day_slips_by',              y: 226, color: '#d8c8ec', size: 16, delay: 4000 },
-    { text: 'm_until_you_say_it_honestly_it',       y: 320, color: '#88ffcc', size: 15, delay: 6200 },
+    { text: 'm_but_today_you_didnt_turn',              y: 226, color: '#e8d0dc', size: 16, delay: 4000 },
+    { text: 'm_road_longer_but_walking',       y: 312, color: '#88ffcc', size: 15, delay: 6200 },
   ],
   palette: {
     skyTop: 0x3a3458, skyBot: 0x6a5a82, glow1: 0x8a7aba, glow2: 0xa890c8,
@@ -241,7 +242,8 @@ const chapter3: ChapterConfig = {
   },
   music: 'home',
   overwhelmAnx: 0,
-  overwhelmSay: 'm_talked_myself_out_again_another_day',
+  overwhelmSay: 'm_not_today_no_today_i_walk',
+  act2End: true, // первый отрезок дороги пройден — дорога продолжается (не финал истории)
 };
 
 export const CHAPTERS: Record<string, ChapterConfig> = { chapter1, chapter2, chapter3 };

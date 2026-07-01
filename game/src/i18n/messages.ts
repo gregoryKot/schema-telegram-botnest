@@ -316,6 +316,14 @@ export const M = {
   m_barg_zone: { ru: "это дорого... может, потом?", en: "it's pricey... maybe later?" },
   m_barg_hit: { ru: "споришь о цене — она только растёт.", en: "haggle over the price — it only climbs." },
   m_barg_off: { ru: "прошёл мимо. цена — не главное.", en: "walked past. the price isn't the point." },
+  // Акт II: гл.3 — конец первого отрезка дороги (прогресс, а не провал)
+  m_but_today_you_didnt_turn: { ru: "но сегодня ты не свернул.", en: "but today you didn't turn back." },
+  m_road_longer_but_walking: { ru: "дорога к терапии длиннее, чем кажется.\nно ты идёшь.", en: "the road to therapy is longer than it looks.\nbut you're walking it." },
+  m_not_today_no_today_i_walk: { ru: "«не сегодня»? нет. сегодня — иду.", en: "\"not today\"? no. today — I walk." },
+  // экран конца отрезка дороги (showRoadEnd)
+  m_road_goes_on: { ru: "дорога продолжается.", en: "the road goes on." },
+  m_first_excuse_passed: { ru: "первую отговорку ты прошёл. впереди — ещё.\nдо терапии не один шаг — но ты в пути.", en: "you got past the first excuse. more lie ahead.\ntherapy isn't one step away — but you're on your way." },
+  m_more_road_soon: { ru: "следующие отрезки дороги — скоро", en: "more of the road — coming soon" },
   // подсказки-действия над дорожными врагами (как Мистер их проходит)
   m_hint_walk_past: { ru: "ИДИ МИМО →", en: "WALK PAST →" },
   m_hint_dash_past: { ru: "РЫВКОМ →", en: "DASH PAST →" },
