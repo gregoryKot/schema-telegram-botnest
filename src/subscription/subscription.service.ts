@@ -200,7 +200,14 @@ export class SubscriptionService {
         desc: `Подписка SchemeHappens (${sub.period === 'year' ? 'год' : 'месяц'})`,
       });
       if (res.ok) {
-        // Payment accepted — confirmation + nextChargeAt advance happen on the webhook.
+        // Advance nextChargeAt NOW (not only on the webhook): the queue runs
+        // hourly, so if the success webhook is delayed or lost we'd otherwise
+        // re-pick this subscription and charge it again. The webhook still
+        // confirms the charge (marks it paid, resets fails) idempotently.
+        await this.prisma.subscription.update({
+          where: { id: sub.id },
+          data: { nextChargeAt: addPeriod(new Date(), sub.period as SubPeriod) },
+        });
         this.logger.log(`Subscription ${sub.id} recurring charge sent (InvId=${SUBSCRIPTION_INVID_BASE + charge.id})`);
       } else {
         const fails = sub.failedAttempts + 1;
