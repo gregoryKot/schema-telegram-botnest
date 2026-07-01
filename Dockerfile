@@ -10,10 +10,6 @@ RUN npm install
 COPY webapp/package*.json ./webapp/
 RUN npm install --prefix webapp
 
-# ── Mini-app dependencies ───────────────────────────────────────────────────
-COPY schema-miniapp/package*.json ./schema-miniapp/
-RUN npm install --prefix schema-miniapp
-
 # ── Game dependencies ───────────────────────────────────────────────────────
 COPY game/package*.json ./game/
 RUN npm install --prefix game
@@ -28,9 +24,10 @@ RUN npm run build
 ENV VITE_BOT_USERNAME=SchemaLabBot
 RUN npm run build --prefix webapp
 
-# Build the Telegram mini-app (vite base '/app/') → served at /app by the same
-# ServeStaticModule. Built from source here so it stays in sync with the code.
-RUN npm run build --prefix schema-miniapp
+# Copy the pre-built Telegram mini-app into webapp/dist/app → served at /app by
+# the same ServeStaticModule. The mini-app is built from its committed source
+# (`npm run build --prefix schema-miniapp`) and its dist committed — this keeps
+# the Docker build fast (no extra install/build step here).
 RUN mkdir -p webapp/dist/app && cp -r schema-miniapp/dist/* webapp/dist/app/
 
 # Build the game (vite base '/game/') → served at /game by the same ServeStatic

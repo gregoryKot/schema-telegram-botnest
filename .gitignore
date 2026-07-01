@@ -64,9 +64,10 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # webapp dist — built by Dockerfile on Amvera, no need to commit
 webapp/dist/
 
-# schema-miniapp now builds in Docker like webapp/game — track source, ignore deps + build output
+# schema-miniapp: track BOTH source and the built dist. Docker copies dist for a
+# fast build; rebuild dist locally (`npm run build --prefix schema-miniapp`) and
+# commit it whenever the mini-app source changes.
 schema-miniapp/node_modules/
-schema-miniapp/dist/
 
 
 # macOS junk

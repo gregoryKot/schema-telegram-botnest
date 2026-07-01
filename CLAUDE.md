@@ -126,14 +126,24 @@ export function MySheet({ onClose }: { onClose: () => void }) {
 `webapp/dist/` **не хранится в git** — Amvera сама собирает webapp из исходников через
 `RUN npm run build --prefix webapp` в `Dockerfile`.
 
-Деплой = обычный `git push` (на origin или amvera):
+**Деплой = push в GitHub (`origin/main`). Amvera сама тянет из GitHub и пересобирает** —
+отдельный `git push amvera` НЕ нужен. Просто `git push origin main`.
+
+### Мини-апп (`schema-miniapp/`) — важно
+Собирается **НЕ** в Docker, а заранее: его `dist/` **коммитится в git**, а Dockerfile
+только копирует его в `webapp/dist/app/` (быстрая сборка, без лишнего install/build).
+Исходник мини-аппа тоже в git. При изменении исходника мини-аппа:
 
 ```bash
-git push           # → GitHub (origin)
-git push amvera main  # → Amvera (триггерит пересборку Docker-образа)
+npm run build --prefix schema-miniapp   # пересобрать dist
+git add schema-miniapp/dist && git commit ...   # закоммитить dist
 ```
 
-Локальная сборка нужна только для проверки что нет ошибок TypeScript/Vite:
+`.dockerignore` исключает исходник мини-аппа из Docker-контекста — поэтому собрать его
+в Docker нельзя, только копировать готовую `dist`. Не переключай Dockerfile на сборку
+мини-аппа — билд упадёт («Could not resolve entry module index.html»).
+
+Локальная сборка webapp для проверки ошибок TypeScript/Vite:
 
 ```bash
 cd webapp && node_modules/.bin/vite build
