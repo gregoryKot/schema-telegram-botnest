@@ -998,6 +998,8 @@ export class GameScene extends Phaser.Scene {
         const go = () => this.scene.restart({ chapter: next });
         this.input.keyboard!.once('keydown', go);
         this.input.once('pointerdown', go);
+      } else if (this.chapter.act2End) {
+        this.showRoadEnd();                        // отрезок дороги пройден — впереди ещё
       } else {
         this.showCta();
       }
@@ -1039,6 +1041,40 @@ export class GameScene extends Phaser.Scene {
     donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
     donTxt.on('pointerout', () => donTxt.setColor('#7a6fa0'));
     donTxt.on('pointerdown', () => { track('donate_click', { source: 'act1_branch' }); window.open('https://schemehappens.ru/donate', '_blank'); });
+  }
+
+  // Конец отрезка Акта II (дорога в терапию). НЕ финал: одна отговорка пройдена,
+  // впереди — ещё, до двери терапевта не один шаг. Прогресс + мягкая воронка.
+  private showRoadEnd() {
+    track('act2_leg_end', { chapter: this.chapter.id });
+    const ky = H / 540, font = '"Press Start 2P", "Courier New", monospace';
+    const mk = (y: number, text: string, size: number, color: string, depth = 153) =>
+      this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
+        .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
+
+    const top = mk(150, t('m_road_goes_on'), 16, '#9fd8ff');
+    const sub = mk(206, t('m_first_excuse_passed'), 11, '#d8c8ec');
+
+    // не ждать всю дорогу — записаться сейчас (воронка, без манипуляции)
+    const ctaTxt = mk(292, t('m_learn_about_schema_therapy'), 12, '#88ffcc', 154);
+    const cta = this.add.rectangle(W / 2, 292 * ky, ctaTxt.width + 40, 42, 0x153028)
+      .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
+    // следующие отрезки дороги — в разработке (честно, без кнопки-пустышки)
+    const soon = mk(352, t('m_more_road_soon'), 10, '#7f74a4', 154);
+    const donTxt = mk(394, t('m_support_game'), 9, '#7a6fa0', 154).setInteractive({ useHandCursor: true });
+
+    this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
+    this.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 600 });
+    this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 1400 });
+    this.tweens.add({ targets: soon, alpha: 0.8, duration: 700, delay: 2200 });
+    this.tweens.add({ targets: donTxt, alpha: 0.8, duration: 700, delay: 2700 });
+
+    cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
+    cta.on('pointerout', () => cta.setFillStyle(0x153028));
+    cta.on('pointerdown', () => { track('cta_click', { from: 'act2_leg' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
+    donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
+    donTxt.on('pointerout', () => donTxt.setColor('#7a6fa0'));
+    donTxt.on('pointerdown', () => { track('donate_click', { source: 'act2_leg' }); window.open('https://schemehappens.ru/donate', '_blank'); });
   }
 
   // Враг = режим схема-терапии — называем в момент узнавания (без лекции)
