@@ -77,13 +77,18 @@ export class DonationService {
   }
 
   /** Mark paid from a Robokassa webhook InvId (already validated). Idempotent. */
-  async markPaidByInvId(invId: number) {
-    return this.markPaid(invId - DONATION_INVID_BASE);
+  async markPaidByInvId(invId: number, paidAmount?: number) {
+    return this.markPaid(invId - DONATION_INVID_BASE, paidAmount);
   }
 
-  private async markPaid(id: number) {
+  private async markPaid(id: number, paidAmount?: number) {
     const row = await this.prisma.donation.findUnique({ where: { id } });
     if (!row || row.status === 'paid') return { ok: true };
+    // Defense in depth: the paid amount is already signature-bound, but flag any
+    // mismatch with the recorded amount so a misconfig can't slip through.
+    if (paidAmount != null && Math.round(paidAmount) !== row.amount) {
+      await this.notify.alertAdmin(`⚠️ <b>Донат #${id}: сумма расходится</b>\nОжидали ${row.amount} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`);
+    }
     await this.prisma.donation.update({ where: { id }, data: { status: 'paid', paidAt: new Date() } });
     const plain = decryptRecord(row, SCHEMA) as any;
     await this.notify.alertAdmin(

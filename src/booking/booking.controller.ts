@@ -83,6 +83,7 @@ export class BookingController {
 
   /** GET /api/booking/by-token/:token — public booking view (no PII) for the post-payment page. */
   @Get('by-token/:token')
+  @Throttle({ long: { limit: 60, ttl: 3_600_000 } })
   async getByToken(@Param('token') token: string) {
     return this.booking.getPublicByToken(token);
   }
@@ -90,6 +91,7 @@ export class BookingController {
   /** POST /api/booking/cancel/:token — client self-cancel */
   @Post('cancel/:token')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ long: { limit: 30, ttl: 3_600_000 } })
   async cancelByToken(@Param('token') token: string) {
     return this.booking.cancel(token);
   }

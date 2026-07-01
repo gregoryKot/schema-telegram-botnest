@@ -113,17 +113,22 @@ export class SubscriptionService {
   }
 
   /** Webhook entry: a subscription charge was paid (InvId already validated). */
-  async markChargePaidByInvId(invId: number) {
-    return this.markChargePaid(invId);
+  async markChargePaidByInvId(invId: number, paidAmount?: number) {
+    return this.markChargePaid(invId, paidAmount);
   }
 
-  private async markChargePaid(invId: number) {
+  private async markChargePaid(invId: number, paidAmount?: number) {
     const chargeId = invId - SUBSCRIPTION_INVID_BASE;
     const charge = await this.prisma.subscriptionCharge.findUnique({ where: { id: chargeId } });
     if (!charge || charge.status === 'paid') return { ok: true };
 
     const sub = await this.prisma.subscription.findUnique({ where: { id: charge.subscriptionId } });
     if (!sub) return { ok: true };
+
+    // Defense in depth: signature already binds the amount, but flag any mismatch.
+    if (paidAmount != null && Math.round(paidAmount) !== charge.amount) {
+      await this.notify.alertAdmin(`⚠️ <b>Подписка #${sub.id}: сумма расходится</b>\nОжидали ${charge.amount} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`);
+    }
 
     const next = addPeriod(new Date(), sub.period as SubPeriod);
     await this.prisma.$transaction([
