@@ -1,6 +1,6 @@
 import { Markup } from 'telegraf';
 import { NotificationType } from './notification.service';
-import { BOOKING_URL, MINIAPP_URL } from '../telegram/telegram.constants';
+import { BOOKING_URL, MINIAPP_URL, DONATE_URL } from '../telegram/telegram.constants';
 import { Need, NeedId } from '../bot/bot.service';
 
 const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -61,6 +61,14 @@ export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, 
 
 const openDiaryButton = Markup.button.webApp('📱 Открыть «Всё по схеме»', MINIAPP_URL);
 const bookingButton = Markup.button.url('📝 Записаться на сессию', BOOKING_URL);
+const donateButton = Markup.button.url('💛 Поддержать проект', DONATE_URL);
+
+// Rotated so the monthly nudge doesn't feel like the same canned message.
+const DONATE_MESSAGES = [
+  '💛 «Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи проект, это помогает его развивать.',
+  '💛 Раз в месяц напоминаю: приложение живёт на поддержке пользователей. Любая сумма помогает.',
+  '💛 Если приложение приносит пользу — можно поддержать его разовым донатом. Спасибо, что ты здесь.',
+];
 const snoozeButton = Markup.button.callback('⏰ Через час', 'snooze_reminder');
 
 const REMINDER_INTROS = [
@@ -198,6 +206,14 @@ export function renderTemplate(
       return {
         text,
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
+      };
+    }
+
+    case 'donate_reminder': {
+      const seed = (payload?.seed as number | undefined) ?? 0;
+      return {
+        text: DONATE_MESSAGES[seed % DONATE_MESSAGES.length],
+        keyboard: Markup.inlineKeyboard([[donateButton]]),
       };
     }
 

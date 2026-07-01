@@ -181,9 +181,13 @@ function Disclaimer({ onAccept }: { onAccept: () => void }) {
           Канал о схема-терапии —{' '}
           <a href="https://t.me/SchemeHappens" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>@SchemeHappens</a>
         </div>
-        <div style={{ fontSize: 14, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>
+        <div style={{ fontSize: 14, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 10 }}>
           Записаться на сессию —{' '}
           <a href="https://t.me/kotlarewski" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>@kotlarewski</a>
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>
+          Приложение бесплатное 💛 Поддержать —{' '}
+          <a href="https://schemehappens.ru/donate" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>донат</a>
         </div>
       </div>
       {!ready && (

@@ -16,6 +16,7 @@ export type NotificationType =
   | 'dormant_7'
   | 'reengagement_30'
   | 'weekly'
+  | 'donate_reminder'
   | 'anniversary_30'
   | 'anniversary_60'
   | 'anniversary_90'

@@ -221,6 +221,12 @@ export function LoginPage() {
             Политикой конфиденциальности
           </a>
         </p>
+
+        {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
+        <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 14 }}>
+          Проект бесплатный 💛{' '}
+          <a href="/donate" style={{ color: 'var(--accent)', textDecoration: 'none' }}>поддержать</a>
+        </p>
       </div>
 
       <style>{`@keyframes fade-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }`}</style>

@@ -304,6 +304,30 @@ export class TelegramScheduleService implements OnModuleInit {
     }
   }
 
+  /** 1st of each month, midnight UTC: gentle donate reminder for active users. */
+  @Cron('0 0 1 * *')
+  async scheduleDonateReminders() {
+    if (!this.bot) return;
+    const users = await this.botService.getAllUsersWithSettings();
+    this.logger.log(`Monthly donate reminder: ${users.length} users`);
+    for (const user of users) {
+      try {
+        const uid = BigInt(user.id);
+        if (await this.notificationService.hasPending(uid, 'donate_reminder')) continue;
+        // Only nudge people who actually use the app (dormant users get nothing).
+        const daysSince = await this.analyticsService.getDaysSinceLastFill(uid);
+        if (daysSince < 0 || daysSince >= 14) continue;
+        await this.notificationService.schedule(
+          uid, 'donate_reminder',
+          this.nextSendAt(user.notifyLocalHour, user.notifyTimezone),
+          { seed: user.id % 3 },
+        );
+      } catch (err) {
+        this.logger.error(`Donate reminder failed for userId=${user.id}`, err);
+      }
+    }
+  }
+
   /** Return sendAt for localHour in timezone, never in the past. DST-aware. */
   private nextSendAt(localHour: number, tz: string): Date {
     const now = new Date();
