@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT, MINIAPP_URL, DONATE_URL } from './telegram.constants';
+import { renderTemplate } from '../notification/notification.templates';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
@@ -181,6 +182,19 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         );
       } catch (err) {
         this.logger.error('subscribe command failed', err);
+      }
+    });
+
+    // Admin-only: preview the monthly donate reminder immediately (the real one
+    // fires 1st of each month). Lets us verify text + button without waiting.
+    this.bot.command('testdonate', async (ctx) => {
+      try {
+        const adminId = Number(process.env.ADMIN_ID);
+        if (!adminId || ctx.from?.id !== adminId) { await ctx.reply('⛔ Нет доступа'); return; }
+        const t = renderTemplate('donate_reminder', { seed: 0 });
+        if (t) await ctx.reply(t.text, (t.keyboard ? { reply_markup: t.keyboard.reply_markup } : {}) as any);
+      } catch (err) {
+        this.logger.error('testdonate command failed', err);
       }
     });
 
