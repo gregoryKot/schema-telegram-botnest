@@ -1,5 +1,5 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 
 // ── Yandex.Metrika SPA pageview tracking ──────────────────────────────────────
 const YM_ID = 109568051;
@@ -30,6 +30,9 @@ import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { ReviewsPage } from './pages/ReviewsPage';
 import { GamePage } from './pages/GamePage';
 import { BookingAdminPage } from './pages/BookingAdminPage';
+// Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main
+// bundle every visitor downloads just for the public site.
+const ArticlesAdminPage = lazy(() => import('./pages/ArticlesAdminPage').then(m => ({ default: m.ArticlesAdminPage })));
 import { DonatePage } from './pages/DonatePage';
 import { BookingPaidPage } from './pages/BookingPaidPage';
 import { SubscribePage } from './pages/SubscribePage';
@@ -89,6 +92,7 @@ const personalRoutes = [
   { path: '/reviews',        element: <ReviewsPage /> },
   { path: '/game',           element: <GamePage /> },
   { path: '/booking-admin',  element: <BookingAdminPage /> },
+  { path: '/articles-admin', element: <Suspense fallback={null}><ArticlesAdminPage /></Suspense> },
   { path: '/booking/paid',   element: <BookingPaidPage /> },
   { path: '/subscribe',      element: <SubscribePage /> },
   { path: '/donate',         element: <DonatePage /> },

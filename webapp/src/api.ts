@@ -132,6 +132,11 @@ export interface AdminBooking {
   clientName: string; clientContact: string; message: string | null;
   cancelToken: string; meetingUrl: string | null;
 }
+export interface ArticleSummary {
+  id: number; slug: string; title: string; description: string; date: string; readMin: number;
+}
+export interface Article extends ArticleSummary { content: string; }
+export type ArticleDto = { slug: string; title: string; description: string; content: string; date: string; readMin: number; };
 export interface UserPractice { id: number; needId: string; text: string; }
 export interface PartnerInfo {
   code: string;
@@ -443,6 +448,13 @@ export const api = {
   adminListBookings: (key: string, filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') =>
     adminReq<AdminBooking[]>('GET', `/api/booking/admin/list?filter=${filter}`, key),
   adminConfirm:      (key: string, id: number) => adminReq<{ ok: true }>('POST', `/api/booking/admin/confirm/${id}`, key),
+  // Articles
+  listArticles:      () => get<ArticleSummary[]>('/api/articles'),
+  getArticle:        (slug: string) => get<Article>(`/api/articles/${slug}`),
+  adminListArticles: (key: string) => adminReq<Article[]>('GET', '/api/articles/admin/list', key),
+  adminCreateArticle: (key: string, dto: ArticleDto) => adminReq<Article>('POST', '/api/articles/admin', key, dto),
+  adminUpdateArticle: (key: string, id: number, dto: Partial<ArticleDto>) => adminReq<Article>('PATCH', `/api/articles/admin/${id}`, key, dto),
+  adminDeleteArticle: (key: string, id: number) => adminReq<void>('DELETE', `/api/articles/admin/${id}`, key),
   // Therapist custom modes
   listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),

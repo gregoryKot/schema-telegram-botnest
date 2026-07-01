@@ -15,6 +15,7 @@ import { NotificationModule } from './notification/notification.module';
 import { TherapyModule } from './therapy/therapy.module';
 import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
+import { ArticlesModule } from './articles/articles.module';
 
 // Domains that are aliases of schemehappens.ru and need their own og:url / canonical
 // so Telegram generates a separate link preview card for each domain.
@@ -48,6 +49,7 @@ const ALIAS_DOMAINS = new Set(['kotlarewski.ru', 'kotlarewski.gr']);
     BotModule,
     ApiModule,
     BookingModule,
+    ArticlesModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: UserThrottlerGuard }],
 })
