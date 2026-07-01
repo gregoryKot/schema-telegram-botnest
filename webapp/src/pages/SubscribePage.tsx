@@ -12,7 +12,12 @@ const fmtDate = (iso: string) => new Intl.DateTimeFormat('ru-RU', { day: 'numeri
 export function SubscribePage() {
   const params = new URLSearchParams(window.location.search);
   const ret = params.get('sub'); // 'ok' | 'fail' | null
-  const token = params.get('token');
+  // Capture the management token once, then strip it from the URL so this
+  // capability token doesn't linger in history / leak via Referer to analytics.
+  const [token] = useState<string | null>(() => new URLSearchParams(window.location.search).get('token'));
+  useEffect(() => {
+    if (token) { const u = new URL(window.location.href); u.searchParams.delete('token'); window.history.replaceState(window.history.state, '', u.pathname + u.search); }
+  }, [token]);
 
   const [opts, setOpts] = useState<Opt[]>([]);
   const [period, setPeriod] = useState<'month' | 'year'>('month');
