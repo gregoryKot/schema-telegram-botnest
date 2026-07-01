@@ -142,12 +142,20 @@ export class BookingService {
     return { id: booking.id, cancelToken, heldUntil, status: BookingStatus.HELD, paymentUrl, meetingUrl };
   }
 
-  /** Confirm a HELD booking (e.g. after payment or manual admin action). */
-  async confirm(id: number) {
+  /** Confirm a HELD booking (e.g. after payment or manual admin action).
+   * @param paidAmount  when confirming from a payment webhook, the amount paid —
+   *                    verified against the expected price (defense in depth). */
+  async confirm(id: number, paidAmount?: number) {
     const booking = await this.prisma.booking.findUnique({ where: { id } });
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.status !== BookingStatus.HELD) {
       throw new ConflictException(`Cannot confirm booking in status ${booking.status}`);
+    }
+    if (paidAmount != null) {
+      const expected = await this.pricing.getPrice(booking.type);
+      if (Math.round(paidAmount) !== expected) {
+        await this.notify.alertAdmin(`⚠️ <b>Бронь #${id}: сумма расходится</b>\nОжидали ${expected} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`);
+      }
     }
 
     await this.prisma.booking.update({

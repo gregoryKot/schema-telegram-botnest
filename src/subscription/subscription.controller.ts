@@ -32,6 +32,7 @@ export class SubscriptionController {
 
   /** GET /api/subscription/by-token/:token — public status (no PII). */
   @Get('by-token/:token')
+  @Throttle({ long: { limit: 60, ttl: 3_600_000 } })
   getByToken(@Param('token') token: string) {
     return this.subs.getPublicByToken(token);
   }
@@ -39,6 +40,7 @@ export class SubscriptionController {
   /** POST /api/subscription/cancel/:token — client self-cancel. */
   @Post('cancel/:token')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ long: { limit: 30, ttl: 3_600_000 } })
   cancel(@Param('token') token: string) {
     return this.subs.cancel(token);
   }
