@@ -624,3 +624,19 @@ model SubscriptionCharge {
   @@index([subscriptionId])
   @@index([status])
 }
+
+// ── Blog articles ────────────────────────────────────────────────────────────
+
+// Site articles (schemehappens.ru/articles), managed from the admin panel.
+// Global content, not user-owned data — not part of the account-deletion checklist.
+model Article {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  description String
+  content     String
+  date        DateTime
+  readMin     Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

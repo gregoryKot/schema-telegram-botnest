@@ -560,6 +560,12 @@ export function LandingPage() {
       .catch(() => {});
   }, []);
   const priceStr = sessionPrice.toLocaleString('ru-RU');
+  // Hero photo + marquee topics (editable in admin) — hardcoded defaults keep
+  // the site looking the same until the therapist actually edits them.
+  const [siteContent, setSiteContent] = useState<{ heroPhoto: string | null; marqueeTopicsA: typeof TOPICS_A; marqueeTopicsB: typeof TOPICS_B }>({
+    heroPhoto: null, marqueeTopicsA: TOPICS_A, marqueeTopicsB: TOPICS_B,
+  });
+  useEffect(() => { api.getSiteContent().then(setSiteContent).catch(() => {}); }, []);
   const { theme, toggle: toggleTheme } = useTheme();
 
   const aboutRef    = useReveal() as React.RefObject<HTMLElement>;
@@ -655,7 +661,7 @@ export function LandingPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ position: 'relative', width: 30, height: 30, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 13, color: 'var(--text-sub)' }}>Г</span>
-            <img src="/gregory.jpg" alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           </div>
           <span style={{ fontSize: 15, fontFamily: 'var(--serif)', color: 'var(--text)', whiteSpace: 'nowrap' }}>Григорий Котляревский</span>
         </div>
@@ -689,7 +695,7 @@ export function LandingPage() {
                 onMouseLeave={e => { const n = e.currentTarget.querySelector('.nav-name') as HTMLElement | null; if (n) n.style.color = 'var(--text)'; }}>
                 <div style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ position: 'absolute', fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--text-sub)' }}>Г</span>
-                  <img src="/gregory.jpg" alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                  <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский" decoding="async" width={34} height={34} style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 18%' }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                 </div>
                 <span className="nav-name" style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--text)', whiteSpace: 'nowrap', transition: 'color .15s' }}>Григорий Котляревский</span>
               </a>
@@ -768,14 +774,14 @@ export function LandingPage() {
       </section>
 
       {/* ── MARQUEE #1 ───────────────────────────────────────────────────── */}
-      <MarqueeStrip topics={TOPICS_A} />
+      <MarqueeStrip topics={siteContent.marqueeTopicsA} />
 
       {/* ── ABOUT ───────────────────────────────────────────────────────── */}
       <section id="about" ref={aboutRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '88px 40px' }}>
         <div className="about-inner">
           <div style={{ position: 'relative' }}>
             <div style={{ aspectRatio: '3/4', borderRadius: 24, overflow: 'hidden', background: 'var(--surface-2)', boxShadow: '0 24px 80px rgba(28,25,20,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/gregory.jpg" alt="Григорий Котляревский – схема-терапевт" loading="lazy" decoding="async" width={600} height={800} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
+              <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский – схема-терапевт" loading="lazy" decoding="async" width={600} height={800} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
                 onError={e => {
                   const img = e.currentTarget as HTMLImageElement;
                   img.style.display = 'none';
@@ -894,7 +900,7 @@ export function LandingPage() {
       </section>
 
       {/* ── MARQUEE #2 (reverse) ────────────────────────────────────────── */}
-      <MarqueeStrip reverse bg="var(--bg)" italic topics={TOPICS_B} />
+      <MarqueeStrip reverse bg="var(--bg)" italic topics={siteContent.marqueeTopicsB} />
 
       {/* ── APPROACH BENTO ──────────────────────────────────────────────── */}
       <section id="approach" ref={approachRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: 'var(--bg-rail)', padding: '80px 40px' }}>
@@ -932,7 +938,7 @@ export function LandingPage() {
       </section>
 
       {/* ── MARQUEE #3 ───────────────────────────────────────────────────── */}
-      <MarqueeStrip topics={TOPICS_B} />
+      <MarqueeStrip topics={siteContent.marqueeTopicsB} />
 
       {/* ── PRICES ──────────────────────────────────────────────────────── */}
       <section id="prices" ref={priceRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 40px' }}>
@@ -1056,7 +1062,7 @@ export function LandingPage() {
       </section>
 
       {/* ── MARQUEE #4 ───────────────────────────────────────────────────── */}
-      <MarqueeStrip reverse bg="var(--bg-rail)" topics={TOPICS_A} />
+      <MarqueeStrip reverse bg="var(--bg-rail)" topics={siteContent.marqueeTopicsA} />
 
       {/* ── PRE-FOOTER CTA ──────────────────────────────────────────────── */}
       <section style={{ background: DARK_BG, padding: '96px 40px', textAlign: 'center' }}>
