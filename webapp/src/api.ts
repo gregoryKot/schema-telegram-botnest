@@ -102,6 +102,11 @@ export interface UserSettings {
   notifyLocalHour: number;
   notifyTimezone: string;
   notifyReminderEnabled: boolean;
+  notifyFrequency?: number;          // 0=каждый день, 1=через день, 2=2×/нед, 3=раз/нед
+  notifyQuietStart?: number;         // тихие часы: начало (локальный час)
+  notifyQuietEnd?: number;           // тихие часы: конец; start===end → выключены
+  notifyPausedUntil?: string | null; // ISO-дата конца паузы; POST null = возобновить
+  addressForm?: 'ty' | 'vy' | null;  // null = ещё не выбрано → показать выбор
   pairCardDismissed: boolean;
   mySchemaIds: string[];
   myModeIds: string[];

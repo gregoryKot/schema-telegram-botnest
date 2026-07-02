@@ -4,20 +4,12 @@ import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
-import { NotificationService } from '../notification/notification.service';
-import { renderTemplate, buildWeeklySummaryText, buildSummaryText, renderLowStreakInsight } from '../notification/notification.templates';
-
-function tzOffsetAt(tz: string, date = new Date()): number {
-  const utc = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const local = new Date(date.toLocaleString('en-US', { timeZone: tz }));
-  return Math.round((local.getTime() - utc.getTime()) / 3_600_000);
-}
-
-function localDateString(tz: string, base = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
-  }).format(base);
-}
+import { NotificationService, QUIET_EXEMPT_TYPES } from '../notification/notification.service';
+import { NotificationCadenceService } from '../notification/notification.cadence.service';
+import { NotificationPlannerService } from '../notification/notification.planner.service';
+import { renderTemplate, buildSummaryText } from '../notification/notification.templates';
+import { isQuietHours, localDateString, nextQuietEnd, utcInstantForLocalHour } from '../notification/notification.time';
+import { normalizeAddressForm } from '../notification/address-form';
 
 @Injectable()
 export class TelegramScheduleService implements OnModuleInit {
@@ -28,18 +20,21 @@ export class TelegramScheduleService implements OnModuleInit {
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
     private readonly notificationService: NotificationService,
+    private readonly cadenceService: NotificationCadenceService,
+    private readonly plannerService: NotificationPlannerService,
   ) {}
 
   private isProcessing = false;
 
   async onModuleInit() {
-    // Catch-up: if midnight cron was missed (deploy/restart), schedule any missing reminders.
+    // Catch-up: if midnight cron was missed (deploy/restart), run the planner.
     // Delay 30s: give CNPG time to come up after a container restart, and let
     // the bot finish connecting.  Use warn (not error) so a transient DB blip
     // at deploy time doesn't page the admin — the cron retries at midnight.
+    // planDay is idempotent per local day (cadence notifyLastEvalDate + hasPending guards).
     setTimeout(() => {
       this.scheduleDailyReminders().catch((e) =>
-        this.logger.warn(`Startup reminder catch-up failed (non-critical, retries at midnight): ${(e as Error).message}`),
+        this.logger.warn(`Startup planner catch-up failed (non-critical, retries at midnight): ${(e as Error).message}`),
       );
     }, 30_000);
   }
@@ -47,11 +42,19 @@ export class TelegramScheduleService implements OnModuleInit {
   /** Reschedule reminder for a single user (called after settings change). */
   async rescheduleForUser(userId: bigint) {
     const s = await this.botService.getUserSettings(userId);
-    if (!s?.notifyEnabled) {
+    if (!s?.notifyEnabled || !s.notifyReminderEnabled) {
       await this.notificationService.cancel(userId, 'reminder');
       return;
     }
-    await this.scheduleReminder(userId, s.notifyLocalHour, s.notifyTimezone, s.notifyReminderEnabled);
+    // На паузе ничего не планируем — юзер попросил тишины
+    if (s.notifyPausedUntil && s.notifyPausedUntil > new Date()) return;
+    const hadPending = await this.notificationService.hasPending(userId, 'reminder');
+    // due покрывает включение уведомлений после перерыва: nextRemindDate устарел или пуст
+    const today = localDateString(s.notifyTimezone, new Date());
+    const due = !s.notifyNextRemindDate || today >= s.notifyNextRemindDate;
+    if (hadPending || due) {
+      await this.plannerService.scheduleReminder(userId, s.notifyLocalHour, s.notifyTimezone);
+    }
   }
 
   /** Every 5 minutes: send all due notifications from the queue */
@@ -93,12 +96,25 @@ export class TelegramScheduleService implements OnModuleInit {
     if (due.length === 0) return;
     this.logger.log(`Processing ${due.length} due notifications`);
 
+    const sendSettings = await this.botService.getSendSettingsFor(
+      [...new Set(due.map((n) => n.userId))].map((id) => BigInt(id)),
+    );
+
     for (const notif of due) {
       try {
+        const s = sendSettings.get(String(notif.userId));
+        // Тихие часы: проактивные придерживаем до утра. Покрывает и catch-up после
+        // даунтайма — уведомление за 21:00 не улетит в 3 ночи.
+        if (!QUIET_EXEMPT_TYPES.includes(notif.type as any)) {
+          if (s && isQuietHours(s.tz, s.start, s.end)) {
+            await this.notificationService.defer(notif.id, nextQuietEnd(s.tz, s.end));
+            continue;
+          }
+        }
         const payload = notif.payload as Record<string, unknown> | null;
         let template: ReturnType<typeof renderTemplate>;
         try {
-          template = renderTemplate(notif.type as any, payload ?? undefined);
+          template = renderTemplate(notif.type as any, payload ?? undefined, normalizeAddressForm(s?.form));
         } catch (renderErr) {
           this.logger.error(`renderTemplate threw for type=${notif.type} id=${notif.id} — skipping`, renderErr);
           await this.notificationService.markSent(notif.id);
@@ -143,96 +159,23 @@ export class TelegramScheduleService implements OnModuleInit {
     }
   }
 
-  /** Midnight UTC: schedule tomorrow's reminders + detect lapsing users */
+  /**
+   * Midnight UTC: единый дневной планировщик. Вся логика приоритетов (пауза,
+   * перерывы, weekly, donate, напоминание, инсайты) — в NotificationPlannerService,
+   * который гарантирует максимум одно проактивное уведомление в день.
+   */
   @Cron('0 0 * * *')
   async scheduleDailyReminders() {
     if (!this.bot) return;
     const users = await this.botService.getAllUsersWithSettings();
-    this.logger.log(`Midnight scheduler: ${users.length} users`);
+    this.logger.log(`Midnight planner: ${users.length} users`);
 
     for (const user of users) {
       try {
-        const uid = BigInt(user.id);
-        await this.scheduleReminder(uid, user.notifyLocalHour, user.notifyTimezone, user.notifyReminderEnabled);
-        const isLapsing = await this.checkLapsingState(uid, user.notifyLocalHour, user.notifyTimezone);
-        if (!isLapsing) {
-          await this.checkMissedPlans(uid, user.notifyLocalHour, user.notifyTimezone);
-          await this.scheduleLowStreakInsight(uid, user.notifyLocalHour, user.notifyTimezone);
-        }
+        await this.plannerService.planDay(user);
       } catch (err) {
-        this.logger.error(`Midnight scheduler failed for userId=${user.id}`, err);
+        this.logger.error(`Midnight planner failed for userId=${user.id}`, err);
       }
-    }
-  }
-
-  private async scheduleReminder(userId: bigint, notifyLocalHour: number, notifyTimezone: string, enabled = true) {
-    if (!enabled) {
-      await this.notificationService.cancel(userId, 'reminder');
-      return;
-    }
-    // Smart payload: yesterday avg + lowest need + streak
-    const [streak, weeklyStats, history] = await Promise.all([
-      this.analyticsService.getConsecutiveDays(userId),
-      this.analyticsService.getWeeklyStats(userId),
-      this.analyticsService.getHistoryRatings(userId, 2),
-    ]);
-    const yesterday = history.find((_, i) => i === 1);
-    const yesterdayAvg = yesterday
-      ? Object.values(yesterday.ratings).reduce((s, v) => s + v, 0) / Object.values(yesterday.ratings).length
-      : undefined;
-    const lowest = weeklyStats.filter(s => s.avg !== null).sort((a, b) => (a.avg ?? 10) - (b.avg ?? 10))[0];
-    const lowestNeedId = lowest?.needId;
-    const lowestNeed = lowest ? this.botService.getNeeds().find(n => n.id === lowest.needId)?.chartLabel : undefined;
-    const dayIndex = Math.floor(Date.now() / 86_400_000);
-    const variant = Number((userId + BigInt(dayIndex)) % 5n);
-    const seed = Number((userId + BigInt(dayIndex)) % 3n);
-    const payload = { streak, yesterdayAvg, lowestNeedId, lowestNeed, variant, seed };
-
-    const sendAt = this.nextSendAt(notifyLocalHour, notifyTimezone);
-
-    // Always cancel stale reminders and reschedule fresh.
-    // hasPending guard caused missed notifications: if a reminder survived from a
-    // previous day (e.g. server was down at sendAt), the guard blocked scheduling
-    // the next day's reminder entirely.
-    await this.notificationService.cancel(userId, 'reminder');
-    await this.notificationService.schedule(userId, 'reminder', sendAt, payload);
-
-  }
-
-  /** Returns true if a lapsing/dormant notification was scheduled (caller should skip other daily notifs) */
-  private async checkLapsingState(userId: bigint, notifyLocalHour: number, notifyTimezone: string): Promise<boolean> {
-    const days = await this.analyticsService.getDaysSinceLastFill(userId);
-    const thresholds: Array<[number, 'lapsing_2' | 'lapsing_4' | 'dormant_7' | 'reengagement_30']> = [
-      [2, 'lapsing_2'], [4, 'lapsing_4'], [7, 'dormant_7'], [30, 'reengagement_30'],
-    ];
-    for (const [d, type] of thresholds) {
-      if (days === d) {
-        const has = await this.notificationService.hasPending(userId, type);
-        if (!has) {
-          await this.notificationService.cancel(userId, 'reminder');
-          await this.notificationService.schedule(userId, type, this.nextSendAt(notifyLocalHour, notifyTimezone));
-        }
-        return true;
-      }
-    }
-    // Nudge every 30 days after day 30 (day 60, 90, 120...)
-    if (days > 30 && days % 30 === 0) {
-      const has = await this.notificationService.hasPending(userId, 'nudge');
-      if (!has) {
-        await this.notificationService.cancel(userId, 'reminder');
-        await this.notificationService.schedule(userId, 'nudge', this.nextSendAt(notifyLocalHour, notifyTimezone), { daysSince: days });
-      }
-      return true;
-    }
-    return false;
-  }
-
-  private async checkMissedPlans(userId: bigint, notifyLocalHour: number, tz: string) {
-    const yesterday = localDateString(tz, new Date(Date.now() - 86_400_000));
-    const missed = await this.botService.getMissedPlans(userId, yesterday);
-    if (missed.length > 0 && !await this.notificationService.hasPending(userId, 'practice_missed')) {
-      const text = missed.map(p => p.practiceText).join(', ');
-      await this.notificationService.schedule(userId, 'practice_missed', this.nextSendAt(notifyLocalHour, tz), { practiceText: text });
     }
   }
 
@@ -240,24 +183,36 @@ export class TelegramScheduleService implements OnModuleInit {
     await this.notificationService.cancel(userId, 'reminder');
     await this.notificationService.cancel(userId, 'pre_reminder');
     await this.notificationService.cancel(userId, 'low_streak_insight');
+    await this.cadenceService.registerFill(userId);
 
     const settings = await this.botService.getUserSettings(userId);
     const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
     const notifyLocalHour = settings?.notifyLocalHour ?? 21;
     const ratings = await this.botService.getRatings(userId);
-    const text = buildSummaryText(this.botService.getNeeds(), ratings, tz);
+    const text = buildSummaryText(this.botService.getNeeds(), ratings, tz, normalizeAddressForm(settings?.addressForm));
 
     await this.notificationService.cancel(userId, 'summary');
     // Schedule summary after milestones: if notify hour passed, add 5 min so milestones (sent now)
     // arrive first and summary follows in the next processQueue cycle.
     const now = new Date();
     const todayStr = localDateString(tz, now);
-    const noonRef = new Date(`${todayStr}T12:00:00.000Z`);
-    const offset = tzOffsetAt(tz, noonRef);
-    const todaySendAt = new Date(`${todayStr}T${String(notifyLocalHour).padStart(2, '0')}:00:00.000Z`);
-    todaySendAt.setTime(todaySendAt.getTime() - offset * 3_600_000);
+    const todaySendAt = utcInstantForLocalHour(todayStr, notifyLocalHour, tz);
     const sendAt = todaySendAt > now ? todaySendAt : new Date(now.getTime() + 5 * 60_000);
     await this.notificationService.schedule(userId, 'summary', sendAt, { text });
+
+    const total = await this.analyticsService.getTotalDaysFilled(userId);
+
+    // Возвращение после перерыва ≥3 дней: тёплое «с возвращением» вместо вех —
+    // одно празднование в день, без упоминания длины перерыва и сгоревших серий.
+    const gap = await this.analyticsService.getGapBeforeLatestFill(userId);
+    if (gap !== null && gap >= 3) {
+      const last = await this.notificationService.lastSentAt(userId, 'comeback');
+      const sentToday = last !== null && localDateString(tz, last) === todayStr;
+      if (!sentToday && !await this.notificationService.hasPending(userId, 'comeback')) {
+        await this.notificationService.schedule(userId, 'comeback', new Date(), { totalDays: total });
+      }
+      return;
+    }
 
     const streak = await this.analyticsService.getConsecutiveDays(userId);
     for (const days of [7, 14, 30] as const) {
@@ -266,7 +221,6 @@ export class TelegramScheduleService implements OnModuleInit {
       }
     }
 
-    const total = await this.analyticsService.getTotalDaysFilled(userId);
     for (const days of [1, 3, 7] as const) {
       if (total === days && !await this.notificationService.hasEver(userId, `onboarding_${days}`)) {
         await this.notificationService.schedule(userId, `onboarding_${days}`, new Date());
@@ -277,100 +231,5 @@ export class TelegramScheduleService implements OnModuleInit {
         await this.notificationService.schedule(userId, `anniversary_${days}`, new Date());
       }
     }
-  }
-
-  /** Sunday midnight UTC: schedule weekly summary for each user */
-  @Cron('0 0 * * 0')
-  async scheduleWeeklySummaries() {
-    if (!this.bot) return;
-    const users = await this.botService.getAllUsersWithSettings();
-    this.logger.log(`Sunday scheduler: ${users.length} users`);
-
-    for (const user of users) {
-      try {
-        const uid = BigInt(user.id);
-        if (await this.notificationService.hasPending(uid, 'weekly')) continue;
-        // Skip dormant users — weekly summary is meaningless without recent data
-        const daysSince = await this.analyticsService.getDaysSinceLastFill(uid);
-        if (daysSince < 0 || daysSince >= 7) continue;
-        const stats = await this.analyticsService.getWeeklyStats(uid);
-        const bestDay = await this.analyticsService.getBestDayOfWeek(uid);
-        const seed = user.id % 3;
-        const text = buildWeeklySummaryText(stats, this.botService.getNeeds(), bestDay, seed);
-        await this.notificationService.schedule(uid, 'weekly', this.nextSendAt(user.notifyLocalHour, user.notifyTimezone), { text });
-      } catch (err) {
-        this.logger.error(`Weekly summary failed for userId=${user.id}`, err);
-      }
-    }
-  }
-
-  /** 1st of each month, midnight UTC: gentle donate reminder for active users. */
-  @Cron('0 0 1 * *')
-  async scheduleDonateReminders() {
-    if (!this.bot) return;
-    const users = await this.botService.getAllUsersWithSettings();
-    this.logger.log(`Monthly donate reminder: ${users.length} users`);
-    for (const user of users) {
-      try {
-        const uid = BigInt(user.id);
-        if (await this.notificationService.hasPending(uid, 'donate_reminder')) continue;
-        // Only nudge people who actually use the app (dormant users get nothing).
-        const daysSince = await this.analyticsService.getDaysSinceLastFill(uid);
-        if (daysSince < 0 || daysSince >= 14) continue;
-        await this.notificationService.schedule(
-          uid, 'donate_reminder',
-          this.nextSendAt(user.notifyLocalHour, user.notifyTimezone),
-          { seed: user.id % 3 },
-        );
-      } catch (err) {
-        this.logger.error(`Donate reminder failed for userId=${user.id}`, err);
-      }
-    }
-  }
-
-  /** Return sendAt for localHour in timezone, never in the past. DST-aware. */
-  private nextSendAt(localHour: number, tz: string): Date {
-    const now = new Date();
-    for (let daysAhead = 0; daysAhead <= 1; daysAhead++) {
-      const probe = new Date(now.getTime() + daysAhead * 86_400_000);
-      const dateStr = localDateString(tz, probe);
-      // Use noon as DST-safe reference to get the offset for that date
-      const noonRef = new Date(`${dateStr}T12:00:00.000Z`);
-      const offset = tzOffsetAt(tz, noonRef);
-      const candidate = new Date(`${dateStr}T${String(localHour).padStart(2, '0')}:00:00.000Z`);
-      candidate.setTime(candidate.getTime() - offset * 3_600_000);
-      if (candidate > now) return candidate;
-    }
-    const probe2 = new Date(now.getTime() + 2 * 86_400_000);
-    const dateStr2 = localDateString(tz, probe2);
-    const noonRef2 = new Date(`${dateStr2}T12:00:00.000Z`);
-    const offset2 = tzOffsetAt(tz, noonRef2);
-    const result = new Date(`${dateStr2}T${String(localHour).padStart(2, '0')}:00:00.000Z`);
-    result.setTime(result.getTime() - offset2 * 3_600_000);
-    return result;
-  }
-
-  private async scheduleLowStreakInsight(userId: bigint, notifyLocalHour: number, notifyTimezone: string) {
-    // Check for needs low 3+ days (threshold 5) and 10+ days (threshold 5) separately
-    const [lowNeeds3, lowNeeds10] = await Promise.all([
-      this.analyticsService.getLowStreakNeeds(userId, 5, 3),
-      this.analyticsService.getLowStreakNeeds(userId, 5, 10),
-    ]);
-    const lowNeeds = lowNeeds10.length > 0 ? lowNeeds10 : lowNeeds3;
-    if (lowNeeds.length === 0) return;
-    if (await this.notificationService.hasPending(userId, 'low_streak_insight')) return;
-
-    const needs = this.botService.getNeeds();
-    const showBooking = lowNeeds10.length > 0;
-    const daysBelowThreshold = showBooking ? 10 : 3;
-    // Pick the single most concerning need (lowest avg, first in list)
-    const need = needs.find((n) => n.id === lowNeeds[0])!;
-    const { text } = renderLowStreakInsight(need.emoji, need.chartLabel, daysBelowThreshold);
-
-    await this.notificationService.schedule(
-      userId, 'low_streak_insight',
-      this.nextSendAt(notifyLocalHour, notifyTimezone),
-      { text, showBooking },
-    );
   }
 }
