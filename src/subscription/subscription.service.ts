@@ -6,6 +6,7 @@ import { RobokassaService } from '../booking/robokassa.service';
 import { BookingNotifyService } from '../booking/booking-notify.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { SUB_DEFAULT_PRICE, SubPeriod } from '../booking/booking.config';
+import { normalizeBaseUrl } from '../utils/url';
 import { randomUUID } from 'crypto';
 
 // Subscription charges live in their own InvId range so the shared Robokassa
@@ -35,7 +36,7 @@ export class SubscriptionService {
     private readonly notify: BookingNotifyService,
     config: ConfigService,
   ) {
-    this.appUrl = (config.get<string>('APP_URL') ?? 'https://schemehappens.ru').replace(/\/$/, '');
+    this.appUrl = normalizeBaseUrl(config.get<string>('APP_URL'), 'https://schemehappens.ru');
     // Hidden until Robokassa enables the recurring service. Flip with
     // SUBSCRIPTION_ENABLED=true once auto-charge actually works.
     this.enabled = config.get<string>('SUBSCRIPTION_ENABLED') === 'true';

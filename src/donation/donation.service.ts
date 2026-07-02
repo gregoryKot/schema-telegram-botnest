@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RobokassaService } from '../booking/robokassa.service';
 import { BookingNotifyService } from '../booking/booking-notify.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { normalizeBaseUrl } from '../utils/url';
 
 // Donation InvId is offset so it never collides with booking InvId (booking uses
 // booking.id directly). Both share one Robokassa shop → one Result URL, which
@@ -32,7 +33,7 @@ export class DonationService {
     private readonly notify: BookingNotifyService,
     config: ConfigService,
   ) {
-    this.appUrl = (config.get<string>('APP_URL') ?? 'https://schemehappens.ru').replace(/\/$/, '');
+    this.appUrl = normalizeBaseUrl(config.get<string>('APP_URL'), 'https://schemehappens.ru');
   }
 
   // Donations occupy [1e9, 2e9); subscriptions start at 2e9. Bounded so a
