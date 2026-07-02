@@ -68,12 +68,14 @@ export class PaymentController {
 
     const id = parseInt(invId, 10);
     if (isNaN(id)) return `FAIL${invId}`;
+    const paidAmount = Number.parseFloat(outSum);
+    const paid = Number.isFinite(paidAmount) ? paidAmount : undefined;
 
     // Subscriptions and donations live in their own InvId ranges and share this
     // one webhook. Check subscriptions first (highest range).
     if (SubscriptionService.isSubscriptionInvId(id)) {
       try {
-        await this.subscription.markChargePaidByInvId(id);
+        await this.subscription.markChargePaidByInvId(id, paid);
       } catch (e) {
         this.logger.error(`Subscription mark-paid failed for InvId ${id}: ${(e as Error).message}`);
         return `FAIL${invId}`;
@@ -82,7 +84,7 @@ export class PaymentController {
     }
     if (DonationService.isDonationInvId(id)) {
       try {
-        await this.donation.markPaidByInvId(id);
+        await this.donation.markPaidByInvId(id, paid);
       } catch (e) {
         this.logger.error(`Donation mark-paid failed for InvId ${id}: ${(e as Error).message}`);
         return `FAIL${invId}`;
@@ -91,7 +93,7 @@ export class PaymentController {
     }
 
     try {
-      await this.booking.confirm(id);
+      await this.booking.confirm(id, paid);
     } catch (e) {
       // Already confirmed/cancelled → benign double-delivery, ack so Robokassa stops.
       if (e instanceof ConflictException) {
