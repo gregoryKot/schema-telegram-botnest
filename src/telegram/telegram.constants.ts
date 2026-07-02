@@ -1,8 +1,11 @@
+import { normalizeBaseUrl } from '../utils/url';
+
 export const TELEGRAF_BOT = 'TELEGRAF_BOT';
 export const CHANNEL = '@SchemeHappens';
 export const BOOKING_URL = 'https://kotlarewski.gr/#booking';
-/** App base URL for support links (donate / subscribe). */
-export const APP_URL = (process.env.APP_URL ?? 'https://schemehappens.ru').replace(/\/$/, '');
+/** App base URL for support links (donate / subscribe). Normalised so a bare
+ * domain in env (no scheme) still produces valid Telegram button URLs. */
+export const APP_URL = normalizeBaseUrl(process.env.APP_URL, 'https://schemehappens.ru');
 export const SUBSCRIBE_URL = `${APP_URL}/subscribe`;
 export const DONATE_URL = `${APP_URL}/donate`;
 export const BOT_USERNAME = process.env.BOT_USERNAME ?? 'SchemaLabBot';

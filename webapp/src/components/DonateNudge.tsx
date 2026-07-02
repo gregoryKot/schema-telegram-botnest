@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 // Periodic in-app donate nudge (like a soft onboarding reminder). Shows at most
 // once every ~30 days, never to a brand-new user (skips the very first session),
@@ -19,9 +20,16 @@ export function DonateNudge() {
     if (Date.now() - last > PERIOD) setShow(true);
   }, []);
 
-  const close = () => { localStorage.setItem(SHOWN_KEY, String(Date.now())); setShow(false); };
-
   if (!show) return null;
+
+  // Mounted only while the sheet is visible, so useHistorySheet's history push
+  // happens exactly once per appearance (not on every app load).
+  return <DonateNudgeSheet onClose={() => setShow(false)} />;
+}
+
+function DonateNudgeSheet({ onClose }: { onClose: () => void }) {
+  const goBack = useHistorySheet(onClose);
+  const close = () => { localStorage.setItem(SHOWN_KEY, String(Date.now())); goBack(); };
 
   return (
     <div onClick={close} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>

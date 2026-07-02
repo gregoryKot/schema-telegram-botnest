@@ -18,6 +18,7 @@ import { BookingService } from './booking.service';
 import { BookingNotifyService } from './booking-notify.service';
 import { DonationService } from '../donation/donation.service';
 import { SubscriptionService } from '../subscription/subscription.service';
+import { normalizeBaseUrl } from '../utils/url';
 
 /**
  * Robokassa payment lifecycle endpoints.
@@ -41,8 +42,8 @@ export class PaymentController {
     private readonly subscription: SubscriptionService,
     config: ConfigService,
   ) {
-    this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr').replace(/\/$/, '');
-    this.appUrl = (config.get<string>('APP_URL') ?? 'https://schemehappens.ru').replace(/\/$/, '');
+    this.siteUrl = normalizeBaseUrl(config.get<string>('SITE_URL'), 'https://kotlarewski.gr');
+    this.appUrl = normalizeBaseUrl(config.get<string>('APP_URL'), 'https://schemehappens.ru');
   }
 
   /**
