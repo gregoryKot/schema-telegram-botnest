@@ -105,6 +105,11 @@ const appRoutes = [
   { path: '/',               element: <Navigate to="/login" replace /> },
   { path: '/subscribe',      element: <SubscribePage /> },
   { path: '/donate',         element: <DonatePage /> },
+  // Admin panel is gated by its own key (not the app login), so it's reachable
+  // on the app domain too — otherwise /admin here falls through to the login/app.
+  { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
+  { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
+  { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
   { path: '/login',          element: <LoginPage /> },
   { path: '/auth/callback',  element: <AuthCallback /> },
   { path: '/auth/telegram',  element: <TelegramWidgetCallback /> },
