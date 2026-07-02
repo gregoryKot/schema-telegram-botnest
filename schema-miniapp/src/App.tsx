@@ -18,6 +18,7 @@ import { TrackerOverlay } from './components/TrackerOverlay';
 import { HistoryView } from './components/HistoryView';
 import { BottomSheet } from './components/BottomSheet';
 import { SettingsSheet } from './components/SettingsSheet';
+import { AddressFormPicker } from './components/AddressFormPicker';
 import { DonateNudge } from './components/DonateNudge';
 import { TherapistClientSheet } from './components/TherapistClientSheet';
 import { PracticesScreen } from './components/PracticesScreen';
@@ -316,6 +317,8 @@ export default function App() {
   const [childhoodRatings, setChildhoodRatings] = useState<Record<string, number>>({});
   const [therapistMode, setTherapistMode] = useState(() => localStorage.getItem('therapist_mode') === '1');
   const switchTherapistMode = (on: boolean) => { localStorage.setItem('therapist_mode', on ? '1' : '0'); setTherapistMode(on); };
+  // Выбор обращения «ты/вы» при первом входе (addressForm === null на сервере)
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
 
   // Sync therapistMode from server when flags load (read-only flag, server is source of truth)
   useEffect(() => {
@@ -429,6 +432,10 @@ export default function App() {
       setPairCardDismissed(s.pairCardDismissed);
       if (s.pairCardDismissed) localStorage.setItem('pair_card_dismissed', '1');
       else localStorage.removeItem('pair_card_dismissed');
+      // Форма обращения ещё не выбрана — спросить (не чаще раза за сессию)
+      if (!s.addressForm && !sessionStorage.getItem('addr_form_asked')) {
+        setShowAddressPicker(true);
+      }
     }).catch(() => {
       setPairCardDismissed(!!localStorage.getItem('pair_card_dismissed'));
     });
@@ -950,6 +957,7 @@ export default function App() {
       )}
 
       {showSettings && <SettingsSheet onClose={() => setShowSettings(false)} userRole={userRole} displayName={displayName} onNameChanged={setDisplayName} onOpenTherapistCabinet={() => { setShowSettings(false); setTherapistMode(true); }} therapistMode={therapistMode} onToggleTherapistMode={() => switchTherapistMode(!therapistMode)} />}
+      {showAddressPicker && <AddressFormPicker onDone={() => { sessionStorage.setItem('addr_form_asked', '1'); setShowAddressPicker(false); }} />}
       <DonateNudge />
 
       {/* therapistMode renders inline in main flow, not as overlay — see below */}

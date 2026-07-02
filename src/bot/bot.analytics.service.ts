@@ -88,6 +88,38 @@ export class BotAnalyticsService {
     return Math.floor(diffMs / 86_400_000);
   }
 
+  /** Сколько разных дней с записями за последние N локальных дней (включая сегодня) */
+  async getFillDaysInLast(userId: bigint, days: number): Promise<number> {
+    const tz = await this.userTimezone(userId);
+    const dates = Array.from({ length: days }, (_, i) =>
+      this.localDateString(tz, new Date(Date.now() - i * 86_400_000)),
+    );
+    const rows = await this.prisma.rating.findMany({
+      where: { userId, date: { in: dates } },
+      select: { date: true },
+      distinct: ['date'],
+    });
+    return rows.length;
+  }
+
+  /**
+   * Перерыв (в днях) перед самой свежей записью: разница между двумя последними
+   * различными датами записей. null если записей меньше двух.
+   * Используется для comeback: свежая запись сегодня после перерыва ≥3 дней.
+   */
+  async getGapBeforeLatestFill(userId: bigint): Promise<number | null> {
+    const rows = await this.prisma.rating.findMany({
+      where: { userId },
+      select: { date: true },
+      distinct: ['date'],
+      orderBy: { date: 'desc' },
+      take: 2,
+    });
+    if (rows.length < 2) return null;
+    const diffMs = new Date(rows[0].date + 'T00:00:00Z').getTime() - new Date(rows[1].date + 'T00:00:00Z').getTime();
+    return Math.floor(diffMs / 86_400_000);
+  }
+
   async getWeeklyStats(userId: bigint): Promise<Array<{ needId: NeedId; avg: number | null; trend: '↑' | '↓' | '→' }>> {
     const tz = await this.userTimezone(userId);
     const last14 = Array.from({ length: 14 }, (_, i) =>

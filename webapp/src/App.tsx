@@ -23,6 +23,7 @@ import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
 import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
+import { AddressFormPicker } from './components/AddressFormPicker';
 import { LandingPage } from './pages/LandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { OfferPage } from './pages/OfferPage';
@@ -52,7 +53,12 @@ function RequireAuth() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <Outlet />;
+  return (
+    <>
+      <AddressFormPicker />
+      <Outlet />
+    </>
+  );
 }
 
 // ── Root layout – providers wrapper ───────────────────────────────────────────

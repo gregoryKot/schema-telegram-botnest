@@ -491,7 +491,7 @@ export function TodaySection({
               </>
             ) : (
               <div style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.7, padding: '8px 0' }}>
-                Фиксируй моменты когда схема активируется – это главная практика
+                Замечать моменты, когда схема активируется – главная практика
               </div>
             )}
           </div>
@@ -606,32 +606,32 @@ interface StepDef {
 
 const STEPS: StepDef[] = [
   { id: 'ysq', emoji: '🧪', color: 'var(--accent)',
-    title: 'Пройди тест на схемы',
-    description: 'YSQ-R – 116 вопросов, 10 минут. Узнаешь какие ранние паттерны управляют твоими реакциями.',
+    title: 'Тест на схемы',
+    description: 'YSQ-R – 116 вопросов, 10 минут. Покажет, какие ранние паттерны управляют реакциями.',
     detail: '20 схем · история прохождений · советы',
     actionLabel: 'Начать тест',
     isDone: (p, ctx) => !!(p?.ysq.completedAt) || !!(ctx?.hasSchemas) },
   { id: 'tracker', emoji: '📊', color: 'var(--c-slate)',
-    title: 'Оцени потребности сегодня',
-    description: 'Пять оценок – и ты видишь индекс дня. Через неделю паттерн начнёт проявляться в графике.',
+    title: 'Оценка потребностей сегодня',
+    description: 'Пять оценок – и виден индекс дня. Через неделю паттерн начнёт проявляться в графике.',
     detail: 'Привязанность · Автономия · Выражение · Радость · Границы',
     actionLabel: 'Перейти в трекер',
     isDone: p => !!(p?.lastActivity.needsTracker) },
   { id: 'diary', emoji: '📔', color: 'var(--accent-indigo)',
-    title: 'Сделай первую запись',
-    description: 'Зафикси момент когда схема сработала – это главная практика схема-терапии.',
+    title: 'Первая запись в дневнике',
+    description: 'Зафиксировать момент, когда схема сработала – главная практика схема-терапии.',
     detail: 'Дневник схем · режимов · благодарности',
     actionLabel: 'Открыть дневник',
     isDone: p => !!(p?.lastActivity.schemaDiary || p?.lastActivity.modeDiary || p?.lastActivity.gratitudeDiary) },
   { id: 'notify', emoji: '🔔', color: 'var(--c-clay)',
-    title: 'Включи ежедневное напоминание',
+    title: 'Ежедневное напоминание',
     description: 'Без регулярности ничего не выйдет. Одно уведомление в нужное время – всё что нужно.',
     detail: 'Время · часовой пояс · серии дней',
     actionLabel: 'Настроить',
     isDone: p => !!(p?.notifications.enabled) },
   { id: 'childhood', emoji: '🌀', color: 'var(--c-moss)',
-    title: 'Исследуй колесо детства',
-    description: 'Оцени как удовлетворялись потребности в детстве – откуда пришли твои паттерны.',
+    title: 'Колесо детства',
+    description: 'Как удовлетворялись потребности в детстве – откуда пришли нынешние паттерны.',
     detail: '5 областей · связь с активными схемами',
     actionLabel: 'Открыть',
     isDone: () => !!localStorage.getItem('childhood_wheel_done') },

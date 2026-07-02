@@ -155,7 +155,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
         <>
           {allOptions.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <SectionLabel>Твои практики</SectionLabel>
+              <SectionLabel>Мои практики</SectionLabel>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {allOptions.map(({ text, isUser, id }) => (
                   <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

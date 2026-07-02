@@ -7,34 +7,9 @@ import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapyService } from '../therapy/therapy.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
+import { isQuietHours, nextQuietEnd, tzOffsetAt } from '../notification/notification.time';
 
-function tzOffsetAt(tz: string, date = new Date()): number {
-  const utc = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const local = new Date(date.toLocaleString('en-US', { timeZone: tz }));
-  return Math.round((local.getTime() - utc.getTime()) / 3_600_000);
-}
-
-function nextSendAtHour(localHour: number, tz: string): Date {
-  const now = new Date();
-  for (let daysAhead = 0; daysAhead <= 1; daysAhead++) {
-    const probe = new Date(now.getTime() + daysAhead * 86_400_000);
-    const dateStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(probe);
-    const noonRef = new Date(`${dateStr}T12:00:00.000Z`);
-    const offset = tzOffsetAt(tz, noonRef);
-    const candidate = new Date(`${dateStr}T${String(localHour).padStart(2, '0')}:00:00.000Z`);
-    candidate.setTime(candidate.getTime() - offset * 3_600_000);
-    if (candidate > now) return candidate;
-  }
-  const probe2 = new Date(now.getTime() + 2 * 86_400_000);
-  const dateStr2 = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(probe2);
-  const noonRef2 = new Date(`${dateStr2}T12:00:00.000Z`);
-  const offset2 = tzOffsetAt(tz, noonRef2);
-  const result = new Date(`${dateStr2}T${String(localHour).padStart(2, '0')}:00:00.000Z`);
-  result.setTime(result.getTime() - offset2 * 3_600_000);
-  return result;
-}
-
-const WELCOME_TEXT = `Привет!
+export const WELCOME_TEXT = `Привет!
 
 Бывает, что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
 
@@ -62,6 +37,17 @@ export function buildWelcomeKeyboard(): any {
 function buildConsentKeyboard() {
   return Markup.inlineKeyboard([
     [Markup.button.callback('✅ Принять и продолжить', 'accept_consent')],
+  ]);
+}
+
+const ADDRESS_PROMPT = 'Один вопрос, чтобы дальше было комфортно: как удобнее общаться?';
+
+export function buildAddressKeyboard() {
+  return Markup.inlineKeyboard([
+    [
+      Markup.button.callback('На «ты»', 'addr:ty'),
+      Markup.button.callback('На «вы»', 'addr:vy'),
+    ],
   ]);
 }
 
@@ -116,7 +102,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const rawId = ctx.from?.id;
         if (!rawId) return;
         const userId = BigInt(rawId);
-        const isReturning = !!(await this.botService.getUserSettings(userId));
+        const existingSettings = await this.botService.getUserSettings(userId);
+        const isReturning = !!existingSettings;
         await this.botService.registerUser(userId, ctx.from?.first_name);
         const payload = (ctx as any).startPayload as string | undefined;
         if (payload?.startsWith('pair_')) {
@@ -140,6 +127,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const hasConsent2 = await this.botService.hasAcceptedDisclaimer(userId);
         if (!hasConsent2) {
           await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
+          return;
+        }
+        // Форма обращения ещё не выбрана — спросить до приветствия
+        if (!existingSettings?.addressForm) {
+          await ctx.reply(ADDRESS_PROMPT, buildAddressKeyboard());
           return;
         }
         if (isReturning) {
@@ -269,10 +261,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             return;
           }
         }
+        // После согласия — сразу выбор обращения, приветствие покажет addr-хендлер
         try {
-          await ctx.editMessageText(WELCOME_TEXT, buildWelcomeKeyboard() as any);
+          await ctx.editMessageText(ADDRESS_PROMPT, buildAddressKeyboard() as any);
         } catch {
-          await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
+          await ctx.reply(ADDRESS_PROMPT, buildAddressKeyboard());
         }
       } catch (err) {
         this.logger.error('accept_consent action failed', err);
@@ -317,12 +310,12 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           const userId = BigInt(rawId);
           const settings = await this.botService.getUserSettings(userId);
           const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
+          const quietStart = settings?.notifyQuietStart ?? 22;
+          const quietEnd = settings?.notifyQuietEnd ?? 8;
           let sendAt = new Date(Date.now() + 3_600_000);
-          // Quiet hours: if local hour >= 22 or < 7, push to 8:00 next morning
-          const offsetNow = tzOffsetAt(tz, sendAt);
-          const localHour = ((sendAt.getUTCHours() + offsetNow) % 24 + 24) % 24;
-          if (localHour >= 22 || localHour < 7) {
-            sendAt = nextSendAtHour(8, tz);
+          // Тихие часы юзера: если «через час» попадает в тишину — переносим на их конец
+          if (isQuietHours(tz, quietStart, quietEnd, sendAt)) {
+            sendAt = nextQuietEnd(tz, quietEnd, sendAt);
           }
           await this.notificationService.cancel(userId, 'reminder');
           await this.notificationService.schedule(userId, 'pre_reminder', sendAt);
