@@ -36,6 +36,7 @@ const ChildhoodWheelEx     = lazy(() => import('./exercises/ChildhoodWheelEx').t
 const TherapistClientSheet  = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
 const TherapistTodaySection = lazy(() => import('../sections/TherapistTodaySection').then(m => ({ default: m.TherapistTodaySection })));
 const PracticesOnboarding  = lazy(() => import('./PracticesOnboarding').then(m => ({ default: m.PracticesOnboarding })));
+const TherapistPrivacyDisclaimer = lazy(() => import('./TherapistPrivacyDisclaimer').then(m => ({ default: m.TherapistPrivacyDisclaimer })));
 
 const LazyLoader = () => <Loader minHeight="100dvh" />;
 
@@ -199,6 +200,15 @@ export function AppShell() {
   const [showChildhoodWheel, setShowChildhoodWheel] = useState(false);
   const [showTodayNote, setShowTodayNote] = useState(false);
   const [showPracticesOnboarding, setShowPracticesOnboarding] = useState(false);
+  const [showTherapistDisclaimer, setShowTherapistDisclaimer] = useState(false);
+
+  // First entry into the cabinet as a therapist → one-time privacy disclaimer
+  useEffect(() => {
+    if (therapistMode && userRole === 'THERAPIST'
+        && !localStorage.getItem('therapist_privacy_disclaimer_seen')) {
+      setShowTherapistDisclaimer(true);
+    }
+  }, [therapistMode, userRole]);
 
   // Therapist clients (for sidebar)
   const [therapistClients, setTherapistClients] = useState<TherapyClientSummary[]>([]);
@@ -709,6 +719,9 @@ export function AppShell() {
             setShowPracticesOnboarding(false);
             if (childhoodWheelPending) { setChildhoodWheelPending(false); setShowChildhoodWheel(true); }
           }} />
+        )}
+        {showTherapistDisclaimer && (
+          <TherapistPrivacyDisclaimer onDone={() => setShowTherapistDisclaimer(false)} />
         )}
 
         {/* ── Celebration ── */}
