@@ -187,17 +187,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.bot.command('donate', async (ctx) => {
+      const text = '💛 <b>Поддержать SchemeHappens</b>\n\n' +
+        'Приложение бесплатное и без рекламы. Если оно тебе помогает — поддержи проект любой суммой. Спасибо 🙏';
       try {
-        await ctx.reply(
-          '💛 <b>Поддержать SchemeHappens</b>\n\n' +
-          'Приложение бесплатное и без рекламы. Если оно тебе помогает — поддержи проект любой суммой. Спасибо 🙏',
-          {
-            parse_mode: 'HTML',
-            reply_markup: { inline_keyboard: [[{ text: '💛 Поддержать проект', url: DONATE_URL }]] },
-          },
-        );
+        await ctx.reply(text, {
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: [[{ text: '💛 Поддержать проект', url: DONATE_URL }]] },
+        });
       } catch (err) {
+        // If the inline button is rejected (e.g. an invalid URL), still give the
+        // user a working plain-text link instead of failing silently.
         this.logger.error('donate command failed', err);
+        await ctx.reply(`${text}\n\n${DONATE_URL}`, { parse_mode: 'HTML' }).catch(() => null);
       }
     });
 
@@ -409,25 +410,27 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.bot.command('about', async (ctx) => {
+      const text = [
+        '🧠 <b>Всё по схеме</b>',
+        '',
+        'Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.',
+        '',
+        '<b>Об авторе</b>',
+        'Канал о схема-терапии — @SchemeHappens',
+        'Записаться на сессию — @kotlarewski',
+        '',
+        'Приложение бесплатное 💛 Поддержать проект можно донатом ниже.',
+      ].join('\n');
       try {
-        const text = [
-          '🧠 <b>Всё по схеме</b>',
-          '',
-          'Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.',
-          '',
-          '<b>Об авторе</b>',
-          'Канал о схема-терапии — @SchemeHappens',
-          'Записаться на сессию — @kotlarewski',
-          '',
-          'Приложение бесплатное 💛 Поддержать проект можно донатом ниже.',
-        ].join('\n');
         await ctx.reply(text, {
           parse_mode: 'HTML',
           reply_markup: { inline_keyboard: [[{ text: '💛 Поддержать проект', url: DONATE_URL }]] },
         });
       } catch (err) {
+        // If the donate button URL is rejected, still show the info (with a
+        // plain-text donate link) rather than a bare error.
         this.logger.error('about command failed', err);
-        await ctx.reply('Не удалось загрузить информацию.').catch(() => null);
+        await ctx.reply(`${text}\n\n💛 ${DONATE_URL}`, { parse_mode: 'HTML' }).catch(() => null);
       }
     });
 
