@@ -39,6 +39,17 @@ model User {
   notifyLocalHour        Int      @default(21)
   notifyTimezone         String   @default("Europe/Moscow")
   notifyReminderEnabled  Boolean  @default(true)
+  // ── Adaptive notification cadence ────────────────────────────────────────
+  notifyFrequency        Int      @default(0)  // выбор юзера: 0=каждый день,1=через день,2=2×/нед,3=раз/нед — потолок для адаптации
+  notifyAdaptiveLevel    Int      @default(0)  // управляется движком; effective = max(frequency, adaptive)
+  notifyIgnoredCount     Int      @default(0)  // подряд проигнорированных напоминаний на текущем уровне
+  notifyNextRemindDate   String?               // YYYY-MM-DD (локальная дата) следующего дня напоминания
+  notifySkipAckDate      String?               // YYYY-MM-DD «Сегодня не могу» — день не считается игнором
+  notifyLastEvalDate     String?               // YYYY-MM-DD последнего прогона движка — идемпотентность catch-up
+  notifyPausedUntil      DateTime?             // пауза уведомлений (UTC instant)
+  notifyQuietStart       Int      @default(22) // тихие часы: начало, локальный час
+  notifyQuietEnd         Int      @default(8)  // тихие часы: конец; start==end → выключено
+  addressForm            String?               // 'ty' | 'vy'; null = ещё не выбрал → показать выбор при входе
   pairCardDismissed      Boolean  @default(false)
   mySchemaIds            Json     @default("[]")
   myModeIds              Json     @default("[]")

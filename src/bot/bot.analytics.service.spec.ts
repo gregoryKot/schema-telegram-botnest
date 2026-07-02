@@ -151,16 +151,47 @@ describe('BotAnalyticsService', () => {
       expect(await svc.getBestDayOfWeek(1)).toBeNull();
     });
 
-    it('returns day name of highest-sum day', async () => {
+    it('returns day name of highest-sum day (needs 3 distinct days of week)', async () => {
       const prisma = makePrisma();
-      // d(0) = 2025-06-11 = Wednesday (среда)
+      // d(0) = 2025-06-11 = Wednesday (среда); d(1) = вторник; d(2) = понедельник
       prisma.rating.findMany.mockResolvedValue([
         { date: d(0), value: 8 },
         { date: d(0), value: 9 },
         { date: d(1), value: 3 },
+        { date: d(2), value: 5 },
       ]);
       const svc = new BotAnalyticsService(prisma);
       expect(await svc.getBestDayOfWeek(1)).toBe('среда');
+    });
+  });
+
+  describe('getFillDaysInLast', () => {
+    it('counts distinct fill days within the window', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([{ date: d(0) }, { date: d(2) }]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getFillDaysInLast(1, 7)).toBe(2);
+    });
+
+    it('returns 0 with no ratings', async () => {
+      const svc = new BotAnalyticsService(makePrisma());
+      expect(await svc.getFillDaysInLast(1, 7)).toBe(0);
+    });
+  });
+
+  describe('getGapBeforeLatestFill', () => {
+    it('returns null with fewer than two fill days', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([{ date: d(0) }]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getGapBeforeLatestFill(1)).toBeNull();
+    });
+
+    it('returns gap between two latest distinct dates', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([{ date: d(0) }, { date: d(5) }]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getGapBeforeLatestFill(1)).toBe(5);
     });
   });
 });

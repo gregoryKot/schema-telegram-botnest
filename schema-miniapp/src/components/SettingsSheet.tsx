@@ -21,9 +21,31 @@ const TIMEZONES = [
 
 const HOURS = [8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
 
+const FREQ_LABELS = ['Каждый день', 'Через день', 'Пару раз в неделю', 'Раз в неделю'];
+
+// Пресеты тихих часов: start===end → выключены
+const QUIET_PRESETS = [
+  { label: 'Выключены', start: 0, end: 0 },
+  { label: '21:00 – 08:00', start: 21, end: 8 },
+  { label: '22:00 – 08:00', start: 22, end: 8 },
+  { label: '23:00 – 07:00', start: 23, end: 7 },
+  { label: '00:00 – 08:00', start: 0, end: 8 },
+];
+
+function quietLabel(start?: number, end?: number): string {
+  if (start === undefined || end === undefined || start === end) return 'Выключены';
+  return `${pad(start)}:00 – ${pad(end)}:00`;
+}
+
+/** Час уведомления внутри окна тишины? (окно может переходить через полночь) */
+function hourInQuiet(hour: number, start?: number, end?: number): boolean {
+  if (start === undefined || end === undefined || start === end) return false;
+  return start > end ? (hour >= start || hour < end) : (hour >= start && hour < end);
+}
+
 function pad(n: number) { return String(n).padStart(2, '0'); }
 
-type View = 'main' | 'time' | 'tz';
+type View = 'main' | 'time' | 'tz' | 'freq' | 'quiet';
 
 interface Props {
   onClose: () => void;
@@ -146,7 +168,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 8px' }}>
           <span onClick={() => view !== 'main' ? setView('main') : onClose()} style={{ fontSize: 26, color: 'var(--text-sub)', cursor: 'pointer', lineHeight: 1 }}>‹</span>
           <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', flex: 1 }}>
-            {view === 'time' ? 'Время уведомления' : view === 'tz' ? 'Часовой пояс' : 'Настройки'}
+            {view === 'time' ? 'Время уведомления' : view === 'tz' ? 'Часовой пояс' : view === 'freq' ? 'Частота напоминаний' : view === 'quiet' ? 'Тихие часы' : 'Настройки'}
           </span>
           <span style={{ fontSize: 12, color: 'var(--accent-green)', fontWeight: 600, opacity: savedToast ? 1 : 0, transition: 'opacity 0.3s ease' }}>
             Сохранено ✓
@@ -167,6 +189,44 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 );
               })}
             </div>
+          )}
+
+          {/* ── FREQ VIEW ── */}
+          {view === 'freq' && (
+            <>
+              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 12, padding: '0 4px' }}>
+                Если напоминания будут оставаться без ответа, бот сам начнёт писать реже — а когда записи вернутся, вернётся к выбранной частоте.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {FREQ_LABELS.map((label, i) => {
+                  const active = i === (settings.notifyFrequency ?? 0);
+                  return (
+                    <div key={i} onClick={async () => { await patch({ notifyFrequency: i }); setView('main'); }}
+                      style={{ padding: '13px 16px', borderRadius: 12, background: active ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'rgba(var(--fg-rgb),0.04)', color: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.7)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+                    >{label}{active && <span>✓</span>}</div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* ── QUIET VIEW ── */}
+          {view === 'quiet' && (
+            <>
+              <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 12, padding: '0 4px' }}>
+                В тихие часы бот не пишет вообще — всё, что накопится, придёт утром.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {QUIET_PRESETS.map(p => {
+                  const active = p.start === (settings.notifyQuietStart ?? 22) && p.end === (settings.notifyQuietEnd ?? 8);
+                  return (
+                    <div key={p.label} onClick={async () => { await patch({ notifyQuietStart: p.start, notifyQuietEnd: p.end }); setView('main'); }}
+                      style={{ padding: '13px 16px', borderRadius: 12, background: active ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'rgba(var(--fg-rgb),0.04)', color: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.7)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+                    >{p.label}{active && <span>✓</span>}</div>
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {/* ── TZ VIEW ── */}
@@ -299,22 +359,55 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               {/* Уведомления */}
               <div style={{ marginBottom: 8 }}>
                 <SectionHeader onInfo={() => setShowNotifyInfo(true)}>УВЕДОМЛЕНИЯ</SectionHeader>
+                {settings.notifyPausedUntil && new Date(settings.notifyPausedUntil) > new Date() && (
+                  <div className="card" style={{ borderRadius: 16, padding: '12px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                      ⏸ Уведомления на паузе до {new Date(settings.notifyPausedUntil).toLocaleDateString('ru-RU')}
+                    </div>
+                    <button
+                      onClick={() => patch({ notifyPausedUntil: null } as Partial<UserSettings>)}
+                      style={{ background: 'color-mix(in srgb, var(--accent) 15%, transparent)', border: 'none', borderRadius: 10, padding: '7px 14px', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
+                    >Возобновить</button>
+                  </div>
+                )}
                 <div className="card" style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 8 }}>
                   <Row label="Итоги дня" sub="Ежедневный отчёт по потребностям" right={<Toggle on={settings.notifyEnabled} onClick={() => patch({ notifyEnabled: !settings.notifyEnabled })} />} />
                   <Row label="Напоминание" sub="Заполнить трекер вечером" right={<Toggle on={!!settings.notifyReminderEnabled} onClick={() => patch({ notifyReminderEnabled: !settings.notifyReminderEnabled })} />} divider />
                   {(settings.notifyEnabled || settings.notifyReminderEnabled) && (
                     <>
                       <Row label="Время" right={<RowRight text={`${pad(localHour)}:00`} />} onClick={() => setView('time')} divider />
+                      <Row label="Частота" right={<RowRight text={FREQ_LABELS[settings.notifyFrequency ?? 0]} small />} onClick={() => setView('freq')} divider />
+                      <Row label="Тихие часы" right={<RowRight text={quietLabel(settings.notifyQuietStart, settings.notifyQuietEnd)} small />} onClick={() => setView('quiet')} divider />
                       <Row label="Часовой пояс" right={<RowRight text={tzLabel} small />} onClick={() => setView('tz')} divider />
                     </>
                   )}
                 </div>
+                {(settings.notifyEnabled || settings.notifyReminderEnabled) && hourInQuiet(localHour, settings.notifyQuietStart, settings.notifyQuietEnd) && (
+                  <div style={{ fontSize: 12, color: 'var(--accent-yellow, #eab308)', lineHeight: 1.5, marginBottom: 8, padding: '0 4px' }}>
+                    Время уведомления попадает в тихие часы — сообщение придёт после их окончания
+                  </div>
+                )}
                 {(settings.notifyEnabled || settings.notifyReminderEnabled) && (
                   <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 8, padding: '0 4px' }}>
                     Приходят через{' '}
                     <a href="https://t.me/SchemaLabBot" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>@SchemaLabBot</a>
                   </div>
                 )}
+              </div>
+
+              {/* Обращение */}
+              <div style={{ marginBottom: 8 }}>
+                <SettingsLabel>ОБРАЩЕНИЕ</SettingsLabel>
+                <div className="card" style={{ borderRadius: 16, padding: '10px 12px', display: 'flex', gap: 8 }}>
+                  {(['ty', 'vy'] as const).map(form => {
+                    const active = (settings.addressForm ?? 'ty') === form;
+                    return (
+                      <div key={form} onClick={() => patch({ addressForm: form })}
+                        style={{ flex: 1, padding: '10px 0', borderRadius: 10, textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.06)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer' }}
+                      >{form === 'ty' ? 'На «ты»' : 'На «вы»'}</div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Терапевт — CLIENT view */}

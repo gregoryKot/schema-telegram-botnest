@@ -122,10 +122,69 @@ describe('renderTemplate', () => {
   });
 
   it.each(['onboarding_1', 'onboarding_3', 'onboarding_7', 'streak_7', 'streak_14', 'streak_30',
-    'lapsing_2', 'lapsing_4', 'dormant_7', 'reengagement_30'] as const)(
+    'lapsing_3', 'dormant_7', 'reengagement_30', 'comeback', 'welcome_back', 'nudge'] as const)(
     'returns non-null result for %s',
     (type) => {
       expect(renderTemplate(type)).not.toBeNull();
     },
   );
+
+  // legacy-строки в очереди на момент деплоя рендерятся мягким текстом
+  it.each(['lapsing_2', 'lapsing_4'] as const)('renders legacy %s with soft text', (type) => {
+    const result = renderTemplate(type as any);
+    expect(result!.text).toContain('Перерывы — часть процесса');
+  });
+
+  describe('reminder keyboard (кнопки саморегуляции)', () => {
+    function callbacks(result: NonNullable<ReturnType<typeof renderTemplate>>): string[] {
+      const rows = (result.keyboard as any).reply_markup.inline_keyboard as Array<Array<any>>;
+      return rows.flat().map((b) => b.callback_data).filter(Boolean);
+    }
+
+    it('has snooze, skip, pause and slower buttons', () => {
+      const result = renderTemplate('reminder')!;
+      const cbs = callbacks(result);
+      expect(cbs).toEqual(expect.arrayContaining(['snooze_reminder', 'notify:skip', 'notify:pause', 'notify:slower']));
+    });
+
+    it('does not mention streak when 0-2 days', () => {
+      for (const streak of [0, 1, 2]) {
+        const result = renderTemplate('reminder', { streak })!;
+        expect(result.text).not.toContain('Серия');
+      }
+    });
+
+    it('mentions streak when alive and growing (>=3)', () => {
+      const result = renderTemplate('reminder', { streak: 5 })!;
+      expect(result.text).toContain('Серия: 5');
+    });
+  });
+
+  describe('comeback', () => {
+    it('mentions total days with correct pluralization', () => {
+      expect(renderTemplate('comeback', { totalDays: 21 })!.text).toContain('21 день');
+      expect(renderTemplate('comeback', { totalDays: 22 })!.text).toContain('22 дня');
+      expect(renderTemplate('comeback', { totalDays: 25 })!.text).toContain('25 дней');
+      expect(renderTemplate('comeback', { totalDays: 11 })!.text).toContain('11 дней');
+    });
+
+    it('never mentions broken streak or gap length', () => {
+      const text = renderTemplate('comeback', { totalDays: 10 })!.text;
+      expect(text).not.toMatch(/Серия|пропуст|сгорел/i);
+    });
+
+    it('works without totalDays', () => {
+      const result = renderTemplate('comeback')!;
+      expect(result.text).toContain('С возвращением');
+    });
+  });
+
+  describe('welcome_back', () => {
+    it('offers to extend the pause', () => {
+      const result = renderTemplate('welcome_back')!;
+      const rows = (result.keyboard as any).reply_markup.inline_keyboard as Array<Array<any>>;
+      const cbs = rows.flat().map((b) => b.callback_data).filter(Boolean);
+      expect(cbs).toContain('notify:pause');
+    });
+  });
 });

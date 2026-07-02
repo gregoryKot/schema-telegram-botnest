@@ -153,6 +153,12 @@ export class BotService {
         notifyLocalHour: true,
         notifyTimezone: true,
         notifyReminderEnabled: true,
+        notifyFrequency: true,
+        notifyQuietStart: true,
+        notifyQuietEnd: true,
+        notifyPausedUntil: true,
+        notifyNextRemindDate: true,
+        addressForm: true,
         pairCardDismissed: true,
         mySchemaIds: true,
         myModeIds: true,
@@ -165,7 +171,7 @@ export class BotService {
     return decryptRecord(row as any, { jsonArrays: ['mySchemaIds', 'myModeIds'] });
   }
 
-  async updateUserSettings(userId: bigint, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean }) {
+  async updateUserSettings(userId: bigint, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; notifyFrequency?: number; notifyQuietStart?: number; notifyQuietEnd?: number; notifyPausedUntil?: Date | null; addressForm?: string; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean }) {
     const enc = encryptRecord(data as Record<string, unknown>, { jsonArrays: ['mySchemaIds', 'myModeIds'] });
     await this.prisma.user.update({ where: { id: userId }, data: enc as any });
   }
@@ -215,12 +221,37 @@ export class BotService {
     return users.map((u) => Number(u.id));
   }
 
-  async getAllUsersWithSettings(): Promise<Array<{ id: number; notifyLocalHour: number; notifyTimezone: string; notifyReminderEnabled: boolean }>> {
-    const users = await this.prisma.user.findMany({
+  async getAllUsersWithSettings() {
+    return this.prisma.user.findMany({
       where: { notifyEnabled: true, botBlockedAt: null, deletedAt: null },
-      select: { id: true, notifyLocalHour: true, notifyTimezone: true, notifyReminderEnabled: true },
+      select: {
+        id: true, notifyLocalHour: true, notifyTimezone: true, notifyReminderEnabled: true,
+        notifyFrequency: true, notifyAdaptiveLevel: true, notifyIgnoredCount: true,
+        notifyNextRemindDate: true, notifySkipAckDate: true, notifyLastEvalDate: true,
+        notifyPausedUntil: true, addressForm: true,
+      },
     });
-    return users.map((u) => ({ ...u, id: Number(u.id) }));
+  }
+
+  /** Явный выбор частоты сбрасывает адаптацию на выбранный уровень */
+  async setAdaptiveLevel(userId: bigint, level: number) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { notifyAdaptiveLevel: level, notifyIgnoredCount: 0 },
+    });
+  }
+
+  /** Тихие часы + таймзона + форма обращения для пачки юзеров (processQueue) */
+  async getSendSettingsFor(ids: bigint[]): Promise<Map<string, { tz: string; start: number; end: number; form: string | null }>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.prisma.user.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, notifyTimezone: true, notifyQuietStart: true, notifyQuietEnd: true, addressForm: true },
+    });
+    return new Map(rows.map((r) => [
+      r.id.toString(),
+      { tz: r.notifyTimezone, start: r.notifyQuietStart, end: r.notifyQuietEnd, form: r.addressForm },
+    ]));
   }
 
   async saveRating(userId: bigint, needId: NeedId, value: number, date?: string) {
