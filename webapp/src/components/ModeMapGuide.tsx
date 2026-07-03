@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { FlowNode } from './modeMapFlow';
 import type { ModeMapNode, ModeMapKind } from '../api';
 import { pickTips } from './modeMapTips';
+import { useTr } from '../utils/addressForm';
 import { MMIcon } from './modeMapIcons';
 
 interface Props {
@@ -30,6 +31,7 @@ function mk(type: ModeMapNode['type'], label: string, extra: Partial<ModeMapNode
 }
 
 export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props) {
+  const tr = useTr();
   const hasTrigger = has(nodes, 'trigger');
   const hasChild   = has(nodes, 'child');
   const hasCritic  = has(nodes, 'critic');
@@ -115,10 +117,10 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
       </div>
       <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 10, lineHeight: 1.4 }}>
         {kind === 'couple'
-          ? 'Копинг А ранит Б → копинг Б ранит А — порочный круг. Помечай режимы партнёром (А/Б). Нажми на шаг, чтобы добавить его.'
+          ? tr('Копинг А ранит Б → копинг Б ранит А — порочный круг. Помечай режимы партнёром (А/Б). Нажми на шаг, чтобы добавить его.', 'Копинг А ранит Б → копинг Б ранит А — порочный круг. Помечайте режимы партнёром (А/Б). Нажмите на шаг, чтобы добавить его.')
           : kind === 'problem'
-          ? 'Триггер → боль → защита → последствия → потребность. Нажми на шаг, чтобы добавить его на холст.'
-          : 'Основные группы режимов клиента. Нажми, чтобы добавить недостающий.'}
+          ? tr('Триггер → боль → защита → последствия → потребность. Нажми на шаг, чтобы добавить его на холст.', 'Триггер → боль → защита → последствия → потребность. Нажмите на шаг, чтобы добавить его на холст.')
+          : tr('Основные группы режимов клиента. Нажми, чтобы добавить недостающий.', 'Основные группы режимов клиента. Нажмите, чтобы добавить недостающий.')}
       </div>
 
       {/* Numbered steps with clinical descriptions */}

@@ -3,6 +3,7 @@ import { api } from '../../api';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { ExScreen, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useTr } from '../../utils/addressForm';
 
 const SCHEMA_QUESTIONS = [
   { key: 'triggers',    label: 'Что запускает эту схему?',        hint: 'Ситуации, слова, интонации – типичные триггеры', placeholder: 'Когда не отвечают на сообщения; когда критикуют при других…' },
@@ -77,6 +78,7 @@ function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; acc
 }
 
 export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () => void; initialSchemaId?: string; onComplete?: () => void }) {
+  const tr = useTr();
   const goBack = useHistorySheet(onBack);
   const [picked, setPicked] = useState<{ id: string; name: string; desc: string; color: string; domain: string } | null>(() => {
     if (!initialSchemaId) return null;
@@ -91,8 +93,8 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
     return (
       <ExScreen onBack={goBack} eyebrow="№ 02 · Знакомство" eyebrowColor="var(--c-plum)"
         title={<>Карточка<br/><span className="it">схемы</span></>}
-        lede="Выбери одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка."
-        aside={<div className="aside-card"><div className="aside-card-eyebrow">Зачем это</div><h3>Назвать – значит вернуть себе власть</h3><p className="body">Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о тебе».</p></div>}
+        lede={tr('Выбери одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.', 'Выберите одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.')}
+        aside={<div className="aside-card"><div className="aside-card-eyebrow">Зачем это</div><h3>Назвать – значит вернуть себе власть</h3><p className="body">{tr('Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о тебе».', 'Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о вас».')}</p></div>}
       >
         {SCHEMA_DOMAINS.map(d => (
           <div key={d.id}>
@@ -131,6 +133,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
 }
 
 export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => void; initialModeId?: string; onComplete?: () => void }) {
+  const tr = useTr();
   const goBack = useHistorySheet(onBack);
   const [picked, setPicked] = useState<{ id: string; name: string; short: string; color: string; group: string } | null>(() => {
     if (!initialModeId) return null;
@@ -146,7 +149,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
       <ExScreen onBack={goBack} eyebrow="№ 03 · Знакомство" eyebrowColor="var(--c-clay)"
         title={<>Карточка<br/><span className="it">режима</span></>}
         lede="Режим – это эмоциональное состояние, которое включается целиком. Описать его – значит научиться его узнавать в моменте."
-        aside={<div className="aside-card"><div className="aside-card-eyebrow">Совет</div><h3>Начни с того, что чаще включается</h3><p className="body">Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого – чтобы было что искать в себе в трудный момент.</p></div>}
+        aside={<div className="aside-card"><div className="aside-card-eyebrow">Совет</div><h3>{tr('Начни с того, что чаще включается', 'Начните с того, что чаще включается')}</h3><p className="body">Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого – чтобы было что искать в себе в трудный момент.</p></div>}
       >
         {MODE_GROUPS.map(g => (
           <div key={g.id}>

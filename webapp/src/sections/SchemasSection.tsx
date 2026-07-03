@@ -5,6 +5,7 @@ import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
 import { NEED_DATA } from '../needData';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
+import { useTr } from '../utils/addressForm';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
@@ -53,6 +54,7 @@ interface Props {
 }
 
 export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel }: Props) {
+  const tr = useTr();
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(MY_SCHEMA_IDS_KEY));
   const [myModeIds, setMyModeIds]         = useState<string[]>(() => readLocalIds(MY_MODE_IDS_KEY));
   const [ysqSchemaIds, setYsqSchemaIds]   = useState<string[]>([]);
@@ -129,7 +131,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         {!profileLoading && ysqSchemaIds.length > 0 && (
           <div className="section">
             <div className="section-head">
-              <h3>Твои выраженные схемы</h3>
+              <h3>{tr('Твои выраженные схемы', 'Ваши выраженные схемы')}</h3>
               {ysqCompletedAt && (
                 <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
                   YSQ от {fmtDate(ysqCompletedAt.slice(0, 10))}
@@ -532,6 +534,7 @@ const MODE_DESC: Record<string, string> = {
 };
 
 function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; onSave: (ids: string[]) => void; onClose: () => void }) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [ids, setIds] = useState<string[]>(selected);
   const toggle = (id: string) => setIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -549,7 +552,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '36px 24px 80px' }}>
         <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>Мои режимы</h1>
         <p style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 28, lineHeight: 1.6 }}>
-          Выбери режимы которые ты замечаешь у себя.
+          {tr('Выбери режимы которые ты замечаешь у себя.', 'Выберите режимы которые вы замечаете у себя.')}
         </p>
 
         <div style={{ marginBottom: 20 }}>

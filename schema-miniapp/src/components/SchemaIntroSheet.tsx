@@ -3,6 +3,7 @@ import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { api } from '../api';
+import { useTr } from '../utils/addressForm';
 
 const LS_KEY = (id: string) => `schema_intro_${id}`;
 
@@ -98,6 +99,7 @@ interface Props {
 }
 
 export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
+  const tr = useTr();
   const schema = getSchemaById(schemaId);
   const [data, setData]     = useState<SchemaIntroData>(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -259,7 +261,7 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
                   fontSize: 13, color: colorHex, fontWeight: 500,
                 }}>
                   <span style={{ fontSize: 16 }}>✏️</span>
-                  <span>Нажми чтобы ответить</span>
+                  <span>{tr('Нажми чтобы ответить', 'Нажмите чтобы ответить')}</span>
                 </div>
               )}
             </>

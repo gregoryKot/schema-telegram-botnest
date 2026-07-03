@@ -4,6 +4,7 @@ import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
 import { NEED_DATA } from '../needData';
 import { useSafeTop } from '../utils/safezone';
+import { useTr } from '../utils/addressForm';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { BottomSheet } from '../components/BottomSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
@@ -593,6 +594,7 @@ const MODE_DESC: Record<string, string> = {
 };
 
 function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; onSave: (ids: string[]) => void; onClose: () => void }) {
+  const tr = useTr();
   const [ids, setIds] = useState<string[]>(selected);
   const toggle = (id: string) => setIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
@@ -601,7 +603,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
       <div style={{ paddingTop: 4 }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Мои режимы</div>
         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 20, lineHeight: 1.5 }}>
-          Выбери режимы которые ты замечаешь у себя.
+          {tr('Выбери режимы которые ты замечаешь у себя.', 'Выберите режимы которые вы замечаете у себя.')}
         </div>
 
         <div style={{ marginBottom: 20 }}>

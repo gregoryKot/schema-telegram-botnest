@@ -3,6 +3,7 @@ import { TherapyNote } from './TherapyNote';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { api } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useTr } from '../utils/addressForm';
 
 const STORAGE_KEY = 'schema_flashcards';
 
@@ -15,13 +16,13 @@ interface FlashcardEntry {
   action: string;
 }
 
-const MODES = [
+const buildModes = (tr: (ty: string, vy: string) => string) => [
   {
     id: 'vulnerable_child',
     emoji: '😢',
     label: 'Уязвимый Ребёнок',
     desc: 'Грустно, страшно, одиноко, беспомощно',
-    response: 'Здоровый Взрослый слышит тебя: твоя боль настоящая, и ты не один. Позволь себе побыть в этом – без самокритики.',
+    response: tr('Здоровый Взрослый слышит тебя: твоя боль настоящая, и ты не один. Позволь себе побыть в этом – без самокритики.', 'Здоровый Взрослый слышит вас: ваша боль настоящая, и вы не один. Позвольте себе побыть в этом – без самокритики.'),
     color: '#60a5fa',
   },
   {
@@ -37,7 +38,7 @@ const MODES = [
     emoji: '🔇',
     label: 'Отстранённый Защитник',
     desc: 'Пусто, онемело, всё равно, хочется исчезнуть',
-    response: 'Ты отключился, чтобы не было больно – это понятно. Но ты в безопасности прямо сейчас. Можно чуть-чуть вернуться.',
+    response: tr('Ты отключился, чтобы не было больно – это понятно. Но ты в безопасности прямо сейчас. Можно чуть-чуть вернуться.', 'Вы отключились, чтобы не было больно – это понятно. Но вы в безопасности прямо сейчас. Можно чуть-чуть вернуться.'),
     color: '#94a3b8',
   },
   {
@@ -45,7 +46,7 @@ const MODES = [
     emoji: '🪓',
     label: 'Внутренний Критик',
     desc: 'Стыд, «я облажался», «я недостаточно хорош»',
-    response: 'Критик думает, что защищает тебя, но причиняет боль. Здоровый Взрослый говорит: ты достаточно хорош – прямо сейчас.',
+    response: tr('Критик думает, что защищает тебя, но причиняет боль. Здоровый Взрослый говорит: ты достаточно хорош – прямо сейчас.', 'Критик думает, что защищает вас, но причиняет боль. Здоровый Взрослый говорит: вы достаточно хороши – прямо сейчас.'),
     color: '#fb923c',
   },
 ];
@@ -78,6 +79,8 @@ function Topbar({ onBack, label = 'Закрыть' }: { onBack: () => void; labe
 interface Props { onClose: () => void; onOpenTracker?: () => void; onComplete?: () => void; }
 
 export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
+  const tr = useTr();
+  const MODES = buildModes(tr);
   const goBack = useHistorySheet(onClose);
   const [grounded,     setGrounded]     = useState(false);
   const [step,         setStep]         = useState<Step>('mode');
@@ -221,7 +224,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           <div style={{ fontSize: 64, marginBottom: 20 }}>🌿</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>Сохранено</h1>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 40 }}>
-            Ты сделал шаг навстречу себе. Это уже немало.
+            {tr('Ты сделал шаг навстречу себе. Это уже немало.', 'Вы сделали шаг навстречу себе. Это уже немало.')}
           </p>
           <div style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 20, padding: '24px', marginBottom: 32, textAlign: 'left' }}>
             {[
@@ -261,10 +264,10 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
           <div style={{ fontSize: 64, marginBottom: 20 }}>💙</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>
-            Ты сделал правильно
+            {tr('Ты сделал правильно', 'Вы сделали правильно')}
           </h1>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, marginBottom: 36 }}>
-            То, что ты чувствуешь сейчас – это нормально.<br/>Это пройдёт.
+            {tr('То, что ты чувствуешь сейчас – это нормально.', 'То, что вы чувствуете сейчас – это нормально.')}<br/>Это пройдёт.
           </p>
           <div style={{
             background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)',
@@ -286,7 +289,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             ))}
           </div>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 28 }}>
-            Почувствуй ноги на полу. Ты в безопасности.
+            {tr('Почувствуй ноги на полу. Ты в безопасности.', 'Почувствуйте ноги на полу. Вы в безопасности.')}
           </p>
           <button onClick={() => setGrounded(true)} className="ex-btn ex-btn-primary" style={{ width: '100%', marginBottom: 12 }}>
             Стало чуть лучше – разобраться →
@@ -360,7 +363,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             borderRadius: 20, padding: '20px', marginBottom: 24,
           }}>
             <div className="eyebrow" style={{ color: 'var(--accent-green)', marginBottom: 12 }}>
-              🌿 Говорит тебе
+              {tr('🌿 Говорит тебе', '🌿 Говорит вам')}
             </div>
             <p style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)', lineHeight: 1.7, margin: 0 }}>
               {modeData?.response}
@@ -444,7 +447,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           </div>
         )}
         <p style={{ fontSize: 15, color: 'var(--text-sub)', marginBottom: 12, lineHeight: 1.6 }}>
-          Что одно маленькое действие ты можешь сделать прямо сейчас?
+          {tr('Что одно маленькое действие ты можешь сделать прямо сейчас?', 'Что одно маленькое действие вы можете сделать прямо сейчас?')}
         </p>
         <textarea
           value={action}
