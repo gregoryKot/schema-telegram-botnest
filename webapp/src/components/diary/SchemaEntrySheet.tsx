@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ExScreen, GlyphCheck } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useTr } from '../../utils/addressForm';
 import { EMOTIONS, INTENSITY_LABELS, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import type { EmotionEntry } from '../../types';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
@@ -39,6 +40,7 @@ interface DraftData {
 }
 
 export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const existing = loadDraft<DraftData>('schema');
   const draft = existing?.data ?? null;
@@ -123,11 +125,11 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         <div className="aside-card" style={{ borderColor: 'var(--c-rose)40', background: 'var(--c-rose)08', position: 'sticky', top: 40 }}>
           <div className="aside-card-eyebrow" style={{ color: 'var(--c-rose)' }}>Совет</div>
           <h3>Не обязательно по порядку</h3>
-          <p className="body">Если в моменте трудно – запиши только триггер и чувство. Остальное можно дополнить позже, или когда тебе кто-то поможет это разобрать.</p>
+          <p className="body">{tr('Если в моменте трудно – запиши только триггер и чувство. Остальное можно дополнить позже, или когда тебе кто-то поможет это разобрать.', 'Если в моменте трудно – запишите только триггер и чувство. Остальное можно дополнить позже, или когда вам кто-то поможет это разобрать.')}</p>
           <ul>
             <li>Автосохранение каждые 5 сек</li>
             <li>Можно вернуться и продолжить</li>
-            <li>Никто кроме тебя не увидит</li>
+            <li>{tr('Никто кроме тебя не увидит', 'Никто кроме вас не увидит')}</li>
           </ul>
         </div>
       }
@@ -137,14 +139,14 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         <span className="flow-section-num">I.</span>
         <div>
           <div className="flow-section-title">Что случилось</div>
-          <div className="flow-section-sub">Внешняя сторона события – ситуация, чувства, тело, твоя реакция.</div>
+          <div className="flow-section-sub">{tr('Внешняя сторона события – ситуация, чувства, тело, твоя реакция.', 'Внешняя сторона события – ситуация, чувства, тело, ваша реакция.')}</div>
         </div>
       </div>
 
       <div className="prompt">
         <div className="prompt-num">1.</div>
         <div>
-          <div className="prompt-label">Опиши ситуацию <span style={{ color: 'var(--c-rose)', marginLeft: 2 }}>*</span></div>
+          <div className="prompt-label">{tr('Опиши ситуацию', 'Опишите ситуацию')} <span style={{ color: 'var(--c-rose)', marginLeft: 2 }}>*</span></div>
           <p className="prompt-hint">Что произошло? Где, с кем, в какой момент. Конкретно – не обобщай.</p>
           <textarea
             className={'paper-input ' + (trigger.trim() ? 'is-filled' : '')}
@@ -159,7 +161,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
 
       <div className="field-block" style={{ marginTop: 32 }}>
         <div className="prompt-label" style={{ fontSize: 22, marginBottom: 6 }}>Что поднялось внутри</div>
-        <p className="field-block-hint">Выбери одно или несколько – потом отметь интенсивность.</p>
+        <p className="field-block-hint">{tr('Выбери одно или несколько – потом отметь интенсивность.', 'Выберите одно или несколько – потом отметьте интенсивность.')}</p>
         <div className="chip-row">
           {EMOTIONS.map(em => {
             const sel = emotions.find(e => e.id === em.id);
@@ -249,7 +251,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         <span className="flow-section-num">II.</span>
         <div>
           <div className="flow-section-title">Какая схема сработала</div>
-          <div className="flow-section-sub">Найди под ситуацией знакомый паттерн. Он не «правда о тебе» – это привычка.</div>
+          <div className="flow-section-sub">{tr('Найди под ситуацией знакомый паттерн. Он не «правда о тебе» – это привычка.', 'Найдите под ситуацией знакомый паттерн. Он не «правда о вас» – это привычка.')}</div>
         </div>
       </div>
 
@@ -317,7 +319,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         <span className="flow-section-num">III.</span>
         <div>
           <div className="flow-section-title">Здоровый взгляд</div>
-          <div className="flow-section-sub">Не «всё хорошо» – а более точно. Что Здоровый Взрослый сказал бы на твоём месте.</div>
+          <div className="flow-section-sub">{tr('Не «всё хорошо» – а более точно. Что Здоровый Взрослый сказал бы на твоём месте.', 'Не «всё хорошо» – а более точно. Что Здоровый Взрослый сказал бы на вашем месте.')}</div>
         </div>
       </div>
 

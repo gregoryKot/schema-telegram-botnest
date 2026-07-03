@@ -1,5 +1,6 @@
 import type { DiaryType } from '../../types';
 import { fmtDateLong } from '../../utils/format';
+import { useTr } from '../../utils/addressForm';
 
 interface DiaryMeta {
   type: DiaryType;
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount, lastSchemaDiaryDate, lastModeDiaryDate, lastGratitudeDiaryDate, onOpen, onClose: _onClose }: Props) {
+  const tr = useTr();
   const diaries: DiaryMeta[] = [
     {
       type: 'schema',
@@ -63,7 +65,7 @@ export function HomeView({ schemaDiaryCount, modeDiaryCount, gratitudeDiaryCount
         <h1 className="hub-title" style={{ marginBottom: 8 }}>
           Замечай<br /><span className="it">паттерны</span>
         </h1>
-        <p className="hub-sub" style={{ margin: 0 }}>Фиксируй моменты, следи за динамикой.</p>
+        <p className="hub-sub" style={{ margin: 0 }}>{tr('Фиксируй моменты, следи за динамикой.', 'Фиксируйте моменты, следите за динамикой.')}</p>
       </div>
 
       {/* Diary type cards */}

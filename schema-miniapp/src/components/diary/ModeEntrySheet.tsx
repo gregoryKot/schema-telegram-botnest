@@ -3,6 +3,7 @@ import { BottomSheet } from '../BottomSheet';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { haptic } from '../../haptic';
+import { useTr } from '../../utils/addressForm';
 
 interface Props {
   onClose: () => void;
@@ -49,6 +50,7 @@ function Area({ value, onChange, placeholder, rows = 3 }: { value: string; onCha
 }
 
 export function ModeEntrySheet({ onClose, onSave }: Props) {
+  const tr = useTr();
   const existing = loadDraft<{ modeId: string; situation: string; thoughts: string; feelings: string; bodyFeelings: string; actions: string; actualNeed: string; childhoodMemories: string }>('mode');
   const d = existing?.data;
 
@@ -143,10 +145,10 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         ))}
 
         <StepLabel step={2} title="Ситуация" hint="что случилось" />
-        <Area value={situation} onChange={setSituation} placeholder="Что произошло? Где ты, с кем, в какой момент?" />
+        <Area value={situation} onChange={setSituation} placeholder={tr('Что произошло? Где ты, с кем, в какой момент?', 'Что произошло? Где вы, с кем, в какой момент?')} />
 
         <StepLabel step={3} title="Мысли" hint="что говорит этот режим" />
-        <Area value={thoughts} onChange={setThoughts} placeholder="Что этот режим говорит тебе? Во что он верит?" rows={2} />
+        <Area value={thoughts} onChange={setThoughts} placeholder={tr('Что этот режим говорит тебе? Во что он верит?', 'Что этот режим говорит вам? Во что он верит?')} rows={2} />
 
         <StepLabel step={4} title="Чувства" hint="что этот режим ощущает" />
         <Area value={feelings} onChange={setFeelings} placeholder="Что этот режим чувствует? Страх, злость, пустоту..." rows={2} />
@@ -154,18 +156,18 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         <StepLabel step={5} title="Тело" hint="что ощущаешь" />
         <Area value={bodyFeelings} onChange={setBodyFeelings} placeholder="Что происходит с телом? Напряжение, онемение, тяжесть..." rows={2} />
 
-        <StepLabel step={6} title="Действия" hint="что ты делаешь или делал/а" />
-        <Area value={actions} onChange={setActions} placeholder="Как этот режим тебя тянет поступить?" rows={2} />
+        <StepLabel step={6} title="Действия" hint={tr('что ты делаешь или делал/а', 'что вы делаете или делали')} />
+        <Area value={actions} onChange={setActions} placeholder={tr('Как этот режим тебя тянет поступить?', 'Как этот режим вас тянет поступить?')} rows={2} />
 
-        <StepLabel step={7} title="Что тебе на самом деле нужно?" />
-        <Area value={actualNeed} onChange={setActualNeed} placeholder="Чего тебе на самом деле не хватает?" rows={2} />
+        <StepLabel step={7} title={tr('Что тебе на самом деле нужно?', 'Что вам на самом деле нужно?')} />
+        <Area value={actualNeed} onChange={setActualNeed} placeholder={tr('Чего тебе на самом деле не хватает?', 'Чего вам на самом деле не хватает?')} rows={2} />
 
         <StepLabel step={8} title="Детские воспоминания" hint="связанные с ситуацией" />
         <Area value={childhoodMemories} onChange={setChildhoodMemories} placeholder="Напоминает что-то из детства? Похожее чувство, похожая ситуация?" rows={3} />
 
         {!canSave && (
           <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-sub)', marginTop: 16, paddingBottom: 8 }}>
-            Выбери режим и опиши ситуацию — и можно будет сохранить
+            {tr('Выбери режим и опиши ситуацию — и можно будет сохранить', 'Выберите режим и опишите ситуацию — и можно будет сохранить')}
           </div>
         )}
       </div>

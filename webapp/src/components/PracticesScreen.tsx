@@ -4,6 +4,7 @@ import type { UserPractice } from '../api';
 import { Loader } from './Loader';
 import { COLORS } from '../types';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useTr } from '../utils/addressForm';
 import { NEED_DATA } from '../needData';
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function PracticesScreen({ onClose, onOpenTracker }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [needIdx, setNeedIdx] = useState(0);
   const [practices, setPractices] = useState<UserPractice[] | null>(null);
@@ -77,7 +79,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             <h1 className="hub-title" style={{ marginBottom: 8 }}>Мои<br /><span className="it">практики</span></h1>
             <div className="text-md muted" style={{ maxWidth: 560, lineHeight: 1.6 }}>
               Конкретные действия, которые наполняют потребность.
-              {onOpenTracker && <> Видишь что что-то просело? <span onClick={onOpenTracker} className="link" style={{ cursor: 'pointer' }}>Открой трекер →</span></>}
+              {onOpenTracker && <> {tr('Видишь что что-то просело?', 'Видите что что-то просело?')} <span onClick={onOpenTracker} className="link" style={{ cursor: 'pointer' }}>{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
