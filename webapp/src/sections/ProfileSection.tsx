@@ -6,6 +6,7 @@ import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { useAuth } from '../auth/AuthContext';
+import { useTr } from '../utils/addressForm';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
@@ -45,6 +46,7 @@ interface Props {
 }
 
 export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, displayName }: Props) {
+  const tr = useTr();
   const navigate = useNavigate();
   const { logout } = useAuth();
   const firstName = displayName || '';
@@ -599,7 +601,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         >
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 32px', width: '100%', maxWidth: 400, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div className="eyebrow" style={{ marginBottom: 16 }}>Лучший день</div>
-            <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>День недели, в который твои оценки в среднем выше всего.</p>
+            <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>{tr('День недели, в который твои оценки в среднем выше всего.', 'День недели, в который ваши оценки в среднем выше всего.')}</p>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>Становится точнее с каждой неделей.</p>
           </div>
         </div>

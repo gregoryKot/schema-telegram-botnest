@@ -5,6 +5,7 @@ import { BottomSheet } from '../components/BottomSheet';
 import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
+import { useTr } from '../utils/addressForm';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
@@ -44,6 +45,7 @@ interface Props {
 }
 
 export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, displayName }: Props) {
+  const tr = useTr();
   const safeTop = useSafeTop();
   const tgName = (window.Telegram?.WebApp as any)?.initDataUnsafe?.user?.first_name ?? '';
   const firstName = displayName || tgName;
@@ -520,7 +522,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         <BottomSheet onClose={() => setShowBestDayInfo(false)} zIndex={300}>
           <div style={{ paddingTop: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 16 }}>Лучший день</div>
-            <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>День недели, в который твои оценки в среднем выше всего.</p>
+            <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>{tr('День недели, в который твои оценки в среднем выше всего.', 'День недели, в который ваши оценки в среднем выше всего.')}</p>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>Становится точнее с каждой неделей.</p>
           </div>
         </BottomSheet>
