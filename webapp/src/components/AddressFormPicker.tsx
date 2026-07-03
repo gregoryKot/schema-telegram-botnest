@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { useSetAddressForm } from '../utils/addressForm';
 
 /**
  * Выбор обращения («ты»/«вы») при первом входе — пока addressForm в настройках null.
@@ -8,6 +9,7 @@ import { api } from '../api';
  */
 export function AddressFormPicker() {
   const [show, setShow] = useState(false);
+  const setForm = useSetAddressForm();
 
   useEffect(() => {
     if (sessionStorage.getItem('addr_form_asked')) return;
@@ -24,6 +26,7 @@ export function AddressFormPicker() {
   }
 
   async function choose(form: 'ty' | 'vy') {
+    setForm(form);
     try { await api.updateSettings({ addressForm: form }); } catch { /* не блокируем вход */ }
     close();
   }

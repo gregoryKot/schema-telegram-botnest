@@ -24,6 +24,7 @@ import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { AddressFormPicker } from './components/AddressFormPicker';
+import { AddressFormProvider } from './utils/addressForm';
 import { LandingPage } from './pages/LandingPage';
 import { ProductLandingPage } from './pages/ProductLandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -55,10 +56,10 @@ function RequireAuth() {
   if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return (
-    <>
+    <AddressFormProvider>
       <AddressFormPicker />
       <Outlet />
-    </>
+    </AddressFormProvider>
   );
 }
 

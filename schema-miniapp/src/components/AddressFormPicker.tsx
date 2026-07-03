@@ -1,4 +1,5 @@
 import { api } from '../api';
+import { useSetAddressForm } from '../utils/addressForm';
 
 interface Props {
   onDone: (form: 'ty' | 'vy' | null) => void;
@@ -9,7 +10,9 @@ interface Props {
  * «Позже» = мягкий пропуск: остаётся «ты» по умолчанию, спросим в следующей сессии.
  */
 export function AddressFormPicker({ onDone }: Props) {
+  const setForm = useSetAddressForm();
   async function choose(form: 'ty' | 'vy') {
+    setForm(form);
     try { await api.updateSettings({ addressForm: form }); } catch { /* не блокируем вход */ }
     onDone(form);
   }
