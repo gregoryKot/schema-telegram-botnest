@@ -5,6 +5,7 @@ import { BottomSheet } from './BottomSheet';
 import { Loader } from './Loader';
 import { useSafeTop } from '../utils/safezone';
 import { getTheme, toggleTheme, resetToSystemTheme, Theme } from '../utils/theme';
+import { useSetAddressForm } from '../utils/addressForm';
 
 const TIMEZONES = [
   { label: 'Лос-Анджелес (UTC−8)', iana: 'America/Los_Angeles' },
@@ -94,6 +95,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [editName, setEditName] = useState(displayName ?? tgName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);
+  const setAddressForm = useSetAddressForm();
 
   useEffect(() => {
     api.getSettings()
@@ -402,7 +404,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   {(['ty', 'vy'] as const).map(form => {
                     const active = (settings.addressForm ?? 'ty') === form;
                     return (
-                      <div key={form} onClick={() => patch({ addressForm: form })}
+                      <div key={form} onClick={() => { setAddressForm(form); patch({ addressForm: form }); }}
                         style={{ flex: 1, padding: '10px 0', borderRadius: 10, textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.06)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer' }}
                       >{form === 'ty' ? 'На «ты»' : 'На «вы»'}</div>
                     );

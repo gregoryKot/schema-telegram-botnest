@@ -6,6 +6,7 @@ import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
 import { Loader } from './Loader';
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
 import type { Theme } from '../utils/theme';
+import { useSetAddressForm } from '../utils/addressForm';
 
 const TIMEZONES = [
   { label: 'Лос-Анджелес (UTC−8)', iana: 'America/Los_Angeles' },
@@ -79,6 +80,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [editName, setEditName] = useState(displayName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);
+  const setAddressForm = useSetAddressForm();
   const [therapistReq, setTherapistReq] = useState<{ status: string; rejectReason: string | null } | null | undefined>(undefined);
   const [showReqForm, setShowReqForm] = useState(false);
   const [reqFullName, setReqFullName] = useState('');
@@ -352,7 +354,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   {(['ty', 'vy'] as const).map(form => {
                     const active = (settings.addressForm ?? 'ty') === form;
                     return (
-                      <button key={form} onClick={() => patch({ addressForm: form })}
+                      <button key={form} onClick={() => { setAddressForm(form); patch({ addressForm: form }); }}
                         style={{ flex: 1, maxWidth: 160, padding: '10px 0', borderRadius: 8, border: 'none', textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit' }}
                       >{form === 'ty' ? 'На «ты»' : 'На «вы»'}</button>
                     );
