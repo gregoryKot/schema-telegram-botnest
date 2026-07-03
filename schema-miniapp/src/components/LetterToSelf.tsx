@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
+import { useTr } from '../utils/addressForm';
 
 const STORAGE_KEY = 'letters_to_self';
 
@@ -21,13 +22,18 @@ function fmtDate(iso: string) {
 
 interface Props { onClose: () => void; onComplete?: () => void; }
 
-const PROMPTS = [
-  'Вспомни момент из детства или юности, когда тебе было по-настоящему тяжело.',
-  'Что тогда происходило? Что ты чувствовал? Чего тебе не хватало?',
-  'Напиши этому ребёнку письмо — от себя сегодняшнего. Что ты хочешь ему сказать? Что ему нужно было услышать?',
+const buildPrompts = (tr: (ty: string, vy: string) => string) => [
+  tr('Вспомни момент из детства или юности, когда тебе было по-настоящему тяжело.',
+     'Вспомните момент из детства или юности, когда вам было по-настоящему тяжело.'),
+  tr('Что тогда происходило? Что ты чувствовал? Чего тебе не хватало?',
+     'Что тогда происходило? Что вы чувствовали? Чего вам не хватало?'),
+  tr('Напиши этому ребёнку письмо — от себя сегодняшнего. Что ты хочешь ему сказать? Что ему нужно было услышать?',
+     'Напишите этому ребёнку письмо — от себя сегодняшнего. Что вы хотите ему сказать? Что ему нужно было услышать?'),
 ];
 
 export function LetterToSelf({ onClose, onComplete }: Props) {
+  const tr = useTr();
+  const PROMPTS = buildPrompts(tr);
   const [text, setText] = useState('');
   const [saved, setSaved] = useState(false);
   const [letters, setLetters] = useState<Letter[]>(() => loadLocal());

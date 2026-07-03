@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useTr } from '../utils/addressForm';
 import type { Need } from '../types';
 import { api } from '../api';
 import { NEED_DATA } from '../needData';
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function PracticesOnboarding({ needs, onDone }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onDone);
   const [step, setStep] = useState<'intro' | number>('intro');
   const [input, setInput] = useState('');
@@ -86,7 +88,7 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
             <div style={{ textAlign: 'center', marginBottom: 32 }}>
               <div style={{ fontSize: 56, marginBottom: 16 }}>🗂</div>
               <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', lineHeight: 1.2, marginBottom: 14 }}>
-                Что тебя вытаскивает?
+                {tr('Что тебя вытаскивает?', 'Что вас вытаскивает?')}
               </h1>
               <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7 }}>
                 Когда потребность низкая – сложно вспомнить что помогает.{' '}
@@ -153,7 +155,7 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
             </div>
 
             <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 16 }}>
-              Выбери готовые или добавь своё:
+              {tr('Выбери готовые или добавь своё:', 'Выберите готовые или добавьте своё:')}
             </p>
 
             {/* Suggestions */}

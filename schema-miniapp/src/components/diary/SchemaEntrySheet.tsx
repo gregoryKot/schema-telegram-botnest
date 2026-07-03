@@ -4,6 +4,7 @@ import { EMOTIONS, INTENSITY_LABELS, SCHEMA_DOMAINS } from '../../schemaTherapyD
 import { EmotionEntry } from '../../types';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { haptic } from '../../haptic';
+import { useTr } from '../../utils/addressForm';
 
 interface Props {
   activeSchemaIds?: string[];
@@ -71,6 +72,7 @@ interface DraftData {
 }
 
 export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
+  const tr = useTr();
   const existing = loadDraft<DraftData>('schema');
   const draft = existing?.data ?? null;
 
@@ -176,7 +178,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         </div>
 
         <StepLabel step={1} title="Что случилось?" hint="опиши ситуацию — где, с кем, когда" required />
-        <Area value={trigger} onChange={setTrigger} placeholder="Что произошло? Где ты был/а, с кем, в какой момент?" rows={3} />
+        <Area value={trigger} onChange={setTrigger} placeholder={tr('Что произошло? Где ты был/а, с кем, в какой момент?', 'Что произошло? Где вы были, с кем, в какой момент?')} rows={3} />
 
         <StepLabel step={2} title="Чувства" hint="что поднялось внутри" />
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 10 }}>
@@ -214,13 +216,13 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         })}
 
         <StepLabel step={3} title="Мысли" hint="о чём думаешь" />
-        <Area value={thoughts} onChange={setThoughts} placeholder="Какие мысли появились? Что ты говоришь себе?" />
+        <Area value={thoughts} onChange={setThoughts} placeholder={tr('Какие мысли появились? Что ты говоришь себе?', 'Какие мысли появились? Что вы говорите себе?')} />
 
         <StepLabel step={4} title="Тело" hint="что ощущаешь физически" />
         <Area value={bodyFeelings} onChange={setBodyFeelings} placeholder="Где в теле это чувствуется? Сжатие, тяжесть, пульс, дыхание..." rows={2} />
 
-        <StepLabel step={5} title="Моя реакция" hint="что ты делаешь или хочешь сделать" />
-        <Area value={actualBehavior} onChange={setActualBehavior} placeholder="Что ты сделал/а или хотел/а сделать? Убежать, замолчать, накричать..." rows={2} />
+        <StepLabel step={5} title="Моя реакция" hint={tr('что ты делаешь или хочешь сделать', 'что вы делаете или хотите сделать')} />
+        <Area value={actualBehavior} onChange={setActualBehavior} placeholder={tr('Что ты сделал/а или хотел/а сделать? Убежать, замолчать, накричать...', 'Что вы сделали или хотели сделать? Убежать, замолчать, накричать...')} rows={2} />
 
         <StepLabel step={6} title="Схемы" hint="что сработало" />
         {SCHEMA_DOMAINS.map(domain => {
@@ -268,11 +270,11 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         <Area value={excessiveReactions} onChange={setExcessiveReactions} placeholder="Где реакция оказалась больше, чем требовала ситуация?" rows={2} />
 
         <StepLabel step={10} title="Здоровое поведение" hint="как поступил бы Здоровый Взрослый" />
-        <Area value={healthyBehavior} onChange={setHealthyBehavior} placeholder="Что сделал бы Здоровый Взрослый внутри тебя?" />
+        <Area value={healthyBehavior} onChange={setHealthyBehavior} placeholder={tr('Что сделал бы Здоровый Взрослый внутри тебя?', 'Что сделал бы Здоровый Взрослый внутри вас?')} />
 
         {!canSave && (
           <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-sub)', marginTop: 16, paddingBottom: 8 }}>
-            Опиши ситуацию — и можно будет сохранить
+            {tr('Опиши ситуацию — и можно будет сохранить', 'Опишите ситуацию — и можно будет сохранить')}
           </div>
         )}
       </div>

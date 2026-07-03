@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry } from '../types';
 import { api } from '../api';
+import { useTr } from '../utils/addressForm';
 import { SchemaEntrySheet } from '../components/diary/SchemaEntrySheet';
 import { ModeEntrySheet } from '../components/diary/ModeEntrySheet';
 import { GratitudeEntrySheet } from '../components/diary/GratitudeEntrySheet';
@@ -246,6 +247,7 @@ type Filter = 'all' | DiaryType;
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {}) {
+  const tr = useTr();
   const [schemaEntries,    setSchemaEntries]    = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries,      setModeEntries]      = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
@@ -500,7 +502,7 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-faint)' }}>
             <div style={{ fontFamily: 'var(--serif)', fontSize: 28, color: 'var(--text-sub)', fontStyle: 'italic', marginBottom: 8 }}>Пусто.</div>
             <div style={{ fontSize: 14 }}>
-              {filter === 'all' ? 'Нажми на карточку выше, чтобы начать.' : 'Нет записей этого типа.'}
+              {filter === 'all' ? tr('Нажми на карточку выше, чтобы начать.', 'Нажмите на карточку выше, чтобы начать.') : 'Нет записей этого типа.'}
             </div>
           </div>
         )}

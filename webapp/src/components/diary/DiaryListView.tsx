@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry, DiaryType } from '../../types';
 import { EMOTIONS, getModeById, getSchemaById } from '../../schemaTherapyData';
 import { loadDraft, clearDraft, formatDraftAge } from '../../utils/drafts';
+import { useTr } from '../../utils/addressForm';
 
 const cm = (color: string, pct: number) => `color-mix(in srgb, ${color} ${pct}%, transparent)`;
 
@@ -15,11 +16,12 @@ interface Props {
   onDelete: (type: DiaryType, id: number) => void;
 }
 
-const DIARY_META: Record<DiaryType, { title: string; eyebrow: string; emoji: string; color: string; emptyLine1: string; emptyLine2: string; fabLabel: string }> = {
-  schema:    { title: 'Дневник схем',          eyebrow: 'Дневник схем',     emoji: '📓', color: 'var(--c-rose)',   emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Когда что-то триггернёт – возвращайся и записывай.', fabLabel: '+ Записать момент' },
-  mode:      { title: 'Дневник режимов',       eyebrow: 'Дневник режимов',  emoji: '🔄', color: 'var(--c-slate)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Как только поймаешь себя в знакомом состоянии – приходи записать.', fabLabel: '+ Записать режим' },
-  gratitude: { title: 'Дневник благодарности', eyebrow: 'Благодарность',    emoji: '🌱', color: 'var(--c-moss)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Начни сегодня – достаточно трёх вещей.', fabLabel: '+ Записать' },
-};
+type DiaryMetaEntry = { title: string; eyebrow: string; emoji: string; color: string; emptyLine1: string; emptyLine2: string; fabLabel: string };
+const buildDiaryMeta = (tr: (ty: string, vy: string) => string): Record<DiaryType, DiaryMetaEntry> => ({
+  schema:    { title: 'Дневник схем',          eyebrow: 'Дневник схем',     emoji: '📓', color: 'var(--c-rose)',   emptyLine1: 'Пока здесь тихо.', emptyLine2: tr('Когда что-то триггернёт – возвращайся и записывай.', 'Когда что-то триггернёт – возвращайтесь и записывайте.'), fabLabel: '+ Записать момент' },
+  mode:      { title: 'Дневник режимов',       eyebrow: 'Дневник режимов',  emoji: '🔄', color: 'var(--c-slate)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: tr('Как только поймаешь себя в знакомом состоянии – приходи записать.', 'Как только поймаете себя в знакомом состоянии – приходите записать.'), fabLabel: '+ Записать режим' },
+  gratitude: { title: 'Дневник благодарности', eyebrow: 'Благодарность',    emoji: '🌱', color: 'var(--c-moss)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: tr('Начни сегодня – достаточно трёх вещей.', 'Начните сегодня – достаточно трёх вещей.'), fabLabel: '+ Записать' },
+});
 
 function formatDt(iso: string) {
   const d = new Date(iso);
@@ -178,7 +180,8 @@ function DraftCard({ type, color, onContinue, onDelete }: { type: DiaryType; col
 }
 
 export function DiaryListView({ type, schemaEntries, modeEntries, gratitudeEntries, onBack, onNewEntry, onDelete }: Props) {
-  const meta = DIARY_META[type];
+  const tr = useTr();
+  const meta = buildDiaryMeta(tr)[type];
   const [draftKey, setDraftKey] = useState(0);
   const hasDraft = !!loadDraft(type);
 
@@ -234,7 +237,7 @@ export function DiaryListView({ type, schemaEntries, modeEntries, gratitudeEntri
   );
 }
 
-function Empty({ meta }: { meta: typeof DIARY_META[DiaryType] }) {
+function Empty({ meta }: { meta: DiaryMetaEntry }) {
   return (
     <div style={{ textAlign: 'center', padding: '60px 32px', color: 'var(--text-faint)' }}>
       <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.4 }}>📭</div>

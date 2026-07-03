@@ -5,6 +5,7 @@ import { NEED_DATA } from '../needData';
 import { COLORS } from '../types';
 import { BottomSheet } from './BottomSheet';
 import { CURATED } from './PlanSheet';
+import { useTr } from '../utils/addressForm';
 
 export const PRACTICES_ONBOARDING_KEY = 'practices_onboarding_done';
 
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function PracticesOnboarding({ needs, onDone }: Props) {
+  const tr = useTr();
   const [step, setStep] = useState<'intro' | number>('intro');
   const [input, setInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -83,7 +85,7 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
           <div style={{ textAlign: 'center', marginBottom: 20, paddingTop: 4 }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🗂</div>
             <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, marginBottom: 10 }}>
-              Что тебя вытаскивает?
+              {tr('Что тебя вытаскивает?', 'Что вас вытаскивает?')}
             </div>
             <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7 }}>
               Когда потребность низкая — сложно вспомнить что помогает.{' '}
@@ -153,7 +155,7 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
           </div>
 
           <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 14 }}>
-            Выбери готовые или добавь своё:
+            {tr('Выбери готовые или добавь своё:', 'Выберите готовые или добавьте своё:')}
           </div>
 
           {/* Suggestions */}

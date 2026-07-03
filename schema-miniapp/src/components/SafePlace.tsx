@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
+import { useTr } from '../utils/addressForm';
 
 const STORAGE_KEY = 'safe_place';
 
@@ -14,15 +15,20 @@ function loadLocal(): SafePlaceData | null {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null'); } catch { return null; }
 }
 
-const PROMPTS = [
-  'Вспомни или представь место, где тебе спокойно и безопасно. Реальное или воображаемое.',
-  'Что ты там видишь? Какие звуки, запахи, ощущения в теле?',
-  'Почему именно здесь ты чувствуешь себя в безопасности?',
+const buildPrompts = (tr: (ty: string, vy: string) => string) => [
+  tr('Вспомни или представь место, где тебе спокойно и безопасно. Реальное или воображаемое.',
+     'Вспомните или представьте место, где вам спокойно и безопасно. Реальное или воображаемое.'),
+  tr('Что ты там видишь? Какие звуки, запахи, ощущения в теле?',
+     'Что вы там видите? Какие звуки, запахи, ощущения в теле?'),
+  tr('Почему именно здесь ты чувствуешь себя в безопасности?',
+     'Почему именно здесь вы чувствуете себя в безопасности?'),
 ];
 
 interface Props { onClose: () => void; onComplete?: () => void; }
 
 export function SafePlace({ onClose, onComplete }: Props) {
+  const tr = useTr();
+  const PROMPTS = buildPrompts(tr);
   const [saved, setSaved] = useState<SafePlaceData | null>(() => loadLocal());
   const [editing, setEditing] = useState(!loadLocal());
   const [text, setText] = useState(() => loadLocal()?.text ?? '');
@@ -108,7 +114,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
           </div>
           <div>
             <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Безопасное место</div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>Напиши — чтобы возвращаться в трудный момент</div>
+            <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>{tr('Напиши — чтобы возвращаться в трудный момент', 'Напишите — чтобы возвращаться в трудный момент')}</div>
           </div>
         </div>
 

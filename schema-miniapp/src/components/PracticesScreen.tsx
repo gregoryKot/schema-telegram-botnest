@@ -4,6 +4,7 @@ import { Loader } from './Loader';
 import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
 import { NEED_DATA } from '../needData';
+import { useTr } from '../utils/addressForm';
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function PracticesScreen({ onClose, onOpenTracker }: Props) {
+  const tr = useTr();
   const safeTop = useSafeTop();
   const [needIdx, setNeedIdx] = useState(0);
   const [practices, setPractices] = useState<UserPractice[] | null>(null);
@@ -82,7 +84,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           Практики — конкретные действия, которые наполняют потребность.
           {onOpenTracker && (
             <> Видишь что что-то просело?{' '}
-              <span onClick={onOpenTracker} style={{ color: 'var(--accent)', cursor: 'pointer' }}>Открой трекер →</span>
+              <span onClick={onOpenTracker} style={{ color: 'var(--accent)', cursor: 'pointer' }}>{tr('Открой трекер →', 'Откройте трекер →')}</span>
             </>
           )}
         </div>
