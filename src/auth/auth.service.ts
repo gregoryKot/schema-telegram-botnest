@@ -238,12 +238,18 @@ export class AuthService {
       create: { id: userId, firstName: displayName },
     });
 
-    await (this.prisma as any).authProvider.create({
-      data: { userId, provider, providerId, displayName, email },
+    // Atomic upsert (Postgres INSERT … ON CONFLICT) — the mini-app fires several
+    // API requests in parallel on first load; without this they race between the
+    // findUnique above and this insert and all-but-one crash on the
+    // (provider, providerId) unique constraint.
+    const row = await (this.prisma as any).authProvider.upsert({
+      where: { provider_providerId: { provider, providerId } },
+      update: { displayName, email },
+      create: { userId, provider, providerId, displayName, email },
     });
 
-    this.logger.log(`New ${provider} auth provider linked to userId ${userId}`);
-    return userId;
+    this.logger.log(`New ${provider} auth provider linked to userId ${row.userId}`);
+    return row.userId as BigInt;
   }
 
   // ─── Account linking (merge two providers to one user) ────────────────────
