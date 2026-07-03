@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTr } from '../utils/addressForm';
 import { COLORS } from '../types';
 import type { Need, DayHistory } from '../types';
 import { NEED_DATA } from '../needData';
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function NeedHistorySheet({ need, value, history, childhoodValue, onClose }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const data = NEED_DATA[need.id];
@@ -123,7 +125,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
       <div className="prompt">
         <div className="prompt-num">·</div>
         <div>
-          <div className="prompt-label">Попробуй сегодня</div>
+          <div className="prompt-label">{tr('Попробуй сегодня', 'Попробуйте сегодня')}</div>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65 }}>
             {tip}
             <button

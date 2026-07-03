@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useTr } from '../utils/addressForm';
 import { Need, DayHistory, COLORS } from '../types';
 import { NeedHistorySheet } from './NeedHistorySheet';
 import { getTherapistContact } from '../utils/therapistContact';
@@ -244,6 +245,7 @@ function InsightCard({ needs, ratings, onTap }: { needs: Need[]; ratings: Record
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function HistoryView({ needs, history, currentRatings, childhoodRatings = {}, onOpenSchemas, onOpenChildhoodWheel, days = 7, onChangeDays, onGoToToday, onBackfill }: Props) {
+  const tr = useTr();
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [subView, setSubView] = useState<'day' | 'week'>('day');
   const dateBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -281,7 +283,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
         <div style={{ fontSize: 48, marginBottom: 16 }}>🌱</div>
         <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>История пока пуста</div>
         <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 28 }}>
-          Заполни трекер сегодня — через 3–5 дней начнёт проявляться паттерн
+          {tr('Заполни трекер сегодня — через 3–5 дней начнёт проявляться паттерн', 'Заполните трекер сегодня — через 3–5 дней начнёт проявляться паттерн')}
         </div>
         {onGoToToday && (
           <button onClick={onGoToToday} className="btn-primary" style={{ width: '100%' }}>
@@ -425,7 +427,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
             {/* Hint */}
             {showHint && (
               <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-faint)' }}>
-                Нажми на потребность — узнаешь что делать
+                {tr('Нажми на потребность — узнаешь что делать', 'Нажмите на потребность — узнаете что делать')}
               </div>
             )}
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTr } from '../utils/addressForm';
 import { Need, DayHistory, COLORS } from '../types';
 import { NEED_DATA } from '../needData';
 import { BottomSheet } from './BottomSheet';
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function NeedHistorySheet({ need, value, history, childhoodValue, onClose }: Props) {
+  const tr = useTr();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const data = NEED_DATA[need.id];
   if (!data) return null;
@@ -159,7 +161,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
 
       {/* Section 2: Random tip */}
       <div style={{ marginBottom: 24 }}>
-        <SectionLabel>Попробуй сегодня</SectionLabel>
+        <SectionLabel>{tr('Попробуй сегодня', 'Попробуйте сегодня')}</SectionLabel>
         <div style={{ background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 14, padding: '14px 16px' }}>
           <div style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.85)', lineHeight: 1.6 }}>
             {tip}

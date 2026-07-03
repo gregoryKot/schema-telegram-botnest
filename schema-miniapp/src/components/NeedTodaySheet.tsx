@@ -4,6 +4,7 @@ import { NEED_DATA } from '../needData';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { getTherapistContact } from '../utils/therapistContact';
+import { useTr } from '../utils/addressForm';
 import { PlanSheet } from './PlanSheet';
 
 interface Props {
@@ -23,6 +24,7 @@ const DISCLAIMER_CONTENT = [
 ];
 
 export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
+  const tr = useTr();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
@@ -134,13 +136,13 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
           color,
           lineHeight: 1.5,
         }}>
-          Сегодня ты позаботился об этой потребности — заметь это
+          {tr('Сегодня ты позаботился об этой потребности — заметь это', 'Сегодня вы позаботились об этой потребности — заметьте это')}
         </div>
       )}
 
       {/* Section 1: Question */}
       <div style={{ marginBottom: 20 }}>
-        <SectionLabel>Спроси себя</SectionLabel>
+        <SectionLabel>{tr('Спроси себя', 'Спросите себя')}</SectionLabel>
         <div style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.85)', lineHeight: 1.6 }}>
           {data.question}
         </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import { COLORS } from '../types';
 import { BottomSheet } from './BottomSheet';
@@ -15,17 +16,18 @@ export function shouldShowChildhoodWheel(): boolean {
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'] as const;
 type NeedId = typeof NEED_IDS[number];
 
-const NEED_META: Record<NeedId, {
+type NeedMetaEntry = {
   label: string; emoji: string; question: string;
   anchorLow: string; anchorHigh: string;
   examples: Array<{ score: number; text: string }>;
-}> = {
+};
+const buildNeedMeta = (tr: (ty: string, vy: string) => string): Record<NeedId, NeedMetaEntry> => ({
   attachment: {
     label: 'Привязанность',
     emoji: '🤝',
-    question: 'Как часто, когда тебе было плохо, рядом оказывался взрослый который это замечал и откликался?',
-    anchorLow: 'Взрослый отсутствовал или был непредсказуем. В трудный момент некому было обратиться. Было ощущение что ты лишний или нежеланный.',
-    anchorHigh: 'Был стабильный взрослый, которому можно было доверять. Он замечал когда что-то не так и приходил. Ты чувствовал себя нужным и принятым.',
+    question: tr('Как часто, когда тебе было плохо, рядом оказывался взрослый который это замечал и откликался?', 'Как часто, когда вам было плохо, рядом оказывался взрослый который это замечал и откликался?'),
+    anchorLow: tr('Взрослый отсутствовал или был непредсказуем. В трудный момент некому было обратиться. Было ощущение что ты лишний или нежеланный.', 'Взрослый отсутствовал или был непредсказуем. В трудный момент некому было обратиться. Было ощущение что вы лишний или нежеланный.'),
+    anchorHigh: tr('Был стабильный взрослый, которому можно было доверять. Он замечал когда что-то не так и приходил. Ты чувствовал себя нужным и принятым.', 'Был стабильный взрослый, которому можно было доверять. Он замечал когда что-то не так и приходил. Вы чувствовали себя нужным и принятым.'),
     examples: [
       { score: 2, text: 'Мама пила. Физически была дома, но эмоционально — нигде. Когда было страшно или плохо — шёл в свою комнату и справлялся один. Обнимала редко и только когда настроение совпадало. Плакать было некому.' },
       { score: 4, text: 'Отец ушёл из семьи когда было 3 года. Бабушка появлялась два-три раза в неделю — с ней было тепло и надёжно. Но её было мало, а мать была непредсказуемой: иногда обнимала, иногда срывалась без причины. Никогда не знал чего ждать.' },
@@ -36,8 +38,8 @@ const NEED_META: Record<NeedId, {
   autonomy: {
     label: 'Автономия',
     emoji: '🧭',
-    question: 'Насколько тебе доверяли — право иметь своё мнение, делать выборы по возрасту, справляться самому и ошибаться без катастрофы?',
-    anchorLow: 'Тебя контролировали, решали за тебя, критиковали или не доверяли. Ошибка была катастрофой. Самостоятельность не поощрялась.',
+    question: tr('Насколько тебе доверяли — право иметь своё мнение, делать выборы по возрасту, справляться самому и ошибаться без катастрофы?', 'Насколько вам доверяли — право иметь своё мнение, делать выборы по возрасту, справляться самому и ошибаться без катастрофы?'),
+    anchorLow: tr('Тебя контролировали, решали за тебя, критиковали или не доверяли. Ошибка была катастрофой. Самостоятельность не поощрялась.', 'Вас контролировали, решали за вас, критиковали или не доверяли. Ошибка была катастрофой. Самостоятельность не поощрялась.'),
     anchorHigh: 'Поощряли пробовать самому. Мнение уважали. Ошибки были частью взросления, а не поводом для стыда или наказания.',
     examples: [
       { score: 2, text: 'Мать решала всё — что надеть, с кем дружить, куда поступать. За ошибки стыдили или наказывали. «Что люди скажут» было важнее чем то, что я хочу. Пробовать что-то своё без разрешения было страшно.' },
@@ -50,7 +52,7 @@ const NEED_META: Record<NeedId, {
     label: 'Выражение чувств',
     emoji: '💬',
     question: 'Насколько безопасно было выражать злость, страх, грусть или несогласие — без наказания, игнорирования или стыда?',
-    anchorLow: 'Сильные чувства было опасно показывать: наказывали, игнорировали или стыдили. Научился прятать или подавлять то, что чувствуешь.',
+    anchorLow: tr('Сильные чувства было опасно показывать: наказывали, игнорировали или стыдили. Научился прятать или подавлять то, что чувствуешь.', 'Сильные чувства было опасно показывать: наказывали, игнорировали или стыдили. Научились прятать или подавлять то, что чувствуете.'),
     anchorHigh: 'Можно было плакать, злиться, бояться. Чувства принимались как норма. О своих переживаниях можно было говорить открыто.',
     examples: [
       { score: 2, text: '«Не реви», «не злись», «не выдумывай». Злость каралась, страх высмеивался, грусть игнорировалась. Выучил одно правило: чувства — личное дело, наружу не выносить. Стал «удобным» ребёнком.' },
@@ -85,7 +87,7 @@ const NEED_META: Record<NeedId, {
       { score: 9, text: 'Знал что можно, а что нет — и почему. Если нарушал — было соразмерное последствие, не катастрофа. Родители держали слово. Граница была — но с теплом, без страха. Мог предсказать как будет.' },
     ],
   },
-};
+});
 
 // Схемы, которые могут формироваться при дефиците каждой потребности
 const SCHEMA_HINTS: Record<NeedId, { domain: string; color: string; schemas: string[] }> = {
@@ -117,6 +119,7 @@ const SCHEMA_HINTS: Record<NeedId, { domain: string; color: string; schemas: str
 };
 
 function ChildhoodWheel({ ratings }: { ratings: Record<NeedId, number> }) {
+  const NEED_META = buildNeedMeta(useTr());
   const size = 220;
   const cx = size / 2;
   const cy = size / 2;
@@ -230,6 +233,8 @@ interface Props {
 }
 
 export function ChildhoodWheelSheet({ onClose, onOpenSchemas, onSaved }: Props) {
+  const tr = useTr();
+  const NEED_META = buildNeedMeta(tr);
   const alreadyDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
   const [phase, setPhase] = useState<Phase>(alreadyDone ? 'result' : 'intro');
   const [activeSchema, setActiveSchema] = useState<{ name: string; desc: string; color: string } | null>(null);
@@ -294,7 +299,7 @@ export function ChildhoodWheelSheet({ onClose, onOpenSchemas, onSaved }: Props) 
 
           <div style={{ background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 14, padding: '12px 16px', marginBottom: 24 }}>
             <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-              Это не диагностика. Оценки приблизительны и субъективны. Результаты — для твоего понимания, не для выводов.
+              Это не диагностика. Оценки приблизительны и субъективны. Результаты — {tr('для твоего понимания', 'для вашего понимания')}, не для выводов.
             </div>
           </div>
 
@@ -318,8 +323,8 @@ export function ChildhoodWheelSheet({ onClose, onOpenSchemas, onSaved }: Props) 
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-yellow)', marginBottom: 4 }}>⚠️ Осторожно: защитная идеализация</div>
             <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.65 }}>
               Психика защищает нас от боли — поэтому мы склонны помнить хорошее и не замечать систематические паттерны.
-              Оценивай <em>не отдельные моменты</em>, а то <em>как было в целом, большую часть времени</em>.
-              Под каждым ползунком — описания крайностей, а по кнопке <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', background: 'rgba(var(--fg-rgb),0.12)', fontSize: 10, fontWeight: 700, color: 'var(--text-sub)', verticalAlign: 'middle' }}>?</span> — реальные примеры из жизни. Сравни с ними.
+              {tr('Оценивай', 'Оценивайте')} <em>не отдельные моменты</em>, а то <em>как было в целом, большую часть времени</em>.
+              Под каждым ползунком — описания крайностей, а по кнопке <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', background: 'rgba(var(--fg-rgb),0.12)', fontSize: 10, fontWeight: 700, color: 'var(--text-sub)', verticalAlign: 'middle' }}>?</span> — реальные примеры из жизни. {tr('Сравни с ними.', 'Сравните с ними.')}
             </div>
           </div>
 
@@ -439,7 +444,7 @@ export function ChildhoodWheelSheet({ onClose, onOpenSchemas, onSaved }: Props) 
       {phase === 'result' && (
         <div>
           <div style={{ textAlign: 'center', marginBottom: 24, paddingTop: 4 }}>
-            <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Твоё колесо детства</div>
+            <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>{tr('Твоё колесо детства', 'Ваше колесо детства')}</div>
             <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
               Сравнение отобразится в разделе История поверх дневника
             </div>
