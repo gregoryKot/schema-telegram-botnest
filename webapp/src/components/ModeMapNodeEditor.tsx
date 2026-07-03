@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ModeMapNode, ModeMapEdge, EdgeType } from '../api';
 import { TYPE_COLORS } from './ModeMapNodes';
 import { MMIcon } from './modeMapIcons';
+import { useTr } from '../utils/addressForm';
 import { NEED_DATA, NEED_ORDER } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 
@@ -45,6 +46,7 @@ function clinicalQuestions(node: ModeMapNode): Question[] {
 function ClinicalHint({ node, onPickNote, onPickNeed, onPickHealthy }: {
   node: ModeMapNode; onPickNote: () => void; onPickNeed: () => void; onPickHealthy: () => void;
 }) {
+  const tr = useTr();
   const qs = clinicalQuestions(node);
   return (
     <div style={{
@@ -58,7 +60,7 @@ function ClinicalHint({ node, onPickNote, onPickNeed, onPickHealthy }: {
         {qs.map((q, i) => (
           <button key={i}
             onClick={() => (q.target === 'need' ? onPickNeed() : q.target === 'healthy' ? onPickHealthy() : onPickNote())}
-            title="Нажми, чтобы заполнить поле"
+            title={tr('Нажми, чтобы заполнить поле', 'Нажмите, чтобы заполнить поле')}
             style={{ display: 'flex', gap: 6, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
               padding: '3px 4px', borderRadius: 5, fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.35 }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
@@ -169,6 +171,7 @@ interface NodeEditorProps {
 }
 
 export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMode }: NodeEditorProps) {
+  const tr = useTr();
   const nameRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const needRef = useRef<HTMLInputElement>(null);
@@ -389,9 +392,9 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
           <textarea ref={healthyRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 48,
             borderColor: 'color-mix(in srgb, var(--c-moss) 45%, transparent)' }} rows={2}
             value={node.data.healthyResponse ?? ''} onChange={e => patchData({ healthyResponse: e.target.value || undefined })}
-            placeholder={node.type === 'critic' ? 'Ответ критику: «Ты не обязан быть идеальным…»'
+            placeholder={node.type === 'critic' ? tr('Ответ критику: «Ты не обязан быть идеальным…»', 'Ответ критику: «Вы не обязаны быть идеальным…»')
               : node.type === 'coping' ? 'Зачем защита? «Я могу выдержать эту боль…»'
-              : 'Поддержка ребёнку: «Я с тобой, ты в безопасности…»'} />
+              : tr('Поддержка ребёнку: «Я с тобой, ты в безопасности…»', 'Поддержка ребёнку: «Я с тобой, ты в безопасности…»')} />
         </>
       )}
 

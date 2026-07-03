@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useTr } from '../utils/addressForm';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 
 interface Props {
@@ -33,6 +34,7 @@ const SCHEMA_DESC: Record<string, string> = {
 };
 
 export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [ids, setIds] = useState<string[]>(selected);
 
@@ -46,7 +48,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
       eyebrow="Схемы"
       eyebrowColor="var(--accent)"
       title={<>Мои<br /><span className="it">схемы</span></>}
-      lede="Выбери схемы, которые тебе близки. Можно без теста – если ты уже знаешь свои."
+      lede={tr('Выбери схемы, которые тебе близки. Можно без теста – если ты уже знаешь свои.', 'Выберите схемы, которые вам близки. Можно без теста – если вы уже знаете свои.')}
     >
       {SCHEMA_DOMAINS.map(domain => (
         <div key={domain.id} style={{ marginBottom: 28 }}>

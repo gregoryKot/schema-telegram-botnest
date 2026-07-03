@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   selected: string[];
@@ -32,6 +33,7 @@ const SCHEMA_DESC: Record<string, string> = {
 };
 
 export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
+  const tr = useTr();
   const [ids, setIds] = useState<string[]>(selected);
 
   const toggle = (id: string) =>
@@ -42,7 +44,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
       <div style={{ paddingTop: 4 }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Мои схемы</div>
         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 20, lineHeight: 1.5 }}>
-          Выбери схемы, которые тебе близки. Можно без теста — если ты уже знаешь свои.
+          {tr('Выбери схемы, которые тебе близки. Можно без теста — если ты уже знаешь свои.', 'Выберите схемы, которые вам близки. Можно без теста — если вы уже знаете свои.')}
         </div>
 
         {SCHEMA_DOMAINS.map(domain => (
