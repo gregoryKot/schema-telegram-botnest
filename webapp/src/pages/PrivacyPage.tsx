@@ -164,7 +164,7 @@ export function PrivacyPage() {
             <Table rows={[
               ['Сессионные cookie (авторизация)', 'Необходимы для входа в систему. Хранятся до закрытия браузера или истечения сессии.'],
               ['Refresh-token cookie', 'Автоматическое обновление сессии. Хранится до 30 дней или до выхода из системы.'],
-              ['OAuth-cookie (oauth_state, tg_pkce_verifier, google_nonce)', 'Временные, только на время процедуры входа через Google или Telegram. Удаляются сразу после завершения авторизации (до 10 минут).'],
+              ['OAuth-cookie (oauth_state, tg_pkce_verifier)', 'Временные, только на время процедуры входа через Google или Telegram. Удаляются сразу после завершения авторизации (до 10 минут).'],
             ]} />
             <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '16px 0 0' }}><strong>Аналитические cookie – только с вашего согласия:</strong></p>
             <Table rows={[
