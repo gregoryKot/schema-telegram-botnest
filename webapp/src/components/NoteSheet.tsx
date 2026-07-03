@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function NoteSheet({ date, onClose }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [text, setText] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
@@ -70,7 +72,7 @@ export function NoteSheet({ date, onClose }: Props) {
       eyebrow="Дневник"
       eyebrowColor="var(--accent)"
       title={<>Заметка<br /><span className="it">к дню</span></>}
-      lede="Фиксируй момент – что происходило, что чувствовал."
+      lede={tr('Фиксируй момент – что происходило, что чувствовал.', 'Фиксируйте момент – что происходило, что чувствовали.')}
       aside={
         <div className="aside-card" style={{
           borderColor: 'color-mix(in srgb, var(--accent) 25%, transparent)',
@@ -139,7 +141,7 @@ export function NoteSheet({ date, onClose }: Props) {
 
       {error && (
         <div style={{ fontSize: 13, color: 'var(--c-rose)', textAlign: 'center', marginBottom: 12 }}>
-          Не удалось сохранить. Попробуй ещё раз.
+          {tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')}
         </div>
       )}
 

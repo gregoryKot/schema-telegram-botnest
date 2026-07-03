@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import type { TherapyClientSummary, UserTask, ClientConceptualization } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
@@ -69,6 +70,7 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
 
 
 export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange }: Props) {
+  const tr = useTr();
   // ─── Client list ──────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,7 +215,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                   <div className="eyebrow" style={{ marginBottom: 16 }}>Новый клиент</div>
                   <h1 className="hub-title" style={{ marginBottom: 8 }}>Добавить клиента</h1>
                   <p className="hub-sub" style={{ marginBottom: 28 }}>
-                    Введи имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.
+                    {tr('Введи имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.', 'Введите имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.')}
                   </p>
 
                   {/* Underline field */}
@@ -383,7 +385,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                 <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>
               ) : clients.length === 0 ? (
                 <div style={{ padding: '24px 0', color: 'var(--text-faint)', fontSize: 14 }}>
-                  Введи имя клиента выше, чтобы добавить первую карточку
+                  {tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')}
                 </div>
               ) : (() => {
                 const today = todayStr();
@@ -726,7 +728,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     {activeSchemaIds.length === 0 && activeModeIds.length === 0 && notes.length === 0 && clientDiary.length === 0 && (
                       <div className="section">
                         <div style={{ padding: '32px 0', color: 'var(--text-faint)', fontSize: 14 }}>
-                          Заполни концептуализацию, чтобы увидеть схемы и режимы клиента
+                          {tr('Заполни концептуализацию, чтобы увидеть схемы и режимы клиента', 'Заполните концептуализацию, чтобы увидеть схемы и режимы клиента')}
                         </div>
                         <button onClick={() => setClientTab('concept')} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                           Открыть концептуализацию

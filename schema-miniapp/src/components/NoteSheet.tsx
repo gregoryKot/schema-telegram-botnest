@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function NoteSheet({ date, onClose }: Props) {
+  const tr = useTr();
   const [text, setText] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
@@ -113,7 +115,7 @@ export function NoteSheet({ date, onClose }: Props) {
 
         {error && (
           <div style={{ fontSize: 12, color: 'rgba(255,100,100,0.8)', marginBottom: 10 }}>
-            Не удалось сохранить. Попробуй ещё раз.
+            {tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')}
           </div>
         )}
         <button

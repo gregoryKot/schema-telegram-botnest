@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTr } from '../utils/addressForm';
 import { api, TherapyClientSummary, UserTask, TherapistNote, ClientConceptualization, ClientData } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { BottomSheet } from './BottomSheet';
@@ -65,6 +66,7 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
 ];
 
 export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerRef }: Props) {
+  const tr = useTr();
   const safeTop = useSafeTop();
 
   // Client list
@@ -270,7 +272,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
 
   async function addByTelegramId() {
     const id = parseInt(addInput.trim(), 10);
-    if (!id || isNaN(id)) { setAddError('Введи числовой Telegram ID'); return; }
+    if (!id || isNaN(id)) { setAddError(tr('Введи числовой Telegram ID', 'Введите числовой Telegram ID')); return; }
     setAddLoading(true);
     setAddError('');
     try {
@@ -287,14 +289,14 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
 
   async function addVirtualClient() {
     const name = addInput.trim();
-    if (!name) { setAddError('Введи имя клиента'); return; }
+    if (!name) { setAddError(tr('Введи имя клиента', 'Введите имя клиента')); return; }
     setAddLoading(true);
     setAddError('');
     try {
       const updated = await api.addVirtualClient(name);
       setClients(updated);
       openAddMode(null);
-    } catch { setAddError('Ошибка. Попробуй ещё раз.'); } finally { setAddLoading(false); }
+    } catch { setAddError(tr('Ошибка. Попробуй ещё раз.', 'Ошибка. Попробуйте ещё раз.')); } finally { setAddLoading(false); }
   }
 
   // ─── Notes ───────────────────────────────────────────────────────────────────
@@ -356,7 +358,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
       setLocalConcept(saved);
       setConceptDirty(false);
     } catch (e: any) {
-      setConceptError(e?.message?.startsWith('API') ? 'Ошибка сервера. Попробуй позже.' : (e?.message ?? 'Ошибка сохранения'));
+      setConceptError(e?.message?.startsWith('API') ? tr('Ошибка сервера. Попробуй позже.', 'Ошибка сервера. Попробуйте позже.') : (e?.message ?? 'Ошибка сохранения'));
     } finally { setConceptSaving(false); }
   }
 
@@ -641,7 +643,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
               <div style={{ color: 'var(--text-sub)', fontSize: 14, textAlign: 'center', paddingTop: 40 }}>Загружаю...</div>
             ) : clients.length === 0 ? (
               <div style={{ color: 'var(--text-sub)', fontSize: 14, textAlign: 'center', paddingTop: 20, lineHeight: 1.8 }}>
-                Нет подключённых клиентов.<br />Нажми <strong style={{ color: 'var(--accent)' }}>+</strong> чтобы добавить.
+                Нет подключённых клиентов.<br />{tr('Нажми', 'Нажмите')} <strong style={{ color: 'var(--accent)' }}>+</strong> чтобы добавить.
               </div>
             ) : clients.map(c => {
               const isToday = c.lastActiveDate === today;
