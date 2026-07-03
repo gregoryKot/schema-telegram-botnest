@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import { SCHEMA_DOMAINS, getModeById } from '../schemaTherapyData';
 
@@ -34,6 +35,7 @@ type Tab = 'cards' | 'diary' | 'exercises';
 interface Props { onClose: () => void; }
 
 export function MyNotesSheet({ onClose }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [tab, setTab] = useState<Tab>('cards');
   const [loading, setLoading] = useState(true);
@@ -153,7 +155,7 @@ export function MyNotesSheet({ onClose }: Props) {
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                       <div className="mode-card-name">{(s as any).emoji ?? '●'} {s.name}</div>
                                       <div className="mode-card-short">
-                                        {filled && note ? `Заполнено · ${notePreview(note).slice(0, 40)}` : 'Нажми, чтобы заполнить →'}
+                                        {filled && note ? `Заполнено · ${notePreview(note).slice(0, 40)}` : tr('Нажми, чтобы заполнить →', 'Нажмите, чтобы заполнить →')}
                                       </div>
                                     </div>
                                   </div>
@@ -183,7 +185,7 @@ export function MyNotesSheet({ onClose }: Props) {
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div className="mode-card-name">{m.emoji} {m.name}</div>
                                 <div className="mode-card-short">
-                                  {filled && note ? `Заполнено · ${notePreview(note).slice(0, 40)}` : 'Нажми, чтобы заполнить →'}
+                                  {filled && note ? `Заполнено · ${notePreview(note).slice(0, 40)}` : tr('Нажми, чтобы заполнить →', 'Нажмите, чтобы заполнить →')}
                                 </div>
                               </div>
                             </div>
