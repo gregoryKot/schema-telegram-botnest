@@ -10,6 +10,7 @@ import { IndexInfoSheet } from './IndexInfoSheet';
 import { NEED_DATA } from '../needData';
 import { shouldShowPracticesOnboarding, PRACTICES_ONBOARDING_KEY } from './PracticesOnboarding';
 import { TaskCreateSheet } from './TaskCreateSheet';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   needs: Need[];
@@ -71,15 +72,18 @@ function DonutRing({ percent }: { percent: number }) {
 
 const ONBOARDING_KEY = 'onboarding_v2_done';
 
-const ONBOARDING_STEPS = [
+const buildOnboardingSteps = (tr: (ty: string, vy: string) => string) => [
   {
     emoji: '👆',
-    title: 'Оценивай действия',
-    text: 'Не «я вроде чувствую близость», а «кто-то обнял» или «я сказал, что думаю». Оценка от 1 до 10 – потяни ползунок.',
+    title: tr('Оценивай действия', 'Оценивайте действия'),
+    text: tr(
+      'Не «я вроде чувствую близость», а «кто-то обнял» или «я сказал, что думаю». Оценка от 1 до 10 – потяни ползунок.',
+      'Не «я вроде чувствую близость», а «кто-то обнял» или «я сказал, что думаю». Оценка от 1 до 10 – потяните ползунок.',
+    ),
   },
   {
     emoji: '💡',
-    title: 'Нажми на потребность',
+    title: tr('Нажми на потребность', 'Нажмите на потребность'),
     text: 'Там объяснение что это, советы и мини-практика. Это ключ к пониманию паттерна.',
   },
   {
@@ -90,16 +94,18 @@ const ONBOARDING_STEPS = [
 ];
 
 function OnboardingCard({ onDismiss }: { onDismiss: () => void }) {
+  const tr = useTr();
   const [step, setStep] = useState(0);
-  const total = ONBOARDING_STEPS.length;
-  const current = ONBOARDING_STEPS[step];
+  const steps = buildOnboardingSteps(tr);
+  const total = steps.length;
+  const current = steps[step];
   const isLast = step === total - 1;
 
   return (
     <div style={{ borderBottom: '1px solid rgba(var(--fg-rgb),0.07)', paddingBottom: 20, marginBottom: 24 }}>
       {/* Step dots */}
       <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
-        {ONBOARDING_STEPS.map((_, i) => (
+        {steps.map((_, i) => (
           <div key={i} onClick={() => setStep(i)} style={{ width: i === step ? 18 : 6, height: 6, borderRadius: 3, background: i === step ? 'var(--text)' : 'rgba(var(--fg-rgb),0.15)', cursor: 'pointer', transition: 'all 0.2s' }} />
         ))}
       </div>
@@ -129,6 +135,7 @@ function OnboardingCard({ onDismiss }: { onDismiss: () => void }) {
 }
 
 export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved, onNote, onOpenPractices, onPlanCreated, plannedNeedIds, onClose: _onClose, onOpenHelp }: Props) {
+  const tr = useTr();
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const unlockTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -339,7 +346,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
         >
           <span style={{ fontSize: 20, flexShrink: 0 }}>🗂</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Что тебе помогает?</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{tr('Что тебе помогает?', 'Что вам помогает?')}</div>
             <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>Добавь практики – будут под рукой в нужный момент</div>
           </div>
           <button

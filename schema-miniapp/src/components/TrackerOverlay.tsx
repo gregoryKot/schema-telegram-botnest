@@ -20,6 +20,7 @@ import { NeedDial } from './NeedDial';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { useSafeTop } from '../utils/safezone';
 import { api, StreakData } from '../api';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   needs: Need[];
@@ -40,10 +41,10 @@ interface Props {
 }
 
 const ONBOARDING_KEY = 'tracker_onboarding_v1';
-const ONBOARDING_STEPS = [
-  { emoji: '👆', title: 'Оценивай действия',
+const buildOnboardingSteps = (tr: (ty: string, vy: string) => string) => [
+  { emoji: '👆', title: tr('Оценивай действия', 'Оценивайте действия'),
     text: 'Не «я вроде чувствую», а конкретные моменты. Тап по дуге или +/−.' },
-  { emoji: '💡', title: 'Нажми на название',
+  { emoji: '💡', title: tr('Нажми на название', 'Нажмите на название'),
     text: 'Там вопрос для рефлексии, примеры и диапазоны оценки.' },
   { emoji: '📊', title: 'Паттерн — через 3–5 дней',
     text: 'Всё сохраняется. Динамика появится в разделе «История».' },
@@ -80,6 +81,8 @@ export function TrackerOverlay({
   date, onDone,
 }: Props) {
   const safeTop = useSafeTop();
+  const tr = useTr();
+  const onbSteps = buildOnboardingSteps(tr);
   const timers  = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const unlockTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -237,19 +240,19 @@ export function TrackerOverlay({
           <div style={{ background:'var(--surface)', border:'1px solid var(--border-color)',
             borderRadius:16, padding:'14px 16px' }}>
             <div style={{ display:'flex', gap:5, marginBottom:10 }}>
-              {ONBOARDING_STEPS.map((_,i)=>(
+              {onbSteps.map((_,i)=>(
                 <div key={i} style={{ width:i===onbStep?16:6, height:6, borderRadius:3,
                   background:i===onbStep?'var(--accent)':'var(--surface-2)', transition:'all 0.2s' }}/>
               ))}
             </div>
             <div style={{ display:'flex', gap:12, alignItems:'flex-start', marginBottom:12 }}>
-              <span style={{ fontSize:22, flexShrink:0 }}>{ONBOARDING_STEPS[onbStep].emoji}</span>
+              <span style={{ fontSize:22, flexShrink:0 }}>{onbSteps[onbStep].emoji}</span>
               <div>
                 <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', marginBottom:4 }}>
-                  {ONBOARDING_STEPS[onbStep].title}
+                  {onbSteps[onbStep].title}
                 </div>
                 <div style={{ fontSize:12, color:'var(--text-sub)', lineHeight:1.55 }}>
-                  {ONBOARDING_STEPS[onbStep].text}
+                  {onbSteps[onbStep].text}
                 </div>
               </div>
             </div>

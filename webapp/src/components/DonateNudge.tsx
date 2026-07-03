@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useTr } from '../utils/addressForm';
 
 // Periodic in-app donate nudge (like a soft onboarding reminder). Shows at most
 // once every ~30 days, never to a brand-new user (skips the very first session),
@@ -9,6 +10,7 @@ const SEEN_KEY = 'donateNudgeSeen';
 const PERIOD = 30 * 24 * 60 * 60 * 1000;
 
 export function DonateNudge() {
+  const tr = useTr();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ function DonateNudgeSheet({ onClose }: { onClose: () => void }) {
         <div style={{ fontSize: 44, marginBottom: 12 }}>💛</div>
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 400, color: 'var(--text)', margin: '0 0 8px' }}>Поддержать проект</h2>
         <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, margin: '0 0 22px' }}>
-          «Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. Это правда помогает. 🙏
+          {tr('«Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. Это правда помогает. 🙏', '«Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите развитие любой суммой. Это правда помогает. 🙏')}
         </p>
         <a href="/donate" onClick={close} style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '14px', fontSize: 16, fontWeight: 700, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12, textDecoration: 'none', marginBottom: 10 }}>
           Поддержать
