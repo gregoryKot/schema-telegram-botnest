@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   onOpenSchemaDiary: () => void;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function FloatingPill({ onOpenSchemaDiary, onOpenModeDiary, onOpenGratitude, onOpenTracker }: Props) {
+  const tr = useTr();
   const [showPicker, setShowPicker] = useState(false);
 
   return (
@@ -53,7 +55,7 @@ export function FloatingPill({ onOpenSchemaDiary, onOpenModeDiary, onOpenGratitu
             </div>
             <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.07)', paddingTop: 14 }}>
               <div className="eyebrow" style={{ marginBottom: 12 }}>Оценить день</div>
-              <DiaryTypeButton emoji="📅" label="Трекер потребностей" sub="Оцени день по пяти шкалам" color="#fb923c"
+              <DiaryTypeButton emoji="📅" label="Трекер потребностей" sub={tr('Оцени день по пяти шкалам', 'Оцените день по пяти шкалам')} color="#fb923c"
                 onClick={() => { setShowPicker(false); onOpenTracker(); }} />
             </div>
           </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, UserPractice } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
+import { useTr } from '../utils/addressForm';
 
 function ianaToUtcOffset(iana: string): number {
   try {
@@ -71,6 +72,7 @@ function defaultReminderIdx(): number {
 }
 
 export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSaved }: Props) {
+  const tr = useTr();
   const [userPractices, setUserPractices] = useState<UserPractice[]>([]);
   const [selectedText, setSelectedText] = useState('');
   const [customText, setCustomText] = useState('');
@@ -143,7 +145,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
         </div>
         <div>
           <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2 }}>
-            Что сделаешь завтра?
+            {tr('Что сделаешь завтра?', 'Что сделаете завтра?')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 2 }}>
             {needLabel}
@@ -334,7 +336,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
 
           {saveError && (
             <div style={{ fontSize: 13, color: '#ff6b6b', textAlign: 'center', marginBottom: 12 }}>
-              Не удалось сохранить. Попробуй ещё раз.
+              {tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')}
             </div>
           )}
           <div style={{ display: 'flex', gap: 10 }}>

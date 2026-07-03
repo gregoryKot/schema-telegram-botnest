@@ -10,6 +10,7 @@ import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateShe
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { hasDraft } from '../utils/drafts';
+import { useTr } from '../utils/addressForm';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
@@ -181,6 +182,7 @@ export function TodaySection({
   onOpenDiaries, onOpenChildhoodWheel,
   refreshKey, userRole, onOpenTherapistCabinet, onTasksChanged,
 }: Props) {
+  const tr = useTr();
   const [profile,        setProfile]        = useState<UserProfile | null>(null);
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(MY_SCHEMA_IDS_KEY));
   const [recentDiaries,  setRecentDiaries]  = useState<Array<{ type: string; label: string; time: string; dateStr: string }>>([]);
@@ -549,7 +551,7 @@ export function TodaySection({
             {streak}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 6 }}>
-            {streak === 0 ? 'Оцени потребности – начнётся стрик' : 'дней подряд'}
+            {streak === 0 ? tr('Оцени потребности – начнётся стрик', 'Оцените потребности – начнётся стрик') : 'дней подряд'}
           </div>
 
         </aside>

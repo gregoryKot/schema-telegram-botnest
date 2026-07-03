@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTr } from '../utils/addressForm';
 
 // Periodic in-app donate nudge: shows at most once every ~30 days, skips the
 // very first session + first 3 days, fully dismissible. Opens the donate page
@@ -8,6 +9,7 @@ const SEEN_KEY = 'donateNudgeSeen';
 const DAY = 24 * 60 * 60 * 1000;
 
 export function DonateNudge() {
+  const tr = useTr();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export function DonateNudge() {
         <div style={{ fontSize: 44, marginBottom: 12 }}>💛</div>
         <div style={{ fontFamily: 'var(--serif, inherit)', fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Поддержать проект</div>
         <div style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 22 }}>
-          «Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. 🙏
+          {tr('«Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. 🙏', '«Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите развитие любой суммой. 🙏')}
         </div>
         <button onClick={donate} style={{ width: '100%', padding: '14px', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 12, cursor: 'pointer', marginBottom: 10 }}>
           Поддержать
