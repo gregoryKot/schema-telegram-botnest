@@ -25,6 +25,7 @@ import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { AddressFormPicker } from './components/AddressFormPicker';
 import { LandingPage } from './pages/LandingPage';
+import { ProductLandingPage } from './pages/ProductLandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { OfferPage } from './pages/OfferPage';
 import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
@@ -108,7 +109,7 @@ const personalRoutes = [
 ];
 
 const appRoutes = [
-  { path: '/',               element: <Navigate to="/login" replace /> },
+  { path: '/',               element: <ProductLandingPage /> },
   { path: '/subscribe',      element: <SubscribePage /> },
   { path: '/donate',         element: <DonatePage /> },
   // Admin panel is gated by its own key (not the app login), so it's reachable
