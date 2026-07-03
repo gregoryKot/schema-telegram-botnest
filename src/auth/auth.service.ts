@@ -272,9 +272,24 @@ export class AuthService {
       return { ok: false, conflictUserId: String(existing.userId) };
     }
 
-    await (this.prisma as any).authProvider.create({
-      data: { userId, provider, providerId, displayName, email },
-    });
+    try {
+      await (this.prisma as any).authProvider.create({
+        data: { userId, provider, providerId, displayName, email },
+      });
+    } catch (e: any) {
+      // Race: a concurrent request inserted the same (provider, providerId)
+      // between the findUnique above and this create. Re-resolve deterministically
+      // instead of crashing on the unique constraint (mirrors the atomic-upsert
+      // fix in findOrCreateUserByProvider).
+      if (e?.code === 'P2002') {
+        const now = await (this.prisma as any).authProvider.findUnique({
+          where: { provider_providerId: { provider, providerId } },
+        });
+        if (now && String(now.userId) === String(userId)) return { ok: true };
+        if (now) return { ok: false, conflictUserId: String(now.userId) };
+      }
+      throw e;
+    }
     this.logger.log(`Linked ${provider} provider to userId ${userId}`);
     return { ok: true };
   }
