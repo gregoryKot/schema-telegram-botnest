@@ -51,7 +51,7 @@ type TrackerTab = 'today' | 'history';
 const NAV_ITEMS: { id: Section; label: string }[] = [
   { id: 'today',    label: 'Сегодня' },
   { id: 'diary',    label: 'Дневник' },
-  { id: 'schemas',  label: 'Схемы' },
+  { id: 'schemas',  label: 'Паттерны' },
   { id: 'practice', label: 'Практика' },
   { id: 'profile',  label: 'Профиль' },
 ];
@@ -59,7 +59,7 @@ const NAV_ITEMS: { id: Section; label: string }[] = [
 const SIDEBAR_NAV_ITEMS = NAV_ITEMS.filter(i => i.id !== 'profile');
 
 const SECTION_LABELS: Record<Section, string> = {
-  today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', practice: 'Практика',
+  today: 'Сегодня', diary: 'Дневник', schemas: 'Паттерны', profile: 'Профиль', practice: 'Практика',
 };
 
 function sectionFromPath(path: string): Section {
@@ -580,7 +580,7 @@ export function AppShell() {
               </ErrorBoundary>
             )}
             {section === 'schemas' && (
-              <ErrorBoundary section="Схемы" key="schemas-boundary">
+              <ErrorBoundary section="Паттерны" key="schemas-boundary">
                 <SchemasSection
                   onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setSchemaHighlight(opts?.highlight); setShowSchemaInfo(true); }}
                   childhoodRatings={childhoodRatings}

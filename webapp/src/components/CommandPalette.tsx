@@ -19,7 +19,7 @@ interface Props {
 const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'today',   label: 'Сегодня',  sub: 'Главная',   hint: '⌘ 1' },
   { id: 'diary',   label: 'Дневник',  sub: 'Записи',    hint: '⌘ 2' },
-  { id: 'schemas', label: 'Схемы',    sub: '20 схем',   hint: '⌘ 3' },
+  { id: 'schemas', label: 'Паттерны', sub: '20 схем',   hint: '⌘ 3' },
   { id: 'profile', label: 'Профиль',  sub: 'Аккаунт',   hint: '⌘ 4' },
   { id: 'practice', label: 'Практика', sub: 'Практики',  hint: '⌘ 5' },
 ];
