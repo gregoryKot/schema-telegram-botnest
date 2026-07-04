@@ -3,14 +3,14 @@ import type { ModeMapNode, ModeMapEdge, EdgeType } from '../api';
 import { TYPE_COLORS } from './ModeMapNodes';
 import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
-import { NEED_DATA, NEED_ORDER } from '../needData';
+import { NEED_ORDER, getNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 
 // Preview fill — token-aware (color-mix) with a legacy-hex fallback.
 const previewFill = (c: string) => c.startsWith('#') ? `${c}22` : `color-mix(in srgb, ${c} 14%, transparent)`;
 
 // 5 core emotional needs (schema therapy) — datalist options for unmet need
-const CORE_NEEDS = NEED_ORDER.map(id => NEED_DATA[id]?.name).filter(Boolean) as string[];
+const CORE_NEEDS = NEED_ORDER.map(id => getNeedData('ty')[id]?.name).filter(Boolean) as string[];
 
 type CopingSubtype = 'over' | 'avoid' | 'surr';
 

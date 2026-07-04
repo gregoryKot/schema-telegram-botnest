@@ -3,7 +3,7 @@ import { api, UserPractice } from '../api';
 import { Loader } from './Loader';
 import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { useTr } from '../utils/addressForm';
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
@@ -18,6 +18,7 @@ interface Props {
 }
 
 export function PracticesScreen({ onClose, onOpenTracker }: Props) {
+  const NEED_DATA = useNeedData();
   const tr = useTr();
   const safeTop = useSafeTop();
   const [needIdx, setNeedIdx] = useState(0);

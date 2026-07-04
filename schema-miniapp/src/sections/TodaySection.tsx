@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import { Need, UserProfile, COLORS } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { api, StreakData, UserTask } from '../api';
 import { Section } from '../components/BottomNav';
 import { useSafeTop } from '../utils/safezone';
@@ -97,6 +97,7 @@ function NeedMini({ need, value, yesterday, onTap }: {
   yesterday?: number;
   onTap: () => void;
 }) {
+  const NEED_DATA = useNeedData();
   const color  = COLORS[need.id] ?? '#888';
   const rgb    = hexToRgb(color);
   const filled = value !== undefined && value !== null;

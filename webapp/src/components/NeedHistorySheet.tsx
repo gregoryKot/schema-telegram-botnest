@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
 import { COLORS } from '../types';
 import type { Need, DayHistory } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { getTherapistContact } from '../utils/therapistContact';
@@ -25,6 +25,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const NEED_DATA = useNeedData();
   const data = NEED_DATA[need.id];
   if (!data) return null;
   const color = COLORS[need.id] ?? '#888';

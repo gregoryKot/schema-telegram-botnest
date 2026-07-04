@@ -15,7 +15,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Need, COLORS, YESTERDAY } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { NeedDial } from './NeedDial';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { useSafeTop } from '../utils/safezone';
@@ -80,6 +80,7 @@ export function TrackerOverlay({
   onOpenNote, onOpenGoal, onOpenHistory, yesterdayRatings = {},
   date, onDone,
 }: Props) {
+  const NEED_DATA = useNeedData();
   const safeTop = useSafeTop();
   const tr = useTr();
   const onbSteps = buildOnboardingSteps(tr);

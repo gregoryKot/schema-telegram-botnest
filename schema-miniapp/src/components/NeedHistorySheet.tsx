@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
 import { Need, DayHistory, COLORS } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { getTherapistContact } from '../utils/therapistContact';
@@ -23,6 +23,7 @@ interface Props {
 export function NeedHistorySheet({ need, value, history, childhoodValue, onClose }: Props) {
   const tr = useTr();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const NEED_DATA = useNeedData();
   const data = NEED_DATA[need.id];
   if (!data) return null;
   const color = COLORS[need.id] ?? '#888';

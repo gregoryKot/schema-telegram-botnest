@@ -3,7 +3,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import type { Need } from '../types';
 import { api } from '../api';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { COLORS } from '../types';
 import { CURATED } from './PlanSheet';
 
@@ -75,6 +75,7 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
 
   const currentNeed = step !== 'intro' ? needs[step as number] : null;
   const color = currentNeed ? COLORS[currentNeed.id] ?? '#888' : 'var(--accent)';
+  const NEED_DATA = useNeedData();
   const emoji = currentNeed ? NEED_DATA[currentNeed.id]?.emoji ?? '' : '';
   const total = needs.length;
   const progress = step === 'intro' ? 0 : ((step as number) + 1) / total;

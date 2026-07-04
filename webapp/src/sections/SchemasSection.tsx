@@ -3,7 +3,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
 import { fmtDate } from '../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, ALL_MODES } from '../schemaTherapyData';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { SchemaPickerSheet } from '../components/SchemaPickerSheet';
 import { useTr } from '../utils/addressForm';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
@@ -54,6 +54,7 @@ interface Props {
 }
 
 export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel }: Props) {
+  const NEED_DATA = useNeedData();
   const tr = useTr();
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(MY_SCHEMA_IDS_KEY));
   const [myModeIds, setMyModeIds]         = useState<string[]>(() => readLocalIds(MY_MODE_IDS_KEY));
