@@ -31,12 +31,16 @@ export function ArticlesListPage() {
               <Link key={a.slug} to={`/articles/${a.slug}`} style={{ textDecoration: 'none' }}>
                 <div style={{
                   padding: '28px 0', borderTop: '1px solid var(--line)',
-                  display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'start',
+                  display: 'flex', gap: 24, alignItems: 'start',
                   transition: 'opacity .15s',
                 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '.7'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}>
-                  <div>
+                  {a.heroImage && (
+                    <img src={a.heroImage} alt="" loading="lazy" decoding="async"
+                      style={{ width: 104, height: 78, objectFit: 'cover', borderRadius: 12, flexShrink: 0, display: 'block' }} />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '0 0 10px', letterSpacing: '-.01em', lineHeight: 1.3 }}>
                       {a.title}
                     </h2>
@@ -109,8 +113,17 @@ export function ArticlePage() {
   }
 
   const safeHtml = DOMPurify.sanitize(article.content, {
-    ALLOWED_TAGS: ['h2', 'h3', 'p', 'strong', 'em', 'ul', 'ol', 'li', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'a', 'br'],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
+    ALLOWED_TAGS: [
+      'h2', 'h3', 'p', 'strong', 'b', 'em', 'i', 'ul', 'ol', 'li', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'a', 'br',
+      // inline diagrams (SVG). No <marker>/<script> — arrowheads are polygons.
+      'figure', 'figcaption', 'svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'text', 'tspan', 'defs',
+    ],
+    ALLOWED_ATTR: [
+      'href', 'target', 'rel', 'class', 'viewBox', 'role', 'aria-label',
+      'd', 'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap',
+      'x', 'y', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r', 'rx', 'ry', 'points',
+      'transform', 'text-anchor', 'width', 'height', 'opacity', 'font-size',
+    ],
   });
 
   return (
@@ -134,7 +147,12 @@ export function ArticlePage() {
           </p>
         </div>
 
-        <div style={{ height: 1, background: 'var(--line)', margin: '0 0 40px' }} />
+        {article.heroImage ? (
+          <img src={article.heroImage} alt="" loading="lazy" decoding="async"
+            style={{ width: '100%', height: 'auto', maxHeight: 380, objectFit: 'cover', borderRadius: 20, display: 'block', margin: '0 0 44px' }} />
+        ) : (
+          <div style={{ height: 1, background: 'var(--line)', margin: '0 0 40px' }} />
+        )}
 
         <div className="article-content" dangerouslySetInnerHTML={{ __html: safeHtml }} />
         <style>{`
@@ -150,6 +168,30 @@ export function ArticlePage() {
           .article-content th { padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--line); font-weight: 700; color: var(--text); font-size: 13px; }
           .article-content td { padding: 10px 14px; border-bottom: 1px solid var(--line); line-height: 1.6; }
           .article-content a { color: var(--accent); }
+          /* ── Inline diagrams ── */
+          .article-content figure.dg { margin: 32px 0; padding: 24px 20px 18px; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 20px; }
+          .article-content figure.dg svg { display: block; width: 100%; height: auto; }
+          .article-content figure.dg figcaption { margin-top: 14px; font-size: 13px; line-height: 1.6; color: var(--text-sub); text-align: center; }
+          .article-content figure.dg figcaption b { color: var(--text); font-weight: 600; }
+          .dg-node { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; }
+          .dg-accent { fill: var(--accent); stroke: var(--accent); }
+          .dg-t { fill: var(--text); font-family: var(--sans); font-weight: 700; font-size: 15px; }
+          .dg-t-on { fill: #fff; font-family: var(--sans); font-weight: 700; font-size: 15px; }
+          .dg-t-acc { fill: var(--accent); font-family: var(--sans); font-weight: 700; font-size: 14px; }
+          .dg-s { fill: var(--text-sub); font-family: var(--sans); font-size: 12px; }
+          .dg-s-on { fill: rgba(255,255,255,.86); font-family: var(--sans); font-size: 12px; }
+          .dg-cap { fill: var(--text-faint); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
+          .dg-cap-acc { fill: var(--accent); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
+          .dg-cap-on { fill: rgba(255,255,255,.8); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
+          .dg-flow { stroke: var(--accent); stroke-width: 2; fill: none; }
+          .dg-flow-soft { stroke: var(--text-faint); stroke-width: 1.6; fill: none; stroke-dasharray: 5 5; }
+          .dg-head { fill: var(--accent); }
+          .dg-head-soft { fill: var(--text-faint); }
+          .dg-lbl { fill: var(--accent); font-family: var(--sans); font-size: 12px; font-weight: 600; }
+          .dg-water { fill: var(--accent-soft); }
+          .dg-waterline { stroke: var(--accent); stroke-width: 1.5; opacity: .5; }
+          .dg-ice { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; }
+          .dg-ice-sub { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; opacity: .92; }
         `}</style>
 
         <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 20 }}>

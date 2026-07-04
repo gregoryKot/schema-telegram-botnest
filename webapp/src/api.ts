@@ -138,10 +138,10 @@ export interface AdminBooking {
   cancelToken: string; meetingUrl: string | null;
 }
 export interface ArticleSummary {
-  id: number; slug: string; title: string; description: string; date: string; readMin: number;
+  id: number; slug: string; title: string; description: string; date: string; readMin: number; heroImage?: string | null;
 }
 export interface Article extends ArticleSummary { content: string; }
-export type ArticleDto = { slug: string; title: string; description: string; content: string; date: string; readMin: number; };
+export type ArticleDto = { slug: string; title: string; description: string; content: string; date: string; readMin: number; heroImage?: string | null; };
 export interface MarqueeTopic { label: string; href: string; }
 export interface SiteContent { heroPhoto: string | null; marqueeTopicsA: MarqueeTopic[]; marqueeTopicsB: MarqueeTopic[]; }
 export interface UserPractice { id: number; needId: string; text: string; }
