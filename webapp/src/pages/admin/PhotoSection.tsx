@@ -1,31 +1,10 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { card, btn } from './shared';
+import { compressImage } from './imageCompress';
 
-const MAX_WIDTH = 800;
-const MAX_DATA_URI_BYTES = 200 * 1024; // stay under the 220kb server-side limit
-
-// Resizes to MAX_WIDTH and re-compresses as JPEG, lowering quality until the
-// data URI fits the size budget (a hero photo doesn't need to be pixel-perfect).
-async function compressImage(file: File): Promise<string> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_WIDTH / bitmap.width);
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas not supported');
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-
-  let quality = 0.85;
-  let dataUri = canvas.toDataURL('image/jpeg', quality);
-  while (dataUri.length > MAX_DATA_URI_BYTES && quality > 0.3) {
-    quality -= 0.1;
-    dataUri = canvas.toDataURL('image/jpeg', quality);
-  }
-  if (dataUri.length > MAX_DATA_URI_BYTES) throw new Error('Не удалось сжать фото до нужного размера');
-  return dataUri;
-}
+// Portrait hero photo — narrower and a touch tighter budget than article images.
+const compressPhoto = (file: File) => compressImage(file, 800, 200 * 1024);
 
 /** Photo admin tab: upload + client-side compress the hero photo shown on the landing page. */
 export function PhotoSection({ adminKey }: { adminKey: string }) {
@@ -42,7 +21,7 @@ export function PhotoSection({ adminKey }: { adminKey: string }) {
     if (!file) return;
     setError(null);
     try {
-      setPreview(await compressImage(file));
+      setPreview(await compressPhoto(file));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось обработать фото');
     }

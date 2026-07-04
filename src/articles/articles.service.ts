@@ -1,6 +1,12 @@
 import { Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ARTICLE_SEED } from './articles.seed';
+import { injectDiagram } from './article-diagrams';
+
+// Bump this when the built-in article content changes (e.g. new diagrams) so a
+// running instance refreshes the seeded articles on next start.
+const SEED_VERSION = '2';
+const SEED_VERSION_KEY = 'articlesSeedVersion';
 
 export interface ArticleDto {
   slug: string;
@@ -9,6 +15,7 @@ export interface ArticleDto {
   content: string;
   date: string;
   readMin: number;
+  heroImage?: string | null;
 }
 
 /** CRUD for blog articles. Public reads, admin-only writes. */
@@ -18,21 +25,46 @@ export class ArticlesService implements OnModuleInit {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // One-time seed of the articles that used to be hardcoded in the webapp.
-  // Only runs while the table is empty, so it never overwrites admin edits.
+  // Seed / refresh the built-in articles (the ones that used to be hardcoded in
+  // the webapp). Version-gated: on an empty table we insert everything; on a
+  // SEED_VERSION bump we refresh the built-in articles' text/diagrams by slug.
+  // heroImage is never overwritten (admin uploads survive), and articles the
+  // admin created (slugs not in the seed) are never touched.
   async onModuleInit() {
-    const count = await this.prisma.article.count();
-    if (count > 0) return;
-    await this.prisma.article.createMany({
-      data: ARTICLE_SEED.map((a) => ({ ...a, date: new Date(a.date) })),
+    const stored = await this.prisma.bookingSetting.findUnique({ where: { key: SEED_VERSION_KEY } });
+    if (stored?.value === SEED_VERSION) return;
+
+    const seed = ARTICLE_SEED.map((a) => ({
+      ...a,
+      date: new Date(a.date),
+      content: injectDiagram(a.slug, a.content),
+    }));
+
+    for (const a of seed) {
+      const existing = await this.prisma.article.findUnique({ where: { slug: a.slug } });
+      if (!existing) {
+        await this.prisma.article.create({ data: a });
+      } else {
+        // Refresh built-in text/diagrams; keep any admin-uploaded hero image.
+        await this.prisma.article.update({
+          where: { slug: a.slug },
+          data: { title: a.title, description: a.description, content: a.content, date: a.date, readMin: a.readMin },
+        });
+      }
+    }
+
+    await this.prisma.bookingSetting.upsert({
+      where: { key: SEED_VERSION_KEY },
+      create: { key: SEED_VERSION_KEY, value: SEED_VERSION },
+      update: { value: SEED_VERSION },
     });
-    this.logger.log(`Seeded ${ARTICLE_SEED.length} articles`);
+    this.logger.log(`Articles seeded/refreshed to version ${SEED_VERSION}`);
   }
 
   async list() {
     return this.prisma.article.findMany({
       orderBy: { date: 'desc' },
-      select: { id: true, slug: true, title: true, description: true, date: true, readMin: true },
+      select: { id: true, slug: true, title: true, description: true, date: true, readMin: true, heroImage: true },
     });
   }
 
