@@ -36,7 +36,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
             fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400,
             color: 'var(--text)', lineHeight: 1.2, marginBottom: 14,
           }}>
-            Давайте вместе позаботимся о клиентах
+            Немного о заботе о клиентах
           </h1>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7 }}>
             Здесь будет ваша работа с людьми, которые вам доверились. Одна маленькая
@@ -107,7 +107,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
           className="ex-btn ex-btn-primary"
           style={{ width: '100%', padding: '16px', fontSize: 16 }}
         >
-          Спасибо, буду беречь клиентов
+          Спасибо, буду иметь в виду
         </button>
       </div>
     </div>
