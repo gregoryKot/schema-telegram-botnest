@@ -197,7 +197,7 @@ export function ProductLandingPage() {
   const ctaRef      = useReveal() as React.RefObject<HTMLElement>;
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', flex: 1, minWidth: 0, overflowX: 'hidden' }}>
 
       {/* ── Навбар ── */}
       <header style={{
