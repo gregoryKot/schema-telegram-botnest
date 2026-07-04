@@ -10,7 +10,6 @@ const SEEN_KEY = 'donateNudgeSeen';
 const PERIOD = 30 * 24 * 60 * 60 * 1000;
 
 export function DonateNudge() {
-  const tr = useTr();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -30,6 +29,7 @@ export function DonateNudge() {
 }
 
 function DonateNudgeSheet({ onClose }: { onClose: () => void }) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const close = () => { localStorage.setItem(SHOWN_KEY, String(Date.now())); goBack(); };
 
