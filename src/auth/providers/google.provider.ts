@@ -5,8 +5,18 @@ import { AuthProviderHandler, ProviderIdentity } from './types';
 
 // Google's public keys (JWKS). jose caches internally and re-fetches on cache miss.
 // Fetched lazily on first token verification — no outbound request at startup.
-const GOOGLE_JWKS_URI  = 'https://www.googleapis.com/oauth2/v3/certs';
-const GOOGLE_TOKEN_URI = 'https://oauth2.googleapis.com/token';
+const GOOGLE_JWKS_URI = 'https://www.googleapis.com/oauth2/v3/certs';
+
+// Token endpoint + его легаси-алиасы на других доменах. С хостинга (Amvera)
+// oauth2.googleapis.com может быть недостижим на сетевом уровне («fetch
+// failed»), при этом www.googleapis.com доступен — JWKS исторически ходил
+// именно туда. Пробуем по очереди; HTTP-ответ с ошибкой от Google — финален,
+// fallback только при сетевых сбоях.
+const GOOGLE_TOKEN_URIS = [
+  'https://oauth2.googleapis.com/token',
+  'https://www.googleapis.com/oauth2/v4/token',
+  'https://accounts.google.com/o/oauth2/token',
+];
 
 @Injectable()
 export class GoogleProvider implements AuthProviderHandler {
@@ -58,27 +68,38 @@ export class GoogleProvider implements AuthProviderHandler {
       redirect_uri:  redirectUri,
     });
 
-    let idToken: string;
-    try {
-      const res = await fetch(GOOGLE_TOKEN_URI, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body.toString(),
-        signal: AbortSignal.timeout(10_000),
-      });
-      const data = (await res.json()) as {
+    let lastNetErr: Error | null = null;
+    for (const endpoint of GOOGLE_TOKEN_URIS) {
+      let res: Response;
+      try {
+        res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString(),
+          signal: AbortSignal.timeout(10_000),
+        });
+      } catch (e: any) {
+        // Сетевой сбой (DNS/TLS/timeout) — пробуем следующий алиас.
+        const cause = e?.cause;
+        const detail = cause ? ` | cause: ${cause.code ?? cause.message ?? cause}` : '';
+        this.logger.warn(`Google token endpoint unreachable (${endpoint}): ${e.message}${detail}`);
+        lastNetErr = e;
+        continue;
+      }
+
+      const data = (await res.json().catch(() => ({}))) as {
         id_token?: string; error?: string; error_description?: string;
       };
       if (!res.ok || data.error || !data.id_token) {
-        throw new Error(data.error_description ?? data.error ?? `HTTP ${res.status}`);
+        // HTTP-ответ получен — это вердикт Google, fallback не поможет.
+        this.logger.error(`Google token exchange rejected (${endpoint}): ${data.error_description ?? data.error ?? `HTTP ${res.status}`}`);
+        throw new UnauthorizedException('Google token exchange failed');
       }
-      idToken = data.id_token;
-    } catch (e: any) {
-      this.logger.error(`Google token exchange failed: ${e.message}`);
-      throw new UnauthorizedException('Google token exchange failed');
+      return this.decodeIdentity(data.id_token);
     }
 
-    return this.decodeIdentity(idToken);
+    this.logger.error(`Google token exchange failed: all endpoints unreachable, last: ${lastNetErr?.message}`);
+    throw new UnauthorizedException('Google token exchange failed');
   }
 
   // Verify id_token signature + claims via Google's JWKS. The token comes
