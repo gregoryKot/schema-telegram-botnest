@@ -115,7 +115,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
 
   return (
-    <div className="page-inner">
+    <div className="page-inner-wide">
 
       {/* ── Хедер ── */}
       <div style={{ marginBottom: 40 }}>

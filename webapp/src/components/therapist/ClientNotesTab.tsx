@@ -35,7 +35,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
 
   if (total === 0) {
     return (
-      <div className="page-inner" style={{ paddingTop: 40 }}>
+      <div className="page-inner-wide" style={{ paddingTop: 40 }}>
         <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)', fontSize: 14 }}>
           Клиент ещё не заполнял дневник
         </div>
@@ -44,7 +44,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
   }
 
   return (
-    <div className="page-inner" style={{ paddingTop: 40 }}>
+    <div className="page-inner-wide" style={{ paddingTop: 40 }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>Записи клиента</div>
