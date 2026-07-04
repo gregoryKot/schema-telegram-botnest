@@ -102,7 +102,7 @@ export function PairSheet({ onClose }: Props) {
               const color = done ? indexColor(partner.partnerIndex!) : 'rgba(var(--fg-rgb),0.35)';
               const idx = partner.partnerIndex ?? 0;
               const contextMsg = !done
-                ? `${name} ещё не заполнил дневник — когда заполнит, увидишь как день`
+                ? `${name} ещё не заполнил дневник — когда заполнит, день появится здесь`
                 : idx < 4
                   ? `Сегодня у ${name} непростой день. Иногда просто написать пару слов — уже помогает`
                   : idx < 7

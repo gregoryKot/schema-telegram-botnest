@@ -205,7 +205,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
           )}
 
           <div style={{ marginBottom: 8 }}>
-            <SectionLabel>{allOptions.length > 0 ? 'Или своя' : 'Что планируешь сделать?'}</SectionLabel>
+            <SectionLabel>{allOptions.length > 0 ? 'Или своя' : tr('Что планируешь сделать?', 'Что планируете сделать?')}</SectionLabel>
             <textarea
               value={customText}
               onChange={e => setCustomText(e.target.value)}

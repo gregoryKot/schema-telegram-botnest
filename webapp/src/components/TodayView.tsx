@@ -258,7 +258,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color }}>Сделать завтра что-то для себя</div>
                   <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2, lineHeight: 1.4 }}>
-                    Один маленький шаг – пока помнишь
+                    Один маленький шаг – {tr('пока помнишь', 'пока помните')}
                   </div>
                 </div>
                 <span style={{ fontSize: 16, color: color + '88', flexShrink: 0 }}>›</span>

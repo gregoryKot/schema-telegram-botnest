@@ -19,9 +19,9 @@ interface Props {
 }
 
 const DIARY_META: Record<DiaryType, { title: string; emoji: string; color: string; emptyLine1: string; emptyLine2: string; fabLabel: string }> = {
-  schema:    { title: 'Дневник схем',          emoji: '📓', color: 'var(--accent-red)',   emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Когда что-то триггернёт — возвращайся и записывай.', fabLabel: '+ Записать момент' },
-  mode:      { title: 'Дневник режимов',       emoji: '🔄', color: 'var(--accent-blue)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Как только поймаешь себя в знакомом состоянии — приходи записать.', fabLabel: '+ Записать режим' },
-  gratitude: { title: 'Дневник благодарности', emoji: '🌱', color: 'var(--accent-green)', emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Начни сегодня — достаточно трёх вещей.', fabLabel: '+ Записать' },
+  schema:    { title: 'Дневник схем',          emoji: '📓', color: 'var(--accent-red)',   emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Когда что-то триггернёт — можно вернуться и записать.', fabLabel: '+ Записать момент' },
+  mode:      { title: 'Дневник режимов',       emoji: '🔄', color: 'var(--accent-blue)',  emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Как только замечается знакомое состояние — можно записать.', fabLabel: '+ Записать режим' },
+  gratitude: { title: 'Дневник благодарности', emoji: '🌱', color: 'var(--accent-green)', emptyLine1: 'Пока здесь тихо.', emptyLine2: 'Можно начать сегодня — достаточно трёх вещей.', fabLabel: '+ Записать' },
 };
 
 function formatDt(iso: string) {

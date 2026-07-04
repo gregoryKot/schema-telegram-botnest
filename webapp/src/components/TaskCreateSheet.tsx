@@ -28,7 +28,7 @@ const TASK_OPTIONS: TaskOption[] = [
   { type: 'safe_place',     label: 'Безопасное место',     sub: 'Описать и перечитывать',                   time: '20 мин',             color: 'var(--c-moss)'   },
   { type: 'diary_streak',   label: 'Дневник',              sub: 'Заполнять N дней подряд',                  hasStreak: true, time: '5–10 мин/день', color: 'var(--accent-indigo)' },
   { type: 'flashcard',      label: 'Мне сейчас плохо',     sub: 'Разобрать ситуацию – 5 шагов',             time: '10 мин',             color: 'var(--c-rose)'   },
-  { type: 'custom',         label: 'Своё задание',         sub: 'Любой текст, который сформулируешь сам',   time: '–',                  color: 'var(--text-sub)' },
+  { type: 'custom',         label: 'Своё задание',         sub: 'Любой текст в свободной форме',   time: '–',                  color: 'var(--text-sub)' },
 ];
 
 const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(s => ({ id: s.id, name: s.name, domainColor: d.color })));

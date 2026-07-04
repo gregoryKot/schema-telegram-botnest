@@ -48,7 +48,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
     'Кто-то, кто помог или поддержал...',
     'Момент, который хочется запомнить...',
     'Что-то простое, что согрело...',
-    'Что-то, что обычно не замечаешь...',
+    'Что-то, что обычно ускользает...',
   ];
 
   return (
@@ -59,7 +59,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
           {dateLabel}
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 16, lineHeight: 1.6 }}>
-          За что ты благодарен сегодня? Даже самое маленькое — оно важно.
+          За что есть благодарность сегодня? Даже самое маленькое — оно важно.
         </div>
 
         {items.map((item, i) => (

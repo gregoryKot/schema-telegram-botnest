@@ -44,7 +44,7 @@ const QUESTIONS: { key: keyof IntroData; label: string; hint: string; placeholde
   {
     key: 'behavior',
     label: 'Как проявляется в поведении',
-    hint: 'Что делаешь (или перестаёшь делать) в этом режиме',
+    hint: 'Что происходит в поведении в этом режиме',
     placeholder: 'Замолкаю, избегаю, злюсь, переусердствую...',
   },
 ];
