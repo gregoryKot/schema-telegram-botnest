@@ -385,7 +385,7 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
   );
 
   return (
-    <div className="page-inner">
+    <div className="page-inner-wide">
 
         {/* ── Hero ── */}
         <div className="diary-hero">

@@ -1149,7 +1149,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
             {/* ── SESSIONS ─────────────────────────────────────────────────────── */}
             {clientTab === 'sessions' && (
-              <div className="page-inner" style={{ paddingTop: 40 }}>
+              <div className="page-inner-wide" style={{ paddingTop: 40 }}>
                 {/* Composer */}
                 <div style={{ marginBottom: 0 }}>
                   <div className="eyebrow" style={{ marginBottom: 16 }}>
@@ -1210,7 +1210,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               const activeTasks  = clientTasks.filter(t => !t.done);
               const doneTasks    = clientTasks.filter(t => t.done === true);
               return (
-              <div className="page-inner" style={{ paddingTop: 40 }}>
+              <div className="page-inner-wide" style={{ paddingTop: 40 }}>
 
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40 }}>
