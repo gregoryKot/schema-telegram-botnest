@@ -414,8 +414,10 @@ export function ProductLandingPage() {
         @keyframes pl-drift { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(3%,4%) scale(1.06); } }
         @keyframes pl-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.65); } }
 
-        .reveal-section { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s ease; }
-        .reveal-section.revealed { opacity: 1; transform: none; }
+        /* Только сдвиг, без opacity — текст всегда полностью виден (даже если
+           переход подтормаживает или .revealed не успел примениться). */
+        .reveal-section { transform: translateY(18px); transition: transform .6s cubic-bezier(.16,1,.3,1); }
+        .reveal-section.revealed { transform: none; }
 
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after {
@@ -424,7 +426,7 @@ export function ProductLandingPage() {
             transition-duration: .15s !important;
             scroll-behavior: auto !important;
           }
-          .reveal-section { opacity: 1 !important; transform: none !important; }
+          .reveal-section { transform: none !important; }
         }
 
         @media (max-width: 900px) {
