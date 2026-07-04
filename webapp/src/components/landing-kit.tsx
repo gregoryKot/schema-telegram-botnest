@@ -102,7 +102,10 @@ export function useReveal() {
       { threshold: 0.08 },
     );
     obs.observe(el);
-    return () => obs.disconnect();
+    // Safety net: never leave a section permanently hidden if the observer is
+    // throttled or misfires (past bug: blank sections). Force-reveal after 2.5s.
+    const fallback = window.setTimeout(() => el.classList.add('revealed'), 2500);
+    return () => { obs.disconnect(); window.clearTimeout(fallback); };
   }, []);
   return ref;
 }
