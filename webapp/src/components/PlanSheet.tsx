@@ -171,7 +171,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
           <div className="prompt">
             <div className="prompt-num">·</div>
             <div style={{ width: '100%' }}>
-              <div className="prompt-label">{allOptions.length > 0 ? 'Или своё' : 'Что планируешь?'}</div>
+              <div className="prompt-label">{allOptions.length > 0 ? 'Или своё' : tr('Что планируешь?', 'Что планируете?')}</div>
               <textarea
                 value={customText}
                 onChange={e => setCustomText(e.target.value)}

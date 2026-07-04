@@ -67,7 +67,7 @@ export function ModeMapViewer() {
         </div>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Карты режимов пока нет</div>
         <div style={{ fontSize: 13, textAlign: 'center', maxWidth: 300, lineHeight: 1.5 }}>
-          Терапевт создаёт её вместе с тобой на сессии — она появится здесь.
+          Терапевт создаёт её на сессии — она появится здесь.
         </div>
       </div>
     );

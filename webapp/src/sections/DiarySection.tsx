@@ -336,7 +336,7 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
   const QUICK_ADD = [
     { type: 'schema'    as DiaryType, color: 'var(--c-rose)',  eyebrow: 'Дневник схем',    title: 'Записать момент',  desc: 'Триггер · чувства · мысли · схема · здоровый взгляд', foot: '8–15 мин' },
     { type: 'mode'      as DiaryType, color: 'var(--c-slate)', eyebrow: 'Дневник режимов', title: 'Записать режим',   desc: 'Кто взял управление, что включило, что было нужно',   foot: '5–10 мин' },
-    { type: 'gratitude' as DiaryType, color: 'var(--c-moss)',  eyebrow: 'Благодарность',   title: 'Три вещи',        desc: 'За что благодаришь сегодня. Даже самое маленькое',    foot: '2–5 мин' },
+    { type: 'gratitude' as DiaryType, color: 'var(--c-moss)',  eyebrow: 'Благодарность',   title: 'Три вещи',        desc: 'За что есть благодарность сегодня. Даже самое маленькое',    foot: '2–5 мин' },
   ];
 
   const FILTERS: { id: Filter; label: string }[] = [
