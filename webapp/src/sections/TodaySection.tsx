@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { COLORS } from '../types';
 import type { Need, UserProfile } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { api } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
 import type { Section } from '../components/BottomNav';
@@ -183,6 +183,7 @@ export function TodaySection({
   refreshKey, userRole, onOpenTherapistCabinet, onTasksChanged,
 }: Props) {
   const tr = useTr();
+  const NEED_DATA = useNeedData();
   const [profile,        setProfile]        = useState<UserProfile | null>(null);
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(MY_SCHEMA_IDS_KEY));
   const [recentDiaries,  setRecentDiaries]  = useState<Array<{ type: string; label: string; time: string; dateStr: string }>>([]);

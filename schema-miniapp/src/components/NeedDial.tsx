@@ -6,7 +6,7 @@
 
 import React, { useCallback, useRef } from 'react';
 import { Need } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 
 interface Props {
   need: Need;
@@ -43,6 +43,7 @@ function hexToRgb(hex: string): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function NeedDial({ need, color, value, onChange, size = DEFAULT_SIZE }: Props) {
+  const NEED_DATA = useNeedData();
   const cx = size / 2;
   const cy = size / 2 + 8; // slightly below center for better arc feel
   const r  = size * 0.386;

@@ -3,7 +3,7 @@ import { api, PracticePlan } from '../api';
 import { Loader } from './Loader';
 import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 
 interface Props {
   onClose: () => void;
@@ -144,6 +144,7 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
   const isPending  = plan.done === null;
   const colors     = statusColor(plan.done);
   const needColor  = COLORS[plan.needId] ?? 'var(--accent)';
+  const NEED_DATA = useNeedData();
   const needData   = NEED_DATA[plan.needId];
 
   function checkin(done: boolean) {

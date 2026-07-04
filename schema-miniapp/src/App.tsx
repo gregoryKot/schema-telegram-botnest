@@ -53,7 +53,7 @@ const YESTERDAY_DATE = (() => {
 })();
 
 import { TaskCreateSheet } from './components/TaskCreateSheet';
-import { ABOUT_TEXT, NEEDS_EXPLAINER } from './aboutData';
+import { useAboutText, NEEDS_EXPLAINER } from './aboutData';
 
 type TrackerTab = 'today' | 'history';
 
@@ -280,6 +280,7 @@ const SECTIONS: Section[] = ['today', 'help', 'schemas', 'profile'];
 
 export default function App() {
   const { flags: serverFlags } = useUserFlags();
+  const ABOUT_TEXT = useAboutText();
   const [section, setSection] = useState<Section>(getInitialSection);
   const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
   const [disclaimerDone, setDisclaimerDone] = useState(

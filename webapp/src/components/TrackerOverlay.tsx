@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { COLORS, YESTERDAY } from '../types';
 import type { Need } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { api } from '../api';
@@ -107,6 +107,7 @@ export function TrackerOverlay({
   const allRated = needs.every(n => (effectiveRatings[n.id] ?? 0) > 0);
   const yval = yesterdayRatings[need.id] ?? YESTERDAY[need.id];
   const delta = (!isBackfill && value > 0 && yval !== undefined) ? value - yval : null;
+  const NEED_DATA = useNeedData();
   const extra = NEED_DATA[need.id];
   const needName = extra?.name ?? need.chartLabel;
 

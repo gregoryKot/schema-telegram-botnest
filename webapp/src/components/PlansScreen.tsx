@@ -3,7 +3,7 @@ import { api } from '../api';
 import type { PracticePlan } from '../api';
 import { Loader } from './Loader';
 import { COLORS } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 
 interface Props {
@@ -125,6 +125,7 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
   const isPending  = plan.done === null;
   const colors     = statusColor(plan.done);
   const needColor  = COLORS[plan.needId] ?? 'var(--accent)';
+  const NEED_DATA = useNeedData();
   const needData   = NEED_DATA[plan.needId];
 
   function checkin(done: boolean) {

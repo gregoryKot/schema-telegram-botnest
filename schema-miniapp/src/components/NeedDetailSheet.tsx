@@ -1,5 +1,5 @@
 import { BottomSheet } from './BottomSheet';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 
 const NEED_COLORS: Record<string, string> = {
@@ -27,6 +27,7 @@ interface Props {
 }
 
 export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onClose }: Props) {
+  const NEED_DATA = useNeedData();
   const need = NEED_DATA[needId];
   const color = NEED_COLORS[needId] ?? '#a78bfa';
 

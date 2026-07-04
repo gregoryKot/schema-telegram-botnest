@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Need } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { COLORS } from '../types';
 import { api } from '../api';
 import { BottomSheet } from './BottomSheet';
@@ -24,6 +24,7 @@ export function ReflectionSheet({ date, needs, ratings, onClose }: Props) {
     ? ratedNeeds.reduce((min, n) => (ratings[n.id] ?? 10) < (ratings[min.id] ?? 10) ? n : min)
     : null;
 
+  const NEED_DATA = useNeedData();
   const question = lowestNeed ? NEED_DATA[lowestNeed.id]?.question : null;
   const color = lowestNeed ? (COLORS[lowestNeed.id] ?? 'var(--accent)') : 'var(--accent)';
 

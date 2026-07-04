@@ -5,7 +5,7 @@ import { Loader } from './Loader';
 import { COLORS } from '../types';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
@@ -19,6 +19,7 @@ interface Props {
 }
 
 export function PracticesScreen({ onClose, onOpenTracker }: Props) {
+  const NEED_DATA = useNeedData();
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [needIdx, setNeedIdx] = useState(0);

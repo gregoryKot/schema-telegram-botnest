@@ -13,7 +13,7 @@ import { api } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
 import { fmtDate } from '../utils/format';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
-import { NEED_ORDER, NEED_DATA } from '../needData';
+import { NEED_ORDER, useNeedData } from '../needData';
 
 const NEED_COLORS: Record<string, string> = {
   attachment: 'var(--c-plum)',
@@ -109,6 +109,7 @@ function TaskLine({ task, onOpen, onComplete, fromTherapist }: { task: UserTask;
 }
 
 export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, onOpenSchema, practiceCount, planCount, refreshKey, initialTasks, onTasksChanged, userRole: _userRole, onOpenTherapistCabinet: _onOpenTherapistCabinet }: Props) {
+  const NEED_DATA = useNeedData();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
   const [showFlashcard, setShowFlashcard] = useState(false);

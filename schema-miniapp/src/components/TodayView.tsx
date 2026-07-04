@@ -5,7 +5,7 @@ import { NeedSlider } from './NeedSlider';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { PlanSheet } from './PlanSheet';
 import { IndexInfoSheet } from './IndexInfoSheet';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { shouldShowPracticesOnboarding, PRACTICES_ONBOARDING_KEY } from './PracticesOnboarding';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { useTr } from '../utils/addressForm';
@@ -139,6 +139,7 @@ function OnboardingCard({ onDismiss }: { onDismiss: () => void }) {
 }
 
 export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved, onNote, onOpenPractices, onPlanCreated, plannedNeedIds, onClose, onOpenHelp }: Props) {
+  const NEED_DATA = useNeedData();
   const tr = useTr();
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const unlockTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
