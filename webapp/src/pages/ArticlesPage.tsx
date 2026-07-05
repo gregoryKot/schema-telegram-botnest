@@ -174,6 +174,7 @@ export function ArticlePage() {
           .article-content figure.dg figcaption { margin-top: 14px; font-size: 13px; line-height: 1.6; color: var(--text-sub); text-align: center; }
           .article-content figure.dg figcaption b { color: var(--text); font-weight: 600; }
           .dg-node { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; }
+          .dg-chip { fill: var(--accent-soft); stroke: none; }
           .dg-accent { fill: var(--accent); stroke: var(--accent); }
           .dg-t { fill: var(--text); font-family: var(--sans); font-weight: 700; font-size: 15px; }
           .dg-t-on { fill: #fff; font-family: var(--sans); font-weight: 700; font-size: 15px; }
