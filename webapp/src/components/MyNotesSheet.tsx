@@ -89,8 +89,10 @@ export function MyNotesSheet({ onClose }: Props) {
     ]).finally(() => setLoading(false));
   }, []);
 
-  const allSchemaIds = [...new Set([...mySchemaIds, ...ysqSchemaIds])];
-  const allModeIds   = myModeIds;
+  // Включаем и id, по которым уже есть заполненная карточка — иначе карточку,
+  // сохранённую без добавления схемы в коллекцию, в архиве «не найти».
+  const allSchemaIds = [...new Set([...mySchemaIds, ...ysqSchemaIds, ...schemaNotes.map(n => n.schemaId)])];
+  const allModeIds   = [...new Set([...myModeIds, ...modeNotes.map(n => n.modeId)])];
   const cardCount    = allSchemaIds.length + allModeIds.length;
 
   const TABS: { id: Tab; label: string; count: number }[] = [
