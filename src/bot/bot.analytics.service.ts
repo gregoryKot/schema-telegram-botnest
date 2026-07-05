@@ -142,6 +142,45 @@ export class BotAnalyticsService {
     });
   }
 
+  /**
+   * Сводный «портрет» по всей истории: сколько дней всего, сильнейшая и слабейшая
+   * потребности (all-time средние). Питает value-based возвраты (comeback / value_recap):
+   * возвращаем не «я есть», а зеркало собственных данных юзера.
+   * null, если данных мало (<5 дней) — новичку такой инсайт был бы шумом.
+   */
+  async getProfileInsight(userId: bigint): Promise<{
+    totalDays: number;
+    strongest: NeedId; strongestAvg: number;
+    weakest: NeedId; weakestAvg: number;
+  } | null> {
+    const rows = await this.prisma.rating.findMany({
+      where: { userId },
+      select: { date: true, needId: true, value: true },
+    });
+    if (rows.length === 0) return null;
+    const totalDays = new Set(rows.map((r) => r.date)).size;
+    if (totalDays < 5) return null;
+
+    const byNeed = new Map<NeedId, { sum: number; n: number }>();
+    for (const r of rows) {
+      const cur = byNeed.get(r.needId as NeedId) ?? { sum: 0, n: 0 };
+      cur.sum += r.value; cur.n++;
+      byNeed.set(r.needId as NeedId, cur);
+    }
+    const avgs = [...byNeed.entries()]
+      .filter(([, v]) => v.n >= 3) // потребность отмечалась хотя бы 3 раза — иначе среднее не значимо
+      .map(([needId, v]) => ({ needId, avg: v.sum / v.n }));
+    if (avgs.length === 0) return null;
+    avgs.sort((a, b) => b.avg - a.avg);
+    const strongest = avgs[0];
+    const weakest = avgs[avgs.length - 1];
+    return {
+      totalDays,
+      strongest: strongest.needId, strongestAvg: strongest.avg,
+      weakest: weakest.needId, weakestAvg: weakest.avg,
+    };
+  }
+
   async getAchievements(userId: bigint): Promise<Array<{ id: string; earned: boolean }>> {
     const streak = await this.getStreakData(userId);
     const total = streak.totalDays;

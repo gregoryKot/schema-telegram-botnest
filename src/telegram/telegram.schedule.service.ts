@@ -53,7 +53,7 @@ export class TelegramScheduleService implements OnModuleInit {
     const today = localDateString(s.notifyTimezone, new Date());
     const due = !s.notifyNextRemindDate || today >= s.notifyNextRemindDate;
     if (hadPending || due) {
-      await this.plannerService.scheduleReminder(userId, s.notifyLocalHour, s.notifyTimezone);
+      await this.plannerService.scheduleReminder(userId, s.notifyLocalHour, s.notifyTimezone, new Date(), !!s.notifyGamified);
     }
   }
 
@@ -209,7 +209,14 @@ export class TelegramScheduleService implements OnModuleInit {
       const last = await this.notificationService.lastSentAt(userId, 'comeback');
       const sentToday = last !== null && localDateString(tz, last) === todayStr;
       if (!sentToday && !await this.notificationService.hasPending(userId, 'comeback')) {
-        await this.notificationService.schedule(userId, 'comeback', new Date(), { totalDays: total });
+        // Value-based возврат: добавляем зеркало собственных данных (сильнейшая потребность).
+        const insight = await this.analyticsService.getProfileInsight(userId);
+        const strongestNeed = insight
+          ? this.botService.getNeeds().find((n) => n.id === insight.strongest)?.chartLabel
+          : undefined;
+        await this.notificationService.schedule(userId, 'comeback', new Date(), {
+          totalDays: total, strongestNeed, strongestAvg: insight?.strongestAvg,
+        });
       }
       return;
     }

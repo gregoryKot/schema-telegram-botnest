@@ -2,7 +2,7 @@ import { Markup } from 'telegraf';
 import { NotificationType } from './notification.service';
 import { BOOKING_URL, MINIAPP_URL, DONATE_URL } from '../telegram/telegram.constants';
 import { Need, NeedId } from '../bot/bot.service';
-import { renderSoftTemplate } from './notification.templates.soft';
+import { renderSoftTemplate, pluralDays } from './notification.templates.soft';
 import { AddressForm, t } from './address-form';
 
 const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
@@ -123,8 +123,16 @@ export function renderTemplate(
       } else if (lowestNeed) {
         text += ` ${t(form, 'Обрати', 'Обратите')} внимание на ${lowestNeed}.`;
       }
-      if (streak && streak >= 3) {
-        text += `\n\n🔥 Серия: ${streak} ${streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'} подряд.`;
+      // Игровой режим (opt-in): позитивная срочность — показываем серию с 1 дня
+      // и подсвечиваем «ещё день до вехи». Для остальных — серия только с 3 дней,
+      // без давления. gamified/approachingStreak кладёт planner.
+      const gamified = payload?.gamified as boolean | undefined;
+      const approaching = payload?.approachingStreak as number | undefined;
+      if (streak && (streak >= 3 || (gamified && streak >= 1))) {
+        text += `\n\n🔥 Серия: ${streak} ${pluralDays(streak)} подряд.`;
+      }
+      if (gamified && approaching) {
+        text += `\n🎯 Ещё один день — и будет ${approaching} ${pluralDays(approaching)} подряд.`;
       }
       return {
         text,
@@ -203,6 +211,17 @@ export function renderTemplate(
 
     case 'donate_reminder': {
       const seed = (payload?.seed as number | undefined) ?? 0;
+      const totalDays = payload?.totalDays as number | undefined;
+      // Value-anchored ask: у давних юзеров привязываем просьбу к их собственному
+      // вкладу («ты уже N дней…») — реципрокность + якорь ценности сильнее общего текста.
+      if (totalDays && totalDays >= 30) {
+        return {
+          text: t(form,
+            `💛 Ты уже ${totalDays} ${pluralDays(totalDays)} наблюдаешь за собой во «Всё по схеме» — и всё это время оно бесплатное и без рекламы. Если приложение приносит пользу, разовый донат помогает его развивать.`,
+            `💛 Вы уже ${totalDays} ${pluralDays(totalDays)} наблюдаете за собой во «Всё по схеме» — и всё это время оно бесплатное и без рекламы. Если приложение приносит пользу, разовый донат помогает его развивать.`),
+          keyboard: Markup.inlineKeyboard([[donateButton]]),
+        };
+      }
       const msg = DONATE_MESSAGES[seed % DONATE_MESSAGES.length];
       return {
         text: t(form, msg[0], msg[1]),

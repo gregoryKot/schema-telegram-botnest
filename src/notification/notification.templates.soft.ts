@@ -36,15 +36,43 @@ export function renderSoftTemplate(
   switch (type) {
     case 'comeback': {
       const totalDays = payload?.totalDays as number | undefined;
+      const strongest = payload?.strongestNeed as string | undefined;
+      const strongestAvg = payload?.strongestAvg as number | undefined;
       const daysLine = totalDays && totalDays > 1
         ? t(form,
             `\nВсего у тебя уже ${totalDays} ${pluralDays(totalDays)} наблюдений. Они никуда не делись.`,
             `\nВсего у вас уже ${totalDays} ${pluralDays(totalDays)} наблюдений. Они никуда не делись.`)
         : '';
+      // Value-based штрих: зеркало собственных данных, а не просто «я есть».
+      const valueLine = strongest && strongestAvg !== undefined
+        ? t(form,
+            `\nТвоя опора всё это время — ${strongest.toLowerCase()} (в среднем ${strongestAvg.toFixed(1)}).`,
+            `\nВаша опора всё это время — ${strongest.toLowerCase()} (в среднем ${strongestAvg.toFixed(1)}).`)
+        : '';
       return {
         text: t(form,
           'С возвращением. Ты снова здесь — это главное.',
-          'С возвращением. Вы снова здесь — это главное.') + daysLine,
+          'С возвращением. Вы снова здесь — это главное.') + daysLine + valueLine,
+      };
+    }
+
+    // День 14 без записей: возврат через зеркало СОБСТВЕННЫХ данных, а не «я есть».
+    // Заполняет окно между dormant_7 и reengagement_30.
+    case 'value_recap': {
+      const totalDays = payload?.totalDays as number | undefined;
+      const strongest = payload?.strongest as string | undefined;
+      const strongestAvg = payload?.strongestAvg as number | undefined;
+      const weakest = payload?.weakest as string | undefined;
+      const weakestAvg = payload?.weakestAvg as number | undefined;
+      if (!strongest || !weakest || strongestAvg === undefined || weakestAvg === undefined) return null;
+      const daysPart = totalDays
+        ? t(form, `За ${totalDays} ${pluralDays(totalDays)} наблюдений `, `За ${totalDays} ${pluralDays(totalDays)} наблюдений `)
+        : 'За это время ';
+      return {
+        text: t(form,
+          `${daysPart}у тебя сложилась картина: ${strongest.toLowerCase()} — твоя опора (в среднем ${strongestAvg.toFixed(1)}), ${weakest.toLowerCase()} чаще проседала (${weakestAvg.toFixed(1)}).\n\nЭто твои данные — они никуда не делись. Захочешь глянуть, что изменилось, — дневник на месте.`,
+          `${daysPart}у вас сложилась картина: ${strongest.toLowerCase()} — ваша опора (в среднем ${strongestAvg.toFixed(1)}), ${weakest.toLowerCase()} чаще проседала (${weakestAvg.toFixed(1)}).\n\nЭто ваши данные — они никуда не делись. Захотите глянуть, что изменилось, — дневник на месте.`),
+        keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
     }
 
