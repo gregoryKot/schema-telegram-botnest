@@ -339,6 +339,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 {(settings.notifyEnabled || settings.notifyReminderEnabled) && (<>
                   <SRow title="Время" right={<ChevronVal text={`${pad(localHour)}:00`} />} onClick={() => setSubView('time')} />
                   <SRow title="Частота" right={<ChevronVal text={FREQ_LABELS[settings.notifyFrequency ?? 0]} small />} onClick={() => setSubView('freq')} />
+                  <SRow title="Игровой режим" sub="Серии и «ещё день до вехи»" right={<Toggle on={!!settings.notifyGamified} onClick={() => patch({ notifyGamified: !settings.notifyGamified })} />} />
                   <SRow title="Тихие часы" right={<ChevronVal text={quietLabel(settings.notifyQuietStart, settings.notifyQuietEnd)} small />} onClick={() => setSubView('quiet')} />
                   <SRow title="Часовой пояс" right={<ChevronVal text={tzLabel} small />} onClick={() => setSubView('tz')} />
                   {hourInQuiet(localHour, settings.notifyQuietStart, settings.notifyQuietEnd) && (

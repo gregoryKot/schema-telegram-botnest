@@ -376,6 +376,7 @@ export class ApiController {
       notifyFrequency: s?.notifyFrequency ?? 0,
       notifyQuietStart: s?.notifyQuietStart ?? 22,
       notifyQuietEnd: s?.notifyQuietEnd ?? 8,
+      notifyGamified: s?.notifyGamified ?? false,
       notifyPausedUntil: s?.notifyPausedUntil?.toISOString() ?? null,
       addressForm: s?.addressForm ?? null,
       pairCardDismissed: s?.pairCardDismissed ?? false,
@@ -389,11 +390,12 @@ export class ApiController {
   @Post('settings')
   async updateSettings(
     @Req() req: AuthRequest,
-    @Body() body: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; notifyFrequency?: number; notifyQuietStart?: number; notifyQuietEnd?: number; notifyPausedUntil?: null; addressForm?: string; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean },
+    @Body() body: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; notifyFrequency?: number; notifyQuietStart?: number; notifyQuietEnd?: number; notifyGamified?: boolean; notifyPausedUntil?: null; addressForm?: string; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean },
   ) {
     const clean: Parameters<typeof this.botService.updateUserSettings>[1] = {};
     if (typeof body.notifyEnabled === 'boolean') clean.notifyEnabled = body.notifyEnabled;
     if (typeof body.notifyReminderEnabled === 'boolean') clean.notifyReminderEnabled = body.notifyReminderEnabled;
+    if (typeof body.notifyGamified === 'boolean') clean.notifyGamified = body.notifyGamified;
     if (typeof body.pairCardDismissed === 'boolean') clean.pairCardDismissed = body.pairCardDismissed;
     if (Number.isInteger(body.notifyLocalHour) && body.notifyLocalHour! >= 0 && body.notifyLocalHour! <= 23) clean.notifyLocalHour = body.notifyLocalHour;
     if (typeof body.notifyTimezone === 'string' && VALID_TIMEZONES.includes(body.notifyTimezone)) clean.notifyTimezone = body.notifyTimezone;

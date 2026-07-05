@@ -46,6 +46,8 @@ function makeDeps() {
     getConsecutiveDays: jest.fn().mockResolvedValue(0),
     getHistoryRatings: jest.fn().mockResolvedValue([]),
     getLowStreakNeeds: jest.fn().mockResolvedValue([]),
+    getTotalDaysFilled: jest.fn().mockResolvedValue(0),
+    getProfileInsight: jest.fn().mockResolvedValue(null),
   } as any;
   return { notifications, cadence, botService, analytics };
 }
@@ -206,6 +208,62 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       deps.botService.getMissedPlans.mockResolvedValue([{ practiceText: 'Позвонить другу' }]);
       await svc.planDay(makeUser(), NOW);
       expect(scheduledTypes(deps)).toEqual(['reminder']);
+    });
+  });
+
+  describe('value_recap (день 14)', () => {
+    it('день 14 + есть портрет → value_recap с данными', async () => {
+      const { svc, deps } = make();
+      deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(14);
+      deps.analytics.getProfileInsight.mockResolvedValue({
+        totalDays: 20, strongest: 'attachment', strongestAvg: 7.2, weakest: 'autonomy', weakestAvg: 4.1,
+      });
+      await svc.planDay(makeUser(), NOW);
+      expect(scheduledTypes(deps)).toEqual(['value_recap']);
+      const payload = deps.notifications.schedule.mock.calls[0][3];
+      expect(payload).toMatchObject({ totalDays: 20, strongest: 'Привязанность', weakest: 'Автономия' });
+    });
+
+    it('день 14 без портрета → тишина (не шлём value_recap)', async () => {
+      const { svc, deps } = make();
+      deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(14);
+      deps.analytics.getProfileInsight.mockResolvedValue(null);
+      await svc.planDay(makeUser(), NOW);
+      expect(deps.notifications.schedule).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('игровой режим', () => {
+    it('gamified + серия 6 → reminder с approachingStreak=7', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getConsecutiveDays.mockResolvedValue(6);
+      await svc.planDay(makeUser({ notifyGamified: true }), NOW);
+      const payload = deps.notifications.schedule.mock.calls[0][3];
+      expect(payload.gamified).toBe(true);
+      expect(payload.approachingStreak).toBe(7);
+    });
+
+    it('не gamified → approachingStreak undefined', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getConsecutiveDays.mockResolvedValue(6);
+      await svc.planDay(makeUser(), NOW);
+      const payload = deps.notifications.schedule.mock.calls[0][3];
+      expect(payload.gamified).toBe(false);
+      expect(payload.approachingStreak).toBeUndefined();
+    });
+  });
+
+  describe('value-anchored донат', () => {
+    it('1-е число → donate_reminder с totalDays', async () => {
+      const { svc, deps } = make();
+      deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
+      deps.analytics.getTotalDaysFilled.mockResolvedValue(45);
+      await svc.planDay(makeUser(), FIRST_OF_MONTH);
+      expect(scheduledTypes(deps)).toEqual(['donate_reminder']);
+      const payload = deps.notifications.schedule.mock.calls[0][3];
+      expect(payload.totalDays).toBe(45);
     });
   });
 });

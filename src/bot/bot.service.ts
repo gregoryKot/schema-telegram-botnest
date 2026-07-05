@@ -156,6 +156,7 @@ export class BotService {
         notifyFrequency: true,
         notifyQuietStart: true,
         notifyQuietEnd: true,
+        notifyGamified: true,
         notifyPausedUntil: true,
         notifyNextRemindDate: true,
         addressForm: true,
@@ -171,7 +172,7 @@ export class BotService {
     return decryptRecord(row as any, { jsonArrays: ['mySchemaIds', 'myModeIds'] });
   }
 
-  async updateUserSettings(userId: bigint, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; notifyFrequency?: number; notifyQuietStart?: number; notifyQuietEnd?: number; notifyPausedUntil?: Date | null; addressForm?: string; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean }) {
+  async updateUserSettings(userId: bigint, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; notifyFrequency?: number; notifyQuietStart?: number; notifyQuietEnd?: number; notifyGamified?: boolean; notifyPausedUntil?: Date | null; addressForm?: string; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean }) {
     const enc = encryptRecord(data as Record<string, unknown>, { jsonArrays: ['mySchemaIds', 'myModeIds'] });
     await this.prisma.user.update({ where: { id: userId }, data: enc as any });
   }
@@ -226,6 +227,7 @@ export class BotService {
       where: { notifyEnabled: true, botBlockedAt: null, deletedAt: null },
       select: {
         id: true, notifyLocalHour: true, notifyTimezone: true, notifyReminderEnabled: true,
+        notifyGamified: true,
         notifyFrequency: true, notifyAdaptiveLevel: true, notifyIgnoredCount: true,
         notifyNextRemindDate: true, notifySkipAckDate: true, notifyLastEvalDate: true,
         notifyPausedUntil: true, addressForm: true,

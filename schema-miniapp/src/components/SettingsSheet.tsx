@@ -379,6 +379,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     <>
                       <Row label="Время" right={<RowRight text={`${pad(localHour)}:00`} />} onClick={() => setView('time')} divider />
                       <Row label="Частота" right={<RowRight text={FREQ_LABELS[settings.notifyFrequency ?? 0]} small />} onClick={() => setView('freq')} divider />
+                      <Row label="Игровой режим" sub="Серии и «ещё день до вехи»" right={<Toggle on={!!settings.notifyGamified} onClick={() => patch({ notifyGamified: !settings.notifyGamified })} />} divider />
                       <Row label="Тихие часы" right={<RowRight text={quietLabel(settings.notifyQuietStart, settings.notifyQuietEnd)} small />} onClick={() => setView('quiet')} divider />
                       <Row label="Часовой пояс" right={<RowRight text={tzLabel} small />} onClick={() => setView('tz')} divider />
                     </>

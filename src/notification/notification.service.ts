@@ -15,6 +15,7 @@ export type NotificationType =
   | 'streak_30'
   | 'lapsing_3'
   | 'dormant_7'
+  | 'value_recap'
   | 'reengagement_30'
   | 'weekly'
   | 'donate_reminder'
@@ -34,7 +35,7 @@ export type NotificationType =
  * streak_*, onboarding_*, task_assigned...) — ответ на действие, не отменяются.
  */
 export const PROACTIVE_TYPES: NotificationType[] = [
-  'reminder', 'pre_reminder', 'lapsing_3', 'dormant_7', 'reengagement_30',
+  'reminder', 'pre_reminder', 'lapsing_3', 'dormant_7', 'value_recap', 'reengagement_30',
   'nudge', 'weekly', 'donate_reminder', 'practice_missed', 'low_streak_insight',
 ];
 

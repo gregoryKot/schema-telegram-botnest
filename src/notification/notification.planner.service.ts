@@ -10,6 +10,7 @@ import { normalizeAddressForm } from './address-form';
 export interface PlannerUser extends CadenceUser {
   notifyLocalHour: number;
   notifyReminderEnabled: boolean;
+  notifyGamified?: boolean;
   addressForm?: string | null;
 }
 
@@ -64,6 +65,25 @@ export class NotificationPlannerService {
       return;
     }
 
+    // День 14 без записей: возврат через зеркало СОБСТВЕННЫХ данных (value_recap).
+    // Заполняет мёртвое окно между dormant_7 и reengagement_30. Только при значимом
+    // портрете (≥5 дней истории) — иначе в этот день просто тишина.
+    if (daysSince === 14 && !await this.notifications.hasPending(uid, 'value_recap')) {
+      const insight = await this.analytics.getProfileInsight(uid);
+      if (insight) {
+        const needs = this.botService.getNeeds();
+        const strongest = needs.find((n) => n.id === insight.strongest)?.chartLabel;
+        const weakest = needs.find((n) => n.id === insight.weakest)?.chartLabel;
+        await this.notifications.cancel(uid, 'reminder');
+        await this.notifications.schedule(uid, 'value_recap', nextSendAt(hour, tz, now), {
+          totalDays: insight.totalDays,
+          strongest, strongestAvg: insight.strongestAvg,
+          weakest, weakestAvg: insight.weakestAvg,
+        });
+      }
+      return;
+    }
+
     // Воскресенье (локальное) для активных: недельная сводка заменяет напоминание
     const today = localDateString(tz, now);
     const isSunday = new Date(`${today}T12:00:00Z`).getUTCDay() === 0;
@@ -76,15 +96,17 @@ export class NotificationPlannerService {
       return;
     }
 
-    // 1-е число месяца (локальное): мягкое напоминание о донате активным
+    // 1-е число месяца (локальное): мягкое напоминание о донате активным.
+    // totalDays → value-anchored формулировка для давних юзеров.
     if (today.endsWith('-01') && daysSince >= 0 && daysSince < 14
         && !await this.notifications.hasPending(uid, 'donate_reminder')) {
-      await this.notifications.schedule(uid, 'donate_reminder', nextSendAt(hour, tz, now), { seed: Number(uid % 3n) });
+      const totalDays = await this.analytics.getTotalDaysFilled(uid);
+      await this.notifications.schedule(uid, 'donate_reminder', nextSendAt(hour, tz, now), { seed: Number(uid % 3n), totalDays });
       return;
     }
 
     if (remindToday && user.notifyReminderEnabled) {
-      await this.scheduleReminder(uid, hour, tz, now);
+      await this.scheduleReminder(uid, hour, tz, now, !!user.notifyGamified);
       return;
     }
 
@@ -100,8 +122,9 @@ export class NotificationPlannerService {
     await this.scheduleLowStreakInsight(uid, hour, tz, now, user.addressForm);
   }
 
-  /** Умное напоминание: вчерашний индекс + западающая потребность + серия. */
-  async scheduleReminder(userId: bigint, notifyLocalHour: number, tz: string, now = new Date()) {
+  /** Умное напоминание: вчерашний индекс + западающая потребность + серия.
+   *  gamified=true добавляет позитивную срочность («ещё день до вехи»). */
+  async scheduleReminder(userId: bigint, notifyLocalHour: number, tz: string, now = new Date(), gamified = false) {
     const [streak, weeklyStats, history] = await Promise.all([
       this.analytics.getConsecutiveDays(userId),
       this.analytics.getWeeklyStats(userId),
@@ -114,10 +137,13 @@ export class NotificationPlannerService {
     const lowest = weeklyStats.filter((s) => s.avg !== null).sort((a, b) => (a.avg ?? 10) - (b.avg ?? 10))[0];
     const lowestNeed = lowest ? this.botService.getNeeds().find((n) => n.id === lowest.needId)?.chartLabel : undefined;
     const dayIndex = Math.floor(now.getTime() / 86_400_000);
+    // В игровом режиме подсвечиваем ближайшую веху: если завтра серия достигнет 7/14/30.
+    const approachingStreak = gamified ? [7, 14, 30].find((m) => streak + 1 === m) : undefined;
     const payload = {
       streak, yesterdayAvg, lowestNeedId: lowest?.needId, lowestNeed,
       variant: Number((userId + BigInt(dayIndex)) % 5n),
       seed: Number((userId + BigInt(dayIndex)) % 3n),
+      gamified, approachingStreak,
     };
     // Всегда отменяем зависшие напоминания и планируем заново
     await this.notifications.cancel(userId, 'reminder');

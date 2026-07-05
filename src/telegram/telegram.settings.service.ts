@@ -46,6 +46,7 @@ export async function buildSettingsView(botService: BotService, userId: bigint) 
     ...(paused ? [`⏸ На паузе до ${s.notifyPausedUntil!.toLocaleDateString('ru-RU', { timeZone: s.notifyTimezone })}`] : []),
     `Время: ${pad(s.notifyLocalHour)}:00`,
     `Частота: ${CADENCE_LABELS[s.notifyFrequency ?? 0] ?? CADENCE_LABELS[0]}`,
+    `Игровой режим: ${s.notifyGamified ? '🎮 включён' : 'выключен'}`,
     `Тихие часы: ${quietLine}`,
     `Часовой пояс: ${tz} (${utcLabel})`,
     `Обращение: на «${isVy ? 'вы' : 'ты'}»`,
@@ -54,6 +55,7 @@ export async function buildSettingsView(botService: BotService, userId: bigint) 
     [Markup.button.callback(s.notifyEnabled ? '🔕 Выключить' : '🔔 Включить', 'settings:toggle')],
     [Markup.button.callback('🕐 Изменить время', 'settings:pick_hour')],
     [Markup.button.callback('🔁 Частота напоминаний', 'settings:pick_freq')],
+    [Markup.button.callback(s.notifyGamified ? '🎮 Игровой режим: выкл' : '🎮 Игровой режим: вкл', 'settings:toggle_gamified')],
     [Markup.button.callback('🌙 Тихие часы', 'settings:pick_quiet')],
     [Markup.button.callback('🌍 Изменить часовой пояс', 'settings:pick_tz')],
     [Markup.button.callback(isVy ? 'Перейти на «ты»' : 'Перейти на «вы»', `settings:addr:${isVy ? 'ty' : 'vy'}`)],
@@ -106,6 +108,24 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.editMessageText(text, keyboard as any);
       } catch (err) {
         this.logger.error('settings:toggle failed', err);
+        await ctx.answerCbQuery('Не удалось сохранить. Попробуй ещё раз.').catch(() => null);
+      }
+    });
+
+    this.bot.action('settings:toggle_gamified', async (ctx) => {
+      try {
+        const rawId = ctx.from?.id;
+        await ctx.answerCbQuery();
+        if (!rawId) return;
+        const userId = BigInt(rawId);
+        const s = await this.botService.getUserSettings(userId);
+        await this.botService.updateUserSettings(userId, { notifyGamified: !s?.notifyGamified });
+        // перепланируем: pending-напоминание пересоберётся с новым режимом
+        await this.scheduleService.rescheduleForUser(userId);
+        const { text, keyboard } = await buildSettingsView(this.botService, userId);
+        await ctx.editMessageText(text, keyboard as any);
+      } catch (err) {
+        this.logger.error('settings:toggle_gamified failed', err);
         await ctx.answerCbQuery('Не удалось сохранить. Попробуй ещё раз.').catch(() => null);
       }
     });
