@@ -5,6 +5,7 @@ import { api } from '../../api';
 import type { Article, ArticleDto } from '../../api';
 import { card, btn, btnGhost, input } from './shared';
 import { compressImage } from './imageCompress';
+import { DIAGRAM_OPTIONS } from '../articleDiagrams';
 
 /** Create/edit form for a single article, with a TipTap WYSIWYG editor for the body. */
 export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
@@ -16,6 +17,7 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
   const [date, setDate] = useState(article?.date?.slice(0, 10) ?? new Date().toISOString().slice(0, 10));
   const [readMin, setReadMin] = useState(article?.readMin ?? 5);
   const [heroImage, setHeroImage] = useState<string | null>(article?.heroImage ?? null);
+  const [diagramKey, setDiagramKey] = useState<string>(article?.diagramKey ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +44,8 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
     setError(null);
     const dto: ArticleDto = {
       slug: slug.trim(), title: title.trim(), description: description.trim(),
-      content: editor?.getHTML() ?? '', date, readMin: Math.max(1, Math.round(readMin)), heroImage,
+      content: editor?.getHTML() ?? '', date, readMin: Math.max(1, Math.round(readMin)),
+      heroImage, diagramKey: diagramKey || null,
     };
     try {
       if (article) await api.adminUpdateArticle(adminKey, article.id, dto);
@@ -77,6 +80,13 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
           <input type="file" accept="image/*" onChange={onHeroFile} />
           {heroImage && <button type="button" style={{ ...btnGhost, padding: '5px 12px', fontSize: 13 }} onClick={() => setHeroImage(null)}>Убрать</button>}
         </div>
+      </Field>
+
+      <Field label="Диаграмма (рисуется после первого абзаца, вне текста)">
+        <select style={input} value={diagramKey} onChange={e => setDiagramKey(e.target.value)}>
+          <option value="">— без диаграммы —</option>
+          {DIAGRAM_OPTIONS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+        </select>
       </Field>
 
       <Field label="Текст статьи">
