@@ -649,6 +649,7 @@ model Article {
   date        DateTime
   readMin     Int
   heroImage   String?  // optional hero image: data URI (uploaded) or path
+  diagramKey  String?  // which built-in SVG diagram to render (rendered client-side, kept out of editable content)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
