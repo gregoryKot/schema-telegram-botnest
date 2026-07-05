@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { api } from '../api';
 import type { ArticleSummary, Article } from '../api';
+import { DIAGRAMS } from './articleDiagrams';
 
 // ─── Article list page ────────────────────────────────────────────────────────
 export function ArticlesListPage() {
@@ -112,7 +113,19 @@ export function ArticlePage() {
     );
   }
 
-  const safeHtml = DOMPurify.sanitize(article.content, {
+  // The diagram lives in its own field (not the editable content), so it's
+  // never lost when the article text is edited. Inject it after the first
+  // paragraph at render time.
+  const diagram = article.diagramKey ? DIAGRAMS[article.diagramKey] : undefined;
+  const withDiagram = (() => {
+    if (!diagram) return article.content;
+    const i = article.content.indexOf('</p>');
+    if (i === -1) return diagram + article.content;
+    const cut = i + '</p>'.length;
+    return article.content.slice(0, cut) + diagram + article.content.slice(cut);
+  })();
+
+  const safeHtml = DOMPurify.sanitize(withDiagram, {
     ALLOWED_TAGS: [
       'h2', 'h3', 'p', 'strong', 'b', 'em', 'i', 'ul', 'ol', 'li', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'a', 'br',
       // inline diagrams (SVG). No <marker>/<script> — arrowheads are polygons.

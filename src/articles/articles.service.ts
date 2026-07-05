@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ARTICLE_SEED } from './articles.seed';
-import { injectDiagram } from './article-diagrams';
+import { ARTICLE_DIAGRAM_KEYS } from './article-diagrams';
 
 // Bump this when the built-in article content changes (e.g. new diagrams) so a
 // running instance refreshes the seeded articles on next start.
-const SEED_VERSION = '3';
+const SEED_VERSION = '4';
 const SEED_VERSION_KEY = 'articlesSeedVersion';
 
 export interface ArticleDto {
@@ -16,6 +16,7 @@ export interface ArticleDto {
   date: string;
   readMin: number;
   heroImage?: string | null;
+  diagramKey?: string | null;
 }
 
 /** CRUD for blog articles. Public reads, admin-only writes. */
@@ -37,7 +38,9 @@ export class ArticlesService implements OnModuleInit {
     const seed = ARTICLE_SEED.map((a) => ({
       ...a,
       date: new Date(a.date),
-      content: injectDiagram(a.slug, a.content),
+      // The diagram is a separate field rendered client-side — it is NOT baked
+      // into `content`, so editing an article never strips it.
+      diagramKey: ARTICLE_DIAGRAM_KEYS[a.slug] ?? null,
     }));
 
     for (const a of seed) {
@@ -45,10 +48,10 @@ export class ArticlesService implements OnModuleInit {
       if (!existing) {
         await this.prisma.article.create({ data: a });
       } else {
-        // Refresh built-in text/diagrams; keep any admin-uploaded hero image.
+        // Refresh built-in text + diagram key; keep any admin-uploaded hero image.
         await this.prisma.article.update({
           where: { slug: a.slug },
-          data: { title: a.title, description: a.description, content: a.content, date: a.date, readMin: a.readMin },
+          data: { title: a.title, description: a.description, content: a.content, date: a.date, readMin: a.readMin, diagramKey: a.diagramKey },
         });
       }
     }
@@ -64,7 +67,7 @@ export class ArticlesService implements OnModuleInit {
   async list() {
     return this.prisma.article.findMany({
       orderBy: { date: 'desc' },
-      select: { id: true, slug: true, title: true, description: true, date: true, readMin: true, heroImage: true },
+      select: { id: true, slug: true, title: true, description: true, date: true, readMin: true, heroImage: true, diagramKey: true },
     });
   }
 
