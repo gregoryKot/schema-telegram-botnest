@@ -484,11 +484,25 @@ export class BotService {
     origins?: string; reality?: string; healthyView?: string; behavior?: string;
   }) {
     const enc = encryptRecord(data, BotService.SCHEMA_NOTE_SCHEMA);
-    return this.prisma.userSchemaNote.upsert({
+    const res = await this.prisma.userSchemaNote.upsert({
       where: { userId_schemaId: { userId, schemaId } },
       update: enc,
       create: { userId, schemaId, ...enc },
     });
+    // Заполненная карточка = схема в коллекции юзера, иначе её не найти в «Моих записях».
+    await this.addToMyList(userId, 'mySchemaIds', schemaId);
+    return res;
+  }
+
+  // Добавляет id в зашифрованный json-массив профиля (mySchemaIds/myModeIds), если его там ещё нет.
+  private async addToMyList(userId: bigint, field: 'mySchemaIds' | 'myModeIds', id: string) {
+    const row = await this.prisma.user.findUnique({ where: { id: userId }, select: { [field]: true } as any });
+    if (!row) return;
+    const dec = decryptRecord(row as any, { jsonArrays: [field] }) as Record<string, unknown>;
+    const list = Array.isArray(dec[field]) ? (dec[field] as string[]) : [];
+    if (list.includes(id)) return;
+    const enc = encryptRecord({ [field]: [...list, id] }, { jsonArrays: [field] });
+    await this.prisma.user.update({ where: { id: userId }, data: enc as any });
   }
 
   async getModeNote(userId: bigint, modeId: string) {
@@ -505,11 +519,13 @@ export class BotService {
     triggers?: string; feelings?: string; thoughts?: string; needs?: string; behavior?: string;
   }) {
     const enc = encryptRecord(data, BotService.MODE_NOTE_SCHEMA);
-    return this.prisma.userModeNote.upsert({
+    const res = await this.prisma.userModeNote.upsert({
       where: { userId_modeId: { userId, modeId } },
       update: enc,
       create: { userId, modeId, ...enc },
     });
+    await this.addToMyList(userId, 'myModeIds', modeId);
+    return res;
   }
 
   async updateName(userId: bigint, name: string): Promise<void> {
