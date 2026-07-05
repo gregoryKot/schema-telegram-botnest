@@ -1,11 +1,11 @@
-// SVG diagram markup for articles. Data only — logic (slug map, injection) lives
-// in article-diagrams.ts. Each is a self-contained <figure class="dg"> that
-// themes itself via the .dg-* classes styled in ArticlesPage.
+// Built-in article diagrams, keyed by Article.diagramKey. Rendered client-side
+// (sanitized) and kept OUT of the editable content, so editing an article in the
+// WYSIWYG editor never strips the diagram.
 //
-// Rules: generous box widths, short labels, no <marker> (arrowheads are
-// polygons so the sanitizer keeps them), coordinates keep every label in bounds.
+// Rules: generous box widths, short labels, no <marker> (arrowheads are polygons
+// so the sanitizer keeps them). Themed via the .dg-* classes in ArticlesPage.
 
-export const CYCLE = `
+const CYCLE = `
 <figure class="dg">
   <svg viewBox="0 0 640 400" role="img" aria-label="Порочный круг схемы">
     <rect class="dg-accent" x="24" y="24" width="176" height="54" rx="14"/>
@@ -33,7 +33,7 @@ export const CYCLE = `
   <figcaption><b>Порочный круг схемы.</b> Триггер запускает убеждение → режим → поведение, а поведение снова подтверждает убеждение. Схема-терапия разрывает этот круг.</figcaption>
 </figure>`;
 
-export const ICEBERG = `
+const ICEBERG = `
 <figure class="dg">
   <svg viewBox="0 0 640 380" role="img" aria-label="Айсберг: видимое и скрытое">
     <rect class="dg-water" x="0" y="150" width="640" height="230"/>
@@ -52,7 +52,7 @@ export const ICEBERG = `
   <figcaption><b>То, что на поверхности — лишь верхушка.</b> Симптомы видно сразу, но корни (схемы, детский опыт) скрыты под водой. Схема-терапия работает с тем, что ниже.</figcaption>
 </figure>`;
 
-export const MODES = `
+const MODES = `
 <figure class="dg">
   <svg viewBox="0 0 640 300" role="img" aria-label="Четыре группы режимов">
     <rect class="dg-node" x="14" y="14" width="300" height="118" rx="16"/>
@@ -79,8 +79,7 @@ export const MODES = `
   <figcaption><b>Карта режимов.</b> Три группы «рабочих» состояний и одно ресурсное — Здоровый взрослый, который развивается в терапии.</figcaption>
 </figure>`;
 
-// Which schemas sit behind anxiety vs behind depression — two-column map.
-export const ANX_DEP = `
+const ANX_DEP = `
 <figure class="dg">
   <svg viewBox="0 0 640 258" role="img" aria-label="Схемы за тревогой и за депрессией">
     <rect class="dg-node" x="14" y="14" width="300" height="230" rx="16"/>
@@ -107,8 +106,7 @@ export const ANX_DEP = `
   <figcaption><b>У симптома есть адрес.</b> Когда понятно, какая схема подпитывает тревогу или спад, становится ясно, куда прикладывать усилия.</figcaption>
 </figure>`;
 
-// Shock vs developmental trauma — comparison, schema therapy shines on the right.
-export const TRAUMA = `
+const TRAUMA = `
 <figure class="dg">
   <svg viewBox="0 0 640 250" role="img" aria-label="Шоковая травма и травма развития">
     <rect class="dg-node" x="14" y="14" width="300" height="222" rx="16"/>
@@ -129,8 +127,7 @@ export const TRAUMA = `
   <figcaption><b>Травма травме рознь.</b> При одном остром событии первой линией идут EMDR и травмофокусированная КПТ; при хронической травме развития раскрывается схема-терапия.</figcaption>
 </figure>`;
 
-// Three self-check questions → schema therapy or another approach.
-export const FORK = `
+const FORK = `
 <figure class="dg">
   <svg viewBox="0 0 640 300" role="img" aria-label="Подходит ли мне схема-терапия">
     <rect class="dg-node" x="180" y="14" width="280" height="58" rx="16"/>
@@ -153,8 +150,7 @@ export const FORK = `
   <figcaption><b>Как понять про себя.</b> Чем больше «так со мной всю жизнь» и «понимание уже не помогает» — тем больше показаний к схема-терапии.</figcaption>
 </figure>`;
 
-// First-session steps — vertical numbered timeline.
-export const STEPS = `
+const STEPS = `
 <figure class="dg">
   <svg viewBox="0 0 640 350" role="img" aria-label="Шаги первой сессии">
     <line class="dg-flow-soft" x1="40" y1="40" x2="40" y2="310"/>
@@ -181,3 +177,24 @@ export const STEPS = `
   </svg>
   <figcaption><b>Первая встреча — это разговор, а не процедура.</b> Понять друг друга и наметить дорогу; дальше — по шагам, в вашем темпе.</figcaption>
 </figure>`;
+
+export const DIAGRAMS: Record<string, string> = {
+  cycle: CYCLE,
+  iceberg: ICEBERG,
+  modes: MODES,
+  'anx-dep': ANX_DEP,
+  trauma: TRAUMA,
+  fork: FORK,
+  steps: STEPS,
+};
+
+// For the admin editor's diagram picker.
+export const DIAGRAM_OPTIONS: { key: string; label: string }[] = [
+  { key: 'cycle', label: 'Порочный круг' },
+  { key: 'iceberg', label: 'Айсберг' },
+  { key: 'modes', label: 'Карта режимов' },
+  { key: 'anx-dep', label: 'Тревога / депрессия' },
+  { key: 'trauma', label: 'Сравнение травмы' },
+  { key: 'fork', label: 'Развилка «подходит ли»' },
+  { key: 'steps', label: 'Шаги (таймлайн)' },
+];
