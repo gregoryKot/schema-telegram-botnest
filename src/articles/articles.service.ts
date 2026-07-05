@@ -5,7 +5,7 @@ import { injectDiagram } from './article-diagrams';
 
 // Bump this when the built-in article content changes (e.g. new diagrams) so a
 // running instance refreshes the seeded articles on next start.
-const SEED_VERSION = '2';
+const SEED_VERSION = '3';
 const SEED_VERSION_KEY = 'articlesSeedVersion';
 
 export interface ArticleDto {
