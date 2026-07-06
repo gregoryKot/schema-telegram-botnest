@@ -15,7 +15,7 @@ export function ArticlesListPage() {
   }, []);
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', flex: 1, minWidth: 0, overflowX: 'hidden' }}>
       <div className="art-page" style={{ maxWidth: 780, margin: '0 auto' }}>
         <a href="/" style={backLink}>← На главную</a>
         <p style={eyebrow}>Статьи</p>
@@ -102,7 +102,7 @@ export function ArticlePage() {
 
   if (article === undefined) {
     return (
-      <div style={{ background: 'var(--bg)', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>
       </div>
     );
@@ -110,7 +110,7 @@ export function ArticlePage() {
 
   if (!article) {
     return (
-      <div style={{ background: 'var(--bg)', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontSize: 48, margin: '0 0 16px' }}>404</p>
           <a href="/articles" style={{ color: 'var(--accent)' }}>← К статьям</a>
@@ -153,7 +153,7 @@ export function ArticlePage() {
   });
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', flex: 1, minWidth: 0, overflowX: 'hidden' }}>
       <div className="art-page" style={{ maxWidth: 720, margin: '0 auto' }}>
         <a href="/articles" style={backLink}>← Все статьи</a>
 
