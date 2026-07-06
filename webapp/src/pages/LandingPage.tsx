@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { BookingPicker } from '../components/BookingPicker';
-import { DARK_BG, INK_ON_DARK, Btn, ThemeIcon, useReveal, useTilt, useTheme } from '../components/landing-kit';
+import { DARK_BG, INK_ON_DARK, Btn, ThemeIcon, useReveal, useTilt, useTheme, useRecentArticles } from '../components/landing-kit';
+import type { ArticleSummary } from '../api';
 
 // ─── Design tokens (local to landing) ────────────────────────────────────────
 const MOSS = '#4a6335';        // green status (passes WCAG AA on paper bg)
@@ -39,8 +40,8 @@ const NAV_LINKS: { label: string; href: string }[] = [
   { label: 'Обо мне', href: '#about' },
   { label: 'Подход',  href: '#approach' },
   { label: 'Цены',    href: '#prices' },
+  { label: 'Статьи',  href: '#articles' },
   { label: 'Запись',  href: '#booking' },
-  { label: 'Вопросы', href: '#faq' },
 ];
 
 function SectionNav({ className, color = 'var(--text-sub)', active = '' }: { className?: string; color?: string; active?: string }) {
@@ -317,6 +318,29 @@ function AppFeatureCard({ f, accent }: { f: typeof APP_FEATURES[0]; accent: bool
   );
 }
 
+// ─── Article card (editorial / serif) ────────────────────────────────────────
+function ArticleCardEditorial({ a }: { a: ArticleSummary }) {
+  const ref = useTilt<HTMLAnchorElement>();
+  return (
+    <a ref={ref} href={`/articles/${a.slug}`} style={{
+      display: 'flex', flexDirection: 'column', textDecoration: 'none',
+      background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 16,
+      overflow: 'hidden', cursor: 'pointer', transition: 'transform .25s, box-shadow .25s', willChange: 'transform',
+    }}>
+      <div style={{ aspectRatio: '16 / 9', background: 'var(--bg-rail)', overflow: 'hidden' }}>
+        {a.heroImage && <img src={a.heroImage} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+      </div>
+      <div style={{ padding: '20px 22px 22px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+        <h3 style={{ fontFamily: 'var(--serif)', fontSize: 21, fontWeight: 400, letterSpacing: '-.01em', lineHeight: 1.25, margin: 0, color: 'var(--text)' }}>{a.title}</h3>
+        <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0, color: 'var(--text-sub)', flex: 1 }}>{a.description}</p>
+        <span style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>
+          {new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long' })} · {a.readMin} мин
+        </span>
+      </div>
+    </a>
+  );
+}
+
 // ─── Approach cards ───────────────────────────────────────────────────────────
 function BentoCard({ num, title, text, accent = false }: { num: string; title: string; text: string; accent?: boolean }) {
   const ref = useTilt();
@@ -441,13 +465,15 @@ export function LandingPage() {
   const priceRef    = useReveal() as React.RefObject<HTMLElement>;
   const boundRef    = useReveal() as React.RefObject<HTMLElement>;
   const formRef     = useReveal() as React.RefObject<HTMLElement>;
+  const articlesRef = useReveal() as React.RefObject<HTMLElement>;
+  const articles    = useRecentArticles(3);
 
   const scrollToBooking = useCallback(() => {
     bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   useEffect(() => {
-    const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'app', 'faq'];
+    const ids = ['about', 'work', 'education', 'approach', 'process', 'prices', 'booking', 'app', 'articles', 'faq'];
     let ticking = false;
     let firstRun = true;
     const fn = () => {
@@ -916,6 +942,26 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── ARTICLES ────────────────────────────────────────────────────── */}
+      {articles && articles.length > 0 && (
+        <section id="articles" ref={articlesRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto', padding: '88px 40px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap', marginBottom: 44 }}>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Статьи</p>
+                <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 400, color: 'var(--text)', margin: 0, letterSpacing: '-.01em', lineHeight: 1.1 }}>
+                  Читайте и <span style={{ fontStyle: 'italic' }}>разбирайтесь</span>
+                </h2>
+              </div>
+              <a href="/articles" style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>Все статьи →</a>
+            </div>
+            <div className="articles-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+              {articles.map((a) => <ArticleCardEditorial key={a.slug} a={a} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── FAQ ─────────────────────────────────────────────────────────── */}
       <section id="faq" style={{ maxWidth: 780, margin: '0 auto', padding: '88px 40px' }}>
         <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Частые вопросы</p>
@@ -1039,9 +1085,11 @@ export function LandingPage() {
           .work-grid    { grid-template-columns:1fr; }
           .trust-grid   { grid-template-columns:1fr; gap:32px; }
           .bound-grid   { grid-template-columns:1fr; gap:28px; }
+          .articles-grid { grid-template-columns:1fr; }
         }
         @media (min-width:601px) and (max-width:900px) {
           .work-grid    { grid-template-columns:1fr 1fr; }
+          .articles-grid { grid-template-columns:1fr 1fr; }
         }
         @media (max-width:600px) {
           .form-grid  { grid-template-columns:1fr; }
