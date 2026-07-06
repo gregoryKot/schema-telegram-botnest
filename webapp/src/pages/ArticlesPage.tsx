@@ -16,7 +16,7 @@ export function ArticlesListPage() {
 
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
-      <div style={{ maxWidth: 780, margin: '0 auto', padding: '64px 40px 96px' }}>
+      <div className="art-page" style={{ maxWidth: 780, margin: '0 auto' }}>
         <a href="/" style={backLink}>← На главную</a>
         <p style={eyebrow}>Статьи</p>
         <h1 style={h1}>Схема-терапия:<br /><span style={{ fontStyle: 'italic' }}>читайте и разбирайтесь</span></h1>
@@ -27,38 +27,44 @@ export function ArticlesListPage() {
         {articles === null && <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>}
 
         {articles && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div className="art-list">
             {articles.map((a) => (
-              <Link key={a.slug} to={`/articles/${a.slug}`} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  padding: '28px 0', borderTop: '1px solid var(--line)',
-                  display: 'flex', gap: 24, alignItems: 'start',
-                  transition: 'opacity .15s',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '.7'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}>
-                  {a.heroImage && (
-                    <img src={a.heroImage} alt="" loading="lazy" decoding="async"
-                      style={{ width: 104, height: 78, objectFit: 'cover', borderRadius: 12, flexShrink: 0, display: 'block' }} />
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '0 0 10px', letterSpacing: '-.01em', lineHeight: 1.3 }}>
-                      {a.title}
-                    </h2>
-                    <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, margin: 0 }}>{a.description}</p>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 4px', whiteSpace: 'nowrap' }}>{a.readMin} мин</p>
-                    <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: 0, whiteSpace: 'nowrap' }}>
-                      {new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </p>
-                  </div>
+              <Link key={a.slug} to={`/articles/${a.slug}`} className="art-card">
+                {a.heroImage && (
+                  <img className="art-thumb" src={a.heroImage} alt="" loading="lazy" decoding="async" />
+                )}
+                <div className="art-main">
+                  <h2 className="art-title">{a.title}</h2>
+                  <p className="art-desc">{a.description}</p>
+                </div>
+                <div className="art-meta">
+                  <span>{a.readMin} мин</span>
+                  <span>{new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                 </div>
               </Link>
             ))}
             <div style={{ borderTop: '1px solid var(--line)' }} />
           </div>
         )}
+
+        <style>{`
+          .art-page { padding: 64px 40px 96px; }
+          .art-list { display: flex; flex-direction: column; }
+          .art-card { display: flex; gap: 24px; align-items: flex-start; padding: 28px 0; border-top: 1px solid var(--line); text-decoration: none; transition: opacity .15s; }
+          .art-card:hover { opacity: .7; }
+          .art-thumb { width: 112px; height: 84px; object-fit: cover; border-radius: 12px; flex-shrink: 0; display: block; }
+          .art-main { flex: 1; min-width: 0; }
+          .art-title { font-family: var(--serif); font-size: 22px; font-weight: 400; color: var(--text); margin: 0 0 10px; letter-spacing: -.01em; line-height: 1.3; }
+          .art-desc { font-size: 14px; color: var(--text-sub); line-height: 1.6; margin: 0; }
+          .art-meta { flex-shrink: 0; text-align: right; display: flex; flex-direction: column; gap: 4px; }
+          .art-meta span { font-size: 12px; color: var(--text-faint); white-space: nowrap; }
+          @media (max-width: 640px) {
+            .art-page { padding: 40px 20px 72px; }
+            .art-card { flex-direction: column; gap: 12px; }
+            .art-thumb { width: 100%; height: 180px; }
+            .art-meta { flex-direction: row; gap: 10px; text-align: left; }
+          }
+        `}</style>
 
         <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 20 }}>
           <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 10px' }}>Хотите разобраться глубже?</p>
@@ -141,7 +147,7 @@ export function ArticlePage() {
 
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '64px 40px 96px' }}>
+      <div className="art-page" style={{ maxWidth: 720, margin: '0 auto' }}>
         <a href="/articles" style={backLink}>← Все статьи</a>
 
         <div style={{ marginBottom: 40 }}>
@@ -169,6 +175,8 @@ export function ArticlePage() {
 
         <div className="article-content" dangerouslySetInnerHTML={{ __html: safeHtml }} />
         <style>{`
+          .art-page { padding: 64px 40px 96px; }
+          @media (max-width: 640px) { .art-page { padding: 40px 20px 72px; } }
           .article-content h2 { font-family: var(--serif); font-size: 26px; font-weight: 400; color: var(--text); margin: 48px 0 16px; padding-top: 40px; border-top: 1px solid var(--line); letter-spacing: -.01em; }
           .article-content h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
           .article-content h3 { font-family: var(--serif); font-size: 20px; font-weight: 400; color: var(--text); margin: 32px 0 12px; letter-spacing: -.01em; }
