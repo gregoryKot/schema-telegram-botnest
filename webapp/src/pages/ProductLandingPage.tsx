@@ -219,7 +219,6 @@ export function ProductLandingPage() {
   const featuresRef = useReveal() as React.RefObject<HTMLElement>;
   const tgRef       = useReveal() as React.RefObject<HTMLElement>;
   const trustRef    = useReveal() as React.RefObject<HTMLElement>;
-  const articlesRef = useReveal() as React.RefObject<HTMLElement>;
   const faqRef      = useReveal() as React.RefObject<HTMLElement>;
   const ctaRef      = useReveal() as React.RefObject<HTMLElement>;
 
@@ -374,7 +373,7 @@ export function ProductLandingPage() {
 
       {/* ── Статьи ── */}
       {articles && articles.length > 0 && (
-        <section id="articles" ref={articlesRef} className="reveal-section" style={{ borderTop: '1px solid var(--line)', background: 'var(--bg-rail)', padding: '84px 24px' }}>
+        <section id="articles" style={{ borderTop: '1px solid var(--line)', background: 'var(--bg-rail)', padding: '84px 24px' }}>
           <div style={{ maxWidth: 1120, margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap', marginBottom: 48 }}>
               <div>
