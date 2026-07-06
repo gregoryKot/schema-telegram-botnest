@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { api, type ArticleSummary } from '../api';
 
 // Shared primitives for landing pages (LandingPage — терапевт, ProductLandingPage — продукт).
 // Moved verbatim from LandingPage.tsx; keep behaviour identical for both pages.
@@ -111,8 +112,8 @@ export function useReveal() {
 }
 
 // ─── Card hover tilt ──────────────────────────────────────────────────────────
-export function useTilt() {
-  const ref = useRef<HTMLDivElement>(null);
+export function useTilt<T extends HTMLElement = HTMLDivElement>() {
+  const ref = useRef<T>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -129,6 +130,19 @@ export function useTilt() {
     return () => { el.removeEventListener('mousemove', onMove); el.removeEventListener('mouseleave', onLeave); };
   }, []);
   return ref;
+}
+
+// ─── Recent articles (shared by both landings) ───────────────────────────────
+// Returns null while loading, [] on empty/failed. Both landing pages surface
+// the same /articles content, so the fetch + trim lives here once.
+export function useRecentArticles(limit = 3) {
+  const [articles, setArticles] = useState<ArticleSummary[] | null>(null);
+  useEffect(() => {
+    api.listArticles()
+      .then((a) => setArticles(a.slice(0, limit)))
+      .catch(() => setArticles([]));
+  }, [limit]);
+  return articles;
 }
 
 // ─── Theme toggle state ───────────────────────────────────────────────────────

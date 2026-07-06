@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { Btn, ThemeIcon, useReveal, useTilt, useTheme } from '../components/landing-kit';
+import { Btn, ThemeIcon, useReveal, useTilt, useTheme, useRecentArticles } from '../components/landing-kit';
+import type { ArticleSummary } from '../api';
 
 // Продуктовый лендинг «Всё по схеме» — главная страница app-домена (schemehappens.ru).
 // Своя айдентика (app-стиль, живые цвета схем, sans-serif), намеренно отличная от
@@ -176,6 +177,29 @@ function FaqList() {
   );
 }
 
+// ─── Карточка статьи (app-стиль) ─────────────────────────────────────────────
+function ArticleCard({ a }: { a: ArticleSummary }) {
+  const ref = useTilt<HTMLAnchorElement>();
+  return (
+    <a ref={ref} href={`/articles/${a.slug}`} style={{
+      display: 'flex', flexDirection: 'column', textDecoration: 'none',
+      background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 20,
+      overflow: 'hidden', cursor: 'pointer', transition: 'transform .25s, box-shadow .25s', willChange: 'transform',
+    }}>
+      <div style={{ aspectRatio: '16 / 9', background: `linear-gradient(135deg, ${soft(C.plum, 22)}, ${soft(C.teal, 22)})`, overflow: 'hidden' }}>
+        {a.heroImage && <img src={a.heroImage} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+      </div>
+      <div style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+        <p style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.25, margin: 0, color: 'var(--text)' }}>{a.title}</p>
+        <p style={{ fontSize: 13.5, lineHeight: 1.6, margin: 0, color: 'var(--text-sub)', flex: 1 }}>{a.description}</p>
+        <span style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4 }}>
+          {new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long' })} · {a.readMin} мин
+        </span>
+      </div>
+    </a>
+  );
+}
+
 // Общий стиль sans-serif заголовков (намеренно НЕ serif — отличие от странички терапевта).
 const H2: React.CSSProperties = { fontFamily: 'inherit', fontSize: 'clamp(28px, 3.6vw, 42px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.1, margin: 0, color: 'var(--text)' };
 const EYEBROW: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase' };
@@ -189,10 +213,13 @@ export function ProductLandingPage() {
   useEffect(() => { if (isAuthenticated) navigate('/today', { replace: true }); }, [isAuthenticated, navigate]);
   useEffect(() => { document.title = 'Всё по схеме — инструмент схема-терапии'; }, []);
 
+  const articles = useRecentArticles(3);
+
   const howRef      = useReveal() as React.RefObject<HTMLElement>;
   const featuresRef = useReveal() as React.RefObject<HTMLElement>;
   const tgRef       = useReveal() as React.RefObject<HTMLElement>;
   const trustRef    = useReveal() as React.RefObject<HTMLElement>;
+  const articlesRef = useReveal() as React.RefObject<HTMLElement>;
   const faqRef      = useReveal() as React.RefObject<HTMLElement>;
   const ctaRef      = useReveal() as React.RefObject<HTMLElement>;
 
@@ -210,7 +237,7 @@ export function ProductLandingPage() {
       }}>
         <a href="/" style={{ textDecoration: 'none' }}><Logo /></a>
         <nav className="pl-nav" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {[['Как это работает', '#how'], ['Возможности', '#features'], ['Вопросы', '#faq']].map(([label, href]) => (
+          {[['Как это работает', '#how'], ['Возможности', '#features'], ['Статьи', '#articles'], ['Вопросы', '#faq']].map(([label, href]) => (
             <a key={href} href={href}
               style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-sub)', textDecoration: 'none', padding: '7px 12px', borderRadius: 10, whiteSpace: 'nowrap', transition: 'color .15s, background .15s' }}
               onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.color = 'var(--accent)'; el.style.background = 'var(--accent-soft)'; }}
@@ -345,6 +372,24 @@ export function ProductLandingPage() {
         </div>
       </section>
 
+      {/* ── Статьи ── */}
+      {articles && articles.length > 0 && (
+        <section id="articles" ref={articlesRef} className="reveal-section" style={{ borderTop: '1px solid var(--line)', background: 'var(--bg-rail)', padding: '84px 24px' }}>
+          <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap', marginBottom: 48 }}>
+              <div>
+                <span style={{ ...EYEBROW, color: 'var(--accent)' }}>Статьи</span>
+                <h2 style={{ ...H2, margin: '14px 0 0', maxWidth: 620 }}>Разбираемся в схема-терапии — простым языком</h2>
+              </div>
+              <a href="/articles" style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>Все статьи →</a>
+            </div>
+            <div className="pl-articles" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
+              {articles.map((a) => <ArticleCard key={a.slug} a={a} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── FAQ ── */}
       <section id="faq" ref={faqRef} className="reveal-section" style={{ padding: '84px 24px' }}>
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
@@ -431,12 +476,12 @@ export function ProductLandingPage() {
 
         @media (max-width: 900px) {
           .pl-hero-grid { grid-template-columns: 1fr !important; gap: 48px !important; }
-          .pl-steps, .pl-features, .pl-trust { grid-template-columns: 1fr !important; }
+          .pl-steps, .pl-features, .pl-trust, .pl-articles { grid-template-columns: 1fr !important; }
           .pl-tg-grid { grid-template-columns: 1fr !important; gap: 36px !important; padding: 36px 28px !important; }
           .pl-chip { display: none; }
         }
         @media (min-width: 601px) and (max-width: 900px) {
-          .pl-features { grid-template-columns: 1fr 1fr !important; }
+          .pl-features, .pl-articles { grid-template-columns: 1fr 1fr !important; }
         }
         @media (max-width: 640px) {
           .pl-nav { display: none !important; }

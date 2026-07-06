@@ -111,6 +111,8 @@ const personalRoutes = [
 
 const appRoutes = [
   { path: '/',               element: <ProductLandingPage /> },
+  { path: '/articles',       element: <ArticlesListPage /> },
+  { path: '/articles/:slug', element: <ArticlePage /> },
   { path: '/subscribe',      element: <SubscribePage /> },
   { path: '/donate',         element: <DonatePage /> },
   // Admin panel is gated by its own key (not the app login), so it's reachable
