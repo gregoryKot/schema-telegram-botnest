@@ -16,53 +16,54 @@ export function ArticlesListPage() {
 
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', flex: 1, minWidth: 0, overflowX: 'hidden' }}>
-      <div className="art-page" style={{ maxWidth: 780, margin: '0 auto' }}>
+      <div className="art-page" style={{ maxWidth: 980, margin: '0 auto' }}>
         <a href="/" style={backLink}>← На главную</a>
         <p style={eyebrow}>Статьи</p>
         <h1 style={h1}>Схема-терапия:<br /><span style={{ fontStyle: 'italic' }}>читайте и разбирайтесь</span></h1>
-        <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 56px', maxWidth: 560 }}>
+        <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 48px', maxWidth: 560 }}>
           Объясняю, как работают схемы, режимы и паттерны – простым языком, без воды.
         </p>
 
         {articles === null && <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>}
 
         {articles && (
-          <div className="art-list">
+          <div className="art-grid">
             {articles.map((a) => (
               <Link key={a.slug} to={`/articles/${a.slug}`} className="art-card">
-                {a.heroImage && (
-                  <img className="art-thumb" src={a.heroImage} alt="" loading="lazy" decoding="async" />
-                )}
-                <div className="art-main">
+                {a.heroImage
+                  ? <img className="art-cover" src={a.heroImage} alt="" loading="lazy" decoding="async" />
+                  : <div className="art-cover art-cover-ph" aria-hidden />}
+                <div className="art-body">
                   <h2 className="art-title">{a.title}</h2>
                   <p className="art-desc">{a.description}</p>
-                </div>
-                <div className="art-meta">
-                  <span>{a.readMin} мин</span>
-                  <span>{new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  <div className="art-meta">
+                    <span>{a.readMin} мин</span>
+                    <span>·</span>
+                    <span>{new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  </div>
                 </div>
               </Link>
             ))}
-            <div style={{ borderTop: '1px solid var(--line)' }} />
           </div>
         )}
 
         <style>{`
           .art-page { padding: 64px 40px 96px; }
-          .art-list { display: flex; flex-direction: column; }
-          .art-card { display: flex; gap: 24px; align-items: flex-start; padding: 28px 0; border-top: 1px solid var(--line); text-decoration: none; transition: opacity .15s; }
-          .art-card:hover { opacity: .7; }
-          .art-thumb { width: 112px; height: 84px; object-fit: cover; border-radius: 12px; flex-shrink: 0; display: block; }
-          .art-main { flex: 1; min-width: 0; }
-          .art-title { font-family: var(--serif); font-size: 22px; font-weight: 400; color: var(--text); margin: 0 0 10px; letter-spacing: -.01em; line-height: 1.3; }
-          .art-desc { font-size: 14px; color: var(--text-sub); line-height: 1.6; margin: 0; }
-          .art-meta { flex-shrink: 0; text-align: right; display: flex; flex-direction: column; gap: 4px; }
-          .art-meta span { font-size: 12px; color: var(--text-faint); white-space: nowrap; }
-          @media (max-width: 640px) {
+          .art-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; }
+          .art-card { display: flex; flex-direction: column; text-decoration: none; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--surface); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+          .art-card:hover { transform: translateY(-3px); box-shadow: 0 16px 44px rgba(28,25,20,.10); border-color: var(--line-strong); }
+          .art-cover { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
+          .art-cover-ph { background: linear-gradient(135deg, var(--accent-soft), transparent 62%), var(--surface-2); position: relative; }
+          .art-cover-ph::after { content: ''; position: absolute; right: -34px; bottom: -34px; width: 132px; height: 132px; border-radius: 50%; border: 1.5px solid var(--accent-line); }
+          .art-cover-ph::before { content: ''; position: absolute; right: 6px; bottom: 6px; width: 72px; height: 72px; border-radius: 50%; border: 1.5px solid var(--accent-line); opacity: .6; }
+          .art-body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }
+          .art-title { font-family: var(--serif); font-size: 22px; font-weight: 400; color: var(--text); margin: 0 0 10px; letter-spacing: -.01em; line-height: 1.25; }
+          .art-desc { font-size: 14px; color: var(--text-sub); line-height: 1.6; margin: 0 0 16px; flex: 1; }
+          .art-meta { display: flex; gap: 8px; align-items: center; }
+          .art-meta span { font-size: 12px; color: var(--text-faint); }
+          @media (max-width: 720px) {
             .art-page { padding: 40px 20px 72px; }
-            .art-card { flex-direction: column; gap: 12px; }
-            .art-thumb { width: 100%; height: 180px; }
-            .art-meta { flex-direction: row; gap: 10px; text-align: left; }
+            .art-grid { grid-template-columns: 1fr; gap: 20px; }
           }
         `}</style>
 
