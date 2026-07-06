@@ -120,15 +120,22 @@ export function ArticlePage() {
   }
 
   // The diagram lives in its own field (not the editable content), so it's
-  // never lost when the article text is edited. Inject it after the first
-  // paragraph at render time.
+  // never lost when the article text is edited. Inject it at render time near
+  // the MIDDLE of the article (at the paragraph boundary closest to the middle)
+  // so it breaks up the text rather than sitting right at the top.
   const diagram = article.diagramKey ? DIAGRAMS[article.diagramKey] : undefined;
   const withDiagram = (() => {
     if (!diagram) return article.content;
-    const i = article.content.indexOf('</p>');
-    if (i === -1) return diagram + article.content;
-    const cut = i + '</p>'.length;
-    return article.content.slice(0, cut) + diagram + article.content.slice(cut);
+    const content = article.content;
+    const marker = '</p>';
+    const ends: number[] = [];
+    for (let i = content.indexOf(marker); i !== -1; i = content.indexOf(marker, i + 1)) {
+      ends.push(i + marker.length);
+    }
+    if (ends.length === 0) return diagram + content;
+    const target = content.length / 2;
+    const cut = ends.reduce((best, p) => (Math.abs(p - target) < Math.abs(best - target) ? p : best), ends[0]);
+    return content.slice(0, cut) + diagram + content.slice(cut);
   })();
 
   const safeHtml = DOMPurify.sanitize(withDiagram, {
