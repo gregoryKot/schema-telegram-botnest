@@ -40,32 +40,32 @@ export class GoogleProvider implements AuthProviderHandler {
   // — is deprecated and relied on a SameSite=None cookie that third-party-cookie
   // phase-out breaks, so we no longer use it.)
   buildAuthUrl(state: string): string {
-    const clientId    = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
+    const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
     const redirectUri = this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI');
     const params = new URLSearchParams({
-      client_id:     clientId,
-      redirect_uri:  redirectUri,
+      client_id: clientId,
+      redirect_uri: redirectUri,
       response_type: 'code',
-      scope:         'openid email profile',
+      scope: 'openid email profile',
       state,
-      access_type:   'online',
-      prompt:        'select_account',
+      access_type: 'online',
+      prompt: 'select_account',
     });
     return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
   }
 
   // ── Step 2: exchange the code for tokens, then verify the id_token ────────
   async exchangeCode(code: string): Promise<ProviderIdentity> {
-    const clientId     = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
+    const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
     const clientSecret = this.config.getOrThrow<string>('GOOGLE_CLIENT_SECRET');
-    const redirectUri  = this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI');
+    const redirectUri = this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI');
 
     const body = new URLSearchParams({
-      grant_type:    'authorization_code',
+      grant_type: 'authorization_code',
       code,
-      client_id:     clientId,
+      client_id: clientId,
       client_secret: clientSecret,
-      redirect_uri:  redirectUri,
+      redirect_uri: redirectUri,
     });
 
     let lastNetErr: Error | null = null;
@@ -81,24 +81,34 @@ export class GoogleProvider implements AuthProviderHandler {
       } catch (e: any) {
         // Сетевой сбой (DNS/TLS/timeout) — пробуем следующий алиас.
         const cause = e?.cause;
-        const detail = cause ? ` | cause: ${cause.code ?? cause.message ?? cause}` : '';
-        this.logger.warn(`Google token endpoint unreachable (${endpoint}): ${e.message}${detail}`);
+        const detail = cause
+          ? ` | cause: ${cause.code ?? cause.message ?? cause}`
+          : '';
+        this.logger.warn(
+          `Google token endpoint unreachable (${endpoint}): ${e.message}${detail}`,
+        );
         lastNetErr = e;
         continue;
       }
 
       const data = (await res.json().catch(() => ({}))) as {
-        id_token?: string; error?: string; error_description?: string;
+        id_token?: string;
+        error?: string;
+        error_description?: string;
       };
       if (!res.ok || data.error || !data.id_token) {
         // HTTP-ответ получен — это вердикт Google, fallback не поможет.
-        this.logger.error(`Google token exchange rejected (${endpoint}): ${data.error_description ?? data.error ?? `HTTP ${res.status}`}`);
+        this.logger.error(
+          `Google token exchange rejected (${endpoint}): ${data.error_description ?? data.error ?? `HTTP ${res.status}`}`,
+        );
         throw new UnauthorizedException('Google token exchange failed');
       }
       return this.decodeIdentity(data.id_token);
     }
 
-    this.logger.error(`Google token exchange failed: all endpoints unreachable, last: ${lastNetErr?.message}`);
+    this.logger.error(
+      `Google token exchange failed: all endpoints unreachable, last: ${lastNetErr?.message}`,
+    );
     throw new UnauthorizedException('Google token exchange failed');
   }
 
@@ -111,11 +121,13 @@ export class GoogleProvider implements AuthProviderHandler {
     let payload: Awaited<ReturnType<typeof jwtVerify>>['payload'];
     try {
       ({ payload } = await jwtVerify(idToken, this.jwks, {
-        issuer:   ['https://accounts.google.com', 'accounts.google.com'],
+        issuer: ['https://accounts.google.com', 'accounts.google.com'],
         audience: clientId,
       }));
     } catch (e: any) {
-      this.logger.error(`Google id_token JWT verification failed: ${e.message}`);
+      this.logger.error(
+        `Google id_token JWT verification failed: ${e.message}`,
+      );
       throw new UnauthorizedException('Google ID token invalid');
     }
 
@@ -124,9 +136,10 @@ export class GoogleProvider implements AuthProviderHandler {
     }
 
     return {
-      providerId:  payload.sub!,
-      email:       payload['email'] as string,
-      displayName: (payload['name'] as string | undefined) ?? (payload['email'] as string),
+      providerId: payload.sub!,
+      email: payload['email'] as string,
+      displayName:
+        (payload['name'] as string | undefined) ?? (payload['email'] as string),
     };
   }
 }

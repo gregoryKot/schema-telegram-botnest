@@ -10,7 +10,13 @@ import { TherapyModule } from '../therapy/therapy.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [BotModule, NotificationModule, TelegramModule, TherapyModule, AuthModule],
+  imports: [
+    BotModule,
+    NotificationModule,
+    TelegramModule,
+    TherapyModule,
+    AuthModule,
+  ],
   controllers: [ApiController, DiaryController, BookingController],
   providers: [TelegramAuthGuard],
 })

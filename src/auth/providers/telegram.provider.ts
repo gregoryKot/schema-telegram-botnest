@@ -27,18 +27,31 @@ export class TelegramProvider implements AuthProviderHandler {
     if (!hash) throw new UnauthorizedException('Missing hash');
     // Must be 64 hex chars — otherwise Buffer.from(hash,'hex') yields a
     // wrong-length buffer and timingSafeEqual throws RangeError → 500.
-    if (!/^[0-9a-f]{64}$/i.test(hash)) throw new UnauthorizedException('Malformed hash');
+    if (!/^[0-9a-f]{64}$/i.test(hash))
+      throw new UnauthorizedException('Malformed hash');
     delete fields['hash'];
 
     const authDate = parseInt(fields['auth_date'] ?? '0', 10);
-    if (Date.now() / 1000 - authDate > 86400) throw new UnauthorizedException('Telegram auth data expired');
+    if (Date.now() / 1000 - authDate > 86400)
+      throw new UnauthorizedException('Telegram auth data expired');
 
     // Login Widget: secret_key = SHA256(bot_token).
-    const checkString = Object.keys(fields).sort().map(k => `${k}=${fields[k]}`).join('\n');
+    const checkString = Object.keys(fields)
+      .sort()
+      .map((k) => `${k}=${fields[k]}`)
+      .join('\n');
     const secretKey = crypto.createHash('sha256').update(botToken).digest();
-    const expectedHash = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
+    const expectedHash = crypto
+      .createHmac('sha256', secretKey)
+      .update(checkString)
+      .digest('hex');
 
-    if (!crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(expectedHash, 'hex'))) {
+    if (
+      !crypto.timingSafeEqual(
+        Buffer.from(hash, 'hex'),
+        Buffer.from(expectedHash, 'hex'),
+      )
+    ) {
       throw new UnauthorizedException('Invalid Telegram signature');
     }
 

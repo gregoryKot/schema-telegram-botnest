@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -36,7 +42,10 @@ export class SubscriptionService {
     private readonly notify: BookingNotifyService,
     config: ConfigService,
   ) {
-    this.appUrl = normalizeBaseUrl(config.get<string>('APP_URL'), 'https://schemehappens.ru');
+    this.appUrl = normalizeBaseUrl(
+      config.get<string>('APP_URL'),
+      'https://schemehappens.ru',
+    );
     // Hidden until Robokassa enables the recurring service. Flip with
     // SUBSCRIPTION_ENABLED=true once auto-charge actually works.
     this.enabled = config.get<string>('SUBSCRIPTION_ENABLED') === 'true';
@@ -51,10 +60,14 @@ export class SubscriptionService {
   }
 
   // ── pricing ────────────────────────────────────────────────────────────────
-  private priceKey(p: SubPeriod) { return `sub:${p}`; }
+  private priceKey(p: SubPeriod) {
+    return `sub:${p}`;
+  }
 
   async getPrice(period: SubPeriod): Promise<number> {
-    const row = await this.prisma.bookingSetting.findUnique({ where: { key: this.priceKey(period) } });
+    const row = await this.prisma.bookingSetting.findUnique({
+      where: { key: this.priceKey(period) },
+    });
     const n = row ? parseInt(row.value, 10) : NaN;
     return Number.isFinite(n) && n > 0 ? n : SUB_DEFAULT_PRICE[period];
   }
@@ -69,14 +82,20 @@ export class SubscriptionService {
   }
 
   async getOptions() {
-    return Promise.all((['month', 'year'] as SubPeriod[]).map(async (p) => ({ period: p, price: await this.getPrice(p) })));
+    return Promise.all(
+      (['month', 'year'] as SubPeriod[]).map(async (p) => ({
+        period: p,
+        price: await this.getPrice(p),
+      })),
+    );
   }
 
   // ── lifecycle ────────────────────────────────────────────────────────────────
 
   /** Start a subscription: create it + the first (CIT) charge, return a payment URL. */
   async subscribe(dto: CreateSubscriptionDto) {
-    if (!this.enabled) throw new ServiceUnavailableException('SUBSCRIPTION_DISABLED');
+    if (!this.enabled)
+      throw new ServiceUnavailableException('SUBSCRIPTION_DISABLED');
     // Explicit consent to recurring auto-charges is required (auto-renewal).
     if (!dto.acceptedOffer) throw new BadRequestException('OFFER_NOT_ACCEPTED');
     const period: SubPeriod = dto.period === 'year' ? 'year' : 'month';
@@ -85,7 +104,15 @@ export class SubscriptionService {
 
     const sub = await this.prisma.subscription.create({
       data: encryptRecord(
-        { period, amount, email: dto.email?.trim() || null, telegramId: dto.telegramId ?? null, status: 'pending', cancelToken, acceptedOfferAt: new Date() },
+        {
+          period,
+          amount,
+          email: dto.email?.trim() || null,
+          telegramId: dto.telegramId ?? null,
+          status: 'pending',
+          cancelToken,
+          acceptedOfferAt: new Date(),
+        },
         SCHEMA,
       ) as any,
     });
@@ -120,20 +147,29 @@ export class SubscriptionService {
 
   private async markChargePaid(invId: number, paidAmount?: number) {
     const chargeId = invId - SUBSCRIPTION_INVID_BASE;
-    const charge = await this.prisma.subscriptionCharge.findUnique({ where: { id: chargeId } });
+    const charge = await this.prisma.subscriptionCharge.findUnique({
+      where: { id: chargeId },
+    });
     if (!charge || charge.status === 'paid') return { ok: true };
 
-    const sub = await this.prisma.subscription.findUnique({ where: { id: charge.subscriptionId } });
+    const sub = await this.prisma.subscription.findUnique({
+      where: { id: charge.subscriptionId },
+    });
     if (!sub) return { ok: true };
 
     // Defense in depth: signature already binds the amount, but flag any mismatch.
     if (paidAmount != null && Math.round(paidAmount) !== charge.amount) {
-      await this.notify.alertAdmin(`⚠️ <b>Подписка #${sub.id}: сумма расходится</b>\nОжидали ${charge.amount} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`);
+      await this.notify.alertAdmin(
+        `⚠️ <b>Подписка #${sub.id}: сумма расходится</b>\nОжидали ${charge.amount} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`,
+      );
     }
 
     const next = addPeriod(new Date(), sub.period as SubPeriod);
     await this.prisma.$transaction([
-      this.prisma.subscriptionCharge.update({ where: { id: chargeId }, data: { status: 'paid', paidAt: new Date() } }),
+      this.prisma.subscriptionCharge.update({
+        where: { id: chargeId },
+        data: { status: 'paid', paidAt: new Date() },
+      }),
       this.prisma.subscription.update({
         where: { id: sub.id },
         data: {
@@ -150,19 +186,26 @@ export class SubscriptionService {
     const plain = decryptRecord(sub, SCHEMA) as any;
     await this.notify.alertAdmin(
       `${charge.isFirst ? '🎉 <b>Новая подписка</b>' : '🔁 <b>Продление подписки</b>'} ${sub.amount} ₽/${sub.period === 'year' ? 'год' : 'мес'}` +
-      (plain.email ? `\n📬 ${plain.email}` : '') +
-      (sub.telegramId ? `\n👤 tg:${sub.telegramId}` : ''),
+        (plain.email ? `\n📬 ${plain.email}` : '') +
+        (sub.telegramId ? `\n👤 tg:${sub.telegramId}` : ''),
     );
-    this.logger.log(`Subscription ${sub.id} ${charge.isFirst ? 'ACTIVATED' : 'RENEWED'} → next ${next.toISOString()}`);
+    this.logger.log(
+      `Subscription ${sub.id} ${charge.isFirst ? 'ACTIVATED' : 'RENEWED'} → next ${next.toISOString()}`,
+    );
     return { ok: true };
   }
 
   /** Cancel a subscription (no further charges). Idempotent. */
   async cancel(cancelToken: string) {
-    const sub = await this.prisma.subscription.findUnique({ where: { cancelToken } });
+    const sub = await this.prisma.subscription.findUnique({
+      where: { cancelToken },
+    });
     if (!sub) throw new NotFoundException('Subscription not found');
     if (sub.status !== 'cancelled') {
-      await this.prisma.subscription.update({ where: { id: sub.id }, data: { status: 'cancelled', nextChargeAt: null } });
+      await this.prisma.subscription.update({
+        where: { id: sub.id },
+        data: { status: 'cancelled', nextChargeAt: null },
+      });
       this.logger.log(`Subscription ${sub.id} CANCELLED`);
     }
     return { ok: true };
@@ -170,7 +213,9 @@ export class SubscriptionService {
 
   /** Public view by token (no PII) for the manage page. */
   async getPublicByToken(cancelToken: string) {
-    const sub = await this.prisma.subscription.findUnique({ where: { cancelToken } });
+    const sub = await this.prisma.subscription.findUnique({
+      where: { cancelToken },
+    });
     if (!sub) throw new NotFoundException('Subscription not found');
     return {
       status: sub.status,
@@ -186,7 +231,16 @@ export class SubscriptionService {
       where: { telegramId, status: { in: ['active', 'past_due'] } },
       orderBy: { createdAt: 'desc' },
     });
-    return sub ? { id: sub.id, status: sub.status, period: sub.period, amount: sub.amount, nextChargeAt: sub.nextChargeAt, cancelToken: sub.cancelToken } : null;
+    return sub
+      ? {
+          id: sub.id,
+          status: sub.status,
+          period: sub.period,
+          amount: sub.amount,
+          nextChargeAt: sub.nextChargeAt,
+          cancelToken: sub.cancelToken,
+        }
+      : null;
   }
 
   /** Charge subscriptions whose next charge is due. Runs hourly. */
@@ -194,11 +248,17 @@ export class SubscriptionService {
   async chargeDue() {
     if (!this.enabled || !this.robokassa.enabled) return;
     const due = await this.prisma.subscription.findMany({
-      where: { status: { in: ['active', 'past_due'] }, nextChargeAt: { lte: new Date() }, firstInvId: { not: null } },
+      where: {
+        status: { in: ['active', 'past_due'] },
+        nextChargeAt: { lte: new Date() },
+        firstInvId: { not: null },
+      },
       take: 50,
     });
     for (const sub of due) {
-      const charge = await this.prisma.subscriptionCharge.create({ data: { subscriptionId: sub.id, amount: sub.amount } });
+      const charge = await this.prisma.subscriptionCharge.create({
+        data: { subscriptionId: sub.id, amount: sub.amount },
+      });
       const res = await this.robokassa.chargeRecurring({
         invId: SUBSCRIPTION_INVID_BASE + charge.id,
         previousInvId: sub.firstInvId!,
@@ -212,27 +272,40 @@ export class SubscriptionService {
         // confirms the charge (marks it paid, resets fails) idempotently.
         await this.prisma.subscription.update({
           where: { id: sub.id },
-          data: { nextChargeAt: addPeriod(new Date(), sub.period as SubPeriod) },
+          data: {
+            nextChargeAt: addPeriod(new Date(), sub.period as SubPeriod),
+          },
         });
-        this.logger.log(`Subscription ${sub.id} recurring charge sent (InvId=${SUBSCRIPTION_INVID_BASE + charge.id})`);
+        this.logger.log(
+          `Subscription ${sub.id} recurring charge sent (InvId=${SUBSCRIPTION_INVID_BASE + charge.id})`,
+        );
       } else {
         const fails = sub.failedAttempts + 1;
         await this.prisma.$transaction([
-          this.prisma.subscriptionCharge.update({ where: { id: charge.id }, data: { status: 'failed' } }),
+          this.prisma.subscriptionCharge.update({
+            where: { id: charge.id },
+            data: { status: 'failed' },
+          }),
           this.prisma.subscription.update({
             where: { id: sub.id },
             data: {
               failedAttempts: fails,
               status: fails >= MAX_FAILS ? 'past_due' : sub.status,
               // Retry in a day unless we've given up.
-              nextChargeAt: fails >= MAX_FAILS ? null : new Date(Date.now() + 24 * 3_600_000),
+              nextChargeAt:
+                fails >= MAX_FAILS
+                  ? null
+                  : new Date(Date.now() + 24 * 3_600_000),
             },
           }),
         ]);
-        await this.notify.alertAdmin(`⚠️ <b>Не удалось списать подписку #${sub.id}</b> (${fails}/${MAX_FAILS})\n${res.body.slice(0, 150)}`);
+        await this.notify.alertAdmin(
+          `⚠️ <b>Не удалось списать подписку #${sub.id}</b> (${fails}/${MAX_FAILS})\n${res.body.slice(0, 150)}`,
+        );
       }
     }
-    if (due.length) this.logger.log(`Processed ${due.length} due subscription(s)`);
+    if (due.length)
+      this.logger.log(`Processed ${due.length} due subscription(s)`);
   }
 }
 

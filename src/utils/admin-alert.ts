@@ -22,12 +22,15 @@ async function sendTelegram(text: string): Promise<boolean> {
   const chatId = process.env.ADMIN_ID;
   if (!token || !chatId) return false;
   try {
-    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text }),
-      signal: AbortSignal.timeout(10_000),
-    });
+    const res = await fetch(
+      `https://api.telegram.org/bot${token}/sendMessage`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text }),
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
     return res.ok;
   } catch {
     return false;
@@ -37,13 +40,22 @@ async function sendTelegram(text: string): Promise<boolean> {
 async function sendEmail(subject: string, text: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.ADMIN_EMAIL;
-  const from = process.env.EMAIL_FROM ?? 'SchemeHappens <no-reply@schemehappens.ru>';
+  const from =
+    process.env.EMAIL_FROM ?? 'SchemeHappens <no-reply@schemehappens.ru>';
   if (!apiKey || !to) return;
   try {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ from, to, subject, text: text.replace(/<[^>]+>/g, '') }),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from,
+        to,
+        subject,
+        text: text.replace(/<[^>]+>/g, ''),
+      }),
       signal: AbortSignal.timeout(10_000),
     });
   } catch {

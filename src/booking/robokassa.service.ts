@@ -28,8 +28,8 @@ export class RobokassaService {
 
   constructor(config: ConfigService) {
     this.login = config.get<string>('ROBOKASSA_MERCHANT_LOGIN') ?? '';
-    this.pass1  = config.get<string>('ROBOKASSA_PASSWORD1') ?? '';
-    this.pass2  = config.get<string>('ROBOKASSA_PASSWORD2') ?? '';
+    this.pass1 = config.get<string>('ROBOKASSA_PASSWORD1') ?? '';
+    this.pass2 = config.get<string>('ROBOKASSA_PASSWORD2') ?? '';
     this.isTest = config.get<string>('ROBOKASSA_IS_TEST') === 'true';
     this.fiscal = config.get<string>('ROBOKASSA_FISCAL') !== 'false'; // default ON
   }
@@ -57,7 +57,8 @@ export class RobokassaService {
     /** First payment of a recurring series — tokenises the card for later MIT charges. */
     recurring?: boolean;
   }): string {
-    const { invId, amount, desc, email, successUrl, failUrl, recurring } = params;
+    const { invId, amount, desc, email, successUrl, failUrl, recurring } =
+      params;
     const outSum = amount.toFixed(2);
 
     // Optional ОФД fiscalization. Per Robokassa docs, when a Receipt is sent it
@@ -71,8 +72,12 @@ export class RobokassaService {
     let receiptParam: string | null = null;
     let sig: string;
     if (this.fiscal) {
-      receiptParam = encodeURIComponent(JSON.stringify(buildReceipt(desc, amount)));
-      sig = md5(`${this.login}:${outSum}:${invId}:${receiptParam}:${this.pass1}`);
+      receiptParam = encodeURIComponent(
+        JSON.stringify(buildReceipt(desc, amount)),
+      );
+      sig = md5(
+        `${this.login}:${outSum}:${invId}:${receiptParam}:${this.pass1}`,
+      );
     } else {
       sig = md5(`${this.login}:${outSum}:${invId}:${this.pass1}`);
     }
@@ -92,7 +97,9 @@ export class RobokassaService {
       FailURL: failUrl,
       IsTest: this.isTest ? '1' : '0',
     });
-    this.logger.debug(`Payment URL built for InvId=${invId} (fiscal=${this.fiscal})`);
+    this.logger.debug(
+      `Payment URL built for InvId=${invId} (fiscal=${this.fiscal})`,
+    );
     return `${base}?${qs}`;
   }
 
@@ -125,7 +132,12 @@ export class RobokassaService {
    *   PreviousInvoiceID is sent but NOT part of the signature.
    * Returns { ok, body } — ok=true when Robokassa accepted the charge request.
    */
-  async chargeRecurring(params: { invId: number; previousInvId: number; amount: number; desc: string }): Promise<{ ok: boolean; body: string }> {
+  async chargeRecurring(params: {
+    invId: number;
+    previousInvId: number;
+    amount: number;
+    desc: string;
+  }): Promise<{ ok: boolean; body: string }> {
     const { invId, previousInvId, amount, desc } = params;
     const outSum = amount.toFixed(2);
     const sig = md5(`${this.login}:${outSum}:${invId}:${this.pass1}`);
@@ -147,10 +159,15 @@ export class RobokassaService {
       const body = (await res.text().catch(() => '')).trim();
       // Robokassa replies "OK<InvId>" on success, otherwise an error code/text.
       const ok = res.ok && /^OK/i.test(body);
-      if (!ok) this.logger.error(`Recurring charge InvId=${invId} failed: ${res.status} ${body.slice(0, 200)}`);
+      if (!ok)
+        this.logger.error(
+          `Recurring charge InvId=${invId} failed: ${res.status} ${body.slice(0, 200)}`,
+        );
       return { ok, body };
     } catch (e) {
-      this.logger.error(`Recurring charge InvId=${invId} error: ${(e as Error).message}`);
+      this.logger.error(
+        `Recurring charge InvId=${invId} error: ${(e as Error).message}`,
+      );
       return { ok: false, body: (e as Error).message };
     }
   }
@@ -179,13 +196,15 @@ function safeEqualHex(a: string, b: string): boolean {
  */
 function buildReceipt(name: string, amount: number) {
   return {
-    items: [{
-      name: name.slice(0, 128),
-      quantity: 1,
-      sum: parseFloat(amount.toFixed(2)),
-      tax: 'none',
-      payment_method: 'full_payment',
-      payment_object: 'service',
-    }],
+    items: [
+      {
+        name: name.slice(0, 128),
+        quantity: 1,
+        sum: parseFloat(amount.toFixed(2)),
+        tax: 'none',
+        payment_method: 'full_payment',
+        payment_object: 'service',
+      },
+    ],
   };
 }

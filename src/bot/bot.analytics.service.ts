@@ -19,33 +19,50 @@ export class BotAnalyticsService {
     return user?.notifyTimezone ?? 'Europe/Moscow';
   }
 
-  async getHistoryRatings(userId: bigint, days: number): Promise<Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>> {
+  async getHistoryRatings(
+    userId: bigint,
+    days: number,
+  ): Promise<
+    Array<{ date: string; ratings: Partial<Record<NeedId, number>> }>
+  > {
     const tz = await this.userTimezone(userId);
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       return this.localDateString(tz, d);
     });
-    const rows = await this.prisma.rating.findMany({ where: { userId, date: { in: dates } } });
+    const rows = await this.prisma.rating.findMany({
+      where: { userId, date: { in: dates } },
+    });
     const byDate = new Map<string, Partial<Record<NeedId, number>>>();
     for (const row of rows) {
       if (!byDate.has(row.date)) byDate.set(row.date, {});
       byDate.get(row.date)![row.needId as NeedId] = row.value;
     }
-    return dates.filter((d) => byDate.has(d)).map((d) => ({ date: d, ratings: byDate.get(d)! }));
+    return dates
+      .filter((d) => byDate.has(d))
+      .map((d) => ({ date: d, ratings: byDate.get(d)! }));
   }
 
-  async getLowStreakNeeds(userId: bigint, threshold: number, days: number): Promise<NeedId[]> {
+  async getLowStreakNeeds(
+    userId: bigint,
+    threshold: number,
+    days: number,
+  ): Promise<NeedId[]> {
     const tz = await this.userTimezone(userId);
     const dates = Array.from({ length: days }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       return this.localDateString(tz, d);
     });
-    const rows = await this.prisma.rating.findMany({ where: { userId, date: { in: dates } } });
+    const rows = await this.prisma.rating.findMany({
+      where: { userId, date: { in: dates } },
+    });
     return NEED_IDS.filter((needId) => {
       const needRows = rows.filter((r) => r.needId === needId);
-      return needRows.length === days && needRows.every((r) => r.value < threshold);
+      return (
+        needRows.length === days && needRows.every((r) => r.value < threshold)
+      );
     });
   }
 
@@ -59,7 +76,10 @@ export class BotAnalyticsService {
     const dates = new Set(rows.map((r) => r.date));
     let count = 0;
     while (true) {
-      const dateStr = this.localDateString(tz, new Date(Date.now() - count * 86_400_000));
+      const dateStr = this.localDateString(
+        tz,
+        new Date(Date.now() - count * 86_400_000),
+      );
       if (!dates.has(dateStr)) break;
       count++;
     }
@@ -84,7 +104,9 @@ export class BotAnalyticsService {
     if (!last) return -1;
     const tz = await this.userTimezone(userId);
     const today = this.localDateString(tz);
-    const diffMs = new Date(today + 'T00:00:00Z').getTime() - new Date(last.date + 'T00:00:00Z').getTime();
+    const diffMs =
+      new Date(today + 'T00:00:00Z').getTime() -
+      new Date(last.date + 'T00:00:00Z').getTime();
     return Math.floor(diffMs / 86_400_000);
   }
 
@@ -116,28 +138,44 @@ export class BotAnalyticsService {
       take: 2,
     });
     if (rows.length < 2) return null;
-    const diffMs = new Date(rows[0].date + 'T00:00:00Z').getTime() - new Date(rows[1].date + 'T00:00:00Z').getTime();
+    const diffMs =
+      new Date(rows[0].date + 'T00:00:00Z').getTime() -
+      new Date(rows[1].date + 'T00:00:00Z').getTime();
     return Math.floor(diffMs / 86_400_000);
   }
 
-  async getWeeklyStats(userId: bigint): Promise<Array<{ needId: NeedId; avg: number | null; trend: '↑' | '↓' | '→' }>> {
+  async getWeeklyStats(
+    userId: bigint,
+  ): Promise<
+    Array<{ needId: NeedId; avg: number | null; trend: '↑' | '↓' | '→' }>
+  > {
     const tz = await this.userTimezone(userId);
     const last14 = Array.from({ length: 14 }, (_, i) =>
       this.localDateString(tz, new Date(Date.now() - i * 86_400_000)),
     );
-    const rows = await this.prisma.rating.findMany({ where: { userId, date: { in: last14 } } });
+    const rows = await this.prisma.rating.findMany({
+      where: { userId, date: { in: last14 } },
+    });
     const curSet = new Set(last14.slice(0, 7));
     const prevSet = new Set(last14.slice(7));
 
     return NEED_IDS.map((needId) => {
       const cur = rows.filter((r) => r.needId === needId && curSet.has(r.date));
-      const prev = rows.filter((r) => r.needId === needId && prevSet.has(r.date));
-      const avg = cur.length ? cur.reduce((s, r) => s + r.value, 0) / cur.length : null;
-      const prevAvg = prev.length ? prev.reduce((s, r) => s + r.value, 0) / prev.length : null;
+      const prev = rows.filter(
+        (r) => r.needId === needId && prevSet.has(r.date),
+      );
+      const avg = cur.length
+        ? cur.reduce((s, r) => s + r.value, 0) / cur.length
+        : null;
+      const prevAvg = prev.length
+        ? prev.reduce((s, r) => s + r.value, 0) / prev.length
+        : null;
       const trend: '↑' | '↓' | '→' =
-        avg !== null && prevAvg !== null && avg - prevAvg > 0.5 ? '↑'
-        : avg !== null && prevAvg !== null && avg - prevAvg < -0.5 ? '↓'
-        : '→';
+        avg !== null && prevAvg !== null && avg - prevAvg > 0.5
+          ? '↑'
+          : avg !== null && prevAvg !== null && avg - prevAvg < -0.5
+            ? '↓'
+            : '→';
       return { needId, avg, trend };
     });
   }
@@ -150,8 +188,10 @@ export class BotAnalyticsService {
    */
   async getProfileInsight(userId: bigint): Promise<{
     totalDays: number;
-    strongest: NeedId; strongestAvg: number;
-    weakest: NeedId; weakestAvg: number;
+    strongest: NeedId;
+    strongestAvg: number;
+    weakest: NeedId;
+    weakestAvg: number;
   } | null> {
     const rows = await this.prisma.rating.findMany({
       where: { userId },
@@ -164,7 +204,8 @@ export class BotAnalyticsService {
     const byNeed = new Map<NeedId, { sum: number; n: number }>();
     for (const r of rows) {
       const cur = byNeed.get(r.needId as NeedId) ?? { sum: 0, n: 0 };
-      cur.sum += r.value; cur.n++;
+      cur.sum += r.value;
+      cur.n++;
       byNeed.set(r.needId as NeedId, cur);
     }
     const avgs = [...byNeed.entries()]
@@ -176,12 +217,16 @@ export class BotAnalyticsService {
     const weakest = avgs[avgs.length - 1];
     return {
       totalDays,
-      strongest: strongest.needId, strongestAvg: strongest.avg,
-      weakest: weakest.needId, weakestAvg: weakest.avg,
+      strongest: strongest.needId,
+      strongestAvg: strongest.avg,
+      weakest: weakest.needId,
+      weakestAvg: weakest.avg,
     };
   }
 
-  async getAchievements(userId: bigint): Promise<Array<{ id: string; earned: boolean }>> {
+  async getAchievements(
+    userId: bigint,
+  ): Promise<Array<{ id: string; earned: boolean }>> {
     const streak = await this.getStreakData(userId);
     const total = streak.totalDays;
     const longest = streak.longestStreak;
@@ -196,52 +241,61 @@ export class BotAnalyticsService {
       if (!byDate.has(r.date)) byDate.set(r.date, {});
       byDate.get(r.date)![r.needId] = r.value;
     }
-    let hasHighDay = false, hasAllAbove7 = false, hasGrowth = false, hasComeBack = false;
+    let hasHighDay = false,
+      hasAllAbove7 = false,
+      hasGrowth = false,
+      hasComeBack = false;
     for (const [, ratings] of byDate) {
       const vals = Object.values(ratings);
       if (vals.length === 5) {
         const avg = vals.reduce((s, v) => s + v, 0) / 5;
         if (avg >= 8) hasHighDay = true;
-        if (vals.every(v => v >= 7)) hasAllAbove7 = true;
+        if (vals.every((v) => v >= 7)) hasAllAbove7 = true;
       }
     }
     // comeback: sorted dates, find gap >= 3 then resumption
     const sorted = [...byDate.keys()].sort();
     for (let i = 1; i < sorted.length; i++) {
       const prev = new Date(sorted[i - 1] + 'T12:00:00Z');
-      const cur  = new Date(sorted[i]     + 'T12:00:00Z');
-      if (Math.round((cur.getTime() - prev.getTime()) / 86_400_000) >= 3) { hasComeBack = true; break; }
+      const cur = new Date(sorted[i] + 'T12:00:00Z');
+      if (Math.round((cur.getTime() - prev.getTime()) / 86_400_000) >= 3) {
+        hasComeBack = true;
+        break;
+      }
     }
     // growth: compare last 7 days vs prev 7 days per need
     const tz = await this.userTimezone(userId);
     const last14 = Array.from({ length: 14 }, (_, i) =>
       this.localDateString(tz, new Date(Date.now() - i * 86_400_000)),
     );
-    const recent = rows.filter(r => last14.slice(0, 7).includes(r.date));
-    const older  = rows.filter(r => last14.slice(7).includes(r.date));
+    const recent = rows.filter((r) => last14.slice(0, 7).includes(r.date));
+    const older = rows.filter((r) => last14.slice(7).includes(r.date));
     for (const needId of NEED_IDS) {
-      const r = recent.filter(r => r.needId === needId);
-      const o = older.filter(r => r.needId === needId);
+      const r = recent.filter((r) => r.needId === needId);
+      const o = older.filter((r) => r.needId === needId);
       if (r.length && o.length) {
         const rAvg = r.reduce((s, x) => s + x.value, 0) / r.length;
         const oAvg = o.reduce((s, x) => s + x.value, 0) / o.length;
-        if (rAvg - oAvg >= 3) { hasGrowth = true; break; }
+        if (rAvg - oAvg >= 3) {
+          hasGrowth = true;
+          break;
+        }
       }
     }
 
     return [
-      { id: 'first_day',  earned: total >= 1 },
-      { id: 'streak_3',   earned: longest >= 3 },
-      { id: 'streak_7',   earned: longest >= 7 },
-      { id: 'streak_14',  earned: longest >= 14 },
-      { id: 'streak_30',  earned: longest >= 30 },
+      { id: 'first_day', earned: total >= 1 },
+      { id: 'streak_3', earned: longest >= 3 },
+      { id: 'streak_7', earned: longest >= 7 },
+      { id: 'streak_14', earned: longest >= 14 },
+      { id: 'streak_30', earned: longest >= 30 },
       { id: 'streak_100', earned: longest >= 100 },
-      { id: 'total_10',   earned: total >= 10 },
-      { id: 'total_50',   earned: total >= 50 },
-      { id: 'high_day',   earned: hasHighDay },
+      { id: 'total_10', earned: total >= 10 },
+      { id: 'total_50', earned: total >= 50 },
+      { id: 'high_day', earned: hasHighDay },
       { id: 'all_above7', earned: hasAllAbove7 },
-      { id: 'comeback',   earned: hasComeBack },
-      { id: 'growth',     earned: hasGrowth },
+      { id: 'comeback', earned: hasComeBack },
+      { id: 'growth', earned: hasGrowth },
     ];
   }
 
@@ -249,11 +303,27 @@ export class BotAnalyticsService {
   private async getActiveDates(userId: bigint): Promise<Set<string>> {
     const uid = userId;
     const [ratings, activity, schema, mode, gratitude] = await Promise.all([
-      this.prisma.rating.findMany({ where: { userId: uid }, select: { date: true }, distinct: ['date'] }),
-      this.prisma.appActivity.findMany({ where: { userId: uid }, select: { date: true } }),
-      this.prisma.schemaDiaryEntry.findMany({ where: { userId: uid }, select: { createdAt: true } }),
-      this.prisma.modeDiaryEntry.findMany({ where: { userId: uid }, select: { createdAt: true } }),
-      this.prisma.gratitudeDiaryEntry.findMany({ where: { userId: uid }, select: { date: true } }),
+      this.prisma.rating.findMany({
+        where: { userId: uid },
+        select: { date: true },
+        distinct: ['date'],
+      }),
+      this.prisma.appActivity.findMany({
+        where: { userId: uid },
+        select: { date: true },
+      }),
+      this.prisma.schemaDiaryEntry.findMany({
+        where: { userId: uid },
+        select: { createdAt: true },
+      }),
+      this.prisma.modeDiaryEntry.findMany({
+        where: { userId: uid },
+        select: { createdAt: true },
+      }),
+      this.prisma.gratitudeDiaryEntry.findMany({
+        where: { userId: uid },
+        select: { date: true },
+      }),
     ]);
     const tz = await this.userTimezone(userId);
     const set = new Set<string>();
@@ -291,19 +361,28 @@ export class BotAnalyticsService {
     const startOffset = dates.has(today) ? 0 : 1;
     let currentStreak = 0;
     while (true) {
-      const d = this.localDateString(tz, new Date(Date.now() - (startOffset + currentStreak) * 86_400_000));
+      const d = this.localDateString(
+        tz,
+        new Date(Date.now() - (startOffset + currentStreak) * 86_400_000),
+      );
       if (!dates.has(d)) break;
       currentStreak++;
     }
 
     // longest streak — scan sorted distinct dates
     const sorted = [...dates].sort();
-    let longest = 0, run = 0;
+    let longest = 0,
+      run = 0;
     for (let i = 0; i < sorted.length; i++) {
-      if (i === 0) { run = 1; continue; }
+      if (i === 0) {
+        run = 1;
+        continue;
+      }
       const prev = new Date(sorted[i - 1] + 'T12:00:00Z');
-      const cur  = new Date(sorted[i]     + 'T12:00:00Z');
-      const diffDays = Math.round((cur.getTime() - prev.getTime()) / 86_400_000);
+      const cur = new Date(sorted[i] + 'T12:00:00Z');
+      const diffDays = Math.round(
+        (cur.getTime() - prev.getTime()) / 86_400_000,
+      );
       run = diffDays === 1 ? run + 1 : 1;
       if (run > longest) longest = run;
     }
@@ -317,7 +396,9 @@ export class BotAnalyticsService {
     const todayDow = (todayUtcNoon.getUTCDay() + 6) % 7; // 0=Mon, 6=Sun
     const weekDots = Array.from({ length: 7 }, (_, i) => {
       if (i > todayDow) return false; // future day
-      const dayDate = new Date(todayUtcNoon.getTime() + (i - todayDow) * 86_400_000);
+      const dayDate = new Date(
+        todayUtcNoon.getTime() + (i - todayDow) * 86_400_000,
+      );
       return dates.has(this.localDateString(tz, dayDate));
     });
 
@@ -334,9 +415,18 @@ export class BotAnalyticsService {
     const rows = await this.prisma.rating.findMany({ where: { userId } });
     if (rows.length === 0) return null;
     const sumByDow = new Map<number, { sum: number; count: number }>();
-    const DAY_NAMES = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+    const DAY_NAMES = [
+      'воскресенье',
+      'понедельник',
+      'вторник',
+      'среда',
+      'четверг',
+      'пятница',
+      'суббота',
+    ];
     const sumByDate = new Map<string, number>();
-    for (const r of rows) sumByDate.set(r.date, (sumByDate.get(r.date) ?? 0) + r.value);
+    for (const r of rows)
+      sumByDate.set(r.date, (sumByDate.get(r.date) ?? 0) + r.value);
     for (const [date, sum] of sumByDate) {
       const dow = new Date(date + 'T12:00:00Z').getUTCDay();
       const cur = sumByDow.get(dow) ?? { sum: 0, count: 0 };
@@ -352,27 +442,59 @@ export class BotAnalyticsService {
   async getAdminStats(): Promise<string> {
     const now = new Date();
     const today = this.localDateString('UTC', now);
-    const d7 = this.localDateString('UTC', new Date(now.getTime() - 7 * 86_400_000));
-    const d30 = this.localDateString('UTC', new Date(now.getTime() - 30 * 86_400_000));
+    const d7 = this.localDateString(
+      'UTC',
+      new Date(now.getTime() - 7 * 86_400_000),
+    );
+    const d30 = this.localDateString(
+      'UTC',
+      new Date(now.getTime() - 30 * 86_400_000),
+    );
     const ago7 = new Date(now.getTime() - 7 * 86_400_000);
     const ago30 = new Date(now.getTime() - 30 * 86_400_000);
 
     const [
-      totalUsers, newUsers7, newUsers30, notifyOff, blockedUsers,
+      totalUsers,
+      newUsers7,
+      newUsers30,
+      notifyOff,
+      blockedUsers,
       activePairs,
-      todayRatings, week7Ratings, month30Ratings,
+      todayRatings,
+      week7Ratings,
+      month30Ratings,
       needAvgs,
       fillsByDow,
     ] = await Promise.all([
       this.prisma.user.count({ where: { deletedAt: null } }),
-      this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: ago7 } } }),
-      this.prisma.user.count({ where: { deletedAt: null, createdAt: { gte: ago30 } } }),
-      this.prisma.user.count({ where: { deletedAt: null, notifyEnabled: false } }),
-      this.prisma.user.count({ where: { deletedAt: null, botBlockedAt: { not: null } } }),
+      this.prisma.user.count({
+        where: { deletedAt: null, createdAt: { gte: ago7 } },
+      }),
+      this.prisma.user.count({
+        where: { deletedAt: null, createdAt: { gte: ago30 } },
+      }),
+      this.prisma.user.count({
+        where: { deletedAt: null, notifyEnabled: false },
+      }),
+      this.prisma.user.count({
+        where: { deletedAt: null, botBlockedAt: { not: null } },
+      }),
       this.prisma.pair.count({ where: { status: 'active' } }),
-      this.prisma.rating.findMany({ where: { date: today }, select: { userId: true }, distinct: ['userId'] }),
-      this.prisma.rating.findMany({ where: { date: { gte: d7 } }, select: { userId: true }, distinct: ['userId'] }),
-      this.prisma.rating.findMany({ where: { date: { gte: d30 } }, select: { userId: true }, distinct: ['userId'] }),
+      this.prisma.rating.findMany({
+        where: { date: today },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      this.prisma.rating.findMany({
+        where: { date: { gte: d7 } },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      this.prisma.rating.findMany({
+        where: { date: { gte: d30 } },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
       // Average score per need over last 7 days
       this.prisma.rating.groupBy({
         by: ['needId'],
@@ -389,29 +511,54 @@ export class BotAnalyticsService {
     ]);
 
     // Retention funnel — count users with N+ distinct fill days (raw SQL for efficiency)
-    const retentionRows = await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
+    const retentionRows = (await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
       SELECT COUNT(*) AS cnt FROM (
         SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 1
-      ) t` as any[];
+      ) t`) as any[];
     const ret1 = Number(retentionRows[0]?.cnt ?? 0);
-    const ret3 = Number((await this.prisma.$queryRaw<any[]>`
-      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 3) t`)[0]?.cnt ?? 0);
-    const ret7 = Number((await this.prisma.$queryRaw<any[]>`
-      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 7) t`)[0]?.cnt ?? 0);
-    const ret30 = Number((await this.prisma.$queryRaw<any[]>`
-      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 30) t`)[0]?.cnt ?? 0);
+    const ret3 = Number(
+      (
+        await this.prisma.$queryRaw<any[]>`
+      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 3) t`
+      )[0]?.cnt ?? 0,
+    );
+    const ret7 = Number(
+      (
+        await this.prisma.$queryRaw<any[]>`
+      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 7) t`
+      )[0]?.cnt ?? 0,
+    );
+    const ret30 = Number(
+      (
+        await this.prisma.$queryRaw<any[]>`
+      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 30) t`
+      )[0]?.cnt ?? 0,
+    );
 
     // Churn signal: active in d7-d30 but NOT in last 7 days
-    const activeRecent = new Set(week7Ratings.map(r => String(r.userId)));
+    const activeRecent = new Set(week7Ratings.map((r) => String(r.userId)));
     const activeOlder = new Set(
-      await this.prisma.rating.findMany({ where: { date: { gte: d30, lt: d7 } }, select: { userId: true }, distinct: ['userId'] })
-        .then(rows => rows.map(r => String(r.userId)))
+      await this.prisma.rating
+        .findMany({
+          where: { date: { gte: d30, lt: d7 } },
+          select: { userId: true },
+          distinct: ['userId'],
+        })
+        .then((rows) => rows.map((r) => String(r.userId))),
     );
-    const churnRisk = [...activeOlder].filter(id => !activeRecent.has(id)).length;
+    const churnRisk = [...activeOlder].filter(
+      (id) => !activeRecent.has(id),
+    ).length;
 
     // Most neglected need (lowest avg this week)
     const lowestNeed = needAvgs[0];
-    const needLabels: Record<string, string> = { attachment: 'Привязанность', autonomy: 'Автономия', expression: 'Выражение чувств', play: 'Спонтанность', limits: 'Границы' };
+    const needLabels: Record<string, string> = {
+      attachment: 'Привязанность',
+      autonomy: 'Автономия',
+      expression: 'Выражение чувств',
+      play: 'Спонтанность',
+      limits: 'Границы',
+    };
 
     // Best fill day of week (last 30 days) — count user-day pairs per DOW
     const DOW = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
@@ -420,7 +567,10 @@ export class BotAnalyticsService {
       dowCounts[new Date(r.date + 'T12:00:00Z').getUTCDay()]++;
     }
     const bestDow = dowCounts.indexOf(Math.max(...dowCounts));
-    const fillRate = month30Ratings.length > 0 ? Math.round((todayRatings.length / month30Ratings.length) * 100) : 0;
+    const fillRate =
+      month30Ratings.length > 0
+        ? Math.round((todayRatings.length / month30Ratings.length) * 100)
+        : 0;
 
     const lines = [
       `📊 <b>Статистика бота</b> · ${today}`,
@@ -438,7 +588,9 @@ export class BotAnalyticsService {
       `1+ день: ${ret1}  ·  3+ дня: ${ret3}  ·  7+ дней: ${ret7}  ·  30+ дней: ${ret30}`,
       '',
       `🔍 <b>Инсайты за 7 дней</b>`,
-      lowestNeed ? `Западает: ${needLabels[lowestNeed.needId] ?? lowestNeed.needId} (avg ${lowestNeed._avg.value?.toFixed(1)})` : 'Нет данных по потребностям',
+      lowestNeed
+        ? `Западает: ${needLabels[lowestNeed.needId] ?? lowestNeed.needId} (avg ${lowestNeed._avg.value?.toFixed(1)})`
+        : 'Нет данных по потребностям',
       `Лучший день для заполнения: ${DOW[bestDow]}`,
       '',
       `💑 <b>Пары</b>`,
@@ -452,10 +604,19 @@ export class BotAnalyticsService {
     const rows = await this.prisma.rating.findMany({ where: { userId } });
     if (rows.length === 0) return null;
     const sumByDow = new Map<number, { sum: number; count: number }>();
-    const DAY_NAMES = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+    const DAY_NAMES = [
+      'воскресенье',
+      'понедельник',
+      'вторник',
+      'среда',
+      'четверг',
+      'пятница',
+      'суббота',
+    ];
     // Group by day of week using all historical data
     const sumByDate = new Map<string, number>();
-    for (const r of rows) sumByDate.set(r.date, (sumByDate.get(r.date) ?? 0) + r.value);
+    for (const r of rows)
+      sumByDate.set(r.date, (sumByDate.get(r.date) ?? 0) + r.value);
     for (const [date, sum] of sumByDate) {
       const dow = new Date(date + 'T12:00:00Z').getUTCDay();
       const cur = sumByDow.get(dow) ?? { sum: 0, count: 0 };

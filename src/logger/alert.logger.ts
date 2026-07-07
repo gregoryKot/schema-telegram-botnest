@@ -13,7 +13,8 @@ export class AlertLogger extends ConsoleLogger {
   private alert(message: string) {
     const now = Date.now();
     // Evict entries older than 1 hour to prevent unbounded Map growth
-    for (const [k, t] of this.seen) if (now - t > 3_600_000) this.seen.delete(k);
+    for (const [k, t] of this.seen)
+      if (now - t > 3_600_000) this.seen.delete(k);
 
     const key = message.slice(0, 100);
     const lastSent = this.seen.get(key) ?? 0;
@@ -21,6 +22,9 @@ export class AlertLogger extends ConsoleLogger {
     this.seen.set(key, now);
 
     // Telegram first, e-mail fallback. Fire-and-forget — never throws.
-    void notifyAdminWithFallback(`🚨 Ошибка на сервере\n${message.slice(0, 300)}`, '🚨 Ошибка на сервере SchemeHappens');
+    void notifyAdminWithFallback(
+      `🚨 Ошибка на сервере\n${message.slice(0, 300)}`,
+      '🚨 Ошибка на сервере SchemeHappens',
+    );
   }
 }

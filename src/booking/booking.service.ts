@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -49,7 +55,9 @@ export class BookingService {
     private readonly pricing: PricingService,
     config: ConfigService,
   ) {
-    this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr').replace(/\/$/, '');
+    this.siteUrl = (
+      config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
+    ).replace(/\/$/, '');
   }
 
   /**
@@ -73,7 +81,10 @@ export class BookingService {
     // Returning client: the contact must match an existing personal meeting,
     // otherwise we'd silently create a duplicate room. Reject with a code the
     // frontend turns into a friendly "check your contact" message.
-    if (dto.returning && !(await this.meeting.hasMeetingForContact(dto.clientContact))) {
+    if (
+      dto.returning &&
+      !(await this.meeting.hasMeetingForContact(dto.clientContact))
+    ) {
       throw new BadRequestException('CLIENT_NOT_FOUND');
     }
     // No last-minute bookings: the slot must be at least MIN_BOOK_LEAD_HOURS away.
@@ -83,7 +94,9 @@ export class BookingService {
     await this.assertSlotFree(dto.startsAt, dto.durationMin);
 
     const isFree = dto.type === SessionType.INTRO_15;
-    const heldUntil = isFree ? null : new Date(Date.now() + HOLD_MINUTES * 60_000);
+    const heldUntil = isFree
+      ? null
+      : new Date(Date.now() + HOLD_MINUTES * 60_000);
     const cancelToken = randomUUID();
 
     const data: any = encryptRecord(
@@ -104,17 +117,26 @@ export class BookingService {
     );
 
     const booking = await this.prisma.booking.create({ data });
-    this.logger.log(`Booking ${booking.id} created (${isFree ? 'CONFIRMED' : 'HELD'})`);
+    this.logger.log(
+      `Booking ${booking.id} created (${isFree ? 'CONFIRMED' : 'HELD'})`,
+    );
 
     if (isFree) {
       const plain = decryptRecord(booking, SCHEMA) as any;
       await this.notify.onConfirmed(plain);
-      return { id: booking.id, cancelToken, heldUntil: null, status: BookingStatus.CONFIRMED, paymentUrl: null, meetingUrl: plain.meetingUrl ?? null };
+      return {
+        id: booking.id,
+        cancelToken,
+        heldUntil: null,
+        status: BookingStatus.CONFIRMED,
+        paymentUrl: null,
+        meetingUrl: plain.meetingUrl ?? null,
+      };
     }
 
     // Paid session — build Robokassa payment URL if configured.
     let paymentUrl: string | null = null;
-    let meetingUrl: string | null = null;
+    const meetingUrl: string | null = null;
     if (this.robokassa.enabled) {
       const price = await this.pricing.getPrice(dto.type);
       paymentUrl = this.robokassa.buildPaymentUrl({
@@ -130,16 +152,33 @@ export class BookingService {
       // Tell the admin a slot is reserved & awaiting payment — so even if the
       // client's payment fails (or Robokassa is misconfigured), the request and
       // contact are never lost.
-      await this.notify.onAwaitingPayment(decryptRecord(booking, SCHEMA) as any);
+      await this.notify.onAwaitingPayment(decryptRecord(booking, SCHEMA));
     } else {
       // Robokassa not configured (dev): auto-confirm so slot isn't stuck in HELD.
-      await this.prisma.booking.update({ where: { id: booking.id }, data: { status: BookingStatus.CONFIRMED, heldUntil: null } });
+      await this.prisma.booking.update({
+        where: { id: booking.id },
+        data: { status: BookingStatus.CONFIRMED, heldUntil: null },
+      });
       const plain = decryptRecord(booking, SCHEMA) as any;
       await this.notify.onConfirmed(plain);
-      return { id: booking.id, cancelToken, heldUntil: null, status: BookingStatus.CONFIRMED, paymentUrl: null, meetingUrl: plain.meetingUrl ?? null };
+      return {
+        id: booking.id,
+        cancelToken,
+        heldUntil: null,
+        status: BookingStatus.CONFIRMED,
+        paymentUrl: null,
+        meetingUrl: plain.meetingUrl ?? null,
+      };
     }
 
-    return { id: booking.id, cancelToken, heldUntil, status: BookingStatus.HELD, paymentUrl, meetingUrl };
+    return {
+      id: booking.id,
+      cancelToken,
+      heldUntil,
+      status: BookingStatus.HELD,
+      paymentUrl,
+      meetingUrl,
+    };
   }
 
   /** Confirm a HELD booking (e.g. after payment or manual admin action).
@@ -149,12 +188,16 @@ export class BookingService {
     const booking = await this.prisma.booking.findUnique({ where: { id } });
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.status !== BookingStatus.HELD) {
-      throw new ConflictException(`Cannot confirm booking in status ${booking.status}`);
+      throw new ConflictException(
+        `Cannot confirm booking in status ${booking.status}`,
+      );
     }
     if (paidAmount != null) {
       const expected = await this.pricing.getPrice(booking.type);
       if (Math.round(paidAmount) !== expected) {
-        await this.notify.alertAdmin(`⚠️ <b>Бронь #${id}: сумма расходится</b>\nОжидали ${expected} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`);
+        await this.notify.alertAdmin(
+          `⚠️ <b>Бронь #${id}: сумма расходится</b>\nОжидали ${expected} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`,
+        );
       }
     }
 
@@ -163,7 +206,7 @@ export class BookingService {
       data: { status: BookingStatus.CONFIRMED, heldUntil: null },
     });
 
-    await this.notify.onConfirmed(decryptRecord(booking, SCHEMA) as any);
+    await this.notify.onConfirmed(decryptRecord(booking, SCHEMA));
     this.logger.log(`Booking ${id} CONFIRMED`);
     return { ok: true };
   }
@@ -174,14 +217,20 @@ export class BookingService {
    *                       MIN_CANCEL_LEAD_HOURS window. Admin flows can pass false.
    */
   async cancel(cancelToken: string, enforceCutoff = true) {
-    const booking = await this.prisma.booking.findUnique({ where: { cancelToken } });
+    const booking = await this.prisma.booking.findUnique({
+      where: { cancelToken },
+    });
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.status === BookingStatus.CANCELLED) return { ok: true };
     if (booking.status === BookingStatus.COMPLETED) {
       throw new BadRequestException('Cannot cancel completed session');
     }
     // Too late to self-cancel — the client must contact the therapist directly.
-    if (enforceCutoff && booking.startsAt.getTime() < Date.now() + MIN_CANCEL_LEAD_HOURS * 3_600_000) {
+    if (
+      enforceCutoff &&
+      booking.startsAt.getTime() <
+        Date.now() + MIN_CANCEL_LEAD_HOURS * 3_600_000
+    ) {
       throw new BadRequestException('CANCEL_TOO_LATE');
     }
 
@@ -190,7 +239,10 @@ export class BookingService {
       data: { status: BookingStatus.CANCELLED, heldUntil: null },
     });
 
-    await this.notify.onCancelled(decryptRecord(booking, SCHEMA) as any, booking.calDavUid);
+    await this.notify.onCancelled(
+      decryptRecord(booking, SCHEMA),
+      booking.calDavUid,
+    );
     this.logger.log(`Booking ${booking.id} CANCELLED`);
     return { ok: true };
   }
@@ -205,10 +257,16 @@ export class BookingService {
   async list(filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') {
     const now = new Date();
     const where =
-      filter === 'past'      ? { startsAt: { lt: now } } :
-      filter === 'cancelled' ? { status: BookingStatus.CANCELLED } :
-      filter === 'all'       ? {} :
-      { startsAt: { gte: now }, status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] } };
+      filter === 'past'
+        ? { startsAt: { lt: now } }
+        : filter === 'cancelled'
+          ? { status: BookingStatus.CANCELLED }
+          : filter === 'all'
+            ? {}
+            : {
+                startsAt: { gte: now },
+                status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] },
+              };
     const rows = await this.prisma.booking.findMany({
       where,
       orderBy: { startsAt: filter === 'upcoming' ? 'asc' : 'desc' },
@@ -228,13 +286,17 @@ export class BookingService {
    * Returns only non-PII session fields — never the client's name/contact.
    */
   async getPublicByToken(token: string) {
-    const b = await this.prisma.booking.findUnique({ where: { cancelToken: token } });
+    const b = await this.prisma.booking.findUnique({
+      where: { cancelToken: token },
+    });
     if (!b) throw new NotFoundException('Booking not found');
     return {
       status: b.status,
       type: b.type,
       startsAt: b.startsAt.toISOString(),
-      endsAt: new Date(b.startsAt.getTime() + b.durationMin * 60_000).toISOString(),
+      endsAt: new Date(
+        b.startsAt.getTime() + b.durationMin * 60_000,
+      ).toISOString(),
       durationMin: b.durationMin,
       meetingUrl: b.meetingUrl,
     };
@@ -252,7 +314,9 @@ export class BookingService {
       data: { status: BookingStatus.CANCELLED, heldUntil: null },
     });
     this.logger.log(`Expired ${expiring.length} HELD booking(s)`);
-    await this.notify.notifyExpired(expiring.map((b) => decryptRecord(b, SCHEMA) as any));
+    await this.notify.notifyExpired(
+      expiring.map((b) => decryptRecord(b, SCHEMA) as any),
+    );
   }
 
   // ── private ────────────────────────────────────────────────────────────────

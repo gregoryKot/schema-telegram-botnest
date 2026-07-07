@@ -19,8 +19,25 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [TelegramModule, AuthModule],
-  controllers: [BookingController, BookingAdminController, PaymentController, DonationController, SubscriptionController],
-  providers: [BookingService, BookingNotifyService, SlotService, AvailabilityService, CalDavService, MeetingService, RobokassaService, PricingService, DonationService, SubscriptionService],
+  controllers: [
+    BookingController,
+    BookingAdminController,
+    PaymentController,
+    DonationController,
+    SubscriptionController,
+  ],
+  providers: [
+    BookingService,
+    BookingNotifyService,
+    SlotService,
+    AvailabilityService,
+    CalDavService,
+    MeetingService,
+    RobokassaService,
+    PricingService,
+    DonationService,
+    SubscriptionService,
+  ],
   exports: [BookingService, SlotService, SubscriptionService],
 })
 export class BookingModule {}

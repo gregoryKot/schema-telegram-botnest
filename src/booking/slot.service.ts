@@ -50,7 +50,9 @@ export class SlotService {
 
     // Busy intervals from the therapist's real calendar — only when explicitly
     // enabled, so /slots never depends on (or hangs on) CalDAV by default.
-    const calBusy = this.blockBusy ? await this.calDav.getBusyTimes(fromDate, toDate) : [];
+    const calBusy = this.blockBusy
+      ? await this.calDav.getBusyTimes(fromDate, toDate)
+      : [];
 
     // Earliest bookable instant: now + minimum lead time.
     const earliest = Date.now() + MIN_BOOK_LEAD_HOURS * 3_600_000;
@@ -67,17 +69,31 @@ export class SlotService {
         if (rule.dayOfWeek !== jsDay) continue;
         const tz = rule.timezone;
         const dateStr = toDateStr(cursor, tz);
-        const slotStart = localToUtc(`${dateStr}T${pad(rule.startHour)}:${pad(rule.startMinute)}:00`, tz);
-        const slotEnd = localToUtc(`${dateStr}T${pad(rule.endHour)}:${pad(rule.endMinute)}:00`, tz);
+        const slotStart = localToUtc(
+          `${dateStr}T${pad(rule.startHour)}:${pad(rule.startMinute)}:00`,
+          tz,
+        );
+        const slotEnd = localToUtc(
+          `${dateStr}T${pad(rule.endHour)}:${pad(rule.endMinute)}:00`,
+          tz,
+        );
         const step = (rule.sessionDuration + rule.bufferMin) * 60_000;
 
-        for (let t = slotStart.getTime(); t + rule.sessionDuration * 60_000 <= slotEnd.getTime(); t += step) {
+        for (
+          let t = slotStart.getTime();
+          t + rule.sessionDuration * 60_000 <= slotEnd.getTime();
+          t += step
+        ) {
           const start = new Date(t);
           const finish = new Date(t + rule.sessionDuration * 60_000);
           if (isOccupied(start, finish, busyBookings)) continue;
           if (overlapsBusy(start, finish, calBusy)) continue; // therapist's calendar
           if (start.getTime() <= earliest) continue; // past + min lead time (no last-minute)
-          slots.push({ startsAt: start, endsAt: finish, durationMin: rule.sessionDuration });
+          slots.push({
+            startsAt: start,
+            endsAt: finish,
+            durationMin: rule.sessionDuration,
+          });
         }
       }
       cursor.setUTCDate(cursor.getUTCDate() + 1);
@@ -90,9 +106,14 @@ export class SlotService {
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function overlapsBusy(start: Date, end: Date, busy: { start: Date; end: Date }[]): boolean {
+function overlapsBusy(
+  start: Date,
+  end: Date,
+  busy: { start: Date; end: Date }[],
+): boolean {
   for (const b of busy) {
-    if (start.getTime() < b.end.getTime() && end.getTime() > b.start.getTime()) return true;
+    if (start.getTime() < b.end.getTime() && end.getTime() > b.start.getTime())
+      return true;
   }
   return false;
 }
@@ -103,7 +124,12 @@ function pad(n: number): string {
 
 /** Format date as YYYY-MM-DD in given timezone */
 function toDateStr(utc: Date, tz: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(utc);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(utc);
 }
 
 /** Convert a local wall-clock datetime string (no Z) to UTC Date using given tz */

@@ -12,7 +12,12 @@
 
 const BOOTSTRAP = 'https://caldav.icloud.com';
 
-async function propfind(url: string, auth: string, body: string, depth = '0'): Promise<string> {
+async function propfind(
+  url: string,
+  auth: string,
+  body: string,
+  depth = '0',
+): Promise<string> {
   const res = await fetch(url, {
     method: 'PROPFIND',
     headers: {
@@ -32,7 +37,9 @@ async function propfind(url: string, auth: string, body: string, depth = '0'): P
 
 /** href found *inside* a named property element (not the outer response href). */
 function innerHref(xml: string, prop: string): string | null {
-  const block = xml.match(new RegExp(`<[^>]*${prop}[^>]*>([\\s\\S]*?)</[^>]*${prop}\\s*>`, 'i'));
+  const block = xml.match(
+    new RegExp(`<[^>]*${prop}[^>]*>([\\s\\S]*?)</[^>]*${prop}\\s*>`, 'i'),
+  );
   if (!block) return null;
   const href = block[1].match(/<[^>]*href[^>]*>\s*([^<]+?)\s*</i);
   return href ? href[1].trim() : null;
@@ -42,13 +49,17 @@ function abs(origin: string, pathOrUrl: string): string {
   return /^https?:\/\//i.test(pathOrUrl) ? pathOrUrl : origin + pathOrUrl;
 }
 
-export interface CalendarRef { url: string; name: string; }
+export interface CalendarRef {
+  url: string;
+  name: string;
+}
 
 /** Enumerate every VEVENT-capable calendar collection for the account. */
 export async function listCalendars(auth: string): Promise<CalendarRef[]> {
   // 1. principal
   const principalXml = await propfind(
-    `${BOOTSTRAP}/`, auth,
+    `${BOOTSTRAP}/`,
+    auth,
     `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="DAV:"><d:prop><d:current-user-principal/></d:prop></d:propfind>`,
   );
   const principalPath = innerHref(principalXml, 'current-user-principal');
@@ -57,17 +68,22 @@ export async function listCalendars(auth: string): Promise<CalendarRef[]> {
 
   // 2. calendar-home-set
   const homeXml = await propfind(
-    principalUrl, auth,
+    principalUrl,
+    auth,
     `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop><c:calendar-home-set/></d:prop></d:propfind>`,
   );
   const homeHref = innerHref(homeXml, 'calendar-home-set');
   if (!homeHref) return [];
-  const homeUrl = abs(new URL(principalUrl).origin, homeHref).replace(/\/?$/, '/');
+  const homeUrl = abs(new URL(principalUrl).origin, homeHref).replace(
+    /\/?$/,
+    '/',
+  );
   const homeOrigin = new URL(homeUrl).origin;
 
   // 3. list every calendar that supports VEVENT
   const listXml = await propfind(
-    homeUrl, auth,
+    homeUrl,
+    auth,
     `<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop><d:displayname/><d:resourcetype/><c:supported-calendar-component-set/></d:prop></d:propfind>`,
     '1',
   );
@@ -75,11 +91,15 @@ export async function listCalendars(auth: string): Promise<CalendarRef[]> {
   const responses = listXml.split(/<[^>]*response[\s>]/i).slice(1);
   const out: CalendarRef[] = [];
   for (const r of responses) {
-    const href = (r.match(/<[^>]*href[^>]*>\s*([^<]+?)\s*</i)?.[1] ?? '').trim();
+    const href = (
+      r.match(/<[^>]*href[^>]*>\s*([^<]+?)\s*</i)?.[1] ?? ''
+    ).trim();
     if (!href || !/VEVENT/i.test(r)) continue;
     if (/inbox|outbox|notification/i.test(href)) continue;
     const url = abs(homeOrigin, href).replace(/\/?$/, '/');
-    const name = (r.match(/<[^>]*displayname[^>]*>\s*([^<]*?)\s*</i)?.[1] ?? '').trim();
+    const name = (
+      r.match(/<[^>]*displayname[^>]*>\s*([^<]*?)\s*</i)?.[1] ?? ''
+    ).trim();
     out.push({ url, name });
   }
   return out;
@@ -93,7 +113,9 @@ export async function discoverCalendarUrl(
   const cals = await listCalendars(auth);
   if (!cals.length) return null;
   if (preferredName) {
-    const match = cals.find((c) => c.name.toLowerCase() === preferredName.toLowerCase());
+    const match = cals.find(
+      (c) => c.name.toLowerCase() === preferredName.toLowerCase(),
+    );
     if (match) return match.url;
   }
   return cals[0].url; // first VEVENT calendar = default
