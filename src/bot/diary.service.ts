@@ -14,30 +14,35 @@ export class DiaryService {
 
   // ─── Schema Diary ─────────────────────────────────────────────────────────
 
-  async createSchemaDiaryEntry(userId: bigint, data: {
-    trigger: string;
-    emotions: EmotionEntry[];
-    thoughts?: string;
-    bodyFeelings?: string;
-    actualBehavior?: string;
-    schemaIds: string[];
-    schemaOrigin?: string;
-    healthyView?: string;
-    realProblems?: string;
-    excessiveReactions?: string;
-    healthyBehavior?: string;
-  }) {
+  async createSchemaDiaryEntry(
+    userId: bigint,
+    data: {
+      trigger: string;
+      emotions: EmotionEntry[];
+      thoughts?: string;
+      bodyFeelings?: string;
+      actualBehavior?: string;
+      schemaIds: string[];
+      schemaOrigin?: string;
+      healthyView?: string;
+      realProblems?: string;
+      excessiveReactions?: string;
+      healthyBehavior?: string;
+    },
+  ) {
     const row = await this.prisma.schemaDiaryEntry.create({
       data: {
         userId,
         trigger: encrypt(data.trigger) ?? data.trigger,
-        emotions: (encryptJson(data.emotions) ?? JSON.stringify(data.emotions)) as any,
+        emotions: (encryptJson(data.emotions) ??
+          JSON.stringify(data.emotions)) as any,
         thoughts: encrypt(data.thoughts),
         bodyFeelings: encrypt(data.bodyFeelings),
         actualBehavior: encrypt(data.actualBehavior),
         // Clinical labels — encrypted JSON string. decryptRecord-style
         // helper isn't used here because the schema is small enough.
-        schemaIds: (encryptJson(data.schemaIds) ?? JSON.stringify(data.schemaIds)) as any,
+        schemaIds: (encryptJson(data.schemaIds) ??
+          JSON.stringify(data.schemaIds)) as any,
         schemaOrigin: encrypt(data.schemaOrigin),
         healthyView: encrypt(data.healthyView),
         realProblems: encrypt(data.realProblems),
@@ -67,18 +72,21 @@ export class DiaryService {
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
-    return rows.map(r => ({
+    return rows.map((r) => ({
       ...r,
       trigger: decrypt(r.trigger) ?? r.trigger,
-      emotions: decryptJson<EmotionEntry[]>(r.emotions as unknown as string) ?? r.emotions,
+      emotions:
+        decryptJson<EmotionEntry[]>(r.emotions as unknown as string) ??
+        r.emotions,
       thoughts: decrypt(r.thoughts),
       bodyFeelings: decrypt(r.bodyFeelings),
       actualBehavior: decrypt(r.actualBehavior),
       // Legacy plaintext returns as already-deserialised array (Prisma Json);
       // new encrypted form returns as string → decrypt+parse.
-      schemaIds: typeof r.schemaIds === 'string'
-        ? (decryptJson<string[]>(r.schemaIds as unknown as string) ?? r.schemaIds)
-        : r.schemaIds,
+      schemaIds:
+        typeof r.schemaIds === 'string'
+          ? (decryptJson<string[]>(r.schemaIds) ?? r.schemaIds)
+          : r.schemaIds,
       schemaOrigin: decrypt(r.schemaOrigin),
       healthyView: decrypt(r.healthyView),
       realProblems: decrypt(r.realProblems),
@@ -93,16 +101,19 @@ export class DiaryService {
 
   // ─── Mode Diary ───────────────────────────────────────────────────────────
 
-  async createModeDiaryEntry(userId: bigint, data: {
-    modeId: string;
-    situation: string;
-    thoughts?: string;
-    feelings?: string;
-    bodyFeelings?: string;
-    actions?: string;
-    actualNeed?: string;
-    childhoodMemories?: string;
-  }) {
+  async createModeDiaryEntry(
+    userId: bigint,
+    data: {
+      modeId: string;
+      situation: string;
+      thoughts?: string;
+      feelings?: string;
+      bodyFeelings?: string;
+      actions?: string;
+      actualNeed?: string;
+      childhoodMemories?: string;
+    },
+  ) {
     const row = await this.prisma.modeDiaryEntry.create({
       data: {
         userId,
@@ -136,7 +147,7 @@ export class DiaryService {
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
-    return rows.map(r => ({
+    return rows.map((r) => ({
       ...r,
       modeId: decrypt(r.modeId) ?? r.modeId,
       situation: decrypt(r.situation) ?? r.situation,
@@ -155,7 +166,11 @@ export class DiaryService {
 
   // ─── Gratitude Diary ──────────────────────────────────────────────────────
 
-  async upsertGratitudeDiaryEntry(userId: bigint, date: string, items: string[]) {
+  async upsertGratitudeDiaryEntry(
+    userId: bigint,
+    date: string,
+    items: string[],
+  ) {
     const enc = (encryptJson(items) ?? JSON.stringify(items)) as any;
     const row = await this.prisma.gratitudeDiaryEntry.upsert({
       where: { userId_date: { userId, date } },
@@ -171,13 +186,15 @@ export class DiaryService {
       orderBy: { date: 'desc' },
       take: limit,
     });
-    return rows.map(r => ({
+    return rows.map((r) => ({
       ...r,
       items: decryptJson<string[]>(r.items as unknown as string) ?? r.items,
     }));
   }
 
   deleteGratitudeDiaryEntry(userId: bigint, id: number) {
-    return this.prisma.gratitudeDiaryEntry.deleteMany({ where: { id, userId } });
+    return this.prisma.gratitudeDiaryEntry.deleteMany({
+      where: { id, userId },
+    });
   }
 }

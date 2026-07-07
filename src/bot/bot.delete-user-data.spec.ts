@@ -8,24 +8,52 @@ import { BotService } from './bot.service';
 function makePrisma() {
   const calls: Record<string, any[]> = {};
   const deleteMany = (table: string) =>
-    jest.fn(async (args: any) => { (calls[table] ??= []).push(args); return { count: 0 }; });
+    jest.fn(async (args: any) => {
+      (calls[table] ??= []).push(args);
+      return { count: 0 };
+    });
 
   const tables = [
     // USER_DATA_TABLES
-    'rating', 'note', 'userSchemaNote', 'userModeNote', 'userBeliefCheck',
-    'userLetter', 'userSafePlace', 'userFlashcard', 'userPractice',
-    'practicePlan', 'childhoodRating', 'ysqResult', 'ysqProgress',
-    'ysqResultHistory', 'scheduledNotification', 'schemaDiaryEntry',
-    'modeDiaryEntry', 'gratitudeDiaryEntry', 'appActivity', 'userTask',
-    'diaryDraft', 'emailToken',
+    'rating',
+    'note',
+    'userSchemaNote',
+    'userModeNote',
+    'userBeliefCheck',
+    'userLetter',
+    'userSafePlace',
+    'userFlashcard',
+    'userPractice',
+    'practicePlan',
+    'childhoodRating',
+    'ysqResult',
+    'ysqProgress',
+    'ysqResultHistory',
+    'scheduledNotification',
+    'schemaDiaryEntry',
+    'modeDiaryEntry',
+    'gratitudeDiaryEntry',
+    'appActivity',
+    'userTask',
+    'diaryDraft',
+    'emailToken',
     // отдельно обрабатываемые
-    'clientConceptualization', 'therapistNote', 'therapyRelation', 'modeMap',
-    'therapistCustomMode', 'pair', 'authProvider', 'webSession',
-    'therapistRequest', 'subscription',
+    'clientConceptualization',
+    'therapistNote',
+    'therapyRelation',
+    'modeMap',
+    'therapistCustomMode',
+    'pair',
+    'authProvider',
+    'webSession',
+    'therapistRequest',
+    'subscription',
   ];
 
   const prisma: any = {
-    $transaction: jest.fn(async (ops: unknown[]) => Promise.all(ops as Promise<unknown>[])),
+    $transaction: jest.fn(async (ops: unknown[]) =>
+      Promise.all(ops as Promise<unknown>[]),
+    ),
     $executeRawUnsafe: jest.fn(() => Promise.resolve(0)),
     user: { delete: jest.fn(async () => ({})) },
     _calls: calls,
@@ -46,7 +74,9 @@ describe('BotService.deleteAllUserData — right-to-erasure', () => {
       const args = prisma._calls[table]?.[0];
       expect(args).toBeDefined();
       // Ключевой инвариант: where покрывает ОБЕ роли пользователя.
-      expect(args.where).toEqual({ OR: [{ therapistId: uid }, { clientId: uid }] });
+      expect(args.where).toEqual({
+        OR: [{ therapistId: uid }, { clientId: uid }],
+      });
     }
   });
 

@@ -1,4 +1,11 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 // Global filter that maps Prisma errors to friendly 4xx responses.
@@ -27,31 +34,36 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       switch (exception.code) {
         case 'P2002': // Unique constraint violation
           return res.status(HttpStatus.CONFLICT).json({
-            statusCode: 409, error: 'Conflict',
+            statusCode: 409,
+            error: 'Conflict',
             message: 'Запись уже существует',
           });
         case 'P2025': // Record not found
           return res.status(HttpStatus.NOT_FOUND).json({
-            statusCode: 404, error: 'Not Found',
+            statusCode: 404,
+            error: 'Not Found',
             message: 'Запись не найдена',
           });
         case 'P2003': // Foreign key violation
           return res.status(HttpStatus.BAD_REQUEST).json({
-            statusCode: 400, error: 'Bad Request',
+            statusCode: 400,
+            error: 'Bad Request',
             message: 'Связанная запись отсутствует',
           });
       }
     }
     if (exception instanceof Prisma.PrismaClientValidationError) {
       return res.status(HttpStatus.BAD_REQUEST).json({
-        statusCode: 400, error: 'Bad Request',
+        statusCode: 400,
+        error: 'Bad Request',
         message: 'Неверный формат данных',
       });
     }
 
     // Unknown Prisma error — generic 500.
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-      statusCode: 500, error: 'Internal Server Error',
+      statusCode: 500,
+      error: 'Internal Server Error',
       message: 'Внутренняя ошибка сервера',
     });
   }
@@ -72,9 +84,13 @@ export class GenericExceptionFilter implements ExceptionFilter {
       return res.status(exception.getStatus()).json(body);
     }
     const req = host.switchToHttp().getRequest();
-    this.logger.error(`Unhandled error on ${req?.url ?? '?'}: ${exception?.message ?? exception}`, exception?.stack);
+    this.logger.error(
+      `Unhandled error on ${req?.url ?? '?'}: ${exception?.message ?? exception}`,
+      exception?.stack,
+    );
     host.switchToHttp().getResponse().status(500).json({
-      statusCode: 500, error: 'Internal Server Error',
+      statusCode: 500,
+      error: 'Internal Server Error',
       message: 'Внутренняя ошибка сервера',
     });
   }

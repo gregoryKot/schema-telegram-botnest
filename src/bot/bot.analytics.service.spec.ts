@@ -14,7 +14,10 @@ function d(daysAgo: number): string {
 
 function makePrisma(overrides: Record<string, jest.Mock> = {}) {
   return {
-    user: { findUnique: jest.fn().mockResolvedValue({ notifyTimezone: 'UTC' }), ...overrides.user },
+    user: {
+      findUnique: jest.fn().mockResolvedValue({ notifyTimezone: 'UTC' }),
+      ...overrides.user,
+    },
     rating: {
       findMany: jest.fn().mockResolvedValue([]),
       findFirst: jest.fn().mockResolvedValue(null),
@@ -49,7 +52,9 @@ describe('BotAnalyticsService', () => {
     it('counts consecutive days ending today', async () => {
       const prisma = makePrisma();
       prisma.rating.findMany.mockResolvedValue([
-        { date: d(0) }, { date: d(1) }, { date: d(2) },
+        { date: d(0) },
+        { date: d(1) },
+        { date: d(2) },
       ]);
       const svc = new BotAnalyticsService(prisma);
       expect(await svc.getConsecutiveDays(1)).toBe(3);
@@ -58,14 +63,20 @@ describe('BotAnalyticsService', () => {
     it('stops at a gap', async () => {
       const prisma = makePrisma();
       // today + 2 days ago, but not yesterday
-      prisma.rating.findMany.mockResolvedValue([{ date: d(0) }, { date: d(2) }]);
+      prisma.rating.findMany.mockResolvedValue([
+        { date: d(0) },
+        { date: d(2) },
+      ]);
       const svc = new BotAnalyticsService(prisma);
       expect(await svc.getConsecutiveDays(1)).toBe(1);
     });
 
     it('returns 0 when only old entries exist', async () => {
       const prisma = makePrisma();
-      prisma.rating.findMany.mockResolvedValue([{ date: d(5) }, { date: d(6) }]);
+      prisma.rating.findMany.mockResolvedValue([
+        { date: d(5) },
+        { date: d(6) },
+      ]);
       const svc = new BotAnalyticsService(prisma);
       expect(await svc.getConsecutiveDays(1)).toBe(0);
     });
@@ -114,8 +125,8 @@ describe('BotAnalyticsService', () => {
     it('marks trend ↑ when current significantly higher than prev', async () => {
       const prisma = makePrisma();
       prisma.rating.findMany.mockResolvedValue([
-        { needId: 'attachment', date: d(0), value: 9 },   // current week
-        { needId: 'attachment', date: d(8), value: 4 },   // prev week
+        { needId: 'attachment', date: d(0), value: 9 }, // current week
+        { needId: 'attachment', date: d(8), value: 4 }, // prev week
       ]);
       const svc = new BotAnalyticsService(prisma);
       const stats = await svc.getWeeklyStats(1);
@@ -168,7 +179,10 @@ describe('BotAnalyticsService', () => {
   describe('getFillDaysInLast', () => {
     it('counts distinct fill days within the window', async () => {
       const prisma = makePrisma();
-      prisma.rating.findMany.mockResolvedValue([{ date: d(0) }, { date: d(2) }]);
+      prisma.rating.findMany.mockResolvedValue([
+        { date: d(0) },
+        { date: d(2) },
+      ]);
       const svc = new BotAnalyticsService(prisma);
       expect(await svc.getFillDaysInLast(1, 7)).toBe(2);
     });
@@ -189,7 +203,10 @@ describe('BotAnalyticsService', () => {
 
     it('returns gap between two latest distinct dates', async () => {
       const prisma = makePrisma();
-      prisma.rating.findMany.mockResolvedValue([{ date: d(0) }, { date: d(5) }]);
+      prisma.rating.findMany.mockResolvedValue([
+        { date: d(0) },
+        { date: d(5) },
+      ]);
       const svc = new BotAnalyticsService(prisma);
       expect(await svc.getGapBeforeLatestFill(1)).toBe(5);
     });

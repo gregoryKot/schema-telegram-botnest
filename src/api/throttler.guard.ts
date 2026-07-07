@@ -20,18 +20,28 @@ export class UserThrottlerGuard extends ThrottlerGuard {
     const auth = req.headers?.['authorization'] as string | undefined;
     if (auth?.startsWith('Bearer ')) {
       try {
-        const payload = JSON.parse(Buffer.from(auth.slice(7).split('.')[1], 'base64url').toString());
+        const payload = JSON.parse(
+          Buffer.from(auth.slice(7).split('.')[1], 'base64url').toString(),
+        );
         if (payload?.sub) return `uid:${payload.sub}|ip:${ip}`;
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
 
     // Telegram initData — extract user.id from the URL-encoded string
-    const initData = req.headers?.['x-telegram-init-data'] as string | undefined;
+    const initData = req.headers?.['x-telegram-init-data'] as
+      | string
+      | undefined;
     if (initData) {
       try {
-        const user = JSON.parse(new URLSearchParams(initData).get('user') ?? '{}');
+        const user = JSON.parse(
+          new URLSearchParams(initData).get('user') ?? '{}',
+        );
         if (user.id) return `uid:${user.id}|ip:${ip}`;
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
 
     return ip;

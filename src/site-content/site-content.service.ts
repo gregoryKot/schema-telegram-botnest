@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-export interface MarqueeTopic { label: string; href: string; }
+export interface MarqueeTopic {
+  label: string;
+  href: string;
+}
 
 const KEY_HERO_PHOTO = 'heroPhoto';
 const KEY_MARQUEE_A = 'marqueeTopicsA';
@@ -45,17 +48,31 @@ export class SiteContentService {
   }
 
   private async set(key: string, value: string): Promise<void> {
-    await this.prisma.bookingSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
+    await this.prisma.bookingSetting.upsert({
+      where: { key },
+      create: { key, value },
+      update: { value },
+    });
   }
 
-  private parseTopics(raw: string | null, fallback: MarqueeTopic[]): MarqueeTopic[] {
+  private parseTopics(
+    raw: string | null,
+    fallback: MarqueeTopic[],
+  ): MarqueeTopic[] {
     if (!raw) return fallback;
     try {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.every((t) => typeof t?.label === 'string' && typeof t?.href === 'string')) {
+      if (
+        Array.isArray(parsed) &&
+        parsed.every(
+          (t) => typeof t?.label === 'string' && typeof t?.href === 'string',
+        )
+      ) {
         return parsed;
       }
-    } catch { /* fall through to default */ }
+    } catch {
+      /* fall through to default */
+    }
     return fallback;
   }
 
@@ -78,7 +95,10 @@ export class SiteContentService {
   }
 
   async setMarqueeTopics(group: 'A' | 'B', topics: MarqueeTopic[]) {
-    await this.set(group === 'A' ? KEY_MARQUEE_A : KEY_MARQUEE_B, JSON.stringify(topics));
+    await this.set(
+      group === 'A' ? KEY_MARQUEE_A : KEY_MARQUEE_B,
+      JSON.stringify(topics),
+    );
     return { ok: true };
   }
 }

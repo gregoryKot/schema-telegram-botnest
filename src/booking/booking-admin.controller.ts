@@ -55,7 +55,10 @@ export class BookingAdminController {
 
   /** PATCH /admin/price — set a session price (rubles). */
   @Patch('price')
-  async setPrice(@Body() body: { type: SessionType; amount: number }, @Headers('x-admin-key') key: string) {
+  async setPrice(
+    @Body() body: { type: SessionType; amount: number },
+    @Headers('x-admin-key') key: string,
+  ) {
     assertAdminKey(key, this.adminKey);
     await this.pricing.setPrice(body.type, Number(body.amount));
     return { ok: true };
@@ -73,15 +76,20 @@ export class BookingAdminController {
     if (this.calDav.enabled) {
       const now = new Date();
       const [busy, names] = await Promise.all([
-        this.calDav.getBusyTimes(now, new Date(now.getTime() + 14 * 86_400_000)),
+        this.calDav.getBusyTimes(
+          now,
+          new Date(now.getTime() + 14 * 86_400_000),
+        ),
         this.calDav.debugCalendars(),
       ]);
       calendarBusyCount = busy.length;
       calendarNames = names;
     }
     return {
-      siteUrl: this.config.get<string>('SITE_URL') ?? '(default kotlarewski.gr)',
-      appUrl: this.config.get<string>('APP_URL') ?? '(default schemehappens.ru)',
+      siteUrl:
+        this.config.get<string>('SITE_URL') ?? '(default kotlarewski.gr)',
+      appUrl:
+        this.config.get<string>('APP_URL') ?? '(default schemehappens.ru)',
       robokassa: this.robokassa.enabled,
       robokassaTest: this.config.get<string>('ROBOKASSA_IS_TEST') === 'true',
       zoom: meeting.zoom,
@@ -90,8 +98,11 @@ export class BookingAdminController {
       appleCalendar: this.calDav.enabled,
       calendarBusyCount,
       calendarNames,
-      calendarBlocking: this.config.get<string>('CALENDAR_BLOCK_SLOTS') === 'true',
-      emailFallback: !!this.config.get<string>('RESEND_API_KEY') && !!this.config.get<string>('ADMIN_EMAIL'),
+      calendarBlocking:
+        this.config.get<string>('CALENDAR_BLOCK_SLOTS') === 'true',
+      emailFallback:
+        !!this.config.get<string>('RESEND_API_KEY') &&
+        !!this.config.get<string>('ADMIN_EMAIL'),
     };
   }
 
@@ -99,16 +110,24 @@ export class BookingAdminController {
 
   @Post('confirm/:id')
   @HttpCode(HttpStatus.OK)
-  async confirm(@Param('id', ParseIntPipe) id: number, @Headers('x-admin-key') key: string) {
+  async confirm(
+    @Param('id', ParseIntPipe) id: number,
+    @Headers('x-admin-key') key: string,
+  ) {
     assertAdminKey(key, this.adminKey);
     return this.booking.confirm(id);
   }
 
   @Get('list')
-  async list(@Headers('x-admin-key') key: string, @Query('filter') filter?: string) {
+  async list(
+    @Headers('x-admin-key') key: string,
+    @Query('filter') filter?: string,
+  ) {
     assertAdminKey(key, this.adminKey);
     const allowed = ['upcoming', 'past', 'cancelled', 'all'] as const;
-    const f = (allowed as readonly string[]).includes(filter ?? '') ? (filter as typeof allowed[number]) : 'upcoming';
+    const f = (allowed as readonly string[]).includes(filter ?? '')
+      ? (filter as (typeof allowed)[number])
+      : 'upcoming';
     return this.booking.list(f);
   }
 
@@ -123,9 +142,15 @@ export class BookingAdminController {
 
   /** PATCH /admin/sub-price — set a subscription price (rubles). */
   @Patch('sub-price')
-  async setSubPrice(@Body() body: { period: 'month' | 'year'; amount: number }, @Headers('x-admin-key') key: string) {
+  async setSubPrice(
+    @Body() body: { period: 'month' | 'year'; amount: number },
+    @Headers('x-admin-key') key: string,
+  ) {
     assertAdminKey(key, this.adminKey);
-    await this.subs.setPrice(body.period === 'year' ? 'year' : 'month', Number(body.amount));
+    await this.subs.setPrice(
+      body.period === 'year' ? 'year' : 'month',
+      Number(body.amount),
+    );
     return { ok: true };
   }
 
@@ -139,7 +164,10 @@ export class BookingAdminController {
 
   @Post('rules')
   @HttpCode(HttpStatus.OK)
-  async createRule(@Body() dto: CreateRuleDto, @Headers('x-admin-key') key: string) {
+  async createRule(
+    @Body() dto: CreateRuleDto,
+    @Headers('x-admin-key') key: string,
+  ) {
     assertAdminKey(key, this.adminKey);
     return this.availability.create(dto);
   }
@@ -155,7 +183,10 @@ export class BookingAdminController {
   }
 
   @Delete('rules/:id')
-  async deleteRule(@Param('id', ParseIntPipe) id: number, @Headers('x-admin-key') key: string) {
+  async deleteRule(
+    @Param('id', ParseIntPipe) id: number,
+    @Headers('x-admin-key') key: string,
+  ) {
     assertAdminKey(key, this.adminKey);
     return this.availability.remove(id);
   }

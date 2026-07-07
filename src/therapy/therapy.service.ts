@@ -3,14 +3,30 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
-import { encrypt, decrypt, encryptJson, decryptJson, encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
+import {
+  encrypt,
+  decrypt,
+  encryptJson,
+  decryptJson,
+  encryptRecord,
+  decryptRecord,
+  EncryptSchema,
+} from '../utils/crypto';
 import { randomBytes } from 'crypto';
 
 function randomCode(): string {
   return randomBytes(6).toString('hex').toUpperCase();
 }
 
-const CONCEPT_TEXT_FIELDS = ['earlyExperience', 'unmetNeeds', 'triggers', 'copingStyles', 'goals', 'currentProblems', 'modeTransitions'] as const;
+const CONCEPT_TEXT_FIELDS = [
+  'earlyExperience',
+  'unmetNeeds',
+  'triggers',
+  'copingStyles',
+  'goals',
+  'currentProblems',
+  'modeTransitions',
+] as const;
 
 function encryptConceptFields(body: Record<string, any>): Record<string, any> {
   const result: Record<string, any> = {};
@@ -19,17 +35,20 @@ function encryptConceptFields(body: Record<string, any>): Record<string, any> {
   }
   // Clinical labels — encrypted JSON string (plaintext-tolerant on read).
   if ('schemaIds' in body && Array.isArray(body.schemaIds)) {
-    result.schemaIds = encryptJson(body.schemaIds) ?? JSON.stringify(body.schemaIds);
+    result.schemaIds =
+      encryptJson(body.schemaIds) ?? JSON.stringify(body.schemaIds);
   }
   if ('modeIds' in body && Array.isArray(body.modeIds)) {
     result.modeIds = encryptJson(body.modeIds) ?? JSON.stringify(body.modeIds);
   }
   // Mode map — nodes and edges contain sensitive clinical data, must be encrypted.
   if ('modeMapNodes' in body && Array.isArray(body.modeMapNodes)) {
-    result.modeMapNodes = encryptJson(body.modeMapNodes) ?? JSON.stringify(body.modeMapNodes);
+    result.modeMapNodes =
+      encryptJson(body.modeMapNodes) ?? JSON.stringify(body.modeMapNodes);
   }
   if ('modeMapEdges' in body && Array.isArray(body.modeMapEdges)) {
-    result.modeMapEdges = encryptJson(body.modeMapEdges) ?? JSON.stringify(body.modeMapEdges);
+    result.modeMapEdges =
+      encryptJson(body.modeMapEdges) ?? JSON.stringify(body.modeMapEdges);
   }
   return result;
 }
@@ -43,26 +62,37 @@ function decryptConceptFields(row: Record<string, any>): Record<string, any> {
   // new rows have encrypted strings.
   for (const f of ['schemaIds', 'modeIds']) {
     const v = row[f];
-    if (v == null) { result[f] = []; continue; }
+    if (v == null) {
+      result[f] = [];
+      continue;
+    }
     if (typeof v === 'string') result[f] = decryptJson<string[]>(v) ?? [];
     else result[f] = v;
   }
   for (const f of ['modeMapNodes', 'modeMapEdges']) {
     const v = row[f];
-    if (v == null) { result[f] = []; continue; }
+    if (v == null) {
+      result[f] = [];
+      continue;
+    }
     if (typeof v === 'string') result[f] = decryptJson<unknown[]>(v) ?? [];
     else result[f] = v;
   }
   return result;
 }
 
-function decryptConceptSnapshot(snap: Record<string, any>): Record<string, any> {
+function decryptConceptSnapshot(
+  snap: Record<string, any>,
+): Record<string, any> {
   return { ...snap, ...decryptConceptFields(snap) };
 }
 
 // Declarative encryption schemas — single source of truth, so a newly added
 // free-text field can't silently end up in plaintext (just add it here).
-const MODE_MAP_SCHEMA: EncryptSchema = { strings: ['title'], jsonArrays: ['nodes', 'edges'] };
+const MODE_MAP_SCHEMA: EncryptSchema = {
+  strings: ['title'],
+  jsonArrays: ['nodes', 'edges'],
+};
 const CUSTOM_MODE_SCHEMA: EncryptSchema = { strings: ['name'] };
 const MODE_MAP_KINDS = ['personality', 'problem', 'couple'] as const;
 
@@ -85,7 +115,7 @@ export interface TherapyClientSummary {
   streak: number;
   lastActiveDate: string | null;
   todayIndex: number | null;
-  recentIndexHistory: (number | null)[];  // 14 values, index 0 = today
+  recentIndexHistory: (number | null)[]; // 14 values, index 0 = today
   relationCreatedAt: string;
   therapyStartDate: string | null;
   nextSession: string | null;
@@ -103,15 +133,21 @@ export class TherapyService {
 
   // ─── Connection ─────────────────────────────────────────────────────────────
 
-  async createInvite(therapistId: bigint): Promise<{ code: string; url: string }> {
+  async createInvite(
+    therapistId: bigint,
+  ): Promise<{ code: string; url: string }> {
     let code: string;
-    do { code = randomCode(); } while (await this.prisma.therapyRelation.findUnique({ where: { code } }));
+    do {
+      code = randomCode();
+    } while (await this.prisma.therapyRelation.findUnique({ where: { code } }));
     await this.prisma.therapyRelation.create({ data: { therapistId, code } });
     return { code, url: `${MINIAPP_TGLINK}?startapp=therapy_${code}` };
   }
 
   async joinAsClient(clientId: bigint, code: string): Promise<boolean> {
-    const rel = await this.prisma.therapyRelation.findUnique({ where: { code: code.toUpperCase() } });
+    const rel = await this.prisma.therapyRelation.findUnique({
+      where: { code: code.toUpperCase() },
+    });
     if (!rel || rel.status !== 'pending' || rel.clientId !== null) return false;
     if (rel.therapistId === clientId) return false;
     // Prevent duplicate: if already connected to this therapist, ignore silently
@@ -133,14 +169,28 @@ export class TherapyService {
       include: { client: { select: { firstName: true } } },
     });
     if (asTherapist) {
-      return { role: 'therapist', status: 'active', partnerName: asTherapist.client?.firstName ?? null, partnerId: asTherapist.clientId ? Number(asTherapist.clientId) : null, code: asTherapist.code, nextSession: null };
+      return {
+        role: 'therapist',
+        status: 'active',
+        partnerName: asTherapist.client?.firstName ?? null,
+        partnerId: asTherapist.clientId ? Number(asTherapist.clientId) : null,
+        code: asTherapist.code,
+        nextSession: null,
+      };
     }
     const asClient = await this.prisma.therapyRelation.findFirst({
       where: { clientId: uid, status: 'active' },
       include: { therapist: { select: { id: true, firstName: true } } },
     });
     if (asClient) {
-      return { role: 'client', status: 'active', partnerName: asClient.therapist?.firstName ?? null, partnerId: asClient.therapist ? Number(asClient.therapist.id) : null, code: asClient.code, nextSession: (asClient as any).nextSession ?? null };
+      return {
+        role: 'client',
+        status: 'active',
+        partnerName: asClient.therapist?.firstName ?? null,
+        partnerId: asClient.therapist ? Number(asClient.therapist.id) : null,
+        code: asClient.code,
+        nextSession: (asClient as any).nextSession ?? null,
+      };
     }
     return null;
   }
@@ -166,14 +216,19 @@ export class TherapyService {
     const conceptMap = new Map<string, string[]>();
     for (const c of concepts) {
       const raw = c.schemaIds;
-      const ids: string[] = typeof raw === 'string' ? (decryptJson<string[]>(raw) ?? []) : (Array.isArray(raw) ? (raw as string[]) : []);
+      const ids: string[] =
+        typeof raw === 'string'
+          ? (decryptJson<string[]>(raw) ?? [])
+          : Array.isArray(raw)
+            ? (raw as string[])
+            : [];
       conceptMap.set(String(c.clientId), ids);
     }
 
     const realClients = await Promise.all(
       relations
-        .filter(rel => rel.client !== null)
-        .map(async rel => {
+        .filter((rel) => rel.client !== null)
+        .map(async (rel) => {
           const clientBigId = rel.client!.id;
           const clientId = Number(clientBigId);
           const [streak, daysSince, history] = await Promise.all([
@@ -181,26 +236,49 @@ export class TherapyService {
             this.analyticsService.getDaysSinceLastFill(clientBigId),
             this.analyticsService.getHistoryRatings(clientBigId, 14),
           ]);
-          const lastActiveDate = daysSince >= 0
-            ? new Date(Date.now() - daysSince * 86400000).toISOString().slice(0, 10)
-            : null;
-          const byDate = new Map(history.map(d => [d.date, d.ratings]));
-          const recentIndexHistory: (number | null)[] = Array.from({ length: 14 }, (_, i) => {
-            const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
-            const r = byDate.get(d);
-            if (!r) return null;
-            const vals = Object.values(r) as number[];
-            return vals.length === 5 ? Math.round(vals.reduce((s, v) => s + v, 0) / 5 * 10) / 10 : null;
-          });
+          const lastActiveDate =
+            daysSince >= 0
+              ? new Date(Date.now() - daysSince * 86400000)
+                  .toISOString()
+                  .slice(0, 10)
+              : null;
+          const byDate = new Map(history.map((d) => [d.date, d.ratings]));
+          const recentIndexHistory: (number | null)[] = Array.from(
+            { length: 14 },
+            (_, i) => {
+              const d = new Date(Date.now() - i * 86400000)
+                .toISOString()
+                .slice(0, 10);
+              const r = byDate.get(d);
+              if (!r) return null;
+              const vals = Object.values(r);
+              return vals.length === 5
+                ? Math.round((vals.reduce((s, v) => s + v, 0) / 5) * 10) / 10
+                : null;
+            },
+          );
           const todayIndex = recentIndexHistory[0];
-          return { telegramId: clientId, name: rel.client!.firstName, clientAlias: (rel as any).clientAlias ?? null, streak, lastActiveDate, todayIndex, recentIndexHistory, relationCreatedAt: rel.createdAt.toISOString(), therapyStartDate: (rel as any).therapyStartDate ?? null, nextSession: (rel as any).nextSession ?? null, meetingDays: ((rel as any).meetingDays as number[]) ?? [], schemaIds: conceptMap.get(String(clientId)) ?? [] };
+          return {
+            telegramId: clientId,
+            name: rel.client!.firstName,
+            clientAlias: (rel as any).clientAlias ?? null,
+            streak,
+            lastActiveDate,
+            todayIndex,
+            recentIndexHistory,
+            relationCreatedAt: rel.createdAt.toISOString(),
+            therapyStartDate: (rel as any).therapyStartDate ?? null,
+            nextSession: (rel as any).nextSession ?? null,
+            meetingDays: ((rel as any).meetingDays as number[]) ?? [],
+            schemaIds: conceptMap.get(String(clientId)) ?? [],
+          };
         }),
     );
 
     // Virtual (offline) clients: no Telegram account, identified by -rel.id
     const virtualClients: TherapyClientSummary[] = relations
-      .filter(rel => rel.client === null && (rel as any).virtualClientName)
-      .map(rel => ({
+      .filter((rel) => rel.client === null && (rel as any).virtualClientName)
+      .map((rel) => ({
         telegramId: -rel.id,
         name: (rel as any).virtualClientName as string,
         clientAlias: (rel as any).clientAlias ?? null,
@@ -218,7 +296,10 @@ export class TherapyService {
     return [...realClients, ...virtualClients];
   }
 
-  async addVirtualClient(therapistId: bigint, name: string): Promise<TherapyClientSummary[]> {
+  async addVirtualClient(
+    therapistId: bigint,
+    name: string,
+  ): Promise<TherapyClientSummary[]> {
     const code = randomBytes(5).toString('hex').toUpperCase();
     await (this.prisma.therapyRelation.create as any)({
       data: {
@@ -237,7 +318,10 @@ export class TherapyService {
     const cid = clientTelegramId;
 
     // Check client user exists
-    const clientUser = await this.prisma.user.findUnique({ where: { id: cid }, select: { id: true, firstName: true } });
+    const clientUser = await this.prisma.user.findUnique({
+      where: { id: cid },
+      select: { id: true, firstName: true },
+    });
     if (!clientUser) throw new Error('User not found');
 
     // Check no existing active relation
@@ -258,10 +342,17 @@ export class TherapyService {
 
   // ─── Tasks ───────────────────────────────────────────────────────────────────
 
-  async createTask(userId: bigint, body: {
-    type: string; text: string; targetDays?: number;
-    needId?: string; dueDate?: string;
-  }, assignedBy?: bigint) {
+  async createTask(
+    userId: bigint,
+    body: {
+      type: string;
+      text: string;
+      targetDays?: number;
+      needId?: string;
+      dueDate?: string;
+    },
+    assignedBy?: bigint,
+  ) {
     const task = await this.prisma.userTask.create({
       data: {
         userId,
@@ -281,7 +372,10 @@ export class TherapyService {
     const uid = userId;
 
     // Use user's stored timezone for correct "today" across all timezones
-    const settings = await this.prisma.user.findUnique({ where: { id: uid }, select: { notifyTimezone: true } });
+    const settings = await this.prisma.user.findUnique({
+      where: { id: uid },
+      select: { notifyTimezone: true },
+    });
     const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
     const today = localDate(tz, now);
     const startOfDay = localMidnightUTC(today, tz);
@@ -295,31 +389,67 @@ export class TherapyService {
     const [trackerToday, diaryToday] = await Promise.all([
       this.prisma.rating.count({ where: { userId: uid, date: today } }),
       Promise.all([
-        this.prisma.schemaDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
-        this.prisma.modeDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
-        this.prisma.gratitudeDiaryEntry.count({ where: { userId: uid, date: today } }),
+        this.prisma.schemaDiaryEntry.count({
+          where: { userId: uid, createdAt: { gte: startOfDay } },
+        }),
+        this.prisma.modeDiaryEntry.count({
+          where: { userId: uid, createdAt: { gte: startOfDay } },
+        }),
+        this.prisma.gratitudeDiaryEntry.count({
+          where: { userId: uid, date: today },
+        }),
       ]).then(([s, m, g]) => s + m + g),
     ]);
 
     // Auto-expire overdue streak tasks
-    const expired = tasks.filter(t => t.targetDays && Math.floor((now.getTime() - t.createdAt.getTime()) / 86_400_000) >= t.targetDays);
+    const expired = tasks.filter(
+      (t) =>
+        t.targetDays &&
+        Math.floor((now.getTime() - t.createdAt.getTime()) / 86_400_000) >=
+          t.targetDays,
+    );
     if (expired.length > 0) {
-      await Promise.all(expired.map(t => this.prisma.userTask.update({ where: { id: t.id }, data: { done: false, completedAt: now } })));
+      await Promise.all(
+        expired.map((t) =>
+          this.prisma.userTask.update({
+            where: { id: t.id },
+            data: { done: false, completedAt: now },
+          }),
+        ),
+      );
     }
-    const expiredIds = new Set(expired.map(t => t.id));
+    const expiredIds = new Set(expired.map((t) => t.id));
 
-    const STREAK_TYPES = new Set(['tracker_streak', 'diary_streak', 'schema_diary', 'mode_diary']);
-    const activeTasks = tasks.filter(t => !expiredIds.has(t.id));
+    const STREAK_TYPES = new Set([
+      'tracker_streak',
+      'diary_streak',
+      'schema_diary',
+      'mode_diary',
+    ]);
+    const activeTasks = tasks.filter((t) => !expiredIds.has(t.id));
 
-    return Promise.all(activeTasks.map(async task => {
-      const doneToday = task.type === 'tracker_streak' ? trackerToday > 0
-        : task.type === 'diary_streak' ? diaryToday > 0
-        : undefined;
-      const progress = task.targetDays && STREAK_TYPES.has(task.type)
-        ? await this.getStreakProgress(userId, task.type, task.targetDays)
-        : undefined;
-      return { ...task, text: decrypt(task.text) ?? task.text, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday, progress };
-    }));
+    return Promise.all(
+      activeTasks.map(async (task) => {
+        const doneToday =
+          task.type === 'tracker_streak'
+            ? trackerToday > 0
+            : task.type === 'diary_streak'
+              ? diaryToday > 0
+              : undefined;
+        const progress =
+          task.targetDays && STREAK_TYPES.has(task.type)
+            ? await this.getStreakProgress(userId, task.type, task.targetDays)
+            : undefined;
+        return {
+          ...task,
+          text: decrypt(task.text) ?? task.text,
+          userId: Number(uid),
+          assignedBy: task.assignedBy ? Number(task.assignedBy) : null,
+          doneToday,
+          progress,
+        };
+      }),
+    );
   }
 
   async getTaskHistory(userId: bigint) {
@@ -328,7 +458,7 @@ export class TherapyService {
       orderBy: { completedAt: 'desc' },
       take: 30,
     });
-    return rows.map(r => ({ ...r, text: decrypt(r.text) ?? r.text }));
+    return rows.map((r) => ({ ...r, text: decrypt(r.text) ?? r.text }));
   }
 
   async getAllTasksForTherapist(therapistId: bigint) {
@@ -337,16 +467,25 @@ export class TherapyService {
       include: { client: { select: { id: true, firstName: true } } },
     });
 
-    const results: Array<{ clientId: number; clientName: string; tasks: any[] }> = [];
+    const results: Array<{
+      clientId: number;
+      clientName: string;
+      tasks: any[];
+    }> = [];
 
     for (const rel of relations) {
       const clientId = rel.client ? Number(rel.client.id) : -rel.id;
       const clientName = rel.client
         ? ((rel as any).clientAlias ?? rel.client.firstName ?? `ID ${clientId}`)
-        : ((rel as any).clientAlias ?? (rel as any).virtualClientName ?? `ID ${-clientId}`);
+        : ((rel as any).clientAlias ??
+          (rel as any).virtualClientName ??
+          `ID ${-clientId}`);
 
       const tasks = await this.prisma.userTask.findMany({
-        where: { assignedBy: therapistId, userId: rel.client ? rel.client.id : { lt: 0 } },
+        where: {
+          assignedBy: therapistId,
+          userId: rel.client ? rel.client.id : { lt: 0 },
+        },
         orderBy: { createdAt: 'desc' },
       });
 
@@ -354,7 +493,7 @@ export class TherapyService {
         results.push({
           clientId,
           clientName,
-          tasks: tasks.map(t => ({
+          tasks: tasks.map((t) => ({
             ...t,
             text: decrypt(t.text) ?? t.text,
             userId: clientId,
@@ -378,7 +517,14 @@ export class TherapyService {
         where: { userId: BigInt(clientId), assignedBy: therapistId },
         orderBy: { createdAt: 'desc' },
       });
-      return tasks.map(task => ({ ...task, text: decrypt(task.text) ?? task.text, userId: clientId, assignedBy: Number(therapistId), doneToday: undefined, progress: undefined }));
+      return tasks.map((task) => ({
+        ...task,
+        text: decrypt(task.text) ?? task.text,
+        userId: clientId,
+        assignedBy: Number(therapistId),
+        doneToday: undefined,
+        progress: undefined,
+      }));
     }
     const uid = BigInt(clientId);
     const rel = await this.prisma.therapyRelation.findFirst({
@@ -386,7 +532,10 @@ export class TherapyService {
     });
     if (!rel) return null;
     const now = new Date();
-    const settings = await this.prisma.user.findUnique({ where: { id: uid }, select: { notifyTimezone: true } });
+    const settings = await this.prisma.user.findUnique({
+      where: { id: uid },
+      select: { notifyTimezone: true },
+    });
     const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
     const today = localDate(tz, now);
     const startOfDay = localMidnightUTC(today, tz);
@@ -396,27 +545,60 @@ export class TherapyService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return Promise.all(tasks.map(async task => {
-      let doneToday: boolean | undefined;
-      let progress: number | undefined;
-      if (task.type === 'tracker_streak') {
-        doneToday = await this.prisma.rating.count({ where: { userId: uid, date: today } }).then(c => c > 0);
-      } else if (task.type === 'diary_streak') {
-        const [s, m, g] = await Promise.all([
-          this.prisma.schemaDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
-          this.prisma.modeDiaryEntry.count({ where: { userId: uid, createdAt: { gte: startOfDay } } }),
-          this.prisma.gratitudeDiaryEntry.count({ where: { userId: uid, date: today } }),
-        ]);
-        doneToday = s + m + g > 0;
-      }
-      if (task.targetDays && ['tracker_streak', 'diary_streak', 'schema_diary', 'mode_diary'].includes(task.type)) {
-        progress = await this.getStreakProgress(uid, task.type, task.targetDays);
-      }
-      return { ...task, text: decrypt(task.text) ?? task.text, userId: Number(uid), assignedBy: task.assignedBy ? Number(task.assignedBy) : null, doneToday, progress };
-    }));
+    return Promise.all(
+      tasks.map(async (task) => {
+        let doneToday: boolean | undefined;
+        let progress: number | undefined;
+        if (task.type === 'tracker_streak') {
+          doneToday = await this.prisma.rating
+            .count({ where: { userId: uid, date: today } })
+            .then((c) => c > 0);
+        } else if (task.type === 'diary_streak') {
+          const [s, m, g] = await Promise.all([
+            this.prisma.schemaDiaryEntry.count({
+              where: { userId: uid, createdAt: { gte: startOfDay } },
+            }),
+            this.prisma.modeDiaryEntry.count({
+              where: { userId: uid, createdAt: { gte: startOfDay } },
+            }),
+            this.prisma.gratitudeDiaryEntry.count({
+              where: { userId: uid, date: today },
+            }),
+          ]);
+          doneToday = s + m + g > 0;
+        }
+        if (
+          task.targetDays &&
+          [
+            'tracker_streak',
+            'diary_streak',
+            'schema_diary',
+            'mode_diary',
+          ].includes(task.type)
+        ) {
+          progress = await this.getStreakProgress(
+            uid,
+            task.type,
+            task.targetDays,
+          );
+        }
+        return {
+          ...task,
+          text: decrypt(task.text) ?? task.text,
+          userId: Number(uid),
+          assignedBy: task.assignedBy ? Number(task.assignedBy) : null,
+          doneToday,
+          progress,
+        };
+      }),
+    );
   }
 
-  async completeTask(userId: bigint, taskId: number, done: boolean): Promise<boolean> {
+  async completeTask(
+    userId: bigint,
+    taskId: number,
+    done: boolean,
+  ): Promise<boolean> {
     const result = await this.prisma.userTask.updateMany({
       where: { id: taskId, userId },
       data: { done, completedAt: new Date() },
@@ -426,53 +608,99 @@ export class TherapyService {
 
   async checkStreakTasks(userId: bigint): Promise<void> {
     const tasks = await this.prisma.userTask.findMany({
-      where: { userId, done: null, type: { in: ['diary_streak', 'tracker_streak', 'schema_diary', 'mode_diary'] } },
+      where: {
+        userId,
+        done: null,
+        type: {
+          in: ['diary_streak', 'tracker_streak', 'schema_diary', 'mode_diary'],
+        },
+      },
     });
     if (tasks.length === 0) return;
     const now = new Date();
-    const progresses = await Promise.all(tasks.map(t => this.getStreakProgress(userId, t.type, t.targetDays ?? 7)));
-    const completed = tasks.filter((t, i) => progresses[i] >= (t.targetDays ?? 7));
+    const progresses = await Promise.all(
+      tasks.map((t) =>
+        this.getStreakProgress(userId, t.type, t.targetDays ?? 7),
+      ),
+    );
+    const completed = tasks.filter(
+      (t, i) => progresses[i] >= (t.targetDays ?? 7),
+    );
     if (completed.length > 0) {
-      await Promise.all(completed.map(t => this.prisma.userTask.update({ where: { id: t.id }, data: { done: true, completedAt: now } })));
+      await Promise.all(
+        completed.map((t) =>
+          this.prisma.userTask.update({
+            where: { id: t.id },
+            data: { done: true, completedAt: now },
+          }),
+        ),
+      );
     }
   }
 
-  async getStreakProgress(userId: bigint, type: string, days: number): Promise<number> {
-    const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  async getStreakProgress(
+    userId: bigint,
+    type: string,
+    days: number,
+  ): Promise<number> {
+    const since = new Date(Date.now() - days * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
     if (type === 'tracker_streak') {
-      const dates = await this.prisma.rating.groupBy({ by: ['date'], where: { userId, date: { gte: since } } });
+      const dates = await this.prisma.rating.groupBy({
+        by: ['date'],
+        where: { userId, date: { gte: since } },
+      });
       return dates.length;
     }
     if (type === 'schema_diary') {
-      return this.prisma.schemaDiaryEntry.count({ where: { userId, createdAt: { gte: new Date(since) } } });
+      return this.prisma.schemaDiaryEntry.count({
+        where: { userId, createdAt: { gte: new Date(since) } },
+      });
     }
     if (type === 'mode_diary') {
-      return this.prisma.modeDiaryEntry.count({ where: { userId, createdAt: { gte: new Date(since) } } });
+      return this.prisma.modeDiaryEntry.count({
+        where: { userId, createdAt: { gte: new Date(since) } },
+      });
     }
     // diary_streak: any diary entry (schema or mode or gratitude)
     const [schema, mode, gratitude] = await Promise.all([
-      this.prisma.schemaDiaryEntry.groupBy({ by: ['createdAt'], where: { userId, createdAt: { gte: new Date(since) } } }),
-      this.prisma.modeDiaryEntry.groupBy({ by: ['createdAt'], where: { userId, createdAt: { gte: new Date(since) } } }),
-      this.prisma.gratitudeDiaryEntry.findMany({ where: { userId, date: { gte: since } }, select: { date: true } }),
+      this.prisma.schemaDiaryEntry.groupBy({
+        by: ['createdAt'],
+        where: { userId, createdAt: { gte: new Date(since) } },
+      }),
+      this.prisma.modeDiaryEntry.groupBy({
+        by: ['createdAt'],
+        where: { userId, createdAt: { gte: new Date(since) } },
+      }),
+      this.prisma.gratitudeDiaryEntry.findMany({
+        where: { userId, date: { gte: since } },
+        select: { date: true },
+      }),
     ]);
     const diaryDates = new Set([
-      ...schema.map(e => e.createdAt.toISOString().slice(0, 10)),
-      ...mode.map(e => e.createdAt.toISOString().slice(0, 10)),
-      ...gratitude.map(e => e.date),
+      ...schema.map((e) => e.createdAt.toISOString().slice(0, 10)),
+      ...mode.map((e) => e.createdAt.toISOString().slice(0, 10)),
+      ...gratitude.map((e) => e.date),
     ]);
     return diaryDates.size;
   }
 
   // ─── Session Info ────────────────────────────────────────────────────────────
 
-  async updateSessionInfo(therapistId: bigint, clientId: number, body: {
-    therapyStartDate?: string | null;
-    nextSession?: string | null;
-    meetingDays?: number[];
-  }): Promise<void> {
+  async updateSessionInfo(
+    therapistId: bigint,
+    clientId: number,
+    body: {
+      therapyStartDate?: string | null;
+      nextSession?: string | null;
+      meetingDays?: number[];
+    },
+  ): Promise<void> {
     await this.assertRelation(therapistId, clientId);
     const data: Record<string, unknown> = {};
-    if (body.therapyStartDate !== undefined) data['therapyStartDate'] = body.therapyStartDate;
+    if (body.therapyStartDate !== undefined)
+      data['therapyStartDate'] = body.therapyStartDate;
     if (body.nextSession !== undefined) data['nextSession'] = body.nextSession;
     if (body.meetingDays !== undefined) data['meetingDays'] = body.meetingDays;
     if (Object.keys(data).length === 0) return;
@@ -497,7 +725,10 @@ export class TherapyService {
     return this.assertRelation(therapistId, clientId);
   }
 
-  private async assertRelation(therapistId: bigint, clientId: number): Promise<void> {
+  private async assertRelation(
+    therapistId: bigint,
+    clientId: number,
+  ): Promise<void> {
     if (clientId < 0) {
       // Virtual client — identified by -rel.id
       const rel = await this.prisma.therapyRelation.findFirst({
@@ -521,13 +752,22 @@ export class TherapyService {
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
-    return rows.map(r => ({ ...r, text: decrypt(r.text) ?? r.text }));
+    return rows.map((r) => ({ ...r, text: decrypt(r.text) ?? r.text }));
   }
 
-  async createNote(therapistId: bigint, clientId: number, body: { date: string; text: string }) {
+  async createNote(
+    therapistId: bigint,
+    clientId: number,
+    body: { date: string; text: string },
+  ) {
     await this.assertRelation(therapistId, clientId);
     const note = await this.prisma.therapistNote.create({
-      data: { therapistId, clientId: BigInt(clientId), date: body.date, text: encrypt(body.text) ?? body.text },
+      data: {
+        therapistId,
+        clientId: BigInt(clientId),
+        date: body.date,
+        text: encrypt(body.text) ?? body.text,
+      },
     });
     return { ...note, text: body.text }; // return plaintext to caller
   }
@@ -548,17 +788,29 @@ export class TherapyService {
       where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
     });
     if (!row) return null;
-    const history = Array.isArray(row.history) ? (row.history as any[]).map(decryptConceptSnapshot) : [];
+    const history = Array.isArray(row.history)
+      ? (row.history as any[]).map(decryptConceptSnapshot)
+      : [];
     return { ...row, ...decryptConceptFields(row), history };
   }
 
-  async saveConceptualization(therapistId: bigint, clientId: number, body: {
-    schemaIds?: string[]; modeIds?: string[];
-    earlyExperience?: string; unmetNeeds?: string;
-    triggers?: string; copingStyles?: string; goals?: string; currentProblems?: string;
-    modeTransitions?: string;
-    modeMapNodes?: unknown[]; modeMapEdges?: unknown[];
-  }) {
+  async saveConceptualization(
+    therapistId: bigint,
+    clientId: number,
+    body: {
+      schemaIds?: string[];
+      modeIds?: string[];
+      earlyExperience?: string;
+      unmetNeeds?: string;
+      triggers?: string;
+      copingStyles?: string;
+      goals?: string;
+      currentProblems?: string;
+      modeTransitions?: string;
+      modeMapNodes?: unknown[];
+      modeMapEdges?: unknown[];
+    },
+  ) {
     await this.assertRelation(therapistId, clientId);
     const tid = therapistId;
     const cid = BigInt(clientId);
@@ -569,8 +821,10 @@ export class TherapyService {
     });
 
     const now = new Date().toISOString();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let history: any[] = Array.isArray(existing?.history) ? (existing.history as any[]) : [];
+
+    let history: any[] = Array.isArray(existing?.history)
+      ? (existing.history as any[])
+      : [];
 
     if (existing) {
       // Snapshot current state into history (max 20 snapshots)
@@ -593,10 +847,11 @@ export class TherapyService {
     const saved = await (this.prisma.clientConceptualization.upsert as any)({
       where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
       create: {
-        therapistId: tid, clientId: cid,
+        therapistId: tid,
+        clientId: cid,
         // schemaIds / modeIds taken from `enc` — encrypted blob.
         schemaIds: enc.schemaIds ?? [],
-        modeIds:   enc.modeIds   ?? [],
+        modeIds: enc.modeIds ?? [],
         earlyExperience: enc.earlyExperience ?? null,
         unmetNeeds: enc.unmetNeeds ?? null,
         triggers: enc.triggers ?? null,
@@ -609,11 +864,17 @@ export class TherapyService {
         history: [],
       },
       update: {
-        ...Object.fromEntries(Object.entries(enc).filter(([k]) => body[k] !== undefined)),
+        ...Object.fromEntries(
+          Object.entries(enc).filter(([k]) => body[k] !== undefined),
+        ),
         history,
       },
     });
-    return { ...saved, ...decryptConceptFields(saved), history: history.map(decryptConceptSnapshot) };
+    return {
+      ...saved,
+      ...decryptConceptFields(saved),
+      history: history.map(decryptConceptSnapshot),
+    };
   }
 
   // ─── Client data for therapist ───────────────────────────────────────────────
@@ -621,21 +882,48 @@ export class TherapyService {
   async getClientData(therapistId: bigint, clientId: number) {
     await this.assertRelation(therapistId, clientId);
     if (clientId < 0) {
-      return { name: null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [] };
+      return {
+        name: null,
+        mySchemaIds: [],
+        myModeIds: [],
+        ysqCompletedAt: null,
+        ysqActiveSchemaIds: [],
+      };
     }
     const uid = BigInt(clientId);
     const [user, ysq, rawHistory] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: uid }, select: { firstName: true, mySchemaIds: true, myModeIds: true, therapistShareProfile: true } }),
+      this.prisma.user.findUnique({
+        where: { id: uid },
+        select: {
+          firstName: true,
+          mySchemaIds: true,
+          myModeIds: true,
+          therapistShareProfile: true,
+        },
+      }),
       this.prisma.ysqResult.findUnique({ where: { userId: uid } }),
-      this.prisma.ysqResultHistory.findMany({ where: { userId: uid }, orderBy: { completedAt: 'desc' }, take: 20 }),
+      this.prisma.ysqResultHistory.findMany({
+        where: { userId: uid },
+        orderBy: { completedAt: 'desc' },
+        take: 20,
+      }),
     ]);
 
     if (user?.therapistShareProfile === false) {
-      return { name: user?.firstName ?? null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [], ysqHistory: [] };
+      return {
+        name: user?.firstName ?? null,
+        mySchemaIds: [],
+        myModeIds: [],
+        ysqCompletedAt: null,
+        ysqActiveSchemaIds: [],
+        ysqHistory: [],
+      };
     }
 
-    const ysqActiveSchemaIds = ysq?.answers ? computeActiveSchemas(ysq.answers as number[]) : [];
-    const ysqHistory = rawHistory.map(r => ({
+    const ysqActiveSchemaIds = ysq?.answers
+      ? computeActiveSchemas(ysq.answers as number[])
+      : [];
+    const ysqHistory = rawHistory.map((r) => ({
       id: r.id,
       completedAt: r.completedAt.toISOString(),
       scores: computeYsqScores(r.answers as number[]),
@@ -651,25 +939,41 @@ export class TherapyService {
     };
   }
 
-  async getClientHistory(therapistId: bigint, clientId: number): Promise<{ date: string; index: number | null; ratings: Record<string, number> }[]> {
+  async getClientHistory(
+    therapistId: bigint,
+    clientId: number,
+  ): Promise<
+    { date: string; index: number | null; ratings: Record<string, number> }[]
+  > {
     if (clientId < 0) return [];
     await this.assertRelation(therapistId, clientId);
-    const history = await this.analyticsService.getHistoryRatings(BigInt(clientId), 14);
-    return history.map(h => {
+    const history = await this.analyticsService.getHistoryRatings(
+      BigInt(clientId),
+      14,
+    );
+    return history.map((h) => {
       const ratings = h.ratings as Record<string, number>;
       const vals = Object.values(ratings);
-      const index = vals.length === 5 ? Math.round(vals.reduce((s, v) => s + v, 0) / 5 * 10) / 10 : null;
+      const index =
+        vals.length === 5
+          ? Math.round((vals.reduce((s, v) => s + v, 0) / 5) * 10) / 10
+          : null;
       return { date: h.date, index, ratings };
     });
   }
 
-  async getClientDiaryEntries(therapistId: bigint, clientId: number): Promise<{
-    type: 'schema' | 'mode' | 'gratitude';
-    date: string;
-    schemaIds?: string[];
-    modeId?: string;
-    excerpt: string;
-  }[]> {
+  async getClientDiaryEntries(
+    therapistId: bigint,
+    clientId: number,
+  ): Promise<
+    {
+      type: 'schema' | 'mode' | 'gratitude';
+      date: string;
+      schemaIds?: string[];
+      modeId?: string;
+      excerpt: string;
+    }[]
+  > {
     if (clientId < 0) return [];
     await this.assertRelation(therapistId, clientId);
     const uid = BigInt(clientId);
@@ -694,27 +998,53 @@ export class TherapyService {
       }),
     ]);
 
-    const entries: { type: 'schema' | 'mode' | 'gratitude'; dateMs: number; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[] = [];
+    const entries: {
+      type: 'schema' | 'mode' | 'gratitude';
+      dateMs: number;
+      date: string;
+      schemaIds?: string[];
+      modeId?: string;
+      excerpt: string;
+    }[] = [];
 
     for (const r of schemaRows) {
-      const schemaIds: string[] = typeof r.schemaIds === 'string'
-        ? (decryptJson<string[]>(r.schemaIds as unknown as string) ?? [])
-        : (r.schemaIds as string[]) ?? [];
-      const trigger = decrypt(r.trigger as string) ?? (r.trigger as string);
-      entries.push({ type: 'schema', dateMs: r.createdAt.getTime(), date: r.createdAt.toISOString().slice(0, 10), schemaIds, excerpt: trigger });
+      const schemaIds: string[] =
+        typeof r.schemaIds === 'string'
+          ? (decryptJson<string[]>(r.schemaIds) ?? [])
+          : ((r.schemaIds as string[]) ?? []);
+      const trigger = decrypt(r.trigger) ?? r.trigger;
+      entries.push({
+        type: 'schema',
+        dateMs: r.createdAt.getTime(),
+        date: r.createdAt.toISOString().slice(0, 10),
+        schemaIds,
+        excerpt: trigger,
+      });
     }
 
     for (const r of modeRows) {
       const modeId = decrypt(r.modeId) ?? r.modeId;
       const situation = decrypt(r.situation) ?? r.situation;
-      entries.push({ type: 'mode', dateMs: r.createdAt.getTime(), date: r.createdAt.toISOString().slice(0, 10), modeId, excerpt: situation });
+      entries.push({
+        type: 'mode',
+        dateMs: r.createdAt.getTime(),
+        date: r.createdAt.toISOString().slice(0, 10),
+        modeId,
+        excerpt: situation,
+      });
     }
 
     for (const r of gratitudeRows) {
-      const items: string[] = typeof r.items === 'string'
-        ? (decryptJson<string[]>(r.items as unknown as string) ?? [])
-        : (r.items as string[]) ?? [];
-      entries.push({ type: 'gratitude', dateMs: new Date(r.date + 'T00:00:00').getTime(), date: r.date, excerpt: items.slice(0, 2).join(' · ') });
+      const items: string[] =
+        typeof r.items === 'string'
+          ? (decryptJson<string[]>(r.items) ?? [])
+          : ((r.items as string[]) ?? []);
+      entries.push({
+        type: 'gratitude',
+        dateMs: new Date(r.date + 'T00:00:00').getTime(),
+        date: r.date,
+        excerpt: items.slice(0, 2).join(' · '),
+      });
     }
 
     return entries
@@ -724,7 +1054,15 @@ export class TherapyService {
   }
 
   private static readonly SCHEMA_NOTE_SCHEMA: EncryptSchema = {
-    strings: ['triggers', 'feelings', 'thoughts', 'origins', 'reality', 'healthyView', 'behavior'],
+    strings: [
+      'triggers',
+      'feelings',
+      'thoughts',
+      'origins',
+      'reality',
+      'healthyView',
+      'behavior',
+    ],
   };
   private static readonly MODE_NOTE_SCHEMA: EncryptSchema = {
     strings: ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'],
@@ -733,24 +1071,46 @@ export class TherapyService {
   async getClientSchemaNotes(therapistId: bigint, clientId: number) {
     if (clientId < 0) return [];
     await this.assertRelation(therapistId, clientId);
-    const rows = await this.prisma.userSchemaNote.findMany({ where: { userId: BigInt(clientId) } });
-    return rows.map(r => decryptRecord(r as any, TherapyService.SCHEMA_NOTE_SCHEMA));
+    const rows = await this.prisma.userSchemaNote.findMany({
+      where: { userId: BigInt(clientId) },
+    });
+    return rows.map((r) =>
+      decryptRecord(r as any, TherapyService.SCHEMA_NOTE_SCHEMA),
+    );
   }
 
   async getClientModeNotes(therapistId: bigint, clientId: number) {
     if (clientId < 0) return [];
     await this.assertRelation(therapistId, clientId);
-    const rows = await this.prisma.userModeNote.findMany({ where: { userId: BigInt(clientId) } });
-    return rows.map(r => decryptRecord(r as any, TherapyService.MODE_NOTE_SCHEMA));
-  }
-
-  async scheduleTaskNotification(clientId: bigint, task: { text: string; needId: string | null; dueDate: string | null }): Promise<void> {
-    await this.notificationService.schedule(clientId, 'task_assigned', new Date(), {
-      text: task.text, needId: task.needId, dueDate: task.dueDate,
+    const rows = await this.prisma.userModeNote.findMany({
+      where: { userId: BigInt(clientId) },
     });
+    return rows.map((r) =>
+      decryptRecord(r as any, TherapyService.MODE_NOTE_SCHEMA),
+    );
   }
 
-  async renameClient(therapistId: bigint, clientId: number, alias: string): Promise<void> {
+  async scheduleTaskNotification(
+    clientId: bigint,
+    task: { text: string; needId: string | null; dueDate: string | null },
+  ): Promise<void> {
+    await this.notificationService.schedule(
+      clientId,
+      'task_assigned',
+      new Date(),
+      {
+        text: task.text,
+        needId: task.needId,
+        dueDate: task.dueDate,
+      },
+    );
+  }
+
+  async renameClient(
+    therapistId: bigint,
+    clientId: number,
+    alias: string,
+  ): Promise<void> {
     if (clientId < 0) {
       await this.prisma.therapyRelation.updateMany({
         where: { id: -clientId, therapistId, status: 'active' },
@@ -768,13 +1128,19 @@ export class TherapyService {
     const tid = therapistId;
     const cid = BigInt(clientId);
     await this.prisma.$transaction([
-      this.prisma.therapistNote.deleteMany({ where: { therapistId: tid, clientId: cid } }),
+      this.prisma.therapistNote.deleteMany({
+        where: { therapistId: tid, clientId: cid },
+      }),
       this.prisma.clientConceptualization.deleteMany({
         where: { therapistId: tid, clientId: cid },
       }),
       clientId < 0
-        ? this.prisma.therapyRelation.deleteMany({ where: { id: -clientId, therapistId: tid } })
-        : this.prisma.therapyRelation.deleteMany({ where: { therapistId: tid, clientId: cid } }),
+        ? this.prisma.therapyRelation.deleteMany({
+            where: { id: -clientId, therapistId: tid },
+          })
+        : this.prisma.therapyRelation.deleteMany({
+            where: { therapistId: tid, clientId: cid },
+          }),
     ]);
   }
 
@@ -782,11 +1148,17 @@ export class TherapyService {
     await this.assertRelation(therapistId, clientId);
     if (clientId < 0) return; // Virtual client — no Telegram account, cannot send notification
     const therapist = await this.prisma.user.findUnique({
-      where: { id: therapistId }, select: { firstName: true },
+      where: { id: therapistId },
+      select: { firstName: true },
     });
-    await this.notificationService.schedule(BigInt(clientId), 'ysq_requested', new Date(), {
-      therapistName: therapist?.firstName ?? null,
-    });
+    await this.notificationService.schedule(
+      BigInt(clientId),
+      'ysq_requested',
+      new Date(),
+      {
+        therapistName: therapist?.firstName ?? null,
+      },
+    );
   }
 
   // ─── Mode Maps ───────────────────────────────────────────────────────────────
@@ -796,31 +1168,57 @@ export class TherapyService {
     const rows = await (this.prisma.modeMap as any).findMany({
       where: { therapistId, clientId: BigInt(clientId) },
       orderBy: { createdAt: 'asc' },
-      select: { id: true, title: true, kind: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        title: true,
+        kind: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
     return rows.map((r: any) => decryptRecord(r, MODE_MAP_SCHEMA));
   }
 
   async getModeMap(therapistId: bigint, mapId: number) {
-    const row = await (this.prisma.modeMap as any).findUnique({ where: { id: mapId } });
+    const row = await (this.prisma.modeMap as any).findUnique({
+      where: { id: mapId },
+    });
     if (!row || row.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
     return decryptRecord(row, MODE_MAP_SCHEMA);
   }
 
-  async createModeMap(therapistId: bigint, clientId: number, title: string, kind?: string) {
+  async createModeMap(
+    therapistId: bigint,
+    clientId: number,
+    title: string,
+    kind?: string,
+  ) {
     await this.assertRelation(therapistId, clientId);
     const k = MODE_MAP_KINDS.includes(kind as any) ? kind : 'problem';
     const row = await (this.prisma.modeMap as any).create({
-      data: { therapistId, clientId: BigInt(clientId), kind: k, ...encryptRecord({ title }, MODE_MAP_SCHEMA) },
+      data: {
+        therapistId,
+        clientId: BigInt(clientId),
+        kind: k,
+        ...encryptRecord({ title }, MODE_MAP_SCHEMA),
+      },
     });
     return decryptRecord({ ...row, nodes: [], edges: [] }, MODE_MAP_SCHEMA);
   }
 
-  async updateModeMap(therapistId: bigint, mapId: number, body: {
-    title?: string; nodes?: unknown[]; edges?: unknown[];
-  }) {
-    const existing = await (this.prisma.modeMap as any).findUnique({ where: { id: mapId } });
+  async updateModeMap(
+    therapistId: bigint,
+    mapId: number,
+    body: {
+      title?: string;
+      nodes?: unknown[];
+      edges?: unknown[];
+    },
+  ) {
+    const existing = await (this.prisma.modeMap as any).findUnique({
+      where: { id: mapId },
+    });
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
     const fields: Record<string, unknown> = {};
@@ -828,13 +1226,16 @@ export class TherapyService {
     if (body.nodes !== undefined) fields.nodes = body.nodes;
     if (body.edges !== undefined) fields.edges = body.edges;
     const row = await (this.prisma.modeMap as any).update({
-      where: { id: mapId }, data: encryptRecord(fields, MODE_MAP_SCHEMA),
+      where: { id: mapId },
+      data: encryptRecord(fields, MODE_MAP_SCHEMA),
     });
     return decryptRecord(row, MODE_MAP_SCHEMA);
   }
 
   async deleteModeMap(therapistId: bigint, mapId: number) {
-    const existing = await (this.prisma.modeMap as any).findUnique({ where: { id: mapId } });
+    const existing = await (this.prisma.modeMap as any).findUnique({
+      where: { id: mapId },
+    });
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
     await (this.prisma.modeMap as any).delete({ where: { id: mapId } });
@@ -852,7 +1253,9 @@ export class TherapyService {
   }
 
   async getMyModeMap(userId: bigint, mapId: number) {
-    const row = await (this.prisma.modeMap as any).findUnique({ where: { id: mapId } });
+    const row = await (this.prisma.modeMap as any).findUnique({
+      where: { id: mapId },
+    });
     if (!row || row.clientId.toString() !== userId.toString())
       throw new Error('Not found');
     return decryptRecord(row, MODE_MAP_SCHEMA);
@@ -868,12 +1271,25 @@ export class TherapyService {
     return rows.map((r: any) => decryptRecord(r, CUSTOM_MODE_SCHEMA));
   }
 
-  async createCustomMode(therapistId: bigint, body: { name: string; emoji?: string; nodeType?: string }) {
-    const allowed = ['trigger','child','critic','coping','healthy','custom'];
-    const nodeType = allowed.includes(body.nodeType ?? '') ? body.nodeType : 'custom';
+  async createCustomMode(
+    therapistId: bigint,
+    body: { name: string; emoji?: string; nodeType?: string },
+  ) {
+    const allowed = [
+      'trigger',
+      'child',
+      'critic',
+      'coping',
+      'healthy',
+      'custom',
+    ];
+    const nodeType = allowed.includes(body.nodeType ?? '')
+      ? body.nodeType
+      : 'custom';
     const row = await (this.prisma.therapistCustomMode as any).create({
       data: {
-        therapistId, nodeType,
+        therapistId,
+        nodeType,
         emoji: (body.emoji ?? '⬡').slice(0, 8),
         ...encryptRecord({ name: body.name.slice(0, 80) }, CUSTOM_MODE_SCHEMA),
       },

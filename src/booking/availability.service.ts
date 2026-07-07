@@ -18,7 +18,9 @@ export class AvailabilityService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list() {
-    return this.prisma.availabilityRule.findMany({ orderBy: [{ dayOfWeek: 'asc' }, { startHour: 'asc' }] });
+    return this.prisma.availabilityRule.findMany({
+      orderBy: [{ dayOfWeek: 'asc' }, { startHour: 'asc' }],
+    });
   }
 
   async create(dto: CreateRuleDto) {
@@ -37,13 +39,20 @@ export class AvailabilityService {
   }
 
   async setActive(id: number, isActive: boolean) {
-    const rule = await this.prisma.availabilityRule.findUnique({ where: { id } });
+    const rule = await this.prisma.availabilityRule.findUnique({
+      where: { id },
+    });
     if (!rule) throw new NotFoundException('Rule not found');
-    return this.prisma.availabilityRule.update({ where: { id }, data: { isActive } });
+    return this.prisma.availabilityRule.update({
+      where: { id },
+      data: { isActive },
+    });
   }
 
   async remove(id: number) {
-    const rule = await this.prisma.availabilityRule.findUnique({ where: { id } });
+    const rule = await this.prisma.availabilityRule.findUnique({
+      where: { id },
+    });
     if (!rule) throw new NotFoundException('Rule not found');
     await this.prisma.availabilityRule.delete({ where: { id } });
     return { ok: true };

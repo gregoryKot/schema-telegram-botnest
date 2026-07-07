@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Headers, HttpCode, HttpStatus, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ArticlesService } from './articles.service';
 import type { ArticleDto } from './articles.service';
@@ -43,7 +55,10 @@ export class ArticlesAdminController {
   }
 
   @Delete(':id')
-  async remove(@Param('id', ParseIntPipe) id: number, @Headers('x-admin-key') key: string) {
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Headers('x-admin-key') key: string,
+  ) {
     assertAdminKey(key, this.adminKey);
     return this.articles.remove(id);
   }

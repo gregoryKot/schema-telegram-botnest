@@ -1,11 +1,28 @@
 import { Markup } from 'telegraf';
 import { NotificationType } from './notification.service';
-import { BOOKING_URL, MINIAPP_URL, DONATE_URL } from '../telegram/telegram.constants';
+import {
+  BOOKING_URL,
+  MINIAPP_URL,
+  DONATE_URL,
+} from '../telegram/telegram.constants';
 import { Need, NeedId } from '../bot/bot.service';
 import { renderSoftTemplate, pluralDays } from './notification.templates.soft';
 import { AddressForm, t } from './address-form';
 
-const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const MONTHS = [
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
+];
 
 function formatDate(date: Date): string {
   return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
@@ -47,7 +64,12 @@ function pickPractice(needId: NeedId, seed: number): string {
   return list[seed % list.length];
 }
 
-export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, number>>, tz = 'Europe/Moscow', form: AddressForm = 'ty'): string {
+export function buildSummaryText(
+  needs: Need[],
+  ratings: Partial<Record<NeedId, number>>,
+  tz = 'Europe/Moscow',
+  form: AddressForm = 'ty',
+): string {
   const lines = needs.map((n) => {
     const v = ratings[n.id];
     if (v === undefined) return `${n.emoji} ${'⬜'.repeat(10)} –`;
@@ -55,42 +77,72 @@ export function buildSummaryText(needs: Need[], ratings: Partial<Record<NeedId, 
   });
   const legend = needs.map((n) => `${n.emoji} ${n.chartLabel}`).join('\n');
   const now = new Date();
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, day: 'numeric', month: 'numeric' }).formatToParts(now);
-  const day = Number(parts.find(p => p.type === 'day')?.value ?? now.getDate());
-  const month = Number(parts.find(p => p.type === 'month')?.value ?? now.getMonth() + 1) - 1;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    day: 'numeric',
+    month: 'numeric',
+  }).formatToParts(now);
+  const day = Number(
+    parts.find((p) => p.type === 'day')?.value ?? now.getDate(),
+  );
+  const month =
+    Number(parts.find((p) => p.type === 'month')?.value ?? now.getMonth() + 1) -
+    1;
   const dateStr = `${day} ${MONTHS[month]}`;
   return `📔 Трекер потребностей · ${dateStr}\n${t(form, 'Твои', 'Ваши')} оценки за сегодня 👇\n\n${lines.join('\n')}\n\n${legend}`;
 }
 
-const openDiaryButton = Markup.button.webApp('📱 Открыть «Всё по схеме»', MINIAPP_URL);
+const openDiaryButton = Markup.button.webApp(
+  '📱 Открыть «Всё по схеме»',
+  MINIAPP_URL,
+);
 const bookingButton = Markup.button.url('📝 Записаться на сессию', BOOKING_URL);
 const donateButton = Markup.button.url('💛 Поддержать проект', DONATE_URL);
 
 // Rotated so the monthly nudge doesn't feel like the same canned message.
 const DONATE_MESSAGES: Array<[string, string]> = [
-  ['💛 «Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи проект, это помогает его развивать.',
-   '💛 «Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите проект, это помогает его развивать.'],
-  ['💛 Раз в месяц напоминаю: приложение живёт на поддержке пользователей. Любая сумма помогает.',
-   '💛 Раз в месяц напоминаю: приложение живёт на поддержке пользователей. Любая сумма помогает.'],
-  ['💛 Если приложение приносит пользу — можно поддержать его разовым донатом. Спасибо, что ты здесь.',
-   '💛 Если приложение приносит пользу — можно поддержать его разовым донатом. Спасибо, что вы здесь.'],
+  [
+    '💛 «Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи проект, это помогает его развивать.',
+    '💛 «Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите проект, это помогает его развивать.',
+  ],
+  [
+    '💛 Раз в месяц напоминаю: приложение живёт на поддержке пользователей. Любая сумма помогает.',
+    '💛 Раз в месяц напоминаю: приложение живёт на поддержке пользователей. Любая сумма помогает.',
+  ],
+  [
+    '💛 Если приложение приносит пользу — можно поддержать его разовым донатом. Спасибо, что ты здесь.',
+    '💛 Если приложение приносит пользу — можно поддержать его разовым донатом. Спасибо, что вы здесь.',
+  ],
 ];
 const snoozeButton = Markup.button.callback('⏰ Через час', 'snooze_reminder');
-const skipTodayButton = Markup.button.callback('Сегодня не могу', 'notify:skip');
+const skipTodayButton = Markup.button.callback(
+  'Сегодня не могу',
+  'notify:skip',
+);
 const pauseButton = Markup.button.callback('⏸ Пауза', 'notify:pause');
 const slowerButton = Markup.button.callback('🔕 Реже', 'notify:slower');
 
 const REMINDER_INTROS: Array<[string, string]> = [
-  ['📔 Трекер потребностей — отметь оценки за сегодня.',
-   '📔 Трекер потребностей — отметьте оценки за сегодня.'],
-  ['📔 Пять оценок — и картина дня готова.',
-   '📔 Пять оценок — и картина дня готова.'],
-  ['📔 Отметь потребности за сегодня — займёт меньше минуты.',
-   '📔 Отметьте потребности за сегодня — займёт меньше минуты.'],
-  ['📔 Как ты сегодня? Минутка на пять оценок.',
-   '📔 Как вы сегодня? Минутка на пять оценок.'],
-  ['📔 Момент для себя: как прошёл день?',
-   '📔 Момент для себя: как прошёл день?'],
+  [
+    '📔 Трекер потребностей — отметь оценки за сегодня.',
+    '📔 Трекер потребностей — отметьте оценки за сегодня.',
+  ],
+  [
+    '📔 Пять оценок — и картина дня готова.',
+    '📔 Пять оценок — и картина дня готова.',
+  ],
+  [
+    '📔 Отметь потребности за сегодня — займёт меньше минуты.',
+    '📔 Отметьте потребности за сегодня — займёт меньше минуты.',
+  ],
+  [
+    '📔 Как ты сегодня? Минутка на пять оценок.',
+    '📔 Как вы сегодня? Минутка на пять оценок.',
+  ],
+  [
+    '📔 Момент для себя: как прошёл день?',
+    '📔 Момент для себя: как прошёл день?',
+  ],
 ];
 
 export interface NotificationTemplate {
@@ -152,25 +204,31 @@ export function renderTemplate(
 
     case 'onboarding_1':
       return {
-        text: t(form,
+        text: t(
+          form,
           'Первая запись сделана.\n\nПаттерн начнёт проявляться через 3–5 дней — возвращайся завтра.',
-          'Первая запись сделана.\n\nПаттерн начнёт проявляться через 3–5 дней — возвращайтесь завтра.'),
+          'Первая запись сделана.\n\nПаттерн начнёт проявляться через 3–5 дней — возвращайтесь завтра.',
+        ),
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
 
     case 'onboarding_3':
       return {
-        text: t(form,
+        text: t(
+          form,
           'Три дня подряд — уже кое-что видно.\n\nЗайди в историю и посмотри как менялись потребности.',
-          'Три дня подряд — уже кое-что видно.\n\nЗайдите в историю и посмотрите, как менялись потребности.'),
+          'Три дня подряд — уже кое-что видно.\n\nЗайдите в историю и посмотрите, как менялись потребности.',
+        ),
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
 
     case 'onboarding_7':
       return {
-        text: t(form,
+        text: t(
+          form,
           'Неделя наблюдений — серьёзно.\n\nТы уже знаешь про себя больше, чем большинство людей.',
-          'Неделя наблюдений — серьёзно.\n\nВы уже знаете про себя больше, чем большинство людей.'),
+          'Неделя наблюдений — серьёзно.\n\nВы уже знаете про себя больше, чем большинство людей.',
+        ),
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
 
@@ -181,9 +239,11 @@ export function renderTemplate(
 
     case 'streak_14':
       return {
-        text: t(form,
+        text: t(
+          form,
           '14 дней. Ты видишь себя в динамике — это редкость.',
-          '14 дней. Вы видите себя в динамике — это редкость.'),
+          '14 дней. Вы видите себя в динамике — это редкость.',
+        ),
       };
 
     case 'streak_30':
@@ -216,9 +276,11 @@ export function renderTemplate(
       // вкладу («ты уже N дней…») — реципрокность + якорь ценности сильнее общего текста.
       if (totalDays && totalDays >= 30) {
         return {
-          text: t(form,
+          text: t(
+            form,
             `💛 Ты уже ${totalDays} ${pluralDays(totalDays)} наблюдаешь за собой во «Всё по схеме» — и всё это время оно бесплатное и без рекламы. Если приложение приносит пользу, разовый донат помогает его развивать.`,
-            `💛 Вы уже ${totalDays} ${pluralDays(totalDays)} наблюдаете за собой во «Всё по схеме» — и всё это время оно бесплатное и без рекламы. Если приложение приносит пользу, разовый донат помогает его развивать.`),
+            `💛 Вы уже ${totalDays} ${pluralDays(totalDays)} наблюдаете за собой во «Всё по схеме» — и всё это время оно бесплатное и без рекламы. Если приложение приносит пользу, разовый донат помогает его развивать.`,
+          ),
           keyboard: Markup.inlineKeyboard([[donateButton]]),
         };
       }
@@ -231,36 +293,50 @@ export function renderTemplate(
 
     case 'anniversary_30':
       return {
-        text: t(form,
+        text: t(
+          form,
           '📅 Месяц наблюдений. Ты уже знаешь о себе больше, чем большинство людей знают за годы.',
-          '📅 Месяц наблюдений. Вы уже знаете о себе больше, чем большинство людей знают за годы.'),
+          '📅 Месяц наблюдений. Вы уже знаете о себе больше, чем большинство людей знают за годы.',
+        ),
       };
 
     case 'anniversary_60':
       return {
-        text: t(form,
+        text: t(
+          form,
           '📅 Два месяца. Паттерн теперь устойчивый — ты видишь себя в динамике.',
-          '📅 Два месяца. Паттерн теперь устойчивый — вы видите себя в динамике.'),
+          '📅 Два месяца. Паттерн теперь устойчивый — вы видите себя в динамике.',
+        ),
       };
 
     case 'anniversary_90':
-      return { text: '📅 Три месяца. Это серьёзная практика самопознания. Редкость.' };
+      return {
+        text: '📅 Три месяца. Это серьёзная практика самопознания. Редкость.',
+      };
 
     case 'practice_reminder': {
       const text = payload?.practiceText as string | undefined;
       const planId = payload?.planId as number | undefined;
       if (!text) return null;
-      const buttons = planId !== undefined
-        ? [
-            [
-              Markup.button.callback('✅ Сделано', `plan_done:${planId}`),
-              Markup.button.callback('❌ Не получилось', `plan_skip:${planId}`),
-            ],
-            [openDiaryButton],
-          ]
-        : [[openDiaryButton]];
+      const buttons =
+        planId !== undefined
+          ? [
+              [
+                Markup.button.callback('✅ Сделано', `plan_done:${planId}`),
+                Markup.button.callback(
+                  '❌ Не получилось',
+                  `plan_skip:${planId}`,
+                ),
+              ],
+              [openDiaryButton],
+            ]
+          : [[openDiaryButton]];
       return {
-        text: t(form, `🎯 Сегодня ты планировал:\n\n${text}`, `🎯 Сегодня вы планировали:\n\n${text}`),
+        text: t(
+          form,
+          `🎯 Сегодня ты планировал:\n\n${text}`,
+          `🎯 Сегодня вы планировали:\n\n${text}`,
+        ),
         keyboard: Markup.inlineKeyboard(buttons),
       };
     }
@@ -269,15 +345,19 @@ export function renderTemplate(
       const text = payload?.practiceText as string | undefined;
       const planId = payload?.planId as number | undefined;
       if (!text) return null;
-      const buttons = planId !== undefined
-        ? [
-            [
-              Markup.button.callback('✅ Всё-таки сделано', `plan_done:${planId}`),
-              Markup.button.callback('❌ Не вышло', `plan_skip:${planId}`),
-            ],
-            [openDiaryButton],
-          ]
-        : [[openDiaryButton]];
+      const buttons =
+        planId !== undefined
+          ? [
+              [
+                Markup.button.callback(
+                  '✅ Всё-таки сделано',
+                  `plan_done:${planId}`,
+                ),
+                Markup.button.callback('❌ Не вышло', `plan_skip:${planId}`),
+              ],
+              [openDiaryButton],
+            ]
+          : [[openDiaryButton]];
       return {
         text: `🎯 Вчера был план:\n\n${text}\n\nКак получилось?`,
         keyboard: Markup.inlineKeyboard(buttons),
@@ -289,7 +369,10 @@ export function renderTemplate(
       const showBooking = payload?.showBooking as boolean | undefined;
       if (!text) return null;
       const buttons = showBooking
-        ? [[Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)], [bookingButton]]
+        ? [
+            [Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)],
+            [bookingButton],
+          ]
         : [[Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)]];
       return {
         text,
@@ -303,16 +386,23 @@ export function renderTemplate(
       const dueDate = payload?.dueDate as string | undefined;
       if (!text) return null;
       const NEED_LABELS: Record<string, string> = {
-        attachment: 'Привязанность', autonomy: 'Автономия',
-        expression: 'Выражение чувств', play: 'Спонтанность', limits: 'Границы',
+        attachment: 'Привязанность',
+        autonomy: 'Автономия',
+        expression: 'Выражение чувств',
+        play: 'Спонтанность',
+        limits: 'Границы',
       };
       let msg = `👨‍⚕️ Терапевт назначил задание:\n\n${text}`;
-      if (needId && NEED_LABELS[needId]) msg += `\n\nПотребность: ${NEED_LABELS[needId]}`;
+      if (needId && NEED_LABELS[needId])
+        msg += `\n\nПотребность: ${NEED_LABELS[needId]}`;
       if (dueDate) {
         const d = new Date(dueDate + 'T12:00:00Z'); // noon UTC — timezone-safe date parsing
         msg += `\nСрок: ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
       }
-      return { text: msg, keyboard: Markup.inlineKeyboard([[openDiaryButton]]) };
+      return {
+        text: msg,
+        keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
+      };
     }
 
     case 'ysq_requested': {
@@ -320,7 +410,9 @@ export function renderTemplate(
       const name = therapistName ? `Терапевт ${therapistName}` : 'Ваш терапевт';
       return {
         text: `📋 ${name} просит вас пройти Опросник схем Янга (YSQ).\n\nЭто займёт 10–15 минут. Результаты помогут лучше понять ваши схемы.`,
-        keyboard: Markup.inlineKeyboard([[Markup.button.webApp('📋 Пройти тест YSQ', MINIAPP_URL)]]),
+        keyboard: Markup.inlineKeyboard([
+          [Markup.button.webApp('📋 Пройти тест YSQ', MINIAPP_URL)],
+        ]),
       };
     }
 
@@ -338,22 +430,24 @@ export function buildWeeklySummaryText(
   seed = 0,
   form: AddressForm = 'ty',
 ): string {
-  const lines = stats.map(({ needId, avg, trend }) => {
-    const need = needs.find((n) => n.id === needId);
-    if (!need) return null;
-    if (avg === null) return `${need.emoji} ${need.chartLabel}  –`;
-    return `${need.emoji} ${need.chartLabel}  ${avg.toFixed(1)} ${trend}`;
-  }).filter(Boolean);
+  const lines = stats
+    .map(({ needId, avg, trend }) => {
+      const need = needs.find((n) => n.id === needId);
+      if (!need) return null;
+      if (avg === null) return `${need.emoji} ${need.chartLabel}  –`;
+      return `${need.emoji} ${need.chartLabel}  ${avg.toFixed(1)} ${trend}`;
+    })
+    .filter(Boolean);
   const bestLine = bestDay ? `\nЛучший день — ${bestDay} 🌟` : '';
 
   // Find lowest need with data and suggest a practice
-  const ratedStats = stats.filter(s => s.avg !== null);
+  const ratedStats = stats.filter((s) => s.avg !== null);
   const lowest = ratedStats.sort((a, b) => (a.avg ?? 10) - (b.avg ?? 10))[0];
   let actionLine = '';
   if (lowest && (lowest.avg ?? 10) < 6) {
-    const need = needs.find(n => n.id === lowest.needId);
+    const need = needs.find((n) => n.id === lowest.needId);
     if (need) {
-      const practice = pickPractice(lowest.needId as NeedId, seed);
+      const practice = pickPractice(lowest.needId, seed);
       actionLine = `\n\n💡 На этой неделе ${t(form, 'уделяй', 'уделяйте')} внимание ${need.chartLabel.toLowerCase()}.\n${t(form, 'Попробуй', 'Попробуйте')}: ${practice}`;
     }
   }
@@ -376,7 +470,10 @@ export function renderLowStreakInsight(
     text,
     keyboard: Markup.inlineKeyboard(
       showBooking
-        ? [[Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)], [Markup.button.url('📝 Записаться на сессию', bookingUrl)]]
+        ? [
+            [Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)],
+            [Markup.button.url('📝 Записаться на сессию', bookingUrl)],
+          ]
         : [[Markup.button.webApp('📱 Раздел Помощь', MINIAPP_URL)]],
     ),
   };

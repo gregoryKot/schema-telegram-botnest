@@ -26,15 +26,21 @@ export class CalDavService {
   private readonly auth: string;
   private resolvedBase: string | null = null;
   private discovery: Promise<string | null> | null = null;
-  private busyCache: { key: string; val: Interval[]; exp: number } | null = null;
+  private busyCache: { key: string; val: Interval[]; exp: number } | null =
+    null;
   private busyUrls: Promise<string[]> | null = null;
 
   constructor(config: ConfigService) {
-    this.configuredBase = (config.get<string>('APPLE_CALDAV_URL') ?? '').replace(/\/?$/, '/').replace(/^\/$/, '');
+    this.configuredBase = (config.get<string>('APPLE_CALDAV_URL') ?? '')
+      .replace(/\/?$/, '/')
+      .replace(/^\/$/, '');
     this.calendarName = config.get<string>('APPLE_CALENDAR_NAME') ?? '';
     const id = config.get<string>('APPLE_ID') ?? '';
     const pass = config.get<string>('APPLE_APP_PASSWORD') ?? '';
-    this.auth = id && pass ? 'Basic ' + Buffer.from(`${id}:${pass}`).toString('base64') : '';
+    this.auth =
+      id && pass
+        ? 'Basic ' + Buffer.from(`${id}:${pass}`).toString('base64')
+        : '';
   }
 
   get enabled(): boolean {
@@ -48,11 +54,19 @@ export class CalDavService {
     if (!this.discovery) {
       this.discovery = discoverCalendarUrl(this.auth, this.calendarName)
         .then((url) => {
-          if (url) { this.resolvedBase = url; this.logger.log(`CalDAV calendar discovered: ${url}`); }
-          else this.logger.warn('CalDAV auto-discovery found no calendar — set APPLE_CALDAV_URL manually');
+          if (url) {
+            this.resolvedBase = url;
+            this.logger.log(`CalDAV calendar discovered: ${url}`);
+          } else
+            this.logger.warn(
+              'CalDAV auto-discovery found no calendar — set APPLE_CALDAV_URL manually',
+            );
           return url;
         })
-        .catch((e) => { this.logger.error(`CalDAV discovery failed: ${(e as Error).message}`); return null; });
+        .catch((e) => {
+          this.logger.error(`CalDAV discovery failed: ${(e as Error).message}`);
+          return null;
+        });
     }
     return this.discovery;
   }
@@ -75,7 +89,9 @@ export class CalDavService {
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
-        this.logger.error(`CalDAV PUT ${res.status} to ${url}: ${body.slice(0, 300)}`);
+        this.logger.error(
+          `CalDAV PUT ${res.status} to ${url}: ${body.slice(0, 300)}`,
+        );
         return null;
       }
       this.logger.log(`CalDAV event pushed: ${ev.uid}`);
@@ -98,10 +114,17 @@ export class CalDavService {
       this.busyUrls = listCalendars(this.auth)
         .then((cals) => {
           const urls = cals.map((c) => c.url);
-          this.logger.log(`CalDAV busy-scan calendars: ${cals.map((c) => c.name || c.url).join(', ') || 'none'}`);
+          this.logger.log(
+            `CalDAV busy-scan calendars: ${cals.map((c) => c.name || c.url).join(', ') || 'none'}`,
+          );
           return urls;
         })
-        .catch((e) => { this.logger.error(`CalDAV calendar list failed: ${(e as Error).message}`); return []; });
+        .catch((e) => {
+          this.logger.error(
+            `CalDAV calendar list failed: ${(e as Error).message}`,
+          );
+          return [];
+        });
     }
     return this.busyUrls;
   }
@@ -114,7 +137,11 @@ export class CalDavService {
   async getBusyTimes(from: Date, to: Date): Promise<Interval[]> {
     if (!this.enabled) return [];
     const key = `${from.getTime()}_${to.getTime()}`;
-    if (this.busyCache && this.busyCache.key === key && Date.now() < this.busyCache.exp) {
+    if (
+      this.busyCache &&
+      this.busyCache.key === key &&
+      Date.now() < this.busyCache.exp
+    ) {
       return this.busyCache.val;
     }
     const urls = await this.getBusyUrls();
@@ -126,7 +153,11 @@ export class CalDavService {
         try {
           const res = await fetch(url, {
             method: 'REPORT',
-            headers: { Authorization: this.auth, 'Content-Type': 'application/xml; charset=utf-8', Depth: '1' },
+            headers: {
+              Authorization: this.auth,
+              'Content-Type': 'application/xml; charset=utf-8',
+              Depth: '1',
+            },
             body,
             signal: AbortSignal.timeout(7_000),
           });
@@ -136,7 +167,9 @@ export class CalDavService {
           }
           return parseBusy(await res.text());
         } catch (e) {
-          this.logger.warn(`CalDAV busy read failed for ${url}: ${(e as Error).message}`);
+          this.logger.warn(
+            `CalDAV busy read failed for ${url}: ${(e as Error).message}`,
+          );
           return [] as Interval[];
         }
       }),

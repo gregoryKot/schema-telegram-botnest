@@ -1,4 +1,15 @@
-import { BadRequestException, Body, Controller, Delete, Get, Logger, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Logger,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { DiaryService } from '../bot/diary.service';
@@ -9,11 +20,14 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-function uid(req: AuthRequest): bigint { return req.webUser.userId; }
+function uid(req: AuthRequest): bigint {
+  return req.webUser.userId;
+}
 
 function parseId(raw: string): number {
   const n = parseInt(raw, 10);
-  if (!Number.isFinite(n) || n <= 0) throw new BadRequestException('Invalid id');
+  if (!Number.isFinite(n) || n <= 0)
+    throw new BadRequestException('Invalid id');
   return n;
 }
 
@@ -35,22 +49,29 @@ export class DiaryController {
   }
 
   @Post('schema')
-  async createSchemaDiary(@Req() req: AuthRequest, @Body() body: {
-    trigger: string;
-    emotions: { id: string; intensity: number }[];
-    thoughts?: string;
-    bodyFeelings?: string;
-    actualBehavior?: string;
-    schemaIds: string[];
-    schemaOrigin?: string;
-    healthyView?: string;
-    realProblems?: string;
-    excessiveReactions?: string;
-    healthyBehavior?: string;
-  }) {
-    if (!body.trigger?.trim()) throw new BadRequestException('trigger required');
-    if (!Array.isArray(body.emotions) || body.emotions.length > 50) throw new BadRequestException('emotions required');
-    if (!Array.isArray(body.schemaIds) || body.schemaIds.length > 50) throw new BadRequestException('schemaIds required');
+  async createSchemaDiary(
+    @Req() req: AuthRequest,
+    @Body()
+    body: {
+      trigger: string;
+      emotions: { id: string; intensity: number }[];
+      thoughts?: string;
+      bodyFeelings?: string;
+      actualBehavior?: string;
+      schemaIds: string[];
+      schemaOrigin?: string;
+      healthyView?: string;
+      realProblems?: string;
+      excessiveReactions?: string;
+      healthyBehavior?: string;
+    },
+  ) {
+    if (!body.trigger?.trim())
+      throw new BadRequestException('trigger required');
+    if (!Array.isArray(body.emotions) || body.emotions.length > 50)
+      throw new BadRequestException('emotions required');
+    if (!Array.isArray(body.schemaIds) || body.schemaIds.length > 50)
+      throw new BadRequestException('schemaIds required');
     const LIMIT = 2000;
     const trimmed = {
       ...body,
@@ -64,8 +85,13 @@ export class DiaryController {
       excessiveReactions: body.excessiveReactions?.slice(0, LIMIT),
       healthyBehavior: body.healthyBehavior?.slice(0, LIMIT),
     };
-    const entry = await this.diaryService.createSchemaDiaryEntry(uid(req), trimmed);
-    this.therapyService.checkStreakTasks(uid(req)).catch((err) => this.logger.error('checkStreakTasks failed', err));
+    const entry = await this.diaryService.createSchemaDiaryEntry(
+      uid(req),
+      trimmed,
+    );
+    this.therapyService
+      .checkStreakTasks(uid(req))
+      .catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;
   }
 
@@ -83,18 +109,23 @@ export class DiaryController {
   }
 
   @Post('mode')
-  async createModeDiary(@Req() req: AuthRequest, @Body() body: {
-    modeId: string;
-    situation: string;
-    thoughts?: string;
-    feelings?: string;
-    bodyFeelings?: string;
-    actions?: string;
-    actualNeed?: string;
-    childhoodMemories?: string;
-  }) {
+  async createModeDiary(
+    @Req() req: AuthRequest,
+    @Body()
+    body: {
+      modeId: string;
+      situation: string;
+      thoughts?: string;
+      feelings?: string;
+      bodyFeelings?: string;
+      actions?: string;
+      actualNeed?: string;
+      childhoodMemories?: string;
+    },
+  ) {
     if (!body.modeId?.trim()) throw new BadRequestException('modeId required');
-    if (!body.situation?.trim()) throw new BadRequestException('situation required');
+    if (!body.situation?.trim())
+      throw new BadRequestException('situation required');
     const LIMIT = 2000;
     const trimmedMode = {
       ...body,
@@ -106,8 +137,13 @@ export class DiaryController {
       actualNeed: body.actualNeed?.slice(0, LIMIT),
       childhoodMemories: body.childhoodMemories?.slice(0, LIMIT),
     };
-    const entry = await this.diaryService.createModeDiaryEntry(uid(req), trimmedMode);
-    this.therapyService.checkStreakTasks(uid(req)).catch((err) => this.logger.error('checkStreakTasks failed', err));
+    const entry = await this.diaryService.createModeDiaryEntry(
+      uid(req),
+      trimmedMode,
+    );
+    this.therapyService
+      .checkStreakTasks(uid(req))
+      .catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;
   }
 
@@ -125,13 +161,24 @@ export class DiaryController {
   }
 
   @Post('gratitude')
-  async createGratitudeDiary(@Req() req: AuthRequest, @Body() body: { date: string; items: string[] }) {
-    if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) throw new BadRequestException('Invalid date');
-    if (!Array.isArray(body.items) || body.items.length === 0) throw new BadRequestException('items required');
+  async createGratitudeDiary(
+    @Req() req: AuthRequest,
+    @Body() body: { date: string; items: string[] },
+  ) {
+    if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date))
+      throw new BadRequestException('Invalid date');
+    if (!Array.isArray(body.items) || body.items.length === 0)
+      throw new BadRequestException('items required');
     if (body.items.length > 20) throw new BadRequestException('Too many items');
     const items = body.items.map((s: string) => String(s).slice(0, 500));
-    const entry = await this.diaryService.upsertGratitudeDiaryEntry(uid(req), body.date, items);
-    this.therapyService.checkStreakTasks(uid(req)).catch((err) => this.logger.error('checkStreakTasks failed', err));
+    const entry = await this.diaryService.upsertGratitudeDiaryEntry(
+      uid(req),
+      body.date,
+      items,
+    );
+    this.therapyService
+      .checkStreakTasks(uid(req))
+      .catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;
   }
 

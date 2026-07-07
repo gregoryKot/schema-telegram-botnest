@@ -16,7 +16,7 @@ import { PricingService } from './pricing.service';
 import { SessionType } from '@prisma/client';
 
 interface BookDto {
-  startsAt: string;      // ISO string
+  startsAt: string; // ISO string
   durationMin?: number;
   type?: SessionType;
   clientName: string;
@@ -74,7 +74,9 @@ export class BookingController {
       clientName: dto.clientName?.trim(),
       clientContact: dto.clientContact?.trim(),
       message: dto.message?.trim(),
-      clientTelegramId: dto.clientTelegramId ? BigInt(dto.clientTelegramId) : undefined,
+      clientTelegramId: dto.clientTelegramId
+        ? BigInt(dto.clientTelegramId)
+        : undefined,
       returning: dto.returning ?? false,
       acceptedOffer: dto.acceptedOffer ?? false,
     };

@@ -1,8 +1,13 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 export interface WebUser {
-  userId: BigInt;
+  userId: bigint;
 }
 
 // Validates JWT Bearer token issued by AuthService.
@@ -14,7 +19,8 @@ export class JwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest();
     const header = req.headers['authorization'] as string | undefined;
-    if (!header?.startsWith('Bearer ')) throw new UnauthorizedException('Missing Bearer token');
+    if (!header?.startsWith('Bearer '))
+      throw new UnauthorizedException('Missing Bearer token');
 
     const token = header.slice(7);
     const { userId } = this.auth.verifyAccessToken(token);
@@ -37,7 +43,9 @@ export class OptionalJwtGuard implements CanActivate {
       try {
         const { userId } = this.auth.verifyAccessToken(header.slice(7));
         req.webUser = { userId };
-      } catch { /* ignore — treat as anonymous */ }
+      } catch {
+        /* ignore — treat as anonymous */
+      }
     }
     // Also support ?link_token= query param for OAuth redirects where
     // we can't set Authorization header (browser top-level navigation).
@@ -46,7 +54,9 @@ export class OptionalJwtGuard implements CanActivate {
       try {
         const { userId } = this.auth.verifyLinkToken(linkToken);
         req.webUser = { userId };
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     return true;
   }

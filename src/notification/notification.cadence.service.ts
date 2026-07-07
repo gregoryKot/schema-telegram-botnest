@@ -6,7 +6,12 @@ import { addDaysLocal, localDateString } from './notification.time';
 
 /** Уровни частоты: 0=каждый день, 1=через день, 2=пара раз в неделю, 3=раз в неделю */
 export const CADENCE_INTERVALS = [1, 2, 3, 7] as const;
-export const CADENCE_LABELS = ['каждый день', 'через день', 'пару раз в неделю', 'раз в неделю'] as const;
+export const CADENCE_LABELS = [
+  'каждый день',
+  'через день',
+  'пару раз в неделю',
+  'раз в неделю',
+] as const;
 export const MAX_CADENCE_LEVEL = 3;
 /** Сколько подряд проигнорированных напоминаний ведут к снижению частоты */
 const IGNORES_BEFORE_DOWNSHIFT = 3;
@@ -23,8 +28,13 @@ export interface CadenceUser {
   notifyPausedUntil: Date | null;
 }
 
-export function effectiveLevel(u: Pick<CadenceUser, 'notifyFrequency' | 'notifyAdaptiveLevel'>): number {
-  return Math.min(MAX_CADENCE_LEVEL, Math.max(u.notifyFrequency, u.notifyAdaptiveLevel));
+export function effectiveLevel(
+  u: Pick<CadenceUser, 'notifyFrequency' | 'notifyAdaptiveLevel'>,
+): number {
+  return Math.min(
+    MAX_CADENCE_LEVEL,
+    Math.max(u.notifyFrequency, u.notifyAdaptiveLevel),
+  );
 }
 
 /**
@@ -43,7 +53,10 @@ export class NotificationCadenceService {
   ) {}
 
   /** 'paused' — пропустить юзера; 'expired' — пауза кончилась, отправить welcome_back и больше ничего */
-  async expirePauseIfDue(user: CadenceUser, now = new Date()): Promise<'none' | 'paused' | 'expired'> {
+  async expirePauseIfDue(
+    user: CadenceUser,
+    now = new Date(),
+  ): Promise<'none' | 'paused' | 'expired'> {
     if (!user.notifyPausedUntil) return 'none';
     if (user.notifyPausedUntil > now) return 'paused';
     const today = localDateString(user.notifyTimezone, now);
@@ -54,7 +67,10 @@ export class NotificationCadenceService {
         notifyIgnoredCount: 0,
         notifySkipAckDate: null,
         notifyLastEvalDate: today,
-        notifyNextRemindDate: addDaysLocal(today, CADENCE_INTERVALS[effectiveLevel(user)]),
+        notifyNextRemindDate: addDaysLocal(
+          today,
+          CADENCE_INTERVALS[effectiveLevel(user)],
+        ),
       },
     });
     return 'expired';
@@ -65,7 +81,10 @@ export class NotificationCadenceService {
    * Идемпотентна в пределах локального дня (notifyLastEvalDate) — catch-up при
    * рестарте не накрутит счётчик второй раз.
    */
-  async evaluate(user: CadenceUser, now = new Date()): Promise<{ remindToday: boolean }> {
+  async evaluate(
+    user: CadenceUser,
+    now = new Date(),
+  ): Promise<{ remindToday: boolean }> {
     const tz = user.notifyTimezone;
     const today = localDateString(tz, now);
     if (user.notifyLastEvalDate === today) return { remindToday: false };
@@ -74,7 +93,10 @@ export class NotificationCadenceService {
     let ignored = user.notifyIgnoredCount;
     let adaptive = user.notifyAdaptiveLevel;
 
-    const lastReminder = await this.notifications.lastSentAt(user.id, 'reminder');
+    const lastReminder = await this.notifications.lastSentAt(
+      user.id,
+      'reminder',
+    );
     if (lastReminder && localDateString(tz, lastReminder) === yesterday) {
       const daysSince = await this.analytics.getDaysSinceLastFill(user.id);
       const filledYesterday = daysSince >= 0 && daysSince <= 1;
@@ -82,16 +104,25 @@ export class NotificationCadenceService {
     }
 
     if (ignored >= IGNORES_BEFORE_DOWNSHIFT) {
-      adaptive = Math.min(MAX_CADENCE_LEVEL, Math.max(user.notifyFrequency, adaptive) + 1);
+      adaptive = Math.min(
+        MAX_CADENCE_LEVEL,
+        Math.max(user.notifyFrequency, adaptive) + 1,
+      );
       ignored = 0;
-      this.logger.log(`Cadence downshift userId=${user.id} → level ${adaptive}`);
+      this.logger.log(
+        `Cadence downshift userId=${user.id} → level ${adaptive}`,
+      );
     } else if (adaptive > user.notifyFrequency) {
       const fills = await this.analytics.getFillDaysInLast(user.id, 7);
       if (fills >= 2) adaptive--;
     }
 
-    const effective = Math.min(MAX_CADENCE_LEVEL, Math.max(user.notifyFrequency, adaptive));
-    const remindToday = !user.notifyNextRemindDate || today >= user.notifyNextRemindDate;
+    const effective = Math.min(
+      MAX_CADENCE_LEVEL,
+      Math.max(user.notifyFrequency, adaptive),
+    );
+    const remindToday =
+      !user.notifyNextRemindDate || today >= user.notifyNextRemindDate;
     const nextRemindDate = remindToday
       ? addDaysLocal(today, CADENCE_INTERVALS[effective])
       : user.notifyNextRemindDate;
@@ -118,7 +149,10 @@ export class NotificationCadenceService {
       data: {
         notifyIgnoredCount: 0,
         notifySkipAckDate: null,
-        notifyNextRemindDate: addDaysLocal(today, CADENCE_INTERVALS[effectiveLevel(user)]),
+        notifyNextRemindDate: addDaysLocal(
+          today,
+          CADENCE_INTERVALS[effectiveLevel(user)],
+        ),
       },
     });
   }
@@ -128,7 +162,10 @@ export class NotificationCadenceService {
     const user = await this.loadUser(userId);
     if (!user) return;
     const today = localDateString(user.notifyTimezone, now);
-    await this.prisma.user.update({ where: { id: userId }, data: { notifySkipAckDate: today } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { notifySkipAckDate: today },
+    });
     await this.notifications.cancel(userId, 'pre_reminder');
   }
 
@@ -154,7 +191,10 @@ export class NotificationCadenceService {
   /** Пауза на N дней: проактивные уведомления отменяются, терапевтские и summary остаются. */
   async pause(userId: bigint, days: number, now = new Date()): Promise<Date> {
     const until = new Date(now.getTime() + days * 86_400_000);
-    await this.prisma.user.update({ where: { id: userId }, data: { notifyPausedUntil: until } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { notifyPausedUntil: until },
+    });
     await this.notifications.cancelProactive(userId);
     return until;
   }
@@ -163,9 +203,15 @@ export class NotificationCadenceService {
     return this.prisma.user.findUnique({
       where: { id: userId },
       select: {
-        id: true, notifyTimezone: true, notifyFrequency: true, notifyAdaptiveLevel: true,
-        notifyIgnoredCount: true, notifyNextRemindDate: true, notifySkipAckDate: true,
-        notifyLastEvalDate: true, notifyPausedUntil: true,
+        id: true,
+        notifyTimezone: true,
+        notifyFrequency: true,
+        notifyAdaptiveLevel: true,
+        notifyIgnoredCount: true,
+        notifyNextRemindDate: true,
+        notifySkipAckDate: true,
+        notifyLastEvalDate: true,
+        notifyPausedUntil: true,
       },
     });
   }

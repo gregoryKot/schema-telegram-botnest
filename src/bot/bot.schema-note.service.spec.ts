@@ -16,8 +16,13 @@ function makeDb(user: { mySchemaIds: string[]; myModeIds: string[] }) {
   const upsert = (store: any[], keyField: string) =>
     jest.fn(async ({ where, create, update }: any) => {
       const key = where[Object.keys(where)[0]];
-      const existing = store.find(r => r.userId === key.userId && r[keyField] === key[keyField]);
-      if (existing) { Object.assign(existing, update); return existing; }
+      const existing = store.find(
+        (r) => r.userId === key.userId && r[keyField] === key[keyField],
+      );
+      if (existing) {
+        Object.assign(existing, update);
+        return existing;
+      }
       const row = { id: store.length + 1, ...create };
       store.push(row);
       return row;
@@ -26,16 +31,23 @@ function makeDb(user: { mySchemaIds: string[]; myModeIds: string[] }) {
   return {
     userSchemaNote: {
       upsert: upsert(schemaNotes, 'schemaId'),
-      findMany: jest.fn(async ({ where }: any) => schemaNotes.filter(r => r.userId === where.userId)),
+      findMany: jest.fn(async ({ where }: any) =>
+        schemaNotes.filter((r) => r.userId === where.userId),
+      ),
     },
     userModeNote: {
       upsert: upsert(modeNotes, 'modeId'),
-      findMany: jest.fn(async ({ where }: any) => modeNotes.filter(r => r.userId === where.userId)),
+      findMany: jest.fn(async ({ where }: any) =>
+        modeNotes.filter((r) => r.userId === where.userId),
+      ),
     },
     user: {
       // getUserSettings/addToMyList both go through findUnique+select
       findUnique: jest.fn(async () => ({ ...user })),
-      update: jest.fn(async ({ data }: any) => { Object.assign(user, data); return user; }),
+      update: jest.fn(async ({ data }: any) => {
+        Object.assign(user, data);
+        return user;
+      }),
     },
     _user: user,
   } as any;
@@ -54,7 +66,7 @@ describe('BotService — карточка схемы/режима попадае
 
     // 2) схема добавлена в коллекцию — иначе архив «Мои записи» её отфильтрует
     const settings = await svc.getUserSettings(1n);
-    expect((settings as any).mySchemaIds).toContain('defectiveness');
+    expect(settings.mySchemaIds).toContain('defectiveness');
   });
 
   it('повторное сохранение той же схемы не дублирует id в коллекции', async () => {
@@ -74,6 +86,6 @@ describe('BotService — карточка схемы/режима попадае
     await svc.upsertModeNote(1n, 'vulnerable_child', { feelings: 'страшно' });
 
     const settings = await svc.getUserSettings(1n);
-    expect((settings as any).myModeIds).toContain('vulnerable_child');
+    expect(settings.myModeIds).toContain('vulnerable_child');
   });
 });
