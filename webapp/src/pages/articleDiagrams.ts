@@ -178,6 +178,31 @@ const STEPS = `
   <figcaption><b>Первая встреча — это разговор, а не процедура.</b> Понять друг друга и наметить дорогу; дальше — по шагам, в вашем темпе.</figcaption>
 </figure>`;
 
+const LAYERS = `
+<figure class="dg">
+  <svg viewBox="0 0 640 360" role="img" aria-label="Глубина фокуса: КПТ и схема-терапия">
+    <rect class="dg-node" x="20" y="20" width="56" height="70" rx="10"/>
+    <rect class="dg-accent" x="92" y="20" width="56" height="304" rx="10"/>
+    <line class="dg-flow-soft" x1="76" y1="90" x2="600" y2="90"/>
+    <line class="dg-flow" x1="148" y1="324" x2="600" y2="324"/>
+    <rect class="dg-node" x="168" y="20" width="432" height="70" rx="14"/>
+    <text class="dg-t" x="188" y="50">Мысли и поведение</text>
+    <text class="dg-s" x="188" y="70">то, что происходит сейчас</text>
+    <rect class="dg-chip" x="168" y="98" width="432" height="70" rx="14"/>
+    <text class="dg-t" x="188" y="128">Эмоциональные реакции</text>
+    <text class="dg-s" x="188" y="148">тревога, злость, стыд</text>
+    <rect class="dg-chip" x="168" y="176" width="432" height="70" rx="14"/>
+    <text class="dg-t" x="188" y="206">Убеждения о себе</text>
+    <text class="dg-s" x="188" y="226">«я недостаточно хорош»</text>
+    <rect class="dg-chip" x="168" y="254" width="432" height="70" rx="14"/>
+    <text class="dg-t" x="188" y="284">Детский опыт и потребности</text>
+    <text class="dg-s" x="188" y="304">что не было закрыто тогда</text>
+    <text class="dg-cap" x="20" y="104">КПТ</text>
+    <text class="dg-cap-acc" x="92" y="338">Схема-терапия</text>
+  </svg>
+  <figcaption><b>Разная глубина фокуса.</b> КПТ хорошо работает с мыслями и поведением на поверхности. Схема-терапия идёт до самого дна — к убеждениям и детскому опыту, из которых всё остальное растёт.</figcaption>
+</figure>`;
+
 export const DIAGRAMS: Record<string, string> = {
   cycle: CYCLE,
   iceberg: ICEBERG,
@@ -186,6 +211,7 @@ export const DIAGRAMS: Record<string, string> = {
   trauma: TRAUMA,
   fork: FORK,
   steps: STEPS,
+  layers: LAYERS,
 };
 
 // For the admin editor's diagram picker.
@@ -197,4 +223,5 @@ export const DIAGRAM_OPTIONS: { key: string; label: string }[] = [
   { key: 'trauma', label: 'Сравнение травмы' },
   { key: 'fork', label: 'Развилка «подходит ли»' },
   { key: 'steps', label: 'Шаги (таймлайн)' },
+  { key: 'layers', label: 'Глубина фокуса (слои)' },
 ];
