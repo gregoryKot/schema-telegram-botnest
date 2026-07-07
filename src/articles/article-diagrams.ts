@@ -10,4 +10,5 @@ export const ARTICLE_DIAGRAM_KEYS: Record<string, string> = {
   'schema-terapiya-pri-travme': 'trauma',
   'podhodit-li-mne-schema-terapiya': 'fork',
   'pervaya-sessiya-schema-terapii': 'steps',
+  'schema-terapiya-vs-kpt': 'layers',
 };
