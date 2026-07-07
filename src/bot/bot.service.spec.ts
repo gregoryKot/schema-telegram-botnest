@@ -1,16 +1,11 @@
-import { BotService } from './bot.service';
+import { BotService, USER_DATA_TABLES } from './bot.service';
 
-// USER_DATA_TABLES из bot.service — должны все вычищаться при удалении аккаунта.
-const USER_DATA_TABLES = [
-  'rating', 'note', 'userSchemaNote', 'userModeNote', 'userBeliefCheck',
-  'userLetter', 'userSafePlace', 'userFlashcard', 'userPractice', 'practicePlan',
-  'childhoodRating', 'ysqResult', 'ysqProgress', 'ysqResultHistory',
-  'scheduledNotification', 'schemaDiaryEntry', 'modeDiaryEntry',
-  'gratitudeDiaryEntry', 'appActivity', 'userTask', 'diaryDraft',
-];
+// Реестр user-owned таблиц импортируется из сервиса: новая таблица в
+// bot.service автоматически попадает под тест полноты каскада.
 const THERAPIST_SIDE = [
   'clientConceptualization', 'therapistNote', 'therapyRelation',
-  'modeMap', 'therapistCustomMode', 'pair', 'authProvider', 'webSession', 'therapistRequest',
+  'modeMap', 'therapistCustomMode', 'pair', 'authProvider', 'webSession',
+  'therapistRequest', 'subscription',
 ];
 
 function model(extra: Record<string, any> = {}) {

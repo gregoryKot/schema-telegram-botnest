@@ -12,6 +12,8 @@ function makeDeps() {
       findUnique: jest.fn().mockResolvedValue(null),
       update: jest.fn().mockResolvedValue({}),
       create: jest.fn().mockResolvedValue({}),
+      // атомарный INSERT … ON CONFLICT — возвращает создаваемую строку
+      upsert: jest.fn().mockImplementation(({ create }: any) => Promise.resolve({ ...create })),
       findMany: jest.fn().mockResolvedValue([]),
       deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
