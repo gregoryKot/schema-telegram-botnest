@@ -5,14 +5,14 @@ import { useRecentArticles } from '../components/landing-kit';
 import type { ArticleSummary } from '../api';
 
 // Продуктовый лендинг «Всё по схеме» — главная app-домена (schemehappens.ru).
-// САМОСТОЯТЕЛЬНАЯ айдентика: тёмный «ночной» холст + аврора-градиенты, глассморфизм,
-// крупная жирная типографика. Намеренно НЕ похоже на тёплую serif-страничку терапевта.
-// Палитра захардкожена (не зависит от app-темы) — это отдельный маркетинговый бренд.
+// САМОСТОЯТЕЛЬНАЯ структура: бенто-сетка + горизонтальный степпер + тонкие полосы,
+// а НЕ повторяющийся ритм «надзаголовок → заголовок → 3 карточки» (как у терапевта).
+// Палитра тёмная, захардкожена — отдельный маркетинговый бренд.
 
 const BOT_URL = 'https://t.me/SchemaLabBot';
 const AUTHOR_SITE = 'https://kotlarewski.gr';
 
-// ─── Палитра (self-contained, тёмная) ────────────────────────────────────────
+// ─── Палитра ──────────────────────────────────────────────────────────────────
 const INK = '#f3f1fb';
 const SUB = 'rgba(243,241,251,.62)';
 const FAINT = 'rgba(243,241,251,.40)';
@@ -31,11 +31,7 @@ const glow = (c: string, a = 0.5) => `color-mix(in srgb, ${c} ${a * 100}%, trans
 function Logo({ size = 30 }: { size?: number }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-      <span style={{
-        width: size, height: size, borderRadius: size * 0.32, flexShrink: 0,
-        background: AURORA, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: size * 0.55, boxShadow: `0 0 22px ${glow(PINK, .5)}`,
-      }}>🧠</span>
+      <span style={{ width: size, height: size, borderRadius: size * 0.32, flexShrink: 0, background: AURORA, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.55, boxShadow: `0 0 22px ${glow(PINK, .5)}` }}>🧠</span>
       <span style={{ fontSize: 16.5, fontWeight: 800, color: INK, letterSpacing: '-.02em' }}>Всё по схеме</span>
     </span>
   );
@@ -45,12 +41,7 @@ function Logo({ size = 30 }: { size?: number }) {
 function Cta({ href, children, variant = 'primary', size = 'md' }: { href: string; children: React.ReactNode; variant?: 'primary' | 'ghost'; size?: 'md' | 'lg' }) {
   const pad = size === 'lg' ? '15px 30px' : '11px 22px';
   const fs = size === 'lg' ? 15 : 13.5;
-  const base: React.CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-    padding: pad, fontSize: fs, fontWeight: 700, fontFamily: 'inherit', borderRadius: 14,
-    textDecoration: 'none', cursor: 'pointer', transition: 'transform .15s, box-shadow .15s, background .15s',
-    border: '1px solid transparent', boxSizing: 'border-box',
-  };
+  const base: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: pad, fontSize: fs, fontWeight: 700, fontFamily: 'inherit', borderRadius: 14, textDecoration: 'none', cursor: 'pointer', transition: 'transform .15s, box-shadow .15s, background .15s', border: '1px solid transparent', boxSizing: 'border-box' };
   const styles: React.CSSProperties = variant === 'primary'
     ? { ...base, background: AURORA, color: '#1a0f2e', boxShadow: `0 8px 30px ${glow(VIOLET, .45)}` }
     : { ...base, background: 'rgba(255,255,255,.04)', color: INK, borderColor: GLASS_BORDER };
@@ -64,86 +55,80 @@ function Cta({ href, children, variant = 'primary', size = 'md' }: { href: strin
   );
 }
 
-// ─── Мокап приложения (тёмное стекло) ─────────────────────────────────────────
+// ─── Мини-мокап чек-ина (для большой плитки бенто) ───────────────────────────
 const MOCK_NEEDS = [
   { emoji: '🤝', name: 'Привязанность', v: 7, c: CYAN },
   { emoji: '🚀', name: 'Автономия',     v: 8, c: EMERALD },
   { emoji: '⚖️', name: 'Границы',       v: 4, c: ROSE },
   { emoji: '🎉', name: 'Спонтанность',  v: 6, c: AMBER },
 ];
-const MOCK_SPARK = [4, 5, 3, 6, 5, 7, 6, 8, 7, 8, 6, 9];
-
-function AppPreview() {
+function CheckinMock() {
   return (
-    <div className="pl2-preview" style={{ position: 'relative', display: 'flex', justifyContent: 'center' }} aria-hidden>
-      <div style={{
-        width: 300, boxSizing: 'border-box', padding: '22px 20px 20px',
-        background: 'linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03))',
-        border: `1px solid ${GLASS_BORDER}`, borderRadius: 32,
-        boxShadow: `0 40px 90px rgba(0,0,0,.5), 0 0 60px ${glow(VIOLET, .18)}`,
-        backdropFilter: 'blur(12px)', animation: 'pl2-float 7s ease-in-out infinite',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-          <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', color: INK }}>Сегодня</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: FAINT }}>минутный чек-ин</span>
-        </div>
-        <p style={{ fontSize: 12, color: SUB, margin: '0 0 16px' }}>Как ты? Отметь свои потребности</p>
-        {MOCK_NEEDS.map((n) => (
-          <div key={n.name} style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 5 }}>
-              <span style={{ color: INK, fontWeight: 600 }}>{n.emoji} {n.name}</span>
-              <span style={{ color: n.c, fontWeight: 800 }}>{n.v}</span>
-            </div>
-            <div style={{ height: 7, borderRadius: 5, background: 'rgba(255,255,255,.08)' }}>
-              <div style={{ width: `${n.v * 10}%`, height: '100%', borderRadius: 5, background: n.c, boxShadow: `0 0 10px ${glow(n.c, .6)}` }} />
-            </div>
+    <div style={{ background: 'rgba(0,0,0,.25)', border: `1px solid ${GLASS_BORDER}`, borderRadius: 18, padding: '18px 18px 20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+        <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-.02em', color: INK }}>Сегодня</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: FAINT }}>минутный чек-ин</span>
+      </div>
+      <p style={{ fontSize: 12, color: SUB, margin: '0 0 14px' }}>Как ты? Отметь свои потребности</p>
+      {MOCK_NEEDS.map((n) => (
+        <div key={n.name} style={{ marginBottom: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4 }}>
+            <span style={{ color: INK, fontWeight: 600 }}>{n.emoji} {n.name}</span>
+            <span style={{ color: n.c, fontWeight: 800 }}>{n.v}</span>
           </div>
-        ))}
-        <div style={{ marginTop: 18, padding: '12px 14px', borderRadius: 16, border: `1px solid ${GLASS_BORDER}`, background: 'rgba(255,255,255,.03)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}>
-            <span style={{ fontWeight: 800, color: INK }}>Динамика</span>
-            <span style={{ color: FAINT }}>2 недели</span>
+          <div style={{ height: 6, borderRadius: 5, background: 'rgba(255,255,255,.08)' }}>
+            <div style={{ width: `${n.v * 10}%`, height: '100%', borderRadius: 5, background: n.c, boxShadow: `0 0 10px ${glow(n.c, .6)}` }} />
           </div>
-          <svg width="100%" height="42" viewBox="0 0 220 42" preserveAspectRatio="none">
-            <defs><linearGradient id="pl2bar" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor={VIOLET} /><stop offset="1" stopColor={PINK} /></linearGradient></defs>
-            {MOCK_SPARK.map((v, i) => (
-              <rect key={i} x={i * 18.5} y={42 - v * 4.2} width="11" height={v * 4.2} rx="3" fill="url(#pl2bar)" opacity={0.45 + (v / 9) * 0.55} />
-            ))}
-          </svg>
         </div>
-      </div>
-      <div className="pl2-chip" style={{ position: 'absolute', top: 30, right: -10, padding: '10px 14px', borderRadius: 14, background: 'rgba(20,14,34,.85)', border: `1px solid ${glow(PINK, .35)}`, boxShadow: `0 14px 40px rgba(0,0,0,.5)`, backdropFilter: 'blur(8px)', fontSize: 12, fontWeight: 700, color: INK, animation: 'pl2-float 6s ease-in-out .8s infinite' }}>
-        <span style={{ color: PINK }}>🔍 Схема замечена</span>
-        <div style={{ fontSize: 11, fontWeight: 500, color: SUB, marginTop: 2 }}>Покинутость · 3-й раз за неделю</div>
-      </div>
-      <div className="pl2-chip" style={{ position: 'absolute', bottom: 44, left: -16, padding: '10px 14px', borderRadius: 14, background: 'rgba(20,14,34,.85)', border: `1px solid ${glow(EMERALD, .35)}`, boxShadow: `0 14px 40px rgba(0,0,0,.5)`, backdropFilter: 'blur(8px)', fontSize: 12, fontWeight: 700, color: INK, animation: 'pl2-float 8s ease-in-out 1.6s infinite' }}>
-        <span style={{ color: EMERALD }}>🌱 Критик — тише</span>
-        <div style={{ fontSize: 11, fontWeight: 500, color: SUB, marginTop: 2 }}>реже, чем месяц назад</div>
-      </div>
+      ))}
     </div>
   );
 }
+const SPARK = [4, 5, 3, 6, 5, 7, 6, 8, 7, 8, 6, 9];
+function SparkMock() {
+  return (
+    <svg width="100%" height="52" viewBox="0 0 220 52" preserveAspectRatio="none" aria-hidden>
+      <defs><linearGradient id="pl2bar" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor={VIOLET} /><stop offset="1" stopColor={PINK} /></linearGradient></defs>
+      {SPARK.map((v, i) => (<rect key={i} x={i * 18.5} y={52 - v * 5.4} width="12" height={v * 5.4} rx="3" fill="url(#pl2bar)" opacity={0.45 + (v / 9) * 0.55} />))}
+    </svg>
+  );
+}
+
+// ─── Плитка бенто ─────────────────────────────────────────────────────────────
+function Tile({ children, span, rowSpan, accent, style }: { children: React.ReactNode; span: number; rowSpan?: number; accent?: boolean; style?: React.CSSProperties }) {
+  return (
+    <div className="pl2-tile" style={{
+      gridColumn: `span ${span}`, gridRow: rowSpan ? `span ${rowSpan}` : undefined,
+      position: 'relative', overflow: 'hidden', borderRadius: 22,
+      background: accent ? AURORA : GLASS, border: accent ? 'none' : `1px solid ${GLASS_BORDER}`,
+      padding: 24, display: 'flex', flexDirection: 'column',
+      transition: 'transform .25s, border-color .25s, box-shadow .25s', ...style,
+    }}>{children}</div>
+  );
+}
+function TileHead({ emoji, color, title }: { emoji: string; color: string; title: string }) {
+  return (
+    <>
+      <div aria-hidden style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: glow(color, .16), filter: 'blur(32px)', pointerEvents: 'none' }} />
+      <span style={{ position: 'relative', width: 44, height: 44, borderRadius: 13, fontSize: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: glow(color, .14), border: `1px solid ${glow(color, .3)}`, marginBottom: 12 }}>{emoji}</span>
+      <p style={{ position: 'relative', fontSize: 17, fontWeight: 800, letterSpacing: '-.02em', margin: 0, color: INK }}>{title}</p>
+    </>
+  );
+}
+const tileText: React.CSSProperties = { position: 'relative', fontSize: 13.5, lineHeight: 1.6, margin: '7px 0 0', color: SUB };
+
+// ─── Степпер «как это работает» ──────────────────────────────────────────────
+const STEPS = [
+  { num: '01', color: ROSE,  title: 'Схемы родом из детства', text: 'Недополученные потребности в безопасности, принятии, тепле — и психика достраивает «правила»: «меня оставят», «я недостаточно хорош».' },
+  { num: '02', color: AMBER, title: 'Включаются незаметно', text: 'Во взрослой жизни срабатывают на автомате: те же ссоры, тревога, самокритика. Кажется «характер» — а это выученный паттерн.' },
+  { num: '03', color: CYAN,  title: 'Их можно менять', text: 'Дневник, тест, упражнения делают схемы видимыми. А то, что видно, — уже можно менять: самому или с терапевтом.' },
+];
 
 // ─── Данные ───────────────────────────────────────────────────────────────────
-const STEPS = [
-  { num: '01', color: ROSE,   emoji: '🌱', title: 'Схемы родом из детства', text: 'Когда важные потребности — в безопасности, принятии, тепле — недополучены, психика достраивает «правила»: «меня оставят», «я недостаточно хорош». Это ранние дезадаптивные схемы.' },
-  { num: '02', color: AMBER,  emoji: '🔁', title: 'Они включаются незаметно', text: 'Во взрослой жизни схемы срабатывают на автомате: одни и те же ссоры, тревога, самокритика, прокрастинация. Кажется, что «такой характер» — а это выученный паттерн.' },
-  { num: '03', color: CYAN,   emoji: '👁️', title: 'Их можно замечать — и менять', text: 'Регулярное наблюдение — дневник, тест, упражнения — делает схемы видимыми. А то, что видно, уже можно менять: самостоятельно или вместе с терапевтом.' },
-];
-
-const FEATURES = [
-  { emoji: '📓', color: CYAN,    title: 'Дневник состояний', text: 'Минутный чек-ин: восемь базовых потребностей по шкале. Через пару недель видно, из чего складываются «плохие дни».' },
-  { emoji: '🧩', color: VIOLET,  title: 'Диагностика схем', text: 'Тест ЯСО: 20 ранних дезадаптивных схем в пяти доменах — с понятным разбором, а не просто цифрами.' },
-  { emoji: '🎭', color: AMBER,   title: 'Режимы', text: 'Внутренний Критик, Уязвимый ребёнок, Здоровый взрослый — отмечайте, кто «за рулём» прямо сейчас.' },
-  { emoji: '✍️', color: EMERALD, title: 'Практики', text: 'Упражнения из схема-терапии и КПТ: переоценка убеждений, терапевтические письма, безопасное место, флэшкарточки.' },
-  { emoji: '📈', color: PINK,    title: 'Динамика', text: 'История состояний за недели и месяцы: что меняется, а что стоит на месте. Удобно приносить на сессии.' },
-  { emoji: '🤝', color: ROSE,    title: 'Кабинет терапевта', text: 'Работаете с психологом? Поделитесь динамикой — и сессии будут опираться на реальные данные, а не только на память.' },
-];
-
 const TRUST = [
-  { icon: '💛', color: AMBER,   title: 'Бесплатно', node: <>Без подписок и рекламы. Проект живёт на донаты — если он помогает, можно <a href="/donate" style={{ color: VIOLET, textDecoration: 'none', fontWeight: 700 }}>поддержать</a>.</> },
-  { icon: '🔒', color: CYAN,    title: 'Записи зашифрованы', node: <>Дневники, письма и заметки хранятся в зашифрованном виде (AES-256). Прочитать их можете только вы.</> },
-  { icon: '🚪', color: EMERALD, title: 'Уйти легко', node: <>Аккаунт удаляется в один клик — целиком, со всеми данными. Никаких «мы сохраним копию».</> },
+  { icon: '💛', title: 'Бесплатно', node: <>без подписок и рекламы, живёт на <a href="/donate" style={{ color: VIOLET, textDecoration: 'none', fontWeight: 700 }}>донаты</a></> },
+  { icon: '🔒', title: 'Зашифровано', node: <>дневники и заметки — AES-256, читаете только вы</> },
+  { icon: '🚪', title: 'Уйти легко', node: <>аккаунт удаляется в один клик, целиком</> },
 ];
 
 const FAQ = [
@@ -154,30 +139,9 @@ const FAQ = [
   { q: 'Нужен ли Telegram?', a: 'Нет. Войти можно через Google, ВКонтакте или по ссылке на email. Telegram — приятное дополнение: бот напомнит про чек-ин, а мини-приложение работает прямо в чате, с теми же данными.' },
 ];
 
-// ─── Стекло-карточка (иконка + заголовок + текст) ────────────────────────────
-function GlassCard({ emoji, color, title, children, big }: { emoji: string; color: string; title: string; children: React.ReactNode; big?: boolean }) {
-  return (
-    <div className="pl2-card" style={{
-      position: 'relative', background: GLASS, border: `1px solid ${GLASS_BORDER}`, borderRadius: 22,
-      padding: big ? '28px 24px' : '24px 22px', overflow: 'hidden',
-      transition: 'transform .25s, border-color .25s, box-shadow .25s',
-    }}>
-      <div aria-hidden style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: glow(color, .16), filter: 'blur(30px)', pointerEvents: 'none' }} />
-      <span style={{ position: 'relative', width: 48, height: 48, borderRadius: 14, fontSize: 23, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: glow(color, .14), border: `1px solid ${glow(color, .3)}`, boxShadow: `0 0 20px ${glow(color, .15)}` }}>{emoji}</span>
-      <p style={{ position: 'relative', fontSize: big ? 19 : 17, fontWeight: 800, letterSpacing: '-.02em', margin: '14px 0 8px', color: INK }}>{title}</p>
-      <p style={{ position: 'relative', fontSize: 14, lineHeight: 1.65, margin: 0, color: SUB }}>{children}</p>
-    </div>
-  );
-}
-
-// ─── Карточка статьи ──────────────────────────────────────────────────────────
 function ArticleCard({ a }: { a: ArticleSummary }) {
   return (
-    <a className="pl2-card" href={`/articles/${a.slug}`} style={{
-      display: 'flex', flexDirection: 'column', textDecoration: 'none',
-      background: GLASS, border: `1px solid ${GLASS_BORDER}`, borderRadius: 20, overflow: 'hidden',
-      transition: 'transform .25s, border-color .25s, box-shadow .25s',
-    }}>
+    <a className="pl2-tile" href={`/articles/${a.slug}`} style={{ display: 'flex', flexDirection: 'column', textDecoration: 'none', background: GLASS, border: `1px solid ${GLASS_BORDER}`, borderRadius: 20, overflow: 'hidden', transition: 'transform .25s, border-color .25s, box-shadow .25s' }}>
       <div style={{ aspectRatio: '16 / 9', background: AURORA, overflow: 'hidden', opacity: a.heroImage ? 1 : 0.5 }}>
         {a.heroImage && <img src={a.heroImage} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
       </div>
@@ -203,9 +167,7 @@ function FaqList() {
               <span style={{ fontSize: 22, color: VIOLET, flexShrink: 0, lineHeight: 1, transform: isOpen ? 'rotate(45deg)' : 'none', transition: 'transform .25s' }}>+</span>
             </button>
             <div style={{ display: 'grid', gridTemplateRows: isOpen ? '1fr' : '0fr', transition: 'grid-template-rows .3s ease' }}>
-              <div style={{ overflow: 'hidden' }}>
-                <p style={{ fontSize: 14.5, lineHeight: 1.75, color: SUB, margin: '0 20px 20px' }}>{item.a}</p>
-              </div>
+              <div style={{ overflow: 'hidden' }}><p style={{ fontSize: 14.5, lineHeight: 1.75, color: SUB, margin: '0 20px 20px' }}>{item.a}</p></div>
             </div>
           </div>
         );
@@ -228,11 +190,10 @@ export function ProductLandingPage() {
 
   return (
     <div style={{ position: 'relative', flex: 1, minWidth: 0, overflowX: 'hidden', minHeight: '100dvh', background: '#0b0817', color: INK, fontFamily: 'Inter, system-ui, sans-serif' }}>
-      {/* Аврора-фон (фиксированный) */}
       <div aria-hidden style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', width: 700, height: 700, borderRadius: '50%', background: glow(VIOLET, .22), filter: 'blur(120px)', top: '-18%', left: '-10%' }} />
-        <div style={{ position: 'absolute', width: 620, height: 620, borderRadius: '50%', background: glow(PINK, .16), filter: 'blur(120px)', top: '20%', right: '-14%' }} />
-        <div style={{ position: 'absolute', width: 560, height: 560, borderRadius: '50%', background: glow(CYAN, .12), filter: 'blur(130px)', bottom: '-10%', left: '20%' }} />
+        <div style={{ position: 'absolute', width: 720, height: 720, borderRadius: '50%', background: glow(VIOLET, .22), filter: 'blur(120px)', top: '-20%', left: '-8%' }} />
+        <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: glow(PINK, .15), filter: 'blur(120px)', top: '30%', right: '-14%' }} />
+        <div style={{ position: 'absolute', width: 560, height: 560, borderRadius: '50%', background: glow(CYAN, .1), filter: 'blur(130px)', bottom: '-8%', left: '25%' }} />
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
@@ -240,7 +201,7 @@ export function ProductLandingPage() {
         <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 24px', boxSizing: 'border-box', background: 'rgba(11,8,23,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: `1px solid ${GLASS_BORDER}` }}>
           <a href="/" style={{ textDecoration: 'none' }}><Logo /></a>
           <nav className="pl2-nav" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {[['Как это работает', '#how'], ['Возможности', '#features'], ['Статьи', '#articles'], ['Вопросы', '#faq']].map(([label, href]) => (
+            {[['Обзор', '#bento'], ['Как это работает', '#how'], ['Статьи', '#articles'], ['Вопросы', '#faq']].map(([label, href]) => (
               <a key={href} href={href} style={{ fontSize: 13.5, fontWeight: 600, color: SUB, textDecoration: 'none', padding: '7px 12px', borderRadius: 10, whiteSpace: 'nowrap', transition: 'color .15s' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = INK; }} onMouseLeave={(e) => { e.currentTarget.style.color = SUB; }}>{label}</a>
             ))}
@@ -248,103 +209,130 @@ export function ProductLandingPage() {
           <Cta href="/login">Войти</Cta>
         </header>
 
-        {/* ── Hero ── */}
-        <section style={{ padding: '140px 24px 90px' }}>
-          <div className="pl2-hero" style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.06fr 1fr', gap: 56, alignItems: 'center' }}>
-            <div style={{ animation: 'pl2-in .7s cubic-bezier(.16,1,.3,1) both' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 15px', borderRadius: 100, background: 'rgba(255,255,255,.05)', border: `1px solid ${GLASS_BORDER}`, fontSize: 12.5, fontWeight: 700, color: SUB, marginBottom: 26 }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: PINK, boxShadow: `0 0 10px ${PINK}`, animation: 'pl2-pulse 2.5s ease-in-out infinite' }} />
-                Схема-терапия · бесплатно · без рекламы
-              </div>
-              <h1 style={{ fontFamily: 'inherit', fontSize: 'clamp(40px, 5.6vw, 68px)', fontWeight: 800, lineHeight: 1.02, letterSpacing: '-.04em', margin: '0 0 22px', color: INK }}>
-                Почему со мной <span style={{ background: AURORA, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>снова</span> это&nbsp;происходит?
-              </h1>
-              <p style={{ fontSize: 17, lineHeight: 1.65, color: SUB, maxWidth: 490, margin: '0 0 34px' }}>
-                Одни и те же ссоры, тревога, самокритика — это не «характер», а&nbsp;схемы:
-                выученные паттерны, которые можно заметить и постепенно менять.
-                «Всё по схеме» — бесплатное приложение для самостоятельной работы в подходе схема-терапии.
-              </p>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Cta href="/login" size="lg">Начать бесплатно →</Cta>
-                <Cta href="#how" variant="ghost" size="lg">Как это работает</Cta>
-              </div>
-              <p style={{ fontSize: 12.5, color: FAINT, margin: '18px 0 0' }}>Вход через Google, ВКонтакте, Telegram или email · регистрация не нужна</p>
+        {/* ── Hero: по центру, без бокового мокапа ── */}
+        <section style={{ padding: '150px 24px 40px', textAlign: 'center' }}>
+          <div style={{ maxWidth: 800, margin: '0 auto', animation: 'pl2-in .7s cubic-bezier(.16,1,.3,1) both' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 15px', borderRadius: 100, background: 'rgba(255,255,255,.05)', border: `1px solid ${GLASS_BORDER}`, fontSize: 12.5, fontWeight: 700, color: SUB, marginBottom: 26 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: PINK, boxShadow: `0 0 10px ${PINK}`, animation: 'pl2-pulse 2.5s ease-in-out infinite' }} />
+              Схема-терапия · бесплатно · без рекламы
             </div>
-            <div style={{ animation: 'pl2-in .7s cubic-bezier(.16,1,.3,1) .15s both' }}><AppPreview /></div>
+            <h1 style={{ fontFamily: 'inherit', fontSize: 'clamp(40px, 6vw, 76px)', fontWeight: 800, lineHeight: 1.0, letterSpacing: '-.045em', margin: '0 0 24px', color: INK }}>
+              Почему со мной <span style={{ background: AURORA, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>снова</span> это&nbsp;происходит?
+            </h1>
+            <p style={{ fontSize: 18, lineHeight: 1.6, color: SUB, maxWidth: 620, margin: '0 auto 34px' }}>
+              Одни и те же ссоры, тревога, самокритика — это не «характер», а&nbsp;схемы: выученные паттерны,
+              которые можно заметить и постепенно менять. Бесплатное приложение для самостоятельной работы
+              в подходе схема-терапии.
+            </p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Cta href="/login" size="lg">Начать бесплатно →</Cta>
+              <Cta href="#bento" variant="ghost" size="lg">Что внутри</Cta>
+            </div>
+            <p style={{ fontSize: 12.5, color: FAINT, margin: '18px 0 0' }}>Вход через Google, ВКонтакте, Telegram или email · регистрация не нужна</p>
           </div>
         </section>
 
-        {/* ── Как это работает ── */}
+        {/* ── БЕНТО: продукт одним экраном (главный структурный ход) ── */}
+        <section id="bento" style={{ padding: '40px 24px 72px', scrollMarginTop: 70 }}>
+          <div className="pl2-bento" style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+            {/* Большая плитка — живой чек-ин */}
+            <Tile span={2} rowSpan={2} style={{ background: 'linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.025))' }}>
+              <div aria-hidden style={{ position: 'absolute', top: -60, left: -30, width: 200, height: 200, borderRadius: '50%', background: glow(VIOLET, .16), filter: 'blur(50px)' }} />
+              <span style={{ position: 'relative', fontSize: 12, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', color: CYAN }}>Дневник состояний</span>
+              <p style={{ position: 'relative', fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', margin: '8px 0 16px', color: INK }}>Минута в день — и видно, из чего складываются «плохие дни»</p>
+              <div style={{ position: 'relative', marginTop: 'auto' }}><CheckinMock /></div>
+            </Tile>
+
+            <Tile span={2}>
+              <TileHead emoji="🧩" color={VIOLET} title="Диагностика схем" />
+              <p style={tileText}>Тест ЯСО: 20 ранних дезадаптивных схем в пяти доменах — с понятным разбором, а не просто цифрами.</p>
+            </Tile>
+
+            <Tile span={1}>
+              <TileHead emoji="🎭" color={AMBER} title="Режимы" />
+              <p style={tileText}>Кто «за рулём» прямо сейчас — Критик, Ребёнок, Взрослый.</p>
+            </Tile>
+
+            <Tile span={1}>
+              <TileHead emoji="✍️" color={EMERALD} title="Практики" />
+              <p style={tileText}>Письма, безопасное место, флэшкарточки, переоценка убеждений.</p>
+            </Tile>
+
+            <Tile span={2}>
+              <TileHead emoji="📈" color={PINK} title="Динамика" />
+              <p style={{ ...tileText, marginBottom: 14 }}>История за недели и месяцы — что меняется, а что стоит на месте.</p>
+              <div style={{ position: 'relative', marginTop: 'auto' }}><SparkMock /></div>
+            </Tile>
+
+            <Tile span={1}>
+              <TileHead emoji="🤝" color={ROSE} title="Кабинет терапевта" />
+              <p style={tileText}>Поделитесь динамикой — сессии на реальных данных.</p>
+            </Tile>
+
+            <Tile span={1} accent>
+              <span style={{ fontSize: 30 }}>💛</span>
+              <p style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-.02em', margin: '10px 0 4px', color: '#1a0f2e' }}>Бесплатно</p>
+              <p style={{ fontSize: 13, lineHeight: 1.5, margin: 0, color: 'rgba(26,15,46,.72)', fontWeight: 600 }}>без подписок и рекламы</p>
+            </Tile>
+          </div>
+        </section>
+
+        {/* ── Как это работает — горизонтальный степпер (не карточки) ── */}
         <section id="how" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>
           <div style={{ maxWidth: 1160, margin: '0 auto' }}>
             <span style={EYEBROW}>Как это работает</span>
-            <h2 style={{ ...H2, margin: '14px 0 48px', maxWidth: 700 }}>Не «что со мной не так», а «какая схема включилась»</h2>
-            <div className="pl2-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
-              {STEPS.map((s) => (
-                <div key={s.num} className="pl2-card" style={{ position: 'relative', background: GLASS, border: `1px solid ${GLASS_BORDER}`, borderRadius: 22, padding: '28px 24px', overflow: 'hidden', transition: 'transform .25s, border-color .25s, box-shadow .25s' }}>
-                  <div aria-hidden style={{ position: 'absolute', top: -40, right: -30, width: 130, height: 130, borderRadius: '50%', background: glow(s.color, .16), filter: 'blur(34px)' }} />
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-                    <span style={{ width: 48, height: 48, borderRadius: 14, fontSize: 24, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: glow(s.color, .14), border: `1px solid ${glow(s.color, .3)}` }}>{s.emoji}</span>
-                    <span style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-.03em', color: glow(s.color, .55) }}>{s.num}</span>
+            <h2 style={{ ...H2, margin: '14px 0 56px', maxWidth: 700 }}>Не «что со мной не так», а «какая схема включилась»</h2>
+            <div className="pl2-flow" style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
+              {STEPS.map((s, i) => (
+                <div key={s.num} style={{ display: 'contents' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 46, fontWeight: 800, letterSpacing: '-.04em', lineHeight: 1, background: `linear-gradient(120deg, ${s.color}, ${INK})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', marginBottom: 16 }}>{s.num}</div>
+                    <p style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-.02em', margin: '0 0 10px', color: INK }}>{s.title}</p>
+                    <p style={{ fontSize: 14.5, lineHeight: 1.65, color: SUB, margin: 0, maxWidth: 300 }}>{s.text}</p>
                   </div>
-                  <p style={{ position: 'relative', fontSize: 18, fontWeight: 800, letterSpacing: '-.02em', margin: '0 0 10px', color: INK }}>{s.title}</p>
-                  <p style={{ position: 'relative', fontSize: 14, lineHeight: 1.7, color: SUB, margin: 0 }}>{s.text}</p>
+                  {i < STEPS.length - 1 && <div className="pl2-arrow" aria-hidden style={{ alignSelf: 'flex-start', fontSize: 28, color: FAINT, padding: '4px 8px', lineHeight: 1 }}>→</div>}
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── Возможности ── */}
-        <section id="features" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>
-          <div style={{ maxWidth: 1160, margin: '0 auto' }}>
-            <span style={EYEBROW}>Возможности</span>
-            <h2 style={{ ...H2, margin: '14px 0 48px', maxWidth: 620 }}>Всё для работы между сессиями — или до них</h2>
-            <div className="pl2-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
-              {FEATURES.map((f) => <GlassCard key={f.title} emoji={f.emoji} color={f.color} title={f.title} big>{f.text}</GlassCard>)}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Telegram ── */}
-        <section style={{ padding: '20px 24px 72px' }}>
-          <div className="pl2-tg" style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 48, alignItems: 'center', background: 'linear-gradient(120deg, rgba(167,139,250,.12), rgba(56,224,208,.08))', border: `1px solid ${GLASS_BORDER}`, borderRadius: 28, padding: '48px 44px' }}>
-            <div>
-              <span style={EYEBROW}>Telegram</span>
-              <h2 style={{ ...H2, margin: '14px 0 18px' }}>Живёт и в&nbsp;Telegram</h2>
-              <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, maxWidth: 470, margin: '0 0 26px' }}>
-                Бот <strong style={{ color: INK }}>@SchemaLabBot</strong> раз в месяц мягко напомнит заглянуть на чек-ин,
-                а мини-приложение открывается прямо в чате — тот же дневник, те же схемы.
-                Данные общие с сайтом: начните в телефоне, продолжите в браузере.
-              </p>
-              <Cta href={BOT_URL} size="lg">Открыть в Telegram ↗</Cta>
-            </div>
-            <div aria-hidden style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 340, width: '100%', justifySelf: 'center' }}>
-              <div style={{ padding: '14px 16px', borderRadius: '16px 16px 16px 6px', background: 'rgba(255,255,255,.05)', border: `1px solid ${GLASS_BORDER}`, backdropFilter: 'blur(8px)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ width: 22, height: 22, borderRadius: 7, background: AURORA, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>🧠</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: INK }}>Всё по схеме</span>
-                </div>
-                <p style={{ fontSize: 13.5, lineHeight: 1.5, color: SUB, margin: 0 }}>🌤️ Как ты в этом месяце? Пара минут на чек-ин помогут увидеть динамику.</p>
-                <div style={{ marginTop: 12, padding: '9px 14px', borderRadius: 10, background: AURORA, color: '#1a0f2e', fontSize: 13, fontWeight: 800, textAlign: 'center' }}>Открыть чек-ин</div>
+        {/* ── Telegram — узкая полоса-баннер ── */}
+        <section style={{ padding: '20px 24px 40px' }}>
+          <div className="pl2-tg" style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 32, flexWrap: 'wrap', background: 'linear-gradient(120deg, rgba(167,139,250,.12), rgba(56,224,208,.08))', border: `1px solid ${GLASS_BORDER}`, borderRadius: 24, padding: '28px 32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0 }}>
+              <span style={{ width: 52, height: 52, flexShrink: 0, borderRadius: 15, background: AURORA, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>🧠</span>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-.02em', margin: '0 0 4px', color: INK }}>Живёт и в Telegram</p>
+                <p style={{ fontSize: 14, lineHeight: 1.55, color: SUB, margin: 0, maxWidth: 560 }}>
+                  Бот <strong style={{ color: INK }}>@SchemaLabBot</strong> мягко напомнит про чек-ин, мини-приложение открывается прямо в чате. Данные общие с сайтом.
+                </p>
               </div>
-              <span style={{ fontSize: 11.5, color: FAINT, alignSelf: 'center' }}>мини-приложение открывается прямо в чате</span>
             </div>
+            <Cta href={BOT_URL} size="lg">Открыть в Telegram ↗</Cta>
           </div>
         </section>
 
-        {/* ── Доверие ── */}
-        <section style={{ padding: '20px 24px 72px' }}>
-          <div className="pl2-3" style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
-            {TRUST.map((t) => <GlassCard key={t.title} emoji={t.icon} color={t.color} title={t.title}>{t.node}</GlassCard>)}
+        {/* ── Доверие — тонкая полоса из трёх пунктов (не карточки) ── */}
+        <section style={{ padding: '20px 24px 60px' }}>
+          <div className="pl2-trust" style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', alignItems: 'stretch', background: GLASS, border: `1px solid ${GLASS_BORDER}`, borderRadius: 20, overflow: 'hidden' }}>
+            {TRUST.map((t, i) => (
+              <div key={t.title} className="pl2-trust-item" style={{ flex: 1, padding: '22px 26px', display: 'flex', alignItems: 'center', gap: 14, borderLeft: i ? `1px solid ${GLASS_BORDER}` : 'none' }}>
+                <span style={{ fontSize: 24, flexShrink: 0 }}>{t.icon}</span>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-.01em', margin: '0 0 2px', color: INK }}>{t.title}</p>
+                  <p style={{ fontSize: 13, lineHeight: 1.5, color: SUB, margin: 0 }}>{t.node}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* ── Статьи ── */}
         {articles && articles.length > 0 && (
-          <section id="articles" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>
+          <section id="articles" style={{ padding: '60px 24px', scrollMarginTop: 70 }}>
             <div style={{ maxWidth: 1160, margin: '0 auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap', marginBottom: 44 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap', marginBottom: 40 }}>
                 <div>
                   <span style={EYEBROW}>Статьи</span>
                   <h2 style={{ ...H2, margin: '14px 0 0', maxWidth: 620 }}>Разбираемся в схема-терапии — простым языком</h2>
@@ -359,7 +347,7 @@ export function ProductLandingPage() {
         )}
 
         {/* ── FAQ ── */}
-        <section id="faq" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>
+        <section id="faq" style={{ padding: '60px 24px', scrollMarginTop: 70 }}>
           <div style={{ maxWidth: 760, margin: '0 auto' }}>
             <span style={EYEBROW}>Вопросы</span>
             <h2 style={{ ...H2, margin: '14px 0 36px' }}>Частые вопросы</h2>
@@ -403,15 +391,19 @@ export function ProductLandingPage() {
         @keyframes pl2-in    { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
         @keyframes pl2-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes pl2-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.6); } }
-        .pl2-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,.22); box-shadow: 0 18px 50px rgba(0,0,0,.4); }
+        .pl2-tile:hover { transform: translateY(-4px); box-shadow: 0 18px 50px rgba(0,0,0,.4); }
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
         }
         @media (max-width: 900px) {
-          .pl2-hero { grid-template-columns: 1fr !important; gap: 48px !important; }
+          .pl2-bento { grid-template-columns: repeat(2, 1fr) !important; }
+          .pl2-bento .pl2-tile { grid-column: span 2 !important; grid-row: auto !important; }
+          .pl2-flow { flex-direction: column !important; gap: 28px !important; }
+          .pl2-arrow { display: none !important; }
+          .pl2-trust { flex-direction: column !important; }
+          .pl2-trust-item { border-left: none !important; border-top: 1px solid ${GLASS_BORDER} !important; }
+          .pl2-trust-item:first-child { border-top: none !important; }
           .pl2-3 { grid-template-columns: 1fr !important; }
-          .pl2-tg { grid-template-columns: 1fr !important; gap: 36px !important; padding: 36px 28px !important; }
-          .pl2-chip { display: none; }
         }
         @media (min-width: 601px) and (max-width: 900px) { .pl2-3 { grid-template-columns: 1fr 1fr !important; } }
         @media (max-width: 640px) { .pl2-nav { display: none !important; } }
