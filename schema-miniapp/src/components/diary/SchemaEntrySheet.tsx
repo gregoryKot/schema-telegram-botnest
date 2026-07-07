@@ -3,6 +3,8 @@ import { BottomSheet } from '../BottomSheet';
 import { EMOTIONS, INTENSITY_LABELS, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { EmotionEntry } from '../../types';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
+import { detectCrisisAny } from '../../utils/crisisMarkers';
+import { CrisisCard } from '../CrisisCard';
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 
@@ -271,6 +273,8 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
 
         <StepLabel step={10} title="Здоровое поведение" hint="как поступил бы Здоровый Взрослый" />
         <Area value={healthyBehavior} onChange={setHealthyBehavior} placeholder={tr('Что сделал бы Здоровый Взрослый внутри тебя?', 'Что сделал бы Здоровый Взрослый внутри вас?')} />
+
+        {detectCrisisAny(trigger, thoughts, bodyFeelings, actualBehavior, schemaOrigin, healthyView, realProblems, excessiveReactions, healthyBehavior) && <CrisisCard />}
 
         {!canSave && (
           <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-sub)', marginTop: 16, paddingBottom: 8 }}>
