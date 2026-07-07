@@ -1,0 +1,57 @@
+# CI-гейт (правило №1 CLAUDE.md: ничего не мержится с красным CI).
+# Бэкенд: типы + юнит-тесты. Фронтенды: сборка (ловит TS-ошибки).
+# eslint пока не гейтится — исторический долг ~2k unsafe-* ошибок;
+# храповик появится на этапе 2е REMEDIATION_PLAN.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx tsc --noEmit -p tsconfig.build.json
+      - run: npx jest --silent
+
+  webapp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: webapp/package-lock.json
+      - run: npm ci --prefix webapp
+      - run: npm run build --prefix webapp
+
+  miniapp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: schema-miniapp/package-lock.json
+      - run: npm ci --prefix schema-miniapp
+      - run: npm run build --prefix schema-miniapp
+      # dist коммитится в git (Docker его только копирует) — проверяем,
+      # что закоммиченный dist не разошёлся с исходником.
+      - name: dist актуален
+        run: |
+          if [ -n "$(git status --porcelain schema-miniapp/dist)" ]; then
+            echo '::error::schema-miniapp/dist устарел — пересобери: npm run build --prefix schema-miniapp и закоммить dist'
+            git status --short schema-miniapp/dist
+            exit 1
+          fi

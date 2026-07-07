@@ -37,4 +37,6 @@ RUN mkdir -p webapp/dist/game && cp -r game/dist/* webapp/dist/game/
 # ── Prune dev deps (backend only) ──────────────────────────────────────────
 RUN npm prune --production
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+# exec — node замещает sh как PID 1, иначе SIGTERM от оркестратора не доходит
+# до node и graceful shutdown (bot.stop, prisma disconnect) никогда не срабатывает.
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/main"]

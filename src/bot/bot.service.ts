@@ -683,9 +683,11 @@ export class BotService {
     await this.prisma.$transaction([
       // All user-owned tables (USER_DATA_TABLES registry above).
       ...USER_DATA_TABLES.map(table => (this.prisma[table] as any).deleteMany({ where: { userId: uid } })),
-      // Therapist-side rows (keyed by therapistId).
-      this.prisma.clientConceptualization.deleteMany({ where: { therapistId: uid } }),
-      this.prisma.therapistNote.deleteMany({ where: { therapistId: uid } }),
+      // Clinical rows about a person: remove when EITHER side deletes account.
+      // clientId matters no less than therapistId — right-to-erasure клиента
+      // включает конспектуализацию и заметки терапевта О НЁМ (аудит 2026-07, D-1).
+      this.prisma.clientConceptualization.deleteMany({ where: { OR: [{ therapistId: uid }, { clientId: uid }] } }),
+      this.prisma.therapistNote.deleteMany({ where: { OR: [{ therapistId: uid }, { clientId: uid }] } }),
       this.prisma.therapyRelation.deleteMany({ where: { OR: [{ therapistId: uid }, { clientId: uid }] } }),
       // Mode maps (about a client, created by a therapist) — remove if either side leaves.
       (this.prisma as any).modeMap.deleteMany({ where: { OR: [{ therapistId: uid }, { clientId: uid }] } }),
