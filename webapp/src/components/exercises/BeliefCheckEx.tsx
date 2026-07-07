@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { ExScreen, StepsBar, GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphPlus, GlyphX } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useTr } from '../../utils/addressForm';
 
 const STEPS = ['Убеждение', 'Доказательства за', 'Доказательства против', 'Переформулировка'];
 
-const SIDE_HINTS: Record<number, { title: string; body: string; list: string[] }> = {
-  0: { title: 'Что такое убеждение схемы', body: 'Схемы говорят голосом абсолютных утверждений. Слушай слова «всегда», «никогда», «никто», «все», «должен» – это маркеры.', list: ['«я всегда всё порчу»', '«меня никто не любит»', '«если ошибусь – это конец»'] },
-  1: { title: 'Будь честен', body: 'Не отмахивайся от мысли. Запиши все факты, которые её подтверждают – даже неприятные. Это не значит что она правдива.', list: ['Конкретные ситуации', 'Слова других людей', 'Твои ощущения тогда'] },
-  2: { title: 'Что упустила схема', body: 'Схема – фильтр, который выбрасывает то, что ей противоречит. Восстанови баланс. Вспомни исключения, факты, чужие точки зрения.', list: ['Случаи, где было иначе', 'Люди, которые видят тебя другим', 'Что сказал бы друг?'] },
-  3: { title: 'Не позитив, а точность', body: 'Не «всё хорошо» – это не работает. Сформулируй точнее: с оговорками, с признанием сложности, с состраданием.', list: ['«иногда я ошибаюсь, и это»', '«часть из этого правда, и»', '«я устал, и это не значит»'] },
-};
+const buildSideHints = (tr: (ty: string, vy: string) => string): Record<number, { title: string; body: string; list: string[] }> => ({
+  0: { title: 'Что такое убеждение схемы', body: tr('Схемы говорят голосом абсолютных утверждений. Слушай слова «всегда», «никогда», «никто», «все», «должен» – это маркеры.', 'Схемы говорят голосом абсолютных утверждений. Слушайте слова «всегда», «никогда», «никто», «все», «должен» – это маркеры.'), list: ['«я всегда всё порчу»', '«меня никто не любит»', '«если ошибусь – это конец»'] },
+  1: { title: tr('Будь честен', 'Будьте честны'), body: tr('Не отмахивайся от мысли. Запиши все факты, которые её подтверждают – даже неприятные. Это не значит что она правдива.', 'Не отмахивайтесь от мысли. Запишите все факты, которые её подтверждают – даже неприятные. Это не значит что она правдива.'), list: ['Конкретные ситуации', 'Слова других людей', tr('Твои ощущения тогда', 'Ваши ощущения тогда')] },
+  2: { title: 'Что упустила схема', body: tr('Схема – фильтр, который выбрасывает то, что ей противоречит. Восстанови баланс. Вспомни исключения, факты, чужие точки зрения.', 'Схема – фильтр, который выбрасывает то, что ей противоречит. Восстановите баланс. Вспомните исключения, факты, чужие точки зрения.'), list: ['Случаи, где было иначе', tr('Люди, которые видят тебя другим', 'Люди, которые видят вас другим'), 'Что сказал бы друг?'] },
+  3: { title: 'Не позитив, а точность', body: tr('Не «всё хорошо» – это не работает. Сформулируй точнее: с оговорками, с признанием сложности, с состраданием.', 'Не «всё хорошо» – это не работает. Сформулируйте точнее: с оговорками, с признанием сложности, с состраданием.'), list: ['«иногда я ошибаюсь, и это»', '«часть из этого правда, и»', '«я устал, и это не значит»'] },
+});
 
 function fmtAgo(d: string): string {
   const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
@@ -21,6 +22,8 @@ function fmtAgo(d: string): string {
 }
 
 export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onComplete?: () => void }) {
+  const tr = useTr();
+  const SIDE_HINTS = buildSideHints(tr);
   const goBack = useHistorySheet(onBack);
   const [step, setStep] = useState(0);
   const [belief, setBelief] = useState('');
@@ -146,7 +149,7 @@ export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onCo
       {step === 2 && (<>
         <div className="ex-prompt"><div className="ex-prompt-num">3.</div><div>
           <div className="ex-prompt-label">Что опровергает «<span style={{ color: 'var(--c-moss)' }}>{belief}</span>»?</div>
-          <p className="ex-prompt-hint">Вспомни факты, исключения, другие точки зрения. Что сказал бы хороший друг?</p>
+          <p className="ex-prompt-hint">{tr('Вспомни факты, исключения, другие точки зрения. Что сказал бы хороший друг?', 'Вспомните факты, исключения, другие точки зрения. Что сказал бы хороший друг?')}</p>
         </div></div>
         <EviList items={againstList} onRemove={i => setAgainstList(l => l.filter((_, j) => j !== i))} input={againstInput} onInput={setAgainstInput} onAdd={addAgainst} placeholder="Добавить контр-доказательство…" />
         <div className="ex-foot"><button className="ex-btn ex-btn-ghost" onClick={() => setStep(1)}><GlyphArrowLeft /> Назад</button><span className="spacer" /><button className="ex-btn ex-btn-primary" disabled={againstList.length === 0} onClick={() => setStep(3)}>Дальше · переформулировка <GlyphArrowRight /></button></div>
@@ -155,7 +158,7 @@ export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onCo
       {step === 3 && (<>
         <div className="ex-prompt"><div className="ex-prompt-num">4.</div><div>
           <div className="ex-prompt-label">Как можно сформулировать точнее?</div>
-          <p className="ex-prompt-hint">Не «всё хорошо». А: что из мысли правда, что преувеличено, и что ты на самом деле сейчас знаешь.</p>
+          <p className="ex-prompt-hint">{tr('Не «всё хорошо». А: что из мысли правда, что преувеличено, и что ты на самом деле сейчас знаешь.', 'Не «всё хорошо». А: что из мысли правда, что преувеличено, и что вы на самом деле сейчас знаете.')}</p>
         </div></div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 28, padding: '18px 0', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
           <div><div className="eyebrow" style={{ color: 'var(--c-rose)', marginBottom: 8 }}>За · {forList.length}</div>{forList.slice(0, 3).map((f, i) => <div key={i} style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, padding: '4px 0' }}>· {f}</div>)}</div>

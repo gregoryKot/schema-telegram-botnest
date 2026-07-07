@@ -17,7 +17,7 @@ const PLACEHOLDERS = [
   'Кто-то, кто помог или поддержал…',
   'Момент, который хочется запомнить…',
   'Что-то простое, что согрело…',
-  'Что-то, что обычно не замечаешь…',
+  'Что-то, что обычно ускользает…',
 ];
 
 export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Props) {

@@ -10,18 +10,20 @@ import { api } from '../api';
 import { NODE_TYPES, NODE_DEFAULT_SIZES } from './ModeMapNodes';
 import { EDGE_TYPES } from './ModeMapFloatingEdge';
 import { DRAG_TYPE, GROUP_TO_TYPE } from './ModeMapPalette';
-import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
+import { MODE_GROUPS, getModeById, getSchemaById } from '../schemaTherapyData';
 import { ModeMapContextMenu, type MenuItem } from './ModeMapContextMenu';
 import { ModeMapLegend } from './ModeMapLegend';
 import { ModeMapGuide } from './ModeMapGuide';
 import { ModeMapZones } from './ModeMapZones';
+import { ModeMapCoupleLanes } from './ModeMapCoupleLanes';
 import { NodeActionsContext, type NodeActions } from './modeMapActions';
-import { autoLayout, layoutByZones, TEMPLATES, templateToGraph } from './modeMapLayout';
+import { autoLayout, layoutByZones, layoutCouple, TEMPLATES, templateToGraph } from './modeMapLayout';
 import {
   type FlowNode, type FlowEdge,
   edgeColor, makeMarker, edgeStyle, toFlowNodes, toFlowEdges,
 } from './modeMapFlow';
 import { useModeMapExport } from './useModeMapExport';
+import { MMIcon } from './modeMapIcons';
 
 export interface CanvasProps {
   clientId: number; mapId: number; kind: ModeMapKind;
@@ -32,6 +34,7 @@ export interface CanvasProps {
   onEdgesChange: ReturnType<typeof useEdgesState<FlowEdge>>[2];
   setSelectedNodeId: (id: string | null) => void;
   setSelectedEdgeId: (id: string | null) => void;
+  selectedNodeId: string | null;
   saveStatus: 'idle' | 'saving' | 'saved';
   scheduleSave: (ns: FlowNode[], es: FlowEdge[]) => void;
   pushHistory: () => void;
@@ -42,7 +45,7 @@ export interface CanvasProps {
 }
 
 export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange,
-  setSelectedNodeId, setSelectedEdgeId, saveStatus, scheduleSave,
+  setSelectedNodeId, setSelectedEdgeId, selectedNodeId, saveStatus, scheduleSave,
   pushHistory, nodesRef, edgesRef, onUndo, onRedo, canUndo, canRedo }: CanvasProps) {
   const { screenToFlowPosition, zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
 
@@ -53,10 +56,23 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   const [tplOpen, setTplOpen] = useState(false);
   const [dlOpen, setDlOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
+  const [schemasOpen, setSchemasOpen] = useState(false);
+  const [clientSchemaIds, setClientSchemaIds] = useState<string[] | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   const tplWrapRef = useRef<HTMLDivElement>(null);
   const dlWrapRef = useRef<HTMLDivElement>(null);
   const keysWrapRef = useRef<HTMLDivElement>(null);
+  const schemasWrapRef = useRef<HTMLDivElement>(null);
+
+  // Lazy-load the client's identified schemas the first time the panel opens
+  const openSchemas = useCallback(() => {
+    setSchemasOpen(o => !o); setTplOpen(false); setDlOpen(false);
+    if (clientSchemaIds === null) {
+      api.getConceptualization(clientId)
+        .then(c => setClientSchemaIds(Array.isArray(c?.schemaIds) ? c!.schemaIds : []))
+        .catch(() => setClientSchemaIds([]));
+    }
+  }, [clientId, clientSchemaIds]);
   // Desktop (fine pointer) — keyboard hints only make sense there
   const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 900px) and (pointer: fine)').matches;
 
@@ -193,11 +209,12 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     if (nodes.length === 0) return;
     pushHistory();
     // With «Зоны» on, lay nodes out by type into the bands; otherwise dagre by edges.
-    const laid = showZones ? layoutByZones(nodes) : autoLayout(nodes, edges);
+    const laid = kind === 'couple' ? layoutCouple(nodes)
+      : showZones ? layoutByZones(nodes) : autoLayout(nodes, edges);
     setNodes(laid); scheduleSave(laid, edges);
     // Only zoom out to fit — never magnify (maxZoom 1) so layout doesn't blow up the scale
     setTimeout(() => fitView({ padding: 0.2, duration: 400, maxZoom: 1 }), 50);
-  }, [nodes, edges, setNodes, scheduleSave, pushHistory, fitView, showZones]);
+  }, [nodes, edges, setNodes, scheduleSave, pushHistory, fitView, showZones, kind]);
 
   // ── Node actions (toolbar + context menu) ────────────────────────────────────
   const duplicateNode = useCallback((id: string) => {
@@ -285,17 +302,17 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   const onPaneContextMenu = useCallback((e: React.MouseEvent | MouseEvent) => {
     e.preventDefault();
     setMenu({ x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY, items: [
-      { label: '↺ Авто-расположение', onClick: onAutoLayout },
-      { label: '⤢ Показать всё', onClick: () => fitView({ padding: 0.2, duration: 300 }) },
+      { label: 'Авто-расположение', onClick: onAutoLayout },
+      { label: 'Показать всё', onClick: () => fitView({ padding: 0.2, duration: 300 }) },
     ] });
   }, [onAutoLayout, fitView]);
 
   const onNodeContextMenu = useCallback((e: React.MouseEvent, node: FlowNode) => {
     e.preventDefault();
     setMenu({ x: e.clientX, y: e.clientY, items: [
-      { label: '✎ Редактировать', onClick: () => nodeActions.edit(node.id) },
-      { label: '⧉ Дублировать', onClick: () => duplicateNode(node.id) },
-      { label: '🗑 Удалить', onClick: () => removeNode(node.id), danger: true },
+      { label: 'Редактировать', onClick: () => nodeActions.edit(node.id) },
+      { label: 'Дублировать', onClick: () => duplicateNode(node.id) },
+      { label: 'Удалить', onClick: () => removeNode(node.id), danger: true },
     ] });
   }, [nodeActions, duplicateNode, removeNode]);
 
@@ -306,7 +323,10 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
       </div>
       {nodes.length === 0 && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 5 }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🗺️</div>
+          <div style={{ width: 52, height: 52, borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--line)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', marginBottom: 14 }}>
+            <MMIcon name="map" size={26} />
+          </div>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Карта режимов пуста</div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6, textAlign: 'center', maxWidth: 260 }}>
             Кликай по режиму в панели слева или перетащи его на холст
@@ -333,28 +353,28 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         nodesDraggable nodeDragThreshold={1}
       >
         <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.16)" gap={snap ? 20 : 22} size={1.5} />
-        {showZones && <ModeMapZones />}
+        {kind === 'couple' ? <ModeMapCoupleLanes mapId={mapId} /> : showZones && <ModeMapZones />}
 
         {/* Toolbar — icon-only with hover tooltips */}
         <Panel position="top-left">
           <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 9, alignItems: 'center', flexWrap: 'nowrap',
-            background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+            background: 'var(--bg-elev)', border: '1px solid var(--line)',
+            boxShadow: 'var(--shadow-2)' }}>
             {/* History */}
-            <TbBtn label="Отменить (⌘Z)" disabled={!canUndo} onClick={onUndo}>↶</TbBtn>
-            <TbBtn label="Вернуть (⌘⇧Z)" disabled={!canRedo} onClick={onRedo}>↷</TbBtn>
+            <TbBtn label="Отменить (⌘Z)" disabled={!canUndo} onClick={onUndo}><MMIcon name="undo" size={17} /></TbBtn>
+            <TbBtn label="Вернуть (⌘⇧Z)" disabled={!canRedo} onClick={onRedo}><MMIcon name="redo" size={17} /></TbBtn>
             <TbSep />
             {/* Zoom */}
-            <TbBtn label="Отдалить" onClick={() => zoomOut()}>－</TbBtn>
-            <TbBtn label="Приблизить" onClick={() => zoomIn()}>＋</TbBtn>
-            <TbBtn label="Показать всё" onClick={() => fitView({ padding: 0.2 })}>⤢</TbBtn>
+            <TbBtn label="Отдалить" onClick={() => zoomOut()}><MMIcon name="minus" size={17} /></TbBtn>
+            <TbBtn label="Приблизить" onClick={() => zoomIn()}><MMIcon name="plus" size={17} /></TbBtn>
+            <TbBtn label="Показать всё" onClick={() => fitView({ padding: 0.2 })}><MMIcon name="fit" size={17} /></TbBtn>
             <TbSep />
             {/* Tools */}
-            <TbBtn label="Разложить автоматически" onClick={onAutoLayout} disabled={nodes.length === 0}>↻</TbBtn>
-            <TbBtn label="Привязка к сетке" onClick={() => setSnap(s => !s)} active={snap}>▦</TbBtn>
-            <TbBtn label="Зоны: здоровый взрослый / копинги / детские и критики" onClick={toggleZones} active={showZones}>▤</TbBtn>
+            <TbBtn label="Разложить автоматически" onClick={onAutoLayout} disabled={nodes.length === 0}><MMIcon name="auto" size={17} /></TbBtn>
+            <TbBtn label="Привязка к сетке" onClick={() => setSnap(s => !s)} active={snap}><MMIcon name="grid" size={17} /></TbBtn>
+            <TbBtn label="Зоны: здоровый взрослый / копинги / детские и критики" onClick={toggleZones} active={showZones}><MMIcon name="zones" size={17} /></TbBtn>
             <div ref={tplWrapRef} style={{ position: 'relative' }}>
-              <TbBtn label="Шаблоны и генерация" onClick={() => { setTplOpen(o => !o); setDlOpen(false); }} active={tplOpen} caret>✚</TbBtn>
+              <TbBtn label="Шаблоны и генерация" onClick={() => { setTplOpen(o => !o); setDlOpen(false); }} active={tplOpen} caret><MMIcon name="layers" size={17} /></TbBtn>
               {tplOpen && (
                 <Dropdown anchorRef={tplWrapRef} onClose={() => setTplOpen(false)}>
                   <div style={dropHeadStyle}>Шаблоны</div>
@@ -362,29 +382,54 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                     <button key={t.id} onClick={() => { const g = templateToGraph(t); insertGraph(g.nodes, g.edges); setTplOpen(false); }}
                       style={menuItemStyle}>{t.name}</button>
                   ))}
-                  <div style={{ height: 1, background: 'rgba(var(--fg-rgb),0.08)', margin: '4px 0' }} />
+                  <div style={{ height: 1, background: 'var(--line)', margin: '4px 0' }} />
                   <button onClick={() => { onGenerateFromConcept(); setTplOpen(false); }} style={menuItemStyle}>
-                    ✨ Из концептуализации клиента
+                    Из концептуализации клиента
                   </button>
                 </Dropdown>
               )}
             </div>
-            <TbBtn label="Подсказки: клиническая цепочка и советы" onClick={toggleGuide} active={showGuide}>💡</TbBtn>
-            <TbBtn label="Легенда: формы и цвета" onClick={toggleLegend} active={showLegend}>ⓘ</TbBtn>
+            <div ref={schemasWrapRef} style={{ position: 'relative' }}>
+              <TbBtn label="Схемы клиента — привязать к выбранному режиму" onClick={openSchemas} active={schemasOpen} caret><MMIcon name="target" size={17} /></TbBtn>
+              {schemasOpen && (
+                <Dropdown anchorRef={schemasWrapRef} onClose={() => setSchemasOpen(false)}>
+                  <div style={dropHeadStyle}>Схемы клиента</div>
+                  <div style={{ padding: '0 10px 6px', fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.35 }}>
+                    {selectedNodeId ? 'Нажми, чтобы привязать к выбранному режиму' : 'Сначала выбери режим на холсте'}
+                  </div>
+                  {clientSchemaIds === null && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>Загрузка…</div>}
+                  {clientSchemaIds?.length === 0 && <div style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-faint)' }}>У клиента пока нет отмеченных схем</div>}
+                  {clientSchemaIds?.map(sid => {
+                    const s = getSchemaById(sid);
+                    if (!s) return null;
+                    return (
+                      <button key={sid} disabled={!selectedNodeId}
+                        onClick={() => { if (selectedNodeId) { patchNodeData(selectedNodeId, { schemaId: sid }); setSchemasOpen(false); } }}
+                        style={{ ...menuItemStyle, display: 'flex', alignItems: 'center', gap: 8, opacity: selectedNodeId ? 1 : 0.55 }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: s.domainColor, flexShrink: 0 }} />
+                        <span>{s.emoji} {s.name}</span>
+                      </button>
+                    );
+                  })}
+                </Dropdown>
+              )}
+            </div>
+            <TbBtn label="Подсказки: клиническая цепочка и советы" onClick={toggleGuide} active={showGuide}><MMIcon name="bulb" size={17} /></TbBtn>
+            <TbBtn label="Легенда: формы и цвета" onClick={toggleLegend} active={showLegend}><MMIcon name="info" size={17} /></TbBtn>
             <TbSep />
             <div ref={dlWrapRef} style={{ position: 'relative' }}>
               <TbBtn label="Скачать карту (PNG / PDF)" onClick={() => { setDlOpen(o => !o); setTplOpen(false); }}
-                active={dlOpen} caret disabled={nodes.length === 0}>⬇</TbBtn>
+                active={dlOpen} caret disabled={nodes.length === 0}><MMIcon name="download" size={17} /></TbBtn>
               {dlOpen && (
                 <Dropdown anchorRef={dlWrapRef} onClose={() => setDlOpen(false)}>
-                  <button disabled={exporting} onClick={() => { onExportPng(); setDlOpen(false); }} style={menuItemStyle}>🖼 Картинка PNG</button>
-                  <button disabled={exporting} onClick={() => { onExportPdf(); setDlOpen(false); }} style={menuItemStyle}>📄 Документ PDF</button>
+                  <button disabled={exporting} onClick={() => { onExportPng(); setDlOpen(false); }} style={menuItemStyle}>Картинка PNG</button>
+                  <button disabled={exporting} onClick={() => { onExportPdf(); setDlOpen(false); }} style={menuItemStyle}>Документ PDF</button>
                 </Dropdown>
               )}
             </div>
             {isDesktop && (
               <div ref={keysWrapRef} style={{ position: 'relative' }}>
-                <TbBtn label="Горячие клавиши" onClick={() => setKeysOpen(o => !o)} active={keysOpen}>⌨</TbBtn>
+                <TbBtn label="Горячие клавиши" onClick={() => setKeysOpen(o => !o)} active={keysOpen}><MMIcon name="keyboard" size={17} /></TbBtn>
                 {keysOpen && (
                   <Dropdown anchorRef={keysWrapRef} onClose={() => setKeysOpen(false)}>
                     <div style={dropHeadStyle}>Горячие клавиши</div>
@@ -399,7 +444,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                     ] as [string, string][]).map(([k, v]) => (
                       <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 14, padding: '5px 10px', fontSize: 12 }}>
                         <span style={{ color: 'var(--text-sub)' }}>{v}</span>
-                        <kbd style={{ color: 'var(--text)', fontFamily: 'inherit', fontSize: 11.5, background: 'rgba(var(--fg-rgb),0.07)', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' }}>{k}</kbd>
+                        <kbd style={{ color: 'var(--text)', fontFamily: 'inherit', fontSize: 11.5, background: 'var(--surface-2)', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' }}>{k}</kbd>
                       </div>
                     ))}
                   </Dropdown>
@@ -442,16 +487,16 @@ function TbBtn({ children, label, onClick, disabled, active, caret }: {
       <button onClick={onClick} disabled={disabled}
         style={{ minWidth: 32, height: 30, padding: caret ? '0 6px 0 8px' : '0 7px', borderRadius: 6, border: 'none',
           cursor: disabled ? 'default' : 'pointer', gap: 3,
-          background: active ? 'var(--accent-soft)' : hover && !disabled ? 'rgba(var(--fg-rgb),0.07)' : 'none', fontSize: 15, lineHeight: 1,
+          background: active ? 'var(--accent-soft)' : hover && !disabled ? 'var(--surface-2)' : 'none', fontSize: 15, lineHeight: 1,
           color: disabled ? 'var(--text-ghost)' : active ? 'var(--accent)' : 'var(--text-sub)',
           display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-        {children}{caret && <span style={{ fontSize: 9, opacity: 0.7 }}>▾</span>}
+        {children}{caret && <MMIcon name="caret" size={11} style={{ opacity: 0.65, marginLeft: 1 }} />}
       </button>
       {hover && !disabled && (
         <div style={{ position: 'absolute', top: 36, left: '50%', transform: 'translateX(-50%)', zIndex: 40,
           background: 'var(--text)', color: 'var(--bg)', fontSize: 11, padding: '3px 7px', borderRadius: 5,
-          whiteSpace: 'nowrap', pointerEvents: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+          whiteSpace: 'nowrap', pointerEvents: 'none', boxShadow: 'var(--shadow-2)' }}>
           {label}
         </div>
       )}
@@ -459,7 +504,7 @@ function TbBtn({ children, label, onClick, disabled, active, caret }: {
   );
 }
 function TbSep() {
-  return <div style={{ width: 1, background: 'rgba(var(--fg-rgb),0.1)', margin: '4px 2px' }} />;
+  return <div style={{ width: 1, background: 'var(--line)', margin: '4px 2px' }} />;
 }
 
 // Anchored to its trigger button and rendered fixed, clamped inside the viewport —
@@ -482,8 +527,8 @@ function Dropdown({ children, onClose, anchorRef }: {
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 39 }} />
       {pos && (
         <div style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 40, width: 220,
-          background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 8,
-          padding: 4, boxShadow: '0 4px 16px rgba(0,0,0,0.16)' }}>
+          background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8,
+          padding: 4, boxShadow: 'var(--shadow-2)' }}>
           {children}
         </div>
       )}

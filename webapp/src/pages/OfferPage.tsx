@@ -65,7 +65,7 @@ export function OfferPage() {
             <P>
               Акцепт означает, что Заказчик ознакомился с настоящей офертой, понимает её содержание
               и безоговорочно принимает все её условия. Оферта является публичной и доступна по
-              адресу: <strong>schemalab.ru/offer</strong>.
+              адресу: <strong>schemehappens.ru/offer</strong>.
             </P>
           </Chapter>
 
@@ -265,7 +265,7 @@ export function OfferPage() {
               ['ИНН', OPERATOR_INN],
               ['E-mail', OPERATOR_EMAIL],
               ['Telegram', '@kotlarewski'],
-              ['Сайт', 'schemalab.ru'],
+              ['Сайт', 'schemehappens.ru'],
             ]} />
           </Chapter>
 

@@ -1,28 +1,87 @@
 import Phaser from 'phaser';
-import { S, C } from '../constants';
+import { S } from '../constants';
+import { loadProps, ensureEnemyAnims } from '../props';
+import { t } from '../i18n';
+// Только обязательные спрайты (меню, пролог, базовое движение) — мелкие, их
+// Vite инлайнит data-URI прямо в главный бандл, так что они физически не могут
+// «не загрузиться». Тяжёлые спрайты (клубок/сон/выпад) едут отдельным async-
+// чанком и догружаются в фоне (main.ts) — меню стартует не дожидаясь их.
+import catRunUrl   from '../assets/cat_run.png';
+import catIdleUrl  from '../assets/cat_idle.png';
 
 type G = Phaser.GameObjects.Graphics;
+
+// Только cat_run/cat_idle обязательны для старта. Остальные подгружаются в фоне;
+// сцены guard'ят анимации, поэтому игра играбельна даже пока они не доехали.
+const CAT_SHEETS: Record<string, { url: string; fw: number; fh: number }> = {
+  cat_run:   { url: catRunUrl,   fw: 48,  fh: 48 },
+  cat_idle:  { url: catIdleUrl,  fw: 48,  fh: 48 },
+};
+const ESSENTIAL = ['cat_run', 'cat_idle'];
 
 export class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
 
+  private loading!: Phaser.GameObjects.Text;
+  private retryArmed = false;
+  private advanced = false;
+  private watchdog?: number;
+
   preload() {
-    this.load.image('bg-mountains', 'assets/bg-mountains.png');
-    this.load.image('bg-moon', 'assets/bg-moon.png');
-    this.load.spritesheet('cat_run',  'assets/cat_run.png',  { frameWidth: 48, frameHeight: 48 });
-    this.load.spritesheet('cat_idle', 'assets/cat_idle.png', { frameWidth: 48, frameHeight: 48 });
+    const cx = Number(this.game.config.width) / 2, cy = Number(this.game.config.height) / 2;
+    this.loading = this.add.text(cx, cy, t('m_loading'), {
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#8a7faa', letterSpacing: 4,
+    }).setOrigin(0.5);
+    // сеть оборвалась (например, в момент деплоя) — говорим честно и даём повторить
+    this.load.on('loaderror', () => this.armRetry());
+    // Страховка от вечной «ЗАГРУЗКА...»: если за 12с не уехали (висящий запрос,
+    // битый ассет и т.п.) — показываем честный экран с перезагрузкой.
+    this.watchdog = window.setTimeout(() => { if (!this.advanced) this.armRetry(); }, 12000);
+    for (const [key, s] of Object.entries(CAT_SHEETS))
+      this.load.spritesheet(key, s.url, { frameWidth: s.fw, frameHeight: s.fh });
+    loadProps(this); // реквизит (будильник, кровать, диван…) — data-URI, не по сети
   }
 
   create() {
-    this.tex('sage',            26, 48, g => this.drawSage(g));
-    this.tex('anxiety',         20, 10, g => this.drawAnxiety(g));
-    this.tex('procrastination', 20, 10, g => this.drawProcrastination(g));
-    this.tex('phone',           10, 16, g => this.drawPhone(g));
-    this.tex('irritation',      20, 10, g => this.drawIrritation(g));
-    this.tex('selfcritic',      20, 10, g => this.drawSelfcritic(g));
-    this.tex('plat',            16, 10, g => this.drawPlat(g));
-    this.tex('ground',          16, 16, g => this.drawGround(g));
-    this.scene.start('Start');
+    // Процедурные текстуры не зависят от сети — генерим ВСЕГДА, чтобы мир был
+    // целым, даже если кто-то зайдёт в главу через меню при битой загрузке.
+    this.tex('plat',   16, 10, g => this.drawPlat(g));
+    this.tex('ground', 16, 16, g => this.drawGround(g));
+    this.tex('plat_room',   16, 10, g => this.drawPlatRoom(g));
+    this.tex('ground_room', 16, 16, g => this.drawGroundRoom(g));
+    ensureEnemyAnims(this);   // idle-циклы тревоги/прокрастинации/телефона
+    // обязательные спрайты кота не доехали (или доехали битыми) — экран «тапни — повторить»
+    if (!this.essentialsReady()) { this.armRetry(); return; }
+    this.advanced = true;
+    if (this.watchdog) clearTimeout(this.watchdog);
+    // Flow: Start → Intro → Game. Dev shortcut: #game jumps straight to a chapter.
+    const hash = window.location.hash.slice(1).toLowerCase();
+    if (hash === 'game' || hash.startsWith('chapter'))
+      this.scene.start('Game', { chapter: hash.startsWith('chapter') ? hash : 'chapter1' });
+    else if (hash === 'tutorial')
+      this.scene.start('Tutorial');
+    else
+      this.scene.start('Start');
+  }
+
+  // Текстура существует И реально декодировалась (а не пришла HTML-заглушкой 0×0).
+  private essentialsReady(): boolean {
+    return ESSENTIAL.every(key => {
+      if (!this.textures.exists(key)) return false;
+      try {
+        const img = this.textures.get(key).getSourceImage() as { width?: number };
+        return !!img && !!img.width; // 0×0 ⇒ пришёл не PNG, а HTML-заглушка
+      } catch { return false; }
+    });
+  }
+
+  // Честный экран ошибки + перезагрузка по тапу/клавише (ставим один раз).
+  private armRetry() {
+    this.loading.setText(t('m_failed_to_load_tap_retry')).setColor('#ff8866').setAlign('center');
+    if (this.retryArmed) return;
+    this.retryArmed = true;
+    this.input.once('pointerdown', () => window.location.reload());
+    this.input.keyboard?.once('keydown', () => window.location.reload());
   }
 
   private tex(key: string, vw: number, vh: number, draw: (g: G) => void) {
@@ -32,135 +91,72 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
-  // ── Pill base — no background, pure capsule shape ─────────────────────
-  private pill(g: G, W: number, H: number, cL: number, cR: number) {
-    const u = S, r = H / 2;
-    // Left half: rounded left cap, square right edge at midpoint
-    g.fillStyle(cL, 1);
-    g.fillRoundedRect(0, 0, W * u, H * u, r * u);
-    // Right half overlay
-    g.fillStyle(cR, 1);
-    g.fillRoundedRect((W / 2) * u, 0, (W / 2) * u, H * u,
-      { tl: 0, tr: r * u, bl: 0, br: r * u } as Phaser.Types.GameObjects.Graphics.RoundedRectRadius);
-    // Seam
-    g.fillStyle(0x000000, 0.22);
-    g.fillRect((W / 2) * u, u, 1, (H - 2) * u);
-    // Highlight
-    g.fillStyle(0xffffff, 0.22);
-    g.fillRect((r + 1) * u, u, (W - 2 * r - 2) * u, u);
-  }
-
-  // ── Anxiety — amber/red · vortex ─────────────────────────────────────
-  private drawAnxiety(g: G) {
-    const u = S, W = 20, H = 10;
-    this.pill(g, W, H, 0xE8A020, 0xD02828);
-    const cx = (W / 2) * u, cy = (H / 2) * u;
-    g.fillStyle(0xFF8800, 0.5); g.fillEllipse(cx, cy, 5 * u, 3 * u);
-    g.fillStyle(0xFFDD00, 0.7); g.fillEllipse(cx, cy, 2.5 * u, 2 * u);
-    g.fillStyle(0x1A0800, 1);   g.fillCircle(cx, cy, u * 0.7);
-  }
-
-  // ── Procrastination — slate/grey · ZZZ ───────────────────────────────
-  private drawProcrastination(g: G) {
-    const u = S, W = 20, H = 10;
-    this.pill(g, W, H, 0x4A7090, 0x7A8898);
-    const drawZ = (bx: number, by: number, sz: number, a: number) => {
-      g.fillStyle(0xffffff, a);
-      g.fillRect(bx * u, by * u, sz * u, u);
-      for (let d = 0; d < sz; d++)
-        g.fillRect((bx + sz - 1 - d) * u, (by + 1 + d) * u, u, u);
-      g.fillRect(bx * u, (by + sz) * u, sz * u, u);
-    };
-    drawZ(4, 2, 3, 0.75);
-    drawZ(10, 1, 2, 0.55);
-    drawZ(15, 3, 2, 0.38);
-  }
-
-  // ── Phone — vertical dark · scroll ───────────────────────────────────
-  private drawPhone(g: G) {
-    const u = S;
-    g.fillStyle(0x0D1B2A, 1); g.fillRoundedRect(0, 0, 10 * u, 16 * u, 1.5 * u);
-    g.fillStyle(0x1A2F4A, 1); g.fillRoundedRect(u * 0.5, u * 0.5, 9 * u, 15 * u, u);
-    g.fillStyle(0x0A1628, 1); g.fillRoundedRect(u, u, 8 * u, 10 * u, u * 0.5);
-    for (let i = 0; i < 3; i++) {
-      g.fillStyle(0x5B9BD5, Math.max(0.1, 0.6 - i * 0.15));
-      g.fillRect(1.5 * u, (2.5 + i * 2.5) * u, 7 * u, u * 0.7);
-    }
-    g.fillStyle(0xFF3040, 1); g.fillCircle(8 * u, 1.5 * u, u * 0.5);
-    g.fillStyle(0x2A3F58, 1); g.fillRoundedRect(3.5 * u, 13 * u, 3 * u, u * 0.7, u * 0.3);
-  }
-
-  // ── Irritation — orange/crimson · lightning ───────────────────────────
-  private drawIrritation(g: G) {
-    const u = S, W = 20, H = 10;
-    this.pill(g, W, H, 0xFF6600, 0xBB1100);
-    g.fillStyle(0xFFEE66, 0.95);
-    g.fillRect(9 * u, u, 4 * u, 1.5 * u);    // top →
-    g.fillRect(11 * u, 2.5 * u, 1.5 * u, 2 * u); // down
-    g.fillRect(7 * u, 4.5 * u, 6 * u, 1.5 * u);  // mid ←
-    g.fillRect(7 * u, 6 * u, 1.5 * u, 2 * u); // down
-    g.fillRect(7 * u, 8 * u, 4 * u, 1.5 * u); // bot →
-  }
-
-  // ── Self-Critic — purple/black · eye ─────────────────────────────────
-  private drawSelfcritic(g: G) {
-    const u = S, W = 20, H = 10;
-    this.pill(g, W, H, 0x560090, 0x180428);
-    g.fillStyle(0xEEDDFF, 0.8);  g.fillEllipse(11 * u, 5 * u, 7 * u, 4 * u);
-    g.fillStyle(0x9B30CC, 1);    g.fillCircle(11 * u, 5 * u, 1.6 * u);
-    g.fillStyle(0x080010, 1);    g.fillCircle(11.3 * u, 5.3 * u, u);
-    g.fillStyle(0xBB88FF, 0.8);
-    g.fillCircle(9.5 * u, 8 * u, u * 0.6);
-    g.fillTriangle(9 * u, 8 * u, 10 * u, 8 * u, 9.5 * u, 9.5 * u);
-  }
-
-  // ── Sage ──────────────────────────────────────────────────────────────
-  private drawSage(g: G) {
-    const u = S;
-    g.fillStyle(C.sage, 0.04); g.fillEllipse(13*u, 30*u, 34*u, 55*u);
-    g.fillStyle(C.sage, 0.06); g.fillEllipse(13*u, 30*u, 26*u, 46*u);
-    g.fillStyle(C.sageDk, 1);
-    g.fillRoundedRect(1*u, 2*u, 3*u, 46*u, 2);
-    g.fillStyle(C.sage, 0.3); g.fillCircle(2*u, 2*u, 4*u);
-    g.fillStyle(C.sage, 0.6); g.fillCircle(2*u, 2*u, 3*u);
-    g.fillStyle(0xffffff, 0.9); g.fillCircle(2*u, 2*u, 1.5*u);
-    g.fillStyle(C.sageDk, 1);
-    g.fillRoundedRect(2*u, 28*u, 22*u, 20*u, 4);
-    g.fillRoundedRect(0*u, 36*u, 26*u, 12*u, 3);
-    g.fillRoundedRect(4*u, 14*u, 18*u, 15*u, 5);
-    g.fillStyle(C.sage, 0.12); g.fillRoundedRect(8*u, 14*u, 10*u, 34*u, 3);
-    g.fillStyle(C.sage, 0.15);
-    g.fillRect(7*u, 28*u, 2*u, 16*u); g.fillRect(17*u, 28*u, 2*u, 16*u);
-    g.fillStyle(C.sageDk, 1);
-    g.fillRoundedRect(3*u, 2*u, 20*u, 15*u, 8);
-    g.fillRoundedRect(2*u, 7*u, 22*u, 10*u, 4);
-    g.fillStyle(0xc0e8d0, 1); g.fillCircle(13*u, 12*u, 7*u);
-    g.fillStyle(0x0f2a1a, 0.6); g.fillCircle(13*u, 9*u, 7*u);
-    g.fillStyle(C.sage, 1);
-    g.fillCircle(10*u, 12*u, 2.5*u); g.fillCircle(16*u, 12*u, 2.5*u);
-    g.fillStyle(0xffffff, 0.95);
-    g.fillCircle(10*u, 12*u, 1.2*u); g.fillCircle(16*u, 12*u, 1.2*u);
-    g.fillStyle(C.sage, 0.25);
-    g.fillRoundedRect(3*u, 2*u, 3*u, 13*u, 2);
-    g.fillRoundedRect(20*u, 2*u, 3*u, 13*u, 2);
-    g.fillStyle(C.sageDk, 1);
-    g.fillRoundedRect(3*u, 22*u, 5*u, 4*u, 2);
-    g.fillRoundedRect(18*u, 22*u, 5*u, 4*u, 2);
-    g.fillStyle(C.sage, 0.5);
-    g.fillCircle(5*u, 27*u, 2.5*u); g.fillCircle(21*u, 27*u, 2.5*u);
-  }
-
   // ── Platform / Ground ─────────────────────────────────────────────────
   private drawPlat(g: G) {
-    g.fillStyle(C.platH); g.fillRect(0, 0, 16*S, 3*S);
-    g.fillStyle(C.plat);  g.fillRect(0, 3*S, 16*S, 7*S);
-    g.fillStyle(0x6a5aff, 0.2); g.fillRect(2*S, 5*S, 12*S, 2*S);
+    const TW = 16*S, TH = 10*S;
+    g.fillStyle(0x8B4513, 1); g.fillRect(0, 0, TW, TH);
+    g.fillStyle(0xD2691E, 1); g.fillRect(0, 0, TW, 1*S);
+    g.fillStyle(0xA0522D, 1); g.fillRect(0, 1*S, TW, 2*S);
+    g.fillStyle(0x3d1a05, 1); g.fillRect(0, TH-1*S, TW, 1*S);
+    g.fillStyle(0x5C2E0A, 1); g.fillRect(0, TH-2*S, TW, 1*S);
+    g.fillStyle(0x5C2E0A, 0.55);
+    g.fillRect(4*S,  1*S, 1, TH-2*S);
+    g.fillRect(8*S,  1*S, 1, TH-2*S);
+    g.fillRect(12*S, 1*S, 1, TH-2*S);
+    g.fillStyle(0x3d1a05, 0.6); g.fillEllipse(6*S, 5*S, 2*S, 3*S);
+    g.fillStyle(0xffd080, 0.6);
+    g.fillRect(2*S, 2*S, 1, 1);
+    g.fillRect(10*S, 2*S, 1, 1);
+  }
+
+  // Комната: полка (книжный стеллаж) и дощатый пол — без травы
+  private drawPlatRoom(g: G) {
+    const TW = 16*S, TH = 10*S;
+    g.fillStyle(0x6b4a2e, 1); g.fillRect(0, 0, TW, TH);
+    g.fillStyle(0x9a6f44, 1); g.fillRect(0, 0, TW, 1*S);
+    g.fillStyle(0x7d5836, 1); g.fillRect(0, 1*S, TW, 1*S);
+    g.fillStyle(0x2e1d10, 1); g.fillRect(0, TH-1*S, TW, 1*S);
+    g.fillStyle(0x462c18, 1); g.fillRect(0, TH-3*S, TW, 2*S);
+    g.fillStyle(0x2e1d10, 0.6);
+    g.fillRect(5*S, 1*S, 1, TH-3*S);
+    g.fillRect(11*S, 1*S, 1, TH-3*S);
+  }
+
+  private drawGroundRoom(g: G) {
+    const TW = 16*S, TH = 16*S;
+    g.fillStyle(0x4a3220, 1); g.fillRect(0, 0, TW, TH);
+    g.fillStyle(0x6b4a2e, 1); g.fillRect(0, 0, TW, 3*S);
+    g.fillStyle(0x8a6238, 1); g.fillRect(0, 0, TW, 1*S);
+    // стыки досок
+    g.fillStyle(0x2e1d10, 0.8);
+    g.fillRect(7*S, 0, 1, 3*S);
+    g.fillRect(0, 3*S, TW, 1*S);
+    g.fillStyle(0x3a2816, 0.7);
+    g.fillRect(0, 8*S, TW, 1*S);
+    g.fillRect(0, 13*S, TW, 1*S);
+    g.fillRect(4*S, 4*S, 1, 4*S);
+    g.fillRect(12*S, 9*S, 1, 4*S);
+    g.fillStyle(0x9a7244, 0.35);
+    g.fillRect(2*S, 1*S, 4*S, 1);
+    g.fillRect(10*S, 2*S, 3*S, 1);
   }
 
   private drawGround(g: G) {
-    g.fillStyle(C.groundH); g.fillRect(0, 0, 16*S, 3*S);
-    g.fillStyle(C.ground);  g.fillRect(0, 3*S, 16*S, 13*S);
-    g.fillStyle(0x2a2060, 0.4); g.fillRect(3*S, 7*S, 2*S, 2*S);
-    g.fillStyle(0x2a2060, 0.2); g.fillRect(9*S, 5*S, 2*S, 2*S);
+    const TW = 16*S, TH = 16*S;
+    g.fillStyle(0x3d1a08, 1); g.fillRect(0, 0, TW, TH);
+    g.fillStyle(0x5a2a12, 1); g.fillRect(0, 3*S, TW, TH-3*S);
+    g.fillStyle(0x2d6614, 1); g.fillRect(0, 0, TW, 3*S);
+    g.fillStyle(0x4a9a22, 1); g.fillRect(0, 0, TW, 1*S);
+    g.fillStyle(0x5ab82a, 1);
+    for (let x = 1; x < 15; x += 3) g.fillRect(x*S, 0, 1, 1*S);
+    g.fillStyle(0x1a0e06, 0.5); g.fillRect(0, 3*S, TW, 1*S);
+    g.fillStyle(0x2a1008, 0.55);
+    g.fillRect(2*S, 6*S, 2*S, 1*S);
+    g.fillRect(8*S, 9*S, 2*S, 1*S);
+    g.fillRect(13*S, 5*S, 1*S, 1*S);
+    g.fillRect(5*S, 12*S, 2*S, 1*S);
+    g.fillStyle(0x4a2010, 0.2);
+    g.fillRect(0, 7*S, TW, 1*S);
+    g.fillRect(0, 12*S, TW, 1*S);
   }
 }

@@ -4,19 +4,37 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Schema Runner</title>
+  <link rel="preload" href="/game/fonts/ps2p-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/game/fonts/ps2p-latin.woff2" as="font" type="font/woff2" crossorigin>
   <style>
+    /* Пиксельный шрифт (NES-классика, есть кириллица). Self-host — без внешних CDN. */
+    @font-face {
+      font-family: 'Press Start 2P';
+      font-style: normal; font-weight: 400; font-display: swap;
+      src: url('/game/fonts/ps2p-cyrillic.woff2') format('woff2');
+      unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+    @font-face {
+      font-family: 'Press Start 2P';
+      font-style: normal; font-weight: 400; font-display: swap;
+      src: url('/game/fonts/ps2p-latin.woff2') format('woff2');
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       margin: 0;
-      background: #1a0800;
+      background: #0a0510;
       width: 100vw;
       height: 100dvh;
       overflow: hidden;
-      font-family: 'Courier New', monospace;
+      font-family: 'Press Start 2P', 'Courier New', monospace;
+      /* центрируем игру — на огромных экранах она в рамке, а не растянута до абсурда */
+      display: flex; align-items: center; justify-content: center;
     }
     #game-container {
-      width: 100%;
-      height: 100%;
+      /* кадр 16:9; ширина = наименьшее из (ширина окна, высота·16/9, потолок 1920px) */
+      width: min(100vw, 177.8vh, 1920px);
+      aspect-ratio: 16 / 9;
+      max-height: 100dvh;
     }
     #game-container canvas {
       display: block;
@@ -92,7 +110,7 @@
       background: transparent; border: 1px solid #6a5aff;
       color: #a08fff; padding: 11px 24px;
       font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
-      cursor: pointer; font-family: 'Courier New', monospace;
+      cursor: pointer; font-family: 'Press Start 2P', 'Courier New', monospace;
       transition: all 0.15s; margin-bottom: 0;
     }
     #card-btn:hover { background: rgba(106,90,255,0.15); color: #e0d8ff; }
@@ -101,30 +119,37 @@
       background: transparent; border: 1px solid #2a2060;
       color: #4a406a; padding: 8px; font-size: 10px;
       letter-spacing: 2px; cursor: pointer;
-      font-family: 'Courier New', monospace; transition: color 0.15s;
+      font-family: 'Press Start 2P', 'Courier New', monospace; transition: color 0.15s;
     }
     #card-btn-sec:hover { color: #7a6aaa; }
 
     /* ── Touch controls ─────────────────────────────────────────────────── */
     #touch-controls {
       position: fixed; bottom: 0; left: 0; right: 0;
-      height: 90px;
+      height: 110px;
+      padding-bottom: env(safe-area-inset-bottom, 0);
       display: none;
       align-items: flex-end;
       justify-content: space-between;
-      padding: 0 20px 14px;
+      padding: 0 18px 14px;
       pointer-events: none;
       z-index: 50;
     }
     #touch-controls.visible { display: flex; }
-    .dpad { display: flex; gap: 8px; pointer-events: all; }
+    .dpad { display: flex; gap: 10px; pointer-events: all; }
+    .action-pad { display: flex; gap: 9px; align-items: flex-end; pointer-events: all; }
+    .tbtn.act {
+      width: 78px; height: 58px; border-radius: 12px;
+      font-size: 10px; letter-spacing: 0; overflow: hidden;
+      line-height: 1.3; word-break: break-word; text-align: center;
+    }
     .tbtn {
-      width: 52px; height: 52px;
+      width: 58px; height: 58px;
       background: rgba(106,90,255,0.15);
       border: 1px solid rgba(106,90,255,0.4);
-      border-radius: 6px;
+      border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px; color: rgba(160,143,255,0.7);
+      font-size: 22px; color: rgba(160,143,255,0.7);
       user-select: none; -webkit-user-select: none;
       touch-action: none;
       transition: background 0.1s;
@@ -149,6 +174,74 @@
       box-shadow: 0 0 16px rgba(106,90,255,0.4);
       color: #e0d8ff;
     }
+
+    /* ── Поверни телефон: в портрете канвас 800×450 нечитаем ─────────────── */
+    #rotate-hint {
+      position: fixed; inset: 0; z-index: 200;
+      background: #120a1e;
+      display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 18px; color: #a08fff; font-size: 13px; letter-spacing: 1px;
+      text-align: center;
+    }
+    #rotate-hint .phone-icon { font-size: 44px; animation: rot 1.6s ease-in-out infinite; }
+    @keyframes rot { 0%, 30% { transform: rotate(0deg); } 70%, 100% { transform: rotate(90deg); } }
+    @media (orientation: portrait) and (pointer: coarse) {
+      #rotate-hint { display: flex; }
+    }
+
+    /* ── Menu ───────────────────────────────────────────────────────────── */
+    /* 8-bit / Dendy-style button: sharp corners, hard pixel bevel, no blur */
+    #menu-btn {
+      position: fixed; top: 14px; right: 16px; z-index: 60;
+      width: 48px; height: 42px;
+      background: #4a3a72; color: #ffe9c0;
+      border: 0; border-radius: 0;
+      font-family: 'Press Start 2P', 'Courier New', monospace; font-size: 20px; font-weight: bold;
+      line-height: 1; letter-spacing: 1px; cursor: pointer;
+      image-rendering: pixelated;
+      display: flex; align-items: center; justify-content: center;
+      text-shadow: 2px 2px 0 #1a1030;
+      box-shadow:
+        0 0 0 3px #120a1e,
+        inset 4px 4px 0 0 #7a63b0,
+        inset -4px -4px 0 0 #2a1c48;
+      transition: none;
+    }
+    #menu-btn:hover { background: #5a4788; color: #fff4d8; }
+    #menu-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow:
+        0 0 0 3px #120a1e,
+        inset 4px 4px 0 0 #2a1c48,
+        inset -4px -4px 0 0 #7a63b0;
+    }
+    #menu-overlay {
+      position: fixed; inset: 0; z-index: 110;
+      background: rgba(5,5,16,0.88); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    #menu-overlay.visible { display: flex; }
+    .menu-panel {
+      background: #18102e; border: 0;
+      width: 100%; max-width: 360px; padding: 24px;
+      max-height: calc(100dvh - 32px); overflow-y: auto;
+      image-rendering: pixelated;
+      box-shadow: 0 0 0 3px #120a1e, inset 4px 4px 0 0 #3a2c5e, inset -4px -4px 0 0 #0e0820, 0 0 50px rgba(100,80,200,0.2);
+    }
+    .menu-donate { display: block; width: 100%; text-align: center; background: rgba(216,184,74,0.10); border: 1px solid #8a7322; color: #ffd86a; padding: 11px; font-size: 12px; letter-spacing: 1px; cursor: pointer; font-family: 'Press Start 2P', 'Courier New', monospace; transition: all 0.15s; }
+    .menu-donate:hover { background: rgba(216,184,74,0.2); color: #fff0d8; }
+    .menu-title { color: #e8e0ff; letter-spacing: 5px; font-size: 16px; text-align: center; margin-bottom: 22px; }
+    .menu-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; color: #c0b8e0; font-size: 13px; letter-spacing: 1px; }
+    .menu-toggle { background: transparent; border: 1px solid #6a5aff; color: #a08fff; padding: 5px 16px; font-size: 11px; letter-spacing: 2px; cursor: pointer; font-family: 'Press Start 2P', 'Courier New', monospace; min-width: 74px; transition: all 0.15s; }
+    .menu-toggle.off { border-color: #3a3060; color: #5a4f7a; }
+    .menu-toggle:hover { background: rgba(106,90,255,0.15); }
+    .menu-section { color: #6a5f9a; font-size: 10px; letter-spacing: 3px; margin: 20px 0 10px; border-top: 1px solid #2a2050; padding-top: 14px; }
+    .menu-level { display: block; width: 100%; text-align: left; background: transparent; border: 1px solid #2a2060; color: #c0b8e0; padding: 9px 12px; margin-bottom: 7px; font-size: 12px; cursor: pointer; font-family: 'Press Start 2P', 'Courier New', monospace; transition: all 0.15s; }
+    .menu-level:hover:not(:disabled) { background: rgba(106,90,255,0.12); border-color: #6a5aff; }
+    .menu-level:disabled { color: #4a4068; border-color: #1e1840; cursor: default; }
+    .menu-close { width: 100%; margin-top: 16px; background: transparent; border: 1px solid #4a3f8f; color: #8a7faa; padding: 9px; font-size: 11px; letter-spacing: 3px; cursor: pointer; font-family: 'Press Start 2P', 'Courier New', monospace; }
+    .menu-close:hover { color: #e0d8ff; }
   </style>
 </head>
 <body>
@@ -167,13 +260,43 @@
     </div>
   </div>
 
+  <!-- Поверни телефон (только тач + портрет) -->
+  <div id="rotate-hint">
+    <div class="phone-icon">📱</div>
+    <div>ПОВЕРНИ ТЕЛЕФОН<br>играем в альбомной</div>
+  </div>
+
   <!-- Mobile touch controls -->
   <div id="touch-controls">
     <div class="dpad">
       <div class="tbtn" id="tbtn-left">◀</div>
       <div class="tbtn" id="tbtn-right">▶</div>
     </div>
-    <div id="tbtn-jump">▲</div>
+    <div class="action-pad">
+      <div class="tbtn act" id="tbtn-fawn">УСТУПИ</div>
+      <div class="tbtn act" id="tbtn-avoid">ИЗБЕГАЙ</div>
+      <div class="tbtn act" id="tbtn-hit">БЕЙ</div>
+      <div id="tbtn-jump">▲</div>
+    </div>
+  </div>
+
+  <!-- Menu -->
+  <button id="menu-btn" aria-label="Меню">☰</button>
+  <div id="menu-overlay">
+    <div class="menu-panel">
+      <div class="menu-title" id="menu-title">М Е Н Ю</div>
+      <div class="menu-row"><span id="lbl-lang">Язык</span><button id="menu-lang" class="menu-toggle">РУ</button></div>
+      <div class="menu-row"><span id="lbl-music">Музыка</span><button id="menu-music" class="menu-toggle">ВКЛ</button></div>
+      <div class="menu-row"><span id="lbl-sfx">Звуки</span><button id="menu-sfx" class="menu-toggle">ВКЛ</button></div>
+      <div class="menu-section" id="menu-sec-help">П О М О Щ Ь</div>
+      <div class="menu-row"><span id="lbl-lives">Больше жизней</span><button id="menu-lives" class="menu-toggle off">ВЫКЛ</button></div>
+      <div class="menu-row"><span id="lbl-invuln">Не умирать</span><button id="menu-invuln" class="menu-toggle off">ВЫКЛ</button></div>
+      <div class="menu-section" id="menu-sec-levels">Г Л А В Ы</div>
+      <div id="menu-levels"></div>
+      <div class="menu-section" id="menu-sec-support">П О Д Д Е Р Ж А Т Ь</div>
+      <button id="menu-donate" class="menu-donate">Поддержать проект 💛</button>
+      <button id="menu-close" class="menu-close">ЗАКРЫТЬ</button>
+    </div>
   </div>
 
   <script type="module" src="/src/main.ts"></script>

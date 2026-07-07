@@ -79,12 +79,35 @@ async function del(path: string): Promise<void> {
   if (!res.ok) throw new Error(`API error: ${res.status}`);
 }
 
+// Admin booking requests: the admin key goes in the x-admin-key header so it
+// never appears in URLs or server access logs.
+async function adminReq<T>(method: string, path: string, key: string, body?: unknown): Promise<T> {
+  const res = await fetchWithTimeout(`${BASE}${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'x-admin-key': key },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+  if (!res.ok) {
+    let msg = `API error: ${res.status}`;
+    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch {}
+    throw new Error(msg);
+  }
+  if (res.status === 204) return undefined as T;
+  return res.json().catch(() => undefined as T);
+}
+
 // ─── Shared types (mirrored from miniapp, same backend) ──────────────────────
 export interface UserSettings {
   notifyEnabled: boolean;
   notifyLocalHour: number;
   notifyTimezone: string;
   notifyReminderEnabled: boolean;
+  notifyFrequency?: number;          // 0=каждый день, 1=через день, 2=2×/нед, 3=раз/нед
+  notifyQuietStart?: number;         // тихие часы: начало (локальный час)
+  notifyQuietEnd?: number;           // тихие часы: конец; start===end → выключены
+  notifyGamified?: boolean;          // opt-in игровой режим: серии + «ещё день до вехи»
+  notifyPausedUntil?: string | null; // ISO-дата конца паузы; POST null = возобновить
+  addressForm?: 'ty' | 'vy' | null;  // null = ещё не выбрано → показать выбор
   pairCardDismissed: boolean;
   mySchemaIds: string[];
   myModeIds: string[];
@@ -99,6 +122,29 @@ export interface StreakData {
   weekDots: boolean[];
 }
 export interface Achievement { id: string; earned: boolean; }
+export interface BookingSlot { startsAt: string; endsAt: string; durationMin: number; }
+export interface SessionOption { type: 'INTRO_15' | 'SESSION_50'; label: string; durationMin: number; price: number; note: string; }
+export interface AvailabilityRule {
+  id: number; dayOfWeek: number; startHour: number; startMinute: number;
+  endHour: number; endMinute: number; sessionDuration: number; bufferMin: number;
+  timezone: string; isActive: boolean;
+}
+export type NewAvailabilityRule = {
+  dayOfWeek: number; startHour: number; endHour: number;
+  startMinute?: number; endMinute?: number; sessionDuration?: number; bufferMin?: number; timezone?: string;
+};
+export interface AdminBooking {
+  id: number; startsAt: string; durationMin: number; type: string; status: string;
+  clientName: string; clientContact: string; message: string | null;
+  cancelToken: string; meetingUrl: string | null;
+}
+export interface ArticleSummary {
+  id: number; slug: string; title: string; description: string; date: string; readMin: number; heroImage?: string | null; diagramKey?: string | null;
+}
+export interface Article extends ArticleSummary { content: string; }
+export type ArticleDto = { slug: string; title: string; description: string; content: string; date: string; readMin: number; heroImage?: string | null; diagramKey?: string | null; };
+export interface MarqueeTopic { label: string; href: string; }
+export interface SiteContent { heroPhoto: string | null; marqueeTopicsA: MarqueeTopic[]; marqueeTopicsB: MarqueeTopic[]; }
 export interface UserPractice { id: number; needId: string; text: string; }
 export interface PartnerInfo {
   code: string;
@@ -200,6 +246,8 @@ export interface ModeMapNode {
     healthyResponse?: string;             // что сказал бы Здоровый Взрослый
     strokeWidth?: 'thin' | 'normal' | 'bold';  // толщина контура фигуры
     fontSize?: 'sm' | 'md' | 'lg';        // размер текста в фигуре
+    side?: 'A' | 'B';                      // чей режим на карте пары (Партнёр А / Б)
+    schemaId?: string;                     // связанная схема (из списка схем клиента)
   };
   width?: number;
   height?: number;
@@ -219,7 +267,7 @@ export interface ModeMapEdge {
   data?: { edgeType?: EdgeType; bidirectional?: boolean; color?: string; lineStyle?: LineStyle; width?: 'thin' | 'normal' | 'bold' };
 }
 
-export type ModeMapKind = 'personality' | 'problem';
+export type ModeMapKind = 'personality' | 'problem' | 'couple';
 
 export interface ModeMapMeta {
   id: number;
@@ -374,6 +422,51 @@ export const api = {
   getClientModeNotes:   (clientId: number) => get<any[]>(`/api/therapy/client/${clientId}/mode-notes`),
   getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
   submitBooking:        (body: { name: string; contact: string; message?: string }) => postJson<{ ok: true }>('/api/booking', body),
+  // Slot-based booking
+  getBookingOptions:    () => get<SessionOption[]>('/api/booking/options'),
+  getSlots:             (from?: string, to?: string) => {
+    const q = new URLSearchParams();
+    if (from) q.set('from', from);
+    if (to) q.set('to', to);
+    const qs = q.toString();
+    return get<BookingSlot[]>(`/api/booking/slots${qs ? `?${qs}` : ''}`);
+  },
+  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; acceptedOffer?: boolean; website?: string }) =>
+    postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null; meetingUrl?: string | null }>('/api/booking/book', body),
+  getBookingByToken:    (token: string) => get<{ status: string; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number; meetingUrl: string | null }>(`/api/booking/by-token/${token}`),
+  cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),
+  donate:               (body: { amount: number; source?: 'app' | 'game'; email?: string; comment?: string; website?: string }) =>
+    postJson<{ id: number; paymentUrl: string | null }>('/api/donation', body),
+  // Subscription (recurring support)
+  getSubscriptionOptions: () => get<{ enabled: boolean; options: { period: 'month' | 'year'; price: number }[] }>('/api/subscription/options'),
+  subscribe:            (body: { period: 'month' | 'year'; email?: string; acceptedOffer?: boolean; website?: string }) =>
+    postJson<{ id: number; cancelToken: string; paymentUrl: string | null }>('/api/subscription', body),
+  getSubscriptionByToken: (token: string) => get<{ status: string; period: string; amount: number; nextChargeAt: string | null }>(`/api/subscription/by-token/${token}`),
+  cancelSubscription:   (token: string) => postJson<{ ok: true }>(`/api/subscription/cancel/${token}`, {}),
+  // Booking admin — key travels in the x-admin-key header (never in URL/logs)
+  adminStatus:       (key: string) => adminReq<Record<string, any>>('GET', '/api/booking/admin/status', key),
+  adminGetPrices:    (key: string) => adminReq<SessionOption[]>('GET', '/api/booking/admin/prices', key),
+  adminSetPrice:     (key: string, type: 'INTRO_15' | 'SESSION_50', amount: number) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/price', key, { type, amount }),
+  adminGetSubPrices: (key: string) => adminReq<{ period: 'month' | 'year'; price: number }[]>('GET', '/api/booking/admin/sub-prices', key),
+  adminSetSubPrice:  (key: string, period: 'month' | 'year', amount: number) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/sub-price', key, { period, amount }),
+  adminListRules:    (key: string) => adminReq<AvailabilityRule[]>('GET', '/api/booking/admin/rules', key),
+  adminCreateRule:   (key: string, rule: NewAvailabilityRule) => adminReq<AvailabilityRule>('POST', '/api/booking/admin/rules', key, rule),
+  adminToggleRule:   (key: string, id: number, isActive: boolean) => adminReq<AvailabilityRule>('PATCH', `/api/booking/admin/rules/${id}`, key, { isActive }),
+  adminDeleteRule:   (key: string, id: number) => adminReq<void>('DELETE', `/api/booking/admin/rules/${id}`, key),
+  adminListBookings: (key: string, filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') =>
+    adminReq<AdminBooking[]>('GET', `/api/booking/admin/list?filter=${filter}`, key),
+  adminConfirm:      (key: string, id: number) => adminReq<{ ok: true }>('POST', `/api/booking/admin/confirm/${id}`, key),
+  // Articles
+  listArticles:      () => get<ArticleSummary[]>('/api/articles'),
+  getArticle:        (slug: string) => get<Article>(`/api/articles/${slug}`),
+  adminListArticles: (key: string) => adminReq<Article[]>('GET', '/api/articles/admin/list', key),
+  adminCreateArticle: (key: string, dto: ArticleDto) => adminReq<Article>('POST', '/api/articles/admin', key, dto),
+  adminUpdateArticle: (key: string, id: number, dto: Partial<ArticleDto>) => adminReq<Article>('PATCH', `/api/articles/admin/${id}`, key, dto),
+  adminDeleteArticle: (key: string, id: number) => adminReq<void>('DELETE', `/api/articles/admin/${id}`, key),
+  // Site content (hero photo, marquee topics)
+  getSiteContent:    () => get<SiteContent>('/api/site-content'),
+  adminSetHeroPhoto: (key: string, dataUri: string) => adminReq<{ ok: true }>('PATCH', '/api/site-content/admin/hero-photo', key, { dataUri }),
+  adminSetMarquee:   (key: string, group: 'A' | 'B', topics: MarqueeTopic[]) => adminReq<{ ok: true }>('PATCH', '/api/site-content/admin/marquee', key, { group, topics }),
   // Therapist custom modes
   listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),

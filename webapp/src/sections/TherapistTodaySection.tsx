@@ -67,7 +67,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
 
   return (
     <div className="page animate-fade">
-      <div className="page-inner" style={{ maxWidth: 780 }}>
+      <div className="page-inner-wide">
         {/* Hero */}
         <div style={{ marginBottom: 48 }}>
           <div className="eyebrow" style={{ marginBottom: 10 }}>{todayLabel()}</div>

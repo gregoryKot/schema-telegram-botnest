@@ -1,7 +1,7 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { COLORS } from '../types';
 import type { Need } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { getTherapistContact } from '../utils/therapistContact';
 import { PlanSheet } from './PlanSheet';
@@ -20,7 +20,7 @@ interface Props {
 const DISCLAIMER_CONTENT = [
   'Дневник помогает видеть паттерны и чуть лучше понимать себя.',
   'Советы внутри – это приглашение к размышлению, не инструкция.',
-  'Если чувствуешь, что что-то важное требует внимания – терапия это место, где можно разобраться по-настоящему. Безопасно, глубоко, рядом живой человек.',
+  'Если что-то важное требует внимания – терапия это место, где можно разобраться по-настоящему. Безопасно, глубоко, рядом живой человек.',
 ];
 
 export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
@@ -29,6 +29,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
   const [showPlan, setShowPlan] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
   const [showRanges, setShowRanges] = useState(false);
+  const NEED_DATA = useNeedData();
   const data = NEED_DATA[need.id];
   if (!data) return null;
   const color = COLORS[need.id] ?? '#888';

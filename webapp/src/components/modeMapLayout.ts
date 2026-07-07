@@ -59,6 +59,26 @@ export function layoutByZones(nodes: FlowNode[]): FlowNode[] {
   return out;
 }
 
+// ── Couple "cycle clash" layout — Partner A column left, Partner B column right ─
+const ROLE_RANK: Record<string, number> = { trigger: 0, critic: 1, child: 2, coping: 3, behavior: 4, healthy: 5, custom: 3 };
+
+export function layoutCouple(nodes: FlowNode[]): FlowNode[] {
+  const cols: Record<'A' | 'B' | 'C', FlowNode[]> = { A: [], B: [], C: [] };
+  nodes.forEach(n => {
+    const side = (n.data as { side?: 'A' | 'B' } | undefined)?.side;
+    cols[side === 'A' ? 'A' : side === 'B' ? 'B' : 'C'].push(n);
+  });
+  const COL_X: Record<string, number> = { A: -360, C: -110, B: 160 };
+  const ROW_H = 160;
+  const out: FlowNode[] = [];
+  (['A', 'C', 'B'] as const).forEach(key => {
+    cols[key].slice()
+      .sort((a, b) => (ROLE_RANK[a.type ?? 'custom'] ?? 3) - (ROLE_RANK[b.type ?? 'custom'] ?? 3))
+      .forEach((n, i) => out.push({ ...n, position: { x: COL_X[key], y: i * ROW_H } }));
+  });
+  return out;
+}
+
 // ── Starter templates ─────────────────────────────────────────────────────────
 type TemplateNode = Omit<ModeMapNode, 'position'> & { x: number; y: number };
 interface Template {

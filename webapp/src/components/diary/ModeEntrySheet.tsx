@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ExScreen, GlyphArrowLeft, GlyphCheck } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useTr } from '../../utils/addressForm';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { haptic } from '../../haptic';
@@ -26,6 +27,7 @@ type DraftData = {
 };
 
 export function ModeEntrySheet({ onClose, onSave }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const existing = loadDraft<DraftData>('mode');
   const d = existing?.data;
@@ -83,7 +85,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         eyebrow="Дневник режимов · новая запись"
         eyebrowColor="var(--c-slate)"
         title={<>Кто сейчас<br /><span className="it">взял управление?</span></>}
-        lede="Выбери режим – состояние, которое сейчас включено. Если не уверен – выбери самый похожий."
+        lede={tr('Выбери режим – состояние, которое сейчас включено. Если не уверен – выбери самый похожий.', 'Выберите режим – состояние, которое сейчас включено. Если не уверены – выберите самый похожий.')}
         aside={
           <div className="aside-card" style={{ borderColor: 'var(--c-slate)40', background: 'var(--c-slate)08' }}>
             <div className="aside-card-eyebrow" style={{ color: 'var(--c-slate)' }}>Подсказка</div>
@@ -205,7 +207,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
       <div className="prompt">
         <div className="prompt-num">5.</div>
         <div>
-          <div className="prompt-label">Что он тебя тянет сделать</div>
+          <div className="prompt-label">{tr('Что он тебя тянет сделать', 'Что он вас тянет сделать')}</div>
           <textarea
             className={'paper-input ' + (actions.trim() ? 'is-filled' : '')}
             rows={2}
@@ -228,7 +230,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         <div className="prompt-num">6.</div>
         <div>
           <div className="prompt-label">Чего на самом деле нужно</div>
-          <p className="prompt-hint">Не режиму – тебе. Чего не хватает в этот момент.</p>
+          <p className="prompt-hint">{tr('Не режиму – тебе. Чего не хватает в этот момент.', 'Не режиму – вам. Чего не хватает в этот момент.')}</p>
           <textarea
             className={'paper-input ' + (actualNeed.trim() ? 'is-filled' : '')}
             rows={2}

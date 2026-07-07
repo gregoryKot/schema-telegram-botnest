@@ -64,7 +64,7 @@ function decryptConceptSnapshot(snap: Record<string, any>): Record<string, any> 
 // free-text field can't silently end up in plaintext (just add it here).
 const MODE_MAP_SCHEMA: EncryptSchema = { strings: ['title'], jsonArrays: ['nodes', 'edges'] };
 const CUSTOM_MODE_SCHEMA: EncryptSchema = { strings: ['name'] };
-const MODE_MAP_KINDS = ['personality', 'problem'] as const;
+const MODE_MAP_KINDS = ['personality', 'problem', 'couple'] as const;
 
 import { localDate, localMidnightUTC } from '../utils/tz';
 import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';

@@ -6,9 +6,9 @@ import { useViewport } from '@xyflow/react';
 //   Child + Critic(parent) modes — backstage (hidden motivation)
 // Rendered in flow coordinates so the bands pan/zoom with the canvas.
 const BANDS = [
-  { y0: -460, y1: 60,  label: 'Здоровый Взрослый — над системой',            rgb: '120,184,122' },
-  { y0: 60,   y1: 400, label: 'Копинги — на сцене (видимое поведение)',       rgb: '212,160,122' },
-  { y0: 400,  y1: 980, label: 'Детские и критикующие — за кулисами',          rgb: '122,150,200' },
+  { y0: -460, y1: 60,  label: 'Здоровый Взрослый — над системой',            color: 'var(--c-moss)' },
+  { y0: 60,   y1: 400, label: 'Копинги — на сцене (видимое поведение)',       color: 'var(--c-clay)' },
+  { y0: 400,  y1: 980, label: 'Детские и критикующие — за кулисами',          color: 'var(--c-slate)' },
 ];
 const LEFT = -3000;
 const WIDTH = 6000;
@@ -21,12 +21,12 @@ export function ModeMapZones() {
         {BANDS.map((b, i) => (
           <div key={i} style={{
             position: 'absolute', left: LEFT, width: WIDTH, top: b.y0, height: b.y1 - b.y0,
-            background: `rgba(${b.rgb},0.06)`,
-            borderTop: `1px dashed rgba(${b.rgb},0.35)`,
+            background: `color-mix(in srgb, ${b.color} 7%, transparent)`,
+            borderTop: `1px dashed color-mix(in srgb, ${b.color} 38%, transparent)`,
           }}>
             <span style={{
               position: 'absolute', left: 3010, top: 8,
-              fontSize: 12, fontWeight: 600, color: `rgba(${b.rgb},0.9)`,
+              fontSize: 12, fontWeight: 600, color: b.color,
               letterSpacing: '0.01em', whiteSpace: 'nowrap',
             }}>
               {b.label}

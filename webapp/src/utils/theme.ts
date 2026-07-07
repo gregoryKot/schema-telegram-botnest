@@ -11,8 +11,14 @@ export function getTheme(): Theme {
   return (localStorage.getItem(KEY) as Theme) ?? detectTheme();
 }
 
+const THEME_BG: Record<Theme, string> = { light: '#f5f2eb', dark: '#14141a' };
+
 export function applyTheme(theme: Theme) {
   document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.style.background = THEME_BG[theme];
+  document.documentElement.style.colorScheme = theme;
+  const meta = document.getElementById('theme-color-meta') as HTMLMetaElement | null;
+  if (meta) meta.content = THEME_BG[theme];
   localStorage.setItem(KEY, theme);
 }
 

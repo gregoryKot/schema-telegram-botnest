@@ -151,7 +151,7 @@ function VictoryScreen() {
         В жизни они тоже встретятся — и теперь ты знаешь их имена.
       </p>
       <a
-        href="https://schemalab.ru/#therapist"
+        href="https://schemehappens.ru/#therapist"
         style={{
           padding: '14px 32px', background: '#4d4799', color: '#fff',
           borderRadius: 12, textDecoration: 'none',

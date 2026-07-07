@@ -2,49 +2,77 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
   <url>
-    <loc>https://schemalab.ru/</loc>
+    <loc>https://schemehappens.ru/</loc>
     <lastmod>2025-05-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
-    <loc>https://schemalab.ru/articles</loc>
-    <lastmod>2025-05-20</lastmod>
+    <loc>https://schemehappens.ru/articles</loc>
+    <lastmod>2025-06-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://schemalab.ru/articles/chto-takoe-schema-terapiya</loc>
+    <loc>https://schemehappens.ru/articles/pervaya-sessiya-schema-terapii</loc>
+    <lastmod>2025-06-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://schemehappens.ru/articles/schema-terapiya-pri-travme</loc>
+    <lastmod>2025-06-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://schemehappens.ru/articles/schema-terapiya-pri-trevoge-i-depressii</loc>
+    <lastmod>2025-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://schemehappens.ru/articles/podhodit-li-mne-schema-terapiya</loc>
+    <lastmod>2025-06-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://schemehappens.ru/articles/chto-takoe-schema-terapiya</loc>
     <lastmod>2025-05-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://schemalab.ru/articles/skhemy-yanga-spisok</loc>
+    <loc>https://schemehappens.ru/articles/skhemy-yanga-spisok</loc>
     <lastmod>2025-05-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://schemalab.ru/articles/rezhimy-v-schema-terapii</loc>
+    <loc>https://schemehappens.ru/articles/rezhimy-v-schema-terapii</loc>
     <lastmod>2025-05-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://schemalab.ru/privacy</loc>
+    <loc>https://schemehappens.ru/privacy</loc>
     <lastmod>2025-05-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
-    <loc>https://schemalab.ru/offer</loc>
+    <loc>https://schemehappens.ru/offer</loc>
     <lastmod>2025-05-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

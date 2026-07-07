@@ -1,68 +1,64 @@
+import type { MsgKey } from '../i18n';
+
 export interface EnemyContent {
   id: string;
-  name: string;
-  schema: string;
+  name: MsgKey;
   emoji: string;
-  quote: string;
-  text: string;
-  tip: string;
+  quote: MsgKey;
+  text: MsgKey;
+  tip: MsgKey;
 }
 
 export const ENEMIES: EnemyContent[] = [
   {
     id: 'anxiety',
-    name: 'ТРЕВОГА',
-    schema: 'Гипербдительность',
+    name: 'm_anxiety',
     emoji: '😰',
-    quote: '«А вдруг что-то пойдёт не так?\nНадо проверить ещё раз»',
-    text: 'Тревога пытается тебя защитить — сканирует горизонт в поисках угрозы даже там, где её нет. Чем больше избегаешь тревожных ситуаций, тем сильнее она разрастается.',
-    tip: '→ Тревога — это сигнал, а не факт о будущем.',
+    quote: 'm_what_if_something_goes_wrong_better',
+    text: 'm_anxiety_is_trying_to_protect_you',
+    tip: 'm_anxiety_is_a_signal_not_a',
   },
   {
     id: 'procrastination',
-    name: 'ПРОКРАСТИНАЦИЯ',
-    schema: 'Избегание / Страх неудачи',
+    name: 'm_procrastination',
     emoji: '🛋️',
-    quote: '«Начну, как только\nпочувствую себя готовым»',
-    text: 'Прокрастинация — это не лень. Это избегание неприятного чувства: страха провала, скуки, тревоги. Мозг выбирает временное облегчение вместо долгосрочного результата.',
-    tip: '→ Чувство готовности не приходит до начала. Только после.',
+    quote: 'm_i_ll_start_as_soon_as',
+    text: 'm_procrastination_isn_t_laziness_it_s',
+    tip: 'm_the_feeling_of_being_ready_never',
   },
   {
     id: 'phone',
-    name: 'ТЕЛЕФОН',
-    schema: 'Избегание через гаджеты',
+    name: 'm_the_phone',
     emoji: '📱',
-    quote: '«Ещё пять минут...\nЕщё одна лента...»',
-    text: 'Бесконечный скроллинг — это не отдых. Это побег от дискомфорта, которому не дают выйти. Чувства остаются на паузе. Они никуда не уходят.',
-    tip: '→ От чего ты сейчас убегаешь?',
+    quote: 'm_just_five_more_minutes_one_more',
+    text: 'm_endless_scrolling_isn_t_rest_it',
+    tip: 'm_what_are_you_running_from_right',
   },
   {
     id: 'irritation',
-    name: 'РАЗДРАЖЕНИЕ',
-    schema: 'Накопленный гнев',
+    name: 'm_irritation',
     emoji: '😤',
-    quote: '«Почему всё не так?!\nЭто невыносимо»',
-    text: 'Когда раздражение 8 из 10 на ситуацию 2 из 10 — это не про сегодня. Где-то внутри копится что-то старое: боль, бессилие, несправедливость.',
-    tip: '→ Интенсивность гнева подсказывает, насколько давно эта рана.',
+    quote: 'm_why_is_everything_wrong_this_is',
+    text: 'm_when_the_irritation_is_an_8',
+    tip: 'm_the_intensity_of_the_anger_hints',
   },
   {
     id: 'selfcritic',
-    name: 'САМОКРИТИК',
-    schema: 'Пунитивность',
+    name: 'm_the_self_critic',
     emoji: '🪞',
-    quote: '«Ты мог сделать лучше.\nТы всегда так»',
-    text: 'Внутренний критик звучит как твой голос — но это чужие слова, усвоенные давно. Самокритика не делает тебя лучше. Она только делает тебя меньше.',
-    tip: '→ Скажи себе то, что сказал бы другу в похожей ситуации.',
+    quote: 'm_you_could_have_done_better_you',
+    text: 'm_the_inner_critic_sounds_like_your',
+    tip: 'm_tell_yourself_what_you_would_tell',
   },
 ];
 
 export const SAGE_CONTENT = {
   emoji: '🌿',
-  name: 'М У Д Р Е Ц',
-  text: 'Ты быстро бегаешь.\nОни всегда возвращаются.\n\nЕсть другой путь —\nне убегать, а встретиться.',
-  tip: 'Это называется терапия.',
-  ctaUrl: 'https://schemalab.ru',
-  ctaLabel: 'Узнать о терапии →',
-};
+  name: 'm_t_h_e_s_a_g',
+  text: 'm_you_run_fast_they_always_come',
+  tip: 'm_it_s_called_therapy',
+  ctaUrl: 'https://schemehappens.ru',
+  ctaLabel: 'm_learn_about_therapy',
+} as const;
 
 export const contentMap = Object.fromEntries(ENEMIES.map(e => [e.id, e]));

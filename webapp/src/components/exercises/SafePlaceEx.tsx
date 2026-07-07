@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useTr } from '../../utils/addressForm';
 
 const SENSES = [
   { k: 'see',   label: 'Что я вижу',           ph: 'высокие сосны, солнце сквозь ветки, мхом покрытый камень…' },
@@ -11,6 +12,7 @@ const SENSES = [
 ] as const;
 
 export function SafePlaceEx({ onBack, onComplete }: { onBack: () => void; onComplete?: () => void }) {
+  const tr = useTr();
   const goBack = useHistorySheet(onBack);
   const [overview, setOverview] = useState('');
   const [senses, setSenses] = useState<Record<string, string>>({ see: '', hear: '', feel: '', smell: '' });
@@ -29,8 +31,8 @@ export function SafePlaceEx({ onBack, onComplete }: { onBack: () => void; onComp
   if (done) {
     return (
       <ExScreen onBack={goBack} eyebrow="Безопасное место · сохранено" eyebrowColor="var(--c-moss)"
-        title={<>Твоё<br/><span className="it">безопасное место.</span></>}
-        lede="Возвращайся сюда, когда станет тревожно. Закрой глаза. Прочти. Побудь."
+        title={<>{tr('Твоё', 'Ваше')}<br/><span className="it">безопасное место.</span></>}
+        lede={tr('Возвращайся сюда, когда станет тревожно. Закрой глаза. Прочти. Побудь.', 'Возвращайтесь сюда, когда станет тревожно. Закройте глаза. Прочтите. Побудьте.')}
       >
         <div className="sp-scene">
           <div className="sp-scene-text">«{overview}»</div>
@@ -55,7 +57,7 @@ export function SafePlaceEx({ onBack, onComplete }: { onBack: () => void; onComp
   return (
     <ExScreen onBack={goBack} eyebrow="№ 05 · Ресурс" eyebrowColor="var(--c-moss)"
       title={<>Безопасное<br/><span className="it">место</span></>}
-      lede="Опиши место, где тебе спокойно – реальное или воображаемое. Чтобы было куда вернуться мысленно, когда становится тревожно."
+      lede={tr('Опиши место, где тебе спокойно – реальное или воображаемое. Чтобы было куда вернуться мысленно, когда становится тревожно.', 'Опишите место, где вам спокойно – реальное или воображаемое. Чтобы было куда вернуться мысленно, когда становится тревожно.')}
       aside={<>
         <div className="aside-card" style={{ borderColor: 'var(--c-moss)40', background: 'var(--c-moss)08' }}>
           <div className="aside-card-eyebrow" style={{ color: 'var(--c-moss)' }}>Совет</div>
@@ -73,7 +75,7 @@ export function SafePlaceEx({ onBack, onComplete }: { onBack: () => void; onComp
       </>}
     >
       <div className="sp-scene">
-        <div className="sp-scene-text">{overview ? `«${overview}»` : 'Опиши общее впечатление от места ниже…'}</div>
+        <div className="sp-scene-text">{overview ? `«${overview}»` : tr('Опиши общее впечатление от места ниже…', 'Опишите общее впечатление от места ниже…')}</div>
       </div>
       <div className="ex-prompt" style={{ marginBottom: 32 }}>
         <div className="ex-prompt-num">1.</div>

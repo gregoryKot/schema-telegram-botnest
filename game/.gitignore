@@ -1,9 +1,12 @@
 node_modules
 dist
 *.tsbuildinfo
+.claude/
 
 # Стрэй-артефакты компиляции (проект на noEmit, исходники — только .ts).
 # Все .ts в src/ — исходные; .js/.d.ts/.map рядом с ними генерятся случайным tsc.
-*.js
-*.d.ts
-*.map
+src/**/*.js
+src/**/*.d.ts
+src/**/*.map
+# …кроме настоящего исходника: типы Vite (import.meta.env) нужны и сборке в Docker.
+!src/vite-env.d.ts

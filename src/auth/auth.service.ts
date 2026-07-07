@@ -25,8 +25,8 @@ const REFRESH_TOKEN_TTL_S = 30 * 24 * 3600; // 30 days
 // happen to share JWT_SECRET. Existing in-flight access tokens (issued
 // before this change) will fail verification once → frontend will hit
 // /api/auth/refresh which is DB-backed and continues to work.
-const JWT_ISSUER = 'schemalab.ru';
-const JWT_AUDIENCE = 'schemalab.ru';
+const JWT_ISSUER = 'schemehappens.ru';
+const JWT_AUDIENCE = 'schemehappens.ru';
 
 // Telegram user IDs are at most ~10 digits. Web-only users get IDs
 // starting from 10^15 to avoid any collision.
@@ -238,12 +238,18 @@ export class AuthService {
       create: { id: userId, firstName: displayName },
     });
 
-    await (this.prisma as any).authProvider.create({
-      data: { userId, provider, providerId, displayName, email },
+    // Atomic upsert (Postgres INSERT … ON CONFLICT) — the mini-app fires several
+    // API requests in parallel on first load; without this they race between the
+    // findUnique above and this insert and all-but-one crash on the
+    // (provider, providerId) unique constraint.
+    const row = await (this.prisma as any).authProvider.upsert({
+      where: { provider_providerId: { provider, providerId } },
+      update: { displayName, email },
+      create: { userId, provider, providerId, displayName, email },
     });
 
-    this.logger.log(`New ${provider} auth provider linked to userId ${userId}`);
-    return userId;
+    this.logger.log(`New ${provider} auth provider linked to userId ${row.userId}`);
+    return row.userId as BigInt;
   }
 
   // ─── Account linking (merge two providers to one user) ────────────────────
@@ -266,9 +272,24 @@ export class AuthService {
       return { ok: false, conflictUserId: String(existing.userId) };
     }
 
-    await (this.prisma as any).authProvider.create({
-      data: { userId, provider, providerId, displayName, email },
-    });
+    try {
+      await (this.prisma as any).authProvider.create({
+        data: { userId, provider, providerId, displayName, email },
+      });
+    } catch (e: any) {
+      // Race: a concurrent request inserted the same (provider, providerId)
+      // between the findUnique above and this create. Re-resolve deterministically
+      // instead of crashing on the unique constraint (mirrors the atomic-upsert
+      // fix in findOrCreateUserByProvider).
+      if (e?.code === 'P2002') {
+        const now = await (this.prisma as any).authProvider.findUnique({
+          where: { provider_providerId: { provider, providerId } },
+        });
+        if (now && String(now.userId) === String(userId)) return { ok: true };
+        if (now) return { ok: false, conflictUserId: String(now.userId) };
+      }
+      throw e;
+    }
     this.logger.log(`Linked ${provider} provider to userId ${userId}`);
     return { ok: true };
   }

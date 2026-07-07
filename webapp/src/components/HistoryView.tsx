@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useTr } from '../utils/addressForm';
 import { COLORS } from '../types';
 import type { Need, DayHistory } from '../types';
 import { NeedHistorySheet } from './NeedHistorySheet';
@@ -176,6 +177,7 @@ function SparklineRow({ need, history, selectedIdx, selectedRatings, onClick }: 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function HistoryView({ needs, history, currentRatings, childhoodRatings = {}, onOpenSchemas, onOpenChildhoodWheel, days = 7, onChangeDays, onGoToToday, onBackfill }: Props) {
+  const tr = useTr();
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [subView, setSubView] = useState<'day' | 'week'>('day');
   const dateBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -211,7 +213,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
       <div style={{ padding: '48px 24px', textAlign: 'center' }}>
         <div style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text-sub)', marginBottom: 12, fontStyle: 'italic' }}>Пусто.</div>
         <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 28 }}>
-          Заполни трекер сегодня – через 3–5 дней начнёт проявляться паттерн
+          {tr('Заполни трекер сегодня – через 3–5 дней начнёт проявляться паттерн', 'Заполните трекер сегодня – через 3–5 дней начнёт проявляться паттерн')}
         </div>
         {onGoToToday && (
           <button onClick={onGoToToday} className="btn-primary" style={{ maxWidth: 280, margin: '0 auto' }}>

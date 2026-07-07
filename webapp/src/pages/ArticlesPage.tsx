@@ -1,449 +1,71 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-
-// ─── Article data ─────────────────────────────────────────────────────────────
-export const ARTICLES = [
-  {
-    slug: 'chto-takoe-schema-terapiya',
-    title: 'Что такое схема-терапия: как она работает и кому подходит',
-    description: 'Схема-терапия – интегративный подход, который помогает разобраться с глубинными убеждениями, сформированными в детстве. Разбираем, как работает метод и в каких случаях он эффективен.',
-    date: '2025-05-01',
-    readMin: 7,
-    content: `
-## Что такое схема-терапия
-
-Схема-терапия – психотерапевтический подход, разработанный американским психологом Джеффри Янгом в конце 1980-х годов. Янг работал с пациентами, которым не помогала классическая когнитивно-поведенческая терапия (КПТ): в первую очередь с людьми с хроническими паттернами в поведении, отношениях и самовосприятии.
-
-Метод объединяет элементы:
-- **Когнитивно-поведенческой терапии** (анализ мыслей и поведения)
-- **Психоанализа** (работа с детским опытом и привязанностью)
-- **Гештальт-подхода** (работа с эмоциями в настоящем моменте)
-- **Теории привязанности** (понимание отношений)
-
-## Что такое схемы
-
-Схемы – это глубинные убеждения и паттерны, которые формируются в детстве и юношестве в ответ на неудовлетворённые базовые потребности. Например:
-
-- Ребёнок, которого часто критиковали, может сформировать схему **«Дефективности»** – убеждение «я недостаточно хорош»
-- Ребёнок, которого гиперопекали, может развить схему **«Зависимости»** – ощущение, что он не справится без других
-- Ребёнок, переживший потери или нестабильность, нередко несёт схему **«Покинутости»**
-
-Всего Янг выделил **18 ранних дезадаптивных схем**, разбив их на 5 доменов:
-1. Разобщённость и отвержение
-2. Нарушение автономии и достижений
-3. Нарушение границ
-4. Ориентация на других
-5. Сверхбдительность и подавление
-
-## Что такое режимы
-
-Режим – это эмоциональное состояние, в котором человек находится в конкретный момент. В отличие от схем (устойчивых убеждений), режимы – это «переключения», которые происходят в ответ на триггеры.
-
-Основные режимы:
-- **Уязвимый ребёнок** – ощущение беспомощности, страха, одиночества
-- **Сердитый ребёнок** – раздражение, гнев, ощущение несправедливости
-- **Карающий родитель** – внутренний критик, самонаказание
-- **Здоровый взрослый** – ресурсное состояние, которое развивается в процессе терапии
-
-## Как проходит работа в схема-терапии
-
-Терапия состоит из нескольких этапов:
-
-### 1. Диагностика и психообразование
-Первый шаг – понять, какие схемы присутствуют. Используются опросники (например, ЯСО – Опросник схем Янга), беседы о детском опыте, анализ текущих паттернов. Важно не только выявить схемы, но и понять их происхождение.
-
-### 2. Работа с эмоциями
-Схема-терапия активно использует техники работы с образами (imagery rescripting) – погружение в воспоминания с целью «переписать» эмоциональный опыт. Это один из самых мощных инструментов метода.
-
-### 3. Когнитивная работа
-Анализ и оспаривание убеждений: «Насколько это убеждение реально? Какие у меня доказательства за и против?»
-
-### 4. Поведенческие изменения
-Постепенное изменение поведенческих паттернов – копинговых стратегий, которые раньше «защищали» от боли, но теперь мешают жить.
-
-### 5. Терапевтические отношения
-Один из ключевых инструментов схема-терапии – сами отношения с терапевтом. Тёплый, принимающий контакт помогает «переписать» опыт ненадёжной привязанности.
-
-## Для кого подходит схема-терапия
-
-Схема-терапия особенно эффективна при:
-- Повторяющихся паттернах в отношениях (те же конфликты, те же партнёры)
-- Хронической низкой самооценке
-- Трудностях с идентичностью («не понимаю, кто я»)
-- Хронической тревоге или эмоциональной пустоте
-- Ситуациях, когда «обычная» терапия или КПТ не давали устойчивого результата
-- Расстройствах личности (пограничное, избегающее, нарциссическое)
-
-## Доказательная база
-
-Схема-терапия входит в число методов с доказанной эффективностью. Ключевые исследования:
-- Рандомизированное контролируемое исследование Giesen-Bloo et al. (2006): схема-терапия показала значительно лучшие результаты, чем психодинамическая терапия, при пограничном расстройстве личности
-- Мета-анализ Masley et al. (2012): эффективность при хронических паттернах и расстройствах личности
-- Исследования показывают, что изменения после схема-терапии более устойчивы, чем после стандартной КПТ
-
-## Схема-терапия vs КПТ: в чём разница
-
-| | КПТ | Схема-терапия |
-|--|--|--|
-| Фокус | Текущие мысли и поведение | Глубинные убеждения и их происхождение |
-| Детский опыт | Минимально | Центральная тема |
-| Эмоции | Работа с дисфункциональными мыслями | Прямая работа с эмоциями |
-| Длительность | Обычно краткосрочная | Средне- и долгосрочная |
-| Терапевтические отношения | Инструмент | Ключевой механизм изменений |
-
-## Что важно знать перед началом
-
-Схема-терапия – это не быстро. Глубинные паттерны, формировавшиеся годами, не меняются за несколько недель. Обычная длительность – от 6 месяцев до нескольких лет, с частотой 1–2 раза в неделю.
-
-Это требует готовности исследовать болезненный опыт – не из мазохизма, а потому что понимание происхождения боли даёт возможность её изменить.
-    `,
-  },
-  {
-    slug: 'skhemy-yanga-spisok',
-    title: '18 схем Янга: полный список с описаниями',
-    description: 'Полный список 18 ранних дезадаптивных схем по Джеффри Янгу с описанием каждой схемы, типичными убеждениями и поведенческими паттернами.',
-    date: '2025-05-10',
-    readMin: 10,
-    content: `
-## 18 ранних дезадаптивных схем Янга
-
-Джеффри Янг выделил 18 схем, сгруппированных в 5 доменов. Каждая схема – это глубинное убеждение о себе, других и мире, сформировавшееся в ответ на неудовлетворённые базовые потребности в детстве.
-
----
-
-## Домен I: Разобщённость и отвержение
-
-Схемы этого домена формируются, когда базовые потребности в безопасности, принятии и любви не удовлетворяются.
-
-### 1. Покинутость / Нестабильность
-**Убеждение:** Значимые люди уйдут, бросят или умрут. Стабильные отношения невозможны.
-
-**Типичные мысли:** «Все в итоге уходят», «Я не могу доверять, что кто-то останется»
-
-**Как проявляется:** Тревога в отношениях, ревность, цепляние за партнёра или, наоборот, избегание близости
-
----
-
-### 2. Недоверие / Ожидание жестокого обращения
-**Убеждение:** Другие люди будут использовать, обманывать или причинять вред.
-
-**Типичные мысли:** «Люди не заслуживают доверия», «За добротой всегда есть скрытый мотив»
-
-**Как проявляется:** Подозрительность, сложности с открытостью, проверка партнёра
-
----
-
-### 3. Эмоциональная депривация
-**Убеждение:** Другие не дадут нужной эмоциональной поддержки, теплоты и понимания.
-
-**Типичные мысли:** «Мои потребности никому не важны», «Я всегда один со своими чувствами»
-
-**Как проявляется:** Трудности с просьбами о помощи, ощущение хронического одиночества даже в окружении людей
-
----
-
-### 4. Дефективность / Стыд
-**Убеждение:** Я плохой, неполноценный, дефектный – и если другие узнают об этом, отвергнут.
-
-**Типичные мысли:** «Если бы люди увидели меня настоящего, они бы отвернулись»
-
-**Как проявляется:** Стыд, скрытность, чувствительность к критике, перфекционизм как маскировка
-
----
-
-### 5. Социальная изоляция / Отчуждённость
-**Убеждение:** Я отличаюсь от других и не вписываюсь ни в одну группу.
-
-**Типичные мысли:** «Я не такой, как все», «Никто не поймёт меня по-настоящему»
-
-**Как проявляется:** Ощущение чужеродности, сложности в социальных ситуациях
-
----
-
-## Домен II: Нарушение автономии и достижений
-
-Схемы формируются, когда ребёнку не давали развивать самостоятельность.
-
-### 6. Зависимость / Некомпетентность
-**Убеждение:** Я не справлюсь с повседневными задачами без помощи других.
-
-**Типичные мысли:** «Мне нужен кто-то, кто скажет, что делать»
-
-**Как проявляется:** Избегание самостоятельных решений, поиск «сильного» партнёра или авторитета
-
----
-
-### 7. Уязвимость к болезням и опасностям
-**Убеждение:** Меня ждёт катастрофа – болезнь, авария, финансовый крах.
-
-**Типичные мысли:** «Что-то обязательно пойдёт не так», постоянные «а вдруг»
-
-**Как проявляется:** Ипохондрия, тревога о безопасности, избегание риска
-
----
-
-### 8. Запутанность / Неразвитая идентичность
-**Убеждение:** Моя идентичность слита с кем-то значимым (обычно с родителем).
-
-**Типичные мысли:** «Я не знаю, кто я без него/неё»
-
-**Как проявляется:** Сложности с сепарацией, ощущение пустоты при отдельности
-
----
-
-### 9. Неудача
-**Убеждение:** Я обречён на неудачу в достижениях по сравнению с другими.
-
-**Типичные мысли:** «Я глупее/хуже/менее успешен, чем окружающие»
-
-**Как проявляется:** Прокрастинация, избегание вызовов, самосаботаж
-
----
-
-## Домен III: Нарушение границ
-
-Схемы формируются, когда границы в семье были размыты или отсутствовали.
-
-### 10. Грандиозность / Особые права
-**Убеждение:** Я особенный и вправе получать больше, чем другие.
-
-**Типичные мысли:** «Правила не для меня», «Я заслуживаю исключений»
-
-**Как проявляется:** Сложности с ограничениями, нарушение чужих границ, нарциссические черты
-
----
-
-### 11. Недостаточный самоконтроль / Самодисциплина
-**Убеждение:** Я не могу терпеть дискомфорт или ограничивать свои импульсы.
-
-**Типичные мысли:** «Я не могу заставить себя», «Зачем терпеть, если можно получить сейчас»
-
-**Как проявляется:** Трудности с завершением задач, импульсивность, проблемы с откладыванием удовольствия
-
----
-
-## Домен IV: Ориентация на других
-
-Схемы формируются, когда потребности ребёнка были вторичны по отношению к потребностям родителей.
-
-### 12. Подчинение
-**Убеждение:** Мои потребности и желания надо подавлять, иначе последуют негативные последствия.
-
-**Типичные мысли:** «Мне нельзя злиться», «Лучше промолчу»
-
-**Как проявляется:** Трудности с выражением потребностей, пассивная агрессия, накопленная обида
-
----
-
-### 13. Самопожертвование
-**Убеждение:** Я должен удовлетворять потребности других в ущерб своим.
-
-**Типичные мысли:** «Им нужнее», «Если я не помогу, кто поможет»
-
-**Как проявляется:** Хроническое истощение, обида, сложности с принятием помощи
-
----
-
-### 14. Поиск одобрения / Признания
-**Убеждение:** Моя ценность определяется вниманием и одобрением других.
-
-**Типичные мысли:** «Что о мне подумают», «Мне важно нравиться»
-
-**Как проявляется:** Подстраивание под ожидания, тревога при критике, нестабильная самооценка
-
----
-
-## Домен V: Сверхбдительность и подавление
-
-Схемы формируются в семьях с жёсткими правилами, перфекционизмом или подавлением эмоций.
-
-### 15. Негативизм / Пессимизм
-**Убеждение:** Плохое неизбежно, поэтому лучше не расслабляться.
-
-**Типичные мысли:** «Что-то обязательно сломается», «Хорошее не может длиться»
-
-**Как проявляется:** Хроническое беспокойство, катастрофизация, сложности с радостью
-
----
-
-### 16. Подавление эмоций
-**Убеждение:** Эмоции надо контролировать, иначе произойдёт что-то плохое.
-
-**Типичные мысли:** «Нельзя показывать слабость», «Слёзы – это стыдно»
-
-**Как проявляется:** Эмоциональная холодность, психосоматика, отчуждение от собственного тела
-
----
-
-### 17. Жёсткие стандарты / Придирчивость
-**Убеждение:** Нужно соответствовать очень высоким стандартам, иначе я плохой.
-
-**Типичные мысли:** «Недостаточно хорошо», «Можно было сделать лучше»
-
-**Как проявляется:** Перфекционизм, хроническое напряжение, сложности с отдыхом
-
----
-
-### 18. Карательность
-**Убеждение:** За ошибки нужно наказывать – себя и других.
-
-**Типичные мысли:** «Я заслужил это», «Надо было думать раньше»
-
-**Как проявляется:** Жёсткий внутренний критик, трудности с прощением себя и других
-
----
-
-## Как узнать свои схемы
-
-Для диагностики используется **Опросник схем Янга (ЯСО)** – стандартизированный инструмент из 205 вопросов. В приложении **СхемаЛаб** доступна адаптированная версия диагностики прямо в телефоне.
-
-Важно понимать: наличие схемы – не приговор. Это информация о том, где искать корни сегодняшних трудностей. Схемы поддаются изменению – особенно в работе со схема-терапевтом.
-    `,
-  },
-  {
-    slug: 'rezhimy-v-schema-terapii',
-    title: 'Режимы в схема-терапии: что это и как с ними работать',
-    description: 'Что такое режимы в схема-терапии, чем они отличаются от схем, какие бывают режимы и как работа с ними помогает изменить эмоциональные паттерны.',
-    date: '2025-05-20',
-    readMin: 8,
-    content: `
-## Что такое режим в схема-терапии
-
-Если **схемы** – это устойчивые глубинные убеждения («Меня бросят», «Я недостаточно хорош»), то **режимы** – это эмоциональные состояния, в которых человек оказывается в конкретный момент.
-
-Режим – это своеобразное «я», которое активируется в ответ на триггер. Один и тот же человек может в разные моменты быть в совершенно разных режимах: тревожным и цепляющимся, холодным и отстранённым, злым, самокритичным или – в идеале – спокойным и ресурсным.
-
-Концепция режимов была особенно важна для работы с расстройствами личности, но применима к любому человеку.
-
-## Четыре группы режимов
-
-### 1. Режимы Ребёнка
-
-Это части нас, которые несут эмоциональный опыт детства – уязвимость, гнев, радость или незащищённость.
-
-**Уязвимый ребёнок** – наиболее болезненный режим. Человек чувствует себя одиноким, испуганным, покинутым, беспомощным. Часто активируется в близких отношениях или при столкновении с критикой.
-
-*Как узнать:* ощущение, что вас «накрыло», острая боль или тревога, желание спрятаться или чтобы кто-то позаботился.
-
-**Злой ребёнок** – режим, в котором человек охвачен гневом, ощущением несправедливости, обидой. Часто возникает, когда базовые потребности игнорируются.
-
-*Как узнать:* вспышки гнева, которые кажутся несоразмерными ситуации, ощущение «меня опять предали».
-
-**Импульсивный ребёнок** – действие по немедленному импульсу без учёта последствий. Хочу – делаю.
-
-**Счастливый ребёнок** – ресурсный режим. Лёгкость, игривость, любопытство. Цель терапии – в том числе дать этому режиму больше места.
-
----
-
-### 2. Режимы Дисфункциональных родителей
-
-Эти режимы – интроецированные голоса значимых людей из детства. Они не помогают, а причиняют вред.
-
-**Карающий родитель** – внутренний критик, который наказывает, обвиняет, стыдит. Голос, говорящий «ты виноват», «ты недостаточно хорош», «ты заслужил это».
-
-*Как узнать:* жёсткая самокритика после ошибки, физическое ощущение сжатия в груди, желание наказать себя.
-
-**Требовательный родитель** – голос, который постоянно гонит вперёд: «недостаточно», «надо лучше», «нельзя останавливаться». В отличие от карающего, он не обвиняет, а давит требованиями.
-
-*Как узнать:* невозможность отдохнуть, ощущение вечной гонки, перфекционизм как способ заглушить внутреннее давление.
-
----
-
-### 3. Режимы Дисфункциональных копингов
-
-Это способы, которыми человек справляется с болью от активированных схем. Когда-то они были адаптивны – помогали выжить. Сейчас они поддерживают схемы и мешают жить.
-
-**Отстранённый защитник** – эмоциональное отключение. «Мне всё равно», «Я не чувствую ничего». Человек уходит в работу, в экраны, в алкоголь – лишь бы не чувствовать.
-
-*Как узнать:* ощущение пустоты или онемения, жалобы партнёра на недоступность, трудности с описанием своих чувств.
-
-**Самовозвеличивающий** (гиперкомпенсация) – человек компенсирует внутреннее ощущение дефективности или беспомощности через демонстрацию превосходства, контроль, перфекционизм.
-
-**Покорный капитулянт** – человек принимает свою схему как правду и ведёт себя так, чтобы она подтвердилась. Убеждён, что хуже всех, – и действительно занимает подчинённую позицию.
-
----
-
-### 4. Здоровый взрослый
-
-Это ресурсный режим, который формируется в ходе терапии. Здоровый взрослый умеет:
-- Признавать и удовлетворять потребности Уязвимого ребёнка
-- Ограничивать разрушительное влияние Злого ребёнка
-- Противостоять голосам Дисфункциональных родителей
-- Не уходить в дисфункциональные копинги
-
-**Здоровый взрослый – это не цель «стать другим человеком»**. Это способность замечать, в каком режиме ты сейчас находишься, и делать осознанный выбор.
-
-## Как происходит работа с режимами
-
-### Шаг 1: Распознавание
-Первое, чему учатся в схема-терапии – замечать, в каком режиме ты сейчас. Это само по себе создаёт дистанцию: «Я не есть этот режим, я наблюдаю его».
-
-### Шаг 2: Понимание функции
-Каждый режим когда-то служил защитой. Отстранённый защитник спасал от непереносимой боли. Злой ребёнок защищал от несправедливости. Понимание этого снижает стыд и самокритику.
-
-### Шаг 3: Диалог режимов
-Один из ключевых методов – работа с образами (imagery) и «диалог на стульях» (empty chair work): буквальный разговор между разными частями себя. Это звучит странно, но работает.
-
-### Шаг 4: Забота о Ребёнке
-Уязвимый ребёнок нуждается не в логике, а в тепле. Часть работы – научиться давать себе то, чего не хватало в детстве: поддержку, принятие, ощущение, что ты не один.
-
-### Шаг 5: Противостояние Родителям
-Голоса Карающего и Требовательного родителей не исчезают мгновенно. Но со временем Здоровый взрослый учится их замечать, оспаривать и не подчиняться им автоматически.
-
-## Зачем это знать
-
-Понимание режимов – инструмент самонаблюдения. Когда вы замечаете «я сейчас в режиме Карающего родителя» – это уже не просто «мне плохо», а информация, с которой можно работать.
-
-Это не значит, что понимание само по себе лечит. Но это фундамент для изменений – и в терапии, и в самостоятельной работе между сессиями.
-
-В приложении **СхемаЛаб** есть инструменты для отслеживания режимов и дневниковые практики, которые помогают замечать паттерны в повседневной жизни.
-    `,
-  },
-];
+import DOMPurify from 'dompurify';
+import { api } from '../api';
+import type { ArticleSummary, Article } from '../api';
+import { DIAGRAMS } from './articleDiagrams';
 
 // ─── Article list page ────────────────────────────────────────────────────────
 export function ArticlesListPage() {
+  const [articles, setArticles] = useState<ArticleSummary[] | null>(null);
+
   useEffect(() => {
-    document.title = 'Статьи о схема-терапии | schemalab.ru';
+    document.title = 'Статьи о схема-терапии | schemehappens.ru';
+    api.listArticles().then(setArticles).catch(() => setArticles([]));
   }, []);
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
-      <div style={{ maxWidth: 780, margin: '0 auto', padding: '64px 40px 96px' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', flex: 1, minWidth: 0, overflowX: 'hidden' }}>
+      <div className="art-page" style={{ maxWidth: 980, margin: '0 auto' }}>
         <a href="/" style={backLink}>← На главную</a>
         <p style={eyebrow}>Статьи</p>
         <h1 style={h1}>Схема-терапия:<br /><span style={{ fontStyle: 'italic' }}>читайте и разбирайтесь</span></h1>
-        <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 56px', maxWidth: 560 }}>
+        <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 48px', maxWidth: 560 }}>
           Объясняю, как работают схемы, режимы и паттерны – простым языком, без воды.
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {ARTICLES.map((a) => (
-            <Link key={a.slug} to={`/articles/${a.slug}`} style={{ textDecoration: 'none' }}>
-              <div style={{
-                padding: '28px 0', borderTop: '1px solid var(--line)',
-                display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'start',
-                transition: 'opacity .15s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '.7'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}>
-                <div>
-                  <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '0 0 10px', letterSpacing: '-.01em', lineHeight: 1.3 }}>
-                    {a.title}
-                  </h2>
-                  <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, margin: 0 }}>{a.description}</p>
+        {articles === null && <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>}
+
+        {articles && (
+          <div className="art-grid">
+            {articles.map((a) => (
+              <Link key={a.slug} to={`/articles/${a.slug}`} className="art-card">
+                {a.heroImage
+                  ? <img className="art-cover" src={a.heroImage} alt="" loading="lazy" decoding="async" />
+                  : <div className="art-cover art-cover-ph" aria-hidden />}
+                <div className="art-body">
+                  <h2 className="art-title">{a.title}</h2>
+                  <p className="art-desc">{a.description}</p>
+                  <div className="art-meta">
+                    <span>{a.readMin} мин</span>
+                    <span>·</span>
+                    <span>{new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  </div>
                 </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 4px', whiteSpace: 'nowrap' }}>{a.readMin} мин</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: 0, whiteSpace: 'nowrap' }}>
-                    {new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                </div>
-              </div>
-            </Link>
-          ))}
-          <div style={{ borderTop: '1px solid var(--line)' }} />
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <style>{`
+          .art-page { padding: 64px 40px 96px; }
+          .art-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; }
+          .art-card { display: flex; flex-direction: column; text-decoration: none; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--surface); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+          .art-card:hover { transform: translateY(-3px); box-shadow: 0 16px 44px rgba(28,25,20,.10); border-color: var(--line-strong); }
+          .art-cover { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
+          .art-cover-ph { background: linear-gradient(135deg, var(--accent-soft), transparent 62%), var(--surface-2); position: relative; }
+          .art-cover-ph::after { content: ''; position: absolute; right: -34px; bottom: -34px; width: 132px; height: 132px; border-radius: 50%; border: 1.5px solid var(--accent-line); }
+          .art-cover-ph::before { content: ''; position: absolute; right: 6px; bottom: 6px; width: 72px; height: 72px; border-radius: 50%; border: 1.5px solid var(--accent-line); opacity: .6; }
+          .art-body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }
+          .art-title { font-family: var(--serif); font-size: 22px; font-weight: 400; color: var(--text); margin: 0 0 10px; letter-spacing: -.01em; line-height: 1.25; }
+          .art-desc { font-size: 14px; color: var(--text-sub); line-height: 1.6; margin: 0 0 16px; flex: 1; }
+          .art-meta { display: flex; gap: 8px; align-items: center; }
+          .art-meta span { font-size: 12px; color: var(--text-faint); }
+          @media (max-width: 720px) {
+            .art-page { padding: 40px 20px 72px; }
+            .art-grid { grid-template-columns: 1fr; gap: 20px; }
+          }
+        `}</style>
 
         <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 20 }}>
           <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 10px' }}>Хотите разобраться глубже?</p>
@@ -465,17 +87,31 @@ export function ArticlesListPage() {
 // ─── Single article page ──────────────────────────────────────────────────────
 export function ArticlePage() {
   const { slug } = useParams<{ slug: string }>();
-  const article = ARTICLES.find(a => a.slug === slug);
+  const [article, setArticle] = useState<Article | null | undefined>(undefined);
 
   useEffect(() => {
-    if (article) {
-      document.title = `${article.title} | schemalab.ru`;
-    }
+    if (!slug) return;
+    setArticle(undefined);
+    api.getArticle(slug)
+      .then(setArticle)
+      .catch(() => setArticle(null));
+  }, [slug]);
+
+  useEffect(() => {
+    if (article) document.title = `${article.title} | schemehappens.ru`;
   }, [article]);
+
+  if (article === undefined) {
+    return (
+      <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: 'var(--text-faint)' }}>Загрузка…</p>
+      </div>
+    );
+  }
 
   if (!article) {
     return (
-      <div style={{ background: 'var(--bg)', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontSize: 48, margin: '0 0 16px' }}>404</p>
           <a href="/articles" style={{ color: 'var(--accent)' }}>← К статьям</a>
@@ -484,91 +120,42 @@ export function ArticlePage() {
     );
   }
 
-  // Simple markdown-like renderer
-  const renderContent = (text: string) => {
-    const lines = text.trim().split('\n');
-    const elements: React.ReactNode[] = [];
-    let key = 0;
-    let inTable = false;
-    let tableRows: string[][] = [];
-
-    const flushTable = () => {
-      if (tableRows.length > 1) {
-        const headers = tableRows[0];
-        const rows = tableRows.slice(2);
-        elements.push(
-          <div key={key++} style={{ overflowX: 'auto', margin: '24px 0' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, color: 'var(--text-sub)' }}>
-              <thead>
-                <tr>{headers.map((h, i) => <th key={i} style={{ padding: '10px 14px', textAlign: 'left', borderBottom: '2px solid var(--line)', fontWeight: 700, color: 'var(--text)', fontSize: 13 }}>{h.trim()}</th>)}</tr>
-              </thead>
-              <tbody>
-                {rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} style={{ padding: '10px 14px', borderBottom: '1px solid var(--line)', lineHeight: 1.6 }}>{c.trim()}</td>)}</tr>)}
-              </tbody>
-            </table>
-          </div>
-        );
-      }
-      tableRows = [];
-      inTable = false;
-    };
-
-    for (const raw of lines) {
-      const line = raw;
-
-      if (line.startsWith('|')) {
-        inTable = true;
-        tableRows.push(line.split('|').filter((_, i, a) => i > 0 && i < a.length - 1));
-        continue;
-      } else if (inTable) {
-        flushTable();
-      }
-
-      if (!line.trim()) { elements.push(<div key={key++} style={{ height: 8 }} />); continue; }
-      if (line.startsWith('### ')) { elements.push(<h3 key={key++} style={{ fontFamily: 'var(--serif)', fontSize: 20, fontWeight: 400, color: 'var(--text)', margin: '32px 0 12px', letterSpacing: '-.01em' }}>{line.slice(4)}</h3>); continue; }
-      if (line.startsWith('## ')) { elements.push(<h2 key={key++} style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, color: 'var(--text)', margin: '48px 0 16px', paddingTop: 40, borderTop: '1px solid var(--line)', letterSpacing: '-.01em' }}>{line.slice(3)}</h2>); continue; }
-      if (line.startsWith('---')) { elements.push(<hr key={key++} style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '32px 0' }} />); continue; }
-
-      if (line.startsWith('- ') || line.startsWith('* ')) {
-        const text = renderInline(line.slice(2));
-        elements.push(<li key={key++} style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, marginBottom: 6 }}>{text}</li>);
-        continue;
-      }
-
-      const text = renderInline(line);
-      elements.push(<p key={key++} style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.9, margin: '0 0 4px' }}>{text}</p>);
+  // The diagram lives in its own field (not the editable content), so it's
+  // never lost when the article text is edited. Inject it at render time near
+  // the MIDDLE of the article (at the paragraph boundary closest to the middle)
+  // so it breaks up the text rather than sitting right at the top.
+  const diagram = article.diagramKey ? DIAGRAMS[article.diagramKey] : undefined;
+  const withDiagram = (() => {
+    if (!diagram) return article.content;
+    const content = article.content;
+    const marker = '</p>';
+    const ends: number[] = [];
+    for (let i = content.indexOf(marker); i !== -1; i = content.indexOf(marker, i + 1)) {
+      ends.push(i + marker.length);
     }
+    if (ends.length === 0) return diagram + content;
+    const target = content.length / 2;
+    const cut = ends.reduce((best, p) => (Math.abs(p - target) < Math.abs(best - target) ? p : best), ends[0]);
+    return content.slice(0, cut) + diagram + content.slice(cut);
+  })();
 
-    if (inTable) flushTable();
-
-    // Wrap consecutive li elements
-    const wrapped: React.ReactNode[] = [];
-    let liBuffer: React.ReactNode[] = [];
-    for (const el of elements) {
-      if ((el as any)?.type === 'li') {
-        liBuffer.push(el);
-      } else {
-        if (liBuffer.length) { wrapped.push(<ul key={key++} style={{ paddingLeft: 20, margin: '8px 0 16px' }}>{liBuffer}</ul>); liBuffer = []; }
-        wrapped.push(el);
-      }
-    }
-    if (liBuffer.length) wrapped.push(<ul key={key++} style={{ paddingLeft: 20, margin: '8px 0 16px' }}>{liBuffer}</ul>);
-
-    return wrapped;
-  };
-
-  const renderInline = (text: string): React.ReactNode => {
-    const parts = text.split(/(\*\*[^*]+\*\*)/g);
-    return parts.map((p, i) =>
-      p.startsWith('**') && p.endsWith('**')
-        ? <strong key={i} style={{ color: 'var(--text)', fontWeight: 600 }}>{p.slice(2, -2)}</strong>
-        : p
-    );
-  };
+  const safeHtml = DOMPurify.sanitize(withDiagram, {
+    ALLOWED_TAGS: [
+      'h2', 'h3', 'p', 'strong', 'b', 'em', 'i', 'ul', 'ol', 'li', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'a', 'br',
+      // inline diagrams (SVG). No <marker>/<script> — arrowheads are polygons.
+      'figure', 'figcaption', 'svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'text', 'tspan', 'defs',
+    ],
+    ALLOWED_ATTR: [
+      'href', 'target', 'rel', 'class', 'viewBox', 'role', 'aria-label',
+      'd', 'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap',
+      'x', 'y', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r', 'rx', 'ry', 'points',
+      'transform', 'text-anchor', 'width', 'height', 'opacity', 'font-size',
+    ],
+  });
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '64px 40px 96px' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', flex: 1, minWidth: 0, overflowX: 'hidden' }}>
+      <div className="art-page" style={{ maxWidth: 720, margin: '0 auto' }}>
         <a href="/articles" style={backLink}>← Все статьи</a>
 
         <div style={{ marginBottom: 40 }}>
@@ -587,9 +174,55 @@ export function ArticlePage() {
           </p>
         </div>
 
-        <div style={{ height: 1, background: 'var(--line)', margin: '0 0 40px' }} />
+        {article.heroImage ? (
+          <img src={article.heroImage} alt="" loading="lazy" decoding="async"
+            style={{ width: '100%', height: 'auto', maxHeight: 380, objectFit: 'cover', borderRadius: 20, display: 'block', margin: '0 0 44px' }} />
+        ) : (
+          <div style={{ height: 1, background: 'var(--line)', margin: '0 0 40px' }} />
+        )}
 
-        <div>{renderContent(article.content)}</div>
+        <div className="article-content" dangerouslySetInnerHTML={{ __html: safeHtml }} />
+        <style>{`
+          .art-page { padding: 64px 40px 96px; }
+          @media (max-width: 640px) { .art-page { padding: 40px 20px 72px; } }
+          .article-content h2 { font-family: var(--serif); font-size: 26px; font-weight: 400; color: var(--text); margin: 48px 0 16px; padding-top: 40px; border-top: 1px solid var(--line); letter-spacing: -.01em; }
+          .article-content h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+          .article-content h3 { font-family: var(--serif); font-size: 20px; font-weight: 400; color: var(--text); margin: 32px 0 12px; letter-spacing: -.01em; }
+          .article-content p { font-size: 15px; color: var(--text-sub); line-height: 1.9; margin: 0 0 12px; }
+          .article-content strong { color: var(--text); font-weight: 600; }
+          .article-content ul, .article-content ol { padding-left: 20px; margin: 8px 0 16px; }
+          .article-content li { font-size: 15px; color: var(--text-sub); line-height: 1.8; margin-bottom: 6px; }
+          .article-content hr { border: none; border-top: 1px solid var(--line); margin: 32px 0; }
+          .article-content table { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--text-sub); margin: 24px 0; }
+          .article-content th { padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--line); font-weight: 700; color: var(--text); font-size: 13px; }
+          .article-content td { padding: 10px 14px; border-bottom: 1px solid var(--line); line-height: 1.6; }
+          .article-content a { color: var(--accent); }
+          /* ── Inline diagrams ── */
+          .article-content figure.dg { margin: 32px 0; padding: 24px 20px 18px; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 20px; }
+          .article-content figure.dg svg { display: block; width: 100%; height: auto; }
+          .article-content figure.dg figcaption { margin-top: 14px; font-size: 13px; line-height: 1.6; color: var(--text-sub); text-align: center; }
+          .article-content figure.dg figcaption b { color: var(--text); font-weight: 600; }
+          .dg-node { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; }
+          .dg-chip { fill: var(--accent-soft); stroke: none; }
+          .dg-accent { fill: var(--accent); stroke: var(--accent); }
+          .dg-t { fill: var(--text); font-family: var(--sans); font-weight: 700; font-size: 15px; }
+          .dg-t-on { fill: #fff; font-family: var(--sans); font-weight: 700; font-size: 15px; }
+          .dg-t-acc { fill: var(--accent); font-family: var(--sans); font-weight: 700; font-size: 14px; }
+          .dg-s { fill: var(--text-sub); font-family: var(--sans); font-size: 12px; }
+          .dg-s-on { fill: rgba(255,255,255,.86); font-family: var(--sans); font-size: 12px; }
+          .dg-cap { fill: var(--text-faint); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
+          .dg-cap-acc { fill: var(--accent); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
+          .dg-cap-on { fill: rgba(255,255,255,.8); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
+          .dg-flow { stroke: var(--accent); stroke-width: 2; fill: none; }
+          .dg-flow-soft { stroke: var(--text-faint); stroke-width: 1.6; fill: none; stroke-dasharray: 5 5; }
+          .dg-head { fill: var(--accent); }
+          .dg-head-soft { fill: var(--text-faint); }
+          .dg-lbl { fill: var(--accent); font-family: var(--sans); font-size: 12px; font-weight: 600; }
+          .dg-water { fill: var(--accent-soft); }
+          .dg-waterline { stroke: var(--accent); stroke-width: 1.5; opacity: .5; }
+          .dg-ice { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; }
+          .dg-ice-sub { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; opacity: .92; }
+        `}</style>
 
         <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 20 }}>
           <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 10px' }}>Разобраться на практике</p>

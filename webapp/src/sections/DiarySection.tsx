@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry } from '../types';
 import { api } from '../api';
+import { useTr } from '../utils/addressForm';
 import { SchemaEntrySheet } from '../components/diary/SchemaEntrySheet';
 import { ModeEntrySheet } from '../components/diary/ModeEntrySheet';
 import { GratitudeEntrySheet } from '../components/diary/GratitudeEntrySheet';
@@ -246,6 +247,7 @@ type Filter = 'all' | DiaryType;
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {}) {
+  const tr = useTr();
   const [schemaEntries,    setSchemaEntries]    = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries,      setModeEntries]      = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
@@ -334,7 +336,7 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
   const QUICK_ADD = [
     { type: 'schema'    as DiaryType, color: 'var(--c-rose)',  eyebrow: 'Дневник схем',    title: 'Записать момент',  desc: 'Триггер · чувства · мысли · схема · здоровый взгляд', foot: '8–15 мин' },
     { type: 'mode'      as DiaryType, color: 'var(--c-slate)', eyebrow: 'Дневник режимов', title: 'Записать режим',   desc: 'Кто взял управление, что включило, что было нужно',   foot: '5–10 мин' },
-    { type: 'gratitude' as DiaryType, color: 'var(--c-moss)',  eyebrow: 'Благодарность',   title: 'Три вещи',        desc: 'За что благодаришь сегодня. Даже самое маленькое',    foot: '2–5 мин' },
+    { type: 'gratitude' as DiaryType, color: 'var(--c-moss)',  eyebrow: 'Благодарность',   title: 'Три вещи',        desc: 'За что есть благодарность сегодня. Даже самое маленькое',    foot: '2–5 мин' },
   ];
 
   const FILTERS: { id: Filter; label: string }[] = [
@@ -383,7 +385,7 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
   );
 
   return (
-    <div className="page-inner">
+    <div className="page-inner-wide">
 
         {/* ── Hero ── */}
         <div className="diary-hero">
@@ -500,7 +502,7 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-faint)' }}>
             <div style={{ fontFamily: 'var(--serif)', fontSize: 28, color: 'var(--text-sub)', fontStyle: 'italic', marginBottom: 8 }}>Пусто.</div>
             <div style={{ fontSize: 14 }}>
-              {filter === 'all' ? 'Нажми на карточку выше, чтобы начать.' : 'Нет записей этого типа.'}
+              {filter === 'all' ? tr('Нажми на карточку выше, чтобы начать.', 'Нажмите на карточку выше, чтобы начать.') : 'Нет записей этого типа.'}
             </div>
           </div>
         )}

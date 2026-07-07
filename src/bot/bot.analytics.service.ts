@@ -88,6 +88,38 @@ export class BotAnalyticsService {
     return Math.floor(diffMs / 86_400_000);
   }
 
+  /** Сколько разных дней с записями за последние N локальных дней (включая сегодня) */
+  async getFillDaysInLast(userId: bigint, days: number): Promise<number> {
+    const tz = await this.userTimezone(userId);
+    const dates = Array.from({ length: days }, (_, i) =>
+      this.localDateString(tz, new Date(Date.now() - i * 86_400_000)),
+    );
+    const rows = await this.prisma.rating.findMany({
+      where: { userId, date: { in: dates } },
+      select: { date: true },
+      distinct: ['date'],
+    });
+    return rows.length;
+  }
+
+  /**
+   * Перерыв (в днях) перед самой свежей записью: разница между двумя последними
+   * различными датами записей. null если записей меньше двух.
+   * Используется для comeback: свежая запись сегодня после перерыва ≥3 дней.
+   */
+  async getGapBeforeLatestFill(userId: bigint): Promise<number | null> {
+    const rows = await this.prisma.rating.findMany({
+      where: { userId },
+      select: { date: true },
+      distinct: ['date'],
+      orderBy: { date: 'desc' },
+      take: 2,
+    });
+    if (rows.length < 2) return null;
+    const diffMs = new Date(rows[0].date + 'T00:00:00Z').getTime() - new Date(rows[1].date + 'T00:00:00Z').getTime();
+    return Math.floor(diffMs / 86_400_000);
+  }
+
   async getWeeklyStats(userId: bigint): Promise<Array<{ needId: NeedId; avg: number | null; trend: '↑' | '↓' | '→' }>> {
     const tz = await this.userTimezone(userId);
     const last14 = Array.from({ length: 14 }, (_, i) =>
@@ -108,6 +140,45 @@ export class BotAnalyticsService {
         : '→';
       return { needId, avg, trend };
     });
+  }
+
+  /**
+   * Сводный «портрет» по всей истории: сколько дней всего, сильнейшая и слабейшая
+   * потребности (all-time средние). Питает value-based возвраты (comeback / value_recap):
+   * возвращаем не «я есть», а зеркало собственных данных юзера.
+   * null, если данных мало (<5 дней) — новичку такой инсайт был бы шумом.
+   */
+  async getProfileInsight(userId: bigint): Promise<{
+    totalDays: number;
+    strongest: NeedId; strongestAvg: number;
+    weakest: NeedId; weakestAvg: number;
+  } | null> {
+    const rows = await this.prisma.rating.findMany({
+      where: { userId },
+      select: { date: true, needId: true, value: true },
+    });
+    if (rows.length === 0) return null;
+    const totalDays = new Set(rows.map((r) => r.date)).size;
+    if (totalDays < 5) return null;
+
+    const byNeed = new Map<NeedId, { sum: number; n: number }>();
+    for (const r of rows) {
+      const cur = byNeed.get(r.needId as NeedId) ?? { sum: 0, n: 0 };
+      cur.sum += r.value; cur.n++;
+      byNeed.set(r.needId as NeedId, cur);
+    }
+    const avgs = [...byNeed.entries()]
+      .filter(([, v]) => v.n >= 3) // потребность отмечалась хотя бы 3 раза — иначе среднее не значимо
+      .map(([needId, v]) => ({ needId, avg: v.sum / v.n }));
+    if (avgs.length === 0) return null;
+    avgs.sort((a, b) => b.avg - a.avg);
+    const strongest = avgs[0];
+    const weakest = avgs[avgs.length - 1];
+    return {
+      totalDays,
+      strongest: strongest.needId, strongestAvg: strongest.avg,
+      weakest: weakest.needId, weakestAvg: weakest.avg,
+    };
   }
 
   async getAchievements(userId: bigint): Promise<Array<{ id: string; earned: boolean }>> {

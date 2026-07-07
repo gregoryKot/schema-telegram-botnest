@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import type { TherapyClientSummary, UserTask, ClientConceptualization } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
@@ -69,6 +70,7 @@ const CONCEPT_FIELDS: { key: keyof ClientConceptualization; label: string; place
 
 
 export function TherapistClientSheet({ view, openClientId: openClientIdProp, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange }: Props) {
+  const tr = useTr();
   // ─── Client list ──────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,11 +155,11 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
+    <div className="therapist-sheet" style={{ background: 'var(--bg)' }}>
 
       {/* ── LIST VIEW ──────────────────────────────────────────────────────────── */}
       {view === 'list' && (
-        <div key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'auto' }}>
+        <div className="therapist-scroll therapist-scroll--list" key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
           <div className="page-inner-wide">
 
             {/* ── Add client form (editorial style) ──────────────────────── */}
@@ -213,7 +215,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                   <div className="eyebrow" style={{ marginBottom: 16 }}>Новый клиент</div>
                   <h1 className="hub-title" style={{ marginBottom: 8 }}>Добавить клиента</h1>
                   <p className="hub-sub" style={{ marginBottom: 28 }}>
-                    Введи имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.
+                    {tr('Введи имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.', 'Введите имя — создастся оффлайн-карточка. Ссылку для подключения через бот — опционально.')}
                   </p>
 
                   {/* Underline field */}
@@ -383,7 +385,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                 <div style={{ padding: '80px 0', textAlign: 'center', color: 'var(--text-faint)' }}>Загрузка...</div>
               ) : clients.length === 0 ? (
                 <div style={{ padding: '24px 0', color: 'var(--text-faint)', fontSize: 14 }}>
-                  Введи имя клиента выше, чтобы добавить первую карточку
+                  {tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')}
                 </div>
               ) : (() => {
                 const today = todayStr();
@@ -478,10 +480,10 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
       {/* ── CLIENT VIEW ────────────────────────────────────────────────────────── */}
       {view === 'client' && selectedClient && (
-        <div key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="therapist-scroll therapist-scroll--client" key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
 
           {/* Client header — moderately compact */}
-          <div style={{ borderBottom: '1px solid var(--line)', padding: '24px 48px 0', flexShrink: 0 }}>
+          <div className="therapist-client-header" style={{ borderBottom: '1px solid var(--line)', padding: '24px 48px 0', flexShrink: 0 }}>
             {/* Row 1: back + name + actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
               <button onClick={() => switchView('list')}
@@ -572,7 +574,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
           </div>
 
           {/* Tab content */}
-          <div style={{ flex: 1, overflow: 'auto' }} key={clientTab}>
+          <div className="therapist-scroll therapist-scroll--tabs" key={clientTab}>
 
             {/* Loading state */}
             {tabLoading ? (
@@ -726,7 +728,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     {activeSchemaIds.length === 0 && activeModeIds.length === 0 && notes.length === 0 && clientDiary.length === 0 && (
                       <div className="section">
                         <div style={{ padding: '32px 0', color: 'var(--text-faint)', fontSize: 14 }}>
-                          Заполни концептуализацию, чтобы увидеть схемы и режимы клиента
+                          {tr('Заполни концептуализацию, чтобы увидеть схемы и режимы клиента', 'Заполните концептуализацию, чтобы увидеть схемы и режимы клиента')}
                         </div>
                         <button onClick={() => setClientTab('concept')} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                           Открыть концептуализацию
@@ -1147,7 +1149,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
 
             {/* ── SESSIONS ─────────────────────────────────────────────────────── */}
             {clientTab === 'sessions' && (
-              <div className="page-inner" style={{ paddingTop: 40 }}>
+              <div className="page-inner-wide" style={{ paddingTop: 40 }}>
                 {/* Composer */}
                 <div style={{ marginBottom: 0 }}>
                   <div className="eyebrow" style={{ marginBottom: 16 }}>
@@ -1208,7 +1210,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               const activeTasks  = clientTasks.filter(t => !t.done);
               const doneTasks    = clientTasks.filter(t => t.done === true);
               return (
-              <div className="page-inner" style={{ paddingTop: 40 }}>
+              <div className="page-inner-wide" style={{ paddingTop: 40 }}>
 
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40 }}>

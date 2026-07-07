@@ -6,6 +6,7 @@ import { NODE_TYPES } from './ModeMapNodes';
 import { EDGE_TYPES } from './ModeMapFloatingEdge';
 import { toFlowNodes, toFlowEdges } from './modeMapFlow';
 import { ModeMapLegend } from './ModeMapLegend';
+import { MMIcon } from './modeMapIcons';
 
 function Canvas({ map }: { map: ModeMapFull }) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
@@ -20,11 +21,11 @@ function Canvas({ map }: { map: ModeMapFull }) {
       <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.16)" gap={22} size={1.5} />
       <Panel position="top-left">
         <div style={{ display: 'flex', gap: 2, padding: 4, borderRadius: 9, background: 'var(--bg-elev)',
-          border: '1px solid rgba(var(--fg-rgb),0.1)', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-          <ViewBtn onClick={() => zoomOut()}>－</ViewBtn>
-          <ViewBtn onClick={() => zoomIn()}>＋</ViewBtn>
-          <ViewBtn onClick={() => fitView({ padding: 0.2 })}>⤢</ViewBtn>
-          <ViewBtn onClick={() => setLegend(l => !l)} active={legend}>ⓘ</ViewBtn>
+          border: '1px solid var(--line)', boxShadow: 'var(--shadow-2)' }}>
+          <ViewBtn onClick={() => zoomOut()}><MMIcon name="minus" size={17} /></ViewBtn>
+          <ViewBtn onClick={() => zoomIn()}><MMIcon name="plus" size={17} /></ViewBtn>
+          <ViewBtn onClick={() => fitView({ padding: 0.2 })}><MMIcon name="fit" size={17} /></ViewBtn>
+          <ViewBtn onClick={() => setLegend(l => !l)} active={legend}><MMIcon name="info" size={17} /></ViewBtn>
         </div>
       </Panel>
       {legend && <Panel position="bottom-left"><ModeMapLegend onClose={() => setLegend(false)} /></Panel>}
@@ -60,10 +61,13 @@ export function ModeMapViewer() {
   if (!loading && maps.length === 0) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, color: 'var(--text-sub)' }}>
-        <div style={{ fontSize: 32 }}>🗺️</div>
+        <div style={{ width: 52, height: 52, borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--line)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}>
+          <MMIcon name="map" size={26} />
+        </div>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Карты режимов пока нет</div>
         <div style={{ fontSize: 13, textAlign: 'center', maxWidth: 300, lineHeight: 1.5 }}>
-          Терапевт создаёт её вместе с тобой на сессии — она появится здесь.
+          Терапевт создаёт её на сессии — она появится здесь.
         </div>
       </div>
     );
@@ -73,15 +77,15 @@ export function ModeMapViewer() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {maps.length > 1 && (
         <div style={{ display: 'flex', gap: 6, padding: '8px 12px', overflowX: 'auto', flexShrink: 0,
-          borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}>
+          borderBottom: '1px solid var(--line)' }}>
           {maps.map(m => (
             <button key={m.id} onClick={() => select(m.id)}
               style={{ padding: '5px 12px', borderRadius: 7, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                 fontWeight: active?.id === m.id ? 600 : 400,
-                border: active?.id === m.id ? '1px solid rgba(var(--fg-rgb),0.12)' : '1px solid transparent',
-                background: active?.id === m.id ? 'rgba(var(--fg-rgb),0.08)' : 'none',
+                border: active?.id === m.id ? '1px solid var(--line)' : '1px solid transparent',
+                background: active?.id === m.id ? 'var(--surface-3)' : 'none',
                 color: active?.id === m.id ? 'var(--text)' : 'var(--text-sub)' }}>
-              {m.kind === 'personality' ? '🧭' : '🎯'} {m.title}
+              {m.kind === 'personality' ? '🧭' : m.kind === 'couple' ? '💞' : '🎯'} {m.title}
             </button>
           ))}
         </div>

@@ -25,6 +25,7 @@ const USER_DATA_TABLES = [
   'appActivity',
   'userTask',
   'diaryDraft',
+  'emailToken',
 ] as const;
 // Compile-time check: any invalid table name above becomes a TS error here.
 type _VerifyTables = { [K in typeof USER_DATA_TABLES[number]]: PrismaService[K] };
@@ -152,6 +153,13 @@ export class BotService {
         notifyLocalHour: true,
         notifyTimezone: true,
         notifyReminderEnabled: true,
+        notifyFrequency: true,
+        notifyQuietStart: true,
+        notifyQuietEnd: true,
+        notifyGamified: true,
+        notifyPausedUntil: true,
+        notifyNextRemindDate: true,
+        addressForm: true,
         pairCardDismissed: true,
         mySchemaIds: true,
         myModeIds: true,
@@ -164,7 +172,7 @@ export class BotService {
     return decryptRecord(row as any, { jsonArrays: ['mySchemaIds', 'myModeIds'] });
   }
 
-  async updateUserSettings(userId: bigint, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean }) {
+  async updateUserSettings(userId: bigint, data: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; notifyFrequency?: number; notifyQuietStart?: number; notifyQuietEnd?: number; notifyGamified?: boolean; notifyPausedUntil?: Date | null; addressForm?: string; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean }) {
     const enc = encryptRecord(data as Record<string, unknown>, { jsonArrays: ['mySchemaIds', 'myModeIds'] });
     await this.prisma.user.update({ where: { id: userId }, data: enc as any });
   }
@@ -214,12 +222,38 @@ export class BotService {
     return users.map((u) => Number(u.id));
   }
 
-  async getAllUsersWithSettings(): Promise<Array<{ id: number; notifyLocalHour: number; notifyTimezone: string; notifyReminderEnabled: boolean }>> {
-    const users = await this.prisma.user.findMany({
+  async getAllUsersWithSettings() {
+    return this.prisma.user.findMany({
       where: { notifyEnabled: true, botBlockedAt: null, deletedAt: null },
-      select: { id: true, notifyLocalHour: true, notifyTimezone: true, notifyReminderEnabled: true },
+      select: {
+        id: true, notifyLocalHour: true, notifyTimezone: true, notifyReminderEnabled: true,
+        notifyGamified: true,
+        notifyFrequency: true, notifyAdaptiveLevel: true, notifyIgnoredCount: true,
+        notifyNextRemindDate: true, notifySkipAckDate: true, notifyLastEvalDate: true,
+        notifyPausedUntil: true, addressForm: true,
+      },
     });
-    return users.map((u) => ({ ...u, id: Number(u.id) }));
+  }
+
+  /** Явный выбор частоты сбрасывает адаптацию на выбранный уровень */
+  async setAdaptiveLevel(userId: bigint, level: number) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { notifyAdaptiveLevel: level, notifyIgnoredCount: 0 },
+    });
+  }
+
+  /** Тихие часы + таймзона + форма обращения для пачки юзеров (processQueue) */
+  async getSendSettingsFor(ids: bigint[]): Promise<Map<string, { tz: string; start: number; end: number; form: string | null }>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.prisma.user.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, notifyTimezone: true, notifyQuietStart: true, notifyQuietEnd: true, addressForm: true },
+    });
+    return new Map(rows.map((r) => [
+      r.id.toString(),
+      { tz: r.notifyTimezone, start: r.notifyQuietStart, end: r.notifyQuietEnd, form: r.addressForm },
+    ]));
   }
 
   async saveRating(userId: bigint, needId: NeedId, value: number, date?: string) {
@@ -452,11 +486,25 @@ export class BotService {
     origins?: string; reality?: string; healthyView?: string; behavior?: string;
   }) {
     const enc = encryptRecord(data, BotService.SCHEMA_NOTE_SCHEMA);
-    return this.prisma.userSchemaNote.upsert({
+    const res = await this.prisma.userSchemaNote.upsert({
       where: { userId_schemaId: { userId, schemaId } },
       update: enc,
       create: { userId, schemaId, ...enc },
     });
+    // Заполненная карточка = схема в коллекции юзера, иначе её не найти в «Моих записях».
+    await this.addToMyList(userId, 'mySchemaIds', schemaId);
+    return res;
+  }
+
+  // Добавляет id в зашифрованный json-массив профиля (mySchemaIds/myModeIds), если его там ещё нет.
+  private async addToMyList(userId: bigint, field: 'mySchemaIds' | 'myModeIds', id: string) {
+    const row = await this.prisma.user.findUnique({ where: { id: userId }, select: { [field]: true } as any });
+    if (!row) return;
+    const dec = decryptRecord(row as any, { jsonArrays: [field] }) as Record<string, unknown>;
+    const list = Array.isArray(dec[field]) ? (dec[field] as string[]) : [];
+    if (list.includes(id)) return;
+    const enc = encryptRecord({ [field]: [...list, id] }, { jsonArrays: [field] });
+    await this.prisma.user.update({ where: { id: userId }, data: enc as any });
   }
 
   async getModeNote(userId: bigint, modeId: string) {
@@ -473,11 +521,13 @@ export class BotService {
     triggers?: string; feelings?: string; thoughts?: string; needs?: string; behavior?: string;
   }) {
     const enc = encryptRecord(data, BotService.MODE_NOTE_SCHEMA);
-    return this.prisma.userModeNote.upsert({
+    const res = await this.prisma.userModeNote.upsert({
       where: { userId_modeId: { userId, modeId } },
       update: enc,
       create: { userId, modeId, ...enc },
     });
+    await this.addToMyList(userId, 'myModeIds', modeId);
+    return res;
   }
 
   async updateName(userId: bigint, name: string): Promise<void> {
@@ -646,6 +696,11 @@ export class BotService {
       (this.prisma as any).authProvider.deleteMany({ where: { userId: uid } }),
       (this.prisma as any).webSession.deleteMany({ where: { userId: uid } }),
       (this.prisma as any).therapistRequest.deleteMany({ where: { userId: uid } }),
+      // Recurring subscriptions: for Telegram users userId === telegramId, so
+      // remove (and stop billing) any subscription tied to this person. Charges
+      // cascade-delete via the FK. (Web-only subs without telegramId aren't
+      // account-linked — managed by their own cancel token.)
+      (this.prisma as any).subscription.deleteMany({ where: { telegramId: uid } }),
       // Finally — the user row itself.
       this.prisma.user.delete({ where: { id: uid } }),
     ]);

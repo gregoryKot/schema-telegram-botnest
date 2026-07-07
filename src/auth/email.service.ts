@@ -19,7 +19,7 @@ function hashToken(raw: string): string {
 // free emails/month). For dev/CI without RESEND_API_KEY set, falls back to
 // logging the would-be email so you can see the link.
 //
-// Required env: RESEND_API_KEY, EMAIL_FROM (e.g. "SchemaLab <no-reply@schemalab.ru>"),
+// Required env: RESEND_API_KEY, EMAIL_FROM (e.g. "Schema Happens <no-reply@schemehappens.ru>"),
 //               WEBAPP_URL.
 @Injectable()
 export class EmailService {
@@ -59,7 +59,7 @@ export class EmailService {
     });
 
     const link = `${this.config.getOrThrow<string>('WEBAPP_URL')}/auth/recovery/confirm?token=${raw}`;
-    await this.send(lower, 'Восстановление доступа к SchemaLab',
+    await this.send(lower, 'Восстановление доступа к «Всё по схеме»',
       `Перейди по ссылке чтобы войти в свой аккаунт и привязать новый способ входа.\n\n${link}\n\n` +
       `Ссылка действует 30 минут. Если ты не запрашивал восстановление — проигнорируй это письмо.`);
     return { ok: true };
@@ -89,7 +89,7 @@ export class EmailService {
     });
 
     const link = `${this.config.getOrThrow<string>('WEBAPP_URL')}/account/verify-email?token=${raw}`;
-    await this.send(lower, 'Подтверди email для SchemaLab',
+    await this.send(lower, 'Подтверди email для «Всё по схеме»',
       `Подтверди что это твой адрес — он будет использован для восстановления доступа если ты потеряешь все способы входа.\n\n${link}\n\n` +
       `Ссылка действует 30 минут.`);
     return { ok: true };
@@ -131,8 +131,8 @@ export class EmailService {
   async sendLoginLink(to: string, link: string): Promise<void> {
     await this.send(
       to,
-      'Войти в СхемаЛаб',
-      `Привет!\n\nПерейди по ссылке чтобы войти в СхемаЛаб:\n\n${link}\n\nСсылка действует 30 минут. Если ты не запрашивал вход — просто проигнорируй это письмо.`,
+      'Войти в «Всё по схеме»',
+      `Привет!\n\nПерейди по ссылке чтобы войти в «Всё по схеме»:\n\n${link}\n\nСсылка действует 30 минут. Если ты не запрашивал вход — просто проигнорируй это письмо.`,
     );
   }
 
@@ -150,7 +150,7 @@ export class EmailService {
 
   private async send(to: string, subject: string, text: string): Promise<void> {
     const apiKey = process.env.RESEND_API_KEY;
-    const from   = process.env.EMAIL_FROM ?? 'SchemaLab <no-reply@schemalab.ru>';
+    const from   = process.env.EMAIL_FROM ?? 'Schema Happens <no-reply@schemehappens.ru>';
 
     if (!apiKey) {
       // Dev / not-configured — log instead of failing silently.

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useTr } from '../../utils/addressForm';
 
 function fmtAgo(d: string): string {
   const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
@@ -12,6 +13,7 @@ function fmtAgo(d: string): string {
 }
 
 export function LetterEx({ onBack, onComplete }: { onBack: () => void; onComplete?: () => void }) {
+  const tr = useTr();
   const goBack = useHistorySheet(onBack);
   const [text, setText] = useState('');
   const [done, setDone] = useState(false);
@@ -65,14 +67,14 @@ export function LetterEx({ onBack, onComplete }: { onBack: () => void; onComplet
   return (
     <ExScreen onBack={goBack} eyebrow="№ 04 · Эмоциональная работа" eyebrowColor="var(--c-amber)"
       title={<>Письмо<br/><span className="it">уязвимому ребёнку</span></>}
-      lede="Сядь рядом с собой-маленьким – таким, каким ты был, когда было трудно. Скажи ему то, что он должен был услышать тогда."
+      lede={tr('Сядь рядом с собой-маленьким – таким, каким ты был, когда было трудно. Скажи ему то, что он должен был услышать тогда.', 'Сядьте рядом с собой-маленьким – таким, каким вы были, когда было трудно. Скажите ему то, что он должен был услышать тогда.')}
       aside={<>
         <div className="aside-card" style={{ borderColor: 'var(--c-amber)40', background: 'var(--c-amber)08' }}>
           <div className="aside-card-eyebrow" style={{ color: 'var(--c-amber)' }}>С чего начать</div>
           <h3>Три вопроса перед тем как писать</h3>
           <ul style={{ marginTop: 14 }}>
             <li>Какой момент из детства – самый трудный?</li>
-            <li>Что ты тогда чувствовал? Чего не хватало?</li>
+            <li>{tr('Что ты тогда чувствовал? Чего не хватало?', 'Что вы тогда чувствовали? Чего не хватало?')}</li>
             <li>Что он должен был услышать – но не услышал?</li>
           </ul>
         </div>

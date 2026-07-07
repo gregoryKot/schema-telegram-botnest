@@ -1,5 +1,5 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 
 // ── Yandex.Metrika SPA pageview tracking ──────────────────────────────────────
 const YM_ID = 109568051;
@@ -23,12 +23,21 @@ import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
 import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
+import { AddressFormPicker } from './components/AddressFormPicker';
+import { AddressFormProvider } from './utils/addressForm';
 import { LandingPage } from './pages/LandingPage';
+import { ProductLandingPage } from './pages/ProductLandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { OfferPage } from './pages/OfferPage';
 import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { ReviewsPage } from './pages/ReviewsPage';
 import { GamePage } from './pages/GamePage';
+// Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main
+// bundle every visitor downloads just for the public site.
+const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+import { DonatePage } from './pages/DonatePage';
+import { BookingPaidPage } from './pages/BookingPaidPage';
+import { SubscribePage } from './pages/SubscribePage';
 
 // Apply saved theme before first render
 const savedTheme = localStorage.getItem('app_theme');
@@ -46,7 +55,12 @@ function RequireAuth() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <Outlet />;
+  return (
+    <AddressFormProvider>
+      <AddressFormPicker />
+      <Outlet />
+    </AddressFormProvider>
+  );
 }
 
 // ── Root layout – providers wrapper ───────────────────────────────────────────
@@ -84,13 +98,28 @@ const personalRoutes = [
   { path: '/articles/:slug', element: <ArticlePage /> },
   { path: '/reviews',        element: <ReviewsPage /> },
   { path: '/game',           element: <GamePage /> },
+  { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
+  { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
+  { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
+  { path: '/booking/paid',   element: <BookingPaidPage /> },
+  { path: '/subscribe',      element: <SubscribePage /> },
+  { path: '/donate',         element: <DonatePage /> },
   { path: '/privacy',        element: <PrivacyPage /> },
   { path: '/offer',          element: <OfferPage /> },
   { path: '*',               element: <Navigate to="/" replace /> },
 ];
 
 const appRoutes = [
-  { path: '/',               element: <Navigate to="/login" replace /> },
+  { path: '/',               element: <ProductLandingPage /> },
+  { path: '/articles',       element: <ArticlesListPage /> },
+  { path: '/articles/:slug', element: <ArticlePage /> },
+  { path: '/subscribe',      element: <SubscribePage /> },
+  { path: '/donate',         element: <DonatePage /> },
+  // Admin panel is gated by its own key (not the app login), so it's reachable
+  // on the app domain too — otherwise /admin here falls through to the login/app.
+  { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
+  { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
+  { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
   { path: '/login',          element: <LoginPage /> },
   { path: '/auth/callback',  element: <AuthCallback /> },
   { path: '/auth/telegram',  element: <TelegramWidgetCallback /> },

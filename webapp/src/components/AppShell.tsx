@@ -10,11 +10,11 @@ import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, shouldShowChil
 import { CommandPalette } from './CommandPalette';
 import { Loader } from './Loader';
 import { ErrorBoundary } from './ErrorBoundary';
-import { FloatingPill } from './FloatingPill';
 
 // – always-needed small helpers (no heavy data deps) –
 import { NoteSheet } from './NoteSheet';
 import { Celebration } from './Celebration';
+import { DonateNudge } from './DonateNudge';
 import { TaskCreateSheet } from './TaskCreateSheet';
 
 // – lazy: sections (each can pull in schemaTherapyData / needData on demand) –
@@ -35,10 +35,8 @@ const SchemaInfoSheet      = lazy(() => import('./SchemaInfoSheet').then(m => ({
 const ChildhoodWheelEx     = lazy(() => import('./exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
 const TherapistClientSheet  = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
 const TherapistTodaySection = lazy(() => import('../sections/TherapistTodaySection').then(m => ({ default: m.TherapistTodaySection })));
-const SchemaEntrySheet     = lazy(() => import('./diary/SchemaEntrySheet').then(m => ({ default: m.SchemaEntrySheet })));
-const ModeEntrySheet       = lazy(() => import('./diary/ModeEntrySheet').then(m => ({ default: m.ModeEntrySheet })));
-const GratitudeEntrySheet  = lazy(() => import('./diary/GratitudeEntrySheet').then(m => ({ default: m.GratitudeEntrySheet })));
 const PracticesOnboarding  = lazy(() => import('./PracticesOnboarding').then(m => ({ default: m.PracticesOnboarding })));
+const TherapistPrivacyDisclaimer = lazy(() => import('./TherapistPrivacyDisclaimer').then(m => ({ default: m.TherapistPrivacyDisclaimer })));
 
 const LazyLoader = () => <Loader minHeight="100dvh" />;
 
@@ -53,14 +51,15 @@ type TrackerTab = 'today' | 'history';
 const NAV_ITEMS: { id: Section; label: string }[] = [
   { id: 'today',    label: 'Сегодня' },
   { id: 'diary',    label: 'Дневник' },
-  { id: 'schemas',  label: 'Схемы' },
+  { id: 'schemas',  label: 'Паттерны' },
   { id: 'practice', label: 'Практика' },
+  { id: 'profile',  label: 'Профиль' },
 ];
-// Note: 'profile' removed from nav – accessible via sidebar footer avatar block.
-// Mobile bottom-nav still includes it (см. ниже).
+// Desktop sidebar omits Profile — it's accessible via the footer account link
+const SIDEBAR_NAV_ITEMS = NAV_ITEMS.filter(i => i.id !== 'profile');
 
 const SECTION_LABELS: Record<Section, string> = {
-  today: 'Сегодня', diary: 'Дневник', schemas: 'Схемы', profile: 'Профиль', practice: 'Практика',
+  today: 'Сегодня', diary: 'Дневник', schemas: 'Паттерны', profile: 'Профиль', practice: 'Практика',
 };
 
 function sectionFromPath(path: string): Section {
@@ -98,6 +97,34 @@ function fillHistoryGaps(h: DayHistory[]): DayHistory[] {
   return filled;
 }
 
+function MobileNavIcon({ id }: { id: Section }) {
+  const a = { fill: 'none' as const, stroke: 'currentColor', strokeWidth: '1.8', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (id === 'today') return (
+    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
+      <rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  );
+  if (id === 'diary') return (
+    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+  );
+  if (id === 'schemas') return (
+    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+    </svg>
+  );
+  if (id === 'practice') return (
+    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  );
+  return (
+    <svg width={20} height={20} viewBox="0 0 24 24" {...a}>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+  );
+}
 
 export function AppShell() {
   const { logout } = useAuth();
@@ -151,7 +178,6 @@ export function AppShell() {
   const [_helpPlanCount, setHelpPlanCount] = useState<number | null>(null);
   const [_helpTasks, setHelpTasks] = useState<UserTask[] | null>(null);
   const [helpTasksKey, setHelpTasksKey] = useState(0);
-  const [diaryActiveSchemaIds, setDiaryActiveSchemaIds] = useState<string[] | undefined>(undefined);
   const [celebrationStreak, setCelebrationStreak] = useState<number | null>(null);
   const [childhoodWheelPending, setChildhoodWheelPending] = useState(false);
   const [todayRefreshKey, setTodayRefreshKey] = useState(0);
@@ -173,8 +199,16 @@ export function AppShell() {
   const [showDiaries, setShowDiaries] = useState(false);
   const [showChildhoodWheel, setShowChildhoodWheel] = useState(false);
   const [showTodayNote, setShowTodayNote] = useState(false);
-  const [newDiaryEntry, setNewDiaryEntry] = useState<'schema' | 'mode' | 'gratitude' | null>(null);
   const [showPracticesOnboarding, setShowPracticesOnboarding] = useState(false);
+  const [showTherapistDisclaimer, setShowTherapistDisclaimer] = useState(false);
+
+  // First entry into the cabinet as a therapist → one-time privacy disclaimer
+  useEffect(() => {
+    if (therapistMode && userRole === 'THERAPIST'
+        && !localStorage.getItem('therapist_privacy_disclaimer_seen')) {
+      setShowTherapistDisclaimer(true);
+    }
+  }, [therapistMode, userRole]);
 
   // Therapist clients (for sidebar)
   const [therapistClients, setTherapistClients] = useState<TherapyClientSummary[]>([]);
@@ -258,7 +292,6 @@ export function AppShell() {
       }
     }).catch(() => {});
     api.getProfile().then(p => {
-      setDiaryActiveSchemaIds(p.ysq.activeSchemaIds);
       setUserRole(p.role);
       // Auto-redirect therapists to cabinet on first login
       if (p.role === 'THERAPIST' && localStorage.getItem('therapist_mode') === null) {
@@ -325,8 +358,6 @@ export function AppShell() {
     }
   }, []);
 
-  const anyOverlayOpen = !!(newDiaryEntry || showTrackerOverlay || showTracker || showDiaries || showSchemaInfo || showSettings || showPractices || showPlans || showChildhoodWheel || showTodayNote);
-
   if (loading) {
     return <Loader minHeight="100vh" />;
   }
@@ -349,8 +380,8 @@ export function AppShell() {
       {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
       <aside className="sidebar">
         <div className="sb-brand">
-          <div className="sb-logo">СЛ</div>
-          <div className="sb-name">СхемаЛаб</div>
+          <div className="sb-logo">ВС</div>
+          <div className="sb-name">Всё по схеме</div>
         </div>
 
         {userRole === 'THERAPIST' && (
@@ -363,7 +394,7 @@ export function AppShell() {
         )}
 
         <nav className="sb-nav">
-          {!therapistMode && NAV_ITEMS.map(item => (
+          {!therapistMode && SIDEBAR_NAV_ITEMS.map(item => (
             <NavLink key={item.id} to={'/' + item.id}
                      className={({ isActive }) => `sb-item${isActive ? ' is-active' : ''}`}>
               <span>{item.label}</span>
@@ -418,6 +449,32 @@ export function AppShell() {
           </>)}
         </nav>
 
+        <div className="sb-foot-wrap">
+          {/* Today's index widget — fills the empty space and gives at-a-glance status */}
+          {!therapistMode && (() => {
+            const vals = Object.values(ratings);
+            const allFilled = needs.length > 0 && vals.length >= needs.length;
+            const idx = allFilled ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+            return (
+              <div className="sb-today">
+                <div className="sb-today-label">Сегодня</div>
+                {idx !== null ? (
+                  <>
+                    <div className="sb-today-index">
+                      <span className="sb-today-num">{idx.toFixed(1)}</span>
+                      <span className="sb-today-denom">/10</span>
+                    </div>
+                    <div className="sb-today-sub">индекс дня</div>
+                  </>
+                ) : (
+                  <button className="sb-today-cta"
+                          onClick={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}>
+                    Заполнить дневник →
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         <div className="sb-foot">
           <NavLink to="/profile" className={({ isActive }) => `sb-account${isActive ? ' is-active' : ''}`}>
             <div className="sb-avatar">{(displayName ?? '?')[0].toUpperCase()}</div>
@@ -441,6 +498,7 @@ export function AppShell() {
             <a href="/offer" target="_blank" style={{ fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none' }}>Оферта</a>
           </div>
         </div>
+        </div>{/* end sb-foot-wrap */}
       </aside>
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
@@ -474,21 +532,25 @@ export function AppShell() {
 
         {/* Therapist mode */}
         {therapistMode && location.pathname === '/cabinet/today' && (
-          <TherapistTodaySection
-            displayName={displayName}
-            onOpenClient={(id) => navigate('/cabinet/' + id)}
-          />
+          <ErrorBoundary section="Кабинет" key="cabinet-today-boundary">
+            <TherapistTodaySection
+              displayName={displayName}
+              onOpenClient={(id) => navigate('/cabinet/' + id)}
+            />
+          </ErrorBoundary>
         )}
         {therapistMode && location.pathname !== '/cabinet/today' && (
-          <TherapistClientSheet
-            view={openClientId ? 'client' : 'list'}
-            openClientId={openClientId}
-            onViewChange={(v) => v === 'list' ? navigate('/cabinet') : null}
-            onOpenClient={(id) => navigate('/cabinet/' + id)}
-            onClose={() => switchTherapistMode(false)}
-            backHandlerRef={therapistBackHandlerRef}
-            onClientsChange={setTherapistClients}
-          />
+          <ErrorBoundary section="Кабинет" key="cabinet-client-boundary">
+            <TherapistClientSheet
+              view={openClientId ? 'client' : 'list'}
+              openClientId={openClientId}
+              onViewChange={(v) => v === 'list' ? navigate('/cabinet') : null}
+              onOpenClient={(id) => navigate('/cabinet/' + id)}
+              onClose={() => switchTherapistMode(false)}
+              backHandlerRef={therapistBackHandlerRef}
+              onClientsChange={setTherapistClients}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Regular sections */}
@@ -518,7 +580,7 @@ export function AppShell() {
               </ErrorBoundary>
             )}
             {section === 'schemas' && (
-              <ErrorBoundary section="Схемы" key="schemas-boundary">
+              <ErrorBoundary section="Паттерны" key="schemas-boundary">
                 <SchemasSection
                   onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setSchemaHighlight(opts?.highlight); setShowSchemaInfo(true); }}
                   childhoodRatings={childhoodRatings}
@@ -528,6 +590,7 @@ export function AppShell() {
             )}
             {section === 'profile' && (
               <ProfileSection
+                onOpenSettings={() => setShowSettings(true)}
                 onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
                 refreshKey={profileRefreshKey}
                 displayName={displayName}
@@ -657,42 +720,13 @@ export function AppShell() {
             if (childhoodWheelPending) { setChildhoodWheelPending(false); setShowChildhoodWheel(true); }
           }} />
         )}
+        {showTherapistDisclaimer && (
+          <TherapistPrivacyDisclaimer onDone={() => setShowTherapistDisclaimer(false)} />
+        )}
 
         {/* ── Celebration ── */}
         {celebrationStreak !== null && (
           <Celebration streak={celebrationStreak} onDone={() => { setCelebrationStreak(null); setShowTodayNote(true); }} />
-        )}
-
-        {/* ── Diary entry sheets (floating pill) ── */}
-        {newDiaryEntry === 'schema' && (
-          <SchemaEntrySheet
-            activeSchemaIds={diaryActiveSchemaIds}
-            onClose={() => setNewDiaryEntry(null)}
-            onSave={async (data) => { await api.createSchemaDiary(data); }}
-          />
-        )}
-        {newDiaryEntry === 'mode' && (
-          <ModeEntrySheet
-            onClose={() => setNewDiaryEntry(null)}
-            onSave={async (data) => { await api.createModeDiary(data); }}
-          />
-        )}
-        {newDiaryEntry === 'gratitude' && (
-          <GratitudeEntrySheet
-            onClose={() => setNewDiaryEntry(null)}
-            date={TODAY_DATE}
-            onSave={async (date, items) => { await api.createGratitudeDiary(date, items); }}
-          />
-        )}
-
-        {/* ── Floating pill ── */}
-        {!therapistMode && !anyOverlayOpen && (
-          <FloatingPill
-            onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
-            onOpenSchemaDiary={() => setNewDiaryEntry('schema')}
-            onOpenModeDiary={() => setNewDiaryEntry('mode')}
-            onOpenGratitude={() => setNewDiaryEntry('gratitude')}
-          />
         )}
 
         </Suspense>
@@ -707,6 +741,7 @@ export function AppShell() {
             to={'/' + item.id}
             className={({ isActive }) => `mobile-nav-item${isActive ? ' active' : ''}`}
           >
+            <MobileNavIcon id={item.id} />
             {item.label}
           </NavLink>
         ))}
@@ -725,6 +760,9 @@ export function AppShell() {
           onNewDiaryEntry={() => { navigate('/diary'); }}
         />
       )}
+
+      {/* Periodic donate nudge (once ~monthly, dismissible) */}
+      <DonateNudge />
     </div>
   );
 }

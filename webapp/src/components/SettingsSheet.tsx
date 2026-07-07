@@ -6,6 +6,7 @@ import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../utils/storageKeys';
 import { Loader } from './Loader';
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
 import type { Theme } from '../utils/theme';
+import { useSetAddressForm } from '../utils/addressForm';
 
 const TIMEZONES = [
   { label: 'Лос-Анджелес (UTC−8)', iana: 'America/Los_Angeles' },
@@ -22,6 +23,28 @@ const TIMEZONES = [
 const HOURS = [8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
 function pad(n: number) { return String(n).padStart(2, '0'); }
 
+const FREQ_LABELS = ['Каждый день', 'Через день', 'Пару раз в неделю', 'Раз в неделю'];
+
+// Пресеты тихих часов: start===end → выключены
+const QUIET_PRESETS = [
+  { label: 'Выключены', start: 0, end: 0 },
+  { label: '21:00 – 08:00', start: 21, end: 8 },
+  { label: '22:00 – 08:00', start: 22, end: 8 },
+  { label: '23:00 – 07:00', start: 23, end: 7 },
+  { label: '00:00 – 08:00', start: 0, end: 8 },
+];
+
+function quietLabel(start?: number, end?: number): string {
+  if (start === undefined || end === undefined || start === end) return 'Выключены';
+  return `${pad(start)}:00 – ${pad(end)}:00`;
+}
+
+/** Час уведомления внутри окна тишины? (окно может переходить через полночь) */
+function hourInQuiet(hour: number, start?: number, end?: number): boolean {
+  if (start === undefined || end === undefined || start === end) return false;
+  return start > end ? (hour >= start || hour < end) : (hour >= start && hour < end);
+}
+
 interface Props {
   onClose: () => void;
   userRole?: 'CLIENT' | 'THERAPIST';
@@ -34,7 +57,7 @@ interface Props {
 
 export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode }: Props) {
   const goBack = useHistorySheet(onClose);
-  const [subView, setSubView] = useState<'main' | 'time' | 'tz'>('main');
+  const [subView, setSubView] = useState<'main' | 'time' | 'tz' | 'freq' | 'quiet'>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
   const [pairData, setPairData]     = useState<PairsData | null>(null);
   const [pairLoading, setPairLoading] = useState(false);
@@ -57,6 +80,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [editName, setEditName] = useState(displayName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);
+  const setAddressForm = useSetAddressForm();
   const [therapistReq, setTherapistReq] = useState<{ status: string; rejectReason: string | null } | null | undefined>(undefined);
   const [showReqForm, setShowReqForm] = useState(false);
   const [reqFullName, setReqFullName] = useState('');
@@ -165,7 +189,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
             ← {subView !== 'main' ? 'Назад' : 'Закрыть'}
           </button>
           <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-            {subView === 'time' ? 'Время уведомления' : subView === 'tz' ? 'Часовой пояс' : 'Настройки'}
+            {subView === 'time' ? 'Время уведомления' : subView === 'tz' ? 'Часовой пояс' : subView === 'freq' ? 'Частота напоминаний' : subView === 'quiet' ? 'Тихие часы' : 'Настройки'}
           </span>
           <span style={{ fontSize: 13, color: 'var(--accent-green)', fontWeight: 500, opacity: savedToast ? 1 : 0, transition: 'opacity 0.3s' }}>
             Сохранено ✓
@@ -188,7 +212,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
           {/* Scrollable content */}
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            <div style={{ maxWidth: 600, padding: subView !== 'main' ? '32px 48px 80px' : '0 48px 80px' }}>
+            <div className="settings-content-inner" style={{ padding: subView !== 'main' ? '32px 48px 80px' : '0 48px 80px' }}>
 
               {/* ── TIME VIEW ── */}
               {subView === 'time' && (
@@ -202,6 +226,44 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     );
                   })}
                 </div>
+              )}
+
+              {/* ── FREQ VIEW ── */}
+              {subView === 'freq' && (
+                <>
+                  <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 14 }}>
+                    Если напоминания будут оставаться без ответа, бот сам начнёт писать реже — а когда записи вернутся, вернётся к выбранной частоте.
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {FREQ_LABELS.map((label, i) => {
+                      const active = i === (settings.notifyFrequency ?? 0);
+                      return (
+                        <div key={i} onClick={async () => { await patch({ notifyFrequency: i }); setSubView('main'); }}
+                          style={{ padding: '12px 14px', borderRadius: 7, background: active ? 'rgba(124,114,248,0.08)' : 'transparent', color: active ? 'var(--accent)' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                        >{label}{active && <span>✓</span>}</div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* ── QUIET VIEW ── */}
+              {subView === 'quiet' && (
+                <>
+                  <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 14 }}>
+                    В тихие часы бот не пишет вообще — всё, что накопится, придёт утром.
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {QUIET_PRESETS.map(p => {
+                      const active = p.start === (settings.notifyQuietStart ?? 22) && p.end === (settings.notifyQuietEnd ?? 8);
+                      return (
+                        <div key={p.label} onClick={async () => { await patch({ notifyQuietStart: p.start, notifyQuietEnd: p.end }); setSubView('main'); }}
+                          style={{ padding: '12px 14px', borderRadius: 7, background: active ? 'rgba(124,114,248,0.08)' : 'transparent', color: active ? 'var(--accent)' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                        >{p.label}{active && <span>✓</span>}</div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
 
               {/* ── TZ VIEW ── */}
@@ -261,12 +323,44 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
                 {/* Уведомления */}
                 <SHead id="s-notifications" label="Уведомления" hint="Приходят через Telegram — @SchemaLabBot" />
+                {settings.notifyPausedUntil && new Date(settings.notifyPausedUntil) > new Date() && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                      ⏸ Уведомления на паузе до {new Date(settings.notifyPausedUntil).toLocaleDateString('ru-RU')}
+                    </span>
+                    <button
+                      onClick={() => patch({ notifyPausedUntil: null } as Partial<UserSettings>)}
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: 'inherit', flexShrink: 0 }}
+                    >Возобновить</button>
+                  </div>
+                )}
                 <SRow title="Итоги дня" sub="Ежедневный отчёт по потребностям" right={<Toggle on={settings.notifyEnabled} onClick={() => patch({ notifyEnabled: !settings.notifyEnabled })} />} />
                 <SRow title="Напоминание" sub="Заполнить трекер вечером" right={<Toggle on={!!settings.notifyReminderEnabled} onClick={() => patch({ notifyReminderEnabled: !settings.notifyReminderEnabled })} />} />
                 {(settings.notifyEnabled || settings.notifyReminderEnabled) && (<>
                   <SRow title="Время" right={<ChevronVal text={`${pad(localHour)}:00`} />} onClick={() => setSubView('time')} />
+                  <SRow title="Частота" right={<ChevronVal text={FREQ_LABELS[settings.notifyFrequency ?? 0]} small />} onClick={() => setSubView('freq')} />
+                  <SRow title="Игровой режим" sub="Серии и «ещё день до вехи»" right={<Toggle on={!!settings.notifyGamified} onClick={() => patch({ notifyGamified: !settings.notifyGamified })} />} />
+                  <SRow title="Тихие часы" right={<ChevronVal text={quietLabel(settings.notifyQuietStart, settings.notifyQuietEnd)} small />} onClick={() => setSubView('quiet')} />
                   <SRow title="Часовой пояс" right={<ChevronVal text={tzLabel} small />} onClick={() => setSubView('tz')} />
+                  {hourInQuiet(localHour, settings.notifyQuietStart, settings.notifyQuietEnd) && (
+                    <div style={{ fontSize: 12, color: '#eab308', lineHeight: 1.5, padding: '8px 0' }}>
+                      Время уведомления попадает в тихие часы — сообщение придёт после их окончания
+                    </div>
+                  )}
                 </>)}
+
+                {/* Обращение */}
+                <SHead id="s-address" label="Обращение" />
+                <div style={{ display: 'flex', gap: 8, padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
+                  {(['ty', 'vy'] as const).map(form => {
+                    const active = (settings.addressForm ?? 'ty') === form;
+                    return (
+                      <button key={form} onClick={() => { setAddressForm(form); patch({ addressForm: form }); }}
+                        style={{ flex: 1, maxWidth: 160, padding: '10px 0', borderRadius: 8, border: 'none', textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit' }}
+                      >{form === 'ty' ? 'На «ты»' : 'На «вы»'}</button>
+                    );
+                  })}
+                </div>
 
                 {/* Мой терапевт */}
                 {userRole !== 'THERAPIST' && (<>
@@ -461,6 +555,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
                       Записаться на сессию → <span style={{ color: 'var(--accent)' }}>@kotlarewski</span>
                     </a>
+                    {/* Подписка скрыта до подключения рекуррента у Robokassa — вернуть ссылку на /subscribe, когда заработает */}
+                    <a href="/donate" target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: 'var(--text-sub)', textDecoration: 'none' }}>
+                      Поддержать проект → <span style={{ color: 'var(--accent)' }}>разовый донат 💛</span>
+                    </a>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.5, marginTop: 14 }}>
                     Разработано для образовательных целей. Не является медицинским или психологическим сервисом.
@@ -514,6 +612,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
           <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>Разработано для образовательных целей.</div>
         </InfoModal>
       )}
+
 
       {/* ── Delete modal ── */}
       {showDeleteSheet && (
@@ -609,9 +708,9 @@ function ChevronVal({ text, small }: { text: string; small?: boolean }) {
 
 function InfoModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '16px 16px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.12)', margin: '0 auto 20px' }} />
+    <div className="settings-modal" onClick={onClose}>
+      <div className="settings-modal-box" onClick={e => e.stopPropagation()}>
+        <div className="settings-modal-handle" />
         {children}
       </div>
     </div>

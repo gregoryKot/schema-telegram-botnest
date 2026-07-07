@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { useTr } from '../utils/addressForm';
 import { COLORS } from '../types';
 import type { Need, DayHistory } from '../types';
-import { NEED_DATA } from '../needData';
+import { useNeedData } from '../needData';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { getTherapistContact } from '../utils/therapistContact';
@@ -9,7 +10,7 @@ import { getTherapistContact } from '../utils/therapistContact';
 const DISCLAIMER_CONTENT = [
   'Дневник помогает видеть паттерны и чуть лучше понимать себя.',
   'Советы внутри – это приглашение к размышлению, не инструкция.',
-  'Если чувствуешь, что что-то важное требует внимания – терапия это место, где можно разобраться по-настоящему. Безопасно, глубоко, рядом живой человек.',
+  'Если что-то важное требует внимания – терапия это место, где можно разобраться по-настоящему. Безопасно, глубоко, рядом живой человек.',
 ];
 
 interface Props {
@@ -21,8 +22,10 @@ interface Props {
 }
 
 export function NeedHistorySheet({ need, value, history, childhoodValue, onClose }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const NEED_DATA = useNeedData();
   const data = NEED_DATA[need.id];
   if (!data) return null;
   const color = COLORS[need.id] ?? '#888';
@@ -123,7 +126,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
       <div className="prompt">
         <div className="prompt-num">·</div>
         <div>
-          <div className="prompt-label">Попробуй сегодня</div>
+          <div className="prompt-label">{tr('Попробуй сегодня', 'Попробуйте сегодня')}</div>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65 }}>
             {tip}
             <button

@@ -1,43 +1,19 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject, Optional, Logger } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
-import { TELEGRAF_BOT, MINIAPP_URL } from './telegram.constants';
+import { TELEGRAF_BOT, MINIAPP_URL, DONATE_URL } from './telegram.constants';
+import { renderTemplate } from '../notification/notification.templates';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapyService } from '../therapy/therapy.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
+import { isQuietHours, nextQuietEnd, tzOffsetAt } from '../notification/notification.time';
 
-function tzOffsetAt(tz: string, date = new Date()): number {
-  const utc = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const local = new Date(date.toLocaleString('en-US', { timeZone: tz }));
-  return Math.round((local.getTime() - utc.getTime()) / 3_600_000);
-}
-
-function nextSendAtHour(localHour: number, tz: string): Date {
-  const now = new Date();
-  for (let daysAhead = 0; daysAhead <= 1; daysAhead++) {
-    const probe = new Date(now.getTime() + daysAhead * 86_400_000);
-    const dateStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(probe);
-    const noonRef = new Date(`${dateStr}T12:00:00.000Z`);
-    const offset = tzOffsetAt(tz, noonRef);
-    const candidate = new Date(`${dateStr}T${String(localHour).padStart(2, '0')}:00:00.000Z`);
-    candidate.setTime(candidate.getTime() - offset * 3_600_000);
-    if (candidate > now) return candidate;
-  }
-  const probe2 = new Date(now.getTime() + 2 * 86_400_000);
-  const dateStr2 = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(probe2);
-  const noonRef2 = new Date(`${dateStr2}T12:00:00.000Z`);
-  const offset2 = tzOffsetAt(tz, noonRef2);
-  const result = new Date(`${dateStr2}T${String(localHour).padStart(2, '0')}:00:00.000Z`);
-  result.setTime(result.getTime() - offset2 * 3_600_000);
-  return result;
-}
-
-const WELCOME_TEXT = `Привет!
+export const WELCOME_TEXT = `Привет!
 
 Бывает, что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
 
-Дело почти всегда в потребностях. Схемалаб помогает это увидеть — трекер, дневники схема-терапии и YSQ-тест в одном месте.`;
+Дело почти всегда в потребностях. «Всё по схеме» помогает это увидеть — трекер, дневники схема-терапии и YSQ-тест в одном месте.`;
 
 const CONSENT_TEXT = `🔐 Соглашение об обработке данных
 
@@ -53,13 +29,25 @@ const CONSENT_TEXT = `🔐 Соглашение об обработке данн
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function buildWelcomeKeyboard(): any {
   return Markup.inlineKeyboard([
-    [Markup.button.webApp('🧠 Открыть СхемаЛаб', MINIAPP_URL)],
+    [Markup.button.webApp('🧠 Открыть «Всё по схеме»', MINIAPP_URL)],
+    [Markup.button.url('💛 Поддержать проект', DONATE_URL)],
   ]);
 }
 
 function buildConsentKeyboard() {
   return Markup.inlineKeyboard([
     [Markup.button.callback('✅ Принять и продолжить', 'accept_consent')],
+  ]);
+}
+
+const ADDRESS_PROMPT = 'Один вопрос, чтобы дальше было комфортно: как удобнее общаться?';
+
+export function buildAddressKeyboard() {
+  return Markup.inlineKeyboard([
+    [
+      Markup.button.callback('На «ты»', 'addr:ty'),
+      Markup.button.callback('На «вы»', 'addr:vy'),
+    ],
   ]);
 }
 
@@ -114,7 +102,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const rawId = ctx.from?.id;
         if (!rawId) return;
         const userId = BigInt(rawId);
-        const isReturning = !!(await this.botService.getUserSettings(userId));
+        const existingSettings = await this.botService.getUserSettings(userId);
+        const isReturning = !!existingSettings;
         await this.botService.registerUser(userId, ctx.from?.first_name);
         const payload = (ctx as any).startPayload as string | undefined;
         if (payload?.startsWith('pair_')) {
@@ -140,6 +129,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
           return;
         }
+        // Форма обращения ещё не выбрана — спросить до приветствия
+        if (!existingSettings?.addressForm) {
+          await ctx.reply(ADDRESS_PROMPT, buildAddressKeyboard());
+          return;
+        }
         if (isReturning) {
           const streak = await this.analyticsService.getConsecutiveDays(userId);
           const name = ctx.from?.first_name ? ` ${ctx.from.first_name}` : '';
@@ -152,7 +146,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('start command failed', err);
-        await ctx.reply('Что-то пошло не так. Попробуй открыть СхемаЛаб через кнопку ниже.',
+        await ctx.reply('Что-то пошло не так. Попробуй открыть «Всё по схеме» через кнопку ниже.',
           Markup.inlineKeyboard([[Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)]])).catch(() => null);
       }
     });
@@ -163,6 +157,53 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply('OK');
       } catch (err) {
         this.logger.error('ping command failed', err);
+      }
+    });
+
+    // Subscription is hidden until Robokassa's recurring service is live, so this
+    // command currently offers only a one-off donation. Re-add the subscribe
+    // button (SUBSCRIBE_URL) when subscriptions go live.
+    this.bot.command('subscribe', async (ctx) => {
+      try {
+        await ctx.reply(
+          '💛 <b>Поддержать SchemeHappens</b>\n\n' +
+          'Приложение бесплатное. Если оно полезно — можно поддержать проект разовым донатом.',
+          {
+            parse_mode: 'HTML',
+            reply_markup: { inline_keyboard: [[{ text: 'Разовый донат', url: DONATE_URL }]] },
+          },
+        );
+      } catch (err) {
+        this.logger.error('subscribe command failed', err);
+      }
+    });
+
+    this.bot.command('donate', async (ctx) => {
+      const text = '💛 <b>Поддержать SchemeHappens</b>\n\n' +
+        'Приложение бесплатное и без рекламы. Если оно тебе помогает — поддержи проект любой суммой. Спасибо 🙏';
+      try {
+        await ctx.reply(text, {
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: [[{ text: '💛 Поддержать проект', url: DONATE_URL }]] },
+        });
+      } catch (err) {
+        // If the inline button is rejected (e.g. an invalid URL), still give the
+        // user a working plain-text link instead of failing silently.
+        this.logger.error('donate command failed', err);
+        await ctx.reply(`${text}\n\n${DONATE_URL}`, { parse_mode: 'HTML' }).catch(() => null);
+      }
+    });
+
+    // Admin-only: preview the monthly donate reminder immediately (the real one
+    // fires 1st of each month). Lets us verify text + button without waiting.
+    this.bot.command('testdonate', async (ctx) => {
+      try {
+        const adminId = Number(process.env.ADMIN_ID);
+        if (!adminId || ctx.from?.id !== adminId) { await ctx.reply('⛔ Нет доступа'); return; }
+        const t = renderTemplate('donate_reminder', { seed: 0 });
+        if (t) await ctx.reply(t.text, (t.keyboard ? { reply_markup: t.keyboard.reply_markup } : {}) as any);
+      } catch (err) {
+        this.logger.error('testdonate command failed', err);
       }
     });
 
@@ -220,10 +261,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             return;
           }
         }
+        // После согласия — сразу выбор обращения, приветствие покажет addr-хендлер
         try {
-          await ctx.editMessageText(WELCOME_TEXT, buildWelcomeKeyboard() as any);
+          await ctx.editMessageText(ADDRESS_PROMPT, buildAddressKeyboard() as any);
         } catch {
-          await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
+          await ctx.reply(ADDRESS_PROMPT, buildAddressKeyboard());
         }
       } catch (err) {
         this.logger.error('accept_consent action failed', err);
@@ -268,12 +310,12 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           const userId = BigInt(rawId);
           const settings = await this.botService.getUserSettings(userId);
           const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
+          const quietStart = settings?.notifyQuietStart ?? 22;
+          const quietEnd = settings?.notifyQuietEnd ?? 8;
           let sendAt = new Date(Date.now() + 3_600_000);
-          // Quiet hours: if local hour >= 22 or < 7, push to 8:00 next morning
-          const offsetNow = tzOffsetAt(tz, sendAt);
-          const localHour = ((sendAt.getUTCHours() + offsetNow) % 24 + 24) % 24;
-          if (localHour >= 22 || localHour < 7) {
-            sendAt = nextSendAtHour(8, tz);
+          // Тихие часы юзера: если «через час» попадает в тишину — переносим на их конец
+          if (isQuietHours(tz, quietStart, quietEnd, sendAt)) {
+            sendAt = nextQuietEnd(tz, quietEnd, sendAt);
           }
           await this.notificationService.cancel(userId, 'reminder');
           await this.notificationService.schedule(userId, 'pre_reminder', sendAt);
@@ -361,31 +403,39 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.bot.command('about', async (ctx) => {
+      const text = [
+        '🧠 <b>Всё по схеме</b>',
+        '',
+        'Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.',
+        '',
+        '<b>Об авторе</b>',
+        'Канал о схема-терапии — @SchemeHappens',
+        'Записаться на сессию — @kotlarewski',
+        '',
+        'Приложение бесплатное 💛 Поддержать проект можно донатом ниже.',
+      ].join('\n');
       try {
-        const text = [
-          '🧠 <b>СхемаЛаб</b>',
-          '',
-          'Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.',
-          '',
-          '<b>Об авторе</b>',
-          'Канал о схема-терапии — @SchemeHappens',
-          'Записаться на сессию — @kotlarewski',
-        ].join('\n');
-        await ctx.reply(text, { parse_mode: 'HTML' });
+        await ctx.reply(text, {
+          parse_mode: 'HTML',
+          reply_markup: { inline_keyboard: [[{ text: '💛 Поддержать проект', url: DONATE_URL }]] },
+        });
       } catch (err) {
+        // If the donate button URL is rejected, still show the info (with a
+        // plain-text donate link) rather than a bare error.
         this.logger.error('about command failed', err);
-        await ctx.reply('Не удалось загрузить информацию.').catch(() => null);
+        await ctx.reply(`${text}\n\n💛 ${DONATE_URL}`, { parse_mode: 'HTML' }).catch(() => null);
       }
     });
 
     await this.bot.telegram.setMyCommands([
-      { command: 'start', description: 'Открыть СхемаЛаб' },
+      { command: 'start', description: 'Открыть «Всё по схеме»' },
       { command: 'settings', description: 'Настройки уведомлений' },
+      { command: 'donate', description: 'Поддержать проект 💛' },
       { command: 'about', description: 'О приложении и авторе' },
     ]).catch((err) => this.logger.error('setMyCommands failed', err));
 
     await this.bot.telegram.callApi('setChatMenuButton' as any, {
-      menu_button: { type: 'web_app', text: 'Схемалаб', web_app: { url: MINIAPP_URL } },
+      menu_button: { type: 'web_app', text: 'Всё по схеме', web_app: { url: MINIAPP_URL } },
     }).catch((err: unknown) => this.logger.warn('setChatMenuButton failed', err));
 
     this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
@@ -406,13 +456,17 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     }).catch(() => null);
   }
 
-  /** Отправить сообщение администратору (для уведомлений о заявках) */
-  async notifyAdmin(text: string): Promise<void> {
+  /** Отправить сообщение администратору. Возвращает true, если доставлено. */
+  async notifyAdmin(text: string): Promise<boolean> {
     const adminId = process.env.ADMIN_ID;
-    if (!adminId || !this.bot) return;
-    await this.bot.telegram.sendMessage(adminId, text, { parse_mode: 'HTML' }).catch((err) => {
+    if (!adminId || !this.bot) return false;
+    try {
+      await this.bot.telegram.sendMessage(adminId, text, { parse_mode: 'HTML' });
+      return true;
+    } catch (err) {
       this.logger.error('notifyAdmin failed', err);
-    });
+      return false;
+    }
   }
 
   async onModuleDestroy() {

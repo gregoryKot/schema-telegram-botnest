@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useTr } from '../utils/addressForm';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 
 interface Props {
@@ -18,8 +19,8 @@ const SCHEMA_DESC: Record<string, string> = {
   dependence:               'Ощущение неспособности справляться с жизнью самостоятельно',
   vulnerability:            'Преувеличенный страх катастрофы: болезни, краха, аварии',
   enmeshment:               'Чрезмерная вовлечённость с близкими за счёт своей идентичности',
-  failure:                  'Убеждение что неизбежно потерпишь неудачу там где другие успешны',
-  entitlement:              'Ощущение что правила для других, а ты особенный',
+  failure:                  'Убеждение в неизбежном провале там где другие успешны',
+  entitlement:              'Ощущение собственной исключительности: правила будто для других',
   insufficient_self_control:'Сложно терпеть дискомфорт, откладывать удовольствия или рутину',
   subjugation:              'Подавление своих желаний чтобы избежать гнева или отвержения',
   self_sacrifice:           'Чрезмерный фокус на нуждах других в ущерб собственным',
@@ -33,6 +34,7 @@ const SCHEMA_DESC: Record<string, string> = {
 };
 
 export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [ids, setIds] = useState<string[]>(selected);
 
@@ -46,7 +48,7 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
       eyebrow="Схемы"
       eyebrowColor="var(--accent)"
       title={<>Мои<br /><span className="it">схемы</span></>}
-      lede="Выбери схемы, которые тебе близки. Можно без теста – если ты уже знаешь свои."
+      lede={tr('Выбери схемы, которые тебе близки. Можно без теста – если ты уже знаешь свои.', 'Выберите схемы, которые вам близки. Можно без теста – если вы уже знаете свои.')}
     >
       {SCHEMA_DOMAINS.map(domain => (
         <div key={domain.id} style={{ marginBottom: 28 }}>

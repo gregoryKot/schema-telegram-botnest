@@ -1,23 +1,25 @@
 import Phaser from 'phaser';
 import { W, H } from '../constants';
+import { setTouchControls } from '../controls';
+import { t, type MsgKey } from '../i18n';
 
 // Текст появляется построчно, затем кнопка «Начать путь»
 const SLIDES = [
   {
-    title: 'Часть I',
-    subtitle: 'Что мешает жить',
+    title: 'm_part_i',
+    subtitle: 'm_what_gets_in_the_way',
     lines: [
-      'Каждый день мы сталкиваемся с тем,',
-      'что тянет нас вниз.',
+      'm_every_day_we_run_into_things',
+      'm_that_drag_us_down',
       '',
-      'Тревога, которая не отпускает.',
-      'Раздражение без причины.',
-      'Прокрастинация, которую не остановить.',
+      'm_anxiety_that_won_t_let_go',
+      'm_irritation_out_of_nowhere',
+      'm_procrastination_you_can_t_stop',
       '',
-      'Мы привыкли с этим бороться.',
-      'Или убегать.',
+      'm_we_re_used_to_fighting_it',
+      'm_or_running_away',
       '',
-      'Но что если просто — пройти сквозь?',
+      'm_but_what_if_you_just_pass',
     ],
   },
 ];
@@ -26,6 +28,7 @@ export class IntroScene extends Phaser.Scene {
   constructor() { super('Intro'); }
 
   create() {
+    setTouchControls(false); // катсцена — тач-кнопки не нужны и мешают
     const slide = SLIDES[0];
 
     // Фон
@@ -37,14 +40,14 @@ export class IntroScene extends Phaser.Scene {
     line.fillRect(W / 2 - 80, 50, 160, 1);
 
     // Заголовок главы
-    this.add.text(W / 2, 70, slide.title.toUpperCase(), {
-      fontFamily: 'Courier New', fontSize: '11px',
+    this.add.text(W / 2, 70, t(slide.title as MsgKey).toUpperCase(), {
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px',
       color: '#aa4411', letterSpacing: 6,
     }).setOrigin(0.5);
 
     // Подзаголовок
-    this.add.text(W / 2, 105, slide.subtitle, {
-      fontFamily: 'Courier New', fontSize: '18px',
+    this.add.text(W / 2, 105, t(slide.subtitle as MsgKey), {
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '18px',
       color: '#fff0d8', letterSpacing: 1,
     }).setOrigin(0.5);
 
@@ -56,15 +59,15 @@ export class IntroScene extends Phaser.Scene {
     const startY = 160;
     const lineH = 26;
 
-    slide.lines.forEach((text, i) => {
-      const t = this.add.text(W / 2, startY + i * lineH, text, {
-        fontFamily: 'Courier New', fontSize: '14px',
-        color: text === '' ? '#000' : '#e8c8a0',
+    slide.lines.forEach((key, i) => {
+      const ln = this.add.text(W / 2, startY + i * lineH, key === '' ? '' : t(key as MsgKey), {
+        fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px',
+        color: key === '' ? '#000' : '#e8c8a0',
         letterSpacing: 0.5, align: 'center',
       }).setOrigin(0.5).setAlpha(0);
 
       this.tweens.add({
-        targets: t,
+        targets: ln,
         alpha: 1,
         duration: 400,
         delay: 300 + i * 180,
@@ -75,14 +78,15 @@ export class IntroScene extends Phaser.Scene {
     // Кнопка появляется после всего текста
     const totalDelay = 300 + slide.lines.length * 180 + 400;
 
-    const btn = this.add.rectangle(W / 2, H - 80, 220, 48, 0x3a1500)
+    const btnTxt = this.add.text(W / 2, H - 80, t('m_begin_the_journey'), {
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px',
+      color: '#ff7733', letterSpacing: 2,
+    }).setOrigin(0.5).setAlpha(0);
+    const btn = this.add.rectangle(W / 2, H - 80, btnTxt.width + 40, 48, 0x3a1500)
       .setStrokeStyle(1, 0xff7733)
       .setInteractive({ useHandCursor: true })
       .setAlpha(0);
-    const btnTxt = this.add.text(W / 2, H - 80, 'Начать путь  →', {
-      fontFamily: 'Courier New', fontSize: '15px',
-      color: '#ff7733', letterSpacing: 3,
-    }).setOrigin(0.5).setAlpha(0);
+    btnTxt.setDepth(1);
 
     this.tweens.add({ targets: [btn, btnTxt], alpha: 1, duration: 600, delay: totalDelay });
 

@@ -5,17 +5,20 @@ export type NotificationType =
   | 'reminder'
   | 'pre_reminder'
   | 'summary'
+  | 'comeback'
+  | 'welcome_back'
   | 'onboarding_1'
   | 'onboarding_3'
   | 'onboarding_7'
   | 'streak_7'
   | 'streak_14'
   | 'streak_30'
-  | 'lapsing_2'
-  | 'lapsing_4'
+  | 'lapsing_3'
   | 'dormant_7'
+  | 'value_recap'
   | 'reengagement_30'
   | 'weekly'
+  | 'donate_reminder'
   | 'anniversary_30'
   | 'anniversary_60'
   | 'anniversary_90'
@@ -25,6 +28,27 @@ export type NotificationType =
   | 'nudge'
   | 'task_assigned'
   | 'ysq_requested';
+
+/**
+ * Проактивные типы — бот пишет сам, без действия юзера. Подчиняются дневному
+ * бюджету (одно в день) и отменяются при паузе. Реактивные (summary, comeback,
+ * streak_*, onboarding_*, task_assigned...) — ответ на действие, не отменяются.
+ */
+export const PROACTIVE_TYPES: NotificationType[] = [
+  'reminder', 'pre_reminder', 'lapsing_3', 'dormant_7', 'value_recap', 'reengagement_30',
+  'nudge', 'weekly', 'donate_reminder', 'practice_missed', 'low_streak_insight',
+];
+
+/**
+ * Не задерживаются тихими часами: приходят через секунды после того, как юзер
+ * сам был активен (заполнил дневник) — придержать их до утра было бы странно.
+ */
+export const QUIET_EXEMPT_TYPES: NotificationType[] = [
+  'summary', 'comeback',
+  'streak_7', 'streak_14', 'streak_30',
+  'onboarding_1', 'onboarding_3', 'onboarding_7',
+  'anniversary_30', 'anniversary_60', 'anniversary_90',
+];
 
 export interface DueNotification {
   id: number;
@@ -92,6 +116,32 @@ export class NotificationService {
     await this.prisma.scheduledNotification.updateMany({
       where: { userId, sentAt: null, cancelledAt: null },
       data: { cancelledAt: new Date() },
+    });
+  }
+
+  /** Отменить все pending ПРОАКТИВНЫЕ уведомления (при паузе). Терапевтские и summary остаются. */
+  async cancelProactive(userId: bigint) {
+    await this.prisma.scheduledNotification.updateMany({
+      where: { userId, type: { in: PROACTIVE_TYPES }, sentAt: null, cancelledAt: null },
+      data: { cancelledAt: new Date() },
+    });
+  }
+
+  /** Когда последний раз реально отправлялось уведомление данного типа */
+  async lastSentAt(userId: bigint, type: NotificationType): Promise<Date | null> {
+    const row = await this.prisma.scheduledNotification.findFirst({
+      where: { userId, type, sentAt: { not: null } },
+      orderBy: { sentAt: 'desc' },
+      select: { sentAt: true },
+    });
+    return row?.sentAt ?? null;
+  }
+
+  /** Перенести неотправленное уведомление на другое время (тихие часы) */
+  async defer(id: number, sendAt: Date) {
+    await this.prisma.scheduledNotification.updateMany({
+      where: { id, sentAt: null },
+      data: { sendAt },
     });
   }
 }

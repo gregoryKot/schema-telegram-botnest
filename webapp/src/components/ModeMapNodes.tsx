@@ -1,6 +1,8 @@
 import { useState, useRef, useLayoutEffect } from 'react';
 import { Handle, Position, NodeToolbar, type NodeProps } from '@xyflow/react';
 import { useNodeActions } from './modeMapActions';
+import { MMIcon } from './modeMapIcons';
+import { getSchemaById } from '../schemaTherapyData';
 
 export interface ModeNodeData {
   label: string;
@@ -14,16 +16,21 @@ export interface ModeNodeData {
   healthyResponse?: string;
   strokeWidth?: 'thin' | 'normal' | 'bold';
   fontSize?: 'sm' | 'md' | 'lg';
+  side?: 'A' | 'B';
+  schemaId?: string;
 }
 
+// Node colours now come from the site's earthy palette tokens (index.css --c-*),
+// so they're consistent with the rest of the app and adapt to light/dark. Coping
+// subtypes share ONE colour (clay) and are told apart by SHAPE, not hue.
 export const TYPE_COLORS: Record<string, string> = {
-  trigger:  '#94a3b8',
-  child:    '#7aa3d4',
-  critic:   '#d47a7a',
-  coping:   '#d4a07a',
-  healthy:  '#7ab87a',
-  custom:   '#9f7ad4',
-  behavior: '#8a8f9e',
+  trigger:  'var(--c-slate)',
+  child:    'var(--c-teal)',
+  critic:   'var(--c-rose)',
+  coping:   'var(--c-clay)',
+  healthy:  'var(--c-moss)',
+  custom:   'var(--c-plum)',
+  behavior: 'var(--c-ochre)',
 };
 
 // Connection dots at the 4 sides. Hidden by default, revealed on node hover
@@ -85,9 +92,9 @@ function NodeTools({ id, selected, data }: { id: string; selected?: boolean; dat
   return (
     <NodeToolbar isVisible={!!selected} position={Position.Top} offset={8}>
       <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 8, alignItems: 'center',
-        background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>
-        <button style={btn} title="Редактировать" onClick={() => actions.edit(id)}>✎</button>
+        background: 'var(--bg-elev)', border: '1px solid var(--line-strong)',
+        boxShadow: 'var(--shadow-2)' }}>
+        <button style={btn} title="Редактировать" onClick={() => actions.edit(id)}><MMIcon name="edit" size={15} /></button>
         {sep}
         <button style={btn} title={`Толщина контура: ${({ thin: 'тонкий', normal: 'обычный', bold: 'жирный' } as const)[sw]} (нажми, чтобы сменить)`}
           onClick={() => actions.patchData(id, { strokeWidth: next(STROKE_CYCLE, sw) })}>
@@ -98,10 +105,24 @@ function NodeTools({ id, selected, data }: { id: string; selected?: boolean; dat
           title={`Размер текста: ${({ sm: 'мелкий', md: 'средний', lg: 'крупный' } as const)[fz]} (нажми, чтобы сменить)`}
           onClick={() => actions.patchData(id, { fontSize: next(FONT_CYCLE, fz) })}>A</button>
         {sep}
-        <button style={btn} title="Дублировать" onClick={() => actions.duplicate(id)}>⧉</button>
-        <button style={{ ...btn, color: 'var(--accent-red)' }} title="Удалить" onClick={() => actions.remove(id)}>🗑</button>
+        <button style={btn} title="Дублировать" onClick={() => actions.duplicate(id)}><MMIcon name="copy" size={15} /></button>
+        <button style={{ ...btn, color: 'var(--accent-red)' }} title="Удалить" onClick={() => actions.remove(id)}><MMIcon name="trash" size={15} /></button>
       </div>
     </NodeToolbar>
+  );
+}
+
+// Partner badge for couple maps (А / Б) — small corner chip
+function SideBadge({ side }: { side?: 'A' | 'B' }) {
+  if (!side) return null;
+  const color = side === 'A' ? 'var(--accent-blue)' : 'var(--accent-orange)';
+  return (
+    <div style={{ position: 'absolute', top: -8, left: -8, zIndex: 4, width: 19, height: 19, borderRadius: '50%',
+      background: color, color: '#fff', fontSize: 11, fontWeight: 700, lineHeight: 1,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      border: '2px solid var(--bg-elev)', pointerEvents: 'none' }}>
+      {side === 'A' ? 'А' : 'Б'}
+    </div>
   );
 }
 
@@ -110,10 +131,16 @@ function hexToRgb(hex: string) {
   return m ? `${parseInt(m[0],16)},${parseInt(m[1],16)},${parseInt(m[2],16)}` : null;
 }
 
+// Accepts both a CSS token (e.g. 'var(--c-teal)') and a legacy stored hex
+// ('#7aa3d4' from older saved maps). Tokens use color-mix so the fill stays
+// theme-aware; hexes keep the old rgba path for backward compatibility.
 function fillColor(color: string, filled?: boolean, fillFull?: boolean) {
-  const rgb = hexToRgb(color);
   const op = fillFull ? 0.88 : filled ? 0.22 : 0.08;
-  return rgb ? `rgba(${rgb},${op})` : `rgba(var(--fg-rgb),${op})`;
+  if (color.startsWith('#')) {
+    const rgb = hexToRgb(color);
+    return rgb ? `rgba(${rgb},${op})` : `rgba(var(--fg-rgb),${op})`;
+  }
+  return `color-mix(in srgb, ${color} ${Math.round(op * 100)}%, transparent)`;
 }
 
 // Contour thickness + text size — minimal per-node settings
@@ -131,6 +158,8 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
   const showNote = display !== 'name' && !!data.note;
   const showNeed = display === 'full' && !!data.unmetNeed;
   const showHealthy = display === 'full' && !!data.healthyResponse;
+  const schema = data.schemaId ? getSchemaById(data.schemaId) : undefined;
+  const showSchema = display !== 'name' && !!schema;
 
   const startEdit = () => { if (id && actions) { setDraft(data.label); setEditing(true); } };
   const commit = () => { if (id && actions) actions.rename(id, draft.trim() || data.label); setEditing(false); };
@@ -160,7 +189,17 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
       {showNeed && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.25, wordBreak: 'break-word', fontStyle: 'italic',
         color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>потребность: {data.unmetNeed}</div>}
       {showHealthy && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.3, wordBreak: 'break-word',
-        color: light ? 'rgba(255,255,255,0.8)' : '#5a9a5c' }}>🌿 {data.healthyResponse}</div>}
+        color: light ? 'rgba(255,255,255,0.8)' : 'var(--c-moss)' }}>🌿 {data.healthyResponse}</div>}
+      {showSchema && schema && (
+        <div style={{ marginTop: 5, display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: '100%',
+          padding: '2px 7px', borderRadius: 999, fontSize: subFs - 1.5, lineHeight: 1.2,
+          background: light ? 'rgba(255,255,255,0.18)' : `color-mix(in srgb, ${schema.domainColor} 14%, transparent)`,
+          border: `1px solid ${light ? 'rgba(255,255,255,0.3)' : `color-mix(in srgb, ${schema.domainColor} 40%, transparent)`}`,
+          color: light ? 'rgba(255,255,255,0.92)' : schema.domainColor }}>
+          <span style={{ fontSize: subFs - 1 }}>{schema.emoji}</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{schema.name}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -204,6 +243,7 @@ function SvgShapeNode({ id, data, selected, color, svgPath, viewBox = '0 0 100 1
     <div ref={ref} style={{ position: 'relative', width: 'max-content', maxWidth: maxW, minWidth: minW, minHeight: minH,
       display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
       <NodeTools id={id} selected={selected} data={data} />
+      <SideBadge side={data.side} />
       <AllHandles />
       <svg viewBox={ready ? `0 0 ${size.w} ${size.h}` : viewBox} preserveAspectRatio="none"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
@@ -226,12 +266,13 @@ function makeRectNode(defaultColor: string, radius = 10) {
     return (
       <div style={{ position: 'relative', width: 'max-content', minWidth: 110, maxWidth: 260, minHeight: 40 }}>
         <NodeTools id={id} selected={selected} data={d} />
+        <SideBadge side={d.side} />
         <AllHandles />
         <div style={{
           borderRadius: radius,
           background: fillColor(color, d.filled, d.fillFull),
           border: `${strokePx(d)}px solid ${selected ? 'var(--accent)' : color}`,
-          boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
+          boxShadow: selected ? '0 0 0 3px var(--accent-line)' : 'var(--shadow-1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', padding: '10px 16px', boxSizing: 'border-box',
         }}>
@@ -268,12 +309,13 @@ export const CopingModeNode = function CopingModeNode({ id, data, selected }: No
     return (
       <div style={{ position: 'relative', width: 'max-content', maxWidth: 220, minWidth: 130 }}>
         <NodeTools id={id} selected={selected} data={d} />
+        <SideBadge side={d.side} />
         <AllHandles />
         <div style={{
           minWidth: 130, borderRadius: 9999,
           background: fillColor(color, d.filled, d.fillFull),
           border: `${strokePx(d)}px solid ${selected ? 'var(--accent)' : color}`,
-          boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
+          boxShadow: selected ? '0 0 0 3px var(--accent-line)' : 'var(--shadow-1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', padding: '10px 22px', boxSizing: 'border-box',
         }}>
@@ -302,12 +344,13 @@ export const ChildModeNode = function ChildModeNode({ id, data, selected }: Node
   return (
     <div style={{ position: 'relative', width: 'max-content', maxWidth: 200, minWidth: 118 }}>
       <NodeTools id={id} selected={selected} data={d} />
+      <SideBadge side={d.side} />
       <AllHandles />
       <div style={{
         minWidth: 118, minHeight: 118, borderRadius: '50%', overflow: 'hidden',
         background: fillColor(color, d.filled, d.fillFull),
         border: `${strokePx(d)}px solid ${selected ? 'var(--accent)' : color}`,
-        boxShadow: selected ? '0 0 0 3px rgba(77,71,153,0.22)' : '0 2px 8px rgba(0,0,0,0.1)',
+        boxShadow: selected ? '0 0 0 3px var(--accent-line)' : 'var(--shadow-1)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '20px 28px', boxSizing: 'border-box',
       }}>

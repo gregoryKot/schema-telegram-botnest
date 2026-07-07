@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import type { FlowNode } from './modeMapFlow';
 import type { ModeMapNode, ModeMapKind } from '../api';
 import { pickTips } from './modeMapTips';
+import { useTr } from '../utils/addressForm';
+import { MMIcon } from './modeMapIcons';
 
 interface Props {
   nodes: FlowNode[];
@@ -29,6 +31,7 @@ function mk(type: ModeMapNode['type'], label: string, extra: Partial<ModeMapNode
 }
 
 export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props) {
+  const tr = useTr();
   const hasTrigger = has(nodes, 'trigger');
   const hasChild   = has(nodes, 'child');
   const hasCritic  = has(nodes, 'critic');
@@ -36,9 +39,26 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
   const hasHealthy = has(nodes, 'healthy');
   const hasBehavior = has(nodes, 'behavior');
   const hasNeed    = nodes.some(n => (n.data as { unmetNeed?: string }).unmetNeed);
+  const hasSide = (type: string, side: 'A' | 'B') =>
+    nodes.some(n => n.type === type && (n.data as { side?: string }).side === side);
 
   // ── Steps with clinical descriptions ────────────────────────────────────────
-  const steps: Step[] = kind === 'problem'
+  const steps: Step[] = kind === 'couple'
+    ? [
+        { ok: hasSide('trigger', 'A'), label: 'Триггер',            desc: 'Что произошло между вами — момент, с которого закрутился цикл',
+          add: mk('trigger', 'Триггер', { side: 'A' }) },
+        { ok: hasSide('child', 'A'),   label: 'Боль Партнёра А',     desc: 'Что задело А под поверхностью: страх, стыд, покинутость',
+          add: mk('child', 'Уязвимый Ребёнок', { side: 'A' }) },
+        { ok: hasSide('coping', 'A'),  label: 'Копинг А → бьёт по Б', desc: 'Как защищается А — именно это видит и чувствует партнёр Б',
+          add: mk('coping', 'Копинг', { copingSubtype: 'over', side: 'A' }) },
+        { ok: hasSide('child', 'B'),   label: 'Боль Партнёра Б',     desc: 'Копинг А задевает рану Б — активируется его Уязвимый Ребёнок',
+          add: mk('child', 'Уязвимый Ребёнок', { side: 'B' }) },
+        { ok: hasSide('coping', 'B'),  label: 'Копинг Б → бьёт по А', desc: 'Как защищается Б — и круг замыкается, снова запуская А',
+          add: mk('coping', 'Копинг', { copingSubtype: 'avoid', side: 'B' }) },
+        { ok: hasSide('healthy', 'A') || hasSide('healthy', 'B'), label: 'Здоровые Взрослые', desc: 'Кто первым замечает цикл и выходит из него — точка разрыва',
+          add: mk('healthy', 'Здоровый Взрослый', { side: 'A' }) },
+      ]
+    : kind === 'problem'
     ? [
         { ok: hasTrigger,  label: 'Триггер',          desc: 'Что запустило цикл: ситуация, слова, воспоминание, ощущение в теле',
           add: mk('trigger', 'Триггер') },
@@ -86,19 +106,21 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
   return (
     <div style={{
       width: 264, maxHeight: 'calc(100vh - 300px)', overflowY: 'auto',
-      background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.1)',
-      borderRadius: 9, padding: '12px 14px', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', fontSize: 12.5,
+      background: 'var(--bg-elev)', border: '1px solid var(--line)',
+      borderRadius: 12, padding: '12px 14px', boxShadow: 'var(--shadow-2)', fontSize: 12.5,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
         <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
-          {kind === 'problem' ? 'Цепочка цикла' : 'Карта личности'}
+          {kind === 'couple' ? 'Цикл-клэш пары' : kind === 'problem' ? 'Цепочка цикла' : 'Карта личности'}
         </span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 12, padding: 0 }}>✕</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 0, display: 'flex' }}><MMIcon name="close" size={14} /></button>
       </div>
       <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 10, lineHeight: 1.4 }}>
-        {kind === 'problem'
-          ? 'Триггер → боль → защита → последствия → потребность. Нажми на шаг, чтобы добавить его на холст.'
-          : 'Основные группы режимов клиента. Нажми, чтобы добавить недостающий.'}
+        {kind === 'couple'
+          ? tr('Копинг А ранит Б → копинг Б ранит А — порочный круг. Помечай режимы партнёром (А/Б). Нажми на шаг, чтобы добавить его.', 'Копинг А ранит Б → копинг Б ранит А — порочный круг. Помечайте режимы партнёром (А/Б). Нажмите на шаг, чтобы добавить его.')
+          : kind === 'problem'
+          ? tr('Триггер → боль → защита → последствия → потребность. Нажми на шаг, чтобы добавить его на холст.', 'Триггер → боль → защита → последствия → потребность. Нажмите на шаг, чтобы добавить его на холст.')
+          : tr('Основные группы режимов клиента. Нажми, чтобы добавить недостающий.', 'Основные группы режимов клиента. Нажмите, чтобы добавить недостающий.')}
       </div>
 
       {/* Numbered steps with clinical descriptions */}
@@ -112,13 +134,13 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
               style={{ display: 'flex', gap: 8, textAlign: 'left', width: '100%',
                 background: 'none', border: 'none', padding: '6px 5px', borderRadius: 6,
                 cursor: clickable ? 'pointer' : 'default', alignItems: 'flex-start' }}
-              onMouseEnter={e => { if (clickable) e.currentTarget.style.background = 'rgba(var(--fg-rgb),0.05)'; }}
+              onMouseEnter={e => { if (clickable) e.currentTarget.style.background = 'var(--surface-2)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
               <span style={{ flexShrink: 0, width: 18, height: 18, borderRadius: '50%', fontSize: 10.5, fontWeight: 600,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1,
-                background: s.ok ? 'var(--accent-green)' : clickable ? 'var(--accent-soft)' : 'rgba(var(--fg-rgb),0.06)',
+                background: s.ok ? 'var(--accent-green)' : clickable ? 'var(--accent-soft)' : 'var(--surface-3)',
                 color: s.ok ? '#fff' : clickable ? 'var(--accent)' : 'var(--text-faint)' }}>
-                {s.ok ? '✓' : clickable ? (s.add ? '＋' : '✎') : i + 1}
+                {s.ok ? '✓' : clickable ? (s.add ? '+' : '✎') : i + 1}
               </span>
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: s.ok ? 'var(--text)' : 'var(--text-sub)' }}>
@@ -152,7 +174,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
       )}
 
       {/* Random tips from the knowledge base */}
-      <div style={{ borderTop: '1px solid rgba(var(--fg-rgb),0.08)', marginTop: 10, paddingTop: 10 }}>
+      <div style={{ borderTop: '1px solid var(--line)', marginTop: 10, paddingTop: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
           <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
             Советы
@@ -164,8 +186,8 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {random.map((t, i) => (
-            <div key={i} style={{ display: 'flex', gap: 6, fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.4 }}>
-              <span style={{ flexShrink: 0 }}>💡</span><span>{t}</span>
+            <div key={i} style={{ display: 'flex', gap: 8, fontSize: 11.5, color: 'var(--text-sub)', lineHeight: 1.4 }}>
+              <span style={{ flexShrink: 0, width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-line)', marginTop: 6 }} /><span>{t}</span>
             </div>
           ))}
         </div>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, type ModeMapMeta, type ModeMapFull, type ModeMapKind } from '../api';
 import { ModeMapEditor } from './ModeMapEditor';
+import { MMIcon } from './modeMapIcons';
 
 interface Props {
   clientId: number;
@@ -9,7 +10,9 @@ interface Props {
 const KIND_META: Record<ModeMapKind, { icon: string; label: string; hint: string }> = {
   personality: { icon: '🧭', label: 'Карта личности',  hint: 'Все основные режимы человека на одной странице — для общей ориентации' },
   problem:     { icon: '🎯', label: 'Карта ситуации',  hint: 'Конкретная цепочка: триггер → режимы → последствия' },
+  couple:      { icon: '💞', label: 'Карта пары',      hint: 'Цикл-клэш: как копинг одного партнёра запускает боль другого' },
 };
+const KINDS: ModeMapKind[] = ['personality', 'problem', 'couple'];
 
 export function ModeMapSelector({ clientId }: Props) {
   const [maps, setMaps] = useState<ModeMapMeta[]>([]);
@@ -55,7 +58,9 @@ export function ModeMapSelector({ clientId }: Props) {
   async function createMap(kind: ModeMapKind) {
     setCreating(true); setPickKind(false);
     try {
-      const title = kind === 'personality' ? 'Карта личности' : `Ситуация ${maps.filter(m => m.kind === 'problem').length + 1}`;
+      const title = kind === 'personality' ? 'Карта личности'
+        : kind === 'couple' ? `Пара ${maps.filter(m => m.kind === 'couple').length + 1}`
+        : `Ситуация ${maps.filter(m => m.kind === 'problem').length + 1}`;
       const m = await api.createModeMap(clientId, title, kind);
       setMaps(prev => [...prev, { id: m.id, title: m.title, kind: m.kind, createdAt: m.createdAt, updatedAt: m.updatedAt }]);
       setActiveId(m.id);
@@ -92,7 +97,7 @@ export function ModeMapSelector({ clientId }: Props) {
       <div style={{
         display: 'flex', alignItems: 'center', gap: 4,
         padding: '8px 12px',
-        borderBottom: '1px solid rgba(var(--fg-rgb),0.07)',
+        borderBottom: '1px solid var(--line)',
         overflowX: 'auto', flexShrink: 0, minHeight: 42,
       }}>
         {maps.map(m => (
@@ -115,8 +120,8 @@ export function ModeMapSelector({ clientId }: Props) {
               <div style={{
                 display: 'flex', alignItems: 'center',
                 borderRadius: 7, overflow: 'hidden',
-                background: activeId === m.id ? 'rgba(var(--fg-rgb),0.08)' : 'none',
-                border: activeId === m.id ? '1px solid rgba(var(--fg-rgb),0.12)' : '1px solid transparent',
+                background: activeId === m.id ? 'var(--surface-3)' : 'none',
+                border: activeId === m.id ? '1px solid var(--line)' : '1px solid transparent',
               }}>
                 <button
                   onClick={() => selectMap(m.id)}
@@ -140,7 +145,7 @@ export function ModeMapSelector({ clientId }: Props) {
                       color: 'var(--text-faint)', fontSize: 11, padding: '4px 8px 4px 2px',
                       lineHeight: 1, display: 'flex', alignItems: 'center',
                     }}>
-                    ✕
+                    <MMIcon name="close" size={12} />
                   </button>
                 )}
               </div>
@@ -150,10 +155,14 @@ export function ModeMapSelector({ clientId }: Props) {
         <button ref={newBtnRef} onClick={openKindPicker} disabled={creating}
           style={{
             padding: '4px 10px', borderRadius: 7, fontSize: 12.5, cursor: 'pointer', flexShrink: 0,
-            border: '1px dashed rgba(var(--fg-rgb),0.18)', background: pickKind ? 'var(--accent-soft)' : 'none',
+            border: '1px dashed var(--line-strong)', background: pickKind ? 'var(--accent-soft)' : 'none',
             color: pickKind ? 'var(--accent)' : 'var(--text-faint)', whiteSpace: 'nowrap', marginLeft: 2,
           }}>
-          {creating ? '…' : '+ Новая карта ▾'}
+          {creating ? '…' : (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <MMIcon name="plus" size={13} />Новая карта<MMIcon name="caret" size={11} style={{ opacity: 0.6 }} />
+            </span>
+          )}
         </button>
       </div>
 
@@ -163,14 +172,14 @@ export function ModeMapSelector({ clientId }: Props) {
           <div onClick={() => setPickKind(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
           <div style={{
             position: 'fixed', left: menuPos.x, top: menuPos.y, zIndex: 61, width: 280,
-            background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)', borderRadius: 8,
-            padding: 5, boxShadow: '0 4px 16px rgba(0,0,0,0.16)',
+            background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8,
+            padding: 5, boxShadow: 'var(--shadow-2)',
           }}>
-            {(['personality', 'problem'] as ModeMapKind[]).map(k => (
+            {KINDS.map(k => (
               <button key={k} onClick={() => createMap(k)}
                 style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px',
                   borderRadius: 6, cursor: 'pointer', background: 'none', border: 'none' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--fg-rgb),0.06)'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
                   <span>{KIND_META[k].icon}</span>{KIND_META[k].label}
@@ -191,16 +200,16 @@ export function ModeMapSelector({ clientId }: Props) {
         )}
         {!loading && maps.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12 }}>
-            <div style={{ fontSize: 32 }}>🗺️</div>
+            <div style={{ width: 52, height: 52, borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}><MMIcon name="map" size={26} /></div>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Нет карт режимов</div>
             <div style={{ fontSize: 13, color: 'var(--text-sub)', maxWidth: 360, textAlign: 'center', lineHeight: 1.45 }}>
               Выбери тип первой карты
             </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
-              {(['personality', 'problem'] as ModeMapKind[]).map(k => (
+            <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {KINDS.map(k => (
                 <button key={k} onClick={() => createMap(k)} disabled={creating}
                   style={{ width: 200, padding: '14px 16px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
-                    background: 'var(--bg-elev)', border: '1px solid rgba(var(--fg-rgb),0.12)' }}>
+                    background: 'var(--bg-elev)', border: '1px solid var(--line)' }}>
                   <div style={{ fontSize: 22, marginBottom: 6 }}>{KIND_META[k].icon}</div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{KIND_META[k].label}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 5, lineHeight: 1.4 }}>{KIND_META[k].hint}</div>

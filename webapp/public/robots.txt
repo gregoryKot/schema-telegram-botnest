@@ -30,4 +30,4 @@ Allow: /
 User-agent: Applebot
 Allow: /
 
-Sitemap: https://schemalab.ru/sitemap.xml
+Sitemap: https://schemehappens.ru/sitemap.xml

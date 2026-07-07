@@ -1,4 +1,5 @@
 import { ENEMIES, SAGE_CONTENT, contentMap } from '../data/content';
+import { t } from '../i18n';
 
 export class CardOverlay {
   private overlay = document.getElementById('card-overlay')!;
@@ -18,14 +19,14 @@ export class CardOverlay {
     const d = contentMap[id];
     if (!d) { cb(); return; } // контент не найден — не зависаем
     this.emojiEl.textContent  = d.emoji;
-    this.titleEl.textContent  = d.name;
-    this.quoteEl.textContent  = d.quote;
-    this.textEl.textContent   = d.text;
-    this.tipEl.textContent    = d.tip;
+    this.titleEl.textContent  = t(d.name);
+    this.quoteEl.textContent  = t(d.quote);
+    this.textEl.textContent   = t(d.text);
+    this.tipEl.textContent    = t(d.tip);
     this.counterEl.textContent = returnCount > 0
-      ? `вернулась ${returnCount}× · ${understood}/${ENEMIES.length} понято`
-      : `${understood}/${ENEMIES.length} понято`;
-    this.btnEl.textContent = 'ПРОДОЛЖИТЬ';
+      ? t('m_hud_returned', { n: returnCount, u: understood, tot: ENEMIES.length })
+      : t('m_hud_understood', { u: understood, tot: ENEMIES.length });
+    this.btnEl.textContent = t('m_continue_2');
     this.btnEl.onclick = () => { this.hide(); cb(); };
     this.overlay.classList.add('visible');
   }
@@ -33,17 +34,17 @@ export class CardOverlay {
   showSage(cb: () => void) {
     const d = SAGE_CONTENT;
     this.emojiEl.textContent  = d.emoji;
-    this.titleEl.textContent  = d.name;
+    this.titleEl.textContent  = t(d.name);
     this.quoteEl.textContent  = '';
-    this.textEl.textContent   = d.text;
-    this.tipEl.textContent    = d.tip;
+    this.textEl.textContent   = t(d.text);
+    this.tipEl.textContent    = t(d.tip);
     this.counterEl.textContent = '';
-    this.btnEl.textContent = d.ctaLabel;
+    this.btnEl.textContent = t(d.ctaLabel);
     this.btnEl.onclick = () => window.open(d.ctaUrl, '_blank');
     // secondary button
     const sec = document.createElement('button');
     sec.id = 'card-btn-sec';
-    sec.textContent = 'продолжить игру';
+    sec.textContent = t('m_keep_playing');
     sec.onclick = () => { sec.remove(); this.hide(); cb(); };
     this.btnEl.after(sec);
     this.overlay.classList.add('visible');

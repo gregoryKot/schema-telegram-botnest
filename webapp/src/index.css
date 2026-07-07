@@ -41,7 +41,7 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   СхемаЛаб · Design System
+   Всё по схеме · Design System
    Тёплая бумага · сдержанный индиго · много воздуха
    ───────────────────────────────────────────────────────────────────────── */
 
@@ -169,6 +169,7 @@ html[data-theme="dark"] {
 /* ─── Reset ──────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
+html { background: var(--bg); }
 body {
   background: var(--bg);
   color: var(--text);
@@ -249,14 +250,20 @@ a { color: inherit; text-decoration: none; }
 .sb-nav { display: flex; flex-direction: column; gap: 1px; }
 .sb-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 6px 8px; border-radius: 5px;
+  padding: 8px 10px; border-radius: 7px;
   color: var(--text-sub);
   font-size: 13.5px; font-weight: 500;
   text-align: left; width: 100%;
   transition: background .1s, color .1s;
 }
 .sb-item:hover { background: var(--surface-2); color: var(--text); }
-.sb-item.is-active { background: var(--surface-3); color: var(--text); font-weight: 600; }
+.sb-item.is-active {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+/* Sidebar items don't need focus ring — active/hover state is sufficient */
+.sb-item:focus-visible, .sb-account:focus-visible { outline: none; }
 .sb-item .badge {
   margin-left: auto;
   font-size: 10.5px; padding: 0 6px; border-radius: 999px;
@@ -273,23 +280,53 @@ a { color: inherit; text-decoration: none; }
 }
 .sb-client-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Footer wrapper pushed to the bottom (margin-top: auto on the wrapper div, not .sb-foot) */
+.sb-foot-wrap { margin-top: auto; flex-shrink: 0; }
 .sb-foot {
-  margin-top: auto;
   padding: 10px 0 12px;
   border-top: 1px solid var(--line);
-  flex-shrink: 0;
 }
+/* Today widget sits just above the footer */
+.sb-today {
+  padding: 14px 10px 10px;
+  border-top: 1px solid var(--line);
+}
+.sb-today-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.10em;
+  text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px;
+}
+.sb-today-index {
+  display: flex; align-items: baseline; gap: 3px;
+}
+.sb-today-num {
+  font-family: var(--serif); font-size: 40px; font-weight: 400;
+  color: var(--text); line-height: 1; letter-spacing: -0.02em;
+}
+.sb-today-denom { font-size: 12px; color: var(--text-sub); padding-bottom: 3px; }
+.sb-today-sub { font-size: 11px; color: var(--text-faint); margin-top: 3px; }
+.sb-today-cta {
+  width: 100%; padding: 8px 10px; border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: none; color: var(--accent);
+  font-size: 12.5px; font-weight: 600; font-family: inherit;
+  text-align: left; cursor: pointer;
+  transition: background .1s;
+}
+.sb-today-cta:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+
 .sb-account {
   display: flex; align-items: center; gap: 10px;
-  padding: 6px 8px; border-radius: 6px;
+  padding: 8px 10px; border-radius: 8px;
   cursor: pointer; width: 100%; text-align: left;
+  transition: background .1s;
 }
 .sb-account:hover { background: var(--surface-2); }
+.sb-account.is-active { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .sb-avatar {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: var(--surface-3);
+  width: 30px; height: 30px; border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   display: grid; place-items: center;
-  font-size: 11px; font-weight: 700; color: var(--text-sub);
+  font-size: 12px; font-weight: 700; color: var(--accent);
   flex-shrink: 0;
 }
 .sb-acc-name { font-size: 13px; font-weight: 600; line-height: 1.2; }
@@ -799,9 +836,22 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   .r-row-head > *:nth-child(2), .r-row-head > *:nth-child(3) { display: none; }
 }
 
-/* ─── Today aside: hide on mobile ────────────────────────────────────────── */
+/* ─── Today aside: compact card on mobile ────────────────────────────────── */
 @media (max-width: 767px) {
-  .today-aside { display: none; }
+  .today-aside {
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .today-aside > * {
+    flex: 1 1 140px;
+  }
+  .today-aside hr {
+    display: none;
+  }
 }
 
 /* ─── Therapist cabinet two-column layout ───────────────────────────────── */
@@ -843,6 +893,50 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   .therapist-back-btn { display: flex !important; }
 }
 
+/* ─── Therapist cabinet (TherapistClientSheet) ───────────────────────────────
+   Desktop: fill canvas via a flex chain. Mobile: natural block flow so the
+   whole page scrolls like a regular section. Layout is kept in CSS (not inline
+   styles) so mobile breakpoint can cleanly override without !important hacks. */
+@media (min-width: 768px) {
+  .therapist-sheet {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* List view: fills sheet, scrolls internally */
+  .therapist-scroll--list {
+    flex: 1;
+    overflow: auto;
+  }
+  /* Client view outer: fixed header + scrollable tab area */
+  .therapist-scroll--client {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* Tab content: scrolls independently inside the client view */
+  .therapist-scroll--tabs {
+    flex: 1;
+    overflow: auto;
+  }
+}
+
+/* Mobile: header padding + horizontal tab scroll */
+@media (max-width: 767px) {
+  .therapist-client-header { padding: 16px 16px 0 !important; }
+  .tabs {
+    padding: 0 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+}
+
 /* ─── Help section tool grid ─────────────────────────────────────────────── */
 .tool-grid {
   display: grid;
@@ -870,12 +964,16 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 }
 .mobile-nav-item {
   flex: 1; display: flex; flex-direction: column;
-  align-items: center; gap: 3px;
-  padding: 6px 0;
-  color: var(--text-faint); font-size: 10px; font-weight: 500;
+  align-items: center; gap: 2px;
+  padding: 5px 0;
+  color: var(--text-faint); font-size: 9.5px; font-weight: 500;
   cursor: pointer; transition: color .15s; border: none; background: none;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .mobile-nav-item.active { color: var(--accent); font-weight: 600; }
+.mobile-nav-item svg { transition: opacity .15s; }
+.mobile-nav-item:not(.active) svg { opacity: 0.5; }
 
 /* ─── Responsive breakpoints ─────────────────────────────────────────────── */
 @media (max-width: 767px) {
@@ -896,6 +994,18 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
   .page { overflow: visible; height: auto; }
+  /* Fixed fullscreen overlays (.ex-screen) need their own scroll — the global
+     overflow:visible override above would clip content behind ex-screen's
+     overflow:hidden. Re-enable scroll for .page inside fixed overlays. */
+  .ex-screen .page { overflow-y: auto !important; }
+  /* Reduce ex-body padding and font for narrow screens */
+  .ex-body { padding: 24px 20px 120px !important; gap: 24px !important; }
+  .ex-title { font-size: 36px !important; }
+  .ex-lede { font-size: 15px !important; }
+  /* Hide aside on mobile: ex-foot has the same actions */
+  .ex-aside { display: none; }
+  /* Mobile-only utility */
+  .desktop-only { display: none !important; }
 }
 @media (min-width: 768px) {
   .mobile-nav { display: none !important; }
@@ -903,6 +1013,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   .settings-overlay { left: var(--sidebar-w) !important; }
   /* Settings left nav: visible on desktop */
   .settings-sidenav { display: flex !important; }
+  .mobile-only { display: none !important; }
 }
 
 /* ─── Settings side nav ──────────────────────────────────────────────────── */
@@ -930,6 +1041,38 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   transition: color 0.1s;
 }
 .settings-sidenav-item:hover { color: var(--text); }
+
+/* ─── Settings InfoModal: bottom-sheet on mobile, centered dialog on desktop ── */
+.settings-modal {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: flex-end;
+}
+.settings-modal-box {
+  background: var(--bg);
+  border-radius: 16px 16px 0 0;
+  padding: 24px 24px calc(32px + env(safe-area-inset-bottom, 0px));
+  width: 100%; max-width: 560px; margin: 0 auto;
+}
+.settings-modal-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: rgba(var(--fg-rgb), 0.12);
+  margin: 0 auto 20px;
+}
+@media (min-width: 768px) {
+  .settings-modal { align-items: center; justify-content: center; padding: 32px; }
+  .settings-modal-box {
+    border-radius: 16px;
+    padding: 36px 40px 40px;
+    max-width: 520px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+    animation: modal-in 0.18s ease;
+  }
+  .settings-modal-handle { display: none; }
+}
+/* Settings content area: center on desktop */
+.settings-content-inner { max-width: 600px; }
+@media (min-width: 768px) { .settings-content-inner { margin: 0 auto; } }
 
 /* ─── BottomSheet → Modal on desktop ────────────────────────────────────── */
 @keyframes modal-in {

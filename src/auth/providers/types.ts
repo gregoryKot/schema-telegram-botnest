@@ -12,11 +12,10 @@ export interface AuthProviderHandler {
   readonly id: string;        // 'google' | 'telegram' | 'vk' | …
   readonly displayName: string;
 
-  // OAuth-redirect flow
+  // OAuth-redirect flow: buildAuthUrl → provider redirects back with a code →
+  // exchangeCode swaps it for the user's identity (server-side token exchange).
   buildAuthUrl?(state: string, nonce?: string): string;
   exchangeCode?(code: string): Promise<ProviderIdentity>;
-  // Implicit / form_post flow: verify id_token locally without calling the provider
-  verifyIdToken?(idToken: string, nonce: string): Promise<ProviderIdentity>;
 
   // Direct client-data verification (no redirect)
   verifyClientData?(data: Record<string, unknown>): ProviderIdentity;

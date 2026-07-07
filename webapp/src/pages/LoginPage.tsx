@@ -104,7 +104,7 @@ export function LoginPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ width: 72, height: 72, background: 'linear-gradient(135deg, var(--accent-indigo), var(--accent))', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 36, boxShadow: '0 8px 32px rgba(124, 114, 248, 0.35)' }}>🧠</div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>СхемаЛаб</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>Всё по схеме</h1>
           <p style={{ color: 'var(--text-sub)', fontSize: 15, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
             Инструмент схема-терапии для работы с мыслями, эмоциями и паттернами
           </p>
@@ -220,6 +220,12 @@ export function LoginPage() {
           <a href="/privacy" target="_blank" style={{ color: 'var(--text-faint)', textDecoration: 'underline' }}>
             Политикой конфиденциальности
           </a>
+        </p>
+
+        {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
+        <p style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 14 }}>
+          Проект бесплатный 💛{' '}
+          <a href="/donate" style={{ color: 'var(--accent)', textDecoration: 'none' }}>поддержать</a>
         </p>
       </div>
 

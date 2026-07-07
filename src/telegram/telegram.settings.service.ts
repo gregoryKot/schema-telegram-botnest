@@ -4,6 +4,8 @@ import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
+import { CADENCE_LABELS } from '../notification/notification.cadence.service';
+import { tzOffsetAt } from '../notification/notification.time';
 
 const TIMEZONES: { label: string; tz: string }[] = [
   { label: 'Лос-Анджелес', tz: 'America/Los_Angeles' },
@@ -19,37 +21,46 @@ const TIMEZONES: { label: string; tz: string }[] = [
   { label: 'Пекин', tz: 'Asia/Shanghai' },
 ];
 
-function tzOffsetAt(tz: string, date = new Date()): number {
-  const utc = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const local = new Date(date.toLocaleString('en-US', { timeZone: tz }));
-  return Math.round((local.getTime() - utc.getTime()) / 3_600_000);
-}
-
 function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-async function buildSettingsText(botService: BotService, userId: bigint): Promise<string> {
+/** Единый экран /settings: текст + клавиатура. Используется и суб-экранами. */
+export async function buildSettingsView(botService: BotService, userId: bigint) {
   const s = await botService.getUserSettings(userId);
-  if (!s) return 'Настройки не найдены.';
+  if (!s) {
+    return { text: 'Настройки не найдены.', keyboard: Markup.inlineKeyboard([]) };
+  }
   const tz = TIMEZONES.find((t) => t.tz === s.notifyTimezone)?.label ?? s.notifyTimezone;
   const offset = tzOffsetAt(s.notifyTimezone);
   const utcLabel = offset >= 0 ? `UTC+${offset}` : `UTC${offset}`;
-  return [
+  const quietLine = s.notifyQuietStart === s.notifyQuietEnd
+    ? 'выключены'
+    : `${pad(s.notifyQuietStart)}:00 – ${pad(s.notifyQuietEnd)}:00`;
+  const paused = s.notifyPausedUntil && s.notifyPausedUntil > new Date();
+  const isVy = s.addressForm === 'vy';
+  const lines = [
     '⚙️ Настройки уведомлений',
     '',
     `Статус: ${s.notifyEnabled ? '🔔 Включены' : '🔕 Выключены'}`,
+    ...(paused ? [`⏸ На паузе до ${s.notifyPausedUntil!.toLocaleDateString('ru-RU', { timeZone: s.notifyTimezone })}`] : []),
     `Время: ${pad(s.notifyLocalHour)}:00`,
+    `Частота: ${CADENCE_LABELS[s.notifyFrequency ?? 0] ?? CADENCE_LABELS[0]}`,
+    `Игровой режим: ${s.notifyGamified ? '🎮 включён' : 'выключен'}`,
+    `Тихие часы: ${quietLine}`,
     `Часовой пояс: ${tz} (${utcLabel})`,
-  ].join('\n');
-}
-
-function buildSettingsKeyboard(notifyEnabled: boolean) {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback(notifyEnabled ? '🔕 Выключить' : '🔔 Включить', 'settings:toggle')],
+    `Обращение: на «${isVy ? 'вы' : 'ты'}»`,
+  ];
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback(s.notifyEnabled ? '🔕 Выключить' : '🔔 Включить', 'settings:toggle')],
     [Markup.button.callback('🕐 Изменить время', 'settings:pick_hour')],
+    [Markup.button.callback('🔁 Частота напоминаний', 'settings:pick_freq')],
+    [Markup.button.callback(s.notifyGamified ? '🎮 Игровой режим: выкл' : '🎮 Игровой режим: вкл', 'settings:toggle_gamified')],
+    [Markup.button.callback('🌙 Тихие часы', 'settings:pick_quiet')],
     [Markup.button.callback('🌍 Изменить часовой пояс', 'settings:pick_tz')],
+    [Markup.button.callback(isVy ? 'Перейти на «ты»' : 'Перейти на «вы»', `settings:addr:${isVy ? 'ty' : 'vy'}`)],
   ]);
+  return { text: lines.join('\n'), keyboard };
 }
 
 @Injectable()
@@ -71,9 +82,8 @@ export class TelegramSettingsService implements OnModuleInit {
         const rawId = ctx.from?.id;
         if (!rawId) return;
         const userId = BigInt(rawId);
-        const s = await this.botService.getUserSettings(userId);
-        const text = await buildSettingsText(this.botService, userId);
-        await ctx.reply(text, buildSettingsKeyboard(s?.notifyEnabled ?? true));
+        const { text, keyboard } = await buildSettingsView(this.botService, userId);
+        await ctx.reply(text, keyboard);
       } catch (err) {
         this.logger.error('settings command failed', err);
         await ctx.reply('Не удалось загрузить настройки. Попробуй ещё раз.').catch(() => null);
@@ -94,10 +104,28 @@ export class TelegramSettingsService implements OnModuleInit {
         } else {
           await this.scheduleService.rescheduleForUser(userId);
         }
-        const text = await buildSettingsText(this.botService, userId);
-        await ctx.editMessageText(text, buildSettingsKeyboard(newEnabled) as any);
+        const { text, keyboard } = await buildSettingsView(this.botService, userId);
+        await ctx.editMessageText(text, keyboard as any);
       } catch (err) {
         this.logger.error('settings:toggle failed', err);
+        await ctx.answerCbQuery('Не удалось сохранить. Попробуй ещё раз.').catch(() => null);
+      }
+    });
+
+    this.bot.action('settings:toggle_gamified', async (ctx) => {
+      try {
+        const rawId = ctx.from?.id;
+        await ctx.answerCbQuery();
+        if (!rawId) return;
+        const userId = BigInt(rawId);
+        const s = await this.botService.getUserSettings(userId);
+        await this.botService.updateUserSettings(userId, { notifyGamified: !s?.notifyGamified });
+        // перепланируем: pending-напоминание пересоберётся с новым режимом
+        await this.scheduleService.rescheduleForUser(userId);
+        const { text, keyboard } = await buildSettingsView(this.botService, userId);
+        await ctx.editMessageText(text, keyboard as any);
+      } catch (err) {
+        this.logger.error('settings:toggle_gamified failed', err);
         await ctx.answerCbQuery('Не удалось сохранить. Попробуй ещё раз.').catch(() => null);
       }
     });
@@ -127,9 +155,8 @@ export class TelegramSettingsService implements OnModuleInit {
         const localHour = Number((ctx.match as RegExpMatchArray)[1]);
         await this.botService.updateUserSettings(userId, { notifyLocalHour: localHour });
         await this.scheduleService.rescheduleForUser(userId);
-        const text = await buildSettingsText(this.botService, userId);
-        const updated = await this.botService.getUserSettings(userId);
-        await ctx.editMessageText(text, buildSettingsKeyboard(updated?.notifyEnabled ?? true) as any);
+        const { text, keyboard } = await buildSettingsView(this.botService, userId);
+        await ctx.editMessageText(text, keyboard as any);
       } catch (err) {
         this.logger.error('settings:hour failed', err);
         await ctx.answerCbQuery('Не удалось сохранить. Попробуй ещё раз.').catch(() => null);
@@ -162,9 +189,8 @@ export class TelegramSettingsService implements OnModuleInit {
         if (!TIMEZONES.find((t) => t.tz === timezone)) return;
         await this.botService.updateUserSettings(userId, { notifyTimezone: timezone });
         await this.scheduleService.rescheduleForUser(userId);
-        const text = await buildSettingsText(this.botService, userId);
-        const updated = await this.botService.getUserSettings(userId);
-        await ctx.editMessageText(text, buildSettingsKeyboard(updated?.notifyEnabled ?? true) as any);
+        const { text, keyboard } = await buildSettingsView(this.botService, userId);
+        await ctx.editMessageText(text, keyboard as any);
       } catch (err) {
         this.logger.error('settings:tz failed', err);
         await ctx.answerCbQuery('Не удалось сохранить. Попробуй ещё раз.').catch(() => null);
@@ -177,9 +203,8 @@ export class TelegramSettingsService implements OnModuleInit {
         await ctx.answerCbQuery();
         if (!rawId) return;
         const userId = BigInt(rawId);
-        const s = await this.botService.getUserSettings(userId);
-        const text = await buildSettingsText(this.botService, userId);
-        await ctx.editMessageText(text, buildSettingsKeyboard(s?.notifyEnabled ?? true) as any);
+        const { text, keyboard } = await buildSettingsView(this.botService, userId);
+        await ctx.editMessageText(text, keyboard as any);
       } catch (err) {
         this.logger.error('settings:back failed', err);
         await ctx.answerCbQuery('Не удалось сохранить. Попробуй ещё раз.').catch(() => null);

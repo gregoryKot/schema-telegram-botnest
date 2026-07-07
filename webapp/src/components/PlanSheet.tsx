@@ -3,6 +3,7 @@ import { api } from '../api';
 import type { UserPractice } from '../api';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useTr } from '../utils/addressForm';
 
 function ianaToUtcOffset(iana: string): number {
   try {
@@ -70,6 +71,7 @@ function defaultReminderIdx(): number {
 }
 
 export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSaved }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [userPractices, setUserPractices] = useState<UserPractice[]>([]);
   const [selectedText, setSelectedText] = useState('');
@@ -169,7 +171,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
           <div className="prompt">
             <div className="prompt-num">·</div>
             <div style={{ width: '100%' }}>
-              <div className="prompt-label">{allOptions.length > 0 ? 'Или своё' : 'Что планируешь?'}</div>
+              <div className="prompt-label">{allOptions.length > 0 ? 'Или своё' : tr('Что планируешь?', 'Что планируете?')}</div>
               <textarea
                 value={customText}
                 onChange={e => setCustomText(e.target.value)}
@@ -230,7 +232,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
 
           {saveError && (
             <div style={{ fontSize: 13, color: 'var(--c-rose)', textAlign: 'center', marginBottom: 12 }}>
-              Не удалось сохранить. Попробуй ещё раз.
+              {tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')}
             </div>
           )}
 

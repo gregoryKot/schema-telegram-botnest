@@ -316,4 +316,34 @@ describe('BotAnalyticsService', () => {
       expect(await new BotAnalyticsService(prisma).getWorstDayOfWeek(1)).toBe('понедельник');
     });
   });
+
+  describe('getFillDaysInLast', () => {
+    it('counts distinct fill days within the window', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([{ date: d(0) }, { date: d(2) }]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getFillDaysInLast(1, 7)).toBe(2);
+    });
+
+    it('returns 0 with no ratings', async () => {
+      const svc = new BotAnalyticsService(makePrisma());
+      expect(await svc.getFillDaysInLast(1, 7)).toBe(0);
+    });
+  });
+
+  describe('getGapBeforeLatestFill', () => {
+    it('returns null with fewer than two fill days', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([{ date: d(0) }]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getGapBeforeLatestFill(1)).toBeNull();
+    });
+
+    it('returns gap between two latest distinct dates', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([{ date: d(0) }, { date: d(5) }]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getGapBeforeLatestFill(1)).toBe(5);
+    });
+  });
 });

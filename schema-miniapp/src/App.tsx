@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useUserFlags, setFlag as setServerFlag } from './useUserFlags';
 import { applyTheme, getTheme } from './utils/theme';
 import { Need, DayHistory, COLORS } from './types';
 
@@ -17,6 +18,8 @@ import { TrackerOverlay } from './components/TrackerOverlay';
 import { HistoryView } from './components/HistoryView';
 import { BottomSheet } from './components/BottomSheet';
 import { SettingsSheet } from './components/SettingsSheet';
+import { AddressFormPicker } from './components/AddressFormPicker';
+import { DonateNudge } from './components/DonateNudge';
 import { TherapistClientSheet } from './components/TherapistClientSheet';
 import { PracticesScreen } from './components/PracticesScreen';
 import { PlansScreen } from './components/PlansScreen';
@@ -50,7 +53,7 @@ const YESTERDAY_DATE = (() => {
 })();
 
 import { TaskCreateSheet } from './components/TaskCreateSheet';
-import { ABOUT_TEXT, NEEDS_EXPLAINER } from './aboutData';
+import { useAboutText, NEEDS_EXPLAINER } from './aboutData';
 
 type TrackerTab = 'today' | 'history';
 
@@ -117,7 +120,7 @@ function Disclaimer({ onAccept }: { onAccept: () => void }) {
     <div key={0}>
       <div style={{ textAlign: 'center', marginBottom: 24, paddingTop: 4 }}>
         <div style={{ width: 68, height: 68, borderRadius: 22, margin: '0 auto 14px', background: 'linear-gradient(135deg, var(--accent), #60a5fa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}>🧠</div>
-        <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>СхемаЛаб</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Всё по схеме</div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 20, padding: '3px 12px', fontSize: 10, fontWeight: 700, color: 'var(--accent-yellow)', letterSpacing: '0.1em' }}>
           БЕТА-ВЕРСИЯ
         </div>
@@ -129,7 +132,7 @@ function Disclaimer({ onAccept }: { onAccept: () => void }) {
       </div>
       <div className='card' style={{ borderRadius: 16, padding: '16px 18px' }}>
         <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.7 }}>
-          СхемаЛаб — инструмент самопознания: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.
+          «Всё по схеме» — инструмент самопознания: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.
           <br /><br />
           Если чувствуешь, что что-то важное требует внимания — терапия это место, где можно разобраться по-настоящему.
         </div>
@@ -145,7 +148,7 @@ function Disclaimer({ onAccept }: { onAccept: () => void }) {
           <br /><br />
           Удалить все данные можно прямо в приложении — Настройки → «Удалить все данные».
           <br /><br />
-          <a href="https://schemalab.ru/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
+          <a href="https://schemehappens.ru/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
             Политика конфиденциальности →
           </a>
         </div>
@@ -162,7 +165,7 @@ function Disclaimer({ onAccept }: { onAccept: () => void }) {
       <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Важно знать</div>
       <div className='card' style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 16 }}>
         <div style={{ fontSize: 13, color: 'rgba(var(--fg-rgb),0.7)', lineHeight: 1.7, marginBottom: 16 }}>
-          СхемаЛаб — инструмент самоисследования. Оценки, тесты и упражнения внутри <strong style={{ color: 'var(--text)' }}>не являются клинической диагностикой</strong> и не заменяют работу с психологом.
+          «Всё по схеме» — инструмент самоисследования. Оценки, тесты и упражнения внутри <strong style={{ color: 'var(--text)' }}>не являются клинической диагностикой</strong> и не заменяют работу с психологом.
         </div>
         <Checkbox
           checked={c1}
@@ -180,9 +183,13 @@ function Disclaimer({ onAccept }: { onAccept: () => void }) {
           Канал о схема-терапии —{' '}
           <a href="https://t.me/SchemeHappens" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>@SchemeHappens</a>
         </div>
-        <div style={{ fontSize: 14, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>
+        <div style={{ fontSize: 14, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 10 }}>
           Записаться на сессию —{' '}
           <a href="https://t.me/kotlarewski" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>@kotlarewski</a>
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>
+          Приложение бесплатное 💛 Поддержать —{' '}
+          <a href="https://schemehappens.ru/donate" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>донат</a>
         </div>
       </div>
       {!ready && (
@@ -272,6 +279,8 @@ function formatHeaderDate(): string {
 const SECTIONS: Section[] = ['today', 'help', 'schemas', 'profile'];
 
 export default function App() {
+  const { flags: serverFlags } = useUserFlags();
+  const ABOUT_TEXT = useAboutText();
   const [section, setSection] = useState<Section>(getInitialSection);
   const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
   const [disclaimerDone, setDisclaimerDone] = useState(
@@ -309,6 +318,13 @@ export default function App() {
   const [childhoodRatings, setChildhoodRatings] = useState<Record<string, number>>({});
   const [therapistMode, setTherapistMode] = useState(() => localStorage.getItem('therapist_mode') === '1');
   const switchTherapistMode = (on: boolean) => { localStorage.setItem('therapist_mode', on ? '1' : '0'); setTherapistMode(on); };
+  // Выбор обращения «ты/вы» при первом входе (addressForm === null на сервере)
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
+
+  // Sync therapistMode from server when flags load (read-only flag, server is source of truth)
+  useEffect(() => {
+    if (serverFlags.therapistMode && !therapistMode) switchTherapistMode(true);
+  }, [serverFlags.therapistMode]);
   const [cabinetView, setCabinetView] = useState<'list' | 'client'>('list');
   const therapistBackHandlerRef = useRef<() => void>(() => setCabinetView('list'));
   const [userRole, setUserRole] = useState<'CLIENT' | 'THERAPIST'>('CLIENT');
@@ -320,6 +336,14 @@ export default function App() {
   const [showYsqBanner, setShowYsqBanner] = useState(
     () => !!localStorage.getItem(YSQ_PROGRESS_KEY) && !localStorage.getItem(YSQ_RESULT_KEY) && !localStorage.getItem('ysq_banner_dismissed')
   );
+  // Hide banner if server says it was already dismissed on another device
+  useEffect(() => {
+    if (serverFlags.ysqBannerDismissed) { setShowYsqBanner(false); localStorage.setItem(YSQ_BANNER_DISMISSED_KEY, '1'); }
+  }, [serverFlags.ysqBannerDismissed]);
+  // Sync childhoodWheelDone from server → localStorage
+  useEffect(() => {
+    if (serverFlags.childhoodWheelDone) localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
+  }, [serverFlags.childhoodWheelDone]);
   const [needs, setNeeds] = useState<Need[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [saved, setSaved] = useState<Record<string, boolean>>({});
@@ -409,6 +433,10 @@ export default function App() {
       setPairCardDismissed(s.pairCardDismissed);
       if (s.pairCardDismissed) localStorage.setItem('pair_card_dismissed', '1');
       else localStorage.removeItem('pair_card_dismissed');
+      // Форма обращения ещё не выбрана — спросить (не чаще раза за сессию)
+      if (!s.addressForm && !sessionStorage.getItem('addr_form_asked')) {
+        setShowAddressPicker(true);
+      }
     }).catch(() => {
       setPairCardDismissed(!!localStorage.getItem('pair_card_dismissed'));
     });
@@ -417,6 +445,7 @@ export default function App() {
       if (Object.keys(r).length > 0) {
         setChildhoodRatings(r);
         localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
+        setServerFlag('childhoodWheelDone', true).catch(() => {});
       }
     }).catch(e => console.error('getChildhoodRatings failed', e));
     Promise.all([api.getYsqProgress(), api.getYsqResult()]).then(([prog, result]) => {
@@ -929,6 +958,9 @@ export default function App() {
       )}
 
       {showSettings && <SettingsSheet onClose={() => setShowSettings(false)} userRole={userRole} displayName={displayName} onNameChanged={setDisplayName} onOpenTherapistCabinet={() => { setShowSettings(false); setTherapistMode(true); }} therapistMode={therapistMode} onToggleTherapistMode={() => switchTherapistMode(!therapistMode)} />}
+      {showAddressPicker && <AddressFormPicker onDone={() => { sessionStorage.setItem('addr_form_asked', '1'); setShowAddressPicker(false); }} />}
+      <DonateNudge />
+
       {/* therapistMode renders inline in main flow, not as overlay — see below */}
       {showPractices && <PracticesScreen onClose={() => setShowPractices(false)} onOpenTracker={() => { setShowPractices(false); setTrackerNeedId(null); setShowTrackerOverlay(true); }} />}
       {showPlans && <PlansScreen onClose={() => setShowPlans(false)} onOpenTracker={() => { setShowPlans(false); setTrackerNeedId(null); setShowTrackerOverlay(true); }} />}

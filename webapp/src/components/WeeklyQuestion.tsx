@@ -1,15 +1,17 @@
 import { useState } from 'react';
+import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import { SectionLabel } from './SectionLabel';
 
-const QUESTIONS = [
+const buildQuestions = (tr: (ty: string, vy: string) => string) => [
   'Что было самым трудным на этой неделе?',
-  'Что дало тебе энергию на этой неделе?',
-  'Было ли что-то, что ты сделал именно так, как хочешь – не потому что нужно или ждут?',
-  'Что ты хотел бы сделать иначе?',
+  tr('Что дало тебе энергию на этой неделе?', 'Что дало вам энергию на этой неделе?'),
+  tr('Было ли что-то, что ты сделал именно так, как хочешь – не потому что нужно или ждут?',
+     'Было ли что-то, что вы сделали именно так, как хотите – не потому что нужно или ждут?'),
+  tr('Что ты хотел бы сделать иначе?', 'Что вы хотели бы сделать иначе?'),
   'Что хочется взять с собой в следующую неделю?',
-  'Как ты заботился о себе на этой неделе?',
-  'Что ты заметил нового о себе?',
+  tr('Как ты заботился о себе на этой неделе?', 'Как вы заботились о себе на этой неделе?'),
+  tr('Что ты заметил нового о себе?', 'Что вы заметили нового о себе?'),
   'Какая потребность требовала больше всего внимания?',
 ];
 
@@ -20,10 +22,11 @@ function getWeekKey() {
   return `weekly_q_${now.getFullYear()}_${week}`;
 }
 
-function getQuestion(): string {
+function getQuestion(tr: (ty: string, vy: string) => string): string {
   const now = new Date();
   const week = Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / 604800000);
-  return QUESTIONS[week % QUESTIONS.length];
+  const questions = buildQuestions(tr);
+  return questions[week % questions.length];
 }
 
 function shouldShow(): boolean {
@@ -38,9 +41,10 @@ interface Props {
 }
 
 export function WeeklyQuestion({ date, onDismiss }: Props) {
+  const tr = useTr();
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
-  const question = getQuestion();
+  const question = getQuestion(tr);
 
   async function handleSave() {
     setSaving(true);
@@ -68,7 +72,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
       <textarea
         value={text}
         onChange={e => setText(e.target.value)}
-        placeholder="Напиши, что приходит в голову..."
+        placeholder={tr('Напиши, что приходит в голову...', 'Напишите, что приходит в голову...')}
         maxLength={500}
         rows={3}
         style={{
