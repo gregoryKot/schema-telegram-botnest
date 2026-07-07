@@ -165,8 +165,17 @@ npm workspaces, пакет `shared/`:
 
 **В этап 0 (критично):**
 - **D-1**: `deleteAllUserData` — чистить `ClientConceptualization`/`TherapistNote` по `OR: [{therapistId}, {clientId}]` (сейчас клинические заметки о клиенте переживают удаление его аккаунта) + data-миграция для уже осиротевших строк + регрессионный тест.
+- **I-1**: `exec node dist/main` в CMD Dockerfile — без этого graceful shutdown не работает в проде (одна строка).
+
+**В этап 1 (безопасность):**
+- **P-1**: TOCTOU-гонка двойного бронирования слота — транзакция/advisory lock в `assertSlotFree`+create.
+- **P-2/P-3/P-4**: атомарная идемпотентность платёжных webhook (условный `updateMany` c `count===1` до side-effects), защита `chargeDue` от двойного recurring-списания (проверка pending-charge), блокировать подтверждение при расхождении суммы (не только алертить).
+- **I-2**: multi-stage Dockerfile, `npm ci`, непривилегированный `USER`.
+- **I-3**: health-эндпоинт с Prisma-пингом + HEALTHCHECK + внешний uptime-мониторинг.
 
 **В этап 2 (бэкенд):**
+- **P-5**: валидация `book()` против AvailabilityRule (сейчас прямой POST бронирует произвольное время/длительность).
+- **I-4**: нормализовать ключ троттлинга алертов (сейчас динамические `id=X` в тексте обходят дедупликацию → лавина DM при массовом сбое); задокументировать single-instance ограничение (cron без распределённых локов, `chargeDue`!) в CLAUDE.md.
 - **D-2**: добавить `onDelete: Cascade` + relation на User для таблиц без FK (`Rating`, `YsqProgress`, `YsqResult`, `ChildhoodRating`, `UserPractice`, `PracticePlan`, дневники, `AppActivity`, `UserTask`) — одна миграция.
 - **D-3**: строковые статусы (`TherapyRelation`, `Pair`, `TherapistRequest`, `Donation`, `Subscription`, `SubscriptionCharge`) → Prisma enum по образцу `BookingStatus`.
 - **D-4** (фоном): `take`-лимиты/агрегация в unbounded `rating.findMany`; `getAdminStats` — отдельный индекс по `date` при росте.
