@@ -285,16 +285,17 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const match = (ctx as any).match as RegExpMatchArray;
         const action = match[1] as 'approve' | 'reject';
         const reqId = parseInt(match[2], 10);
+        // answerCbQuery ДО обращения к БД — иначе при зависшем approve/reject
+        // Telegram крутит вечный спиннер на кнопке (правило CLAUDE.md).
+        await ctx.answerCbQuery(action === 'approve' ? '✅ Одобряю…' : '❌ Отклоняю…');
         if (action === 'approve') {
           await this.therapistRequestService.approve(adminId, reqId);
-          await ctx.answerCbQuery('✅ Одобрено');
           await ctx.editMessageReplyMarkup(undefined).catch(() => null);
           await ctx.reply(`Заявка #${reqId} одобрена`);
         } else {
           // Reject without reason in the inline-button path; for a reason
           // admin should reply to the notification with "/reject <id> <reason>".
           await this.therapistRequestService.reject(adminId, reqId, '');
-          await ctx.answerCbQuery('❌ Отклонено');
           await ctx.editMessageReplyMarkup(undefined).catch(() => null);
           await ctx.reply(`Заявка #${reqId} отклонена`);
         }
