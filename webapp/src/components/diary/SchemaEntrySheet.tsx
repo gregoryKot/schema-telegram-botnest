@@ -5,6 +5,8 @@ import { useTr } from '../../utils/addressForm';
 import { EMOTIONS, INTENSITY_LABELS, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import type { EmotionEntry } from '../../types';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
+import { detectCrisisAny } from '../../utils/crisisMarkers';
+import { CrisisCard } from '../CrisisCard';
 import { haptic } from '../../haptic';
 
 interface Props {
@@ -365,6 +367,8 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           />
         </div>
       </div>
+
+      {detectCrisisAny(trigger, thoughts, bodyFeelings, actualBehavior, schemaOrigin, healthyView, realProblems, excessiveReactions, healthyBehavior) && <CrisisCard />}
 
       <div className="ex-foot">
         <span style={{ fontSize: 12, color: 'var(--text-faint)', display: 'flex', alignItems: 'center', gap: 6 }}>
