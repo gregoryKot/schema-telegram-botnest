@@ -1150,11 +1150,20 @@ try {
   @UseGuards(JwtAuthGuard)
   async issueLinkToken(
     @Req() req: any,
+    @Res({ passthrough: true }) res: any,
   ): Promise<{ linkToken: string; expiresIn: number }> {
     const webUser: WebUser = req.webUser;
-    return {
-      linkToken: this.auth.buildLinkToken(webUser.userId as bigint),
-      expiresIn: 60,
-    };
+    const linkToken = this.auth.buildLinkToken(webUser.userId as bigint);
+    // Основной канал доставки — httpOnly-cookie (S-4): токен не попадает в
+    // URL/логи. Тело ответа сохранено для обратной совместимости со старыми
+    // клиентами, которые ещё передают ?link_token=.
+    res.cookie('link_token', linkToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax' as const,
+      maxAge: 60_000,
+      path: '/api/auth',
+    });
+    return { linkToken, expiresIn: 60 };
   }
 }

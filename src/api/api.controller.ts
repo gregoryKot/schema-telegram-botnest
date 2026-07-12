@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
@@ -67,11 +68,19 @@ export class ApiController {
   @Get('link-token')
   async issueLinkToken(
     @Req() req: AuthRequest,
+    @Res({ passthrough: true }) res: any,
   ): Promise<{ linkToken: string; expiresIn: number }> {
-    return {
-      linkToken: this.authService.buildLinkToken(uid(req)),
-      expiresIn: 60,
-    };
+    const linkToken = this.authService.buildLinkToken(uid(req));
+    // httpOnly-cookie — основной канал (S-4, токен не в URL); тело ответа —
+    // обратная совместимость со старыми клиентами (?link_token=).
+    res.cookie('link_token', linkToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax' as const,
+      maxAge: 60_000,
+      path: '/api/auth',
+    });
+    return { linkToken, expiresIn: 60 };
   }
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────
