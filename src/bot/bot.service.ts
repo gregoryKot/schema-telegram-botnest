@@ -695,22 +695,27 @@ export class BotService {
     field: 'mySchemaIds' | 'myModeIds',
     id: string,
   ) {
-    const row = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { [field]: true } as any,
+    // Read-modify-write по денормализованному зашифрованному списку — в
+    // транзакции (аудит 2026-07, 2.2): конкурентные upsert'ы разных карточек
+    // одного юзера гонялись за одним прочитанным списком → lost update.
+    await this.prisma.$transaction(async (tx) => {
+      const row = await tx.user.findUnique({
+        where: { id: userId },
+        select: { [field]: true } as any,
+      });
+      if (!row) return;
+      const dec = decryptRecord(row as any, { jsonArrays: [field] }) as Record<
+        string,
+        unknown
+      >;
+      const list = Array.isArray(dec[field]) ? (dec[field] as string[]) : [];
+      if (list.includes(id)) return;
+      const enc = encryptRecord(
+        { [field]: [...list, id] },
+        { jsonArrays: [field] },
+      );
+      await tx.user.update({ where: { id: userId }, data: enc as any });
     });
-    if (!row) return;
-    const dec = decryptRecord(row as any, { jsonArrays: [field] }) as Record<
-      string,
-      unknown
-    >;
-    const list = Array.isArray(dec[field]) ? (dec[field] as string[]) : [];
-    if (list.includes(id)) return;
-    const enc = encryptRecord(
-      { [field]: [...list, id] },
-      { jsonArrays: [field] },
-    );
-    await this.prisma.user.update({ where: { id: userId }, data: enc as any });
   }
 
   async getModeNote(userId: bigint, modeId: string) {
