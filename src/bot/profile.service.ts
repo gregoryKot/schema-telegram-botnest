@@ -40,22 +40,48 @@ export class ProfileService {
   ) {}
 
   async getProfile(userId: bigint): Promise<UserProfile> {
-    const [user, ysqResult, streakData, lastSchema, lastMode, lastGratitude, lastRating] = await Promise.all([
+    const [
+      user,
+      ysqResult,
+      streakData,
+      lastSchema,
+      lastMode,
+      lastGratitude,
+      lastRating,
+    ] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: userId } }),
       this.prisma.ysqResult.findUnique({ where: { userId } }),
       this.analytics.getStreakData(userId),
-      this.prisma.schemaDiaryEntry.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
-      this.prisma.modeDiaryEntry.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
-      this.prisma.gratitudeDiaryEntry.findFirst({ where: { userId }, orderBy: { date: 'desc' }, select: { date: true } }),
-      this.prisma.rating.findFirst({ where: { userId }, orderBy: { date: 'desc' }, select: { date: true } }),
+      this.prisma.schemaDiaryEntry.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      }),
+      this.prisma.modeDiaryEntry.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      }),
+      this.prisma.gratitudeDiaryEntry.findFirst({
+        where: { userId },
+        orderBy: { date: 'desc' },
+        select: { date: true },
+      }),
+      this.prisma.rating.findFirst({
+        where: { userId },
+        orderBy: { date: 'desc' },
+        select: { date: true },
+      }),
     ]);
 
     return {
       name: user?.firstName ?? null,
-      role: (user?.role ?? 'CLIENT') as 'CLIENT' | 'THERAPIST',
+      role: user?.role ?? 'CLIENT',
       ysq: {
         completedAt: ysqResult?.completedAt ?? null,
-        activeSchemaIds: ysqResult ? computeActiveSchemas(ysqResult.answers as number[]) : [],
+        activeSchemaIds: ysqResult
+          ? computeActiveSchemas(ysqResult.answers as number[])
+          : [],
       },
       notifications: {
         enabled: user?.notifyEnabled ?? true,
@@ -66,12 +92,25 @@ export class ProfileService {
       streak: streakData.currentStreak,
       lastActivity: {
         needsTracker: lastRating?.date ?? null,
-        schemaDiary: lastSchema ? lastSchema.createdAt.toISOString().split('T')[0] : null,
-        modeDiary: lastMode ? lastMode.createdAt.toISOString().split('T')[0] : null,
+        schemaDiary: lastSchema
+          ? lastSchema.createdAt.toISOString().split('T')[0]
+          : null,
+        modeDiary: lastMode
+          ? lastMode.createdAt.toISOString().split('T')[0]
+          : null,
         gratitudeDiary: lastGratitude?.date ?? null,
       },
-      mySchemaIds: toStringArray(user ? decryptRecord(user as any, { jsonArrays: ['mySchemaIds'] }).mySchemaIds : null),
-      myModeIds: toStringArray(user ? decryptRecord(user as any, { jsonArrays: ['myModeIds'] }).myModeIds : null),
+      mySchemaIds: toStringArray(
+        user
+          ? decryptRecord(user as any, { jsonArrays: ['mySchemaIds'] })
+              .mySchemaIds
+          : null,
+      ),
+      myModeIds: toStringArray(
+        user
+          ? decryptRecord(user as any, { jsonArrays: ['myModeIds'] }).myModeIds
+          : null,
+      ),
     };
   }
 }

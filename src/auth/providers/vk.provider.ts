@@ -21,7 +21,10 @@ export class VkProvider implements AuthProviderHandler {
   readonly id = 'vk';
   readonly displayName = 'ВКонтакте';
 
-  private readonly verifiers = new Map<string, { verifier: string; expiresAt: number }>();
+  private readonly verifiers = new Map<
+    string,
+    { verifier: string; expiresAt: number }
+  >();
 
   constructor(private readonly config: ConfigService) {
     // Sweep expired verifiers every 15 min so the map doesn't grow unboundedly
@@ -31,18 +34,25 @@ export class VkProvider implements AuthProviderHandler {
 
   private prune(): void {
     const now = Date.now();
-    for (const [k, v] of this.verifiers) if (v.expiresAt < now) this.verifiers.delete(k);
+    for (const [k, v] of this.verifiers)
+      if (v.expiresAt < now) this.verifiers.delete(k);
   }
 
   buildAuthUrl(state: string): string {
     this.prune();
-    const clientId    = this.config.getOrThrow<string>('VK_APP_ID');
+    const clientId = this.config.getOrThrow<string>('VK_APP_ID');
     const redirectUri = this.config.getOrThrow<string>('VK_REDIRECT_URI');
 
     // PKCE: 64-byte verifier → base64url-encoded → sha256 → base64url(challenge)
     const verifier = crypto.randomBytes(48).toString('base64url');
-    const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
-    this.verifiers.set(state, { verifier, expiresAt: Date.now() + 10 * 60 * 1000 });
+    const challenge = crypto
+      .createHash('sha256')
+      .update(verifier)
+      .digest('base64url');
+    this.verifiers.set(state, {
+      verifier,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+    });
 
     const params = new URLSearchParams({
       response_type: 'code',
@@ -66,11 +76,17 @@ export class VkProvider implements AuthProviderHandler {
   async exchangeCode(code: string): Promise<ProviderIdentity> {
     // This signature is kept for type compatibility but VK needs device_id +
     // state. Use exchangeCodeWithContext via the OAuth callback wrapper.
-    throw new Error('VkProvider.exchangeCode requires context — call exchangeCodeWithContext()');
+    throw new Error(
+      'VkProvider.exchangeCode requires context — call exchangeCodeWithContext()',
+    );
   }
 
-  async exchangeCodeWithContext(code: string, deviceId: string, state: string): Promise<ProviderIdentity> {
-    const clientId    = this.config.getOrThrow<string>('VK_APP_ID');
+  async exchangeCodeWithContext(
+    code: string,
+    deviceId: string,
+    state: string,
+  ): Promise<ProviderIdentity> {
+    const clientId = this.config.getOrThrow<string>('VK_APP_ID');
     const redirectUri = this.config.getOrThrow<string>('VK_REDIRECT_URI');
     const entry = this.verifiers.get(state);
     this.verifiers.delete(state);
@@ -93,12 +109,22 @@ export class VkProvider implements AuthProviderHandler {
       body: body.toString(),
       signal: AbortSignal.timeout(10_000),
     });
-    const tokenData = await tokenRes.json() as {
-      access_token?: string; user_id?: number; email?: string;
-      error?: string; error_description?: string;
+    const tokenData = (await tokenRes.json()) as {
+      access_token?: string;
+      user_id?: number;
+      email?: string;
+      error?: string;
+      error_description?: string;
     };
-    if (!tokenRes.ok || tokenData.error || !tokenData.access_token || !tokenData.user_id) {
-      throw new UnauthorizedException(`VK auth error: ${tokenData.error_description ?? tokenData.error ?? 'unknown'}`);
+    if (
+      !tokenRes.ok ||
+      tokenData.error ||
+      !tokenData.access_token ||
+      !tokenData.user_id
+    ) {
+      throw new UnauthorizedException(
+        `VK auth error: ${tokenData.error_description ?? tokenData.error ?? 'unknown'}`,
+      );
     }
 
     // Fetch user info — VK ID exposes user_info under oauth2/user_info
@@ -114,11 +140,17 @@ export class VkProvider implements AuthProviderHandler {
         signal: AbortSignal.timeout(10_000),
       });
       if (infoRes.ok) {
-        const info = await infoRes.json() as { user?: { first_name?: string; last_name?: string } };
+        const info = (await infoRes.json()) as {
+          user?: { first_name?: string; last_name?: string };
+        };
         const u = info.user;
-        if (u) displayName = [u.first_name, u.last_name].filter(Boolean).join(' ') || undefined;
+        if (u)
+          displayName =
+            [u.first_name, u.last_name].filter(Boolean).join(' ') || undefined;
       }
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
 
     return {
       providerId: String(tokenData.user_id),

@@ -14,6 +14,8 @@ import type { UserTask, TherapyRelationInfo } from '../api';
 import { fmtDate } from '../utils/format';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { NEED_ORDER, useNeedData } from '../needData';
+import { useTr } from '../utils/addressForm';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 const NEED_COLORS: Record<string, string> = {
   attachment: 'var(--c-plum)',
@@ -59,6 +61,14 @@ function resolveTaskDisplayText(task: UserTask): string {
 }
 
 // Calm document-style task row (no emoji bubbles, no rounded boxes)
+// Обёртка для fullscreen-оверлея «Мои цели»: хук useHistorySheet обязан
+// вызываться в теле компонента, который монтируется вместе с листом
+// (правило CLAUDE.md) — иначе браузерная «Назад» уводит из приложения.
+function AllTasksOverlay({ onClose, children }: { onClose: () => void; children: (goBack: () => void) => import('react').ReactNode }) {
+  const goBack = useHistorySheet(onClose);
+  return <>{children(goBack)}</>;
+}
+
 function TaskLine({ task, onOpen, onComplete, fromTherapist }: { task: UserTask; onOpen: () => void; onComplete?: () => void; fromTherapist?: boolean }) {
   const isStreakTask = task.type === 'diary_streak' || task.type === 'tracker_streak';
   const [completing, setCompleting] = useState(false);
@@ -115,6 +125,7 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
   const [showFlashcard, setShowFlashcard] = useState(false);
   const [showBeliefCheck, setShowBeliefCheck] = useState(false);
   const [showLetterToSelf, setShowLetterToSelf] = useState(false);
+  const tr = useTr();
   const [showSafePlace, setShowSafePlace] = useState(false);
   const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [introModeId, setIntroModeId] = useState<string | null>(null);
@@ -330,7 +341,7 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         </div>
         {myGoals.length === 0 ? (
           <div className="text-sm muted" style={{ maxWidth: 480, lineHeight: 1.55 }}>
-            Поставь себе цель и иди к ней маленькими шагами. Большие изменения начинаются с малого.
+            {tr('Поставь себе цель и иди к ней маленькими шагами.', 'Поставьте себе цель и идите к ней маленькими шагами.')} Большие изменения начинаются с малого.
           </div>
         ) : (
           myGoals.slice(0, 5).map(task => (
@@ -391,9 +402,11 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         />
       )}
       {showAllTasks && (
+        <AllTasksOverlay onClose={() => setShowAllTasks(false)}>
+        {(goBack) => (
         <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', overflowY: 'auto' }}>
           <div style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--bg)', borderBottom: '1px solid var(--line)', padding: '12px 24px' }}>
-            <button className="ex-btn ex-btn-ghost" onClick={() => setShowAllTasks(false)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
+            <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
               <GlyphArrowLeft /> Назад
             </button>
           </div>
@@ -401,7 +414,7 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', marginBottom: 8 }}>Мои цели</h1>
             <p style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 28, lineHeight: 1.6 }}>
               {tasks.length === 0
-                ? 'Поставь себе цель и иди к ней маленькими шагами'
+                ? tr('Поставь себе цель и иди к ней маленькими шагами', 'Поставьте себе цель и идите к ней маленькими шагами')
                 : `${tasks.length} ${plural(tasks.length, 'активная', 'активные', 'активных')}${taskHistory.length > 0 ? ` · ${taskHistory.length} выполнено` : ''}`}
             </p>
 
@@ -439,11 +452,13 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
               </>
             )}
 
-            <button className="ex-btn ex-btn-primary" style={{ marginTop: 24, width: '100%' }} onClick={() => { setShowAllTasks(false); setShowTaskCreate(true); }}>
+            <button className="ex-btn ex-btn-primary" style={{ marginTop: 24, width: '100%' }} onClick={() => { goBack(); setShowTaskCreate(true); }}>
               + Поставить цель
             </button>
           </div>
         </div>
+        )}
+        </AllTasksOverlay>
       )}
     </div>
   );

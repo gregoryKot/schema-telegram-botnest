@@ -3,7 +3,10 @@ import { MINIAPP_URL } from '../telegram/telegram.constants';
 import type { NotificationTemplate } from './notification.templates';
 import { AddressForm, t } from './address-form';
 
-const openDiaryButton = Markup.button.webApp('📱 Открыть «Всё по схеме»', MINIAPP_URL);
+const openDiaryButton = Markup.button.webApp(
+  '📱 Открыть «Всё по схеме»',
+  MINIAPP_URL,
+);
 
 /** N день / N дня / N дней */
 export function pluralDays(n: number): string {
@@ -15,12 +18,18 @@ export function pluralDays(n: number): string {
 }
 
 const NUDGE_TEXTS: Array<[string, string]> = [
-  ['Просто напоминаю, что я есть. Без ожиданий.',
-   'Просто напоминаю, что я есть. Без ожиданий.'],
-  ['Если захочется снова отслеживать состояние — можно начать с одного дня, этого достаточно.',
-   'Если захочется снова отслеживать состояние — можно начать с одного дня, этого достаточно.'],
-  ['Дневник на месте. Вернуться можно в любой момент — с чистого листа или с того же места.',
-   'Дневник на месте. Вернуться можно в любой момент — с чистого листа или с того же места.'],
+  [
+    'Просто напоминаю, что я есть. Без ожиданий.',
+    'Просто напоминаю, что я есть. Без ожиданий.',
+  ],
+  [
+    'Если захочется снова отслеживать состояние — можно начать с одного дня, этого достаточно.',
+    'Если захочется снова отслеживать состояние — можно начать с одного дня, этого достаточно.',
+  ],
+  [
+    'Дневник на месте. Вернуться можно в любой момент — с чистого листа или с того же места.',
+    'Дневник на месте. Вернуться можно в любой момент — с чистого листа или с того же места.',
+  ],
 ];
 
 /**
@@ -38,21 +47,32 @@ export function renderSoftTemplate(
       const totalDays = payload?.totalDays as number | undefined;
       const strongest = payload?.strongestNeed as string | undefined;
       const strongestAvg = payload?.strongestAvg as number | undefined;
-      const daysLine = totalDays && totalDays > 1
-        ? t(form,
-            `\nВсего у тебя уже ${totalDays} ${pluralDays(totalDays)} наблюдений. Они никуда не делись.`,
-            `\nВсего у вас уже ${totalDays} ${pluralDays(totalDays)} наблюдений. Они никуда не делись.`)
-        : '';
+      const daysLine =
+        totalDays && totalDays > 1
+          ? t(
+              form,
+              `\nВсего у тебя уже ${totalDays} ${pluralDays(totalDays)} наблюдений. Они никуда не делись.`,
+              `\nВсего у вас уже ${totalDays} ${pluralDays(totalDays)} наблюдений. Они никуда не делись.`,
+            )
+          : '';
       // Value-based штрих: зеркало собственных данных, а не просто «я есть».
-      const valueLine = strongest && strongestAvg !== undefined
-        ? t(form,
-            `\nТвоя опора всё это время — ${strongest.toLowerCase()} (в среднем ${strongestAvg.toFixed(1)}).`,
-            `\nВаша опора всё это время — ${strongest.toLowerCase()} (в среднем ${strongestAvg.toFixed(1)}).`)
-        : '';
+      const valueLine =
+        strongest && strongestAvg !== undefined
+          ? t(
+              form,
+              `\nТвоя опора всё это время — ${strongest.toLowerCase()} (в среднем ${strongestAvg.toFixed(1)}).`,
+              `\nВаша опора всё это время — ${strongest.toLowerCase()} (в среднем ${strongestAvg.toFixed(1)}).`,
+            )
+          : '';
       return {
-        text: t(form,
-          'С возвращением. Ты снова здесь — это главное.',
-          'С возвращением. Вы снова здесь — это главное.') + daysLine + valueLine,
+        text:
+          t(
+            form,
+            'С возвращением. Ты снова здесь — это главное.',
+            'С возвращением. Вы снова здесь — это главное.',
+          ) +
+          daysLine +
+          valueLine,
       };
     }
 
@@ -64,23 +84,37 @@ export function renderSoftTemplate(
       const strongestAvg = payload?.strongestAvg as number | undefined;
       const weakest = payload?.weakest as string | undefined;
       const weakestAvg = payload?.weakestAvg as number | undefined;
-      if (!strongest || !weakest || strongestAvg === undefined || weakestAvg === undefined) return null;
+      if (
+        !strongest ||
+        !weakest ||
+        strongestAvg === undefined ||
+        weakestAvg === undefined
+      )
+        return null;
       const daysPart = totalDays
-        ? t(form, `За ${totalDays} ${pluralDays(totalDays)} наблюдений `, `За ${totalDays} ${pluralDays(totalDays)} наблюдений `)
+        ? t(
+            form,
+            `За ${totalDays} ${pluralDays(totalDays)} наблюдений `,
+            `За ${totalDays} ${pluralDays(totalDays)} наблюдений `,
+          )
         : 'За это время ';
       return {
-        text: t(form,
+        text: t(
+          form,
           `${daysPart}у тебя сложилась картина: ${strongest.toLowerCase()} — твоя опора (в среднем ${strongestAvg.toFixed(1)}), ${weakest.toLowerCase()} чаще проседала (${weakestAvg.toFixed(1)}).\n\nЭто твои данные — они никуда не делись. Захочешь глянуть, что изменилось, — дневник на месте.`,
-          `${daysPart}у вас сложилась картина: ${strongest.toLowerCase()} — ваша опора (в среднем ${strongestAvg.toFixed(1)}), ${weakest.toLowerCase()} чаще проседала (${weakestAvg.toFixed(1)}).\n\nЭто ваши данные — они никуда не делись. Захотите глянуть, что изменилось, — дневник на месте.`),
+          `${daysPart}у вас сложилась картина: ${strongest.toLowerCase()} — ваша опора (в среднем ${strongestAvg.toFixed(1)}), ${weakest.toLowerCase()} чаще проседала (${weakestAvg.toFixed(1)}).\n\nЭто ваши данные — они никуда не делись. Захотите глянуть, что изменилось, — дневник на месте.`,
+        ),
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
     }
 
     case 'welcome_back':
       return {
-        text: t(form,
+        text: t(
+          form,
           'Привет. Пауза закончилась — я снова на связи.\n\nЕсли захочешь продолжить наблюдения — дневник на месте. Если нужно ещё время, можно продлить паузу.',
-          'Здравствуйте. Пауза закончилась — я снова на связи.\n\nЕсли захотите продолжить наблюдения — дневник на месте. Если нужно ещё время, можно продлить паузу.'),
+          'Здравствуйте. Пауза закончилась — я снова на связи.\n\nЕсли захотите продолжить наблюдения — дневник на месте. Если нужно ещё время, можно продлить паузу.',
+        ),
         keyboard: Markup.inlineKeyboard([
           [openDiaryButton],
           [Markup.button.callback('⏸ Ещё паузу', 'notify:pause')],
@@ -98,9 +132,11 @@ export function renderSoftTemplate(
 
     case 'dormant_7':
       return {
-        text: t(form,
+        text: t(
+          form,
           'Неделя без дневника — ничего страшного. Наблюдать за собой — не обязанность.\n\nЕсли захочешь вернуться, всё сохранилось. А если сейчас не до этого — можно поставить паузу, и я не буду писать.',
-          'Неделя без дневника — ничего страшного. Наблюдать за собой — не обязанность.\n\nЕсли захотите вернуться, всё сохранилось. А если сейчас не до этого — можно поставить паузу, и я не буду писать.'),
+          'Неделя без дневника — ничего страшного. Наблюдать за собой — не обязанность.\n\nЕсли захотите вернуться, всё сохранилось. А если сейчас не до этого — можно поставить паузу, и я не буду писать.',
+        ),
         keyboard: Markup.inlineKeyboard([
           [openDiaryButton],
           [Markup.button.callback('⏸ Пауза', 'notify:pause')],
@@ -109,9 +145,11 @@ export function renderSoftTemplate(
 
     case 'reengagement_30':
       return {
-        text: t(form,
+        text: t(
+          form,
           'Прошёл месяц. Возможно, сейчас дневник не нужен — и это тоже нормально.\n\nЕсли когда-нибудь захочется снова понаблюдать за собой, всё твоё на месте. Начать можно с одного дня.',
-          'Прошёл месяц. Возможно, сейчас дневник не нужен — и это тоже нормально.\n\nЕсли когда-нибудь захочется снова понаблюдать за собой, всё ваше на месте. Начать можно с одного дня.'),
+          'Прошёл месяц. Возможно, сейчас дневник не нужен — и это тоже нормально.\n\nЕсли когда-нибудь захочется снова понаблюдать за собой, всё ваше на месте. Начать можно с одного дня.',
+        ),
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
 

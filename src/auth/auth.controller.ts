@@ -84,21 +84,37 @@ export class AuthController {
     identity: ProviderIdentity,
     opts: { linkUserId: bigint | null; ip?: string; userAgent?: string },
   ): Promise<
-    | { kind: 'tokens'; userId: bigint; tokens: Awaited<ReturnType<AuthService['issueTokens']>> }
+    | {
+        kind: 'tokens';
+        userId: bigint;
+        tokens: Awaited<ReturnType<AuthService['issueTokens']>>;
+      }
     | { kind: 'totp_challenge'; userId: bigint; challengeToken: string }
-    | { kind: 'merge'; mergeToken: string; summary: Record<string, number>; otherDisplay: string | null }
+    | {
+        kind: 'merge';
+        mergeToken: string;
+        summary: Record<string, number>;
+        otherDisplay: string | null;
+      }
   > {
     const { linkUserId, ip, userAgent } = opts;
 
     if (linkUserId === null) {
-      const userId = (await this.auth.findOrCreateUserByProvider(
-        providerId_ as any, identity.providerId, identity.displayName, identity.email,
-      )) as bigint;
+      const userId = await this.auth.findOrCreateUserByProvider(
+        providerId_ as any,
+        identity.providerId,
+        identity.displayName,
+        identity.email,
+      );
       // 2FA gate: if user has TOTP enabled, don't issue tokens yet — return
       // a challenge token that the client exchanges for tokens after typing
       // a valid 6-digit code on /api/auth/2fa/challenge.
       if (await this.totp.isEnabled(userId)) {
-        const challengeToken = this.auth.buildTotpChallengeToken(userId, ip, userAgent);
+        const challengeToken = this.auth.buildTotpChallengeToken(
+          userId,
+          ip,
+          userAgent,
+        );
         return { kind: 'totp_challenge', userId, challengeToken };
       }
       const tokens = await this.auth.issueTokens(userId, ip, userAgent);
@@ -106,7 +122,11 @@ export class AuthController {
     }
 
     const result = await this.auth.linkProviderToUser(
-      linkUserId, providerId_, identity.providerId, identity.displayName, identity.email,
+      linkUserId,
+      providerId_,
+      identity.providerId,
+      identity.displayName,
+      identity.email,
     );
 
     if (result.ok) {
@@ -118,9 +138,19 @@ export class AuthController {
 
     // Conflict — issue a signed merge token, return data summary for UI.
     const sourceId = BigInt(result.conflictUserId);
-    const mergeToken = this.auth.buildMergeToken(linkUserId, sourceId, providerId_, identity.providerId);
+    const mergeToken = this.auth.buildMergeToken(
+      linkUserId,
+      sourceId,
+      providerId_,
+      identity.providerId,
+    );
     const summary = await this.merge.summarize(sourceId);
-    return { kind: 'merge', mergeToken, summary, otherDisplay: identity.displayName ?? identity.email ?? null };
+    return {
+      kind: 'merge',
+      mergeToken,
+      summary,
+      otherDisplay: identity.displayName ?? identity.email ?? null,
+    };
   }
 
   // Shared response handler for OAuth redirect callbacks (Google, VK, Telegram-OIDC).
@@ -142,11 +172,19 @@ export class AuthController {
       return;
     }
     if (outcome.kind === 'totp_challenge') {
-      res.redirect(`${frontendBase}/auth/2fa?token=${encodeURIComponent(outcome.challengeToken)}`);
+      res.redirect(
+        `${frontendBase}/auth/2fa?token=${encodeURIComponent(outcome.challengeToken)}`,
+      );
       return;
     }
-    res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
-    res.redirect(`${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`);
+    res.cookie(
+      REFRESH_COOKIE,
+      outcome.tokens.refreshToken,
+      cookieOptions(30 * 24 * 3600),
+    );
+    res.redirect(
+      `${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`,
+    );
   }
 
   // ─── OAuth helpers ────────────────────────────────────────────────────────
@@ -164,49 +202,82 @@ export class AuthController {
 
   private oauthRedirect(provider: string, req: any, res: any): void {
     const handler = this.providers.get(provider);
-    if (!handler.buildAuthUrl) throw new BadRequestException(`Provider ${provider} doesn't support OAuth`);
-    const state = Buffer.from(JSON.stringify({
-      nonce: randomBytes(16).toString('hex'),
-      linkUserId: (req as any).webUser?.userId?.toString() ?? null,
-    })).toString('base64url');
-    res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+    if (!handler.buildAuthUrl)
+      throw new BadRequestException(
+        `Provider ${provider} doesn't support OAuth`,
+      );
+    const state = Buffer.from(
+      JSON.stringify({
+        nonce: randomBytes(16).toString('hex'),
+        linkUserId: req.webUser?.userId?.toString() ?? null,
+      }),
+    ).toString('base64url');
+    res.cookie('oauth_state', state, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: 10 * 60 * 1000,
+      path: '/api/auth',
+    });
     res.redirect(handler.buildAuthUrl(state));
   }
 
   private requireCsrf(req: any, endpoint: string): void {
     if (!hasCsrfHeader(req)) {
-      this.securityLog.log('csrf_blocked', { endpoint, ip: req.ip, ua: (req.headers['user-agent'] ?? '').slice(0, 80) });
+      this.securityLog.log('csrf_blocked', {
+        endpoint,
+        ip: req.ip,
+        ua: (req.headers['user-agent'] ?? '').slice(0, 80),
+      });
       throw new UnauthorizedException('Missing CSRF header');
     }
   }
 
   private async oauthCallback(
-    provider: string, code: string, state: string, error: string, req: any, res: any,
+    provider: string,
+    code: string,
+    state: string,
+    error: string,
+    req: any,
+    res: any,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
       const handler = this.providers.get(provider);
-      if (!handler.exchangeCode) throw new BadRequestException(`Provider ${provider} doesn't support OAuth`);
+      if (!handler.exchangeCode)
+        throw new BadRequestException(
+          `Provider ${provider} doesn't support OAuth`,
+        );
       if (error) throw new UnauthorizedException(`${provider} auth denied`);
-      if (!code || !state) throw new BadRequestException('Missing code or state');
+      if (!code || !state)
+        throw new BadRequestException('Missing code or state');
 
       const savedState = req.cookies?.['oauth_state'];
-      if (!savedState || savedState !== state) throw new UnauthorizedException('OAuth state mismatch');
+      if (!savedState || savedState !== state)
+        throw new UnauthorizedException('OAuth state mismatch');
       res.clearCookie('oauth_state', { path: '/api/auth' });
 
       const identity = await handler.exchangeCode(code);
       let linkUserId: bigint | null = null;
       try {
-        const raw = JSON.parse(Buffer.from(state, 'base64url').toString()).linkUserId;
+        const raw = JSON.parse(
+          Buffer.from(state, 'base64url').toString(),
+        ).linkUserId;
         if (raw) linkUserId = BigInt(raw);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       const outcome = await this.signInOrLinkOrMerge(provider, identity, {
-        linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
+        linkUserId,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
       });
       this.finishOAuthRedirect(outcome, provider, res, frontendBase);
     } catch (err) {
-      this.logger.error(`${provider} callback error: ${(err as Error).message}`);
+      this.logger.error(
+        `${provider} callback error: ${(err as Error).message}`,
+      );
       res.redirect(`${frontendBase}/auth/error?reason=${provider}_failed`);
     }
   }
@@ -226,7 +297,8 @@ export class AuthController {
     @Query('code') code: string,
     @Query('state') state: string,
     @Query('error') error: string,
-    @Req() req: any, @Res() res: any,
+    @Req() req: any,
+    @Res() res: any,
   ): Promise<void> {
     return this.oauthCallback('google', code, state, error, req, res);
   }
@@ -241,9 +313,12 @@ export class AuthController {
 
   @Get('vk/callback')
   async vkCallback(
-    @Query('code') code: string, @Query('state') state: string,
-    @Query('device_id') deviceId: string, @Query('error') error: string,
-    @Req() req: any, @Res() res: any,
+    @Query('code') code: string,
+    @Query('state') state: string,
+    @Query('device_id') deviceId: string,
+    @Query('error') error: string,
+    @Req() req: any,
+    @Res() res: any,
   ): Promise<void> {
     // VK ID needs device_id + PKCE state for token exchange. Bypass the
     // generic helper and call the provider-specific method.
@@ -251,22 +326,30 @@ export class AuthController {
     try {
       const vk = this.providers.get('vk') as any;
       if (error) throw new UnauthorizedException(`vk auth denied: ${error}`);
-      if (!code || !state || !deviceId) throw new BadRequestException('Missing code / state / device_id');
+      if (!code || !state || !deviceId)
+        throw new BadRequestException('Missing code / state / device_id');
 
       const savedState = req.cookies?.['oauth_state'];
-      if (!savedState || savedState !== state) throw new UnauthorizedException('OAuth state mismatch');
+      if (!savedState || savedState !== state)
+        throw new UnauthorizedException('OAuth state mismatch');
       res.clearCookie('oauth_state', { path: '/api/auth' });
 
       const identity = await vk.exchangeCodeWithContext(code, deviceId, state);
 
       let linkUserId: bigint | null = null;
       try {
-        const raw = JSON.parse(Buffer.from(state, 'base64url').toString()).linkUserId;
+        const raw = JSON.parse(
+          Buffer.from(state, 'base64url').toString(),
+        ).linkUserId;
         if (raw) linkUserId = BigInt(raw);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       const outcome = await this.signInOrLinkOrMerge('vk', identity, {
-        linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
+        linkUserId,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
       });
       this.finishOAuthRedirect(outcome, 'vk', res, frontendBase);
     } catch (err) {
@@ -281,13 +364,27 @@ export class AuthController {
   @UseGuards(OptionalJwtGuard)
   telegramOidcRedirect(@Req() req: any, @Res() res: any): void {
     const provider = this.providers.get('telegram-oidc') as any;
-    const state = Buffer.from(JSON.stringify({
-      nonce: randomBytes(16).toString('hex'),
-      linkUserId: (req as any).webUser?.userId?.toString() ?? null,
-    })).toString('base64url');
+    const state = Buffer.from(
+      JSON.stringify({
+        nonce: randomBytes(16).toString('hex'),
+        linkUserId: req.webUser?.userId?.toString() ?? null,
+      }),
+    ).toString('base64url');
     const { verifier, challenge } = provider.generatePkce();
-    res.cookie('oauth_state', state, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
-    res.cookie('tg_pkce_verifier', verifier, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+    res.cookie('oauth_state', state, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: 10 * 60 * 1000,
+      path: '/api/auth',
+    });
+    res.cookie('tg_pkce_verifier', verifier, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: 10 * 60 * 1000,
+      path: '/api/auth',
+    });
     res.redirect(provider.buildAuthUrl(state, challenge));
   }
 
@@ -296,19 +393,24 @@ export class AuthController {
     @Query('code') code: string,
     @Query('state') state: string,
     @Query('error') error: string,
-    @Req() req: any, @Res() res: any,
+    @Req() req: any,
+    @Res() res: any,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
-      if (error) throw new UnauthorizedException(`Telegram OIDC auth denied: ${error}`);
-      if (!code || !state) throw new BadRequestException('Missing code or state');
+      if (error)
+        throw new UnauthorizedException(`Telegram OIDC auth denied: ${error}`);
+      if (!code || !state)
+        throw new BadRequestException('Missing code or state');
 
       const savedState = req.cookies?.['oauth_state'];
-      if (!savedState || savedState !== state) throw new UnauthorizedException('OAuth state mismatch');
+      if (!savedState || savedState !== state)
+        throw new UnauthorizedException('OAuth state mismatch');
       res.clearCookie('oauth_state', { path: '/api/auth' });
 
       const codeVerifier = req.cookies?.['tg_pkce_verifier'];
-      if (!codeVerifier) throw new UnauthorizedException('Missing PKCE verifier');
+      if (!codeVerifier)
+        throw new UnauthorizedException('Missing PKCE verifier');
       res.clearCookie('tg_pkce_verifier', { path: '/api/auth' });
 
       const provider = this.providers.get('telegram-oidc') as any;
@@ -316,16 +418,28 @@ export class AuthController {
 
       let linkUserId: bigint | null = null;
       try {
-        const raw = JSON.parse(Buffer.from(state, 'base64url').toString()).linkUserId;
+        const raw = JSON.parse(
+          Buffer.from(state, 'base64url').toString(),
+        ).linkUserId;
         if (raw) linkUserId = BigInt(raw);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
-      const outcome = await this.signInOrLinkOrMerge('telegram-oidc', identity, {
-        linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
-      });
+      const outcome = await this.signInOrLinkOrMerge(
+        'telegram-oidc',
+        identity,
+        {
+          linkUserId,
+          ip: req.ip,
+          userAgent: req.headers['user-agent'],
+        },
+      );
       this.finishOAuthRedirect(outcome, 'telegram-oidc', res, frontendBase);
     } catch (err) {
-      this.logger.error(`telegram-oidc callback error: ${(err as Error).message}`);
+      this.logger.error(
+        `telegram-oidc callback error: ${(err as Error).message}`,
+      );
       res.redirect(`${frontendBase}/auth/error?reason=telegram_oidc_failed`);
     }
   }
@@ -334,7 +448,10 @@ export class AuthController {
 
   @Post('telegram/widget')
   @UseGuards(OptionalJwtGuard)
-  @Throttle({ short: { limit: 5, ttl: 60_000 }, long: { limit: 30, ttl: 3_600_000 } })
+  @Throttle({
+    short: { limit: 5, ttl: 60_000 },
+    long: { limit: 30, ttl: 3_600_000 },
+  })
   @HttpCode(200)
   async telegramWidget(
     @Body() body: Record<string, string>,
@@ -343,22 +460,30 @@ export class AuthController {
   ): Promise<any> {
     this.requireCsrf(req, 'telegram/widget');
     const telegramHandler = this.providers.get('telegram');
-    if (!telegramHandler.verifyClientData) throw new BadRequestException('Telegram provider does not support direct verification');
+    if (!telegramHandler.verifyClientData)
+      throw new BadRequestException(
+        'Telegram provider does not support direct verification',
+      );
     const identity = telegramHandler.verifyClientData(body);
 
     // JWT-based link (inline widget inside the app) takes priority.
     // Cookie-based link is used by the redirect flow: the user left the app
     // to authenticate on oauth.telegram.org, so the access token is gone but
     // the httpOnly tg_link_user cookie is still present.
-    let linkUserId = (req as any).webUser?.userId ?? null;
+    let linkUserId = req.webUser?.userId ?? null;
     if (!linkUserId && req.cookies?.['tg_link_user']) {
-      try { linkUserId = BigInt(req.cookies['tg_link_user']); } catch { /* ignore */ }
+      try {
+        linkUserId = BigInt(req.cookies['tg_link_user']);
+      } catch {
+        /* ignore */
+      }
     }
     res.clearCookie('tg_link_user', { path: '/api/auth' });
 
     const outcome = await this.signInOrLinkOrMerge('telegram', identity, {
       linkUserId: linkUserId ? BigInt(String(linkUserId)) : null,
-      ip: req.ip, userAgent: req.headers['user-agent'],
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
     });
 
     if (outcome.kind === 'merge') {
@@ -373,8 +498,15 @@ export class AuthController {
     if (outcome.kind === 'totp_challenge') {
       return { totp: true, challengeToken: outcome.challengeToken };
     }
-    res.cookie(REFRESH_COOKIE, outcome.tokens.refreshToken, cookieOptions(30 * 24 * 3600));
-    return { accessToken: outcome.tokens.accessToken, expiresIn: outcome.tokens.expiresIn };
+    res.cookie(
+      REFRESH_COOKIE,
+      outcome.tokens.refreshToken,
+      cookieOptions(30 * 24 * 3600),
+    );
+    return {
+      accessToken: outcome.tokens.accessToken,
+      expiresIn: outcome.tokens.expiresIn,
+    };
   }
 
   // ─── Telegram Login Widget — redirect flow ───────────────────────────────
@@ -387,16 +519,24 @@ export class AuthController {
   telegramRedirect(@Req() req: any, @Res() res: any): void {
     const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
     const botId = botToken.split(':')[0]; // BOT_TOKEN format: 123456789:HASH
-    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL').replace(/\/$/, '');
+    const frontendBase = this.config
+      .getOrThrow<string>('WEBAPP_URL')
+      .replace(/\/$/, '');
     // Return to the frontend SPA page that reads the hash fragment.
     // oauth.telegram.org puts auth data in #tgAuthResult=BASE64URL_JSON (hash fragment),
     // which browsers never send to the server. The frontend page reads window.location.hash
     // and calls /api/auth/telegram/widget directly.
     const returnTo = `${frontendBase}/auth/telegram`;
     // Persist linkUserId in a short-lived cookie so we can restore it after redirect
-    const linkUserId = (req as any).webUser?.userId?.toString() ?? null;
+    const linkUserId = req.webUser?.userId?.toString() ?? null;
     if (linkUserId) {
-      res.cookie('tg_link_user', linkUserId, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/auth' });
+      res.cookie('tg_link_user', linkUserId, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        maxAge: 10 * 60 * 1000,
+        path: '/api/auth',
+      });
     }
     const url = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(frontendBase)}&return_to=${encodeURIComponent(returnTo)}&request_access=write&lang=ru&embed=0`;
     res.redirect(url);
@@ -438,7 +578,8 @@ try {
 
     try {
       const telegramHandler = this.providers.get('telegram');
-      if (!telegramHandler.verifyClientData) throw new BadRequestException('Telegram provider missing');
+      if (!telegramHandler.verifyClientData)
+        throw new BadRequestException('Telegram provider missing');
 
       // oauth.telegram.org/auth?embed=0 may also return data as a query param:
       //   ?tgAuthResult=BASE64URL_JSON  (wrapped format)
@@ -454,9 +595,13 @@ try {
           for (const [k, v] of Object.entries(decoded)) {
             if (v != null) fields[k] = String(v);
           }
-          this.logger.debug(`telegram widget-redirect: decoded tgAuthResult, id=${fields['id']}`);
+          this.logger.debug(
+            `telegram widget-redirect: decoded tgAuthResult, id=${fields['id']}`,
+          );
         } catch (e) {
-          throw new UnauthorizedException(`Failed to decode tgAuthResult: ${(e as Error).message}`);
+          throw new UnauthorizedException(
+            `Failed to decode tgAuthResult: ${(e as Error).message}`,
+          );
         }
       }
 
@@ -467,20 +612,29 @@ try {
       const linkUserId = savedLinkUserId ? BigInt(savedLinkUserId) : null;
 
       const outcome = await this.signInOrLinkOrMerge('telegram', identity, {
-        linkUserId, ip: req.ip, userAgent: req.headers['user-agent'],
+        linkUserId,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
       });
       this.finishOAuthRedirect(outcome, 'telegram', res, frontendBase);
     } catch (err) {
       const msg = (err as Error).message ?? 'unknown';
-      this.logger.error(`telegram widget-redirect error: ${msg} | query keys=${JSON.stringify(Object.keys(query))}`);
-      res.redirect(`${frontendBase}/auth/error?reason=${encodeURIComponent(msg)}`);
+      this.logger.error(
+        `telegram widget-redirect error: ${msg} | query keys=${JSON.stringify(Object.keys(query))}`,
+      );
+      res.redirect(
+        `${frontendBase}/auth/error?reason=${encodeURIComponent(msg)}`,
+      );
     }
   }
 
   // ─── Email magic-link login ───────────────────────────────────────────────
 
   @Post('email/link')
-  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 3_600_000 } })
+  @Throttle({
+    short: { limit: 3, ttl: 60_000 },
+    long: { limit: 10, ttl: 3_600_000 },
+  })
   @HttpCode(200)
   async emailLoginLink(
     @Body('email') email: string,
@@ -498,13 +652,23 @@ try {
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
-      const { tokens, purpose } = await this.auth.consumeEmailToken(token, req.ip, req.headers['user-agent']);
-      res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+      const { tokens, purpose } = await this.auth.consumeEmailToken(
+        token,
+        req.ip,
+        req.headers['user-agent'],
+      );
+      res.cookie(
+        REFRESH_COOKIE,
+        tokens.refreshToken,
+        cookieOptions(30 * 24 * 3600),
+      );
       if (purpose === 'link_email_auth') {
         // Already logged in — go back to account with success banner
         res.redirect(`${frontendBase}/account?linked=email`);
       } else {
-        res.redirect(`${frontendBase}/auth/callback#access_token=${tokens.accessToken}&expires_in=${tokens.expiresIn}`);
+        res.redirect(
+          `${frontendBase}/auth/callback#access_token=${tokens.accessToken}&expires_in=${tokens.expiresIn}`,
+        );
       }
     } catch (err) {
       this.logger.error(`Email callback: ${(err as Error).message}`);
@@ -516,7 +680,10 @@ try {
 
   @Post('email/link-to-account')
   @UseGuards(JwtAuthGuard)
-  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 3_600_000 } })
+  @Throttle({
+    short: { limit: 3, ttl: 60_000 },
+    long: { limit: 10, ttl: 3_600_000 },
+  })
   @HttpCode(200)
   async emailLinkToAccount(
     @Body('email') email: string,
@@ -524,12 +691,15 @@ try {
   ): Promise<{ ok: true }> {
     this.requireCsrf(req, 'email/link-to-account');
     const webUser: WebUser = req.webUser;
-    return this.auth.linkEmailToAccount(webUser.userId as bigint, email);
+    return this.auth.linkEmailToAccount(webUser.userId, email);
   }
 
   // ─── Telegram WebApp initData (mini-app auto-auth) ────────────────────────
 
-  @Throttle({ short: { limit: 5, ttl: 60_000 }, long: { limit: 30, ttl: 3_600_000 } })
+  @Throttle({
+    short: { limit: 5, ttl: 60_000 },
+    long: { limit: 30, ttl: 3_600_000 },
+  })
   @Post('telegram/webapp')
   @HttpCode(200)
   async telegramWebApp(
@@ -538,12 +708,23 @@ try {
     @Res({ passthrough: true }) res: any,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     if (!initData) throw new BadRequestException('Missing initData');
-    const { id: telegramId, firstName } = this.auth.verifyTelegramWebAppData(initData);
-    const userId = (await this.auth.findOrCreateUserByProvider(
-      'telegram', String(telegramId), firstName,
-    )) as bigint;
-    const tokens = await this.auth.issueTokens(userId, req.ip, req.headers['user-agent']);
-    res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+    const { id: telegramId, firstName } =
+      this.auth.verifyTelegramWebAppData(initData);
+    const userId = await this.auth.findOrCreateUserByProvider(
+      'telegram',
+      String(telegramId),
+      firstName,
+    );
+    const tokens = await this.auth.issueTokens(
+      userId,
+      req.ip,
+      req.headers['user-agent'],
+    );
+    res.cookie(
+      REFRESH_COOKIE,
+      tokens.refreshToken,
+      cookieOptions(30 * 24 * 3600),
+    );
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
@@ -551,7 +732,10 @@ try {
 
   @Post('merge')
   @UseGuards(OptionalJwtGuard)
-  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 3_600_000 } })
+  @Throttle({
+    short: { limit: 3, ttl: 60_000 },
+    long: { limit: 10, ttl: 3_600_000 },
+  })
   @HttpCode(200)
   async confirmMerge(
     @Body('token') token: string,
@@ -560,9 +744,10 @@ try {
   ): Promise<{ accessToken: string; expiresIn: number }> {
     // CSRF: require the custom header same way refresh/logout do. Browser
     // cannot set it from a cross-origin form/img.
-    this.requireCsrf(req, "merge");
+    this.requireCsrf(req, 'merge');
     if (!token) throw new BadRequestException('Missing merge token');
-    const { target, source, provider, providerId } = this.auth.verifyMergeToken(token);
+    const { target, source, provider, providerId } =
+      this.auth.verifyMergeToken(token);
 
     // Security: the caller MUST be authenticated as either:
     //   - the target user (started a link from an active session), OR
@@ -573,9 +758,11 @@ try {
     // because the merge token itself is the proof of intent: it was just
     // issued to the same browser session and we trust the signed payload.
     // We do NOT accept if someone is logged in as a DIFFERENT user.
-    const webUser = (req as any).webUser;
+    const webUser = req.webUser;
     if (webUser && String(webUser.userId) !== String(target)) {
-      throw new UnauthorizedException('Merge token does not match current session');
+      throw new UnauthorizedException(
+        'Merge token does not match current session',
+      );
     }
 
     // 1. Move data from source → target.
@@ -584,13 +771,22 @@ try {
     } catch (err) {
       const msg = (err as Error).message ?? 'merge failed';
       // Full error → logs + admin alert (AlertLogger picks up .error).
-      this.logger.error(`merge ${source} → ${target} failed: ${msg}`, (err as Error).stack);
+      this.logger.error(
+        `merge ${source} → ${target} failed: ${msg}`,
+        (err as Error).stack,
+      );
       // Friendly message to client — no Prisma internals leaked.
-      throw new BadRequestException('Не удалось объединить аккаунты. Админ уведомлён — попробуйте позже.');
+      throw new BadRequestException(
+        'Не удалось объединить аккаунты. Админ уведомлён — попробуйте позже.',
+      );
     }
 
     // 2. Link the provider that triggered the merge to the target user.
-    const linkRes = await this.auth.linkProviderToUser(target, provider, providerId);
+    const linkRes = await this.auth.linkProviderToUser(
+      target,
+      provider,
+      providerId,
+    );
     if (!linkRes.ok) {
       // Should be impossible — source's provider row was moved to target by
       // merge() above. Be defensive.
@@ -598,9 +794,22 @@ try {
     }
 
     // 3. Issue fresh tokens for the target user.
-    const tokens = await this.auth.issueTokens(target, req.ip, req.headers['user-agent']);
-    res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
-    this.securityLog.log('merge_confirmed', { target, source, provider, ip: req.ip });
+    const tokens = await this.auth.issueTokens(
+      target,
+      req.ip,
+      req.headers['user-agent'],
+    );
+    res.cookie(
+      REFRESH_COOKIE,
+      tokens.refreshToken,
+      cookieOptions(30 * 24 * 3600),
+    );
+    this.securityLog.log('merge_confirmed', {
+      target,
+      source,
+      provider,
+      ip: req.ip,
+    });
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
@@ -613,23 +822,35 @@ try {
     @Param('provider') provider: string,
     @Body() body: Record<string, unknown>,
     @Req() req: any,
-  ): Promise<{ ok: true } | { merge: true; mergeToken: string; summary: Record<string, number> }> {
+  ): Promise<
+    | { ok: true }
+    | { merge: true; mergeToken: string; summary: Record<string, number> }
+  > {
     const handler = this.providers.get(provider);
     if (!handler.verifyClientData) {
-      throw new BadRequestException(`Provider ${provider} doesn't support direct linking — use OAuth flow`);
+      throw new BadRequestException(
+        `Provider ${provider} doesn't support direct linking — use OAuth flow`,
+      );
     }
     const identity = handler.verifyClientData(body);
     const webUser: WebUser = req.webUser;
 
     const result = await this.auth.linkProviderToUser(
-      webUser.userId as bigint, provider, identity.providerId, identity.displayName, identity.email,
+      webUser.userId,
+      provider,
+      identity.providerId,
+      identity.displayName,
+      identity.email,
     );
     if (result.ok) return { ok: true };
 
     // Conflict — give the UI a merge token.
     const sourceId = BigInt(result.conflictUserId);
     const mergeToken = this.auth.buildMergeToken(
-      webUser.userId as bigint, sourceId, provider, identity.providerId,
+      webUser.userId,
+      sourceId,
+      provider,
+      identity.providerId,
     );
     const summary = await this.merge.summarize(sourceId);
     return { merge: true, mergeToken, summary };
@@ -640,13 +861,20 @@ try {
   @Post('unlink/:provider')
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
-  async unlink(@Param('provider') provider: string, @Req() req: any): Promise<{ ok: boolean }> {
-    if (!this.providers.list().some(p => p.id === provider)) {
+  async unlink(
+    @Param('provider') provider: string,
+    @Req() req: any,
+  ): Promise<{ ok: boolean }> {
+    if (!this.providers.list().some((p) => p.id === provider)) {
       throw new BadRequestException('Unknown provider');
     }
     const webUser: WebUser = req.webUser;
-    await this.auth.unlinkProvider(webUser.userId as bigint, provider as any);
-    this.securityLog.log('provider_unlinked', { userId: webUser.userId, provider, ip: req.ip });
+    await this.auth.unlinkProvider(webUser.userId, provider as any);
+    this.securityLog.log('provider_unlinked', {
+      userId: webUser.userId,
+      provider,
+      ip: req.ip,
+    });
     return { ok: true };
   }
 
@@ -658,11 +886,19 @@ try {
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ): Promise<{ accessToken: string; expiresIn: number }> {
-    this.requireCsrf(req, "refresh");
+    this.requireCsrf(req, 'refresh');
     const rawRefresh = req.cookies?.[REFRESH_COOKIE];
     if (!rawRefresh) throw new UnauthorizedException('No refresh token');
-    const tokens = await this.auth.rotateRefreshToken(rawRefresh, req.ip, req.headers['user-agent']);
-    res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+    const tokens = await this.auth.rotateRefreshToken(
+      rawRefresh,
+      req.ip,
+      req.headers['user-agent'],
+    );
+    res.cookie(
+      REFRESH_COOKIE,
+      tokens.refreshToken,
+      cookieOptions(30 * 24 * 3600),
+    );
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
@@ -675,17 +911,20 @@ try {
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ): Promise<{ ok: boolean }> {
-    this.requireCsrf(req, "logout");
+    this.requireCsrf(req, 'logout');
     const rawRefresh = req.cookies?.[REFRESH_COOKIE];
     if (rawRefresh) {
       if (all === 'true') {
         try {
           const tokens = await this.auth.rotateRefreshToken(rawRefresh);
           const { userId } = this.auth.verifyAccessToken(tokens.accessToken);
-          await this.auth.revokeAllSessions(userId as bigint);
+          await this.auth.revokeAllSessions(userId);
         } catch (err) {
           if (!(err instanceof UnauthorizedException)) {
-            this.logger.error(`logout all-sessions error: ${(err as Error).message}`, err);
+            this.logger.error(
+              `logout all-sessions error: ${(err as Error).message}`,
+              err,
+            );
           }
           // UnauthorizedException = token already invalid, fine to continue logout
         }
@@ -703,13 +942,17 @@ try {
   @UseGuards(JwtAuthGuard)
   async me(@Req() req: any): Promise<{
     userId: string;
-    providers: Array<{ provider: string; email: string | null; displayName: string | null }>;
+    providers: Array<{
+      provider: string;
+      email: string | null;
+      displayName: string | null;
+    }>;
     totp: { enabled: boolean; recoveryCodesLeft: number };
   }> {
     const webUser: WebUser = req.webUser;
     const [providers, totp] = await Promise.all([
-      this.auth.getUserProviders(webUser.userId as bigint),
-      this.totp.getStatus(webUser.userId as bigint),
+      this.auth.getUserProviders(webUser.userId),
+      this.totp.getStatus(webUser.userId),
     ]);
     return { userId: String(webUser.userId), providers, totp };
   }
@@ -719,13 +962,18 @@ try {
   @Post('2fa/setup')
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
-  async totpSetup(@Req() req: any): Promise<{ otpauthUrl: string; qrDataUrl: string }> {
+  async totpSetup(
+    @Req() req: any,
+  ): Promise<{ otpauthUrl: string; qrDataUrl: string }> {
     this.requireCsrf(req, '2fa/setup');
     const webUser: WebUser = req.webUser;
     // Use one of the user's display names for the QR label
-    const providers = await this.auth.getUserProviders(webUser.userId as bigint);
-    const label = providers[0]?.email ?? providers[0]?.displayName ?? `user-${webUser.userId}`;
-    return this.totp.startSetup(webUser.userId as bigint, label);
+    const providers = await this.auth.getUserProviders(webUser.userId);
+    const label =
+      providers[0]?.email ??
+      providers[0]?.displayName ??
+      `user-${webUser.userId}`;
+    return this.totp.startSetup(webUser.userId, label);
   }
 
   @Post('2fa/enable')
@@ -738,8 +986,11 @@ try {
     this.requireCsrf(req, '2fa/enable');
     if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser;
-    const result = await this.totp.confirmSetup(webUser.userId as bigint, code);
-    this.securityLog.log('role_changed', { userId: webUser.userId, event: '2fa_enabled' });
+    const result = await this.totp.confirmSetup(webUser.userId, code);
+    this.securityLog.log('role_changed', {
+      userId: webUser.userId,
+      event: '2fa_enabled',
+    });
     return result;
   }
 
@@ -753,8 +1004,11 @@ try {
     this.requireCsrf(req, '2fa/disable');
     if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser;
-    await this.totp.disable(webUser.userId as bigint, code);
-    this.securityLog.log('role_changed', { userId: webUser.userId, event: '2fa_disabled' });
+    await this.totp.disable(webUser.userId, code);
+    this.securityLog.log('role_changed', {
+      userId: webUser.userId,
+      event: '2fa_disabled',
+    });
     return { ok: true };
   }
 
@@ -768,14 +1022,17 @@ try {
     this.requireCsrf(req, '2fa/recovery-codes');
     if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser;
-    return this.totp.regenerateRecoveryCodes(webUser.userId as bigint, code);
+    return this.totp.regenerateRecoveryCodes(webUser.userId, code);
   }
 
   // ─── Recovery email ──────────────────────────────────────────────────────
 
   @Post('recovery-email/start')
   @UseGuards(JwtAuthGuard)
-  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 24 * 3_600_000 } })
+  @Throttle({
+    short: { limit: 3, ttl: 60_000 },
+    long: { limit: 10, ttl: 24 * 3_600_000 },
+  })
   @HttpCode(200)
   async recoveryEmailStart(
     @Req() req: any,
@@ -783,17 +1040,22 @@ try {
   ): Promise<{ ok: true }> {
     this.requireCsrf(req, 'recovery-email/start');
     const webUser: WebUser = req.webUser;
-    return this.emailSvc.sendVerificationLink(webUser.userId as bigint, email);
+    return this.emailSvc.sendVerificationLink(webUser.userId, email);
   }
 
   @Get('recovery-email/verify')
-  async recoveryEmailVerify(@Query('token') token: string, @Res() res: any): Promise<void> {
+  async recoveryEmailVerify(
+    @Query('token') token: string,
+    @Res() res: any,
+  ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
       await this.emailSvc.consumeToken(token, 'verify_email');
       res.redirect(`${frontendBase}/account?verified=1`);
     } catch (err) {
-      this.logger.error(`recovery email verify failed: ${(err as Error).message}`);
+      this.logger.error(
+        `recovery email verify failed: ${(err as Error).message}`,
+      );
       res.redirect(`${frontendBase}/account?verified=0`);
     }
   }
@@ -801,7 +1063,10 @@ try {
   // Public — anyone can request a recovery link by email. We silently
   // succeed regardless to avoid leaking which emails are registered.
   @Post('recovery/request')
-  @Throttle({ short: { limit: 3, ttl: 60_000 }, long: { limit: 10, ttl: 24 * 3_600_000 } })
+  @Throttle({
+    short: { limit: 3, ttl: 60_000 },
+    long: { limit: 10, ttl: 24 * 3_600_000 },
+  })
   @HttpCode(200)
   async recoveryRequest(@Body('email') email: string): Promise<{ ok: true }> {
     return this.emailSvc.sendRecoveryLink(email);
@@ -820,16 +1085,31 @@ try {
     const { userId } = await this.emailSvc.consumeToken(token, 'recovery');
     // Recovery DOES skip 2FA — the email proves possession of a separate
     // factor. Otherwise losing TOTP + all providers = unrecoverable account.
-    const tokens = await this.auth.issueTokens(userId, req.ip, req.headers['user-agent']);
-    res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
-    this.securityLog.log('role_changed', { userId, event: 'recovery_login', ip: req.ip });
+    const tokens = await this.auth.issueTokens(
+      userId,
+      req.ip,
+      req.headers['user-agent'],
+    );
+    res.cookie(
+      REFRESH_COOKIE,
+      tokens.refreshToken,
+      cookieOptions(30 * 24 * 3600),
+    );
+    this.securityLog.log('role_changed', {
+      userId,
+      event: 'recovery_login',
+      ip: req.ip,
+    });
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
   // Verify a TOTP code in exchange for a real access token. Called by the
   // /auth/2fa frontend page after primary login returned a challengeToken.
   @Post('2fa/challenge')
-  @Throttle({ short: { limit: 5, ttl: 60_000 }, long: { limit: 20, ttl: 3_600_000 } })
+  @Throttle({
+    short: { limit: 5, ttl: 60_000 },
+    long: { limit: 20, ttl: 3_600_000 },
+  })
   @HttpCode(200)
   async totpChallenge(
     @Req() req: any,
@@ -838,12 +1118,21 @@ try {
     @Body('code') code: string,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     this.requireCsrf(req, '2fa/challenge');
-    if (!challengeToken || !code) throw new BadRequestException('Missing token or code');
+    if (!challengeToken || !code)
+      throw new BadRequestException('Missing token or code');
     const { userId } = this.auth.verifyTotpChallengeToken(challengeToken);
     const ok = await this.totp.verifyCode(userId, code);
     if (!ok) throw new UnauthorizedException('Invalid 2FA code');
-    const tokens = await this.auth.issueTokens(userId, req.ip, req.headers['user-agent']);
-    res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions(30 * 24 * 3600));
+    const tokens = await this.auth.issueTokens(
+      userId,
+      req.ip,
+      req.headers['user-agent'],
+    );
+    res.cookie(
+      REFRESH_COOKIE,
+      tokens.refreshToken,
+      cookieOptions(30 * 24 * 3600),
+    );
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
@@ -859,8 +1148,22 @@ try {
 
   @Get('link-token')
   @UseGuards(JwtAuthGuard)
-  async issueLinkToken(@Req() req: any): Promise<{ linkToken: string; expiresIn: number }> {
+  async issueLinkToken(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: any,
+  ): Promise<{ linkToken: string; expiresIn: number }> {
     const webUser: WebUser = req.webUser;
-    return { linkToken: this.auth.buildLinkToken(webUser.userId as bigint), expiresIn: 60 };
+    const linkToken = this.auth.buildLinkToken(webUser.userId);
+    // Основной канал доставки — httpOnly-cookie (S-4): токен не попадает в
+    // URL/логи. Тело ответа сохранено для обратной совместимости со старыми
+    // клиентами, которые ещё передают ?link_token=.
+    res.cookie('link_token', linkToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax' as const,
+      maxAge: 60_000,
+      path: '/api/auth',
+    });
+    return { linkToken, expiresIn: 60 };
   }
 }

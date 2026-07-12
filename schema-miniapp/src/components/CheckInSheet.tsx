@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, PracticePlan } from '../api';
 import { BottomSheet } from './BottomSheet';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   plan: PracticePlan;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Props) {
+  const tr = useTr();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
@@ -33,7 +35,7 @@ export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Prop
       <div style={{ textAlign: 'center', marginBottom: 20 }}>
         <div style={{ fontSize: 36, marginBottom: 8 }}>🎯</div>
         <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>
-          Вчера ты планировал
+          {tr('Вчера ты планировал', 'Вчера вы планировали')}
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>
           {needEmoji} {needLabel}

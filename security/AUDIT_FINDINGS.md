@@ -88,3 +88,69 @@ p/nodejs, p/typescript, p/javascript, p/jwt, p/react), `gitleaks` по всей
 - После: `npm audit` чист на всех 3 пакетах; `osv-scanner` — только F-2-03 (отслеживается).
 
 Следующая фаза — 3 (архитектурный разбор).
+
+---
+
+## Фаза 3 — Полный аудит проекта (2026-07, PROJECT_AUDIT.md + ADDENDUM)
+
+Ручной аудит архитектуры auth/crypto/authz + БД + инфра + платежи.
+Все находки ниже закрыты в PR #27, если не отмечено иное.
+
+### S-1 · Rate-limit обходился ротацией неверифицированного `sub` ✅ Закрыто
+- **Severity:** Medium. Троттлинг-бакет строился по JWT `sub`/initData `user.id`
+  ДО проверки подписи → свежий бакет на каждый запрос.
+- **Фикс:** неверифицированные идентификаторы скованы с IP (`uid|ip`),
+  `throttler.guard.ts` + регрессионный spec.
+
+### S-2 · Реестры user-таблиц дублировались без сверки ✅ Закрыто
+- **Severity:** Medium (data-loss/retention). `USER_DATA_TABLES` ↔
+  `USER_OWNED_TABLES` жили независимо.
+- **Фикс:** `table-registry.spec.ts` парсит schema.prisma и роняет тест при
+  дрейфе. Сверка сразу вскрыла: EmailToken-сироты после merge (→
+  SECURITY_SENSITIVE), непереносимые ModeMap/TherapistCustomMode (→ remap в
+  merge()). Чеклист CLAUDE.md дополнен.
+
+### S-3 · decrypt() молчал при провале GCM-аутентификации ✅ Закрыто
+- **Фикс:** warning (троттлинг 1/мин) при blob'е в формате шифротекста,
+  который не расшифровался ни одним ключом.
+
+### S-4 · link_token в query-параметре ✅ Закрыто
+- **Фикс:** httpOnly-cookie `link_token` (60 с, path=/api/auth) как основной
+  канал; query — deprecated fallback для старых клиентов.
+
+### S-5 · CI отсутствовал ✅ Закрыто
+- **Фикс:** `.github/workflows/ci.yml` — tsc+jest+npm audit (high, prod-deps)
+  бэкенда, сборки+vitest фронтендов, проверка актуальности dist миниаппа.
+
+### D-1 · Клинические записи о клиенте переживали удаление его аккаунта ✅ Закрыто
+- **Severity:** High (right-to-erasure). `deleteAllUserData` чистил
+  ClientConceptualization/TherapistNote только по therapistId.
+- **Фикс:** OR [{therapistId},{clientId}] + миграция дочистки сирот
+  (20260707000001) + регрессионный spec.
+
+### P-1 · TOCTOU-гонка двойного бронирования слота ✅ Закрыто
+- **Фикс:** проверка+create в транзакции под pg_advisory_xact_lock.
+
+### P-2 · Платёжные webhook: check-then-act ✅ Закрыто
+- **Фикс:** атомарный CAS (updateMany по статусу) в booking.confirm,
+  subscription.markChargePaid, donation.markPaid + спеки идемпотентности.
+
+### P-3 · Возможное двойное recurring-списание ✅ Закрыто
+- **Фикс:** chargeDue пропускает подписку со свежим pending-charge + алерт.
+
+### P-4 · Расхождение суммы только алертило ✅ Закрыто (booking) / ❌ Accepted (subs/donations)
+- **Фикс:** booking.confirm блокирует авто-подтверждение при mismatch.
+  Для подписок/донатов — осознанно только алерт: сумма подписана Robokassa,
+  юзер оплатил легитимно выставленный счёт.
+
+### P-5 · book() не валидирует время против AvailabilityRule ⚠️ Открыто (этап 2)
+
+### I-1 · CMD без exec — graceful shutdown не работал ✅ Закрыто
+### I-2 · Root, однослойный образ ✅ Закрыто (multi-stage, USER node, npm ci)
+### I-3 · Нет health-эндпоинта ✅ Закрыто (/health + HEALTHCHECK)
+### I-4 · Троттлинг алертов обходится динамическим текстом ⚠️ Открыто (этап 2)
+
+### Юридика (L-1…L-9) — см. PROJECT_AUDIT_ADDENDUM.md
+L-1/L-2/L-4/L-5/L-6(частично)/L-7/L-8 закрыты правками политики, оферты и
+согласий (2026-07-07). Открыто: L-3 уведомление РКН (на владельце),
+Ю.5 оферта подписки (блокер включения подписки).

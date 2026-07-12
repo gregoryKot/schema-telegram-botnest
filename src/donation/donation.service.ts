@@ -33,7 +33,10 @@ export class DonationService {
     private readonly notify: BookingNotifyService,
     config: ConfigService,
   ) {
-    this.appUrl = normalizeBaseUrl(config.get<string>('APP_URL'), 'https://schemehappens.ru');
+    this.appUrl = normalizeBaseUrl(
+      config.get<string>('APP_URL'),
+      'https://schemehappens.ru',
+    );
   }
 
   // Donations occupy [1e9, 2e9); subscriptions start at 2e9. Bounded so a
@@ -52,7 +55,13 @@ export class DonationService {
 
     const row = await this.prisma.donation.create({
       data: encryptRecord(
-        { amount, source, email: dto.email?.trim() || null, comment: dto.comment?.trim() || null, status: 'pending' },
+        {
+          amount,
+          source,
+          email: dto.email?.trim() || null,
+          comment: dto.comment?.trim() || null,
+          status: 'pending',
+        },
         SCHEMA,
       ) as any,
     });
@@ -88,14 +97,21 @@ export class DonationService {
     // Defense in depth: the paid amount is already signature-bound, but flag any
     // mismatch with the recorded amount so a misconfig can't slip through.
     if (paidAmount != null && Math.round(paidAmount) !== row.amount) {
-      await this.notify.alertAdmin(`⚠️ <b>Донат #${id}: сумма расходится</b>\nОжидали ${row.amount} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`);
+      await this.notify.alertAdmin(
+        `⚠️ <b>Донат #${id}: сумма расходится</b>\nОжидали ${row.amount} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`,
+      );
     }
-    await this.prisma.donation.update({ where: { id }, data: { status: 'paid', paidAt: new Date() } });
+    // P-2 (аудит 2026-07): CAS — ретраи webhook не задваивают алерт админу.
+    const claimed = await this.prisma.donation.updateMany({
+      where: { id, status: { not: 'paid' } },
+      data: { status: 'paid', paidAt: new Date() },
+    });
+    if (claimed.count === 0) return { ok: true };
     const plain = decryptRecord(row, SCHEMA) as any;
     await this.notify.alertAdmin(
       `💛 <b>Донат ${row.amount} ₽</b> (${row.source})` +
-      (plain.email ? `\n📬 ${plain.email}` : '') +
-      (plain.comment ? `\n💬 ${plain.comment}` : ''),
+        (plain.email ? `\n📬 ${plain.email}` : '') +
+        (plain.comment ? `\n💬 ${plain.comment}` : ''),
     );
     this.logger.log(`Donation ${id} PAID`);
     return { ok: true };

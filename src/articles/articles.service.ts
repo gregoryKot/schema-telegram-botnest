@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ARTICLE_SEED } from './articles.seed';
 import { ARTICLE_DIAGRAM_KEYS } from './article-diagrams';
@@ -32,7 +37,9 @@ export class ArticlesService implements OnModuleInit {
   // heroImage is never overwritten (admin uploads survive), and articles the
   // admin created (slugs not in the seed) are never touched.
   async onModuleInit() {
-    const stored = await this.prisma.bookingSetting.findUnique({ where: { key: SEED_VERSION_KEY } });
+    const stored = await this.prisma.bookingSetting.findUnique({
+      where: { key: SEED_VERSION_KEY },
+    });
     if (stored?.value === SEED_VERSION) return;
 
     const seed = ARTICLE_SEED.map((a) => ({
@@ -44,14 +51,23 @@ export class ArticlesService implements OnModuleInit {
     }));
 
     for (const a of seed) {
-      const existing = await this.prisma.article.findUnique({ where: { slug: a.slug } });
+      const existing = await this.prisma.article.findUnique({
+        where: { slug: a.slug },
+      });
       if (!existing) {
         await this.prisma.article.create({ data: a });
       } else {
         // Refresh built-in text + diagram key; keep any admin-uploaded hero image.
         await this.prisma.article.update({
           where: { slug: a.slug },
-          data: { title: a.title, description: a.description, content: a.content, date: a.date, readMin: a.readMin, diagramKey: a.diagramKey },
+          data: {
+            title: a.title,
+            description: a.description,
+            content: a.content,
+            date: a.date,
+            readMin: a.readMin,
+            diagramKey: a.diagramKey,
+          },
         });
       }
     }
@@ -67,7 +83,16 @@ export class ArticlesService implements OnModuleInit {
   async list() {
     return this.prisma.article.findMany({
       orderBy: { date: 'desc' },
-      select: { id: true, slug: true, title: true, description: true, date: true, readMin: true, heroImage: true, diagramKey: true },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        date: true,
+        readMin: true,
+        heroImage: true,
+        diagramKey: true,
+      },
     });
   }
 
@@ -82,7 +107,9 @@ export class ArticlesService implements OnModuleInit {
   }
 
   async create(dto: ArticleDto) {
-    return this.prisma.article.create({ data: { ...dto, date: new Date(dto.date) } });
+    return this.prisma.article.create({
+      data: { ...dto, date: new Date(dto.date) },
+    });
   }
 
   async update(id: number, dto: Partial<ArticleDto>) {

@@ -15,7 +15,10 @@ export interface CalEvent {
 }
 
 /** Build the VCALENDAR/VEVENT body that CalDAV PUTs to iCloud (RFC 5545). */
-export function buildVcalendar(events: CalEvent[], calName = 'Запись на сессии'): string {
+export function buildVcalendar(
+  events: CalEvent[],
+  calName = 'Запись на сессии',
+): string {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -49,7 +52,10 @@ function buildVevent(ev: CalEvent): string[] {
 
 /** YYYYMMDDTHHMMSSZ in UTC */
 function fmtUtc(d: Date): string {
-  return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  return d
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}/, '');
 }
 
 /** Escape per RFC 5545: backslash, comma, semicolon, newline */
@@ -62,5 +68,7 @@ function escapeText(s: string): string {
 }
 
 export function sessionLabel(type: SessionType): string {
-  return type === SessionType.INTRO_15 ? 'Знакомство (15 мин)' : 'Сессия (50 мин)';
+  return type === SessionType.INTRO_15
+    ? 'Знакомство (15 мин)'
+    : 'Сессия (50 мин)';
 }

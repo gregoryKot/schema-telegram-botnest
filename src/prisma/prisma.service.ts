@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
@@ -19,7 +24,10 @@ function buildAdapter(): PrismaPg {
 }
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
@@ -36,8 +44,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       } catch (err) {
         if (attempt === 5) throw err;
         const delay = attempt * 2_000;
-        this.logger.warn(`DB connect attempt ${attempt} failed, retrying in ${delay}ms: ${(err as Error).message}`);
-        await new Promise(r => setTimeout(r, delay));
+        this.logger.warn(
+          `DB connect attempt ${attempt} failed, retrying in ${delay}ms: ${(err as Error).message}`,
+        );
+        await new Promise((r) => setTimeout(r, delay));
       }
     }
   }

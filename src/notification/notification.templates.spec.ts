@@ -1,12 +1,46 @@
-import { buildSummaryText, buildWeeklySummaryText, renderTemplate } from './notification.templates';
+import {
+  buildSummaryText,
+  buildWeeklySummaryText,
+  renderTemplate,
+} from './notification.templates';
 import { Need } from '../bot/bot.service';
 
 const NEEDS: Need[] = [
-  { id: 'attachment', emoji: '🤝', title: '🤝 Привязанность', fullTitle: 'Привязанность', chartLabel: 'Привязанность' },
-  { id: 'autonomy',   emoji: '🚀', title: '🚀 Автономия',     fullTitle: 'Автономия',     chartLabel: 'Автономия' },
-  { id: 'expression', emoji: '💬', title: '💬 Выражение',     fullTitle: 'Выражение',     chartLabel: 'Выражение чувств' },
-  { id: 'play',       emoji: '🎉', title: '🎉 Спонтанность',  fullTitle: 'Спонтанность',  chartLabel: 'Спонтанность' },
-  { id: 'limits',     emoji: '⚖️', title: '⚖️ Границы',      fullTitle: 'Границы',       chartLabel: 'Границы' },
+  {
+    id: 'attachment',
+    emoji: '🤝',
+    title: '🤝 Привязанность',
+    fullTitle: 'Привязанность',
+    chartLabel: 'Привязанность',
+  },
+  {
+    id: 'autonomy',
+    emoji: '🚀',
+    title: '🚀 Автономия',
+    fullTitle: 'Автономия',
+    chartLabel: 'Автономия',
+  },
+  {
+    id: 'expression',
+    emoji: '💬',
+    title: '💬 Выражение',
+    fullTitle: 'Выражение',
+    chartLabel: 'Выражение чувств',
+  },
+  {
+    id: 'play',
+    emoji: '🎉',
+    title: '🎉 Спонтанность',
+    fullTitle: 'Спонтанность',
+    chartLabel: 'Спонтанность',
+  },
+  {
+    id: 'limits',
+    emoji: '⚖️',
+    title: '⚖️ Границы',
+    fullTitle: 'Границы',
+    chartLabel: 'Границы',
+  },
 ];
 
 describe('buildSummaryText', () => {
@@ -39,15 +73,21 @@ describe('buildSummaryText', () => {
 });
 
 describe('buildWeeklySummaryText', () => {
-  const makeStats = (overrides: Partial<Record<string, { avg: number | null; prevAvg: number | null }>>) =>
+  const makeStats = (
+    overrides: Partial<
+      Record<string, { avg: number | null; prevAvg: number | null }>
+    >,
+  ) =>
     NEEDS.map((n) => {
       const o = overrides[n.id];
       const avg = o?.avg ?? 5;
       const prevAvg = o?.prevAvg ?? 5;
       const trend =
-        avg !== null && prevAvg !== null && avg - prevAvg > 0.5 ? '↑'
-        : avg !== null && prevAvg !== null && avg - prevAvg < -0.5 ? '↓'
-        : '→';
+        avg !== null && prevAvg !== null && avg - prevAvg > 0.5
+          ? '↑'
+          : avg !== null && prevAvg !== null && avg - prevAvg < -0.5
+            ? '↓'
+            : '→';
       return { needId: n.id as any, avg, trend } as any;
     });
 
@@ -64,7 +104,11 @@ describe('buildWeeklySummaryText', () => {
   });
 
   it('shows dash when avg is null', () => {
-    const stats = NEEDS.map((n) => ({ needId: n.id as any, avg: null, trend: '→' as const }));
+    const stats = NEEDS.map((n) => ({
+      needId: n.id as any,
+      avg: null,
+      trend: '→' as const,
+    }));
     const text = buildWeeklySummaryText(stats, NEEDS, null);
     expect(text).toContain(' –');
   });
@@ -82,8 +126,14 @@ describe('buildWeeklySummaryText', () => {
   });
 
   it('formats averages to 1 decimal place', () => {
-    const stats = [{ needId: 'attachment' as any, avg: 7.333, trend: '→' as const },
-      ...NEEDS.slice(1).map((n) => ({ needId: n.id as any, avg: 5, trend: '→' as const }))];
+    const stats = [
+      { needId: 'attachment' as any, avg: 7.333, trend: '→' as const },
+      ...NEEDS.slice(1).map((n) => ({
+        needId: n.id as any,
+        avg: 5,
+        trend: '→' as const,
+      })),
+    ];
     const text = buildWeeklySummaryText(stats, NEEDS, null);
     expect(text).toContain('7.3');
   });
@@ -121,30 +171,55 @@ describe('renderTemplate', () => {
     expect(renderTemplate('unknown_type' as any)).toBeNull();
   });
 
-  it.each(['onboarding_1', 'onboarding_3', 'onboarding_7', 'streak_7', 'streak_14', 'streak_30',
-    'lapsing_3', 'dormant_7', 'reengagement_30', 'comeback', 'welcome_back', 'nudge'] as const)(
-    'returns non-null result for %s',
+  it.each([
+    'onboarding_1',
+    'onboarding_3',
+    'onboarding_7',
+    'streak_7',
+    'streak_14',
+    'streak_30',
+    'lapsing_3',
+    'dormant_7',
+    'reengagement_30',
+    'comeback',
+    'welcome_back',
+    'nudge',
+  ] as const)('returns non-null result for %s', (type) => {
+    expect(renderTemplate(type)).not.toBeNull();
+  });
+
+  // legacy-строки в очереди на момент деплоя рендерятся мягким текстом
+  it.each(['lapsing_2', 'lapsing_4'] as const)(
+    'renders legacy %s with soft text',
     (type) => {
-      expect(renderTemplate(type)).not.toBeNull();
+      const result = renderTemplate(type);
+      expect(result!.text).toContain('Перерывы — часть процесса');
     },
   );
 
-  // legacy-строки в очереди на момент деплоя рендерятся мягким текстом
-  it.each(['lapsing_2', 'lapsing_4'] as const)('renders legacy %s with soft text', (type) => {
-    const result = renderTemplate(type as any);
-    expect(result!.text).toContain('Перерывы — часть процесса');
-  });
-
   describe('reminder keyboard (кнопки саморегуляции)', () => {
-    function callbacks(result: NonNullable<ReturnType<typeof renderTemplate>>): string[] {
-      const rows = (result.keyboard as any).reply_markup.inline_keyboard as Array<Array<any>>;
-      return rows.flat().map((b) => b.callback_data).filter(Boolean);
+    function callbacks(
+      result: NonNullable<ReturnType<typeof renderTemplate>>,
+    ): string[] {
+      const rows = (result.keyboard as any).reply_markup
+        .inline_keyboard as Array<Array<any>>;
+      return rows
+        .flat()
+        .map((b) => b.callback_data)
+        .filter(Boolean);
     }
 
     it('has snooze, skip, pause and slower buttons', () => {
       const result = renderTemplate('reminder')!;
       const cbs = callbacks(result);
-      expect(cbs).toEqual(expect.arrayContaining(['snooze_reminder', 'notify:skip', 'notify:pause', 'notify:slower']));
+      expect(cbs).toEqual(
+        expect.arrayContaining([
+          'snooze_reminder',
+          'notify:skip',
+          'notify:pause',
+          'notify:slower',
+        ]),
+      );
     });
 
     it('does not mention streak when 0-2 days', () => {
@@ -162,10 +237,18 @@ describe('renderTemplate', () => {
 
   describe('comeback', () => {
     it('mentions total days with correct pluralization', () => {
-      expect(renderTemplate('comeback', { totalDays: 21 })!.text).toContain('21 день');
-      expect(renderTemplate('comeback', { totalDays: 22 })!.text).toContain('22 дня');
-      expect(renderTemplate('comeback', { totalDays: 25 })!.text).toContain('25 дней');
-      expect(renderTemplate('comeback', { totalDays: 11 })!.text).toContain('11 дней');
+      expect(renderTemplate('comeback', { totalDays: 21 })!.text).toContain(
+        '21 день',
+      );
+      expect(renderTemplate('comeback', { totalDays: 22 })!.text).toContain(
+        '22 дня',
+      );
+      expect(renderTemplate('comeback', { totalDays: 25 })!.text).toContain(
+        '25 дней',
+      );
+      expect(renderTemplate('comeback', { totalDays: 11 })!.text).toContain(
+        '11 дней',
+      );
     });
 
     it('never mentions broken streak or gap length', () => {
@@ -182,8 +265,12 @@ describe('renderTemplate', () => {
   describe('welcome_back', () => {
     it('offers to extend the pause', () => {
       const result = renderTemplate('welcome_back')!;
-      const rows = (result.keyboard as any).reply_markup.inline_keyboard as Array<Array<any>>;
-      const cbs = rows.flat().map((b) => b.callback_data).filter(Boolean);
+      const rows = (result.keyboard as any).reply_markup
+        .inline_keyboard as Array<Array<any>>;
+      const cbs = rows
+        .flat()
+        .map((b) => b.callback_data)
+        .filter(Boolean);
       expect(cbs).toContain('notify:pause');
     });
   });

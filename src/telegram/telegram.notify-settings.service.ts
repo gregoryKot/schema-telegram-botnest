@@ -1,4 +1,10 @@
-import { Injectable, OnModuleInit, Inject, Optional, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  Inject,
+  Optional,
+  Logger,
+} from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
@@ -24,14 +30,16 @@ export class TelegramNotifySettingsService implements OnModuleInit {
   private readonly logger = new Logger(TelegramNotifySettingsService.name);
 
   constructor(
-    @Inject(TELEGRAF_BOT) @Optional() private readonly bot: Telegraf<Context> | null,
+    @Inject(TELEGRAF_BOT)
+    @Optional()
+    private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly scheduleService: TelegramScheduleService,
   ) {}
 
   private async backToSettings(ctx: Context, userId: bigint) {
     const { text, keyboard } = await buildSettingsView(this.botService, userId);
-    await ctx.editMessageText(text, keyboard as any);
+    await ctx.editMessageText(text, keyboard);
   }
 
   async onModuleInit() {
@@ -40,16 +48,22 @@ export class TelegramNotifySettingsService implements OnModuleInit {
     this.bot.action('settings:pick_freq', async (ctx) => {
       try {
         await ctx.answerCbQuery();
-        const rows = CADENCE_LABELS.map((label, i) =>
-          [Markup.button.callback(label[0].toUpperCase() + label.slice(1), `settings:freq:${i}`)]);
+        const rows = CADENCE_LABELS.map((label, i) => [
+          Markup.button.callback(
+            label[0].toUpperCase() + label.slice(1),
+            `settings:freq:${i}`,
+          ),
+        ]);
         rows.push([Markup.button.callback('⬅️ Назад', 'settings:back')]);
         await ctx.editMessageText(
           'Как часто напоминать о дневнике?\n\nЕсли напоминания будут оставаться без ответа, я сам начну писать реже — а когда записи вернутся, вернусь к выбранной частоте.',
-          Markup.inlineKeyboard(rows) as any,
+          Markup.inlineKeyboard(rows),
         );
       } catch (err) {
         this.logger.error('settings:pick_freq failed', err);
-        await ctx.answerCbQuery('Не получилось. Попробуй ещё раз.').catch(() => null);
+        await ctx
+          .answerCbQuery('Не получилось. Попробуй ещё раз.')
+          .catch(() => null);
       }
     });
 
@@ -60,7 +74,9 @@ export class TelegramNotifySettingsService implements OnModuleInit {
         if (!rawId) return;
         const userId = BigInt(rawId);
         const level = Number((ctx.match as RegExpMatchArray)[1]);
-        await this.botService.updateUserSettings(userId, { notifyFrequency: level });
+        await this.botService.updateUserSettings(userId, {
+          notifyFrequency: level,
+        });
         // Явный выбор сбрасывает адаптацию на выбранный уровень
         await this.botService.setAdaptiveLevel(userId, level);
         await this.scheduleService.rescheduleForUser(userId);
@@ -74,16 +90,19 @@ export class TelegramNotifySettingsService implements OnModuleInit {
     this.bot.action('settings:pick_quiet', async (ctx) => {
       try {
         await ctx.answerCbQuery();
-        const rows = QUIET_PRESETS.map((p) =>
-          [Markup.button.callback(p.label, `settings:quiet:${p.start}:${p.end}`)]);
+        const rows = QUIET_PRESETS.map((p) => [
+          Markup.button.callback(p.label, `settings:quiet:${p.start}:${p.end}`),
+        ]);
         rows.push([Markup.button.callback('⬅️ Назад', 'settings:back')]);
         await ctx.editMessageText(
           'Тихие часы — в это время я не пишу вообще. Всё, что накопится, придёт утром.',
-          Markup.inlineKeyboard(rows) as any,
+          Markup.inlineKeyboard(rows),
         );
       } catch (err) {
         this.logger.error('settings:pick_quiet failed', err);
-        await ctx.answerCbQuery('Не получилось. Попробуй ещё раз.').catch(() => null);
+        await ctx
+          .answerCbQuery('Не получилось. Попробуй ещё раз.')
+          .catch(() => null);
       }
     });
 
@@ -96,8 +115,12 @@ export class TelegramNotifySettingsService implements OnModuleInit {
         const start = Number((ctx.match as RegExpMatchArray)[1]);
         const end = Number((ctx.match as RegExpMatchArray)[2]);
         if (start > 23 || end > 23) return;
-        if (!QUIET_PRESETS.some((p) => p.start === start && p.end === end)) return;
-        await this.botService.updateUserSettings(userId, { notifyQuietStart: start, notifyQuietEnd: end });
+        if (!QUIET_PRESETS.some((p) => p.start === start && p.end === end))
+          return;
+        await this.botService.updateUserSettings(userId, {
+          notifyQuietStart: start,
+          notifyQuietEnd: end,
+        });
         await this.backToSettings(ctx, userId);
       } catch (err) {
         this.logger.error('settings:quiet failed', err);

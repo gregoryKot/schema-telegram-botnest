@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../api';
 import type { PracticePlan } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   plan: PracticePlan;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Props) {
+  const tr = useTr();
   const goBack = useHistorySheet(onDone);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
@@ -38,7 +40,7 @@ export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Prop
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
           <div style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, color: 'var(--text)', lineHeight: 1.3 }}>
-            Вчера ты планировал
+            {tr('Вчера ты планировал', 'Вчера вы планировали')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6 }}>
             {needEmoji} {needLabel}
