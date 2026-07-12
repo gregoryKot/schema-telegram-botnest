@@ -203,6 +203,34 @@ const LAYERS = `
   <figcaption><b>Разная глубина фокуса.</b> КПТ хорошо работает с мыслями и поведением на поверхности. Схема-терапия идёт до самого дна — к убеждениям и детскому опыту, из которых всё остальное растёт.</figcaption>
 </figure>`;
 
+const RELATIONS = `
+<figure class="dg">
+  <svg viewBox="0 0 640 300" role="img" aria-label="Одна схема, разные партнёры, один и тот же итог">
+    <rect class="dg-accent" x="270" y="20" width="100" height="50" rx="14"/>
+    <text class="dg-t-on" x="320" y="50" text-anchor="middle">Схема</text>
+    <text class="dg-cap" x="222" y="86">например, Покинутость / Недоверие</text>
+    <line class="dg-flow-soft" x1="320" y1="70" x2="120" y2="110"/>
+    <line class="dg-flow-soft" x1="320" y1="70" x2="320" y2="110"/>
+    <line class="dg-flow-soft" x1="320" y1="70" x2="520" y2="110"/>
+    <rect class="dg-node" x="30" y="110" width="180" height="64" rx="14"/>
+    <text class="dg-t" x="120" y="136" text-anchor="middle">Партнёр А</text>
+    <text class="dg-s" x="120" y="156" text-anchor="middle">тревожный</text>
+    <rect class="dg-node" x="230" y="110" width="180" height="64" rx="14"/>
+    <text class="dg-t" x="320" y="136" text-anchor="middle">Партнёр Б</text>
+    <text class="dg-s" x="320" y="156" text-anchor="middle">холодный</text>
+    <rect class="dg-node" x="430" y="110" width="180" height="64" rx="14"/>
+    <text class="dg-t" x="520" y="136" text-anchor="middle">Партнёр В</text>
+    <text class="dg-s" x="520" y="156" text-anchor="middle">несвободен</text>
+    <line class="dg-flow" x1="120" y1="174" x2="320" y2="230"/>
+    <line class="dg-flow" x1="320" y1="174" x2="320" y2="230"/>
+    <line class="dg-flow" x1="520" y1="174" x2="320" y2="230"/>
+    <rect class="dg-accent" x="140" y="230" width="360" height="60" rx="16"/>
+    <text class="dg-t-on" x="320" y="256" text-anchor="middle">Тот же сценарий повторяется</text>
+    <text class="dg-s-on" x="320" y="276" text-anchor="middle">разные люди, знакомый финал</text>
+  </svg>
+  <figcaption><b>Схема как фильтр.</b> Одна и та же схема влияет и на то, кто вас привлекает, и на то, как вы толкуете и проживаете отношения — поэтому с разными партнёрами история нередко приходит к одному и тому же финалу.</figcaption>
+</figure>`;
+
 export const DIAGRAMS: Record<string, string> = {
   cycle: CYCLE,
   iceberg: ICEBERG,
@@ -212,6 +240,7 @@ export const DIAGRAMS: Record<string, string> = {
   fork: FORK,
   steps: STEPS,
   layers: LAYERS,
+  relations: RELATIONS,
 };
 
 // For the admin editor's diagram picker.
@@ -224,4 +253,5 @@ export const DIAGRAM_OPTIONS: { key: string; label: string }[] = [
   { key: 'fork', label: 'Развилка «подходит ли»' },
   { key: 'steps', label: 'Шаги (таймлайн)' },
   { key: 'layers', label: 'Глубина фокуса (слои)' },
+  { key: 'relations', label: 'Схема как фильтр (отношения)' },
 ];
