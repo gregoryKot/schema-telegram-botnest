@@ -28,7 +28,7 @@ function makeDb(user: { mySchemaIds: string[]; myModeIds: string[] }) {
       return row;
     });
 
-  return {
+  const db: any = {
     userSchemaNote: {
       upsert: upsert(schemaNotes, 'schemaId'),
       findMany: jest.fn(async ({ where }: any) =>
@@ -50,7 +50,11 @@ function makeDb(user: { mySchemaIds: string[]; myModeIds: string[] }) {
       }),
     },
     _user: user,
-  } as any;
+  };
+  // addToMyList теперь read-modify-write в интерактивной транзакции —
+  // фейк просто исполняет колбэк на самом себе.
+  db.$transaction = jest.fn(async (fn: any) => fn(db));
+  return db;
 }
 
 describe('BotService — карточка схемы/режима попадает в коллекцию', () => {

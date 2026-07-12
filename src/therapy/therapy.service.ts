@@ -225,17 +225,25 @@ export class TherapyService {
       conceptMap.set(String(c.clientId), ids);
     }
 
-    const realClients = await Promise.all(
-      relations
-        .filter((rel) => rel.client !== null)
-        .map(async (rel) => {
+    // Батч вместо ~6 SQL на клиента (аудит 2026-07, N+1): стрик, давность и
+    // история всех клиентов достаются тремя запросами в getClientOverviews.
+    const overviews = await this.analyticsService.getClientOverviews(
+      relations.filter((rel) => rel.client !== null).map((rel) => rel.client!.id),
+    );
+    const realClients = relations
+      .filter((rel) => rel.client !== null)
+      .map((rel) => {
           const clientBigId = rel.client!.id;
           const clientId = Number(clientBigId);
-          const [streak, daysSince, history] = await Promise.all([
-            this.analyticsService.getConsecutiveDays(clientBigId),
-            this.analyticsService.getDaysSinceLastFill(clientBigId),
-            this.analyticsService.getHistoryRatings(clientBigId, 14),
-          ]);
+          const {
+            streak,
+            daysSince,
+            history,
+          } = overviews.get(String(clientBigId)) ?? {
+            streak: 0,
+            daysSince: -1,
+            history: [],
+          };
           const lastActiveDate =
             daysSince >= 0
               ? new Date(Date.now() - daysSince * 86400000)
@@ -272,8 +280,7 @@ export class TherapyService {
             meetingDays: ((rel as any).meetingDays as number[]) ?? [],
             schemaIds: conceptMap.get(String(clientId)) ?? [],
           };
-        }),
-    );
+        });
 
     // Virtual (offline) clients: no Telegram account, identified by -rel.id
     const virtualClients: TherapyClientSummary[] = relations
@@ -814,62 +821,68 @@ export class TherapyService {
     await this.assertRelation(therapistId, clientId);
     const tid = therapistId;
     const cid = BigInt(clientId);
-
-    // Fetch current state to push to history before overwriting
-    const existing = await this.prisma.clientConceptualization.findUnique({
-      where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
-    });
-
+    const enc = encryptConceptFields(body);
     const now = new Date().toISOString();
 
-    let history: any[] = Array.isArray(existing?.history)
-      ? (existing.history as any[])
-      : [];
+    // Read-modify-write по history-массиву — в транзакции (аудит 2026-07,
+    // 2.3): две вкладки/двойной клик гонялись за одним прочитанным history →
+    // потерянный или задвоенный snapshot.
+    const { saved, history } = await this.prisma.$transaction(async (tx) => {
+      // Fetch current state to push to history before overwriting
+      const existing = await tx.clientConceptualization.findUnique({
+        where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
+      });
 
-    if (existing) {
-      // Snapshot current state into history (max 20 snapshots)
-      const snapshot = {
-        savedAt: now,
-        schemaIds: existing.schemaIds,
-        modeIds: existing.modeIds,
-        earlyExperience: existing.earlyExperience,
-        unmetNeeds: existing.unmetNeeds,
-        triggers: existing.triggers,
-        copingStyles: existing.copingStyles,
-        goals: existing.goals,
-        currentProblems: existing.currentProblems,
-        modeTransitions: (existing as any).modeTransitions ?? null,
-      };
-      history = [snapshot, ...history].slice(0, 20);
-    }
+      let hist: any[] = Array.isArray(existing?.history)
+        ? (existing.history as any[])
+        : [];
 
-    const enc = encryptConceptFields(body);
-    const saved = await (this.prisma.clientConceptualization.upsert as any)({
-      where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
-      create: {
-        therapistId: tid,
-        clientId: cid,
-        // schemaIds / modeIds taken from `enc` — encrypted blob.
-        schemaIds: enc.schemaIds ?? [],
-        modeIds: enc.modeIds ?? [],
-        earlyExperience: enc.earlyExperience ?? null,
-        unmetNeeds: enc.unmetNeeds ?? null,
-        triggers: enc.triggers ?? null,
-        copingStyles: enc.copingStyles ?? null,
-        goals: enc.goals ?? null,
-        currentProblems: enc.currentProblems ?? null,
-        modeTransitions: enc.modeTransitions ?? null,
-        modeMapNodes: enc.modeMapNodes ?? [],
-        modeMapEdges: enc.modeMapEdges ?? [],
-        history: [],
-      },
-      update: {
-        ...Object.fromEntries(
-          Object.entries(enc).filter(([k]) => body[k] !== undefined),
-        ),
-        history,
-      },
+      if (existing) {
+        // Snapshot current state into history (max 20 snapshots)
+        const snapshot = {
+          savedAt: now,
+          schemaIds: existing.schemaIds,
+          modeIds: existing.modeIds,
+          earlyExperience: existing.earlyExperience,
+          unmetNeeds: existing.unmetNeeds,
+          triggers: existing.triggers,
+          copingStyles: existing.copingStyles,
+          goals: existing.goals,
+          currentProblems: existing.currentProblems,
+          modeTransitions: (existing as any).modeTransitions ?? null,
+        };
+        hist = [snapshot, ...hist].slice(0, 20);
+      }
+
+      const row = await (tx.clientConceptualization.upsert as any)({
+        where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
+        create: {
+          therapistId: tid,
+          clientId: cid,
+          // schemaIds / modeIds taken from `enc` — encrypted blob.
+          schemaIds: enc.schemaIds ?? [],
+          modeIds: enc.modeIds ?? [],
+          earlyExperience: enc.earlyExperience ?? null,
+          unmetNeeds: enc.unmetNeeds ?? null,
+          triggers: enc.triggers ?? null,
+          copingStyles: enc.copingStyles ?? null,
+          goals: enc.goals ?? null,
+          currentProblems: enc.currentProblems ?? null,
+          modeTransitions: enc.modeTransitions ?? null,
+          modeMapNodes: enc.modeMapNodes ?? [],
+          modeMapEdges: enc.modeMapEdges ?? [],
+          history: [],
+        },
+        update: {
+          ...Object.fromEntries(
+            Object.entries(enc).filter(([k]) => body[k] !== undefined),
+          ),
+          history: hist,
+        },
+      });
+      return { saved: row, history: hist };
     });
+
     return {
       ...saved,
       ...decryptConceptFields(saved),
