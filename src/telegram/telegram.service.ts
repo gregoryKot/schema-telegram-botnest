@@ -20,6 +20,7 @@ import {
   tzOffsetAt,
 } from '../notification/notification.time';
 import { adminIdNum, isAdminSender } from '../utils/admin-alert';
+import { retryWithBackoff } from '../utils/retry';
 
 export const WELCOME_TEXT = `Привет!
 
@@ -552,26 +553,33 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    await this.bot.telegram
-      .setMyCommands([
+    // Декоративные вызовы Telegram API (меню команд, кнопка мини-аппа).
+    // На свежем контейнере сеть может подняться позже процесса — ретраим с
+    // бэкоффом и НЕ будим админа error-алертом: бот полноценно работает и
+    // без них (инцидент 2026-07-12: «🚨 setMyCommands failed» на деплое).
+    // fire-and-forget — не задерживаем launch().
+    void retryWithBackoff(() =>
+      this.bot!.telegram.setMyCommands([
         { command: 'start', description: 'Открыть «Всё по схеме»' },
         { command: 'settings', description: 'Настройки уведомлений' },
         { command: 'donate', description: 'Поддержать проект 💛' },
         { command: 'about', description: 'О приложении и авторе' },
-      ])
-      .catch((err) => this.logger.error('setMyCommands failed', err));
+      ]),
+    ).then((ok) => {
+      if (!ok) this.logger.warn('setMyCommands failed after retries');
+    });
 
-    await this.bot.telegram
-      .callApi('setChatMenuButton' as any, {
+    void retryWithBackoff(() =>
+      this.bot!.telegram.callApi('setChatMenuButton' as any, {
         menu_button: {
           type: 'web_app',
           text: 'Всё по схеме',
           web_app: { url: MINIAPP_URL },
         },
-      })
-      .catch((err: unknown) =>
-        this.logger.warn('setChatMenuButton failed', err),
-      );
+      }),
+    ).then((ok) => {
+      if (!ok) this.logger.warn('setChatMenuButton failed after retries');
+    });
 
     this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
       const msg = String(err);
