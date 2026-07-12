@@ -20,6 +20,8 @@ import {
   tzOffsetAt,
 } from '../notification/notification.time';
 import { adminIdNum, isAdminSender } from '../utils/admin-alert';
+import { retryWithBackoff } from '../utils/retry';
+import { t, AddressForm } from '../notification/address-form';
 
 export const WELCOME_TEXT = `Привет!
 
@@ -38,7 +40,7 @@ const CONSENT_TEXT = `🔐 Соглашение об обработке данн
 • Приложение не является медицинским инструментом и не заменяет психотерапию
 • Сервис предназначен для пользователей старше 18 лет
 
-Нажимая «Принять», ты подтверждаешь, что тебе есть 18 лет, и соглашаешься с этими условиями.`;
+Кнопка ниже — это согласие с условиями, подтверждение 18+ и выбор формы обращения (поменять можно в любой момент в /settings).`;
 
 export function buildWelcomeKeyboard(): any {
   return Markup.inlineKeyboard([
@@ -47,9 +49,12 @@ export function buildWelcomeKeyboard(): any {
   ]);
 }
 
+// Онбординг −1 шаг (аудит 2026-07, этап 4.3): согласие и выбор ты/вы — один
+// экран с двумя кнопками вместо двух последовательных сообщений.
 function buildConsentKeyboard() {
   return Markup.inlineKeyboard([
-    [Markup.button.callback('✅ Принять и продолжить', 'accept_consent')],
+    [Markup.button.callback('✅ Принять — общаемся на «ты»', 'accept:ty')],
+    [Markup.button.callback('✅ Принять — на «вы»', 'accept:vy')],
   ]);
 }
 
@@ -302,38 +307,55 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    // Единый экран согласия: кнопка = согласие + 18+ + форма обращения
+    // (этап 4.3 — на один шаг меньше до полезного контента).
+    this.bot.action(/^accept:(ty|vy)$/, async (ctx) => {
+      try {
+        await ctx.answerCbQuery('Принято ✅');
+        const rawId = ctx.from?.id;
+        if (!rawId) return;
+        const form = (ctx.match as RegExpMatchArray)[1] as AddressForm;
+        const userId = BigInt(rawId);
+        await this.botService.acceptDisclaimer(userId);
+        await this.botService.updateUserSettings(userId, {
+          addressForm: form,
+        });
+        if (await this.resumePendingPair(ctx, rawId)) return;
+        const ack = t(
+          form,
+          'Договорились, на «ты». Поменять можно в любой момент в /settings.',
+          'Договорились, на «вы». Поменять можно в любой момент в /settings.',
+        );
+        const welcome = t(
+          form,
+          WELCOME_TEXT,
+          WELCOME_TEXT.replace('Привет!', 'Здравствуйте!'),
+        );
+        try {
+          await ctx.editMessageText(
+            `${ack}\n\n${welcome}`,
+            buildWelcomeKeyboard(),
+          );
+        } catch {
+          await ctx.reply(`${ack}\n\n${welcome}`, buildWelcomeKeyboard());
+        }
+      } catch (err) {
+        this.logger.error('accept action failed', err);
+        await ctx
+          .editMessageText('Что-то пошло не так. Попробуй нажать ещё раз.')
+          .catch(() => null);
+      }
+    });
+
+    // Легаси-кнопка старых consent-сообщений, уже отправленных в чаты до
+    // объединения экранов: принимаем согласие и спрашиваем форму отдельно.
     this.bot.action('accept_consent', async (ctx) => {
       try {
         await ctx.answerCbQuery('Принято ✅');
         const rawId = ctx.from?.id;
         if (rawId) {
-          const userId = BigInt(rawId);
-          await this.botService.acceptDisclaimer(userId);
-          // Resume pending pair join if user arrived via pair invite link
-          const pending = this.pendingPairCodes.get(rawId);
-          if (pending && pending.expiresAt > Date.now()) {
-            this.pendingPairCodes.delete(rawId);
-            const ok = await this.botService.joinPair(userId, pending.code);
-            const text = ok
-              ? 'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.'
-              : 'Ссылка недействительна или уже использована.';
-            try {
-              await ctx.editMessageText(
-                text,
-                Markup.inlineKeyboard([
-                  [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-                ]),
-              );
-            } catch {
-              await ctx.reply(
-                text,
-                Markup.inlineKeyboard([
-                  [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
-                ]),
-              );
-            }
-            return;
-          }
+          await this.botService.acceptDisclaimer(BigInt(rawId));
+          if (await this.resumePendingPair(ctx, rawId)) return;
         }
         // После согласия — сразу выбор обращения, приветствие покажет addr-хендлер
         try {
@@ -350,6 +372,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     // ─── Therapist-request admin callbacks ──────────────────────────────────
+    // (resumePendingPair — приватный метод класса ниже, общий для обоих
+    // consent-хендлеров.)
     // Inline buttons attached to admin notification messages. Only the admin
     // ID may trigger these.
     this.bot.action(/^treq:(approve|reject):(\d+)$/, async (ctx) => {
@@ -552,26 +576,33 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    await this.bot.telegram
-      .setMyCommands([
+    // Декоративные вызовы Telegram API (меню команд, кнопка мини-аппа).
+    // На свежем контейнере сеть может подняться позже процесса — ретраим с
+    // бэкоффом и НЕ будим админа error-алертом: бот полноценно работает и
+    // без них (инцидент 2026-07-12: «🚨 setMyCommands failed» на деплое).
+    // fire-and-forget — не задерживаем launch().
+    void retryWithBackoff(() =>
+      this.bot!.telegram.setMyCommands([
         { command: 'start', description: 'Открыть «Всё по схеме»' },
         { command: 'settings', description: 'Настройки уведомлений' },
         { command: 'donate', description: 'Поддержать проект 💛' },
         { command: 'about', description: 'О приложении и авторе' },
-      ])
-      .catch((err) => this.logger.error('setMyCommands failed', err));
+      ]),
+    ).then((ok) => {
+      if (!ok) this.logger.warn('setMyCommands failed after retries');
+    });
 
-    await this.bot.telegram
-      .callApi('setChatMenuButton' as any, {
+    void retryWithBackoff(() =>
+      this.bot!.telegram.callApi('setChatMenuButton' as any, {
         menu_button: {
           type: 'web_app',
           text: 'Всё по схеме',
           web_app: { url: MINIAPP_URL },
         },
-      })
-      .catch((err: unknown) =>
-        this.logger.warn('setChatMenuButton failed', err),
-      );
+      }),
+    ).then((ok) => {
+      if (!ok) this.logger.warn('setChatMenuButton failed after retries');
+    });
 
     this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
       const msg = String(err);
@@ -614,6 +645,30 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       this.logger.error('notifyAdmin failed', err);
       return false;
     }
+  }
+
+  /**
+   * Если юзер пришёл по pair-инвайту и только что принял согласие —
+   * возобновляем подключение пары. true = флоу завершён (сообщение показано).
+   * Общий для accept:(ty|vy) и легаси accept_consent.
+   */
+  private async resumePendingPair(ctx: any, rawId: number): Promise<boolean> {
+    const pending = this.pendingPairCodes.get(rawId);
+    if (!pending || pending.expiresAt <= Date.now()) return false;
+    this.pendingPairCodes.delete(rawId);
+    const ok = await this.botService.joinPair(BigInt(rawId), pending.code);
+    const text = ok
+      ? 'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.'
+      : 'Ссылка недействительна или уже использована.';
+    const kb = Markup.inlineKeyboard([
+      [Markup.button.webApp('🧠 Открыть Схему', MINIAPP_URL)],
+    ]);
+    try {
+      await ctx.editMessageText(text, kb);
+    } catch {
+      await ctx.reply(text, kb);
+    }
+    return true;
   }
 
   async onModuleDestroy() {

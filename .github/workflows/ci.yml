@@ -38,6 +38,9 @@ jobs:
       - run: npm ci --prefix webapp
       - run: npm run build --prefix webapp
       - run: npm test --prefix webapp
+      # ты/вы-храповик (правило CLAUDE.md): новые жёсткие «ты»-строки без tr()
+      # не проходят; исторический долг зафиксирован в бейслайне.
+      - run: node scripts/check-address-form.mjs
 
   miniapp:
     runs-on: ubuntu-latest
