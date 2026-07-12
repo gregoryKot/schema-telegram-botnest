@@ -17,6 +17,7 @@ import { Throttle } from '@nestjs/throttler';
 import { timingSafeEqual } from 'crypto';
 import { Request } from 'express';
 import { uid, parseId as parseIdShared } from '../api/request-utils';
+import { SubmitTherapistRequestDto } from './therapist-request.dto';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyService } from './therapy.service';
 import { TherapistRequestService } from './therapist-request.service';
@@ -142,13 +143,7 @@ export class TherapyController {
   })
   async submitRequest(
     @Req() req: AuthRequest,
-    @Body()
-    body: {
-      fullName: string;
-      qualification: string;
-      contacts: string;
-      message?: string;
-    },
+    @Body() body: SubmitTherapistRequestDto,
   ) {
     return this.therapistRequestService.submit(uid(req), body);
   }
