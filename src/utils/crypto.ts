@@ -78,7 +78,25 @@ export function decrypt(value: string | null | undefined): string | null {
       /* wrong key, try next */
     }
   }
-  return value; // none worked — legacy plaintext, return as-is
+  // Ни один ключ не подошёл, хотя blob похож на наш формат (валидный base64
+  // ≥29 байт). Это либо legacy plaintext, случайно похожий на base64, либо
+  // ПОБИТЫЙ/ПОДДЕЛАННЫЙ шифротекст (провал GCM-аутентификации) — молчать
+  // нельзя (аудит 2026-07, S-3). Троттлинг: не чаще раза в минуту, чтобы
+  // массовое чтение легаси-строк не заливало логи.
+  warnDecryptFailure();
+  return value; // legacy plaintext (или мусор) — возвращаем как есть
+}
+
+let lastDecryptWarnAt = 0;
+function warnDecryptFailure(): void {
+  const now = Date.now();
+  if (now - lastDecryptWarnAt < 60_000) return;
+  lastDecryptWarnAt = now;
+  // console, не Logger: utils-модуль без DI; AlertLogger перехватывает stdout уровня error/warn.
+  console.warn(
+    '[crypto] decrypt: blob в формате шифротекста не расшифровался ни одним ключом — ' +
+      'возможна порча данных или неполная ротация ENCRYPTION_KEY',
+  );
 }
 
 // Re-encrypt with the CURRENT key. Used by rotation script — pass any

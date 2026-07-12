@@ -22,6 +22,9 @@ jobs:
       - run: npx prisma generate
       - run: npx tsc --noEmit -p tsconfig.build.json
       - run: npx jest --silent
+      # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
+      # блокируют мерж. dev-зависимости не гейтим — шум.
+      - run: npm audit --omit=dev --audit-level=high
 
   webapp:
     runs-on: ubuntu-latest

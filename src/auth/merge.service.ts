@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 // Tables where a userId column points to User.id (BigInt).
 // Discovered via grep on schema.prisma; if a new user-owned model is added,
 // register its table name here. Order matters for FK dependencies on delete.
-const USER_OWNED_TABLES = [
+export const USER_OWNED_TABLES = [
   'Rating',
   'YsqProgress',
   'YsqResult',
@@ -36,7 +36,10 @@ const USER_OWNED_TABLES = [
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
 // valid for the new one). Source's rows are simply destroyed.
-const SECURITY_SENSITIVE_TABLES = ['WebSession'] as const;
+// EmailToken тоже здесь: verification-токены старого аккаунта не должны
+// подтверждать e-mail нового, а после DELETE User они стали бы сиротами
+// (у EmailToken нет FK) — найдено spec-сверкой реестров (аудит 2026-07, S-2).
+export const SECURITY_SENSITIVE_TABLES = ['WebSession', 'EmailToken'] as const;
 
 // Per-table allow-list of "other columns" in unique constraints that include
 // userId. When source and target both have a row with the same (userId, …key)
@@ -67,6 +70,8 @@ const KNOWN_TABLES = new Set<string>([
   'TherapyRelation',
   'TherapistNote',
   'ClientConceptualization',
+  'ModeMap',
+  'TherapistCustomMode',
   'User',
 ]);
 const KNOWN_COLS = new Set<string>([
@@ -264,6 +269,28 @@ export class MergeService {
       // a self-loop (therapist === client) — drop.
       await tx.$executeRaw(Prisma.sql`
         DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
+      `);
+
+      // 4d. ModeMap (therapistId / clientId, без unique) — до аудита 2026-07
+      // карты режимов при merge не переносились вовсе и терялись для
+      // терапевта. Паттерн как у TherapistNote; clientId может быть
+      // отрицательным (виртуальный клиент) — обычный remap это покрывает.
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "ModeMap" SET "therapistId" = ${targetId}
+        WHERE "therapistId" = ${sourceId} AND "clientId" <> ${targetId}
+      `);
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "ModeMap" SET "clientId" = ${targetId}
+        WHERE "clientId" = ${sourceId} AND "therapistId" <> ${targetId}
+      `);
+      await tx.$executeRaw(Prisma.sql`
+        DELETE FROM "ModeMap" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
+      `);
+
+      // 4e. TherapistCustomMode (только therapistId, без unique) — просто remap.
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "TherapistCustomMode" SET "therapistId" = ${targetId}
+        WHERE "therapistId" = ${sourceId}
       `);
 
       // Step D: clean up orphaned virtual-client conceptualizations.
