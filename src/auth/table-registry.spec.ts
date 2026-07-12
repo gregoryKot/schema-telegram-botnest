@@ -13,10 +13,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { USER_DATA_TABLES } from '../bot/bot.service';
-import {
-  USER_OWNED_TABLES,
-  SECURITY_SENSITIVE_TABLES,
-} from './merge.service';
+import { USER_OWNED_TABLES, SECURITY_SENSITIVE_TABLES } from './merge.service';
 
 const ROOT = join(__dirname, '..', '..');
 const schema = readFileSync(join(ROOT, 'prisma', 'schema.prisma'), 'utf8');
@@ -101,6 +98,9 @@ describe('Реестры user-таблиц ↔ schema.prisma', () => {
     ]);
     const onlyDelete = [...del].filter((t) => !mrg.has(t));
     const onlyMerge = [...mrg].filter((t) => !del.has(t));
-    expect({ onlyDelete, onlyMerge }).toEqual({ onlyDelete: [], onlyMerge: [] });
+    expect({ onlyDelete, onlyMerge }).toEqual({
+      onlyDelete: [],
+      onlyMerge: [],
+    });
   });
 });

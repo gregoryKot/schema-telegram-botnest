@@ -228,59 +228,59 @@ export class TherapyService {
     // Батч вместо ~6 SQL на клиента (аудит 2026-07, N+1): стрик, давность и
     // история всех клиентов достаются тремя запросами в getClientOverviews.
     const overviews = await this.analyticsService.getClientOverviews(
-      relations.filter((rel) => rel.client !== null).map((rel) => rel.client!.id),
+      relations
+        .filter((rel) => rel.client !== null)
+        .map((rel) => rel.client!.id),
     );
     const realClients = relations
       .filter((rel) => rel.client !== null)
       .map((rel) => {
-          const clientBigId = rel.client!.id;
-          const clientId = Number(clientBigId);
-          const {
-            streak,
-            daysSince,
-            history,
-          } = overviews.get(String(clientBigId)) ?? {
-            streak: 0,
-            daysSince: -1,
-            history: [],
-          };
-          const lastActiveDate =
-            daysSince >= 0
-              ? new Date(Date.now() - daysSince * 86400000)
-                  .toISOString()
-                  .slice(0, 10)
-              : null;
-          const byDate = new Map(history.map((d) => [d.date, d.ratings]));
-          const recentIndexHistory: (number | null)[] = Array.from(
-            { length: 14 },
-            (_, i) => {
-              const d = new Date(Date.now() - i * 86400000)
+        const clientBigId = rel.client!.id;
+        const clientId = Number(clientBigId);
+        const { streak, daysSince, history } = overviews.get(
+          String(clientBigId),
+        ) ?? {
+          streak: 0,
+          daysSince: -1,
+          history: [],
+        };
+        const lastActiveDate =
+          daysSince >= 0
+            ? new Date(Date.now() - daysSince * 86400000)
                 .toISOString()
-                .slice(0, 10);
-              const r = byDate.get(d);
-              if (!r) return null;
-              const vals = Object.values(r);
-              return vals.length === 5
-                ? Math.round((vals.reduce((s, v) => s + v, 0) / 5) * 10) / 10
-                : null;
-            },
-          );
-          const todayIndex = recentIndexHistory[0];
-          return {
-            telegramId: clientId,
-            name: rel.client!.firstName,
-            clientAlias: (rel as any).clientAlias ?? null,
-            streak,
-            lastActiveDate,
-            todayIndex,
-            recentIndexHistory,
-            relationCreatedAt: rel.createdAt.toISOString(),
-            therapyStartDate: (rel as any).therapyStartDate ?? null,
-            nextSession: (rel as any).nextSession ?? null,
-            meetingDays: ((rel as any).meetingDays as number[]) ?? [],
-            schemaIds: conceptMap.get(String(clientId)) ?? [],
-          };
-        });
+                .slice(0, 10)
+            : null;
+        const byDate = new Map(history.map((d) => [d.date, d.ratings]));
+        const recentIndexHistory: (number | null)[] = Array.from(
+          { length: 14 },
+          (_, i) => {
+            const d = new Date(Date.now() - i * 86400000)
+              .toISOString()
+              .slice(0, 10);
+            const r = byDate.get(d);
+            if (!r) return null;
+            const vals = Object.values(r);
+            return vals.length === 5
+              ? Math.round((vals.reduce((s, v) => s + v, 0) / 5) * 10) / 10
+              : null;
+          },
+        );
+        const todayIndex = recentIndexHistory[0];
+        return {
+          telegramId: clientId,
+          name: rel.client!.firstName,
+          clientAlias: (rel as any).clientAlias ?? null,
+          streak,
+          lastActiveDate,
+          todayIndex,
+          recentIndexHistory,
+          relationCreatedAt: rel.createdAt.toISOString(),
+          therapyStartDate: (rel as any).therapyStartDate ?? null,
+          nextSession: (rel as any).nextSession ?? null,
+          meetingDays: ((rel as any).meetingDays as number[]) ?? [],
+          schemaIds: conceptMap.get(String(clientId)) ?? [],
+        };
+      });
 
     // Virtual (offline) clients: no Telegram account, identified by -rel.id
     const virtualClients: TherapyClientSummary[] = relations

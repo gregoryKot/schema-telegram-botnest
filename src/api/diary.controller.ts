@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { uid, parseId } from './request-utils';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { DiaryService } from '../bot/diary.service';
 import { TherapyService } from '../therapy/therapy.service';
@@ -20,16 +21,8 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-function uid(req: AuthRequest): bigint {
-  return req.webUser.userId;
-}
-
-function parseId(raw: string): number {
-  const n = parseInt(raw, 10);
-  if (!Number.isFinite(n) || n <= 0)
-    throw new BadRequestException('Invalid id');
-  return n;
-}
+// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
+// Заодно ужесточение: parseInt принимал «5abc» как 5, теперь это 400.
 
 @Controller('api/diary')
 @UseGuards(TelegramAuthGuard)

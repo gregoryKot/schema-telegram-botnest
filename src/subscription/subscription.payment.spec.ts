@@ -20,10 +20,7 @@ const SUB = {
   nextChargeAt: new Date(Date.now() - 1000),
 };
 
-function makeService(opts: {
-  pendingCharge?: any;
-  chargeRow?: any;
-}) {
+function makeService(opts: { pendingCharge?: any; chargeRow?: any }) {
   const calls: Record<string, any[]> = { recurring: [], alerts: [] };
   const chargeState = opts.chargeRow ? { ...opts.chargeRow } : null;
   const prisma: any = {
@@ -92,7 +89,13 @@ describe('SubscriptionService.chargeDue — защита от двойного �
 describe('SubscriptionService.markChargePaidByInvId — идемпотентность (P-2)', () => {
   it('первый webhook активирует, повторный — no-op без второго алерта', async () => {
     const { service, prisma, calls } = makeService({
-      chargeRow: { id: 55, subscriptionId: 1, amount: 300, status: 'pending', isFirst: true },
+      chargeRow: {
+        id: 55,
+        subscriptionId: 1,
+        amount: 300,
+        status: 'pending',
+        isFirst: true,
+      },
     });
     await service.markChargePaidByInvId(SUBSCRIPTION_INVID_BASE + 55, 300);
     const alertsAfterFirst = calls.alerts.length;

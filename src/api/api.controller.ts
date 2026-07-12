@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { uid, parseId } from './request-utils';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { ProfileService } from '../bot/profile.service';
@@ -31,17 +32,7 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-/** Returns the canonical BigInt userId — always precise, even for Google/VK accounts. */
-function uid(req: AuthRequest): bigint {
-  return req.webUser.userId;
-}
-
-function parseId(raw: string): number {
-  const n = Number(raw);
-  if (!Number.isInteger(n) || n <= 0)
-    throw new BadRequestException('Invalid id');
-  return n;
-}
+// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
 
 @Controller('api')
 @UseGuards(TelegramAuthGuard)

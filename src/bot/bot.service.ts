@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
+import { localDate } from '../utils/tz';
 import {
   encrypt,
   decrypt,
@@ -115,13 +116,10 @@ export class BotService {
     return this.needs;
   }
 
+  // Единый источник — utils/tz.localDate (аудит 2026-07, 2в): раньше тело
+  // Intl.DateTimeFormat дублировалось здесь и в notification.time.
   private localDateString(tz: string, base = new Date()): string {
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: tz,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(base);
+    return localDate(tz, base);
   }
 
   private async userTimezone(userId: bigint): Promise<string> {

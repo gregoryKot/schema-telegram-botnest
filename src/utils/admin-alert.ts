@@ -9,6 +9,21 @@
 //
 // Env: BOT_TOKEN, ADMIN_ID (Telegram) · RESEND_API_KEY, ADMIN_EMAIL, EMAIL_FROM (e-mail)
 
+/** Числовой ADMIN_ID из env (null, если не задан/некорректен). */
+export function adminIdNum(): number | null {
+  const n = Number(process.env.ADMIN_ID);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Единая проверка «отправитель — админ» для бот-хендлеров (аудит 2026-07,
+ * 2в: разбор ADMIN_ID был скопипащен по хендлерам 7 раз).
+ */
+export function isAdminSender(from: { id?: number } | undefined): boolean {
+  const a = adminIdNum();
+  return a !== null && from?.id === a;
+}
+
 export async function notifyAdminWithFallback(
   text: string,
   subject = 'Уведомление SchemeHappens',

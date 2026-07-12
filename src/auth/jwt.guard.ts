@@ -52,8 +52,9 @@ export class OptionalJwtGuard implements CanActivate {
     // (ставится эндпоинтом /link-token); query-параметр оставлен как legacy
     // fallback для закэшированных клиентов и будет удалён (аудит 2026-07,
     // S-4: токены в URL утекают в логи прокси и историю браузера).
-    const linkToken = (req.cookies?.['link_token'] ??
-      req.query?.link_token) as string | undefined;
+    const linkToken = (req.cookies?.['link_token'] ?? req.query?.link_token) as
+      | string
+      | undefined;
     if (!req.webUser && linkToken) {
       try {
         const { userId } = this.auth.verifyLinkToken(linkToken);

@@ -19,6 +19,7 @@ import {
   nextQuietEnd,
   tzOffsetAt,
 } from '../notification/notification.time';
+import { adminIdNum, isAdminSender } from '../utils/admin-alert';
 
 export const WELCOME_TEXT = `Привет!
 
@@ -250,8 +251,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     // fires 1st of each month). Lets us verify text + button without waiting.
     this.bot.command('testdonate', async (ctx) => {
       try {
-        const adminId = Number(process.env.ADMIN_ID);
-        if (!adminId || ctx.from?.id !== adminId) {
+        if (!isAdminSender(ctx.from)) {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
@@ -268,8 +268,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.command('stats', async (ctx) => {
       try {
-        const adminId = Number(process.env.ADMIN_ID);
-        if (!adminId || ctx.from?.id !== adminId) {
+        if (!isAdminSender(ctx.from)) {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
@@ -355,7 +354,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     // ID may trigger these.
     this.bot.action(/^treq:(approve|reject):(\d+)$/, async (ctx) => {
       try {
-        const adminId = Number(process.env.ADMIN_ID);
+        const adminId = adminIdNum();
         if (!adminId || ctx.from?.id !== adminId) {
           await ctx.answerCbQuery('Только админ');
           return;
@@ -470,8 +469,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.command('broadcast', async (ctx) => {
       try {
-        const adminId = Number(process.env.ADMIN_ID);
-        if (!adminId || ctx.from?.id !== adminId) {
+        if (!isAdminSender(ctx.from)) {
           await ctx.reply('⛔ Нет доступа');
           return;
         }

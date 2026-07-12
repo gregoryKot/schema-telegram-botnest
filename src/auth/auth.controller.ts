@@ -100,12 +100,12 @@ export class AuthController {
     const { linkUserId, ip, userAgent } = opts;
 
     if (linkUserId === null) {
-      const userId = (await this.auth.findOrCreateUserByProvider(
+      const userId = await this.auth.findOrCreateUserByProvider(
         providerId_ as any,
         identity.providerId,
         identity.displayName,
         identity.email,
-      )) as bigint;
+      );
       // 2FA gate: if user has TOTP enabled, don't issue tokens yet — return
       // a challenge token that the client exchanges for tokens after typing
       // a valid 6-digit code on /api/auth/2fa/challenge.
@@ -691,7 +691,7 @@ try {
   ): Promise<{ ok: true }> {
     this.requireCsrf(req, 'email/link-to-account');
     const webUser: WebUser = req.webUser;
-    return this.auth.linkEmailToAccount(webUser.userId as bigint, email);
+    return this.auth.linkEmailToAccount(webUser.userId, email);
   }
 
   // ─── Telegram WebApp initData (mini-app auto-auth) ────────────────────────
@@ -710,11 +710,11 @@ try {
     if (!initData) throw new BadRequestException('Missing initData');
     const { id: telegramId, firstName } =
       this.auth.verifyTelegramWebAppData(initData);
-    const userId = (await this.auth.findOrCreateUserByProvider(
+    const userId = await this.auth.findOrCreateUserByProvider(
       'telegram',
       String(telegramId),
       firstName,
-    )) as bigint;
+    );
     const tokens = await this.auth.issueTokens(
       userId,
       req.ip,
@@ -951,8 +951,8 @@ try {
   }> {
     const webUser: WebUser = req.webUser;
     const [providers, totp] = await Promise.all([
-      this.auth.getUserProviders(webUser.userId as bigint),
-      this.totp.getStatus(webUser.userId as bigint),
+      this.auth.getUserProviders(webUser.userId),
+      this.totp.getStatus(webUser.userId),
     ]);
     return { userId: String(webUser.userId), providers, totp };
   }
@@ -973,7 +973,7 @@ try {
       providers[0]?.email ??
       providers[0]?.displayName ??
       `user-${webUser.userId}`;
-    return this.totp.startSetup(webUser.userId as bigint, label);
+    return this.totp.startSetup(webUser.userId, label);
   }
 
   @Post('2fa/enable')
@@ -986,7 +986,7 @@ try {
     this.requireCsrf(req, '2fa/enable');
     if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser;
-    const result = await this.totp.confirmSetup(webUser.userId as bigint, code);
+    const result = await this.totp.confirmSetup(webUser.userId, code);
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
       event: '2fa_enabled',
@@ -1004,7 +1004,7 @@ try {
     this.requireCsrf(req, '2fa/disable');
     if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser;
-    await this.totp.disable(webUser.userId as bigint, code);
+    await this.totp.disable(webUser.userId, code);
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
       event: '2fa_disabled',
@@ -1022,7 +1022,7 @@ try {
     this.requireCsrf(req, '2fa/recovery-codes');
     if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser;
-    return this.totp.regenerateRecoveryCodes(webUser.userId as bigint, code);
+    return this.totp.regenerateRecoveryCodes(webUser.userId, code);
   }
 
   // ─── Recovery email ──────────────────────────────────────────────────────
@@ -1040,7 +1040,7 @@ try {
   ): Promise<{ ok: true }> {
     this.requireCsrf(req, 'recovery-email/start');
     const webUser: WebUser = req.webUser;
-    return this.emailSvc.sendVerificationLink(webUser.userId as bigint, email);
+    return this.emailSvc.sendVerificationLink(webUser.userId, email);
   }
 
   @Get('recovery-email/verify')
@@ -1153,7 +1153,7 @@ try {
     @Res({ passthrough: true }) res: any,
   ): Promise<{ linkToken: string; expiresIn: number }> {
     const webUser: WebUser = req.webUser;
-    const linkToken = this.auth.buildLinkToken(webUser.userId as bigint);
+    const linkToken = this.auth.buildLinkToken(webUser.userId);
     // Основной канал доставки — httpOnly-cookie (S-4): токен не попадает в
     // URL/логи. Тело ответа сохранено для обратной совместимости со старыми
     // клиентами, которые ещё передают ?link_token=.
