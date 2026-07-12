@@ -8,7 +8,10 @@
  * keyboard, etc. Prepending https:// keeps everything working regardless of how
  * the env value is written. Trailing slash is stripped.
  */
-export function normalizeBaseUrl(raw: string | undefined, fallback: string): string {
+export function normalizeBaseUrl(
+  raw: string | undefined,
+  fallback: string,
+): string {
   const value = (raw ?? '').trim() || fallback;
   const withScheme = /^https?:\/\//i.test(value) ? value : `https://${value}`;
   return withScheme.replace(/\/$/, '');

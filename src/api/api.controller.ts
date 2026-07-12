@@ -1,5 +1,19 @@
-import { BadRequestException, Body, Controller, Delete, Get, Logger, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { Request } from 'express';
+import { uid, parseId } from './request-utils';
 import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { ProfileService } from '../bot/profile.service';
@@ -18,14 +32,7 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-/** Returns the canonical BigInt userId — always precise, even for Google/VK accounts. */
-function uid(req: AuthRequest): bigint { return req.webUser.userId; }
-
-function parseId(raw: string): number {
-  const n = Number(raw);
-  if (!Number.isInteger(n) || n <= 0) throw new BadRequestException('Invalid id');
-  return n;
-}
+// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
 
 @Controller('api')
 @UseGuards(TelegramAuthGuard)
@@ -50,8 +57,21 @@ export class ApiController {
   // ?link_token=… on the redirect. This endpoint issues one.
 
   @Get('link-token')
-  async issueLinkToken(@Req() req: AuthRequest): Promise<{ linkToken: string; expiresIn: number }> {
-    return { linkToken: this.authService.buildLinkToken(uid(req)), expiresIn: 60 };
+  async issueLinkToken(
+    @Req() req: AuthRequest,
+    @Res({ passthrough: true }) res: any,
+  ): Promise<{ linkToken: string; expiresIn: number }> {
+    const linkToken = this.authService.buildLinkToken(uid(req));
+    // httpOnly-cookie — основной канал (S-4, токен не в URL); тело ответа —
+    // обратная совместимость со старыми клиентами (?link_token=).
+    res.cookie('link_token', linkToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax' as const,
+      maxAge: 60_000,
+      path: '/api/auth',
+    });
+    return { linkToken, expiresIn: 60 };
   }
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────
@@ -61,20 +81,35 @@ export class ApiController {
   // `role` (see bot.service.setRole). Letting clients flip it would be a
   // privilege escalation into therapist UI.
   private readonly FLAG_FIELDS = [
-    'themePref', 'onboardingV1Done', 'onboardingV2Done', 'onboardingSkipped',
-    'practicesOnboardingDone', 'childhoodWheelDone', 'ysqBannerDismissed',
-    'hintSheetCloseShown', 'hintHistoryDismissed', 'trackerOnboardingDone',
-    'lastCelebrationDate', 'lastYesterdayBannerDate', 'lastWeeklyQuestionWeek',
-    'schemaIntrosShown', 'modeIntrosShown',
+    'themePref',
+    'onboardingV1Done',
+    'onboardingV2Done',
+    'onboardingSkipped',
+    'practicesOnboardingDone',
+    'childhoodWheelDone',
+    'ysqBannerDismissed',
+    'hintSheetCloseShown',
+    'hintHistoryDismissed',
+    'trackerOnboardingDone',
+    'lastCelebrationDate',
+    'lastYesterdayBannerDate',
+    'lastWeeklyQuestionWeek',
+    'schemaIntrosShown',
+    'modeIntrosShown',
     'defaultSection',
   ] as const;
 
   // Read-only flags — returned by GET but not writable via POST.
-  private readonly FLAG_FIELDS_READ = [...this.FLAG_FIELDS, 'therapistMode'] as const;
+  private readonly FLAG_FIELDS_READ = [
+    ...this.FLAG_FIELDS,
+    'therapistMode',
+  ] as const;
 
   @Get('user-flags')
   async getUserFlags(@Req() req: AuthRequest) {
-    const select = Object.fromEntries(this.FLAG_FIELDS_READ.map(f => [f, true]));
+    const select = Object.fromEntries(
+      this.FLAG_FIELDS_READ.map((f) => [f, true]),
+    );
     const u = await (this.prisma.user as any).findUnique({
       where: { id: uid(req) },
       select,
@@ -87,7 +122,8 @@ export class ApiController {
     @Req() req: AuthRequest,
     @Body() body: Record<string, unknown>,
   ): Promise<{ ok: true }> {
-    if (!body || typeof body !== 'object') throw new BadRequestException('Invalid body');
+    if (!body || typeof body !== 'object')
+      throw new BadRequestException('Invalid body');
     const data: Record<string, unknown> = {};
     for (const k of this.FLAG_FIELDS) if (k in body) data[k] = (body as any)[k];
     if (Object.keys(data).length === 0) return { ok: true };
@@ -106,7 +142,12 @@ export class ApiController {
       where: { userId: uid(req) },
       select: { type: true, startedAt: true, data: true },
     });
-    return Object.fromEntries(rows.map((r: any) => [r.type, { startedAt: r.startedAt.toISOString(), data: r.data }]));
+    return Object.fromEntries(
+      rows.map((r: any) => [
+        r.type,
+        { startedAt: r.startedAt.toISOString(), data: r.data },
+      ]),
+    );
   }
 
   @Post('drafts/:type')
@@ -115,11 +156,14 @@ export class ApiController {
     @Param('type') type: string,
     @Body() body: { startedAt: string; data: unknown },
   ): Promise<{ ok: true }> {
-    if (!['schema', 'mode', 'gratitude'].includes(type)) throw new BadRequestException('Invalid type');
+    if (!['schema', 'mode', 'gratitude'].includes(type))
+      throw new BadRequestException('Invalid type');
     if (!body?.startedAt) throw new BadRequestException('Missing startedAt');
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(body.startedAt)) throw new BadRequestException('Invalid startedAt format');
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(body.startedAt))
+      throw new BadRequestException('Invalid startedAt format');
     const startedAt = new Date(body.startedAt);
-    if (isNaN(startedAt.getTime())) throw new BadRequestException('Invalid startedAt value');
+    if (isNaN(startedAt.getTime()))
+      throw new BadRequestException('Invalid startedAt value');
     await (this.prisma as any).diaryDraft.upsert({
       where: { userId_type: { userId: uid(req), type } },
       update: { data: body.data, startedAt },
@@ -129,8 +173,12 @@ export class ApiController {
   }
 
   @Delete('drafts/:type')
-  async deleteDraft(@Req() req: AuthRequest, @Param('type') type: string): Promise<{ ok: true }> {
-    if (!['schema', 'mode', 'gratitude'].includes(type)) throw new BadRequestException('Invalid type');
+  async deleteDraft(
+    @Req() req: AuthRequest,
+    @Param('type') type: string,
+  ): Promise<{ ok: true }> {
+    if (!['schema', 'mode', 'gratitude'].includes(type))
+      throw new BadRequestException('Invalid type');
     await (this.prisma as any).diaryDraft.deleteMany({
       where: { userId: uid(req), type },
     });
@@ -145,14 +193,19 @@ export class ApiController {
   @Post('profile/name')
   async updateName(@Req() req: AuthRequest, @Body() body: { name: string }) {
     const name = body.name?.trim();
-    if (!name || name.length > 50) throw new BadRequestException('Invalid name');
+    if (!name || name.length > 50)
+      throw new BadRequestException('Invalid name');
     await this.botService.updateName(uid(req), name);
     return { ok: true };
   }
 
   @Post('init')
   async init(@Req() req: AuthRequest, @Body() body: { timezone?: string }) {
-    await this.botService.registerUser(uid(req), req.telegramFirstName, body.timezone);
+    await this.botService.registerUser(
+      uid(req),
+      req.telegramFirstName,
+      body.timezone,
+    );
     return { ok: true };
   }
 
@@ -178,10 +231,16 @@ export class ApiController {
   }
 
   @Post('ysq-progress')
-  async saveYsqProgress(@Req() req: AuthRequest, @Body() body: { answers: number[]; page: number }) {
-    if (!Array.isArray(body.answers) || body.answers.length !== 116) throw new BadRequestException('Invalid answers');
-    if (!body.answers.every(a => Number.isInteger(a) && a >= 0 && a <= 6)) throw new BadRequestException('Invalid answer values');
-    if (!Number.isInteger(body.page) || body.page < 0) throw new BadRequestException('Invalid page');
+  async saveYsqProgress(
+    @Req() req: AuthRequest,
+    @Body() body: { answers: number[]; page: number },
+  ) {
+    if (!Array.isArray(body.answers) || body.answers.length !== 116)
+      throw new BadRequestException('Invalid answers');
+    if (!body.answers.every((a) => Number.isInteger(a) && a >= 0 && a <= 6))
+      throw new BadRequestException('Invalid answer values');
+    if (!Number.isInteger(body.page) || body.page < 0)
+      throw new BadRequestException('Invalid page');
     await this.botService.saveYsqProgress(uid(req), body.answers, body.page);
     return { ok: true };
   }
@@ -199,25 +258,42 @@ export class ApiController {
 
   @Get('ratings')
   async getRatings(@Req() req: AuthRequest, @Query('date') date?: string) {
-    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException('Invalid date format');
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date))
+      throw new BadRequestException('Invalid date format');
     return this.botService.getRatings(uid(req), date);
   }
 
   @Post('rating')
-  async saveRating(@Req() req: AuthRequest, @Body() body: { needId: string; value: number; date?: string }) {
-    if (!NEED_IDS.includes(body.needId as NeedId) || !Number.isInteger(body.value) || body.value < 0 || body.value > 10) {
+  async saveRating(
+    @Req() req: AuthRequest,
+    @Body() body: { needId: string; value: number; date?: string },
+  ) {
+    if (
+      !NEED_IDS.includes(body.needId as NeedId) ||
+      !Number.isInteger(body.value) ||
+      body.value < 0 ||
+      body.value > 10
+    ) {
       throw new BadRequestException('Invalid needId or value');
     }
-    if (body.date && !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) throw new BadRequestException('Invalid date');
-    await this.botService.saveRating(uid(req), body.needId as NeedId, body.value, body.date);
-    this.therapyService.checkStreakTasks(uid(req)).catch((err) => this.logger.error('checkStreakTasks failed', err));
+    if (body.date && !/^\d{4}-\d{2}-\d{2}$/.test(body.date))
+      throw new BadRequestException('Invalid date');
+    await this.botService.saveRating(
+      uid(req),
+      body.needId as NeedId,
+      body.value,
+      body.date,
+    );
+    this.therapyService
+      .checkStreakTasks(uid(req))
+      .catch((err) => this.logger.error('checkStreakTasks failed', err));
 
     // Skip diary-complete logic for historical backfill
     if (body.date) return { ok: true, allDone: false };
 
     // Check if all needs are now rated today → trigger diary-complete logic
     const ratings = await this.botService.getRatings(uid(req));
-    const allDone = NEED_IDS.every(id => ratings[id] !== undefined);
+    const allDone = NEED_IDS.every((id) => ratings[id] !== undefined);
     if (allDone) {
       const [streak] = await Promise.all([
         this.analyticsService.getStreakData(uid(req)).catch((err) => {
@@ -257,28 +333,39 @@ export class ApiController {
       this.analyticsService.getStreakData(uid(req)),
     ]);
     const needs = this.botService.getNeeds();
-    const lines: string[] = [`📔 Трекер потребностей · последние ${history.length} дней`, ''];
+    const lines: string[] = [
+      `📔 Трекер потребностей · последние ${history.length} дней`,
+      '',
+    ];
     for (const day of [...history].reverse()) {
-      const vals = needs.map(n => {
-        const v = day.ratings[n.id as import('../bot/bot.service').NeedId];
+      const vals = needs.map((n) => {
+        const v = day.ratings[n.id];
         return v !== undefined ? `${n.emoji} ${v}/10` : `${n.emoji} –`;
       });
       lines.push(`${day.date}: ${vals.join('  ')}`);
     }
     lines.push('');
-    lines.push(`Серия: ${streak.currentStreak} дн. · Рекорд: ${streak.longestStreak} · Всего: ${streak.totalDays}`);
+    lines.push(
+      `Серия: ${streak.currentStreak} дн. · Рекорд: ${streak.longestStreak} · Всего: ${streak.totalDays}`,
+    );
     return { text: lines.join('\n') };
   }
 
   @Get('insights')
   async getInsights(@Req() req: AuthRequest) {
-    const [weeklyStats, bestDayOfWeek, worstDayOfWeek, streak] = await Promise.all([
-      this.analyticsService.getWeeklyStats(uid(req)),
-      this.analyticsService.getBestDayOfWeek(uid(req)),
-      this.analyticsService.getWorstDayOfWeek(uid(req)),
-      this.analyticsService.getStreakData(uid(req)),
-    ]);
-    return { weeklyStats, bestDayOfWeek, worstDayOfWeek, totalDays: streak.totalDays };
+    const [weeklyStats, bestDayOfWeek, worstDayOfWeek, streak] =
+      await Promise.all([
+        this.analyticsService.getWeeklyStats(uid(req)),
+        this.analyticsService.getBestDayOfWeek(uid(req)),
+        this.analyticsService.getWorstDayOfWeek(uid(req)),
+        this.analyticsService.getStreakData(uid(req)),
+      ]);
+    return {
+      weeklyStats,
+      bestDayOfWeek,
+      worstDayOfWeek,
+      totalDays: streak.totalDays,
+    };
   }
 
   @Get('achievements')
@@ -287,58 +374,88 @@ export class ApiController {
       this.analyticsService.getAchievements(uid(req)),
       this.botService.getUserPairs(uid(req)),
     ]);
-    const hasPair = pairs.some(p => p.status === 'active');
+    const hasPair = pairs.some((p) => p.status === 'active');
     return [...achievements, { id: 'pair_connected', earned: hasPair }];
   }
 
   @Get('note')
   async getNote(@Req() req: AuthRequest, @Query('date') date: string) {
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException('Invalid date format');
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date))
+      throw new BadRequestException('Invalid date format');
     return this.botService.getNote(uid(req), date);
   }
 
   @Post('note')
-  async saveNote(@Req() req: AuthRequest, @Body() body: { date: string; text: string; tags?: string[] }) {
-    if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date) || typeof body.text !== 'string') throw new BadRequestException();
-    await this.botService.saveNote(uid(req), body.date, body.text.slice(0, 500), body.tags);
+  async saveNote(
+    @Req() req: AuthRequest,
+    @Body() body: { date: string; text: string; tags?: string[] },
+  ) {
+    if (
+      !body.date ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(body.date) ||
+      typeof body.text !== 'string'
+    )
+      throw new BadRequestException();
+    await this.botService.saveNote(
+      uid(req),
+      body.date,
+      body.text.slice(0, 500),
+      body.tags,
+    );
     return { ok: true };
   }
 
   @Get('pair')
   async getPair(@Req() req: AuthRequest) {
     const pairs = await this.botService.getUserPairs(uid(req));
-    const activePairs = pairs.filter(p => p.status === 'active');
-    const pendingPair = pairs.find(p => p.status === 'pending' && p.isCreator);
+    const activePairs = pairs.filter((p) => p.status === 'active');
+    const pendingPair = pairs.find(
+      (p) => p.status === 'pending' && p.isCreator,
+    );
 
-    const partners = await Promise.all(activePairs.map(async pair => {
-      const [partnerRatings, partnerName, partnerHistory] = await Promise.all([
-        this.botService.getRatings(BigInt(pair.partnerId!)),
-        this.botService.getUserFirstName(BigInt(pair.partnerId!)),
-        this.analyticsService.getHistoryRatings(BigInt(pair.partnerId!), 7),
-      ]);
-      const partnerRaw = NEED_IDS.reduce((s, id) => s + (partnerRatings[id] ?? 0), 0) / NEED_IDS.length;
-      const partnerTodayDone = NEED_IDS.every(id => partnerRatings[id] !== undefined);
-      const histByDate = new Map(partnerHistory.map(d => [d.date, d.ratings]));
-      const partnerWeekAvgs = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setUTCDate(d.getUTCDate() - i);
-        const date = d.toISOString().split('T')[0];
-        const ratings = histByDate.get(date);
-        if (!ratings) return null;
-        const done = NEED_IDS.every(id => ratings[id as NeedId] !== undefined);
-        if (!done) return null;
-        const avg = NEED_IDS.reduce((s, id) => s + (ratings[id as NeedId] ?? 0), 0) / NEED_IDS.length;
-        return Math.round(avg * 10) / 10;
-      });
-      return {
-        code: pair.code,
-        partnerIndex: partnerTodayDone ? Math.round(partnerRaw * 10) / 10 : null,
-        partnerTodayDone,
-        partnerName,
-        partnerTelegramId: pair.partnerId,
-        partnerWeekAvgs,
-      };
-    }));
+    const partners = await Promise.all(
+      activePairs.map(async (pair) => {
+        const [partnerRatings, partnerName, partnerHistory] = await Promise.all(
+          [
+            this.botService.getRatings(BigInt(pair.partnerId!)),
+            this.botService.getUserFirstName(BigInt(pair.partnerId!)),
+            this.analyticsService.getHistoryRatings(BigInt(pair.partnerId!), 7),
+          ],
+        );
+        const partnerRaw =
+          NEED_IDS.reduce((s, id) => s + (partnerRatings[id] ?? 0), 0) /
+          NEED_IDS.length;
+        const partnerTodayDone = NEED_IDS.every(
+          (id) => partnerRatings[id] !== undefined,
+        );
+        const histByDate = new Map(
+          partnerHistory.map((d) => [d.date, d.ratings]),
+        );
+        const partnerWeekAvgs = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setUTCDate(d.getUTCDate() - i);
+          const date = d.toISOString().split('T')[0];
+          const ratings = histByDate.get(date);
+          if (!ratings) return null;
+          const done = NEED_IDS.every((id) => ratings[id] !== undefined);
+          if (!done) return null;
+          const avg =
+            NEED_IDS.reduce((s, id) => s + (ratings[id] ?? 0), 0) /
+            NEED_IDS.length;
+          return Math.round(avg * 10) / 10;
+        });
+        return {
+          code: pair.code,
+          partnerIndex: partnerTodayDone
+            ? Math.round(partnerRaw * 10) / 10
+            : null,
+          partnerTodayDone,
+          partnerName,
+          partnerTelegramId: pair.partnerId,
+          partnerWeekAvgs,
+        };
+      }),
+    );
 
     return { partners, pendingCode: pendingPair?.code ?? null };
   }
@@ -352,8 +469,12 @@ export class ApiController {
 
   @Post('pair/join')
   async joinPair(@Req() req: AuthRequest, @Body() body: { code: string }) {
-    if (!body.code || !/^[A-Z0-9]{5,12}$/i.test(body.code)) throw new BadRequestException('Invalid code format');
-    const ok = await this.botService.joinPair(uid(req), body.code.toUpperCase());
+    if (!body.code || !/^[A-Z0-9]{5,12}$/i.test(body.code))
+      throw new BadRequestException('Invalid code format');
+    const ok = await this.botService.joinPair(
+      uid(req),
+      body.code.toUpperCase(),
+    );
     if (!ok) throw new BadRequestException('Invalid or expired code');
     return { ok: true };
   }
@@ -380,7 +501,9 @@ export class ApiController {
       notifyPausedUntil: s?.notifyPausedUntil?.toISOString() ?? null,
       addressForm: s?.addressForm ?? null,
       pairCardDismissed: s?.pairCardDismissed ?? false,
-      mySchemaIds: Array.isArray(s?.mySchemaIds) ? (s.mySchemaIds as string[]) : [],
+      mySchemaIds: Array.isArray(s?.mySchemaIds)
+        ? (s.mySchemaIds as string[])
+        : [],
       myModeIds: Array.isArray(s?.myModeIds) ? (s.myModeIds as string[]) : [],
       therapistShareCards: s?.therapistShareCards ?? true,
       therapistShareProfile: s?.therapistShareProfile ?? true,
@@ -390,25 +513,83 @@ export class ApiController {
   @Post('settings')
   async updateSettings(
     @Req() req: AuthRequest,
-    @Body() body: { notifyEnabled?: boolean; notifyLocalHour?: number; notifyTimezone?: string; notifyReminderEnabled?: boolean; notifyFrequency?: number; notifyQuietStart?: number; notifyQuietEnd?: number; notifyGamified?: boolean; notifyPausedUntil?: null; addressForm?: string; pairCardDismissed?: boolean; mySchemaIds?: string[]; myModeIds?: string[]; therapistShareCards?: boolean; therapistShareProfile?: boolean },
+    @Body()
+    body: {
+      notifyEnabled?: boolean;
+      notifyLocalHour?: number;
+      notifyTimezone?: string;
+      notifyReminderEnabled?: boolean;
+      notifyFrequency?: number;
+      notifyQuietStart?: number;
+      notifyQuietEnd?: number;
+      notifyGamified?: boolean;
+      notifyPausedUntil?: null;
+      addressForm?: string;
+      pairCardDismissed?: boolean;
+      mySchemaIds?: string[];
+      myModeIds?: string[];
+      therapistShareCards?: boolean;
+      therapistShareProfile?: boolean;
+    },
   ) {
     const clean: Parameters<typeof this.botService.updateUserSettings>[1] = {};
-    if (typeof body.notifyEnabled === 'boolean') clean.notifyEnabled = body.notifyEnabled;
-    if (typeof body.notifyReminderEnabled === 'boolean') clean.notifyReminderEnabled = body.notifyReminderEnabled;
-    if (typeof body.notifyGamified === 'boolean') clean.notifyGamified = body.notifyGamified;
-    if (typeof body.pairCardDismissed === 'boolean') clean.pairCardDismissed = body.pairCardDismissed;
-    if (Number.isInteger(body.notifyLocalHour) && body.notifyLocalHour! >= 0 && body.notifyLocalHour! <= 23) clean.notifyLocalHour = body.notifyLocalHour;
-    if (typeof body.notifyTimezone === 'string' && VALID_TIMEZONES.includes(body.notifyTimezone)) clean.notifyTimezone = body.notifyTimezone;
-    if (Number.isInteger(body.notifyFrequency) && body.notifyFrequency! >= 0 && body.notifyFrequency! <= 3) clean.notifyFrequency = body.notifyFrequency;
-    if (Number.isInteger(body.notifyQuietStart) && body.notifyQuietStart! >= 0 && body.notifyQuietStart! <= 23) clean.notifyQuietStart = body.notifyQuietStart;
-    if (Number.isInteger(body.notifyQuietEnd) && body.notifyQuietEnd! >= 0 && body.notifyQuietEnd! <= 23) clean.notifyQuietEnd = body.notifyQuietEnd;
+    if (typeof body.notifyEnabled === 'boolean')
+      clean.notifyEnabled = body.notifyEnabled;
+    if (typeof body.notifyReminderEnabled === 'boolean')
+      clean.notifyReminderEnabled = body.notifyReminderEnabled;
+    if (typeof body.notifyGamified === 'boolean')
+      clean.notifyGamified = body.notifyGamified;
+    if (typeof body.pairCardDismissed === 'boolean')
+      clean.pairCardDismissed = body.pairCardDismissed;
+    if (
+      Number.isInteger(body.notifyLocalHour) &&
+      body.notifyLocalHour! >= 0 &&
+      body.notifyLocalHour! <= 23
+    )
+      clean.notifyLocalHour = body.notifyLocalHour;
+    if (
+      typeof body.notifyTimezone === 'string' &&
+      VALID_TIMEZONES.includes(body.notifyTimezone)
+    )
+      clean.notifyTimezone = body.notifyTimezone;
+    if (
+      Number.isInteger(body.notifyFrequency) &&
+      body.notifyFrequency! >= 0 &&
+      body.notifyFrequency! <= 3
+    )
+      clean.notifyFrequency = body.notifyFrequency;
+    if (
+      Number.isInteger(body.notifyQuietStart) &&
+      body.notifyQuietStart! >= 0 &&
+      body.notifyQuietStart! <= 23
+    )
+      clean.notifyQuietStart = body.notifyQuietStart;
+    if (
+      Number.isInteger(body.notifyQuietEnd) &&
+      body.notifyQuietEnd! >= 0 &&
+      body.notifyQuietEnd! <= 23
+    )
+      clean.notifyQuietEnd = body.notifyQuietEnd;
     // Возобновление паузы из UI: единственное допустимое значение — null
     if (body.notifyPausedUntil === null) clean.notifyPausedUntil = null;
-    if (body.addressForm === 'ty' || body.addressForm === 'vy') clean.addressForm = body.addressForm;
-    if (Array.isArray(body.mySchemaIds) && body.mySchemaIds.length <= 200 && body.mySchemaIds.every(id => typeof id === 'string' && id.length < 100)) clean.mySchemaIds = body.mySchemaIds;
-    if (Array.isArray(body.myModeIds) && body.myModeIds.length <= 200 && body.myModeIds.every(id => typeof id === 'string' && id.length < 100)) clean.myModeIds = body.myModeIds;
-    if (typeof body.therapistShareCards === 'boolean') clean.therapistShareCards = body.therapistShareCards;
-    if (typeof body.therapistShareProfile === 'boolean') clean.therapistShareProfile = body.therapistShareProfile;
+    if (body.addressForm === 'ty' || body.addressForm === 'vy')
+      clean.addressForm = body.addressForm;
+    if (
+      Array.isArray(body.mySchemaIds) &&
+      body.mySchemaIds.length <= 200 &&
+      body.mySchemaIds.every((id) => typeof id === 'string' && id.length < 100)
+    )
+      clean.mySchemaIds = body.mySchemaIds;
+    if (
+      Array.isArray(body.myModeIds) &&
+      body.myModeIds.length <= 200 &&
+      body.myModeIds.every((id) => typeof id === 'string' && id.length < 100)
+    )
+      clean.myModeIds = body.myModeIds;
+    if (typeof body.therapistShareCards === 'boolean')
+      clean.therapistShareCards = body.therapistShareCards;
+    if (typeof body.therapistShareProfile === 'boolean')
+      clean.therapistShareProfile = body.therapistShareProfile;
     await this.botService.updateUserSettings(uid(req), clean);
 
     // Явный выбор частоты сбрасывает адаптацию на выбранный уровень
@@ -417,8 +598,14 @@ export class ApiController {
     }
 
     // Reschedule reminder if notification time/toggle changed
-    if ('notifyEnabled' in clean || 'notifyLocalHour' in clean || 'notifyTimezone' in clean
-        || 'notifyReminderEnabled' in clean || 'notifyFrequency' in clean || 'notifyPausedUntil' in clean) {
+    if (
+      'notifyEnabled' in clean ||
+      'notifyLocalHour' in clean ||
+      'notifyTimezone' in clean ||
+      'notifyReminderEnabled' in clean ||
+      'notifyFrequency' in clean ||
+      'notifyPausedUntil' in clean
+    ) {
       await this.scheduleService.rescheduleForUser(uid(req));
     }
 
@@ -429,15 +616,24 @@ export class ApiController {
 
   @Get('practices')
   async getPractices(@Req() req: AuthRequest, @Query('needId') needId: string) {
-    if (!NEED_IDS.includes(needId as NeedId)) throw new BadRequestException('Invalid needId');
+    if (!NEED_IDS.includes(needId as NeedId))
+      throw new BadRequestException('Invalid needId');
     const rows = await this.botService.getPractices(uid(req), needId);
     return rows;
   }
 
   @Post('practices')
-  async addPractice(@Req() req: AuthRequest, @Body() body: { needId: string; text: string }) {
-    if (!NEED_IDS.includes(body.needId as NeedId) || !body.text?.trim()) throw new BadRequestException();
-    const row = await this.botService.addPractice(uid(req), body.needId, body.text.trim().slice(0, 200));
+  async addPractice(
+    @Req() req: AuthRequest,
+    @Body() body: { needId: string; text: string },
+  ) {
+    if (!NEED_IDS.includes(body.needId as NeedId) || !body.text?.trim())
+      throw new BadRequestException();
+    const row = await this.botService.addPractice(
+      uid(req),
+      body.needId,
+      body.text.trim().slice(0, 200),
+    );
     return row;
   }
 
@@ -451,7 +647,9 @@ export class ApiController {
 
   @Get('plan/pending')
   async getPendingPlans(@Req() req: AuthRequest) {
-    const tz = (await this.botService.getUserSettings(uid(req)))?.notifyTimezone ?? 'Europe/Moscow';
+    const tz =
+      (await this.botService.getUserSettings(uid(req)))?.notifyTimezone ??
+      'Europe/Moscow';
     const today = this.localDate(tz);
     const plans = await this.botService.getPendingPlans(uid(req), today);
     return plans;
@@ -460,30 +658,45 @@ export class ApiController {
   @Post('plan')
   async createPlan(
     @Req() req: AuthRequest,
-    @Body() body: { needId: string; practiceText: string; reminderUtcHour?: number },
+    @Body()
+    body: { needId: string; practiceText: string; reminderUtcHour?: number },
   ) {
-    if (!NEED_IDS.includes(body.needId as NeedId) || !body.practiceText?.trim()) throw new BadRequestException();
+    if (!NEED_IDS.includes(body.needId as NeedId) || !body.practiceText?.trim())
+      throw new BadRequestException();
     const settings = await this.botService.getUserSettings(uid(req));
     const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
     const tomorrow = this.localDate(tz, 1);
     const plan = await this.botService.createPlan(
-      uid(req), body.needId, body.practiceText.trim(), tomorrow, body.reminderUtcHour,
+      uid(req),
+      body.needId,
+      body.practiceText.trim(),
+      tomorrow,
+      body.reminderUtcHour,
     );
     if (body.reminderUtcHour !== undefined) {
       const sendAt = new Date();
       sendAt.setUTCDate(sendAt.getUTCDate() + 1);
       sendAt.setUTCHours(body.reminderUtcHour, 0, 0, 0);
-      await this.notificationService.schedule(uid(req), 'practice_reminder', sendAt, {
-        practiceText: body.practiceText.trim(),
-        needId: body.needId,
-        planId: plan.id,
-      });
+      await this.notificationService.schedule(
+        uid(req),
+        'practice_reminder',
+        sendAt,
+        {
+          practiceText: body.practiceText.trim(),
+          needId: body.needId,
+          planId: plan.id,
+        },
+      );
     }
     return plan;
   }
 
   @Post('plan/:id/checkin')
-  async checkinPlan(@Req() req: AuthRequest, @Param('id') id: string, @Body() body: { done: boolean }) {
+  async checkinPlan(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body() body: { done: boolean },
+  ) {
     await this.botService.checkinPlan(uid(req), parseId(id), body.done);
     return { ok: true };
   }
@@ -502,14 +715,23 @@ export class ApiController {
   }
 
   @Post('childhood-ratings')
-  async saveChildhoodRatings(@Req() req: AuthRequest, @Body() body: Record<string, number>) {
+  async saveChildhoodRatings(
+    @Req() req: AuthRequest,
+    @Body() body: Record<string, number>,
+  ) {
     const ratings: Record<string, number> = {};
     for (const needId of NEED_IDS) {
-      if (typeof body[needId] === 'number' && Number.isInteger(body[needId]) && body[needId] >= 0 && body[needId] <= 10) {
+      if (
+        typeof body[needId] === 'number' &&
+        Number.isInteger(body[needId]) &&
+        body[needId] >= 0 &&
+        body[needId] <= 10
+      ) {
         ratings[needId] = body[needId];
       }
     }
-    if (Object.keys(ratings).length === 0) throw new BadRequestException('No valid ratings');
+    if (Object.keys(ratings).length === 0)
+      throw new BadRequestException('No valid ratings');
     await this.botService.saveChildhoodRatings(uid(req), ratings);
     return { ok: true };
   }
@@ -522,9 +744,14 @@ export class ApiController {
   }
 
   @Post('ysq-result')
-  async saveYsqResult(@Req() req: AuthRequest, @Body() body: { answers: number[] }) {
-    if (!Array.isArray(body.answers) || body.answers.length !== 116) throw new BadRequestException('Invalid answers');
-    if (!body.answers.every(a => Number.isInteger(a) && a >= 0 && a <= 6)) throw new BadRequestException('Invalid answer values');
+  async saveYsqResult(
+    @Req() req: AuthRequest,
+    @Body() body: { answers: number[] },
+  ) {
+    if (!Array.isArray(body.answers) || body.answers.length !== 116)
+      throw new BadRequestException('Invalid answers');
+    if (!body.answers.every((a) => Number.isInteger(a) && a >= 0 && a <= 6))
+      throw new BadRequestException('Invalid answer values');
     await this.botService.saveYsqResult(uid(req), body.answers);
     return { ok: true };
   }
@@ -538,7 +765,7 @@ export class ApiController {
   @Get('ysq-history')
   async getYsqHistory(@Req() req: AuthRequest) {
     const raw = await this.botService.getYsqHistory(uid(req));
-    return raw.map(r => ({
+    return raw.map((r) => ({
       id: r.id,
       completedAt: r.completedAt.toISOString(),
       scores: computeYsqScores(r.answers),
@@ -551,22 +778,48 @@ export class ApiController {
   }
 
   @Post('schema-notes')
-  async upsertSchemaNote(@Req() req: AuthRequest, @Body() body: {
-    schemaId: string;
-    triggers?: string; feelings?: string; thoughts?: string;
-    origins?: string; reality?: string; healthyView?: string; behavior?: string;
-  }) {
-    if (!body.schemaId || typeof body.schemaId !== 'string') throw new BadRequestException('schemaId required');
-    if (!/^[a-z_]{1,64}$/.test(body.schemaId)) throw new BadRequestException('invalid schemaId');
+  async upsertSchemaNote(
+    @Req() req: AuthRequest,
+    @Body()
+    body: {
+      schemaId: string;
+      triggers?: string;
+      feelings?: string;
+      thoughts?: string;
+      origins?: string;
+      reality?: string;
+      healthyView?: string;
+      behavior?: string;
+    },
+  ) {
+    if (!body.schemaId || typeof body.schemaId !== 'string')
+      throw new BadRequestException('schemaId required');
+    if (!/^[a-z_]{1,64}$/.test(body.schemaId))
+      throw new BadRequestException('invalid schemaId');
     const MAX = 3000;
-    const fields = ['triggers', 'feelings', 'thoughts', 'origins', 'reality', 'healthyView', 'behavior'] as const;
+    const fields = [
+      'triggers',
+      'feelings',
+      'thoughts',
+      'origins',
+      'reality',
+      'healthyView',
+      'behavior',
+    ] as const;
     for (const f of fields) {
-      if (body[f] !== undefined && (typeof body[f] !== 'string' || body[f]!.length > MAX))
+      if (
+        body[f] !== undefined &&
+        (typeof body[f] !== 'string' || body[f].length > MAX)
+      )
         throw new BadRequestException(`${f} too long or invalid`);
     }
     return this.botService.upsertSchemaNote(uid(req), body.schemaId, {
-      triggers: body.triggers?.trim(), feelings: body.feelings?.trim(), thoughts: body.thoughts?.trim(),
-      origins: body.origins?.trim(), reality: body.reality?.trim(), healthyView: body.healthyView?.trim(),
+      triggers: body.triggers?.trim(),
+      feelings: body.feelings?.trim(),
+      thoughts: body.thoughts?.trim(),
+      origins: body.origins?.trim(),
+      reality: body.reality?.trim(),
+      healthyView: body.healthyView?.trim(),
       behavior: body.behavior?.trim(),
     });
   }
@@ -577,22 +830,43 @@ export class ApiController {
   }
 
   @Post('mode-notes')
-  async upsertModeNote(@Req() req: AuthRequest, @Body() body: {
-    modeId: string;
-    triggers?: string; feelings?: string; thoughts?: string;
-    needs?: string; behavior?: string;
-  }) {
-    if (!body.modeId || typeof body.modeId !== 'string') throw new BadRequestException('modeId required');
-    if (!/^[a-z_]{1,64}$/.test(body.modeId)) throw new BadRequestException('invalid modeId');
+  async upsertModeNote(
+    @Req() req: AuthRequest,
+    @Body()
+    body: {
+      modeId: string;
+      triggers?: string;
+      feelings?: string;
+      thoughts?: string;
+      needs?: string;
+      behavior?: string;
+    },
+  ) {
+    if (!body.modeId || typeof body.modeId !== 'string')
+      throw new BadRequestException('modeId required');
+    if (!/^[a-z_]{1,64}$/.test(body.modeId))
+      throw new BadRequestException('invalid modeId');
     const MAX = 3000;
-    const fields = ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'] as const;
+    const fields = [
+      'triggers',
+      'feelings',
+      'thoughts',
+      'needs',
+      'behavior',
+    ] as const;
     for (const f of fields) {
-      if (body[f] !== undefined && (typeof body[f] !== 'string' || body[f]!.length > MAX))
+      if (
+        body[f] !== undefined &&
+        (typeof body[f] !== 'string' || body[f].length > MAX)
+      )
         throw new BadRequestException(`${f} too long or invalid`);
     }
     return this.botService.upsertModeNote(uid(req), body.modeId, {
-      triggers: body.triggers?.trim(), feelings: body.feelings?.trim(), thoughts: body.thoughts?.trim(),
-      needs: body.needs?.trim(), behavior: body.behavior?.trim(),
+      triggers: body.triggers?.trim(),
+      feelings: body.feelings?.trim(),
+      thoughts: body.thoughts?.trim(),
+      needs: body.needs?.trim(),
+      behavior: body.behavior?.trim(),
     });
   }
 
@@ -604,16 +878,48 @@ export class ApiController {
   }
 
   @Post('belief-checks')
-  async createBeliefCheck(@Req() req: AuthRequest, @Body() body: { belief?: string; evidenceFor?: unknown; evidenceAgainst?: unknown; reframe?: string }) {
+  async createBeliefCheck(
+    @Req() req: AuthRequest,
+    @Body()
+    body: {
+      belief?: string;
+      evidenceFor?: unknown;
+      evidenceAgainst?: unknown;
+      reframe?: string;
+    },
+  ) {
     const MAX = 3000;
-    if (!body.belief || typeof body.belief !== 'string' || body.belief.length > MAX) throw new BadRequestException('invalid belief');
-    if (!Array.isArray(body.evidenceFor) || !body.evidenceFor.every(s => typeof s === 'string' && s.length <= MAX)) throw new BadRequestException('invalid evidenceFor');
-    if (!Array.isArray(body.evidenceAgainst) || !body.evidenceAgainst.every(s => typeof s === 'string' && s.length <= MAX)) throw new BadRequestException('invalid evidenceAgainst');
-    if (body.reframe !== undefined && (typeof body.reframe !== 'string' || body.reframe.length > MAX)) throw new BadRequestException('invalid reframe');
+    if (
+      !body.belief ||
+      typeof body.belief !== 'string' ||
+      body.belief.length > MAX
+    )
+      throw new BadRequestException('invalid belief');
+    if (
+      !Array.isArray(body.evidenceFor) ||
+      !body.evidenceFor.every((s) => typeof s === 'string' && s.length <= MAX)
+    )
+      throw new BadRequestException('invalid evidenceFor');
+    if (
+      !Array.isArray(body.evidenceAgainst) ||
+      !body.evidenceAgainst.every(
+        (s) => typeof s === 'string' && s.length <= MAX,
+      )
+    )
+      throw new BadRequestException('invalid evidenceAgainst');
+    if (
+      body.reframe !== undefined &&
+      (typeof body.reframe !== 'string' || body.reframe.length > MAX)
+    )
+      throw new BadRequestException('invalid reframe');
     return this.botService.createBeliefCheck(uid(req), {
       belief: body.belief.trim(),
-      evidenceFor: (body.evidenceFor as string[]).map(s => s.trim()).filter(Boolean),
-      evidenceAgainst: (body.evidenceAgainst as string[]).map(s => s.trim()).filter(Boolean),
+      evidenceFor: (body.evidenceFor as string[])
+        .map((s) => s.trim())
+        .filter(Boolean),
+      evidenceAgainst: (body.evidenceAgainst as string[])
+        .map((s) => s.trim())
+        .filter(Boolean),
       reframe: body.reframe?.trim() || undefined,
     });
   }
@@ -632,7 +938,8 @@ export class ApiController {
 
   @Post('letters')
   async createLetter(@Req() req: AuthRequest, @Body() body: { text?: string }) {
-    if (!body.text || typeof body.text !== 'string' || body.text.length > 10000) throw new BadRequestException('invalid text');
+    if (!body.text || typeof body.text !== 'string' || body.text.length > 10000)
+      throw new BadRequestException('invalid text');
     return this.botService.createLetter(uid(req), body.text.trim());
   }
 
@@ -649,8 +956,16 @@ export class ApiController {
   }
 
   @Post('safe-place')
-  async upsertSafePlace(@Req() req: AuthRequest, @Body() body: { description?: string }) {
-    if (!body.description || typeof body.description !== 'string' || body.description.length > 10000) throw new BadRequestException('invalid description');
+  async upsertSafePlace(
+    @Req() req: AuthRequest,
+    @Body() body: { description?: string },
+  ) {
+    if (
+      !body.description ||
+      typeof body.description !== 'string' ||
+      body.description.length > 10000
+    )
+      throw new BadRequestException('invalid description');
     return this.botService.upsertSafePlace(uid(req), body.description.trim());
   }
 
@@ -662,12 +977,41 @@ export class ApiController {
   }
 
   @Post('flashcards')
-  async createFlashcard(@Req() req: AuthRequest, @Body() body: { modeId?: string; needId?: string; reflection?: string; action?: string }) {
+  async createFlashcard(
+    @Req() req: AuthRequest,
+    @Body()
+    body: {
+      modeId?: string;
+      needId?: string;
+      reflection?: string;
+      action?: string;
+    },
+  ) {
     const MAX = 3000;
-    if (!body.modeId || typeof body.modeId !== 'string' || !/^[a-z_]{1,64}$/.test(body.modeId)) throw new BadRequestException('invalid modeId');
-    if (!body.needId || typeof body.needId !== 'string' || !NEED_IDS.includes(body.needId as NeedId) && body.needId !== 'detached' && body.needId !== 'critic') throw new BadRequestException('invalid needId');
-    if (body.reflection !== undefined && (typeof body.reflection !== 'string' || body.reflection.length > MAX)) throw new BadRequestException('invalid reflection');
-    if (body.action !== undefined && (typeof body.action !== 'string' || body.action.length > MAX)) throw new BadRequestException('invalid action');
+    if (
+      !body.modeId ||
+      typeof body.modeId !== 'string' ||
+      !/^[a-z_]{1,64}$/.test(body.modeId)
+    )
+      throw new BadRequestException('invalid modeId');
+    if (
+      !body.needId ||
+      typeof body.needId !== 'string' ||
+      (!NEED_IDS.includes(body.needId as NeedId) &&
+        body.needId !== 'detached' &&
+        body.needId !== 'critic')
+    )
+      throw new BadRequestException('invalid needId');
+    if (
+      body.reflection !== undefined &&
+      (typeof body.reflection !== 'string' || body.reflection.length > MAX)
+    )
+      throw new BadRequestException('invalid reflection');
+    if (
+      body.action !== undefined &&
+      (typeof body.action !== 'string' || body.action.length > MAX)
+    )
+      throw new BadRequestException('invalid action');
     return this.botService.createFlashcard(uid(req), {
       modeId: body.modeId,
       needId: body.needId,
@@ -684,15 +1028,27 @@ export class ApiController {
   // ── Therapist: client notes ───────────────────────────────────────────────────
 
   @Get('therapy/client/:clientId/schema-notes')
-  async getClientSchemaNotes(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
-    const notes = await this.botService.getClientSchemaNotes(uid(req), BigInt(parseId(clientId)));
+  async getClientSchemaNotes(
+    @Req() req: AuthRequest,
+    @Param('clientId') clientId: string,
+  ) {
+    const notes = await this.botService.getClientSchemaNotes(
+      uid(req),
+      BigInt(parseId(clientId)),
+    );
     if (!notes) throw new BadRequestException('relation not found');
     return notes;
   }
 
   @Get('therapy/client/:clientId/mode-notes')
-  async getClientModeNotes(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
-    const notes = await this.botService.getClientModeNotes(uid(req), BigInt(parseId(clientId)));
+  async getClientModeNotes(
+    @Req() req: AuthRequest,
+    @Param('clientId') clientId: string,
+  ) {
+    const notes = await this.botService.getClientModeNotes(
+      uid(req),
+      BigInt(parseId(clientId)),
+    );
     if (!notes) throw new BadRequestException('relation not found');
     return notes;
   }
@@ -706,7 +1062,10 @@ export class ApiController {
   private localDate(tz: string, daysAhead = 0): string {
     const d = new Date(Date.now() + daysAhead * 86_400_000);
     return new Intl.DateTimeFormat('en-CA', {
-      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
     }).format(d);
   }
 }

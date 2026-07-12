@@ -19,7 +19,10 @@ export const MIN_CANCEL_LEAD_HOURS = 24;
 // Subscription (recurring support). Prices editable in admin (BookingSetting
 // keys sub:month / sub:year); these are the initial defaults.
 export type SubPeriod = 'month' | 'year';
-export const SUB_DEFAULT_PRICE: Record<SubPeriod, number> = { month: 500, year: 5000 };
+export const SUB_DEFAULT_PRICE: Record<SubPeriod, number> = {
+  month: 500,
+  year: 5000,
+};
 
 export interface SessionMeta {
   type: SessionType;
@@ -29,8 +32,18 @@ export interface SessionMeta {
 }
 
 export const SESSION_META: SessionMeta[] = [
-  { type: SessionType.INTRO_15,  label: 'Знакомство', durationMin: 15, note: '15 минут · бесплатно' },
-  { type: SessionType.SESSION_50, label: 'Сессия',     durationMin: 50, note: '50 минут' },
+  {
+    type: SessionType.INTRO_15,
+    label: 'Знакомство',
+    durationMin: 15,
+    note: '15 минут · бесплатно',
+  },
+  {
+    type: SessionType.SESSION_50,
+    label: 'Сессия',
+    durationMin: 50,
+    note: '50 минут',
+  },
 ];
 
 export interface SessionOption extends SessionMeta {

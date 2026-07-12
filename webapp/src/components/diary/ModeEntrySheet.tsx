@@ -4,6 +4,8 @@ import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
+import { detectCrisisAny } from '../../utils/crisisMarkers';
+import { CrisisCard } from '../CrisisCard';
 import { haptic } from '../../haptic';
 
 interface Props {
@@ -255,6 +257,8 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           />
         </div>
       </div>
+
+      {detectCrisisAny(situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories) && <CrisisCard />}
 
       <div className="ex-foot">
         <span style={{ fontSize: 12, color: 'var(--text-faint)', display: 'flex', alignItems: 'center', gap: 6 }}>

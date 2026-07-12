@@ -384,6 +384,11 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       <p style={{ fontSize: 13, color: 'var(--text-sub)', margin: '0 0 12px', lineHeight: 1.6 }}>
                         Если терапевт выслал ссылку-приглашение — введи код ниже.
                       </p>
+                      <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 12px', lineHeight: 1.6 }}>
+                        Ввод кода — это согласие открыть терапевту доступ к своим записям:
+                        дневникам, заметкам и результатам опросников (объём настраивается после
+                        подключения, отключить терапевта можно в любой момент).
+                      </p>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <input value={therapyJoinCode} onChange={e => setTherapyJoinCode(e.target.value.toUpperCase())}
                           placeholder="ABCDEF" maxLength={8}

@@ -14,21 +14,7 @@ import { BookingService, CreateBookingDto } from './booking.service';
 import { SlotService } from './slot.service';
 import { PricingService } from './pricing.service';
 import { SessionType } from '@prisma/client';
-
-interface BookDto {
-  startsAt: string;      // ISO string
-  durationMin?: number;
-  type?: SessionType;
-  clientName: string;
-  clientContact: string;
-  message?: string;
-  clientTelegramId?: string;
-  returning?: boolean;
-  /** Client accepted the public offer (consent checkbox). */
-  acceptedOffer?: boolean;
-  /** Honeypot — must stay empty. Bots fill hidden fields; humans never see it. */
-  website?: string;
-}
+import { BookDto } from './book.dto';
 
 /** Public booking endpoints: browse slots, book one, self-cancel. */
 @Controller('api/booking')
@@ -74,7 +60,9 @@ export class BookingController {
       clientName: dto.clientName?.trim(),
       clientContact: dto.clientContact?.trim(),
       message: dto.message?.trim(),
-      clientTelegramId: dto.clientTelegramId ? BigInt(dto.clientTelegramId) : undefined,
+      clientTelegramId: dto.clientTelegramId
+        ? BigInt(dto.clientTelegramId)
+        : undefined,
       returning: dto.returning ?? false,
       acceptedOffer: dto.acceptedOffer ?? false,
     };

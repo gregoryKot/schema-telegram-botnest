@@ -35,8 +35,17 @@ export type NotificationType =
  * streak_*, onboarding_*, task_assigned...) — ответ на действие, не отменяются.
  */
 export const PROACTIVE_TYPES: NotificationType[] = [
-  'reminder', 'pre_reminder', 'lapsing_3', 'dormant_7', 'value_recap', 'reengagement_30',
-  'nudge', 'weekly', 'donate_reminder', 'practice_missed', 'low_streak_insight',
+  'reminder',
+  'pre_reminder',
+  'lapsing_3',
+  'dormant_7',
+  'value_recap',
+  'reengagement_30',
+  'nudge',
+  'weekly',
+  'donate_reminder',
+  'practice_missed',
+  'low_streak_insight',
 ];
 
 /**
@@ -44,10 +53,17 @@ export const PROACTIVE_TYPES: NotificationType[] = [
  * сам был активен (заполнил дневник) — придержать их до утра было бы странно.
  */
 export const QUIET_EXEMPT_TYPES: NotificationType[] = [
-  'summary', 'comeback',
-  'streak_7', 'streak_14', 'streak_30',
-  'onboarding_1', 'onboarding_3', 'onboarding_7',
-  'anniversary_30', 'anniversary_60', 'anniversary_90',
+  'summary',
+  'comeback',
+  'streak_7',
+  'streak_14',
+  'streak_30',
+  'onboarding_1',
+  'onboarding_3',
+  'onboarding_7',
+  'anniversary_30',
+  'anniversary_60',
+  'anniversary_90',
 ];
 
 export interface DueNotification {
@@ -63,7 +79,12 @@ export class NotificationService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Запланировать уведомление */
-  async schedule(userId: bigint, type: NotificationType, sendAt: Date, payload?: object) {
+  async schedule(
+    userId: bigint,
+    type: NotificationType,
+    sendAt: Date,
+    payload?: object,
+  ) {
     await this.prisma.scheduledNotification.create({
       data: { userId, type, sendAt, payload: payload ?? undefined },
     });
@@ -122,13 +143,21 @@ export class NotificationService {
   /** Отменить все pending ПРОАКТИВНЫЕ уведомления (при паузе). Терапевтские и summary остаются. */
   async cancelProactive(userId: bigint) {
     await this.prisma.scheduledNotification.updateMany({
-      where: { userId, type: { in: PROACTIVE_TYPES }, sentAt: null, cancelledAt: null },
+      where: {
+        userId,
+        type: { in: PROACTIVE_TYPES },
+        sentAt: null,
+        cancelledAt: null,
+      },
       data: { cancelledAt: new Date() },
     });
   }
 
   /** Когда последний раз реально отправлялось уведомление данного типа */
-  async lastSentAt(userId: bigint, type: NotificationType): Promise<Date | null> {
+  async lastSentAt(
+    userId: bigint,
+    type: NotificationType,
+  ): Promise<Date | null> {
     const row = await this.prisma.scheduledNotification.findFirst({
       where: { userId, type, sentAt: { not: null } },
       orderBy: { sentAt: 'desc' },

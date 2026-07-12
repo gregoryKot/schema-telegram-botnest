@@ -42,8 +42,14 @@ export class PaymentController {
     private readonly subscription: SubscriptionService,
     config: ConfigService,
   ) {
-    this.siteUrl = normalizeBaseUrl(config.get<string>('SITE_URL'), 'https://kotlarewski.gr');
-    this.appUrl = normalizeBaseUrl(config.get<string>('APP_URL'), 'https://schemehappens.ru');
+    this.siteUrl = normalizeBaseUrl(
+      config.get<string>('SITE_URL'),
+      'https://kotlarewski.gr',
+    );
+    this.appUrl = normalizeBaseUrl(
+      config.get<string>('APP_URL'),
+      'https://schemehappens.ru',
+    );
   }
 
   /**
@@ -77,7 +83,9 @@ export class PaymentController {
       try {
         await this.subscription.markChargePaidByInvId(id, paid);
       } catch (e) {
-        this.logger.error(`Subscription mark-paid failed for InvId ${id}: ${(e as Error).message}`);
+        this.logger.error(
+          `Subscription mark-paid failed for InvId ${id}: ${(e as Error).message}`,
+        );
         return `FAIL${invId}`;
       }
       return `OK${invId}`;
@@ -86,7 +94,9 @@ export class PaymentController {
       try {
         await this.donation.markPaidByInvId(id, paid);
       } catch (e) {
-        this.logger.error(`Donation mark-paid failed for InvId ${id}: ${(e as Error).message}`);
+        this.logger.error(
+          `Donation mark-paid failed for InvId ${id}: ${(e as Error).message}`,
+        );
         return `FAIL${invId}`;
       }
       return `OK${invId}`;
@@ -102,7 +112,9 @@ export class PaymentController {
       }
       // Real failure: the client PAID but the booking didn't confirm. Alert loudly
       // and return FAIL so Robokassa retries later.
-      this.logger.error(`PAID but confirm failed for booking ${id}: ${(e as Error).message}`);
+      this.logger.error(
+        `PAID but confirm failed for booking ${id}: ${(e as Error).message}`,
+      );
       await this.notify.alertAdmin(
         `🚨 <b>Оплата прошла, но бронь #${id} не подтвердилась</b>\n${(e as Error).message}\nПроверьте вручную в админке.`,
       );
@@ -141,7 +153,9 @@ export class PaymentController {
     }
     try {
       const b = await this.booking.getById(id);
-      return res.redirect(`${this.siteUrl}/booking/paid?token=${(b as { cancelToken: string }).cancelToken}`);
+      return res.redirect(
+        `${this.siteUrl}/booking/paid?token=${(b as { cancelToken: string }).cancelToken}`,
+      );
     } catch {
       return res.redirect(`${this.siteUrl}/booking/paid`);
     }

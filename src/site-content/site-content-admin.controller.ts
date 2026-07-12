@@ -1,4 +1,10 @@
-import { Body, Controller, Headers, Patch, BadRequestException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Headers,
+  Patch,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SiteContentService } from './site-content.service';
 import type { MarqueeTopic } from './site-content.service';
@@ -21,18 +27,30 @@ export class SiteContentAdminController {
   }
 
   @Patch('hero-photo')
-  async setHeroPhoto(@Body() body: { dataUri: string }, @Headers('x-admin-key') key: string) {
+  async setHeroPhoto(
+    @Body() body: { dataUri: string },
+    @Headers('x-admin-key') key: string,
+  ) {
     assertAdminKey(key, this.adminKey);
-    if (!body.dataUri?.startsWith('data:image/')) throw new BadRequestException('Expected an image data URI');
-    if (body.dataUri.length > MAX_PHOTO_BYTES) throw new BadRequestException('Photo too large');
+    if (!body.dataUri?.startsWith('data:image/'))
+      throw new BadRequestException('Expected an image data URI');
+    if (body.dataUri.length > MAX_PHOTO_BYTES)
+      throw new BadRequestException('Photo too large');
     return this.content.setHeroPhoto(body.dataUri);
   }
 
   @Patch('marquee')
-  async setMarquee(@Body() body: { group: 'A' | 'B'; topics: MarqueeTopic[] }, @Headers('x-admin-key') key: string) {
+  async setMarquee(
+    @Body() body: { group: 'A' | 'B'; topics: MarqueeTopic[] },
+    @Headers('x-admin-key') key: string,
+  ) {
     assertAdminKey(key, this.adminKey);
-    if (body.group !== 'A' && body.group !== 'B') throw new BadRequestException('Invalid group');
-    if (!Array.isArray(body.topics) || body.topics.some((t) => !t.label?.trim() || !t.href?.trim())) {
+    if (body.group !== 'A' && body.group !== 'B')
+      throw new BadRequestException('Invalid group');
+    if (
+      !Array.isArray(body.topics) ||
+      body.topics.some((t) => !t.label?.trim() || !t.href?.trim())
+    ) {
       throw new BadRequestException('Invalid topics');
     }
     return this.content.setMarqueeTopics(body.group, body.topics);

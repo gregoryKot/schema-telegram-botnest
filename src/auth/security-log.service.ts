@@ -48,7 +48,12 @@ export class SecurityLogService {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(data)) {
       const lower = k.toLowerCase();
-      if (lower.includes('token') || lower.includes('password') || lower.includes('secret') || lower === 'initdata') {
+      if (
+        lower.includes('token') ||
+        lower.includes('password') ||
+        lower.includes('secret') ||
+        lower === 'initdata'
+      ) {
         out[k] = '[redacted]';
       } else if (typeof v === 'bigint') {
         out[k] = v.toString();
@@ -59,11 +64,16 @@ export class SecurityLogService {
     return out;
   }
 
-  private async alertAdmin(event: SecurityEvent, data: Record<string, unknown>): Promise<void> {
+  private async alertAdmin(
+    event: SecurityEvent,
+    data: Record<string, unknown>,
+  ): Promise<void> {
     const redacted = this.redact(data);
     const text =
       `🔐 ${event}\n` +
-      Object.entries(redacted).map(([k, v]) => `${k}: ${String(v).slice(0, 80)}`).join('\n');
+      Object.entries(redacted)
+        .map(([k, v]) => `${k}: ${String(v).slice(0, 80)}`)
+        .join('\n');
     // Telegram first, e-mail fallback so security events are never lost.
     await notifyAdminWithFallback(text, `🔐 Security: ${event}`);
   }

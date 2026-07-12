@@ -12,6 +12,10 @@ export function normalizeAddressForm(value: unknown): AddressForm {
 }
 
 /** Выбор текста по форме обращения: t(form, 'ты-вариант', 'вы-вариант') */
-export function t(form: AddressForm | null | undefined, tyText: string, vyText: string): string {
+export function t(
+  form: AddressForm | null | undefined,
+  tyText: string,
+  vyText: string,
+): string {
   return form === 'vy' ? vyText : tyText;
 }

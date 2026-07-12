@@ -21,7 +21,12 @@ describe('NotificationService', () => {
       const sendAt = new Date('2025-06-11T19:00:00Z');
       await svc.schedule(BigInt(42), 'reminder', sendAt);
       expect(prisma.scheduledNotification.create).toHaveBeenCalledWith({
-        data: { userId: BigInt(42), type: 'reminder', sendAt, payload: undefined },
+        data: {
+          userId: BigInt(42),
+          type: 'reminder',
+          sendAt,
+          payload: undefined,
+        },
       });
     });
 
@@ -30,7 +35,9 @@ describe('NotificationService', () => {
       const svc = new NotificationService(prisma);
       await svc.schedule(BigInt(1), 'summary', new Date(), { text: 'hello' });
       expect(prisma.scheduledNotification.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ payload: { text: 'hello' } }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ payload: { text: 'hello' } }),
+        }),
       );
     });
   });
@@ -41,7 +48,12 @@ describe('NotificationService', () => {
       const svc = new NotificationService(prisma);
       await svc.cancel(BigInt(42), 'reminder');
       expect(prisma.scheduledNotification.updateMany).toHaveBeenCalledWith({
-        where: { userId: BigInt(42), type: 'reminder', sentAt: null, cancelledAt: null },
+        where: {
+          userId: BigInt(42),
+          type: 'reminder',
+          sentAt: null,
+          cancelledAt: null,
+        },
         data: expect.objectContaining({ cancelledAt: expect.any(Date) }),
       });
     });
@@ -53,14 +65,23 @@ describe('NotificationService', () => {
       const svc = new NotificationService(prisma);
       await svc.getDue();
       expect(prisma.scheduledNotification.findMany).toHaveBeenCalledWith({
-        where: { sendAt: { lte: expect.any(Date) }, sentAt: null, cancelledAt: null },
+        where: {
+          sendAt: { lte: expect.any(Date) },
+          sentAt: null,
+          cancelledAt: null,
+        },
         orderBy: { sendAt: 'asc' },
       });
     });
 
     it('returns rows with numeric userId', async () => {
       const prisma = makePrisma();
-      const row = { id: 1, userId: BigInt(42), type: 'reminder', sendAt: new Date() };
+      const row = {
+        id: 1,
+        userId: BigInt(42),
+        type: 'reminder',
+        sendAt: new Date(),
+      };
       prisma.scheduledNotification.findMany.mockResolvedValue([row]);
       const svc = new NotificationService(prisma);
       expect(await svc.getDue()).toEqual([{ ...row, userId: 42 }]);
@@ -123,7 +144,13 @@ describe('NotificationService', () => {
     });
 
     it('proactive set does not include reactive types', () => {
-      for (const t of ['summary', 'comeback', 'task_assigned', 'ysq_requested', 'streak_7']) {
+      for (const t of [
+        'summary',
+        'comeback',
+        'task_assigned',
+        'ysq_requested',
+        'streak_7',
+      ]) {
         expect(PROACTIVE_TYPES).not.toContain(t);
       }
     });

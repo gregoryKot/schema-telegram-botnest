@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -27,8 +32,8 @@ const ALIAS_DOMAINS = new Set(['kotlarewski.ru', 'kotlarewski.gr']);
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
-      { name: 'short', ttl: 1000,  limit: 10  },
-      { name: 'long',  ttl: 60000, limit: 200 },
+      { name: 'short', ttl: 1000, limit: 10 },
+      { name: 'long', ttl: 60000, limit: 200 },
     ]),
     // Single ServeStatic for everything.
     // webapp/dist serves the website at /
@@ -68,8 +73,14 @@ export class AppModule implements NestModule {
         if (!ALIAS_DOMAINS.has(req.hostname)) return next();
         const domain = req.hostname;
         const modified = html
-          .replace('href="https://schemehappens.ru/"', `href="https://${domain}/"`)
-          .replace('content="https://schemehappens.ru/"', `content="https://${domain}/"`);
+          .replace(
+            'href="https://schemehappens.ru/"',
+            `href="https://${domain}/"`,
+          )
+          .replace(
+            'content="https://schemehappens.ru/"',
+            `content="https://${domain}/"`,
+          );
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         return res.send(modified);
       })

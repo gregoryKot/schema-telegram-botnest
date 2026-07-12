@@ -5,13 +5,29 @@ import { PrismaService } from '../prisma/prisma.service';
 // Tables where a userId column points to User.id (BigInt).
 // Discovered via grep on schema.prisma; if a new user-owned model is added,
 // register its table name here. Order matters for FK dependencies on delete.
-const USER_OWNED_TABLES = [
-  'Rating', 'YsqProgress', 'YsqResult', 'YsqResultHistory',
-  'Note', 'UserSchemaNote', 'UserModeNote', 'UserBeliefCheck', 'UserLetter',
-  'UserSafePlace', 'UserFlashcard', 'UserPractice', 'PracticePlan',
-  'ChildhoodRating', 'ScheduledNotification',
-  'SchemaDiaryEntry', 'ModeDiaryEntry', 'GratitudeDiaryEntry',
-  'AppActivity', 'UserTask', 'DiaryDraft', 'TherapistRequest',
+export const USER_OWNED_TABLES = [
+  'Rating',
+  'YsqProgress',
+  'YsqResult',
+  'YsqResultHistory',
+  'Note',
+  'UserSchemaNote',
+  'UserModeNote',
+  'UserBeliefCheck',
+  'UserLetter',
+  'UserSafePlace',
+  'UserFlashcard',
+  'UserPractice',
+  'PracticePlan',
+  'ChildhoodRating',
+  'ScheduledNotification',
+  'SchemaDiaryEntry',
+  'ModeDiaryEntry',
+  'GratitudeDiaryEntry',
+  'AppActivity',
+  'UserTask',
+  'DiaryDraft',
+  'TherapistRequest',
   'AuthProvider',
 ] as const;
 // Note: Pair / TherapyRelation / TherapistNote / ClientConceptualization
@@ -20,25 +36,28 @@ const USER_OWNED_TABLES = [
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become
 // valid for the new one). Source's rows are simply destroyed.
-const SECURITY_SENSITIVE_TABLES = ['WebSession'] as const;
+// EmailToken тоже здесь: verification-токены старого аккаунта не должны
+// подтверждать e-mail нового, а после DELETE User они стали бы сиротами
+// (у EmailToken нет FK) — найдено spec-сверкой реестров (аудит 2026-07, S-2).
+export const SECURITY_SENSITIVE_TABLES = ['WebSession', 'EmailToken'] as const;
 
 // Per-table allow-list of "other columns" in unique constraints that include
 // userId. When source and target both have a row with the same (userId, …key)
 // the source row is dropped first so the bulk UPDATE that follows can succeed
 // without violating the constraint.
 const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
-  { table: 'Rating',              cols: ['date', 'needId'] },
-  { table: 'Note',                cols: ['date'] },
+  { table: 'Rating', cols: ['date', 'needId'] },
+  { table: 'Note', cols: ['date'] },
   { table: 'GratitudeDiaryEntry', cols: ['date'] },
-  { table: 'AppActivity',         cols: ['date'] },
-  { table: 'YsqProgress',         cols: [] }, // userId is PK
-  { table: 'YsqResult',           cols: [] },
-  { table: 'UserSchemaNote',      cols: ['schemaId'] },
-  { table: 'UserModeNote',        cols: ['modeId'] },
-  { table: 'UserSafePlace',       cols: [] },
-  { table: 'ChildhoodRating',     cols: ['needId'] },
-  { table: 'DiaryDraft',          cols: ['type'] },
-  { table: 'TherapistRequest',    cols: [] }, // userId is @unique
+  { table: 'AppActivity', cols: ['date'] },
+  { table: 'YsqProgress', cols: [] }, // userId is PK
+  { table: 'YsqResult', cols: [] },
+  { table: 'UserSchemaNote', cols: ['schemaId'] },
+  { table: 'UserModeNote', cols: ['modeId'] },
+  { table: 'UserSafePlace', cols: [] },
+  { table: 'ChildhoodRating', cols: ['needId'] },
+  { table: 'DiaryDraft', cols: ['type'] },
+  { table: 'TherapistRequest', cols: [] }, // userId is @unique
 ];
 
 // Whitelist of identifiers we'll embed directly in SQL. Anything outside this
@@ -47,15 +66,31 @@ const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
 const KNOWN_TABLES = new Set<string>([
   ...USER_OWNED_TABLES,
   ...SECURITY_SENSITIVE_TABLES,
-  'Pair', 'TherapyRelation', 'TherapistNote', 'ClientConceptualization', 'User',
+  'Pair',
+  'TherapyRelation',
+  'TherapistNote',
+  'ClientConceptualization',
+  'ModeMap',
+  'TherapistCustomMode',
+  'User',
 ]);
 const KNOWN_COLS = new Set<string>([
-  'userId', 'userId1', 'userId2', 'therapistId', 'clientId', 'id',
-  'date', 'needId', 'schemaId', 'modeId', 'type',
+  'userId',
+  'userId1',
+  'userId2',
+  'therapistId',
+  'clientId',
+  'id',
+  'date',
+  'needId',
+  'schemaId',
+  'modeId',
+  'type',
 ]);
 function ident(name: string, kind: 'table' | 'col'): string {
   const ok = (kind === 'table' ? KNOWN_TABLES : KNOWN_COLS).has(name);
-  if (!ok) throw new Error(`Refusing to interpolate unknown SQL identifier: ${name}`);
+  if (!ok)
+    throw new Error(`Refusing to interpolate unknown SQL identifier: ${name}`);
   return `"${name}"`;
 }
 
@@ -85,7 +120,9 @@ export class MergeService {
     // If we couldn't count some tables, surface this — otherwise the merge
     // UI claims "you'll move 5 rows" when actually 5000 are moving.
     if (failed.length > 0) {
-      this.logger.error(`summarize partial — failed tables: ${failed.join(', ')}`);
+      this.logger.error(
+        `summarize partial — failed tables: ${failed.join(', ')}`,
+      );
     }
     return counts;
   }
@@ -119,7 +156,7 @@ export class MergeService {
           // Unique on (userId, col1, col2, …) — drop source rows where target
           // already has the same key tuple.
           const colCond = Prisma.join(
-            rule.cols.map(c => {
+            rule.cols.map((c) => {
               const col = Prisma.raw(ident(c, 'col'));
               return Prisma.sql`src.${col} = tgt.${col}`;
             }),
@@ -234,6 +271,28 @@ export class MergeService {
         DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
       `);
 
+      // 4d. ModeMap (therapistId / clientId, без unique) — до аудита 2026-07
+      // карты режимов при merge не переносились вовсе и терялись для
+      // терапевта. Паттерн как у TherapistNote; clientId может быть
+      // отрицательным (виртуальный клиент) — обычный remap это покрывает.
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "ModeMap" SET "therapistId" = ${targetId}
+        WHERE "therapistId" = ${sourceId} AND "clientId" <> ${targetId}
+      `);
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "ModeMap" SET "clientId" = ${targetId}
+        WHERE "clientId" = ${sourceId} AND "therapistId" <> ${targetId}
+      `);
+      await tx.$executeRaw(Prisma.sql`
+        DELETE FROM "ModeMap" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
+      `);
+
+      // 4e. TherapistCustomMode (только therapistId, без unique) — просто remap.
+      await tx.$executeRaw(Prisma.sql`
+        UPDATE "TherapistCustomMode" SET "therapistId" = ${targetId}
+        WHERE "therapistId" = ${sourceId}
+      `);
+
       // Step D: clean up orphaned virtual-client conceptualizations.
       // Virtual clients are identified by negative clientId (-TherapyRelation.id).
       // If the corresponding TherapyRelation was deleted (e.g. by a previous buggy
@@ -256,7 +315,9 @@ export class MergeService {
       //    Must happen before DELETE so we can still read source fields.
       //    recoveryEmail is @unique — clear from source first, then set on target
       //    (otherwise Postgres unique constraint fires within the transaction).
-      const srcEmailRows = await tx.$queryRaw<Array<{ re: string | null; rev: Date | null }>>(Prisma.sql`
+      const srcEmailRows = await tx.$queryRaw<
+        Array<{ re: string | null; rev: Date | null }>
+      >(Prisma.sql`
         SELECT "recoveryEmail" AS re, "recoveryEmailVerifiedAt" AS rev
         FROM "User" WHERE id = ${sourceId}
       `);
@@ -290,7 +351,9 @@ export class MergeService {
       `);
 
       // 6. Finally, delete the now-empty source User.
-      await tx.$executeRaw(Prisma.sql`DELETE FROM "User" WHERE id = ${sourceId}`);
+      await tx.$executeRaw(
+        Prisma.sql`DELETE FROM "User" WHERE id = ${sourceId}`,
+      );
     });
     const ms = Date.now() - startedAt;
     this.logger.log(`Merged user ${sourceId} → ${targetId} (${ms}ms)`);

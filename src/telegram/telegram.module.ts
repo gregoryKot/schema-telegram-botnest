@@ -11,7 +11,14 @@ import { TherapyModule } from '../therapy/therapy.module';
 
 @Module({
   imports: [BotModule, NotificationModule, TherapyModule],
-  providers: [TelegramService, TelegramScheduleService, TelegramSettingsService, TelegramNotifyActionsService, TelegramNotifySettingsService, ...TELEGRAM_PROVIDERS],
+  providers: [
+    TelegramService,
+    TelegramScheduleService,
+    TelegramSettingsService,
+    TelegramNotifyActionsService,
+    TelegramNotifySettingsService,
+    ...TELEGRAM_PROVIDERS,
+  ],
   exports: [TelegramService, TelegramScheduleService],
 })
 export class TelegramModule {}
