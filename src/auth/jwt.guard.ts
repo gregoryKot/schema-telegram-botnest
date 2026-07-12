@@ -47,9 +47,13 @@ export class OptionalJwtGuard implements CanActivate {
         /* ignore — treat as anonymous */
       }
     }
-    // Also support ?link_token= query param for OAuth redirects where
-    // we can't set Authorization header (browser top-level navigation).
-    const linkToken = req.query?.link_token as string | undefined;
+    // Link-token для OAuth-редиректов (top-level навигация — Authorization
+    // header поставить нельзя). Основной канал — httpOnly-cookie `link_token`
+    // (ставится эндпоинтом /link-token); query-параметр оставлен как legacy
+    // fallback для закэшированных клиентов и будет удалён (аудит 2026-07,
+    // S-4: токены в URL утекают в логи прокси и историю браузера).
+    const linkToken = (req.cookies?.['link_token'] ??
+      req.query?.link_token) as string | undefined;
     if (!req.webUser && linkToken) {
       try {
         const { userId } = this.auth.verifyLinkToken(linkToken);
