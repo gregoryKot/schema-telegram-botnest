@@ -21,7 +21,7 @@ import { randomBytes, timingSafeEqual } from 'crypto';
 //   4. Run `npx prisma generate` after schema changes
 //
 // TypeScript: if a name doesn't exist on PrismaService you get a compile error.
-const USER_DATA_TABLES = [
+export const USER_DATA_TABLES = [
   'rating',
   'note',
   'userSchemaNote',

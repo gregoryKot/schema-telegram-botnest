@@ -37,6 +37,10 @@ RUN mkdir -p webapp/dist/game && cp -r game/dist/* webapp/dist/game/
 # ── Prune dev deps (backend only) ──────────────────────────────────────────
 RUN npm prune --production
 
+# Зависший процесс/потерянная БД видны оркестратору (см. /health).
+HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "fetch('http://localhost:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
 # exec — node замещает sh как PID 1, иначе SIGTERM от оркестратора не доходит
 # до node и graceful shutdown (bot.stop, prisma disconnect) никогда не срабатывает.
 CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/main"]
