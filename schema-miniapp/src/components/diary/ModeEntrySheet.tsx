@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { BottomSheet } from '../BottomSheet';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
+import { detectCrisisAny } from '../../utils/crisisMarkers';
+import { CrisisCard } from '../CrisisCard';
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 
@@ -164,6 +166,8 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
 
         <StepLabel step={8} title="Детские воспоминания" hint="связанные с ситуацией" />
         <Area value={childhoodMemories} onChange={setChildhoodMemories} placeholder="Напоминает что-то из детства? Похожее чувство, похожая ситуация?" rows={3} />
+
+        {detectCrisisAny(situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories) && <CrisisCard />}
 
         {!canSave && (
           <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-sub)', marginTop: 16, paddingBottom: 8 }}>

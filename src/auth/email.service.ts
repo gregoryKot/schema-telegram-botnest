@@ -1,4 +1,11 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -42,7 +49,9 @@ export class EmailService {
     });
     // Pretend success even if no user / unverified — don't leak existence.
     if (!user || !user.recoveryEmailVerifiedAt) {
-      this.logger.warn(`Recovery requested for ${lower}: ${user ? 'unverified' : 'no match'} (silent)`);
+      this.logger.warn(
+        `Recovery requested for ${lower}: ${user ? 'unverified' : 'no match'} (silent)`,
+      );
       return { ok: true };
     }
 
@@ -59,14 +68,20 @@ export class EmailService {
     });
 
     const link = `${this.config.getOrThrow<string>('WEBAPP_URL')}/auth/recovery/confirm?token=${raw}`;
-    await this.send(lower, 'Восстановление доступа к «Всё по схеме»',
+    await this.send(
+      lower,
+      'Восстановление доступа к «Всё по схеме»',
       `Перейди по ссылке чтобы войти в свой аккаунт и привязать новый способ входа.\n\n${link}\n\n` +
-      `Ссылка действует 30 минут. Если ты не запрашивал восстановление — проигнорируй это письмо.`);
+        `Ссылка действует 30 минут. Если ты не запрашивал восстановление — проигнорируй это письмо.`,
+    );
     return { ok: true };
   }
 
   // Begin email verification — user types address, we send a link.
-  async sendVerificationLink(userId: bigint, email: string): Promise<{ ok: true }> {
+  async sendVerificationLink(
+    userId: bigint,
+    email: string,
+  ): Promise<{ ok: true }> {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
     const lower = email.toLowerCase().trim();
 
@@ -74,7 +89,8 @@ export class EmailService {
       where: { recoveryEmail: lower, NOT: { id: userId } },
       select: { id: true },
     });
-    if (taken) throw new ConflictException('Этот email уже привязан к другому аккаунту');
+    if (taken)
+      throw new ConflictException('Этот email уже привязан к другому аккаунту');
 
     const raw = crypto.randomBytes(32).toString('base64url');
     await (this.prisma as any).emailToken.create({
@@ -89,16 +105,23 @@ export class EmailService {
     });
 
     const link = `${this.config.getOrThrow<string>('WEBAPP_URL')}/account/verify-email?token=${raw}`;
-    await this.send(lower, 'Подтверди email для «Всё по схеме»',
+    await this.send(
+      lower,
+      'Подтверди email для «Всё по схеме»',
       `Подтверди что это твой адрес — он будет использован для восстановления доступа если ты потеряешь все способы входа.\n\n${link}\n\n` +
-      `Ссылка действует 30 минут.`);
+        `Ссылка действует 30 минут.`,
+    );
     return { ok: true };
   }
 
   // ─── Consume a magic link ─────────────────────────────────────────────────
 
-  async consumeToken(rawToken: string, expectedPurpose: 'recovery' | 'verify_email'): Promise<{
-    userId: bigint; email: string;
+  async consumeToken(
+    rawToken: string,
+    expectedPurpose: 'recovery' | 'verify_email',
+  ): Promise<{
+    userId: bigint;
+    email: string;
   }> {
     if (!rawToken) throw new BadRequestException('Missing token');
     const row = await (this.prisma as any).emailToken.findUnique({
@@ -106,9 +129,12 @@ export class EmailService {
     });
     if (!row) throw new UnauthorizedException('Token not found');
     if (row.usedAt) throw new UnauthorizedException('Token already used');
-    if (row.expiresAt < new Date()) throw new UnauthorizedException('Token expired');
-    if (row.purpose !== expectedPurpose) throw new UnauthorizedException('Token purpose mismatch');
-    if (!row.userId) throw new UnauthorizedException('Token has no user binding');
+    if (row.expiresAt < new Date())
+      throw new UnauthorizedException('Token expired');
+    if (row.purpose !== expectedPurpose)
+      throw new UnauthorizedException('Token purpose mismatch');
+    if (!row.userId)
+      throw new UnauthorizedException('Token has no user binding');
 
     await (this.prisma as any).emailToken.update({
       where: { id: row.id },
@@ -142,7 +168,9 @@ export class EmailService {
     const to = process.env.ADMIN_EMAIL;
     if (!to) return; // not configured — skip silently
     await this.send(to, subject, text).catch((err) => {
-      this.logger.error(`sendAdminNotification failed: ${(err as Error).message}`);
+      this.logger.error(
+        `sendAdminNotification failed: ${(err as Error).message}`,
+      );
     });
   }
 
@@ -150,11 +178,14 @@ export class EmailService {
 
   private async send(to: string, subject: string, text: string): Promise<void> {
     const apiKey = process.env.RESEND_API_KEY;
-    const from   = process.env.EMAIL_FROM ?? 'Schema Happens <no-reply@schemehappens.ru>';
+    const from =
+      process.env.EMAIL_FROM ?? 'Schema Happens <no-reply@schemehappens.ru>';
 
     if (!apiKey) {
       // Dev / not-configured — log instead of failing silently.
-      this.logger.warn(`[DEV: no RESEND_API_KEY] would send to ${to}:\n  Subject: ${subject}\n  Body: ${text}`);
+      this.logger.warn(
+        `[DEV: no RESEND_API_KEY] would send to ${to}:\n  Subject: ${subject}\n  Body: ${text}`,
+      );
       return;
     }
 
@@ -170,7 +201,9 @@ export class EmailService {
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
-        this.logger.error(`Resend send failed ${res.status}: ${body.slice(0, 200)}`);
+        this.logger.error(
+          `Resend send failed ${res.status}: ${body.slice(0, 200)}`,
+        );
         throw new Error('Email delivery failed');
       }
     } catch (e) {

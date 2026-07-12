@@ -93,12 +93,16 @@ describe('notification.time', () => {
 
   describe('tzOffsetAt / localDateString', () => {
     it('Moscow offset is +3', () => {
-      expect(tzOffsetAt('Europe/Moscow', new Date('2026-07-02T12:00:00Z'))).toBe(3);
+      expect(
+        tzOffsetAt('Europe/Moscow', new Date('2026-07-02T12:00:00Z')),
+      ).toBe(3);
     });
 
     it('localDateString shifts across midnight', () => {
       // 22:00 UTC 2 июля = 01:00 3 июля в Москве
-      expect(localDateString('Europe/Moscow', new Date('2026-07-02T22:00:00Z'))).toBe('2026-07-03');
+      expect(
+        localDateString('Europe/Moscow', new Date('2026-07-02T22:00:00Z')),
+      ).toBe('2026-07-03');
     });
   });
 });

@@ -46,23 +46,23 @@ export function AccountPage() {
   const [emailLinkSent, setEmailLinkSent] = useState(false);
   const [emailLinkBusy, setEmailLinkBusy] = useState(false);
 
-  const fetchLinkToken = async (): Promise<string> => {
-    const res = await fetch(`${API_BASE}/api/auth/link-token`, {
+  // Запрос ставит httpOnly-cookie `link_token` (60 c) — токен больше не
+  // передаётся в URL (не попадает в логи/историю браузера).
+  const fetchLinkToken = async (): Promise<void> => {
+    await fetch(`${API_BASE}/api/auth/link-token`, {
       credentials: 'include',
       headers: { Authorization: `Bearer ${accessToken ?? ''}` },
     });
-    const { linkToken } = await res.json() as { linkToken: string };
-    return linkToken;
   };
   const linkGoogle = async () => {
     sessionStorage.setItem('auth_return_to', '/account');
-    const token = await fetchLinkToken();
-    window.location.href = `${API_BASE}/api/auth/google?link_token=${encodeURIComponent(token)}`;
+    await fetchLinkToken();
+    window.location.href = `${API_BASE}/api/auth/google`;
   };
   const linkVk = async () => {
     sessionStorage.setItem('auth_return_to', '/account');
-    const token = await fetchLinkToken();
-    window.location.href = `${API_BASE}/api/auth/vk?link_token=${encodeURIComponent(token)}`;
+    await fetchLinkToken();
+    window.location.href = `${API_BASE}/api/auth/vk`;
   };
   const linkTelegram = () => {
     sessionStorage.setItem('auth_return_to', '/account');

@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  HttpCode,
+  HttpStatus,
+  BadRequestException,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { SubscriptionService } from './subscription.service';
 
@@ -18,7 +27,10 @@ export class SubscriptionController {
   /** GET /api/subscription/options — whether enabled + periods and current prices. */
   @Get('options')
   async options() {
-    return { enabled: this.subs.isEnabled(), options: await this.subs.getOptions() };
+    return {
+      enabled: this.subs.isEnabled(),
+      options: await this.subs.getOptions(),
+    };
   }
 
   /** POST /api/subscription — start a subscription, returns a payment URL. */
@@ -27,7 +39,11 @@ export class SubscriptionController {
   @Throttle({ long: { limit: 6, ttl: 3_600_000 } })
   async subscribe(@Body() dto: SubscribeDto) {
     if (dto.website) throw new BadRequestException('rejected'); // honeypot
-    return this.subs.subscribe({ period: dto.period === 'year' ? 'year' : 'month', email: dto.email?.trim() || undefined, acceptedOffer: dto.acceptedOffer });
+    return this.subs.subscribe({
+      period: dto.period === 'year' ? 'year' : 'month',
+      email: dto.email?.trim() || undefined,
+      acceptedOffer: dto.acceptedOffer,
+    });
   }
 
   /** GET /api/subscription/by-token/:token — public status (no PII). */

@@ -45,21 +45,29 @@ export class MeetingService {
   }
 
   private get zoomEnabled(): boolean {
-    return Boolean(this.zoomAccountId && this.zoomClientId && this.zoomClientSecret);
+    return Boolean(
+      this.zoomAccountId && this.zoomClientId && this.zoomClientSecret,
+    );
   }
 
   /** Public, secret-free view for the admin diagnostics panel. */
   get status() {
     return {
       zoom: this.zoomEnabled,
-      zoomVars: { accountId: !!this.zoomAccountId, clientId: !!this.zoomClientId, clientSecret: !!this.zoomClientSecret },
+      zoomVars: {
+        accountId: !!this.zoomAccountId,
+        clientId: !!this.zoomClientId,
+        clientSecret: !!this.zoomClientSecret,
+      },
       staticUrl: !!this.staticUrl,
     };
   }
 
   /** True if this contact already has a personal meeting (i.e. a returning client). */
   async hasMeetingForContact(contact: string): Promise<boolean> {
-    const found = await this.prisma.clientMeeting.findUnique({ where: { clientKey: clientKey(contact) } });
+    const found = await this.prisma.clientMeeting.findUnique({
+      where: { clientKey: clientKey(contact) },
+    });
     return found !== null;
   }
 
@@ -68,43 +76,71 @@ export class MeetingService {
     if (this.staticUrl) return this.staticUrl;
 
     const key = clientKey(b.clientContact);
-    const existing = await this.prisma.clientMeeting.findUnique({ where: { clientKey: key } });
+    const existing = await this.prisma.clientMeeting.findUnique({
+      where: { clientKey: key },
+    });
     if (existing) {
       // Upgrade a previously-issued Jitsi room to Zoom once Zoom is configured,
       // so links created during testing/before Zoom setup don't stay on Jitsi.
-      if (this.zoomEnabled && !existing.zoomMeetingId && existing.meetingUrl.includes('meet.jit.si')) {
-        const z = await this.createZoom(b).catch((e) => { this.logger.error(`Zoom upgrade failed: ${(e as Error).message}`); return null; });
+      if (
+        this.zoomEnabled &&
+        !existing.zoomMeetingId &&
+        existing.meetingUrl.includes('meet.jit.si')
+      ) {
+        const z = await this.createZoom(b).catch((e) => {
+          this.logger.error(`Zoom upgrade failed: ${(e as Error).message}`);
+          return null;
+        });
         if (z) {
-          await this.prisma.clientMeeting.update({ where: { clientKey: key }, data: { meetingUrl: z.url, zoomMeetingId: z.id } });
+          await this.prisma.clientMeeting.update({
+            where: { clientKey: key },
+            data: { meetingUrl: z.url, zoomMeetingId: z.id },
+          });
           this.logger.log(`Upgraded client ${key.slice(0, 8)}… Jitsi → Zoom`);
           return z.url;
         }
       }
-      this.logger.log(`Reusing personal meeting for client ${key.slice(0, 8)}…`);
+      this.logger.log(
+        `Reusing personal meeting for client ${key.slice(0, 8)}…`,
+      );
       return existing.meetingUrl;
     }
 
-    if (!this.zoomEnabled) this.logger.warn('Zoom not configured (ZOOM_* env) — using Jitsi for new client');
-    const zoom = this.zoomEnabled ? await this.createZoom(b).catch((e) => {
-      this.logger.error(`Zoom create failed, falling back to Jitsi: ${(e as Error).message}`);
-      return null;
-    }) : null;
+    if (!this.zoomEnabled)
+      this.logger.warn(
+        'Zoom not configured (ZOOM_* env) — using Jitsi for new client',
+      );
+    const zoom = this.zoomEnabled
+      ? await this.createZoom(b).catch((e) => {
+          this.logger.error(
+            `Zoom create failed, falling back to Jitsi: ${(e as Error).message}`,
+          );
+          return null;
+        })
+      : null;
 
     const meetingUrl = zoom?.url ?? jitsiRoom(key);
     await this.prisma.clientMeeting.create({
       data: { clientKey: key, meetingUrl, zoomMeetingId: zoom?.id ?? null },
     });
-    this.logger.log(`Created personal meeting for client ${key.slice(0, 8)}… (${zoom ? 'zoom' : 'jitsi'})`);
+    this.logger.log(
+      `Created personal meeting for client ${key.slice(0, 8)}… (${zoom ? 'zoom' : 'jitsi'})`,
+    );
     return meetingUrl;
   }
 
   /** Create a per-client recurring Zoom meeting (no fixed time → one stable link). */
-  private async createZoom(b: MeetingTarget): Promise<{ url: string; id: string } | null> {
+  private async createZoom(
+    b: MeetingTarget,
+  ): Promise<{ url: string; id: string } | null> {
     const token = await this.zoomToken();
     if (!token) return null;
     const res = await fetch('https://api.zoom.us/v2/users/me/meetings', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
         topic: `Сессии — ${b.clientName}`,
         type: 3, // recurring meeting with no fixed time → permanent join_url
@@ -115,7 +151,9 @@ export class MeetingService {
     });
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      this.logger.error(`Zoom create meeting ${res.status}: ${body.slice(0, 300)}`);
+      this.logger.error(
+        `Zoom create meeting ${res.status}: ${body.slice(0, 300)}`,
+      );
       return null;
     }
     const data = (await res.json()) as { join_url?: string; id?: number };
@@ -124,10 +162,16 @@ export class MeetingService {
   }
 
   private async zoomToken(): Promise<string | null> {
-    const basic = Buffer.from(`${this.zoomClientId}:${this.zoomClientSecret}`).toString('base64');
+    const basic = Buffer.from(
+      `${this.zoomClientId}:${this.zoomClientSecret}`,
+    ).toString('base64');
     const res = await fetch(
       `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${this.zoomAccountId}`,
-      { method: 'POST', headers: { Authorization: `Basic ${basic}` }, signal: AbortSignal.timeout(10_000) },
+      {
+        method: 'POST',
+        headers: { Authorization: `Basic ${basic}` },
+        signal: AbortSignal.timeout(10_000),
+      },
     );
     if (!res.ok) {
       const body = await res.text().catch(() => '');
@@ -143,7 +187,11 @@ export class MeetingService {
 
 /** Normalise a contact (telegram/phone) so the same person maps to one key. */
 function clientKey(contact: string): string {
-  const norm = contact.trim().toLowerCase().replace(/^@/, '').replace(/[\s()+-]/g, '');
+  const norm = contact
+    .trim()
+    .toLowerCase()
+    .replace(/^@/, '')
+    .replace(/[\s()+-]/g, '');
   return createHash('sha256').update(norm).digest('hex');
 }
 

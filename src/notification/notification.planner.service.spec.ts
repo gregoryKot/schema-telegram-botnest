@@ -1,4 +1,7 @@
-import { NotificationPlannerService, PlannerUser } from './notification.planner.service';
+import {
+  NotificationPlannerService,
+  PlannerUser,
+} from './notification.planner.service';
 
 // 2026-07-02 — четверг; 2026-07-05 — воскресенье
 const NOW = new Date('2026-07-02T00:05:00Z');
@@ -55,7 +58,12 @@ function makeDeps() {
 function make(deps = makeDeps()) {
   return {
     deps,
-    svc: new NotificationPlannerService(deps.notifications, deps.cadence, deps.botService, deps.analytics),
+    svc: new NotificationPlannerService(
+      deps.notifications,
+      deps.cadence,
+      deps.botService,
+      deps.analytics,
+    ),
   };
 }
 
@@ -111,14 +119,17 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       [3, 'lapsing_3'],
       [7, 'dormant_7'],
       [30, 'reengagement_30'],
-      [75, 'nudge'],   // 30 + 45
-      [120, 'nudge'],  // 30 + 90
+      [75, 'nudge'], // 30 + 45
+      [120, 'nudge'], // 30 + 90
     ])('день %i → %s (и отмена reminder)', async (days, type) => {
       const { svc, deps } = make();
       deps.analytics.getDaysSinceLastFill.mockResolvedValue(days);
       await svc.planDay(makeUser(), NOW);
       expect(scheduledTypes(deps)).toEqual([type]);
-      expect(deps.notifications.cancel).toHaveBeenCalledWith(BigInt(42), 'reminder');
+      expect(deps.notifications.cancel).toHaveBeenCalledWith(
+        BigInt(42),
+        'reminder',
+      );
     });
 
     it('день 2 больше НЕ триггерит ничего (lapsing_2 удалён) — идёт обычный reminder', async () => {
@@ -165,7 +176,10 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       ]);
       await svc.planDay(makeUser(), SUNDAY);
       expect(scheduledTypes(deps)).toEqual(['weekly']);
-      expect(deps.notifications.cancel).toHaveBeenCalledWith(BigInt(42), 'reminder');
+      expect(deps.notifications.cancel).toHaveBeenCalledWith(
+        BigInt(42),
+        'reminder',
+      );
     });
 
     it('воскресенье + спит ≥7 дней → weekly не шлём', async () => {
@@ -188,7 +202,9 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
     it('вчерашний невыполненный план → practice_missed', async () => {
       const { svc, deps } = make();
       deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
-      deps.botService.getMissedPlans.mockResolvedValue([{ practiceText: 'Позвонить другу' }]);
+      deps.botService.getMissedPlans.mockResolvedValue([
+        { practiceText: 'Позвонить другу' },
+      ]);
       await svc.planDay(makeUser(), NOW);
       expect(scheduledTypes(deps)).toEqual(['practice_missed']);
     });
@@ -205,7 +221,9 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
 
     it('в день напоминания practice_missed уступает reminder (бюджет)', async () => {
       const { svc, deps } = make();
-      deps.botService.getMissedPlans.mockResolvedValue([{ practiceText: 'Позвонить другу' }]);
+      deps.botService.getMissedPlans.mockResolvedValue([
+        { practiceText: 'Позвонить другу' },
+      ]);
       await svc.planDay(makeUser(), NOW);
       expect(scheduledTypes(deps)).toEqual(['reminder']);
     });
@@ -217,12 +235,20 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
       deps.analytics.getDaysSinceLastFill.mockResolvedValue(14);
       deps.analytics.getProfileInsight.mockResolvedValue({
-        totalDays: 20, strongest: 'attachment', strongestAvg: 7.2, weakest: 'autonomy', weakestAvg: 4.1,
+        totalDays: 20,
+        strongest: 'attachment',
+        strongestAvg: 7.2,
+        weakest: 'autonomy',
+        weakestAvg: 4.1,
       });
       await svc.planDay(makeUser(), NOW);
       expect(scheduledTypes(deps)).toEqual(['value_recap']);
       const payload = deps.notifications.schedule.mock.calls[0][3];
-      expect(payload).toMatchObject({ totalDays: 20, strongest: 'Привязанность', weakest: 'Автономия' });
+      expect(payload).toMatchObject({
+        totalDays: 20,
+        strongest: 'Привязанность',
+        weakest: 'Автономия',
+      });
     });
 
     it('день 14 без портрета → тишина (не шлём value_recap)', async () => {

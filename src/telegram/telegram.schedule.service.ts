@@ -1,14 +1,31 @@
-import { Injectable, Logger, Inject, Optional, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Inject,
+  Optional,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
-import { NotificationService, QUIET_EXEMPT_TYPES } from '../notification/notification.service';
+import {
+  NotificationService,
+  QUIET_EXEMPT_TYPES,
+} from '../notification/notification.service';
 import { NotificationCadenceService } from '../notification/notification.cadence.service';
 import { NotificationPlannerService } from '../notification/notification.planner.service';
-import { renderTemplate, buildSummaryText } from '../notification/notification.templates';
-import { isQuietHours, localDateString, nextQuietEnd, utcInstantForLocalHour } from '../notification/notification.time';
+import {
+  renderTemplate,
+  buildSummaryText,
+} from '../notification/notification.templates';
+import {
+  isQuietHours,
+  localDateString,
+  nextQuietEnd,
+  utcInstantForLocalHour,
+} from '../notification/notification.time';
 import { normalizeAddressForm } from '../notification/address-form';
 
 @Injectable()
@@ -16,7 +33,9 @@ export class TelegramScheduleService implements OnModuleInit {
   private readonly logger = new Logger(TelegramScheduleService.name);
 
   constructor(
-    @Inject(TELEGRAF_BOT) @Optional() private readonly bot: Telegraf<Context> | null,
+    @Inject(TELEGRAF_BOT)
+    @Optional()
+    private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
     private readonly notificationService: NotificationService,
@@ -34,7 +53,9 @@ export class TelegramScheduleService implements OnModuleInit {
     // planDay is idempotent per local day (cadence notifyLastEvalDate + hasPending guards).
     setTimeout(() => {
       this.scheduleDailyReminders().catch((e) =>
-        this.logger.warn(`Startup planner catch-up failed (non-critical, retries at midnight): ${(e as Error).message}`),
+        this.logger.warn(
+          `Startup planner catch-up failed (non-critical, retries at midnight): ${(e as Error).message}`,
+        ),
       );
     }, 30_000);
   }
@@ -48,12 +69,21 @@ export class TelegramScheduleService implements OnModuleInit {
     }
     // На паузе ничего не планируем — юзер попросил тишины
     if (s.notifyPausedUntil && s.notifyPausedUntil > new Date()) return;
-    const hadPending = await this.notificationService.hasPending(userId, 'reminder');
+    const hadPending = await this.notificationService.hasPending(
+      userId,
+      'reminder',
+    );
     // due покрывает включение уведомлений после перерыва: nextRemindDate устарел или пуст
     const today = localDateString(s.notifyTimezone, new Date());
     const due = !s.notifyNextRemindDate || today >= s.notifyNextRemindDate;
     if (hadPending || due) {
-      await this.plannerService.scheduleReminder(userId, s.notifyLocalHour, s.notifyTimezone, new Date(), !!s.notifyGamified);
+      await this.plannerService.scheduleReminder(
+        userId,
+        s.notifyLocalHour,
+        s.notifyTimezone,
+        new Date(),
+        !!s.notifyGamified,
+      );
     }
   }
 
@@ -79,9 +109,14 @@ export class TelegramScheduleService implements OnModuleInit {
       // the next tick once the DB comes back.  Log as warn so AlertLogger
       // doesn't send a DM.
       const msg = String(err?.message ?? err);
-      const isConnError = /server has closed the connection|connection.*refused|ECONNREFUSED|connect ETIMEDOUT|P1001|P1017/i.test(msg);
+      const isConnError =
+        /server has closed the connection|connection.*refused|ECONNREFUSED|connect ETIMEDOUT|P1001|P1017/i.test(
+          msg,
+        );
       if (isConnError) {
-        this.logger.warn(`processQueue DB connection error (will retry): ${msg.slice(0, 120)}`);
+        this.logger.warn(
+          `processQueue DB connection error (will retry): ${msg.slice(0, 120)}`,
+        );
       } else {
         this.logger.error(`processQueue failed: ${msg}`, err?.stack);
       }
@@ -107,27 +142,41 @@ export class TelegramScheduleService implements OnModuleInit {
         // даунтайма — уведомление за 21:00 не улетит в 3 ночи.
         if (!QUIET_EXEMPT_TYPES.includes(notif.type as any)) {
           if (s && isQuietHours(s.tz, s.start, s.end)) {
-            await this.notificationService.defer(notif.id, nextQuietEnd(s.tz, s.end));
+            await this.notificationService.defer(
+              notif.id,
+              nextQuietEnd(s.tz, s.end),
+            );
             continue;
           }
         }
         const payload = notif.payload as Record<string, unknown> | null;
         let template: ReturnType<typeof renderTemplate>;
         try {
-          template = renderTemplate(notif.type as any, payload ?? undefined, normalizeAddressForm(s?.form));
+          template = renderTemplate(
+            notif.type as any,
+            payload ?? undefined,
+            normalizeAddressForm(s?.form),
+          );
         } catch (renderErr) {
-          this.logger.error(`renderTemplate threw for type=${notif.type} id=${notif.id} — skipping`, renderErr);
+          this.logger.error(
+            `renderTemplate threw for type=${notif.type} id=${notif.id} — skipping`,
+            renderErr,
+          );
           await this.notificationService.markSent(notif.id);
           continue;
         }
         if (!template) {
-          this.logger.warn(`No template for type=${notif.type} id=${notif.id} — skipping`);
+          this.logger.warn(
+            `No template for type=${notif.type} id=${notif.id} — skipping`,
+          );
           await this.notificationService.markSent(notif.id);
           continue;
         }
         const silent = notif.type === 'summary';
         const opts = {
-          ...(template.keyboard ? { reply_markup: template.keyboard.reply_markup } : {}),
+          ...(template.keyboard
+            ? { reply_markup: template.keyboard.reply_markup }
+            : {}),
           ...(silent ? { disable_notification: true } : {}),
         };
         await Promise.race([
@@ -145,15 +194,21 @@ export class TelegramScheduleService implements OnModuleInit {
         // Other 400s (markdown parse error, message too long, etc) are bugs
         // on OUR side — don't mark legitimate users as blocked for those.
         const isPermanent =
-          code === 403
-          || (code === 400 && /chat not found|user is deactivated|bot was blocked/i.test(desc));
+          code === 403 ||
+          (code === 400 &&
+            /chat not found|user is deactivated|bot was blocked/i.test(desc));
         if (isPermanent) {
-          this.logger.warn(`Skipping notification id=${notif.id} userId=${notif.userId} (${code}: ${desc})`);
+          this.logger.warn(
+            `Skipping notification id=${notif.id} userId=${notif.userId} (${code}: ${desc})`,
+          );
           await this.notificationService.markSent(notif.id);
           await this.botService.markUserBlocked(BigInt(notif.userId));
         } else {
           // Transient — log + don't markSent so we retry next tick.
-          this.logger.error(`Failed to send notification id=${notif.id} userId=${notif.userId} (${code}: ${desc})`, err);
+          this.logger.error(
+            `Failed to send notification id=${notif.id} userId=${notif.userId} (${code}: ${desc})`,
+            err,
+          );
         }
       }
     }
@@ -189,7 +244,12 @@ export class TelegramScheduleService implements OnModuleInit {
     const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
     const notifyLocalHour = settings?.notifyLocalHour ?? 21;
     const ratings = await this.botService.getRatings(userId);
-    const text = buildSummaryText(this.botService.getNeeds(), ratings, tz, normalizeAddressForm(settings?.addressForm));
+    const text = buildSummaryText(
+      this.botService.getNeeds(),
+      ratings,
+      tz,
+      normalizeAddressForm(settings?.addressForm),
+    );
 
     await this.notificationService.cancel(userId, 'summary');
     // Schedule summary after milestones: if notify hour passed, add 5 min so milestones (sent now)
@@ -197,8 +257,11 @@ export class TelegramScheduleService implements OnModuleInit {
     const now = new Date();
     const todayStr = localDateString(tz, now);
     const todaySendAt = utcInstantForLocalHour(todayStr, notifyLocalHour, tz);
-    const sendAt = todaySendAt > now ? todaySendAt : new Date(now.getTime() + 5 * 60_000);
-    await this.notificationService.schedule(userId, 'summary', sendAt, { text });
+    const sendAt =
+      todaySendAt > now ? todaySendAt : new Date(now.getTime() + 5 * 60_000);
+    await this.notificationService.schedule(userId, 'summary', sendAt, {
+      text,
+    });
 
     const total = await this.analyticsService.getTotalDaysFilled(userId);
 
@@ -206,36 +269,71 @@ export class TelegramScheduleService implements OnModuleInit {
     // одно празднование в день, без упоминания длины перерыва и сгоревших серий.
     const gap = await this.analyticsService.getGapBeforeLatestFill(userId);
     if (gap !== null && gap >= 3) {
-      const last = await this.notificationService.lastSentAt(userId, 'comeback');
+      const last = await this.notificationService.lastSentAt(
+        userId,
+        'comeback',
+      );
       const sentToday = last !== null && localDateString(tz, last) === todayStr;
-      if (!sentToday && !await this.notificationService.hasPending(userId, 'comeback')) {
+      if (
+        !sentToday &&
+        !(await this.notificationService.hasPending(userId, 'comeback'))
+      ) {
         // Value-based возврат: добавляем зеркало собственных данных (сильнейшая потребность).
         const insight = await this.analyticsService.getProfileInsight(userId);
         const strongestNeed = insight
-          ? this.botService.getNeeds().find((n) => n.id === insight.strongest)?.chartLabel
+          ? this.botService.getNeeds().find((n) => n.id === insight.strongest)
+              ?.chartLabel
           : undefined;
-        await this.notificationService.schedule(userId, 'comeback', new Date(), {
-          totalDays: total, strongestNeed, strongestAvg: insight?.strongestAvg,
-        });
+        await this.notificationService.schedule(
+          userId,
+          'comeback',
+          new Date(),
+          {
+            totalDays: total,
+            strongestNeed,
+            strongestAvg: insight?.strongestAvg,
+          },
+        );
       }
       return;
     }
 
     const streak = await this.analyticsService.getConsecutiveDays(userId);
     for (const days of [7, 14, 30] as const) {
-      if (streak === days && !await this.notificationService.hasEver(userId, `streak_${days}`)) {
-        await this.notificationService.schedule(userId, `streak_${days}`, new Date());
+      if (
+        streak === days &&
+        !(await this.notificationService.hasEver(userId, `streak_${days}`))
+      ) {
+        await this.notificationService.schedule(
+          userId,
+          `streak_${days}`,
+          new Date(),
+        );
       }
     }
 
     for (const days of [1, 3, 7] as const) {
-      if (total === days && !await this.notificationService.hasEver(userId, `onboarding_${days}`)) {
-        await this.notificationService.schedule(userId, `onboarding_${days}`, new Date());
+      if (
+        total === days &&
+        !(await this.notificationService.hasEver(userId, `onboarding_${days}`))
+      ) {
+        await this.notificationService.schedule(
+          userId,
+          `onboarding_${days}`,
+          new Date(),
+        );
       }
     }
     for (const days of [30, 60, 90] as const) {
-      if (total === days && !await this.notificationService.hasEver(userId, `anniversary_${days}`)) {
-        await this.notificationService.schedule(userId, `anniversary_${days}`, new Date());
+      if (
+        total === days &&
+        !(await this.notificationService.hasEver(userId, `anniversary_${days}`))
+      ) {
+        await this.notificationService.schedule(
+          userId,
+          `anniversary_${days}`,
+          new Date(),
+        );
       }
     }
   }

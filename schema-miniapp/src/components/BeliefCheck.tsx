@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
+import { useTr } from '../utils/addressForm';
 
 const STORAGE_KEY = 'belief_checks';
 
@@ -27,6 +28,7 @@ type Step = 'belief' | 'for' | 'against' | 'reframe' | 'done';
 interface Props { onClose: () => void; onComplete?: () => void; }
 
 export function BeliefCheck({ onClose, onComplete }: Props) {
+  const tr = useTr();
   const [step, setStep] = useState<Step>('belief');
   const [belief, setBelief] = useState('');
   const [forInput, setForInput] = useState('');
@@ -153,7 +155,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
           <>
             <div style={{ background: 'rgba(96,165,250,0.06)', border: '1px solid rgba(96,165,250,0.12)', borderRadius: 14, padding: '12px 14px', marginBottom: 14 }}>
               <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                Запиши мысль или убеждение, которое тебя беспокоит. Схемы часто говорят с нами голосом абсолютных утверждений: «я никогда», «всё всегда», «я недостаточно».
+                {tr('Запиши мысль или убеждение, которое тебя беспокоит.', 'Запишите мысль или убеждение, которое вас беспокоит.')} Схемы часто говорят с нами голосом абсолютных утверждений: «я никогда», «всё всегда», «я недостаточно».
               </div>
             </div>
             <textarea
@@ -205,7 +207,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
           <>
             <div style={{ background: 'color-mix(in srgb, var(--accent-green) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-green) 12%, transparent)', borderRadius: 14, padding: '10px 14px', marginBottom: 14 }}>
               <div style={{ fontSize: 12, color: 'var(--accent-green)', fontWeight: 600, marginBottom: 4 }}>Доказательства ПРОТИВ</div>
-              <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.5 }}>Что опровергает «{belief}»? Вспомни факты, исключения, другие точки зрения.</div>
+              <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.5 }}>Что опровергает «{belief}»? {tr('Вспомни факты, исключения, другие точки зрения.', 'Вспомните факты, исключения, другие точки зрения.')}</div>
             </div>
             {againstList.length > 0 && (
               <div style={{ marginBottom: 10 }}>

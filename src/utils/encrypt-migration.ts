@@ -21,17 +21,28 @@ function looksPlaintext(v: string): boolean {
 //   SchemaDiaryEntry.schemaIds
 //   ModeDiaryEntry.modeId
 //   ClientConceptualization.schemaIds, modeIds, history[].schemaIds, modeIds
-export async function migrateClinicalLabels(prisma: PrismaService): Promise<void> {
+export async function migrateClinicalLabels(
+  prisma: PrismaService,
+): Promise<void> {
   if (!process.env.ENCRYPTION_KEY) {
     logger.warn('ENCRYPTION_KEY not set — skipping clinical-label migration');
     return;
   }
   const startedAt = Date.now();
-  let totals = { Note: 0, User: 0, SchemaDiaryEntry: 0, ModeDiaryEntry: 0, ClientConceptualization: 0 };
+  const totals = {
+    Note: 0,
+    User: 0,
+    SchemaDiaryEntry: 0,
+    ModeDiaryEntry: 0,
+    ClientConceptualization: 0,
+  };
 
   // ── Note.tags ──────────────────────────────────────────────────────────────
   // Stored as comma-separated string. Encrypt the whole thing as one blob.
-  const notes = await prisma.note.findMany({ where: { tags: { not: '' } }, select: { id: true, tags: true } });
+  const notes = await prisma.note.findMany({
+    where: { tags: { not: '' } },
+    select: { id: true, tags: true },
+  });
   for (const n of notes) {
     if (!looksPlaintext(n.tags)) continue;
     const enc = encrypt(n.tags);
@@ -42,7 +53,9 @@ export async function migrateClinicalLabels(prisma: PrismaService): Promise<void
 
   // ── User.mySchemaIds / User.myModeIds ──────────────────────────────────────
   // JSON column. Legacy rows: array. New rows: encrypted string.
-  const users = await prisma.user.findMany({ select: { id: true, mySchemaIds: true, myModeIds: true } });
+  const users = await prisma.user.findMany({
+    select: { id: true, mySchemaIds: true, myModeIds: true },
+  });
   for (const u of users) {
     const patch: any = {};
     if (Array.isArray(u.mySchemaIds)) {
@@ -60,22 +73,32 @@ export async function migrateClinicalLabels(prisma: PrismaService): Promise<void
   }
 
   // ── SchemaDiaryEntry.schemaIds ────────────────────────────────────────────
-  const schemaEntries = await prisma.schemaDiaryEntry.findMany({ select: { id: true, schemaIds: true } });
+  const schemaEntries = await prisma.schemaDiaryEntry.findMany({
+    select: { id: true, schemaIds: true },
+  });
   for (const e of schemaEntries) {
     if (!Array.isArray(e.schemaIds)) continue; // string → already encrypted
     const enc = encryptJson(e.schemaIds);
     if (!enc) continue;
-    await prisma.schemaDiaryEntry.update({ where: { id: e.id }, data: { schemaIds: enc as any } });
+    await prisma.schemaDiaryEntry.update({
+      where: { id: e.id },
+      data: { schemaIds: enc as any },
+    });
     totals.SchemaDiaryEntry++;
   }
 
   // ── ModeDiaryEntry.modeId (single string) ─────────────────────────────────
-  const modeEntries = await prisma.modeDiaryEntry.findMany({ select: { id: true, modeId: true } });
+  const modeEntries = await prisma.modeDiaryEntry.findMany({
+    select: { id: true, modeId: true },
+  });
   for (const e of modeEntries) {
     if (!looksPlaintext(e.modeId)) continue;
     const enc = encrypt(e.modeId);
     if (!enc) continue;
-    await prisma.modeDiaryEntry.update({ where: { id: e.id }, data: { modeId: enc } });
+    await prisma.modeDiaryEntry.update({
+      where: { id: e.id },
+      data: { modeId: enc },
+    });
     totals.ModeDiaryEntry++;
   }
 
@@ -86,24 +109,30 @@ export async function migrateClinicalLabels(prisma: PrismaService): Promise<void
   for (const c of concepts) {
     const patch: any = {};
     if (Array.isArray(c.schemaIds)) {
-      const enc = encryptJson(c.schemaIds); if (enc) patch.schemaIds = enc;
+      const enc = encryptJson(c.schemaIds);
+      if (enc) patch.schemaIds = enc;
     }
     if (Array.isArray(c.modeIds)) {
-      const enc = encryptJson(c.modeIds); if (enc) patch.modeIds = enc;
+      const enc = encryptJson(c.modeIds);
+      if (enc) patch.modeIds = enc;
     }
     // History — array of snapshots, each with its own schemaIds/modeIds
     if (Array.isArray(c.history)) {
       const newHistory = c.history.map((snap: any) => {
         const s: any = { ...snap };
         if (Array.isArray(s.schemaIds)) s.schemaIds = encryptJson(s.schemaIds);
-        if (Array.isArray(s.modeIds))   s.modeIds   = encryptJson(s.modeIds);
+        if (Array.isArray(s.modeIds)) s.modeIds = encryptJson(s.modeIds);
         return s;
       });
       // Only patch history if something actually changed
-      if (JSON.stringify(newHistory) !== JSON.stringify(c.history)) patch.history = newHistory;
+      if (JSON.stringify(newHistory) !== JSON.stringify(c.history))
+        patch.history = newHistory;
     }
     if (Object.keys(patch).length > 0) {
-      await (prisma as any).clientConceptualization.update({ where: { id: c.id }, data: patch });
+      await (prisma as any).clientConceptualization.update({
+        where: { id: c.id },
+        data: patch,
+      });
       totals.ClientConceptualization++;
     }
   }
@@ -111,8 +140,12 @@ export async function migrateClinicalLabels(prisma: PrismaService): Promise<void
   const total = Object.values(totals).reduce((a, b) => a + b, 0);
   const ms = Date.now() - startedAt;
   if (total > 0) {
-    logger.log(`Encrypted clinical labels: ${JSON.stringify(totals)} (${ms}ms)`);
+    logger.log(
+      `Encrypted clinical labels: ${JSON.stringify(totals)} (${ms}ms)`,
+    );
   } else {
-    logger.log(`No plaintext clinical labels found — migration is up-to-date (${ms}ms)`);
+    logger.log(
+      `No plaintext clinical labels found — migration is up-to-date (${ms}ms)`,
+    );
   }
 }

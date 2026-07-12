@@ -1,4 +1,10 @@
-import { CanActivate, ExecutionContext, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { validate } from '@tma.js/init-data-node';
 import { PrismaService } from '../prisma/prisma.service';
@@ -46,8 +52,9 @@ export class TelegramAuthGuard implements CanActivate {
     // SKIP_AUTH was a dev-only escape hatch. Hard-disable in production
     // regardless of env value — otherwise a misconfig/leaked secret = full
     // takeover of every Telegram user by passing crafted x-telegram-init-data.
-    const skipAuth = process.env.NODE_ENV !== 'production'
-      && this.config.get<string>('SKIP_AUTH') === 'true';
+    const skipAuth =
+      process.env.NODE_ENV !== 'production' &&
+      this.config.get<string>('SKIP_AUTH') === 'true';
     if (skipAuth) {
       this.logger.warn('SKIP_AUTH=true (DEV ONLY) — validation skipped');
     } else {
@@ -59,15 +66,18 @@ export class TelegramAuthGuard implements CanActivate {
         // Loud alert: signature failure on initData is either a real attack
         // (someone trying to forge a Telegram identity) or a bot-token rotation
         // we forgot to roll out. Either way, admin should see it.
-        fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: process.env.ADMIN_ID,
-            text: `🚨 suspicious_initdata: ${reason} (ip: ${(req.ip ?? '?')})`,
-          }),
-          signal: AbortSignal.timeout(5_000),
-        }).catch(() => null);
+        fetch(
+          `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: process.env.ADMIN_ID,
+              text: `🚨 suspicious_initdata: ${reason} (ip: ${req.ip ?? '?'})`,
+            }),
+            signal: AbortSignal.timeout(5_000),
+          },
+        ).catch(() => null);
         throw new UnauthorizedException('Invalid initData');
       }
     }
@@ -81,7 +91,8 @@ export class TelegramAuthGuard implements CanActivate {
       const user = JSON.parse(userStr);
       if (typeof user.id !== 'number') throw new Error('Invalid user.id');
       rawTelegramId = user.id;
-      firstName = typeof user.first_name === 'string' ? user.first_name : undefined;
+      firstName =
+        typeof user.first_name === 'string' ? user.first_name : undefined;
     } catch {
       throw new UnauthorizedException('Invalid user data');
     }
@@ -90,7 +101,9 @@ export class TelegramAuthGuard implements CanActivate {
     // (Telegram merged → Google) still land on the correct userId instead
     // of creating a new empty User with the raw Telegram ID.
     const canonicalId = await this.authService.findOrCreateUserByProvider(
-      'telegram', String(rawTelegramId), firstName,
+      'telegram',
+      String(rawTelegramId),
+      firstName,
     );
     req.telegramUserId = Number(canonicalId);
     req.telegramFirstName = firstName;

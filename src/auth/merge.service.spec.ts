@@ -20,12 +20,17 @@ function captureRawSql() {
   const calls: string[] = [];
   return {
     calls,
-    spy: jest.fn(async (query: { strings?: TemplateStringsArray; values?: unknown[] }) => {
-      // Prisma.sql tagged templates expose .strings; join them for inspection.
-      const sql = (query?.strings ?? []).join('?').replace(/\s+/g, ' ').trim();
-      calls.push(sql);
-      return 0;
-    }),
+    spy: jest.fn(
+      async (query: { strings?: TemplateStringsArray; values?: unknown[] }) => {
+        // Prisma.sql tagged templates expose .strings; join them for inspection.
+        const sql = (query?.strings ?? [])
+          .join('?')
+          .replace(/\s+/g, ' ')
+          .trim();
+        calls.push(sql);
+        return 0;
+      },
+    ),
   };
 }
 
@@ -64,7 +69,7 @@ describe('MergeService — SQL safety', () => {
     const sqls = await runMerge();
     // Only the UPDATE that reassigns therapistId — identified by SET "therapistId"
     const sql = sqls.find(
-      s => s.includes('TherapyRelation') && s.includes('SET "therapistId"'),
+      (s) => s.includes('TherapyRelation') && s.includes('SET "therapistId"'),
     );
     expect(sql).toBeDefined();
     expect(sql).toContain('IS DISTINCT FROM');
@@ -75,7 +80,7 @@ describe('MergeService — SQL safety', () => {
   it('TherapyRelation SET clientId UPDATE still uses plain <> (clientId=source is never NULL here)', async () => {
     const sqls = await runMerge();
     const sql = sqls.find(
-      s => s.includes('TherapyRelation') && s.includes('SET "clientId"'),
+      (s) => s.includes('TherapyRelation') && s.includes('SET "clientId"'),
     );
     expect(sql).toBeDefined();
   });
@@ -85,7 +90,7 @@ describe('MergeService — SQL safety', () => {
   it('TherapistNote SET therapistId UPDATE uses IS DISTINCT FROM, not plain <>', async () => {
     const sqls = await runMerge();
     const sql = sqls.find(
-      s => s.includes('TherapistNote') && s.includes('SET "therapistId"'),
+      (s) => s.includes('TherapistNote') && s.includes('SET "therapistId"'),
     );
     expect(sql).toBeDefined();
     expect(sql).toContain('IS DISTINCT FROM');
@@ -97,11 +102,12 @@ describe('MergeService — SQL safety', () => {
   it('includes a DELETE that removes orphaned virtual-client conceptualizations', async () => {
     const sqls = await runMerge();
     const orphanCleanup = sqls.find(
-      s => s.includes('ClientConceptualization') &&
-           s.includes('clientId') &&
-           s.includes('< 0') &&
-           s.includes('TherapyRelation') &&
-           s.includes('NOT EXISTS'),
+      (s) =>
+        s.includes('ClientConceptualization') &&
+        s.includes('clientId') &&
+        s.includes('< 0') &&
+        s.includes('TherapyRelation') &&
+        s.includes('NOT EXISTS'),
     );
     expect(orphanCleanup).toBeDefined();
   });

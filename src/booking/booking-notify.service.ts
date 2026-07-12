@@ -10,7 +10,9 @@ import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { sessionLabel } from './caldav-event.util';
 import { BookingStatus, SessionType } from '@prisma/client';
 
-const SCHEMA: EncryptSchema = { strings: ['clientName', 'clientContact', 'message'] };
+const SCHEMA: EncryptSchema = {
+  strings: ['clientName', 'clientContact', 'message'],
+};
 
 interface PlainBooking {
   id: number;
@@ -38,7 +40,9 @@ export class BookingNotifyService {
     private readonly email: EmailService,
     config: ConfigService,
   ) {
-    this.siteUrl = (config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr').replace(/\/$/, '');
+    this.siteUrl = (
+      config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
+    ).replace(/\/$/, '');
   }
 
   /**
@@ -48,18 +52,26 @@ export class BookingNotifyService {
   async onConfirmed(b: PlainBooking): Promise<void> {
     if (!b.meetingUrl) {
       b.meetingUrl = await this.meeting.createMeeting(b);
-      await this.prisma.booking.update({ where: { id: b.id }, data: { meetingUrl: b.meetingUrl } });
+      await this.prisma.booking.update({
+        where: { id: b.id },
+        data: { meetingUrl: b.meetingUrl },
+      });
     }
     const uid = await this.calDav.pushEvent({
       uid: `booking-${b.id}@schemehappens.ru`,
       startsAt: b.startsAt,
       durationMin: b.durationMin,
       summary: `${sessionLabel(b.type)} — ${b.clientName}`,
-      description: [b.clientContact, b.message, b.meetingUrl].filter(Boolean).join('\n'),
+      description: [b.clientContact, b.message, b.meetingUrl]
+        .filter(Boolean)
+        .join('\n'),
       location: b.meetingUrl ?? undefined,
     });
     if (uid) {
-      await this.prisma.booking.update({ where: { id: b.id }, data: { calDavUid: uid } });
+      await this.prisma.booking.update({
+        where: { id: b.id },
+        data: { calDavUid: uid },
+      });
     }
     await this.sendAdmin('✅ <b>Запись подтверждена</b>', b);
     // CalDAV is configured but the write failed — the session won't appear in
@@ -67,7 +79,7 @@ export class BookingNotifyService {
     if (this.calDav.enabled && !uid) {
       await this.notifyAdminText(
         `⚠️ <b>Бронь подтверждена, но НЕ попала в Apple Calendar</b>\n` +
-        `${formatTime(b.startsAt)} · ${b.clientName}\nДобавьте в календарь вручную.`,
+          `${formatTime(b.startsAt)} · ${b.clientName}\nДобавьте в календарь вручную.`,
       );
     }
   }
@@ -80,7 +92,10 @@ export class BookingNotifyService {
 
   /** Notify admin a paid slot is reserved and awaiting payment (so a failed/abandoned payment isn't lost). */
   async onAwaitingPayment(b: PlainBooking): Promise<void> {
-    await this.sendAdmin('⏳ <b>Бронь ожидает оплаты</b> (слот зарезервирован на 15 мин)', b);
+    await this.sendAdmin(
+      '⏳ <b>Бронь ожидает оплаты</b> (слот зарезервирован на 15 мин)',
+      b,
+    );
   }
 
   /** Notify admin that HELD bookings expired without payment (so they're not lost silently). */
@@ -100,10 +115,18 @@ export class BookingNotifyService {
   async sendReminders(): Promise<void> {
     const now = Date.now();
     await this.remindWindow(now + 24 * 3_600_000, 'reminder24SentAt', 'завтра');
-    await this.remindWindow(now + 2 * 3_600_000, 'reminder2SentAt', 'через 2 часа');
+    await this.remindWindow(
+      now + 2 * 3_600_000,
+      'reminder2SentAt',
+      'через 2 часа',
+    );
   }
 
-  private async remindWindow(beforeMs: number, field: 'reminder24SentAt' | 'reminder2SentAt', when: string) {
+  private async remindWindow(
+    beforeMs: number,
+    field: 'reminder24SentAt' | 'reminder2SentAt',
+    when: string,
+  ) {
     const due = await this.prisma.booking.findMany({
       where: {
         status: BookingStatus.CONFIRMED,
@@ -114,7 +137,10 @@ export class BookingNotifyService {
     for (const row of due) {
       const b = decryptRecord(row, SCHEMA) as unknown as PlainBooking;
       await this.sendAdmin(`⏰ <b>Напоминание: сессия ${when}</b>`, b);
-      await this.prisma.booking.update({ where: { id: b.id }, data: { [field]: new Date() } });
+      await this.prisma.booking.update({
+        where: { id: b.id },
+        data: { [field]: new Date() },
+      });
     }
     if (due.length) this.logger.log(`Sent ${due.length} ${field} reminder(s)`);
   }
@@ -128,7 +154,9 @@ export class BookingNotifyService {
       `🗓 ${formatTime(b.startsAt)}`,
       b.message ? `💬 ${b.message}` : null,
       b.meetingUrl ? `🔗 ${b.meetingUrl}` : null,
-    ].filter(Boolean).join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
     await this.notifyAdminText(text);
   }
 
@@ -138,13 +166,21 @@ export class BookingNotifyService {
     if (ok) return;
     this.logger.warn('Admin Telegram notify failed — falling back to e-mail');
     const plain = html.replace(/<[^>]+>/g, '');
-    await this.email.sendAdminNotification('Уведомление о записи', plain).catch(() => null);
+    await this.email
+      .sendAdminNotification('Уведомление о записи', plain)
+      .catch(() => null);
   }
 }
 
 function formatTime(date: Date): string {
-  return new Intl.DateTimeFormat('ru-RU', {
-    timeZone: 'Europe/Moscow',
-    weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
-  }).format(date) + ' МСК';
+  return (
+    new Intl.DateTimeFormat('ru-RU', {
+      timeZone: 'Europe/Moscow',
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date) + ' МСК'
+  );
 }

@@ -6,7 +6,15 @@ import { BotModule } from '../bot/bot.module';
 
 @Module({
   imports: [BotModule],
-  providers: [NotificationService, NotificationCadenceService, NotificationPlannerService],
-  exports: [NotificationService, NotificationCadenceService, NotificationPlannerService],
+  providers: [
+    NotificationService,
+    NotificationCadenceService,
+    NotificationPlannerService,
+  ],
+  exports: [
+    NotificationService,
+    NotificationCadenceService,
+    NotificationPlannerService,
+  ],
 })
 export class NotificationModule {}

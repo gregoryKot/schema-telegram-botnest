@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { BottomSheet } from '../BottomSheet';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
+import { detectCrisisAny } from '../../utils/crisisMarkers';
+import { CrisisCard } from '../CrisisCard';
 import { fmtDateLong, todayStr } from '../../utils/format';
 import { haptic } from '../../haptic';
 
@@ -88,6 +90,8 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
             />
           </div>
         ))}
+
+        {detectCrisisAny(...items) && <CrisisCard />}
 
         {items.length < 5 && (
           <button onClick={() => setItems(prev => [...prev, ''])} style={{
