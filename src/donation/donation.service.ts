@@ -101,10 +101,12 @@ export class DonationService {
         `⚠️ <b>Донат #${id}: сумма расходится</b>\nОжидали ${row.amount} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`,
       );
     }
-    await this.prisma.donation.update({
-      where: { id },
+    // P-2 (аудит 2026-07): CAS — ретраи webhook не задваивают алерт админу.
+    const claimed = await this.prisma.donation.updateMany({
+      where: { id, status: { not: 'paid' } },
       data: { status: 'paid', paidAt: new Date() },
     });
+    if (claimed.count === 0) return { ok: true };
     const plain = decryptRecord(row, SCHEMA) as any;
     await this.notify.alertAdmin(
       `💛 <b>Донат ${row.amount} ₽</b> (${row.source})` +

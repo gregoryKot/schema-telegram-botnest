@@ -14,7 +14,7 @@ import { RobokassaService } from './robokassa.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { PricingService } from './pricing.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
-import { BookingStatus, SessionType } from '@prisma/client';
+import { BookingStatus, Prisma, SessionType } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 export interface CreateBookingDto {
@@ -36,6 +36,10 @@ const SCHEMA: EncryptSchema = {
 };
 
 const HOLD_MINUTES = 15;
+// Ключ pg_advisory_xact_lock для сериализации «проверить слот → создать бронь».
+// Один глобальный лок на все брони: трафик записи низкий, сериализация дешевле,
+// чем exclusion constraint по времени (P-1, аудит 2026-07).
+const BOOKING_SLOT_LOCK_KEY = 911_001;
 
 /** Loose e-mail check — enough to decide whether to forward it to Robokassa. */
 function isEmail(s: string): boolean {
@@ -91,8 +95,6 @@ export class BookingService {
     if (dto.startsAt.getTime() < Date.now() + MIN_BOOK_LEAD_HOURS * 3_600_000) {
       throw new BadRequestException('TOO_SOON');
     }
-    await this.assertSlotFree(dto.startsAt, dto.durationMin);
-
     const isFree = dto.type === SessionType.INTRO_15;
     const heldUntil = isFree
       ? null
@@ -116,7 +118,15 @@ export class BookingService {
       SCHEMA,
     );
 
-    const booking = await this.prisma.booking.create({ data });
+    // P-1 (аудит 2026-07): проверка занятости и создание — в одной транзакции
+    // под advisory-lock, иначе два клиента, кликнувшие одновременно, оба
+    // проходили findMany-проверку и бронировали один слот (TOCTOU).
+    // Lock — xact-scoped: снимается автоматически на commit/rollback.
+    const booking = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${BOOKING_SLOT_LOCK_KEY})`;
+      await this.assertSlotFree(dto.startsAt, dto.durationMin, tx);
+      return tx.booking.create({ data });
+    });
     this.logger.log(
       `Booking ${booking.id} created (${isFree ? 'CONFIRMED' : 'HELD'})`,
     );
@@ -187,24 +197,38 @@ export class BookingService {
   async confirm(id: number, paidAmount?: number) {
     const booking = await this.prisma.booking.findUnique({ where: { id } });
     if (!booking) throw new NotFoundException('Booking not found');
-    if (booking.status !== BookingStatus.HELD) {
-      throw new ConflictException(
-        `Cannot confirm booking in status ${booking.status}`,
-      );
-    }
+    // P-4 (аудит 2026-07): расхождение суммы БЛОКИРУЕТ авто-подтверждение,
+    // а не только алертит. Бронь остаётся HELD — админ разбирается вручную
+    // (подпись Robokassa уже привязывает сумму, так что сюда попадёт только
+    // рассинхрон нашего прайса между выпиской счёта и оплатой).
     if (paidAmount != null) {
       const expected = await this.pricing.getPrice(booking.type);
       if (Math.round(paidAmount) !== expected) {
         await this.notify.alertAdmin(
-          `⚠️ <b>Бронь #${id}: сумма расходится</b>\nОжидали ${expected} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`,
+          `⚠️ <b>Бронь #${id}: сумма расходится</b>\nОжидали ${expected} ₽, оплатили ${paidAmount} ₽. Бронь НЕ подтверждена автоматически — проверьте и подтвердите вручную.`,
         );
+        throw new ConflictException('Amount mismatch — manual review');
       }
     }
 
-    await this.prisma.booking.update({
-      where: { id },
+    // P-2: атомарный CAS вместо check-then-act — параллельные ретраи webhook
+    // Robokassa не задваивают side-effects (уведомление, meeting-линк):
+    // updateMany выигрывает ровно один вызов.
+    const claimed = await this.prisma.booking.updateMany({
+      where: { id, status: BookingStatus.HELD },
       data: { status: BookingStatus.CONFIRMED, heldUntil: null },
     });
+    if (claimed.count === 0) {
+      const now = await this.prisma.booking.findUnique({
+        where: { id },
+        select: { status: true },
+      });
+      // Повторный webhook по уже подтверждённой броне — идемпотентный успех.
+      if (now?.status === BookingStatus.CONFIRMED) return { ok: true };
+      throw new ConflictException(
+        `Cannot confirm booking in status ${now?.status ?? 'UNKNOWN'}`,
+      );
+    }
 
     await this.notify.onConfirmed(decryptRecord(booking, SCHEMA));
     this.logger.log(`Booking ${id} CONFIRMED`);
@@ -325,9 +349,13 @@ export class BookingService {
   // existing.startsAt < newEnd AND existing.end > newStart. Prisma can't add
   // durationMin to startsAt in a filter, so we narrow by startsAt then check
   // the computed end in JS.
-  private async assertSlotFree(startsAt: Date, durationMin: number) {
+  private async assertSlotFree(
+    startsAt: Date,
+    durationMin: number,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
     const endsAt = new Date(startsAt.getTime() + durationMin * 60_000);
-    const candidates = await this.prisma.booking.findMany({
+    const candidates = await tx.booking.findMany({
       where: {
         status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] },
         startsAt: { lt: endsAt },
