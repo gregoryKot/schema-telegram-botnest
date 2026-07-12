@@ -158,30 +158,36 @@ export class SubscriptionService {
     if (!sub) return { ok: true };
 
     // Defense in depth: signature already binds the amount, but flag any mismatch.
+    // Здесь (в отличие от booking.confirm) не блокируем: сумма подписана
+    // Robokassa нашим же счётом, юзер оплатил легитимно выставленное —
+    // расхождение означает рассинхрон прайса и требует ручного решения,
+    // а не отказа юзеру в оплаченном сервисе.
     if (paidAmount != null && Math.round(paidAmount) !== charge.amount) {
       await this.notify.alertAdmin(
         `⚠️ <b>Подписка #${sub.id}: сумма расходится</b>\nОжидали ${charge.amount} ₽, оплатили ${paidAmount} ₽. Проверьте вручную.`,
       );
     }
 
+    // P-2 (аудит 2026-07): атомарный CAS по статусу charge — параллельные
+    // ретраи webhook не задваивают активацию/алерты: выигрывает один вызов.
+    const claimed = await this.prisma.subscriptionCharge.updateMany({
+      where: { id: chargeId, status: { not: 'paid' } },
+      data: { status: 'paid', paidAt: new Date() },
+    });
+    if (claimed.count === 0) return { ok: true };
+
     const next = addPeriod(new Date(), sub.period as SubPeriod);
-    await this.prisma.$transaction([
-      this.prisma.subscriptionCharge.update({
-        where: { id: chargeId },
-        data: { status: 'paid', paidAt: new Date() },
-      }),
-      this.prisma.subscription.update({
-        where: { id: sub.id },
-        data: {
-          status: 'active',
-          lastChargeAt: new Date(),
-          nextChargeAt: next,
-          failedAttempts: 0,
-          // The first paid charge becomes the PreviousInvoiceID for all future charges.
-          ...(charge.isFirst ? { firstInvId: invId } : {}),
-        },
-      }),
-    ]);
+    await this.prisma.subscription.update({
+      where: { id: sub.id },
+      data: {
+        status: 'active',
+        lastChargeAt: new Date(),
+        nextChargeAt: next,
+        failedAttempts: 0,
+        // The first paid charge becomes the PreviousInvoiceID for all future charges.
+        ...(charge.isFirst ? { firstInvId: invId } : {}),
+      },
+    });
 
     const plain = decryptRecord(sub, SCHEMA) as any;
     await this.notify.alertAdmin(
@@ -256,6 +262,23 @@ export class SubscriptionService {
       take: 50,
     });
     for (const sub of due) {
+      // P-3 (аудит 2026-07): если у подписки уже висит свежий pending-charge —
+      // прошлое списание ушло в Robokassa, но webhook ещё не подтвердил его
+      // (или процесс упал между chargeRecurring и update nextChargeAt).
+      // Второе реальное списание в этой ситуации недопустимо — пропускаем и алертим.
+      const pending = await this.prisma.subscriptionCharge.findFirst({
+        where: {
+          subscriptionId: sub.id,
+          status: 'pending',
+          createdAt: { gte: new Date(Date.now() - 48 * 3_600_000) },
+        },
+      });
+      if (pending) {
+        await this.notify.alertAdmin(
+          `⚠️ <b>Подписка #${sub.id}: pending-charge #${pending.id} без подтверждения</b>\nНовое списание не отправлено. Проверьте статус в Robokassa.`,
+        );
+        continue;
+      }
       const charge = await this.prisma.subscriptionCharge.create({
         data: { subscriptionId: sub.id, amount: sub.amount },
       });
