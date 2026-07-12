@@ -126,7 +126,10 @@ export class BotAnalyticsService {
       const recent = recentDatesByUser.get(key)!;
       const history = recent
         .filter((d) => ratingsByUserDate.has(`${key}|${d}`))
-        .map((d) => ({ date: d, ratings: ratingsByUserDate.get(`${key}|${d}`)! }));
+        .map((d) => ({
+          date: d,
+          ratings: ratingsByUserDate.get(`${key}|${d}`)!,
+        }));
 
       out.set(key, { streak, daysSince, history });
     }

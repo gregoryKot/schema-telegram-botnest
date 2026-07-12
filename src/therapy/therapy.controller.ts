@@ -16,6 +16,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { timingSafeEqual } from 'crypto';
 import { Request } from 'express';
+import { uid, parseId as parseIdShared } from '../api/request-utils';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyService } from './therapy.service';
 import { TherapistRequestService } from './therapist-request.service';
@@ -27,16 +28,11 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-function uid(req: AuthRequest): bigint {
-  return req.webUser.userId;
-}
-
-function parseId(raw: string): number {
-  const n = Number(raw);
-  if (!Number.isInteger(n) || n === 0)
-    throw new BadRequestException('Invalid id');
-  return n;
-}
+// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
+// allowNegative: виртуальные (офлайн) клиенты терапевта кодируются
+// отрицательным id = -TherapyRelation.id — только в therapy-эндпоинтах.
+const parseId = (raw: string): number =>
+  parseIdShared(raw, { allowNegative: true });
 
 @Controller('api/therapy')
 @UseGuards(TelegramAuthGuard)

@@ -20,18 +20,20 @@ function makeService(rels: Rel[], conceptRow: any = null) {
   const concept = { row: conceptRow };
   const prisma: any = {
     therapyRelation: {
-      findFirst: jest.fn(async ({ where }: any) =>
-        rels.find(
-          (r) =>
-            (where.id === undefined || r.id === where.id) &&
-            (where.therapistId === undefined ||
-              r.therapistId === where.therapistId) &&
-            (where.clientId === undefined || r.clientId === where.clientId) &&
-            (where.status === undefined || r.status === where.status),
-        ) ?? null,
+      findFirst: jest.fn(
+        async ({ where }: any) =>
+          rels.find(
+            (r) =>
+              (where.id === undefined || r.id === where.id) &&
+              (where.therapistId === undefined ||
+                r.therapistId === where.therapistId) &&
+              (where.clientId === undefined || r.clientId === where.clientId) &&
+              (where.status === undefined || r.status === where.status),
+          ) ?? null,
       ),
-      findUnique: jest.fn(async ({ where }: any) =>
-        rels.find((r) => r.code === where.code) ?? null,
+      findUnique: jest.fn(
+        async ({ where }: any) =>
+          rels.find((r) => r.code === where.code) ?? null,
       ),
       update: jest.fn(async ({ where, data }: any) => {
         const r = rels.find((x) => x.id === where.id)!;

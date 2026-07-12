@@ -13,7 +13,14 @@ const day = (offset: number) =>
     day: '2-digit',
   }).format(new Date(Date.now() - offset * 86_400_000));
 
-function makePrisma(ratings: Array<{ userId: bigint; date: string; needId: string; value: number }>) {
+function makePrisma(
+  ratings: Array<{
+    userId: bigint;
+    date: string;
+    needId: string;
+    value: number;
+  }>,
+) {
   let queries = 0;
   const prisma: any = {
     user: {
@@ -27,7 +34,8 @@ function makePrisma(ratings: Array<{ userId: bigint; date: string; needId: strin
       findMany: jest.fn(async ({ where, select, distinct }: any) => {
         queries++;
         let rows = ratings.filter((r) => where.userId.in.includes(r.userId));
-        if (where.date?.in) rows = rows.filter((r) => where.date.in.includes(r.date));
+        if (where.date?.in)
+          rows = rows.filter((r) => where.date.in.includes(r.date));
         if (distinct) {
           const seen = new Set<string>();
           rows = rows.filter((r) => {
