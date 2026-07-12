@@ -9,6 +9,7 @@ datasource db {
 model Rating {
   id     Int    @id @default(autoincrement())
   userId BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date   String
   needId String
   value  Int
@@ -19,6 +20,7 @@ model Rating {
 
 model YsqProgress {
   userId    BigInt   @id
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   answers   Json
   page      Int
   updatedAt DateTime @default(now())
@@ -107,6 +109,18 @@ model User {
   // a new provider. Verified separately (verifiedAt).
   recoveryEmail          String?  @unique
   recoveryEmailVerifiedAt DateTime?
+
+  // ── Back-refs добавлены аудитом 2026-07 (D-2): Cascade на уровне БД ──────
+  ratings                Rating[]
+  ysqProgress            YsqProgress?
+  ysqResult              YsqResult?
+  childhoodRatings       ChildhoodRating[]
+  practices              UserPractice[]
+  practicePlans          PracticePlan[]
+  schemaDiaries          SchemaDiaryEntry[]
+  modeDiaries            ModeDiaryEntry[]
+  gratitudeDiaries       GratitudeDiaryEntry[]
+  appActivities          AppActivity[]
 }
 
 // Email magic-link tokens — for recovery, email verification, etc.
@@ -219,6 +233,7 @@ model Pair {
 model UserPractice {
   id        Int      @id @default(autoincrement())
   userId    BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   needId    String
   text      String
   createdAt DateTime @default(now())
@@ -229,6 +244,7 @@ model UserPractice {
 model PracticePlan {
   id              Int       @id @default(autoincrement())
   userId          BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   needId          String
   practiceText    String
   scheduledDate   String    // YYYY-MM-DD — дата когда планируем выполнить
@@ -242,6 +258,7 @@ model PracticePlan {
 
 model YsqResult {
   userId      BigInt   @id
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   answers     Json
   completedAt DateTime @default(now())
 }
@@ -259,6 +276,7 @@ model YsqResultHistory {
 model ChildhoodRating {
   id     Int    @id @default(autoincrement())
   userId BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   needId String
   value  Int
 
@@ -269,6 +287,7 @@ model ChildhoodRating {
 model SchemaDiaryEntry {
   id                 Int      @id @default(autoincrement())
   userId             BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt          DateTime @default(now())
   trigger            String   // Спусковой механизм (что произошло)
   emotions           Json     // {id, intensity}[] — Эмоции
@@ -288,6 +307,7 @@ model SchemaDiaryEntry {
 model ModeDiaryEntry {
   id                Int      @id @default(autoincrement())
   userId            BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt         DateTime @default(now())
   modeId            String   // Режим (кто включился)
   situation         String   // Ситуация (что произошло)
@@ -304,6 +324,7 @@ model ModeDiaryEntry {
 model GratitudeDiaryEntry {
   id        Int      @id @default(autoincrement())
   userId    BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      String
   items     Json     // string[]
   createdAt DateTime @default(now())
@@ -315,6 +336,7 @@ model GratitudeDiaryEntry {
 model AppActivity {
   id        Int      @id @default(autoincrement())
   userId    BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      String   // YYYY-MM-DD in user's timezone
 
   @@unique([userId, date])
@@ -344,6 +366,9 @@ model TherapyRelation {
 model UserTask {
   id          Int       @id @default(autoincrement())
   userId      BigInt
+  // БЕЗ FK на User (осознанно): задачи виртуальных клиентов терапевта
+  // хранятся с отрицательным userId = -TherapyRelation.id — строки User нет.
+  // Чистится вручную в deleteAllUserData (см. table-registry.spec).
   assignedBy  BigInt?   // null = self, therapistId = from therapist
   type        String    // 'custom' | 'diary_streak' | 'tracker_streak' | 'schema_diary' | 'mode_diary'
   text        String

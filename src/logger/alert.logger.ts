@@ -16,7 +16,13 @@ export class AlertLogger extends ConsoleLogger {
     for (const [k, t] of this.seen)
       if (now - t > 3_600_000) this.seen.delete(k);
 
-    const key = message.slice(0, 100);
+    // Нормализованный ключ (аудит 2026-07, I-4): числа/uuid/hex заменяются
+    // плейсхолдером, иначе «Failed … id=1», «id=2», … — это разные ключи, и
+    // массовый сбой обходит троттлинг лавиной DM админу.
+    const key = message
+      .replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, '<uuid>')
+      .replace(/\d+/g, '<n>')
+      .slice(0, 100);
     const lastSent = this.seen.get(key) ?? 0;
     if (now - lastSent < 60_000) return;
     this.seen.set(key, now);
