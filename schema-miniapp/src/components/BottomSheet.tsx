@@ -14,6 +14,13 @@ export function BottomSheet({ onClose, children, zIndex = 200, scrollRef }: Prop
   const startY = useRef(0);
   const [showHint, setShowHint] = useState(() => !localStorage.getItem(HINT_KEY));
 
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   useEffect(() => {
     if (!showHint) return;
     localStorage.setItem(HINT_KEY, '1');
