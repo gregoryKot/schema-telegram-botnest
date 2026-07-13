@@ -61,9 +61,9 @@ function TopicListEditor({ title, adminKey, group, topics, onChange }: {
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
           <input style={{ ...input, flex: 2 }} placeholder="Текст" value={t.label} onChange={e => update(i, { label: e.target.value })} />
           <input style={{ ...input, flex: 1 }} placeholder="Ссылка (#booking, /reviews...)" value={t.href} onChange={e => update(i, { href: e.target.value })} />
-          <button style={{ ...btnGhost, padding: '4px 8px', fontSize: 12 }} onClick={() => move(i, -1)} disabled={i === 0}>↑</button>
-          <button style={{ ...btnGhost, padding: '4px 8px', fontSize: 12 }} onClick={() => move(i, 1)} disabled={i === topics.length - 1}>↓</button>
-          <button style={{ ...btnGhost, padding: '4px 8px', fontSize: 12, color: 'var(--accent-red)' }} onClick={() => remove(i)}>✕</button>
+          <button aria-label="Переместить выше" style={{ ...btnGhost, padding: '4px 8px', fontSize: 12 }} onClick={() => move(i, -1)} disabled={i === 0}>↑</button>
+          <button aria-label="Переместить ниже" style={{ ...btnGhost, padding: '4px 8px', fontSize: 12 }} onClick={() => move(i, 1)} disabled={i === topics.length - 1}>↓</button>
+          <button aria-label="Удалить" style={{ ...btnGhost, padding: '4px 8px', fontSize: 12, color: 'var(--accent-red)' }} onClick={() => remove(i)}>✕</button>
         </div>
       ))}
       <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>

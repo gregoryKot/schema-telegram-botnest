@@ -97,6 +97,8 @@ export function NoteSheet({ date, onClose }: Props) {
                 <div
                   key={t.id}
                   onClick={() => toggleTag(t.id)}
+                  role="button" tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTag(t.id); } }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
                     padding: '7px 14px', borderRadius: 20, cursor: 'pointer',

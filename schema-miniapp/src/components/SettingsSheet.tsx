@@ -168,7 +168,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 8px' }}>
-          <span onClick={() => view !== 'main' ? setView('main') : onClose()} style={{ fontSize: 26, color: 'var(--text-sub)', cursor: 'pointer', lineHeight: 1 }}>‹</span>
+          <span onClick={() => view !== 'main' ? setView('main') : onClose()}
+            role="button" tabIndex={0} aria-label={view !== 'main' ? 'Назад' : 'Закрыть'}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); view !== 'main' ? setView('main') : onClose(); } }}
+            style={{ fontSize: 26, color: 'var(--text-sub)', cursor: 'pointer', lineHeight: 1 }}>‹</span>
           <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', flex: 1 }}>
             {view === 'time' ? 'Время уведомления' : view === 'tz' ? 'Часовой пояс' : view === 'freq' ? 'Частота напоминаний' : view === 'quiet' ? 'Тихие часы' : 'Настройки'}
           </span>
@@ -186,6 +189,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 const active = h === localHour;
                 return (
                   <div key={h} onClick={async () => { await patch({ notifyLocalHour: h }); setView('main'); }}
+                    role="button" tabIndex={0}
+                    onKeyDown={async e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await patch({ notifyLocalHour: h }); setView('main'); } }}
                     style={{ padding: '12px 0', borderRadius: 12, textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.06)', color: active ? '#fff' : 'rgba(var(--fg-rgb),0.6)', fontSize: 15, fontWeight: active ? 600 : 400, cursor: 'pointer' }}
                   >{pad(h)}:00</div>
                 );
@@ -204,6 +209,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   const active = i === (settings.notifyFrequency ?? 0);
                   return (
                     <div key={i} onClick={async () => { await patch({ notifyFrequency: i }); setView('main'); }}
+                      role="button" tabIndex={0}
+                      onKeyDown={async e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await patch({ notifyFrequency: i }); setView('main'); } }}
                       style={{ padding: '13px 16px', borderRadius: 12, background: active ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'rgba(var(--fg-rgb),0.04)', color: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.7)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
                     >{label}{active && <span>✓</span>}</div>
                   );
@@ -223,6 +230,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   const active = p.start === (settings.notifyQuietStart ?? 22) && p.end === (settings.notifyQuietEnd ?? 8);
                   return (
                     <div key={p.label} onClick={async () => { await patch({ notifyQuietStart: p.start, notifyQuietEnd: p.end }); setView('main'); }}
+                      role="button" tabIndex={0}
+                      onKeyDown={async e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await patch({ notifyQuietStart: p.start, notifyQuietEnd: p.end }); setView('main'); } }}
                       style={{ padding: '13px 16px', borderRadius: 12, background: active ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'rgba(var(--fg-rgb),0.04)', color: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.7)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
                     >{p.label}{active && <span>✓</span>}</div>
                   );
@@ -238,6 +247,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 const active = tz.iana === settings.notifyTimezone;
                 return (
                   <div key={tz.iana} onClick={async () => { await patch({ notifyTimezone: tz.iana }); setView('main'); }}
+                    role="button" tabIndex={0}
+                    onKeyDown={async e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await patch({ notifyTimezone: tz.iana }); setView('main'); } }}
                     style={{ padding: '13px 16px', borderRadius: 12, background: active ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'rgba(var(--fg-rgb),0.04)', color: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.7)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
                   >{tz.label}{active && <span>✓</span>}</div>
                 );
@@ -261,6 +272,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         </div>
                         <div
                           onClick={() => setTheme(resetToSystemTheme())}
+                          role="button" tabIndex={0}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTheme(resetToSystemTheme()); } }}
                           style={{ fontSize: 11, color: 'var(--accent)', cursor: 'pointer', marginTop: 1 }}
                         >
                           Авто (по Telegram) →
@@ -269,6 +282,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     </div>
                     <div
                       onClick={() => setTheme(toggleTheme())}
+                      role="switch" aria-checked={theme === 'light'} tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTheme(toggleTheme()); } }}
                       style={{
                         width: 46, height: 26, borderRadius: 13,
                         background: theme === 'light' ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 30%, transparent)',
@@ -299,6 +314,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       </div>
                       <div
                         onClick={onToggleTherapistMode}
+                        role="switch" aria-checked={!!therapistMode} tabIndex={0}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleTherapistMode(); } }}
                         style={{
                           width: 46, height: 26, borderRadius: 13,
                           background: therapistMode ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 30%, transparent)',
@@ -406,6 +423,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     const active = (settings.addressForm ?? 'ty') === form;
                     return (
                       <div key={form} onClick={() => { setAddressForm(form); patch({ addressForm: form }); }}
+                        role="button" tabIndex={0}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAddressForm(form); patch({ addressForm: form }); } }}
                         style={{ flex: 1, padding: '10px 0', borderRadius: 10, textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.06)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer' }}
                       >{form === 'ty' ? 'На «ты»' : 'На «вы»'}</div>
                     );
@@ -435,6 +454,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                             </div>
                             <div
                               onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })}
+                              role="switch" aria-checked={!!settings.therapistShareCards} tabIndex={0}
+                              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); patch({ therapistShareCards: !settings.therapistShareCards }); } }}
                               style={{ width: 40, height: 22, borderRadius: 11, background: settings.therapistShareCards ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.15)', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}
                             >
                               <div style={{ position: 'absolute', top: 2, left: settings.therapistShareCards ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
@@ -447,6 +468,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                             </div>
                             <div
                               onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })}
+                              role="switch" aria-checked={!!settings.therapistShareProfile} tabIndex={0}
+                              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); patch({ therapistShareProfile: !settings.therapistShareProfile }); } }}
                               style={{ width: 40, height: 22, borderRadius: 11, background: settings.therapistShareProfile ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.15)', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}
                             >
                               <div style={{ position: 'absolute', top: 2, left: settings.therapistShareProfile ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
@@ -596,6 +619,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
                     <div
                       onClick={onOpenTherapistCabinet}
+                      role="button" tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenTherapistCabinet?.(); } }}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', cursor: 'pointer' }}
                     >
                       <div>
@@ -675,7 +700,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   ) : (
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                        <span onClick={() => setJoinView('main')} style={{ fontSize: 22, color: 'var(--text-sub)', cursor: 'pointer' }}>‹</span>
+                        <span onClick={() => setJoinView('main')}
+                          role="button" tabIndex={0} aria-label="Назад"
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setJoinView('main'); } }}
+                          style={{ fontSize: 22, color: 'var(--text-sub)', cursor: 'pointer' }}>‹</span>
                         <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>Ввести код</span>
                       </div>
                       <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="Код из приглашения"
@@ -896,6 +924,7 @@ function SectionHeader({ children, onInfo }: { children: React.ReactNode; onInfo
       {onInfo && (
         <button
           onClick={onInfo}
+          aria-label="Пояснение"
           style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-faint)', fontSize: 9, fontWeight: 700, cursor: 'pointer', border: 'none', flexShrink: 0, padding: 0 }}
         >?</button>
       )}
@@ -907,7 +936,9 @@ const SettingsLabel = ({ children }: { children: React.ReactNode }) => <SectionH
 
 function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
   return (
-    <div onClick={onClick} style={{ width: 44, height: 26, borderRadius: 13, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
+    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
+      style={{ width: 44, height: 26, borderRadius: 13, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
       <div style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s' }} />
     </div>
   );
@@ -924,7 +955,9 @@ function RowRight({ text, small }: { text: string; small?: boolean }) {
 
 function Row({ label, sub, emoji, right, onClick, divider, color }: { label: string; sub?: string; emoji?: string; right?: React.ReactNode; onClick?: () => void; divider?: boolean; color?: string }) {
   return (
-    <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', cursor: onClick ? 'pointer' : 'default', borderTop: divider ? '1px solid rgba(var(--fg-rgb),0.05)' : undefined }}>
+    <div onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
+      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', cursor: onClick ? 'pointer' : 'default', borderTop: divider ? '1px solid rgba(var(--fg-rgb),0.05)' : undefined }}>
       {emoji && <span style={{ fontSize: 18, width: 26, textAlign: 'center', flexShrink: 0 }}>{emoji}</span>}
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 500, color: color ?? 'var(--text)' }}>{label}</div>

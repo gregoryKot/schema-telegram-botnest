@@ -534,11 +534,13 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
               <button
                 onClick={handleBack}
                 disabled={page === 0}
+                aria-label="Назад"
                 style={{ width: 36, height: 36, borderRadius: 12, border: 'none', background: page === 0 ? 'transparent' : 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 16, cursor: page === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: page === 0 ? 0 : 1, transition: 'opacity 0.15s' }}
               >←</button>
               <span style={{ fontSize: 13, color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>{page + 1} / {TOTAL_PAGES}</span>
               <button
                 onClick={() => setPhase('intro')}
+                aria-label="Закрыть"
                 style={{ width: 36, height: 36, borderRadius: 12, border: 'none', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 17, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >✕</button>
             </div>

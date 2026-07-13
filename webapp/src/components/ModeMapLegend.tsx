@@ -38,7 +38,7 @@ export function ModeMapLegend({ onClose }: { onClose: () => void }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <span style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-faint)' }}>Легенда</span>
-        <button onClick={onClose} title="Скрыть" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 0, display: 'flex' }}><MMIcon name="close" size={14} /></button>
+        <button onClick={onClose} title="Скрыть" aria-label="Скрыть" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 0, display: 'flex' }}><MMIcon name="close" size={14} /></button>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {ITEMS.map(it => (

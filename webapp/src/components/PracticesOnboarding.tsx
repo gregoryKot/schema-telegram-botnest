@@ -167,6 +167,8 @@ export function PracticesOnboarding({ needs, onDone }: Props) {
                   <div
                     key={text}
                     onClick={() => toggleSuggestion(text)}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSuggestion(text); } }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       background: on ? color + '20' : 'rgba(var(--fg-rgb),0.04)',

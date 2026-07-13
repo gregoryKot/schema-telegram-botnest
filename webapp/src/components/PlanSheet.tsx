@@ -143,6 +143,8 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
                     <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div
                         onClick={() => selectText(text)}
+                        role="button" tabIndex={0}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectText(text); } }}
                         className="mode-card"
                         style={{ '--mode-color': isUser ? color : 'var(--text-ghost)', flex: 1 } as React.CSSProperties}
                       >
@@ -159,6 +161,7 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
                               .catch(() => setDeletingIds(prev => { const s = new Set(prev); s.delete(id); return s; }));
                           }}
                           style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: deletingIds.has(id) ? 'default' : 'pointer', fontSize: 16, color: deletingIds.has(id) ? 'var(--text-ghost)' : 'var(--c-rose)', border: 'none' }}
+                          aria-label="Удалить"
                         >×</button>
                       )}
                     </div>
@@ -213,6 +216,8 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
                   <div
                     key={i}
                     onClick={() => setReminderIdx(i)}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setReminderIdx(i); } }}
                     className={'mode-card ' + (reminderIdx === i ? 'is-selected' : '')}
                     style={{ '--mode-color': color } as React.CSSProperties}
                   >

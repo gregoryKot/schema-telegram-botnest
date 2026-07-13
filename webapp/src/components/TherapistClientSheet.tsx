@@ -501,7 +501,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                   <button onClick={saveAlias} disabled={aliasSaving} style={{ padding: '3px 10px', borderRadius: 5, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
                     {aliasSaving ? '…' : 'OK'}
                   </button>
-                  <button onClick={() => setRenamingAlias(false)} style={{ padding: '3px 7px', borderRadius: 5, border: 'none', background: 'transparent', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                  <button onClick={() => setRenamingAlias(false)} aria-label="Отменить" style={{ padding: '3px 7px', borderRadius: 5, border: 'none', background: 'transparent', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>✕</button>
                   {aliasError && <span style={{ fontSize: 12, color: 'var(--c-rose)' }}>{aliasError}</span>}
                 </>
               ) : (
@@ -510,7 +510,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     {selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`}
                   </span>
                   <button onClick={() => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); }}
-                    style={{ background: 'none', border: 'none', padding: '2px 5px', borderRadius: 4, color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', flexShrink: 0 }} title="Переименовать">✎</button>
+                    style={{ background: 'none', border: 'none', padding: '2px 5px', borderRadius: 4, color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer', flexShrink: 0 }} title="Переименовать" aria-label="Переименовать">✎</button>
                   {/* Inline meta */}
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
                     {selectedClient.lastActiveDate === todayStr() && (
@@ -542,7 +542,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginLeft: 'auto', alignItems: 'center' }}>
                 <button onClick={() => setShowAssign(true)} className="btn btn-primary">+ Задание</button>
                 <button onClick={() => setClientTab('sessions')} className="btn btn-secondary">+ Заметка</button>
-                <button onClick={deleteClient} disabled={deleteLoading} title="Удалить клиента"
+                <button onClick={deleteClient} disabled={deleteLoading} title="Удалить клиента" aria-label="Удалить клиента"
                   style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                     borderRadius: 8, border: '1px solid var(--line)', background: 'transparent', fontSize: 14, color: 'var(--text-faint)', cursor: 'pointer' }}>
                   {deleteLoading ? '…' : '🗑'}
@@ -1194,7 +1194,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                           <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{fmtDate(note.date)}</span>
                           <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>Сессия {notes.length - i}</span>
                         </div>
-                        <button onClick={() => removeNote(note.id)} style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, fontSize: 12, color: 'var(--text-ghost)', cursor: 'pointer' }}>✕</button>
+                        <button onClick={() => removeNote(note.id)} aria-label="Удалить заметку" style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, fontSize: 12, color: 'var(--text-ghost)', cursor: 'pointer' }}>✕</button>
                       </div>
                       <div style={{ fontSize: 15, lineHeight: 1.7, color: 'var(--text-sub)', maxWidth: 720, whiteSpace: 'pre-wrap' }}>
                         {note.text}

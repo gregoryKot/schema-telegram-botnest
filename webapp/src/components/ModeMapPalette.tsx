@@ -139,7 +139,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
               </button>
               {onAddMany && (
                 <button onClick={() => { const all = clientModeIds.map(clientModeNode).filter(Boolean) as Omit<ModeMapNode, 'position'>[]; if (all.length) onAddMany(all); }}
-                  title="Вынести все режимы клиента на карту"
+                  title="Вынести все режимы клиента на карту" aria-label="Вынести все режимы клиента на карту"
                   style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 3, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 5,
                     cursor: 'pointer', fontSize: 10.5, fontWeight: 600, padding: '3px 8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
                   <MMIcon name="plus" size={11} /> все
@@ -153,7 +153,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                 <button key={modeId}
                   onClick={() => onAdd(node)}
                   draggable onDragStart={e => onDragStart(e, node)}
-                  style={{ ...itemStyle, padding: '5px 14px' }} title="Из концептуализации клиента">
+                  style={{ ...itemStyle, padding: '5px 14px' }} title="Из концептуализации клиента" aria-label="Из концептуализации клиента">
                   <span style={{ fontSize: 12 }}>{clientModeEmoji(modeId)}</span>
                   <span style={{ fontSize: 12, flex: 1 }}>{node.data.label}</span>
                 </button>
@@ -166,7 +166,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
         {(!q || 'триггер ситуация'.includes(q)) && (
           <button onClick={() => onAdd({ id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
             draggable onDragStart={e => onDragStart(e, { id: `trigger_${Date.now()}`, type: 'trigger', data: { label: 'Триггер' } })}
-            style={itemStyle} title="Внешняя ситуация, запускающая цикл">
+            style={itemStyle} title="Внешняя ситуация, запускающая цикл" aria-label="Внешняя ситуация, запускающая цикл">
             <span style={{ fontSize: 12 }}>☁️</span>
             <span style={{ fontSize: 12.5, flex: 1 }}>Триггер / Ситуация</span>
           </button>
@@ -174,7 +174,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
         {(!q || 'поведение последствие'.includes(q)) && (
           <button onClick={() => onAdd({ id: `behavior_${Date.now()}`, type: 'behavior', data: { label: 'Поведение' } })}
             draggable onDragStart={e => onDragStart(e, { id: `behavior_${Date.now()}`, type: 'behavior', data: { label: 'Поведение' } })}
-            style={itemStyle} title="Что человек делает / последствие">
+            style={itemStyle} title="Что человек делает / последствие" aria-label="Что человек делает / последствие">
             <span style={{ fontSize: 12 }}>🎬</span>
             <span style={{ fontSize: 12.5, flex: 1 }}>Поведение / Последствие</span>
           </button>
@@ -221,7 +221,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
               <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-sub)', flex: 1 }}>Мои режимы</span>
               <button onClick={() => { const next = !adding; setAdding(next); if (next) setTimeout(() => { addFormRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); addInputRef.current?.focus(); }, 60); }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', padding: 0, lineHeight: 1, display: 'flex', alignItems: 'center' }}
-                title="Добавить свой режим"><MMIcon name="plus" size={15} /></button>
+                title="Добавить свой режим" aria-label="Добавить свой режим"><MMIcon name="plus" size={15} /></button>
             </div>
 
             {adding && (
@@ -298,7 +298,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                 </button>
                 <button onClick={() => removeCustomMode(m.id)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: '0 10px', flexShrink: 0, display: 'flex', alignItems: 'center' }}
-                  title="Удалить"><MMIcon name="close" size={11} /></button>
+                  title="Удалить" aria-label="Удалить"><MMIcon name="close" size={11} /></button>
               </div>
             ))}
 

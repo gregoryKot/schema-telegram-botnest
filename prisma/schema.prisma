@@ -31,6 +31,33 @@ enum UserRole {
   THERAPIST
 }
 
+
+// ── Статусы как enum (аудит 2026-07, D-3): раньше — голые String с
+// комментарием-списком, БД не защищала от опечатки в статусе. ──────────────
+enum RelationStatus {
+  pending
+  active
+}
+
+enum RequestStatus {
+  pending
+  approved
+  rejected
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+}
+
+enum SubscriptionStatus {
+  pending
+  active
+  cancelled
+  past_due
+}
+
 model User {
   id                     BigInt   @id
   createdAt              DateTime @default(now())
@@ -149,7 +176,7 @@ model TherapistRequest {
   qualification String
   contacts      String    // free text: site, telegram handle, etc
   message       String?   // optional cover letter
-  status        String    @default("pending") // 'pending' | 'approved' | 'rejected'
+  status        RequestStatus @default(pending)
   reviewedAt    DateTime?
   reviewedBy    BigInt?   // admin's Telegram id
   rejectReason  String?
@@ -224,7 +251,7 @@ model Pair {
   code      String   @unique
   userId1   BigInt
   userId2   BigInt?
-  status    String   @default("pending")
+  status    RelationStatus @default(pending)
   createdAt DateTime @default(now())
   user1     User     @relation("PairUser1", fields: [userId1], references: [id], onDelete: Cascade)
   user2     User?    @relation("PairUser2", fields: [userId2], references: [id], onDelete: SetNull)
@@ -348,7 +375,7 @@ model TherapyRelation {
   code        String   @unique
   therapistId BigInt
   clientId    BigInt?
-  status      String   @default("pending") // "pending" | "active"
+  status      RelationStatus @default(pending)
   clientAlias       String?  // therapist's custom name for client
   virtualClientName String?  // if set: offline/virtual client (no Telegram account)
   therapyStartDate  String?  // YYYY-MM-DD, editable by therapist
@@ -613,7 +640,7 @@ model BookingSetting {
 model Donation {
   id        Int       @id @default(autoincrement())
   amount    Int                          // rubles
-  status    String    @default("pending") // pending | paid
+  status    PaymentStatus @default(pending)
   source    String    @default("app")     // app | game
   email     String?
   comment   String?
@@ -628,7 +655,7 @@ model Donation {
 // project. email is encrypted. Managed by cancelToken (web) or telegramId (bot).
 model Subscription {
   id             Int      @id @default(autoincrement())
-  status         String   @default("pending") // pending | active | cancelled | past_due
+  status         SubscriptionStatus @default(pending)
   period         String                        // "month" | "year"
   amount         Int                           // rubles per period
   email          String?                       // encrypted
@@ -653,7 +680,7 @@ model SubscriptionCharge {
   subscriptionId Int
   subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   amount         Int
-  status         String       @default("pending") // pending | paid | failed
+  status         PaymentStatus @default(pending)
   isFirst        Boolean      @default(false)      // the establishing (CIT) payment
   paidAt         DateTime?
   createdAt      DateTime     @default(now())

@@ -34,9 +34,11 @@ interface Particle {
 interface Props {
   streak: number;
   onDone: () => void;
+  /** Фраза-интерпретация сегодняшнего профиля (todayInsightPhrase) — «мгновенный aha», этап 4.2. */
+  insight?: string | null;
 }
 
-export function Celebration({ streak, onDone }: Props) {
+export function Celebration({ streak, onDone, insight }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const [copied, setCopied] = useState(false);
@@ -110,6 +112,15 @@ export function Celebration({ streak, onDone }: Props) {
         <div style={{ fontSize: 14, color: 'rgba(var(--fg-rgb),0.75)', lineHeight: 1.5, maxWidth: 220 }}>
           {getMilestoneText(streak)}
         </div>
+        {insight && (
+          <div style={{
+            fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55,
+            maxWidth: 240, marginTop: 12, paddingTop: 12,
+            borderTop: '1px solid rgba(var(--fg-rgb),0.08)',
+          }}>
+            {insight}
+          </div>
+        )}
         <button
           onClick={async (e) => {
             e.stopPropagation();
