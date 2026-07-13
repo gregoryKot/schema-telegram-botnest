@@ -27,7 +27,8 @@ export type NotificationType =
   | 'low_streak_insight'
   | 'nudge'
   | 'task_assigned'
-  | 'ysq_requested';
+  | 'ysq_requested'
+  | 'pair_activity';
 
 /**
  * Проактивные типы — бот пишет сам, без действия юзера. Подчиняются дневному
@@ -46,6 +47,10 @@ export const PROACTIVE_TYPES: NotificationType[] = [
   'donate_reminder',
   'practice_missed',
   'low_streak_insight',
+  // Парный триггер (аудит 2026-07, 4.5): бот пишет сам по действию напарника —
+  // проактивное (дневной бюджет, отмена при паузе), НЕ quiet-exempt (получатель
+  // сам ничего не делал — тихие часы уважаются).
+  'pair_activity',
 ];
 
 /**

@@ -405,6 +405,15 @@ export function renderTemplate(
       };
     }
 
+    // Парный триггер (аудит 2026-07, 4.5): напарник заполнил трекер.
+    // Формулировка нейтральная по обращению, без сравнения и соревнования.
+    case 'pair_activity': {
+      return {
+        text: '🤝 Напарник сегодня уже отметил свои потребности.\n\nХороший момент свериться с собой — минутка на пять оценок.',
+        keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
+      };
+    }
+
     case 'ysq_requested': {
       const therapistName = payload?.therapistName as string | undefined;
       const name = therapistName ? `Терапевт ${therapistName}` : 'Ваш терапевт';
