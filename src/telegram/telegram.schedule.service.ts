@@ -8,7 +8,7 @@ import {
 import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
-import { BotService } from '../bot/bot.service';
+import { BotService, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import {
   NotificationService,
@@ -263,6 +263,12 @@ export class TelegramScheduleService implements OnModuleInit {
       text,
     });
 
+    // 4.5 (аудит 2026-07): лёгкий социальный триггер для напарника — до
+    // раннего return'а comeback-ветки, чтобы срабатывал в обоих путях.
+    await this.maybeNotifyPairPartners(userId).catch((err) =>
+      this.logger.error('maybeNotifyPairPartners failed', err),
+    );
+
     const total = await this.analyticsService.getTotalDaysFilled(userId);
 
     // Возвращение после перерыва ≥3 дней: тёплое «с возвращением» вместо вех —
@@ -335,6 +341,50 @@ export class TelegramScheduleService implements OnModuleInit {
           new Date(),
         );
       }
+    }
+  }
+
+  /**
+   * Парный триггер (аудит 2026-07, этап 4.5): юзер заполнил трекер —
+   * мягко подсказать активным напарникам, без сравнения и соревнования.
+   * Ограничители: уведомления напарника включены; напарник сегодня ещё
+   * не заполнил сам; максимум одно pair_activity в день (по его таймзоне);
+   * тихие часы уважает очередь (тип не quiet-exempt), дневной бюджет —
+   * PROACTIVE_TYPES.
+   */
+  async maybeNotifyPairPartners(userId: bigint): Promise<void> {
+    const pairs = await this.botService.getUserPairs(userId);
+    for (const pair of pairs) {
+      if (pair.status !== 'active' || pair.partnerId === null) continue;
+      const partnerId = BigInt(pair.partnerId);
+
+      const settings = await this.botService.getUserSettings(partnerId);
+      if (!settings || settings.notifyEnabled === false) continue;
+
+      // Напарник уже заполнил сегодня сам — подсказка не нужна.
+      const partnerRatings = await this.botService.getRatings(partnerId);
+      if (NEED_IDS.every((id) => partnerRatings[id] !== undefined)) continue;
+
+      const tz = settings.notifyTimezone ?? 'Europe/Moscow';
+      const todayStr = localDateString(tz, new Date());
+      const last = await this.notificationService.lastSentAt(
+        partnerId,
+        'pair_activity',
+      );
+      const sentToday =
+        last !== null && localDateString(tz, last) === todayStr;
+      if (
+        sentToday ||
+        (await this.notificationService.hasPending(partnerId, 'pair_activity'))
+      ) {
+        continue;
+      }
+
+      await this.notificationService.schedule(
+        partnerId,
+        'pair_activity',
+        new Date(),
+      );
     }
   }
 }
