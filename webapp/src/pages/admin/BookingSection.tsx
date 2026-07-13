@@ -191,7 +191,7 @@ function ScheduleManager({ rules, onChange, adminKey }: { rules: AvailabilityRul
           <button style={{ ...btnGhost, padding: '4px 10px', fontSize: 12 }} onClick={() => api.adminToggleRule(adminKey, r.id, !r.isActive).then(onChange)}>
             {r.isActive ? 'Выкл' : 'Вкл'}
           </button>
-          <button style={{ ...btnGhost, padding: '4px 10px', fontSize: 12, color: 'var(--accent-red)' }} onClick={() => api.adminDeleteRule(adminKey, r.id).then(onChange)}>✕</button>
+          <button aria-label="Удалить правило" style={{ ...btnGhost, padding: '4px 10px', fontSize: 12, color: 'var(--accent-red)' }} onClick={() => api.adminDeleteRule(adminKey, r.id).then(onChange)}>✕</button>
         </div>
       ))}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 16 }}>

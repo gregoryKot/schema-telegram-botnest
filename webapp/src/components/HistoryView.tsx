@@ -148,7 +148,8 @@ function SparklineRow({ need, history, selectedIdx, selectedRatings, onClick }: 
   const polyStr = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 
   return (
-    <div onClick={onClick} style={{
+    <div onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined} style={{
       display: 'flex', alignItems: 'center', gap: 16,
       padding: '12px 0', cursor: onClick ? 'pointer' : 'default',
     }}>
@@ -352,7 +353,8 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
 
             {/* Backfill */}
             {onBackfill && selected.date !== TODAY_STR && (
-              <div onClick={() => onBackfill(selected.date)} style={{
+              <div onClick={() => onBackfill(selected.date)} role="button" tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBackfill(selected.date); } }} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '10px 0', marginBottom: 8, cursor: 'pointer',
                 borderBottom: '1px solid rgba(var(--fg-rgb),0.07)',
@@ -377,7 +379,8 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                 const levelLabel = val === 0 ? '' : val <= 3 ? 'низко' : val <= 6 ? 'средне' : 'хорошо';
                 const levelColor = val <= 3 ? 'var(--accent-red)' : val <= 6 ? 'var(--accent-yellow)' : 'var(--accent-green)';
                 return (
-                  <div key={n.id} onClick={() => handleTapNeed(n)} style={{
+                  <div key={n.id} onClick={() => handleTapNeed(n)} role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTapNeed(n); } }} style={{
                     display: 'flex', alignItems: 'center', gap: 14,
                     padding: '14px 0',
                     borderBottom: i < needs.length - 1 ? '1px solid rgba(var(--fg-rgb),0.07)' : 'none',
@@ -429,7 +432,8 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
             })()}
 
             {/* Note */}
-            <div onClick={() => setShowNote(true)} style={{
+            <div onClick={() => setShowNote(true)} role="button" tabIndex={0}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowNote(true); } }} style={{
               display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
               padding: '14px 0', marginTop: 4,
               borderTop: '1px solid rgba(var(--fg-rgb),0.07)',

@@ -29,7 +29,14 @@ export function PairCard({ partners, pendingCode, showInvite, onOpen, onDismissI
         const done = partner.partnerTodayDone && partner.partnerIndex !== null;
         const color = done ? indexColor(partner.partnerIndex ?? 0) : 'rgba(var(--fg-rgb),0.3)';
         return (
-          <div key={partner.code} style={{ ...rowStyle, cursor: 'pointer' }} onClick={onOpen}>
+          <div
+            key={partner.code}
+            style={{ ...rowStyle, cursor: 'pointer' }}
+            onClick={onOpen}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
+          >
             <span style={{ fontSize: 22 }}>🤝</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>{name} сегодня</div>
@@ -48,7 +55,13 @@ export function PairCard({ partners, pendingCode, showInvite, onOpen, onDismissI
       })}
 
       {pendingCode && (
-        <div style={{ ...rowStyle, cursor: 'pointer' }} onClick={onOpen}>
+        <div
+          style={{ ...rowStyle, cursor: 'pointer' }}
+          onClick={onOpen}
+          role="button"
+          tabIndex={0}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
+        >
           <span style={{ fontSize: 22 }}>⏳</span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, color: 'var(--text-sub)', fontWeight: 500 }}>Ждём партнёра</div>
@@ -61,13 +74,20 @@ export function PairCard({ partners, pendingCode, showInvite, onOpen, onDismissI
       {showInvite && (
         <div style={rowStyle}>
           <span style={{ fontSize: 22 }}>🤝</span>
-          <div style={{ flex: 1, cursor: 'pointer' }} onClick={onOpen}>
+          <div
+            style={{ flex: 1, cursor: 'pointer' }}
+            onClick={onOpen}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
+          >
             <div style={{ fontSize: 13, color: 'var(--text-sub)', fontWeight: 500 }}>Отслеживать вместе</div>
             <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>Пригласи друга или партнёра</div>
           </div>
           <span onClick={onOpen} style={{ fontSize: 16, color: 'var(--text-faint)', cursor: 'pointer' }}>›</span>
           <button
             onClick={e => { e.stopPropagation(); onDismissInvite(); }}
+            aria-label="Закрыть"
             style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 18, cursor: 'pointer', padding: '0 0 0 4px', lineHeight: 1 }}
           >×</button>
         </div>
@@ -76,6 +96,9 @@ export function PairCard({ partners, pendingCode, showInvite, onOpen, onDismissI
       {partners.length > 0 && !pendingCode && (
         <div
           onClick={onOpen}
+          role="button"
+          tabIndex={0}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
           style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '2px 0 8px', cursor: 'pointer' }}
         >
           + Пригласить ещё

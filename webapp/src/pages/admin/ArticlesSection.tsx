@@ -37,7 +37,7 @@ export function ArticlesSection({ adminKey }: { adminKey: string }) {
             <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>/{a.slug} · {a.readMin} мин · {new Date(a.date).toLocaleDateString('ru')}</div>
           </div>
           <button style={{ ...btnGhost, padding: '5px 12px', fontSize: 13 }} onClick={() => setEditing(a)}>Редактировать</button>
-          <button style={{ ...btnGhost, padding: '5px 12px', fontSize: 13, color: 'var(--accent-red)' }}
+          <button aria-label="Удалить статью" style={{ ...btnGhost, padding: '5px 12px', fontSize: 13, color: 'var(--accent-red)' }}
             onClick={() => { if (confirm(`Удалить статью «${a.title}»?`)) api.adminDeleteArticle(adminKey, a.id).then(reload); }}>
             ✕
           </button>

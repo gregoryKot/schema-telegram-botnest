@@ -139,7 +139,7 @@ export function ModeMapSelector({ clientId }: Props) {
                   {m.title}
                 </button>
                 {maps.length > 1 && activeId === m.id && (
-                  <button onClick={() => deleteMap(m.id)} title="Удалить карту"
+                  <button onClick={() => deleteMap(m.id)} title="Удалить карту" aria-label="Удалить карту"
                     style={{
                       background: 'none', border: 'none', cursor: 'pointer',
                       color: 'var(--text-faint)', fontSize: 11, padding: '4px 8px 4px 2px',

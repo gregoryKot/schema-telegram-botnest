@@ -17,6 +17,7 @@ export function FloatingPill({ onOpenSchemaDiary, onOpenModeDiary, onOpenGratitu
       <div style={{ position: 'fixed', bottom: 84, right: 16, zIndex: 49 }}>
         <button
           onClick={() => setShowPicker(true)}
+          aria-label="Быстрое действие"
           style={{
             width: 60, height: 60, borderRadius: '50%', border: 'none',
             background: 'linear-gradient(135deg, #60a5fa, #7c72f8)',

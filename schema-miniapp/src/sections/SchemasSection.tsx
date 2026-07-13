@@ -146,7 +146,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         <button
           onClick={() => onOpenSchema()}
           style={{ width: 38, height: 38, borderRadius: 12, border: 'none', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 4 }}
-          title="Библиотека схема-терапии"
+          title="Библиотека схема-терапии" aria-label="Библиотека схема-терапии"
         >📖</button>
       </div>
 

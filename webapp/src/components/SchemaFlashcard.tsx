@@ -189,7 +189,8 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             const m = MODES.find(x => x.id === card.mode);
             const n = NEEDS.find(x => x.id === card.needId);
             return (
-              <div key={card.id} onClick={() => setViewing(card)} style={{
+              <div key={card.id} onClick={() => setViewing(card)} role="button" tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewing(card); } }} style={{
                 padding: '16px 20px', background: 'transparent',
                 border: '1px solid var(--line)', borderRadius: 16, marginBottom: 10, cursor: 'pointer',
               }}>
