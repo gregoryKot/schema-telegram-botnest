@@ -11,8 +11,8 @@ const LEVELS: LevelEntry[] = [
   { scene: 'Tutorial',                    label: t('m_prologue_intro'), enabled: true  },
   { scene: 'Game', chapter: 'chapter1',   label: t('m_ch_1_ordinary_day'), enabled: true  },
   { scene: 'Game', chapter: 'chapter2',   label: t('m_ch_2_home'),          enabled: true  },
-  { scene: 'Game', chapter: 'chapter3',   label: t('m_ch_3_it_ll_pass'), enabled: true  },
-  { scene: 'Game', chapter: 'chapter4',   label: t('m_ch_4_choice_soon'), enabled: false },
+  { scene: 'Game', chapter: 'chapter3',   label: t('m_ch_3_road'), enabled: true  },
+  { scene: 'Game', chapter: 'chapter4',   label: t('m_ch_4_first_session'), enabled: true },
 ];
 
 // Перевод статичных подписей меню + переключатель языка (reload пересобирает тексты)

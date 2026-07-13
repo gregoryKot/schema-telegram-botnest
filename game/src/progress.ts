@@ -1,7 +1,7 @@
 // Прогресс игрока в localStorage: какая глава достигнута.
 // Хранится самая дальняя — закрыл вкладку, вернулся, продолжил с неё.
 const KEY = 'rtym_chapter';
-const ORDER = ['chapter1', 'chapter2'];
+const ORDER = ['chapter1', 'chapter2', 'chapter3', 'chapter4'];
 
 export function unlockChapter(id: string) {
   try {

@@ -1,6 +1,10 @@
 import { GROUND_Y } from './constants';
 import type { MsgKey } from './i18n';
 
+// Акт II: двери-выборы на дороге. home/guru — копинг-ловушки с последствиями,
+// therapist — цель главы (вход = кабинет, финал воронки).
+export type DoorKind = 'home' | 'guru' | 'therapist';
+
 // A chapter = pure data. The Game scene is the engine; chapters are config.
 export interface TriggerDef {
   x: number; anx?: number; critic?: boolean; say?: MsgKey; overwhelm?: boolean;
@@ -36,7 +40,7 @@ export interface ChapterConfig {
   overwhelmSay: MsgKey;
   next?: string;            // глава после развязки; нет — в начало
   branch?: string;          // конец Акта I: экран-развилка (CTA в терапию ИЛИ продолжить в эту главу)
-  act2End?: boolean;        // конец отрезка Акта II (дорога): «дорога продолжается» + воронка, но НЕ финал истории
+  doors?: { kind: DoorKind; x: number }[]; // Акт II «Выбор»: три двери на дороге
 }
 
 const G = GROUND_Y;
@@ -182,69 +186,98 @@ const chapter2: ChapterConfig = {
   branch: 'chapter3', // конец Акта I: воронка-CTA ИЛИ продолжить в Дорогу (гл.3)
 };
 
-// ── Глава 3 · «Само пройдёт» (Акт II — дорога в терапию) ────────────────────
-// Понял, что так нельзя — и тут же начал себя отговаривать. Враги не нападают,
-// а УБАЮКИВАЮТ: Само-Пройдёт замедляет и темнит экран, шепчет «да всё норм».
+// ── Глава 3 · «Дорога» (Акт II — путь в терапию) ────────────────────────────
+// Дверь терапевта — в конце улицы, видна как цель. Путь перегораживают
+// ОТГОВОРКИ («само пройдёт», «дорого», «ты в порядке», у двери — «а вдруг
+// хуже»). Копинги на них не действуют — их проходят, ОТВЕЧАЯ (E/тап).
+// Рядом с отговорками — зазывалы-спрайты (не враги, урона нет). Старые враги
+// Акта I бродят по дороге — жизнь продолжается, пока идёшь.
 const chapter3: ChapterConfig = {
   id: 'chapter3',
-  title: 'm_it_ll_pass',
-  tagline: 'm_realised_this_can_t_go_on',
+  title: 'm_road_title',
+  tagline: 'm_choice_tagline',
   theme: 'road',
-  arenaW: 3500,
-  pits: [{ s: 1250, e: 1400 }, { s: 2350, e: 2500 }],
-  checkpoints: [100, 1450, 2550],
+  arenaW: 3600,
+  pits: [{ s: 1450, e: 1600 }, { s: 2750, e: 2900 }],
+  checkpoints: [100, 1650, 2950],
   // высоты сильно разные — лесенки и башенки, чтобы прятать сердца/монеты наверху
   platforms: [
     { x: 360,  w: 110, y: G - 78  },                       // ступень 1
     { x: 560,  w: 90,  y: G - 150 },                       // ступень 2
-    { x: 760,  w: 100, y: G - 222 },                       // башенка — секрет наверху
-    { x: 1050, w: 120, y: G - 96  },
-    { x: 1320, w: 96,  y: G - 138 },                       // над ямой 1250-1400
-    { x: 1520, w: 100, y: G - 208 },                       // высокий секрет
-    { x: 1820, w: 120, y: G - 86  },
-    { x: 2040, w: 96,  y: G - 158 },                       // лесенка к башне
-    { x: 2220, w: 90,  y: G - 232 },                       // башня — секрет наверху
-    { x: 2430, w: 110, y: G - 118 },                       // над ямой 2350-2500
-    { x: 2760, w: 120, y: G - 92  },                       // за зеркалом
-    { x: 2960, w: 100, y: G - 168 },
-    { x: 3160, w: 120, y: G - 108 },
+    { x: 700,  w: 100, y: G - 222 },                       // башенка — секрет наверху
+    { x: 1180, w: 120, y: G - 96  },
+    { x: 1520, w: 96,  y: G - 138 },                       // над ямой 1450-1600
+    { x: 1720, w: 100, y: G - 208 },                       // высокий секрет
+    { x: 1980, w: 120, y: G - 86  },
+    { x: 2140, w: 96,  y: G - 158 },                       // лесенка к башне
+    { x: 2300, w: 90,  y: G - 232 },                       // башня — секрет наверху
+    { x: 2820, w: 110, y: G - 118 },                       // над ямой 2750-2900
+    { x: 3060, w: 120, y: G - 92  },
+    { x: 3240, w: 100, y: G - 168 },
   ],
   spikes: [],
   hearts: [
-    { x: 420,  y: G - 116 }, { x: 760,  y: G - 262 },      // награда за подъём на башенку
-    { x: 1820, y: G - 126 }, { x: 2430, y: G - 158 },      // над ямой
-    { x: 3160, y: G - 150 },
+    { x: 420,  y: G - 116 }, { x: 700,  y: G - 262 },      // награда за подъём на башенку
+    { x: 1980, y: G - 126 }, { x: 2820, y: G - 158 },      // над ямой
+    { x: 3240, y: G - 210 },
   ],
   memories: [
-    { x: 560,  y: G - 190 }, { x: 760,  y: G - 300 },      // секрет: лесенка 360→560→760
-    { x: 1050, y: G - 138 }, { x: 1320, y: G - 180 },      // над ямой
-    { x: 1520, y: G - 250 },                               // высокий секрет
-    { x: 2220, y: G - 278 },                               // секрет на башне
-    { x: 2960, y: G - 210 }, { x: 3300, y: G - 118 },      // за зеркалом + у финиша
+    { x: 560,  y: G - 190 }, { x: 700,  y: G - 300 },      // секрет: лесенка 360→560→700
+    { x: 1180, y: G - 138 }, { x: 1520, y: G - 180 },      // над ямой
+    { x: 1720, y: G - 250 },                               // высокий секрет
+    { x: 2300, y: G - 278 },                               // секрет на башне
+    { x: 3060, y: G - 134 }, { x: 3350, y: G - 118 },      // у финиша
+  ],
+  // Одна дверь — настоящая, в самом конце, скромная.
+  doors: [
+    { kind: 'therapist', x: 3480 },
   ],
   triggers: [
-    { x: 240,  say: 'm_i_need_to_change_something_or' },
-    { x: 600,  soothe: 820 },
-    { x: 1300, bargainer: 1620 },   // Это-Дорого: швыряет ценники, бить → дорожает
-    { x: 2100, say: 'm_see_easier_already_maybe_it_ll' },
-    { x: 2350, mirror: 2620 },      // поворот: ЗАМРИ = посмотреть честно
-    { x: 3250, overwhelm: true },
+    { x: 240,  say: 'm_door_at_end' },              // цель видна: дверь — в конце улицы
+    { x: 560,  soothe: 840 },                       // призрак у отговорки «само пройдёт»
+    { x: 1150, anx: 1 },                            // жизнь продолжается, пока идёшь
+    { x: 1400, bargainer: 1680 },                   // торгаш у отговорки «это дорого»
+    { x: 2000, phone: 2150 },                       // и телефон всегда при тебе
+    { x: 2250, mirror: 2480 },                      // зеркало у отговорки «ты в порядке»
+    { x: 3080, critic: true },                      // финальный шёпот у двери
   ],
-  ending: [
-    { text: 'm_the_slyest_enemy_never_attacked',       y: 120, color: '#d8c8ec', size: 17, delay: 700  },
-    { text: 'm_it_just_whispered_not_today',       y: 156, color: '#bfe0ff', size: 15, delay: 2200 },
-    { text: 'm_but_today_you_didnt_turn',              y: 226, color: '#e8d0dc', size: 16, delay: 4000 },
-    { text: 'm_road_longer_but_walking',       y: 312, color: '#88ffcc', size: 15, delay: 6200 },
-  ],
+  // развязка гл.3 — не текстовая карточка, а вход в дверь (кабинет); ending не используется
+  ending: [],
   palette: {
     skyTop: 0x3a3458, skyBot: 0x6a5a82, glow1: 0x8a7aba, glow2: 0xa890c8,
     groundTint: 0xc8bcdc, platTint: 0xc0b4d4, fog: 0x342a4a, mote: 0xb0a0d0,
   },
   music: 'home',
   overwhelmAnx: 0,
-  overwhelmSay: 'm_not_today_no_today_i_walk',
-  act2End: true, // первый отрезок дороги пройден — дорога продолжается (не финал истории)
+  overwhelmSay: 'm_not_today_no_today_i_walk', // не используется (нет overwhelm-триггера)
 };
 
-export const CHAPTERS: Record<string, ChapterConfig> = { chapter1, chapter2, chapter3 };
+// ── Глава 4 · «Первый сеанс» (Акт III — путь в терапии) ─────────────────────
+// Не платформер — скриптовая сцена в кабинете (GameScene.sessionScene):
+// тихо, кто-то рядом, и первый ВСТРЕТИТЬ — Критик вблизи меньше, чем казался.
+const chapter4: ChapterConfig = {
+  id: 'chapter4',
+  title: 'm_ch4_title',
+  tagline: 'm_ch4_tagline',
+  theme: 'room',
+  arenaW: 960,
+  pits: [],
+  checkpoints: [100],
+  platforms: [],
+  spikes: [],
+  hearts: [],
+  memories: [],
+  triggers: [],
+  ending: [],
+  palette: {
+    // тёплая комната при лампе — как chapter2, но спокойнее
+    skyTop: 0x342b3e, skyBot: 0x5a4a52, glow1: 0x7a5a5e, glow2: 0x9a6e54,
+    groundTint: 0xe8cda0, platTint: 0xeacf9a, fog: 0x241a26, mote: 0x8a7a8a,
+  },
+  music: 'home',
+  overwhelmAnx: 0,
+  overwhelmSay: 'm_not_today_no_today_i_walk', // не используется
+};
+
+export const CHAPTERS: Record<string, ChapterConfig> = { chapter1, chapter2, chapter3, chapter4 };
 export const DEFAULT_CHAPTER = 'chapter1';
