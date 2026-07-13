@@ -3,6 +3,37 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NeedId, NEED_IDS } from './bot.service';
 import { localDate } from '../utils/tz';
 
+export interface RetentionPoint {
+  cohort: number;
+  retained: number;
+}
+export interface RetentionStats {
+  d1: RetentionPoint;
+  d7: RetentionPoint;
+  d30: RetentionPoint;
+  funnel: { registered30: number; consented30: number; filledOnce30: number };
+}
+
+/** Блок для /stats — чистая функция, покрыта тестом. */
+export function formatRetentionBlock(s: RetentionStats): string {
+  const pct = (p: RetentionPoint) =>
+    p.cohort === 0
+      ? '—'
+      : `${Math.round((p.retained / p.cohort) * 100)}% (${p.retained}/${p.cohort})`;
+  const f = s.funnel;
+  const fp = (n: number) =>
+    f.registered30 === 0 ? '' : ` (${Math.round((n / f.registered30) * 100)}%)`;
+  return [
+    `📉 <b>Когортный retention</b> (недельные когорты)`,
+    `D1: ${pct(s.d1)} · D7: ${pct(s.d7)} · D30: ${pct(s.d30)}`,
+    '',
+    `🚪 <b>Воронка онбординга</b> (регистрации за 30д)`,
+    `Регистрация: ${f.registered30}`,
+    `→ Приняли согласие: ${f.consented30}${fp(f.consented30)}`,
+    `→ Заполнили трекер хоть раз: ${f.filledOnce30}${fp(f.filledOnce30)}`,
+  ].join('\n');
+}
+
 @Injectable()
 export class BotAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -556,6 +587,66 @@ export class BotAnalyticsService {
     return DAY_NAMES[bestDow];
   }
 
+  /**
+   * Когортный retention + воронка онбординга (аудит 2026-07, этап 4.6 /
+   * правило №8 CLAUDE.md: гипотезы про онбординг проверяются D1/D7/D30,
+   * а не ощущениями). Всё выводится из существующих данных — User.createdAt,
+   * AppActivity, Rating, disclaimerAccepted; событийной таблицы не требуется.
+   */
+  async getRetentionStats(): Promise<RetentionStats> {
+    // DN: юзеры, зарегистрированные [N, N+7) дней назад (когорта недели);
+    // retained = есть AppActivity ровно в день createdAt + N дней.
+    // AppActivity.date — локальная дата юзера, createdAt — UTC: для
+    // админ-метрики допустимо (±1 день на границах таймзон).
+    const point = async (n: number): Promise<RetentionPoint> => {
+      const rows = await this.prisma.$queryRaw<
+        Array<{ cohort: bigint; retained: bigint }>
+      >`
+        SELECT count(*)::bigint AS cohort,
+               count(*) FILTER (
+                 WHERE EXISTS (
+                   SELECT 1 FROM "AppActivity" a
+                   WHERE a."userId" = u.id
+                     AND a."date" = to_char((u."createdAt" + make_interval(days => ${n}))::date, 'YYYY-MM-DD')
+                 )
+               )::bigint AS retained
+        FROM "User" u
+        WHERE u."createdAt" >= now() - make_interval(days => ${n + 7})
+          AND u."createdAt" <  now() - make_interval(days => ${n})
+      `;
+      return {
+        cohort: Number(rows[0]?.cohort ?? 0),
+        retained: Number(rows[0]?.retained ?? 0),
+      };
+    };
+    const since30 = new Date(Date.now() - 30 * 86_400_000);
+    const [d1, d7, d30, registered30, consented30, filledRows] =
+      await Promise.all([
+        point(1),
+        point(7),
+        point(30),
+        this.prisma.user.count({ where: { createdAt: { gte: since30 } } }),
+        this.prisma.user.count({
+          where: { createdAt: { gte: since30 }, disclaimerAccepted: true },
+        }),
+        this.prisma.$queryRaw<Array<{ c: bigint }>>`
+          SELECT count(*)::bigint AS c FROM "User" u
+          WHERE u."createdAt" >= ${since30}
+            AND EXISTS (SELECT 1 FROM "Rating" r WHERE r."userId" = u.id)
+        `,
+      ]);
+    return {
+      d1,
+      d7,
+      d30,
+      funnel: {
+        registered30,
+        consented30,
+        filledOnce30: Number(filledRows[0]?.c ?? 0),
+      },
+    };
+  }
+
   async getAdminStats(): Promise<string> {
     const now = new Date();
     const today = this.localDateString('UTC', now);
@@ -714,7 +805,8 @@ export class BotAnalyticsService {
       `Активных пар: ${activePairs}`,
     ];
 
-    return lines.join('\n');
+    const retention = await this.getRetentionStats();
+    return lines.join('\n') + '\n\n' + formatRetentionBlock(retention);
   }
 
   async getWorstDayOfWeek(userId: bigint): Promise<string | null> {
