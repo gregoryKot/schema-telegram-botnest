@@ -352,6 +352,7 @@ export function TodayView({ needs, ratings, saved, isOffline, onChange, onSaved,
           </div>
           <button
             onClick={e => { e.stopPropagation(); localStorage.setItem(PRACTICES_ONBOARDING_KEY, '1'); setPracticesCardVisible(false); }}
+            aria-label="Закрыть"
             style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 18, cursor: 'pointer', padding: '0 4px', flexShrink: 0 }}
           >
             ×

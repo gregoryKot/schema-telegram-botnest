@@ -150,6 +150,8 @@ export function MyNotesSheet({ onClose }: Props) {
                                 const filled = note && Object.entries(note).some(([k, v]) => k !== 'schemaId' && typeof v === 'string' && v.trim());
                                 return (
                                   <div key={s.id} onClick={() => setOpenSchemaId(s.id)}
+                                    role="button" tabIndex={0}
+                                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenSchemaId(s.id); } }}
                                     className="mode-card"
                                     style={{ '--mode-color': domain.color } as React.CSSProperties}
                                   >
@@ -180,6 +182,8 @@ export function MyNotesSheet({ onClose }: Props) {
                           const filled = note && Object.entries(note).some(([k, v]) => k !== 'modeId' && typeof v === 'string' && v.trim());
                           return (
                             <div key={id} onClick={() => setOpenModeId(id)}
+                              role="button" tabIndex={0}
+                              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenModeId(id); } }}
                               className="mode-card"
                               style={{ '--mode-color': m.groupColor } as React.CSSProperties}
                             >

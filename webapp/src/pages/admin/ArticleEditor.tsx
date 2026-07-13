@@ -125,15 +125,15 @@ function EditorToolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
   });
   return (
     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', padding: '8px 10px', borderBottom: '1.5px solid var(--line)', background: 'rgba(var(--fg-rgb),0.02)' }}>
-      <button type="button" style={tbBtn(editor.isActive('bold'))} onClick={() => editor.chain().focus().toggleBold().run()}>Ж</button>
-      <button type="button" style={tbBtn(editor.isActive('italic'))} onClick={() => editor.chain().focus().toggleItalic().run()}><i>К</i></button>
-      <button type="button" style={tbBtn(editor.isActive('heading', { level: 2 }))} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</button>
-      <button type="button" style={tbBtn(editor.isActive('heading', { level: 3 }))} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>H3</button>
+      <button type="button" aria-label="Жирный" style={tbBtn(editor.isActive('bold'))} onClick={() => editor.chain().focus().toggleBold().run()}>Ж</button>
+      <button type="button" aria-label="Курсив" style={tbBtn(editor.isActive('italic'))} onClick={() => editor.chain().focus().toggleItalic().run()}><i>К</i></button>
+      <button type="button" aria-label="Заголовок 2" style={tbBtn(editor.isActive('heading', { level: 2 }))} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</button>
+      <button type="button" aria-label="Заголовок 3" style={tbBtn(editor.isActive('heading', { level: 3 }))} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>H3</button>
       <button type="button" style={tbBtn(editor.isActive('bulletList'))} onClick={() => editor.chain().focus().toggleBulletList().run()}>• Список</button>
       <button type="button" style={tbBtn(editor.isActive('orderedList'))} onClick={() => editor.chain().focus().toggleOrderedList().run()}>1. Список</button>
-      <button type="button" style={tbBtn(false)} onClick={() => editor.chain().focus().setHorizontalRule().run()}>―</button>
-      <button type="button" style={tbBtn(false)} onClick={() => editor.chain().focus().undo().run()}>↶</button>
-      <button type="button" style={tbBtn(false)} onClick={() => editor.chain().focus().redo().run()}>↷</button>
+      <button type="button" aria-label="Разделитель" style={tbBtn(false)} onClick={() => editor.chain().focus().setHorizontalRule().run()}>―</button>
+      <button type="button" aria-label="Отменить" style={tbBtn(false)} onClick={() => editor.chain().focus().undo().run()}>↶</button>
+      <button type="button" aria-label="Повторить" style={tbBtn(false)} onClick={() => editor.chain().focus().redo().run()}>↷</button>
     </div>
   );
 }

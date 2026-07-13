@@ -34,7 +34,7 @@ export function ModeMapCoupleLanes({ mapId }: { mapId: number }) {
         style={{ width: 130, fontSize: 12.5, fontWeight: 600, textAlign: 'center', padding: '4px 8px', borderRadius: 999,
           border: `1.5px solid ${color}`, background: 'var(--bg-elev)', color: 'var(--text)', outline: 'none' }} />
     ) : (
-      <button onDoubleClick={() => setEditing(side)} onClick={() => setEditing(side)} title="Переименовать партнёра"
+      <button onDoubleClick={() => setEditing(side)} onClick={() => setEditing(side)} title="Переименовать партнёра" aria-label="Переименовать партнёра"
         style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 999, cursor: 'text',
           fontSize: 12.5, fontWeight: 600, color,
           background: `color-mix(in srgb, ${color} 12%, var(--bg-elev))`,

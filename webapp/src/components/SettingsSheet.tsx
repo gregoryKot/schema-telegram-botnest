@@ -221,6 +221,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     const active = h === localHour;
                     return (
                       <div key={h} onClick={async () => { await patch({ notifyLocalHour: h }); setSubView('main'); }}
+                        role="button" tabIndex={0}
+                        onKeyDown={async e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await patch({ notifyLocalHour: h }); setSubView('main'); } }}
                         style={{ padding: '14px 0', borderRadius: 8, textAlign: 'center', background: active ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.05)', color: active ? '#fff' : 'var(--text-sub)', fontSize: 15, fontWeight: active ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s' }}
                       >{pad(h)}:00</div>
                     );
@@ -239,6 +241,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       const active = i === (settings.notifyFrequency ?? 0);
                       return (
                         <div key={i} onClick={async () => { await patch({ notifyFrequency: i }); setSubView('main'); }}
+                          role="button" tabIndex={0}
+                          onKeyDown={async e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await patch({ notifyFrequency: i }); setSubView('main'); } }}
                           style={{ padding: '12px 14px', borderRadius: 7, background: active ? 'rgba(124,114,248,0.08)' : 'transparent', color: active ? 'var(--accent)' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                         >{label}{active && <span>✓</span>}</div>
                       );
@@ -258,6 +262,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                       const active = p.start === (settings.notifyQuietStart ?? 22) && p.end === (settings.notifyQuietEnd ?? 8);
                       return (
                         <div key={p.label} onClick={async () => { await patch({ notifyQuietStart: p.start, notifyQuietEnd: p.end }); setSubView('main'); }}
+                          role="button" tabIndex={0}
+                          onKeyDown={async e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await patch({ notifyQuietStart: p.start, notifyQuietEnd: p.end }); setSubView('main'); } }}
                           style={{ padding: '12px 14px', borderRadius: 7, background: active ? 'rgba(124,114,248,0.08)' : 'transparent', color: active ? 'var(--accent)' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                         >{p.label}{active && <span>✓</span>}</div>
                       );
@@ -273,6 +279,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     const active = tz.iana === settings.notifyTimezone;
                     return (
                       <div key={tz.iana} onClick={async () => { await patch({ notifyTimezone: tz.iana }); setSubView('main'); }}
+                        role="button" tabIndex={0}
+                        onKeyDown={async e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await patch({ notifyTimezone: tz.iana }); setSubView('main'); } }}
                         style={{ padding: '12px 14px', borderRadius: 7, background: active ? 'rgba(124,114,248,0.08)' : 'transparent', color: active ? 'var(--accent)' : 'var(--text-sub)', fontSize: 14, fontWeight: active ? 600 : 400, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                       >{tz.label}{active && <span>✓</span>}</div>
                     );
@@ -287,7 +295,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 <SHead id="s-appearance" label="Оформление" />
                 <SRow
                   title={theme === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
-                  sub={<span onClick={e => { e.stopPropagation(); setTheme(resetToSystemTheme()); }} style={{ color: 'var(--accent)', cursor: 'pointer' }}>Авто (по системе) →</span>}
+                  sub={<span onClick={e => { e.stopPropagation(); setTheme(resetToSystemTheme()); }}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); setTheme(resetToSystemTheme()); } }}
+                    style={{ color: 'var(--accent)', cursor: 'pointer' }}>Авто (по системе) →</span>}
                   right={<Toggle on={theme === 'dark'} onClick={() => setTheme(toggleTheme())} />}
                 />
                 {userRole === 'THERAPIST' && onToggleTherapistMode && (
@@ -671,7 +682,9 @@ function SRow({ title, sub, right, onClick, danger }: {
   onClick?: () => void; danger?: boolean;
 }) {
   return (
-    <div onClick={onClick} style={{
+    <div onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
+      style={{
       display: 'flex', alignItems: 'center', gap: 16,
       padding: '13px 0',
       borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
@@ -688,7 +701,9 @@ function SRow({ title, sub, right, onClick, danger }: {
 
 function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
   return (
-    <div onClick={onClick} style={{ width: 44, height: 26, borderRadius: 13, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
+    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
+      style={{ width: 44, height: 26, borderRadius: 13, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
       <div style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.25)' }} />
     </div>
   );
@@ -696,7 +711,9 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
 
 function SmallToggle({ on, onClick }: { on: boolean; onClick: () => void }) {
   return (
-    <div onClick={onClick} style={{ width: 38, height: 22, borderRadius: 11, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
+    <div onClick={onClick} role="switch" aria-checked={on} tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
+      style={{ width: 38, height: 22, borderRadius: 11, flexShrink: 0, background: on ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.12)', position: 'relative', transition: 'background 0.2s', cursor: 'pointer' }}>
       <div style={{ position: 'absolute', top: 2, left: on ? 18 : 2, width: 18, height: 18, borderRadius: '50%', background: 'var(--bg)', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
     </div>
   );

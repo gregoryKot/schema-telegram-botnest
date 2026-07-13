@@ -177,7 +177,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                 {/* Exit therapist mode — always visible escape hatch */}
                 <button
                   onClick={onClose}
-                  title="Вернуться в приложение"
+                  title="Вернуться в приложение" aria-label="Вернуться в приложение"
                   style={{
                     width: 36, height: 36, borderRadius: 18, border: 'none',
                     background: 'rgba(var(--fg-rgb),0.07)',
@@ -188,6 +188,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                 >✕</button>
                 <button
                   onClick={() => openAddMode(addMode ? null : 'invite')}
+                  aria-label={addMode ? 'Закрыть' : 'Добавить клиента'}
                   style={{
                     width: 36, height: 36, borderRadius: 18, border: 'none',
                     background: addMode ? 'rgba(var(--fg-rgb),0.08)' : 'color-mix(in srgb, var(--accent) 20%, transparent)',
@@ -413,10 +414,10 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                       maxLength={100}
                       style={{ flex: 1, background: 'rgba(var(--fg-rgb),0.07)', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 10, padding: '7px 10px', outline: 'none', color: 'var(--text)', fontSize: 15 }}
                     />
-                    <button onClick={saveAlias} disabled={aliasSaving} style={{ padding: '7px 12px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    <button onClick={saveAlias} disabled={aliasSaving} aria-label="Сохранить" style={{ padding: '7px 12px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                       {aliasSaving ? '...' : '✓'}
                     </button>
-                    <button onClick={() => { setRenamingAlias(false); setAliasError(''); }} style={{ padding: '7px 10px', borderRadius: 10, border: 'none', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>✕</button>
+                    <button onClick={() => { setRenamingAlias(false); setAliasError(''); }} aria-label="Отменить" style={{ padding: '7px 10px', borderRadius: 10, border: 'none', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>✕</button>
                   </div>
                   {aliasError && <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 4 }}>{aliasError}</div>}
                 </div>
@@ -427,12 +428,13 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                   </div>
                   <button
                     onClick={() => { setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); setRenamingAlias(true); }}
+                    aria-label="Переименовать"
                     style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-faint)', padding: '4px', flexShrink: 0 }}
                   >✎</button>
                   <button
                     onClick={deleteClient} disabled={deleteLoading}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--accent-red)', padding: '4px', flexShrink: 0 }}
-                    title="Удалить клиента"
+                    title="Удалить клиента" aria-label="Удалить клиента"
                   >🗑</button>
                 </div>
               )}
@@ -464,8 +466,8 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                             type="date" value={localStartDate} onChange={e => setLocalStartDate(e.target.value)} autoFocus
                             style={{ background: 'rgba(var(--fg-rgb),0.07)', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 8, padding: '5px 8px', outline: 'none', color: 'var(--text)', fontSize: 13 }}
                           />
-                          <button onClick={async () => { await saveSessionInfo({ therapyStartDate: localStartDate || null }); setEditingStartDate(false); }} disabled={sessionInfoSaving} style={{ padding: '5px 10px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, cursor: 'pointer' }}>✓</button>
-                          <button onClick={() => setEditingStartDate(false)} style={{ padding: '5px 8px', borderRadius: 8, border: 'none', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                          <button onClick={async () => { await saveSessionInfo({ therapyStartDate: localStartDate || null }); setEditingStartDate(false); }} disabled={sessionInfoSaving} aria-label="Сохранить" style={{ padding: '5px 10px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, cursor: 'pointer' }}>✓</button>
+                          <button onClick={() => setEditingStartDate(false)} aria-label="Отменить" style={{ padding: '5px 8px', borderRadius: 8, border: 'none', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>✕</button>
                         </div>
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }} onClick={() => { setLocalStartDate(selectedClient.therapyStartDate ?? selectedClient.relationCreatedAt?.slice(0, 10) ?? ''); setEditingStartDate(true); }}>
@@ -496,8 +498,8 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                             style={{ padding: '4px 9px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, background: localMeetingDays.includes(d) ? 'color-mix(in srgb, var(--accent) 30%, transparent)' : 'rgba(var(--fg-rgb),0.07)', color: localMeetingDays.includes(d) ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.4)' }}
                           >{DAY_NAMES[d]}</button>
                         ))}
-                        <button onClick={async () => { await saveSessionInfo({ meetingDays: localMeetingDays }); setEditingDays(false); }} disabled={sessionInfoSaving} style={{ padding: '4px 10px', borderRadius: 20, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>✓</button>
-                        <button onClick={() => setEditingDays(false)} style={{ padding: '4px 8px', borderRadius: 20, border: 'none', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                        <button onClick={async () => { await saveSessionInfo({ meetingDays: localMeetingDays }); setEditingDays(false); }} disabled={sessionInfoSaving} aria-label="Сохранить" style={{ padding: '4px 10px', borderRadius: 20, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>✓</button>
+                        <button onClick={() => setEditingDays(false)} aria-label="Отменить" style={{ padding: '4px 8px', borderRadius: 20, border: 'none', background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>✕</button>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', gap: 4, alignItems: 'center', cursor: 'pointer' }} onClick={() => { setLocalMeetingDays(selectedClient.meetingDays ?? []); setEditingDays(true); }}>
@@ -522,8 +524,8 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
                             type="datetime-local" value={localNextSession} onChange={e => setLocalNextSession(e.target.value)} autoFocus
                             style={{ background: 'rgba(var(--fg-rgb),0.07)', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 8, padding: '5px 8px', outline: 'none', color: 'var(--text)', fontSize: 13 }}
                           />
-                          <button onClick={async () => { await saveSessionInfo({ nextSession: localNextSession || null }); setEditingNextSession(false); }} disabled={sessionInfoSaving} style={{ padding: '5px 10px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, cursor: 'pointer' }}>✓</button>
-                          <button onClick={() => setEditingNextSession(false)} style={{ padding: '5px 8px', borderRadius: 8, border: 'none', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                          <button onClick={async () => { await saveSessionInfo({ nextSession: localNextSession || null }); setEditingNextSession(false); }} disabled={sessionInfoSaving} aria-label="Сохранить" style={{ padding: '5px 10px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, cursor: 'pointer' }}>✓</button>
+                          <button onClick={() => setEditingNextSession(false)} aria-label="Отменить" style={{ padding: '5px 8px', borderRadius: 8, border: 'none', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>✕</button>
                         </div>
                       ) : (
                         <div style={{ marginLeft: 'auto', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => { setLocalNextSession(selectedClient.nextSession ?? ''); setEditingNextSession(true); }}>
@@ -711,7 +713,7 @@ export function TherapistClientSheet({ view, onViewChange, onClose, backHandlerR
               <div key={note.id} style={{ background: 'rgba(var(--fg-rgb),0.03)', border: '1px solid rgba(var(--fg-rgb),0.06)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                   <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>{fmtDate(note.date)}</span>
-                  <button onClick={() => removeNote(note.id)} style={{ background: 'none', border: 'none', color: 'var(--accent-red)', fontSize: 18, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>×</button>
+                  <button onClick={() => removeNote(note.id)} aria-label="Удалить заметку" style={{ background: 'none', border: 'none', color: 'var(--accent-red)', fontSize: 18, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>×</button>
                 </div>
                 <div style={{ fontSize: 13, color: 'rgba(var(--fg-rgb),0.75)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.text}</div>
               </div>

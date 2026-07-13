@@ -194,7 +194,7 @@ export function TrackerOverlay({
   const Steps = () => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       {needs.map((n, i) => (
-        <button key={n.id} onClick={() => setIdx(i)} style={{
+        <button key={n.id} onClick={() => setIdx(i)} aria-label={n.chartLabel} style={{
           width: i === idx ? 22 : 6, height: 6, borderRadius: 3, border: 'none', padding: 0,
           background: i === idx ? (COLORS[n.id] ?? 'var(--accent)')
             : (effectiveRatings[n.id] ?? 0) > 0 ? 'rgba(var(--fg-rgb),0.3)' : 'rgba(var(--fg-rgb),0.12)',
@@ -219,7 +219,7 @@ export function TrackerOverlay({
       )}
       <div style={{ display: 'flex', gap: 2 }}>
         {onOpenNote && (
-          <button onClick={onOpenNote} style={{ width: 30, height: 30, borderRadius: 6,
+          <button onClick={onOpenNote} aria-label="Заметка" style={{ width: 30, height: 30, borderRadius: 6,
             display: 'grid', placeItems: 'center', background: 'none', border: 'none',
             color: 'var(--text-faint)', cursor: 'pointer' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -228,7 +228,7 @@ export function TrackerOverlay({
           </button>
         )}
         {onOpenHistory && (
-          <button onClick={() => { onOpenHistory(); goBack(); }} style={{ width: 30, height: 30, borderRadius: 6,
+          <button onClick={() => { onOpenHistory(); goBack(); }} aria-label="История" style={{ width: 30, height: 30, borderRadius: 6,
             display: 'grid', placeItems: 'center', background: 'none', border: 'none',
             color: 'var(--text-faint)', cursor: 'pointer' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

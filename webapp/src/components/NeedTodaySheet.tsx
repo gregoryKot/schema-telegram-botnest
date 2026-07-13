@@ -156,6 +156,8 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
                   <div
                     key={range.label}
                     onClick={() => onChange(RANGE_VALUES[i])}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(RANGE_VALUES[i]); } }}
                     className={'mode-card ' + (active ? 'is-selected' : '')}
                     style={{ '--mode-color': color } as React.CSSProperties}
                   >
@@ -182,6 +184,8 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div
                 onClick={() => setShowPlan(true)}
+                role="button" tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowPlan(true); } }}
                 className="mode-card"
                 style={{ '--mode-color': color } as React.CSSProperties}
               >
@@ -194,6 +198,8 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
               {onOpenHelp && (
                 <div
                   onClick={() => { onOpenHelp(); goBack(); }}
+                  role="button" tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenHelp(); goBack(); } }}
                   className="mode-card"
                   style={{ '--mode-color': 'var(--c-rose)' } as React.CSSProperties}
                 >
