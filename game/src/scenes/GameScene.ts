@@ -384,6 +384,12 @@ export class GameScene extends Phaser.Scene {
       this.voices.push(new ExcuseVoice(this, b.x, GROUND_Y - 150, b.lines, b.answer,
         v => { stub.alive = false; this.onVoiceAnswered(v); }));
     }
+    // тач: пузырь — мелкая цель, поэтому тап В ЛЮБОМ месте рядом с голосом = ответить.
+    // guard по hitstop: тап, закрывающий стоп-кадр, не должен заодно «ответить».
+    this.input.on('pointerdown', () => {
+      if (this.dead || this.hitstop > 0) return;
+      this.voices.find(v => !v.answered && v.near(this.player.x))?.doAnswer();
+    });
   }
 
   private updateDoors(dt: number) {
