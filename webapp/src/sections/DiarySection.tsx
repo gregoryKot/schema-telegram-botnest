@@ -225,7 +225,7 @@ function DraftBanner({ type, color, title, onContinue, onDelete }: {
           <div style={{ flex: 1 }} />
           <button onClick={onContinue} style={{ fontSize: 12.5, fontWeight: 700, color, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', letterSpacing: '-0.01em' }}>Продолжить →</button>
           {!confirm
-            ? <button onClick={() => setConfirm(true)} style={{ fontSize: 18, lineHeight: 1, color: 'var(--text-ghost)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>×</button>
+            ? <button onClick={() => setConfirm(true)} aria-label="Удалить черновик" style={{ fontSize: 18, lineHeight: 1, color: 'var(--text-ghost)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>×</button>
             : <button onClick={onDelete} style={{ fontSize: 12, color: 'var(--c-rose)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', fontWeight: 700 }}>удалить</button>
           }
         </div>

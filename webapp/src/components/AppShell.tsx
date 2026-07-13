@@ -14,6 +14,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 // – always-needed small helpers (no heavy data deps) –
 import { NoteSheet } from './NoteSheet';
 import { Celebration } from './Celebration';
+import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
 import { TaskCreateSheet } from './TaskCreateSheet';
 
@@ -726,7 +727,7 @@ export function AppShell() {
 
         {/* ── Celebration ── */}
         {celebrationStreak !== null && (
-          <Celebration streak={celebrationStreak} onDone={() => { setCelebrationStreak(null); setShowTodayNote(true); }} />
+          <Celebration streak={celebrationStreak} insight={todayInsightPhrase(ratings)} onDone={() => { setCelebrationStreak(null); setShowTodayNote(true); }} />
         )}
 
         </Suspense>

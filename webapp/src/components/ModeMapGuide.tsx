@@ -113,7 +113,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
         <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
           {kind === 'couple' ? 'Цикл-клэш пары' : kind === 'problem' ? 'Цепочка цикла' : 'Карта личности'}
         </span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 0, display: 'flex' }}><MMIcon name="close" size={14} /></button>
+        <button onClick={onClose} aria-label="Закрыть" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 0, display: 'flex' }}><MMIcon name="close" size={14} /></button>
       </div>
       <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 10, lineHeight: 1.4 }}>
         {kind === 'couple'
@@ -179,7 +179,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
           <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-faint)' }}>
             Советы
           </span>
-          <button onClick={() => setReroll(r => r + 1)} title="Другие советы"
+          <button onClick={() => setReroll(r => r + 1)} title="Другие советы" aria-label="Другие советы"
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 13, padding: 0, lineHeight: 1 }}>
             ↻
           </button>

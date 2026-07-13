@@ -131,6 +131,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
             {tip}
             <button
               onClick={() => setShowDisclaimer(true)}
+              aria-label="Пояснение"
               style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', background: 'var(--surface-2)', color: 'var(--text-faint)', fontSize: 10, fontWeight: 700, cursor: 'pointer', border: 'none', marginLeft: 6, verticalAlign: 'middle' }}
             >?</button>
           </p>

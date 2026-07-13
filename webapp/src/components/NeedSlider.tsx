@@ -92,7 +92,9 @@ export function NeedSlider({ id, label, value, onChange, onTap, locked, onUnlock
   return (
     <div style={{ marginBottom: 20 }}>
       {/* Top row: icon block + label/hint + score/delta */}
-      <div onClick={onTap} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, cursor: onTap ? 'pointer' : 'default' }}>
+      <div onClick={onTap} role={onTap ? 'button' : undefined} tabIndex={onTap ? 0 : undefined}
+        onKeyDown={onTap ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTap(); } }) : undefined}
+        style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, cursor: onTap ? 'pointer' : 'default' }}>
         {/* Colored icon box */}
         <div style={{
           width: 36, height: 36, borderRadius: 10, flexShrink: 0,
@@ -126,6 +128,8 @@ export function NeedSlider({ id, label, value, onChange, onTap, locked, onUnlock
           {locked ? (
             <div
               onClick={(e) => { e.stopPropagation(); onUnlock?.(); }}
+              role="button" tabIndex={0}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); onUnlock?.(); } }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
                 background: color + '18',

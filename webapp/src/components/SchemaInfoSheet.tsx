@@ -148,6 +148,8 @@ function SchemasTab({ highlight }: { highlight?: string }) {
         <div key={d.domain} style={{ marginBottom: 10 }}>
           <div
             onClick={() => setOpen(open === d.domain ? null : d.domain)}
+            role="button" tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(open === d.domain ? null : d.domain); } }}
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               padding: '14px 18px',
@@ -197,6 +199,8 @@ function ModesTab() {
     <div>
       <div
         onClick={() => setShowCheckin(true)}
+        role="button" tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowCheckin(true); } }}
         style={{
           background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
           border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
@@ -247,6 +251,8 @@ function ModesTab() {
                   <div
                     key={item.label}
                     onClick={() => setCheckinMode(item)}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCheckinMode(item); } }}
                     className="mode-card"
                     style={{ '--mode-color': 'var(--accent)' } as React.CSSProperties}
                   >
@@ -377,6 +383,8 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
           {hasProgress && !hasResult && (
             <div
               onClick={() => setShowTest(true)}
+              role="button" tabIndex={0}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowTest(true); } }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 14,
                 background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
@@ -392,6 +400,8 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
           )}
           <div
             onClick={() => setShowTest(true)}
+            role="button" tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowTest(true); } }}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               background: 'color-mix(in srgb, var(--accent) 8%, transparent)',

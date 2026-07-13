@@ -9,6 +9,16 @@ import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 // Preview fill — token-aware (color-mix) with a legacy-hex fallback.
 const previewFill = (c: string) => c.startsWith('#') ? `${c}22` : `color-mix(in srgb, ${c} 14%, transparent)`;
 
+// Human-readable name for a --c-* color token, for aria-label/title on color swatches.
+const COLOR_TOKEN_NAMES: Record<string, string> = {
+  teal: 'Бирюзовый', rose: 'Розовый', clay: 'Терракотовый', moss: 'Оливковый',
+  plum: 'Сливовый', ochre: 'Охра', slate: 'Серый', amber: 'Янтарный',
+};
+const colorPresetLabel = (c: string) => {
+  const m = c.match(/--c-([a-z]+)/);
+  return (m && COLOR_TOKEN_NAMES[m[1]]) || 'Цвет';
+};
+
 // 5 core emotional needs (schema therapy) — datalist options for unmet need
 const CORE_NEEDS = NEED_ORDER.map(id => getNeedData('ty')[id]?.name).filter(Boolean) as string[];
 
@@ -204,7 +214,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
     <div style={panelStyle}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>Режим</div>
-        <button onClick={onClose} title="Закрыть" style={closeBtnStyle}><MMIcon name="close" size={15} /></button>
+        <button onClick={onClose} title="Закрыть" aria-label="Закрыть" style={closeBtnStyle}><MMIcon name="close" size={15} /></button>
       </div>
 
       <label style={labelStyle}>Название</label>
@@ -262,10 +272,11 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
         {COLOR_PRESETS.map(c => (
           <button key={c} onClick={() => patchData({ customColor: c })}
+            aria-label={colorPresetLabel(c)} title={colorPresetLabel(c)}
             style={{ width: 22, height: 22, borderRadius: '50%', background: c, cursor: 'pointer', padding: 0,
               border: currentColor === c ? '2px solid var(--text)' : '2px solid transparent' }} />
         ))}
-        <button onClick={() => patchData({ customColor: undefined })} title="Сбросить"
+        <button onClick={() => patchData({ customColor: undefined })} title="Сбросить" aria-label="Сбросить"
           style={{ width: 22, height: 22, borderRadius: '50%', background: 'none', cursor: 'pointer', padding: 0,
             border: '2px dashed var(--line-strong)', color: 'var(--text-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MMIcon name="close" size={11} /></button>
       </div>
@@ -299,7 +310,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         ]).map(opt => {
           const active = (node.data.strokeWidth ?? 'normal') === opt.v;
           return (
-            <button key={opt.v} onClick={() => patchData({ strokeWidth: opt.v })} title={opt.label}
+            <button key={opt.v} onClick={() => patchData({ strokeWidth: opt.v })} title={opt.label} aria-label={opt.label}
               style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                 padding: '8px 4px', borderRadius: 6, cursor: 'pointer',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
@@ -429,7 +440,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
     <div style={panelStyle}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>Связь</div>
-        <button onClick={onClose} title="Закрыть" style={closeBtnStyle}><MMIcon name="close" size={15} /></button>
+        <button onClick={onClose} title="Закрыть" aria-label="Закрыть" style={closeBtnStyle}><MMIcon name="close" size={15} /></button>
       </div>
 
       <label style={labelStyle}>Тип связи (вставит подпись)</label>
@@ -454,7 +465,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
           <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-faint)', flex: 1 }}>
             Варианты подписи
           </span>
-          <button onClick={() => setSuggestions(pickPhrases(suggestType, 4))} title="Другие варианты"
+          <button onClick={() => setSuggestions(pickPhrases(suggestType, 4))} title="Другие варианты" aria-label="Другие варианты"
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 13, padding: 0, lineHeight: 1 }}>↻</button>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
@@ -489,7 +500,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
           const active = (edge.data?.lineStyle ?? 'solid') === opt.k;
           return (
             <button key={opt.k} onClick={() => onChange({ ...edge, data: { ...edge.data, lineStyle: opt.k } })}
-              title={opt.label}
+              title={opt.label} aria-label={opt.label}
               style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                 padding: '7px 4px', borderRadius: 6, cursor: 'pointer',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
@@ -513,7 +524,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
         ]).map(opt => {
           const active = (edge.data?.width ?? 'normal') === opt.v;
           return (
-            <button key={opt.v} onClick={() => onChange({ ...edge, data: { ...edge.data, width: opt.v } })} title={opt.label}
+            <button key={opt.v} onClick={() => onChange({ ...edge, data: { ...edge.data, width: opt.v } })} title={opt.label} aria-label={opt.label}
               style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                 padding: '8px 4px', borderRadius: 6, cursor: 'pointer',
                 border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
@@ -529,20 +540,20 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
       <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
         {/* One-way (current direction) */}
         <button onClick={() => onChange({ ...edge, data: { ...edge.data, bidirectional: false } })}
-          title="Одна стрелка"
+          title="Одна стрелка" aria-label="Одна стрелка"
           style={dirBtnStyle(!bidir)}>
           <span style={{ fontSize: 16, lineHeight: 1 }}>→</span>
           <span style={{ fontSize: 9 }}>одна</span>
         </button>
         {/* Both ways */}
         <button onClick={() => onChange({ ...edge, data: { ...edge.data, bidirectional: true } })}
-          title="Две стрелки"
+          title="Две стрелки" aria-label="Две стрелки"
           style={dirBtnStyle(bidir)}>
           <span style={{ fontSize: 16, lineHeight: 1 }}>↔</span>
           <span style={{ fontSize: 9 }}>обе</span>
         </button>
         {/* Reverse — swaps source/target */}
-        <button onClick={onSwap} title="Развернуть (поменять начало и конец)"
+        <button onClick={onSwap} title="Развернуть (поменять начало и конец)" aria-label="Развернуть (поменять начало и конец)"
           style={dirBtnStyle(false)}>
           <span style={{ fontSize: 15, lineHeight: 1 }}>⤺</span>
           <span style={{ fontSize: 9 }}>развернуть</span>
@@ -553,10 +564,11 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
         {['var(--c-rose)','var(--c-moss)','var(--c-clay)','var(--c-teal)','var(--c-plum)','var(--c-slate)'].map(c => (
           <button key={c} onClick={() => onChange({ ...edge, data: { ...edge.data, color: c } })}
+            aria-label={colorPresetLabel(c)} title={colorPresetLabel(c)}
             style={{ width: 22, height: 22, borderRadius: '50%', background: c, cursor: 'pointer', padding: 0,
               border: edge.data?.color === c ? '2px solid var(--text)' : '2px solid transparent' }} />
         ))}
-        <button onClick={() => onChange({ ...edge, data: { ...edge.data, color: undefined } })} title="Нейтральный (по умолчанию)"
+        <button onClick={() => onChange({ ...edge, data: { ...edge.data, color: undefined } })} title="Нейтральный (по умолчанию)" aria-label="Нейтральный (по умолчанию)"
           style={{ width: 22, height: 22, borderRadius: '50%', background: 'none', cursor: 'pointer', padding: 0,
             border: '2px dashed var(--line-strong)', color: 'var(--text-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MMIcon name="close" size={11} /></button>
       </div>

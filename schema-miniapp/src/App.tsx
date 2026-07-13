@@ -24,6 +24,7 @@ import { TherapistClientSheet } from './components/TherapistClientSheet';
 import { PracticesScreen } from './components/PracticesScreen';
 import { PlansScreen } from './components/PlansScreen';
 import { Celebration } from './components/Celebration';
+import { todayInsightPhrase } from './utils/todayInsight';
 import { NoteSheet } from './components/NoteSheet';
 import { Loader } from './components/Loader';
 import { SchemaInfoSheet } from './components/SchemaInfoSheet';
@@ -878,7 +879,7 @@ export default function App() {
       )}
 
       {celebrationStreak !== null && (
-        <Celebration streak={celebrationStreak} onDone={() => { setCelebrationStreak(null); setShowTodayNote(true); }} />
+        <Celebration streak={celebrationStreak} insight={todayInsightPhrase(ratings)} onDone={() => { setCelebrationStreak(null); setShowTodayNote(true); }} />
       )}
 
       {showTodayNote && (

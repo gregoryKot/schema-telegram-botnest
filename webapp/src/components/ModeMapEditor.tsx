@@ -236,7 +236,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   const paletteCol = (
     <div style={{ position: 'relative', display: 'flex' }}>
       <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} clientId={clientId} />
-      <button onClick={() => setPaletteOpen(false)} title="Скрыть панель режимов"
+      <button onClick={() => setPaletteOpen(false)} title="Скрыть панель режимов" aria-label="Скрыть панель режимов"
         style={collapseBtnStyle('left')}>‹</button>
     </div>
   );
@@ -247,7 +247,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
         {/* Palette: inline column (desktop) or floating drawer (mobile) */}
         {paletteOpen && !mobile && paletteCol}
         {!paletteOpen && (
-          <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов"
+          <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов" aria-label="Показать панель режимов"
             style={mobile
               ? { ...collapseBtnStyle('left'), position: 'absolute', top: 52, left: 8, zIndex: 30, borderRadius: 7, width: 30, height: 30, fontSize: 17 }
               : { ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
@@ -267,7 +267,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
 
         {/* Mobile drawers */}
         {mobile && paletteOpen && overlay(
-          <button onClick={() => setPaletteOpen(false)} title="Скрыть" style={collapseBtnStyle('left')}>‹</button>,
+          <button onClick={() => setPaletteOpen(false)} title="Скрыть" aria-label="Скрыть" style={collapseBtnStyle('left')}>‹</button>,
           <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} clientId={clientId} />, 'left')}
         {mobile && (nodeEditor || edgeEditor) && overlay(null, nodeEditor || edgeEditor, 'right')}
       </div>

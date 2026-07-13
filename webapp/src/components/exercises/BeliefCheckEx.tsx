@@ -181,7 +181,7 @@ function EviList({ items, onRemove, input, onInput, onAdd, placeholder }: {
         <div key={i} className="evi-row">
           <span className="evi-num">{String(i + 1).padStart(2, '0')}</span>
           <span className="evi-text">{f}</span>
-          <button className="evi-x" onClick={() => onRemove(i)}><GlyphX /></button>
+          <button className="evi-x" onClick={() => onRemove(i)} aria-label="Удалить"><GlyphX /></button>
         </div>
       ))}
       <div className="evi-add">

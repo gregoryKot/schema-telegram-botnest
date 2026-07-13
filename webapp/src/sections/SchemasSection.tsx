@@ -480,7 +480,7 @@ function MyModeMapSheet({ onClose }: { onClose: () => void }) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexShrink: 0,
         borderBottom: '1px solid rgba(var(--fg-rgb),0.07)' }}>
-        <button onClick={goBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'var(--text)' }}>
+        <button onClick={goBack} aria-label="Назад" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'var(--text)' }}>
           <GlyphArrowLeft />
         </button>
         <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>Карта режимов</span>

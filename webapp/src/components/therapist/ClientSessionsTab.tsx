@@ -36,7 +36,7 @@ export function ClientSessionsTab({ notes, newNoteText, newNoteDate, noteSaving,
                         Сессия {notes.length - i}
                       </span>
                     </div>
-                    <button onClick={() => removeNote(note.id)} style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, fontSize: 12, color: 'var(--text-ghost)', cursor: 'pointer' }} title="Удалить">✕</button>
+                    <button onClick={() => removeNote(note.id)} style={{ background: 'none', border: 'none', padding: '2px 6px', borderRadius: 4, fontSize: 12, color: 'var(--text-ghost)', cursor: 'pointer' }} title="Удалить" aria-label="Удалить">✕</button>
                   </div>
                   <div style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--text-sub)', whiteSpace: 'pre-wrap' }}>{note.text}</div>
                 </div>
