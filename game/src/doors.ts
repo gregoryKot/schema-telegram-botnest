@@ -128,6 +128,7 @@ export class ExcuseVoice {
     if (seen && this.cycleT > 4200) {
       this.cycleT = 0;
       this.bubble.setText(t(this.lines[this.li++ % this.lines.length])).setScale(0.85);
+      this.bubble.setInteractive(); // hit-area создаётся по ПУСТОМУ тексту — пересоздаём под реальный размер
       this.bubble.scene.tweens.add({ targets: this.bubble, scale: 1, duration: 240, ease: 'Back.Out' });
     }
     this.bubble.setAlpha(Phaser.Math.Linear(this.bubble.alpha, seen ? 0.95 : 0, 0.1));
