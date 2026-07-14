@@ -161,6 +161,9 @@ export class TherapistRequestService {
     return (this.prisma as any).therapistRequest.findMany({
       where: { status: 'pending' },
       orderBy: { createdAt: 'asc' },
+      // D-4 (аудит 2026-07): страховка от роста таблицы (не пагинация) —
+      // админский список заявок не должен читаться без ограничения.
+      take: 5000,
     });
   }
 

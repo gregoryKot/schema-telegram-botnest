@@ -12,11 +12,11 @@
   "webapp/src/pages/MergePage.tsx": 1,
   "webapp/src/pages/RecoveryPage.tsx": 1,
   "webapp/src/utils/addressForm.tsx": 2,
-  "schema-miniapp/src/App.tsx": 1,
   "schema-miniapp/src/components/AddressFormPicker.tsx": 3,
   "schema-miniapp/src/components/ChildhoodWheelSheet.tsx": 1,
   "schema-miniapp/src/components/PlanSheet.tsx": 1,
   "schema-miniapp/src/components/SettingsSheet.tsx": 7,
+  "schema-miniapp/src/components/disclaimer/DisclaimerWelcomeStep.tsx": 1,
   "schema-miniapp/src/hooks/useYsqTest.ts": 1,
   "schema-miniapp/src/utils/addressForm.tsx": 2
 }
