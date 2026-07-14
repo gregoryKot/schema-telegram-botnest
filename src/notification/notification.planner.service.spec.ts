@@ -40,6 +40,8 @@ function makeDeps() {
       { id: 'attachment', emoji: '🤝', chartLabel: 'Привязанность' },
       { id: 'autonomy', emoji: '🚀', chartLabel: 'Автономия' },
     ]),
+  } as any;
+  const practices = {
     getMissedPlans: jest.fn().mockResolvedValue([]),
   } as any;
   const analytics = {
@@ -52,7 +54,7 @@ function makeDeps() {
     getTotalDaysFilled: jest.fn().mockResolvedValue(0),
     getProfileInsight: jest.fn().mockResolvedValue(null),
   } as any;
-  return { notifications, cadence, botService, analytics };
+  return { notifications, cadence, botService, practices, analytics };
 }
 
 function make(deps = makeDeps()) {
@@ -63,6 +65,7 @@ function make(deps = makeDeps()) {
       deps.cadence,
       deps.botService,
       deps.analytics,
+      deps.practices,
     ),
   };
 }
@@ -202,7 +205,7 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
     it('вчерашний невыполненный план → practice_missed', async () => {
       const { svc, deps } = make();
       deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
-      deps.botService.getMissedPlans.mockResolvedValue([
+      deps.practices.getMissedPlans.mockResolvedValue([
         { practiceText: 'Позвонить другу' },
       ]);
       await svc.planDay(makeUser(), NOW);
@@ -221,7 +224,7 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
 
     it('в день напоминания practice_missed уступает reminder (бюджет)', async () => {
       const { svc, deps } = make();
-      deps.botService.getMissedPlans.mockResolvedValue([
+      deps.practices.getMissedPlans.mockResolvedValue([
         { practiceText: 'Позвонить другу' },
       ]);
       await svc.planDay(makeUser(), NOW);

@@ -1,5 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ApiController } from './api.controller';
+import { YsqController } from './ysq.controller';
+import { PairsController } from './pairs.controller';
+import { PlansController } from './plans.controller';
+import { ExercisesController } from './exercises.controller';
+import { NotesController } from './notes.controller';
+import { TrackerController } from './tracker.controller';
 import { HealthController } from './health.controller';
 import { DiaryController } from './diary.controller';
 import { BookingController } from './booking.controller';
@@ -20,6 +26,12 @@ import { AuthModule } from '../auth/auth.module';
   ],
   controllers: [
     ApiController,
+    YsqController,
+    PairsController,
+    PlansController,
+    ExercisesController,
+    NotesController,
+    TrackerController,
     DiaryController,
     BookingController,
     HealthController,

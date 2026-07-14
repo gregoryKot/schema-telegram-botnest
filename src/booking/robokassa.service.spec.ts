@@ -27,9 +27,7 @@ function makeService(overrides: Record<string, string | undefined> = {}) {
 describe('RobokassaService.enabled', () => {
   it('true только когда все три секрета заданы', () => {
     expect(makeService().enabled).toBe(true);
-    expect(makeService({ ROBOKASSA_PASSWORD2: undefined }).enabled).toBe(
-      false,
-    );
+    expect(makeService({ ROBOKASSA_PASSWORD2: undefined }).enabled).toBe(false);
     expect(makeService({ ROBOKASSA_MERCHANT_LOGIN: '' }).enabled).toBe(false);
   });
 });
@@ -124,17 +122,16 @@ describe('RobokassaService.buildPaymentUrl — подпись исходящег
     ).searchParams.get('SignatureValue');
     expect(sigRecurring).toBe(sigPlain);
     expect(
-      new URL(svc.buildPaymentUrl({ ...base, recurring: true })).searchParams.get(
-        'Recurring',
-      ),
+      new URL(
+        svc.buildPaymentUrl({ ...base, recurring: true }),
+      ).searchParams.get('Recurring'),
     ).toBe('true');
   });
 
   it('email прокидывается только когда передан', () => {
     const svc = makeService({ ROBOKASSA_FISCAL: 'false' });
-    const withEmail = new URL(
-      svc.buildPaymentUrl({ ...base, email: 'a@b.ru' }),
-    ).searchParams;
+    const withEmail = new URL(svc.buildPaymentUrl({ ...base, email: 'a@b.ru' }))
+      .searchParams;
     expect(withEmail.get('Email')).toBe('a@b.ru');
     const withoutEmail = new URL(svc.buildPaymentUrl(base)).searchParams;
     expect(withoutEmail.has('Email')).toBe(false);
