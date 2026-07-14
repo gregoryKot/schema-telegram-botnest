@@ -61,6 +61,8 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
       {/* Header — tap to close */}
       <div
         onClick={onClose}
+        role="button" tabIndex={0} aria-label="Закрыть"
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
         style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 24, cursor: 'pointer' }}
       >
         <div style={{
@@ -168,6 +170,8 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
             {tip}
             <span
               onClick={(e) => { e.stopPropagation(); setShowDisclaimer(true); }}
+              role="button" tabIndex={0} aria-label="Пояснение"
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setShowDisclaimer(true); } }}
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 16, height: 16, borderRadius: '50%',

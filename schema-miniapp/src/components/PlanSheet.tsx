@@ -132,6 +132,40 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
     }
   }
 
+  function handleIcsDownload() {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    const y = date.getUTCFullYear();
+    const mo = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(date.getUTCDate()).padStart(2, '0');
+    const opt = REMINDER_OPTIONS[reminderIdx];
+    const h = opt.localHour !== null ? String(((opt.localHour - tzOffset + 24) % 24)).padStart(2, '0') : '09';
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Schema//Schema//RU',
+      'BEGIN:VEVENT',
+      `DTSTART:${y}${mo}${d}T${h}0000Z`,
+      `DTEND:${y}${mo}${d}T${h}3000Z`,
+      `SUMMARY:🎯 ${selectedText}`,
+      `DESCRIPTION:Практика для потребности: ${needLabel}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+    const dataUrl = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+    // Telegram WebApp: use openLink to let the OS handle .ics
+    if (window.Telegram?.WebApp?.openLink) {
+      window.Telegram.WebApp.openLink(dataUrl);
+    } else {
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'practice.ics';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  }
+
   return (
     <BottomSheet onClose={onClose}>
       {/* Header */}
@@ -163,6 +197,8 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
                   <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div
                       onClick={() => selectText(text)}
+                      role="button" tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectText(text); } }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10, flex: 1,
                         background: 'rgba(var(--fg-rgb),0.05)',
@@ -183,6 +219,16 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
                     {isUser && id !== undefined && (
                       <div
                         onClick={() => {
+                          if (deletingIds.has(id)) return;
+                          setDeletingIds(prev => new Set([...prev, id]));
+                          api.deletePractice(id)
+                            .then(() => setUserPractices(prev => prev.filter(p => p.id !== id)))
+                            .catch(() => setDeletingIds(prev => { const s = new Set(prev); s.delete(id); return s; }));
+                        }}
+                        role="button" tabIndex={0} aria-label="Удалить"
+                        onKeyDown={e => {
+                          if (e.key !== 'Enter' && e.key !== ' ') return;
+                          e.preventDefault();
                           if (deletingIds.has(id)) return;
                           setDeletingIds(prev => new Set([...prev, id]));
                           api.deletePractice(id)
@@ -257,6 +303,8 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
                 <div
                   key={i}
                   onClick={() => setReminderIdx(i)}
+                  role="button" tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setReminderIdx(i); } }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10,
                     background: reminderIdx === i ? color + '22' : 'rgba(var(--fg-rgb),0.04)',
@@ -289,39 +337,9 @@ export function PlanSheet({ needId, needEmoji, needLabel, color, onClose, onSave
           {/* ICS download */}
           <div style={{ marginBottom: 16 }}>
             <div
-              onClick={() => {
-                const date = new Date();
-                date.setDate(date.getDate() + 1);
-                const y = date.getUTCFullYear();
-                const mo = String(date.getUTCMonth() + 1).padStart(2, '0');
-                const d = String(date.getUTCDate()).padStart(2, '0');
-                const opt = REMINDER_OPTIONS[reminderIdx];
-                const h = opt.localHour !== null ? String(((opt.localHour - tzOffset + 24) % 24)).padStart(2, '0') : '09';
-                const ics = [
-                  'BEGIN:VCALENDAR',
-                  'VERSION:2.0',
-                  'PRODID:-//Schema//Schema//RU',
-                  'BEGIN:VEVENT',
-                  `DTSTART:${y}${mo}${d}T${h}0000Z`,
-                  `DTEND:${y}${mo}${d}T${h}3000Z`,
-                  `SUMMARY:🎯 ${selectedText}`,
-                  `DESCRIPTION:Практика для потребности: ${needLabel}`,
-                  'END:VEVENT',
-                  'END:VCALENDAR',
-                ].join('\r\n');
-                const dataUrl = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-                // Telegram WebApp: use openLink to let the OS handle .ics
-                if (window.Telegram?.WebApp?.openLink) {
-                  window.Telegram.WebApp.openLink(dataUrl);
-                } else {
-                  const a = document.createElement('a');
-                  a.href = dataUrl;
-                  a.download = 'practice.ics';
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                }
-              }}
+              onClick={handleIcsDownload}
+              role="button" tabIndex={0}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleIcsDownload(); } }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 background: 'rgba(var(--fg-rgb),0.04)',

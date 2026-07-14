@@ -218,6 +218,8 @@ function SchemasTab({ highlight }: { highlight?: string }) {
         <div key={d.domain} style={{ marginBottom: 12 }}>
           <div
             onClick={() => setOpen(open === d.domain ? null : d.domain)}
+            role="button" tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(open === d.domain ? null : d.domain); } }}
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               padding: '12px 16px',
@@ -275,6 +277,8 @@ function ModesTab() {
       {/* Check-in widget */}
       <div
         onClick={() => setShowCheckin(true)}
+        role="button" tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowCheckin(true); } }}
         style={{
           background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, transparent), rgba(79,163,247,0.1))',
           border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
@@ -329,6 +333,8 @@ function ModesTab() {
                 <div
                   key={item.label}
                   onClick={() => setCheckinMode(item)}
+                  role="button" tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCheckinMode(item); } }}
                   style={{ background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 14, padding: '12px 8px', textAlign: 'center', cursor: 'pointer', border: '1px solid rgba(var(--fg-rgb),0.06)' }}
                 >
                   <div style={{ fontSize: 26, marginBottom: 6 }}>{item.emoji}</div>
@@ -431,6 +437,8 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
             {hasProgress && !hasResult && (
               <div
                 onClick={() => setShowTest(true)}
+                role="button" tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowTest(true); } }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
@@ -446,6 +454,8 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
             )}
             <div
               onClick={() => setShowTest(true)}
+              role="button" tabIndex={0}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowTest(true); } }}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 background: 'color-mix(in srgb, var(--accent) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
