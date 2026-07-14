@@ -25,6 +25,23 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 import { computeYsqScores } from '../utils/ysq';
+import {
+  SaveDraftDto,
+  UpdateNameDto,
+  InitDto,
+  CheckinDto,
+} from './dto/misc.dto';
+import { SaveRatingDto, YsqProgressDto, YsqResultDto } from './dto/ratings.dto';
+import { PairCodeDto } from './dto/pairs.dto';
+import { UpdateSettingsDto } from './dto/settings.dto';
+import { AddPracticeDto, CreatePlanDto } from './dto/practice-plan.dto';
+import { SaveNoteDto, SchemaNoteDto, ModeNoteDto } from './dto/notes.dto';
+import {
+  BeliefCheckDto,
+  LetterDto,
+  SafePlaceDto,
+  FlashcardDto,
+} from './dto/tools.dto';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -120,6 +137,7 @@ export class ApiController {
   @Post('user-flags')
   async setUserFlags(
     @Req() req: AuthRequest,
+    // Не DTO: map произвольных флагов, фильтруется по FLAG_FIELDS ниже.
     @Body() body: Record<string, unknown>,
   ): Promise<{ ok: true }> {
     if (!body || typeof body !== 'object')
@@ -154,7 +172,7 @@ export class ApiController {
   async saveDraft(
     @Req() req: AuthRequest,
     @Param('type') type: string,
-    @Body() body: { startedAt: string; data: unknown },
+    @Body() body: SaveDraftDto,
   ): Promise<{ ok: true }> {
     if (!['schema', 'mode', 'gratitude'].includes(type))
       throw new BadRequestException('Invalid type');
@@ -191,7 +209,7 @@ export class ApiController {
   }
 
   @Post('profile/name')
-  async updateName(@Req() req: AuthRequest, @Body() body: { name: string }) {
+  async updateName(@Req() req: AuthRequest, @Body() body: UpdateNameDto) {
     const name = body.name?.trim();
     if (!name || name.length > 50)
       throw new BadRequestException('Invalid name');
@@ -200,7 +218,7 @@ export class ApiController {
   }
 
   @Post('init')
-  async init(@Req() req: AuthRequest, @Body() body: { timezone?: string }) {
+  async init(@Req() req: AuthRequest, @Body() body: InitDto) {
     await this.botService.registerUser(
       uid(req),
       req.telegramFirstName,
@@ -231,10 +249,7 @@ export class ApiController {
   }
 
   @Post('ysq-progress')
-  async saveYsqProgress(
-    @Req() req: AuthRequest,
-    @Body() body: { answers: number[]; page: number },
-  ) {
+  async saveYsqProgress(@Req() req: AuthRequest, @Body() body: YsqProgressDto) {
     if (!Array.isArray(body.answers) || body.answers.length !== 116)
       throw new BadRequestException('Invalid answers');
     if (!body.answers.every((a) => Number.isInteger(a) && a >= 0 && a <= 6))
@@ -264,18 +279,7 @@ export class ApiController {
   }
 
   @Post('rating')
-  async saveRating(
-    @Req() req: AuthRequest,
-    @Body() body: { needId: string; value: number; date?: string },
-  ) {
-    if (
-      !NEED_IDS.includes(body.needId as NeedId) ||
-      !Number.isInteger(body.value) ||
-      body.value < 0 ||
-      body.value > 10
-    ) {
-      throw new BadRequestException('Invalid needId or value');
-    }
+  async saveRating(@Req() req: AuthRequest, @Body() body: SaveRatingDto) {
     if (body.date && !/^\d{4}-\d{2}-\d{2}$/.test(body.date))
       throw new BadRequestException('Invalid date');
     await this.botService.saveRating(
@@ -386,10 +390,7 @@ export class ApiController {
   }
 
   @Post('note')
-  async saveNote(
-    @Req() req: AuthRequest,
-    @Body() body: { date: string; text: string; tags?: string[] },
-  ) {
+  async saveNote(@Req() req: AuthRequest, @Body() body: SaveNoteDto) {
     if (
       !body.date ||
       !/^\d{4}-\d{2}-\d{2}$/.test(body.date) ||
@@ -468,7 +469,7 @@ export class ApiController {
   }
 
   @Post('pair/join')
-  async joinPair(@Req() req: AuthRequest, @Body() body: { code: string }) {
+  async joinPair(@Req() req: AuthRequest, @Body() body: PairCodeDto) {
     if (!body.code || !/^[A-Z0-9]{5,12}$/i.test(body.code))
       throw new BadRequestException('Invalid code format');
     const ok = await this.botService.joinPair(
@@ -480,7 +481,7 @@ export class ApiController {
   }
 
   @Delete('pair')
-  async leavePair(@Req() req: AuthRequest, @Body() body: { code: string }) {
+  async leavePair(@Req() req: AuthRequest, @Body() body: PairCodeDto) {
     if (!body.code) throw new BadRequestException('Code required');
     await this.botService.leavePair(uid(req), body.code);
     return { ok: true };
@@ -513,24 +514,7 @@ export class ApiController {
   @Post('settings')
   async updateSettings(
     @Req() req: AuthRequest,
-    @Body()
-    body: {
-      notifyEnabled?: boolean;
-      notifyLocalHour?: number;
-      notifyTimezone?: string;
-      notifyReminderEnabled?: boolean;
-      notifyFrequency?: number;
-      notifyQuietStart?: number;
-      notifyQuietEnd?: number;
-      notifyGamified?: boolean;
-      notifyPausedUntil?: null;
-      addressForm?: string;
-      pairCardDismissed?: boolean;
-      mySchemaIds?: string[];
-      myModeIds?: string[];
-      therapistShareCards?: boolean;
-      therapistShareProfile?: boolean;
-    },
+    @Body() body: UpdateSettingsDto,
   ) {
     const clean: Parameters<typeof this.botService.updateUserSettings>[1] = {};
     if (typeof body.notifyEnabled === 'boolean')
@@ -623,12 +607,7 @@ export class ApiController {
   }
 
   @Post('practices')
-  async addPractice(
-    @Req() req: AuthRequest,
-    @Body() body: { needId: string; text: string },
-  ) {
-    if (!NEED_IDS.includes(body.needId as NeedId) || !body.text?.trim())
-      throw new BadRequestException();
+  async addPractice(@Req() req: AuthRequest, @Body() body: AddPracticeDto) {
     const row = await this.botService.addPractice(
       uid(req),
       body.needId,
@@ -656,13 +635,7 @@ export class ApiController {
   }
 
   @Post('plan')
-  async createPlan(
-    @Req() req: AuthRequest,
-    @Body()
-    body: { needId: string; practiceText: string; reminderUtcHour?: number },
-  ) {
-    if (!NEED_IDS.includes(body.needId as NeedId) || !body.practiceText?.trim())
-      throw new BadRequestException();
+  async createPlan(@Req() req: AuthRequest, @Body() body: CreatePlanDto) {
     const settings = await this.botService.getUserSettings(uid(req));
     const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
     const tomorrow = this.localDate(tz, 1);
@@ -695,7 +668,7 @@ export class ApiController {
   async checkinPlan(
     @Req() req: AuthRequest,
     @Param('id') id: string,
-    @Body() body: { done: boolean },
+    @Body() body: CheckinDto,
   ) {
     await this.botService.checkinPlan(uid(req), parseId(id), body.done);
     return { ok: true };
@@ -717,6 +690,8 @@ export class ApiController {
   @Post('childhood-ratings')
   async saveChildhoodRatings(
     @Req() req: AuthRequest,
+    // Не DTO: map needId→value, ключи и значения валидируются ниже вручную
+    // (сервис saveChildhoodRatings принимает их как есть, без проверки).
     @Body() body: Record<string, number>,
   ) {
     const ratings: Record<string, number> = {};
@@ -744,10 +719,7 @@ export class ApiController {
   }
 
   @Post('ysq-result')
-  async saveYsqResult(
-    @Req() req: AuthRequest,
-    @Body() body: { answers: number[] },
-  ) {
+  async saveYsqResult(@Req() req: AuthRequest, @Body() body: YsqResultDto) {
     if (!Array.isArray(body.answers) || body.answers.length !== 116)
       throw new BadRequestException('Invalid answers');
     if (!body.answers.every((a) => Number.isInteger(a) && a >= 0 && a <= 6))
@@ -778,20 +750,7 @@ export class ApiController {
   }
 
   @Post('schema-notes')
-  async upsertSchemaNote(
-    @Req() req: AuthRequest,
-    @Body()
-    body: {
-      schemaId: string;
-      triggers?: string;
-      feelings?: string;
-      thoughts?: string;
-      origins?: string;
-      reality?: string;
-      healthyView?: string;
-      behavior?: string;
-    },
-  ) {
+  async upsertSchemaNote(@Req() req: AuthRequest, @Body() body: SchemaNoteDto) {
     if (!body.schemaId || typeof body.schemaId !== 'string')
       throw new BadRequestException('schemaId required');
     if (!/^[a-z_]{1,64}$/.test(body.schemaId))
@@ -830,18 +789,7 @@ export class ApiController {
   }
 
   @Post('mode-notes')
-  async upsertModeNote(
-    @Req() req: AuthRequest,
-    @Body()
-    body: {
-      modeId: string;
-      triggers?: string;
-      feelings?: string;
-      thoughts?: string;
-      needs?: string;
-      behavior?: string;
-    },
-  ) {
+  async upsertModeNote(@Req() req: AuthRequest, @Body() body: ModeNoteDto) {
     if (!body.modeId || typeof body.modeId !== 'string')
       throw new BadRequestException('modeId required');
     if (!/^[a-z_]{1,64}$/.test(body.modeId))
@@ -880,44 +828,12 @@ export class ApiController {
   @Post('belief-checks')
   async createBeliefCheck(
     @Req() req: AuthRequest,
-    @Body()
-    body: {
-      belief?: string;
-      evidenceFor?: unknown;
-      evidenceAgainst?: unknown;
-      reframe?: string;
-    },
+    @Body() body: BeliefCheckDto,
   ) {
-    const MAX = 3000;
-    if (
-      !body.belief ||
-      typeof body.belief !== 'string' ||
-      body.belief.length > MAX
-    )
-      throw new BadRequestException('invalid belief');
-    if (
-      !Array.isArray(body.evidenceFor) ||
-      !body.evidenceFor.every((s) => typeof s === 'string' && s.length <= MAX)
-    )
-      throw new BadRequestException('invalid evidenceFor');
-    if (
-      !Array.isArray(body.evidenceAgainst) ||
-      !body.evidenceAgainst.every(
-        (s) => typeof s === 'string' && s.length <= MAX,
-      )
-    )
-      throw new BadRequestException('invalid evidenceAgainst');
-    if (
-      body.reframe !== undefined &&
-      (typeof body.reframe !== 'string' || body.reframe.length > MAX)
-    )
-      throw new BadRequestException('invalid reframe');
     return this.botService.createBeliefCheck(uid(req), {
       belief: body.belief.trim(),
-      evidenceFor: (body.evidenceFor as string[])
-        .map((s) => s.trim())
-        .filter(Boolean),
-      evidenceAgainst: (body.evidenceAgainst as string[])
+      evidenceFor: body.evidenceFor.map((s) => s.trim()).filter(Boolean),
+      evidenceAgainst: body.evidenceAgainst
         .map((s) => s.trim())
         .filter(Boolean),
       reframe: body.reframe?.trim() || undefined,
@@ -937,9 +853,8 @@ export class ApiController {
   }
 
   @Post('letters')
-  async createLetter(@Req() req: AuthRequest, @Body() body: { text?: string }) {
-    if (!body.text || typeof body.text !== 'string' || body.text.length > 10000)
-      throw new BadRequestException('invalid text');
+  async createLetter(@Req() req: AuthRequest, @Body() body: LetterDto) {
+    if (!body.text) throw new BadRequestException('invalid text');
     return this.botService.createLetter(uid(req), body.text.trim());
   }
 
@@ -956,16 +871,8 @@ export class ApiController {
   }
 
   @Post('safe-place')
-  async upsertSafePlace(
-    @Req() req: AuthRequest,
-    @Body() body: { description?: string },
-  ) {
-    if (
-      !body.description ||
-      typeof body.description !== 'string' ||
-      body.description.length > 10000
-    )
-      throw new BadRequestException('invalid description');
+  async upsertSafePlace(@Req() req: AuthRequest, @Body() body: SafePlaceDto) {
+    if (!body.description) throw new BadRequestException('invalid description');
     return this.botService.upsertSafePlace(uid(req), body.description.trim());
   }
 
@@ -977,41 +884,10 @@ export class ApiController {
   }
 
   @Post('flashcards')
-  async createFlashcard(
-    @Req() req: AuthRequest,
-    @Body()
-    body: {
-      modeId?: string;
-      needId?: string;
-      reflection?: string;
-      action?: string;
-    },
-  ) {
-    const MAX = 3000;
-    if (
-      !body.modeId ||
-      typeof body.modeId !== 'string' ||
-      !/^[a-z_]{1,64}$/.test(body.modeId)
-    )
+  async createFlashcard(@Req() req: AuthRequest, @Body() body: FlashcardDto) {
+    if (!body.modeId || !/^[a-z_]{1,64}$/.test(body.modeId))
       throw new BadRequestException('invalid modeId');
-    if (
-      !body.needId ||
-      typeof body.needId !== 'string' ||
-      (!NEED_IDS.includes(body.needId as NeedId) &&
-        body.needId !== 'detached' &&
-        body.needId !== 'critic')
-    )
-      throw new BadRequestException('invalid needId');
-    if (
-      body.reflection !== undefined &&
-      (typeof body.reflection !== 'string' || body.reflection.length > MAX)
-    )
-      throw new BadRequestException('invalid reflection');
-    if (
-      body.action !== undefined &&
-      (typeof body.action !== 'string' || body.action.length > MAX)
-    )
-      throw new BadRequestException('invalid action');
+    if (!body.needId) throw new BadRequestException('invalid needId');
     return this.botService.createFlashcard(uid(req), {
       modeId: body.modeId,
       needId: body.needId,

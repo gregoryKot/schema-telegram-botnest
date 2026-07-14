@@ -13,8 +13,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ArticlesService } from './articles.service';
-import type { ArticleDto } from './articles.service';
 import { assertAdminKey } from '../booking/admin-key.util';
+import { ArticleDto, UpdateArticleDto } from './article.dto';
 
 /**
  * Admin article endpoints, guarded by the same ADMIN_BOOKING_KEY used by the
@@ -47,7 +47,7 @@ export class ArticlesAdminController {
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: Partial<ArticleDto>,
+    @Body() dto: UpdateArticleDto,
     @Headers('x-admin-key') key: string,
   ) {
     assertAdminKey(key, this.adminKey);
