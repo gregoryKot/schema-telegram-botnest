@@ -20,7 +20,7 @@ import { ProfileService } from '../bot/profile.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
-import { TherapyService } from '../therapy/therapy.service';
+import { TherapyTasksService } from '../therapy/therapy-tasks.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
@@ -62,7 +62,7 @@ export class ApiController {
     private readonly profileService: ProfileService,
     private readonly notificationService: NotificationService,
     private readonly scheduleService: TelegramScheduleService,
-    private readonly therapyService: TherapyService,
+    private readonly tasksService: TherapyTasksService,
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
   ) {}
@@ -288,7 +288,7 @@ export class ApiController {
       body.value,
       body.date,
     );
-    this.therapyService
+    this.tasksService
       .checkStreakTasks(uid(req))
       .catch((err) => this.logger.error('checkStreakTasks failed', err));
 
