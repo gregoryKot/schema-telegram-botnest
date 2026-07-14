@@ -8,6 +8,7 @@ import {
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
+import { AccountService } from '../bot/account.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
 import { CADENCE_LABELS } from '../notification/notification.cadence.service';
 import { buildSettingsView } from './telegram.settings.service';
@@ -34,6 +35,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
     @Optional()
     private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
+    private readonly accountService: AccountService,
     private readonly scheduleService: TelegramScheduleService,
   ) {}
 
@@ -78,7 +80,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
           notifyFrequency: level,
         });
         // Явный выбор сбрасывает адаптацию на выбранный уровень
-        await this.botService.setAdaptiveLevel(userId, level);
+        await this.accountService.setAdaptiveLevel(userId, level);
         await this.scheduleService.rescheduleForUser(userId);
         await this.backToSettings(ctx, userId);
       } catch (err) {

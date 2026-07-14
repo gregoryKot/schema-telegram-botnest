@@ -3,7 +3,7 @@
 // удалял КЛИЕНТ, клинические записи о нём (schemaIds, unmetNeeds, triggers,
 // заметки) оставались в БД навсегда — нарушение right-to-erasure.
 // Тест фиксирует: обе таблицы чистятся по OR [{therapistId}, {clientId}].
-import { BotService } from './bot.service';
+import { AccountService } from './account.service';
 
 function makePrisma() {
   const calls: Record<string, any[]> = {};
@@ -62,12 +62,12 @@ function makePrisma() {
   return prisma;
 }
 
-describe('BotService.deleteAllUserData — right-to-erasure', () => {
+describe('AccountService.deleteAllUserData — right-to-erasure', () => {
   const uid = 12345n;
 
   it('чистит клинические записи О пользователе (clientId), а не только ЕГО записи как терапевта', async () => {
     const prisma = makePrisma();
-    const service = new BotService(prisma);
+    const service = new AccountService(prisma);
     await service.deleteAllUserData(uid);
 
     for (const table of ['clientConceptualization', 'therapistNote']) {
@@ -82,7 +82,7 @@ describe('BotService.deleteAllUserData — right-to-erasure', () => {
 
   it('удаляет саму строку User и все user-owned таблицы в одной транзакции', async () => {
     const prisma = makePrisma();
-    const service = new BotService(prisma);
+    const service = new AccountService(prisma);
     await service.deleteAllUserData(uid);
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);

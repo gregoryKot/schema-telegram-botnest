@@ -111,7 +111,7 @@ describe('BookingService.book — валидация до транзакции',
         startsAt: INSIDE_WINDOW,
         durationMin: 50,
         type: SessionType.SESSION_50,
-      } as any),
+      }),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -124,7 +124,7 @@ describe('BookingService.book — валидация до транзакции',
         startsAt: INSIDE_WINDOW,
         durationMin: 50,
         type: SessionType.SESSION_50,
-      } as any),
+      }),
     ).rejects.toThrow('OFFER_NOT_ACCEPTED');
   });
 
@@ -138,7 +138,7 @@ describe('BookingService.book — валидация до транзакции',
         startsAt: INSIDE_WINDOW,
         durationMin: 50,
         type: SessionType.SESSION_50,
-      } as any),
+      }),
     ).rejects.toThrow('CLIENT_NOT_FOUND');
   });
 
@@ -150,7 +150,7 @@ describe('BookingService.book — валидация до транзакции',
         startsAt: new Date(FIXED_NOW.getTime() + 3_600_000), // через 1 час
         durationMin: 50,
         type: SessionType.SESSION_50,
-      } as any),
+      }),
     ).rejects.toThrow('TOO_SOON');
   });
 
@@ -162,7 +162,7 @@ describe('BookingService.book — валидация до транзакции',
         startsAt: new Date(FIXED_NOW.getTime() + 20 * 3_600_000), // пн 23:00 МСК
         durationMin: 50,
         type: SessionType.SESSION_50,
-      } as any),
+      }),
     ).rejects.toThrow('OUTSIDE_AVAILABILITY');
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
@@ -182,7 +182,7 @@ describe('BookingService.book — advisory-lock и TOCTOU (P-1)', () => {
       startsAt: INSIDE_WINDOW,
       durationMin: 50,
       type: SessionType.SESSION_50,
-    } as any);
+    });
     expect(tx.$queryRaw).toHaveBeenCalledTimes(1); // advisory lock взят
     expect(tx.booking.create).toHaveBeenCalledTimes(1);
   });
@@ -205,7 +205,7 @@ describe('BookingService.book — advisory-lock и TOCTOU (P-1)', () => {
         startsAt: INSIDE_WINDOW,
         durationMin: 50,
         type: SessionType.SESSION_50,
-      } as any),
+      }),
     ).rejects.toThrow(ConflictException);
     expect(tx.booking.create).not.toHaveBeenCalled();
   });
@@ -225,7 +225,7 @@ describe('BookingService.book — создание и side-effects', () => {
       startsAt: INSIDE_WINDOW,
       durationMin: 15,
       type: SessionType.INTRO_15,
-    } as any);
+    });
     expect(res.status).toBe(BookingStatus.CONFIRMED);
     expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
     expect(robokassa.buildPaymentUrl).not.toHaveBeenCalled();
@@ -241,7 +241,7 @@ describe('BookingService.book — создание и side-effects', () => {
       startsAt: INSIDE_WINDOW,
       durationMin: 50,
       type: SessionType.SESSION_50,
-    } as any);
+    });
     expect(res.status).toBe(BookingStatus.HELD);
     expect(res.paymentUrl).toBeTruthy();
     expect(pricing.getPrice).toHaveBeenCalledWith(SessionType.SESSION_50);
@@ -260,7 +260,7 @@ describe('BookingService.book — создание и side-effects', () => {
       startsAt: INSIDE_WINDOW,
       durationMin: 50,
       type: SessionType.SESSION_50,
-    } as any);
+    });
     expect(res.status).toBe(BookingStatus.CONFIRMED);
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({

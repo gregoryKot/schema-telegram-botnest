@@ -1,4 +1,5 @@
-import { BotService } from './bot.service';
+import { NotesService } from './notes.service';
+import { decryptRecord } from '../utils/crypto';
 
 // Регрессия на инцидент «карточка сохранилась, но её не найти»:
 // упражнение «Карточка схемы/режима» писало UserSchemaNote, но не добавляло
@@ -57,10 +58,10 @@ function makeDb(user: { mySchemaIds: string[]; myModeIds: string[] }) {
   return db;
 }
 
-describe('BotService — карточка схемы/режима попадает в коллекцию', () => {
+describe('NotesService — карточка схемы/режима попадает в коллекцию', () => {
   it('сохранённая карточка схемы находится в архиве (schemaId в mySchemaIds)', async () => {
     const db = makeDb({ mySchemaIds: [], myModeIds: [] });
-    const svc = new BotService(db);
+    const svc = new NotesService(db);
 
     await svc.upsertSchemaNote(1n, 'defectiveness', { thoughts: 'я плохой' });
 
@@ -69,13 +70,17 @@ describe('BotService — карточка схемы/режима попадае
     expect(notes.map((n: any) => n.schemaId)).toContain('defectiveness');
 
     // 2) схема добавлена в коллекцию — иначе архив «Мои записи» её отфильтрует
-    const settings = await svc.getUserSettings(1n);
+    // (коллекция денормализована в User.mySchemaIds — читаем/расшифровываем
+    // напрямую, как это делает bot.service.getUserSettings).
+    const settings = decryptRecord(db._user, {
+      jsonArrays: ['mySchemaIds', 'myModeIds'],
+    });
     expect(settings.mySchemaIds).toContain('defectiveness');
   });
 
   it('повторное сохранение той же схемы не дублирует id в коллекции', async () => {
     const db = makeDb({ mySchemaIds: ['defectiveness'], myModeIds: [] });
-    const svc = new BotService(db);
+    const svc = new NotesService(db);
 
     await svc.upsertSchemaNote(1n, 'defectiveness', { thoughts: 'обновил' });
 
@@ -85,11 +90,13 @@ describe('BotService — карточка схемы/режима попадае
 
   it('сохранённая карточка режима попадает в myModeIds', async () => {
     const db = makeDb({ mySchemaIds: [], myModeIds: [] });
-    const svc = new BotService(db);
+    const svc = new NotesService(db);
 
     await svc.upsertModeNote(1n, 'vulnerable_child', { feelings: 'страшно' });
 
-    const settings = await svc.getUserSettings(1n);
+    const settings = decryptRecord(db._user, {
+      jsonArrays: ['mySchemaIds', 'myModeIds'],
+    });
     expect(settings.myModeIds).toContain('vulnerable_child');
   });
 });

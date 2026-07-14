@@ -20,7 +20,6 @@ function makeService(opts: {
 }) {
   const scheduled: Array<{ userId: bigint; type: string }> = [];
   const botService: any = {
-    getUserPairs: jest.fn(async () => opts.pairs ?? []),
     getUserSettings: jest.fn(
       async () =>
         opts.partnerSettings ?? {
@@ -29,6 +28,9 @@ function makeService(opts: {
         },
     ),
     getRatings: jest.fn(async () => opts.partnerRatings ?? {}),
+  };
+  const pairsService: any = {
+    getUserPairs: jest.fn(async () => opts.pairs ?? []),
   };
   const notificationService: any = {
     lastSentAt: jest.fn(async () => opts.lastSent ?? null),
@@ -40,10 +42,12 @@ function makeService(opts: {
   const service = new TelegramScheduleService(
     null,
     botService,
-    {} as any,
+    {} as any, // analyticsService
+    {} as any, // accountService
+    pairsService,
     notificationService,
-    {} as any,
-    {} as any,
+    {} as any, // cadenceService
+    {} as any, // plannerService
   );
   return { service, scheduled, notificationService };
 }
