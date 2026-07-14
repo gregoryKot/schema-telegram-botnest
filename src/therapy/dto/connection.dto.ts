@@ -16,7 +16,7 @@ export class VirtualClientDto {
   name!: string;
 }
 
-// Эндпоинт всегда возвращает 403 (см. therapy.controller.ts) — DTO нужен
+// Эндпоинт всегда возвращает 403 (см. therapy-connection.controller.ts) — DTO нужен
 // только для рантайм-типизации тела запроса, ручной ветки добавления
 // реальных клиентов больше нет.
 export class AddClientDto {
