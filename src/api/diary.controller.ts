@@ -14,7 +14,7 @@ import { Request } from 'express';
 import { uid, parseId } from './request-utils';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { DiaryService } from '../bot/diary.service';
-import { TherapyService } from '../therapy/therapy.service';
+import { TherapyTasksService } from '../therapy/therapy-tasks.service';
 import {
   SchemaDiaryDto,
   ModeDiaryDto,
@@ -36,7 +36,7 @@ export class DiaryController {
 
   constructor(
     private readonly diaryService: DiaryService,
-    private readonly therapyService: TherapyService,
+    private readonly tasksService: TherapyTasksService,
   ) {}
 
   // ─── Schema Diary ─────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ export class DiaryController {
       uid(req),
       trimmed,
     );
-    this.therapyService
+    this.tasksService
       .checkStreakTasks(uid(req))
       .catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;
@@ -109,7 +109,7 @@ export class DiaryController {
       uid(req),
       trimmedMode,
     );
-    this.therapyService
+    this.tasksService
       .checkStreakTasks(uid(req))
       .catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;
@@ -141,7 +141,7 @@ export class DiaryController {
       body.date,
       items,
     );
-    this.therapyService
+    this.tasksService
       .checkStreakTasks(uid(req))
       .catch((err) => this.logger.error('checkStreakTasks failed', err));
     return entry;

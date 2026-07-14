@@ -81,4 +81,33 @@ describe('BookingService.assertWithinAvailability (P-5)', () => {
       assert(new Date('2026-07-13T00:00:00Z'), 50),
     ).resolves.toBeUndefined();
   });
+
+  // Границы валидации длительности (15–180 мин включительно) — без правил,
+  // чтобы изолировать именно проверку длительности от проверки окна.
+  it('граница длительности: 15 мин — валидна, 14 — отказ', async () => {
+    const { assert } = makeService([]);
+    await expect(
+      assert(new Date('2026-07-13T09:00:00Z'), 15),
+    ).resolves.toBeUndefined();
+    await expect(assert(new Date('2026-07-13T09:00:00Z'), 14)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('граница длительности: 180 мин — валидна, 181 — отказ', async () => {
+    const { assert } = makeService([]);
+    await expect(
+      assert(new Date('2026-07-13T09:00:00Z'), 180),
+    ).resolves.toBeUndefined();
+    await expect(assert(new Date('2026-07-13T09:00:00Z'), 181)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('нецелая длительность — отказ', async () => {
+    const { assert } = makeService([]);
+    await expect(
+      assert(new Date('2026-07-13T09:00:00Z'), 50.5),
+    ).rejects.toThrow(BadRequestException);
+  });
 });

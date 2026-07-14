@@ -19,7 +19,12 @@ import { Request } from 'express';
 import { uid, parseId as parseIdShared } from '../api/request-utils';
 import { SubmitTherapistRequestDto } from './therapist-request.dto';
 import { TelegramAuthGuard } from '../api/telegram-auth.guard';
-import { TherapyService } from './therapy.service';
+import { TherapyRelationsService } from './therapy-relations.service';
+import { TherapyTasksService } from './therapy-tasks.service';
+import { TherapyTasksViewService } from './therapy-tasks-view.service';
+import { TherapyNotesService } from './therapy-notes.service';
+import { TherapyClientDataService } from './therapy-client-data.service';
+import { ModeMapsService } from './mode-maps.service';
 import { TherapistRequestService } from './therapist-request.service';
 import { BotService } from '../bot/bot.service';
 import {
@@ -58,7 +63,12 @@ export class TherapyController {
   private readonly logger = new Logger(TherapyController.name);
 
   constructor(
-    private readonly therapyService: TherapyService,
+    private readonly relationsService: TherapyRelationsService,
+    private readonly tasksService: TherapyTasksService,
+    private readonly tasksViewService: TherapyTasksViewService,
+    private readonly notesService: TherapyNotesService,
+    private readonly clientDataService: TherapyClientDataService,
+    private readonly modeMapsService: ModeMapsService,
     private readonly botService: BotService,
     private readonly therapistRequestService: TherapistRequestService,
   ) {}
@@ -69,25 +79,25 @@ export class TherapyController {
   async createInvite(@Req() req: AuthRequest) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    return this.therapyService.createInvite(uid(req));
+    return this.relationsService.createInvite(uid(req));
   }
 
   @Get('relation')
   async getRelation(@Req() req: AuthRequest) {
-    return this.therapyService.getRelation(uid(req));
+    return this.relationsService.getRelation(uid(req));
   }
 
   @Post('join')
   async join(@Req() req: AuthRequest, @Body() body: JoinTherapyDto) {
     if (!body.code) throw new BadRequestException('code required');
-    const ok = await this.therapyService.joinAsClient(uid(req), body.code);
+    const ok = await this.relationsService.joinAsClient(uid(req), body.code);
     if (!ok) throw new BadRequestException('Invalid or expired code');
     return { ok: true };
   }
 
   @Delete('relation')
   async disconnect(@Req() req: AuthRequest) {
-    await this.therapyService.disconnect(uid(req));
+    await this.relationsService.disconnect(uid(req));
     return { ok: true };
   }
 
@@ -95,7 +105,7 @@ export class TherapyController {
   async getClients(@Req() req: AuthRequest) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    return this.therapyService.getClients(uid(req));
+    return this.relationsService.getClients(uid(req));
   }
 
   @Delete('clients/:clientId')
@@ -105,7 +115,7 @@ export class TherapyController {
   ) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    await this.therapyService.removeClient(uid(req), parseId(clientId));
+    await this.clientDataService.removeClient(uid(req), parseId(clientId));
     return { ok: true };
   }
 
@@ -117,7 +127,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     if (!body.name?.trim()) throw new BadRequestException('name required');
-    return this.therapyService.addVirtualClient(uid(req), body.name);
+    return this.relationsService.addVirtualClient(uid(req), body.name);
   }
 
   @Post('clients/add')
@@ -181,7 +191,7 @@ export class TherapyController {
       // SECURITY: assert there is an actual therapy relation. Without this
       // any THERAPIST can inject tasks into ANY user's account.
       try {
-        await this.therapyService.assertHasClient(uid(req), body.clientId);
+        await this.relationsService.assertHasClient(uid(req), body.clientId);
       } catch {
         throw new ForbiddenException('No therapy relation with this client');
       }
@@ -189,14 +199,14 @@ export class TherapyController {
       assignedBy = uid(req);
     }
 
-    const task = await this.therapyService.createTask(
+    const task = await this.tasksService.createTask(
       targetUserId,
       body,
       assignedBy,
     );
     if (assignedBy && targetUserId > 0n) {
       // Pass original (plaintext) body so the notification payload is readable
-      await this.therapyService.scheduleTaskNotification(targetUserId, {
+      await this.tasksService.scheduleTaskNotification(targetUserId, {
         text: body.text,
         needId: body.needId ?? null,
         dueDate: body.dueDate ?? null,
@@ -207,19 +217,19 @@ export class TherapyController {
 
   @Get('tasks')
   async getTasks(@Req() req: AuthRequest) {
-    return this.therapyService.getTasks(uid(req));
+    return this.tasksService.getTasks(uid(req));
   }
 
   @Get('tasks/history')
   async getTaskHistory(@Req() req: AuthRequest) {
-    return this.therapyService.getTaskHistory(uid(req));
+    return this.tasksService.getTaskHistory(uid(req));
   }
 
   @Get('tasks/all')
   async getAllTasks(@Req() req: AuthRequest) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    return this.therapyService.getAllTasksForTherapist(uid(req));
+    return this.tasksViewService.getAllTasksForTherapist(uid(req));
   }
 
   @Get('tasks/client/:clientId')
@@ -229,7 +239,7 @@ export class TherapyController {
   ) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    const tasks = await this.therapyService.getTasksForClient(
+    const tasks = await this.tasksViewService.getTasksForClient(
       uid(req),
       parseId(clientId),
     );
@@ -244,7 +254,7 @@ export class TherapyController {
     @Param('id') id: string,
     @Body() body: CompleteTaskDto,
   ) {
-    const owned = await this.therapyService.completeTask(
+    const owned = await this.tasksService.completeTask(
       uid(req),
       parseId(id),
       body.done,
@@ -263,7 +273,7 @@ export class TherapyController {
   ) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    await this.therapyService.renameClient(
+    await this.relationsService.renameClient(
       uid(req),
       parseId(clientId),
       body.alias,
@@ -279,7 +289,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      await this.therapyService.requestYsq(uid(req), parseId(clientId));
+      await this.clientDataService.requestYsq(uid(req), parseId(clientId));
     } catch (e: any) {
       if (e?.message === 'No active relation')
         throw new ForbiddenException('No active relation with this client');
@@ -296,7 +306,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      return await this.therapyService.getClientDiaryEntries(
+      return await this.clientDataService.getClientDiaryEntries(
         uid(req),
         parseId(clientId),
       );
@@ -315,7 +325,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      return await this.therapyService.getClientSchemaNotes(
+      return await this.clientDataService.getClientSchemaNotes(
         uid(req),
         parseId(clientId),
       );
@@ -334,7 +344,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      return await this.therapyService.getClientModeNotes(
+      return await this.clientDataService.getClientModeNotes(
         uid(req),
         parseId(clientId),
       );
@@ -353,7 +363,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      return await this.therapyService.getClientHistory(
+      return await this.clientDataService.getClientHistory(
         uid(req),
         parseId(clientId),
       );
@@ -372,7 +382,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      return await this.therapyService.getClientData(
+      return await this.clientDataService.getClientData(
         uid(req),
         parseId(clientId),
       );
@@ -390,7 +400,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      return await this.therapyService.getNotes(uid(req), parseId(clientId));
+      return await this.notesService.getNotes(uid(req), parseId(clientId));
     } catch (e: any) {
       if (e?.message === 'No active relation')
         throw new ForbiddenException('No active relation with this client');
@@ -411,7 +421,7 @@ export class TherapyController {
       throw new BadRequestException('Invalid date');
     const note = { date: body.date, text: body.text.slice(0, 5000) };
     try {
-      return await this.therapyService.createNote(
+      return await this.notesService.createNote(
         uid(req),
         parseId(clientId),
         note,
@@ -427,7 +437,7 @@ export class TherapyController {
   async deleteNote(@Req() req: AuthRequest, @Param('noteId') noteId: string) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    await this.therapyService.deleteNote(uid(req), parseId(noteId));
+    await this.notesService.deleteNote(uid(req), parseId(noteId));
     return { ok: true };
   }
 
@@ -441,7 +451,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      return await this.therapyService.getConceptualization(
+      return await this.notesService.getConceptualization(
         uid(req),
         parseId(clientId),
       );
@@ -461,7 +471,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      await this.therapyService.updateSessionInfo(
+      await this.clientDataService.updateSessionInfo(
         uid(req),
         parseId(clientId),
         body,
@@ -483,7 +493,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      return await this.therapyService.saveConceptualization(
+      return await this.notesService.saveConceptualization(
         uid(req),
         parseId(clientId),
         body,
@@ -501,7 +511,7 @@ export class TherapyController {
   async listCustomModes(@Req() req: AuthRequest) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    return this.therapyService.listCustomModes(uid(req));
+    return this.modeMapsService.listCustomModes(uid(req));
   }
 
   @Post('custom-modes')
@@ -509,7 +519,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     if (!body.name?.trim()) throw new BadRequestException('name required');
-    return this.therapyService.createCustomMode(
+    return this.modeMapsService.createCustomMode(
       uid(req),
       body as { name: string; emoji?: string; nodeType?: string },
     );
@@ -522,7 +532,7 @@ export class TherapyController {
   ) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    await this.therapyService.deleteCustomMode(uid(req), parseId(modeId));
+    await this.modeMapsService.deleteCustomMode(uid(req), parseId(modeId));
     return { ok: true };
   }
 
@@ -536,7 +546,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      return await this.therapyService.listModeMaps(
+      return await this.modeMapsService.listModeMaps(
         uid(req),
         parseId(clientId),
       );
@@ -551,7 +561,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      return await this.therapyService.getModeMap(uid(req), parseId(mapId));
+      return await this.modeMapsService.getModeMap(uid(req), parseId(mapId));
     } catch (e: any) {
       if (e?.message === 'Not found') throw new ForbiddenException();
       throw e;
@@ -568,7 +578,7 @@ export class TherapyController {
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     const title = (body.title ?? 'Карта режимов').slice(0, 120);
     try {
-      return await this.therapyService.createModeMap(
+      return await this.modeMapsService.createModeMap(
         uid(req),
         parseId(clientId),
         title,
@@ -589,7 +599,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      return await this.therapyService.updateModeMap(
+      return await this.modeMapsService.updateModeMap(
         uid(req),
         parseId(mapId),
         body,
@@ -605,7 +615,7 @@ export class TherapyController {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
-      await this.therapyService.deleteModeMap(uid(req), parseId(mapId));
+      await this.modeMapsService.deleteModeMap(uid(req), parseId(mapId));
       return { ok: true };
     } catch (e: any) {
       if (e?.message === 'Not found') throw new ForbiddenException();
@@ -617,13 +627,13 @@ export class TherapyController {
 
   @Get('my-mode-maps')
   async listMyModeMaps(@Req() req: AuthRequest) {
-    return this.therapyService.listMyModeMaps(uid(req));
+    return this.modeMapsService.listMyModeMaps(uid(req));
   }
 
   @Get('my-mode-maps/:mapId')
   async getMyModeMap(@Req() req: AuthRequest, @Param('mapId') mapId: string) {
     try {
-      return await this.therapyService.getMyModeMap(uid(req), parseId(mapId));
+      return await this.modeMapsService.getMyModeMap(uid(req), parseId(mapId));
     } catch (e: any) {
       if (e?.message === 'Not found') throw new ForbiddenException();
       throw e;

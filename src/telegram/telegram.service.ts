@@ -12,7 +12,6 @@ import { renderTemplate } from '../notification/notification.templates';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
-import { TherapyService } from '../therapy/therapy.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
 import {
   isQuietHours,
@@ -81,7 +80,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
     private readonly notificationService: NotificationService,
-    private readonly therapyService: TherapyService,
     private readonly therapistRequestService: TherapistRequestService,
   ) {}
 
