@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SiteContentService } from './site-content.service';
-import type { MarqueeTopic } from './site-content.service';
 import { assertAdminKey } from '../booking/admin-key.util';
+import { HeroPhotoDto, MarqueeDto } from './site-content-admin.dto';
 
 // The global express json() body limit is 256kb (main.ts) — stay well under it,
 // the frontend compresses the photo client-side before upload.
@@ -28,7 +28,7 @@ export class SiteContentAdminController {
 
   @Patch('hero-photo')
   async setHeroPhoto(
-    @Body() body: { dataUri: string },
+    @Body() body: HeroPhotoDto,
     @Headers('x-admin-key') key: string,
   ) {
     assertAdminKey(key, this.adminKey);
@@ -41,16 +41,11 @@ export class SiteContentAdminController {
 
   @Patch('marquee')
   async setMarquee(
-    @Body() body: { group: 'A' | 'B'; topics: MarqueeTopic[] },
+    @Body() body: MarqueeDto,
     @Headers('x-admin-key') key: string,
   ) {
     assertAdminKey(key, this.adminKey);
-    if (body.group !== 'A' && body.group !== 'B')
-      throw new BadRequestException('Invalid group');
-    if (
-      !Array.isArray(body.topics) ||
-      body.topics.some((t) => !t.label?.trim() || !t.href?.trim())
-    ) {
+    if (body.topics.some((t) => !t.label?.trim() || !t.href?.trim())) {
       throw new BadRequestException('Invalid topics');
     }
     return this.content.setMarqueeTopics(body.group, body.topics);
