@@ -231,7 +231,34 @@ const RELATIONS = `
   <figcaption><b>Схема как фильтр.</b> Одна и та же схема влияет и на то, кто вас привлекает, и на то, как вы толкуете и проживаете отношения — поэтому с разными партнёрами история нередко приходит к одному и тому же финалу.</figcaption>
 </figure>`;
 
+const DURATION = `
+<figure class="dg">
+  <svg viewBox="0 0 640 240" role="img" aria-label="Три этапа схема-терапии по времени">
+    <rect class="dg-node" x="20" y="40" width="150" height="90" rx="14"/>
+    <text class="dg-cap-acc" x="40" y="64">ЭТАП 1</text>
+    <text class="dg-t" x="40" y="92">Стабилизация</text>
+    <text class="dg-s" x="40" y="112">1–3 месяца</text>
+    <path class="dg-flow" d="M170,85 L196,85"/>
+    <polygon class="dg-head" points="196,85 186,79 186,91"/>
+    <rect class="dg-accent" x="200" y="40" width="260" height="90" rx="14"/>
+    <text class="dg-cap-on" x="220" y="64">ЭТАП 2 · ОСНОВНОЙ</text>
+    <text class="dg-t-on" x="220" y="92">Работа с режимами</text>
+    <text class="dg-s-on" x="220" y="112">обычно 6–18 месяцев</text>
+    <path class="dg-flow" d="M460,85 L486,85"/>
+    <polygon class="dg-head" points="486,85 476,79 476,91"/>
+    <rect class="dg-node" x="490" y="40" width="150" height="90" rx="14"/>
+    <text class="dg-cap-acc" x="510" y="64">ЭТАП 3</text>
+    <text class="dg-t" x="510" y="92">Закрепление</text>
+    <text class="dg-s" x="510" y="112">от нескольких месяцев</text>
+    <rect class="dg-chip" x="20" y="160" width="600" height="60" rx="16"/>
+    <text class="dg-t" x="40" y="186">Итого: обычно от года до нескольких лет</text>
+    <text class="dg-s" x="40" y="206">при регулярных встречах — работа с паттерном, а не короткая интервенция</text>
+  </svg>
+  <figcaption><b>Три условных этапа.</b> Границы между ними размыты, а темп у каждого свой — но именно поэтому схема-терапия структурно дольше методов, нацеленных на один симптом.</figcaption>
+</figure>`;
+
 export const DIAGRAMS: Record<string, string> = {
+  duration: DURATION,
   cycle: CYCLE,
   iceberg: ICEBERG,
   modes: MODES,
@@ -245,6 +272,7 @@ export const DIAGRAMS: Record<string, string> = {
 
 // For the admin editor's diagram picker.
 export const DIAGRAM_OPTIONS: { key: string; label: string }[] = [
+  { key: 'duration', label: 'Сколько длится (таймлайн этапов)' },
   { key: 'cycle', label: 'Порочный круг' },
   { key: 'iceberg', label: 'Айсберг' },
   { key: 'modes', label: 'Карта режимов' },
