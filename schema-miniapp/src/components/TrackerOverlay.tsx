@@ -184,7 +184,7 @@ export function TrackerOverlay({
       {/* Header */}
       <div style={{ padding:`${safeTop+16}px 20px 12px`,
         display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
-        <button onClick={onClose} style={{
+        <button onClick={onClose} aria-label="Закрыть" style={{
           width:34, height:34, borderRadius:10, border:'none', cursor:'pointer',
           background:'var(--surface-2)', display:'flex', alignItems:'center', justifyContent:'center',
           color:'var(--text-sub)',
