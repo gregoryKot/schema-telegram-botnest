@@ -12,6 +12,7 @@ import { SchemasSection } from './sections/SchemasSection';
 import { ProfileSection, DEFAULT_SECTION_KEY } from './sections/ProfileSection';
 import { HelpSection } from './sections/HelpSection';
 import { BottomNav, Section } from './components/BottomNav';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { FloatingPill } from './components/FloatingPill';
 import { TodayView } from './components/TodayView';
 import { TrackerOverlay } from './components/TrackerOverlay';
@@ -692,6 +693,7 @@ export default function App() {
 
       {/* ── Main sections (hidden when therapistMode) ── */}
       {!therapistMode && section === 'today' && (
+        <ErrorBoundary section="Сегодня" key="today-boundary">
         <TodaySection
           needs={needs}
           ratings={ratings}
@@ -708,17 +710,21 @@ export default function App() {
           userRole={userRole}
           onOpenTherapistCabinet={() => { setCabinetView('list'); switchTherapistMode(true); }}
         />
+        </ErrorBoundary>
       )}
 
       {!therapistMode && section === 'schemas' && (
+        <ErrorBoundary section="Паттерны" key="schemas-boundary">
         <SchemasSection
           onOpenSchema={(opts) => { setSchemaAutoStartTest(!!opts?.startTest); setSchemaInitialTab(opts?.tab ?? 'needs'); setSchemaHighlight(opts?.highlight); setShowSchemaInfo(true); }}
           childhoodRatings={childhoodRatings}
           onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
         />
+        </ErrorBoundary>
       )}
 
       {!therapistMode && section === 'help' && (
+        <ErrorBoundary section="Помощь" key="help-boundary">
         <HelpSection
           onOpenChildhoodWheel={() => setShowChildhoodWheel(true)}
           onOpenPractices={() => setShowPractices(true)}
@@ -733,15 +739,18 @@ export default function App() {
           userRole={userRole}
           onOpenTherapistCabinet={() => { setCabinetView('list'); switchTherapistMode(true); }}
         />
+        </ErrorBoundary>
       )}
 
       {!therapistMode && section === 'profile' && (
+        <ErrorBoundary section="Профиль" key="profile-boundary">
         <ProfileSection
           onOpenSettings={() => setShowSettings(true)}
           onOpenTracker={() => { setTrackerNeedId(null); setShowTrackerOverlay(true); }}
           refreshKey={profileRefreshKey}
           displayName={displayName}
         />
+        </ErrorBoundary>
       )}
 
       {/* ── TrackerOverlay (NeedDial, per-need) ── */}
