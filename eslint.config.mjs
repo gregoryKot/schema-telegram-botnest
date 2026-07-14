@@ -35,4 +35,21 @@ export default tseslint.config(
       "prettier/prettier": ["error", { endOfLine: "auto" }],
     },
   },
+  {
+    // Тесты: паттерн проекта — сервис инстанцируется с поддельной Prisma
+    // на any (см. CLAUDE.md «Тесты»), плюс jest-глобалы без типов в typed-линте.
+    // unsafe-* здесь — заведомый шум, который наказывал храповиком каждый
+    // новый spec (а тесты обязательны). Глушим ТОЛЬКО в тестах; для
+    // продакшен-кода правила действуют в полную силу.
+    files: ['**/*.spec.ts', '**/*.test.ts', '**/*.test.tsx'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
 );
