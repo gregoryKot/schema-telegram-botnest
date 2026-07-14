@@ -48,7 +48,12 @@ function makeService(opts: {
   return { service, scheduled, notificationService };
 }
 
-const ACTIVE_PAIR = { code: 'X', status: 'active', isCreator: true, partnerId: 777 };
+const ACTIVE_PAIR = {
+  code: 'X',
+  status: 'active',
+  isCreator: true,
+  partnerId: 777,
+};
 
 describe('maybeNotifyPairPartners', () => {
   it('активному напарнику уходит pair_activity', async () => {
@@ -71,7 +76,10 @@ describe('maybeNotifyPairPartners', () => {
   it('уведомления у напарника выключены — тишина', async () => {
     const { service, scheduled } = makeService({
       pairs: [ACTIVE_PAIR],
-      partnerSettings: { notifyEnabled: false, notifyTimezone: 'Europe/Moscow' },
+      partnerSettings: {
+        notifyEnabled: false,
+        notifyTimezone: 'Europe/Moscow',
+      },
     });
     await service.maybeNotifyPairPartners(1n);
     expect(scheduled).toEqual([]);
@@ -87,7 +95,10 @@ describe('maybeNotifyPairPartners', () => {
   });
 
   it('дедуп: уже отправляли сегодня или висит в очереди — тишина', async () => {
-    const sentToday = makeService({ pairs: [ACTIVE_PAIR], lastSent: new Date() });
+    const sentToday = makeService({
+      pairs: [ACTIVE_PAIR],
+      lastSent: new Date(),
+    });
     await sentToday.service.maybeNotifyPairPartners(1n);
     expect(sentToday.scheduled).toEqual([]);
 

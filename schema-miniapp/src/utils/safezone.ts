@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 function readSafeTop(): number {
-  const tg = (window.Telegram?.WebApp as any);
+  const tg = window.Telegram?.WebApp as any;
   if (!tg) return 0;
   const contentTop: number = tg?.contentSafeAreaInset?.top ?? 0;
   const deviceTop: number = tg?.safeAreaInset?.top ?? 0;
@@ -22,7 +22,7 @@ export function useSafeTop(): number {
   });
 
   useEffect(() => {
-    const tg = (window.Telegram?.WebApp as any);
+    const tg = window.Telegram?.WebApp as any;
     if (!tg) return;
 
     function update() {
@@ -32,7 +32,7 @@ export function useSafeTop(): number {
         const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
         // If contentSafeAreaInset is explicitly 0 (not undefined), trust it — no fallback
         const contentTopDefined = tg?.contentSafeAreaInset?.top !== undefined;
-        setSafeTop(contentTopDefined ? 0 : (isIOS ? 56 : 0));
+        setSafeTop(contentTopDefined ? 0 : isIOS ? 56 : 0);
       } else {
         setSafeTop(v);
       }

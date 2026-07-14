@@ -1,7 +1,7 @@
 # CI-гейт (правило №1 CLAUDE.md: ничего не мержится с красным CI).
 # Бэкенд: типы + юнит-тесты. Фронтенды: сборка (ловит TS-ошибки).
-# eslint пока не гейтится — исторический долг ~2k unsafe-* ошибок;
-# храповик появится на этапе 2е REMEDIATION_PLAN.
+# eslint — храповиком (правило №9): исторический долг зафиксирован
+# в scripts/eslint-baseline.json, рост счётчика роняет джобу eslint.
 name: CI
 
 on:
@@ -44,6 +44,27 @@ jobs:
       # Драйв-гард парных файлов (правило №3): канонические пары
       # webapp ↔ miniapp обязаны быть побайтово идентичны.
       - run: node scripts/check-paired-files.mjs
+
+  # eslint-храповик (этап 2е, правило №9). Нужны node_modules всех трёх
+  # пакетов + prisma generate: typed-линт без типов зависимостей видит
+  # everything-as-any и счётчики уезжают. game/ исключён (заморожен).
+  eslint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            webapp/package-lock.json
+            schema-miniapp/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm ci --prefix webapp
+      - run: npm ci --prefix schema-miniapp
+      - run: node scripts/check-eslint-ratchet.mjs
 
   miniapp:
     runs-on: ubuntu-latest

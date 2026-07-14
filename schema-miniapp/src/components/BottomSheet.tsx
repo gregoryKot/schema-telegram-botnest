@@ -9,14 +9,23 @@ interface Props {
 
 const HINT_KEY = 'sheet_close_hint_shown';
 
-export function BottomSheet({ onClose, children, zIndex = 200, scrollRef }: Props) {
+export function BottomSheet({
+  onClose,
+  children,
+  zIndex = 200,
+  scrollRef,
+}: Props) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
-  const [showHint, setShowHint] = useState(() => !localStorage.getItem(HINT_KEY));
+  const [showHint, setShowHint] = useState(
+    () => !localStorage.getItem(HINT_KEY),
+  );
 
   // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
@@ -36,7 +45,8 @@ export function BottomSheet({ onClose, children, zIndex = 200, scrollRef }: Prop
   const onHandleMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.buttons === 0) return;
     const dy = Math.max(0, e.clientY - startY.current);
-    if (sheetRef.current) sheetRef.current.style.transform = `translateY(${dy}px)`;
+    if (sheetRef.current)
+      sheetRef.current.style.transform = `translateY(${dy}px)`;
   };
 
   const onHandleUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -50,7 +60,9 @@ export function BottomSheet({ onClose, children, zIndex = 200, scrollRef }: Prop
       <div
         onClick={onClose}
         style={{
-          position: 'fixed', inset: 0, zIndex,
+          position: 'fixed',
+          inset: 0,
+          zIndex,
           background: 'rgba(0,0,0,0.55)',
           animation: 'fade-in 200ms ease',
         }}
@@ -58,7 +70,11 @@ export function BottomSheet({ onClose, children, zIndex = 200, scrollRef }: Prop
       <div
         ref={sheetRef}
         style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: zIndex + 1,
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: zIndex + 1,
           background: 'var(--sheet-bg)',
           borderRadius: '24px 24px 0 0',
           maxHeight: '88vh',
@@ -74,30 +90,44 @@ export function BottomSheet({ onClose, children, zIndex = 200, scrollRef }: Prop
           onPointerUp={onHandleUp}
           style={{
             padding: '12px 0 6px',
-            display: 'flex', justifyContent: 'center',
-            cursor: 'grab', flexShrink: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            cursor: 'grab',
+            flexShrink: 0,
             touchAction: 'none',
           }}
         >
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(var(--fg-rgb),0.15)' }} />
+          <div
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              background: 'rgba(var(--fg-rgb),0.15)',
+            }}
+          />
         </div>
 
         {/* One-time close hint */}
         {showHint && (
-          <div style={{
-            textAlign: 'center',
-            fontSize: 12,
-            color: 'var(--text-sub)',
-            padding: '0 0 10px',
-            animation: 'fade-in 300ms ease',
-            flexShrink: 0,
-          }}>
+          <div
+            style={{
+              textAlign: 'center',
+              fontSize: 12,
+              color: 'var(--text-sub)',
+              padding: '0 0 10px',
+              animation: 'fade-in 300ms ease',
+              flexShrink: 0,
+            }}
+          >
             Нажми на заголовок чтобы закрыть
           </div>
         )}
 
         {/* Scrollable content */}
-        <div ref={scrollRef} style={{ overflowY: 'auto', flex: 1, padding: '0 24px 48px' }}>
+        <div
+          ref={scrollRef}
+          style={{ overflowY: 'auto', flex: 1, padding: '0 24px 48px' }}
+        >
           {children}
         </div>
       </div>

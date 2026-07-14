@@ -22,21 +22,74 @@ const prisma = new PrismaClient();
 
 // (table prismaName, fields to rotate)
 const TARGETS: Array<{ name: string; fields: string[] }> = [
-  { name: 'note',                    fields: ['text', 'tags'] },
-  { name: 'userSchemaNote',          fields: ['triggers', 'feelings', 'thoughts', 'origins', 'reality', 'healthyView', 'behavior'] },
-  { name: 'userModeNote',            fields: ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'] },
-  { name: 'userBeliefCheck',         fields: ['belief', 'reframe'] },
-  { name: 'userLetter',              fields: ['text'] },
-  { name: 'userSafePlace',           fields: ['description'] },
-  { name: 'userFlashcard',           fields: ['reflection', 'action'] },
-  { name: 'userPractice',            fields: ['text'] },
-  { name: 'practicePlan',            fields: ['practiceText'] },
-  { name: 'schemaDiaryEntry',        fields: ['trigger', 'thoughts', 'bodyFeelings', 'actualBehavior', 'schemaOrigin', 'healthyView', 'realProblems', 'excessiveReactions', 'healthyBehavior', 'schemaIds'] },
-  { name: 'modeDiaryEntry',          fields: ['modeId', 'situation', 'thoughts', 'feelings', 'bodyFeelings', 'actions', 'actualNeed', 'childhoodMemories'] },
-  { name: 'gratitudeDiaryEntry',     fields: ['items'] },
-  { name: 'userTask',                fields: ['text'] },
-  { name: 'therapistNote',           fields: ['text'] },
-  { name: 'clientConceptualization', fields: ['earlyExperience', 'unmetNeeds', 'triggers', 'copingStyles', 'goals', 'currentProblems', 'modeTransitions', 'schemaIds', 'modeIds'] },
+  { name: 'note', fields: ['text', 'tags'] },
+  {
+    name: 'userSchemaNote',
+    fields: [
+      'triggers',
+      'feelings',
+      'thoughts',
+      'origins',
+      'reality',
+      'healthyView',
+      'behavior',
+    ],
+  },
+  {
+    name: 'userModeNote',
+    fields: ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'],
+  },
+  { name: 'userBeliefCheck', fields: ['belief', 'reframe'] },
+  { name: 'userLetter', fields: ['text'] },
+  { name: 'userSafePlace', fields: ['description'] },
+  { name: 'userFlashcard', fields: ['reflection', 'action'] },
+  { name: 'userPractice', fields: ['text'] },
+  { name: 'practicePlan', fields: ['practiceText'] },
+  {
+    name: 'schemaDiaryEntry',
+    fields: [
+      'trigger',
+      'thoughts',
+      'bodyFeelings',
+      'actualBehavior',
+      'schemaOrigin',
+      'healthyView',
+      'realProblems',
+      'excessiveReactions',
+      'healthyBehavior',
+      'schemaIds',
+    ],
+  },
+  {
+    name: 'modeDiaryEntry',
+    fields: [
+      'modeId',
+      'situation',
+      'thoughts',
+      'feelings',
+      'bodyFeelings',
+      'actions',
+      'actualNeed',
+      'childhoodMemories',
+    ],
+  },
+  { name: 'gratitudeDiaryEntry', fields: ['items'] },
+  { name: 'userTask', fields: ['text'] },
+  { name: 'therapistNote', fields: ['text'] },
+  {
+    name: 'clientConceptualization',
+    fields: [
+      'earlyExperience',
+      'unmetNeeds',
+      'triggers',
+      'copingStyles',
+      'goals',
+      'currentProblems',
+      'modeTransitions',
+      'schemaIds',
+      'modeIds',
+    ],
+  },
 ];
 
 async function rotate() {
@@ -49,7 +102,10 @@ async function rotate() {
 
   for (const { name, fields } of TARGETS) {
     const repo = (prisma as any)[name];
-    if (!repo?.findMany) { console.warn(`! Skipping ${name} — no Prisma model`); continue; }
+    if (!repo?.findMany) {
+      console.warn(`! Skipping ${name} — no Prisma model`);
+      continue;
+    }
     const select: Record<string, true> = { id: true };
     for (const f of fields) select[f] = true;
     const rows: any[] = await repo.findMany({ select });
@@ -79,7 +135,9 @@ async function rotate() {
   }
 
   // Also rotate User.mySchemaIds / myModeIds (JSON columns).
-  const users = await prisma.user.findMany({ select: { id: true, mySchemaIds: true, myModeIds: true } });
+  const users = await prisma.user.findMany({
+    select: { id: true, mySchemaIds: true, myModeIds: true },
+  });
   let userTouched = 0;
   for (const u of users) {
     const patch: any = {};
@@ -94,10 +152,14 @@ async function rotate() {
       userTouched++;
     }
   }
-  if (userTouched > 0) { console.log(`✓ user (clinical labels): ${userTouched}`); grand += userTouched; }
-  else console.log(`  user (clinical labels): nothing to do`);
+  if (userTouched > 0) {
+    console.log(`✓ user (clinical labels): ${userTouched}`);
+    grand += userTouched;
+  } else console.log(`  user (clinical labels): nothing to do`);
 
-  console.log(`\nDone in ${Date.now() - startedAt}ms — ${grand} rows re-encrypted.`);
+  console.log(
+    `\nDone in ${Date.now() - startedAt}ms — ${grand} rows re-encrypted.`,
+  );
   await prisma.$disconnect();
 }
 

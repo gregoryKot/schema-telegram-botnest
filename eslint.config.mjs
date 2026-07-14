@@ -25,9 +25,12 @@ export default tseslint.config(
     },
   },
   {
+    // Правило №9 CLAUDE.md: no-floating-promises — error, новые any — warn.
+    // Исторический долг зафиксирован бейслайном (scripts/eslint-baseline.json),
+    // храповик scripts/check-eslint-ratchet.mjs не даёт счётчику расти.
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-unsafe-argument': 'warn',
       "prettier/prettier": ["error", { endOfLine: "auto" }],
     },

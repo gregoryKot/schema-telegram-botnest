@@ -84,9 +84,7 @@ async function bootstrap() {
   // Рантайм-валидация DTO (аудит 2026-07, 2г / правило №6 CLAUDE.md):
   // whitelist срезает недекорированные поля; для body без DTO-класса
   // (легаси inline-интерфейсы) пайп прозрачен — миграция инкрементальная.
-  app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, transform: true }),
-  );
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   // Cap request bodies. Largest legitimate payload is a YSQ progress update
   // (~116 ints + page) — well under 100 KB. Cap at 256 KB to leave room for
   // big text fields (letters, schema notes) while killing DoS via huge JSON.
