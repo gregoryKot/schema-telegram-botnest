@@ -12,7 +12,7 @@
 // теперь роняет этот тест.
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { USER_DATA_TABLES } from '../bot/bot.service';
+import { USER_DATA_TABLES } from '../bot/account.service';
 import { USER_OWNED_TABLES, SECURITY_SENSITIVE_TABLES } from './merge.service';
 
 const ROOT = join(__dirname, '..', '..');
@@ -47,7 +47,7 @@ describe('Реестры user-таблиц ↔ schema.prisma', () => {
 
   it('каждая модель с userId покрыта удалением аккаунта (USER_DATA_TABLES или явный deleteMany)', () => {
     // Обрабатываются отдельными deleteMany в deleteAllUserData, а не через
-    // реестр (проверено тестом bot.delete-user-data.spec.ts).
+    // реестр (проверено тестом account.service.spec.ts).
     const DELETE_HANDLED_SEPARATELY = [
       'AuthProvider',
       'WebSession',
@@ -73,7 +73,10 @@ describe('Реестры user-таблиц ↔ schema.prisma', () => {
   it('therapist-side модели упомянуты и в deleteAllUserData, и в merge()', () => {
     // Трипваер: у этих моделей нет userId, реестры их не ловят — проверяем,
     // что имя модели фигурирует в исходнике обоих сервисов.
-    const botSrc = readFileSync(join(ROOT, 'src/bot/bot.service.ts'), 'utf8');
+    const botSrc = readFileSync(
+      join(ROOT, 'src/bot/account.service.ts'),
+      'utf8',
+    );
     const mergeSrc = readFileSync(
       join(ROOT, 'src/auth/merge.service.ts'),
       'utf8',

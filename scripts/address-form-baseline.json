@@ -3,11 +3,11 @@
   "webapp/src/components/NeedDetailSheet.tsx": 1,
   "webapp/src/components/PlanSheet.tsx": 1,
   "webapp/src/components/SettingsSheet.tsx": 4,
-  "webapp/src/components/YSQTestSheet.tsx": 1,
   "webapp/src/components/exercises/ChildhoodWheelEx.tsx": 1,
   "webapp/src/components/modeMapTips.ts": 5,
   "webapp/src/game/GameCanvas.tsx": 3,
   "webapp/src/game/obstacles.ts": 21,
+  "webapp/src/hooks/useYsqTest.ts": 1,
   "webapp/src/pages/AccountPage.tsx": 2,
   "webapp/src/pages/MergePage.tsx": 1,
   "webapp/src/pages/RecoveryPage.tsx": 1,
@@ -17,6 +17,6 @@
   "schema-miniapp/src/components/ChildhoodWheelSheet.tsx": 1,
   "schema-miniapp/src/components/PlanSheet.tsx": 1,
   "schema-miniapp/src/components/SettingsSheet.tsx": 7,
-  "schema-miniapp/src/components/YSQTestSheet.tsx": 1,
+  "schema-miniapp/src/hooks/useYsqTest.ts": 1,
   "schema-miniapp/src/utils/addressForm.tsx": 2
 }

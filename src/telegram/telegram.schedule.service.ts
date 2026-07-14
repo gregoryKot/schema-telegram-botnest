@@ -10,6 +10,8 @@ import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { BotService, NEED_IDS } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { AccountService } from '../bot/account.service';
+import { PairsService } from '../bot/pairs.service';
 import {
   NotificationService,
   QUIET_EXEMPT_TYPES,
@@ -38,6 +40,8 @@ export class TelegramScheduleService implements OnModuleInit {
     private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
+    private readonly accountService: AccountService,
+    private readonly pairsService: PairsService,
     private readonly notificationService: NotificationService,
     private readonly cadenceService: NotificationCadenceService,
     private readonly plannerService: NotificationPlannerService,
@@ -131,7 +135,7 @@ export class TelegramScheduleService implements OnModuleInit {
     if (due.length === 0) return;
     this.logger.log(`Processing ${due.length} due notifications`);
 
-    const sendSettings = await this.botService.getSendSettingsFor(
+    const sendSettings = await this.accountService.getSendSettingsFor(
       [...new Set(due.map((n) => n.userId))].map((id) => BigInt(id)),
     );
 
@@ -202,7 +206,7 @@ export class TelegramScheduleService implements OnModuleInit {
             `Skipping notification id=${notif.id} userId=${notif.userId} (${code}: ${desc})`,
           );
           await this.notificationService.markSent(notif.id);
-          await this.botService.markUserBlocked(BigInt(notif.userId));
+          await this.accountService.markUserBlocked(BigInt(notif.userId));
         } else {
           // Transient — log + don't markSent so we retry next tick.
           this.logger.error(
@@ -222,7 +226,7 @@ export class TelegramScheduleService implements OnModuleInit {
   @Cron('0 0 * * *')
   async scheduleDailyReminders() {
     if (!this.bot) return;
-    const users = await this.botService.getAllUsersWithSettings();
+    const users = await this.accountService.getAllUsersWithSettings();
     this.logger.log(`Midnight planner: ${users.length} users`);
 
     for (const user of users) {
@@ -353,7 +357,7 @@ export class TelegramScheduleService implements OnModuleInit {
    * PROACTIVE_TYPES.
    */
   async maybeNotifyPairPartners(userId: bigint): Promise<void> {
-    const pairs = await this.botService.getUserPairs(userId);
+    const pairs = await this.pairsService.getUserPairs(userId);
     for (const pair of pairs) {
       if (pair.status !== 'active' || pair.partnerId === null) continue;
       const partnerId = BigInt(pair.partnerId);

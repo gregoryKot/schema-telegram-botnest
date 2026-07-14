@@ -24,6 +24,7 @@ const PAIRS = [
   'utils/drafts.ts',
   'utils/addressForm.tsx',
   'components/CrisisCard.tsx',
+  'hooks/useYsqTest.ts',
 ];
 
 // Осознанно НЕ в списке (разошлись содержательно; кандидаты волны 2 —

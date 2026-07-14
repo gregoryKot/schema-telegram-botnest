@@ -7,6 +7,7 @@ import {
 } from './notification.cadence.service';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { PracticesService } from '../bot/practices.service';
 import {
   buildWeeklySummaryText,
   renderLowStreakInsight,
@@ -35,6 +36,7 @@ export class NotificationPlannerService {
     private readonly cadence: NotificationCadenceService,
     private readonly botService: BotService,
     private readonly analytics: BotAnalyticsService,
+    private readonly practicesService: PracticesService,
   ) {}
 
   async planDay(user: PlannerUser, now = new Date()) {
@@ -169,7 +171,7 @@ export class NotificationPlannerService {
 
     // Дни без напоминания: невыполненный вчерашний план или инсайт о низкой потребности
     const yesterday = addDaysLocal(today, -1);
-    const missed = await this.botService.getMissedPlans(uid, yesterday);
+    const missed = await this.practicesService.getMissedPlans(uid, yesterday);
     if (
       missed.length > 0 &&
       !(await this.notifications.hasPending(uid, 'practice_missed'))

@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { BotService } from '../bot/bot.service';
+import { AccountService } from '../bot/account.service';
 
 const MAX_NAME = 100;
 const MAX_QUAL = 500;
@@ -20,7 +20,7 @@ export class TherapistRequestService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly botService: BotService,
+    private readonly accountService: AccountService,
   ) {}
 
   // Raw Telegram Bot API call. Avoids depending on Telegraf instance and
@@ -80,7 +80,7 @@ export class TherapistRequestService {
       message?: string;
     },
   ): Promise<{ id: number; status: string }> {
-    const role = await this.botService.getUserRole(userId);
+    const role = await this.accountService.getUserRole(userId);
     if (role === 'THERAPIST')
       throw new ConflictException('You are already a therapist');
 

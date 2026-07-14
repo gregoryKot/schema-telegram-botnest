@@ -11,6 +11,9 @@ import { TELEGRAF_BOT, MINIAPP_URL, DONATE_URL } from './telegram.constants';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { AccountService } from '../bot/account.service';
+import { PairsService } from '../bot/pairs.service';
+import { PracticesService } from '../bot/practices.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
 import {
@@ -79,6 +82,9 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
+    private readonly accountService: AccountService,
+    private readonly pairsService: PairsService,
+    private readonly practicesService: PracticesService,
     private readonly notificationService: NotificationService,
     private readonly therapistRequestService: TherapistRequestService,
   ) {}
@@ -130,7 +136,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const userId = BigInt(rawId);
         const existingSettings = await this.botService.getUserSettings(userId);
         const isReturning = !!existingSettings;
-        await this.botService.registerUser(userId, ctx.from?.first_name);
+        await this.accountService.registerUser(userId, ctx.from?.first_name);
         const payload = (ctx as any).startPayload as string | undefined;
         if (payload?.startsWith('pair_')) {
           const code = payload.slice(5).toUpperCase();
@@ -144,7 +150,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             await ctx.reply(CONSENT_TEXT, buildConsentKeyboard());
             return;
           }
-          const ok = await this.botService.joinPair(userId, code);
+          const ok = await this.pairsService.joinPair(userId, code);
           if (ok) {
             await ctx.reply(
               'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.',
@@ -460,7 +466,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const match = ctx.match as RegExpMatchArray;
         const done = match[1] === 'done';
         const planId = Number(match[2]);
-        await this.botService.checkinPlan(userId, planId, done);
+        await this.practicesService.checkinPlan(userId, planId, done);
         const reply = done
           ? '✅ Отлично! Записал.'
           : '❌ Бывает. Можно попробовать завтра.';
@@ -502,7 +508,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply('Укажи текст: /broadcast <сообщение>');
           return;
         }
-        const userIds = await this.botService.getBroadcastUserIds();
+        const userIds = await this.accountService.getBroadcastUserIds();
         await ctx.reply(
           `Начинаю рассылку для ${userIds.length} пользователей...`,
         );
@@ -529,7 +535,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
                   desc,
                 ));
             if (isPermanent) {
-              await this.botService
+              await this.accountService
                 .markUserBlocked(BigInt(uid))
                 .catch(() => null);
             }
@@ -654,7 +660,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     const pending = this.pendingPairCodes.get(rawId);
     if (!pending || pending.expiresAt <= Date.now()) return false;
     this.pendingPairCodes.delete(rawId);
-    const ok = await this.botService.joinPair(BigInt(rawId), pending.code);
+    const ok = await this.pairsService.joinPair(BigInt(rawId), pending.code);
     const text = ok
       ? 'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.'
       : 'Ссылка недействительна или уже использована.';
