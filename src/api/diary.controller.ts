@@ -15,6 +15,11 @@ import { uid, parseId } from './request-utils';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { DiaryService } from '../bot/diary.service';
 import { TherapyService } from '../therapy/therapy.service';
+import {
+  SchemaDiaryDto,
+  ModeDiaryDto,
+  GratitudeDiaryDto,
+} from './dto/diary-entries.dto';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -44,27 +49,10 @@ export class DiaryController {
   @Post('schema')
   async createSchemaDiary(
     @Req() req: AuthRequest,
-    @Body()
-    body: {
-      trigger: string;
-      emotions: { id: string; intensity: number }[];
-      thoughts?: string;
-      bodyFeelings?: string;
-      actualBehavior?: string;
-      schemaIds: string[];
-      schemaOrigin?: string;
-      healthyView?: string;
-      realProblems?: string;
-      excessiveReactions?: string;
-      healthyBehavior?: string;
-    },
+    @Body() body: SchemaDiaryDto,
   ) {
     if (!body.trigger?.trim())
       throw new BadRequestException('trigger required');
-    if (!Array.isArray(body.emotions) || body.emotions.length > 50)
-      throw new BadRequestException('emotions required');
-    if (!Array.isArray(body.schemaIds) || body.schemaIds.length > 50)
-      throw new BadRequestException('schemaIds required');
     const LIMIT = 2000;
     const trimmed = {
       ...body,
@@ -102,20 +90,7 @@ export class DiaryController {
   }
 
   @Post('mode')
-  async createModeDiary(
-    @Req() req: AuthRequest,
-    @Body()
-    body: {
-      modeId: string;
-      situation: string;
-      thoughts?: string;
-      feelings?: string;
-      bodyFeelings?: string;
-      actions?: string;
-      actualNeed?: string;
-      childhoodMemories?: string;
-    },
-  ) {
+  async createModeDiary(@Req() req: AuthRequest, @Body() body: ModeDiaryDto) {
     if (!body.modeId?.trim()) throw new BadRequestException('modeId required');
     if (!body.situation?.trim())
       throw new BadRequestException('situation required');
@@ -156,13 +131,10 @@ export class DiaryController {
   @Post('gratitude')
   async createGratitudeDiary(
     @Req() req: AuthRequest,
-    @Body() body: { date: string; items: string[] },
+    @Body() body: GratitudeDiaryDto,
   ) {
     if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date))
       throw new BadRequestException('Invalid date');
-    if (!Array.isArray(body.items) || body.items.length === 0)
-      throw new BadRequestException('items required');
-    if (body.items.length > 20) throw new BadRequestException('Too many items');
     const items = body.items.map((s: string) => String(s).slice(0, 500));
     const entry = await this.diaryService.upsertGratitudeDiaryEntry(
       uid(req),

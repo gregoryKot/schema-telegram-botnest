@@ -22,7 +22,11 @@ import { CalDavService } from './caldav.service';
 import { PricingService } from './pricing.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { assertAdminKey } from './admin-key.util';
-import { SessionType } from '@prisma/client';
+import {
+  SetPriceDto,
+  SetSubPriceDto,
+  ToggleRuleDto,
+} from './booking-admin.dto';
 
 /**
  * Admin booking endpoints, guarded by ADMIN_BOOKING_KEY. The key is passed in
@@ -56,7 +60,7 @@ export class BookingAdminController {
   /** PATCH /admin/price — set a session price (rubles). */
   @Patch('price')
   async setPrice(
-    @Body() body: { type: SessionType; amount: number },
+    @Body() body: SetPriceDto,
     @Headers('x-admin-key') key: string,
   ) {
     assertAdminKey(key, this.adminKey);
@@ -143,7 +147,7 @@ export class BookingAdminController {
   /** PATCH /admin/sub-price — set a subscription price (rubles). */
   @Patch('sub-price')
   async setSubPrice(
-    @Body() body: { period: 'month' | 'year'; amount: number },
+    @Body() body: SetSubPriceDto,
     @Headers('x-admin-key') key: string,
   ) {
     assertAdminKey(key, this.adminKey);
@@ -175,7 +179,7 @@ export class BookingAdminController {
   @Patch('rules/:id')
   async toggleRule(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { isActive: boolean },
+    @Body() body: ToggleRuleDto,
     @Headers('x-admin-key') key: string,
   ) {
     assertAdminKey(key, this.adminKey);

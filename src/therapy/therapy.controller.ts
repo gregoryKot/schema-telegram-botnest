@@ -22,6 +22,23 @@ import { TelegramAuthGuard } from '../api/telegram-auth.guard';
 import { TherapyService } from './therapy.service';
 import { TherapistRequestService } from './therapist-request.service';
 import { BotService } from '../bot/bot.service';
+import {
+  JoinTherapyDto,
+  VirtualClientDto,
+  AddClientDto,
+} from './dto/connection.dto';
+import { CreateTaskDto, CompleteTaskDto } from './dto/tasks.dto';
+import {
+  RenameClientDto,
+  CreateSessionNoteDto,
+  SessionInfoDto,
+} from './dto/client-data.dto';
+import { ConceptualizationDto } from './dto/conceptualization.dto';
+import {
+  CustomModeDto,
+  CreateModeMapDto,
+  UpdateModeMapDto,
+} from './dto/mode-maps.dto';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -61,7 +78,7 @@ export class TherapyController {
   }
 
   @Post('join')
-  async join(@Req() req: AuthRequest, @Body() body: { code: string }) {
+  async join(@Req() req: AuthRequest, @Body() body: JoinTherapyDto) {
     if (!body.code) throw new BadRequestException('code required');
     const ok = await this.therapyService.joinAsClient(uid(req), body.code);
     if (!ok) throw new BadRequestException('Invalid or expired code');
@@ -95,7 +112,7 @@ export class TherapyController {
   @Post('clients/virtual')
   async addVirtualClient(
     @Req() req: AuthRequest,
-    @Body() body: { name: string },
+    @Body() body: VirtualClientDto,
   ) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
@@ -104,10 +121,7 @@ export class TherapyController {
   }
 
   @Post('clients/add')
-  async addClientManually(
-    @Req() req: AuthRequest,
-    @Body() body: { clientTelegramId: number },
-  ) {
+  async addClientManually(@Req() req: AuthRequest, @Body() body: AddClientDto) {
     // SECURITY: silently attaching a therapist to a real user's account (and
     // gaining read access to their schema/mode notes, ratings, etc) without
     // the client's consent is unacceptable for a therapy app. Manual add is
@@ -157,27 +171,7 @@ export class TherapyController {
   // ─── Tasks ───────────────────────────────────────────────────────────────────
 
   @Post('tasks')
-  async createTask(
-    @Req() req: AuthRequest,
-    @Body()
-    body: {
-      type: string;
-      text: string;
-      targetDays?: number;
-      needId?: string;
-      dueDate?: string;
-      clientId?: number;
-    },
-  ) {
-    if (!body.type || !body.text)
-      throw new BadRequestException('type and text required');
-    if (
-      body.targetDays !== undefined &&
-      (!Number.isInteger(body.targetDays) ||
-        body.targetDays < 1 ||
-        body.targetDays > 365)
-    )
-      throw new BadRequestException('targetDays must be 1–365');
+  async createTask(@Req() req: AuthRequest, @Body() body: CreateTaskDto) {
     let targetUserId: bigint = uid(req);
     let assignedBy: bigint | undefined;
 
@@ -248,7 +242,7 @@ export class TherapyController {
   async completeTask(
     @Req() req: AuthRequest,
     @Param('id') id: string,
-    @Body() body: { done: boolean },
+    @Body() body: CompleteTaskDto,
   ) {
     const owned = await this.therapyService.completeTask(
       uid(req),
@@ -265,14 +259,10 @@ export class TherapyController {
   async renameClient(
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
-    @Body() body: { alias: string },
+    @Body() body: RenameClientDto,
   ) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    if (typeof body.alias !== 'string')
-      throw new BadRequestException('alias required');
-    if (body.alias.length > 100)
-      throw new BadRequestException('alias too long');
     await this.therapyService.renameClient(
       uid(req),
       parseId(clientId),
@@ -412,7 +402,7 @@ export class TherapyController {
   async createNote(
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
-    @Body() body: { date: string; text: string },
+    @Body() body: CreateSessionNoteDto,
   ) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
@@ -466,12 +456,7 @@ export class TherapyController {
   async updateSessionInfo(
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
-    @Body()
-    body: {
-      therapyStartDate?: string | null;
-      nextSession?: string | null;
-      meetingDays?: number[];
-    },
+    @Body() body: SessionInfoDto,
   ) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
@@ -493,63 +478,10 @@ export class TherapyController {
   async saveConceptualization(
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
-    @Body()
-    body: {
-      schemaIds?: string[];
-      modeIds?: string[];
-      earlyExperience?: string;
-      unmetNeeds?: string;
-      triggers?: string;
-      copingStyles?: string;
-      goals?: string;
-      currentProblems?: string;
-      modeTransitions?: string;
-      modeMapNodes?: unknown[];
-      modeMapEdges?: unknown[];
-    },
+    @Body() body: ConceptualizationDto,
   ) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    const MAX = 5000;
-    const textFields = [
-      'earlyExperience',
-      'unmetNeeds',
-      'triggers',
-      'copingStyles',
-      'goals',
-      'currentProblems',
-      'modeTransitions',
-    ] as const;
-    for (const f of textFields) {
-      if (
-        body[f] !== undefined &&
-        (typeof body[f] !== 'string' || body[f].length > MAX)
-      )
-        throw new BadRequestException(`${f} too long or invalid`);
-    }
-    if (
-      body.schemaIds !== undefined &&
-      (!Array.isArray(body.schemaIds) ||
-        body.schemaIds.some((s) => typeof s !== 'string' || s.length > 64))
-    )
-      throw new BadRequestException('invalid schemaIds');
-    if (
-      body.modeIds !== undefined &&
-      (!Array.isArray(body.modeIds) ||
-        body.modeIds.some((s) => typeof s !== 'string' || s.length > 64))
-    )
-      throw new BadRequestException('invalid modeIds');
-    // Mode map: validate arrays exist and aren't absurdly large (max 200 nodes/edges)
-    if (
-      body.modeMapNodes !== undefined &&
-      (!Array.isArray(body.modeMapNodes) || body.modeMapNodes.length > 200)
-    )
-      throw new BadRequestException('invalid modeMapNodes');
-    if (
-      body.modeMapEdges !== undefined &&
-      (!Array.isArray(body.modeMapEdges) || body.modeMapEdges.length > 500)
-    )
-      throw new BadRequestException('invalid modeMapEdges');
     try {
       return await this.therapyService.saveConceptualization(
         uid(req),
@@ -573,10 +505,7 @@ export class TherapyController {
   }
 
   @Post('custom-modes')
-  async createCustomMode(
-    @Req() req: AuthRequest,
-    @Body() body: { name?: string; emoji?: string; nodeType?: string },
-  ) {
+  async createCustomMode(@Req() req: AuthRequest, @Body() body: CustomModeDto) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     if (!body.name?.trim()) throw new BadRequestException('name required');
@@ -633,7 +562,7 @@ export class TherapyController {
   async createModeMap(
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
-    @Body() body: { title?: string; kind?: string },
+    @Body() body: CreateModeMapDto,
   ) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
@@ -655,25 +584,10 @@ export class TherapyController {
   async updateModeMap(
     @Req() req: AuthRequest,
     @Param('mapId') mapId: string,
-    @Body()
-    body: {
-      title?: string;
-      nodes?: unknown[];
-      edges?: unknown[];
-    },
+    @Body() body: UpdateModeMapDto,
   ) {
     const role = await this.botService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    if (
-      body.nodes !== undefined &&
-      (!Array.isArray(body.nodes) || body.nodes.length > 200)
-    )
-      throw new BadRequestException('invalid nodes');
-    if (
-      body.edges !== undefined &&
-      (!Array.isArray(body.edges) || body.edges.length > 500)
-    )
-      throw new BadRequestException('invalid edges');
     try {
       return await this.therapyService.updateModeMap(
         uid(req),

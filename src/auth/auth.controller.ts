@@ -454,6 +454,7 @@ export class AuthController {
   })
   @HttpCode(200)
   async telegramWidget(
+    // Не DTO: подписанный Telegram-payload, whitelist срежет поля и сломает hash-верификацию.
     @Body() body: Record<string, string>,
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
@@ -820,6 +821,7 @@ try {
   @HttpCode(200)
   async linkProvider(
     @Param('provider') provider: string,
+    // Не DTO: подписанный Telegram-payload, whitelist срежет поля и сломает hash-верификацию.
     @Body() body: Record<string, unknown>,
     @Req() req: any,
   ): Promise<
