@@ -1,4 +1,4 @@
-import { DiaryType } from '../types';
+import type { DiaryType } from '../types';
 
 export const DRAFT_KEYS: Record<DiaryType, string> = {
   schema:    'diary_draft_schema',
