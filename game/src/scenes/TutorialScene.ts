@@ -142,7 +142,8 @@ export class TutorialScene extends Phaser.Scene {
     this.narr = this.add.text(W / 2, 104, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '13px', color: '#fff0d8', align: 'center', lineSpacing: 14, wordWrap: { width: W - 90 },
       backgroundColor: 'rgba(8,6,18,0.82)', padding: { x: 16, y: 12 } })
       .setOrigin(0.5, 0).setDepth(50);
-    this.prompt = this.add.text(W / 2, IS_TOUCH ? H - 250 : H - 56, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#88ffcc', align: 'center', wordWrap: { width: W - 80 },
+    // тач: подсказка ВВЕРХУ (под сердцами) — на «H-250» она попадала ровно в пузырь реплики
+    this.prompt = this.add.text(W / 2, IS_TOUCH ? 62 : H - 56, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#88ffcc', align: 'center', wordWrap: { width: W - 80 },
       backgroundColor: 'rgba(8,6,18,0.82)', padding: { x: 12, y: 8 } })
       .setOrigin(0.5).setDepth(50);
     this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',

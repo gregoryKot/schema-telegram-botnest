@@ -3,7 +3,7 @@ import { W, H } from '../constants';
 import { getContinueChapter } from '../progress';
 import { track } from '../analytics';
 import { CHAPTERS } from '../chapters';
-import { setTouchControls } from '../controls';
+import { setTouchControls, IS_TOUCH } from '../controls';
 import { t } from '../i18n';
 
 export class StartScene extends Phaser.Scene {
@@ -29,13 +29,16 @@ export class StartScene extends Phaser.Scene {
       frameRate: 10, repeat: -1,
     });
 
-    const cat = this.add.sprite(W / 2, H / 2 + 20, 'cat_idle').setScale(4).play('s-cat-idle');
+    // тач-экран ниже (H=384) — сжимаем вертикаль, иначе кнопка/хинт/continue налезают
+    const catY = IS_TOUCH ? H / 2 + 4 : H / 2 + 20;
+    const btnY = IS_TOUCH ? H / 2 + 100 : H / 2 + 130;
+    const cat = this.add.sprite(W / 2, catY, 'cat_idle').setScale(IS_TOUCH ? 3.2 : 4).play('s-cat-idle');
 
     // Кнопка запуска — рамка подгоняется под текст, чтобы он не вылезал
-    const btnTxt = this.add.text(W / 2, H / 2 + 130, t('m_start'), {
+    const btnTxt = this.add.text(W / 2, btnY, t('m_start'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '16px', color: '#ff7733', letterSpacing: 6,
     }).setOrigin(0.5);
-    const btn = this.add.rectangle(W / 2, H / 2 + 130, btnTxt.width + 48, 48, 0x3a1500)
+    const btn = this.add.rectangle(W / 2, btnY, btnTxt.width + 48, 48, 0x3a1500)
       .setStrokeStyle(2, 0xa08fff)
       .setInteractive({ useHandCursor: true });
     btnTxt.setDepth(1); // текст поверх рамки
@@ -43,19 +46,19 @@ export class StartScene extends Phaser.Scene {
     btn.on('pointerover', () => {
       btn.fillColor = 0xcc5522;
       btnTxt.setColor('#fff0d8');
-      cat.setScale(4.3);
+      cat.setScale(IS_TOUCH ? 3.4 : 4.3);
     });
     btn.on('pointerout', () => {
       btn.fillColor = 0x3a1500;
       btnTxt.setColor('#ff7733');
-      cat.setScale(4);
+      cat.setScale(IS_TOUCH ? 3.2 : 4);
     });
     btn.on('pointerdown', () => { track('game_start'); this.scene.start('Tutorial'); });
 
     // вернулся — продолжай с достигнутой главы, не с нуля
     const cont = getContinueChapter();
     if (cont && CHAPTERS[cont]) {
-      const cbtn = this.add.text(W / 2, H / 2 + 178, t('m_continue') + ` — «${t(CHAPTERS[cont].title)}» →`, {
+      const cbtn = this.add.text(W / 2, IS_TOUCH ? H / 2 + 144 : H / 2 + 178, t('m_continue') + ` — «${t(CHAPTERS[cont].title)}» →`, {
         fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#88ffcc', letterSpacing: 0,
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
       cbtn.on('pointerover', () => cbtn.setColor('#fff0d8'));
@@ -63,8 +66,11 @@ export class StartScene extends Phaser.Scene {
       cbtn.on('pointerdown', () => { track('game_continue', { chapter: cont }); this.scene.start('Game', { chapter: cont }); });
     }
 
-    this.add.text(W / 2, H - 40, t('m_arrows_wasd_tap_to_play'), {
-      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#7a3a10', letterSpacing: 1,
-    }).setOrigin(0.5);
+    // на таче «стрелки/WASD» бессмысленны и налезали на START — не показываем
+    if (!IS_TOUCH) {
+      this.add.text(W / 2, H - 40, t('m_arrows_wasd_tap_to_play'), {
+        fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#7a3a10', letterSpacing: 1,
+      }).setOrigin(0.5);
+    }
   }
 }
