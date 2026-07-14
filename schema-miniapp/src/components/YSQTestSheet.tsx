@@ -145,7 +145,7 @@ interface SchemaInfo {
 const SCHEMAS: SchemaInfo[] = [
   {
     name: 'Эмоциональная депривация',
-    questions: [1,2,3,4,5],
+    questions: [1, 2, 3, 4, 5],
     color: 'var(--accent-red)',
     desc: 'Ощущение, что никто по-настоящему не понимает и не заботится так, как нужно.',
     tip: 'Попробуй прямо попросить о поддержке — не намёком, а словами.',
@@ -153,7 +153,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Покинутость/Нестабильность',
-    questions: [6,7,8,9,10,11,12,13],
+    questions: [6, 7, 8, 9, 10, 11, 12, 13],
     color: 'var(--accent-red)',
     desc: 'Страх что близкие уйдут или окажутся ненадёжными — даже если сейчас всё хорошо.',
     tip: 'Замечай, когда партнёр рядом — это реальный факт, а не случайность.',
@@ -161,7 +161,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Недоверие/Ожидание жестокого обращения',
-    questions: [14,15,16,17,18],
+    questions: [14, 15, 16, 17, 18],
     color: 'var(--accent-red)',
     desc: 'Убеждённость что люди в конечном счёте причинят боль, обманут или используют.',
     tip: 'Выбери одного человека которому доверяешь — и сделай один маленький шаг навстречу.',
@@ -169,7 +169,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Социальная отчужденность',
-    questions: [19,20,21,22,23],
+    questions: [19, 20, 21, 22, 23],
     color: 'var(--accent-red)',
     desc: 'Ощущение собственной инаковости и непринадлежности ни к какой группе.',
     tip: 'Найди одно сообщество по интересу — не для дружбы, просто чтобы быть среди своих.',
@@ -177,7 +177,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Дефективность/Стыд',
-    questions: [24,25,26,27,28,29],
+    questions: [24, 25, 26, 27, 28, 29],
     color: 'var(--accent-red)',
     desc: 'Глубокое ощущение собственной дефективности: если узнают настоящего — отвернутся.',
     tip: 'Поделись чем-то личным с одним человеком которому доверяешь — и посмотрите что будет.',
@@ -185,7 +185,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Неуспешность',
-    questions: [30,31,32,33,34,35],
+    questions: [30, 31, 32, 33, 34, 35],
     color: 'var(--accent-orange)',
     desc: 'Убеждённость в неизбежном провале и отставании от других в работе или учёбе.',
     tip: 'Запиши три реальных достижения за последний год — маленьких, но своих.',
@@ -193,7 +193,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Зависимость/Беспомощность',
-    questions: [36,37,38,39,40,41,42,43],
+    questions: [36, 37, 38, 39, 40, 41, 42, 43],
     color: 'var(--accent-orange)',
     desc: 'Чувство что не способен справляться с жизнью самостоятельно без чьей-то помощи.',
     tip: 'Реши одну бытовую задачу без совета — любую, самую маленькую.',
@@ -201,7 +201,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Уязвимость',
-    questions: [44,45,46,47,48,49],
+    questions: [44, 45, 46, 47, 48, 49],
     color: 'var(--accent-orange)',
     desc: 'Хроническое ожидание катастрофы: болезни, финансового краха, опасности.',
     tip: 'Когда возникает тревога — спроси себя: какова реальная вероятность этого прямо сейчас?',
@@ -209,7 +209,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Спутанность/Неразвитая идентичность',
-    questions: [50,51,52,53,54,55,56],
+    questions: [50, 51, 52, 53, 54, 55, 56],
     color: 'var(--accent-orange)',
     desc: 'Трудно ощущать себя отдельной личностью — слишком много слияния с близкими.',
     tip: 'Сделай что-то только для себя — без объяснений и разрешения.',
@@ -217,7 +217,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Покорность',
-    questions: [57,58,59,60,61],
+    questions: [57, 58, 59, 60, 61],
     color: 'var(--accent-green)',
     desc: 'Привычка уступать и подавлять свои желания из страха конфликта или отвержения.',
     tip: 'Выскажи одно своё мнение сегодня — даже если оно отличается от чужого.',
@@ -225,7 +225,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Самопожертвование',
-    questions: [62,63,64,65,66,67],
+    questions: [62, 63, 64, 65, 66, 67],
     color: 'var(--accent-green)',
     desc: 'Постоянная забота о других за счёт собственных потребностей, с накопленной обидой.',
     tip: 'Откажи кому-то в одной просьбе — и заметьте, что ничего страшного не произошло.',
@@ -233,7 +233,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Страх потери контроля над эмоциями',
-    questions: [68,69,70,71],
+    questions: [68, 69, 70, 71],
     color: 'var(--accent-indigo)',
     desc: 'Страх что если дать волю чувствам — они выйдут из-под контроля и навредят.',
     tip: 'Назови вслух одну эмоцию которую сейчас чувствуешь — просто назови, не действуй.',
@@ -241,7 +241,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Эмоциональная скованность',
-    questions: [72,73,74,75,76],
+    questions: [72, 73, 74, 75, 76],
     color: 'var(--accent-indigo)',
     desc: 'Подавление спонтанных чувств из стыда или убеждения что эмоции — слабость.',
     tip: 'Позволь себе что-то почувствовать сегодня — смех, злость, нежность — не сдерживай.',
@@ -249,7 +249,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Жёсткие стандарты/Придирчивость',
-    questions: [77,78,79,80,81,82,83],
+    questions: [77, 78, 79, 80, 81, 82, 83],
     color: 'var(--accent-indigo)',
     desc: 'Постоянное давление соответствовать очень высоким стандартам, жертвуя радостью.',
     tip: 'Сделай что-то «достаточно хорошо» — не идеально — и остановись на этом.',
@@ -257,7 +257,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Привилегированность/Грандиозность',
-    questions: [84,85,86,87,88,89],
+    questions: [84, 85, 86, 87, 88, 89],
     color: 'var(--accent-yellow)',
     desc: 'Ощущение особых прав, нетерпимость к ограничениям и чужим нуждам.',
     tip: 'Спроси кого-то что им нужно — и сделай это, даже если тебе не хочется.',
@@ -265,7 +265,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Недостаточность самоконтроля',
-    questions: [90,91,92,93,94,95,96],
+    questions: [90, 91, 92, 93, 94, 95, 96],
     color: 'var(--accent-yellow)',
     desc: 'Трудно сдерживать импульсы или доводить дела до конца когда скучно.',
     tip: 'Поставь таймер на 20 минут и сделай одно неприятное дело до сигнала.',
@@ -273,7 +273,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Поиск одобрения',
-    questions: [97,98,99,100,101],
+    questions: [97, 98, 99, 100, 101],
     color: 'var(--accent-indigo)',
     desc: 'Самооценка зависит от чужой оценки, подстройка под других чтобы понравиться.',
     tip: 'Прими одно решение исходя только из своих желаний — без оглядки на реакцию других.',
@@ -281,7 +281,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Негативизм/Пессимизм',
-    questions: [102,103,104,105,106,107],
+    questions: [102, 103, 104, 105, 106, 107],
     color: 'var(--accent-indigo)',
     desc: 'Устойчивый фокус на негативном, хроническое ожидание плохого исхода.',
     tip: 'Запиши одну хорошую вещь которая случилась сегодня — даже маленькую.',
@@ -289,7 +289,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Пунитивность (на себя)',
-    questions: [108,109,110,111,112],
+    questions: [108, 109, 110, 111, 112],
     color: 'var(--accent-indigo)',
     desc: 'Жёсткая самокритика за ошибки, убеждённость в заслуженности наказания.',
     tip: 'Скажи себе то, что сказал бы другу в такой же ситуации — без осуждения.',
@@ -297,7 +297,7 @@ const SCHEMAS: SchemaInfo[] = [
   },
   {
     name: 'Пунитивность (на других)',
-    questions: [113,114,115,116],
+    questions: [113, 114, 115, 116],
     color: 'var(--accent-indigo)',
     desc: 'Нетерпимость к чужим ошибкам, гнев когда другие не соответствуют ожиданиям.',
     tip: 'Спроси себя: что стоит за поведением этого человека? Что он чувствовал?',
@@ -328,7 +328,7 @@ const ANSWER_LABELS = [
 ];
 
 function getSchemaForQuestion(qIdx: number): SchemaInfo | undefined {
-  return SCHEMAS.find(s => s.questions.includes(qIdx + 1));
+  return SCHEMAS.find((s) => s.questions.includes(qIdx + 1));
 }
 
 type Phase = 'intro' | 'test' | 'result';
@@ -343,43 +343,77 @@ interface SchemaScore {
 function computeScores(answers: number[]): Record<string, SchemaScore> {
   const result: Record<string, SchemaScore> = {};
   for (const schema of SCHEMAS) {
-    const vals = schema.questions.map(q => answers[q - 1] ?? 0).filter(v => v > 0);
+    const vals = schema.questions
+      .map((q) => answers[q - 1] ?? 0)
+      .filter((v) => v > 0);
     const sum = vals.reduce((a, b) => a + b, 0);
     const max = schema.questions.length * 6;
     const pct = Math.round((sum / max) * 100);
-    const pct5plus = vals.length > 0 ? Math.round((vals.filter(v => v >= 5).length / schema.questions.length) * 100) : 0;
+    const pct5plus =
+      vals.length > 0
+        ? Math.round(
+            (vals.filter((v) => v >= 5).length / schema.questions.length) * 100,
+          )
+        : 0;
     result[schema.name] = { sum, max, pct, pct5plus };
   }
   return result;
 }
 
 const TIP_VY: Record<string, string> = {
-  'Эмоциональная депривация': 'Попробуйте прямо попросить о поддержке — не намёком, а словами.',
-  'Покинутость/Нестабильность': 'Замечайте, когда партнёр рядом — это реальный факт, а не случайность.',
-  'Недоверие/Ожидание жестокого обращения': 'Выберите одного человека которому доверяете — и сделайте один маленький шаг навстречу.',
-  'Социальная отчужденность': 'Найдите одно сообщество по интересу — не для дружбы, просто чтобы быть среди своих.',
-  'Дефективность/Стыд': 'Поделитесь чем-то личным с одним человеком которому доверяете — и посмотрите что будет.',
-  'Неуспешность': 'Запишите три реальных достижения за последний год — маленьких, но своих.',
-  'Зависимость/Беспомощность': 'Решите одну бытовую задачу без совета — любую, самую маленькую.',
-  'Уязвимость': 'Когда возникает тревога — спросите себя: какова реальная вероятность этого прямо сейчас?',
-  'Спутанность/Неразвитая идентичность': 'Сделайте что-то только для себя — без объяснений и разрешения.',
-  'Покорность': 'Выскажите одно своё мнение сегодня — даже если оно отличается от чужого.',
-  'Самопожертвование': 'Откажите кому-то в одной просьбе — и заметьте, что ничего страшного не произошло.',
-  'Страх потери контроля над эмоциями': 'Назовите вслух одну эмоцию которую сейчас чувствуете — просто назовите, не действуйте.',
-  'Эмоциональная скованность': 'Позвольте себе что-то почувствовать сегодня — смех, злость, нежность — не сдерживайте.',
-  'Жёсткие стандарты/Придирчивость': 'Сделайте что-то «достаточно хорошо» — не идеально — и остановитесь на этом.',
-  'Привилегированность/Грандиозность': 'Спросите кого-то что им нужно — и сделайте это, даже если вам не хочется.',
-  'Недостаточность самоконтроля': 'Поставьте таймер на 20 минут и сделайте одно неприятное дело до сигнала.',
-  'Поиск одобрения': 'Примите одно решение исходя только из своих желаний — без оглядки на реакцию других.',
-  'Негативизм/Пессимизм': 'Запишите одну хорошую вещь которая случилась сегодня — даже маленькую.',
-  'Пунитивность (на себя)': 'Скажите себе то, что сказали бы другу в такой же ситуации — без осуждения.',
-  'Пунитивность (на других)': 'Спросите себя: что стоит за поведением этого человека? Что он чувствовал?',
+  'Эмоциональная депривация':
+    'Попробуйте прямо попросить о поддержке — не намёком, а словами.',
+  'Покинутость/Нестабильность':
+    'Замечайте, когда партнёр рядом — это реальный факт, а не случайность.',
+  'Недоверие/Ожидание жестокого обращения':
+    'Выберите одного человека которому доверяете — и сделайте один маленький шаг навстречу.',
+  'Социальная отчужденность':
+    'Найдите одно сообщество по интересу — не для дружбы, просто чтобы быть среди своих.',
+  'Дефективность/Стыд':
+    'Поделитесь чем-то личным с одним человеком которому доверяете — и посмотрите что будет.',
+  Неуспешность:
+    'Запишите три реальных достижения за последний год — маленьких, но своих.',
+  'Зависимость/Беспомощность':
+    'Решите одну бытовую задачу без совета — любую, самую маленькую.',
+  Уязвимость:
+    'Когда возникает тревога — спросите себя: какова реальная вероятность этого прямо сейчас?',
+  'Спутанность/Неразвитая идентичность':
+    'Сделайте что-то только для себя — без объяснений и разрешения.',
+  Покорность:
+    'Выскажите одно своё мнение сегодня — даже если оно отличается от чужого.',
+  Самопожертвование:
+    'Откажите кому-то в одной просьбе — и заметьте, что ничего страшного не произошло.',
+  'Страх потери контроля над эмоциями':
+    'Назовите вслух одну эмоцию которую сейчас чувствуете — просто назовите, не действуйте.',
+  'Эмоциональная скованность':
+    'Позвольте себе что-то почувствовать сегодня — смех, злость, нежность — не сдерживайте.',
+  'Жёсткие стандарты/Придирчивость':
+    'Сделайте что-то «достаточно хорошо» — не идеально — и остановитесь на этом.',
+  'Привилегированность/Грандиозность':
+    'Спросите кого-то что им нужно — и сделайте это, даже если вам не хочется.',
+  'Недостаточность самоконтроля':
+    'Поставьте таймер на 20 минут и сделайте одно неприятное дело до сигнала.',
+  'Поиск одобрения':
+    'Примите одно решение исходя только из своих желаний — без оглядки на реакцию других.',
+  'Негативизм/Пессимизм':
+    'Запишите одну хорошую вещь которая случилась сегодня — даже маленькую.',
+  'Пунитивность (на себя)':
+    'Скажите себе то, что сказали бы другу в такой же ситуации — без осуждения.',
+  'Пунитивность (на других)':
+    'Спросите себя: что стоит за поведением этого человека? Что он чувствовал?',
 };
 
-export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Props) {
+export function YSQTestSheet({
+  onClose,
+  ratings,
+  autoResume,
+  onViewSchemas,
+}: Props) {
   const tr = useTr();
   const [phase, setPhase] = useState<Phase>('intro');
-  const [answers, setAnswers] = useState<number[]>(Array(QUESTIONS.length).fill(0));
+  const [answers, setAnswers] = useState<number[]>(
+    Array(QUESTIONS.length).fill(0),
+  );
   const [page, setPage] = useState(0);
   const [slideKey, setSlideKey] = useState(0);
   const [slideDir, setSlideDir] = useState<'forward' | 'back'>('forward');
@@ -390,11 +424,11 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
   const [inactiveExpanded, setInactiveExpanded] = useState(false);
   const [retakeConfirm, setRetakeConfirm] = useState(false);
 
-  const progressAnswered = answers.filter(a => a > 0).length;
+  const progressAnswered = answers.filter((a) => a > 0).length;
 
   const goToPage = (newPage: number, dir: 'forward' | 'back') => {
     setSlideDir(dir);
-    setSlideKey(k => k + 1);
+    setSlideKey((k) => k + 1);
     setPage(newPage);
   };
 
@@ -404,7 +438,11 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
         const result = localStorage.getItem(YSQ_RESULT_KEY);
         if (result) {
           const parsed = JSON.parse(result);
-          if (parsed.answers && Array.isArray(parsed.answers) && parsed.answers.length === QUESTIONS.length) {
+          if (
+            parsed.answers &&
+            Array.isArray(parsed.answers) &&
+            parsed.answers.length === QUESTIONS.length
+          ) {
             setAnswers(parsed.answers);
             setPhase('result');
             if (parsed.date) setCompletedAt(parsed.date);
@@ -414,7 +452,10 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
       const saved = localStorage.getItem(YSQ_PROGRESS_KEY);
       if (saved) {
         const parsed = JSON.parse(saved) as { answers: number[]; page: number };
-        if (Array.isArray(parsed.answers) && parsed.answers.length === QUESTIONS.length) {
+        if (
+          Array.isArray(parsed.answers) &&
+          parsed.answers.length === QUESTIONS.length
+        ) {
           setHasProgress(true);
           setAnswers(parsed.answers);
           if (autoResume) {
@@ -423,31 +464,61 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           }
         }
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     if (!autoResume) {
-      api.getYsqHistory().then(h => { if (h) setHistory(h); }).catch(() => {});
+      api
+        .getYsqHistory()
+        .then((h) => {
+          if (h) setHistory(h);
+        })
+        .catch(() => {});
 
-      Promise.all([api.getYsqResult(), api.getYsqProgress()]).then(([serverResult, serverProgress]) => {
-        if (userStartedRef.current) return;
-        if (serverResult?.answers && Array.isArray(serverResult.answers) && serverResult.answers.length === QUESTIONS.length) {
-          const dateStr = serverResult.completedAt ?? new Date().toISOString();
-          localStorage.setItem(YSQ_RESULT_KEY, JSON.stringify({ date: dateStr, answers: serverResult.answers }));
-          setAnswers(serverResult.answers);
-          setCompletedAt(dateStr);
-          setPhase('result');
-        } else if (serverProgress?.answers && Array.isArray(serverProgress.answers) && serverProgress.answers.length === QUESTIONS.length) {
-          localStorage.setItem(YSQ_PROGRESS_KEY, JSON.stringify({ answers: serverProgress.answers, page: serverProgress.page }));
-          setAnswers(serverProgress.answers);
-          setPage(serverProgress.page);
-          setHasProgress(true);
-        }
-      }).catch(() => {});
+      Promise.all([api.getYsqResult(), api.getYsqProgress()])
+        .then(([serverResult, serverProgress]) => {
+          if (userStartedRef.current) return;
+          if (
+            serverResult?.answers &&
+            Array.isArray(serverResult.answers) &&
+            serverResult.answers.length === QUESTIONS.length
+          ) {
+            const dateStr =
+              serverResult.completedAt ?? new Date().toISOString();
+            localStorage.setItem(
+              YSQ_RESULT_KEY,
+              JSON.stringify({ date: dateStr, answers: serverResult.answers }),
+            );
+            setAnswers(serverResult.answers);
+            setCompletedAt(dateStr);
+            setPhase('result');
+          } else if (
+            serverProgress?.answers &&
+            Array.isArray(serverProgress.answers) &&
+            serverProgress.answers.length === QUESTIONS.length
+          ) {
+            localStorage.setItem(
+              YSQ_PROGRESS_KEY,
+              JSON.stringify({
+                answers: serverProgress.answers,
+                page: serverProgress.page,
+              }),
+            );
+            setAnswers(serverProgress.answers);
+            setPage(serverProgress.page);
+            setHasProgress(true);
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 
   const saveProgress = (newAnswers: number[], newPage: number) => {
-    localStorage.setItem(YSQ_PROGRESS_KEY, JSON.stringify({ answers: newAnswers, page: newPage }));
+    localStorage.setItem(
+      YSQ_PROGRESS_KEY,
+      JSON.stringify({ answers: newAnswers, page: newPage }),
+    );
   };
 
   const handleContinue = () => {
@@ -456,12 +527,17 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
       const saved = localStorage.getItem(YSQ_PROGRESS_KEY);
       if (saved) {
         const parsed = JSON.parse(saved) as { answers: number[]; page: number };
-        if (Array.isArray(parsed.answers) && parsed.answers.length === QUESTIONS.length) {
+        if (
+          Array.isArray(parsed.answers) &&
+          parsed.answers.length === QUESTIONS.length
+        ) {
           setAnswers(parsed.answers);
           setPage(parsed.page ?? 0);
         }
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setPhase('test');
   };
 
@@ -508,7 +584,9 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
   const scores = phase === 'result' ? computeScores(answers) : null;
   const sortedSchemas = scores
-    ? [...SCHEMAS].sort((a, b) => scores[b.name].pct5plus - scores[a.name].pct5plus)
+    ? [...SCHEMAS].sort(
+        (a, b) => scores[b.name].pct5plus - scores[a.name].pct5plus,
+      )
     : [];
 
   // ── Full-screen test phase ────────────────────────────────────────────────────
@@ -524,25 +602,94 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           @keyframes slideFromRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
           @keyframes slideFromLeft  { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
         `}</style>
-        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 300,
+            background: 'var(--bg)',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           {/* Header */}
           <div style={{ flexShrink: 0, padding: '16px 20px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 10,
+              }}
+            >
               <button
                 onClick={handleBack}
                 disabled={page === 0}
                 aria-label="Назад"
-                style={{ width: 36, height: 36, borderRadius: 12, border: 'none', background: page === 0 ? 'transparent' : 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 16, cursor: page === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: page === 0 ? 0 : 1, transition: 'opacity 0.15s' }}
-              >←</button>
-              <span style={{ fontSize: 13, color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>{page + 1} / {TOTAL_PAGES}</span>
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  border: 'none',
+                  background:
+                    page === 0 ? 'transparent' : 'rgba(var(--fg-rgb),0.08)',
+                  color: 'var(--text-sub)',
+                  fontSize: 16,
+                  cursor: page === 0 ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: page === 0 ? 0 : 1,
+                  transition: 'opacity 0.15s',
+                }}
+              >
+                ←
+              </button>
+              <span
+                style={{
+                  fontSize: 13,
+                  color: 'var(--text-faint)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {page + 1} / {TOTAL_PAGES}
+              </span>
               <button
                 onClick={() => setPhase('intro')}
                 aria-label="Закрыть"
-                style={{ width: 36, height: 36, borderRadius: 12, border: 'none', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 17, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >✕</button>
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  border: 'none',
+                  background: 'rgba(var(--fg-rgb),0.08)',
+                  color: 'var(--text-sub)',
+                  fontSize: 17,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                ✕
+              </button>
             </div>
-            <div style={{ height: 3, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 3 }}>
-              <div style={{ height: '100%', width: `${progressPct}%`, background: 'var(--accent)', borderRadius: 3, transition: 'width 0.25s ease' }} />
+            <div
+              style={{
+                height: 3,
+                background: 'rgba(var(--fg-rgb),0.08)',
+                borderRadius: 3,
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${progressPct}%`,
+                  background: 'var(--accent)',
+                  borderRadius: 3,
+                  transition: 'width 0.25s ease',
+                }}
+              />
             </div>
           </div>
 
@@ -557,17 +704,41 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             }}
           >
             {schema && (
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: schema.color, marginBottom: 12 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: schema.color,
+                  marginBottom: 12,
+                }}
+              >
                 {schema.name}
               </div>
             )}
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1.45 }}>
+            <div
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: 'var(--text)',
+                lineHeight: 1.45,
+              }}
+            >
               {QUESTIONS[qIdx]}
             </div>
           </div>
 
           {/* Answer buttons */}
-          <div style={{ padding: '0 16px 32px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+          <div
+            style={{
+              padding: '0 16px 32px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              flexShrink: 0,
+            }}
+          >
             {ANSWER_LABELS.map((label, i) => {
               const value = i + 1;
               const selected = currentAnswer === value;
@@ -577,7 +748,9 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                   onClick={() => {
                     handleAnswer(qIdx, value);
                     setTimeout(() => {
-                      const newAnswers = answers.map((a, idx) => idx === qIdx ? value : a);
+                      const newAnswers = answers.map((a, idx) =>
+                        idx === qIdx ? value : a,
+                      );
                       if (page < TOTAL_PAGES - 1) {
                         const next = page + 1;
                         goToPage(next, 'forward');
@@ -585,9 +758,23 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                         api.saveYsqProgress(newAnswers, next).catch(() => {});
                       } else {
                         const dateStr = new Date().toISOString();
-                        localStorage.setItem(YSQ_RESULT_KEY, JSON.stringify({ date: dateStr, answers: newAnswers }));
-                        api.saveYsqResult(newAnswers)
-                          .then(() => api.getYsqHistory().then(h => { if (h) setHistory(h); }).catch(() => {}))
+                        localStorage.setItem(
+                          YSQ_RESULT_KEY,
+                          JSON.stringify({
+                            date: dateStr,
+                            answers: newAnswers,
+                          }),
+                        );
+                        api
+                          .saveYsqResult(newAnswers)
+                          .then(() =>
+                            api
+                              .getYsqHistory()
+                              .then((h) => {
+                                if (h) setHistory(h);
+                              })
+                              .catch(() => {}),
+                          )
                           .catch(() => {});
                         api.deleteYsqProgress().catch(() => {});
                         localStorage.removeItem(YSQ_PROGRESS_KEY);
@@ -598,24 +785,54 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                     }, 160);
                   }}
                   style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '13px 16px', borderRadius: 16,
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                    padding: '13px 16px',
+                    borderRadius: 16,
                     border: `1.5px solid ${selected ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.08)'}`,
-                    background: selected ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'var(--surface)',
-                    cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent',
+                    background: selected
+                      ? 'color-mix(in srgb, var(--accent) 12%, transparent)'
+                      : 'var(--surface)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    WebkitTapHighlightColor: 'transparent',
                     transition: 'background 0.12s, border-color 0.12s',
                   }}
                 >
-                  <div style={{
-                    width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                    border: `2px solid ${selected ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.2)'}`,
-                    background: selected ? 'var(--accent)' : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.12s',
-                  }}>
-                    {selected && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />}
+                  <div
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      border: `2px solid ${selected ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.2)'}`,
+                      background: selected ? 'var(--accent)' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.12s',
+                    }}
+                  >
+                    {selected && (
+                      <div
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: '#fff',
+                        }}
+                      />
+                    )}
                   </div>
-                  <span style={{ fontSize: 15, color: selected ? 'var(--text)' : 'var(--text-sub)', fontWeight: selected ? 500 : 400 }}>
+                  <span
+                    style={{
+                      fontSize: 15,
+                      color: selected ? 'var(--text)' : 'var(--text-sub)',
+                      fontWeight: selected ? 500 : 400,
+                    }}
+                  >
                     {label}
                   </span>
                 </button>
@@ -635,347 +852,913 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
         <div style={{ padding: '8px 0 16px' }}>
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>🧠</div>
-            <div style={{ fontSize: 23, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 6 }}>
+            <div
+              style={{
+                fontSize: 23,
+                fontWeight: 800,
+                color: 'var(--text)',
+                letterSpacing: '-0.5px',
+                marginBottom: 6,
+              }}
+            >
               Опросник схем YSQ-R
             </div>
-            <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+            <div
+              style={{
+                fontSize: 14,
+                color: 'var(--text-sub)',
+                lineHeight: 1.5,
+              }}
+            >
               Паттерны мышления и поведения, сложившиеся в детстве
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              marginBottom: 20,
+            }}
+          >
             {[
               ['📋', '116 утверждений', 'Оцени каждое от 1 до 6'],
               ['⏱️', '~10 минут', 'Можно прервать — прогресс сохраняется'],
               ['🔍', '20 схем', 'Результат с описанием и советом для каждой'],
             ].map(([emoji, title, desc]) => (
-              <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 14, padding: '12px 16px' }}>
+              <div
+                key={title}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  background: 'rgba(var(--fg-rgb),0.04)',
+                  borderRadius: 14,
+                  padding: '12px 16px',
+                }}
+              >
                 <span style={{ fontSize: 20, flexShrink: 0 }}>{emoji}</span>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{title}</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 1 }}>{desc}</div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: 'var(--text)',
+                    }}
+                  >
+                    {title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: 'var(--text-sub)',
+                      marginTop: 1,
+                    }}
+                  >
+                    {desc}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div style={{ background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 14, padding: '12px 16px', marginBottom: 20 }}>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)', fontWeight: 600, marginBottom: 10 }}>Шкала ответов:</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 4 }}>
-              {[1,2,3,4,5,6].map(n => (
+          <div
+            style={{
+              background: 'rgba(var(--fg-rgb),0.05)',
+              borderRadius: 14,
+              padding: '12px 16px',
+              marginBottom: 20,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                color: 'var(--text-sub)',
+                fontWeight: 600,
+                marginBottom: 10,
+              }}
+            >
+              Шкала ответов:
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: 4,
+              }}
+            >
+              {[1, 2, 3, 4, 5, 6].map((n) => (
                 <div key={n} style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{
-                    height: 34, borderRadius: 10,
-                    background: `color-mix(in srgb, var(--accent) ${6 + n * 13}%, rgba(var(--fg-rgb),0.06))`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 15, fontWeight: 700,
-                    color: n >= 4 ? 'var(--accent)' : 'var(--text-sub)',
-                    marginBottom: 5,
-                  }}>{n}</div>
-                  <div style={{ fontSize: 9, color: 'var(--text-faint)', lineHeight: 1.3 }}>
-                    {n === 1 ? 'Совсем не про меня' : n === 6 ? 'Полностью про меня' : ''}
+                  <div
+                    style={{
+                      height: 34,
+                      borderRadius: 10,
+                      background: `color-mix(in srgb, var(--accent) ${6 + n * 13}%, rgba(var(--fg-rgb),0.06))`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: n >= 4 ? 'var(--accent)' : 'var(--text-sub)',
+                      marginBottom: 5,
+                    }}
+                  >
+                    {n}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 9,
+                      color: 'var(--text-faint)',
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {n === 1
+                      ? 'Совсем не про меня'
+                      : n === 6
+                        ? 'Полностью про меня'
+                        : ''}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.5, marginBottom: 20, textAlign: 'center' }}>
+          <div
+            style={{
+              fontSize: 12,
+              color: 'var(--text-faint)',
+              lineHeight: 1.5,
+              marginBottom: 20,
+              textAlign: 'center',
+            }}
+          >
             Ответы привязаны к аккаунту Telegram и не передаются третьим лицам.
           </div>
 
           {hasProgress ? (
             <>
-              <button onClick={handleContinue} className="btn-primary" style={{ marginBottom: 10 }}>
+              <button
+                onClick={handleContinue}
+                className="btn-primary"
+                style={{ marginBottom: 10 }}
+              >
                 Продолжить ({progressAnswered} из 116)
               </button>
-              <button onClick={handleStartFresh} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 14, background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer', marginBottom: 10 }}>
+              <button
+                onClick={handleStartFresh}
+                style={{
+                  width: '100%',
+                  padding: '14px 0',
+                  border: 'none',
+                  borderRadius: 14,
+                  background: 'rgba(var(--fg-rgb),0.07)',
+                  color: 'var(--text-sub)',
+                  fontSize: 15,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  marginBottom: 10,
+                }}
+              >
                 Начать заново
               </button>
             </>
           ) : (
-            <button onClick={() => { userStartedRef.current = true; setPhase('test'); setPage(0); }} className="btn-primary" style={{ marginBottom: 10 }}>
+            <button
+              onClick={() => {
+                userStartedRef.current = true;
+                setPhase('test');
+                setPage(0);
+              }}
+              className="btn-primary"
+              style={{ marginBottom: 10 }}
+            >
               Начать тест
             </button>
           )}
 
-          <button onClick={onClose} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 14, background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>
+          <button
+            onClick={onClose}
+            style={{
+              width: '100%',
+              padding: '14px 0',
+              border: 'none',
+              borderRadius: 14,
+              background: 'rgba(var(--fg-rgb),0.07)',
+              color: 'var(--text-sub)',
+              fontSize: 15,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
             Отмена
           </button>
 
-          <div style={{ marginTop: 20, fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.7, textAlign: 'center' }}>
-            Основан на YSQ-R (Young Schema Questionnaire). © Jeffrey Young, Schema Therapy Institute. Используется в образовательных целях.
+          <div
+            style={{
+              marginTop: 20,
+              fontSize: 11,
+              color: 'var(--text-faint)',
+              lineHeight: 1.7,
+              textAlign: 'center',
+            }}
+          >
+            Основан на YSQ-R (Young Schema Questionnaire). © Jeffrey Young,
+            Schema Therapy Institute. Используется в образовательных целях.
           </div>
         </div>
       )}
 
       {/* RESULT */}
-      {phase === 'result' && scores && (() => {
-        const activeSchemas = sortedSchemas.filter(s => scores[s.name].pct5plus > 50);
-        const inactiveSchemas = sortedSchemas.filter(s => scores[s.name].pct5plus <= 50);
+      {phase === 'result' &&
+        scores &&
+        (() => {
+          const activeSchemas = sortedSchemas.filter(
+            (s) => scores[s.name].pct5plus > 50,
+          );
+          const inactiveSchemas = sortedSchemas.filter(
+            (s) => scores[s.name].pct5plus <= 50,
+          );
 
-        const activeByDomain = DOMAIN_ORDER
-          .map(needId => ({
+          const activeByDomain = DOMAIN_ORDER.map((needId) => ({
             needId,
             label: NEED_LABELS[needId],
-            schemas: activeSchemas.filter(s => s.needId === needId),
-          }))
-          .filter(d => d.schemas.length > 0);
+            schemas: activeSchemas.filter((s) => s.needId === needId),
+          })).filter((d) => d.schemas.length > 0);
 
-        const dateLabel = completedAt
-          ? new Date(completedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
-          : null;
+          const dateLabel = completedAt
+            ? new Date(completedAt).toLocaleDateString('ru-RU', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })
+            : null;
 
-        const activeCount = activeSchemas.length;
-        const activeLabel = activeCount === 0
-          ? 'Активных схем не найдено'
-          : `${activeCount} ${activeCount === 1 ? 'выраженная схема' : activeCount < 5 ? 'выраженные схемы' : 'выраженных схем'}`;
+          const activeCount = activeSchemas.length;
+          const activeLabel =
+            activeCount === 0
+              ? 'Активных схем не найдено'
+              : `${activeCount} ${activeCount === 1 ? 'выраженная схема' : activeCount < 5 ? 'выраженные схемы' : 'выраженных схем'}`;
 
-        const prevEntry = history.length >= 2 ? history[1] : null;
-        const SCHEMA_NAME_TO_ID: Record<string, string> = {
-          'Эмоциональная депривация': 'emotional_deprivation',
-          'Покинутость/Нестабильность': 'abandonment',
-          'Недоверие/Ожидание жестокого обращения': 'mistrust',
-          'Социальная отчужденность': 'social_isolation',
-          'Дефективность/Стыд': 'defectiveness',
-          'Неуспешность': 'failure',
-          'Зависимость/Беспомощность': 'dependence',
-          'Уязвимость': 'vulnerability',
-          'Спутанность/Неразвитая идентичность': 'enmeshment',
-          'Покорность': 'subjugation',
-          'Самопожертвование': 'self_sacrifice',
-          'Страх потери контроля над эмоциями': 'emotion_inhibition_fear',
-          'Эмоциональная скованность': 'emotional_inhibition',
-          'Жёсткие стандарты/Придирчивость': 'unrelenting_standards',
-          'Привилегированность/Грандиозность': 'entitlement',
-          'Недостаточность самоконтроля': 'insufficient_self_control',
-          'Поиск одобрения': 'approval_seeking',
-          'Негативизм/Пессимизм': 'negativity',
-          'Пунитивность (на себя)': 'punitiveness_self',
-          'Пунитивность (на других)': 'punitiveness_others',
-        };
-        const getSchemaDelta = (schemaName: string): number | null => {
-          if (!prevEntry) return null;
-          const id = SCHEMA_NAME_TO_ID[schemaName];
-          if (!id) return null;
-          const prev = prevEntry.scores.find(s => s.id === id);
-          if (prev == null) return null;
-          return (scores[schemaName]?.pct5plus ?? 0) - prev.pct5plus;
-        };
+          const prevEntry = history.length >= 2 ? history[1] : null;
+          const SCHEMA_NAME_TO_ID: Record<string, string> = {
+            'Эмоциональная депривация': 'emotional_deprivation',
+            'Покинутость/Нестабильность': 'abandonment',
+            'Недоверие/Ожидание жестокого обращения': 'mistrust',
+            'Социальная отчужденность': 'social_isolation',
+            'Дефективность/Стыд': 'defectiveness',
+            Неуспешность: 'failure',
+            'Зависимость/Беспомощность': 'dependence',
+            Уязвимость: 'vulnerability',
+            'Спутанность/Неразвитая идентичность': 'enmeshment',
+            Покорность: 'subjugation',
+            Самопожертвование: 'self_sacrifice',
+            'Страх потери контроля над эмоциями': 'emotion_inhibition_fear',
+            'Эмоциональная скованность': 'emotional_inhibition',
+            'Жёсткие стандарты/Придирчивость': 'unrelenting_standards',
+            'Привилегированность/Грандиозность': 'entitlement',
+            'Недостаточность самоконтроля': 'insufficient_self_control',
+            'Поиск одобрения': 'approval_seeking',
+            'Негативизм/Пессимизм': 'negativity',
+            'Пунитивность (на себя)': 'punitiveness_self',
+            'Пунитивность (на других)': 'punitiveness_others',
+          };
+          const getSchemaDelta = (schemaName: string): number | null => {
+            if (!prevEntry) return null;
+            const id = SCHEMA_NAME_TO_ID[schemaName];
+            if (!id) return null;
+            const prev = prevEntry.scores.find((s) => s.id === id);
+            if (prev == null) return null;
+            return (scores[schemaName]?.pct5plus ?? 0) - prev.pct5plus;
+          };
 
-        return (
-          <div style={{ padding: '8px 0 16px' }}>
-            {/* Header */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 4 }}>
-                {activeLabel}
-              </div>
-              {dateLabel && (
-                <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Пройдено {dateLabel}</div>
-              )}
-            </div>
-
-            <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, marginBottom: 20, fontStyle: 'italic' }}>
-              Схема считается выраженной если больше половины ответов — 5 или 6. Это инструмент самоисследования, не диагноз.
-            </div>
-
-            {activeCount === 0 && (
-              <div style={{ textAlign: 'center', padding: '28px 0', fontSize: 14, color: 'var(--text-sub)' }}>
-                Выраженных схем не обнаружено — отличный результат.
-              </div>
-            )}
-
-            {/* Active schemas grouped by domain */}
-            {activeByDomain.map(domain => (
-              <div key={domain.needId} style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>
-                  {domain.label}
-                </div>
-                {domain.schemas.map(schema => {
-                  const s = scores[schema.name];
-                  const color = schema.color;
-                  const diaryRating = ratings?.[schema.needId];
-                  const showDiaryHint = diaryRating !== undefined && diaryRating <= 4;
-                  const delta = getSchemaDelta(schema.name);
-                  return (
-                    <div key={schema.name} style={{
-                      marginBottom: 10,
-                      background: `color-mix(in srgb, ${color} 10%, transparent)`,
-                      borderRadius: 16,
-                      padding: '14px 16px',
-                      border: `1px solid color-mix(in srgb, ${color} 28%, transparent)`,
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, paddingRight: 8 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 3 }} />
-                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35 }}>{schema.name}</div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                          {delta !== null && Math.abs(delta) >= 5 && (
-                            <span style={{ fontSize: 12, fontWeight: 600, color: delta < 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                              {delta > 0 ? '+' : ''}{delta}%
-                            </span>
-                          )}
-                          <div style={{ fontSize: 15, fontWeight: 700, color }}>{s.pct5plus}%</div>
-                        </div>
-                      </div>
-
-                      <div style={{ height: 3, background: 'rgba(var(--fg-rgb),0.1)', borderRadius: 2, marginBottom: 10 }}>
-                        <div style={{ height: '100%', width: `${s.pct5plus}%`, background: color, borderRadius: 2 }} />
-                      </div>
-
-                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, marginBottom: 8 }}>
-                        {schema.desc}
-                      </div>
-
-                      <div style={{ display: 'flex', gap: 8, background: 'rgba(var(--fg-rgb),0.05)', borderRadius: 10, padding: '8px 12px', marginBottom: 10 }}>
-                        <span style={{ fontSize: 14, flexShrink: 0 }}>💡</span>
-                        <span style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>{tr(schema.tip, TIP_VY[schema.name] ?? schema.tip)}</span>
-                      </div>
-
-                      <div
-                        onClick={() => onViewSchemas ? onViewSchemas(schema.name) : onClose()}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0', marginBottom: showDiaryHint ? 8 : 0 }}
-                      >
-                        <span style={{ fontSize: 13, color: 'var(--accent)' }}>Читать карточку схемы</span>
-                        <span style={{ fontSize: 16, color: 'var(--accent)' }}>›</span>
-                      </div>
-
-                      {showDiaryHint && (
-                        <div style={{ fontSize: 12, color: 'var(--accent-yellow)', lineHeight: 1.4, padding: '6px 10px', background: 'rgba(250,204,21,0.1)', borderRadius: 8 }}>
-                          ⚡ Совпадает с дневником: «{NEED_LABELS[schema.needId]}» стабильно низкая
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-
-            {/* Inactive schemas — collapsed */}
-            {inactiveSchemas.length > 0 && (
-              <div style={{ marginTop: 4, marginBottom: 12 }}>
-                <button
-                  onClick={() => setInactiveExpanded(prev => !prev)}
+          return (
+            <div style={{ padding: '8px 0 16px' }}>
+              {/* Header */}
+              <div style={{ marginBottom: 16 }}>
+                <div
                   style={{
-                    width: '100%', padding: '11px 16px', border: 'none', borderRadius: 12,
-                    background: 'rgba(var(--fg-rgb),0.05)', color: 'var(--text-sub)',
-                    fontSize: 14, fontWeight: 500, cursor: 'pointer', textAlign: 'left',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    fontSize: 24,
+                    fontWeight: 800,
+                    color: 'var(--text)',
+                    letterSpacing: '-0.5px',
+                    marginBottom: 4,
                   }}
                 >
-                  <span>Остальные схемы ({inactiveSchemas.length})</span>
-                  <span style={{ fontSize: 12 }}>{inactiveExpanded ? '▲' : '▼'}</span>
-                </button>
-                {inactiveExpanded && (
-                  <div style={{ marginTop: 8 }}>
-                    {inactiveSchemas.map(schema => {
-                      const s = scores[schema.name];
-                      const mid = s.pct5plus >= 30 && s.pct5plus <= 50;
-                      const barColor = mid ? 'var(--accent-yellow)' : 'rgba(var(--fg-rgb),0.2)';
-                      return (
-                        <div key={schema.name} style={{ marginBottom: 8, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '12px 14px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
-                            <div style={{ fontSize: 13, color: 'var(--text-sub)', flex: 1, paddingRight: 8, lineHeight: 1.3 }}>{schema.name}</div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: barColor, flexShrink: 0 }}>{s.pct5plus}%</div>
+                  {activeLabel}
+                </div>
+                {dateLabel && (
+                  <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+                    Пройдено {dateLabel}
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  fontSize: 13,
+                  color: 'var(--text-sub)',
+                  lineHeight: 1.55,
+                  marginBottom: 20,
+                  fontStyle: 'italic',
+                }}
+              >
+                Схема считается выраженной если больше половины ответов — 5 или
+                6. Это инструмент самоисследования, не диагноз.
+              </div>
+
+              {activeCount === 0 && (
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: '28px 0',
+                    fontSize: 14,
+                    color: 'var(--text-sub)',
+                  }}
+                >
+                  Выраженных схем не обнаружено — отличный результат.
+                </div>
+              )}
+
+              {/* Active schemas grouped by domain */}
+              {activeByDomain.map((domain) => (
+                <div key={domain.needId} style={{ marginBottom: 20 }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: 'var(--text-sub)',
+                      letterSpacing: '0.07em',
+                      textTransform: 'uppercase',
+                      marginBottom: 10,
+                    }}
+                  >
+                    {domain.label}
+                  </div>
+                  {domain.schemas.map((schema) => {
+                    const s = scores[schema.name];
+                    const color = schema.color;
+                    const diaryRating = ratings?.[schema.needId];
+                    const showDiaryHint =
+                      diaryRating !== undefined && diaryRating <= 4;
+                    const delta = getSchemaDelta(schema.name);
+                    return (
+                      <div
+                        key={schema.name}
+                        style={{
+                          marginBottom: 10,
+                          background: `color-mix(in srgb, ${color} 10%, transparent)`,
+                          borderRadius: 16,
+                          padding: '14px 16px',
+                          border: `1px solid color-mix(in srgb, ${color} 28%, transparent)`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            marginBottom: 6,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              flex: 1,
+                              paddingRight: 8,
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                background: color,
+                                flexShrink: 0,
+                                marginTop: 3,
+                              }}
+                            />
+                            <div
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: 'var(--text)',
+                                lineHeight: 1.35,
+                              }}
+                            >
+                              {schema.name}
+                            </div>
                           </div>
-                          <div style={{ height: 3, background: 'rgba(var(--fg-rgb),0.1)', borderRadius: 2 }}>
-                            <div style={{ height: '100%', width: `${s.pct5plus}%`, background: barColor, borderRadius: 2 }} />
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {delta !== null && Math.abs(delta) >= 5 && (
+                              <span
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  color:
+                                    delta < 0
+                                      ? 'var(--accent-green)'
+                                      : 'var(--accent-red)',
+                                }}
+                              >
+                                {delta > 0 ? '+' : ''}
+                                {delta}%
+                              </span>
+                            )}
+                            <div
+                              style={{ fontSize: 15, fontWeight: 700, color }}
+                            >
+                              {s.pct5plus}%
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            height: 3,
+                            background: 'rgba(var(--fg-rgb),0.1)',
+                            borderRadius: 2,
+                            marginBottom: 10,
+                          }}
+                        >
+                          <div
+                            style={{
+                              height: '100%',
+                              width: `${s.pct5plus}%`,
+                              background: color,
+                              borderRadius: 2,
+                            }}
+                          />
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: 'var(--text-sub)',
+                            lineHeight: 1.55,
+                            marginBottom: 8,
+                          }}
+                        >
+                          {schema.desc}
+                        </div>
+
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: 8,
+                            background: 'rgba(var(--fg-rgb),0.05)',
+                            borderRadius: 10,
+                            padding: '8px 12px',
+                            marginBottom: 10,
+                          }}
+                        >
+                          <span style={{ fontSize: 14, flexShrink: 0 }}>
+                            💡
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 13,
+                              color: 'var(--text-sub)',
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {tr(schema.tip, TIP_VY[schema.name] ?? schema.tip)}
+                          </span>
+                        </div>
+
+                        <div
+                          onClick={() =>
+                            onViewSchemas
+                              ? onViewSchemas(schema.name)
+                              : onClose()
+                          }
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            padding: '4px 0',
+                            marginBottom: showDiaryHint ? 8 : 0,
+                          }}
+                        >
+                          <span
+                            style={{ fontSize: 13, color: 'var(--accent)' }}
+                          >
+                            Читать карточку схемы
+                          </span>
+                          <span
+                            style={{ fontSize: 16, color: 'var(--accent)' }}
+                          >
+                            ›
+                          </span>
+                        </div>
+
+                        {showDiaryHint && (
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: 'var(--accent-yellow)',
+                              lineHeight: 1.4,
+                              padding: '6px 10px',
+                              background: 'rgba(250,204,21,0.1)',
+                              borderRadius: 8,
+                            }}
+                          >
+                            ⚡ Совпадает с дневником: «
+                            {NEED_LABELS[schema.needId]}» стабильно низкая
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+
+              {/* Inactive schemas — collapsed */}
+              {inactiveSchemas.length > 0 && (
+                <div style={{ marginTop: 4, marginBottom: 12 }}>
+                  <button
+                    onClick={() => setInactiveExpanded((prev) => !prev)}
+                    style={{
+                      width: '100%',
+                      padding: '11px 16px',
+                      border: 'none',
+                      borderRadius: 12,
+                      background: 'rgba(var(--fg-rgb),0.05)',
+                      color: 'var(--text-sub)',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span>Остальные схемы ({inactiveSchemas.length})</span>
+                    <span style={{ fontSize: 12 }}>
+                      {inactiveExpanded ? '▲' : '▼'}
+                    </span>
+                  </button>
+                  {inactiveExpanded && (
+                    <div style={{ marginTop: 8 }}>
+                      {inactiveSchemas.map((schema) => {
+                        const s = scores[schema.name];
+                        const mid = s.pct5plus >= 30 && s.pct5plus <= 50;
+                        const barColor = mid
+                          ? 'var(--accent-yellow)'
+                          : 'rgba(var(--fg-rgb),0.2)';
+                        return (
+                          <div
+                            key={schema.name}
+                            style={{
+                              marginBottom: 8,
+                              background: 'rgba(var(--fg-rgb),0.04)',
+                              borderRadius: 12,
+                              padding: '12px 14px',
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginBottom: 6,
+                                alignItems: 'center',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  color: 'var(--text-sub)',
+                                  flex: 1,
+                                  paddingRight: 8,
+                                  lineHeight: 1.3,
+                                }}
+                              >
+                                {schema.name}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  color: barColor,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {s.pct5plus}%
+                              </div>
+                            </div>
+                            <div
+                              style={{
+                                height: 3,
+                                background: 'rgba(var(--fg-rgb),0.1)',
+                                borderRadius: 2,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  height: '100%',
+                                  width: `${s.pct5plus}%`,
+                                  background: barColor,
+                                  borderRadius: 2,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* CTA */}
+              {activeCount > 0 && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    marginBottom: 16,
+                    background:
+                      'color-mix(in srgb, var(--accent) 7%, transparent)',
+                    border:
+                      '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
+                    borderRadius: 16,
+                    padding: '16px 18px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: 'var(--accent)',
+                      marginBottom: 8,
+                    }}
+                  >
+                    {tr(
+                      'Хочешь разобраться глубже?',
+                      'Хотите разобраться глубже?',
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: 'var(--text-sub)',
+                      lineHeight: 1.65,
+                      marginBottom: 12,
+                    }}
+                  >
+                    Схемы — паттерны, сложившиеся давно. Их можно менять, но это
+                    требует времени и поддержки. Схема-терапия — один из самых
+                    эффективных методов для этой работы.
+                  </div>
+                  <a
+                    href={getTherapistContact().url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'block',
+                      textAlign: 'center',
+                      padding: '11px 0',
+                      borderRadius: 12,
+                      background:
+                        'color-mix(in srgb, var(--accent) 15%, transparent)',
+                      color: 'var(--accent)',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    {getTherapistContact().name === 'автору'
+                      ? 'Поговорить с психологом →'
+                      : `Написать ${getTherapistContact().name} →`}
+                  </a>
+                </div>
+              )}
+
+              {/* History timeline */}
+              {history.length >= 2 && (
+                <div style={{ marginBottom: 20 }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: 'var(--text-sub)',
+                      letterSpacing: '0.07em',
+                      textTransform: 'uppercase',
+                      marginBottom: 10,
+                    }}
+                  >
+                    История прохождений
+                  </div>
+                  <div
+                    style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                  >
+                    {history.map((entry, idx) => {
+                      const entryActive = entry.scores.filter(
+                        (s) => s.pct5plus > 50,
+                      ).length;
+                      const prevEntryItem = history[idx + 1];
+                      const entryDelta = prevEntryItem
+                        ? entryActive -
+                          prevEntryItem.scores.filter((s) => s.pct5plus > 50)
+                            .length
+                        : null;
+                      const entryDate = new Date(
+                        entry.completedAt,
+                      ).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      });
+                      return (
+                        <div
+                          key={entry.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '10px 14px',
+                            background: 'rgba(var(--fg-rgb),0.04)',
+                            borderRadius: 12,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              background:
+                                idx === 0
+                                  ? 'var(--accent)'
+                                  : 'rgba(var(--fg-rgb),0.2)',
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                fontSize: 13,
+                                color:
+                                  idx === 0 ? 'var(--text)' : 'var(--text-sub)',
+                                fontWeight: idx === 0 ? 600 : 400,
+                              }}
+                            >
+                              {entryActive}{' '}
+                              {entryActive === 1
+                                ? 'схема'
+                                : entryActive < 5
+                                  ? 'схемы'
+                                  : 'схем'}
+                              {idx === 0 && (
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    color: 'var(--accent)',
+                                    marginLeft: 6,
+                                  }}
+                                >
+                                  сейчас
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {entryDelta !== null && Math.abs(entryDelta) > 0 && (
+                            <span
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color:
+                                  entryDelta < 0
+                                    ? 'var(--accent-green)'
+                                    : 'var(--accent-red)',
+                              }}
+                            >
+                              {entryDelta > 0 ? '+' : ''}
+                              {entryDelta}
+                            </span>
+                          )}
+                          <div
+                            style={{ fontSize: 12, color: 'var(--text-faint)' }}
+                          >
+                            {entryDate}
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* CTA */}
-            {activeCount > 0 && (
-              <div style={{
-                marginTop: 8, marginBottom: 16,
-                background: 'color-mix(in srgb, var(--accent) 7%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-                borderRadius: 16, padding: '16px 18px',
-              }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', marginBottom: 8 }}>
-                  {tr('Хочешь разобраться глубже?', 'Хотите разобраться глубже?')}
+              <button
+                onClick={onClose}
+                className="btn-primary"
+                style={{ marginTop: 4, marginBottom: 10 }}
+              >
+                Сохранить и закрыть
+              </button>
+
+              {retakeConfirm ? (
+                <div
+                  style={{
+                    background: 'rgba(255,100,100,0.08)',
+                    borderRadius: 12,
+                    padding: '14px 16px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 14,
+                      color: 'var(--text-sub)',
+                      marginBottom: 12,
+                    }}
+                  >
+                    Результаты будут удалены. Точно начать заново?
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => setRetakeConfirm(false)}
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        border: 'none',
+                        borderRadius: 10,
+                        background: 'rgba(var(--fg-rgb),0.08)',
+                        color: 'var(--text-sub)',
+                        fontSize: 14,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      onClick={handleRetake}
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        border: 'none',
+                        borderRadius: 10,
+                        background: 'rgba(255,100,100,0.2)',
+                        color: 'var(--accent-red)',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Начать заново
+                    </button>
+                  </div>
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 12 }}>
-                  Схемы — паттерны, сложившиеся давно. Их можно менять, но это требует времени и поддержки. Схема-терапия — один из самых эффективных методов для этой работы.
-                </div>
+              ) : (
+                <button
+                  onClick={() => setRetakeConfirm(true)}
+                  style={{
+                    width: '100%',
+                    padding: '14px 0',
+                    border: 'none',
+                    borderRadius: 14,
+                    background: 'rgba(var(--fg-rgb),0.07)',
+                    color: 'var(--text-sub)',
+                    fontSize: 15,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Пройти заново
+                </button>
+              )}
+
+              <div
+                style={{
+                  marginTop: 16,
+                  fontSize: 11,
+                  color: 'var(--text-faint)',
+                  lineHeight: 1.7,
+                  textAlign: 'center',
+                }}
+              >
+                © Jeffrey Young, Schema Therapy Institute. Используется в
+                образовательных целях.{' '}
                 <a
-                  href={getTherapistContact().url}
+                  href="https://schematherapy.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ display: 'block', textAlign: 'center', padding: '11px 0', borderRadius: 12, background: 'color-mix(in srgb, var(--accent) 15%, transparent)', color: 'var(--accent)', fontSize: 14, fontWeight: 500, textDecoration: 'none' }}
+                  style={{ color: 'var(--accent)', textDecoration: 'none' }}
                 >
-                  {getTherapistContact().name === 'автору' ? 'Поговорить с психологом →' : `Написать ${getTherapistContact().name} →`}
+                  schematherapy.com
                 </a>
               </div>
-            )}
-
-            {/* History timeline */}
-            {history.length >= 2 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>
-                  История прохождений
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {history.map((entry, idx) => {
-                    const entryActive = entry.scores.filter(s => s.pct5plus > 50).length;
-                    const prevEntryItem = history[idx + 1];
-                    const entryDelta = prevEntryItem
-                      ? entryActive - prevEntryItem.scores.filter(s => s.pct5plus > 50).length
-                      : null;
-                    const entryDate = new Date(entry.completedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
-                    return (
-                      <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: idx === 0 ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.2)', flexShrink: 0 }} />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, color: idx === 0 ? 'var(--text)' : 'var(--text-sub)', fontWeight: idx === 0 ? 600 : 400 }}>
-                            {entryActive} {entryActive === 1 ? 'схема' : entryActive < 5 ? 'схемы' : 'схем'}
-                            {idx === 0 && <span style={{ fontSize: 11, color: 'var(--accent)', marginLeft: 6 }}>сейчас</span>}
-                          </div>
-                        </div>
-                        {entryDelta !== null && Math.abs(entryDelta) > 0 && (
-                          <span style={{ fontSize: 12, fontWeight: 600, color: entryDelta < 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                            {entryDelta > 0 ? '+' : ''}{entryDelta}
-                          </span>
-                        )}
-                        <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>{entryDate}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <button onClick={onClose} className="btn-primary" style={{ marginTop: 4, marginBottom: 10 }}>
-              Сохранить и закрыть
-            </button>
-
-            {retakeConfirm ? (
-              <div style={{ background: 'rgba(255,100,100,0.08)', borderRadius: 12, padding: '14px 16px' }}>
-                <div style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 12 }}>Результаты будут удалены. Точно начать заново?</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setRetakeConfirm(false)} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 10, background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 14, cursor: 'pointer' }}>Отмена</button>
-                  <button onClick={handleRetake} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 10, background: 'rgba(255,100,100,0.2)', color: 'var(--accent-red)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Начать заново</button>
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => setRetakeConfirm(true)} style={{ width: '100%', padding: '14px 0', border: 'none', borderRadius: 14, background: 'rgba(var(--fg-rgb),0.07)', color: 'var(--text-sub)', fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>
-                Пройти заново
-              </button>
-            )}
-
-            <div style={{ marginTop: 16, fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.7, textAlign: 'center' }}>
-              © Jeffrey Young, Schema Therapy Institute. Используется в образовательных целях.{' '}
-              <a href="https://schematherapy.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>schematherapy.com</a>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </BottomSheet>
   );
 }

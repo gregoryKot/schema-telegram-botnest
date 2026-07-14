@@ -14,9 +14,20 @@ interface IntroData {
   behavior: string;
 }
 
-const EMPTY: IntroData = { triggers: '', feelings: '', thoughts: '', needs: '', behavior: '' };
+const EMPTY: IntroData = {
+  triggers: '',
+  feelings: '',
+  thoughts: '',
+  needs: '',
+  behavior: '',
+};
 
-const QUESTIONS: { key: keyof IntroData; label: string; hint: string; placeholder: string }[] = [
+const QUESTIONS: {
+  key: keyof IntroData;
+  label: string;
+  hint: string;
+  placeholder: string;
+}[] = [
   {
     key: 'triggers',
     label: 'Когда активируется',
@@ -57,36 +68,57 @@ interface Props {
 
 export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
   const mode = getModeById(modeId);
-  const [data, setData]     = useState<IntroData>(EMPTY);
+  const [data, setData] = useState<IntroData>(EMPTY);
   const [saving, setSaving] = useState(false);
-  const [saved,  setSaved]  = useState(false);
-  const [step,   setStep]   = useState(0);
+  const [saved, setSaved] = useState(false);
+  const [step, setStep] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); }, []);
+  useEffect(
+    () => () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
-    api.getModeNotes().then(notes => {
-      const note = notes.find(n => n.modeId === modeId);
-      if (note) {
-        setData({ triggers: note.triggers, feelings: note.feelings, thoughts: note.thoughts,
-          needs: note.needs, behavior: note.behavior });
-      } else {
+    api
+      .getModeNotes()
+      .then((notes) => {
+        const note = notes.find((n) => n.modeId === modeId);
+        if (note) {
+          setData({
+            triggers: note.triggers,
+            feelings: note.feelings,
+            thoughts: note.thoughts,
+            needs: note.needs,
+            behavior: note.behavior,
+          });
+        } else {
+          const stored = localStorage.getItem(STORAGE_KEY(modeId));
+          if (stored) {
+            try {
+              setData(JSON.parse(stored));
+            } catch {}
+          }
+        }
+      })
+      .catch(() => {
         const stored = localStorage.getItem(STORAGE_KEY(modeId));
-        if (stored) { try { setData(JSON.parse(stored)); } catch {} }
-      }
-    }).catch(() => {
-      const stored = localStorage.getItem(STORAGE_KEY(modeId));
-      if (stored) { try { setData(JSON.parse(stored)); } catch {} }
-    });
+        if (stored) {
+          try {
+            setData(JSON.parse(stored));
+          } catch {}
+        }
+      });
   }, [modeId]);
 
   if (!mode) return null;
 
-  const color  = mode.groupColor ?? 'var(--accent)';
-  const hasAny = Object.values(data).some(v => v.trim().length > 0);
-  const q      = QUESTIONS[step];
+  const color = mode.groupColor ?? 'var(--accent)';
+  const hasAny = Object.values(data).some((v) => v.trim().length > 0);
+  const q = QUESTIONS[step];
   const answer = q ? data[q.key] : '';
 
   function set(key: keyof IntroData, value: string) {
@@ -100,10 +132,15 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
   }
 
   async function handleSave() {
-    if (autoSaveTimer.current) { clearTimeout(autoSaveTimer.current); autoSaveTimer.current = null; }
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
     setSaving(true);
     localStorage.setItem(STORAGE_KEY(modeId), JSON.stringify(data));
-    try { await api.saveModeNote({ modeId, ...data }); } catch {}
+    try {
+      await api.saveModeNote({ modeId, ...data });
+    } catch {}
     setSaving(false);
     setSaved(true);
     onComplete?.();
@@ -113,18 +150,40 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
-
         {/* ── Header ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <div style={{
-            width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-            background: `${color}18`, border: `1px solid ${color}28`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24,
-          }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              flexShrink: 0,
+              background: `${color}18`,
+              border: `1px solid ${color}28`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 24,
+            }}
+          >
             {mode.emoji}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.3px' }}>
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: 'var(--text)',
+                letterSpacing: '-0.3px',
+              }}
+            >
               {mode.name}
             </div>
             <div style={{ fontSize: 12, fontWeight: 500, color, marginTop: 2 }}>
@@ -135,11 +194,22 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
 
         {/* ── Mode description ── */}
         {mode.short && (
-          <div style={{
-            background: `${color}0e`, border: `1px solid ${color}22`,
-            borderRadius: 16, padding: '12px 14px', marginBottom: 16,
-          }}>
-            <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
+          <div
+            style={{
+              background: `${color}0e`,
+              border: `1px solid ${color}22`,
+              borderRadius: 16,
+              padding: '12px 14px',
+              marginBottom: 16,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                color: 'var(--text-sub)',
+                lineHeight: 1.6,
+              }}
+            >
               {mode.short}
             </div>
           </div>
@@ -152,10 +222,21 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
             const active = i === step;
             return (
               <div
-                key={i} onClick={() => { setStep(i); setFlipped(false); }}
+                key={i}
+                onClick={() => {
+                  setStep(i);
+                  setFlipped(false);
+                }}
                 style={{
-                  flex: 1, height: 4, borderRadius: 2, cursor: 'pointer',
-                  background: filled ? color : active ? `${color}55` : 'var(--surface-2)',
+                  flex: 1,
+                  height: 4,
+                  borderRadius: 2,
+                  cursor: 'pointer',
+                  background: filled
+                    ? color
+                    : active
+                      ? `${color}55`
+                      : 'var(--surface-2)',
                   transition: 'background 0.2s',
                 }}
               />
@@ -169,21 +250,48 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
           style={{
             background: flipped ? `${color}06` : 'var(--surface)',
             border: `1px solid ${flipped ? `${color}40` : 'var(--border-color)'}`,
-            borderRadius: 20, padding: '18px 18px 14px', marginBottom: 16,
-            minHeight: 120, cursor: flipped ? 'default' : 'pointer', position: 'relative',
+            borderRadius: 20,
+            padding: '18px 18px 14px',
+            marginBottom: 16,
+            minHeight: 120,
+            cursor: flipped ? 'default' : 'pointer',
+            position: 'relative',
             transition: 'all 0.2s',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color,
+              }}
+            >
               {step + 1} / {QUESTIONS.length}
             </div>
             {flipped && (
               <button
-                onClick={e => { e.stopPropagation(); setFlipped(false); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFlipped(false);
+                }}
                 style={{
-                  background: 'none', border: 'none', padding: 0, fontFamily: 'inherit',
-                  fontSize: 11, color: 'var(--text-faint)', cursor: 'pointer',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  fontFamily: 'inherit',
+                  fontSize: 11,
+                  color: 'var(--text-faint)',
+                  cursor: 'pointer',
                 }}
               >
                 ← к вопросу
@@ -193,28 +301,59 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
 
           {!flipped ? (
             <>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 8 }}>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: 'var(--text)',
+                  lineHeight: 1.35,
+                  marginBottom: 8,
+                }}
+              >
                 {q.label}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5, marginBottom: 14 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: 'var(--text-faint)',
+                  lineHeight: 1.5,
+                  marginBottom: 14,
+                }}
+              >
                 {q.hint}
               </div>
               {answer.trim() ? (
-                <div style={{
-                  background: 'var(--surface-2)', borderRadius: 12, padding: '10px 12px',
-                  fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5,
-                  display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as any,
-                  overflow: 'hidden',
-                }}>
+                <div
+                  style={{
+                    background: 'var(--surface-2)',
+                    borderRadius: 12,
+                    padding: '10px 12px',
+                    fontSize: 13,
+                    color: 'var(--text-sub)',
+                    lineHeight: 1.5,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
                   {answer}
                 </div>
               ) : (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '11px 14px', borderRadius: 12,
-                  background: `${color}10`, border: `1px dashed ${color}55`,
-                  fontSize: 13, color, fontWeight: 500,
-                }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '11px 14px',
+                    borderRadius: 12,
+                    background: `${color}10`,
+                    border: `1px dashed ${color}55`,
+                    fontSize: 13,
+                    color,
+                    fontWeight: 500,
+                  }}
+                >
                   <span style={{ fontSize: 16 }}>✏️</span>
                   <span>Нажми чтобы ответить</span>
                 </div>
@@ -222,23 +361,37 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
             </>
           ) : (
             <>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4, marginBottom: 10 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--text)',
+                  lineHeight: 1.4,
+                  marginBottom: 10,
+                }}
+              >
                 {q.label}
               </div>
               <textarea
                 autoFocus
                 value={answer}
-                onChange={e => set(q.key, e.target.value)}
+                onChange={(e) => set(q.key, e.target.value)}
                 placeholder={q.placeholder}
                 rows={4}
                 style={{
                   width: '100%',
                   background: 'var(--surface)',
                   border: `1.5px solid ${answer.trim() ? `${color}66` : 'var(--border-color)'}`,
-                  borderRadius: 12, padding: '11px 13px',
-                  color: 'var(--text)', fontSize: 14, lineHeight: 1.55,
-                  resize: 'none', outline: 'none', fontFamily: 'inherit',
-                  boxSizing: 'border-box', transition: 'border-color 0.2s',
+                  borderRadius: 12,
+                  padding: '11px 13px',
+                  color: 'var(--text)',
+                  fontSize: 14,
+                  lineHeight: 1.55,
+                  resize: 'none',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.2s',
                 }}
               />
             </>
@@ -248,24 +401,46 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
         {/* ── Navigation ── */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           <button
-            onClick={() => { setStep(s => Math.max(0, s - 1)); setFlipped(false); }}
+            onClick={() => {
+              setStep((s) => Math.max(0, s - 1));
+              setFlipped(false);
+            }}
             disabled={step === 0}
             style={{
-              width: 44, height: 44, borderRadius: 12, border: 'none', fontFamily: 'inherit',
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              border: 'none',
+              fontFamily: 'inherit',
               background: step === 0 ? 'var(--surface)' : 'var(--surface-2)',
               color: step === 0 ? 'var(--text-faint)' : 'var(--text-sub)',
-              fontSize: 18, cursor: step === 0 ? 'default' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18,
+              cursor: step === 0 ? 'default' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
-          >←</button>
+          >
+            ←
+          </button>
 
           {step < QUESTIONS.length - 1 ? (
             <button
-              onClick={() => { setStep(s => s + 1); setFlipped(false); }}
+              onClick={() => {
+                setStep((s) => s + 1);
+                setFlipped(false);
+              }}
               style={{
-                flex: 1, padding: '13px', borderRadius: 12, border: 'none', fontFamily: 'inherit',
-                background: `${color}20`, color,
-                fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                flex: 1,
+                padding: '13px',
+                borderRadius: 12,
+                border: 'none',
+                fontFamily: 'inherit',
+                background: `${color}20`,
+                color,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
               }}
             >
               Следующий →
@@ -275,14 +450,24 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
               onClick={handleSave}
               disabled={!hasAny || saving}
               style={{
-                flex: 1, padding: '13px', borderRadius: 12, border: 'none', fontFamily: 'inherit',
+                flex: 1,
+                padding: '13px',
+                borderRadius: 12,
+                border: 'none',
+                fontFamily: 'inherit',
                 background: hasAny ? color : 'var(--surface-2)',
                 color: hasAny ? '#fff' : 'var(--text-faint)',
-                fontSize: 14, fontWeight: 600,
-                cursor: hasAny ? 'pointer' : 'default', transition: 'all 0.2s',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: hasAny ? 'pointer' : 'default',
+                transition: 'all 0.2s',
               }}
             >
-              {saving ? 'Сохраняем…' : saved ? '✓ Сохранено' : 'Сохранить карточку'}
+              {saving
+                ? 'Сохраняем…'
+                : saved
+                  ? '✓ Сохранено'
+                  : 'Сохранить карточку'}
             </button>
           )}
         </div>

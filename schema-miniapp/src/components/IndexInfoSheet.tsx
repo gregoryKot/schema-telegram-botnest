@@ -12,9 +12,19 @@ export function IndexInfoSheet({ onClose }: { onClose: () => void }) {
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 8 }}>
-        <SectionLabel purple mb={16}>Об индексе дня</SectionLabel>
+        <SectionLabel purple mb={16}>
+          Об индексе дня
+        </SectionLabel>
         {PARAGRAPHS.map((p, i) => (
-          <p key={i} style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>
+          <p
+            key={i}
+            style={{
+              fontSize: 15,
+              color: 'rgba(var(--fg-rgb),0.8)',
+              lineHeight: 1.7,
+              marginBottom: 14,
+            }}
+          >
             {p}
           </p>
         ))}

@@ -1,7 +1,5 @@
 {
-  "webapp/src/aboutData.ts": 2,
   "webapp/src/components/AddressFormPicker.tsx": 3,
-  "webapp/src/components/CrisisCard.tsx": 1,
   "webapp/src/components/NeedDetailSheet.tsx": 1,
   "webapp/src/components/PlanSheet.tsx": 1,
   "webapp/src/components/SettingsSheet.tsx": 4,
@@ -15,10 +13,8 @@
   "webapp/src/pages/RecoveryPage.tsx": 1,
   "webapp/src/utils/addressForm.tsx": 2,
   "schema-miniapp/src/App.tsx": 1,
-  "schema-miniapp/src/aboutData.ts": 2,
   "schema-miniapp/src/components/AddressFormPicker.tsx": 3,
   "schema-miniapp/src/components/ChildhoodWheelSheet.tsx": 1,
-  "schema-miniapp/src/components/CrisisCard.tsx": 1,
   "schema-miniapp/src/components/PlanSheet.tsx": 1,
   "schema-miniapp/src/components/SettingsSheet.tsx": 7,
   "schema-miniapp/src/components/YSQTestSheet.tsx": 1,

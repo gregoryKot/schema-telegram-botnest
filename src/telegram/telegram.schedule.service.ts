@@ -371,8 +371,7 @@ export class TelegramScheduleService implements OnModuleInit {
         partnerId,
         'pair_activity',
       );
-      const sentToday =
-        last !== null && localDateString(tz, last) === todayStr;
+      const sentToday = last !== null && localDateString(tz, last) === todayStr;
       if (
         sentToday ||
         (await this.notificationService.hasPending(partnerId, 'pair_activity'))

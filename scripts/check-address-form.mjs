@@ -30,8 +30,40 @@ const EXCLUDE = [
 // через lookaround по буквам.
 const TY_RE =
   /(?<![А-Яа-яЁёA-Za-z])([Тт]ы|[Тт]ебя|[Тт]ебе|[Тт]обой|[Тт]во(?:й|я|ё|е|и|их|им|ей|ю))(?![А-Яа-яЁё])/g;
-// Строка легитимна, если вилка формы есть на той же строке.
-const FORK_RE = /\b(tr|pickForm|t)\(/;
+// Вхождение легитимно, если оно внутри аргументов вилки tr(...)/pickForm(...)/
+// t(...). Вилки бывают многострочными (prettier переносит аргументы), поэтому
+// построчная проверка не годится: вырезаем аргументы целиком, балансируя
+// скобки и не считая скобки внутри строковых литералов.
+const FORK_OPEN_RE = /(?<![\p{L}\p{N}_$.])(tr|pickForm|t)\(/gu;
+
+function blankForkArgs(src) {
+  let out = '';
+  let last = 0;
+  FORK_OPEN_RE.lastIndex = 0;
+  let m;
+  while ((m = FORK_OPEN_RE.exec(src)) !== null) {
+    const argStart = m.index + m[0].length;
+    if (argStart <= last) continue; // вложенная вилка внутри уже вырезанной
+    let depth = 1;
+    let quote = null; // ' " ` или null
+    let i = argStart;
+    for (; i < src.length && depth > 0; i++) {
+      const c = src[i];
+      if (quote) {
+        if (c === '\\') i++;
+        else if (c === quote) quote = null;
+      } else if (c === "'" || c === '"' || c === '`') quote = c;
+      else if (c === '(') depth++;
+      else if (c === ')') depth--;
+    }
+    out += src.slice(last, argStart);
+    // Переводы строк сохраняем — номера строк в диагностике не съезжают.
+    out += src.slice(argStart, i).replace(/[^\n]/g, ' ');
+    last = i;
+    FORK_OPEN_RE.lastIndex = i;
+  }
+  return out + src.slice(last);
+}
 
 function* walk(dir) {
   for (const name of readdirSync(dir)) {
@@ -47,9 +79,8 @@ for (const dir of SCAN_DIRS) {
     const rel = relative(ROOT, file);
     if (EXCLUDE.some((re) => re.test(rel))) continue;
     let n = 0;
-    for (const line of readFileSync(file, 'utf8').split('\n')) {
+    for (const line of blankForkArgs(readFileSync(file, 'utf8')).split('\n')) {
       const code = line.replace(/\/\/.*$/, ''); // строчные комментарии не считаем
-      if (FORK_RE.test(code)) continue;
       const m = code.match(TY_RE);
       if (m) n += m.length;
     }

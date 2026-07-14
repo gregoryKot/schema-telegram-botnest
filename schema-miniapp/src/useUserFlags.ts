@@ -49,7 +49,10 @@ let fetchPromise: Promise<void> | null = null;
 
 function getHeaders(): Record<string, string> {
   const initData = (window as any).Telegram?.WebApp?.initData ?? '';
-  return { 'x-telegram-init-data': initData, 'Content-Type': 'application/json' };
+  return {
+    'x-telegram-init-data': initData,
+    'Content-Type': 'application/json',
+  };
 }
 
 function notify(): void {
@@ -63,7 +66,9 @@ async function doFetch(): Promise<void> {
       const data = await res.json();
       flags = { ...DEFAULT_FLAGS, ...data };
     }
-  } catch { /* network error — keep defaults */ }
+  } catch {
+    /* network error — keep defaults */
+  }
   loaded = true;
   notify();
 }
@@ -81,7 +86,10 @@ export function ensureUserFlagsLoaded(): Promise<void> {
  * Set a single flag locally and persist to server in the background.
  * Optimistic: UI updates immediately, POST fires async.
  */
-export async function setFlag<K extends keyof UserFlags>(key: K, value: UserFlags[K]): Promise<void> {
+export async function setFlag<K extends keyof UserFlags>(
+  key: K,
+  value: UserFlags[K],
+): Promise<void> {
   flags = { ...flags, [key]: value };
   notify();
   try {
@@ -90,7 +98,9 @@ export async function setFlag<K extends keyof UserFlags>(key: K, value: UserFlag
       headers: getHeaders(),
       body: JSON.stringify({ [key]: value }),
     });
-  } catch { /* silent — flag is already updated locally */ }
+  } catch {
+    /* silent — flag is already updated locally */
+  }
 }
 
 /**
@@ -117,7 +127,11 @@ export async function updateFlags(patch: Partial<UserFlags>): Promise<void> {
  *   // read:  flags.childhoodWheelDone
  *   // write: setFlag('childhoodWheelDone', true)
  */
-export function useUserFlags(): { flags: UserFlags; setFlag: typeof setFlag; updateFlags: typeof updateFlags } {
+export function useUserFlags(): {
+  flags: UserFlags;
+  setFlag: typeof setFlag;
+  updateFlags: typeof updateFlags;
+} {
   const [current, setCurrent] = useState<UserFlags>(() => ({ ...flags }));
 
   useEffect(() => {
@@ -125,7 +139,9 @@ export function useUserFlags(): { flags: UserFlags; setFlag: typeof setFlag; upd
     const handler = (f: UserFlags) => setCurrent({ ...f });
     subscribers.add(handler);
     ensureUserFlagsLoaded();
-    return () => { subscribers.delete(handler); };
+    return () => {
+      subscribers.delete(handler);
+    };
   }, []);
 
   return { flags: current, setFlag, updateFlags };

@@ -389,8 +389,7 @@ export class BookingService {
         hour: '2-digit',
         minute: '2-digit',
       }).formatToParts(startsAt);
-      const get = (t: string) =>
-        parts.find((p) => p.type === t)?.value ?? '';
+      const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
       const day = BookingService.WEEKDAYS.indexOf(get('weekday'));
       if (day !== r.dayOfWeek) return false;
       const startMin = (Number(get('hour')) % 24) * 60 + Number(get('minute'));

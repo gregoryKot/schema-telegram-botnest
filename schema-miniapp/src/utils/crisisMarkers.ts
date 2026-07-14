@@ -44,7 +44,9 @@ export function detectCrisis(text: string | null | undefined): boolean {
 }
 
 /** Проверка сразу нескольких полей формы одной строкой. */
-export function detectCrisisAny(...texts: Array<string | null | undefined>): boolean {
+export function detectCrisisAny(
+  ...texts: Array<string | null | undefined>
+): boolean {
   return texts.some(detectCrisis);
 }
 

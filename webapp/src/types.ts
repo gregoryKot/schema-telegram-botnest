@@ -12,18 +12,18 @@ export interface DayHistory {
 
 export const COLORS: Record<string, string> = {
   attachment: '#f472b6',
-  autonomy:   '#4fa3f7',
+  autonomy: '#4fa3f7',
   expression: '#f59e0b',
-  play:       '#10b981',
-  limits:     '#a78bfa',
+  play: '#10b981',
+  limits: '#a78bfa',
 };
 
 export const YESTERDAY: Record<string, number> = {
   attachment: 5,
-  autonomy:   6,
+  autonomy: 6,
   expression: 4,
-  play:       7,
-  limits:     6,
+  play: 7,
+  limits: 6,
 };
 
 // ─── Diary types ──────────────────────────────────────────────────────────────
