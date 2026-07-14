@@ -41,6 +41,9 @@ jobs:
       # ты/вы-храповик (правило CLAUDE.md): новые жёсткие «ты»-строки без tr()
       # не проходят; исторический долг зафиксирован в бейслайне.
       - run: node scripts/check-address-form.mjs
+      # Драйв-гард парных файлов (правило №3): канонические пары
+      # webapp ↔ miniapp обязаны быть побайтово идентичны.
+      - run: node scripts/check-paired-files.mjs
 
   miniapp:
     runs-on: ubuntu-latest
