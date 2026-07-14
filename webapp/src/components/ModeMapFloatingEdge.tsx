@@ -54,7 +54,7 @@ function getNodeIntersection(node: InternalNode<Node>, other: InternalNode<Node>
   const oy = other.internals.positionAbsolute.y + (other.measured.height ?? 0) / 2;
 
   if (w === 0 || h === 0) return { x: cx, y: cy };
-  let dx = ox - cx, dy = oy - cy;
+  const dx = ox - cx, dy = oy - cy;
   if (dx === 0 && dy === 0) return { x: cx, y: cy };
   const len = Math.hypot(dx, dy);
 

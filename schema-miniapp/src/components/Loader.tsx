@@ -12,23 +12,42 @@ const phrase = PHRASES[Math.floor(Math.random() * PHRASES.length)];
 
 export function Loader({ minHeight = '60vh' }: { minHeight?: string }) {
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      minHeight, gap: 12,
-    }}>
-      <div style={{
-        fontSize: 42,
-        animation: 'catBounce 1s ease-in-out infinite',
-      }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight,
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 42,
+          animation: 'catBounce 1s ease-in-out infinite',
+        }}
+      >
         {cat}
       </div>
-      <div style={{
-        fontSize: 13, color: 'var(--text-sub)',
-        display: 'flex', gap: 3, alignItems: 'center',
-      }}>
+      <div
+        style={{
+          fontSize: 13,
+          color: 'var(--text-sub)',
+          display: 'flex',
+          gap: 3,
+          alignItems: 'center',
+        }}
+      >
         {phrase}
-        <span style={{ animation: 'dots 1.4s steps(4, end) infinite', letterSpacing: 1 }}>...</span>
+        <span
+          style={{
+            animation: 'dots 1.4s steps(4, end) infinite',
+            letterSpacing: 1,
+          }}
+        >
+          ...
+        </span>
       </div>
       <style>{`
         @keyframes catBounce {

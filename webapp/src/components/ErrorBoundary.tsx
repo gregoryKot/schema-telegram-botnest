@@ -12,7 +12,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     this.setState({ info });
-    // eslint-disable-next-line no-console
+     
     console.error(`[${this.props.section}] crashed:`, error, info?.componentStack);
     // Auto-reload once on chunk load failures (stale cache after deploy)
     const isChunk = /Failed to fetch dynamically imported module|Loading chunk|Loading CSS chunk/i.test(error.message);

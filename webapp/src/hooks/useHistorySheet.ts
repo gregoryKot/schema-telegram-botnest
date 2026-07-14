@@ -39,7 +39,7 @@ export function useHistorySheet(onClose: () => void) {
     if ((location.state as any)?.__sheetId !== id.current) {
       ref.current();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [location]);
 
   return () => navigate(-1);

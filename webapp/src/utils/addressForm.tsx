@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 import { api } from '../api';
 
 /**
@@ -14,13 +20,20 @@ interface Ctx {
   setForm: (f: AddressForm) => void;
 }
 
-const AddressFormContext = createContext<Ctx>({ form: 'ty', setForm: () => {} });
+const AddressFormContext = createContext<Ctx>({
+  form: 'ty',
+  setForm: () => {},
+});
 
 export function AddressFormProvider({ children }: { children: ReactNode }) {
   const [form, setForm] = useState<AddressForm>('ty');
   useEffect(() => {
-    api.getSettings()
-      .then((s) => { if (s.addressForm === 'ty' || s.addressForm === 'vy') setForm(s.addressForm); })
+    api
+      .getSettings()
+      .then((s) => {
+        if (s.addressForm === 'ty' || s.addressForm === 'vy')
+          setForm(s.addressForm);
+      })
       .catch(() => {});
   }, []);
   return (
@@ -45,6 +58,10 @@ export function useTr(): (ty: string, vy: string) => string {
 }
 
 /** Чистый выбор для не-React мест (селекторы данных и т.п.) */
-export function pickForm(form: AddressForm | null | undefined, ty: string, vy: string): string {
+export function pickForm(
+  form: AddressForm | null | undefined,
+  ty: string,
+  vy: string,
+): string {
   return form === 'vy' ? vy : ty;
 }

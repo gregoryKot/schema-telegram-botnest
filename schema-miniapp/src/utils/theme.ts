@@ -8,7 +8,8 @@ function detectTheme(): Theme {
   if (tg?.colorScheme === 'light') return 'light';
   if (tg?.colorScheme === 'dark') return 'dark';
   // 2. System preference
-  if (window.matchMedia?.('(prefers-color-scheme: light)').matches) return 'light';
+  if (window.matchMedia?.('(prefers-color-scheme: light)').matches)
+    return 'light';
   return 'dark';
 }
 
