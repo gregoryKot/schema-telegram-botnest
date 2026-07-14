@@ -63,10 +63,17 @@
 > P-5 (валидация брони против AvailabilityRule), I-4 (ключ алертов),
 > D-2 (Cascade FK для 10 таблиц + миграция; UserTask — задокументированное
 > исключение: виртуальные клиенты с отрицательным userId).
-> Осталось: тесты booking/subscription (остаток 2а), DTO на остальные
-> эндпоинты, 2д распил god-объектов, 2е типизация (~2600 unsafe), D-3
-> enum-статусы, D-5 deletedAt (требует проверки прод-данных на
-> soft-deleted строки).
+> Ещё сделано (2026-07-14): 2г ✅ полностью — все ~35 inline-@Body
+> переведены на class-validator DTO (+spec на каждый dto-файл; auth
+> telegram-payload'ы и map-тела — задокументированные исключения);
+> 2е частично — eslint-долг 11 329 → 4 518 (eslint --fix, без game/),
+> храповик scripts/check-eslint-ratchet.mjs в CI (джоба eslint),
+> no-floating-promises=error, no-explicit-any=warn.
+> Осталось: тесты booking/subscription (остаток 2а), 2д распил
+> god-объектов (therapy.service 1318, bot.service 1001, api.controller
+> 947 — строки после prettier), 2е добивание unsafe-* (храповик не даёт
+> расти; снижение — фоном), D-5 deletedAt (требует проверки прод-данных
+> на soft-deleted строки).
 
 Порядок принципиален: **сначала тесты на текущее поведение, потом рефакторинг под их защитой**.
 
@@ -127,7 +134,10 @@
 > побайтово идентичны, CI-чекер). Осталось: 3в волна 2 — настоящий
 > shared-пакет (npm workspaces; кандидаты в scripts/check-paired-files.mjs),
 > распил App.tsx miniapp (58 useState → reducer), YSQTestSheet shared-хук,
-> ErrorBoundary по секциям miniapp, ретраи/оффлайн-очередь api.
+> ретраи/оффлайн-очередь api.
+> Ещё сделано (2026-07-14): ErrorBoundary по секциям miniapp ✅ (4 секции,
+> глобальный в main.tsx — последний рубеж); ты/вы-храповик стал
+> мультистрочным (вырезание аргументов вилок со скобочным балансом).
 
 ### 3а. Санация (0.5 недели)
 
