@@ -668,9 +668,9 @@ export class BotAnalyticsService {
       notifyOff,
       blockedUsers,
       activePairs,
-      todayRatings,
+      todayCountRows,
       week7Ratings,
-      month30Ratings,
+      month30CountRows,
       needAvgs,
       fillsByDow,
     ] = await Promise.all([
@@ -688,35 +688,45 @@ export class BotAnalyticsService {
         where: { deletedAt: null, botBlockedAt: { not: null } },
       }),
       this.prisma.pair.count({ where: { status: 'active' } }),
-      this.prisma.rating.findMany({
-        where: { date: today },
-        select: { userId: true },
-        distinct: ['userId'],
-      }),
+      // D-4 (аудит 2026-07): раньше findMany({distinct:['userId']}).length —
+      // без take это неограниченная выборка. Здесь нужен только сам счётчик
+      // (не id), поэтому меняем на честный COUNT(DISTINCT), а не на take —
+      // take исказил бы статистику при росте числа активных юзеров.
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT COUNT(DISTINCT "userId")::bigint AS c FROM "Rating" WHERE date = ${today}
+      `,
       this.prisma.rating.findMany({
         where: { date: { gte: d7 } },
         select: { userId: true },
         distinct: ['userId'],
+        // D-4: явная страховка от роста таблицы (не пагинация). Тут (в
+        // отличие от today/month30) нужен сам список id — используется ниже
+        // для churnRisk (activeRecent) — поэтому COUNT(DISTINCT) не подходит.
+        take: 5000,
       }),
-      this.prisma.rating.findMany({
-        where: { date: { gte: d30 } },
-        select: { userId: true },
-        distinct: ['userId'],
-      }),
-      // Average score per need over last 7 days
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT COUNT(DISTINCT "userId")::bigint AS c FROM "Rating" WHERE date >= ${d30}
+      `,
+      // Average score per need over last 7 days — по числу потребностей
+      // (NEED_IDS), не растёт с таблицей, take не нужен.
       this.prisma.rating.groupBy({
         by: ['needId'],
         where: { date: { gte: d7 } },
         _avg: { value: true },
         orderBy: { _avg: { value: 'asc' } },
       }),
-      // Fills by day of week (last 30 days) — date strings, compute DOW in JS
+      // Fills by day of week (last 30 days) — date strings, compute DOW in JS.
+      // D-4: явная страховка от роста таблицы (не пагинация) — нужны сами
+      // пары (date, userId) для подсчёта по дням недели, COUNT не подходит.
       this.prisma.rating.findMany({
         where: { date: { gte: d30 } },
         select: { date: true, userId: true },
         distinct: ['userId', 'date'],
+        take: 5000,
       }),
     ]);
+    const todayCount = Number(todayCountRows[0]?.c ?? 0);
+    const month30Count = Number(month30CountRows[0]?.c ?? 0);
 
     // Retention funnel — count users with N+ distinct fill days (raw SQL for efficiency)
     const retentionRows = (await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
@@ -751,6 +761,9 @@ export class BotAnalyticsService {
           where: { date: { gte: d30, lt: d7 } },
           select: { userId: true },
           distinct: ['userId'],
+          // D-4: страховка от роста таблицы (не пагинация) — нужен сам
+          // список id для сравнения с activeRecent (churnRisk).
+          take: 5000,
         })
         .then((rows) => rows.map((r) => String(r.userId))),
     );
@@ -776,9 +789,7 @@ export class BotAnalyticsService {
     }
     const bestDow = dowCounts.indexOf(Math.max(...dowCounts));
     const fillRate =
-      month30Ratings.length > 0
-        ? Math.round((todayRatings.length / month30Ratings.length) * 100)
-        : 0;
+      month30Count > 0 ? Math.round((todayCount / month30Count) * 100) : 0;
 
     const lines = [
       `📊 <b>Статистика бота</b> · ${today}`,
@@ -788,8 +799,8 @@ export class BotAnalyticsService {
       `Отключили уведомления: ${notifyOff} · заблокировали: ${blockedUsers}`,
       '',
       `📔 <b>Дневник</b>`,
-      `Сегодня: ${todayRatings.length} (${fillRate}% от MAU)`,
-      `Активных за 7д: ${week7Ratings.length} · за 30д: ${month30Ratings.length}`,
+      `Сегодня: ${todayCount} (${fillRate}% от MAU)`,
+      `Активных за 7д: ${week7Ratings.length} · за 30д: ${month30Count}`,
       `⚠️ Риск оттока (были 8-30д, нет 7д): ${churnRisk}`,
       '',
       `📈 <b>Retention (все время)</b>`,
