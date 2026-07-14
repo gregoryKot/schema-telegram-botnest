@@ -173,7 +173,10 @@ export function MyNotesSheet({ onClose }: Props) {
                                   const note = schemaNotes.find(n => n.schemaId === s.id);
                                   const filled = note && Object.entries(note).some(([k, v]) => k !== 'schemaId' && typeof v === 'string' && v.trim());
                                   return (
-                                    <div key={s.id} onClick={() => setOpenSchemaId(s.id)} style={{
+                                    <div key={s.id} onClick={() => setOpenSchemaId(s.id)}
+                                      role="button" tabIndex={0}
+                                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenSchemaId(s.id); } }}
+                                      style={{
                                       display: 'flex', alignItems: 'center', gap: 12,
                                       padding: '10px 12px', borderRadius: 14, cursor: 'pointer',
                                       background: `${colorHex}0d`, border: `1px solid ${colorHex}22`,
@@ -218,7 +221,10 @@ export function MyNotesSheet({ onClose }: Props) {
                             const filled = note && Object.entries(note).some(([k, v]) => k !== 'modeId' && typeof v === 'string' && v.trim());
                             const colorHex = hex(m.groupColor);
                             return (
-                              <div key={id} onClick={() => setOpenModeId(id)} style={{
+                              <div key={id} onClick={() => setOpenModeId(id)}
+                                role="button" tabIndex={0}
+                                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenModeId(id); } }}
+                                style={{
                                 display: 'flex', alignItems: 'center', gap: 12,
                                 padding: '10px 12px', borderRadius: 14, cursor: 'pointer',
                                 background: `${colorHex}0d`, border: `1px solid ${colorHex}20`,

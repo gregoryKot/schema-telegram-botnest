@@ -132,7 +132,10 @@ function NeedRow({ need, value, onTap }: { need: Need; value: number; onTap?: ()
     : value <= 3 ? 'var(--accent-red)' : value <= 6 ? 'var(--accent-yellow)' : 'var(--accent-green)';
 
   return (
-    <div onClick={onTap} className="card" style={{ borderRadius: 16, padding: '12px 14px', cursor: onTap ? 'pointer' : 'default' }}>
+    <div onClick={onTap} className="card"
+      role={onTap ? 'button' : undefined} tabIndex={onTap ? 0 : undefined}
+      onKeyDown={onTap ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTap(); } }) : undefined}
+      style={{ borderRadius: 16, padding: '12px 14px', cursor: onTap ? 'pointer' : 'default' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{
           width: 36, height: 36, borderRadius: 10, flexShrink: 0,
@@ -181,7 +184,10 @@ function SparklineRow({ need, history, selectedIdx, selectedRatings, onClick }: 
   const polyStr = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 
   return (
-    <div onClick={onClick} className="card" style={{ borderRadius: 16, padding: '12px 14px', cursor: onClick ? 'pointer' : 'default' }}>
+    <div onClick={onClick} className="card"
+      role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
+      style={{ borderRadius: 16, padding: '12px 14px', cursor: onClick ? 'pointer' : 'default' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{
           width: 32, height: 32, borderRadius: 9, flexShrink: 0,
@@ -219,7 +225,10 @@ function InsightCard({ needs, ratings, onTap }: { needs: Need[]; ratings: Record
   const color = COLORS[lowest.id] ?? '#888';
   const value = ratings[lowest.id] ?? 0;
   return (
-    <div onClick={() => onTap?.(lowest)} style={{
+    <div onClick={() => onTap?.(lowest)}
+      role={onTap ? 'button' : undefined} tabIndex={onTap ? 0 : undefined}
+      onKeyDown={onTap ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTap(lowest); } }) : undefined}
+      style={{
       background: `color-mix(in srgb, ${color} 8%, var(--surface))`,
       border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`,
       borderRadius: 16, padding: '14px 16px',
@@ -406,18 +415,27 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
               {/* Links row */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, paddingBottom: 8 }}>
                 {Object.keys(childhoodRatings).length > 0 ? (
-                  <div onClick={onOpenChildhoodWheel} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: onOpenChildhoodWheel ? 'pointer' : 'default' }}>
+                  <div onClick={onOpenChildhoodWheel}
+                    role={onOpenChildhoodWheel ? 'button' : undefined} tabIndex={onOpenChildhoodWheel ? 0 : undefined}
+                    onKeyDown={onOpenChildhoodWheel ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenChildhoodWheel(); } }) : undefined}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: onOpenChildhoodWheel ? 'pointer' : 'default' }}>
                     <svg width={16} height={6}><line x1={0} y1={3} x2={16} y2={3} stroke="rgba(var(--fg-rgb),0.3)" strokeWidth={1.5} strokeDasharray="3 3" /></svg>
                     <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>детство</span>
                     {onOpenChildhoodWheel && <span style={{ fontSize: 12, color: 'var(--accent)' }}>→</span>}
                   </div>
                 ) : onOpenChildhoodWheel ? (
-                  <div onClick={onOpenChildhoodWheel} style={{ cursor: 'pointer' }}>
+                  <div onClick={onOpenChildhoodWheel}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenChildhoodWheel(); } }}
+                    style={{ cursor: 'pointer' }}>
                     <span style={{ fontSize: 12, color: 'var(--accent)' }}>🌱 Оценить детство →</span>
                   </div>
                 ) : null}
                 {onOpenSchemas && (
-                  <div onClick={onOpenSchemas} style={{ cursor: 'pointer' }}>
+                  <div onClick={onOpenSchemas}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenSchemas(); } }}
+                    style={{ cursor: 'pointer' }}>
                     <span style={{ fontSize: 12, color: 'var(--accent)' }}>Что за этим стоит →</span>
                   </div>
                 )}
@@ -433,7 +451,10 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
 
             {/* Backfill — any past day (partial or empty) */}
             {onBackfill && selected.date !== TODAY_STR && (
-              <div onClick={() => onBackfill(selected.date)} className="card" style={{
+              <div onClick={() => onBackfill(selected.date)} className="card"
+                role="button" tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBackfill(selected.date); } }}
+                style={{
                 borderRadius: 16, padding: '14px 16px',
                 display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
                 background: ratedCount === 0
@@ -481,7 +502,10 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
             )}
 
             {/* Note */}
-            <div onClick={() => setShowNote(true)} className="card" style={{
+            <div onClick={() => setShowNote(true)} className="card"
+              role="button" tabIndex={0}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowNote(true); } }}
+              style={{
               borderRadius: 14, padding: '12px 14px', cursor: 'pointer',
               border: noteText ? undefined : '1px dashed rgba(var(--fg-rgb),0.14)',
               boxShadow: noteText ? undefined : 'none',

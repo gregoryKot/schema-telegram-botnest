@@ -62,6 +62,8 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
                   <div
                     key={s.id}
                     onClick={() => toggle(s.id)}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(s.id); } }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       padding: '10px 12px', borderRadius: 12, cursor: 'pointer',

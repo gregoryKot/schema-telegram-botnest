@@ -25,6 +25,7 @@ export function FloatingPill({ onOpenSchemaDiary, onOpenModeDiary, onOpenGratitu
       >
         <button
           onClick={() => setShowPicker(true)}
+          aria-label="Быстрое действие"
           style={{
             width: 60,
             height: 60,
