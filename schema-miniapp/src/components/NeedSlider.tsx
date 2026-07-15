@@ -1,5 +1,10 @@
-import { useRef, useCallback } from 'react';
 import { COLORS, YESTERDAY } from '../types';
+import { haptic } from '../haptic';
+
+// P1/P2 (UI-аудит СДВГ): оценка ставится ДИСКРЕТНЫМ ТАПОМ по 10 сегментам,
+// а не перетаскиванием. Открытие карточки-объяснения — отдельной явной
+// кнопкой «?» с зоной ≥44px, а не тапом по всей строке. Скрытой блокировки
+// больше нет: значение всегда меняется повторным тапом.
 
 const HINTS: Record<string, string> = {
   attachment: 'близость · связь',
@@ -57,40 +62,13 @@ function NeedIcon({ id, color }: { id: string; color: string }) {
   }
 }
 
-const BADGE_NEUTRAL: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 500,
-  padding: '2px 6px',
-  borderRadius: 20,
-  background: 'rgba(var(--fg-rgb),0.07)',
-  color: 'var(--text-sub)',
-};
-const BADGE_POSITIVE: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 500,
-  padding: '2px 6px',
-  borderRadius: 20,
-  background: 'color-mix(in srgb, var(--accent-green) 15%, transparent)',
-  color: '#06d6a0',
-};
-
-function DeltaBadge({ delta }: { delta: number }) {
-  if (delta === 0) return null;
-  if (delta > 0) return <span style={BADGE_POSITIVE}>+{delta}</span>;
-  return <span style={BADGE_NEUTRAL}>{delta}</span>;
-}
-
 interface Props {
   id: string;
-  emoji: string;
   label: string;
   value: number | undefined;
-  saved: boolean;
-  locked?: boolean;
-  onUnlock?: () => void;
   onChange: (value: number) => void;
-  onTap?: () => void;
-  showTooltip?: boolean;
+  onOpenDetail?: () => void;
+  justSaved?: boolean;
 }
 
 export function NeedSlider({
@@ -98,69 +76,25 @@ export function NeedSlider({
   label,
   value,
   onChange,
-  onTap,
-  locked,
-  onUnlock,
+  onOpenDetail,
+  justSaved,
 }: Props) {
   const color = COLORS[id] ?? '#888';
-  const hasValue = value !== undefined;
-  const pct = hasValue ? value * 10 : 0;
-  const delta = hasValue ? value - (YESTERDAY[id] ?? 0) : null;
-  const trackRef = useRef<HTMLDivElement>(null);
-
-  const calcValue = useCallback(
-    (clientX: number) => {
-      if (!trackRef.current) return;
-      const rect = trackRef.current.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      onChange(Math.round(pct * 10));
-    },
-    [onChange],
-  );
-
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.currentTarget.setPointerCapture(e.pointerId);
-      calcValue(e.clientX);
-    },
-    [calcValue],
-  );
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.buttons === 0) return;
-      calcValue(e.clientX);
-    },
-    [calcValue],
-  );
+  const v = value ?? 0;
+  const yv = YESTERDAY[id] ?? 0;
+  const delta = v > 0 ? v - yv : 0;
 
   return (
-    <div style={{ marginBottom: 20 }}>
-      {/* Top row: icon block + label/hint + score/delta */}
+    <div style={{ marginBottom: 22 }}>
+      {/* Header: иконка + название, справа оценка и кнопка объяснения */}
       <div
-        onClick={onTap}
-        role={onTap ? 'button' : undefined}
-        tabIndex={onTap ? 0 : undefined}
-        onKeyDown={
-          onTap
-            ? (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onTap();
-                }
-              }
-            : undefined
-        }
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 12,
-          marginBottom: 12,
-          cursor: onTap ? 'pointer' : 'default',
+          marginBottom: 10,
         }}
       >
-        {/* Colored icon box */}
         <div
           style={{
             width: 36,
@@ -176,7 +110,6 @@ export function NeedSlider({
           <NeedIcon id={id} color={color} />
         </div>
 
-        {/* Name + hint */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
@@ -193,16 +126,66 @@ export function NeedSlider({
           </div>
         </div>
 
-        {/* "?" hint icon */}
-        <div style={{ flexShrink: 0 }}>
-          <div
+        {/* Оценка */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: 2,
+            flexShrink: 0,
+          }}
+        >
+          {justSaved && (
+            <span
+              aria-hidden
+              style={{
+                fontSize: 13,
+                color,
+                marginRight: 2,
+                animation: 'fade-in 0.2s ease',
+              }}
+            >
+              ✓
+            </span>
+          )}
+          {v > 0 ? (
+            <>
+              <span style={{ fontSize: 19, fontWeight: 700, color }}>{v}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+                /10
+              </span>
+            </>
+          ) : (
+            <span style={{ fontSize: 15, color: 'var(--text-faint)' }}>—</span>
+          )}
+        </div>
+
+        {/* Явная кнопка объяснения — зона ≥44px */}
+        <button
+          onClick={onOpenDetail}
+          aria-label="Что это, примеры и советы"
+          style={{
+            width: 44,
+            height: 44,
+            flexShrink: 0,
+            marginRight: -10,
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <span
             style={{
-              width: 18,
-              height: 18,
+              width: 24,
+              height: 24,
               borderRadius: '50%',
               background: 'rgba(var(--fg-rgb),0.08)',
               color: 'var(--text-sub)',
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: 600,
               display: 'flex',
               alignItems: 'center',
@@ -210,163 +193,80 @@ export function NeedSlider({
             }}
           >
             ?
-          </div>
-        </div>
-
-        {/* Score + edit button or delta */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end',
-            gap: 4,
-            flexShrink: 0,
-          }}
-        >
-          {locked ? (
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                onUnlock?.();
-              }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onUnlock?.();
-                }
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                background: color + '18',
-                border: `1px solid ${color}33`,
-                borderRadius: 8,
-                padding: '3px 8px',
-                cursor: 'pointer',
-              }}
-            >
-              <span style={{ fontSize: 15, fontWeight: 600, color }}>
-                {value}
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>
-                /10
-              </span>
-              <span
-                style={{ fontSize: 11, color: color + 'aa', marginLeft: 2 }}
-              >
-                ✎
-              </span>
-            </div>
-          ) : hasValue ? (
-            <>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                <span style={{ fontSize: 17, fontWeight: 600, color }}>
-                  {value}
-                </span>
-                <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                  /10
-                </span>
-              </div>
-              {delta !== null && <DeltaBadge delta={delta} />}
-            </>
-          ) : (
-            <span style={{ fontSize: 15, color: 'var(--text-faint)' }}>—</span>
-          )}
-        </div>
+          </span>
+        </button>
       </div>
 
-      {/* Slider track — disabled when locked, active when unlocked */}
+      {/* Дискретная шкала-тап: 10 сегментов, каждый — цель ≥44px по высоте */}
       <div
-        ref={trackRef}
-        onPointerDown={locked ? undefined : handlePointerDown}
-        onPointerMove={locked ? undefined : handlePointerMove}
+        role="group"
+        aria-label={`Оценка «${label}» от 1 до 10`}
+        style={{ display: 'flex', gap: 3 }}
+      >
+        {Array.from({ length: 10 }, (_, i) => i + 1).map((s) => {
+          const filled = v > 0 && s <= v;
+          const isYesterday = yv > 0 && s === yv;
+          return (
+            <button
+              key={s}
+              onClick={() => {
+                haptic.tap();
+                onChange(s);
+              }}
+              aria-label={`Поставить ${s}`}
+              aria-pressed={v === s}
+              style={{
+                flex: 1,
+                padding: '17px 0',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                position: 'relative',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              <div
+                style={{
+                  height: 12,
+                  borderRadius: 4,
+                  background: filled ? color : 'rgba(var(--fg-rgb),0.09)',
+                  boxShadow: isYesterday
+                    ? `inset 0 0 0 1.5px ${color}80`
+                    : 'none',
+                  transition: 'background 0.12s',
+                }}
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Подписи-опоры + маркер «вчера» */}
+      <div
         style={{
-          position: 'relative',
-          padding: '12px 0',
-          cursor: locked ? 'default' : 'pointer',
-          touchAction: locked ? 'auto' : 'none',
-          userSelect: 'none',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: 4,
+          fontSize: 11,
+          color: 'var(--text-faint)',
         }}
       >
-        {/* Track */}
-        <div
-          style={{
-            height: 6,
-            borderRadius: 6,
-            background: 'rgba(var(--fg-rgb),0.07)',
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              width: `${pct}%`,
-              height: '100%',
-              borderRadius: 6,
-              background: locked
-                ? `linear-gradient(to right, ${color}33, ${color}55)`
-                : `linear-gradient(to right, ${color}55, ${color})`,
-            }}
-          />
-        </div>
-
-        {/* Yesterday reference marker */}
-        {!locked && (YESTERDAY[id] ?? 0) > 0 && (
-          <div
-            style={{
-              position: 'absolute',
-              left: `${(YESTERDAY[id] ?? 0) * 10}%`,
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 2,
-              height: 16,
-              borderRadius: 1,
-              background: hasValue ? `${color}40` : `${color}70`,
-              pointerEvents: 'none',
-              zIndex: 2,
-            }}
-          />
+        <span>мало</span>
+        {yv > 0 ? (
+          <span style={{ color: 'var(--text-sub)' }}>
+            вчера {yv}
+            {delta !== 0 && (
+              <span style={{ color, fontWeight: 600 }}>
+                {' '}
+                {delta > 0 ? `+${delta}` : delta}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span />
         )}
-
-        {/* Thumb — always visible; dimmed when locked */}
-        {!locked && (
-          <div
-            style={{
-              position: 'absolute',
-              left: `${pct}%`,
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              background: hasValue ? color : 'rgba(var(--fg-rgb),0.25)',
-              border: '2px solid var(--bg)',
-              pointerEvents: 'none',
-              zIndex: 1,
-            }}
-          />
-        )}
-        {locked && hasValue && (
-          <div
-            style={{
-              position: 'absolute',
-              left: `${pct}%`,
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              background: color,
-              border: '2px solid var(--bg)',
-              pointerEvents: 'none',
-              zIndex: 1,
-              opacity: 0.45,
-            }}
-          />
-        )}
+        <span>много</span>
       </div>
     </div>
   );

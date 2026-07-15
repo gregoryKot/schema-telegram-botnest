@@ -467,7 +467,8 @@ export function ProfileSection({
         {ready &&
           activeDates.size > 0 &&
           (() => {
-            const WEEKS = 16;
+            // P7 UI-аудит: короче и крупнее — влезает без скрытого скролла
+            const WEEKS = 10;
             const today = new Date();
             const todayDow = (today.getDay() + 6) % 7;
             const startDate = new Date(today);
@@ -533,10 +534,10 @@ export function ProfileSection({
                         <div
                           key={i}
                           style={{
-                            height: 10,
+                            height: 13,
                             fontSize: 8,
                             color: 'var(--text-faint)',
-                            lineHeight: '10px',
+                            lineHeight: '13px',
                             width: 14,
                             textAlign: 'right',
                             paddingRight: 3,
@@ -580,8 +581,8 @@ export function ProfileSection({
                               <div
                                 key={dateStr}
                                 style={{
-                                  width: 10,
-                                  height: 10,
+                                  width: 13,
+                                  height: 13,
                                   borderRadius: 3,
                                   background: isFuture
                                     ? 'transparent'
@@ -816,28 +817,42 @@ export function ProfileSection({
                           {insights.bestDayOfWeek}
                         </div>
                       </div>
-                      <span
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowBestDayInfo(true);
                         }}
+                        aria-label="Что такое лучший день"
                         style={{
+                          width: 40,
+                          height: 40,
+                          margin: '-13px -13px -13px -11px',
+                          border: 'none',
+                          background: 'none',
+                          cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          width: 14,
-                          height: 14,
-                          borderRadius: '50%',
-                          background: 'rgba(var(--fg-rgb),0.08)',
-                          color: 'var(--text-sub)',
-                          fontSize: 8,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          marginLeft: 2,
+                          flexShrink: 0,
                         }}
                       >
-                        ?
-                      </span>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 16,
+                            height: 16,
+                            borderRadius: '50%',
+                            background: 'rgba(var(--fg-rgb),0.08)',
+                            color: 'var(--text-sub)',
+                            fontSize: 9,
+                            fontWeight: 600,
+                          }}
+                        >
+                          ?
+                        </span>
+                      </button>
                     </div>
                   )}
                   {insights?.worstDayOfWeek && (
