@@ -1156,7 +1156,7 @@ export function SettingsSheet({
                                   fontWeight: 500,
                                 }}
                               >
-                                Профиль и схемы YSQ
+                                Профиль и схемы
                               </div>
                               <div
                                 style={{
@@ -2471,7 +2471,7 @@ export function SettingsSheet({
                     marginBottom: 10,
                   }}
                 >
-                  Удалить данные теста YSQ-R
+                  Удалить данные теста
                 </div>
                 <button
                   onClick={() => {

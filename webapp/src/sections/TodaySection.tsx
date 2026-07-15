@@ -610,7 +610,7 @@ interface StepDef {
 const STEPS: StepDef[] = [
   { id: 'ysq', emoji: '🧪', color: 'var(--accent)',
     title: 'Тест на схемы',
-    description: 'YSQ-R – 116 вопросов, 10 минут. Покажет, какие ранние паттерны управляют реакциями.',
+    description: '116 вопросов, 10 минут. Покажет, какие ранние паттерны управляют реакциями.',
     detail: '20 схем · история прохождений · советы',
     actionLabel: 'Начать тест',
     isDone: (p, ctx) => !!(p?.ysq.completedAt) || !!(ctx?.hasSchemas) },

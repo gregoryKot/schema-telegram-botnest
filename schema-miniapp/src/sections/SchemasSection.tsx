@@ -363,7 +363,7 @@ export function SchemasSection({
                     marginBottom: 2,
                   }}
                 >
-                  YSQ-тест схем
+                  Тест на схеме
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
                   {ysqCompletedAt
