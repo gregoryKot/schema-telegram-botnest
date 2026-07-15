@@ -1,18 +1,8 @@
-import { useState, useEffect, useRef, useCallback, RefObject } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Need, COLORS } from '../types';
 import { api } from '../api';
 import { BottomSheet } from './BottomSheet';
-
-/** Prevent the iOS overflowY:auto container from stealing touch events on the slider track */
-function usePreventScrollOnTrack(trackRef: RefObject<HTMLDivElement>) {
-  useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const prevent = (e: TouchEvent) => e.preventDefault();
-    el.addEventListener('touchstart', prevent, { passive: false });
-    return () => el.removeEventListener('touchstart', prevent);
-  }, [trackRef]);
-}
+import { NeedRatingBar } from './NeedRatingBar';
 
 interface Props {
   needs: Need[];
@@ -114,7 +104,6 @@ export function YesterdaySheet({ needs, date, onClose }: Props) {
             return (
               <SliderRow
                 key={n.id}
-                needId={n.id}
                 label={n.chartLabel}
                 value={value}
                 color={color}
@@ -134,7 +123,7 @@ export function YesterdaySheet({ needs, date, onClose }: Props) {
               marginBottom: 8,
             }}
           >
-            Ошибка сохранения — потяни ползунок ещё раз
+            Ошибка сохранения — нажми на шкалу ещё раз
           </div>
         )}
         <button
@@ -160,37 +149,18 @@ export function YesterdaySheet({ needs, date, onClose }: Props) {
 }
 
 function SliderRow({
-  needId,
   label,
   value,
   color,
   saved,
   onChange,
 }: {
-  needId: string;
   label: string;
   value: number;
   color: string;
   saved: boolean;
   onChange: (v: number) => void;
 }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  usePreventScrollOnTrack(trackRef);
-  const pct = value * 10;
-
-  const calc = useCallback(
-    (clientX: number) => {
-      if (!trackRef.current) return;
-      const rect = trackRef.current.getBoundingClientRect();
-      onChange(
-        Math.round(
-          Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * 10,
-        ),
-      );
-    },
-    [onChange],
-  );
-
   return (
     <div style={{ marginBottom: 20 }}>
       <div
@@ -226,57 +196,7 @@ function SliderRow({
           </span>
         </div>
       </div>
-      <div
-        ref={trackRef}
-        onPointerDown={(e) => {
-          e.preventDefault();
-          e.currentTarget.setPointerCapture(e.pointerId);
-          calc(e.clientX);
-        }}
-        onPointerMove={(e) => {
-          if (e.buttons === 0) return;
-          calc(e.clientX);
-        }}
-        style={{
-          position: 'relative',
-          padding: '10px 0',
-          cursor: 'pointer',
-          touchAction: 'none',
-          userSelect: 'none',
-        }}
-      >
-        <div
-          style={{
-            height: 6,
-            borderRadius: 6,
-            background: 'rgba(var(--fg-rgb),0.07)',
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              width: `${pct}%`,
-              height: '100%',
-              borderRadius: 6,
-              background: `linear-gradient(to right, ${color}55, ${color})`,
-            }}
-          />
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            left: `${pct}%`,
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 20,
-            height: 20,
-            borderRadius: '50%',
-            background: value > 0 ? color : 'rgba(var(--fg-rgb),0.2)',
-            border: '2px solid var(--bg)',
-            pointerEvents: 'none',
-          }}
-        />
-      </div>
+      <NeedRatingBar color={color} value={value} onChange={onChange} />
     </div>
   );
 }
