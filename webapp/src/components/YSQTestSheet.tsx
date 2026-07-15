@@ -156,7 +156,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <div style={{ fontSize: 48, marginBottom: 14 }}>🧠</div>
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 8, lineHeight: 1.2 }}>
-              Тест на схеме
+              Тест на схемы
             </h1>
             <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>
               Паттерны мышления и поведения, сложившиеся в детстве

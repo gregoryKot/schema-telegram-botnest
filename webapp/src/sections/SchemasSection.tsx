@@ -173,10 +173,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           </div>
         )}
 
-        {/* ══════════ Тест на схеме ══════════ */}
+        {/* ══════════ Тест на схемы ══════════ */}
         <div className="section">
           <div className="section-head">
-            <h3>Тест на схеме</h3>
+            <h3>Тест на схемы</h3>
             <button onClick={() => onOpenSchema({ startTest: true })} className="link">
               {ysqCompletedAt ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · пройти снова →` : 'Начать →'}
             </button>
