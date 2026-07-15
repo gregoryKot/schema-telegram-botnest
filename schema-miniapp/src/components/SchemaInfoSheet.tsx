@@ -1179,7 +1179,7 @@ export function SchemaInfoSheet({
                   }}
                 >
                   {hasResult
-                    ? 'Мои результаты YSQ-R'
+                    ? 'Мои результаты теста'
                     : hasProgress
                       ? 'Продолжить тест'
                       : 'Пройти тест на схемы'}
@@ -1193,7 +1193,7 @@ export function SchemaInfoSheet({
                 >
                   {hasResult
                     ? 'Посмотреть или пройти заново'
-                    : '116 вопросов · ~10 минут · YSQ-R'}
+                    : '116 вопросов · ~10 минут'}
                 </div>
               </div>
               <span style={{ fontSize: 20, color: 'var(--accent)' }}>›</span>

@@ -135,7 +135,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               <h3>{tr('Твои выраженные схемы', 'Ваши выраженные схемы')}</h3>
               {ysqCompletedAt && (
                 <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                  YSQ от {fmtDate(ysqCompletedAt.slice(0, 10))}
+                  Тест от {fmtDate(ysqCompletedAt.slice(0, 10))}
                 </span>
               )}
             </div>
@@ -173,10 +173,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           </div>
         )}
 
-        {/* ══════════ YSQ-тест схем ══════════ */}
+        {/* ══════════ Тест на схеме ══════════ */}
         <div className="section">
           <div className="section-head">
-            <h3>YSQ-тест схем</h3>
+            <h3>Тест на схеме</h3>
             <button onClick={() => onOpenSchema({ startTest: true })} className="link">
               {ysqCompletedAt ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · пройти снова →` : 'Начать →'}
             </button>
@@ -200,7 +200,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             </div>
           ) : allSchemaIds.length === 0 ? (
             <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-              Пройди YSQ-тест или добавь вручную
+              Пройди тест на схемы или добавь вручную
             </div>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>

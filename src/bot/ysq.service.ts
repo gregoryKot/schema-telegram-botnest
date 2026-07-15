@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-// YSQ (Young Schema Questionnaire) — прогресс прохождения и итоговые результаты.
+// Тест на схемы — прогресс прохождения и итоговые результаты.
 @Injectable()
 export class YsqService {
   constructor(private readonly prisma: PrismaService) {}
