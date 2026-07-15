@@ -287,7 +287,7 @@ export function YSQTestSheet({
                 marginBottom: 6,
               }}
             >
-              Опросник схем YSQ-R
+              Тест на схемы
             </div>
             <div
               style={{
@@ -485,10 +485,9 @@ export function YSQTestSheet({
               textAlign: 'center',
             }}
           >
-            Составлено по мотивам подхода схема-терапии (Дж. Янг).
-            Самостоятельная версия в образовательных целях — не официальный
-            опросник YSQ и не аффилировано со Schema Therapy Institute. Не
-            заменяет консультацию специалиста.
+            Самостоятельный опросник для самонаблюдения по модели ранних
+            дезадаптивных схем. Это не диагностический инструмент и не заменяет
+            консультацию специалиста.
           </div>
         </div>
       )}
@@ -1120,16 +1119,9 @@ export function YSQTestSheet({
                   textAlign: 'center',
                 }}
               >
-                © Jeffrey Young, Schema Therapy Institute. Используется в
-                образовательных целях.{' '}
-                <a
-                  href="https://schematherapy.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: 'var(--accent)', textDecoration: 'none' }}
-                >
-                  schematherapy.com
-                </a>
+                Самостоятельный опросник для самонаблюдения по модели ранних
+                дезадаптивных схем. Не диагностический инструмент и не заменяет
+                консультацию специалиста.
               </div>
             </div>
           );

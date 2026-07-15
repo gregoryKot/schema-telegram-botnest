@@ -233,7 +233,7 @@ export function HelpSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
           {[
             { label: 'Колесо детства', sub: 'Какие базовые потребности были или не были удовлетворены', onClick: onOpenChildhoodWheel, done: childhoodDone },
-            { label: 'Тест YSQ',       sub: 'Опросник Янга, 90 вопросов, 20 шкал схем',                  onClick: () => onOpenSchema?.({ startTest: true }), done: false },
+            { label: 'Тест на схемы',  sub: '116 вопросов, 20 шкал схем',                                onClick: () => onOpenSchema?.({ startTest: true }), done: false },
             { label: 'Карта режимов',  sub: 'Найди своего Уязвимого Ребёнка, Критика, Защитника',         onClick: () => onOpenSchema?.({ tab: 'modes' }), done: false },
           ].map(card => (
             <div

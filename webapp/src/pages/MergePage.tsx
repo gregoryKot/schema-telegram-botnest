@@ -6,8 +6,8 @@ const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
 const TABLE_LABELS: Record<string, string> = {
   Rating: 'оценки потребностей',
-  YsqProgress: 'прогресс YSQ-теста',
-  YsqResult: 'результат YSQ-теста',
+  YsqProgress: 'прогресс теста на схемы',
+  YsqResult: 'результат теста на схемы',
   YsqResultHistory: 'история тестов',
   Note: 'заметки',
   UserSchemaNote: 'заметки по схемам',
