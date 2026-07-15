@@ -1,5 +1,5 @@
 /**
- * Minimal YSQ-R scoring: mirrors YSQTestSheet.tsx logic.
+ * Minimal scoring for the schema test: mirrors YSQTestSheet.tsx logic.
  * Returns schema IDs with pct5plus > 50% (same threshold as frontend).
  */
 

@@ -2592,7 +2592,7 @@ export function TherapistClientSheet({
                 >
                   {ysqRequested
                     ? '✓ Запрос отправлен'
-                    : '📋 Запросить тест YSQ'}
+                    : '📋 Запросить тест на схемы'}
                 </button>
                 {ysqError && (
                   <div
@@ -2655,7 +2655,7 @@ export function TherapistClientSheet({
                         marginBottom: 10,
                       }}
                     >
-                      📊 YSQ · {hist.length}{' '}
+                      📊 Схемы · {hist.length}{' '}
                       {hist.length === 1
                         ? 'прохождение'
                         : hist.length < 5
