@@ -153,10 +153,13 @@ export class NotificationPlannerService {
 
     // 1-е число месяца (локальное): мягкое напоминание о донате активным.
     // totalDays → value-anchored формулировка для давних юзеров.
+    // Порог daysSince<7 (а не <14): просьба о донате уместна только пока юзер
+    // реально в контакте с приложением. На перерыве ≥7 дней всё остальное молчит
+    // (см. подавление напоминаний ниже) — донат в это окно выбивался бы из тона.
     if (
       today.endsWith('-01') &&
       daysSince >= 0 &&
-      daysSince < 14 &&
+      daysSince < 7 &&
       !(await this.notifications.hasPending(uid, 'donate_reminder'))
     ) {
       const totalDays = await this.analytics.getTotalDaysFilled(uid);

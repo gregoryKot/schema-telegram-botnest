@@ -268,6 +268,15 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       await svc.planDay(makeUser(), FIRST_OF_MONTH);
       expect(scheduledTypes(deps)).toEqual(['donate_reminder']);
     });
+
+    // Порог ужат до <7: на перерыве ≥7 дней всё молчит, донат не должен выбиваться.
+    it('1-е число + перерыв ≥7 дней → donate_reminder НЕ шлём', async () => {
+      const { svc, deps } = make();
+      deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(9);
+      await svc.planDay(makeUser(), FIRST_OF_MONTH);
+      expect(scheduledTypes(deps)).not.toContain('donate_reminder');
+    });
   });
 
   describe('дни без напоминания', () => {
