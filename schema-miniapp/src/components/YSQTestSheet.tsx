@@ -287,7 +287,7 @@ export function YSQTestSheet({
                 marginBottom: 6,
               }}
             >
-              Тест на схеме
+              Тест на схемы
             </div>
             <div
               style={{
