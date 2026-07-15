@@ -68,6 +68,8 @@ function TabIcon({
       </svg>
     );
 
+  // «Помощь» — спасательный круг: однозначная метафора поддержки
+  // (сердце читалось как «лайк/избранное»). P4 UI-аудита.
   if (id === 'help')
     return (
       <svg
@@ -79,10 +81,16 @@ function TabIcon({
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="4" />
+        <line x1="4.93" y1="4.93" x2="9.17" y2="9.17" />
+        <line x1="14.83" y1="14.83" x2="19.07" y2="19.07" />
+        <line x1="14.83" y1="9.17" x2="19.07" y2="4.93" />
+        <line x1="9.17" y1="14.83" x2="4.93" y2="19.07" />
       </svg>
     );
 
+  // «Паттерны» — линия динамики (пульс), а не стопка слоёв. P4 UI-аудита.
   if (id === 'schemas')
     return (
       <svg
@@ -94,9 +102,7 @@ function TabIcon({
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <path d="M12 2L2 7l10 5 10-5-10-5z" />
-        <path d="M2 17l10 5 10-5" />
-        <path d="M2 12l10 5 10-5" />
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
       </svg>
     );
 
@@ -187,8 +193,8 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
                   style={{
                     position: 'relative',
                     zIndex: 1,
-                    fontSize: 10,
-                    fontWeight: active ? 700 : 400,
+                    fontSize: 11,
+                    fontWeight: active ? 700 : 500,
                     letterSpacing: '0.03em',
                     color: active ? tab.color : 'var(--text-faint)',
                     transition: 'color 0.2s',

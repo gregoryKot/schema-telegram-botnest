@@ -12,6 +12,7 @@ import {
 } from './PracticesOnboarding';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { useTr } from '../utils/addressForm';
+import { haptic } from '../haptic';
 
 interface Props {
   needs: Need[];
@@ -88,8 +89,8 @@ const buildOnboardingSteps = (tr: (ty: string, vy: string) => string) => [
     emoji: '👆',
     title: tr('Оценивай действия', 'Оценивайте действия'),
     text: tr(
-      'Не «я вроде чувствую близость», а «кто-то обнял» или «я сказал, что думаю». Оценка от 1 до 10 — потяни ползунок.',
-      'Не «я вроде чувствую близость», а «кто-то обнял» или «я сказал, что думаю». Оценка от 1 до 10 — потяните ползунок.',
+      'Не «я вроде чувствую близость», а «кто-то обнял» или «я сказал, что думаю». Оценка от 1 до 10 — нажми на шкалу.',
+      'Не «я вроде чувствую близость», а «кто-то обнял» или «я сказал, что думаю». Оценка от 1 до 10 — нажмите на шкалу.',
     ),
   },
   {
@@ -208,6 +209,67 @@ function OnboardingCard({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
+// P3 (UI-аудит): якорь «одна ясная цель дня» + прогресс. Отвечает на вопрос
+// «что от меня хотят прямо сейчас» и показывает завершённость.
+function ProgressAnchor({
+  done,
+  total,
+  tr,
+}: {
+  done: number;
+  total: number;
+  tr: (ty: string, vy: string) => string;
+}) {
+  const allDone = done >= total && total > 0;
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        borderRadius: 14,
+        padding: '12px 14px',
+        marginBottom: 18,
+        background: allDone
+          ? 'color-mix(in srgb, var(--accent) 12%, transparent)'
+          : 'rgba(var(--fg-rgb),0.05)',
+        border: allDone
+          ? '1px solid color-mix(in srgb, var(--accent) 26%, transparent)'
+          : '1px solid transparent',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+          {allDone ? 'Всё отмечено сегодня 🎉' : `Отмечено ${done} из ${total}`}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
+          {allDone
+            ? tr('Ты позаботился о себе', 'Вы позаботились о себе')
+            : tr(
+                'Нажми на шкалу под потребностью — сохранится сама',
+                'Нажмите на шкалу под потребностью — сохранится сама',
+              )}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+        {Array.from({ length: total }, (_, i) => (
+          <div
+            key={i}
+            style={{
+              width: 9,
+              height: 9,
+              borderRadius: '50%',
+              background:
+                i < done ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.15)',
+              transition: 'background 0.2s',
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function TodayView({
   needs,
   ratings,
@@ -225,21 +287,19 @@ export function TodayView({
   const NEED_DATA = useNeedData();
   const tr = useTr();
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const unlockTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>(
-    {},
-  );
+  const flashTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState(false);
+  const [savedFlash, setSavedFlash] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     return () => {
       Object.values(timers.current).forEach(clearTimeout);
-      Object.values(unlockTimers.current).forEach(clearTimeout);
+      Object.values(flashTimers.current).forEach(clearTimeout);
     };
   }, []);
   const [activeNeed, setActiveNeed] = useState<Need | null>(null);
   const [showIndexInfo, setShowIndexInfo] = useState(false);
-  const [unlocked, setUnlocked] = useState<Set<string>>(new Set());
   const [sessionPlannedNeeds, setSessionPlannedNeeds] = useState<Set<string>>(
     new Set(),
   );
@@ -267,16 +327,6 @@ export function TodayView({
     (needId: string, value: number) => {
       onChange(needId, value);
       if (isOffline) return; // visual update only — no save while offline
-      // Keep slider unlocked while user is actively dragging + 2.5s after last move
-      setUnlocked((prev) => new Set([...prev, needId]));
-      clearTimeout(unlockTimers.current[needId]);
-      unlockTimers.current[needId] = setTimeout(() => {
-        setUnlocked((prev) => {
-          const next = new Set(prev);
-          next.delete(needId);
-          return next;
-        });
-      }, 2500);
       clearTimeout(timers.current[needId]);
       timers.current[needId] = setTimeout(async () => {
         if (value === 0) return; // 0 = not rated, don't save
@@ -284,6 +334,17 @@ export function TodayView({
           const res = await api.saveRating(needId, value);
           onSaved(needId, res.allDone ? res.streak : undefined);
           setLastSavedAt(new Date());
+          haptic.success();
+          // P6: заметный, но недолгий «✓» рядом с оценкой
+          setSavedFlash((prev) => new Set([...prev, needId]));
+          clearTimeout(flashTimers.current[needId]);
+          flashTimers.current[needId] = setTimeout(() => {
+            setSavedFlash((prev) => {
+              const next = new Set(prev);
+              next.delete(needId);
+              return next;
+            });
+          }, 1400);
         } catch {
           setSaveError(true);
           setTimeout(() => setSaveError(false), 3000);
@@ -315,42 +376,33 @@ export function TodayView({
   return (
     <div style={{ padding: '20px 20px 40px' }}>
       {onboardingVisible && <OnboardingCard onDismiss={dismissTooltip} />}
-      {!onboardingVisible &&
-        needs.length > 0 &&
-        needs.every((n) => (ratings[n.id] ?? 0) === 0) && (
-          <div
-            style={{
-              textAlign: 'center',
-              fontSize: 12,
-              color: 'var(--text-faint)',
-              marginBottom: 16,
-              lineHeight: 1.5,
-            }}
-          >
-            Потяни ползунок → оценка сохранится автоматически
-          </div>
-        )}
+      {!onboardingVisible && needs.length > 0 && (
+        <ProgressAnchor
+          done={needs.filter((n) => (ratings[n.id] ?? 0) > 0).length}
+          total={needs.length}
+          tr={tr}
+        />
+      )}
       {needs.map((n) => {
-        const locked = !!saved[n.id] && !unlocked.has(n.id);
-        const isLow = locked && ratings[n.id] <= 3;
+        const val = ratings[n.id] ?? 0;
+        const isLow = !!saved[n.id] && val > 0 && val <= 3;
         const showPlanCard = isLow && !plannedNeeds.has(n.id);
         const color = COLORS[n.id] ?? '#888';
         return (
           <div key={n.id}>
             <NeedSlider
               id={n.id}
-              emoji={n.emoji}
               label={n.chartLabel}
               value={ratings[n.id]}
-              saved={false}
-              locked={locked}
-              onUnlock={() => setUnlocked((prev) => new Set([...prev, n.id]))}
-              onChange={(v) => handleChange(n.id, v)}
-              onTap={() => {
+              justSaved={savedFlash.has(n.id)}
+              onChange={(v) => {
+                dismissTooltip();
+                handleChange(n.id, v);
+              }}
+              onOpenDetail={() => {
                 dismissTooltip();
                 setActiveNeed(n);
               }}
-              showTooltip={false}
             />
             {showPlanCard && (
               <div
@@ -464,13 +516,14 @@ export function TodayView({
         <div
           style={{
             fontSize: 12,
-            color: saveError ? 'var(--accent-red)' : 'rgba(var(--fg-rgb),0.3)',
+            fontWeight: 500,
+            color: saveError ? 'var(--accent-red)' : 'var(--text-sub)',
           }}
         >
           {saveError
-            ? 'Ошибка сохранения — потяни слайдер ещё раз'
+            ? 'Ошибка сохранения — нажми на шкалу ещё раз'
             : lastSavedAt &&
-              `Сохранено ${lastSavedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`}
+              `✓ Сохранено ${lastSavedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
@@ -482,7 +535,7 @@ export function TodayView({
               background: 'rgba(var(--fg-rgb),0.06)',
               border: 'none',
               borderRadius: 20,
-              padding: '6px 12px',
+              padding: '11px 15px',
               cursor: 'pointer',
               color: 'var(--text-sub)',
               fontSize: 12,
@@ -500,7 +553,7 @@ export function TodayView({
               background: 'rgba(var(--fg-rgb),0.06)',
               border: 'none',
               borderRadius: 20,
-              padding: '6px 12px',
+              padding: '11px 15px',
               cursor: 'pointer',
               color: 'var(--accent)',
               fontSize: 12,
@@ -557,7 +610,12 @@ export function TodayView({
               color: 'var(--text-faint)',
               fontSize: 18,
               cursor: 'pointer',
-              padding: '0 4px',
+              width: 44,
+              height: 44,
+              margin: '-10px -12px -10px 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               flexShrink: 0,
             }}
           >
