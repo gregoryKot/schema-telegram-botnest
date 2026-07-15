@@ -58,18 +58,29 @@ export class TelegramChannelService {
       };
     }
     if (!this.bot) {
-      return { ok: false, message: '⚠️ Бот не инициализирован (нет BOT_TOKEN?).' };
+      return {
+        ok: false,
+        message: '⚠️ Бот не инициализирован (нет BOT_TOKEN?).',
+      };
     }
 
     const phrase = pickHealthyAdultPhrase(new Date(), slot);
     try {
       await this.bot.telegram.sendMessage(channel, phrase);
       this.logger.log(`healthy_adult_post slot=${slot} channel=${channel}`);
-      return { ok: true, message: `✅ Опубликовано в ${channel}:\n\n${phrase}` };
+      return {
+        ok: true,
+        message: `✅ Опубликовано в ${channel}:\n\n${phrase}`,
+      };
     } catch (err) {
-      const desc = String(
-        (err as any)?.response?.description ?? (err as Error)?.message ?? err,
-      );
+      // Телеграм кладёт причину в err.response.description; типобезопасно
+      // достаём её без каста на any (правило №9), с фолбэком на message/строку.
+      const resp =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { description?: string } }).response
+          : undefined;
+      const desc =
+        resp?.description ?? (err instanceof Error ? err.message : String(err));
       this.logger.error(
         `Failed to post healthy-adult phrase (slot=${slot}, channel=${channel}): ${desc}`,
       );
