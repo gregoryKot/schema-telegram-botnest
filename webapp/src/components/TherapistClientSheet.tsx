@@ -558,7 +558,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                 ['mode_map', 'Карта режимов', null],
                 ['sessions', 'Сессии', notes.length],
                 ['tasks', 'Задания', clientTasks.length],
-                ['ysq', 'YSQ', clientData?.ysqHistory?.length ?? 0],
+                ['ysq', 'Схемы', clientData?.ysqHistory?.length ?? 0],
                 ['client_notes', 'Записи клиента', clientSchemaNotesData.length + clientModeNotesData.length + clientDiary.length],
               ] as [ClientTab, string, number | null][]).map(([t, label, count]) => (
                 <button key={t} className={`tab${clientTab === t ? ' is-active' : ''}`} onClick={() => setClientTab(t)}>
@@ -892,7 +892,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                         {[
                           { label: '+ Заметка сессии', action: () => setClientTab('sessions') },
                           { label: '+ Назначить задание', action: () => setShowAssign(true) },
-                          { label: '→ Запросить YSQ', action: () => setClientTab('ysq') },
+                          { label: '→ Запросить тест', action: () => setClientTab('ysq') },
                           { label: `↗ Экспорт концепта${exportCopied ? ' ✓' : ''}`, action: handleExport },
                         ].map(item => (
                           <button key={item.label} onClick={item.action} style={{ textAlign: 'left', background: 'none', border: 'none', padding: 0, fontSize: 13, color: 'var(--accent)', cursor: 'pointer' }}>

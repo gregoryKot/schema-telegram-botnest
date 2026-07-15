@@ -19,7 +19,7 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-// YSQ (Young Schema Questionnaire) — прогресс прохождения, итоговый
+// Тест на схемы — прогресс прохождения, итоговый
 // результат и история попыток.
 @Controller('api')
 @UseGuards(TelegramAuthGuard)

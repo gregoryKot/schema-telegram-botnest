@@ -450,9 +450,9 @@ export function renderTemplate(
       const therapistName = payload?.therapistName as string | undefined;
       const name = therapistName ? `Терапевт ${therapistName}` : 'Ваш терапевт';
       return {
-        text: `📋 ${name} просит вас пройти Опросник схем Янга (YSQ).\n\nЭто займёт 10–15 минут. Результаты помогут лучше понять ваши схемы.`,
+        text: `📋 ${name} просит вас пройти тест на схемы.\n\nЭто займёт 10–15 минут. Результаты помогут лучше понять ваши схемы.`,
         keyboard: Markup.inlineKeyboard([
-          [Markup.button.webApp('📋 Пройти тест YSQ', MINIAPP_URL)],
+          [Markup.button.webApp('📋 Пройти тест', MINIAPP_URL)],
         ]),
       };
     }
