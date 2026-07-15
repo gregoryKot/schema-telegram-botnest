@@ -1,10 +1,9 @@
 import { COLORS, YESTERDAY } from '../types';
-import { haptic } from '../haptic';
+import { NeedRatingBar } from './NeedRatingBar';
 
-// P1/P2 (UI-аудит СДВГ): оценка ставится ДИСКРЕТНЫМ ТАПОМ по 10 сегментам,
-// а не перетаскиванием. Открытие карточки-объяснения — отдельной явной
-// кнопкой «?» с зоной ≥44px, а не тапом по всей строке. Скрытой блокировки
-// больше нет: значение всегда меняется повторным тапом.
+// P1/P2 (UI-аудит СДВГ): оценка ставится ДИСКРЕТНЫМ ТАПОМ (общий контрол
+// NeedRatingBar — тот же, что в карточке-детали), а не перетаскиванием.
+// Открытие карточки-объяснения — отдельной явной кнопкой «?» с зоной ≥44px.
 
 const HINTS: Record<string, string> = {
   attachment: 'близость · связь',
@@ -82,7 +81,6 @@ export function NeedSlider({
   const color = COLORS[id] ?? '#888';
   const v = value ?? 0;
   const yv = YESTERDAY[id] ?? 0;
-  const delta = v > 0 ? v - yv : 0;
 
   return (
     <div style={{ marginBottom: 22 }}>
@@ -197,77 +195,12 @@ export function NeedSlider({
         </button>
       </div>
 
-      {/* Дискретная шкала-тап: 10 сегментов, каждый — цель ≥44px по высоте */}
-      <div
-        role="group"
-        aria-label={`Оценка «${label}» от 1 до 10`}
-        style={{ display: 'flex', gap: 3 }}
-      >
-        {Array.from({ length: 10 }, (_, i) => i + 1).map((s) => {
-          const filled = v > 0 && s <= v;
-          const isYesterday = yv > 0 && s === yv;
-          return (
-            <button
-              key={s}
-              onClick={() => {
-                haptic.tap();
-                onChange(s);
-              }}
-              aria-label={`Поставить ${s}`}
-              aria-pressed={v === s}
-              style={{
-                flex: 1,
-                padding: '17px 0',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                position: 'relative',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              <div
-                style={{
-                  height: 12,
-                  borderRadius: 4,
-                  background: filled ? color : 'rgba(var(--fg-rgb),0.09)',
-                  boxShadow: isYesterday
-                    ? `inset 0 0 0 1.5px ${color}80`
-                    : 'none',
-                  transition: 'background 0.12s',
-                }}
-              />
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Подписи-опоры + маркер «вчера» */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginTop: 4,
-          fontSize: 11,
-          color: 'var(--text-faint)',
-        }}
-      >
-        <span>мало</span>
-        {yv > 0 ? (
-          <span style={{ color: 'var(--text-sub)' }}>
-            вчера {yv}
-            {delta !== 0 && (
-              <span style={{ color, fontWeight: 600 }}>
-                {' '}
-                {delta > 0 ? `+${delta}` : delta}
-              </span>
-            )}
-          </span>
-        ) : (
-          <span />
-        )}
-        <span>много</span>
-      </div>
+      <NeedRatingBar
+        color={color}
+        value={value}
+        yesterday={yv}
+        onChange={onChange}
+      />
     </div>
   );
 }

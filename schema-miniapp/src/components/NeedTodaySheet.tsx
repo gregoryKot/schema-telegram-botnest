@@ -1,11 +1,12 @@
-import { useRef, useCallback, useState, useEffect } from 'react';
-import { Need, COLORS } from '../types';
+import { useState } from 'react';
+import { Need, COLORS, YESTERDAY } from '../types';
 import { useNeedData } from '../needData';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { getTherapistContact } from '../utils/therapistContact';
 import { useTr } from '../utils/addressForm';
 import { PlanSheet } from './PlanSheet';
+import { NeedRatingBar } from './NeedRatingBar';
 
 interface Props {
   need: Need;
@@ -45,43 +46,6 @@ export function NeedTodaySheet({
 
   const rangeIdx = value <= 3 ? 0 : value <= 6 ? 1 : 2;
   const RANGE_VALUES = [1, 4, 7];
-
-  // Inline slider — prevent iOS scroll container from stealing touch events
-  const trackRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const prevent = (e: TouchEvent) => e.preventDefault();
-    el.addEventListener('touchstart', prevent, { passive: false });
-    return () => el.removeEventListener('touchstart', prevent);
-  }, []);
-  const calcValue = useCallback(
-    (clientX: number) => {
-      if (!trackRef.current) return;
-      const rect = trackRef.current.getBoundingClientRect();
-      onChange(
-        Math.round(
-          Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * 10,
-        ),
-      );
-    },
-    [onChange],
-  );
-  const onPtrDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.currentTarget.setPointerCapture(e.pointerId);
-      calcValue(e.clientX);
-    },
-    [calcValue],
-  );
-  const onPtrMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.buttons === 0) return;
-      calcValue(e.clientX);
-    },
-    [calcValue],
-  );
 
   return (
     <BottomSheet onClose={onClose}>
@@ -170,50 +134,12 @@ export function NeedTodaySheet({
             /10
           </span>
         </div>
-        <div
-          ref={trackRef}
-          onPointerDown={onPtrDown}
-          onPointerMove={onPtrMove}
-          style={{
-            position: 'relative',
-            padding: '12px 0',
-            cursor: 'pointer',
-            touchAction: 'none',
-            userSelect: 'none',
-          }}
-        >
-          <div
-            style={{
-              height: 6,
-              borderRadius: 6,
-              background: 'rgba(var(--fg-rgb),0.07)',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                width: `${value * 10}%`,
-                height: '100%',
-                borderRadius: 6,
-                background: `linear-gradient(to right, ${color}55, ${color})`,
-              }}
-            />
-          </div>
-          <div
-            style={{
-              position: 'absolute',
-              left: `${value * 10}%`,
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              background: color,
-              border: '2px solid #161821',
-              pointerEvents: 'none',
-            }}
-          />
-        </div>
+        <NeedRatingBar
+          color={color}
+          value={value}
+          yesterday={YESTERDAY[need.id]}
+          onChange={onChange}
+        />
       </div>
 
       {/* High score affirmation */}
