@@ -87,7 +87,10 @@ export function Disclaimer({ onAccept }: { onAccept: () => void }) {
               setStep((s) => s + 1);
             }}
             className="btn-primary"
-            style={{ flex: 2, opacity: step === CONSENT_STEP && !ready ? 0.35 : 1 }}
+            style={{
+              flex: 2,
+              opacity: step === CONSENT_STEP && !ready ? 0.35 : 1,
+            }}
           >
             Далее →
           </button>

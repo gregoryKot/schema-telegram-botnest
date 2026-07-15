@@ -72,7 +72,11 @@ export function DisclaimerNeedsStep() {
             >
               <span style={{ fontSize: 15 }}>{n.emoji}</span>
               <span
-                style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)' }}
+                style={{
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  color: 'var(--text)',
+                }}
               >
                 {n.name}
               </span>
@@ -82,10 +86,7 @@ export function DisclaimerNeedsStep() {
       </div>
 
       {/* Зачем отмечать */}
-      <div
-        className="card"
-        style={{ borderRadius: 16, padding: '16px 18px' }}
-      >
+      <div className="card" style={{ borderRadius: 16, padding: '16px 18px' }}>
         <div
           style={{
             fontSize: 11,
