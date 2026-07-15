@@ -43,6 +43,8 @@ function drawCard(
   // fg-rgb is "255, 255, 255" in dark or "26, 14, 64" in light
   const fgRgb = cs.getPropertyValue('--fg-rgb').trim() || '255, 255, 255';
   const fg = (alpha: number) => `rgba(${fgRgb},${alpha})`;
+  // Canvas can't parse var() in colors — resolve accent to a concrete value
+  const accent = cs.getPropertyValue('--accent').trim() || '#a78bfa';
   const bg = ctx.createLinearGradient(0, 0, W, H);
   bg.addColorStop(0, bgColor);
   bg.addColorStop(1, cs.getPropertyValue('--sheet-bg').trim() || '#141720');
@@ -53,7 +55,7 @@ function drawCard(
 
   // Top accent bar
   const accentGrad = ctx.createLinearGradient(28, 0, W - 28, 0);
-  accentGrad.addColorStop(0, 'var(--accent)');
+  accentGrad.addColorStop(0, accent);
   accentGrad.addColorStop(1, '#4fa3f7');
   ctx.strokeStyle = accentGrad;
   ctx.lineWidth = 2;
@@ -214,7 +216,11 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
 
   useEffect(() => {
     if (!canvasRef.current || history.length === 0) return;
-    drawCard(canvasRef.current, needs, history, streak);
+    try {
+      drawCard(canvasRef.current, needs, history, streak);
+    } catch {
+      // Canvas render must never take down the whole screen
+    }
   }, [needs, history, streak]);
 
   function buildShareText(detailed: boolean): {
