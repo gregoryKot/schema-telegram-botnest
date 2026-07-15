@@ -313,6 +313,23 @@ describe('NotificationCadenceService', () => {
       expect(data.notifyNextRemindDate).toBe('2026-07-04'); // через день
     });
 
+    it('nextReminderSeq атомарно инкрементирует и возвращает новый счётчик', async () => {
+      const { prisma, notifications, analytics } = makeDeps();
+      prisma.user.update.mockResolvedValue({ notifyReminderSeq: 8 });
+      const svc = new NotificationCadenceService(
+        prisma,
+        notifications,
+        analytics,
+      );
+      const seq = await svc.nextReminderSeq(BigInt(42));
+      expect(seq).toBe(8);
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { notifyReminderSeq: { increment: 1 } },
+        }),
+      );
+    });
+
     it('skipToday ставит только skipAck и отменяет pre_reminder', async () => {
       const { prisma, notifications, analytics } = makeDeps();
       const svc = new NotificationCadenceService(

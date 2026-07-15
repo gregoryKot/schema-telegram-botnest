@@ -24,10 +24,6 @@ const MONTHS = [
   'декабря',
 ];
 
-function formatDate(date: Date): string {
-  return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
-}
-
 // One curated practice suggestion per need — short, concrete, fits in a notification.
 // Формулировки нейтральные — работают и при «ты», и при «вы».
 const CURATED_PRACTICE: Record<NeedId, string[]> = {
@@ -122,26 +118,47 @@ const skipTodayButton = Markup.button.callback(
 const pauseButton = Markup.button.callback('⏸ Пауза', 'notify:pause');
 const slowerButton = Markup.button.callback('🔕 Реже', 'notify:slower');
 
+// Тон напоминаний — как у бережного схема-терапевта: приглашение побыть с собой,
+// а не задача на исполнение. Без «отметь оценки за сегодня» в лоб, без давления и
+// подсчёта. Формулировки двухформенные (ты/вы), см. CLAUDE.md.
 const REMINDER_INTROS: Array<[string, string]> = [
   [
-    '📔 Трекер потребностей — отметь оценки за сегодня.',
-    '📔 Трекер потребностей — отметьте оценки за сегодня.',
+    '📔 Минутка для себя. Как ты сегодня — по-честному, а не «нормально»?',
+    '📔 Минутка для себя. Как вы сегодня — по-честному, а не «нормально»?',
   ],
   [
-    '📔 Пять оценок — и картина дня готова.',
-    '📔 Пять оценок — и картина дня готова.',
+    '📔 Пять коротких вопросов к себе. Правильных ответов нет — есть только твои.',
+    '📔 Пять коротких вопросов к себе. Правильных ответов нет — есть только ваши.',
   ],
   [
-    '📔 Отметь потребности за сегодня — займёт меньше минуты.',
-    '📔 Отметьте потребности за сегодня — займёт меньше минуты.',
+    '📔 Если есть силы — загляни к себе на минутку. Без спешки и без оценок.',
+    '📔 Если есть силы — загляните к себе на минутку. Без спешки и без оценок.',
   ],
   [
-    '📔 Как ты сегодня? Минутка на пять оценок.',
-    '📔 Как вы сегодня? Минутка на пять оценок.',
+    '📔 Как прошёл твой день? Побудь пару секунд с этим вопросом.',
+    '📔 Как прошёл ваш день? Побудьте пару секунд с этим вопросом.',
   ],
   [
-    '📔 Момент для себя: как прошёл день?',
-    '📔 Момент для себя: как прошёл день?',
+    '📔 Немного бережного внимания к себе — что было с тобой сегодня?',
+    '📔 Немного бережного внимания к себе — что было с вами сегодня?',
+  ],
+];
+
+// Перерыв ≥3 дней: тон признаёт паузу без вины, приглашает мягко, без «за сегодня»
+// и без наверстывания. Приходит вместо обычного напоминания на коротких перерывах
+// (3–6 дней); с 7-го дня сухие напоминания замолкают вовсе (см. planner).
+const BREAK_INTROS: Array<[string, string]> = [
+  [
+    '📔 Тебя не было пару дней — и это нормально. Дневник на месте, вернуться можно с любого дня, без наверстывания.',
+    '📔 Вас не было пару дней — и это нормально. Дневник на месте, вернуться можно с любого дня, без наверстывания.',
+  ],
+  [
+    '📔 Перерыв — часть пути, а не сбой. Если сегодня есть силы побыть с собой — я рядом.',
+    '📔 Перерыв — часть пути, а не сбой. Если сегодня есть силы побыть с собой — я рядом.',
+  ],
+  [
+    '📔 Возвращаться к себе можно без спешки. Как ты сейчас, в эту минуту?',
+    '📔 Возвращаться к себе можно без спешки. Как вы сейчас, в эту минуту?',
   ],
 ];
 
@@ -164,16 +181,24 @@ export function renderTemplate(
       const variant = (payload?.variant as number | undefined) ?? 0;
       const seed = (payload?.seed as number | undefined) ?? 0;
 
-      const intro = REMINDER_INTROS[variant % REMINDER_INTROS.length];
+      const onBreak = payload?.onBreak === true;
+      const compactControls = payload?.compactControls === true;
+
+      const intros = onBreak ? BREAK_INTROS : REMINDER_INTROS;
+      const intro = intros[variant % intros.length];
       let text = t(form, intro[0], intro[1]);
-      if (yesterdayAvg !== undefined) {
-        text += `\nВчера индекс был ${yesterdayAvg.toFixed(1)}.`;
-      }
-      if (lowestNeed && lowestNeedId) {
-        const practice = pickPractice(lowestNeedId, seed);
-        text += `\n\n${lowestNeed} просит внимания. ${t(form, 'Попробуй', 'Попробуйте')}: ${practice}`;
-      } else if (lowestNeed) {
-        text += ` ${t(form, 'Обрати', 'Обратите')} внимание на ${lowestNeed}.`;
+      // Данные «за вчера» и практику показываем только активному юзеру: на перерыве
+      // вчерашней записи нет, а лишняя нагрузка ломает мягкий тон возвращения.
+      if (!onBreak) {
+        if (yesterdayAvg !== undefined) {
+          text += `\nВчера индекс был ${yesterdayAvg.toFixed(1)}.`;
+        }
+        if (lowestNeed && lowestNeedId) {
+          const practice = pickPractice(lowestNeedId, seed);
+          text += `\n\n${lowestNeed} просит внимания. ${t(form, 'Попробуй', 'Попробуйте')}: ${practice}`;
+        } else if (lowestNeed) {
+          text += ` ${t(form, 'Обрати', 'Обратите')} внимание на ${lowestNeed}.`;
+        }
       }
       // Игровой режим (opt-in): позитивная срочность — показываем серию с 1 дня
       // и подсвечиваем «ещё день до вехи». Для остальных — серия только с 3 дней,
@@ -186,13 +211,20 @@ export function renderTemplate(
       if (gamified && approaching) {
         text += `\n🎯 Ещё один день — и будет ${approaching} ${pluralDays(approaching)} подряд.`;
       }
+      // Вовлечённому юзеру — компактно (открыть + «реже»), чтобы напоминание не было
+      // простынёй кнопок. При признаках усталости/перерыве — полный набор escape-hatch'ей
+      // (через час / сегодня не могу / пауза / реже), чтобы сбросить частоту в один тап.
       return {
         text,
-        keyboard: Markup.inlineKeyboard([
-          [openDiaryButton],
-          [snoozeButton, skipTodayButton],
-          [pauseButton, slowerButton],
-        ]),
+        keyboard: Markup.inlineKeyboard(
+          compactControls
+            ? [[openDiaryButton], [slowerButton]]
+            : [
+                [openDiaryButton],
+                [snoozeButton, skipTodayButton],
+                [pauseButton, slowerButton],
+              ],
+        ),
       };
     }
 

@@ -3,7 +3,6 @@ import { NotificationService } from './notification.service';
 import {
   NotificationCadenceService,
   CadenceUser,
-  effectiveLevel,
 } from './notification.cadence.service';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
@@ -58,15 +57,21 @@ export class NotificationPlannerService {
     // Оценка движка идёт каждую ночь — детекция игнора и сдвиги уровня не зависят
     // от того, какое сообщение (и было ли) отправлено сегодня.
     const { remindToday } = await this.cadence.evaluate(user, now);
-    const level = effectiveLevel(user);
     const daysSince = await this.analytics.getDaysSinceLastFill(uid);
 
     // Перерывы: 3 → lapsing_3, 7 → dormant_7, 30 → reengagement_30, дальше nudge раз в 45 дней.
-    // При уровне ≥2 короткие перерывы (3–7 дней) ожидаемы — движок уже отступил, это не «lapsing».
+    // Гейт по ВЫБРАННОЙ юзером частоте (notifyFrequency), а не по эффективному уровню.
+    // Если человек сам попросил редкий контакт (≥2×/нед и реже), перерыв 3–7 дней для него
+    // ожидаем — «тебя не было пару дней» прозвучало бы навязчиво. Но если частоту снизил САМ
+    // движок из-за игноров (notifyFrequency низкий, adaptive высокий), редкого контакта юзер
+    // не выбирал — заботливое сообщение про перерыв уместно. Раньше гейт стоял на effective
+    // уровне, из-за чего адаптивно-задавленный юзер переставал получать мягкие сообщения и
+    // оставался с сухими напоминаниями (см. инцидент со скриншотом 2026-07-15).
+    const chosenSparse = user.notifyFrequency >= 2;
     const lapsingType =
-      daysSince === 3 && level < 2
+      daysSince === 3 && !chosenSparse
         ? 'lapsing_3'
-        : daysSince === 7 && level < 2
+        : daysSince === 7 && !chosenSparse
           ? 'dormant_7'
           : daysSince === 30
             ? 'reengagement_30'
@@ -165,7 +170,21 @@ export class NotificationPlannerService {
     }
 
     if (remindToday && user.notifyReminderEnabled) {
-      await this.scheduleReminder(uid, hour, tz, now, !!user.notifyGamified);
+      // Долгий перерыв (≥7 дней без записей): сухие напоминания замолкают совсем.
+      // Контакт в это время держат только мягкие milestone-сообщения (dormant_7,
+      // value_recap, reengagement_30, nudge) — они выше по приоритету и приходят в
+      // свои дни. Между ними — тишина, а не еженедельное «отметь оценки за сегодня».
+      // Это и есть авто-затихание: после reengagement_30 остаётся лишь nudge раз в 45.
+      if (daysSince >= 7) return;
+      await this.scheduleReminder(
+        uid,
+        hour,
+        tz,
+        now,
+        !!user.notifyGamified,
+        daysSince,
+        user.notifyIgnoredCount,
+      );
       return;
     }
 
@@ -190,18 +209,24 @@ export class NotificationPlannerService {
   }
 
   /** Умное напоминание: вчерашний индекс + западающая потребность + серия.
-   *  gamified=true добавляет позитивную срочность («ещё день до вехи»). */
+   *  gamified=true добавляет позитивную срочность («ещё день до вехи»).
+   *  daysSince≥3 → мягкий «перерыв-осознающий» тон без императива и без данных «за вчера».
+   *  ignoredCount>0 или перерыв → показываем полный набор кнопок саморегуляции,
+   *  иначе — компактный (открыть + «реже»), чтобы напоминание не выглядело простынёй кнопок. */
   async scheduleReminder(
     userId: bigint,
     notifyLocalHour: number,
     tz: string,
     now = new Date(),
     gamified = false,
+    daysSince = 0,
+    ignoredCount = 0,
   ) {
-    const [streak, weeklyStats, history] = await Promise.all([
+    const [streak, weeklyStats, history, seq] = await Promise.all([
       this.analytics.getConsecutiveDays(userId),
       this.analytics.getWeeklyStats(userId),
       this.analytics.getHistoryRatings(userId, 2),
+      this.cadence.nextReminderSeq(userId),
     ]);
     const yesterday = history.find((_, i) => i === 1);
     const yesterdayAvg = yesterday
@@ -215,20 +240,28 @@ export class NotificationPlannerService {
       ? this.botService.getNeeds().find((n) => n.id === lowest.needId)
           ?.chartLabel
       : undefined;
-    const dayIndex = Math.floor(now.getTime() / 86_400_000);
+    // Ротация текста — по монотонному счётчику отправленных напоминаний (seq),
+    // а не по календарному дню: при фиксированном интервале dayIndex % N совпадал
+    // и юзер видел один и тот же текст подряд (инцидент со скриншотом 2026-07-15).
+    // seq растёт на 1 на каждое реальное напоминание → соседние всегда различаются.
+    const onBreak = daysSince >= 3;
     // В игровом режиме подсвечиваем ближайшую веху: если завтра серия достигнет 7/14/30.
     const approachingStreak = gamified
       ? [7, 14, 30].find((m) => streak + 1 === m)
       : undefined;
     const payload = {
       streak,
-      yesterdayAvg,
-      lowestNeedId: lowest?.needId,
-      lowestNeed,
-      variant: Number((userId + BigInt(dayIndex)) % 5n),
-      seed: Number((userId + BigInt(dayIndex)) % 3n),
+      // На перерыве данные «за вчера» бессмысленны (вчера записи не было) — не тащим их.
+      yesterdayAvg: onBreak ? undefined : yesterdayAvg,
+      lowestNeedId: onBreak ? undefined : lowest?.needId,
+      lowestNeed: onBreak ? undefined : lowestNeed,
+      variant: seq % 5,
+      seed: seq % 3,
       gamified,
       approachingStreak,
+      onBreak,
+      // Компактная клавиатура только для вовлечённого юзера без признаков усталости.
+      compactControls: ignoredCount === 0 && !onBreak,
     };
     // Всегда отменяем зависшие напоминания и планируем заново
     await this.notifications.cancel(userId, 'reminder');
