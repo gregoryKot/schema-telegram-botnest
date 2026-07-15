@@ -224,7 +224,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           </button>
 
           <div style={{ marginTop: 20, fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.7, textAlign: 'center' }}>
-            Основан на YSQ-R (Young Schema Questionnaire). © Jeffrey Young, Schema Therapy Institute. Используется в образовательных целях.
+            Составлено по мотивам подхода схема-терапии (Дж. Янг). Самостоятельная версия в образовательных целях — не официальный опросник YSQ и не аффилировано со Schema Therapy Institute. Не заменяет консультацию специалиста.
           </div>
         </div>
       )}

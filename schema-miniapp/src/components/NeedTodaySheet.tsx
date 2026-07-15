@@ -36,6 +36,7 @@ export function NeedTodaySheet({
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
+  const [showReflection, setShowReflection] = useState(false);
   const [showRanges, setShowRanges] = useState(false);
   const NEED_DATA = useNeedData();
   const data = NEED_DATA[need.id];
@@ -307,6 +308,66 @@ export function NeedTodaySheet({
           </div>
         )}
       </div>
+
+      {/* Section 1c: Reflection questions — collapsible */}
+      {data.reflection?.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div
+            onClick={() => setShowReflection((v) => !v)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              marginBottom: showReflection ? 10 : 0,
+            }}
+          >
+            <SectionLabel mb={0}>Вопросы для рефлексии</SectionLabel>
+            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+              {showReflection ? '▴' : '▾'}
+            </span>
+          </div>
+          {showReflection && (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {data.reflection.map((q, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: '8px 0',
+                    borderBottom:
+                      i < data.reflection.length - 1
+                        ? '1px solid rgba(var(--fg-rgb),0.05)'
+                        : 'none',
+                  }}
+                >
+                  <span
+                    style={{
+                      color,
+                      fontSize: 14,
+                      flexShrink: 0,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    ?
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 14,
+                      color: 'var(--text-sub)',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {q}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Section 2: Range pills — collapsible */}
       <div style={{ marginBottom: 24 }}>

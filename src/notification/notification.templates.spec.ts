@@ -222,6 +222,49 @@ describe('renderTemplate', () => {
       );
     });
 
+    it('компактные кнопки: только «открыть» и «реже», без snooze/skip/pause', () => {
+      const result = renderTemplate('reminder', { compactControls: true })!;
+      const cbs = callbacks(result);
+      expect(cbs).toEqual(['notify:slower']);
+      expect(cbs).not.toContain('snooze_reminder');
+      expect(cbs).not.toContain('notify:skip');
+      expect(cbs).not.toContain('notify:pause');
+    });
+
+    it('перерыв (onBreak) → перерыв-осознающий текст, без «за сегодня» и без «вчера»', () => {
+      const result = renderTemplate('reminder', {
+        onBreak: true,
+        variant: 0,
+        yesterdayAvg: 6.5,
+      })!;
+      expect(result.text).toContain('это нормально');
+      expect(result.text).not.toContain('за сегодня');
+      expect(result.text).not.toContain('Вчера индекс');
+    });
+
+    it('перерыв рендерится в обеих формах обращения', () => {
+      const ty = renderTemplate(
+        'reminder',
+        { onBreak: true, variant: 0 },
+        'ty',
+      )!;
+      const vy = renderTemplate(
+        'reminder',
+        { onBreak: true, variant: 0 },
+        'vy',
+      )!;
+      expect(ty.text).toContain('Тебя не было');
+      expect(vy.text).toContain('Вас не было');
+    });
+
+    it('активный тон (не перерыв) — без императива «отметь оценки за сегодня»', () => {
+      for (let variant = 0; variant < 5; variant++) {
+        const text = renderTemplate('reminder', { variant })!.text;
+        expect(text).not.toContain('отметь оценки за сегодня');
+        expect(text).not.toContain('отметьте оценки за сегодня');
+      }
+    });
+
     it('does not mention streak when 0-2 days', () => {
       for (const streak of [0, 1, 2]) {
         const result = renderTemplate('reminder', { streak })!;
