@@ -15,37 +15,50 @@ describe('TelegramChannelService', () => {
     jest.restoreAllMocks();
   });
 
-  it('не постит, если канал не задан в env', async () => {
+  it('не постит и сообщает, что фича выключена, если канал не задан', async () => {
     delete process.env.HEALTHY_ADULT_CHANNEL;
     const { bot, sendMessage } = makeBot();
-    await new TelegramChannelService(bot).post(0);
+    const res = await new TelegramChannelService(bot).post(0);
     expect(sendMessage).not.toHaveBeenCalled();
+    expect(res.ok).toBe(false);
+    expect(res.message).toContain('HEALTHY_ADULT_CHANNEL');
   });
 
-  it('не падает, если бот не инициализирован', async () => {
+  it('не падает и сообщает об отсутствии бота', async () => {
     process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
-    await expect(
-      new TelegramChannelService(null).post(0),
-    ).resolves.toBeUndefined();
+    const res = await new TelegramChannelService(null).post(0);
+    expect(res.ok).toBe(false);
+    expect(res.message).toContain('Бот');
   });
 
-  it('постит фразу из пула в заданный канал', async () => {
+  it('постит фразу из пула в заданный канал и возвращает ok', async () => {
     process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
     const { bot, sendMessage } = makeBot();
-    await new TelegramChannelService(bot).post(0);
+    const res = await new TelegramChannelService(bot).post(0);
     expect(sendMessage).toHaveBeenCalledTimes(1);
     const [channel, text] = sendMessage.mock.calls[0];
     expect(channel).toBe('@test_channel');
     expect(HEALTHY_ADULT_PHRASES).toContain(text);
+    expect(res.ok).toBe(true);
   });
 
-  it('глотает ошибку отправки, не пробрасывает наружу', async () => {
+  it('постит с уведомлением (без disable_notification)', async () => {
+    process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
+    const { bot, sendMessage } = makeBot();
+    await new TelegramChannelService(bot).post(0);
+    const opts = sendMessage.mock.calls[0][2];
+    // Либо опций нет вовсе, либо явно не заглушено.
+    expect(opts?.disable_notification).toBeFalsy();
+  });
+
+  it('не пробрасывает ошибку отправки, возвращает диагностику с подсказкой про права', async () => {
     process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
     const { bot, sendMessage } = makeBot();
     sendMessage.mockRejectedValueOnce(new Error('chat not found'));
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-    await expect(
-      new TelegramChannelService(bot).post(1),
-    ).resolves.toBeUndefined();
+    const res = await new TelegramChannelService(bot).post(1);
+    expect(res.ok).toBe(false);
+    expect(res.message).toContain('chat not found');
+    expect(res.message).toContain('администратор');
   });
 });

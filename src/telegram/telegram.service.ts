@@ -16,6 +16,7 @@ import { PairsService } from '../bot/pairs.service';
 import { PracticesService } from '../bot/practices.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
+import { TelegramChannelService } from './telegram.channel.service';
 import {
   isQuietHours,
   nextQuietEnd,
@@ -87,6 +88,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly practicesService: PracticesService,
     private readonly notificationService: NotificationService,
     private readonly therapistRequestService: TherapistRequestService,
+    private readonly channelService: TelegramChannelService,
   ) {}
 
   private stopping = false;
@@ -285,6 +287,32 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply(text, { parse_mode: 'HTML' });
       } catch (err) {
         this.logger.error('stats command failed', err);
+        await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);
+      }
+    });
+
+    // Ручная публикация фразы «Здорового Взрослого» в канал — для проверки
+    // связки (env + права бота), т.к. по расписанию пост выходит только в
+    // 09:00/20:00 МСК и «сразу после настройки» ничего не публикуется.
+    this.bot.command('zv', async (ctx) => {
+      try {
+        if (!isAdminSender(ctx.from)) {
+          await ctx.reply('⛔ Нет доступа');
+          return;
+        }
+        // Слот по текущему часу МСК: вечером тестируем вечернюю фразу.
+        const hour = Number(
+          new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Europe/Moscow',
+            hour: 'numeric',
+            hour12: false,
+          }).format(new Date()),
+        );
+        const slot = hour >= 14 ? 1 : 0;
+        const result = await this.channelService.post(slot);
+        await ctx.reply(result.message);
+      } catch (err) {
+        this.logger.error('zv command failed', err);
         await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);
       }
     });

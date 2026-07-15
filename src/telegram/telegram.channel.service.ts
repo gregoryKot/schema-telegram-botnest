@@ -44,22 +44,50 @@ export class TelegramChannelService {
     await this.post(1);
   }
 
-  /** Опубликовать фразу для слота (0 = утро, 1 = вечер). */
-  async post(slot: number): Promise<void> {
+  /**
+   * Опубликовать фразу для слота (0 = утро, 1 = вечер). Возвращает статус для
+   * диагностики (крон игнорирует, админ-команда /zv показывает): выключенная
+   * фича и ошибка отправки различимы, чтобы было видно, дошёл ли пост.
+   */
+  async post(slot: number): Promise<{ ok: boolean; message: string }> {
     const channel = this.channel();
-    if (!this.bot || !channel) return;
+    if (!channel) {
+      return {
+        ok: false,
+        message: '⚠️ HEALTHY_ADULT_CHANNEL не задан — постинг выключен.',
+      };
+    }
+    if (!this.bot) {
+      return {
+        ok: false,
+        message: '⚠️ Бот не инициализирован (нет BOT_TOKEN?).',
+      };
+    }
 
     const phrase = pickHealthyAdultPhrase(new Date(), slot);
     try {
-      await this.bot.telegram.sendMessage(channel, phrase, {
-        disable_notification: true,
-      });
+      await this.bot.telegram.sendMessage(channel, phrase);
       this.logger.log(`healthy_adult_post slot=${slot} channel=${channel}`);
+      return {
+        ok: true,
+        message: `✅ Опубликовано в ${channel}:\n\n${phrase}`,
+      };
     } catch (err) {
+      // Телеграм кладёт причину в err.response.description; типобезопасно
+      // достаём её без каста на any (правило №9), с фолбэком на message/строку.
+      const resp =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { description?: string } }).response
+          : undefined;
+      const desc =
+        resp?.description ?? (err instanceof Error ? err.message : String(err));
       this.logger.error(
-        `Failed to post healthy-adult phrase (slot=${slot}, channel=${channel})`,
-        err as Error,
+        `Failed to post healthy-adult phrase (slot=${slot}, channel=${channel}): ${desc}`,
       );
+      return {
+        ok: false,
+        message: `❌ Не удалось опубликовать в ${channel}: ${desc}\n\nПроверь, что бот — администратор канала с правом публикации.`,
+      };
     }
   }
 }
