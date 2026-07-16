@@ -49,7 +49,16 @@ export default tseslint.config(
     // unsafe-* здесь — заведомый шум, который наказывал храповиком каждый
     // новый spec (а тесты обязательны). Глушим ТОЛЬКО в тестах; для
     // продакшен-кода правила действуют в полную силу.
-    files: ['**/*.spec.ts', '**/*.test.ts', '**/*.test.tsx'],
+    // `**/*.e2e-spec.ts` и `test/e2e-support/**` — e2e-смоук (TEST_COVERAGE_PLAN.md,
+    // этап 1 п.7): тот же паттерн (in-memory фейк Prisma на any), не матчился
+    // старым glob'ом (`app.e2e-spec.ts` не оканчивается на `.spec.ts`).
+    files: [
+      '**/*.spec.ts',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/*.e2e-spec.ts',
+      'test/e2e-support/**/*.ts',
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
