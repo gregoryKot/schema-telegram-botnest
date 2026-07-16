@@ -54,9 +54,10 @@ interface Props {
   onOpenTherapistCabinet?: () => void;
   therapistMode?: boolean;
   onToggleTherapistMode?: () => void;
+  onResignTherapist?: () => Promise<void> | void;
 }
 
-export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode }: Props) {
+export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode, onResignTherapist }: Props) {
   const goBack = useHistorySheet(onClose);
   const [subView, setSubView] = useState<'main' | 'time' | 'tz' | 'freq' | 'quiet'>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
@@ -73,6 +74,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting]     = useState(false);
+  const [resignConfirm, setResignConfirm] = useState(false);
+  const [resignBusy, setResignBusy] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
   const [therapyRelation, setTherapyRelation] = useState<TherapyRelationInfo | null | undefined>(undefined);
   const [therapyJoinCode, setTherapyJoinCode] = useState('');
@@ -308,6 +311,33 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     sub={therapistMode ? 'Кабинет терапевта' : 'Режим клиента'}
                     right={<Toggle on={!!therapistMode} onClick={onToggleTherapistMode} />}
                   />
+                )}
+                {userRole === 'THERAPIST' && onResignTherapist && (
+                  !resignConfirm ? (
+                    <div style={{ padding: '10px 0' }}>
+                      <button onClick={() => setResignConfirm(true)}
+                        style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
+                        Перестать быть специалистом
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '10px 0' }}>
+                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 10 }}>
+                        Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряешь. Заявку можно подать заново.
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button disabled={resignBusy} onClick={() => setResignConfirm(false)}
+                          style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
+                          Отмена
+                        </button>
+                        <button disabled={resignBusy}
+                          onClick={() => { setResignBusy(true); void (async () => { try { await onResignTherapist(); setResignConfirm(false); } finally { setResignBusy(false); } })(); }}
+                          style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: 'var(--accent-red, #e5484d)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                          {resignBusy ? '…' : 'Снять роль'}
+                        </button>
+                      </div>
+                    </div>
+                  )
                 )}
 
                 {/* Имя */}

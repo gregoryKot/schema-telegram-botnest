@@ -148,8 +148,12 @@ export function AppShell() {
     }
   }, [location.pathname, therapistMode]);
 
-  const switchTherapistMode = useCallback((on: boolean) => {
+  const switchTherapistMode = useCallback((on: boolean, persist = true) => {
     localStorage.setItem('therapist_mode', on ? '1' : '0');
+    // Запоминаем стартовое предпочтение на сервере (source of truth, единое с
+    // мини-аппом). Сервер принимает флаг только у THERAPIST — эндпоинт вернёт
+    // 403 для клиента, поэтому просто глушим ошибку.
+    if (persist) api.setTherapistView(on).catch(() => {});
     if (on) {
       const last = localStorage.getItem('last_cabinet_path');
       navigate(last && last.startsWith('/cabinet') ? last : '/cabinet');
@@ -294,10 +298,20 @@ export function AppShell() {
     }).catch(() => {});
     api.getProfile().then(p => {
       setUserRole(p.role);
-      // Auto-redirect therapists to cabinet on first login
-      if (p.role === 'THERAPIST' && localStorage.getItem('therapist_mode') === null) {
-        localStorage.setItem('therapist_mode', '1');
-        navigate('/cabinet');
+      // Психолог по умолчанию попадает в кабинет (запрос: «если я психолог —
+      // всегда начинать со странички психолога»). Уважаем явный выбор
+      // клиентского режима (localStorage '0'); при заходе на дефолтный лендинг
+      // (/, /today) без такого выбора — ведём в кабинет.
+      if (p.role === 'THERAPIST') {
+        const pref = localStorage.getItem('therapist_mode');
+        const onDefaultLanding =
+          location.pathname === '/' || location.pathname === '/today';
+        if (pref !== '0' && !location.pathname.startsWith('/cabinet') && onDefaultLanding) {
+          localStorage.setItem('therapist_mode', '1');
+          navigate('/cabinet');
+        } else if (pref === null) {
+          localStorage.setItem('therapist_mode', '1');
+        }
       }
       if (p.role !== 'THERAPIST' && location.pathname.startsWith('/cabinet')) {
         navigate('/today');
@@ -671,6 +685,13 @@ export function AppShell() {
             onOpenTherapistCabinet={() => { setShowSettings(false); navigate('/cabinet'); }}
             therapistMode={therapistMode}
             onToggleTherapistMode={() => switchTherapistMode(!therapistMode)}
+            onResignTherapist={async () => {
+              await api.resignTherapist();
+              setUserRole('CLIENT');
+              localStorage.setItem('therapist_mode', '0');
+              setShowSettings(false);
+              navigate('/today');
+            }}
           />
         )}
         {showPractices && (

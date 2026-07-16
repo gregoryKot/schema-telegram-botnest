@@ -104,14 +104,33 @@ export default function App() {
   const [therapistMode, setTherapistMode] = useState(
     () => localStorage.getItem('therapist_mode') === '1',
   );
-  const switchTherapistMode = (on: boolean) => {
+  // Роль нужна внутри switchTherapistMode (который объявлен раньше setUserRole).
+  const userRoleRef = useRef<'CLIENT' | 'THERAPIST'>('CLIENT');
+  // persist=true — записать предпочтение на сервер (source of truth: localStorage
+  // в Telegram WebView стирается, из-за чего терапевт «терял» кабинет). Сервер
+  // принимает флаг только у THERAPIST — клиент escalation не получит, поэтому
+  // и на клиенте лишний 403-запрос не шлём.
+  const switchTherapistMode = (on: boolean, persist = true) => {
     localStorage.setItem('therapist_mode', on ? '1' : '0');
     setTherapistMode(on);
+    if (persist && userRoleRef.current === 'THERAPIST') {
+      api.setTherapistView(on).catch(() => {});
+    }
   };
-  // Sync therapistMode from server when flags load (read-only flag, server is source of truth)
+  // Sync therapistMode from server when flags load (server = source of truth).
+  // persist=false: это чтение с сервера, не переписываем его же значение назад.
   useEffect(() => {
-    if (serverFlags.therapistMode && !therapistMode) switchTherapistMode(true);
+    if (serverFlags.therapistMode && !therapistMode)
+      switchTherapistMode(true, false);
   }, [serverFlags.therapistMode]);
+  // Отказ от роли терапевта → снова CLIENT: закрываем кабинет и переводим UI.
+  const handleResignTherapist = useCallback(async () => {
+    await api.resignTherapist();
+    setUserRole('CLIENT');
+    userRoleRef.current = 'CLIENT';
+    switchTherapistMode(false, false);
+    setCabinetView('list');
+  }, []);
   const [cabinetView, setCabinetView] = useState<'list' | 'client'>('list');
   const therapistBackHandlerRef = useRef<() => void>(() =>
     setCabinetView('list'),
@@ -300,16 +319,22 @@ export default function App() {
       .then((p) => {
         setDiaryActiveSchemaIds(p.ysq.activeSchemaIds);
         setUserRole(p.role);
-        // First launch as therapist: auto-enable therapist mode if not saved yet
+        userRoleRef.current = p.role;
+        // Психолог по умолчанию стартует в кабинете (запрос: «если я психолог —
+        // всегда начинать со странички психолога»). Стартовое предпочтение
+        // хранится на сервере (флаг therapistMode) — localStorage в Telegram
+        // WebView ненадёжен. При первом входе (localStorage пуст) — включаем
+        // кабинет и фиксируем предпочтение; дальше решает серверный флаг
+        // (см. sync-эффект выше) и явный тумблер в настройках.
         if (
           p.role === 'THERAPIST' &&
           localStorage.getItem('therapist_mode') === null
         ) {
           switchTherapistMode(true);
         }
-        // Safety: CLIENT can never be in therapist mode
         if (p.role !== 'THERAPIST') {
-          switchTherapistMode(false);
+          // Safety: CLIENT can never be in therapist mode
+          switchTherapistMode(false, false);
         }
         if (p.name) setDisplayName(p.name);
         const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
@@ -523,7 +548,10 @@ export default function App() {
             view={cabinetView}
             onViewChange={setCabinetView}
             onClose={() => {
-              switchTherapistMode(false);
+              // Выход из кабинета — временный «загляну в клиентский режим»,
+              // не меняем стартовое предпочтение (persist=false): психолог
+              // при следующем входе снова окажется в кабинете.
+              switchTherapistMode(false, false);
               setCabinetView('list');
             }}
             backHandlerRef={therapistBackHandlerRef}
@@ -614,6 +642,7 @@ export default function App() {
         therapistMode={therapistMode}
         setTherapistMode={setTherapistMode}
         switchTherapistMode={switchTherapistMode}
+        onResignTherapist={handleResignTherapist}
         diaryActiveSchemaIds={diaryActiveSchemaIds}
         newDiaryEntry={newDiaryEntry}
         setNewDiaryEntry={setNewDiaryEntry}
