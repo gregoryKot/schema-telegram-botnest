@@ -15,11 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
 import { TelegramChannelService } from './telegram.channel.service';
 import { assertAdminKey } from '../booking/admin-key.util';
-import {
-  CreatePhraseDto,
-  UpdatePhraseDto,
-  TestPostDto,
-} from '../bot/healthy-adult.dto';
+import { CreatePhraseDto, UpdatePhraseDto } from '../bot/healthy-adult.dto';
 
 /**
  * Админ-эндпоинты управления фразами «Здорового Взрослого», защищены тем же
@@ -73,14 +69,11 @@ export class HealthyAdultAdminController {
     return this.phrases.remove(id);
   }
 
-  /** Опубликовать фразу в канал прямо сейчас — проверка связки из админки. */
+  /** Опубликовать сообщение в канал прямо сейчас — проверка связки из админки. */
   @Post('test-post')
   @HttpCode(HttpStatus.OK)
-  async testPost(
-    @Body() dto: TestPostDto,
-    @Headers('x-admin-key') key: string,
-  ) {
+  async testPost(@Headers('x-admin-key') key: string) {
     assertAdminKey(key, this.adminKey);
-    return this.channel.post(dto.slot === 1 ? 1 : 0);
+    return this.channel.post();
   }
 }

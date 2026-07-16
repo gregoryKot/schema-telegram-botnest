@@ -712,10 +712,22 @@ model Article {
 // Управляются из админки (вкладка «Канал ЗВ»). Глобальный контент, не
 // пользовательские данные — вне чеклиста удаления аккаунта/merge.
 model HealthyAdultPhrase {
+  id           Int       @id @default(autoincrement())
+  text         String
+  enabled      Boolean   @default(true)
+  sortOrder    Int       @default(0)
+  lastPostedAt DateTime? // когда фраза последний раз выходила в канал (для LRU-ротации — не повторять подряд)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// Лог реально опубликованных сообщений канала «Здоровый Взрослый».
+// Нужен, чтобы (1) не постить точный дубль недавнего и (2) отдавать
+// генератору последние N сообщений как контекст «не повторяй форму».
+// Глобальный контент, не пользовательские данные.
+model HealthyAdultPost {
   id        Int      @id @default(autoincrement())
   text      String
-  enabled   Boolean  @default(true)
-  sortOrder Int      @default(0)
+  source    String // 'ai' | 'pool'
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
