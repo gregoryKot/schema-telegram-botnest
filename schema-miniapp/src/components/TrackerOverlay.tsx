@@ -14,9 +14,9 @@
 //   )}
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Need, COLORS, YESTERDAY } from '../types';
+import { Need, COLORS } from '../types';
 import { useNeedData } from '../needData';
-import { NeedDial } from './NeedDial';
+import { NeedRatingBar } from './NeedRatingBar';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { useSafeTop } from '../utils/safezone';
 import { api, StreakData } from '../api';
@@ -181,9 +181,25 @@ export function TrackerOverlay({
       ? needs.reduce((s, n) => s + (effectiveRatings[n.id] ?? 0), 0) /
         needs.length
       : 0;
-  const yval = yesterdayRatings[need.id] ?? YESTERDAY[need.id];
+  const yval = yesterdayRatings[need.id];
   const delta =
     !isBackfill && value > 0 && yval !== undefined ? value - yval : null;
+  const levelColor =
+    value === 0
+      ? 'var(--text-faint)'
+      : value <= 3
+        ? 'var(--accent-red)'
+        : value <= 6
+          ? 'var(--accent-yellow)'
+          : 'var(--accent-green)';
+  const levelLabel =
+    value === 0
+      ? '· · ·'
+      : value <= 3
+        ? 'низко'
+        : value <= 6
+          ? 'средне'
+          : 'хорошо';
 
   const dismissOnb = useCallback(() => {
     localStorage.setItem(ONBOARDING_KEY, '1');
@@ -578,15 +594,46 @@ export function TrackerOverlay({
           </div>
         )}
 
-        <NeedDial
-          need={need}
-          color={COLORS[need.id] ?? '#888'}
-          value={value}
-          onChange={(v) => {
-            dismissOnb();
-            handleChange(need.id, v);
-          }}
-        />
+        {/* Большая цифра + уровень (раньше жили в центре круга) */}
+        <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              fontSize: 76,
+              fontWeight: 800,
+              letterSpacing: '-5px',
+              lineHeight: 1,
+              color: value > 0 ? 'var(--text)' : 'var(--text-faint)',
+              fontVariantNumeric: 'tabular-nums',
+              transition: 'color 0.3s',
+            }}
+          >
+            {value}
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: levelColor,
+              marginTop: 8,
+              transition: 'color 0.3s',
+            }}
+          >
+            {levelLabel}
+          </div>
+        </div>
+
+        {/* Оценка тапом — тот же контрол, что в детали и «Вчера» */}
+        <div style={{ width: '100%', maxWidth: 360, padding: '0 26px' }}>
+          <NeedRatingBar
+            color={COLORS[need.id] ?? '#888'}
+            value={value}
+            yesterday={yval}
+            onChange={(v) => {
+              dismissOnb();
+              handleChange(need.id, v);
+            }}
+          />
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button
@@ -776,9 +823,7 @@ export function TrackerOverlay({
         <NeedTodaySheet
           need={detailNeed}
           value={effectiveRatings[detailNeed.id] ?? 0}
-          yesterdayValue={
-            yesterdayRatings[detailNeed.id] ?? YESTERDAY[detailNeed.id]
-          }
+          yesterdayValue={yesterdayRatings[detailNeed.id]}
           onChange={(v) => handleChange(detailNeed.id, v)}
           onClose={() => setDetailNeed(null)}
         />

@@ -31,6 +31,39 @@ jobs:
       # Храповик копипасты: новая дублированная логика ≥70 токенов не проходит.
       - run: node scripts/check-jscpd-ratchet.mjs
 
+  # Миграции гоняются на РЕАЛЬНОМ Postgres (инцидент 2026-07-16: битый сид
+  # healthy_adult_phrases — updatedAt NOT NULL без значения — уронил прод
+  # в крашлуп; ни один существующий чек SQL не исполнял). Правило CLAUDE.md
+  # «Миграции БД»: рукописный SQL не мержится, пока не прошёл migrate deploy.
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:ci@localhost:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: migrate deploy на пустой БД — ловит битые миграции до прода
+        run: npx prisma migrate deploy
+      - name: повторный migrate deploy — все миграции зарегистрированы, состояние чистое
+        run: npx prisma migrate deploy
+
   webapp:
     runs-on: ubuntu-latest
     steps:

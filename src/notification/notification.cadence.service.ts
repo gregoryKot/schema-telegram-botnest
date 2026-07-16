@@ -188,6 +188,22 @@ export class NotificationCadenceService {
     return newLevel;
   }
 
+  /**
+   * Атомарно инкрементирует и возвращает счётчик отправленных напоминаний.
+   * Вызывается один раз на каждое РЕАЛЬНО запланированное напоминание — служит
+   * nonce для ротации текста. Монотонность важнее: два соседних напоминания
+   * получают seq n и n+1, поэтому variant = seq % N у них всегда разный (в отличие
+   * от прежней ротации по календарному дню, где фиксированный интервал давал повтор).
+   */
+  async nextReminderSeq(userId: bigint): Promise<number> {
+    const row = await this.prisma.user.update({
+      where: { id: userId },
+      data: { notifyReminderSeq: { increment: 1 } },
+      select: { notifyReminderSeq: true },
+    });
+    return row.notifyReminderSeq;
+  }
+
   /** Пауза на N дней: проактивные уведомления отменяются, терапевтские и summary остаются. */
   async pause(userId: bigint, days: number, now = new Date()): Promise<Date> {
     const until = new Date(now.getTime() + days * 86_400_000);

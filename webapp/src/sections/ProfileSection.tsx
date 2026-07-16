@@ -152,7 +152,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                 [currentStreak, 'дней стрика'],
                 [totalDays, 'дней всего'],
                 [diaryCount, 'записей дневника'],
-                [ysqCount, 'прохождений YSQ'],
+                [ysqCount, 'прохождений теста'],
               ].map(([n, l]) => (
                 <div key={l as string}>
                   <div className="num" style={{ fontSize: 36, fontWeight: 500, letterSpacing: '-0.025em', color: 'var(--text)' }}>{n as number}</div>

@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Need, COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { BottomSheet } from './BottomSheet';
@@ -6,6 +6,7 @@ import { SectionLabel } from './SectionLabel';
 import { getTherapistContact } from '../utils/therapistContact';
 import { useTr } from '../utils/addressForm';
 import { PlanSheet } from './PlanSheet';
+import { NeedRatingBar } from './NeedRatingBar';
 
 interface Props {
   need: Need;
@@ -36,6 +37,7 @@ export function NeedTodaySheet({
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
+  const [showReflection, setShowReflection] = useState(false);
   const [showRanges, setShowRanges] = useState(false);
   const NEED_DATA = useNeedData();
   const data = NEED_DATA[need.id];
@@ -44,43 +46,6 @@ export function NeedTodaySheet({
 
   const rangeIdx = value <= 3 ? 0 : value <= 6 ? 1 : 2;
   const RANGE_VALUES = [1, 4, 7];
-
-  // Inline slider — prevent iOS scroll container from stealing touch events
-  const trackRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const prevent = (e: TouchEvent) => e.preventDefault();
-    el.addEventListener('touchstart', prevent, { passive: false });
-    return () => el.removeEventListener('touchstart', prevent);
-  }, []);
-  const calcValue = useCallback(
-    (clientX: number) => {
-      if (!trackRef.current) return;
-      const rect = trackRef.current.getBoundingClientRect();
-      onChange(
-        Math.round(
-          Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * 10,
-        ),
-      );
-    },
-    [onChange],
-  );
-  const onPtrDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.currentTarget.setPointerCapture(e.pointerId);
-      calcValue(e.clientX);
-    },
-    [calcValue],
-  );
-  const onPtrMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.buttons === 0) return;
-      calcValue(e.clientX);
-    },
-    [calcValue],
-  );
 
   return (
     <BottomSheet onClose={onClose}>
@@ -169,50 +134,12 @@ export function NeedTodaySheet({
             /10
           </span>
         </div>
-        <div
-          ref={trackRef}
-          onPointerDown={onPtrDown}
-          onPointerMove={onPtrMove}
-          style={{
-            position: 'relative',
-            padding: '12px 0',
-            cursor: 'pointer',
-            touchAction: 'none',
-            userSelect: 'none',
-          }}
-        >
-          <div
-            style={{
-              height: 6,
-              borderRadius: 6,
-              background: 'rgba(var(--fg-rgb),0.07)',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                width: `${value * 10}%`,
-                height: '100%',
-                borderRadius: 6,
-                background: `linear-gradient(to right, ${color}55, ${color})`,
-              }}
-            />
-          </div>
-          <div
-            style={{
-              position: 'absolute',
-              left: `${value * 10}%`,
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              background: color,
-              border: '2px solid #161821',
-              pointerEvents: 'none',
-            }}
-          />
-        </div>
+        <NeedRatingBar
+          color={color}
+          value={value}
+          yesterday={yesterdayValue}
+          onChange={onChange}
+        />
       </div>
 
       {/* High score affirmation */}
@@ -307,6 +234,66 @@ export function NeedTodaySheet({
           </div>
         )}
       </div>
+
+      {/* Section 1c: Reflection questions — collapsible */}
+      {data.reflection?.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div
+            onClick={() => setShowReflection((v) => !v)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              marginBottom: showReflection ? 10 : 0,
+            }}
+          >
+            <SectionLabel mb={0}>Вопросы для рефлексии</SectionLabel>
+            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+              {showReflection ? '▴' : '▾'}
+            </span>
+          </div>
+          {showReflection && (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {data.reflection.map((q, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: '8px 0',
+                    borderBottom:
+                      i < data.reflection.length - 1
+                        ? '1px solid rgba(var(--fg-rgb),0.05)'
+                        : 'none',
+                  }}
+                >
+                  <span
+                    style={{
+                      color,
+                      fontSize: 14,
+                      flexShrink: 0,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    ?
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 14,
+                      color: 'var(--text-sub)',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {q}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Section 2: Range pills — collapsible */}
       <div style={{ marginBottom: 24 }}>

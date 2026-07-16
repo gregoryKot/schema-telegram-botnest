@@ -66,4 +66,7 @@ HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
 
 # exec — node замещает sh как PID 1, иначе SIGTERM от оркестратора не доходит
 # до node и graceful shutdown (bot.stop, prisma disconnect) никогда не срабатывает.
-CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/main"]
+# db execute снимает застрявшую failed-миграцию (P3009, инцидент 2026-07-16)
+# ДО migrate deploy; идемпотентно (удаляет только незавершённую запись), || true
+# — чтобы на здоровой БД не мешать старту. После стабилизации можно убрать.
+CMD ["sh", "-c", "npx prisma db execute --file prisma/recover-p3009.sql || true; npx prisma migrate deploy && exec node dist/main"]

@@ -384,7 +384,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         {therapyRelation.partnerName ?? 'Терапевт'} подключён
                       </div>
                       <SRow title="Карточки схем и режимов" sub="Личные карточки и заметки" right={<SmallToggle on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
-                      <SRow title="Профиль и схемы YSQ" sub="Активные схемы и результаты теста" right={<SmallToggle on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
+                      <SRow title="Профиль и схемы" sub="Активные схемы и результаты теста" right={<SmallToggle on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
                       <button onClick={() => { api.leaveTherapy().then(() => setTherapyRelation(null)).catch(() => {}); }}
                         style={{ marginTop: 14, background: 'none', border: 'none', color: 'var(--accent-red)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                         Отключиться от терапевта
@@ -622,7 +622,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
           {(!!localStorage.getItem(YSQ_PROGRESS_KEY) || !!localStorage.getItem(YSQ_RESULT_KEY)) && (
             <button onClick={() => { localStorage.removeItem(YSQ_PROGRESS_KEY); localStorage.removeItem(YSQ_RESULT_KEY); api.deleteYsqResult().catch(() => {}); setShowPrivacy(false); }}
               style={{ width: '100%', padding: '12px 0', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: 'var(--accent-red)', fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 10, fontFamily: 'inherit' }}>
-              Удалить результаты теста YSQ-R
+              Удалить результаты теста
             </button>
           )}
           <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>Разработано для образовательных целей.</div>

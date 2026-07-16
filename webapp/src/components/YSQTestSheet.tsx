@@ -156,7 +156,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <div style={{ fontSize: 48, marginBottom: 14 }}>🧠</div>
             <h1 style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--text)', marginBottom: 8, lineHeight: 1.2 }}>
-              Опросник схем YSQ-R
+              Тест на схемы
             </h1>
             <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>
               Паттерны мышления и поведения, сложившиеся в детстве
@@ -224,7 +224,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           </button>
 
           <div style={{ marginTop: 20, fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.7, textAlign: 'center' }}>
-            Основан на YSQ-R (Young Schema Questionnaire). © Jeffrey Young, Schema Therapy Institute. Используется в образовательных целях.
+            Самостоятельный опросник для самонаблюдения по модели ранних дезадаптивных схем. Это не диагностический инструмент и не заменяет консультацию специалиста.
           </div>
         </div>
       )}
@@ -440,8 +440,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             )}
 
             <div style={{ marginTop: 16, fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.7, textAlign: 'center' }}>
-              © Jeffrey Young, Schema Therapy Institute. Используется в образовательных целях.{' '}
-              <a href="https://schematherapy.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>schematherapy.com</a>
+              Самостоятельный опросник для самонаблюдения по модели ранних дезадаптивных схем. Не диагностический инструмент и не заменяет консультацию специалиста.
             </div>
           </div>
         );

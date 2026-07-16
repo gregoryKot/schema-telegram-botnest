@@ -34,6 +34,7 @@ function makeDeps() {
   const cadence = {
     expirePauseIfDue: jest.fn().mockResolvedValue('none'),
     evaluate: jest.fn().mockResolvedValue({ remindToday: true }),
+    nextReminderSeq: jest.fn().mockResolvedValue(1),
   } as any;
   const botService = {
     getNeeds: jest.fn().mockReturnValue([
@@ -142,15 +143,29 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       expect(scheduledTypes(deps)).toEqual(['reminder']);
     });
 
-    it('lapsing_3 подавляется при уровне ≥2 — перерыв ожидаем', async () => {
+    it('lapsing_3 подавляется когда юзер САМ выбрал редкую частоту (notifyFrequency≥2)', async () => {
       const { svc, deps } = make();
       deps.analytics.getDaysSinceLastFill.mockResolvedValue(3);
       deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
-      await svc.planDay(makeUser({ notifyAdaptiveLevel: 2 }), NOW);
+      await svc.planDay(makeUser({ notifyFrequency: 2 }), NOW);
       expect(deps.notifications.schedule).not.toHaveBeenCalled();
     });
 
-    it('dormant_7 подавляется при уровне ≥2, но reengagement_30 — нет', async () => {
+    // Регрессия на инцидент 2026-07-15: адаптивно-задавленный юзер (частоту снизил
+    // движок из-за игноров, сам он редкий контакт не выбирал) ДОЛЖЕН получать мягкие
+    // сообщения про перерыв, а не оставаться с сухими напоминаниями.
+    it('адаптивно-задавленный юзер (frequency=0, adaptive=2) на 3 день ВСЁ ЕЩЁ получает lapsing_3', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(3);
+      deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
+      await svc.planDay(
+        makeUser({ notifyFrequency: 0, notifyAdaptiveLevel: 2 }),
+        NOW,
+      );
+      expect(scheduledTypes(deps)).toEqual(['lapsing_3']);
+    });
+
+    it('dormant_7 подавляется когда юзер сам выбрал редкую частоту, но reengagement_30 — нет', async () => {
       const { svc, deps } = make();
       deps.analytics.getDaysSinceLastFill.mockResolvedValue(7);
       deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
@@ -168,6 +183,60 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       deps.notifications.hasPending.mockResolvedValue(true);
       await svc.planDay(makeUser(), NOW);
       expect(deps.notifications.schedule).not.toHaveBeenCalled();
+    });
+
+    // Долгий перерыв (≥7 дней, но не milestone-день): сухое напоминание молчит совсем —
+    // контакт держат только мягкие milestone-сообщения. Это авто-затихание.
+    it.each([8, 10, 20, 40])(
+      'день %i (не milestone) + remindToday → напоминание подавлено, тишина',
+      async (days) => {
+        const { svc, deps } = make();
+        deps.analytics.getDaysSinceLastFill.mockResolvedValue(days);
+        deps.cadence.evaluate.mockResolvedValue({ remindToday: true });
+        await svc.planDay(makeUser(), NOW);
+        expect(deps.notifications.schedule).not.toHaveBeenCalled();
+        expect(deps.cadence.nextReminderSeq).not.toHaveBeenCalled();
+      },
+    );
+
+    it('короткий перерыв (день 5) + remindToday → напоминание всё же идёт, но перерыв-осознающее', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(5);
+      deps.cadence.evaluate.mockResolvedValue({ remindToday: true });
+      await svc.planDay(makeUser(), NOW);
+      expect(scheduledTypes(deps)).toEqual(['reminder']);
+      expect(deps.notifications.schedule.mock.calls[0][3]).toMatchObject({
+        onBreak: true,
+        compactControls: false,
+      });
+    });
+  });
+
+  describe('перерыв-осознающий тон и компактные кнопки', () => {
+    it('активный вовлечённый юзер (daysSince<3, ignored=0) → onBreak=false, компактные кнопки', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(1);
+      await svc.planDay(makeUser({ notifyIgnoredCount: 0 }), NOW);
+      const payload = deps.notifications.schedule.mock.calls[0][3];
+      expect(payload).toMatchObject({ onBreak: false, compactControls: true });
+    });
+
+    it('юзер с признаком усталости (ignored>0) → полный набор кнопок даже без перерыва', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(1);
+      await svc.planDay(makeUser({ notifyIgnoredCount: 1 }), NOW);
+      expect(deps.notifications.schedule.mock.calls[0][3].compactControls).toBe(
+        false,
+      );
+    });
+
+    it('variant/seed берутся из seq (ротация без календарных совпадений)', async () => {
+      const { svc, deps } = make();
+      deps.cadence.nextReminderSeq.mockResolvedValue(7);
+      await svc.planDay(makeUser(), NOW);
+      const payload = deps.notifications.schedule.mock.calls[0][3];
+      expect(payload.variant).toBe(2); // 7 % 5
+      expect(payload.seed).toBe(1); // 7 % 3
     });
   });
 
@@ -198,6 +267,15 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
       await svc.planDay(makeUser(), FIRST_OF_MONTH);
       expect(scheduledTypes(deps)).toEqual(['donate_reminder']);
+    });
+
+    // Порог ужат до <7: на перерыве ≥7 дней всё молчит, донат не должен выбиваться.
+    it('1-е число + перерыв ≥7 дней → donate_reminder НЕ шлём', async () => {
+      const { svc, deps } = make();
+      deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(9);
+      await svc.planDay(makeUser(), FIRST_OF_MONTH);
+      expect(scheduledTypes(deps)).not.toContain('donate_reminder');
     });
   });
 

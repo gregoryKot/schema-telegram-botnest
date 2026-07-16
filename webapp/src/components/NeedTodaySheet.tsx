@@ -28,6 +28,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
+  const [showReflection, setShowReflection] = useState(false);
   const [showRanges, setShowRanges] = useState(false);
   const NEED_DATA = useNeedData();
   const data = NEED_DATA[need.id];
@@ -136,6 +137,32 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
           )}
         </div>
       </div>
+
+      {/* Reflection questions */}
+      {data.reflection?.length > 0 && (
+        <div className="prompt">
+          <div className="prompt-num">·</div>
+          <div style={{ width: '100%' }}>
+            <button
+              onClick={() => setShowReflection(v => !v)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              <div className="prompt-label" style={{ marginBottom: 0 }}>Вопросы для рефлексии</div>
+              <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>{showReflection ? '▴' : '▾'}</span>
+            </button>
+            {showReflection && (
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column' }}>
+                {data.reflection.map((q, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < data.reflection.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                    <span style={{ color, fontSize: 14, flexShrink: 0, lineHeight: 1.5 }}>?</span>
+                    <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>{q}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Ranges */}
       <div className="prompt">

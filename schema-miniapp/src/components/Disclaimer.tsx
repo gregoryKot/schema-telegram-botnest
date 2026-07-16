@@ -1,25 +1,37 @@
 import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { DisclaimerWelcomeStep } from './disclaimer/DisclaimerWelcomeStep';
+import { DisclaimerNeedsStep } from './disclaimer/DisclaimerNeedsStep';
 import { DisclaimerPrivacyStep } from './disclaimer/DisclaimerPrivacyStep';
 import { DisclaimerNotTherapyStep } from './disclaimer/DisclaimerNotTherapyStep';
 import { DisclaimerAuthorStep } from './disclaimer/DisclaimerAuthorStep';
 import { DisclaimerHomeScreenStep } from './disclaimer/DisclaimerHomeScreenStep';
 
-export function Disclaimer({ onAccept }: { onAccept: () => void }) {
+export function Disclaimer({
+  onAccept,
+  consentGiven = false,
+}: {
+  onAccept: () => void;
+  // Согласие уже дано раньше (напр. в боте/на сайте) — тогда онбординг
+  // остаётся образовательным, но галочки не заставляем ставить заново.
+  consentGiven?: boolean;
+}) {
   const [step, setStep] = useState(0);
-  const [c1, setC1] = useState(false);
-  const [c2, setC2] = useState(false);
+  const [c1, setC1] = useState(consentGiven);
+  const [c2, setC2] = useState(consentGiven);
   const canAddToHome = !!(window as any).Telegram?.WebApp?.addToHomeScreen;
-  const TOTAL = canAddToHome ? 5 : 4;
+  const TOTAL = canAddToHome ? 6 : 5;
   const ready = c1 && c2;
+  // Шаг «Об авторе» — на нём собираются согласия, до них дальше не пускаем.
+  const CONSENT_STEP = 4;
 
   const steps = [
     <DisclaimerWelcomeStep key={0} />,
-    <DisclaimerPrivacyStep key={1} c2={c2} setC2={setC2} />,
-    <DisclaimerNotTherapyStep key={2} c1={c1} setC1={setC1} />,
-    <DisclaimerAuthorStep key={3} ready={ready} c1={c1} c2={c2} />,
-    <DisclaimerHomeScreenStep key={4} />,
+    <DisclaimerNeedsStep key={1} />,
+    <DisclaimerPrivacyStep key={2} c2={c2} setC2={setC2} />,
+    <DisclaimerNotTherapyStep key={3} c1={c1} setC1={setC1} />,
+    <DisclaimerAuthorStep key={4} ready={ready} c1={c1} c2={c2} />,
+    <DisclaimerHomeScreenStep key={5} />,
   ];
 
   return (
@@ -79,11 +91,14 @@ export function Disclaimer({ onAccept }: { onAccept: () => void }) {
         {step < TOTAL - 1 ? (
           <button
             onClick={() => {
-              if (step === 3 && !ready) return;
+              if (step === CONSENT_STEP && !ready) return;
               setStep((s) => s + 1);
             }}
             className="btn-primary"
-            style={{ flex: 2, opacity: step === 3 && !ready ? 0.35 : 1 }}
+            style={{
+              flex: 2,
+              opacity: step === CONSENT_STEP && !ready ? 0.35 : 1,
+            }}
           >
             Далее →
           </button>

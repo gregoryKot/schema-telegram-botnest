@@ -79,6 +79,7 @@ model User {
   notifyQuietStart       Int      @default(22) // тихие часы: начало, локальный час
   notifyQuietEnd         Int      @default(8)  // тихие часы: конец; start==end → выключено
   notifyGamified         Boolean  @default(false) // opt-in игровой режим: серия с 1 дня + «ещё день до вехи»
+  notifyReminderSeq      Int      @default(0)  // счётчик реально отправленных напоминаний — ротация текста без календарных совпадений
   addressForm            String?               // 'ty' | 'vy'; null = ещё не выбрал → показать выбор при входе
   pairCardDismissed      Boolean  @default(false)
   mySchemaIds            Json     @default("[]")
@@ -705,4 +706,16 @@ model Article {
   diagramKey  String?  // which built-in SVG diagram to render (rendered client-side, kept out of editable content)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Фразы «Здорового Взрослого» для авто-публикации в Telegram-канал.
+// Управляются из админки (вкладка «Канал ЗВ»). Глобальный контент, не
+// пользовательские данные — вне чеклиста удаления аккаунта/merge.
+model HealthyAdultPhrase {
+  id        Int      @id @default(autoincrement())
+  text      String
+  enabled   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

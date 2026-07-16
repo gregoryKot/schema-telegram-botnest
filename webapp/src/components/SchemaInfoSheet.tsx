@@ -411,10 +411,10 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
           >
             <div>
               <div style={{ fontFamily: 'var(--serif)', fontSize: 20, color: 'var(--accent)' }}>
-                {hasResult ? 'Мои результаты YSQ-R' : hasProgress ? 'Продолжить тест' : 'Пройти тест на схемы'}
+                {hasResult ? 'Мои результаты теста' : hasProgress ? 'Продолжить тест' : 'Пройти тест на схемы'}
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>
-                {hasResult ? 'Посмотреть или пройти заново' : '116 вопросов · ~10 минут · YSQ-R'}
+                {hasResult ? 'Посмотреть или пройти заново' : '116 вопросов · ~10 минут'}
               </div>
             </div>
             <span style={{ fontSize: 22, color: 'var(--accent)' }}>›</span>
