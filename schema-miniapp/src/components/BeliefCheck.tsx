@@ -82,7 +82,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
     setAgainstInput('');
   }
 
-  async function handleSave() {
+  function handleSave() {
     const entry: BeliefEntry = {
       id: Date.now().toString(),
       date: new Date().toLocaleDateString('ru-RU', {

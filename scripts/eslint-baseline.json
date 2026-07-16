@@ -1,11 +1,10 @@
 {
-  "total": 192,
-  "errors": 159,
+  "total": 185,
+  "errors": 152,
   "warnings": 33,
   "byRule": {
     "(parse)": 7,
     "@typescript-eslint/no-unsafe-return": 10,
-    "@typescript-eslint/require-await": 5,
     "@typescript-eslint/no-unsafe-argument": 9,
     "@typescript-eslint/no-unsafe-call": 8,
     "@typescript-eslint/no-unsafe-member-access": 23,
@@ -13,7 +12,6 @@
     "prettier/prettier": 1,
     "@typescript-eslint/no-unsafe-assignment": 11,
     "react-hooks/exhaustive-deps": 11,
-    "no-irregular-whitespace": 2,
     "@typescript-eslint/no-explicit-any": 15,
     "react-hooks/immutability": 2,
     "react-hooks/preserve-manual-memoization": 1,

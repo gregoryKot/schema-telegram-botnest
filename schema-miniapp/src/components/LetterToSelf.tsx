@@ -71,7 +71,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
       .catch(() => {});
   }, []);
 
-  async function handleSave() {
+  function handleSave() {
     if (!text.trim()) return;
     const trimmed = text.trim();
     const letter: Letter = {
