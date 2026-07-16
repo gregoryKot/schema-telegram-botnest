@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS "HealthyAdultPhrase" (
 
 -- Сид: 40 фраз, ранее захардкоженных в src/bot/healthy-adult.data.ts,
 -- чтобы канал и админка сразу видели один и тот же пул.
-INSERT INTO "HealthyAdultPhrase" ("text", "sortOrder")
-SELECT * FROM (VALUES
+INSERT INTO "HealthyAdultPhrase" ("text", "sortOrder", "updatedAt")
+SELECT "text", "sortOrder", CURRENT_TIMESTAMP FROM (VALUES
   ('Чувства — это информация, а не приговор.', 0),
   ('Отдых — не награда за продуктивность, а базовая потребность.', 1),
   ('Можно быть уставшим и всё ещё достойным заботы.', 2),
