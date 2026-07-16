@@ -32,6 +32,8 @@ interface Props {
   onSaved: (needId: string, streak?: StreakData) => void;
   yesterdayRatings: Record<string, number>;
   onboardingSeen: boolean;
+  addressFormReady: boolean;
+  onAddressPickerDone: () => void;
   consentGiven: boolean;
   onAcceptDisclaimer: () => void;
   celebrationStreak: number | null;
@@ -66,6 +68,8 @@ export function AppOverlays({
   onSaved,
   yesterdayRatings,
   onboardingSeen,
+  addressFormReady,
+  onAddressPickerDone,
   consentGiven,
   onAcceptDisclaimer,
   celebrationStreak,
@@ -126,7 +130,9 @@ export function AppOverlays({
         </div>
       )}
 
-      {!onboardingSeen && (
+      {/* Онбординг ждёт выбора формы обращения — иначе приветствие «на ты»
+          покажется раньше, чем спросим ты/вы. */}
+      {!onboardingSeen && addressFormReady && (
         <Disclaimer consentGiven={consentGiven} onAccept={onAcceptDisclaimer} />
       )}
 
@@ -224,6 +230,7 @@ export function AppOverlays({
           onDone={() => {
             sessionStorage.setItem('addr_form_asked', '1');
             sheets.close('addressPicker');
+            onAddressPickerDone();
           }}
         />
       )}
