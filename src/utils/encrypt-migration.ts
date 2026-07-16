@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, decrypt, encryptJson } from './crypto';
 
@@ -57,7 +58,7 @@ export async function migrateClinicalLabels(
     select: { id: true, mySchemaIds: true, myModeIds: true },
   });
   for (const u of users) {
-    const patch: any = {};
+    const patch: Prisma.UserUpdateInput = {};
     if (Array.isArray(u.mySchemaIds)) {
       const enc = encryptJson(u.mySchemaIds);
       if (enc) patch.mySchemaIds = enc;
@@ -107,7 +108,7 @@ export async function migrateClinicalLabels(
     select: { id: true, schemaIds: true, modeIds: true, history: true },
   });
   for (const c of concepts) {
-    const patch: any = {};
+    const patch: Prisma.ClientConceptualizationUpdateInput = {};
     if (Array.isArray(c.schemaIds)) {
       const enc = encryptJson(c.schemaIds);
       if (enc) patch.schemaIds = enc;
@@ -118,15 +119,15 @@ export async function migrateClinicalLabels(
     }
     // History — array of snapshots, each with its own schemaIds/modeIds
     if (Array.isArray(c.history)) {
-      const newHistory = c.history.map((snap: any) => {
-        const s: any = { ...snap };
+      const newHistory = c.history.map((snap) => {
+        const s = { ...(snap as Record<string, unknown>) };
         if (Array.isArray(s.schemaIds)) s.schemaIds = encryptJson(s.schemaIds);
         if (Array.isArray(s.modeIds)) s.modeIds = encryptJson(s.modeIds);
         return s;
       });
       // Only patch history if something actually changed
       if (JSON.stringify(newHistory) !== JSON.stringify(c.history))
-        patch.history = newHistory;
+        patch.history = newHistory as unknown as Prisma.InputJsonValue;
     }
     if (Object.keys(patch).length > 0) {
       await prisma.clientConceptualization.update({

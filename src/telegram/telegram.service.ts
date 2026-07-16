@@ -45,7 +45,9 @@ const CONSENT_TEXT = `🔐 Соглашение об обработке данн
 
 Кнопка ниже — это согласие с условиями, подтверждение 18+ и выбор формы обращения (поменять можно в любой момент в /settings).`;
 
-export function buildWelcomeKeyboard(): any {
+export function buildWelcomeKeyboard(): ReturnType<
+  typeof Markup.inlineKeyboard
+> {
   return Markup.inlineKeyboard([
     [Markup.button.webApp('🧠 Открыть «Всё по схеме»', MINIAPP_URL)],
     [Markup.button.url('💛 Поддержать проект', DONATE_URL)],
@@ -98,7 +100,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     { code: string; expiresAt: number }
   >();
 
-  async onModuleInit() {
+  onModuleInit() {
     if (!this.bot) {
       this.logger.warn('BOT_TOKEN not provided — bot will not start.');
       return;
@@ -120,7 +122,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply(redirectText).catch(() => null);
       });
       this.bot.on('callback_query', async (ctx) => {
-        await (ctx as any)
+        await ctx
           .answerCbQuery(redirectText, { show_alert: true })
           .catch(() => null);
       });
@@ -139,7 +141,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const existingSettings = await this.botService.getUserSettings(userId);
         const isReturning = !!existingSettings;
         await this.accountService.registerUser(userId, ctx.from?.first_name);
-        const payload = (ctx as any).startPayload as string | undefined;
+        const payload = (ctx as Context & { startPayload?: string })
+          .startPayload;
         if (payload?.startsWith('pair_')) {
           const code = payload.slice(5).toUpperCase();
           const hasConsent =
@@ -415,7 +418,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await ctx.answerCbQuery('Только админ');
           return;
         }
-        const match = (ctx as any).match as RegExpMatchArray;
+        const match = ctx.match as RegExpMatchArray;
         const action = match[1] as 'approve' | 'reject';
         const reqId = parseInt(match[2], 10);
         // answerCbQuery ДО обращения к БД — иначе при зависшем approve/reject
@@ -529,7 +532,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
-        const text = ((ctx.message as any)?.text as string | undefined)
+        const text = (ctx.message as { text?: string } | undefined)?.text
           ?.slice('/broadcast '.length)
           .trim();
         if (!text) {
@@ -550,12 +553,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
               parse_mode: undefined,
             });
             sent++;
-          } catch (err: any) {
+          } catch (err: unknown) {
             failed++;
-            const code = err?.response?.error_code;
-            const desc = String(
-              err?.response?.description ?? err?.message ?? '',
-            );
+            const e = err as {
+              response?: { error_code?: number; description?: string };
+              message?: string;
+            };
+            const code = e.response?.error_code;
+            const desc = String(e.response?.description ?? e.message ?? '');
             const isPermanent =
               code === 403 ||
               (code === 400 &&
@@ -625,7 +630,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     void retryWithBackoff(() =>
-      this.bot!.telegram.callApi('setChatMenuButton' as any, {
+      this.bot!.telegram.callApi('setChatMenuButton', {
         menu_button: {
           type: 'web_app',
           text: 'Всё по схеме',
@@ -684,7 +689,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
    * возобновляем подключение пары. true = флоу завершён (сообщение показано).
    * Общий для accept:(ty|vy) и легаси accept_consent.
    */
-  private async resumePendingPair(ctx: any, rawId: number): Promise<boolean> {
+  private async resumePendingPair(
+    ctx: Context,
+    rawId: number,
+  ): Promise<boolean> {
     const pending = this.pendingPairCodes.get(rawId);
     if (!pending || pending.expiresAt <= Date.now()) return false;
     this.pendingPairCodes.delete(rawId);
@@ -703,10 +711,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     return true;
   }
 
-  async onModuleDestroy() {
+  onModuleDestroy() {
     this.stopping = true;
     try {
-      await this.bot?.stop();
+      this.bot?.stop();
     } catch {
       /* expected on graceful shutdown */
     }
