@@ -53,10 +53,10 @@ export class ApiController {
   // ?link_token=… on the redirect. This endpoint issues one.
 
   @Get('link-token')
-  async issueLinkToken(
+  issueLinkToken(
     @Req() req: AuthRequest,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ linkToken: string; expiresIn: number }> {
+  ): { linkToken: string; expiresIn: number } {
     const linkToken = this.authService.buildLinkToken(uid(req));
     // httpOnly-cookie — основной канал (S-4, токен не в URL); тело ответа —
     // обратная совместимость со старыми клиентами (?link_token=).
@@ -125,7 +125,7 @@ export class ApiController {
     if (Object.keys(data).length === 0) return { ok: true };
     await this.prisma.user.update({
       where: { id: uid(req) },
-      data: data as Prisma.UserUpdateInput,
+      data,
     });
     return { ok: true };
   }

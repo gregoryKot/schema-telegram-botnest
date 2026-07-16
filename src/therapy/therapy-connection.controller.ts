@@ -109,7 +109,7 @@ export class TherapyConnectionController {
   }
 
   @Post('clients/add')
-  async addClientManually(@Req() req: AuthRequest, @Body() body: AddClientDto) {
+  addClientManually(@Req() req: AuthRequest, @Body() body: AddClientDto) {
     // SECURITY: silently attaching a therapist to a real user's account (and
     // gaining read access to their schema/mode notes, ratings, etc) without
     // the client's consent is unacceptable for a therapy app. Manual add is
@@ -145,7 +145,7 @@ export class TherapyConnectionController {
   // Kept returning 410 Gone so any clients still using the old endpoint get
   // a clear error rather than silent failure.
   @Post('become-therapist')
-  async becomeTherapist() {
+  becomeTherapist() {
     throw new HttpException(
       'Этот способ отключён. Используй /api/therapy/request — заявку рассмотрит администратор.',
       410,

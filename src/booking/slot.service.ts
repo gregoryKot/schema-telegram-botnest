@@ -136,7 +136,7 @@ function toDateStr(utc: Date, tz: string): string {
 function localToUtc(localIso: string, tz: string): Date {
   // Build a reference date at noon UTC on that calendar day, then compute offset
   const [datePart, timePart] = localIso.split('T');
-  const [h, m] = timePart.split(':').map(Number);
+  const [_h, _m] = timePart.split(':').map(Number);
   const noonUtc = new Date(`${datePart}T12:00:00.000Z`);
   const localNoon = new Date(noonUtc.toLocaleString('en-US', { timeZone: tz }));
   const offset = Math.round((noonUtc.getTime() - localNoon.getTime()) / 60_000); // utc-local in minutes

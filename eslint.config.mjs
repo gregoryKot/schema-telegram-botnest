@@ -33,6 +33,17 @@ export default tseslint.config(
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-unsafe-argument': 'warn',
       "prettier/prettier": ["error", { endOfLine: "auto" }],
+      // `_`-префикс — общепринятый маркер «намеренно не используется» (omit
+      // через rest, compile-time type-assert `_VerifyTables`); rest-siblings
+      // при omit-через-spread тоже не считаем мусором.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
     },
   },
   {

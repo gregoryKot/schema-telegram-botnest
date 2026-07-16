@@ -3,7 +3,6 @@ import {
   ConflictException,
   Injectable,
   Logger,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -208,7 +207,7 @@ export class EmailService {
       }
     } catch (e) {
       this.logger.error(`Resend error: ${(e as Error).message}`);
-      throw new Error('Email delivery failed');
+      throw new Error('Email delivery failed', { cause: e });
     }
   }
 }
