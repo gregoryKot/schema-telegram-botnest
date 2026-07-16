@@ -1,6 +1,6 @@
 -- Фразы «Здорового Взрослого» для авто-публикации в Telegram-канал.
 -- Управляются из админки. Глобальный контент (не user-owned).
-CREATE TABLE "HealthyAdultPhrase" (
+CREATE TABLE IF NOT EXISTS "HealthyAdultPhrase" (
   "id"        SERIAL       NOT NULL,
   "text"      TEXT         NOT NULL,
   "enabled"   BOOLEAN      NOT NULL DEFAULT true,
@@ -12,7 +12,8 @@ CREATE TABLE "HealthyAdultPhrase" (
 
 -- Сид: 40 фраз, ранее захардкоженных в src/bot/healthy-adult.data.ts,
 -- чтобы канал и админка сразу видели один и тот же пул.
-INSERT INTO "HealthyAdultPhrase" ("text", "sortOrder") VALUES
+INSERT INTO "HealthyAdultPhrase" ("text", "sortOrder")
+SELECT * FROM (VALUES
   ('Чувства — это информация, а не приговор.', 0),
   ('Отдых — не награда за продуктивность, а базовая потребность.', 1),
   ('Можно быть уставшим и всё ещё достойным заботы.', 2),
@@ -52,4 +53,6 @@ INSERT INTO "HealthyAdultPhrase" ("text", "sortOrder") VALUES
   ('Ценно не только достигнутое, но и пережитое.', 36),
   ('Можно остановиться и просто подышать. Иногда этого достаточно.', 37),
   ('Строгость к себе не делает сильнее — она истощает.', 38),
-  ('Я справлюсь — не потому что должен, а потому что уже не раз справлялся.', 39);
+  ('Я справлюсь — не потому что должен, а потому что уже не раз справлялся.', 39)
+) AS seed("text", "sortOrder")
+WHERE NOT EXISTS (SELECT 1 FROM "HealthyAdultPhrase");
