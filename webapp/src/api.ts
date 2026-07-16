@@ -41,7 +41,7 @@ async function get<T>(path: string): Promise<T> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 async function post(path: string, body: unknown): Promise<void> {
@@ -53,8 +53,8 @@ async function post(path: string, body: unknown): Promise<void> {
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
     try {
-      const j = await res.json();
-      if (j?.message)
+      const j = (await res.json()) as { message?: unknown };
+      if (j.message)
         msg =
           typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
     } catch {
@@ -73,8 +73,8 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
     try {
-      const j = await res.json();
-      if (j?.message)
+      const j = (await res.json()) as { message?: unknown };
+      if (j.message)
         msg =
           typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
     } catch {
@@ -82,7 +82,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     }
     throw new Error(msg);
   }
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 async function patchJson<T>(path: string, body: unknown): Promise<T> {
@@ -94,8 +94,8 @@ async function patchJson<T>(path: string, body: unknown): Promise<T> {
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
     try {
-      const j = await res.json();
-      if (j?.message)
+      const j = (await res.json()) as { message?: unknown };
+      if (j.message)
         msg =
           typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
     } catch {
@@ -103,7 +103,7 @@ async function patchJson<T>(path: string, body: unknown): Promise<T> {
     }
     throw new Error(msg);
   }
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 async function del(path: string): Promise<void> {
@@ -130,8 +130,8 @@ async function adminReq<T>(
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
     try {
-      const j = await res.json();
-      if (j?.message)
+      const j = (await res.json()) as { message?: unknown };
+      if (j.message)
         msg =
           typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
     } catch {
@@ -472,7 +472,11 @@ export const api = {
       credentials: 'include',
     });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return res.json();
+    return res.json() as Promise<{
+      ok: boolean;
+      allDone: boolean;
+      streak?: StreakData;
+    }>;
   },
   history: (days = 7) => get<import('./types').DayHistory[]>(`/api/history?days=${days}`),
   getSettings: () => get<UserSettings>('/api/settings'),
