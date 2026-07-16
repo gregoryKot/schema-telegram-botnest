@@ -1,6 +1,6 @@
 {
-  "total": 554,
-  "errors": 476,
+  "total": 477,
+  "errors": 399,
   "warnings": 78,
   "byRule": {
     "(parse)": 7,
@@ -8,7 +8,6 @@
     "@typescript-eslint/no-unsafe-member-access": 101,
     "@typescript-eslint/no-unsafe-return": 19,
     "@typescript-eslint/no-unsafe-assignment": 54,
-    "@typescript-eslint/no-misused-promises": 77,
     "@typescript-eslint/require-await": 5,
     "@typescript-eslint/no-unsafe-call": 29,
     "@typescript-eslint/no-unsafe-argument": 17,

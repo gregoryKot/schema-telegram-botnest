@@ -39,6 +39,15 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-unsafe-argument': 'warn',
+      // async-обработчики событий в JSX (onClick/onKeyDown = async () => …) —
+      // штатный и безопасный паттерн React: возвращаемый промис игнорируется
+      // фреймворком, а сами хендлеры внутри обёрнуты в try/catch. Точечно
+      // отключаем проверку void-return ТОЛЬКО для JSX-атрибутов (документир.
+      // опция typescript-eslint), в остальных местах правило действует.
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { attributes: false } },
+      ],
       "prettier/prettier": ["error", { endOfLine: "auto" }],
       // `_`-префикс — общепринятый маркер «намеренно не используется» (omit
       // через rest, compile-time type-assert `_VerifyTables`); rest-siblings
