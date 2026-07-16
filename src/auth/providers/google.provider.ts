@@ -78,16 +78,18 @@ export class GoogleProvider implements AuthProviderHandler {
           body: body.toString(),
           signal: AbortSignal.timeout(10_000),
         });
-      } catch (e: any) {
+      } catch (e: unknown) {
         // Сетевой сбой (DNS/TLS/timeout) — пробуем следующий алиас.
-        const cause = e?.cause;
+        const err = e instanceof Error ? e : new Error(String(e));
+        const cause = (err as { cause?: { code?: string; message?: string } })
+          .cause;
         const detail = cause
-          ? ` | cause: ${cause.code ?? cause.message ?? cause}`
+          ? ` | cause: ${cause.code ?? cause.message ?? 'unknown'}`
           : '';
         this.logger.warn(
-          `Google token endpoint unreachable (${endpoint}): ${e.message}${detail}`,
+          `Google token endpoint unreachable (${endpoint}): ${err.message}${detail}`,
         );
-        lastNetErr = e;
+        lastNetErr = err;
         continue;
       }
 
@@ -124,9 +126,10 @@ export class GoogleProvider implements AuthProviderHandler {
         issuer: ['https://accounts.google.com', 'accounts.google.com'],
         audience: clientId,
       }));
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       this.logger.error(
-        `Google id_token JWT verification failed: ${e.message}`,
+        `Google id_token JWT verification failed: ${err.message}`,
       );
       throw new UnauthorizedException('Google ID token invalid');
     }
