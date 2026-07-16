@@ -80,7 +80,7 @@ export class TherapyRelationsService {
         partnerName: asClient.therapist?.firstName ?? null,
         partnerId: asClient.therapist ? Number(asClient.therapist.id) : null,
         code: asClient.code,
-        nextSession: (asClient as any).nextSession ?? null,
+        nextSession: asClient.nextSession ?? null,
       };
     }
     return null;
@@ -160,34 +160,34 @@ export class TherapyRelationsService {
         return {
           telegramId: clientId,
           name: rel.client!.firstName,
-          clientAlias: (rel as any).clientAlias ?? null,
+          clientAlias: rel.clientAlias ?? null,
           streak,
           lastActiveDate,
           todayIndex,
           recentIndexHistory,
           relationCreatedAt: rel.createdAt.toISOString(),
-          therapyStartDate: (rel as any).therapyStartDate ?? null,
-          nextSession: (rel as any).nextSession ?? null,
-          meetingDays: ((rel as any).meetingDays as number[]) ?? [],
+          therapyStartDate: rel.therapyStartDate ?? null,
+          nextSession: rel.nextSession ?? null,
+          meetingDays: (rel.meetingDays as number[]) ?? [],
           schemaIds: conceptMap.get(String(clientId)) ?? [],
         };
       });
 
     // Virtual (offline) clients: no Telegram account, identified by -rel.id
     const virtualClients: TherapyClientSummary[] = relations
-      .filter((rel) => rel.client === null && (rel as any).virtualClientName)
+      .filter((rel) => rel.client === null && rel.virtualClientName)
       .map((rel) => ({
         telegramId: -rel.id,
-        name: (rel as any).virtualClientName as string,
-        clientAlias: (rel as any).clientAlias ?? null,
+        name: rel.virtualClientName as string,
+        clientAlias: rel.clientAlias ?? null,
         streak: 0,
         lastActiveDate: null,
         todayIndex: null,
         recentIndexHistory: Array(14).fill(null) as null[],
         relationCreatedAt: rel.createdAt.toISOString(),
-        therapyStartDate: (rel as any).therapyStartDate ?? null,
-        nextSession: (rel as any).nextSession ?? null,
-        meetingDays: ((rel as any).meetingDays as number[]) ?? [],
+        therapyStartDate: rel.therapyStartDate ?? null,
+        nextSession: rel.nextSession ?? null,
+        meetingDays: (rel.meetingDays as number[]) ?? [],
         schemaIds: conceptMap.get(String(-rel.id)) ?? [],
       }));
 
@@ -199,7 +199,7 @@ export class TherapyRelationsService {
     name: string,
   ): Promise<TherapyClientSummary[]> {
     const code = randomBytes(5).toString('hex').toUpperCase();
-    await (this.prisma.therapyRelation.create as any)({
+    await this.prisma.therapyRelation.create({
       data: {
         code,
         therapistId,
@@ -272,12 +272,12 @@ export class TherapyRelationsService {
     if (clientId < 0) {
       await this.prisma.therapyRelation.updateMany({
         where: { id: -clientId, therapistId, status: 'active' },
-        data: { clientAlias: alias.trim() || null } as any,
+        data: { clientAlias: alias.trim() || null },
       });
     } else {
       await this.prisma.therapyRelation.updateMany({
         where: { therapistId, clientId: BigInt(clientId), status: 'active' },
-        data: { clientAlias: alias.trim() || null } as any,
+        data: { clientAlias: alias.trim() || null },
       });
     }
   }
