@@ -4,7 +4,7 @@
 // read-after-write: прогресс и результат кэшируются в localStorage
 // (денормализованное состояние, зеркалящее сервер) — поэтому кроме «сохранился
 // ли ответ» здесь проверяется и «виден ли он после повторного монтирования».
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import {
   useYsqTest,
@@ -29,10 +29,22 @@ function makeApi(overrides: Partial<YsqApi> = {}): YsqApi {
   };
 }
 
-const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// Advances the fake clock past the hook's internal ANSWER_ADVANCE_DELAY
+// (setTimeout) deterministically, instead of sleeping wall-clock time —
+// no real-time waits left in this suite.
+const advance = async (ms: number) => {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(ms);
+  });
+};
 
 beforeEach(() => {
   localStorage.clear();
+  vi.useFakeTimers();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 // ── Скоринг ──────────────────────────────────────────────────────────────────
@@ -80,7 +92,7 @@ describe('useYsqTest — прогресс', () => {
     const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
 
     act(() => { result.current.selectAnswer(0, 4); });
-    await act(async () => { await wait(250); });
+    await advance(250);
 
     expect(result.current.page).toBe(1);
     const saved = JSON.parse(localStorage.getItem(YSQ_PROGRESS_KEY)!);
@@ -92,7 +104,7 @@ describe('useYsqTest — прогресс', () => {
     const api1 = makeApi();
     const { result: r1 } = renderHook(() => useYsqTest({ api: api1, autoResume: true }));
     act(() => { r1.current.selectAnswer(0, 6); });
-    await act(async () => { await wait(250); });
+    await advance(250);
 
     // Новый инстанс хука — как при повторном открытии интро-экрана теста.
     const api2 = makeApi();
@@ -125,7 +137,7 @@ describe('useYsqTest — завершение', () => {
     expect(result.current.page).toBe(TOTAL_PAGES - 1);
 
     act(() => { result.current.selectAnswer(TOTAL_PAGES - 1, 5); });
-    await act(async () => { await wait(250); });
+    await advance(250);
 
     expect(result.current.phase).toBe('result');
     expect(localStorage.getItem(YSQ_PROGRESS_KEY)).toBeNull();
@@ -145,7 +157,7 @@ describe('useYsqTest — завершение', () => {
     const api1 = makeApi();
     const { result: r1 } = renderHook(() => useYsqTest({ api: api1, autoResume: true }));
     act(() => { r1.current.selectAnswer(TOTAL_PAGES - 1, 5); });
-    await act(async () => { await wait(250); });
+    await advance(250);
 
     // Повторное открытие карточки схемы/теста читает то, что реально сохранилось,
     // а не только внутреннее состояние первого инстанса хука.

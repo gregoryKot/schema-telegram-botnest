@@ -5,6 +5,11 @@
 import { BotAnalyticsService } from './bot.analytics.service';
 
 const TZ = 'Europe/Moscow';
+// Fixed mid-day Moscow instant — the service derives "today"/"N days ago"
+// from Date.now() internally, so a real clock read here is flaky whenever the
+// test happens to straddle local midnight relative to the service's own call.
+const FIXED_NOW = new Date('2026-07-16T12:00:00+03:00');
+
 const day = (offset: number) =>
   new Intl.DateTimeFormat('en-CA', {
     timeZone: TZ,
@@ -24,14 +29,14 @@ function makePrisma(
   let queries = 0;
   const prisma: any = {
     user: {
-      findMany: jest.fn(async ({ where }: any) => {
+      findMany: jest.fn(({ where }: any) => {
         queries++;
         const ids: bigint[] = where.id.in;
-        return ids.map((id) => ({ id, notifyTimezone: TZ }));
+        return Promise.resolve(ids.map((id) => ({ id, notifyTimezone: TZ })));
       }),
     },
     rating: {
-      findMany: jest.fn(async ({ where, select, distinct }: any) => {
+      findMany: jest.fn(({ where, distinct }: any) => {
         queries++;
         let rows = ratings.filter((r) => where.userId.in.includes(r.userId));
         if (where.date?.in)
@@ -45,7 +50,7 @@ function makePrisma(
             return true;
           });
         }
-        return rows;
+        return Promise.resolve(rows);
       }),
     },
     countQueries: () => queries,
@@ -54,6 +59,17 @@ function makePrisma(
 }
 
 describe('BotAnalyticsService.getClientOverviews', () => {
+  // Freeze the clock before computing `ratings` below (module-collection time)
+  // so the fixture dates and the service's internal Date.now()-based "today"
+  // agree for the whole suite — no per-test reset needed since nothing here
+  // advances time.
+  jest.useFakeTimers();
+  jest.setSystemTime(FIXED_NOW);
+
+  afterAll(() => {
+    jest.useRealTimers();
+  });
+
   const A = 1n; // стрик 2 дня (сегодня + вчера), заполнял сегодня
   const B = 2n; // последний раз 3 дня назад, стрика нет
   const C = 3n; // никогда не заполнял

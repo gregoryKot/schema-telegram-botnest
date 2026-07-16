@@ -20,23 +20,25 @@ function makeService(opts: {
 }) {
   const scheduled: Array<{ userId: bigint; type: string }> = [];
   const botService: any = {
-    getUserSettings: jest.fn(
-      async () =>
+    getUserSettings: jest.fn(() =>
+      Promise.resolve(
         opts.partnerSettings ?? {
           notifyEnabled: true,
           notifyTimezone: 'Europe/Moscow',
         },
+      ),
     ),
-    getRatings: jest.fn(async () => opts.partnerRatings ?? {}),
+    getRatings: jest.fn(() => Promise.resolve(opts.partnerRatings ?? {})),
   };
   const pairsService: any = {
-    getUserPairs: jest.fn(async () => opts.pairs ?? []),
+    getUserPairs: jest.fn(() => Promise.resolve(opts.pairs ?? [])),
   };
   const notificationService: any = {
-    lastSentAt: jest.fn(async () => opts.lastSent ?? null),
-    hasPending: jest.fn(async () => opts.hasPending ?? false),
-    schedule: jest.fn(async (userId: bigint, type: string) => {
+    lastSentAt: jest.fn(() => Promise.resolve(opts.lastSent ?? null)),
+    hasPending: jest.fn(() => Promise.resolve(opts.hasPending ?? false)),
+    schedule: jest.fn((userId: bigint, type: string) => {
       scheduled.push({ userId, type });
+      return Promise.resolve();
     }),
   };
   const service = new TelegramScheduleService(
@@ -60,6 +62,20 @@ const ACTIVE_PAIR = {
 };
 
 describe('maybeNotifyPairPartners', () => {
+  // Fixed mid-day Moscow instant — avoids flake from real `new Date()` landing
+  // on different local dates a moment apart near MSK midnight (the dedup
+  // logic compares localDateString(tz, ...) for "today").
+  const FIXED_NOW = new Date('2026-07-16T12:00:00+03:00');
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(FIXED_NOW);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('активному напарнику уходит pair_activity', async () => {
     const { service, scheduled } = makeService({ pairs: [ACTIVE_PAIR] });
     await service.maybeNotifyPairPartners(1n);
