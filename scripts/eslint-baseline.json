@@ -1,10 +1,10 @@
 {
-  "total": 1902,
-  "errors": 1515,
+  "total": 1899,
+  "errors": 1512,
   "warnings": 387,
   "byRule": {
     "(parse)": 11,
-    "@typescript-eslint/no-unused-vars": 62,
+    "@typescript-eslint/no-unused-vars": 59,
     "@typescript-eslint/no-explicit-any": 393,
     "@typescript-eslint/no-unsafe-member-access": 541,
     "@typescript-eslint/no-floating-promises": 19,
