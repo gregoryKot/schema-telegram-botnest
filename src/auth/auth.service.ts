@@ -267,7 +267,7 @@ export class AuthService {
   // ─── Find or create user ───────────────────────────────────────────────────
 
   async findOrCreateUserByProvider(
-    provider: 'telegram' | 'google' | 'email',
+    provider: string,
     providerId: string,
     displayName?: string,
     email?: string,
@@ -460,10 +460,7 @@ export class AuthService {
     }
   }
 
-  async unlinkProvider(
-    userId: bigint,
-    provider: 'google' | 'telegram',
-  ): Promise<void> {
+  async unlinkProvider(userId: bigint, provider: string): Promise<void> {
     // Don't allow unlinking the last provider — user would lose access
     const all = await this.prisma.authProvider.findMany({
       where: { userId },
