@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { validate } from '@tma.js/init-data-node';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
+import type { Request } from 'express';
 
 // Unified guard: accepts Telegram initData (mini-app / bot) OR JWT Bearer (web app).
 // Sets req.telegramUserId (number) which all existing controllers rely on.
@@ -23,10 +24,10 @@ export class TelegramAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest();
+    const req = context.switchToHttp().getRequest<Request>();
 
     // ── Path 1: JWT Bearer (web app) ─────────────────────────────────────────
-    const authHeader = req.headers['authorization'] as string | undefined;
+    const authHeader = req.headers['authorization'];
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7);
       const { userId } = this.authService.verifyAccessToken(token);
@@ -88,7 +89,10 @@ export class TelegramAuthGuard implements CanActivate {
     let rawTelegramId: number;
     let firstName: string | undefined;
     try {
-      const user = JSON.parse(userStr);
+      const user = JSON.parse(userStr) as {
+        id?: unknown;
+        first_name?: unknown;
+      };
       if (typeof user.id !== 'number') throw new Error('Invalid user.id');
       rawTelegramId = user.id;
       firstName =

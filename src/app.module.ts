@@ -11,6 +11,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_GUARD } from '@nestjs/core';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
+import type { Request, Response } from 'express';
 import { UserThrottlerGuard } from './api/throttler.guard';
 import { TelegramModule } from './telegram/telegram.module';
 import { BotModule } from './bot/bot.module';
@@ -68,7 +69,7 @@ export class AppModule implements NestModule {
     const html = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : null;
 
     consumer
-      .apply((req: any, res: any, next: () => void) => {
+      .apply((req: Request, res: Response, next: () => void) => {
         if (!html) return next();
         if (!ALIAS_DOMAINS.has(req.hostname)) return next();
         const domain = req.hostname;

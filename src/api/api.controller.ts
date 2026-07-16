@@ -10,7 +10,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request, Response } from 'express';
 import { uid } from './request-utils';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
@@ -55,7 +55,7 @@ export class ApiController {
   @Get('link-token')
   async issueLinkToken(
     @Req() req: AuthRequest,
-    @Res({ passthrough: true }) res: any,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ linkToken: string; expiresIn: number }> {
     const linkToken = this.authService.buildLinkToken(uid(req));
     // httpOnly-cookie — основной канал (S-4, токен не в URL); тело ответа —
