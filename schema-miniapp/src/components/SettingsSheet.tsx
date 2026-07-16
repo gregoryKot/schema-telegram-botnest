@@ -4,6 +4,7 @@ import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './YSQTestSheet';
 import { BottomSheet } from './BottomSheet';
 import { Loader } from './Loader';
 import { useSafeTop } from '../utils/safezone';
+import { botUrl, botHandle, botShortUrl } from '../utils/botConfig';
 import {
   getTheme,
   toggleTheme,
@@ -958,12 +959,12 @@ export function SettingsSheet({
                   >
                     Приходят через{' '}
                     <a
-                      href="https://t.me/SchemaLabBot"
+                      href={botUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: 'var(--accent)', textDecoration: 'none' }}
                     >
-                      @SchemaLabBot
+                      {botHandle}
                     </a>
                   </div>
                 )}
@@ -1988,8 +1989,7 @@ export function SettingsSheet({
                     sub="Поделиться ссылкой на бота"
                     emoji="🔗"
                     onClick={async () => {
-                      const text =
-                        'Трекер потребностей — отслеживай своё состояние каждый день. t.me/SchemaLabBot';
+                      const text = `Трекер потребностей — отслеживай своё состояние каждый день. ${botShortUrl}`;
                       try {
                         if (navigator.share) await navigator.share({ text });
                         else await navigator.clipboard.writeText(text);

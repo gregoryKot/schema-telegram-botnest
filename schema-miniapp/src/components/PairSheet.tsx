@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, PairsData } from '../api';
 import { BottomSheet } from './BottomSheet';
+import { miniappDeepLink } from '../utils/botConfig';
 
 interface Props {
   onClose: () => void;
@@ -92,7 +93,7 @@ export function PairSheet({ onClose }: Props) {
   }
 
   const pendingUrl = data?.pendingCode
-    ? `https://t.me/SchemaLabBot/diary?startapp=pair_${data.pendingCode}`
+    ? miniappDeepLink(`pair_${data.pendingCode}`)
     : '';
 
   return (
