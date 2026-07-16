@@ -7,6 +7,7 @@ import { MyNotesSheet } from '../components/MyNotesSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { useAuth } from '../auth/AuthContext';
 import { useTr } from '../utils/addressForm';
+import { botShortUrl } from '../utils/botConfig';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
@@ -583,7 +584,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{m.title}</div>
               <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 28 }}>{m.desc}</div>
               <button onClick={async () => {
-                const text = `${m.emoji} Получил достижение «${m.title}»!\n\nt.me/SchemaLabBot`;
+                const text = `${m.emoji} Получил достижение «${m.title}»!\n\n${botShortUrl}`;
                 try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); } catch {}
               }} className="btn-primary">
                 Поделиться

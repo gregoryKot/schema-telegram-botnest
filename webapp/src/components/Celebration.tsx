@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { botShortUrl } from '../utils/botConfig';
 
 // Canvas fillStyle не понимает CSS-переменные – только hex
 const COLORS = ['#ff6b9d', '#facc15', '#06d6a0', '#a78bfa', '#4fa3f7', '#ff9a3c'];
@@ -124,7 +125,7 @@ export function Celebration({ streak, onDone, insight }: Props) {
         <button
           onClick={async (e) => {
             e.stopPropagation();
-            const text = `🔥 ${streak} ${streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'} подряд в дневнике потребностей!\n\nОтслеживаю своё состояние каждый день. t.me/SchemaLabBot`;
+            const text = `🔥 ${streak} ${streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'} подряд в дневнике потребностей!\n\nОтслеживаю своё состояние каждый день. ${botShortUrl}`;
             try {
               if (navigator.share) { await navigator.share({ text }); }
               else { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }
