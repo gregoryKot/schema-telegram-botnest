@@ -128,7 +128,7 @@ export class AuthService {
 
     const raw = crypto.randomBytes(32).toString('base64url');
     const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
-    await (this.prisma as any).emailToken.create({
+    await this.prisma.emailToken.create({
       data: {
         id: crypto.randomUUID(),
         userId,
@@ -169,7 +169,7 @@ export class AuthService {
       .createHash('sha256')
       .update(rawToken)
       .digest('hex');
-    const row = await (this.prisma as any).emailToken.findUnique({
+    const row = await this.prisma.emailToken.findUnique({
       where: { tokenHash },
     });
 
@@ -181,7 +181,7 @@ export class AuthService {
       throw new UnauthorizedException('Token purpose mismatch');
     if (!row.userId) throw new UnauthorizedException('No user bound to token');
 
-    await (this.prisma as any).emailToken.update({
+    await this.prisma.emailToken.update({
       where: { id: row.id },
       data: { usedAt: new Date() },
     });
@@ -220,7 +220,7 @@ export class AuthService {
     const lower = email.toLowerCase().trim();
 
     // Check if already linked to another user
-    const taken = await (this.prisma as any).authProvider.findUnique({
+    const taken = await this.prisma.authProvider.findUnique({
       where: { provider_providerId: { provider: 'email', providerId: lower } },
     });
     if (taken && BigInt(taken.userId) !== targetUserId) {
@@ -229,7 +229,7 @@ export class AuthService {
 
     const raw = crypto.randomBytes(32).toString('base64url');
     const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
-    await (this.prisma as any).emailToken.create({
+    await this.prisma.emailToken.create({
       data: {
         id: crypto.randomUUID(),
         userId: targetUserId,
@@ -272,13 +272,13 @@ export class AuthService {
     displayName?: string,
     email?: string,
   ): Promise<bigint> {
-    const existing = await (this.prisma as any).authProvider.findUnique({
+    const existing = await this.prisma.authProvider.findUnique({
       where: { provider_providerId: { provider, providerId } },
     });
     if (existing) {
       // Update display name if changed
       if (displayName) {
-        await (this.prisma as any).authProvider.update({
+        await this.prisma.authProvider.update({
           where: { id: existing.id },
           data: { displayName, email },
         });
@@ -292,7 +292,7 @@ export class AuthService {
       provider === 'telegram' ? BigInt(providerId) : this.generateWebUserId();
 
     // Upsert User (may already exist for telegram users who used the bot)
-    await (this.prisma as any).user.upsert({
+    await this.prisma.user.upsert({
       where: { id: userId },
       update: displayName ? { firstName: displayName } : {},
       create: { id: userId, firstName: displayName },
@@ -302,7 +302,7 @@ export class AuthService {
     // API requests in parallel on first load; without this they race between the
     // findUnique above and this insert and all-but-one crash on the
     // (provider, providerId) unique constraint.
-    const row = await (this.prisma as any).authProvider.upsert({
+    const row = await this.prisma.authProvider.upsert({
       where: { provider_providerId: { provider, providerId } },
       update: { displayName, email },
       create: { userId, provider, providerId, displayName, email },
@@ -323,7 +323,7 @@ export class AuthService {
     displayName?: string,
     email?: string,
   ): Promise<{ ok: true } | { ok: false; conflictUserId: string }> {
-    const existing = await (this.prisma as any).authProvider.findUnique({
+    const existing = await this.prisma.authProvider.findUnique({
       where: { provider_providerId: { provider, providerId } },
     });
 
@@ -335,7 +335,7 @@ export class AuthService {
     }
 
     try {
-      await (this.prisma as any).authProvider.create({
+      await this.prisma.authProvider.create({
         data: { userId, provider, providerId, displayName, email },
       });
     } catch (e: any) {
@@ -344,7 +344,7 @@ export class AuthService {
       // instead of crashing on the unique constraint (mirrors the atomic-upsert
       // fix in findOrCreateUserByProvider).
       if (e?.code === 'P2002') {
-        const now = await (this.prisma as any).authProvider.findUnique({
+        const now = await this.prisma.authProvider.findUnique({
           where: { provider_providerId: { provider, providerId } },
         });
         if (now && String(now.userId) === String(userId)) return { ok: true };
@@ -395,7 +395,13 @@ export class AuthService {
         algorithms: ['HS256'],
         issuer: JWT_ISSUER,
         audience: JWT_AUDIENCE,
-      }) as any;
+      }) as {
+        kind: string;
+        target: string;
+        source: string;
+        provider: string;
+        providerId: string;
+      };
       if (p.kind !== 'merge') throw new Error('Wrong token kind');
       return {
         target: BigInt(p.target),
@@ -446,7 +452,7 @@ export class AuthService {
         algorithms: ['HS256'],
         issuer: JWT_ISSUER,
         audience: JWT_AUDIENCE,
-      }) as any;
+      }) as { kind: string; sub: string; ip: string | null; ua: string };
       if (p.kind !== 'totp_challenge') throw new Error('Wrong token kind');
       return { userId: BigInt(p.sub), ip: p.ip ?? null, ua: p.ua ?? '' };
     } catch {
@@ -459,7 +465,7 @@ export class AuthService {
     provider: 'google' | 'telegram',
   ): Promise<void> {
     // Don't allow unlinking the last provider — user would lose access
-    const all = await (this.prisma as any).authProvider.findMany({
+    const all = await this.prisma.authProvider.findMany({
       where: { userId },
     });
     if (all.length <= 1) {
@@ -467,7 +473,7 @@ export class AuthService {
         'Cannot unlink the only authentication method',
       );
     }
-    await (this.prisma as any).authProvider.deleteMany({
+    await this.prisma.authProvider.deleteMany({
       where: { userId, provider },
     });
     this.logger.log(`Unlinked ${provider} from userId ${userId}`);
@@ -480,7 +486,7 @@ export class AuthService {
       displayName: string | null;
     }>
   > {
-    const rows = await (this.prisma as any).authProvider.findMany({
+    const rows = await this.prisma.authProvider.findMany({
       where: { userId },
       select: { provider: true, email: true, displayName: true },
     });
@@ -511,7 +517,7 @@ export class AuthService {
     const family = crypto.randomBytes(16).toString('hex');
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_S * 1000);
 
-    await (this.prisma as any).webSession.create({
+    await this.prisma.webSession.create({
       data: {
         id: crypto.randomUUID(),
         userId,
@@ -587,7 +593,7 @@ export class AuthService {
   ): Promise<TokenPair> {
     const tokenHash = this.hashToken(rawRefresh);
 
-    const session = await (this.prisma as any).webSession.findUnique({
+    const session = await this.prisma.webSession.findUnique({
       where: { tokenHash },
     });
 
@@ -628,11 +634,11 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_S * 1000);
 
     await this.prisma.$transaction([
-      (this.prisma as any).webSession.update({
+      this.prisma.webSession.update({
         where: { tokenHash },
         data: { revokedAt: new Date() },
       }),
-      (this.prisma as any).webSession.create({
+      this.prisma.webSession.create({
         data: {
           id: crypto.randomUUID(),
           userId: session.userId,
@@ -652,14 +658,14 @@ export class AuthService {
 
   async revokeSession(rawRefresh: string): Promise<void> {
     const tokenHash = this.hashToken(rawRefresh);
-    await (this.prisma as any).webSession.updateMany({
+    await this.prisma.webSession.updateMany({
       where: { tokenHash, revokedAt: null },
       data: { revokedAt: new Date() },
     });
   }
 
   async revokeAllSessions(userId: bigint): Promise<void> {
-    await (this.prisma as any).webSession.updateMany({
+    await this.prisma.webSession.updateMany({
       where: { userId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
@@ -675,7 +681,7 @@ export class AuthService {
     family: string,
     exceptHash: string | null,
   ): Promise<void> {
-    await (this.prisma as any).webSession.updateMany({
+    await this.prisma.webSession.updateMany({
       where: {
         family,
         revokedAt: null,

@@ -34,7 +34,7 @@ export class TelegramAuthGuard implements CanActivate {
       req.telegramUserId = Number(userId);
       req.webUser = { userId };
       // Ensure user row exists (web-only users may have never touched the bot)
-      await (this.prisma.user as any).upsert({
+      await this.prisma.user.upsert({
         where: { id: userId },
         update: {},
         create: { id: userId },

@@ -97,7 +97,7 @@ export class TherapistRequestService {
     if (message && message.length > MAX_MSG)
       throw new BadRequestException('Message too long');
 
-    const existing = await (this.prisma as any).therapistRequest.findUnique({
+    const existing = await this.prisma.therapistRequest.findUnique({
       where: { userId },
     });
     if (existing?.status === 'pending')
@@ -106,7 +106,7 @@ export class TherapistRequestService {
       throw new ConflictException('Request already approved');
 
     const row = existing
-      ? await (this.prisma as any).therapistRequest.update({
+      ? await this.prisma.therapistRequest.update({
           where: { userId },
           data: {
             fullName,
@@ -119,7 +119,7 @@ export class TherapistRequestService {
             rejectReason: null,
           },
         })
-      : await (this.prisma as any).therapistRequest.create({
+      : await this.prisma.therapistRequest.create({
           data: {
             userId,
             fullName,
@@ -137,7 +137,7 @@ export class TherapistRequestService {
   }
 
   async getMine(userId: bigint) {
-    return (this.prisma as any).therapistRequest.findUnique({
+    return this.prisma.therapistRequest.findUnique({
       where: { userId },
       select: {
         id: true,
@@ -158,7 +158,7 @@ export class TherapistRequestService {
 
   async listPending(adminId: number) {
     this.assertAdmin(adminId);
-    return (this.prisma as any).therapistRequest.findMany({
+    return this.prisma.therapistRequest.findMany({
       where: { status: 'pending' },
       orderBy: { createdAt: 'asc' },
       // D-4 (аудит 2026-07): страховка от роста таблицы (не пагинация) —
@@ -169,7 +169,7 @@ export class TherapistRequestService {
 
   async approve(adminId: number, requestId: number) {
     this.assertAdmin(adminId);
-    const req = await (this.prisma as any).therapistRequest.findUnique({
+    const req = await this.prisma.therapistRequest.findUnique({
       where: { id: requestId },
     });
     if (!req) throw new NotFoundException('Request not found');
@@ -177,7 +177,7 @@ export class TherapistRequestService {
       throw new ConflictException(`Request is ${req.status}`);
 
     await this.prisma.$transaction(async (tx) => {
-      await (tx as any).therapistRequest.update({
+      await tx.therapistRequest.update({
         where: { id: requestId },
         data: {
           status: 'approved',
@@ -200,14 +200,14 @@ export class TherapistRequestService {
 
   async reject(adminId: number, requestId: number, reason: string) {
     this.assertAdmin(adminId);
-    const req = await (this.prisma as any).therapistRequest.findUnique({
+    const req = await this.prisma.therapistRequest.findUnique({
       where: { id: requestId },
     });
     if (!req) throw new NotFoundException('Request not found');
     if (req.status !== 'pending')
       throw new ConflictException(`Request is ${req.status}`);
 
-    await (this.prisma as any).therapistRequest.update({
+    await this.prisma.therapistRequest.update({
       where: { id: requestId },
       data: {
         status: 'rejected',

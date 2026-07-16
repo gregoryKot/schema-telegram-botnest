@@ -82,7 +82,7 @@ export async function migrateClinicalLabels(
     if (!enc) continue;
     await prisma.schemaDiaryEntry.update({
       where: { id: e.id },
-      data: { schemaIds: enc as any },
+      data: { schemaIds: enc },
     });
     totals.SchemaDiaryEntry++;
   }
@@ -103,7 +103,7 @@ export async function migrateClinicalLabels(
   }
 
   // ── ClientConceptualization.schemaIds / modeIds (+ history snapshots) ────
-  const concepts = await (prisma as any).clientConceptualization.findMany({
+  const concepts = await prisma.clientConceptualization.findMany({
     select: { id: true, schemaIds: true, modeIds: true, history: true },
   });
   for (const c of concepts) {
@@ -129,7 +129,7 @@ export async function migrateClinicalLabels(
         patch.history = newHistory;
     }
     if (Object.keys(patch).length > 0) {
-      await (prisma as any).clientConceptualization.update({
+      await prisma.clientConceptualization.update({
         where: { id: c.id },
         data: patch,
       });
