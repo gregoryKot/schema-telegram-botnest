@@ -25,6 +25,11 @@ jobs:
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high
+      # Один маршрут — один контроллер (аудит: найдены живые дубли маршрутов
+      # с разъехавшейся privacy-логикой).
+      - run: node scripts/check-route-collisions.mjs
+      # Храповик копипасты: новая дублированная логика ≥70 токенов не проходит.
+      - run: node scripts/check-jscpd-ratchet.mjs
 
   webapp:
     runs-on: ubuntu-latest

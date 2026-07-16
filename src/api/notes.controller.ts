@@ -3,13 +3,12 @@ import {
   Body,
   Controller,
   Get,
-  Param,
   Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { uid, parseId } from './request-utils';
+import { uid } from './request-utils';
 import { NotesService } from '../bot/notes.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { SchemaNoteDto, ModeNoteDto } from './dto/notes.dto';
@@ -97,32 +96,8 @@ export class NotesController {
       behavior: body.behavior?.trim(),
     });
   }
-
-  // ── Therapist: client notes ───────────────────────────────────────────────────
-
-  @Get('therapy/client/:clientId/schema-notes')
-  async getClientSchemaNotes(
-    @Req() req: AuthRequest,
-    @Param('clientId') clientId: string,
-  ) {
-    const notes = await this.notesService.getClientSchemaNotes(
-      uid(req),
-      BigInt(parseId(clientId)),
-    );
-    if (!notes) throw new BadRequestException('relation not found');
-    return notes;
-  }
-
-  @Get('therapy/client/:clientId/mode-notes')
-  async getClientModeNotes(
-    @Req() req: AuthRequest,
-    @Param('clientId') clientId: string,
-  ) {
-    const notes = await this.notesService.getClientModeNotes(
-      uid(req),
-      BigInt(parseId(clientId)),
-    );
-    if (!notes) throw new BadRequestException('relation not found');
-    return notes;
-  }
 }
+// Маршруты therapy/client/:clientId/{schema,mode}-notes здесь были дублем
+// therapy.controller (аудит 2026-07: жили обе реализации, отвечала therapy-
+// версия, а therapistShareCards уважала только эта, мёртвая). Оставлена одна
+// реализация в therapy.controller + privacy-проверка в client-data.service.
