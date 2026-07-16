@@ -993,7 +993,7 @@ export function SettingsSheet({
                         key={form}
                         onClick={() => {
                           setAddressForm(form);
-                          patch({ addressForm: form });
+                          void patch({ addressForm: form });
                         }}
                         role="button"
                         tabIndex={0}
@@ -1001,7 +1001,7 @@ export function SettingsSheet({
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             setAddressForm(form);
-                            patch({ addressForm: form });
+                            void patch({ addressForm: form });
                           }
                         }}
                         style={{
@@ -1111,7 +1111,7 @@ export function SettingsSheet({
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                   e.preventDefault();
-                                  patch({
+                                  void patch({
                                     therapistShareCards:
                                       !settings.therapistShareCards,
                                   });
@@ -1186,7 +1186,7 @@ export function SettingsSheet({
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                   e.preventDefault();
-                                  patch({
+                                  void patch({
                                     therapistShareProfile:
                                       !settings.therapistShareProfile,
                                   });

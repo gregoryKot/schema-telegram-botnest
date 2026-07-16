@@ -190,7 +190,7 @@ export function AppOverlays({
         <PairSheet
           onClose={() => {
             sheets.close('pairSheet');
-            api.getPair().then(setPairData);
+            void api.getPair().then(setPairData);
           }}
         />
       )}

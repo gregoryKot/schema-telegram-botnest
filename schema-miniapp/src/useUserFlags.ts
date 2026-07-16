@@ -140,7 +140,7 @@ export function useUserFlags(): {
     setCurrent({ ...flags }); // sync in case flags loaded between render and effect
     const handler = (f: UserFlags) => setCurrent({ ...f });
     subscribers.add(handler);
-    ensureUserFlagsLoaded();
+    void ensureUserFlagsLoaded();
     return () => {
       subscribers.delete(handler);
     };

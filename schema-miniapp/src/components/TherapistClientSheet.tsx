@@ -2352,7 +2352,7 @@ export function TherapistClientSheet({
       {showConceptSheet && selectedClient && (
         <BottomSheet
           onClose={() => {
-            if (conceptDirty) saveConcept();
+            if (conceptDirty) void saveConcept();
             setShowConceptSheet(false);
           }}
         >

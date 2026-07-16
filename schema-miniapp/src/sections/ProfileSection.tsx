@@ -127,7 +127,7 @@ export function ProfileSection({
     setStreak(null);
     setAchievements(null);
     setInsights(null);
-    Promise.all([
+    void Promise.all([
       api
         .getStreak()
         .then(setStreak)

@@ -105,7 +105,7 @@ export function MyNotesSheet({ onClose }: Props) {
   const [safePlace, setSafePlace] = useState<SafeEntry>(null);
 
   useEffect(() => {
-    Promise.all([
+    void Promise.all([
       api
         .getProfile()
         .then((p) => {

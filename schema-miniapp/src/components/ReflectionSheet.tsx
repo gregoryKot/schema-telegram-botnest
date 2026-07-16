@@ -34,7 +34,7 @@ export function ReflectionSheet({ date, needs, ratings, onClose }: Props) {
     : 'var(--accent)';
 
   useEffect(() => {
-    api.getNote(date).then((r) => {
+    void api.getNote(date).then((r) => {
       setText(r.text ?? '');
       setLoaded(true);
     });

@@ -408,7 +408,7 @@ export default function App() {
   useEffect(() => {
     if (sheets.trackerTab === 'history') {
       setHistoryLoading(true);
-      api
+      void api
         .history(historyDays)
         .then((h) => setHistory(fillHistoryGaps(h)))
         .finally(() => setHistoryLoading(false));

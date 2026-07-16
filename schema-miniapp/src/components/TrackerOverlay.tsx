@@ -144,7 +144,7 @@ export function TrackerOverlay({
 
   useEffect(() => {
     if (!isBackfill) return;
-    api
+    void api
       .ratings(date)
       .then((r) => setLocalRatings(r))
       .finally(() => setLocalLoading(false));
