@@ -1,10 +1,8 @@
 import {
   IsBoolean,
-  IsInt,
   IsOptional,
   IsString,
   MaxLength,
-  Min,
   MinLength,
 } from 'class-validator';
 
@@ -27,12 +25,4 @@ export class UpdatePhraseDto {
   @IsOptional()
   @IsBoolean()
   enabled?: boolean;
-}
-
-/** Тестовая публикация в канал по требованию (слот 0 = утро, 1 = вечер). */
-export class TestPostDto {
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  slot?: number;
 }

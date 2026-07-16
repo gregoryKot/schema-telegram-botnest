@@ -300,16 +300,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
-        // Слот по текущему часу МСК: вечером тестируем вечернюю фразу.
-        const hour = Number(
-          new Intl.DateTimeFormat('en-US', {
-            timeZone: 'Europe/Moscow',
-            hour: 'numeric',
-            hour12: false,
-          }).format(new Date()),
-        );
-        const slot = hour >= 14 ? 1 : 0;
-        const result = await this.channelService.post(slot);
+        const result = await this.channelService.post();
         await ctx.reply(result.message);
       } catch (err) {
         this.logger.error('zv command failed', err);
