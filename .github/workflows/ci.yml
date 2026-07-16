@@ -1,7 +1,9 @@
 # CI-гейт (правило №1 CLAUDE.md: ничего не мержится с красным CI).
-# Бэкенд: типы + юнит-тесты. Фронтенды: сборка (ловит TS-ошибки).
-# eslint — храповиком (правило №9): исторический долг зафиксирован
-# в scripts/eslint-baseline.json, рост счётчика роняет джобу eslint.
+# Бэкенд: типы + юнит-тесты + coverage-храповик. Фронтенды: сборка (ловит
+# TS-ошибки). eslint — храповиком (правило №9): исторический долг
+# зафиксирован в scripts/eslint-baseline.json, рост счётчика роняет джобу
+# eslint. Покрытие бэкенда — храповиком в scripts/coverage-baseline.json
+# (TEST_COVERAGE_PLAN.md, этап 4, п.14).
 name: CI
 
 on:
@@ -21,7 +23,11 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npx tsc --noEmit -p tsconfig.build.json
-      - run: npx jest --silent
+      # coverage-храповик (TEST_COVERAGE_PLAN.md, этап 4, п.14): сам гоняет
+      # jest --coverage, отдельный `npx jest` не нужен. Падает при просадке
+      # покрытия ниже scripts/coverage-baseline.json (общей или по полу
+      # src/auth и src/utils).
+      - run: node scripts/check-coverage-ratchet.mjs
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high

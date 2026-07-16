@@ -76,9 +76,12 @@ read-after-write, stateful-фейки, точные ассерты) — проб
 
 ## Этап 3 — сервисы и хендлеры
 
-11. ☐ `therapy-client-data.service.ts` (границы доступа терапевт↔клиент),
-    `therapist-request.service.ts` (выдача роли), `diary.service.ts`
-    (read-after-write шифрованного дневника), `payment.controller.ts`.
+11. ✅ (частично) `therapy-client-data.service.spec.ts` (14 — все 7 методов
+    отбивают чужого терапевта; находки: removeClient без assertHasClient,
+    create-ответ дневника отдаёт schemaIds не расшифрованными) и
+    `diary.service.spec.ts` (15 — read-after-write всех трёх дневников,
+    изоляция юзеров). Осталось: `therapist-request.service.ts`,
+    `payment.controller.ts`.
 12. ☐ `telegram.service.ts`: инвариант «answerCbQuery до БД» + try/catch —
     дёшево фиксируется grep-трипваером по образцу `table-registry.spec.ts`.
 13. ☐ Починка слабостей существующих тестов:
@@ -94,10 +97,10 @@ read-after-write, stateful-фейки, точные ассерты) — проб
 
 ## Этап 4 — механизм принуждения (без него откатится)
 
-14. ☐ **Coverage-храповик** по образцу eslint-храповика: бейслайн текущего
-    покрытия в `scripts/`, джоба падает при снижении; порог поднимается
-    по мере этапов 1–3. Отдельный жёсткий порог 90%+ на `src/auth`,
-    `src/utils/crypto*`, guards — после этапа 1.
+14. ✅ **Coverage-храповик**: `scripts/check-coverage-ratchet.mjs` +
+    `coverage-baseline.json` (lines/branches total + полы по каталогам,
+    сейчас src/auth и src/utils), в CI заменяет голый jest в джобе backend.
+    Полы поднимать по мере этапов 1–3 через `--update`.
 15. ☐ Правило в CLAUDE.md: новый контроллер = e2e-смок на ownership.
 
 ## Известные ограничения текущего сьюта (осознанно принятые)

@@ -29,7 +29,9 @@ let report;
 try {
   report = JSON.parse(res.stdout);
 } catch {
-  console.error('❌ eslint не отработал:\n' + (res.stderr || res.stdout).slice(0, 2000));
+  console.error(
+    '❌ eslint не отработал:\n' + (res.stderr || res.stdout).slice(0, 2000),
+  );
   process.exit(1);
 }
 
@@ -51,7 +53,9 @@ if (UPDATE) {
     BASELINE_PATH,
     JSON.stringify({ total, errors, warnings, byRule }, null, 2) + '\n',
   );
-  console.log(`Бейслайн обновлён: ${total} (errors ${errors}, warnings ${warnings}).`);
+  console.log(
+    `Бейслайн обновлён: ${total} (errors ${errors}, warnings ${warnings}).`,
+  );
   process.exit(0);
 }
 
@@ -59,7 +63,9 @@ let baseline;
 try {
   baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
 } catch {
-  console.error('Нет бейслайна — сгенерируй: node scripts/check-eslint-ratchet.mjs --update');
+  console.error(
+    'Нет бейслайна — сгенерируй: node scripts/check-eslint-ratchet.mjs --update',
+  );
   process.exit(1);
 }
 

@@ -36,6 +36,14 @@ export default tseslint.config(
     },
   },
   {
+    // scripts/*.mjs — plain-Node скрипты вне tsconfig: projectService не видит
+    // их и давал каждому файлу структурную (parse)-ошибку, из-за чего любой
+    // новый скрипт ронял храповик. Линтим без typed-правил.
+    files: ['scripts/**/*.mjs'],
+    extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: { sourceType: 'module' },
+  },
+  {
     // Тесты: паттерн проекта — сервис инстанцируется с поддельной Prisma
     // на any (см. CLAUDE.md «Тесты»), плюс jest-глобалы без типов в typed-линте.
     // unsafe-* здесь — заведомый шум, который наказывал храповиком каждый
