@@ -35,7 +35,7 @@ function TabIcon({
   id,
   active,
   color,
-  isTherapist,
+  isTherapist: _isTherapist,
 }: {
   id: Section;
   active: boolean;

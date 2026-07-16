@@ -118,9 +118,9 @@ export function ProfileSection({
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(
     null,
   );
-  const [insightsOpen] = useState(false); // kept for future use
+  const [_insightsOpen] = useState(false); // kept for future use
   const [showBestDayInfo, setShowBestDayInfo] = useState(false);
-  const [homeScreenStatus] = useState<string | null>(null);
+  const [_homeScreenStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setReady(false);
@@ -163,7 +163,7 @@ export function ProfileSection({
   const hasInsights =
     insights && insights.weeklyStats.some((s) => s.avg !== null);
 
-  const insightSummary = (() => {
+  const _insightSummary = (() => {
     if (!insights) return null;
     if (insights.bestDayOfWeek && insights.totalDays >= 7)
       return `Лучший день — ${insights.bestDayOfWeek}`;
@@ -172,7 +172,7 @@ export function ProfileSection({
     return 'Заполняй дневник каждый день';
   })();
 
-  const showHomeSuggestion = false; // moved to onboarding
+  const _showHomeSuggestion = false; // moved to onboarding
 
   return (
     <div

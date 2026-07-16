@@ -12,7 +12,6 @@ import { TherapistClientSheet } from './components/TherapistClientSheet';
 import { Loader } from './components/Loader';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './components/YSQTestSheet';
 import { shouldShowWeeklyQuestion } from './components/WeeklyQuestion';
-import { PairCard } from './components/PairCard';
 import {
   shouldShowChildhoodWheel,
   CHILDHOOD_DONE_KEY,
@@ -69,7 +68,7 @@ export default function App() {
     () => !!localStorage.getItem(ONBOARDING_SEEN_KEY),
   );
   const historyDays = 30;
-  const tabScrollPositions = useRef<Record<TrackerTab, number>>({
+  const _tabScrollPositions = useRef<Record<TrackerTab, number>>({
     today: 0,
     history: 0,
   });
@@ -79,12 +78,12 @@ export default function App() {
   );
   const [showYesterdaySheet, setShowYesterdaySheet] = useState(false);
   const [backfillDate, setBackfillDate] = useState<string | null>(null);
-  const [showYesterdayBanner, setShowYesterdayBanner] = useState(false);
-  const [showWeeklyQ, setShowWeeklyQ] = useState(() =>
+  const [_showYesterdayBanner, setShowYesterdayBanner] = useState(false);
+  const [_showWeeklyQ, _setShowWeeklyQ] = useState(() =>
     shouldShowWeeklyQuestion(),
   );
   const [pairData, setPairData] = useState<PairsData | null>(null);
-  const [pairCardDismissed, setPairCardDismissed] = useState<boolean | null>(
+  const [_pairCardDismissed, setPairCardDismissed] = useState<boolean | null>(
     null,
   );
   const [pendingPlans, setPendingPlans] = useState<PracticePlan[]>([]);
@@ -122,7 +121,7 @@ export default function App() {
   const [helpTasks, setHelpTasks] = useState<UserTask[] | null>(null);
   const [helpTasksKey, setHelpTasksKey] = useState(0);
   const YSQ_BANNER_DISMISSED_KEY = 'ysq_banner_dismissed';
-  const [showYsqBanner, setShowYsqBanner] = useState(
+  const [_showYsqBanner, setShowYsqBanner] = useState(
     () =>
       !!localStorage.getItem(YSQ_PROGRESS_KEY) &&
       !localStorage.getItem(YSQ_RESULT_KEY) &&

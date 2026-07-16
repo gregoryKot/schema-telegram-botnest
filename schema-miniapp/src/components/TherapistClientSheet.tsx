@@ -77,7 +77,7 @@ function nextSessionLabel(dateStr: string): string {
   return timePart ? `${base} · ${timePart}` : base;
 }
 
-function streakEmoji(s: number) {
+function _streakEmoji(s: number) {
   if (s >= 7) return '🔥';
   if (s >= 1) return '🌱';
   return '🫥';
@@ -208,7 +208,7 @@ export function TherapistClientSheet({
   // ─── Destructure for JSX convenience ─────────────────────────────────────────
   const {
     selectedClient,
-    setSelectedClient,
+    setSelectedClient: _setSelectedClient,
     showTasksSheet,
     setShowTasksSheet,
     showNotesSheet,

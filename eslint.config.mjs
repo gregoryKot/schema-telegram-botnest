@@ -6,7 +6,14 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    // Не линтим билд-артефакты и конфиги сборки: коммитнутый бандл мини-аппа
+    // (минифицированный JS) и vite-конфиг вне tsconfig-проекта давали лишь
+    // parse-error-шум.
+    ignores: [
+      'eslint.config.mjs',
+      'schema-miniapp/dist/**',
+      '**/vite.config.ts',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

@@ -70,7 +70,7 @@ const NEEDS = [
 
 type Step = 'mode' | 'response' | 'need' | 'action';
 const STEPS: Step[] = ['mode', 'response', 'need', 'action'];
-const STEP_LABELS = ['Режим', 'Ответ', 'Потребность', 'Действие'];
+const _STEP_LABELS = ['Режим', 'Ответ', 'Потребность', 'Действие'];
 
 function loadLocal(): FlashcardEntry[] {
   try {
