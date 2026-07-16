@@ -80,8 +80,12 @@ read-after-write, stateful-фейки, точные ассерты) — проб
     отбивают чужого терапевта; находки: removeClient без assertHasClient,
     create-ответ дневника отдаёт schemaIds не расшифрованными) и
     `diary.service.spec.ts` (15 — read-after-write всех трёх дневников,
-    изоляция юзеров). Осталось: `therapist-request.service.ts`,
-    `payment.controller.ts`.
+    изоляция юзеров), `therapist-request.service.spec.ts` (16 — non-admin
+    не может выдать роль ни одним путём; находка: выдача роли терапевта
+    идёт МИМО SecurityLogService, хотя `therapist_request_submitted` и
+    `role_changed` там объявлены), `payment.controller.spec.ts` (18 —
+    подпись считается настоящим RobokassaService; находка: ConflictException
+    не различает идемпотентный повтор и расхождение суммы — оба ackаются OK).
 12. ☐ `telegram.service.ts`: инвариант «answerCbQuery до БД» + try/catch —
     дёшево фиксируется grep-трипваером по образцу `table-registry.spec.ts`.
 13. ☐ Починка слабостей существующих тестов:
