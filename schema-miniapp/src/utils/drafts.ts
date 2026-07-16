@@ -23,7 +23,7 @@ export function saveDraft<T>(type: DiaryType, data: T) {
 export function loadDraft<T>(type: DiaryType): DiaryDraft<T> | null {
   try {
     const s = localStorage.getItem(DRAFT_KEYS[type]);
-    return s ? JSON.parse(s) : null;
+    return s ? (JSON.parse(s) as DiaryDraft<T>) : null;
   } catch {
     return null;
   }

@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../api';
-import type { AvailabilityRule, AdminBooking, SessionOption } from '../../api';
+import type {
+  AvailabilityRule,
+  AdminBooking,
+  SessionOption,
+  AdminBookingStatus,
+} from '../../api';
 import { card, btn, btnGhost, input } from './shared';
 
 const DAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -27,7 +32,7 @@ export function BookingSection({ adminKey }: { adminKey: string }) {
 // ── Integration status ──────────────────────────────────────────────────────
 
 function IntegrationStatus({ adminKey }: { adminKey: string }) {
-  const [s, setS] = useState<Record<string, any> | null>(null);
+  const [s, setS] = useState<AdminBookingStatus | null>(null);
   useEffect(() => { api.adminStatus(adminKey).then(setS).catch(() => setS(null)); }, [adminKey]);
   if (!s) return null;
   const dot = (on: boolean) => (

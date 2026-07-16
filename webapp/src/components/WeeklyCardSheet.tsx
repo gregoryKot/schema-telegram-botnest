@@ -89,8 +89,8 @@ function drawCard(
     ctx.textAlign = 'left';
     ctx.fillStyle = fg(0.07);
     ctx.beginPath();
-    ctx.roundRect?.(BAR_X, rowY + 12, BAR_MAX_W, BAR_H, 3.5) ??
-      ctx.rect(BAR_X, rowY + 12, BAR_MAX_W, BAR_H);
+    if (ctx.roundRect) ctx.roundRect(BAR_X, rowY + 12, BAR_MAX_W, BAR_H, 3.5);
+    else ctx.rect(BAR_X, rowY + 12, BAR_MAX_W, BAR_H);
     ctx.fill();
     if (avg !== null && avg > 0) {
       const fillW = Math.max(4, (avg / 10) * BAR_MAX_W);
@@ -99,8 +99,8 @@ function drawCard(
       barGrad.addColorStop(1, color);
       ctx.fillStyle = barGrad;
       ctx.beginPath();
-      ctx.roundRect?.(BAR_X, rowY + 12, fillW, BAR_H, 3.5) ??
-        ctx.rect(BAR_X, rowY + 12, fillW, BAR_H);
+      if (ctx.roundRect) ctx.roundRect(BAR_X, rowY + 12, fillW, BAR_H, 3.5);
+      else ctx.rect(BAR_X, rowY + 12, fillW, BAR_H);
       ctx.fill();
     }
   });

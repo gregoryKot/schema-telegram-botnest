@@ -63,7 +63,7 @@ async function doFetch(): Promise<void> {
   try {
     const res = await fetch('/api/user-flags', { headers: getHeaders() });
     if (res.ok) {
-      const data = await res.json();
+      const data = (await res.json()) as Partial<UserFlags>;
       flags = { ...DEFAULT_FLAGS, ...data };
     }
   } catch {

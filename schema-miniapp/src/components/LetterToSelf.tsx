@@ -14,7 +14,7 @@ interface Letter {
 
 function loadLocal(): Letter[] {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') as Letter[];
   } catch {
     return [];
   }

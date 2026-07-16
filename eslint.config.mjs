@@ -70,6 +70,7 @@ export default tseslint.config(
     // продакшен-кода правила действуют в полную силу.
     files: [
       '**/*.spec.ts',
+      '**/*.e2e-spec.ts',
       '**/*.test.ts',
       '**/*.test.tsx',
       '**/*.test-helpers.ts',

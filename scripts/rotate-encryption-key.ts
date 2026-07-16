@@ -15,10 +15,21 @@
 //
 // Re-runnable: re-encrypting an already-current value is a no-op cost-wise.
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { reencrypt } from '../src/utils/crypto';
 
 const prisma = new PrismaClient();
+
+// Minimal structural view of a Prisma model delegate — this script dispatches
+// over models by runtime name, so it can't use the concrete generated types.
+type Row = Record<string, unknown>;
+interface Delegate {
+  findMany(args: { select: Record<string, true> }): Promise<Row[]>;
+  update(args: {
+    where: { id: number | string };
+    data: Record<string, string>;
+  }): Promise<unknown>;
+}
 
 // (table prismaName, fields to rotate)
 const TARGETS: Array<{ name: string; fields: string[] }> = [
@@ -101,17 +112,19 @@ async function rotate() {
   let grand = 0;
 
   for (const { name, fields } of TARGETS) {
-    const repo = (prisma as any)[name];
+    const repo = (prisma as unknown as Record<string, Delegate | undefined>)[
+      name
+    ];
     if (!repo?.findMany) {
       console.warn(`! Skipping ${name} — no Prisma model`);
       continue;
     }
     const select: Record<string, true> = { id: true };
     for (const f of fields) select[f] = true;
-    const rows: any[] = await repo.findMany({ select });
+    const rows = await repo.findMany({ select });
     let touched = 0;
     for (const row of rows) {
-      const patch: Record<string, any> = {};
+      const patch: Record<string, string> = {};
       for (const f of fields) {
         const v = row[f];
         if (v == null) continue;
@@ -119,10 +132,13 @@ async function rotate() {
         // already handled by migrateClinicalLabels on startup).
         if (typeof v !== 'string') continue;
         const fresh = reencrypt(v);
-        if (fresh !== v) patch[f] = fresh;
+        if (fresh !== null && fresh !== v) patch[f] = fresh;
       }
       if (Object.keys(patch).length > 0) {
-        await repo.update({ where: { id: row.id }, data: patch });
+        await repo.update({
+          where: { id: row.id as number | string },
+          data: patch,
+        });
         touched++;
       }
     }
@@ -140,15 +156,18 @@ async function rotate() {
   });
   let userTouched = 0;
   for (const u of users) {
-    const patch: any = {};
+    const patch: Record<string, string> = {};
     for (const f of ['mySchemaIds', 'myModeIds'] as const) {
-      const v = (u as any)[f];
+      const v = u[f];
       if (typeof v !== 'string') continue;
       const fresh = reencrypt(v);
-      if (fresh !== v) patch[f] = fresh;
+      if (fresh !== null && fresh !== v) patch[f] = fresh;
     }
     if (Object.keys(patch).length > 0) {
-      await prisma.user.update({ where: { id: u.id }, data: patch });
+      await prisma.user.update({
+        where: { id: u.id },
+        data: patch as Prisma.UserUpdateInput,
+      });
       userTouched++;
     }
   }

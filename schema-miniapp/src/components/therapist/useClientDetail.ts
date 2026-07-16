@@ -335,8 +335,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
   function buildExportText(): string {
     if (!selectedClient || !concept) return '';
     const therapistName =
-      window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ??
-      'Терапевт';
+      window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? 'Терапевт';
     const clientName =
       selectedClient.clientAlias ??
       selectedClient.name ??

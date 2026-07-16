@@ -145,7 +145,7 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
           const stored = localStorage.getItem(LS_KEY(schemaId));
           if (stored) {
             try {
-              setData(JSON.parse(stored));
+              setData(JSON.parse(stored) as SchemaIntroData);
             } catch {
               /* best-effort: ошибку намеренно игнорируем */
             }
@@ -156,7 +156,7 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
         const stored = localStorage.getItem(LS_KEY(schemaId));
         if (stored) {
           try {
-            setData(JSON.parse(stored));
+            setData(JSON.parse(stored) as SchemaIntroData);
           } catch {
             /* best-effort: ошибку намеренно игнорируем */
           }
@@ -167,7 +167,9 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
   if (!schema) return null;
 
   const colorHex = VAR_HEX[schema.color] ?? '#a78bfa';
-  const hasAny = Object.values(data).some((v) => v.trim().length > 0);
+  const hasAny = (Object.values(data) as string[]).some(
+    (v) => v.trim().length > 0,
+  );
   const q = QUESTIONS[step];
   const answer = q ? data[q.key] : '';
 

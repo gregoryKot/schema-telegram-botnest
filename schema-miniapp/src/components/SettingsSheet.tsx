@@ -272,7 +272,8 @@ export function SettingsSheet({
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                view !== 'main' ? setView('main') : onClose();
+                if (view !== 'main') setView('main');
+                else onClose();
               }
             }}
             style={{

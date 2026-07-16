@@ -99,7 +99,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
           const stored = localStorage.getItem(STORAGE_KEY(modeId));
           if (stored) {
             try {
-              setData(JSON.parse(stored));
+              setData(JSON.parse(stored) as IntroData);
             } catch {
               /* best-effort: ошибку намеренно игнорируем */
             }
@@ -110,7 +110,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
         const stored = localStorage.getItem(STORAGE_KEY(modeId));
         if (stored) {
           try {
-            setData(JSON.parse(stored));
+            setData(JSON.parse(stored) as IntroData);
           } catch {
             /* best-effort: ошибку намеренно игнорируем */
           }
@@ -121,7 +121,9 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
   if (!mode) return null;
 
   const color = mode.groupColor ?? 'var(--accent)';
-  const hasAny = Object.values(data).some((v) => v.trim().length > 0);
+  const hasAny = (Object.values(data) as string[]).some(
+    (v) => v.trim().length > 0,
+  );
   const q = QUESTIONS[step];
   const answer = q ? data[q.key] : '';
 

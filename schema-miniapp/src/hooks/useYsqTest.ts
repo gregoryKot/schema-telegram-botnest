@@ -506,7 +506,10 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
       if (!autoResume) {
         const result = localStorage.getItem(YSQ_RESULT_KEY);
         if (result) {
-          const parsed = JSON.parse(result);
+          const parsed = JSON.parse(result) as {
+            answers?: number[];
+            date?: string;
+          };
           if (
             parsed.answers &&
             Array.isArray(parsed.answers) &&

@@ -122,7 +122,7 @@ function formatGreetingDate(): string {
 
 function readLocalIds(key: string): string[] {
   try {
-    return JSON.parse(localStorage.getItem(key) ?? '[]');
+    return JSON.parse(localStorage.getItem(key) ?? '[]') as string[];
   } catch {
     return [];
   }
@@ -1358,7 +1358,9 @@ function OnboardingWidget({
 }) {
   const [skipped, setSkipped] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem(ONBOARDING_SKIPPED_KEY) ?? '[]');
+      return JSON.parse(
+        localStorage.getItem(ONBOARDING_SKIPPED_KEY) ?? '[]',
+      ) as string[];
     } catch {
       return [];
     }

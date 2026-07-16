@@ -13,7 +13,9 @@ interface SafePlaceData {
 
 function loadLocal(): SafePlaceData | null {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ?? 'null',
+    ) as SafePlaceData | null;
   } catch {
     return null;
   }

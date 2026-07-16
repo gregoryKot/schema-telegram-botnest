@@ -85,7 +85,9 @@ const BELIEFS: Record<string, string[]> = {
 
 function readSchemaIds(): string[] {
   try {
-    return JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '[]');
+    return JSON.parse(
+      localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '[]',
+    ) as string[];
   } catch {
     return [];
   }
