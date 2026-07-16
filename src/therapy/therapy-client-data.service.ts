@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
@@ -218,7 +219,7 @@ export class TherapyClientDataService {
     const rows = await this.prisma.userSchemaNote.findMany({
       where: { userId: BigInt(clientId) },
     });
-    return rows.map((r) => decryptRecord(r as any, SCHEMA_NOTE_SCHEMA));
+    return rows.map((r) => decryptRecord(r, SCHEMA_NOTE_SCHEMA));
   }
 
   async getClientModeNotes(therapistId: bigint, clientId: number) {
@@ -227,7 +228,7 @@ export class TherapyClientDataService {
     const rows = await this.prisma.userModeNote.findMany({
       where: { userId: BigInt(clientId) },
     });
-    return rows.map((r) => decryptRecord(r as any, MODE_NOTE_SCHEMA));
+    return rows.map((r) => decryptRecord(r, MODE_NOTE_SCHEMA));
   }
 
   async requestYsq(therapistId: bigint, clientId: number): Promise<void> {
@@ -264,15 +265,16 @@ export class TherapyClientDataService {
     if (body.nextSession !== undefined) data['nextSession'] = body.nextSession;
     if (body.meetingDays !== undefined) data['meetingDays'] = body.meetingDays;
     if (Object.keys(data).length === 0) return;
+    const mutation = data as Prisma.TherapyRelationUpdateManyMutationInput;
     if (clientId < 0) {
       await this.prisma.therapyRelation.updateMany({
         where: { id: -clientId, therapistId, status: 'active' },
-        data: data as any,
+        data: mutation,
       });
     } else {
       await this.prisma.therapyRelation.updateMany({
         where: { therapistId, clientId: BigInt(clientId), status: 'active' },
-        data: data as any,
+        data: mutation,
       });
     }
   }
