@@ -27,7 +27,7 @@ RUN npm run build
 
 # Build webapp (website) — output → webapp/dist/ → served at /
 # VITE_BOT_USERNAME is baked into the bundle so the Telegram Login Widget works
-ENV VITE_BOT_USERNAME=SchemaLabBot
+ENV VITE_BOT_USERNAME=SchemeHappensBot
 RUN npm run build --prefix webapp
 
 # Copy the pre-built Telegram mini-app into webapp/dist/app → served at /app by
