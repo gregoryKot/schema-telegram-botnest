@@ -3,6 +3,7 @@ import { api } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { BookingPicker } from '../components/BookingPicker';
 import { DARK_BG, INK_ON_DARK, Btn, ThemeIcon, useReveal, useTilt, useTheme } from '../components/landing-kit';
+import { botUrl, botHandle } from '../utils/botConfig';
 
 // ─── Design tokens (local to landing) ────────────────────────────────────────
 const MOSS = '#4a6335';        // green status (passes WCAG AA on paper bg)
@@ -361,7 +362,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Что такое «Всё по схеме» и зачем оно нужно?',
-    a: '«Всё по схеме» – бесплатное веб-приложение, которое я создал для самостоятельной работы между сессиями. Дневник состояний, диагностика схем (тест по схемам), упражнения из схема-терапии и КПТ, отслеживание динамики. Работает в браузере и через Telegram-бот @SchemaLabBot.',
+    a: `«Всё по схеме» – бесплатное веб-приложение, которое я создал для самостоятельной работы между сессиями. Дневник состояний, диагностика схем (тест по схемам), упражнения из схема-терапии и КПТ, отслеживание динамики. Работает в браузере и через Telegram-бот ${botHandle}.`,
   },
 ];
 
@@ -906,7 +907,7 @@ export function LandingPage() {
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <Btn href="https://schemehappens.ru" newTab={false}>Попробовать бесплатно</Btn>
-                <Btn variant="ghost" href="https://t.me/SchemaLabBot">Telegram-бот</Btn>
+                <Btn variant="ghost" href={botUrl}>Telegram-бот</Btn>
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

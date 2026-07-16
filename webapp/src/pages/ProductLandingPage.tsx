@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useRecentArticles } from '../components/landing-kit';
 import type { ArticleSummary } from '../api';
+import { botUrl, botHandle } from '../utils/botConfig';
 
 // Продуктовый лендинг «Всё по схеме» — главная app-домена (schemehappens.ru).
 // САМОСТОЯТЕЛЬНАЯ айдентика: тёмный «ночной» холст + аврора-градиенты, глассморфизм,
 // крупная жирная типографика. Намеренно НЕ похоже на тёплую serif-страничку терапевта.
 // Палитра захардкожена (не зависит от app-темы) — это отдельный маркетинговый бренд.
 
-const BOT_URL = 'https://t.me/SchemaLabBot';
+const BOT_URL = botUrl;
 const AUTHOR_SITE = 'https://kotlarewski.gr';
 
 // ─── Палитра (self-contained, тёмная) ────────────────────────────────────────
@@ -313,7 +314,7 @@ export function ProductLandingPage() {
               <span style={EYEBROW}>Telegram</span>
               <h2 style={{ ...H2, margin: '14px 0 18px' }}>Живёт и в&nbsp;Telegram</h2>
               <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, maxWidth: 470, margin: '0 0 26px' }}>
-                Бот <strong style={{ color: INK }}>@SchemaLabBot</strong> раз в месяц мягко напомнит заглянуть на чек-ин,
+                Бот <strong style={{ color: INK }}>{botHandle}</strong> раз в месяц мягко напомнит заглянуть на чек-ин,
                 а мини-приложение открывается прямо в чате — тот же дневник, те же схемы.
                 Данные общие с сайтом: начните в телефоне, продолжите в браузере.
               </p>

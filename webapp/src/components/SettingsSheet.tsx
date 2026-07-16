@@ -7,6 +7,7 @@ import { Loader } from './Loader';
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
 import type { Theme } from '../utils/theme';
 import { useSetAddressForm } from '../utils/addressForm';
+import { botHandle, botShortUrl } from '../utils/botConfig';
 
 const TIMEZONES = [
   { label: 'Лос-Анджелес (UTC−8)', iana: 'America/Los_Angeles' },
@@ -333,7 +334,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 </div>
 
                 {/* Уведомления */}
-                <SHead id="s-notifications" label="Уведомления" hint="Приходят через Telegram — @SchemaLabBot" />
+                <SHead id="s-notifications" label="Уведомления" hint={`Приходят через Telegram — ${botHandle}`} />
                 {settings.notifyPausedUntil && new Date(settings.notifyPausedUntil) > new Date() && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                     <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
@@ -548,7 +549,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 {/* Поделиться */}
                 <SHead id="s-share" label="Поделиться" />
                 <SRow title="Пригласить друга" sub="Поделиться ссылкой на бота" onClick={async () => {
-                  const text = 'Трекер потребностей – отслеживай своё состояние каждый день. t.me/SchemaLabBot';
+                  const text = `Трекер потребностей – отслеживай своё состояние каждый день. ${botShortUrl}`;
                   try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); } catch { try { await navigator.clipboard.writeText(text); } catch {} }
                 }} />
                 <SRow title="Сводка для терапевта" sub="Данные за 30 дней" onClick={async () => {
