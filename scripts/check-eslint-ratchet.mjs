@@ -68,10 +68,21 @@ if (total > baseline.total) {
     `❌ eslint-храповик: счётчик вырос ${baseline.total} → ${total} ` +
       `(errors ${baseline.errors} → ${errors}, warnings ${baseline.warnings} → ${warnings}).`,
   );
-  console.error('Правила с ростом против бейслайна:');
+  console.error('Правила с ростом против бейслайна (и файлы с их вхождениями):');
   for (const [rule, n] of Object.entries(byRule).sort((a, b) => b[1] - a[1])) {
     const base = baseline.byRule?.[rule] ?? 0;
-    if (n > base) console.error(`   ${rule}: ${base} → ${n}`);
+    if (n <= base) continue;
+    console.error(`   ${rule}: ${base} → ${n}`);
+    for (const f of report) {
+      const hits = f.messages.filter((m) => (m.ruleId ?? '(parse)') === rule);
+      if (hits.length)
+        console.error(
+          `      ${f.filePath}: ${hits.length} (стр. ${hits
+            .slice(0, 5)
+            .map((m) => m.line)
+            .join(', ')})`,
+        );
+    }
   }
   console.error(
     'Правило №9 CLAUDE.md: ни один PR не увеличивает счётчик eslint.\n' +
