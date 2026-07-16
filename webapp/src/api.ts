@@ -455,7 +455,7 @@ export const api = {
   saveYsqProgress: (answers: number[], page: number) =>
     post('/api/ysq-progress', { answers, page }),
   deleteYsqProgress: () => del('/api/ysq-progress'),
-  needs: () => get<any[]>('/api/needs'),
+  needs: () => get<import('./types').Need[]>('/api/needs'),
   ratings: (date?: string) =>
     get<Record<string, number>>(
       `/api/ratings${date ? `?date=${encodeURIComponent(date)}` : ''}`,
@@ -464,7 +464,7 @@ export const api = {
     needId: string,
     value: number,
     date?: string,
-  ): Promise<{ ok: boolean; allDone: boolean; streak?: any }> => {
+  ): Promise<{ ok: boolean; allDone: boolean; streak?: StreakData }> => {
     const res = await fetch(`${BASE}/api/rating`, {
       method: 'POST',
       headers: authHeaders(),
@@ -474,26 +474,36 @@ export const api = {
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     return res.json();
   },
-  history: (days = 7) => get<any[]>(`/api/history?days=${days}`),
-  getSettings: () => get<any>('/api/settings'),
-  updateSettings: (body: any) => post('/api/settings', body),
-  getAchievements: () => get<any[]>('/api/achievements'),
+  history: (days = 7) => get<import('./types').DayHistory[]>(`/api/history?days=${days}`),
+  getSettings: () => get<UserSettings>('/api/settings'),
+  updateSettings: (body: Partial<UserSettings>) => post('/api/settings', body),
+  getAchievements: () => get<Achievement[]>('/api/achievements'),
   getNote: (date: string) =>
     get<{ text: string | null; tags: string[] }>(`/api/note?date=${date}`),
   saveNote: (date: string, text: string, tags?: string[]) =>
     post('/api/note', { date, text, tags }),
-  getStreak: () => get<any>('/api/streak'),
+  getStreak: () => get<StreakData>('/api/streak'),
   recordActivity: () => post('/api/activity', {}),
-  getInsights: () => get<any>('/api/insights'),
+  getInsights: () =>
+    get<{
+      weeklyStats: Array<{
+        needId: string;
+        avg: number | null;
+        trend: '↑' | '↓' | '→';
+      }>;
+      bestDayOfWeek: string | null;
+      worstDayOfWeek: string | null;
+      totalDays: number;
+    }>('/api/insights'),
   getExport: () => get<{ text: string }>('/api/export'),
   getPractices: (needId: string) =>
-    get<any[]>(`/api/practices?needId=${needId}`),
+    get<UserPractice[]>(`/api/practices?needId=${needId}`),
   addPractice: (needId: string, text: string) =>
     post('/api/practices', { needId, text }),
   deletePractice: (id: number) => del(`/api/practices/${id}`),
   deleteAllUserData: () => del('/api/user'),
-  getPendingPlans: () => get<any[]>('/api/plan/pending'),
-  getPlanHistory: (days = 30) => get<any[]>(`/api/plans/history?days=${days}`),
+  getPendingPlans: () => get<PracticePlan[]>('/api/plan/pending'),
+  getPlanHistory: (days = 30) => get<PracticePlan[]>(`/api/plans/history?days=${days}`),
   createPlan: (
     needId: string,
     practiceText: string,
@@ -501,7 +511,7 @@ export const api = {
   ) => post('/api/plan', { needId, practiceText, reminderUtcHour }),
   checkinPlan: (id: number, done: boolean) =>
     post(`/api/plan/${id}/checkin`, { done }),
-  getPair: () => get<any>('/api/pair'),
+  getPair: () => get<PairsData>('/api/pair'),
   createPairInvite: async () => {
     const res = await fetch(`${BASE}/api/pair/invite`, {
       method: 'POST',
@@ -530,30 +540,54 @@ export const api = {
     get<{ answers: number[]; completedAt: string } | null>('/api/ysq-result'),
   saveYsqResult: (answers: number[]) => post('/api/ysq-result', { answers }),
   deleteYsqResult: () => del('/api/ysq-result'),
-  getYsqHistory: () => get<any[]>('/api/ysq-history'),
-  getProfile: () => get<any>('/api/profile'),
+  getYsqHistory: () => get<YsqHistoryEntry[]>('/api/ysq-history'),
+  getProfile: () => get<import('./types').UserProfile>('/api/profile'),
   updateName: (name: string) =>
     postJson<{ ok: boolean }>('/api/profile/name', { name }),
-  getSchemaDiary: () => get<any[]>('/api/diary/schema'),
-  createSchemaDiary: (data: any) => postJson<any>('/api/diary/schema', data),
+  getSchemaDiary: () => get<import('./types').SchemaDiaryEntry[]>('/api/diary/schema'),
+  createSchemaDiary: (data: {
+    trigger: string;
+    emotions: import('./types').EmotionEntry[];
+    thoughts?: string;
+    bodyFeelings?: string;
+    actualBehavior?: string;
+    schemaIds: string[];
+    schemaOrigin?: string;
+    healthyView?: string;
+    realProblems?: string;
+    excessiveReactions?: string;
+    healthyBehavior?: string;
+  }) => postJson<import('./types').SchemaDiaryEntry>('/api/diary/schema', data),
   deleteSchemaDiary: (id: number) => del(`/api/diary/schema/${id}`),
-  getModeDiary: () => get<any[]>('/api/diary/mode'),
-  createModeDiary: (data: any) => postJson<any>('/api/diary/mode', data),
+  getModeDiary: () => get<import('./types').ModeDiaryEntry[]>('/api/diary/mode'),
+  createModeDiary: (data: {
+    modeId: string;
+    situation: string;
+    thoughts?: string;
+    feelings?: string;
+    bodyFeelings?: string;
+    actions?: string;
+    actualNeed?: string;
+    childhoodMemories?: string;
+  }) => postJson<import('./types').ModeDiaryEntry>('/api/diary/mode', data),
   deleteModeDiary: (id: number) => del(`/api/diary/mode/${id}`),
-  getGratitudeDiary: () => get<any[]>('/api/diary/gratitude'),
+  getGratitudeDiary: () => get<import('./types').GratitudeDiaryEntry[]>('/api/diary/gratitude'),
   createGratitudeDiary: (date: string, items: string[]) =>
-    postJson<any>('/api/diary/gratitude', { date, items }),
+    postJson<import('./types').GratitudeDiaryEntry>('/api/diary/gratitude', {
+      date,
+      items,
+    }),
   deleteGratitudeDiary: (id: number) => del(`/api/diary/gratitude/${id}`),
   createTherapyInvite: () =>
     postJson<{ code: string; url: string }>('/api/therapy/invite', {}),
-  getTherapyRelation: () => get<any | null>('/api/therapy/relation'),
+  getTherapyRelation: () => get<TherapyRelationInfo | null>('/api/therapy/relation'),
   joinTherapy: (code: string) => post('/api/therapy/join', { code }),
   leaveTherapy: () => del('/api/therapy/relation'),
-  getTherapyClients: () => get<any[]>('/api/therapy/clients'),
+  getTherapyClients: () => get<TherapyClientSummary[]>('/api/therapy/clients'),
   addClientManually: (clientTelegramId: number) =>
-    postJson<any[]>('/api/therapy/clients/add', { clientTelegramId }),
+    postJson<TherapyClientSummary[]>('/api/therapy/clients/add', { clientTelegramId }),
   addVirtualClient: (name: string) =>
-    postJson<any[]>('/api/therapy/clients/virtual', { name }),
+    postJson<TherapyClientSummary[]>('/api/therapy/clients/virtual', { name }),
   removeClient: (clientId: number) => del(`/api/therapy/clients/${clientId}`),
   renameClient: (clientId: number, alias: string) =>
     post(`/api/therapy/rename-client/${clientId}`, { alias }),
@@ -571,21 +605,28 @@ export const api = {
     contacts: string;
     message?: string;
   }) => postJson<{ ok: boolean }>('/api/therapy/request', body),
-  createTask: (body: any) => postJson<any>('/api/therapy/tasks', body),
-  getTasks: () => get<any[]>('/api/therapy/tasks'),
-  getTaskHistory: () => get<any[]>('/api/therapy/tasks/history'),
+  createTask: (body: {
+    type: string;
+    text: string;
+    targetDays?: number;
+    needId?: string;
+    dueDate?: string;
+    clientId?: number;
+  }) => postJson<UserTask>('/api/therapy/tasks', body),
+  getTasks: () => get<UserTask[]>('/api/therapy/tasks'),
+  getTaskHistory: () => get<UserTask[]>('/api/therapy/tasks/history'),
   completeTask: (id: number, done: boolean) =>
     post(`/api/therapy/tasks/${id}/complete`, { done }),
   getTherapyTasksForClient: (clientId: number) =>
-    get<any[]>(`/api/therapy/tasks/client/${clientId}`),
+    get<UserTask[]>(`/api/therapy/tasks/client/${clientId}`),
   getAllTherapyTasks: () =>
     get<{ clientId: number; clientName: string; tasks: UserTask[] }[]>(
       '/api/therapy/tasks/all',
     ),
   getTherapistNotes: (clientId: number) =>
-    get<any[]>(`/api/therapy/notes/${clientId}`),
+    get<TherapistNote[]>(`/api/therapy/notes/${clientId}`),
   createTherapistNote: (clientId: number, date: string, text: string) =>
-    postJson<any>(`/api/therapy/notes/${clientId}`, { date, text }),
+    postJson<TherapistNote>(`/api/therapy/notes/${clientId}`, { date, text }),
   deleteTherapistNote: (noteId: number) => del(`/api/therapy/notes/${noteId}`),
   getConceptualization: (clientId: number) =>
     get<ClientConceptualization | null>(
@@ -604,34 +645,130 @@ export const api = {
       `/api/therapy/conceptualization/${clientId}`,
       body,
     ),
-  updateSessionInfo: (clientId: number, body: any) =>
-    post(`/api/therapy/session-info/${clientId}`, body),
+  updateSessionInfo: (
+    clientId: number,
+    body: {
+      therapyStartDate?: string | null;
+      nextSession?: string | null;
+      meetingDays?: number[];
+    },
+  ) => post(`/api/therapy/session-info/${clientId}`, body),
   getTherapyClientData: (clientId: number) =>
-    get<any>(`/api/therapy/client-data/${clientId}`),
+    get<ClientData>(`/api/therapy/client-data/${clientId}`),
   getTherapyClientHistory: (clientId: number) =>
     get<
       { date: string; index: number | null; ratings: Record<string, number> }[]
     >(`/api/therapy/client-history/${clientId}`),
-  getSchemaNotes: () => get<any[]>('/api/schema-notes'),
-  saveSchemaNote: (body: any) => post('/api/schema-notes', body),
-  getModeNotes: () => get<any[]>('/api/mode-notes'),
-  saveModeNote: (body: any) => post('/api/mode-notes', body),
-  getBeliefChecks: () => get<any[]>('/api/belief-checks'),
-  createBeliefCheck: (body: any) => post('/api/belief-checks', body),
+  getSchemaNotes: () =>
+    get<
+      Array<{
+        schemaId: string;
+        triggers: string;
+        feelings: string;
+        thoughts: string;
+        origins: string;
+        reality: string;
+        healthyView: string;
+        behavior: string;
+      }>
+    >('/api/schema-notes'),
+  saveSchemaNote: (body: {
+    schemaId: string;
+    triggers?: string;
+    feelings?: string;
+    thoughts?: string;
+    origins?: string;
+    reality?: string;
+    healthyView?: string;
+    behavior?: string;
+  }) => post('/api/schema-notes', body),
+  getModeNotes: () =>
+    get<
+      Array<{
+        modeId: string;
+        triggers: string;
+        feelings: string;
+        thoughts: string;
+        needs: string;
+        behavior: string;
+      }>
+    >('/api/mode-notes'),
+  saveModeNote: (body: {
+    modeId: string;
+    triggers?: string;
+    feelings?: string;
+    thoughts?: string;
+    needs?: string;
+    behavior?: string;
+  }) => post('/api/mode-notes', body),
+  getBeliefChecks: () =>
+    get<
+      Array<{
+        id: number;
+        belief: string;
+        evidenceFor: string[];
+        evidenceAgainst: string[];
+        reframe: string | null;
+        createdAt: string;
+      }>
+    >('/api/belief-checks'),
+  createBeliefCheck: (body: {
+    belief: string;
+    evidenceFor: string[];
+    evidenceAgainst: string[];
+    reframe?: string;
+  }) => post('/api/belief-checks', body),
   deleteBeliefCheck: (id: number) => del(`/api/belief-checks/${id}`),
-  getLetters: () => get<any[]>('/api/letters'),
+  getLetters: () =>
+    get<Array<{ id: number; text: string; createdAt: string }>>('/api/letters'),
   createLetter: (text: string) => post('/api/letters', { text }),
   deleteLetter: (id: number) => del(`/api/letters/${id}`),
-  getSafePlace: () => get<any | null>('/api/safe-place'),
+  getSafePlace: () =>
+    get<{ description: string; updatedAt: string } | null>('/api/safe-place'),
   saveSafePlace: (description: string) =>
     post('/api/safe-place', { description }),
-  getFlashcards: () => get<any[]>('/api/flashcards'),
-  createFlashcard: (body: any) => post('/api/flashcards', body),
+  getFlashcards: () =>
+    get<
+      Array<{
+        id: number;
+        modeId: string;
+        needId: string;
+        reflection: string | null;
+        action: string | null;
+        createdAt: string;
+      }>
+    >('/api/flashcards'),
+  createFlashcard: (body: {
+    modeId: string;
+    needId: string;
+    reflection?: string;
+    action?: string;
+  }) => post('/api/flashcards', body),
   deleteFlashcard: (id: number) => del(`/api/flashcards/${id}`),
   getClientSchemaNotes: (clientId: number) =>
-    get<any[]>(`/api/therapy/client/${clientId}/schema-notes`),
+    get<
+      Array<{
+        schemaId: string;
+        triggers: string;
+        feelings: string;
+        thoughts: string;
+        origins: string;
+        reality: string;
+        healthyView: string;
+        behavior: string;
+      }>
+    >(`/api/therapy/client/${clientId}/schema-notes`),
   getClientModeNotes: (clientId: number) =>
-    get<any[]>(`/api/therapy/client/${clientId}/mode-notes`),
+    get<
+      Array<{
+        modeId: string;
+        triggers: string;
+        feelings: string;
+        thoughts: string;
+        needs: string;
+        behavior: string;
+      }>
+    >(`/api/therapy/client/${clientId}/mode-notes`),
   getClientDiary: (clientId: number) =>
     get<
       {
@@ -718,7 +855,7 @@ export const api = {
     postJson<{ ok: true }>(`/api/subscription/cancel/${token}`, {}),
   // Booking admin — key travels in the x-admin-key header (never in URL/logs)
   adminStatus: (key: string) =>
-    adminReq<Record<string, any>>('GET', '/api/booking/admin/status', key),
+    adminReq<Record<string, unknown>>('GET', '/api/booking/admin/status', key),
   adminGetPrices: (key: string) =>
     adminReq<SessionOption[]>('GET', '/api/booking/admin/prices', key),
   adminSetPrice: (

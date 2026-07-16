@@ -1,10 +1,10 @@
 {
-  "total": 477,
-  "errors": 399,
+  "total": 429,
+  "errors": 351,
   "warnings": 78,
   "byRule": {
     "(parse)": 7,
-    "@typescript-eslint/no-explicit-any": 141,
+    "@typescript-eslint/no-explicit-any": 93,
     "@typescript-eslint/no-unsafe-member-access": 101,
     "@typescript-eslint/no-unsafe-return": 19,
     "@typescript-eslint/no-unsafe-assignment": 54,
