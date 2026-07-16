@@ -64,6 +64,32 @@ try {
 }
 
 if (total > baseline.total) {
+  // Диагностика environment-расхождений: какой prettier резолвится и
+  // совпадает ли содержимое файла (см. инцидент PR #64).
+  try {
+    const { createRequire } = await import('module');
+    const req = createRequire(join(ROOT, 'package.json'));
+    const pPath = req.resolve('prettier/package.json');
+    const pVer = JSON.parse(readFileSync(pPath, 'utf8')).version;
+    let miniVer = '(нет)';
+    try {
+      const reqMini = createRequire(join(ROOT, 'schema-miniapp/package.json'));
+      const mp = reqMini.resolve('prettier/package.json');
+      miniVer = JSON.parse(readFileSync(mp, 'utf8')).version + ' @ ' + mp;
+    } catch {
+      /* prettier не установлен в miniapp — норм */
+    }
+    const { createHash } = await import('crypto');
+    const suspect = join(ROOT, 'schema-miniapp/src/components/YSQTestSheet.tsx');
+    const md5 = createHash('md5').update(readFileSync(suspect)).digest('hex');
+    console.error(
+      `   [diag] prettier(root) ${pVer} @ ${pPath}\n` +
+        `   [diag] prettier(miniapp) ${miniVer}\n` +
+        `   [diag] node ${process.version}, YSQTestSheet md5=${md5}`,
+    );
+  } catch (e) {
+    console.error('   [diag] не удалось: ' + e.message);
+  }
   console.error(
     `❌ eslint-храповик: счётчик вырос ${baseline.total} → ${total} ` +
       `(errors ${baseline.errors} → ${errors}, warnings ${baseline.warnings} → ${warnings}).`,
