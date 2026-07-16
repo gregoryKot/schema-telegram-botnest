@@ -8,7 +8,16 @@ export default tseslint.config(
   {
     // .claire/.claude — воркспейсы агент-сессий: их содержимое различается
     // между машинами и давало environment-зависимые счётчики храповика.
-    ignores: ['eslint.config.mjs', '.claire/**', '.claude/**'],
+    // dist — сборочный вывод, scripts/deploy — plain-Node утилиты вне tsconfig:
+    // типизированный линтер их не парсит и выдаёт только parse-ошибки-шум.
+    ignores: [
+      'eslint.config.mjs',
+      '.claire/**',
+      '.claude/**',
+      '**/dist/**',
+      'scripts/**',
+      'deploy/**',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
