@@ -9,6 +9,7 @@ import { PairsService } from './pairs.service';
 import { PracticesService } from './practices.service';
 import { ExercisesService } from './exercises.service';
 import { NotesService } from './notes.service';
+import { HealthyAdultService } from './healthy-adult.service';
 
 @Module({
   providers: [
@@ -22,6 +23,7 @@ import { NotesService } from './notes.service';
     PracticesService,
     ExercisesService,
     NotesService,
+    HealthyAdultService,
   ],
   exports: [
     BotService,
@@ -34,6 +36,7 @@ import { NotesService } from './notes.service';
     PracticesService,
     ExercisesService,
     NotesService,
+    HealthyAdultService,
   ],
 })
 export class BotModule {}

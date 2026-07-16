@@ -707,3 +707,15 @@ model Article {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// Фразы «Здорового Взрослого» для авто-публикации в Telegram-канал.
+// Управляются из админки (вкладка «Канал ЗВ»). Глобальный контент, не
+// пользовательские данные — вне чеклиста удаления аккаунта/merge.
+model HealthyAdultPhrase {
+  id        Int      @id @default(autoincrement())
+  text      String
+  enabled   Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
