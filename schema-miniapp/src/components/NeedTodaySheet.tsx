@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Need, COLORS, YESTERDAY } from '../types';
+import { Need, COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
@@ -137,7 +137,7 @@ export function NeedTodaySheet({
         <NeedRatingBar
           color={color}
           value={value}
-          yesterday={YESTERDAY[need.id]}
+          yesterday={yesterdayValue}
           onChange={onChange}
         />
       </div>
