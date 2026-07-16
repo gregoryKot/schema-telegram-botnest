@@ -100,7 +100,9 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
           if (stored) {
             try {
               setData(JSON.parse(stored));
-            } catch {}
+            } catch {
+              /* best-effort: ошибку намеренно игнорируем */
+            }
           }
         }
       })
@@ -109,7 +111,9 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
         if (stored) {
           try {
             setData(JSON.parse(stored));
-          } catch {}
+          } catch {
+            /* best-effort: ошибку намеренно игнорируем */
+          }
         }
       });
   }, [modeId]);
@@ -140,7 +144,9 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
     localStorage.setItem(STORAGE_KEY(modeId), JSON.stringify(data));
     try {
       await api.saveModeNote({ modeId, ...data });
-    } catch {}
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
     setSaving(false);
     setSaved(true);
     onComplete?.();

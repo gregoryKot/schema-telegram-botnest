@@ -1279,7 +1279,9 @@ export function ProfileSection({
                     try {
                       if (navigator.share) await navigator.share({ text });
                       else await navigator.clipboard.writeText(text);
-                    } catch {}
+                    } catch {
+                      /* best-effort: ошибку намеренно игнорируем */
+                    }
                   }}
                   className="btn-primary"
                 >

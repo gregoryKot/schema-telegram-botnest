@@ -115,7 +115,9 @@ export async function updateFlags(patch: Partial<UserFlags>): Promise<void> {
       headers: getHeaders(),
       body: JSON.stringify(patch),
     });
-  } catch {}
+  } catch {
+    /* best-effort: ошибку намеренно игнорируем */
+  }
 }
 
 /**

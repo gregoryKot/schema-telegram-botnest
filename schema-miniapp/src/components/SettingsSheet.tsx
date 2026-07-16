@@ -179,7 +179,9 @@ export function SettingsSheet({
           await navigator.share({
             text: `Давай отслеживать потребности вместе! ${url}`,
           });
-      } catch {}
+      } catch {
+        /* best-effort: ошибку намеренно игнорируем */
+      }
     } finally {
       setPairLoading(false);
     }
@@ -190,7 +192,9 @@ export function SettingsSheet({
       await navigator.clipboard.writeText(pairInviteUrl);
       setPairInviteCopied(true);
       setTimeout(() => setPairInviteCopied(false), 2000);
-    } catch {}
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
   }
 
   async function handleJoin() {
@@ -750,6 +754,7 @@ export function SettingsSheet({
                           setSavedToast(true);
                           setTimeout(() => setSavedToast(false), 1800);
                         } catch {
+                          /* best-effort: ошибку намеренно игнорируем */
                         } finally {
                           setNameSaving(false);
                         }
@@ -1996,7 +2001,9 @@ export function SettingsSheet({
                       } catch {
                         try {
                           await navigator.clipboard.writeText(text);
-                        } catch {}
+                        } catch {
+                          /* best-effort: ошибку намеренно игнорируем */
+                        }
                       }
                     }}
                   />
@@ -2013,11 +2020,15 @@ export function SettingsSheet({
                           await navigator.share({ text });
                           shared = true;
                         }
-                      } catch {}
+                      } catch {
+                        /* best-effort: ошибку намеренно игнорируем */
+                      }
                       if (!shared) {
                         try {
                           await navigator.clipboard.writeText(text);
-                        } catch {}
+                        } catch {
+                          /* best-effort: ошибку намеренно игнорируем */
+                        }
                         setExportText(text);
                       }
                     }}
@@ -2226,7 +2237,9 @@ export function SettingsSheet({
                   await navigator.clipboard.writeText(exportText);
                   setExportCopied(true);
                   setTimeout(() => setExportCopied(false), 2000);
-                } catch {}
+                } catch {
+                  /* best-effort: ошибку намеренно игнорируем */
+                }
               }}
               style={{
                 width: '100%',

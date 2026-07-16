@@ -146,7 +146,9 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
           if (stored) {
             try {
               setData(JSON.parse(stored));
-            } catch {}
+            } catch {
+              /* best-effort: ошибку намеренно игнорируем */
+            }
           }
         }
       })
@@ -155,7 +157,9 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
         if (stored) {
           try {
             setData(JSON.parse(stored));
-          } catch {}
+          } catch {
+            /* best-effort: ошибку намеренно игнорируем */
+          }
         }
       });
   }, [schemaId]);
@@ -186,7 +190,9 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
     localStorage.setItem(LS_KEY(schemaId), JSON.stringify(data));
     try {
       await api.saveSchemaNote({ schemaId, ...data });
-    } catch {}
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
     setSaving(false);
     setSaved(true);
     onComplete?.();

@@ -289,7 +289,9 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
         await navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
-      } catch {}
+      } catch {
+        /* best-effort: ошибку намеренно игнорируем */
+      }
       setFallbackText(text);
     } finally {
       setSharing(false);
@@ -415,7 +417,9 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
                   await navigator.clipboard.writeText(fallbackText);
                   setFallbackCopied(true);
                   setTimeout(() => setFallbackCopied(false), 2000);
-                } catch {}
+                } catch {
+                  /* best-effort: ошибку намеренно игнорируем */
+                }
               }}
               style={{
                 width: '100%',

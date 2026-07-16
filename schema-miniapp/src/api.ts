@@ -44,7 +44,9 @@ async function post(path: string, body: unknown): Promise<void> {
       if (j?.message)
         msg =
           typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-    } catch {}
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
     throw new Error(msg);
   }
 }
@@ -62,7 +64,9 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
       if (j?.message)
         msg =
           typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-    } catch {}
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
     throw new Error(msg);
   }
   return res.json();

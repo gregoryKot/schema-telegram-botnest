@@ -64,11 +64,17 @@ export function AchievementsSheet({ achievements, onClose }: Props) {
           await navigator.share({ text });
           return;
         }
-      } catch {}
+      } catch {
+        /* best-effort: ошибку намеренно игнорируем */
+      }
       try {
         await navigator.clipboard.writeText(text);
-      } catch {}
-    } catch {}
+      } catch {
+        /* best-effort: ошибку намеренно игнорируем */
+      }
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
   }
 
   return (

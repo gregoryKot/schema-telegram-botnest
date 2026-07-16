@@ -202,7 +202,9 @@ export function Celebration({ streak, onDone, insight }: Props) {
                 await navigator.clipboard.writeText(text);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
-              } catch {}
+              } catch {
+                /* best-effort: ошибку намеренно игнорируем */
+              }
             }
           }}
           style={{
