@@ -3,9 +3,9 @@
 // in-memory фейк, сервис инстанцируется напрямую (см. auth.service.spec.ts).
 // AccountService — тоже фейк, но читает роль из той же users-таблицы, чтобы
 // approve()/submit() видели согласованное состояние.
-// (f) Сервис НЕ вызывает SecurityLogService нигде, хотя security-log.service.ts
-// объявляет 'therapist_request_submitted'/'role_changed' именно для этого
-// сценария (ALERT_EVENTS → DM админу) — тестировать нечего, вызовов нет.
+// (f) Сервис вызывает SecurityLogService: submit() → 'therapist_request_submitted',
+// approve() → 'role_changed' (см. security-log.service.ts ALERT_EVENTS →
+// DM админу). securityLog — фейк ({ log: jest.fn() }), как в auth.service.spec.ts.
 import {
   BadRequestException,
   ConflictException,
@@ -76,8 +76,13 @@ function makeService() {
       return Promise.resolve(u?.role ?? 'CLIENT');
     }),
   };
-  const svc = new TherapistRequestService(prisma, accountService as any);
-  return { svc, prisma, requests, users, accountService };
+  const securityLog = { log: jest.fn() };
+  const svc = new TherapistRequestService(
+    prisma,
+    accountService as any,
+    securityLog as any,
+  );
+  return { svc, prisma, requests, users, accountService, securityLog };
 }
 
 const ORIGINAL_ENV = { ...process.env };
@@ -110,7 +115,7 @@ const INPUT = {
 
 describe('TherapistRequestService.submit', () => {
   it('happy path: сохраняет pending-заявку и шлёт админу карточку с approve/reject-кнопками', async () => {
-    const { svc, requests, users } = makeService();
+    const { svc, requests, users, securityLog } = makeService();
     users.push({ id: 1n, role: 'CLIENT' });
     const result = await svc.submit(1n, INPUT);
     expect(result).toEqual({ id: requests[0].id, status: 'pending' });
@@ -122,6 +127,12 @@ describe('TherapistRequestService.submit', () => {
       message: INPUT.message,
       status: 'pending',
     });
+
+    // Аудит-событие для SecurityLogService (ALERT_EVENTS → DM админу).
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'therapist_request_submitted',
+      expect.objectContaining({ userId: 1n, requestId: requests[0].id }),
+    );
 
     await flush();
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -203,7 +214,7 @@ describe('TherapistRequestService.getMine — только публичные п
 
 describe('TherapistRequestService.approve — выдача роли THERAPIST', () => {
   it('меняет User.role/therapistMode через фейковую Prisma, статус заявки → approved', async () => {
-    const { svc, users, requests } = makeService();
+    const { svc, users, requests, securityLog } = makeService();
     users.push({ id: 8n, role: 'CLIENT', therapistMode: false });
     const { id: reqId } = await svc.submit(8n, INPUT);
     await svc.approve(ADMIN_ID, reqId);
@@ -215,6 +226,18 @@ describe('TherapistRequestService.approve — выдача роли THERAPIST', 
       rejectReason: null,
     });
     expect(requests[0].reviewedAt).toBeInstanceOf(Date);
+
+    // Аудит-событие эскалации привилегий — кем и кому выдана роль.
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'role_changed',
+      expect.objectContaining({
+        userId: 8n,
+        role: 'THERAPIST',
+        adminId: ADMIN_ID,
+        requestId: reqId,
+      }),
+    );
+
     await flush();
     // Последний fetch-вызов — уведомление заявителю (первый был notifyAdmin в submit).
     const [, opts] = fetchMock.mock.calls.at(-1)!;
@@ -278,14 +301,20 @@ describe('approve/reject — только для админа, плюс пове
     );
   });
 
-  it('reject НЕ выдаёт роль, обрезает причину до 500 символов', async () => {
-    const { svc, users, requests } = makeService();
+  it('reject НЕ выдаёт роль, обрезает причину до 500 символов, НЕ шлёт role_changed', async () => {
+    const { svc, users, requests, securityLog } = makeService();
     users.push({ id: 14n, role: 'CLIENT' });
     const { id: reqId } = await svc.submit(14n, INPUT);
+    securityLog.log.mockClear(); // сбрасываем therapist_request_submitted от submit()
     await svc.reject(ADMIN_ID, reqId, 'x'.repeat(600));
     expect(users[0].role).toBe('CLIENT');
     expect(requests[0].status).toBe('rejected');
     expect(requests[0].rejectReason).toHaveLength(500);
+    // reject — не эскалация привилегий, role_changed не должен звучать.
+    expect(securityLog.log).not.toHaveBeenCalledWith(
+      'role_changed',
+      expect.anything(),
+    );
     await flush();
     const [, opts] = fetchMock.mock.calls.at(-1)!;
     expect(JSON.parse(opts.body).text).toContain('отклонена');

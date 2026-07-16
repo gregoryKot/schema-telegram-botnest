@@ -6,6 +6,7 @@
 import { ConflictException } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { PaymentController } from './payment.controller';
+import { PaymentAmountMismatchError } from './booking.service';
 import { RobokassaService } from './robokassa.service';
 import { DONATION_INVID_BASE } from '../donation/donation.service';
 import { SUBSCRIPTION_INVID_BASE } from '../subscription/subscription.service';
@@ -107,10 +108,10 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
     expect(res).toBe('OK7');
   });
 
-  it('расхождение суммы: BookingService.confirm тоже бросает ConflictException — контроллер НЕ отличает его от идемпотентного повтора и так же отвечает "OK" (реальная брoнь остаётся неподтверждённой, но админ уже заалерчен внутри BookingService.confirm)', async () => {
-    const { controller, booking } = makeController();
+  it('расхождение суммы: BookingService.confirm бросает PaymentAmountMismatchError — контроллер отличает его от идемпотентного повтора и отвечает "FAIL" (не подтверждаем деньги, которые не сверились; Robokassa продолжит ретраить, админ уже заалерчен внутри BookingService.confirm)', async () => {
+    const { controller, booking, notify } = makeController();
     booking.confirm.mockRejectedValueOnce(
-      new ConflictException('Amount mismatch — manual review'),
+      new PaymentAmountMismatchError('Amount mismatch — manual review'),
     );
     const outSum = '1.00';
     const invId = '7';
@@ -118,7 +119,9 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
 
     const res = await controller.handleResult(outSum, invId, sig);
 
-    expect(res).toBe('OK7'); // контроллер не различает эти два ConflictException
+    expect(res).toBe('FAIL7');
+    // Алерт уже был внутри BookingService.confirm — контроллер не дублирует его.
+    expect(notify.alertAdmin).not.toHaveBeenCalled();
   });
 
   it('реальная (не Conflict) ошибка подтверждения → "FAIL", алертит админа', async () => {
