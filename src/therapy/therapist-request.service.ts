@@ -37,7 +37,12 @@ export class TherapistRequestService {
       this.logger.warn('sendTg: BOT_TOKEN not set');
       return;
     }
-    const body: any = { chat_id: chatId, text, parse_mode: 'HTML' };
+    const body: {
+      chat_id: number;
+      text: string;
+      parse_mode: string;
+      reply_markup?: object;
+    } = { chat_id: chatId, text, parse_mode: 'HTML' };
     if (replyMarkup) body.reply_markup = replyMarkup;
     let res: Response | undefined;
     try {
@@ -47,10 +52,9 @@ export class TherapistRequestService {
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(10_000),
       });
-    } catch (e: any) {
-      this.logger.warn(
-        `sendTg network error to chat_id=${chatId}: ${e.message}`,
-      );
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`sendTg network error to chat_id=${chatId}: ${msg}`);
       return;
     }
     if (!res.ok) {
@@ -130,8 +134,10 @@ export class TherapistRequestService {
           },
         });
 
-    this.notifyAdmin(row).catch((e) =>
-      this.logger.warn(`notifyAdmin failed: ${e?.message ?? e}`),
+    this.notifyAdmin(row).catch((e: unknown) =>
+      this.logger.warn(
+        `notifyAdmin failed: ${e instanceof Error ? e.message : String(e)}`,
+      ),
     );
     return { id: row.id, status: row.status };
   }
