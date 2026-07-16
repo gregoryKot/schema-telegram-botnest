@@ -199,6 +199,31 @@ describe('encryptJson / decryptJson', () => {
   });
 });
 
+describe('looksLikeCiphertext (используется encrypt-migration.ts для защиты от двойного шифрования)', () => {
+  it('настоящий шифроблок распознаётся как «похоже на шифротекст»', () => {
+    const { encrypt, looksLikeCiphertext } = loadCrypto({ key: KEY_A });
+    const blob = encrypt('данные')!;
+    expect(looksLikeCiphertext(blob)).toBe(true);
+  });
+
+  it('обычный плейнтекст (не base64 нужной длины) — не похож на шифротекст', () => {
+    const { looksLikeCiphertext } = loadCrypto({ key: KEY_A });
+    expect(looksLikeCiphertext('anxiety,anger')).toBe(false);
+    expect(looksLikeCiphertext('')).toBe(false);
+    expect(looksLikeCiphertext(null)).toBe(false);
+    expect(looksLikeCiphertext(undefined)).toBe(false);
+  });
+
+  it('короткий base64-блоб (< 29 байт) и мусор с недопустимыми символами — не похожи на шифротекст', () => {
+    const { looksLikeCiphertext } = loadCrypto({ key: KEY_A });
+    expect(looksLikeCiphertext(Buffer.from('short').toString('base64'))).toBe(
+      false,
+    );
+    // содержит пробел/запятую — не строгий base64-алфавит
+    expect(looksLikeCiphertext('not base64!, with spaces ===')).toBe(false);
+  });
+});
+
 describe('encryptRecord / decryptRecord (схема записи)', () => {
   const SCHEMA = { strings: ['text'], jsonArrays: ['items'] };
 

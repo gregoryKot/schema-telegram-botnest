@@ -221,34 +221,49 @@ describe('поведение при уже проведённой смене ENC
     expect(crypto.decrypt(oldBlob)).toBe('anxiety,anger'); // читается, пока жив OLD-ключ
   });
 
-  it('БАГ: если OLD-ключ уже убран, старый шифроблок трактуется как плейнтекст и шифруется повторно — оригинальный текст теряется', async () => {
+  it('ФИКС (был БАГ): если OLD-ключ уже убран, старый шифроблок распознаётся по формату и пропускается — не шифруется повторно', async () => {
     const oldMods = load({ key: KEY_A });
     const oldBlob = oldMods.crypto.encrypt('anxiety,anger')!;
 
     // Сценарий инцидента: старый ключ убрали из env, не прогнав
     // scripts/rotate-encryption-key.ts перед этим.
-    const { migrateClinicalLabels, crypto } = load({ key: KEY_B });
+    const { migrateClinicalLabels } = load({ key: KEY_B });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     const db = makeDb({ notes: [{ id: 1, tags: oldBlob }] }) as any;
     await migrateClinicalLabels(db);
 
-    // decrypt(oldBlob) новым ключом не срабатывает ⇒ decrypt() возвращает
-    // oldBlob без изменений ⇒ looksPlaintext(oldBlob) === true (совпал сам с
-    // собой) ⇒ код считает блок «плейнтекстом» и шифрует его ЕЩЁ РАЗ.
-    expect(db.note.update).toHaveBeenCalledTimes(1);
-    const stored = db.note.update.mock.calls[0][0].data.tags;
-    expect(stored).not.toBe(oldBlob);
+    // Раньше: decrypt(oldBlob) новым ключом не срабатывает ⇒ decrypt()
+    // возвращает oldBlob без изменений ⇒ looksPlaintext(oldBlob) === true
+    // (совпал сам с собой) ⇒ код считал блок «плейнтекстом» и шифровал его
+    // ЕЩЁ РАЗ — оригинал терялся необратимо.
+    //
+    // Теперь: строка decrypt-инвариантна, НО похожа на формат шифротекста
+    // (looksLikeCiphertext — строгий base64 ≥29 байт) ⇒ классифицируется как
+    // «неизвестный ключ», а не «плейнтекст» ⇒ строка НЕ трогается, только
+    // громкий warn — можно восстановить после починки ENCRYPTION_KEY_OLD.
+    expect(db.note.update).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'возможна неполная ротация ENCRYPTION_KEY — строка похожа на шифротекст, пропущена',
+      ),
+    );
 
-    // Расшифровка новым ключом даёт не исходный текст, а сам старый
-    // шифроблок — данные фактически потеряны без доступа к KEY_A.
-    const recovered = crypto.decrypt(stored);
-    expect(recovered).toBe(oldBlob);
-    expect(recovered).not.toBe('anxiety,anger');
+    // Блоб остался нетронутым и всё ещё читается старым ключом.
+    expect(oldMods.crypto.decrypt(oldBlob)).toBe('anxiety,anger');
   });
 });
 
-describe('устойчивость к ошибкам при записи', () => {
-  it('ошибка prisma.update на одной строке обрывает всю миграцию (остальные строки/таблицы не обрабатываются)', async () => {
+describe('устойчивость к ошибкам при записи (изоляция по строке)', () => {
+  it('ФИКС: ошибка prisma.update на одной строке НЕ обрывает миграцию — остальные строки и таблицы всё равно обрабатываются', async () => {
     const { migrateClinicalLabels } = load({ key: KEY_A });
+    // Logger внутри encrypt-migration.ts пишет через process.stdout.write
+    // (дефолтный Nest ConsoleLogger), не через console.* — а модуль
+    // encrypt-migration.ts подгружен через jest.isolateModules со своей
+    // изолированной копией '@nestjs/common', поэтому spyOn(Logger.prototype)
+    // из внешнего скоупа его не перехватит. Перехватываем на уровне стрима.
+    const stdoutWrite = jest
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
     const db = makeDb({
       notes: [
         { id: 1, tags: 'anxiety' },
@@ -258,13 +273,21 @@ describe('устойчивость к ошибкам при записи', () =>
       throwOn: { table: 'note', id: 1 },
     }) as any;
 
-    await expect(migrateClinicalLabels(db)).rejects.toThrow(
-      'DB update failed for id=1',
-    );
+    // Раньше: первая же упавшая строка обрывала for-цикл целиком (throw
+    // наружу из migrateClinicalLabels) — вторая заметка (id=2) и таблица
+    // User так и не обрабатывались, try/catch по строке отсутствовал.
+    await expect(migrateClinicalLabels(db)).resolves.toBeUndefined();
 
-    // Первая же упавшая строка обрывает for-цикл: вторая заметка (id=2) и
-    // таблица User так и не были обработаны — try/catch по строке отсутствует.
-    expect(db.note.update).toHaveBeenCalledTimes(1);
-    expect(db.user.findMany).not.toHaveBeenCalled();
+    // Строка id=1 упала и осталась нетронутой в БД (update откатился),
+    // но строка id=2 всё равно обработана, и таблица User дошла до findMany
+    // и update — миграция не оборвалась на первой ошибке.
+    expect(db.note.update).toHaveBeenCalledTimes(2); // id=1 (упала) + id=2 (успех)
+    expect(db.user.findMany).toHaveBeenCalledTimes(1);
+    expect(db.user.update).toHaveBeenCalledTimes(1);
+
+    // Сводка о падениях залогирована через Logger.warn.
+    const logged = stdoutWrite.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(logged).toEqual(expect.stringContaining('1 row failure'));
+    stdoutWrite.mockRestore();
   });
 });
