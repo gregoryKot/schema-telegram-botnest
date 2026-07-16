@@ -69,4 +69,4 @@ HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
 # db execute снимает застрявшую failed-миграцию (P3009, инцидент 2026-07-16)
 # ДО migrate deploy; идемпотентно (удаляет только незавершённую запись), || true
 # — чтобы на здоровой БД не мешать старту. После стабилизации можно убрать.
-CMD ["sh", "-c", "npx prisma db execute --schema prisma/schema.prisma --file prisma/recover-p3009.sql || true; npx prisma migrate deploy && exec node dist/main"]
+CMD ["sh", "-c", "npx prisma db execute --file prisma/recover-p3009.sql || true; npx prisma migrate deploy && exec node dist/main"]
