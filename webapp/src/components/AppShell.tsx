@@ -722,7 +722,13 @@ export function AppShell() {
           }} />
         )}
         {showTherapistDisclaimer && (
-          <TherapistPrivacyDisclaimer onDone={() => setShowTherapistDisclaimer(false)} />
+          <TherapistPrivacyDisclaimer onDone={() => {
+            // Persist on ANY close path (button OR browser-back), otherwise a
+            // back-button dismissal leaves the flag unset and the disclaimer
+            // re-shows on every entry into the therapist cabinet.
+            localStorage.setItem('therapist_privacy_disclaimer_seen', '1');
+            setShowTherapistDisclaimer(false);
+          }} />
         )}
 
         {/* ── Celebration ── */}

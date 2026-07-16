@@ -59,7 +59,7 @@ function getInitialSection(): Section {
 const SECTIONS: Section[] = ['today', 'help', 'schemas', 'profile'];
 
 export default function App() {
-  const { flags: serverFlags } = useUserFlags();
+  const { flags: serverFlags, setFlag } = useUserFlags();
   const [section, setSection] = useState<Section>(getInitialSection);
   const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
   const [disclaimerDone, setDisclaimerDone] = useState(
@@ -140,6 +140,15 @@ export default function App() {
     if (serverFlags.childhoodWheelDone)
       localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
   }, [serverFlags.childhoodWheelDone]);
+  // Educational onboarding is server-backed (onboardingV2Done): Telegram WebView
+  // localStorage is not reliably persistent, so a device-only flag re-shows the
+  // onboarding on almost every entry. Server flag = show once per account.
+  useEffect(() => {
+    if (serverFlags.onboardingV2Done) {
+      localStorage.setItem(ONBOARDING_SEEN_KEY, '1');
+      setOnboardingSeen(true);
+    }
+  }, [serverFlags.onboardingV2Done]);
   const [needs, setNeeds] = useState<Need[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [saved, setSaved] = useState<Record<string, boolean>>({});
@@ -586,6 +595,7 @@ export default function App() {
         onAcceptDisclaimer={() => {
           localStorage.setItem(ONBOARDING_SEEN_KEY, '1');
           setOnboardingSeen(true);
+          setFlag('onboardingV2Done', true).catch(() => {});
           if (!disclaimerDone) {
             localStorage.setItem(DISCLAIMER_KEY, '1');
             api.acceptDisclaimer().catch(() => {});
