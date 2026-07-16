@@ -7,10 +7,18 @@ import { DisclaimerNotTherapyStep } from './disclaimer/DisclaimerNotTherapyStep'
 import { DisclaimerAuthorStep } from './disclaimer/DisclaimerAuthorStep';
 import { DisclaimerHomeScreenStep } from './disclaimer/DisclaimerHomeScreenStep';
 
-export function Disclaimer({ onAccept }: { onAccept: () => void }) {
+export function Disclaimer({
+  onAccept,
+  consentGiven = false,
+}: {
+  onAccept: () => void;
+  // Согласие уже дано раньше (напр. в боте/на сайте) — тогда онбординг
+  // остаётся образовательным, но галочки не заставляем ставить заново.
+  consentGiven?: boolean;
+}) {
   const [step, setStep] = useState(0);
-  const [c1, setC1] = useState(false);
-  const [c2, setC2] = useState(false);
+  const [c1, setC1] = useState(consentGiven);
+  const [c2, setC2] = useState(consentGiven);
   const canAddToHome = !!(window as any).Telegram?.WebApp?.addToHomeScreen;
   const TOTAL = canAddToHome ? 6 : 5;
   const ready = c1 && c2;
