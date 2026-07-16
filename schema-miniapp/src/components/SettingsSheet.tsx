@@ -2041,7 +2041,7 @@ export function SettingsSheet({
                       marginBottom: 10,
                     }}
                   >
-                    СхемаЛаб
+                    Всё по схеме
                   </div>
                   <p
                     style={{

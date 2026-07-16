@@ -275,7 +275,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
       div, row('ДЕЗАДАПТИВНЫЕ КОПИНГИ', c.copingStyles as string),
       div, row('АКТУАЛЬНЫЕ ПРОБЛЕМЫ И СИМПТОМЫ', c.currentProblems as string),
       div, row('ЦЕЛИ СХЕМА-ТЕРАПИИ', c.goals as string),
-      div, '', '@SchemeHappens · Схема-лаб',
+      div, '', '@SchemeHappens · Всё по схеме',
     ].join('\n');
   }
 
