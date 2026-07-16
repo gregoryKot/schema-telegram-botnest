@@ -76,29 +76,29 @@ export function ExercisesSection() {
     ]).then(([beliefs, schemas, modes, letters, safe, wheel]) => {
       const upd: Partial<Record<ExId, ExStats>> = {};
       if (beliefs.status === 'fulfilled') {
-        const b = beliefs.value as any[];
+        const b = beliefs.value;
         if (b.length) upd.belief = { count: b.length, lastDone: b[0]?.createdAt ?? null };
       }
       if (schemas.status === 'fulfilled') {
-        const s = schemas.value as any[];
+        const s = schemas.value;
         if (s.length) {
           const sorted = [...s].sort((a, b) => (b.updatedAt > a.updatedAt ? 1 : -1));
           upd.schema = { count: s.length, lastDone: sorted[0]?.updatedAt ?? null };
         }
       }
       if (modes.status === 'fulfilled') {
-        const m = modes.value as any[];
+        const m = modes.value;
         if (m.length) {
           const sorted = [...m].sort((a, b) => (b.updatedAt > a.updatedAt ? 1 : -1));
           upd.mode = { count: m.length, lastDone: sorted[0]?.updatedAt ?? null };
         }
       }
       if (letters.status === 'fulfilled') {
-        const l = letters.value as any[];
+        const l = letters.value;
         if (l.length) upd.letter = { count: l.length, lastDone: l[0]?.createdAt ?? null };
       }
       if (safe.status === 'fulfilled' && safe.value) {
-        upd.safe = { count: 1, lastDone: (safe.value as any).updatedAt ?? null };
+        upd.safe = { count: 1, lastDone: safe.value.updatedAt ?? null };
       }
       if (wheel.status === 'fulfilled' && Object.keys(wheel.value as object).length > 0) {
         upd.wheel = { count: 1, lastDone: null };

@@ -26,7 +26,7 @@ export function LetterEx({
   const goBack = useHistorySheet(onBack);
   const [text, setText] = useState('');
   const [done, setDone] = useState(false);
-  const [pastLetters, setPastLetters] = useState<any[]>([]);
+  const [pastLetters, setPastLetters] = useState<Awaited<ReturnType<typeof api.getLetters>>>([]);
 
   useEffect(() => {
     if (done)

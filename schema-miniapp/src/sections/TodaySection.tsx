@@ -892,7 +892,7 @@ export function TodaySection({
                     schema: '#818cf8',
                     mode: '#f472b6',
                     gratitude: '#4ade80',
-                  } as any
+                  } as Record<string, string>
                 )[entry.type] ?? '#aaa';
               return (
                 <div

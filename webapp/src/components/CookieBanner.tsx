@@ -3,17 +3,30 @@ import { useState, useEffect } from 'react';
 const CONSENT_KEY = 'cookie_consent';
 const YM_ID = 109568051;
 
+type YmFn = ((...args: unknown[]) => void) & { a?: unknown[][]; l?: number };
+
 export function loadMetrika() {
-  if (typeof window === 'undefined' || (window as any).__ym_loaded) return;
-  (window as any).__ym_loaded = true;
-  const w = window as any;
-  w['ym'] = w['ym'] || function () { (w['ym'].a = w['ym'].a || []).push(arguments); };
-  w['ym'].l = 1 * Date.now();
+  if (typeof window === 'undefined') return;
+  const w = window as unknown as { __ym_loaded?: boolean; ym?: YmFn };
+  if (w.__ym_loaded) return;
+  w.__ym_loaded = true;
+  w.ym =
+    w.ym ||
+    function (...args: unknown[]) {
+      (w.ym!.a = w.ym!.a || []).push(args);
+    };
+  w.ym.l = Date.now();
   const s = document.createElement('script');
   s.async = true;
   s.src = `https://mc.yandex.ru/metrika/tag.js?id=${YM_ID}`;
   document.head.appendChild(s);
-  w['ym'](YM_ID, 'init', { webvisor: true, clickmap: true, accurateTrackBounce: true, trackLinks: true, defer: true });
+  w.ym(YM_ID, 'init', {
+    webvisor: true,
+    clickmap: true,
+    accurateTrackBounce: true,
+    trackLinks: true,
+    defer: true,
+  });
 }
 
 export function CookieBanner() {

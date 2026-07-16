@@ -502,6 +502,7 @@ export const api = {
         reality: string;
         healthyView: string;
         behavior: string;
+        updatedAt: string;
       }>
     >('/api/schema-notes'),
   saveSchemaNote: (body: {
@@ -523,6 +524,7 @@ export const api = {
         thoughts: string;
         needs: string;
         behavior: string;
+        updatedAt: string;
       }>
     >('/api/mode-notes'),
   saveModeNote: (body: {

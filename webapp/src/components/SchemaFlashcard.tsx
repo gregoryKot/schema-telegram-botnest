@@ -202,7 +202,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
                 {card.action && (
                   <div style={{ fontSize: 13, color: 'var(--accent)', marginTop: 6,
                     overflow: 'hidden', display: '-webkit-box',
-                    WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' as any }}>
+                    WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
                     → {card.action}
                   </div>
                 )}

@@ -3216,7 +3216,7 @@ export function TherapistClientSheet({
                               marginBottom: 8,
                             }}
                           >
-                            {(s as any)?.emoji ?? '●'} {s?.name ?? n.schemaId}
+                            {s?.emoji ?? '●'} {s?.name ?? n.schemaId}
                           </div>
                           {[
                             { label: 'Триггеры', val: n.triggers },

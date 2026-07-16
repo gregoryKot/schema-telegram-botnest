@@ -101,7 +101,7 @@ export function BeliefCheckEx({
   const [forInput, setForInput] = useState('');
   const [againstInput, setAgainstInput] = useState('');
   const [done, setDone] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<Awaited<ReturnType<typeof api.getBeliefChecks>>>([]);
 
   useEffect(() => {
     if (done)

@@ -89,7 +89,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
                 <div key={s.id} className="mode-card" style={{ '--mode-color': color } as React.CSSProperties}>
                   <span className="mode-card-stripe" />
                   <div>
-                    <div className="mode-card-name">{(s as any).emoji ?? '●'} {s.name}</div>
+                    <div className="mode-card-name">{s.emoji ?? '●'} {s.name}</div>
                     <div className="mode-card-short">{s.desc}</div>
                   </div>
                 </div>

@@ -32,11 +32,11 @@ export function useHistorySheet(onClose: () => void) {
   useEffect(() => {
     if (!ready.current) {
       // Wait until our navigate has committed
-      if ((location.state as any)?.__sheetId === id.current) ready.current = true;
+      if ((location.state as { __sheetId?: string } | null)?.__sheetId === id.current) ready.current = true;
       return;
     }
     // Our entry is gone from history (user pressed back) – close the sheet
-    if ((location.state as any)?.__sheetId !== id.current) {
+    if ((location.state as { __sheetId?: string } | null)?.__sheetId !== id.current) {
       ref.current();
     }
      
