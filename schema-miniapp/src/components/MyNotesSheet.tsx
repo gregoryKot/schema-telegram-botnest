@@ -124,26 +124,26 @@ export function MyNotesSheet({ onClose }: Props) {
         .catch(() => {}),
       // Diary
       Promise.all([
-        api.getSchemaDiary().catch(() => [] as any[]),
-        api.getModeDiary().catch(() => [] as any[]),
-        api.getGratitudeDiary().catch(() => [] as any[]),
+        api.getSchemaDiary().catch(() => []),
+        api.getModeDiary().catch(() => []),
+        api.getGratitudeDiary().catch(() => []),
       ]).then(([sd, md, gd]) => {
         const entries: DiaryEntry[] = [
-          ...sd.map((e: any) => ({
+          ...sd.map((e) => ({
             id: e.id,
             createdAt: e.createdAt,
             type: 'schema' as const,
             label: 'Схемный дневник',
             preview: e.trigger ?? '',
           })),
-          ...md.map((e: any) => ({
+          ...md.map((e) => ({
             id: e.id,
             createdAt: e.createdAt,
             type: 'mode' as const,
             label: `Режим: ${getModeById(e.modeId)?.name ?? e.modeId}`,
             preview: e.situation ?? '',
           })),
-          ...gd.map((e: any) => ({
+          ...gd.map((e) => ({
             id: e.id,
             createdAt: e.createdAt,
             type: 'gratitude' as const,
@@ -162,28 +162,28 @@ export function MyNotesSheet({ onClose }: Props) {
       }),
       // Exercises
       Promise.all([
-        api.getBeliefChecks().catch(() => [] as any[]),
-        api.getLetters().catch(() => [] as any[]),
-        api.getFlashcards().catch(() => [] as any[]),
+        api.getBeliefChecks().catch(() => []),
+        api.getLetters().catch(() => []),
+        api.getFlashcards().catch(() => []),
         api.getSafePlace().catch(() => null),
       ]).then(([bc, lt, fc, sp]) => {
         setSafePlace(sp);
         const exs: Exercise[] = [
-          ...bc.map((e: any) => ({
+          ...bc.map((e) => ({
             id: e.id,
             createdAt: e.createdAt,
             type: 'belief' as const,
             label: 'Проверка убеждения',
             preview: e.belief ?? '',
           })),
-          ...lt.map((e: any) => ({
+          ...lt.map((e) => ({
             id: e.id,
             createdAt: e.createdAt,
             type: 'letter' as const,
             label: 'Письмо себе',
             preview: e.text?.slice(0, 70) ?? '',
           })),
-          ...fc.map((e: any) => ({
+          ...fc.map((e) => ({
             id: e.id,
             createdAt: e.createdAt,
             type: 'flashcard' as const,
@@ -378,7 +378,7 @@ export function MyNotesSheet({ onClose }: Props) {
                                           fontSize: 20,
                                         }}
                                       >
-                                        {(s as any).emoji ?? '●'}
+                                        {s.emoji ?? '●'}
                                       </div>
                                       <div style={{ flex: 1, minWidth: 0 }}>
                                         <div
