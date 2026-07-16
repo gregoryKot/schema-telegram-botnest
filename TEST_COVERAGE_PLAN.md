@@ -36,11 +36,18 @@ read-after-write, stateful-фейки, точные ассерты) — проб
 3. ✅ `src/auth/jwt.guard.spec.ts` — JwtAuthGuard/OptionalJwtGuard: подпись,
    тип токена (access/refresh/link не взаимозаменяемы), срок, issuer,
    link_token из cookie/query.
-4. ☐ `src/utils/encrypt-migration.ts` — прогон ротации на фейковой таблице.
-5. ☐ `src/auth/auth.service.ts` — выпуск/refresh/revoke токенов, merge-токены,
-   `verifyTelegramWebAppData` (malformed hash → 401, не 500).
-6. ☐ `src/auth/totp.service.ts` — окно, replay; `src/auth/providers/*` —
-   верификация подписи/токена каждого провайдера.
+4. ✅ `src/utils/encrypt-migration.spec.ts` — миграция плейнтекста на фейковой
+   таблице; найден и зафиксирован тестом баг двойного шифрования (если
+   ENCRYPTION_KEY_OLD убран до rotate-encryption — оригинал невосстановим).
+   Фикс бага — отдельным решением.
+5. ✅ `src/auth/auth.service.spec.ts` — ротация refresh-токенов (reuse палит
+   всю family), verifyTelegramWebAppData (malformed hash → 401, не 500),
+   findOrCreateUserByProvider, merge-токены.
+6. ✅ (частично) `src/auth/totp.service.spec.ts` + `providers/telegram.provider.spec.ts`.
+   Осталось: google/vk/telegram-oidc провайдеры (google.provider тянет
+   ESM-only `jose` — jest-конфигу нужен transform для node_modules).
+   Известное ограничение: verifyCode принимает тот же TOTP-код повторно
+   в пределах окна (одноразовы только recovery-коды) — решить осознанно.
 7. ☐ **Smoke-e2e** (`@nestjs/testing` + supertest уже в devDeps): глобальный
    `ValidationPipe` реально стрипает лишние поля; guard висит на API;
    ownership «юзер А не видит данные юзера Б» на 2–3 эндпоинтах;
