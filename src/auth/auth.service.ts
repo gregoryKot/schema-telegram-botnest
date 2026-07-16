@@ -101,7 +101,7 @@ export class AuthService {
     if (!userJson) throw new UnauthorizedException('Missing user in initData');
     let user: { id: number; first_name?: string };
     try {
-      user = JSON.parse(userJson);
+      user = JSON.parse(userJson) as { id: number; first_name?: string };
     } catch {
       throw new UnauthorizedException('Invalid user JSON in initData');
     }
@@ -189,11 +189,11 @@ export class AuthService {
     if (row.purpose === 'link_email_auth') {
       // Link email as auth provider to the existing (already-authed) user.
       const result = await this.linkProviderToUser(
-        row.userId as bigint,
+        row.userId,
         'email',
-        row.email as string,
-        row.email as string,
-        row.email as string,
+        row.email,
+        row.email,
+        row.email,
       );
       if (!result.ok) {
         throw new ConflictException(
@@ -202,11 +202,11 @@ export class AuthService {
       }
     }
 
-    const tokens = await this.issueTokens(row.userId as bigint, ip, userAgent);
+    const tokens = await this.issueTokens(row.userId, ip, userAgent);
     return {
       tokens,
-      purpose: row.purpose as string,
-      userId: row.userId as bigint,
+      purpose: row.purpose,
+      userId: row.userId,
     };
   }
 
@@ -283,7 +283,7 @@ export class AuthService {
           data: { displayName, email },
         });
       }
-      return existing.userId as bigint;
+      return existing.userId;
     }
 
     // For Telegram: userId = telegramId (maintains backward compat with bot data)
@@ -311,7 +311,7 @@ export class AuthService {
     this.logger.log(
       `New ${provider} auth provider linked to userId ${row.userId}`,
     );
-    return row.userId as bigint;
+    return row.userId;
   }
 
   // ─── Account linking (merge two providers to one user) ────────────────────
@@ -338,12 +338,12 @@ export class AuthService {
       await this.prisma.authProvider.create({
         data: { userId, provider, providerId, displayName, email },
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Race: a concurrent request inserted the same (provider, providerId)
       // between the findUnique above and this create. Re-resolve deterministically
       // instead of crashing on the unique constraint (mirrors the atomic-upsert
       // fix in findOrCreateUserByProvider).
-      if (e?.code === 'P2002') {
+      if ((e as { code?: string }).code === 'P2002') {
         const now = await this.prisma.authProvider.findUnique({
           where: { provider_providerId: { provider, providerId } },
         });

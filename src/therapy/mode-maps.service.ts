@@ -37,7 +37,7 @@ export class ModeMapsService {
         updatedAt: true,
       },
     });
-    return rows.map((r: any) => decryptRecord(r, MODE_MAP_SCHEMA));
+    return rows.map((r) => decryptRecord(r, MODE_MAP_SCHEMA));
   }
 
   async getModeMap(therapistId: bigint, mapId: number) {
@@ -56,7 +56,9 @@ export class ModeMapsService {
     kind?: string,
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    const k = MODE_MAP_KINDS.includes(kind as any) ? kind : 'problem';
+    const k = MODE_MAP_KINDS.includes(kind as (typeof MODE_MAP_KINDS)[number])
+      ? kind
+      : 'problem';
     const row = await this.prisma.modeMap.create({
       data: {
         therapistId,
@@ -110,7 +112,7 @@ export class ModeMapsService {
       orderBy: { updatedAt: 'desc' },
       select: { id: true, title: true, kind: true, updatedAt: true },
     });
-    return rows.map((r: any) => decryptRecord(r, MODE_MAP_SCHEMA));
+    return rows.map((r) => decryptRecord(r, MODE_MAP_SCHEMA));
   }
 
   async getMyModeMap(userId: bigint, mapId: number) {
@@ -129,7 +131,7 @@ export class ModeMapsService {
       where: { therapistId },
       orderBy: { createdAt: 'asc' },
     });
-    return rows.map((r: any) => decryptRecord(r, CUSTOM_MODE_SCHEMA));
+    return rows.map((r) => decryptRecord(r, CUSTOM_MODE_SCHEMA));
   }
 
   async createCustomMode(
