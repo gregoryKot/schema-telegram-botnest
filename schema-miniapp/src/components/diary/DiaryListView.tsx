@@ -439,7 +439,11 @@ function DraftCard({
   onDelete: () => void;
 }) {
   const [confirm, setConfirm] = useState(false);
-  const draft = loadDraft<any>(type);
+  const draft = loadDraft<{
+    trigger?: string;
+    situation?: string;
+    items?: string[];
+  }>(type);
   if (!draft) return null;
 
   const preview =

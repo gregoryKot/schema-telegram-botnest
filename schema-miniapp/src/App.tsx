@@ -174,7 +174,7 @@ export default function App() {
     // Clear YSQ data from localStorage if it belongs to a different Telegram user.
     // Prevents a shared-device scenario where person B reads person A's clinical data.
     const currentUserId = String(
-      (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id ?? '',
+      window.Telegram?.WebApp?.initDataUnsafe?.user?.id ?? '',
     );
     if (currentUserId) {
       const storedUserId = localStorage.getItem('ysq_owner_id');

@@ -121,7 +121,7 @@ export function SettingsSheet({
   const [reqBusy, setReqBusy] = useState(false);
   const [reqError, setReqError] = useState('');
   const tgName =
-    (window.Telegram?.WebApp as any)?.initDataUnsafe?.user?.first_name ?? '';
+    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
   const [editName, setEditName] = useState(displayName ?? tgName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);

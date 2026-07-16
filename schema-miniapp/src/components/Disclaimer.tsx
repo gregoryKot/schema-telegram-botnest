@@ -19,7 +19,7 @@ export function Disclaimer({
   const [step, setStep] = useState(0);
   const [c1, setC1] = useState(consentGiven);
   const [c2, setC2] = useState(consentGiven);
-  const canAddToHome = !!(window as any).Telegram?.WebApp?.addToHomeScreen;
+  const canAddToHome = !!window.Telegram?.WebApp?.addToHomeScreen;
   const TOTAL = canAddToHome ? 6 : 5;
   const ready = c1 && c2;
   // Шаг «Об авторе» — на нём собираются согласия, до них дальше не пускаем.

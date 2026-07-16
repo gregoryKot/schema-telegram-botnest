@@ -340,7 +340,7 @@ export function TodaySection({
   const safeTop = useSafeTop();
 
   const firstName =
-    (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
+    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
 
   useEffect(() => {
     let ignore = false;

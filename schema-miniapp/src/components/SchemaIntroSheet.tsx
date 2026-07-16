@@ -225,7 +225,7 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
               fontSize: 24,
             }}
           >
-            {(schema as any).emoji ?? '●'}
+            {schema.emoji ?? '●'}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
@@ -264,7 +264,7 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
           <div
             style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
           >
-            {(schema as any).desc}
+            {schema.desc}
           </div>
         </div>
 

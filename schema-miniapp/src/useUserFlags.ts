@@ -48,7 +48,7 @@ const subscribers = new Set<(f: UserFlags) => void>();
 let fetchPromise: Promise<void> | null = null;
 
 function getHeaders(): Record<string, string> {
-  const initData = (window as any).Telegram?.WebApp?.initData ?? '';
+  const initData = window.Telegram?.WebApp?.initData ?? '';
   return {
     'x-telegram-init-data': initData,
     'Content-Type': 'application/json',

@@ -98,7 +98,7 @@ export function ProfileSection({
   const tr = useTr();
   const safeTop = useSafeTop();
   const tgName =
-    (window.Telegram?.WebApp as any)?.initDataUnsafe?.user?.first_name ?? '';
+    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
   const firstName = displayName || tgName;
 
   const [streak, setStreak] = useState<StreakData | null>(null);
