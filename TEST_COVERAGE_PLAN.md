@@ -37,17 +37,15 @@ read-after-write, stateful-фейки, точные ассерты) — проб
    тип токена (access/refresh/link не взаимозаменяемы), срок, issuer,
    link_token из cookie/query.
 4. ✅ `src/utils/encrypt-migration.spec.ts` — миграция плейнтекста на фейковой
-   таблице; найден и зафиксирован тестом баг двойного шифрования (если
-   ENCRYPTION_KEY_OLD убран до rotate-encryption — оригинал невосстановим).
-   Фикс бага — отдельным решением.
+   таблице; найден баг двойного шифрования (ENCRYPTION_KEY_OLD убран до
+   rotate-encryption → оригинал невосстановим) — ИСПРАВЛЕН: classify()
+   plaintext/encrypted/unknown-key + per-row изоляция ошибок.
 5. ✅ `src/auth/auth.service.spec.ts` — ротация refresh-токенов (reuse палит
    всю family), verifyTelegramWebAppData (malformed hash → 401, не 500),
    findOrCreateUserByProvider, merge-токены.
-6. ✅ (частично) `src/auth/totp.service.spec.ts` + `providers/telegram.provider.spec.ts`.
-   Осталось: google/vk/telegram-oidc провайдеры (google.provider тянет
-   ESM-only `jose` — jest-конфигу нужен transform для node_modules).
-   Известное ограничение: verifyCode принимает тот же TOTP-код повторно
-   в пределах окна (одноразовы только recovery-коды) — решить осознанно.
+6. ✅ `totp.service.spec.ts`, `providers/telegram.provider.spec.ts`,
+   `google/vk/telegram-oidc.provider.spec.ts` (jose замокан на уровне
+   модуля). TOTP-replay — accepted risk, см. «Известные ограничения».
 7. ✅ **Smoke-e2e**: реальный AppModule целиком (переопределены только
    PrismaService-фейк и TELEGRAF_BOT-заглушка), test/e2e-support/*.
    Guard смонтирован (401), whitelist реально стрипает, ownership по HTTP,
@@ -60,8 +58,9 @@ read-after-write, stateful-фейки, точные ассерты) — проб
    блок «известные ограничения»). Подтверждены ОПАСНЫЕ пропуски — «выброшусь
    из окна», «повешусь», «порежу вены» (1-е лицо буд. времени; ветки
    «повеслюсь»/«порезжу» — несуществующие формы), «покончила с собой»;
-   ложное срабатывание «фильм про суицид». **Нужен фикс crisisMarkers.ts
-   в обоих фронтендах + пересборка dist — отдельным решением.**
+   ложное срабатывание «фильм про суицид». Все 7 пропусков ИСПРАВЛЕНЫ
+   в обоих фронтендах (+нормализация латиницы-гомоглифов), dist пересобран;
+   «фильм про суицид» оставлен осознанным false positive (recall важнее).
 9. ✅ (первый шаг) Бутстрап miniapp: vitest+jsdom+testing-library, `"test"`
    в package.json, шаг в CI-джобе `miniapp`; 26 тестов —
    `useTelegramBackButton` (приоритетная цепочка Back), `useSheets`.
@@ -89,7 +88,7 @@ read-after-write, stateful-фейки, точные ассерты) — проб
 12. ✅ `telegram.invariants.spec.ts` — grep-трипваер: try/catch в каждом
     хендлере, answerCbQuery до БД, запрет console.log. Все 36 хендлеров
     соответствуют; allowlist пуст и обязан оставаться пустым.
-13. ☐ Починка слабостей существующих тестов:
+13. ✅ Починка слабостей существующих тестов:
     - `merge.service.spec.ts:80` — тест-пустышка (имя обещает `<>`, ассертит
       только `toBeDefined`);
     - `telegram.pair-notify.spec.ts` и `bot.analytics.overview.spec.ts` —
@@ -106,7 +105,7 @@ read-after-write, stateful-фейки, точные ассерты) — проб
     `coverage-baseline.json` (lines/branches total + полы по каталогам,
     сейчас src/auth и src/utils), в CI заменяет голый jest в джобе backend.
     Полы поднимать по мере этапов 1–3 через `--update`.
-15. ☐ Правило в CLAUDE.md: новый контроллер = e2e-смок на ownership.
+15. ✅ Правило в CLAUDE.md: новый контроллер = e2e-смок на ownership.
 
 ## Статус 2026-07-16 (конец дня)
 

@@ -222,6 +222,18 @@ error. Новые `any` не добавляются (`no-explicit-any` как м
 Каждый пойманный на проде баг → регрессионный тест, воспроизводящий сценарий
 (комментарий-ссылка на инцидент сверху файла, как в `notes.service.spec.ts`).
 
+## Тестовые храповики и e2e (по итогам покрытия 2026-07-16)
+
+- **Coverage-храповик**: `scripts/check-coverage-ratchet.mjs` (CI-джоба
+  backend) — покрытие бэкенда не может снизиться; полы по каталогам в
+  `scripts/coverage-baseline.json`. Стало лучше — зафиксируй `--update`.
+- **Новый контроллер/эндпоинт = e2e-смок на ownership**: тест в `test/`,
+  что юзер А не видит данные юзера Б через HTTP (см. `app-ownership.e2e-spec.ts`;
+  инфраструктура — `test/e2e-support/`, бут реального AppModule).
+- **Инварианты telegram-хендлеров** держит `telegram.invariants.spec.ts`
+  (try/catch, `answerCbQuery` до БД, запрет console.log) — allowlist в нём
+  пуст и может только сокращаться.
+
 ## Обработка ошибок
 
 - **Все** Telegram-хендлеры (команды и action) обёрнуты в `try/catch`.
