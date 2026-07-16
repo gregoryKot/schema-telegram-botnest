@@ -130,8 +130,8 @@ export function AppOverlays({
         </div>
       )}
 
-      {/* Онбординг ждёт выбора формы обращения — иначе приветствие «на ты»
-          покажется раньше, чем спросим ты/вы. */}
+      {/* Онбординг ждёт выбора формы обращения — иначе приветствие покажется
+          в дефолтной форме до того, как пользователь её выбрал. */}
       {!onboardingSeen && addressFormReady && (
         <Disclaimer consentGiven={consentGiven} onAccept={onAcceptDisclaimer} />
       )}
