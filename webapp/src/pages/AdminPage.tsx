@@ -4,16 +4,18 @@ import { BookingSection } from './admin/BookingSection';
 import { ArticlesSection } from './admin/ArticlesSection';
 import { PhotoSection } from './admin/PhotoSection';
 import { MarqueeSection } from './admin/MarqueeSection';
+import { HealthyAdultSection } from './admin/HealthyAdultSection';
 import { btn, input } from './admin/shared';
 
 const KEY_STORE = 'booking_admin_key';
 
-type Tab = 'booking' | 'articles' | 'photo' | 'marquee';
+type Tab = 'booking' | 'articles' | 'photo' | 'marquee' | 'healthyAdult';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'booking', label: 'Запись' },
   { id: 'articles', label: 'Статьи' },
   { id: 'photo', label: 'Фото' },
   { id: 'marquee', label: 'Бегущая строка' },
+  { id: 'healthyAdult', label: 'Канал ЗВ' },
 ];
 
 /** Single admin panel for the whole site — one key, tabbed sections. */
@@ -69,6 +71,7 @@ export function AdminPage() {
       {tab === 'articles' && <ArticlesSection adminKey={key} />}
       {tab === 'photo' && <PhotoSection adminKey={key} />}
       {tab === 'marquee' && <MarqueeSection adminKey={key} />}
+      {tab === 'healthyAdult' && <HealthyAdultSection adminKey={key} />}
     </div>
   );
 }
