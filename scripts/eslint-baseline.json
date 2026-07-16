@@ -1,11 +1,9 @@
 {
-  "total": 100,
-  "errors": 90,
+  "total": 89,
+  "errors": 79,
   "warnings": 10,
   "byRule": {
-    "(parse)": 7,
     "react-hooks/exhaustive-deps": 11,
-    "@typescript-eslint/no-unnecessary-type-assertion": 4,
     "react-hooks/immutability": 2,
     "react-hooks/preserve-manual-memoization": 1,
     "react-refresh/only-export-components": 23,

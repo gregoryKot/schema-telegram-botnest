@@ -15,7 +15,7 @@
 //
 // Re-runnable: re-encrypting an already-current value is a no-op cost-wise.
 
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { reencrypt } from '../src/utils/crypto';
 
 const prisma = new PrismaClient();
@@ -166,7 +166,7 @@ async function rotate() {
     if (Object.keys(patch).length > 0) {
       await prisma.user.update({
         where: { id: u.id },
-        data: patch as Prisma.UserUpdateInput,
+        data: patch,
       });
       userTouched++;
     }

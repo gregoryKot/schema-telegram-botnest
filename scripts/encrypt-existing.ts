@@ -158,7 +158,7 @@ async function main() {
     if (Object.keys(update).length > 0) {
       await prisma.schemaDiaryEntry.update({
         where: { id: e.id },
-        data: update as Prisma.SchemaDiaryEntryUpdateInput,
+        data: update,
       });
       count++;
       total++;
@@ -188,7 +188,7 @@ async function main() {
     if (Object.keys(update).length > 0) {
       await prisma.modeDiaryEntry.update({
         where: { id: e.id },
-        data: update as Prisma.ModeDiaryEntryUpdateInput,
+        data: update,
       });
       count++;
       total++;
@@ -252,7 +252,7 @@ async function main() {
     if (Object.keys(update).length > 0) {
       await prisma.clientConceptualization.update({
         where: { id: c.id },
-        data: update as Prisma.ClientConceptualizationUpdateInput,
+        data: update,
       });
       count++;
       total++;
