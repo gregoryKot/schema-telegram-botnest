@@ -14,7 +14,7 @@
 //   )}
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Need, COLORS, YESTERDAY } from '../types';
+import { Need, COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { NeedRatingBar } from './NeedRatingBar';
 import { NeedTodaySheet } from './NeedTodaySheet';
@@ -181,7 +181,7 @@ export function TrackerOverlay({
       ? needs.reduce((s, n) => s + (effectiveRatings[n.id] ?? 0), 0) /
         needs.length
       : 0;
-  const yval = yesterdayRatings[need.id] ?? YESTERDAY[need.id];
+  const yval = yesterdayRatings[need.id];
   const delta =
     !isBackfill && value > 0 && yval !== undefined ? value - yval : null;
   const levelColor =
@@ -823,9 +823,7 @@ export function TrackerOverlay({
         <NeedTodaySheet
           need={detailNeed}
           value={effectiveRatings[detailNeed.id] ?? 0}
-          yesterdayValue={
-            yesterdayRatings[detailNeed.id] ?? YESTERDAY[detailNeed.id]
-          }
+          yesterdayValue={yesterdayRatings[detailNeed.id]}
           onChange={(v) => handleChange(detailNeed.id, v)}
           onClose={() => setDetailNeed(null)}
         />
