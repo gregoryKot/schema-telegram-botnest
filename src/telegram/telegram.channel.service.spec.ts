@@ -1,10 +1,18 @@
 import { Logger } from '@nestjs/common';
 import { TelegramChannelService } from './telegram.channel.service';
 import { HEALTHY_ADULT_PHRASES } from '../bot/healthy-adult.data';
+import type { HealthyAdultService } from '../bot/healthy-adult.service';
 
 function makeBot() {
   const sendMessage = jest.fn().mockResolvedValue(undefined);
   return { bot: { telegram: { sendMessage } } as any, sendMessage };
+}
+
+/** Фейковый сервис фраз: по умолчанию отдаёт весь встроенный пул. */
+function makePhrases(texts: string[] = [...HEALTHY_ADULT_PHRASES]) {
+  return {
+    enabledTexts: jest.fn().mockResolvedValue(texts),
+  } as unknown as HealthyAdultService;
 }
 
 describe('TelegramChannelService', () => {
@@ -18,7 +26,7 @@ describe('TelegramChannelService', () => {
   it('не постит и сообщает, что фича выключена, если канал не задан', async () => {
     delete process.env.HEALTHY_ADULT_CHANNEL;
     const { bot, sendMessage } = makeBot();
-    const res = await new TelegramChannelService(bot).post(0);
+    const res = await new TelegramChannelService(bot, makePhrases()).post(0);
     expect(sendMessage).not.toHaveBeenCalled();
     expect(res.ok).toBe(false);
     expect(res.message).toContain('HEALTHY_ADULT_CHANNEL');
@@ -26,28 +34,39 @@ describe('TelegramChannelService', () => {
 
   it('не падает и сообщает об отсутствии бота', async () => {
     process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
-    const res = await new TelegramChannelService(null).post(0);
+    const res = await new TelegramChannelService(null, makePhrases()).post(0);
     expect(res.ok).toBe(false);
     expect(res.message).toContain('Бот');
   });
 
-  it('постит фразу из пула в заданный канал и возвращает ok', async () => {
+  it('сообщает, если активных фраз нет', async () => {
     process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
     const { bot, sendMessage } = makeBot();
-    const res = await new TelegramChannelService(bot).post(0);
+    const res = await new TelegramChannelService(bot, makePhrases([])).post(0);
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(res.ok).toBe(false);
+    expect(res.message).toContain('фраз');
+  });
+
+  it('постит фразу из активного пула в заданный канал и возвращает ok', async () => {
+    process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
+    const { bot, sendMessage } = makeBot();
+    const pool = ['фраза раз', 'фраза два'];
+    const res = await new TelegramChannelService(bot, makePhrases(pool)).post(
+      0,
+    );
     expect(sendMessage).toHaveBeenCalledTimes(1);
     const [channel, text] = sendMessage.mock.calls[0];
     expect(channel).toBe('@test_channel');
-    expect(HEALTHY_ADULT_PHRASES).toContain(text);
+    expect(pool).toContain(text);
     expect(res.ok).toBe(true);
   });
 
   it('постит с уведомлением (без disable_notification)', async () => {
     process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
     const { bot, sendMessage } = makeBot();
-    await new TelegramChannelService(bot).post(0);
+    await new TelegramChannelService(bot, makePhrases()).post(0);
     const opts = sendMessage.mock.calls[0][2];
-    // Либо опций нет вовсе, либо явно не заглушено.
     expect(opts?.disable_notification).toBeFalsy();
   });
 
@@ -56,7 +75,7 @@ describe('TelegramChannelService', () => {
     const { bot, sendMessage } = makeBot();
     sendMessage.mockRejectedValueOnce(new Error('chat not found'));
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-    const res = await new TelegramChannelService(bot).post(1);
+    const res = await new TelegramChannelService(bot, makePhrases()).post(1);
     expect(res.ok).toBe(false);
     expect(res.message).toContain('chat not found');
     expect(res.message).toContain('администратор');

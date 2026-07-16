@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { pickHealthyAdultPhrase } from '../bot/healthy-adult.data';
+import { HealthyAdultService } from '../bot/healthy-adult.service';
 
 /** Часовой пояс расписания канала (единый для broadcast, не per-user). */
 const POST_TZ = 'Europe/Moscow';
@@ -26,6 +27,7 @@ export class TelegramChannelService {
     @Inject(TELEGRAF_BOT)
     @Optional()
     private readonly bot: Telegraf<Context> | null,
+    private readonly phrases: HealthyAdultService,
   ) {}
 
   /** Целевой канал из env (null → фича выключена). */
@@ -64,7 +66,14 @@ export class TelegramChannelService {
       };
     }
 
-    const phrase = pickHealthyAdultPhrase(new Date(), slot);
+    const pool = await this.phrases.enabledTexts();
+    if (pool.length === 0) {
+      return {
+        ok: false,
+        message: '⚠️ Нет активных фраз — добавь или включи хотя бы одну.',
+      };
+    }
+    const phrase = pickHealthyAdultPhrase(new Date(), slot, pool);
     try {
       await this.bot.telegram.sendMessage(channel, phrase);
       this.logger.log(`healthy_adult_post slot=${slot} channel=${channel}`);
