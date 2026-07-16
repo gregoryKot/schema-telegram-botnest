@@ -627,17 +627,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       if (!ok) this.logger.warn('setChatMenuButton failed after retries');
     });
 
-    this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
-      const msg = String(err);
-      if (
-        !msg.includes('409') &&
-        !msg.includes('terminated by other') &&
-        !this.stopping
-      ) {
-        this.logger.error('Failed to launch bot', err);
-      }
-    });
-    this.logger.log('Bot launched');
+    this.launchBotWithRetry();
     const adminId = process.env.ADMIN_ID;
     if (adminId) {
       this.bot.telegram
@@ -692,6 +682,48 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       await ctx.reply(text, kb);
     }
     return true;
+  }
+
+  /**
+   * Запуск long-polling с ретраем. `bot.launch()` внутри дёргает `getMe()`;
+   * если сеть на старте контейнера ещё не поднялась (Amvera → Telegram
+   * ETIMEDOUT), launch() реджектится, и БЕЗ ретрая поллинг НИКОГДА не стартует
+   * — бот висит «живым» (Nest поднят, уведомления-`sendMessage` идут), но не
+   * отвечает на команды до следующего рестарта (инцидент 2026-07-16).
+   *
+   * 409 / «terminated by other» = поллит другой инстанс, ретрай навредит.
+   * `stopping` = штатная остановка, ретрай не нужен. Промис launch() на успехе
+   * резолвится лишь при остановке поллинга — поэтому только .catch, без await.
+   */
+  private launchBotWithRetry(attempt = 1): void {
+    const MAX_ATTEMPTS = 5;
+    if (attempt === 1) this.logger.log('Bot launch initiated');
+    this.bot!.launch({ dropPendingUpdates: true }).catch((err) => {
+      const msg = String(err);
+      if (
+        msg.includes('409') ||
+        msg.includes('terminated by other') ||
+        this.stopping
+      ) {
+        return;
+      }
+      if (attempt < MAX_ATTEMPTS) {
+        const delayMs = attempt * 5_000;
+        this.logger.warn(
+          `Bot launch failed (попытка ${attempt}/${MAX_ATTEMPTS}), ` +
+            `ретрай через ${delayMs}ms: ${msg}`,
+        );
+        setTimeout(() => {
+          if (!this.stopping) this.launchBotWithRetry(attempt + 1);
+        }, delayMs);
+      } else {
+        this.logger.error(
+          `Bot launch провалился после ${MAX_ATTEMPTS} попыток — ` +
+            `поллинг не стартовал`,
+          err,
+        );
+      }
+    });
   }
 
   async onModuleDestroy() {
