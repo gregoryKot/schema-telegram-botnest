@@ -75,13 +75,13 @@ if (total > baseline.total) {
     console.error(`   ${rule}: ${base} → ${n}`);
     for (const f of report) {
       const hits = f.messages.filter((m) => (m.ruleId ?? '(parse)') === rule);
-      if (hits.length)
-        console.error(
-          `      ${f.filePath}: ${hits.length} (стр. ${hits
-            .slice(0, 5)
-            .map((m) => m.line)
-            .join(', ')})`,
-        );
+      if (hits.length) {
+        console.error(`      ${f.filePath}: ${hits.length}`);
+        for (const m of hits.slice(0, 5))
+          console.error(
+            `         стр. ${m.line}: ${JSON.stringify(m.message).slice(0, 160)}`,
+          );
+      }
     }
   }
   console.error(
