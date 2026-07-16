@@ -41,7 +41,12 @@ export default tseslint.config(
     // unsafe-* здесь — заведомый шум, который наказывал храповиком каждый
     // новый spec (а тесты обязательны). Глушим ТОЛЬКО в тестах; для
     // продакшен-кода правила действуют в полную силу.
-    files: ['**/*.spec.ts', '**/*.test.ts', '**/*.test.tsx'],
+    files: [
+      '**/*.spec.ts',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/*.test-helpers.ts',
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
