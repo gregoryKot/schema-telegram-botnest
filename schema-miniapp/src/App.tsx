@@ -68,6 +68,11 @@ export default function App() {
   const [onboardingSeen, setOnboardingSeen] = useState(
     () => !!localStorage.getItem(ONBOARDING_SEEN_KEY),
   );
+  // Онбординг ждёт, пока не выбрана форма обращения (ты/вы) — иначе приветствие
+  // прозвучит «на ты» до выбора. Если уже спрашивали за сессию — не ждём.
+  const [addressFormReady, setAddressFormReady] = useState(
+    () => !!sessionStorage.getItem('addr_form_asked'),
+  );
   const historyDays = 30;
   const tabScrollPositions = useRef<Record<TrackerTab, number>>({
     today: 0,
@@ -261,13 +266,18 @@ export default function App() {
         if (s.pairCardDismissed)
           localStorage.setItem('pair_card_dismissed', '1');
         else localStorage.removeItem('pair_card_dismissed');
-        // Форма обращения ещё не выбрана — спросить (не чаще раза за сессию)
+        // Форма обращения ещё не выбрана — спросить ДО онбординга (не чаще раза
+        // за сессию), чтобы весь онбординг звучал в выбранной форме.
         if (!s.addressForm && !sessionStorage.getItem('addr_form_asked')) {
           sheets.open('addressPicker');
+        } else {
+          setAddressFormReady(true);
         }
       })
       .catch(() => {
         setPairCardDismissed(!!localStorage.getItem('pair_card_dismissed'));
+        // Настройки не загрузились — не блокируем онбординг из-за формы.
+        setAddressFormReady(true);
       });
     api
       .getPendingPlans()
@@ -591,6 +601,8 @@ export default function App() {
         onSaved={handleSaved}
         yesterdayRatings={yesterdayRatings}
         onboardingSeen={onboardingSeen}
+        addressFormReady={addressFormReady}
+        onAddressPickerDone={() => setAddressFormReady(true)}
         consentGiven={disclaimerDone}
         onAcceptDisclaimer={() => {
           localStorage.setItem(ONBOARDING_SEEN_KEY, '1');
