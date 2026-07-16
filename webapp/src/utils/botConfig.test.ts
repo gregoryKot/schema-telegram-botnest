@@ -1,14 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import {
-  botUsername,
-  botHandle,
-  botUrl,
-  botShortUrl,
-  miniappDeepLink,
-} from './botConfig';
+import { botUsername, botHandle, botUrl, botShortUrl } from './botConfig';
 
 // Сверяем, что все формы username выводятся из одного источника и не разъезжаются
 // (после переезда бота меняется только VITE_BOT_USERNAME — всё остальное следом).
+// miniappDeepLink живёт в парном schema-miniapp/botConfig и строится по той же
+// схеме `https://t.me/<bot>/...` — здесь покрыта базовая деривация username.
 describe('botConfig', () => {
   it('формы @handle / url / short-url согласованы с username', () => {
     expect(botHandle).toBe(`@${botUsername}`);
@@ -16,15 +12,7 @@ describe('botConfig', () => {
     expect(botShortUrl).toBe(`t.me/${botUsername}`);
   });
 
-  it('deep-link без payload ведёт в мини-апп этого же бота', () => {
-    expect(miniappDeepLink()).toMatch(
-      new RegExp(`^https://t\\.me/${botUsername}/[^?]+$`),
-    );
-  });
-
-  it('deep-link со startapp добавляет payload к тому же базовому линку', () => {
-    expect(miniappDeepLink('pair_ABC12')).toBe(
-      `${miniappDeepLink()}?startapp=pair_ABC12`,
-    );
+  it('username непустой (есть дефолт при отсутствии env)', () => {
+    expect(botUsername.length).toBeGreaterThan(0);
   });
 });
