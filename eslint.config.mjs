@@ -50,6 +50,10 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
       '@typescript-eslint/unbound-method': 'off',
+      // Поддельные Prisma-делегаты в тестах — `jest.fn(async () => …)`,
+      // чтобы сигнатура совпадала с Promise-возвращающим методом; await внутри
+      // мока не нужен. Тот же «заведомый шум», что и unsafe-* выше.
+      '@typescript-eslint/require-await': 'off',
     },
   },
 );
