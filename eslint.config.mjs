@@ -6,7 +6,9 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    // .claire/.claude — воркспейсы агент-сессий: их содержимое различается
+    // между машинами и давало environment-зависимые счётчики храповика.
+    ignores: ['eslint.config.mjs', '.claire/**', '.claude/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
