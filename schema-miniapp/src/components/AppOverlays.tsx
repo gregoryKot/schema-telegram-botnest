@@ -31,7 +31,8 @@ interface Props {
   onChange: (needId: string, value: number) => void;
   onSaved: (needId: string, streak?: StreakData) => void;
   yesterdayRatings: Record<string, number>;
-  disclaimerDone: boolean;
+  onboardingSeen: boolean;
+  consentGiven: boolean;
   onAcceptDisclaimer: () => void;
   celebrationStreak: number | null;
   setCelebrationStreak: (v: number | null) => void;
@@ -64,7 +65,8 @@ export function AppOverlays({
   onChange,
   onSaved,
   yesterdayRatings,
-  disclaimerDone,
+  onboardingSeen,
+  consentGiven,
   onAcceptDisclaimer,
   celebrationStreak,
   setCelebrationStreak,
@@ -124,7 +126,9 @@ export function AppOverlays({
         </div>
       )}
 
-      {!disclaimerDone && <Disclaimer onAccept={onAcceptDisclaimer} />}
+      {!onboardingSeen && (
+        <Disclaimer consentGiven={consentGiven} onAccept={onAcceptDisclaimer} />
+      )}
 
       {celebrationStreak !== null && (
         <Celebration

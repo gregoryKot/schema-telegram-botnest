@@ -39,6 +39,10 @@ import { OfflineBanner } from './components/OfflineBanner';
 type TrackerTab = 'today' | 'history';
 
 const DISCLAIMER_KEY = 'disclaimer_v2_accepted';
+// Отдельно от согласия: образовательный онбординг показываем один раз на
+// устройство, даже если согласие уже дано в боте/на сайте (иначе новичок
+// пропускает объяснение «откуда потребности и зачем»).
+const ONBOARDING_SEEN_KEY = 'app_onboarding_seen_v1';
 
 function getInitialSection(): Section {
   const params = new URLSearchParams(window.location.search);
@@ -60,6 +64,9 @@ export default function App() {
   const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
   const [disclaimerDone, setDisclaimerDone] = useState(
     () => !!localStorage.getItem(DISCLAIMER_KEY),
+  );
+  const [onboardingSeen, setOnboardingSeen] = useState(
+    () => !!localStorage.getItem(ONBOARDING_SEEN_KEY),
   );
   const historyDays = 30;
   const tabScrollPositions = useRef<Record<TrackerTab, number>>({
@@ -574,11 +581,16 @@ export default function App() {
         onChange={handleChange}
         onSaved={handleSaved}
         yesterdayRatings={yesterdayRatings}
-        disclaimerDone={disclaimerDone}
+        onboardingSeen={onboardingSeen}
+        consentGiven={disclaimerDone}
         onAcceptDisclaimer={() => {
-          localStorage.setItem(DISCLAIMER_KEY, '1');
-          api.acceptDisclaimer().catch(() => {});
-          setDisclaimerDone(true);
+          localStorage.setItem(ONBOARDING_SEEN_KEY, '1');
+          setOnboardingSeen(true);
+          if (!disclaimerDone) {
+            localStorage.setItem(DISCLAIMER_KEY, '1');
+            api.acceptDisclaimer().catch(() => {});
+            setDisclaimerDone(true);
+          }
         }}
         celebrationStreak={celebrationStreak}
         setCelebrationStreak={setCelebrationStreak}
