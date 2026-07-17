@@ -366,7 +366,7 @@ export function TrackerOverlay({
   const prevNeed = needs[idx - 1];
   const nextNeed = needs[idx + 1];
 
-  const Steps = () => (
+  const steps = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       {needs.map((n, i) => (
         <button
@@ -393,7 +393,7 @@ export function TrackerOverlay({
     </div>
   );
 
-  const Topbar = () => (
+  const topbar = (
     <div
       style={{
         height: 52,
@@ -502,7 +502,7 @@ export function TrackerOverlay({
     </div>
   );
 
-  const Footer = () => (
+  const footer = (
     <div
       style={{
         padding: '14px 24px',
@@ -661,7 +661,7 @@ export function TrackerOverlay({
           overflow: 'hidden',
         }}
       >
-        <Topbar />
+        {topbar}
         {/* Hero header */}
         <div
           style={{
@@ -748,7 +748,7 @@ export function TrackerOverlay({
                 </p>
               )}
             </div>
-            <Steps />
+            {steps}
           </div>
         </div>
         {/* 3 columns */}
@@ -901,7 +901,7 @@ export function TrackerOverlay({
             </ul>
           </div>
         </div>
-        <Footer />
+        {footer}
         {DetailSheet}
       </div>
     );
@@ -921,7 +921,7 @@ export function TrackerOverlay({
       onTouchStart={onTS}
       onTouchEnd={onTE}
     >
-      <Topbar />
+      {topbar}
       <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 20px' }}>
         <div
           style={{
@@ -951,7 +951,7 @@ export function TrackerOverlay({
             />
             <span>{extra?.subtitle ?? ''}</span>
           </div>
-          <Steps />
+          {steps}
         </div>
         <div
           style={{
@@ -1091,7 +1091,7 @@ export function TrackerOverlay({
           </ul>
         </div>
       </div>
-      <Footer />
+      {footer}
       {DetailSheet}
     </div>
   );
