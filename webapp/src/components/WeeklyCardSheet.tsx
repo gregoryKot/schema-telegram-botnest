@@ -1,156 +1,22 @@
+// Экран «Карточка недели» — отрисовка и расчёты в shared/src/share
+// (единственная копия, правило №3). Здесь только вёрстка ExScreen и share-флоу.
+// Парный файл: schema-miniapp/src/components/WeeklyCardSheet.tsx.
 import { useEffect, useRef, useState } from 'react';
-import { COLORS } from '../types';
 import type { Need, DayHistory } from '../types';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
-import { fmtDate } from '../utils/format';
+import {
+  drawWeeklyCard,
+  buildWeeklyShareText,
+} from '../../../shared/src/share/cards/weeklyCard';
+import { shareCanvasImage } from '../../../shared/src/share/shareImage';
+import { botShortUrl } from '../utils/botConfig';
 
 interface Props {
   needs: Need[];
   history: DayHistory[];
   onClose: () => void;
-}
-
-function calcWeekAvg(history: DayHistory[], needId: string): number | null {
-  const vals = history
-    .map((d) => d.ratings[needId])
-    .filter((v) => v !== undefined) as number[];
-  if (vals.length === 0) return null;
-  return vals.reduce((s, v) => s + v, 0) / vals.length;
-}
-
-function drawCard(
-  canvas: HTMLCanvasElement,
-  needs: Need[],
-  history: DayHistory[],
-  streak: number,
-) {
-  const W = 400;
-  const ROW_H = 44;
-  const NEED_SECTION_H = needs.length * ROW_H + 8;
-  const H = 120 + NEED_SECTION_H + 96 + 56;
-  const DPR = 2;
-  canvas.width = W * DPR;
-  canvas.height = H * DPR;
-  const ctx = canvas.getContext('2d')!;
-  ctx.scale(DPR, DPR);
-  const cs = getComputedStyle(document.documentElement);
-  const bgColor = cs.getPropertyValue('--bg').trim() || '#f5f2eb';
-  const fgRgb = cs.getPropertyValue('--fg-rgb').trim() || '28, 25, 20';
-  const fg = (alpha: number) => `rgba(${fgRgb},${alpha})`;
-  ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = fg(0.12);
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(28, 24);
-  ctx.lineTo(W - 28, 24);
-  ctx.stroke();
-  ctx.font = 'bold 17px -apple-system, sans-serif';
-  ctx.fillStyle = fg(0.95);
-  ctx.textAlign = 'left';
-  ctx.fillText('Трекер потребностей', 28, 56);
-  const sorted = [...history].map((d) => d.date).sort();
-  const weekRange =
-    sorted.length >= 2
-      ? `${fmtDate(sorted[0])} – ${fmtDate(sorted[sorted.length - 1])}`
-      : sorted.length === 1
-        ? fmtDate(sorted[0])
-        : '';
-  ctx.font = '12px -apple-system, sans-serif';
-  ctx.fillStyle = fg(0.38);
-  ctx.fillText(weekRange, 28, 76);
-  ctx.strokeStyle = fg(0.07);
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(28, 96);
-  ctx.lineTo(W - 28, 96);
-  ctx.stroke();
-  const BAR_X = W - 28 - 100;
-  const BAR_MAX_W = 100;
-  const BAR_H = 7;
-  needs.forEach((need, i) => {
-    const rowY = 112 + i * ROW_H;
-    const avg = calcWeekAvg(history, need.id);
-    const color = (COLORS as Record<string, string>)[need.id] ?? '#888';
-    ctx.font = '17px serif';
-    ctx.fillStyle = fg(0.95);
-    ctx.textAlign = 'left';
-    ctx.fillText(need.emoji, 28, rowY + 20);
-    ctx.font = '13px -apple-system, sans-serif';
-    ctx.fillStyle = fg(0.7);
-    ctx.fillText(need.chartLabel, 52, rowY + 20);
-    const valStr = avg !== null ? avg.toFixed(1) : '–';
-    ctx.font = 'bold 14px -apple-system, sans-serif';
-    ctx.fillStyle = color;
-    ctx.textAlign = 'right';
-    ctx.fillText(valStr, BAR_X - 12, rowY + 20);
-    ctx.textAlign = 'left';
-    ctx.fillStyle = fg(0.07);
-    ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(BAR_X, rowY + 12, BAR_MAX_W, BAR_H, 3.5);
-    else ctx.rect(BAR_X, rowY + 12, BAR_MAX_W, BAR_H);
-    ctx.fill();
-    if (avg !== null && avg > 0) {
-      const fillW = Math.max(4, (avg / 10) * BAR_MAX_W);
-      const barGrad = ctx.createLinearGradient(BAR_X, 0, BAR_X + fillW, 0);
-      barGrad.addColorStop(0, color + 'aa');
-      barGrad.addColorStop(1, color);
-      ctx.fillStyle = barGrad;
-      ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(BAR_X, rowY + 12, fillW, BAR_H, 3.5);
-      else ctx.rect(BAR_X, rowY + 12, fillW, BAR_H);
-      ctx.fill();
-    }
-  });
-  const statsDivY = 112 + needs.length * ROW_H + 8;
-  ctx.strokeStyle = fg(0.07);
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(28, statsDivY);
-  ctx.lineTo(W - 28, statsDivY);
-  ctx.stroke();
-  const statsY = statsDivY + 20;
-  const allAvgs = needs
-    .map((n) => calcWeekAvg(history, n.id))
-    .filter((v) => v !== null) as number[];
-  const weekIndex =
-    allAvgs.length > 0
-      ? allAvgs.reduce((s, v) => s + v, 0) / allAvgs.length
-      : 0;
-  ctx.font = '11px -apple-system, sans-serif';
-  ctx.fillStyle = fg(0.35);
-  ctx.textAlign = 'left';
-  ctx.fillText('Индекс недели', 28, statsY);
-  ctx.font = 'bold 26px -apple-system, sans-serif';
-  ctx.fillStyle = fg(0.95);
-  ctx.fillText(weekIndex.toFixed(1), 28, statsY + 30);
-  ctx.font = '11px -apple-system, sans-serif';
-  ctx.fillStyle = fg(0.28);
-  const idxW = ctx.measureText(weekIndex.toFixed(1)).width;
-  ctx.fillText('/10', 28 + idxW + 2, statsY + 24);
-  if (streak > 0) {
-    ctx.textAlign = 'right';
-    ctx.font = '11px -apple-system, sans-serif';
-    ctx.fillStyle = fg(0.35);
-    ctx.fillText('Серия дней', W - 28, statsY);
-    ctx.font = 'bold 26px -apple-system, sans-serif';
-    ctx.fillStyle = fg(0.95);
-    ctx.fillText(`${streak} 🔥`, W - 28, statsY + 30);
-    ctx.textAlign = 'left';
-  }
-  ctx.strokeStyle = fg(0.05);
-  ctx.lineWidth = 1;
-  const footerDivY = H - 52;
-  ctx.beginPath();
-  ctx.moveTo(28, footerDivY);
-  ctx.lineTo(W - 28, footerDivY);
-  ctx.stroke();
-  ctx.font = '11px -apple-system, sans-serif';
-  ctx.fillStyle = fg(0.25);
-  ctx.textAlign = 'left';
-  ctx.fillText('@SchemeHappens · Трекер потребностей', 28, footerDivY + 22);
 }
 
 export function WeeklyCardSheet({ needs, history, onClose }: Props) {
@@ -168,60 +34,28 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
       .then((s) => setStreak(s.currentStreak))
       .catch(() => {});
   }, []);
+
   useEffect(() => {
     if (!canvasRef.current || history.length === 0) return;
-    drawCard(canvasRef.current, needs, history, streak);
+    try {
+      drawWeeklyCard(canvasRef.current, needs, history, streak);
+    } catch {
+      // Отрисовка карточки не должна ронять весь экран
+    }
   }, [needs, history, streak]);
-
-  function buildShareText() {
-    const allAvgs = needs
-      .map((n) => calcWeekAvg(history, n.id))
-      .filter((v) => v !== null) as number[];
-    const weekIndex =
-      allAvgs.length > 0
-        ? (allAvgs.reduce((s, v) => s + v, 0) / allAvgs.length).toFixed(1)
-        : '–';
-    const sorted = [...history].map((d) => d.date).sort();
-    const range =
-      sorted.length >= 2
-        ? `${fmtDate(sorted[0])} – ${fmtDate(sorted[sorted.length - 1])}`
-        : sorted.length === 1
-          ? fmtDate(sorted[0])
-          : '';
-    const streakSuffix = streak > 0 ? ` · Серия: ${streak} дней 🔥` : '';
-    return `Трекер потребностей · ${range}\n\n${needs
-      .map((n) => {
-        const avg = calcWeekAvg(history, n.id);
-        return `${n.emoji} ${n.chartLabel}: ${avg !== null ? avg.toFixed(1) : '–'}`;
-      })
-      .join('\n')}\n\nИндекс: ${weekIndex}/10${streakSuffix}\n\n@SchemeHappens`;
-  }
 
   async function handleShare() {
     if (!canvasRef.current) return;
     setSharing(true);
     try {
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvasRef.current!.toBlob(
-          (b) => (b ? resolve(b) : reject(new Error('canvas empty'))),
-          'image/png',
-        );
-      });
-      const file = new File([blob], 'needs-week.png', { type: 'image/png' });
-      const text = buildShareText();
-      if (navigator.canShare?.({ files: [file] }))
-        await navigator.share({ files: [file], text });
-      else if (navigator.share) await navigator.share({ text });
-      else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'needs-week.png';
-        a.click();
-        URL.revokeObjectURL(url);
-      }
+      await shareCanvasImage(
+        canvasRef.current,
+        buildWeeklyShareText(needs, history, streak, false, botShortUrl),
+        'needs-week.png',
+        { downloadFallback: true },
+      );
     } catch {
-      const text = buildShareText();
+      const text = buildWeeklyShareText(needs, history, streak, true, botShortUrl);
       try {
         await navigator.clipboard.writeText(text);
         setCopied(true);
