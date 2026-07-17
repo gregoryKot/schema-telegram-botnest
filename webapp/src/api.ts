@@ -390,6 +390,8 @@ export const api = {
   getTherapistRequest:  () => get<{ id: number; status: string; rejectReason: string | null } | null>('/api/therapy/request'),
   submitTherapistRequest: (body: { fullName: string; qualification: string; contacts: string; message?: string }) =>
     postJson<{ ok: boolean }>('/api/therapy/request', body),
+  setTherapistView:     (on: boolean) => postJson<{ ok: boolean }>('/api/therapy/therapist-view', { on }),
+  resignTherapist:      () => del('/api/therapy/therapist-role'),
   createTask:           (body: any) => postJson<any>('/api/therapy/tasks', body),
   getTasks:             () => get<any[]>('/api/therapy/tasks'),
   getTaskHistory:       () => get<any[]>('/api/therapy/tasks/history'),

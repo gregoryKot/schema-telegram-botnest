@@ -30,6 +30,9 @@ jobs:
       - run: node scripts/check-route-collisions.mjs
       # Храповик копипасты: новая дублированная логика ≥70 токенов не проходит.
       - run: node scripts/check-jscpd-ratchet.mjs
+      # Старое имя продукта «СхемаЛаб»/«Схема-лаб» не возвращается (переехали на
+      # «Всё по схеме»); первый проход искал только латиницей и кириллицу упустил.
+      - run: node scripts/check-legacy-name.mjs
 
   # Миграции гоняются на РЕАЛЬНОМ Postgres (инцидент 2026-07-16: битый сид
   # healthy_adult_phrases — updatedAt NOT NULL без значения — уронил прод

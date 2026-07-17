@@ -72,6 +72,7 @@ interface Props {
   onOpenTherapistCabinet?: () => void;
   therapistMode?: boolean;
   onToggleTherapistMode?: () => void;
+  onResignTherapist?: () => Promise<void> | void;
 }
 
 export function SettingsSheet({
@@ -82,6 +83,7 @@ export function SettingsSheet({
   onOpenTherapistCabinet,
   therapistMode,
   onToggleTherapistMode,
+  onResignTherapist,
 }: Props) {
   const safeTop = useSafeTop();
   const [view, setView] = useState<View>('main');
@@ -121,6 +123,8 @@ export function SettingsSheet({
   const [reqMsg, setReqMsg] = useState('');
   const [reqBusy, setReqBusy] = useState(false);
   const [reqError, setReqError] = useState('');
+  const [resignConfirm, setResignConfirm] = useState(false);
+  const [resignBusy, setResignBusy] = useState(false);
   const tgName =
     (window.Telegram?.WebApp as any)?.initDataUnsafe?.user?.first_name ?? '';
   const [editName, setEditName] = useState(displayName ?? tgName ?? '');
@@ -706,6 +710,92 @@ export function SettingsSheet({
                           }}
                         />
                       </div>
+                    </div>
+                  )}
+                  {userRole === 'THERAPIST' && onResignTherapist && (
+                    <div
+                      style={{
+                        borderTop: '1px solid rgba(var(--fg-rgb),0.06)',
+                        padding: '14px 16px',
+                      }}
+                    >
+                      {!resignConfirm ? (
+                        <button
+                          onClick={() => setResignConfirm(true)}
+                          style={{
+                            width: '100%',
+                            padding: '9px 0',
+                            borderRadius: 10,
+                            border: '1px solid rgba(var(--fg-rgb),0.1)',
+                            background: 'transparent',
+                            color: 'var(--text-sub)',
+                            fontSize: 13,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Перестать быть специалистом
+                        </button>
+                      ) : (
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: 'var(--text-sub)',
+                              lineHeight: 1.5,
+                              marginBottom: 10,
+                            }}
+                          >
+                            Роль специалиста будет снята: кабинет и доступ к
+                            данным клиентов пропадут. Свои данные не теряешь.
+                            Заявку можно подать заново.
+                          </div>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              disabled={resignBusy}
+                              onClick={() => setResignConfirm(false)}
+                              style={{
+                                flex: 1,
+                                padding: '9px 0',
+                                borderRadius: 10,
+                                border: '1px solid rgba(var(--fg-rgb),0.1)',
+                                background: 'transparent',
+                                color: 'var(--text-sub)',
+                                fontSize: 13,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Отмена
+                            </button>
+                            <button
+                              disabled={resignBusy}
+                              onClick={() => {
+                                setResignBusy(true);
+                                void (async () => {
+                                  try {
+                                    await onResignTherapist();
+                                    setResignConfirm(false);
+                                  } finally {
+                                    setResignBusy(false);
+                                  }
+                                })();
+                              }}
+                              style={{
+                                flex: 1,
+                                padding: '9px 0',
+                                borderRadius: 10,
+                                border: 'none',
+                                background: 'var(--accent-red)',
+                                color: '#fff',
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {resignBusy ? '...' : 'Снять роль'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1560,8 +1650,14 @@ export function SettingsSheet({
                               const req = await api.getTherapistRequest();
                               setTherapistReq(req);
                               setShowReqForm(false);
-                            } catch {
-                              setReqError('Ошибка. Попробуй ещё раз.');
+                            } catch (e) {
+                              // Показываем реальную причину (парность с webapp):
+                              // «Request already pending», лимит и т.п. — иначе
+                              // ошибка выглядит необъяснимой.
+                              setReqError(
+                                String(e).replace('Error: ', '') ||
+                                  'Ошибка. Попробуй ещё раз.',
+                              );
                             } finally {
                               setReqBusy(false);
                             }
@@ -2041,7 +2137,7 @@ export function SettingsSheet({
                       marginBottom: 10,
                     }}
                   >
-                    СхемаЛаб
+                    Всё по схеме
                   </div>
                   <p
                     style={{

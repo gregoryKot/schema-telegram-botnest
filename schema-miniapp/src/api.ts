@@ -498,6 +498,11 @@ export const api = {
     contacts: string;
     message?: string;
   }) => postJson<{ ok: boolean }>('/api/therapy/request', body),
+  // Запомнить предпочтение старта терапевта (кабинет vs клиентский режим).
+  setTherapistView: (on: boolean) =>
+    postJson<{ ok: boolean }>('/api/therapy/therapist-view', { on }),
+  // Отказаться от роли терапевта → снова CLIENT.
+  resignTherapist: () => del('/api/therapy/therapist-role'),
   createTask: (body: {
     type: string;
     text: string;
