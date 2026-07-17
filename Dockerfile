@@ -8,6 +8,15 @@ FROM node:22-slim AS build
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
+# Облегчение сборки (слабый билдер Amvera ловил OOM на `npm ci --prefix webapp`
+# — npm error "Exit handler never called!", т.е. процесс прибивал kernel).
+# audit строит в памяти полный граф зависимостей и ходит в реестр; fund /
+# update-notifier — лишний ввод-вывод. Отключаем на всю build-стадию: это
+# снижает пик памяти и время всех `npm ci` (на установленное дерево не влияет).
+ENV npm_config_audit=false \
+    npm_config_fund=false \
+    npm_config_update_notifier=false
+
 # Backend dependencies
 COPY package*.json ./
 RUN npm ci
