@@ -30,13 +30,15 @@ export function loadMetrika() {
 }
 
 export function CookieBanner() {
-  const [visible, setVisible] = useState(false);
+  // Начальная видимость выводится из localStorage на маунте (lazy-init), а не
+  // через setState в эффекте (react-hooks/set-state-in-effect). Побочный
+  // эффект (загрузка метрики при ранее данном согласии) остаётся в эффекте.
+  const [visible, setVisible] = useState(
+    () => !localStorage.getItem(CONSENT_KEY),
+  );
 
   useEffect(() => {
-    const consent = localStorage.getItem(CONSENT_KEY);
-    if (!consent) {
-      setVisible(true);
-    } else if (consent === 'all') {
+    if (localStorage.getItem(CONSENT_KEY) === 'all') {
       loadMetrika();
     }
   }, []);

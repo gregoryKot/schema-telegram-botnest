@@ -1,13 +1,13 @@
 {
-  "total": 64,
-  "errors": 54,
+  "total": 62,
+  "errors": 52,
   "warnings": 10,
   "byRule": {
     "react-hooks/exhaustive-deps": 11,
     "react-hooks/immutability": 2,
     "react-hooks/preserve-manual-memoization": 1,
     "react-refresh/only-export-components": 23,
-    "react-hooks/set-state-in-effect": 21,
+    "react-hooks/set-state-in-effect": 19,
     "react-hooks/refs": 6
   }
 }
