@@ -33,7 +33,7 @@ function makeService(opts: { pendingCharge?: any; chargeRow?: any }) {
       findFirst: jest.fn(async () => opts.pendingCharge ?? null),
       findUnique: jest.fn(async () => chargeState),
       create: jest.fn(async () => ({ id: 55, subscriptionId: 1, amount: 300 })),
-      updateMany: jest.fn(async ({ where }: any) => {
+      updateMany: jest.fn(async () => {
         if (!chargeState || chargeState.status === 'paid') return { count: 0 };
         chargeState.status = 'paid';
         return { count: 1 };

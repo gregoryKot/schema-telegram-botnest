@@ -50,7 +50,7 @@ function drawCard(
   bg.addColorStop(1, cs.getPropertyValue('--sheet-bg').trim() || '#141720');
   ctx.fillStyle = bg;
   ctx.beginPath();
-  (ctx as any).roundRect(0, 0, W, H, 20);
+  ctx.roundRect(0, 0, W, H, 20);
   ctx.fill();
 
   // Top accent bar
@@ -122,7 +122,7 @@ function drawCard(
     // Bar background
     ctx.fillStyle = fg(0.07);
     ctx.beginPath();
-    (ctx as any).roundRect(BAR_X, rowY + 12, BAR_MAX_W, BAR_H, 3.5);
+    ctx.roundRect(BAR_X, rowY + 12, BAR_MAX_W, BAR_H, 3.5);
     ctx.fill();
 
     // Bar fill
@@ -133,7 +133,7 @@ function drawCard(
       barGrad.addColorStop(1, color);
       ctx.fillStyle = barGrad;
       ctx.beginPath();
-      (ctx as any).roundRect(BAR_X, rowY + 12, fillW, BAR_H, 3.5);
+      ctx.roundRect(BAR_X, rowY + 12, fillW, BAR_H, 3.5);
       ctx.fill();
     }
   });
@@ -289,7 +289,9 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
         await navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
-      } catch {}
+      } catch {
+        /* best-effort: ошибку намеренно игнорируем */
+      }
       setFallbackText(text);
     } finally {
       setSharing(false);
@@ -415,7 +417,9 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
                   await navigator.clipboard.writeText(fallbackText);
                   setFallbackCopied(true);
                   setTimeout(() => setFallbackCopied(false), 2000);
-                } catch {}
+                } catch {
+                  /* best-effort: ошибку намеренно игнорируем */
+                }
               }}
               style={{
                 width: '100%',

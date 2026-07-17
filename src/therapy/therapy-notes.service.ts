@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
@@ -13,10 +14,12 @@ const CONCEPT_TEXT_FIELDS = [
   'modeTransitions',
 ] as const;
 
-function encryptConceptFields(body: Record<string, any>): Record<string, any> {
-  const result: Record<string, any> = {};
+function encryptConceptFields(
+  body: Record<string, unknown>,
+): Record<string, string | null> {
+  const result: Record<string, string | null> = {};
   for (const f of CONCEPT_TEXT_FIELDS) {
-    if (f in body) result[f] = body[f] != null ? encrypt(body[f]) : null;
+    if (f in body) result[f] = encrypt(body[f] as string | null | undefined);
   }
   // Clinical labels — encrypted JSON string (plaintext-tolerant on read).
   if ('schemaIds' in body && Array.isArray(body.schemaIds)) {
@@ -38,10 +41,12 @@ function encryptConceptFields(body: Record<string, any>): Record<string, any> {
   return result;
 }
 
-function decryptConceptFields(row: Record<string, any>): Record<string, any> {
-  const result: Record<string, any> = {};
+function decryptConceptFields(
+  row: Record<string, unknown>,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
   for (const f of CONCEPT_TEXT_FIELDS) {
-    result[f] = row[f] != null ? decrypt(row[f]) : null;
+    result[f] = row[f] != null ? decrypt(row[f] as string) : null;
   }
   // schemaIds / modeIds / modeMapNodes / modeMapEdges: legacy rows have JSON arrays;
   // new rows have encrypted strings.
@@ -67,8 +72,8 @@ function decryptConceptFields(row: Record<string, any>): Record<string, any> {
 }
 
 function decryptConceptSnapshot(
-  snap: Record<string, any>,
-): Record<string, any> {
+  snap: Record<string, unknown>,
+): Record<string, unknown> {
   return { ...snap, ...decryptConceptFields(snap) };
 }
 
@@ -130,7 +135,7 @@ export class TherapyNotesService {
     });
     if (!row) return null;
     const history = Array.isArray(row.history)
-      ? (row.history as any[]).map(decryptConceptSnapshot)
+      ? (row.history as Record<string, unknown>[]).map(decryptConceptSnapshot)
       : [];
     return { ...row, ...decryptConceptFields(row), history };
   }
@@ -167,9 +172,8 @@ export class TherapyNotesService {
         where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
       });
 
-      let hist: any[] = Array.isArray(existing?.history)
-        ? (existing.history as any[])
-        : [];
+      let hist: unknown[] =
+        existing && Array.isArray(existing.history) ? existing.history : [];
 
       if (existing) {
         // Snapshot current state into history (max 20 snapshots)
@@ -183,12 +187,23 @@ export class TherapyNotesService {
           copingStyles: existing.copingStyles,
           goals: existing.goals,
           currentProblems: existing.currentProblems,
-          modeTransitions: (existing as any).modeTransitions ?? null,
+          modeTransitions: existing.modeTransitions ?? null,
         };
         hist = [snapshot, ...hist].slice(0, 20);
       }
 
-      const row = await (tx.clientConceptualization.upsert as any)({
+      // Частичный апдейт: пишем только те поля, что реально пришли в body.
+      const bodyMap = body as Record<string, unknown>;
+      const update: Prisma.ClientConceptualizationUpdateInput = {
+        history: hist as Prisma.InputJsonValue,
+      };
+      for (const [k, v] of Object.entries(enc)) {
+        if (bodyMap[k] !== undefined) {
+          (update as Record<string, string | null>)[k] = v;
+        }
+      }
+
+      const row = await tx.clientConceptualization.upsert({
         where: { therapistId_clientId: { therapistId: tid, clientId: cid } },
         create: {
           therapistId: tid,
@@ -207,12 +222,7 @@ export class TherapyNotesService {
           modeMapEdges: enc.modeMapEdges ?? [],
           history: [],
         },
-        update: {
-          ...Object.fromEntries(
-            Object.entries(enc).filter(([k]) => body[k] !== undefined),
-          ),
-          history: hist,
-        },
+        update,
       });
       return { saved: row, history: hist };
     });
@@ -220,7 +230,9 @@ export class TherapyNotesService {
     return {
       ...saved,
       ...decryptConceptFields(saved),
-      history: history.map(decryptConceptSnapshot),
+      history: history.map((h) =>
+        decryptConceptSnapshot(h as Record<string, unknown>),
+      ),
     };
   }
 }

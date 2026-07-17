@@ -61,28 +61,28 @@ export function MyNotesSheet({ onClose }: Props) {
       api.getSchemaNotes().then(setSchemaNotes).catch(() => {}),
       api.getModeNotes().then(setModeNotes).catch(() => {}),
       Promise.all([
-        api.getSchemaDiary().catch(() => [] as any[]),
-        api.getModeDiary().catch(() => [] as any[]),
-        api.getGratitudeDiary().catch(() => [] as any[]),
+        api.getSchemaDiary().catch(() => []),
+        api.getModeDiary().catch(() => []),
+        api.getGratitudeDiary().catch(() => []),
       ]).then(([sd, md, gd]) => {
         const entries: DiaryEntry[] = [
-          ...sd.map((e: any) => ({ id: e.id, createdAt: e.createdAt, type: 'schema' as const, label: 'Схемный дневник', preview: e.trigger ?? '' })),
-          ...md.map((e: any) => ({ id: e.id, createdAt: e.createdAt, type: 'mode' as const, label: `Режим: ${getModeById(e.modeId)?.name ?? e.modeId}`, preview: e.situation ?? '' })),
-          ...gd.map((e: any) => ({ id: e.id, createdAt: e.createdAt, type: 'gratitude' as const, label: 'Благодарность', preview: Array.isArray(e.items) ? e.items.slice(0, 2).join(', ') : '' })),
+          ...sd.map((e) => ({ id: e.id, createdAt: e.createdAt, type: 'schema' as const, label: 'Схемный дневник', preview: e.trigger ?? '' })),
+          ...md.map((e) => ({ id: e.id, createdAt: e.createdAt, type: 'mode' as const, label: `Режим: ${getModeById(e.modeId)?.name ?? e.modeId}`, preview: e.situation ?? '' })),
+          ...gd.map((e) => ({ id: e.id, createdAt: e.createdAt, type: 'gratitude' as const, label: 'Благодарность', preview: Array.isArray(e.items) ? e.items.slice(0, 2).join(', ') : '' })),
         ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 30);
         setDiaryEntries(entries);
       }),
       Promise.all([
-        api.getBeliefChecks().catch(() => [] as any[]),
-        api.getLetters().catch(() => [] as any[]),
-        api.getFlashcards().catch(() => [] as any[]),
+        api.getBeliefChecks().catch(() => []),
+        api.getLetters().catch(() => []),
+        api.getFlashcards().catch(() => []),
         api.getSafePlace().catch(() => null),
       ]).then(([bc, lt, fc, sp]) => {
         setSafePlace(sp);
         const exs: Exercise[] = [
-          ...bc.map((e: any) => ({ id: e.id, createdAt: e.createdAt, type: 'belief' as const, label: 'Проверка убеждения', preview: e.belief ?? '' })),
-          ...lt.map((e: any) => ({ id: e.id, createdAt: e.createdAt, type: 'letter' as const, label: 'Письмо себе', preview: e.text?.slice(0, 70) ?? '' })),
-          ...fc.map((e: any) => ({ id: e.id, createdAt: e.createdAt, type: 'flashcard' as const, label: `Кризис: ${e.modeId}`, preview: e.action ?? e.reflection ?? '' })),
+          ...bc.map((e) => ({ id: e.id, createdAt: e.createdAt, type: 'belief' as const, label: 'Проверка убеждения', preview: e.belief ?? '' })),
+          ...lt.map((e) => ({ id: e.id, createdAt: e.createdAt, type: 'letter' as const, label: 'Письмо себе', preview: e.text?.slice(0, 70) ?? '' })),
+          ...fc.map((e) => ({ id: e.id, createdAt: e.createdAt, type: 'flashcard' as const, label: `Кризис: ${e.modeId}`, preview: e.action ?? e.reflection ?? '' })),
         ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 30);
         setExercises(exs);
       }),
@@ -157,7 +157,7 @@ export function MyNotesSheet({ onClose }: Props) {
                                   >
                                     <span className="mode-card-stripe" />
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div className="mode-card-name">{(s as any).emoji ?? '●'} {s.name}</div>
+                                      <div className="mode-card-name">{s.emoji ?? '●'} {s.name}</div>
                                       <div className="mode-card-short">
                                         {filled && note ? `Заполнено · ${notePreview(note).slice(0, 40)}` : tr('Нажми, чтобы заполнить →', 'Нажмите, чтобы заполнить →')}
                                       </div>

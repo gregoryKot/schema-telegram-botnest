@@ -18,7 +18,10 @@ export class TelegramProvider implements AuthProviderHandler {
     // JSON payload. Coerce everything non-null to string for the check-string
     // — Telegram's HMAC is computed over string values.
     const fields: Record<string, string> = {};
-    for (const [k, v] of Object.entries(data)) {
+    for (const [k, v] of Object.entries(data) as [
+      string,
+      string | number | boolean,
+    ][]) {
       if (v == null) continue;
       fields[k] = String(v);
     }

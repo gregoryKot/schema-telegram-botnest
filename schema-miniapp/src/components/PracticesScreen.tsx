@@ -376,7 +376,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAdd();
+              if (e.key === 'Enter') void handleAdd();
             }}
             placeholder="Добавить практику..."
             maxLength={200}

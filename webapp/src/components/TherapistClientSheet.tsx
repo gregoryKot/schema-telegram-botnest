@@ -680,9 +680,9 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           {clientDiary.slice(0, 5).map((entry, i) => {
-                            let color = 'var(--text-faint)';
-                            let title = '';
-                            let typeLabel = '';
+                            let color: string;
+                            let title: string;
+                            let typeLabel: string;
                             if (entry.type === 'schema') {
                               const firstId = entry.schemaIds?.[0];
                               const domain = firstId ? SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === firstId)) : null;
@@ -1052,7 +1052,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                         <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
                         <div className="eyebrow" style={{ marginBottom: 12 }}>История версий · {concept.history.length}</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {concept.history.slice(0, 5).map((h: any, i: number) => {
+                          {concept.history.slice(0, 5).map((h, i: number) => {
                             const vNum = concept.history.length - i;
                             const isOpen = expandedSnapshot === i;
                             const textFields: { label: string; val: string | null }[] = [

@@ -80,8 +80,8 @@ export function useAddClient({ setClients }: Params) {
       const updated = await api.addClientManually(id);
       setClients(updated);
       openAddMode(null);
-    } catch (e: any) {
-      const msg = e?.message ?? '';
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '';
       if (msg.toLowerCase().includes('not found'))
         setAddError(
           'Пользователь не найден. Должен открыть приложение хотя бы раз.',

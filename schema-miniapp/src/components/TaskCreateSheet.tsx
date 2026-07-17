@@ -89,7 +89,7 @@ const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap((d) =>
   d.schemas.map((s) => ({
     id: s.id,
     name: s.name,
-    emoji: (s as any).emoji ?? '●',
+    emoji: s.emoji ?? '●',
     domainColor: d.color,
   })),
 );

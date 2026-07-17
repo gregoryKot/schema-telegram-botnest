@@ -126,7 +126,7 @@ export function SettingsSheet({
   const [resignConfirm, setResignConfirm] = useState(false);
   const [resignBusy, setResignBusy] = useState(false);
   const tgName =
-    (window.Telegram?.WebApp as any)?.initDataUnsafe?.user?.first_name ?? '';
+    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
   const [editName, setEditName] = useState(displayName ?? tgName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);
@@ -184,7 +184,9 @@ export function SettingsSheet({
           await navigator.share({
             text: `Давай отслеживать потребности вместе! ${url}`,
           });
-      } catch {}
+      } catch {
+        /* best-effort: ошибку намеренно игнорируем */
+      }
     } finally {
       setPairLoading(false);
     }
@@ -195,7 +197,9 @@ export function SettingsSheet({
       await navigator.clipboard.writeText(pairInviteUrl);
       setPairInviteCopied(true);
       setTimeout(() => setPairInviteCopied(false), 2000);
-    } catch {}
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
   }
 
   async function handleJoin() {
@@ -273,7 +277,8 @@ export function SettingsSheet({
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                view !== 'main' ? setView('main') : onClose();
+                if (view !== 'main') setView('main');
+                else onClose();
               }
             }}
             style={{
@@ -841,6 +846,7 @@ export function SettingsSheet({
                           setSavedToast(true);
                           setTimeout(() => setSavedToast(false), 1800);
                         } catch {
+                          /* best-effort: ошибку намеренно игнорируем */
                         } finally {
                           setNameSaving(false);
                         }
@@ -1079,7 +1085,7 @@ export function SettingsSheet({
                         key={form}
                         onClick={() => {
                           setAddressForm(form);
-                          patch({ addressForm: form });
+                          void patch({ addressForm: form });
                         }}
                         role="button"
                         tabIndex={0}
@@ -1087,7 +1093,7 @@ export function SettingsSheet({
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             setAddressForm(form);
-                            patch({ addressForm: form });
+                            void patch({ addressForm: form });
                           }
                         }}
                         style={{
@@ -1197,7 +1203,7 @@ export function SettingsSheet({
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                   e.preventDefault();
-                                  patch({
+                                  void patch({
                                     therapistShareCards:
                                       !settings.therapistShareCards,
                                   });
@@ -1272,7 +1278,7 @@ export function SettingsSheet({
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                   e.preventDefault();
-                                  patch({
+                                  void patch({
                                     therapistShareProfile:
                                       !settings.therapistShareProfile,
                                   });
@@ -2092,7 +2098,9 @@ export function SettingsSheet({
                       } catch {
                         try {
                           await navigator.clipboard.writeText(text);
-                        } catch {}
+                        } catch {
+                          /* best-effort: ошибку намеренно игнорируем */
+                        }
                       }
                     }}
                   />
@@ -2109,11 +2117,15 @@ export function SettingsSheet({
                           await navigator.share({ text });
                           shared = true;
                         }
-                      } catch {}
+                      } catch {
+                        /* best-effort: ошибку намеренно игнорируем */
+                      }
                       if (!shared) {
                         try {
                           await navigator.clipboard.writeText(text);
-                        } catch {}
+                        } catch {
+                          /* best-effort: ошибку намеренно игнорируем */
+                        }
                         setExportText(text);
                       }
                     }}
@@ -2322,7 +2334,9 @@ export function SettingsSheet({
                   await navigator.clipboard.writeText(exportText);
                   setExportCopied(true);
                   setTimeout(() => setExportCopied(false), 2000);
-                } catch {}
+                } catch {
+                  /* best-effort: ошибку намеренно игнорируем */
+                }
               }}
               style={{
                 width: '100%',

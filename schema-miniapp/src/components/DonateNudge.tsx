@@ -29,7 +29,7 @@ export function DonateNudge() {
   };
   const donate = () => {
     const url = 'https://schemehappens.ru/donate';
-    const tg = (window as any).Telegram?.WebApp;
+    const tg = window.Telegram?.WebApp;
     if (tg?.openLink) tg.openLink(url);
     else window.open(url, '_blank');
     close();

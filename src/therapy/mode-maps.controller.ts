@@ -89,8 +89,9 @@ export class ModeMapsController {
         uid(req),
         parseId(clientId),
       );
-    } catch (e: any) {
-      if (e?.message === 'No active relation') throw new ForbiddenException();
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'No active relation')
+        throw new ForbiddenException();
       throw e;
     }
   }
@@ -101,8 +102,9 @@ export class ModeMapsController {
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
       return await this.modeMapsService.getModeMap(uid(req), parseId(mapId));
-    } catch (e: any) {
-      if (e?.message === 'Not found') throw new ForbiddenException();
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'Not found')
+        throw new ForbiddenException();
       throw e;
     }
   }
@@ -123,8 +125,9 @@ export class ModeMapsController {
         title,
         body.kind,
       );
-    } catch (e: any) {
-      if (e?.message === 'No active relation') throw new ForbiddenException();
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'No active relation')
+        throw new ForbiddenException();
       throw e;
     }
   }
@@ -143,8 +146,9 @@ export class ModeMapsController {
         parseId(mapId),
         body,
       );
-    } catch (e: any) {
-      if (e?.message === 'Not found') throw new ForbiddenException();
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'Not found')
+        throw new ForbiddenException();
       throw e;
     }
   }
@@ -156,8 +160,9 @@ export class ModeMapsController {
     try {
       await this.modeMapsService.deleteModeMap(uid(req), parseId(mapId));
       return { ok: true };
-    } catch (e: any) {
-      if (e?.message === 'Not found') throw new ForbiddenException();
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'Not found')
+        throw new ForbiddenException();
       throw e;
     }
   }
@@ -173,8 +178,9 @@ export class ModeMapsController {
   async getMyModeMap(@Req() req: AuthRequest, @Param('mapId') mapId: string) {
     try {
       return await this.modeMapsService.getMyModeMap(uid(req), parseId(mapId));
-    } catch (e: any) {
-      if (e?.message === 'Not found') throw new ForbiddenException();
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'Not found')
+        throw new ForbiddenException();
       throw e;
     }
   }

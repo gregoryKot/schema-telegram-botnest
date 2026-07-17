@@ -12,7 +12,7 @@
 import { useEffect, useState } from 'react';
 import { Need, UserProfile, COLORS } from '../types';
 import { useNeedData } from '../needData';
-import { api, StreakData, UserTask } from '../api';
+import { api, UserTask } from '../api';
 import { Section } from '../components/BottomNav';
 import { useSafeTop } from '../utils/safezone';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
@@ -33,7 +33,7 @@ function hexToRgb(hex: string): string {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',');
 }
 
-function plural(n: number, one: string, few: string, many: string): string {
+function _plural(n: number, one: string, few: string, many: string): string {
   const m10 = n % 10,
     m100 = n % 100;
   if (m100 >= 11 && m100 <= 19) return many;
@@ -54,7 +54,7 @@ function formatGreetingDate(): string {
 
 function readLocalIds(key: string): string[] {
   try {
-    return JSON.parse(localStorage.getItem(key) ?? '[]');
+    return JSON.parse(localStorage.getItem(key) ?? '[]') as string[];
   } catch {
     return [];
   }
@@ -272,7 +272,7 @@ export function TodaySection({
   const safeTop = useSafeTop();
 
   const firstName =
-    (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
+    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
 
   useEffect(() => {
     let ignore = false;
@@ -349,7 +349,7 @@ export function TodaySection({
       .catch(() => {});
   }, [refreshKey]);
 
-  function openTask(task: UserTask) {
+  function _openTask(task: UserTask) {
     if (task.assignedBy !== null && task.type !== 'custom')
       setActiveTaskId(task.id);
     switch (task.type) {
@@ -396,9 +396,9 @@ export function TodaySection({
       .catch(() => {});
   }
 
-  const myTasks = tasks.filter((t) => t.assignedBy === null);
-  const therapistTasks = tasks.filter((t) => t.assignedBy !== null);
-  const hasAnyTask = tasks.length > 0;
+  const _myTasks = tasks.filter((t) => t.assignedBy === null);
+  const _therapistTasks = tasks.filter((t) => t.assignedBy !== null);
+  const _hasAnyTask = tasks.length > 0;
 
   const streak = profile?.streak ?? 0;
   const ratedCount = needs.filter((n) => ratings[n.id] !== undefined).length;
@@ -826,7 +826,7 @@ export function TodaySection({
                     schema: '#818cf8',
                     mode: '#f472b6',
                     gratitude: '#4ade80',
-                  } as any
+                  } as Record<string, string>
                 )[entry.type] ?? '#aaa';
               return (
                 <div
@@ -1145,7 +1145,9 @@ function OnboardingWidget({
 }) {
   const [skipped, setSkipped] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem(ONBOARDING_SKIPPED_KEY) ?? '[]');
+      return JSON.parse(
+        localStorage.getItem(ONBOARDING_SKIPPED_KEY) ?? '[]',
+      ) as string[];
     } catch {
       return [];
     }

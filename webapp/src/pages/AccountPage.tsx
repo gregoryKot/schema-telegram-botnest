@@ -69,7 +69,7 @@ export function AccountPage() {
     window.location.href = `${API_BASE}/api/auth/telegram/redirect`;
   };
 
-  const unlink = async (provider: 'google' | 'telegram' | 'vk') => {
+  const unlink = async (provider: 'google' | 'telegram' | 'vk' | 'email') => {
     if (!confirm(`Отвязать ${provider === 'google' ? 'Google' : 'Telegram'}?`)) return;
     setBusy(true);
     setError(null);
@@ -233,7 +233,7 @@ export function AccountPage() {
                 </div>
               </div>
               {hasEmail ? (
-                <button disabled={busy} onClick={() => unlink('email' as any)} style={{ background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
+                <button disabled={busy} onClick={() => unlink('email')} style={{ background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
                   Отвязать
                 </button>
               ) : (

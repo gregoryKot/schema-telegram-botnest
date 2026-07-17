@@ -31,7 +31,7 @@ function makePrisma(
       }),
     },
     rating: {
-      findMany: jest.fn(async ({ where, select, distinct }: any) => {
+      findMany: jest.fn(async ({ where, distinct }: any) => {
         queries++;
         let rows = ratings.filter((r) => where.userId.in.includes(r.userId));
         if (where.date?.in)

@@ -10,15 +10,23 @@ const SEEN_KEY = 'donateNudgeSeen';
 const PERIOD = 30 * 24 * 60 * 60 * 1000;
 
 export function DonateNudge() {
-  const [show, setShow] = useState(false);
+  // Показывать ли — выводится на маунте (lazy-init), а не через setState в
+  // эффекте (react-hooks/set-state-in-effect). Побочный эффект (пометить
+  // brand-new юзера) остаётся в эффекте.
+  const [show, setShow] = useState(() => {
+    const seen = localStorage.getItem(SEEN_KEY);
+    if (!seen) return false; // brand-new — don't nag
+    // Give new users a few days before the first nudge.
+    if (Date.now() - Number(seen) < 3 * 24 * 60 * 60 * 1000) return false;
+    const last = Number(localStorage.getItem(SHOWN_KEY) || 0);
+    return Date.now() - last > PERIOD;
+  });
 
   useEffect(() => {
-    const seen = localStorage.getItem(SEEN_KEY);
-    if (!seen) { localStorage.setItem(SEEN_KEY, String(Date.now())); return; } // brand-new — don't nag
-    // Give new users a few days before the first nudge.
-    if (Date.now() - Number(seen) < 3 * 24 * 60 * 60 * 1000) return;
-    const last = Number(localStorage.getItem(SHOWN_KEY) || 0);
-    if (Date.now() - last > PERIOD) setShow(true);
+    // Впервые видим юзера — фиксируем момент, чтобы отсчитывать «пару дней».
+    if (!localStorage.getItem(SEEN_KEY)) {
+      localStorage.setItem(SEEN_KEY, String(Date.now()));
+    }
   }, []);
 
   if (!show) return null;

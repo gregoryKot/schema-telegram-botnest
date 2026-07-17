@@ -61,7 +61,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
   const [saving, setSaving] = useState(false);
   const question = getQuestion(tr);
 
-  async function handleSave() {
+  function handleSave() {
     setSaving(true);
     localStorage.setItem(getWeekKey(), '1');
     api
