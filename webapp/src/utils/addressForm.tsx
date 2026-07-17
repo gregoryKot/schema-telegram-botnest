@@ -1,48 +1,22 @@
-/* eslint-disable react-refresh/only-export-components -- файл намеренно держит компонент рядом с его константами/хуками; вынос в отдельный файл — churn ради dev-only Fast Refresh, на прод-рантайм не влияет */
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react';
-import { api } from '../api';
+import { createContext, useContext } from 'react';
 
 /**
  * Форма обращения к пользователю: «ты» или «вы».
  * Источник — settings.addressForm (null = ещё не выбрано → используем «ты»).
- * Провайдер сам грузит настройки; picker/настройки зовут setForm для живого
- * обновления тона без перезагрузки.
+ * Провайдер (AddressFormProvider.tsx) грузит настройки; picker/настройки зовут
+ * setForm для живого обновления тона без перезагрузки.
  */
 export type AddressForm = 'ty' | 'vy';
 
-interface Ctx {
+export interface AddressFormCtx {
   form: AddressForm;
   setForm: (f: AddressForm) => void;
 }
 
-const AddressFormContext = createContext<Ctx>({
+export const AddressFormContext = createContext<AddressFormCtx>({
   form: 'ty',
   setForm: () => {},
 });
-
-export function AddressFormProvider({ children }: { children: ReactNode }) {
-  const [form, setForm] = useState<AddressForm>('ty');
-  useEffect(() => {
-    api
-      .getSettings()
-      .then((s) => {
-        if (s.addressForm === 'ty' || s.addressForm === 'vy')
-          setForm(s.addressForm);
-      })
-      .catch(() => {});
-  }, []);
-  return (
-    <AddressFormContext.Provider value={{ form, setForm }}>
-      {children}
-    </AddressFormContext.Provider>
-  );
-}
 
 export function useAddressForm(): AddressForm {
   return useContext(AddressFormContext).form;
