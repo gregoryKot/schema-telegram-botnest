@@ -56,8 +56,8 @@ COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/prisma.config.js ./
 COPY --from=build --chown=node:node /app/webapp/dist ./webapp/dist
-# Сервер «технические работы» (dependency-free) — фолбэк на порту 3000, когда
-# приложение не смогло стартовать. См. deploy/entrypoint.mjs и CMD ниже.
+# Front + страница техработ (dependency-free) — держат порт 3000 всю жизнь
+# контейнера. См. deploy/front-server.mjs, deploy/entrypoint.mjs и CMD ниже.
 COPY --from=build --chown=node:node /app/deploy ./deploy
 
 # Непривилегированный пользователь (в node-образе уже есть `node`)
@@ -67,10 +67,11 @@ USER node
 HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "fetch('http://localhost:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-# Точка входа — Node-супервизор (deploy/entrypoint.mjs): recover-p3009 →
-# migrate deploy → node dist/main. При ЛЮБОМ падении старта (миграция или краш
-# приложения, исчерпав лимит перезапусков) вместо выхода контейнера и generic-
-# ошибки Amvera (502) на порту 3000 поднимается страница «технические работы».
+# Точка входа — Node-супервизор (deploy/entrypoint.mjs). Front держит публичный
+# порт 3000 с первой секунды; приложение слушает внутренний APP_PORT. Пока идёт
+# старт (recover-p3009 → migrate deploy → буст Nest) или пока приложение
+# крашлупит — клиент видит нашу страницу техработ, а не generic-503 Amvera;
+# приложение подняло APP_PORT — front прозрачно проксирует на него.
 # Node как PID 1 ловит SIGTERM/SIGINT и пробрасывает их дочернему процессу —
 # graceful shutdown (bot.stop, prisma disconnect) сохранён.
 # recover-p3009 снимает застрявшую failed-миграцию (P3009, инцидент 2026-07-16)
