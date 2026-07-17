@@ -1,6 +1,6 @@
 {
-  "total": 81,
-  "errors": 72,
+  "total": 80,
+  "errors": 71,
   "warnings": 9,
   "byRule": {
     "@typescript-eslint/no-unsafe-return": 4,
@@ -13,7 +13,7 @@
     "react-hooks/immutability": 2,
     "react-hooks/preserve-manual-memoization": 1,
     "react-refresh/only-export-components": 22,
-    "react-hooks/set-state-in-effect": 16,
+    "react-hooks/set-state-in-effect": 15,
     "react-hooks/refs": 2
   }
 }
