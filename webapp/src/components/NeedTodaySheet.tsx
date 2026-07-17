@@ -31,13 +31,11 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
   const [showReflection, setShowReflection] = useState(false);
   const [showRanges, setShowRanges] = useState(false);
   const NEED_DATA = useNeedData();
-  const data = NEED_DATA[need.id];
-  if (!data) return null;
-  const color = COLORS[need.id] ?? '#888';
-  const rangeIdx = value <= 3 ? 0 : value <= 6 ? 1 : 2;
-  const RANGE_VALUES = [1, 4, 7];
 
-  // Inline slider – prevent iOS scroll container from stealing touch events
+  // Inline slider – prevent iOS scroll container from stealing touch events.
+  // Хуки объявляются ДО раннего `return null` ниже: при !data ранний выход
+  // иначе пропускал бы эти хуки и порядок хуков плыл между рендерами
+  // (react-hooks/rules-of-hooks).
   const trackRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = trackRef.current;
@@ -60,6 +58,12 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
     if (e.buttons === 0) return;
     calcValue(e.clientX);
   }, [calcValue]);
+
+  const data = NEED_DATA[need.id];
+  if (!data) return null;
+  const color = COLORS[need.id] ?? '#888';
+  const rangeIdx = value <= 3 ? 0 : value <= 6 ? 1 : 2;
+  const RANGE_VALUES = [1, 4, 7];
 
   return (
     <ExScreen

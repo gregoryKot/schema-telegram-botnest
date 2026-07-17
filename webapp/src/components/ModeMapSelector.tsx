@@ -35,6 +35,7 @@ export function ModeMapSelector({ clientId }: Props) {
 
   // Load list on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
     setLoading(true);
     api.listModeMaps(clientId)
       .then(list => {
@@ -43,6 +44,7 @@ export function ModeMapSelector({ clientId }: Props) {
         else setLoading(false);
       })
       .catch(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, [clientId]);
 
   async function selectMap(id: number) {

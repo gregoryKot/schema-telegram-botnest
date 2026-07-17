@@ -48,7 +48,7 @@ export function DiarySection({ onClose }: Props = {}) {
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const handleDelete = async (type: DiaryType, id: number) => {

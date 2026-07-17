@@ -48,7 +48,9 @@ export function ExportOverlay({
               await navigator.clipboard.writeText(exportText);
               setExportCopied(true);
               setTimeout(() => setExportCopied(false), 2000);
-            } catch {}
+            } catch {
+              /* игнорируем */
+            }
           }}
           style={{
             width: '100%',

@@ -91,7 +91,7 @@ export function SettingsSheet({
   const [reqBusy, setReqBusy] = useState(false);
   const [reqError, setReqError] = useState('');
   const tgName =
-    (window.Telegram?.WebApp as any)?.initDataUnsafe?.user?.first_name ?? '';
+    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
   const [editName, setEditName] = useState(displayName ?? tgName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);
@@ -149,7 +149,9 @@ export function SettingsSheet({
           await navigator.share({
             text: `Давай отслеживать потребности вместе! ${url}`,
           });
-      } catch {}
+      } catch {
+        /* игнорируем */
+      }
     } finally {
       setPairLoading(false);
     }
@@ -160,7 +162,9 @@ export function SettingsSheet({
       await navigator.clipboard.writeText(pairInviteUrl);
       setPairInviteCopied(true);
       setTimeout(() => setPairInviteCopied(false), 2000);
-    } catch {}
+    } catch {
+      /* игнорируем */
+    }
   }
 
   async function handleJoin() {
@@ -238,7 +242,8 @@ export function SettingsSheet({
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                view !== 'main' ? setView('main') : onClose();
+                if (view !== 'main') setView('main');
+                else onClose();
               }
             }}
             style={{

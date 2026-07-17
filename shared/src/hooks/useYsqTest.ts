@@ -506,7 +506,10 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
       if (!autoResume) {
         const result = localStorage.getItem(YSQ_RESULT_KEY);
         if (result) {
-          const parsed = JSON.parse(result);
+          const parsed = JSON.parse(result) as {
+            answers?: number[];
+            date?: string;
+          };
           if (
             parsed.answers &&
             Array.isArray(parsed.answers) &&
@@ -581,7 +584,6 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
         })
         .catch(() => {});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveProgress = (newAnswers: number[], newPage: number) => {
@@ -722,7 +724,7 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     const activeLabel =
       activeCount === 0
         ? 'Активных схем не найдено'
-        : `${activeCount} ${activeCount === 1 ? 'выраженная схема' : activeCount < 5 ? 'выраженные схемы' : 'выраженных схем'}`;
+        : `${activeCount}\u00A0${activeCount === 1 ? 'выраженная схема' : activeCount < 5 ? 'выраженные схемы' : 'выраженных схем'}`;
 
     const prevEntry = history.length >= 2 ? history[1] : null;
     const getSchemaDelta = (schemaName: string): number | null => {

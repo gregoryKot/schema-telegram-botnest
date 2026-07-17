@@ -29,7 +29,7 @@ export function AddressFormSection({
               key={form}
               onClick={() => {
                 setAddressForm(form);
-                patch({ addressForm: form });
+                void patch({ addressForm: form });
               }}
               role="button"
               tabIndex={0}
@@ -37,7 +37,7 @@ export function AddressFormSection({
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   setAddressForm(form);
-                  patch({ addressForm: form });
+                  void patch({ addressForm: form });
                 }
               }}
               style={{

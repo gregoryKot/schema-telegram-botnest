@@ -1,3 +1,4 @@
+import type { Request, Response } from 'express';
 import {
   Controller,
   Get,
@@ -18,12 +19,16 @@ import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { OptionalJwtGuard } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
+import { VkProvider } from './providers/vk.provider';
+import { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
 import {
   AuthFlowService,
   REFRESH_COOKIE,
   cookieOptions,
+  getCookie,
+  linkUserIdFromState,
 } from './auth-flow.service';
 
 // Redirect-based OAuth flows (Google, VK, Telegram OIDC), the Telegram Login
@@ -47,7 +52,7 @@ export class AuthOAuthController {
 
   @Get('google')
   @UseGuards(OptionalJwtGuard)
-  googleRedirect(@Req() req: any, @Res() res: any): void {
+  googleRedirect(@Req() req: Request, @Res() res: Response): void {
     return this.flow.oauthRedirect('google', req, res);
   }
 
@@ -58,8 +63,8 @@ export class AuthOAuthController {
     @Query('code') code: string,
     @Query('state') state: string,
     @Query('error') error: string,
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: Request,
+    @Res() res: Response,
   ): Promise<void> {
     return this.flow.oauthCallback('google', code, state, error, req, res);
   }
@@ -68,7 +73,7 @@ export class AuthOAuthController {
 
   @Get('vk')
   @UseGuards(OptionalJwtGuard)
-  vkRedirect(@Req() req: any, @Res() res: any): void {
+  vkRedirect(@Req() req: Request, @Res() res: Response): void {
     return this.flow.oauthRedirect('vk', req, res);
   }
 
@@ -78,34 +83,26 @@ export class AuthOAuthController {
     @Query('state') state: string,
     @Query('device_id') deviceId: string,
     @Query('error') error: string,
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: Request,
+    @Res() res: Response,
   ): Promise<void> {
     // VK ID needs device_id + PKCE state for token exchange. Bypass the
     // generic helper and call the provider-specific method.
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
-      const vk = this.providers.get('vk') as any;
+      const vk = this.providers.get('vk') as VkProvider;
       if (error) throw new UnauthorizedException(`vk auth denied: ${error}`);
       if (!code || !state || !deviceId)
         throw new BadRequestException('Missing code / state / device_id');
 
-      const savedState = req.cookies?.['oauth_state'];
+      const savedState = getCookie(req, 'oauth_state');
       if (!savedState || savedState !== state)
         throw new UnauthorizedException('OAuth state mismatch');
       res.clearCookie('oauth_state', { path: '/api/auth' });
 
       const identity = await vk.exchangeCodeWithContext(code, deviceId, state);
 
-      let linkUserId: bigint | null = null;
-      try {
-        const raw = JSON.parse(
-          Buffer.from(state, 'base64url').toString(),
-        ).linkUserId;
-        if (raw) linkUserId = BigInt(raw);
-      } catch {
-        /* ignore */
-      }
+      const linkUserId = linkUserIdFromState(state);
 
       const outcome = await this.flow.signInOrLinkOrMerge('vk', identity, {
         linkUserId,
@@ -123,8 +120,10 @@ export class AuthOAuthController {
 
   @Get('telegram-oidc')
   @UseGuards(OptionalJwtGuard)
-  telegramOidcRedirect(@Req() req: any, @Res() res: any): void {
-    const provider = this.providers.get('telegram-oidc') as any;
+  telegramOidcRedirect(@Req() req: Request, @Res() res: Response): void {
+    const provider = this.providers.get(
+      'telegram-oidc',
+    ) as TelegramOidcProvider;
     const state = Buffer.from(
       JSON.stringify({
         nonce: randomBytes(16).toString('hex'),
@@ -154,8 +153,8 @@ export class AuthOAuthController {
     @Query('code') code: string,
     @Query('state') state: string,
     @Query('error') error: string,
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: Request,
+    @Res() res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
@@ -164,28 +163,22 @@ export class AuthOAuthController {
       if (!code || !state)
         throw new BadRequestException('Missing code or state');
 
-      const savedState = req.cookies?.['oauth_state'];
+      const savedState = getCookie(req, 'oauth_state');
       if (!savedState || savedState !== state)
         throw new UnauthorizedException('OAuth state mismatch');
       res.clearCookie('oauth_state', { path: '/api/auth' });
 
-      const codeVerifier = req.cookies?.['tg_pkce_verifier'];
+      const codeVerifier = getCookie(req, 'tg_pkce_verifier');
       if (!codeVerifier)
         throw new UnauthorizedException('Missing PKCE verifier');
       res.clearCookie('tg_pkce_verifier', { path: '/api/auth' });
 
-      const provider = this.providers.get('telegram-oidc') as any;
+      const provider = this.providers.get(
+        'telegram-oidc',
+      ) as TelegramOidcProvider;
       const identity = await provider.exchangeCodePkce(code, codeVerifier);
 
-      let linkUserId: bigint | null = null;
-      try {
-        const raw = JSON.parse(
-          Buffer.from(state, 'base64url').toString(),
-        ).linkUserId;
-        if (raw) linkUserId = BigInt(raw);
-      } catch {
-        /* ignore */
-      }
+      const linkUserId = linkUserIdFromState(state);
 
       const outcome = await this.flow.signInOrLinkOrMerge(
         'telegram-oidc',
@@ -196,7 +189,12 @@ export class AuthOAuthController {
           userAgent: req.headers['user-agent'],
         },
       );
-      this.flow.finishOAuthRedirect(outcome, 'telegram-oidc', res, frontendBase);
+      this.flow.finishOAuthRedirect(
+        outcome,
+        'telegram-oidc',
+        res,
+        frontendBase,
+      );
     } catch (err) {
       this.logger.error(
         `telegram-oidc callback error: ${(err as Error).message}`,
@@ -217,9 +215,19 @@ export class AuthOAuthController {
   async telegramWidget(
     // Не DTO: подписанный Telegram-payload, whitelist срежет поля и сломает hash-верификацию.
     @Body() body: Record<string, string>,
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
-  ): Promise<any> {
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<
+    | {
+        merge: true;
+        mergeToken: string;
+        summary: Record<string, number>;
+        otherDisplay: string | null;
+        provider: string;
+      }
+    | { totp: true; challengeToken: string }
+    | { accessToken: string; expiresIn: number }
+  > {
     this.flow.requireCsrf(req, 'telegram/widget');
     const telegramHandler = this.providers.get('telegram');
     if (!telegramHandler.verifyClientData)
@@ -233,9 +241,10 @@ export class AuthOAuthController {
     // to authenticate on oauth.telegram.org, so the access token is gone but
     // the httpOnly tg_link_user cookie is still present.
     let linkUserId = req.webUser?.userId ?? null;
-    if (!linkUserId && req.cookies?.['tg_link_user']) {
+    const tgLinkCookie = getCookie(req, 'tg_link_user');
+    if (!linkUserId && tgLinkCookie) {
       try {
-        linkUserId = BigInt(req.cookies['tg_link_user']);
+        linkUserId = BigInt(tgLinkCookie);
       } catch {
         /* ignore */
       }
@@ -278,7 +287,7 @@ export class AuthOAuthController {
 
   @Get('telegram/redirect')
   @UseGuards(OptionalJwtGuard)
-  telegramRedirect(@Req() req: any, @Res() res: any): void {
+  telegramRedirect(@Req() req: Request, @Res() res: Response): void {
     const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
     const botId = botToken.split(':')[0]; // BOT_TOKEN format: 123456789:HASH
     const frontendBase = this.config
@@ -307,8 +316,8 @@ export class AuthOAuthController {
   @Get('telegram/widget-redirect')
   async telegramWidgetRedirect(
     @Query() query: Record<string, string>,
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: Request,
+    @Res() res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
 
@@ -352,7 +361,7 @@ try {
         try {
           const decoded = JSON.parse(
             Buffer.from(query['tgAuthResult'], 'base64url').toString('utf8'),
-          ) as Record<string, unknown>;
+          ) as Record<string, string | number | boolean | null>;
           fields = {};
           for (const [k, v] of Object.entries(decoded)) {
             if (v != null) fields[k] = String(v);
@@ -369,15 +378,19 @@ try {
 
       const identity = telegramHandler.verifyClientData(fields);
 
-      const savedLinkUserId = req.cookies?.['tg_link_user'] ?? null;
+      const savedLinkUserId = getCookie(req, 'tg_link_user') ?? null;
       res.clearCookie('tg_link_user', { path: '/api/auth' });
       const linkUserId = savedLinkUserId ? BigInt(savedLinkUserId) : null;
 
-      const outcome = await this.flow.signInOrLinkOrMerge('telegram', identity, {
-        linkUserId,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'],
-      });
+      const outcome = await this.flow.signInOrLinkOrMerge(
+        'telegram',
+        identity,
+        {
+          linkUserId,
+          ip: req.ip,
+          userAgent: req.headers['user-agent'],
+        },
+      );
       this.flow.finishOAuthRedirect(outcome, 'telegram', res, frontendBase);
     } catch (err) {
       const msg = (err as Error).message ?? 'unknown';
@@ -401,8 +414,8 @@ try {
   @HttpCode(200)
   async confirmMerge(
     @Body('token') token: string,
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     // CSRF: require the custom header same way refresh/logout do. Browser
     // cannot set it from a cross-origin form/img.

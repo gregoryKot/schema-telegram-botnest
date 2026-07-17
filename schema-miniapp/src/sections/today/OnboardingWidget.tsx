@@ -104,7 +104,9 @@ export function OnboardingWidget({
 }) {
   const [skipped, setSkipped] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem(ONBOARDING_SKIPPED_KEY) ?? '[]');
+      return JSON.parse(
+        localStorage.getItem(ONBOARDING_SKIPPED_KEY) ?? '[]',
+      ) as string[];
     } catch {
       return [];
     }

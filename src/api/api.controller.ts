@@ -10,13 +10,14 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request, Response } from 'express';
 import { uid } from './request-utils';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import { ProfileService } from '../bot/profile.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { SaveDraftDto, UpdateNameDto, InitDto } from './dto/misc.dto';
 
@@ -48,10 +49,10 @@ export class ApiController {
   // ?link_token=… on the redirect. This endpoint issues one.
 
   @Get('link-token')
-  async issueLinkToken(
+  issueLinkToken(
     @Req() req: AuthRequest,
-    @Res({ passthrough: true }) res: any,
-  ): Promise<{ linkToken: string; expiresIn: number }> {
+    @Res({ passthrough: true }) res: Response,
+  ): { linkToken: string; expiresIn: number } {
     const linkToken = this.authService.buildLinkToken(uid(req));
     // httpOnly-cookie — основной канал (S-4, токен не в URL); тело ответа —
     // обратная совместимость со старыми клиентами (?link_token=).
@@ -98,10 +99,9 @@ export class ApiController {
 
   @Get('user-flags')
   async getUserFlags(@Req() req: AuthRequest) {
-    const select = Object.fromEntries(
-      this.FLAG_FIELDS_READ.map((f) => [f, true]),
-    );
-    const u = await (this.prisma.user as any).findUnique({
+    const select: Prisma.UserSelect = {};
+    for (const f of this.FLAG_FIELDS_READ) select[f] = true;
+    const u = await this.prisma.user.findUnique({
       where: { id: uid(req) },
       select,
     });
@@ -117,9 +117,9 @@ export class ApiController {
     if (!body || typeof body !== 'object')
       throw new BadRequestException('Invalid body');
     const data: Record<string, unknown> = {};
-    for (const k of this.FLAG_FIELDS) if (k in body) data[k] = (body as any)[k];
+    for (const k of this.FLAG_FIELDS) if (k in body) data[k] = body[k];
     if (Object.keys(data).length === 0) return { ok: true };
-    await (this.prisma.user as any).update({
+    await this.prisma.user.update({
       where: { id: uid(req) },
       data,
     });
@@ -130,12 +130,12 @@ export class ApiController {
 
   @Get('drafts')
   async getDrafts(@Req() req: AuthRequest) {
-    const rows = await (this.prisma as any).diaryDraft.findMany({
+    const rows = await this.prisma.diaryDraft.findMany({
       where: { userId: uid(req) },
       select: { type: true, startedAt: true, data: true },
     });
     return Object.fromEntries(
-      rows.map((r: any) => [
+      rows.map((r) => [
         r.type,
         { startedAt: r.startedAt.toISOString(), data: r.data },
       ]),
@@ -156,10 +156,11 @@ export class ApiController {
     const startedAt = new Date(body.startedAt);
     if (isNaN(startedAt.getTime()))
       throw new BadRequestException('Invalid startedAt value');
-    await (this.prisma as any).diaryDraft.upsert({
+    const data = body.data as Prisma.InputJsonValue;
+    await this.prisma.diaryDraft.upsert({
       where: { userId_type: { userId: uid(req), type } },
-      update: { data: body.data, startedAt },
-      create: { userId: uid(req), type, data: body.data, startedAt },
+      update: { data, startedAt },
+      create: { userId: uid(req), type, data, startedAt },
     });
     return { ok: true };
   }
@@ -171,7 +172,7 @@ export class ApiController {
   ): Promise<{ ok: true }> {
     if (!['schema', 'mode', 'gratitude'].includes(type))
       throw new BadRequestException('Invalid type');
-    await (this.prisma as any).diaryDraft.deleteMany({
+    await this.prisma.diaryDraft.deleteMany({
       where: { userId: uid(req), type },
     });
     return { ok: true };

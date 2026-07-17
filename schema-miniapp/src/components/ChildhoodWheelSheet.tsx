@@ -63,7 +63,7 @@ export function ChildhoodWheelSheet({
 
   const lowNeeds = NEED_IDS.filter((id) => ratings[id] <= 4);
 
-  async function handleSave() {
+  function handleSave() {
     if (saving) return;
     setSaving(true);
     // Save locally first so UI never gets stuck

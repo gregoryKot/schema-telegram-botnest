@@ -99,7 +99,7 @@ export function MyTherapistSection({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      patch({
+                      void patch({
                         therapistShareCards: !settings.therapistShareCards,
                       });
                     }
@@ -172,7 +172,7 @@ export function MyTherapistSection({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      patch({
+                      void patch({
                         therapistShareProfile: !settings.therapistShareProfile,
                       });
                     }

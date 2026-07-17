@@ -1,3 +1,4 @@
+import type { Request, Response } from 'express';
 import {
   Controller,
   Get,
@@ -26,6 +27,7 @@ import {
   AuthFlowService,
   REFRESH_COOKIE,
   cookieOptions,
+  getCookie,
 } from './auth-flow.service';
 
 @Controller('api/auth')
@@ -53,7 +55,7 @@ export class AuthController {
   @HttpCode(200)
   async emailLoginLink(
     @Body('email') email: string,
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<{ ok: true }> {
     this.flow.requireCsrf(req, 'email/link');
     return this.auth.requestEmailLogin(email);
@@ -62,8 +64,8 @@ export class AuthController {
   @Get('email/callback')
   async emailLoginCallback(
     @Query('token') token: string,
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: Request,
+    @Res() res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
@@ -102,10 +104,10 @@ export class AuthController {
   @HttpCode(200)
   async emailLinkToAccount(
     @Body('email') email: string,
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<{ ok: true }> {
     this.flow.requireCsrf(req, 'email/link-to-account');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     return this.auth.linkEmailToAccount(webUser.userId, email);
   }
 
@@ -119,8 +121,8 @@ export class AuthController {
   @HttpCode(200)
   async telegramWebApp(
     @Body('initData') initData: string,
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     if (!initData) throw new BadRequestException('Missing initData');
     const { id: telegramId, firstName } =
@@ -152,7 +154,7 @@ export class AuthController {
     @Param('provider') provider: string,
     // Не DTO: подписанный Telegram-payload, whitelist срежет поля и сломает hash-верификацию.
     @Body() body: Record<string, unknown>,
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<
     | { ok: true }
     | { merge: true; mergeToken: string; summary: Record<string, number> }
@@ -164,7 +166,7 @@ export class AuthController {
       );
     }
     const identity = handler.verifyClientData(body);
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
 
     const result = await this.auth.linkProviderToUser(
       webUser.userId,
@@ -194,13 +196,13 @@ export class AuthController {
   @HttpCode(200)
   async unlink(
     @Param('provider') provider: string,
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<{ ok: boolean }> {
     if (!this.providers.list().some((p) => p.id === provider)) {
       throw new BadRequestException('Unknown provider');
     }
-    const webUser: WebUser = req.webUser;
-    await this.auth.unlinkProvider(webUser.userId, provider as any);
+    const webUser: WebUser = req.webUser!;
+    await this.auth.unlinkProvider(webUser.userId, provider);
     this.securityLog.log('provider_unlinked', {
       userId: webUser.userId,
       provider,
@@ -214,11 +216,11 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(200)
   async refresh(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     this.flow.requireCsrf(req, 'refresh');
-    const rawRefresh = req.cookies?.[REFRESH_COOKIE];
+    const rawRefresh = getCookie(req, REFRESH_COOKIE);
     if (!rawRefresh) throw new UnauthorizedException('No refresh token');
     const tokens = await this.auth.rotateRefreshToken(
       rawRefresh,
@@ -239,11 +241,11 @@ export class AuthController {
   @HttpCode(200)
   async logout(
     @Query('all') all: string,
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ ok: boolean }> {
     this.flow.requireCsrf(req, 'logout');
-    const rawRefresh = req.cookies?.[REFRESH_COOKIE];
+    const rawRefresh = getCookie(req, REFRESH_COOKIE);
     if (rawRefresh) {
       if (all === 'true') {
         try {
@@ -271,7 +273,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@Req() req: any): Promise<{
+  async me(@Req() req: Request): Promise<{
     userId: string;
     providers: Array<{
       provider: string;
@@ -280,7 +282,7 @@ export class AuthController {
     }>;
     totp: { enabled: boolean; recoveryCodesLeft: number };
   }> {
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     const [providers, totp] = await Promise.all([
       this.auth.getUserProviders(webUser.userId),
       this.totp.getStatus(webUser.userId),
@@ -294,10 +296,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
   async totpSetup(
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<{ otpauthUrl: string; qrDataUrl: string }> {
     this.flow.requireCsrf(req, '2fa/setup');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     // Use one of the user's display names for the QR label
     const providers = await this.auth.getUserProviders(webUser.userId);
     const label =
@@ -311,12 +313,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
   async totpEnable(
-    @Req() req: any,
+    @Req() req: Request,
     @Body('code') code: string,
   ): Promise<{ recoveryCodes: string[] }> {
     this.flow.requireCsrf(req, '2fa/enable');
     if (!code) throw new BadRequestException('Missing code');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     const result = await this.totp.confirmSetup(webUser.userId, code);
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
@@ -329,12 +331,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
   async totpDisable(
-    @Req() req: any,
+    @Req() req: Request,
     @Body('code') code: string,
   ): Promise<{ ok: true }> {
     this.flow.requireCsrf(req, '2fa/disable');
     if (!code) throw new BadRequestException('Missing code');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     await this.totp.disable(webUser.userId, code);
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
@@ -347,12 +349,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
   async totpRegenerateRecovery(
-    @Req() req: any,
+    @Req() req: Request,
     @Body('code') code: string,
   ): Promise<{ recoveryCodes: string[] }> {
     this.flow.requireCsrf(req, '2fa/recovery-codes');
     if (!code) throw new BadRequestException('Missing code');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     return this.totp.regenerateRecoveryCodes(webUser.userId, code);
   }
 
@@ -366,18 +368,18 @@ export class AuthController {
   })
   @HttpCode(200)
   async recoveryEmailStart(
-    @Req() req: any,
+    @Req() req: Request,
     @Body('email') email: string,
   ): Promise<{ ok: true }> {
     this.flow.requireCsrf(req, 'recovery-email/start');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     return this.emailSvc.sendVerificationLink(webUser.userId, email);
   }
 
   @Get('recovery-email/verify')
   async recoveryEmailVerify(
     @Query('token') token: string,
-    @Res() res: any,
+    @Res() res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
@@ -408,8 +410,8 @@ export class AuthController {
   @Post('recovery/confirm')
   @HttpCode(200)
   async recoveryConfirm(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
     @Body('token') token: string,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     this.flow.requireCsrf(req, 'recovery/confirm');
@@ -443,8 +445,8 @@ export class AuthController {
   })
   @HttpCode(200)
   async totpChallenge(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
     @Body('challengeToken') challengeToken: string,
     @Body('code') code: string,
   ): Promise<{ accessToken: string; expiresIn: number }> {
@@ -479,11 +481,11 @@ export class AuthController {
 
   @Get('link-token')
   @UseGuards(JwtAuthGuard)
-  async issueLinkToken(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
-  ): Promise<{ linkToken: string; expiresIn: number }> {
-    const webUser: WebUser = req.webUser;
+  issueLinkToken(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): { linkToken: string; expiresIn: number } {
+    const webUser: WebUser = req.webUser!;
     const linkToken = this.auth.buildLinkToken(webUser.userId);
     // Основной канал доставки — httpOnly-cookie (S-4): токен не попадает в
     // URL/логи. Тело ответа сохранено для обратной совместимости со старыми

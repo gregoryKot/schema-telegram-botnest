@@ -39,7 +39,7 @@ export function ConceptSheet({ selectedClient, detail }: Props) {
   return (
     <BottomSheet
       onClose={() => {
-        if (conceptDirty) saveConcept();
+        if (conceptDirty) void saveConcept();
         setShowConceptSheet(false);
       }}
     >

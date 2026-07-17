@@ -1,3 +1,4 @@
+import type { Request, Response } from 'express';
 import {
   Injectable,
   Logger,
@@ -16,7 +17,26 @@ import { TotpService } from './totp.service';
 export const REFRESH_COOKIE = 'refresh_token';
 const CSRF_HEADER = 'x-requested-with';
 
-function hasCsrfHeader(req: any): boolean {
+// express типизирует Request.cookies как any — читаем куки через одну
+// типобезопасную обёртку вместо россыпи unsafe-обращений по контроллерам.
+export function getCookie(req: Request, name: string): string | undefined {
+  const jar = req.cookies as Record<string, string | undefined> | undefined;
+  return jar?.[name];
+}
+
+// linkUserId зашит в base64url-state OAuth-редиректа — разбираем типобезопасно.
+export function linkUserIdFromState(state: string): bigint | null {
+  try {
+    const parsed = JSON.parse(Buffer.from(state, 'base64url').toString()) as {
+      linkUserId?: string | null;
+    };
+    return parsed.linkUserId ? BigInt(parsed.linkUserId) : null;
+  } catch {
+    return null;
+  }
+}
+
+function hasCsrfHeader(req: Request): boolean {
   // Primary check: x-requested-with header set by our webapp fetch calls.
   const v = req.headers?.[CSRF_HEADER];
   if (typeof v === 'string' && v.length > 0) return true;
@@ -92,7 +112,7 @@ export class AuthFlowService {
 
     if (linkUserId === null) {
       const userId = await this.auth.findOrCreateUserByProvider(
-        providerId_ as any,
+        providerId_,
         identity.providerId,
         identity.displayName,
         identity.email,
@@ -149,7 +169,7 @@ export class AuthFlowService {
   finishOAuthRedirect(
     outcome: Awaited<ReturnType<AuthFlowService['signInOrLinkOrMerge']>>,
     provider: string,
-    res: any,
+    res: Response,
     frontendBase: string,
   ): void {
     if (outcome.kind === 'merge') {
@@ -191,7 +211,7 @@ export class AuthFlowService {
   //
   // We don't use Get(':provider') because it would shadow /me, /refresh etc.
 
-  oauthRedirect(provider: string, req: any, res: any): void {
+  oauthRedirect(provider: string, req: Request, res: Response): void {
     const handler = this.providers.get(provider);
     if (!handler.buildAuthUrl)
       throw new BadRequestException(
@@ -213,7 +233,7 @@ export class AuthFlowService {
     res.redirect(handler.buildAuthUrl(state));
   }
 
-  requireCsrf(req: any, endpoint: string): void {
+  requireCsrf(req: Request, endpoint: string): void {
     if (!hasCsrfHeader(req)) {
       this.securityLog.log('csrf_blocked', {
         endpoint,
@@ -229,8 +249,8 @@ export class AuthFlowService {
     code: string,
     state: string,
     error: string,
-    req: any,
-    res: any,
+    req: Request,
+    res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
@@ -243,21 +263,13 @@ export class AuthFlowService {
       if (!code || !state)
         throw new BadRequestException('Missing code or state');
 
-      const savedState = req.cookies?.['oauth_state'];
+      const savedState = getCookie(req, 'oauth_state');
       if (!savedState || savedState !== state)
         throw new UnauthorizedException('OAuth state mismatch');
       res.clearCookie('oauth_state', { path: '/api/auth' });
 
       const identity = await handler.exchangeCode(code);
-      let linkUserId: bigint | null = null;
-      try {
-        const raw = JSON.parse(
-          Buffer.from(state, 'base64url').toString(),
-        ).linkUserId;
-        if (raw) linkUserId = BigInt(raw);
-      } catch {
-        /* ignore */
-      }
+      const linkUserId = linkUserIdFromState(state);
 
       const outcome = await this.signInOrLinkOrMerge(provider, identity, {
         linkUserId,

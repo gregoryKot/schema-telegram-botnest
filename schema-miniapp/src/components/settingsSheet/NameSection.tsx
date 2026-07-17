@@ -70,6 +70,7 @@ export function NameSection({
                 onNameChanged?.(name);
                 showSavedToast();
               } catch {
+                /* игнорируем */
               } finally {
                 setNameSaving(false);
               }

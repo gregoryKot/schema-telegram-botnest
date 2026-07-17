@@ -75,20 +75,19 @@ export class NotesService {
     await this.prisma.$transaction(async (tx) => {
       const row = await tx.user.findUnique({
         where: { id: userId },
-        select: { [field]: true } as any,
+        select: { [field]: true },
       });
       if (!row) return;
-      const dec = decryptRecord(row as any, { jsonArrays: [field] }) as Record<
-        string,
-        unknown
-      >;
+      const dec = decryptRecord(row as Record<string, unknown>, {
+        jsonArrays: [field],
+      });
       const list = Array.isArray(dec[field]) ? (dec[field] as string[]) : [];
       if (list.includes(id)) return;
       const enc = encryptRecord(
         { [field]: [...list, id] },
         { jsonArrays: [field] },
       );
-      await tx.user.update({ where: { id: userId }, data: enc as any });
+      await tx.user.update({ where: { id: userId }, data: enc });
     });
   }
 

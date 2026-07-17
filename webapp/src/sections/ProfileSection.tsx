@@ -80,6 +80,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
     setReady(false);
     setStreak(null);
     setAchievements(null);
@@ -585,7 +586,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 28 }}>{m.desc}</div>
               <button onClick={async () => {
                 const text = `${m.emoji} Получил достижение «${m.title}»!\n\n${botShortUrl}`;
-                try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); } catch {}
+                try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); } catch { /* best-effort: ошибку намеренно игнорируем */ }
               }} className="btn-primary">
                 Поделиться
               </button>

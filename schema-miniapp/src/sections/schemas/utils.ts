@@ -19,7 +19,7 @@ export function hex(color: string) {
 
 export function readLocalIds(key: string): string[] {
   try {
-    return JSON.parse(localStorage.getItem(key) ?? '[]');
+    return JSON.parse(localStorage.getItem(key) ?? '[]') as string[];
   } catch {
     return [];
   }

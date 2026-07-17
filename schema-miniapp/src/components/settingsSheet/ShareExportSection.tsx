@@ -23,7 +23,9 @@ export function ShareExportSection({
             } catch {
               try {
                 await navigator.clipboard.writeText(text);
-              } catch {}
+              } catch {
+                /* игнорируем */
+              }
             }
           }}
         />
@@ -40,11 +42,15 @@ export function ShareExportSection({
                 await navigator.share({ text });
                 shared = true;
               }
-            } catch {}
+            } catch {
+              /* игнорируем */
+            }
             if (!shared) {
               try {
                 await navigator.clipboard.writeText(text);
-              } catch {}
+              } catch {
+                /* игнорируем */
+              }
               setExportText(text);
             }
           }}

@@ -200,7 +200,7 @@ export function TrackerHistoryOverlay({
           onDone={() => {
             setShowYesterdaySheet(false);
             setHistoryLoading(true);
-            api
+            void api
               .history(historyDays)
               .then((h) => setHistory(fillHistoryGaps(h)))
               .finally(() => setHistoryLoading(false));
@@ -221,7 +221,7 @@ export function TrackerHistoryOverlay({
           onDone={() => {
             setBackfillDate(null);
             setHistoryLoading(true);
-            api
+            void api
               .history(historyDays)
               .then((h) => setHistory(fillHistoryGaps(h)))
               .finally(() => setHistoryLoading(false));

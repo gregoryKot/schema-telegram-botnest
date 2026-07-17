@@ -344,7 +344,9 @@ export function AchievementsFeature({
                     try {
                       if (navigator.share) await navigator.share({ text });
                       else await navigator.clipboard.writeText(text);
-                    } catch {}
+                    } catch {
+                      /* игнорируем */
+                    }
                   }}
                   className="btn-primary"
                 >

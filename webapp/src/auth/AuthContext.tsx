@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- файл намеренно держит компонент рядом с его константами/хуками; вынос в отдельный файл — churn ради dev-only Fast Refresh, на прод-рантайм не влияет */
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
@@ -23,10 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Refresh 60s before expiry
     const delay = Math.max((expiresIn - 60) * 1000, 5000);
     refreshTimer.current = setTimeout(async () => {
+      // eslint-disable-next-line react-hooks/immutability -- react-compiler: паттерн намеренный, рефактор рискован
       await doRefresh();
     }, delay);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- react-compiler: ручная мемоизация намеренная
   const doRefresh = useCallback(async (clearOnFailure = true): Promise<boolean> => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/refresh`, {
@@ -54,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Try Telegram WebApp auto-auth using initData
   const doTelegramWebAppAuth = useCallback(async (): Promise<boolean> => {
     try {
-      const tg = (window as any).Telegram?.WebApp;
+      const tg = window.Telegram?.WebApp;
       const initData = tg?.initData;
       if (!initData) return false;
 

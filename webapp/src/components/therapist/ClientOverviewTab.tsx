@@ -113,9 +113,9 @@ export function ClientOverviewTab({ detail }: { detail: ReturnType<typeof useCli
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {clientDiary.slice(0, 5).map((entry, i) => {
-                  let color = 'var(--text-faint)';
-                  let title = '';
-                  let typeLabel = '';
+                  let color: string;
+                  let title: string;
+                  let typeLabel: string;
                   if (entry.type === 'schema') {
                     const firstId = entry.schemaIds?.[0];
                     const domain = firstId ? SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === firstId)) : null;

@@ -5,9 +5,9 @@ export class AlertLogger extends ConsoleLogger {
   // Simple in-memory throttle: don't send same error more than once per 60s
   private readonly seen = new Map<string, number>();
 
-  error(message: any, ...optionalParams: any[]) {
+  error(message: unknown, ...optionalParams: unknown[]) {
     super.error(message, ...optionalParams);
-    this.alert(String(message));
+    this.alert(typeof message === 'string' ? message : JSON.stringify(message));
   }
 
   private alert(message: string) {

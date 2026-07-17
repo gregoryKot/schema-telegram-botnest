@@ -24,7 +24,7 @@ import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { AddressFormPicker } from './components/AddressFormPicker';
-import { AddressFormProvider } from './utils/addressForm';
+import { AddressFormProvider } from './utils/AddressFormProvider';
 import { LandingPage } from './pages/LandingPage';
 import { ProductLandingPage } from './pages/ProductLandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';

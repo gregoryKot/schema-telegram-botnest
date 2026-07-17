@@ -68,7 +68,9 @@ export const STEP_LABELS = ['Режим', 'Ответ', 'Потребность'
 
 export function loadLocal(): FlashcardEntry[] {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ?? '[]',
+    ) as FlashcardEntry[];
   } catch {
     return [];
   }

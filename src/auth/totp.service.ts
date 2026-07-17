@@ -40,7 +40,7 @@ export class TotpService {
     userId: bigint,
     accountLabel: string,
   ): Promise<{ otpauthUrl: string; qrDataUrl: string }> {
-    const user = await (this.prisma as any).user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { totpEnabledAt: true },
     });
@@ -51,7 +51,7 @@ export class TotpService {
     if (!encrypted)
       throw new Error('Encryption unavailable — refusing to store TOTP secret');
 
-    await (this.prisma as any).user.update({
+    await this.prisma.user.update({
       where: { id: userId },
       data: { totpSecret: encrypted, totpEnabledAt: null },
     });
@@ -70,7 +70,7 @@ export class TotpService {
     userId: bigint,
     code: string,
   ): Promise<{ recoveryCodes: string[] }> {
-    const row = await (this.prisma as any).user.findUnique({
+    const row = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { totpSecret: true, totpEnabledAt: true },
     });
@@ -91,11 +91,11 @@ export class TotpService {
     const hashes = codes.map(hashCode);
     const encryptedHashes = encryptJson(hashes) ?? JSON.stringify(hashes);
 
-    await (this.prisma as any).user.update({
+    await this.prisma.user.update({
       where: { id: userId },
       data: {
         totpEnabledAt: new Date(),
-        totpRecoveryCodes: encryptedHashes as any,
+        totpRecoveryCodes: encryptedHashes,
       },
     });
 
@@ -107,7 +107,7 @@ export class TotpService {
   // Verify a TOTP code OR a one-time recovery code against the user's stored
   // secret. Recovery codes are consumed (removed from the list) on success.
   async verifyCode(userId: bigint, code: string): Promise<boolean> {
-    const row = await (this.prisma as any).user.findUnique({
+    const row = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         totpSecret: true,
@@ -127,7 +127,7 @@ export class TotpService {
       typeof raw === 'string'
         ? (decryptJson<string[]>(raw) ?? [])
         : Array.isArray(raw)
-          ? raw
+          ? raw.map(String)
           : [];
     const incomingHash = hashCode(trimmed);
     const idx = hashes.indexOf(incomingHash);
@@ -137,9 +137,9 @@ export class TotpService {
     const remaining = hashes.filter((_, i) => i !== idx);
     const encryptedRemaining =
       encryptJson(remaining) ?? JSON.stringify(remaining);
-    await (this.prisma as any).user.update({
+    await this.prisma.user.update({
       where: { id: userId },
-      data: { totpRecoveryCodes: encryptedRemaining as any },
+      data: { totpRecoveryCodes: encryptedRemaining },
     });
     this.logger.warn(
       `Recovery code consumed for user ${userId} (${remaining.length} left)`,
@@ -151,7 +151,7 @@ export class TotpService {
   async disable(userId: bigint, code: string): Promise<void> {
     const ok = await this.verifyCode(userId, code);
     if (!ok) throw new UnauthorizedException('Invalid code');
-    await (this.prisma as any).user.update({
+    await this.prisma.user.update({
       where: { id: userId },
       data: { totpSecret: null, totpEnabledAt: null, totpRecoveryCodes: [] },
     });
@@ -169,16 +169,16 @@ export class TotpService {
     );
     const hashes = codes.map(hashCode);
     const encryptedHashes = encryptJson(hashes) ?? JSON.stringify(hashes);
-    await (this.prisma as any).user.update({
+    await this.prisma.user.update({
       where: { id: userId },
-      data: { totpRecoveryCodes: encryptedHashes as any },
+      data: { totpRecoveryCodes: encryptedHashes },
     });
     return { recoveryCodes: codes };
   }
 
   // Quick read for the login flow — "does this user have 2FA on?".
   async isEnabled(userId: bigint): Promise<boolean> {
-    const row = await (this.prisma as any).user.findUnique({
+    const row = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { totpEnabledAt: true },
     });
@@ -188,7 +188,7 @@ export class TotpService {
   async getStatus(
     userId: bigint,
   ): Promise<{ enabled: boolean; recoveryCodesLeft: number }> {
-    const row = await (this.prisma as any).user.findUnique({
+    const row = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { totpEnabledAt: true, totpRecoveryCodes: true },
     });
@@ -198,7 +198,7 @@ export class TotpService {
       typeof raw === 'string'
         ? (decryptJson<string[]>(raw) ?? [])
         : Array.isArray(raw)
-          ? raw
+          ? raw.map(String)
           : [];
     return { enabled: true, recoveryCodesLeft: hashes.length };
   }

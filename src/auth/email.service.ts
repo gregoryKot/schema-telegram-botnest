@@ -3,7 +3,6 @@ import {
   ConflictException,
   Injectable,
   Logger,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -43,7 +42,7 @@ export class EmailService {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
     const lower = email.toLowerCase().trim();
 
-    const user = await (this.prisma as any).user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { recoveryEmail: lower },
       select: { id: true, recoveryEmailVerifiedAt: true },
     });
@@ -56,7 +55,7 @@ export class EmailService {
     }
 
     const raw = crypto.randomBytes(32).toString('base64url');
-    await (this.prisma as any).emailToken.create({
+    await this.prisma.emailToken.create({
       data: {
         id: crypto.randomUUID(),
         userId: user.id,
@@ -85,7 +84,7 @@ export class EmailService {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
     const lower = email.toLowerCase().trim();
 
-    const taken = await (this.prisma as any).user.findFirst({
+    const taken = await this.prisma.user.findFirst({
       where: { recoveryEmail: lower, NOT: { id: userId } },
       select: { id: true },
     });
@@ -93,7 +92,7 @@ export class EmailService {
       throw new ConflictException('Этот email уже привязан к другому аккаунту');
 
     const raw = crypto.randomBytes(32).toString('base64url');
-    await (this.prisma as any).emailToken.create({
+    await this.prisma.emailToken.create({
       data: {
         id: crypto.randomUUID(),
         userId,
@@ -124,7 +123,7 @@ export class EmailService {
     email: string;
   }> {
     if (!rawToken) throw new BadRequestException('Missing token');
-    const row = await (this.prisma as any).emailToken.findUnique({
+    const row = await this.prisma.emailToken.findUnique({
       where: { tokenHash: hashToken(rawToken) },
     });
     if (!row) throw new UnauthorizedException('Token not found');
@@ -136,14 +135,14 @@ export class EmailService {
     if (!row.userId)
       throw new UnauthorizedException('Token has no user binding');
 
-    await (this.prisma as any).emailToken.update({
+    await this.prisma.emailToken.update({
       where: { id: row.id },
       data: { usedAt: new Date() },
     });
 
     if (expectedPurpose === 'verify_email') {
       // Bind verified email to user.
-      await (this.prisma as any).user.update({
+      await this.prisma.user.update({
         where: { id: row.userId },
         data: { recoveryEmail: row.email, recoveryEmailVerifiedAt: new Date() },
       });
@@ -208,7 +207,7 @@ export class EmailService {
       }
     } catch (e) {
       this.logger.error(`Resend error: ${(e as Error).message}`);
-      throw new Error('Email delivery failed');
+      throw new Error('Email delivery failed', { cause: e });
     }
   }
 }

@@ -30,7 +30,7 @@ export class BookingController {
 
   @Post('booking')
   @HttpCode(HttpStatus.OK)
-  async submitBooking(@Body() dto: BookingDto): Promise<{ ok: true }> {
+  submitBooking(@Body() dto: BookingDto): { ok: true } {
     const { name, contact, message } = dto;
 
     if (!name?.trim() || !contact?.trim()) {

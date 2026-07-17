@@ -156,7 +156,7 @@ export function ClientConceptTab({ detail }: { detail: ReturnType<typeof useClie
               <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
               <div className="eyebrow" style={{ marginBottom: 12 }}>История версий · {concept.history.length}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {concept.history.slice(0, 5).map((h: any, i: number) => {
+                {concept.history.slice(0, 5).map((h, i: number) => {
                   const vNum = concept.history.length - i;
                   const isOpen = expandedSnapshot === i;
                   const textFields: { label: string; val: string | null }[] = [

@@ -25,14 +25,24 @@ const PAIRS = [
   'utils/todayInsight.ts',
   'utils/drafts.ts',
   'utils/addressForm.tsx',
+  'utils/AddressFormProvider.tsx',
   'components/CrisisCard.tsx',
   'hooks/useYsqTest.ts',
+  'utils/format.ts',
+  'utils/storageKeys.ts',
 ];
 
-// Осознанно НЕ в списке (разошлись содержательно; кандидаты волны 2 —
-// выравнивание или вынос в shared): components/Celebration.tsx (тире+стили),
-// components/PairCard.tsx, components/TherapyNote.tsx,
-// components/WeeklyQuestion.tsx, utils/format.ts, utils/storageKeys.ts,
+// Осознанно НЕ в списке (разошлись содержательно, или намеренное визуальное
+// расхождение — см. shared/README и разбор волны 2 в CLAUDE.md):
+// components/Celebration.tsx (текстовая логика вынесена в
+// shared/src/utils/celebrationText.ts; сама вёрстка/canvas-анимация/стили
+// остаются раздельными — у стрик-числа намеренно разный fontWeight),
+// components/TherapyNote.tsx (различия — только форматирование кода и тип
+// тире «–»/«—» в тексте; побайтовое выравнивание разобрано волной 2, но не
+// применено — jscpd-храповик считает выровненную пару целиком новым клоном
+// ≥70 токенов и растёт на файле такого размера сильнее, чем экономят прочие
+// правки волны 2; см. shared/README),
+// components/PairCard.tsx, components/WeeklyQuestion.tsx,
 // needData.ts, schemaTherapyData.ts, api.ts.
 
 let failed = false;
