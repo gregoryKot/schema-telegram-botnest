@@ -59,7 +59,7 @@ function getInitialSection(): Section {
 const SECTIONS: Section[] = ['today', 'help', 'schemas', 'profile'];
 
 export default function App() {
-  const { flags: serverFlags, setFlag } = useUserFlags();
+  const { flags: serverFlags, loaded: flagsLoaded, setFlag } = useUserFlags();
   const [section, setSection] = useState<Section>(getInitialSection);
   const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
   const [disclaimerDone, setDisclaimerDone] = useState(
@@ -104,19 +104,48 @@ export default function App() {
   const [therapistMode, setTherapistMode] = useState(
     () => localStorage.getItem('therapist_mode') === '1',
   );
-  const switchTherapistMode = (on: boolean) => {
+  // Роль нужна внутри switchTherapistMode (который объявлен раньше setUserRole).
+  const userRoleRef = useRef<'CLIENT' | 'THERAPIST'>('CLIENT');
+  // persist=true — запомнить выбор режима на сервере (source of truth: приложение
+  // должно помнить, в каком режиме ты был; localStorage в Telegram WebView
+  // стирается). Сервер принимает флаг только у THERAPIST — клиент escalation
+  // не получит, поэтому и на клиенте лишний 403-запрос не шлём.
+  const switchTherapistMode = (on: boolean, persist = true) => {
     localStorage.setItem('therapist_mode', on ? '1' : '0');
     setTherapistMode(on);
+    if (persist && userRoleRef.current === 'THERAPIST') {
+      api.setTherapistView(on).catch(() => {});
+    }
   };
-  // Sync therapistMode from server when flags load (read-only flag, server is source of truth)
-  useEffect(() => {
-    if (serverFlags.therapistMode && !therapistMode) switchTherapistMode(true);
-  }, [serverFlags.therapistMode]);
+  // Отказ от роли терапевта → снова CLIENT: закрываем кабинет и переводим UI.
+  const handleResignTherapist = useCallback(async () => {
+    await api.resignTherapist();
+    setUserRole('CLIENT');
+    userRoleRef.current = 'CLIENT';
+    switchTherapistMode(false, false);
+    setCabinetView('list');
+  }, []);
   const [cabinetView, setCabinetView] = useState<'list' | 'client'>('list');
   const therapistBackHandlerRef = useRef<() => void>(() =>
     setCabinetView('list'),
   );
   const [userRole, setUserRole] = useState<'CLIENT' | 'THERAPIST'>('CLIENT');
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  // Один раз, когда И серверные флаги, И роль загружены, восстанавливаем
+  // запомненный режим терапевта из серверного флага therapistMode (source of
+  // truth — переживает стирание localStorage в Telegram WebView и синхронен
+  // между устройствами). До этого момента показываем быстрый localStorage-хинт,
+  // поэтому в типичном случае (флаг совпадает с localStorage) экран не моргает.
+  const modeReconciledRef = useRef(false);
+  useEffect(() => {
+    if (modeReconciledRef.current || !flagsLoaded || !roleLoaded) return;
+    modeReconciledRef.current = true;
+    if (userRoleRef.current === 'THERAPIST') {
+      const remembered = serverFlags.therapistMode;
+      setTherapistMode(remembered);
+      localStorage.setItem('therapist_mode', remembered ? '1' : '0');
+    }
+  }, [flagsLoaded, roleLoaded, serverFlags.therapistMode]);
   const safeTop = useSafeTop();
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [helpTasks, setHelpTasks] = useState<UserTask[] | null>(null);
@@ -171,9 +200,15 @@ export default function App() {
 
   useEffect(() => {
     const handleOffline = () => setIsOffline(true);
-    const handleOnline = () => setIsOffline(false);
+    const handleOnline = () => {
+      setIsOffline(false);
+      api.flushOutbox().catch(() => {});
+    };
     window.addEventListener('offline', handleOffline);
     window.addEventListener('online', handleOnline);
+    // Флаш и при старте приложения — очередь могла накопиться в прошлой
+    // сессии (webview закрылся до восстановления сети).
+    api.flushOutbox().catch(() => {});
     return () => {
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('online', handleOnline);
@@ -300,16 +335,13 @@ export default function App() {
       .then((p) => {
         setDiaryActiveSchemaIds(p.ysq.activeSchemaIds);
         setUserRole(p.role);
-        // First launch as therapist: auto-enable therapist mode if not saved yet
-        if (
-          p.role === 'THERAPIST' &&
-          localStorage.getItem('therapist_mode') === null
-        ) {
-          switchTherapistMode(true);
-        }
-        // Safety: CLIENT can never be in therapist mode
+        userRoleRef.current = p.role;
+        setRoleLoaded(true);
+        // Восстановление запомненного режима — в reconcile-эффекте (ждёт и
+        // серверные флаги, и роль). Здесь только страховка: CLIENT никогда не
+        // может быть в режиме терапевта.
         if (p.role !== 'THERAPIST') {
-          switchTherapistMode(false);
+          switchTherapistMode(false, false);
         }
         if (p.name) setDisplayName(p.name);
         const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
@@ -523,6 +555,8 @@ export default function App() {
             view={cabinetView}
             onViewChange={setCabinetView}
             onClose={() => {
+              // Выход из кабинета запоминается (persist): приложение помнит
+              // последний режим — при следующем входе откроется клиентский.
               switchTherapistMode(false);
               setCabinetView('list');
             }}
@@ -612,8 +646,8 @@ export default function App() {
         displayName={displayName}
         setDisplayName={setDisplayName}
         therapistMode={therapistMode}
-        setTherapistMode={setTherapistMode}
         switchTherapistMode={switchTherapistMode}
+        onResignTherapist={handleResignTherapist}
         diaryActiveSchemaIds={diaryActiveSchemaIds}
         newDiaryEntry={newDiaryEntry}
         setNewDiaryEntry={setNewDiaryEntry}

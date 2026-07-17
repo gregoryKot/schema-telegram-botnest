@@ -11,24 +11,84 @@
 
 import { useEffect, useState } from 'react';
 import { Need, UserProfile } from '../types';
-import { api, UserTask } from '../api';
+import { api, StreakData, UserTask } from '../api';
 import { Section } from '../components/BottomNav';
 import { useSafeTop } from '../utils/safezone';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
-import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
+import { BottomSheet } from '../components/BottomSheet';
 import { fmtDate, todayStr } from '../utils/format';
-import { readLocalIds } from './today/helpers';
-import { TodayHeader } from './today/TodayHeader';
-import { TherapistBanner } from './today/TherapistBanner';
+import { TaskRow } from '../components/tasks/TaskRow';
+import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
+import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
+import { NeedMini } from './today/NeedMini';
 import { OnboardingWidget } from './today/OnboardingWidget';
-import { NeedsCard } from './today/NeedsCard';
-import { DiaryCard, DiaryPreviewEntry } from './today/DiaryCard';
-import { AllTasksSheet } from './today/AllTasksSheet';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
+
+function plural(n: number, one: string, few: string, many: string): string {
+  const m10 = n % 10,
+    m100 = n % 100;
+  if (m100 >= 11 && m100 <= 19) return many;
+  if (m10 === 1) return one;
+  if (m10 >= 2 && m10 <= 4) return few;
+  return many;
+}
+
+function formatGreetingDate(): string {
+  const now = new Date();
+  const dow = now.toLocaleDateString('ru-RU', { weekday: 'long' });
+  const date = now.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+  });
+  return `${dow[0].toUpperCase()}${dow.slice(1)}, ${date}`;
+}
+
+function readLocalIds(key: string): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? '[]');
+  } catch {
+    return [];
+  }
+}
+
+// ── Diary type badge ──────────────────────────────────────────────────────────
+
+function DiaryTypeBadge({ type }: { type: string }) {
+  const MAP: Record<string, { label: string; color: string }> = {
+    schema: { label: 'Сх', color: '#818cf8' },
+    mode: { label: 'Рж', color: '#f472b6' },
+    gratitude: { label: 'Бл', color: '#4ade80' },
+  };
+  const { label, color } = MAP[type] ?? {
+    label: type.slice(0, 2),
+    color: '#aaa',
+  };
+  return (
+    <span
+      style={{
+        width: 22,
+        height: 22,
+        flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 10,
+        fontWeight: 700,
+        color,
+        background: color + '18',
+        borderRadius: '50%',
+      }}
+    >
+      {label}
+    </span>
+  );
+}
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -77,7 +137,9 @@ export function TodaySection({
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() =>
     readLocalIds(MY_SCHEMA_IDS_KEY),
   );
-  const [recentDiaries, setRecentDiaries] = useState<DiaryPreviewEntry[]>([]);
+  const [recentDiaries, setRecentDiaries] = useState<
+    Array<{ type: string; label: string; time: string; dateStr: string }>
+  >([]);
   const [diariesLoaded, setDiariesLoaded] = useState(false);
   const [showDiaryTask, setShowDiaryTask] = useState(false);
   const [tasks, setTasks] = useState<UserTask[]>([]);
@@ -183,17 +245,19 @@ export function TodaySection({
       case 'mode_intro':
         if (task.text) setIntroModeId(task.text);
         break;
-      default:
-        if (ALL_SCHEMAS.some((s) => s.id === task.text)) {
-          setIntroSchemaId(task.text);
+      default: {
+        const legacy = findLegacyTaskTarget(task.text);
+        if (legacy?.type === 'schema') {
+          setIntroSchemaId(legacy.id);
           break;
         }
-        if (ALL_MODES.some((m) => m.id === task.text)) {
-          setIntroModeId(task.text);
+        if (legacy?.type === 'mode') {
+          setIntroModeId(legacy.id);
           break;
         }
         // belief_check, letter_to_self etc — navigate to Help
         onNavigate('help');
+      }
     }
   }
 
@@ -231,7 +295,88 @@ export function TodaySection({
       style={{ minHeight: '100vh', paddingBottom: 120, paddingTop: safeTop }}
     >
       {/* ── Header ── */}
-      <TodayHeader firstName={firstName} profile={profile} streak={streak} />
+      <div style={{ padding: '24px 20px 0' }}>
+        <div
+          style={{
+            fontSize: 11,
+            color: 'var(--text-faint)',
+            fontWeight: 500,
+            marginBottom: 5,
+            letterSpacing: '0.03em',
+          }}
+        >
+          {formatGreetingDate()}
+        </div>
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--text-faint)',
+            fontWeight: 500,
+            marginBottom: 2,
+          }}
+        >
+          {firstName ? 'Привет,' : ''}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 26,
+              fontWeight: 700,
+              color: 'var(--text)',
+              letterSpacing: '-0.5px',
+              lineHeight: 1.2,
+            }}
+          >
+            {firstName ?? 'Добро пожаловать'}
+          </div>
+          {/* Streak */}
+          {profile !== null && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                flexShrink: 0,
+                background:
+                  streak > 0 ? 'rgba(251,146,60,0.12)' : 'var(--surface)',
+                border: `1px solid ${streak > 0 ? 'rgba(251,146,60,0.22)' : 'var(--border-color)'}`,
+                borderRadius: 20,
+                padding: '5px 10px',
+              }}
+            >
+              {streak > 7 ? (
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="#fb923c"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M12 2C12 2 9 7 9 10.5C9 12.43 10.57 14 12.5 14C14.43 14 16 12.43 16 10.5C16 9.5 15.5 8.5 15 7.5C15 7.5 17 9 17 12C17 15.31 14.31 18 11 18C7.69 18 5 15.31 5 12C5 7 12 2 12 2Z" />
+                </svg>
+              ) : (
+                <span style={{ fontSize: 13 }}>{streak > 0 ? '✨' : '💤'}</span>
+              )}
+              <span
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: streak > 0 ? '#fb923c' : 'var(--text-faint)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {streak}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div
         style={{
@@ -243,7 +388,51 @@ export function TodaySection({
       >
         {/* ── Therapist cabinet banner ── */}
         {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
-          <TherapistBanner onOpen={onOpenTherapistCabinet} />
+          <div
+            onClick={onOpenTherapistCabinet}
+            className="card"
+            style={{
+              borderRadius: 18,
+              padding: '12px 16px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+            }}
+          >
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 13,
+                flexShrink: 0,
+                background:
+                  'color-mix(in srgb, var(--accent) 10%, transparent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 20,
+              }}
+            >
+              🧑‍⚕️
+            </div>
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: 'var(--text)',
+                  marginBottom: 2,
+                }}
+              >
+                Кабинет терапевта
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+                Клиенты · Задания · Концептуализация
+              </div>
+            </div>
+            <span style={{ fontSize: 18, color: 'var(--text-faint)' }}>›</span>
+          </div>
         )}
 
         {/* ── Onboarding widget ── */}
@@ -258,25 +447,355 @@ export function TodaySection({
         />
 
         {/* ── Needs card — tap card = history, tap need = tracker ── */}
-        <NeedsCard
-          needs={needs}
-          ratings={ratings}
-          yesterdayRatings={yesterdayRatings}
-          onOpenTracker={onOpenTracker}
-          onOpenTrackerAt={onOpenTrackerAt}
-          onOpenTrackerHistory={onOpenTrackerHistory}
-          ratedCount={ratedCount}
-          allRated={allRated}
-          avgScore={avgScore}
-        />
+        <div
+          className="card"
+          onClick={onOpenTrackerHistory}
+          style={{
+            padding: '18px 18px 14px',
+            cursor: onOpenTrackerHistory ? 'pointer' : undefined,
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 16,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'var(--text-sub)',
+              }}
+            >
+              Потребности
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+                {allRated ? 'Готово ✓' : `${ratedCount} / ${needs.length}`}
+              </span>
+              {onOpenTrackerHistory && (
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--text-faint)"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              )}
+            </div>
+          </div>
+
+          {/* 5 mini indicators */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: 14,
+            }}
+          >
+            {needs.map((n) => (
+              <NeedMini
+                key={n.id}
+                need={n}
+                value={ratings[n.id]}
+                yesterday={yesterdayRatings[n.id]}
+                onTap={() =>
+                  onOpenTrackerAt ? onOpenTrackerAt(n.id) : onOpenTracker()
+                }
+              />
+            ))}
+          </div>
+
+          {/* Primary CTA */}
+          {allRated && avgScore ? (
+            (() => {
+              const sc = parseFloat(avgScore);
+              const scoreColor =
+                sc >= 7
+                  ? 'var(--accent-green)'
+                  : sc >= 4
+                    ? 'var(--accent-yellow)'
+                    : 'var(--accent-red)';
+              const scoreLabel =
+                sc >= 7
+                  ? 'Хороший день'
+                  : sc >= 4
+                    ? 'Средний день'
+                    : 'Сложный день';
+              return (
+                <div
+                  style={{
+                    background: 'var(--surface-2)',
+                    borderRadius: 14,
+                    padding: '12px 14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: 'var(--text-faint)',
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        marginBottom: 2,
+                      }}
+                    >
+                      Средний индекс
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 26,
+                        fontWeight: 800,
+                        letterSpacing: '-1.5px',
+                        color: scoreColor,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {avgScore}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: scoreColor,
+                        fontWeight: 600,
+                        marginTop: 2,
+                      }}
+                    >
+                      {scoreLabel}
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenTrackerHistory?.();
+                    }}
+                    style={{
+                      background:
+                        'color-mix(in srgb, var(--accent) 10%, transparent)',
+                      border:
+                        '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
+                      borderRadius: 10,
+                      padding: '8px 12px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: 'var(--accent)',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 2,
+                    }}
+                  >
+                    <span>📊</span>
+                    <span>История</span>
+                  </button>
+                </div>
+              );
+            })()
+          ) : (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenTracker();
+              }}
+              style={{
+                borderRadius: 14,
+                padding: '12px 14px',
+                cursor: 'pointer',
+                background:
+                  'color-mix(in srgb, var(--accent) 8%, var(--surface-2))',
+                border:
+                  '1px solid color-mix(in srgb, var(--accent) 18%, transparent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: 'var(--accent)',
+                  }}
+                >
+                  Оценить потребности
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--text-faint)',
+                    marginTop: 2,
+                  }}
+                >
+                  Займёт 2 минуты
+                </div>
+              </div>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--accent)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </div>
+          )}
+        </div>
 
         {/* ── Diary card ── */}
-        <DiaryCard
-          onOpenDiaries={onOpenDiaries}
-          diariesLoaded={diariesLoaded}
-          recentDiaries={recentDiaries}
-          onSetDiaryTask={() => setShowDiaryTask(true)}
-        />
+        <div
+          onClick={onOpenDiaries}
+          className="card"
+          style={{
+            padding: '18px 18px 14px',
+            cursor: 'pointer',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 14,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'var(--text-sub)',
+              }}
+            >
+              Дневник
+            </div>
+            <span
+              style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500 }}
+            >
+              Все →
+            </span>
+          </div>
+
+          {!diariesLoaded ? (
+            <SkeletonLines />
+          ) : recentDiaries.length > 0 ? (
+            recentDiaries.map((entry, i) => {
+              const typeColor =
+                (
+                  {
+                    schema: '#818cf8',
+                    mode: '#f472b6',
+                    gratitude: '#4ade80',
+                  } as any
+                )[entry.type] ?? '#aaa';
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '7px 0',
+                    borderTop:
+                      i > 0 ? '1px solid var(--border-color)' : undefined,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 4,
+                      height: 36,
+                      borderRadius: 4,
+                      flexShrink: 0,
+                      background: typeColor,
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: 'var(--text)',
+                        fontWeight: 500,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {entry.label}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--text-sub)',
+                        marginTop: 2,
+                      }}
+                    >
+                      {entry.dateStr}
+                      {entry.time ? ` · ${entry.time}` : ''}
+                    </div>
+                  </div>
+                  <DiaryTypeBadge type={entry.type} />
+                </div>
+              );
+            })
+          ) : (
+            <div
+              style={{
+                fontSize: 13,
+                color: 'var(--text-sub)',
+                lineHeight: 1.55,
+              }}
+            >
+              Замечать моменты, когда схемы активируются — главная практика
+            </div>
+          )}
+
+          <div
+            style={{
+              paddingTop: 10,
+              marginTop: 2,
+              borderTop: '1px solid var(--border-color)',
+            }}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDiaryTask(true);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                fontSize: 12,
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                fontWeight: 500,
+                fontFamily: 'inherit',
+              }}
+            >
+              + Поставить цель на дневник
+            </button>
+          </div>
+        </div>
       </div>
 
       {showDiaryTask && (
@@ -324,18 +843,84 @@ export function TodaySection({
 
       {/* All tasks sheet */}
       {showAllTasks && (
-        <AllTasksSheet
-          tasks={tasks}
-          taskHistory={taskHistory}
-          onClose={() => setShowAllTasks(false)}
-          setTasks={setTasks}
-          setTaskHistory={setTaskHistory}
-          onOpenCreate={() => {
-            setShowAllTasks(false);
-            setShowTaskCreate(true);
-          }}
-        />
+        <BottomSheet onClose={() => setShowAllTasks(false)} zIndex={200}>
+          <div
+            style={{
+              fontSize: 17,
+              fontWeight: 700,
+              color: 'var(--text)',
+              marginBottom: 20,
+            }}
+          >
+            Все задания
+          </div>
+          {tasks.map((task) => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              variant="compact"
+              onComplete={() =>
+                api
+                  .completeTask(task.id, true)
+                  .then(() =>
+                    Promise.all([api.getTasks(), api.getTaskHistory()]).then(
+                      ([t, h]) => {
+                        setTasks(t);
+                        setTaskHistory(h);
+                      },
+                    ),
+                  )
+                  .catch(() => {})
+              }
+            />
+          ))}
+          <TaskHistoryList taskHistory={taskHistory} variant="compact" />
+          <button
+            onClick={() => {
+              setShowAllTasks(false);
+              setShowTaskCreate(true);
+            }}
+            style={{
+              marginTop: 16,
+              width: '100%',
+              padding: '13px 0',
+              borderRadius: 14,
+              border: 'none',
+              background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+              color: 'var(--accent)',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            + Поставить цель
+          </button>
+        </BottomSheet>
       )}
     </div>
   );
 }
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+
+function SkeletonLines() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {[80, 65, 90].map((w, i) => (
+        <div
+          key={i}
+          style={{
+            height: 12,
+            borderRadius: 6,
+            width: `${w}%`,
+            background:
+              'linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%)',
+            backgroundSize: '200% auto',
+            animation: 'shimmer 1.5s linear infinite',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+

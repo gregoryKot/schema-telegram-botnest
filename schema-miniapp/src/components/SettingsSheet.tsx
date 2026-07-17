@@ -39,6 +39,7 @@ interface Props {
   onOpenTherapistCabinet?: () => void;
   therapistMode?: boolean;
   onToggleTherapistMode?: () => void;
+  onResignTherapist?: () => Promise<void> | void;
 }
 
 export function SettingsSheet({
@@ -49,6 +50,7 @@ export function SettingsSheet({
   onOpenTherapistCabinet,
   therapistMode,
   onToggleTherapistMode,
+  onResignTherapist,
 }: Props) {
   const safeTop = useSafeTop();
   const [view, setView] = useState<View>('main');
@@ -380,6 +382,7 @@ export function SettingsSheet({
                   onOpenTherapistCabinet={onOpenTherapistCabinet}
                   therapyInviteUrl={therapyInviteUrl}
                   setTherapyInviteUrl={setTherapyInviteUrl}
+                  onResignTherapist={onResignTherapist}
                 />
               )}
 

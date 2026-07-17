@@ -254,8 +254,14 @@ export function BecomeTherapistSection({
                   const req = await api.getTherapistRequest();
                   setTherapistReq(req);
                   setShowReqForm(false);
-                } catch {
-                  setReqError('Ошибка. Попробуй ещё раз.');
+                } catch (e) {
+                  // Показываем реальную причину (парность с webapp):
+                  // «Request already pending», лимит и т.п. — иначе
+                  // ошибка выглядит необъяснимой.
+                  setReqError(
+                    String(e).replace('Error: ', '') ||
+                      'Ошибка. Попробуй ещё раз.',
+                  );
                 } finally {
                   setReqBusy(false);
                 }

@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsString } from 'class-validator';
 
 /**
  * DTO подключения клиент↔терапевт (аудит 2026-07, 2г / правило №6
@@ -22,4 +22,11 @@ export class VirtualClientDto {
 export class AddClientDto {
   @IsInt()
   clientTelegramId!: number;
+}
+
+// Запоминаемое предпочтение терапевта: стартовать в кабинете (on=true) или в
+// клиентском режиме (on=false). Правило №6 CLAUDE.md — рантайм-валидация тела.
+export class TherapistViewDto {
+  @IsBoolean()
+  on!: boolean;
 }

@@ -1,8 +1,9 @@
-// NeedMini — small need indicator with fill-bar for TodaySection
-
 import { Need, COLORS } from '../../types';
 import { useNeedData } from '../../needData';
-import { hexToRgb } from './helpers';
+
+function hexToRgb(hex: string): string {
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',');
+}
 
 export function NeedMini({
   need,
