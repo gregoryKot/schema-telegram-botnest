@@ -102,7 +102,9 @@ export class ModeMapsController {
     try {
       return await this.modeMapsService.getModeMap(uid(req), parseId(mapId));
     } catch (e: any) {
-      if (e?.message === 'Not found') throw new ForbiddenException();
+      // 'No active relation' — вторая линия защиты в сервисе (связь разорвана)
+      if (e?.message === 'Not found' || e?.message === 'No active relation')
+        throw new ForbiddenException();
       throw e;
     }
   }
@@ -144,7 +146,9 @@ export class ModeMapsController {
         body,
       );
     } catch (e: any) {
-      if (e?.message === 'Not found') throw new ForbiddenException();
+      // 'No active relation' — вторая линия защиты в сервисе (связь разорвана)
+      if (e?.message === 'Not found' || e?.message === 'No active relation')
+        throw new ForbiddenException();
       throw e;
     }
   }
@@ -157,7 +161,9 @@ export class ModeMapsController {
       await this.modeMapsService.deleteModeMap(uid(req), parseId(mapId));
       return { ok: true };
     } catch (e: any) {
-      if (e?.message === 'Not found') throw new ForbiddenException();
+      // 'No active relation' — вторая линия защиты в сервисе (связь разорвана)
+      if (e?.message === 'Not found' || e?.message === 'No active relation')
+        throw new ForbiddenException();
       throw e;
     }
   }
@@ -174,7 +180,9 @@ export class ModeMapsController {
     try {
       return await this.modeMapsService.getMyModeMap(uid(req), parseId(mapId));
     } catch (e: any) {
-      if (e?.message === 'Not found') throw new ForbiddenException();
+      // 'No active relation' — вторая линия защиты в сервисе (связь разорвана)
+      if (e?.message === 'Not found' || e?.message === 'No active relation')
+        throw new ForbiddenException();
       throw e;
     }
   }

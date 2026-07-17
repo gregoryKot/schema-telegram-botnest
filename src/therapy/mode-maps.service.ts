@@ -46,6 +46,15 @@ export class ModeMapsService {
     });
     if (!row || row.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
+    // Связь могла быть разорвана уже ПОСЛЕ создания карты — сверка
+    // therapistId на строке этого не отражает (карта — не единственный
+    // барьер, а первая линия). Как и весь остальной клинический доступ
+    // (TherapyClientDataService — assertHasClient на каждом обращении, а
+    // не только на листинге), догоняем активность связи здесь же.
+    await this.relationsService.assertHasClient(
+      therapistId,
+      Number((row as { clientId: bigint }).clientId),
+    );
     return decryptRecord(row, MODE_MAP_SCHEMA);
   }
 
@@ -82,6 +91,12 @@ export class ModeMapsService {
     });
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
+    // См. комментарий в getModeMap — та же догоняющая проверка активности
+    // связи, симметрично для записи.
+    await this.relationsService.assertHasClient(
+      therapistId,
+      Number((existing as { clientId: bigint }).clientId),
+    );
     const fields: Record<string, unknown> = {};
     if (body.title !== undefined) fields.title = body.title;
     if (body.nodes !== undefined) fields.nodes = body.nodes;
@@ -99,6 +114,12 @@ export class ModeMapsService {
     });
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
+    // См. комментарий в getModeMap — та же догоняющая проверка активности
+    // связи, симметрично для удаления.
+    await this.relationsService.assertHasClient(
+      therapistId,
+      Number((existing as { clientId: bigint }).clientId),
+    );
     await (this.prisma.modeMap as any).delete({ where: { id: mapId } });
   }
 
