@@ -1,6 +1,6 @@
 {
-  "total": 89,
-  "errors": 79,
+  "total": 83,
+  "errors": 73,
   "warnings": 10,
   "byRule": {
     "react-hooks/exhaustive-deps": 11,
@@ -9,7 +9,6 @@
     "react-refresh/only-export-components": 23,
     "react-hooks/set-state-in-effect": 21,
     "react-hooks/refs": 9,
-    "react-hooks/rules-of-hooks": 6,
     "react-hooks/static-components": 10,
     "react-hooks/purity": 6
   }
