@@ -1,13 +1,22 @@
 {
-  "total": 62,
-  "errors": 52,
-  "warnings": 10,
+  "total": 148,
+  "errors": 139,
+  "warnings": 9,
   "byRule": {
-    "react-hooks/exhaustive-deps": 11,
+    "@typescript-eslint/no-unsafe-return": 4,
+    "@typescript-eslint/no-unsafe-assignment": 5,
+    "@typescript-eslint/no-unsafe-member-access": 14,
+    "no-empty": 19,
+    "@typescript-eslint/no-unsafe-argument": 3,
+    "@typescript-eslint/no-unused-vars": 4,
+    "react-hooks/exhaustive-deps": 7,
+    "no-irregular-whitespace": 1,
+    "@typescript-eslint/require-await": 1,
+    "@typescript-eslint/no-explicit-any": 47,
     "react-hooks/immutability": 2,
     "react-hooks/preserve-manual-memoization": 1,
-    "react-refresh/only-export-components": 23,
-    "react-hooks/set-state-in-effect": 19,
-    "react-hooks/refs": 6
+    "react-refresh/only-export-components": 22,
+    "react-hooks/set-state-in-effect": 16,
+    "react-hooks/refs": 2
   }
 }
