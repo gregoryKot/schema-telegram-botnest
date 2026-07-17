@@ -13,6 +13,8 @@ interface Props {
   avgScore: string | null;
   onOpenTracker: () => void;
   onOpenHistory?: () => void;
+  /** Поделиться карточкой заполненного дня (есть только когда день оценён) */
+  onShareDay?: () => void;
 }
 
 export function TodayFocusCard({
@@ -21,6 +23,7 @@ export function TodayFocusCard({
   avgScore,
   onOpenTracker,
   onOpenHistory,
+  onShareDay,
 }: Props) {
   const tr = useTr();
   const allRated = total > 0 && ratedCount === total;
@@ -89,6 +92,46 @@ export function TodayFocusCard({
             </button>
           )}
         </div>
+        {onShareDay && (
+          <button
+            onClick={onShareDay}
+            style={{
+              marginTop: 14,
+              width: '100%',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              minHeight: 44,
+              borderRadius: 12,
+              border:
+                '1px solid color-mix(in srgb, var(--accent) 24%, transparent)',
+              background: 'color-mix(in srgb, var(--accent) 9%, transparent)',
+              color: 'var(--accent)',
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: 'inherit',
+              cursor: 'pointer',
+            }}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M12 15V4m0 0L8 8m4-4 4 4M6 13v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Поделиться днём
+          </button>
+        )}
       </div>
     );
   }

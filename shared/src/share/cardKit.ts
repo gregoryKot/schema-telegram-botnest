@@ -122,6 +122,85 @@ export function footer(c: Card, label: string) {
   c.ctx.fillText(`${BRAND} · ${label}`, CARD_PAD, y + 22);
 }
 
+/** Строка трекера в карточке: emoji, подпись, значение, цветной бар. */
+export interface NeedRow {
+  emoji: string;
+  chartLabel: string;
+  color: string;
+  /** null → «—», бар не рисуется */
+  value: number | null;
+  /** отформатированное значение (напр. '7.0' для недели, '7' для дня) */
+  valueText: string;
+}
+
+export const ROW_H = 44;
+
+/** Рисует строки потребностей с барами (общий блок weekly/day карточек). */
+export function drawNeedRows(c: Card, rows: NeedRow[], startY = 112) {
+  const { ctx, W, th } = c;
+  const BAR_MAX_W = 100;
+  const BAR_X = W - CARD_PAD - BAR_MAX_W;
+  const BAR_H = 7;
+
+  rows.forEach((row, i) => {
+    const rowY = startY + i * ROW_H;
+
+    ctx.font = '17px serif';
+    ctx.fillStyle = th.fg(0.95);
+    ctx.textAlign = 'left';
+    ctx.fillText(row.emoji, CARD_PAD, rowY + 20);
+
+    ctx.font = cardFont(13);
+    ctx.fillStyle = th.fg(0.7);
+    ctx.fillText(row.chartLabel, 52, rowY + 20);
+
+    ctx.font = cardFont(14, 'bold');
+    ctx.fillStyle = row.color;
+    ctx.textAlign = 'right';
+    ctx.fillText(row.valueText, BAR_X - 12, rowY + 20);
+    ctx.textAlign = 'left';
+
+    ctx.fillStyle = th.fg(0.07);
+    ctx.beginPath();
+    ctx.roundRect(BAR_X, rowY + 12, BAR_MAX_W, BAR_H, 3.5);
+    ctx.fill();
+
+    if (row.value !== null && row.value > 0) {
+      const fillW = Math.max(4, (row.value / 10) * BAR_MAX_W);
+      const barGrad = ctx.createLinearGradient(BAR_X, 0, BAR_X + fillW, 0);
+      barGrad.addColorStop(0, row.color + 'aa');
+      barGrad.addColorStop(1, row.color);
+      ctx.fillStyle = barGrad;
+      ctx.beginPath();
+      ctx.roundRect(BAR_X, rowY + 12, fillW, BAR_H, 3.5);
+      ctx.fill();
+    }
+  });
+}
+
+/** Стат-блок «Индекс …»: подпись + крупное значение + «/10» слева. */
+export function drawIndexStat(
+  c: Card,
+  label: string,
+  value: number,
+  y: number,
+) {
+  const { ctx, th } = c;
+  ctx.font = cardFont(11);
+  ctx.fillStyle = th.fg(0.35);
+  ctx.textAlign = 'left';
+  ctx.fillText(label, CARD_PAD, y);
+
+  ctx.font = cardFont(26, 'bold');
+  ctx.fillStyle = th.fg(0.95);
+  ctx.fillText(value.toFixed(1), CARD_PAD, y + 30);
+
+  ctx.font = cardFont(11);
+  ctx.fillStyle = th.fg(0.28);
+  const w = ctx.measureText(value.toFixed(1)).width;
+  ctx.fillText('/10', CARD_PAD + w + 2, y + 24);
+}
+
 /** Высота футера + его отступ сверху — для расчёта высоты карточки. */
 export const FOOTER_H = 56;
 

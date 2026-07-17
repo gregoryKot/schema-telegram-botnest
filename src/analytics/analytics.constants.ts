@@ -13,6 +13,7 @@ export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 // Тип карточки для события share_card (meta.kind).
 export const SHARE_CARD_KINDS = [
   'weekly',
+  'day',
   'achievement',
   'streak',
   'schema',
