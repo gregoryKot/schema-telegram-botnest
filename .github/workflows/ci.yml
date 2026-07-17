@@ -118,6 +118,7 @@ jobs:
           cache-dependency-path: schema-miniapp/package-lock.json
       - run: npm ci --prefix schema-miniapp
       - run: npm run build --prefix schema-miniapp
+      - run: npm test --prefix schema-miniapp
       # dist коммитится в git (Docker его только копирует) — проверяем,
       # что закоммиченный dist не разошёлся с исходником.
       - name: dist актуален
