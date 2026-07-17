@@ -1,6 +1,6 @@
 {
-  "total": 126,
-  "errors": 117,
+  "total": 81,
+  "errors": 72,
   "warnings": 9,
   "byRule": {
     "@typescript-eslint/no-unsafe-return": 4,
@@ -9,7 +9,7 @@
     "@typescript-eslint/no-unsafe-argument": 3,
     "prettier/prettier": 3,
     "react-hooks/exhaustive-deps": 7,
-    "@typescript-eslint/no-explicit-any": 47,
+    "@typescript-eslint/no-explicit-any": 2,
     "react-hooks/immutability": 2,
     "react-hooks/preserve-manual-memoization": 1,
     "react-refresh/only-export-components": 22,
