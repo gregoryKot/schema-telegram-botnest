@@ -5,6 +5,11 @@ import { useEffect, useRef, useState } from 'react';
 import { BottomSheet } from '../components/BottomSheet';
 import { TherapyNote } from '../components/TherapyNote';
 import { shareCanvasImage } from '../../../shared/src/share/shareImage';
+import {
+  SHARE_CARD_EVENT,
+  type ShareCardKind,
+} from '../../../shared/src/share/analytics';
+import { api } from '../api';
 
 interface Props {
   /** Заголовок шита («Карточка недели», «Достижение»…) */
@@ -16,6 +21,8 @@ interface Props {
   /** Подробный текст для фолбэка (по умолчанию shareText) */
   fallbackText?: string;
   filename: string;
+  /** Тип карточки для аналитики share_card (правило №8) */
+  eventKind: ShareCardKind;
   onClose: () => void;
   zIndex?: number;
   therapyNote?: boolean;
@@ -27,6 +34,7 @@ export function ShareCardSheet({
   shareText,
   fallbackText,
   filename,
+  eventKind,
   onClose,
   zIndex = 200,
   therapyNote,
@@ -53,6 +61,7 @@ export function ShareCardSheet({
       await shareCanvasImage(canvasRef.current, shareText, filename, {
         downloadFallback: true,
       });
+      api.trackEvent(SHARE_CARD_EVENT, { kind: eventKind });
     } catch {
       // Шэр не удался — показываем текстовый фолбэк
       const text = fallbackText ?? shareText;

@@ -27,6 +27,7 @@ export const USER_OWNED_TABLES = [
   'AppActivity',
   'UserTask',
   'DiaryDraft',
+  'AnalyticsEvent',
   'TherapistRequest',
   'AuthProvider',
 ] as const;

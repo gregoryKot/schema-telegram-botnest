@@ -4,6 +4,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { shareCanvasImage } from '../../../shared/src/share/shareImage';
+import {
+  SHARE_CARD_EVENT,
+  type ShareCardKind,
+} from '../../../shared/src/share/analytics';
+import { api } from '../api';
 
 interface Props {
   title: string;
@@ -11,6 +16,8 @@ interface Props {
   shareText: string;
   fallbackText?: string;
   filename: string;
+  /** Тип карточки для аналитики share_card (правило №8) */
+  eventKind: ShareCardKind;
   onClose: () => void;
   zIndex?: number;
 }
@@ -21,6 +28,7 @@ export function ShareCardSheet({
   shareText,
   fallbackText,
   filename,
+  eventKind,
   onClose,
   zIndex = 300,
 }: Props) {
@@ -48,6 +56,7 @@ export function ShareCardSheet({
       await shareCanvasImage(canvasRef.current, shareText, filename, {
         downloadFallback: true,
       });
+      api.trackEvent(SHARE_CARD_EVENT, { kind: eventKind });
     } catch {
       // Шэр не удался — текстовый фолбэк + клипборд
       try {

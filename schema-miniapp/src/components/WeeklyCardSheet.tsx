@@ -81,6 +81,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
         botShortUrl,
       )}
       filename="needs-week.png"
+      eventKind="weekly"
       onClose={onClose}
       therapyNote
     />

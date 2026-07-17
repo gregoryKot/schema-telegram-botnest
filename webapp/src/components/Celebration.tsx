@@ -5,6 +5,8 @@ import { useConfetti } from '../../../shared/src/hooks/useConfetti';
 import { drawStreakCard } from '../../../shared/src/share/cards/streakCard';
 import { shareCanvasImage } from '../../../shared/src/share/shareImage';
 import { streakShareText } from '../../../shared/src/share/shareTexts';
+import { SHARE_CARD_EVENT } from '../../../shared/src/share/analytics';
+import { api } from '../api';
 
 interface Props {
   streak: number;
@@ -60,6 +62,7 @@ export function Celebration({ streak, onDone, insight }: Props) {
               const card = document.createElement('canvas');
               drawStreakCard(card, streak);
               await shareCanvasImage(card, text, 'streak.png');
+              api.trackEvent(SHARE_CARD_EVENT, { kind: 'streak' });
             } catch {
               try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ }
             }

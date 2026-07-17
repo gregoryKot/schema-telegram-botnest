@@ -85,6 +85,7 @@ export function AchievementDetail({ meta, onClose }: Props) {
               botShortUrl,
             )}
             filename="achievement.png"
+            eventKind="achievement"
             onClose={() => setShowShare(false)}
             zIndex={450}
           />

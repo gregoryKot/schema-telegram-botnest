@@ -296,6 +296,12 @@ async function rawSaveRating(item: OutboxItem): Promise<SaveRatingResult> {
 
 export const api = {
   init: (tzOffset?: number) => post('/api/init', { tzOffset }),
+
+  // Продуктовая аналитика (правило №8). Fire-and-forget: аналитика НИКОГДА не
+  // влияет на UX — ошибки/сеть глотаем, промис не пробрасываем.
+  trackEvent: (name: string, meta?: Record<string, unknown>): void => {
+    void post('/api/event', { name, meta }).catch(() => undefined);
+  },
   getDisclaimer: () => get<{ accepted: boolean }>('/api/disclaimer'),
   acceptDisclaimer: () => post('/api/disclaimer', {}),
   getYsqProgress: () =>
