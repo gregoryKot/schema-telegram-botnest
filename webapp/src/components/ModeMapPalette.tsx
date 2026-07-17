@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- файл намеренно держит компонент рядом с его константами/хуками; вынос в отдельный файл — churn ради dev-only Fast Refresh, на прод-рантайм не влияет */
 import { useEffect, useRef, useState } from 'react';
 import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
 import type { ModeMapNode, TherapistCustomMode } from '../api';
