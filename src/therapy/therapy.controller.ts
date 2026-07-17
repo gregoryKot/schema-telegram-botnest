@@ -37,115 +37,77 @@ export class TherapyController {
     private readonly accountService: AccountService,
   ) {}
 
+  // Все ручки одинаково: проверяем роль THERAPIST и мапим единственную
+  // доменную ошибку доступа ('No active relation') в 403 — раньше это был
+  // шестикратный копипаст try/catch с `e: any`.
+  private async asTherapist<T>(
+    req: AuthRequest,
+    work: (therapistId: bigint) => Promise<T>,
+  ): Promise<T> {
+    const therapistId = uid(req);
+    const role = await this.accountService.getUserRole(therapistId);
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    try {
+      return await work(therapistId);
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'No active relation')
+        throw new ForbiddenException('No active relation with this client');
+      throw e;
+    }
+  }
+
   @Post('request-ysq/:clientId')
   async requestYsq(
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
   ) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    try {
-      await this.clientDataService.requestYsq(uid(req), parseId(clientId));
-    } catch (e: any) {
-      if (e?.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+    await this.asTherapist(req, (tid) =>
+      this.clientDataService.requestYsq(tid, parseId(clientId)),
+    );
     return { ok: true };
   }
 
   @Get('client/:clientId/diary')
-  async getClientDiary(
-    @Req() req: AuthRequest,
-    @Param('clientId') clientId: string,
-  ) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    try {
-      return await this.clientDataService.getClientDiaryEntries(
-        uid(req),
-        parseId(clientId),
-      );
-    } catch (e: any) {
-      if (e?.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+  getClientDiary(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    return this.asTherapist(req, (tid) =>
+      this.clientDataService.getClientDiaryEntries(tid, parseId(clientId)),
+    );
   }
 
   @Get('client/:clientId/schema-notes')
-  async getClientSchemaNotes(
+  getClientSchemaNotes(
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
   ) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    try {
-      return await this.clientDataService.getClientSchemaNotes(
-        uid(req),
-        parseId(clientId),
-      );
-    } catch (e: any) {
-      if (e?.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+    return this.asTherapist(req, (tid) =>
+      this.clientDataService.getClientSchemaNotes(tid, parseId(clientId)),
+    );
   }
 
   @Get('client/:clientId/mode-notes')
-  async getClientModeNotes(
+  getClientModeNotes(
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
   ) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    try {
-      return await this.clientDataService.getClientModeNotes(
-        uid(req),
-        parseId(clientId),
-      );
-    } catch (e: any) {
-      if (e?.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+    return this.asTherapist(req, (tid) =>
+      this.clientDataService.getClientModeNotes(tid, parseId(clientId)),
+    );
   }
 
   @Get('client-history/:clientId')
-  async getClientHistory(
+  getClientHistory(
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
   ) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    try {
-      return await this.clientDataService.getClientHistory(
-        uid(req),
-        parseId(clientId),
-      );
-    } catch (e: any) {
-      if (e?.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+    return this.asTherapist(req, (tid) =>
+      this.clientDataService.getClientHistory(tid, parseId(clientId)),
+    );
   }
 
   @Get('client-data/:clientId')
-  async getClientData(
-    @Req() req: AuthRequest,
-    @Param('clientId') clientId: string,
-  ) {
-    const role = await this.accountService.getUserRole(uid(req));
-    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    try {
-      return await this.clientDataService.getClientData(
-        uid(req),
-        parseId(clientId),
-      );
-    } catch (e: any) {
-      if (e?.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+  getClientData(@Req() req: AuthRequest, @Param('clientId') clientId: string) {
+    return this.asTherapist(req, (tid) =>
+      this.clientDataService.getClientData(tid, parseId(clientId)),
+    );
   }
 }

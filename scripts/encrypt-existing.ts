@@ -5,7 +5,7 @@
  * Idempotent: already-encrypted values are detected and skipped.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { encrypt, encryptJson } from '../src/utils/crypto';
 
 const prisma = new PrismaClient();
@@ -135,7 +135,7 @@ async function main() {
   count = 0;
   const schemaEntries = await prisma.schemaDiaryEntry.findMany();
   for (const e of schemaEntries) {
-    const update: Record<string, any> = {};
+    const update: Record<string, string | null> = {};
     const fields: Array<[string, string | null]> = [
       ['trigger', e.trigger],
       ['thoughts', e.thoughts],
@@ -172,7 +172,7 @@ async function main() {
   count = 0;
   const modeEntries = await prisma.modeDiaryEntry.findMany();
   for (const e of modeEntries) {
-    const update: Record<string, any> = {};
+    const update: Record<string, string | null> = {};
     for (const key of [
       'situation',
       'thoughts',
@@ -186,7 +186,10 @@ async function main() {
       if (enc !== e[key]) update[key] = enc;
     }
     if (Object.keys(update).length > 0) {
-      await prisma.modeDiaryEntry.update({ where: { id: e.id }, data: update });
+      await prisma.modeDiaryEntry.update({
+        where: { id: e.id },
+        data: update,
+      });
       count++;
       total++;
     }
@@ -203,7 +206,7 @@ async function main() {
     if (enc !== itemsStr) {
       await prisma.gratitudeDiaryEntry.update({
         where: { id: e.id },
-        data: { items: enc as any },
+        data: { items: enc ?? Prisma.JsonNull },
       });
       count++;
       total++;
@@ -224,16 +227,19 @@ async function main() {
     'goals',
     'currentProblems',
   ] as const;
+  type Snapshot = Record<string, string | null>;
   for (const c of concepts) {
-    const update: Record<string, any> = {};
+    const update: Record<string, string | null | Snapshot[]> = {};
     for (const key of CONCEPT_FIELDS) {
-      const enc = encIf((c as any)[key]);
-      if (enc !== (c as any)[key]) update[key] = enc;
+      const enc = encIf(c[key]);
+      if (enc !== c[key]) update[key] = enc;
     }
     // Encrypt text fields inside history snapshots
-    const history = Array.isArray(c.history) ? (c.history as any[]) : [];
-    const encHistory = history.map((snap: any) => {
-      const s = { ...snap };
+    const history: Snapshot[] = Array.isArray(c.history)
+      ? (c.history as unknown as Snapshot[])
+      : [];
+    const encHistory = history.map((snap) => {
+      const s: Snapshot = { ...snap };
       for (const key of CONCEPT_FIELDS) {
         const enc = encIf(s[key]);
         if (enc !== s[key]) s[key] = enc;
@@ -244,7 +250,7 @@ async function main() {
       JSON.stringify(encHistory) !== JSON.stringify(history);
     if (historyChanged) update['history'] = encHistory;
     if (Object.keys(update).length > 0) {
-      await (prisma.clientConceptualization.update as any)({
+      await prisma.clientConceptualization.update({
         where: { id: c.id },
         data: update,
       });

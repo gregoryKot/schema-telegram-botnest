@@ -37,8 +37,10 @@ export function useAddClient({ setClients }: Params) {
       }
       setCreated({ name: trimmed, inviteUrl });
       setName('');
-    } catch (e: any) {
-      setError(e?.message ?? 'Ошибка. Попробуй ещё раз.');
+    } catch (e: unknown) {
+      setError(
+        e instanceof Error ? e.message : 'Ошибка. Попробуй ещё раз.',
+      );
     } finally {
       setSubmitting(false);
     }

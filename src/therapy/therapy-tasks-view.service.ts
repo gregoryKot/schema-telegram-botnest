@@ -24,16 +24,14 @@ export class TherapyTasksViewService {
     const results: Array<{
       clientId: number;
       clientName: string;
-      tasks: any[];
+      tasks: Record<string, unknown>[];
     }> = [];
 
     for (const rel of relations) {
       const clientId = rel.client ? Number(rel.client.id) : -rel.id;
       const clientName = rel.client
-        ? ((rel as any).clientAlias ?? rel.client.firstName ?? `ID ${clientId}`)
-        : ((rel as any).clientAlias ??
-          (rel as any).virtualClientName ??
-          `ID ${-clientId}`);
+        ? (rel.clientAlias ?? rel.client.firstName ?? `ID ${clientId}`)
+        : (rel.clientAlias ?? rel.virtualClientName ?? `ID ${-clientId}`);
 
       const tasks = await this.prisma.userTask.findMany({
         where: {

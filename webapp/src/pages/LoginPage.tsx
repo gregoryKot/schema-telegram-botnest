@@ -14,7 +14,7 @@ export function LoginPage() {
   const [emailValue, setEmailValue] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
-  const isTelegramContext = !!(window as any).Telegram?.WebApp?.initData;
+  const isTelegramContext = !!window.Telegram?.WebApp?.initData;
 
   useEffect(() => {
     if (isAuthenticated) navigate('/today', { replace: true });
@@ -26,7 +26,7 @@ export function LoginPage() {
     setMiniAppLoading(true);
     setError(null);
     try {
-      const initData = (window as any).Telegram?.WebApp?.initData;
+      const initData = window.Telegram?.WebApp?.initData;
       if (!initData) { setError('initData недоступен'); return; }
       const res = await fetch('/api/auth/telegram/webapp', {
         method: 'POST',

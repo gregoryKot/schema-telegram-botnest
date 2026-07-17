@@ -28,7 +28,7 @@ export function DisclaimerHomeScreenStep() {
       </div>
       <button
         onClick={() => {
-          (window as any).Telegram?.WebApp?.addToHomeScreen();
+          window.Telegram?.WebApp?.addToHomeScreen?.();
         }}
         className="btn-primary"
         style={{ marginBottom: 10 }}

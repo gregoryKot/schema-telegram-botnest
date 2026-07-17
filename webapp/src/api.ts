@@ -138,6 +138,21 @@ export interface AdminBooking {
   clientName: string; clientContact: string; message: string | null;
   cancelToken: string; meetingUrl: string | null;
 }
+/** Diagnostics snapshot from GET /api/booking/admin/status (no secrets). */
+export interface AdminBookingStatus {
+  siteUrl: string;
+  appUrl: string;
+  robokassa: boolean;
+  robokassaTest: boolean;
+  zoom: boolean;
+  zoomVars: { accountId: boolean; clientId: boolean; clientSecret: boolean };
+  meetingStaticUrl: boolean;
+  appleCalendar: boolean;
+  calendarBusyCount: number | null;
+  calendarNames: string[];
+  calendarBlocking: boolean;
+  emailFallback: boolean;
+}
 export interface ArticleSummary {
   id: number; slug: string; title: string; description: string; date: string; readMin: number; heroImage?: string | null; diagramKey?: string | null;
 }
@@ -447,7 +462,7 @@ export const api = {
   getSubscriptionByToken: (token: string) => get<{ status: string; period: string; amount: number; nextChargeAt: string | null }>(`/api/subscription/by-token/${token}`),
   cancelSubscription:   (token: string) => postJson<{ ok: true }>(`/api/subscription/cancel/${token}`, {}),
   // Booking admin — key travels in the x-admin-key header (never in URL/logs)
-  adminStatus:       (key: string) => adminReq<Record<string, any>>('GET', '/api/booking/admin/status', key),
+  adminStatus:       (key: string) => adminReq<AdminBookingStatus>('GET', '/api/booking/admin/status', key),
   adminGetPrices:    (key: string) => adminReq<SessionOption[]>('GET', '/api/booking/admin/prices', key),
   adminSetPrice:     (key: string, type: 'INTRO_15' | 'SESSION_50', amount: number) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/price', key, { type, amount }),
   adminGetSubPrices: (key: string) => adminReq<{ period: 'month' | 'year'; price: number }[]>('GET', '/api/booking/admin/sub-prices', key),

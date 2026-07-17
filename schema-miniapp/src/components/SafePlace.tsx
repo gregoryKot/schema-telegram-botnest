@@ -13,7 +13,9 @@ interface SafePlaceData {
 
 function loadLocal(): SafePlaceData | null {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ?? 'null',
+    ) as SafePlaceData | null;
   } catch {
     return null;
   }
@@ -69,7 +71,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
       .catch(() => {});
   }, []);
 
-  async function handleSave() {
+  function handleSave() {
     if (!text.trim()) return;
     const trimmed = text.trim();
     const data: SafePlaceData = {

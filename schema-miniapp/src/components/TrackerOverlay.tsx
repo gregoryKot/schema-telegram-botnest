@@ -115,14 +115,14 @@ function SummaryDonut({ avg }: { avg: number }) {
 export function TrackerOverlay({
   needs,
   ratings,
-  saved,
+  saved: _saved,
   isOffline,
   onChange,
   onSaved,
   onClose,
   initialNeedId,
   onOpenNote,
-  onOpenGoal,
+  onOpenGoal: _onOpenGoal,
   onOpenHistory,
   yesterdayRatings = {},
   date,
@@ -144,7 +144,7 @@ export function TrackerOverlay({
 
   useEffect(() => {
     if (!isBackfill) return;
-    api
+    void api
       .ratings(date)
       .then((r) => setLocalRatings(r))
       .finally(() => setLocalLoading(false));
@@ -163,7 +163,7 @@ export function TrackerOverlay({
     }
     return 0;
   });
-  const [unlocked, setUnlocked] = useState<Set<string>>(new Set());
+  const [_unlocked, setUnlocked] = useState<Set<string>>(new Set());
   const [detailNeed, setDetailNeed] = useState<Need | null>(null);
   const [onbStep, setOnbStep] = useState(0);
   const [showOnb, setShowOnb] = useState(

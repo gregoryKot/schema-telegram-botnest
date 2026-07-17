@@ -48,6 +48,10 @@ interface Props {
 export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  // «Сейчас» фиксируется при монтировании: Date.now() в теле рендера
+  // недетерминирован (react-hooks/purity), а данные всё равно грузятся на
+  // маунте. Значения — дневного масштаба, замер на маунте достаточен.
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     api.getTherapyClients().then(setClients).catch(() => {}).finally(() => setLoading(false));
@@ -61,7 +65,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
     if (c.todayIndex != null) return false;
     const last = c.lastActiveDate;
     if (!last) return true;
-    const daysSince = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+    const daysSince = Math.floor((now - new Date(last).getTime()) / 86400000);
     return daysSince >= 3;
   });
 
@@ -136,7 +140,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                         )}
                         <span style={{ fontSize: 11, color: 'var(--text-ghost)' }}>
                           {done ? 'заполнил' : c.lastActiveDate
-                            ? `${Math.floor((Date.now() - new Date(c.lastActiveDate).getTime()) / 86400000)} дн.`
+                            ? `${Math.floor((now - new Date(c.lastActiveDate).getTime()) / 86400000)} дн.`
                             : 'нет данных'}
                         </span>
                       </button>
@@ -190,7 +194,7 @@ export function TherapistTodaySection({ displayName, onOpenClient }: Props) {
                       </span>
                       <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
                         {c.lastActiveDate
-                          ? `${Math.floor((Date.now() - new Date(c.lastActiveDate).getTime()) / 86400000)} дн.`
+                          ? `${Math.floor((now - new Date(c.lastActiveDate).getTime()) / 86400000)} дн.`
                           : 'нет данных'}
                       </span>
                     </button>

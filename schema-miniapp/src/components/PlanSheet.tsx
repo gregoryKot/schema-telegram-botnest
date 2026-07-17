@@ -581,7 +581,7 @@ export function PlanSheet({
             <button
               onClick={() => {
                 setSaveError(false);
-                handleSave();
+                void handleSave();
               }}
               disabled={saving || savedOk}
               style={{

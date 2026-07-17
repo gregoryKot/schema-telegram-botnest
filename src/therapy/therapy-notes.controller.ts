@@ -50,8 +50,8 @@ export class TherapyNotesController {
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
       return await this.notesService.getNotes(uid(req), parseId(clientId));
-    } catch (e: any) {
-      if (e?.message === 'No active relation')
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'No active relation')
         throw new ForbiddenException('No active relation with this client');
       throw e;
     }
@@ -75,8 +75,8 @@ export class TherapyNotesController {
         parseId(clientId),
         note,
       );
-    } catch (e: any) {
-      if (e?.message === 'No active relation')
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'No active relation')
         throw new ForbiddenException('No active relation with this client');
       throw e;
     }
@@ -104,8 +104,8 @@ export class TherapyNotesController {
         uid(req),
         parseId(clientId),
       );
-    } catch (e: any) {
-      if (e?.message === 'No active relation')
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'No active relation')
         throw new ForbiddenException('No active relation with this client');
       throw e;
     }
@@ -125,8 +125,8 @@ export class TherapyNotesController {
         parseId(clientId),
         body,
       );
-    } catch (e: any) {
-      if (e?.message === 'No active relation')
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'No active relation')
         throw new ForbiddenException('No active relation with this client');
       throw e;
     }
@@ -147,8 +147,8 @@ export class TherapyNotesController {
         parseId(clientId),
         body,
       );
-    } catch (e: any) {
-      if (e?.message === 'No active relation')
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'No active relation')
         throw new ForbiddenException('No active relation with this client');
       throw e;
     }

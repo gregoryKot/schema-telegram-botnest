@@ -99,7 +99,7 @@ export function ProfileSection({
   const tr = useTr();
   const safeTop = useSafeTop();
   const tgName =
-    (window.Telegram?.WebApp as any)?.initDataUnsafe?.user?.first_name ?? '';
+    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
   const firstName = displayName || tgName;
 
   const [streak, setStreak] = useState<StreakData | null>(null);
@@ -119,16 +119,16 @@ export function ProfileSection({
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(
     null,
   );
-  const [insightsOpen] = useState(false); // kept for future use
+  const [_insightsOpen] = useState(false); // kept for future use
   const [showBestDayInfo, setShowBestDayInfo] = useState(false);
-  const [homeScreenStatus] = useState<string | null>(null);
+  const [_homeScreenStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setReady(false);
     setStreak(null);
     setAchievements(null);
     setInsights(null);
-    Promise.all([
+    void Promise.all([
       api
         .getStreak()
         .then(setStreak)
@@ -164,7 +164,7 @@ export function ProfileSection({
   const hasInsights =
     insights && insights.weeklyStats.some((s) => s.avg !== null);
 
-  const insightSummary = (() => {
+  const _insightSummary = (() => {
     if (!insights) return null;
     if (insights.bestDayOfWeek && insights.totalDays >= 7)
       return `Лучший день — ${insights.bestDayOfWeek}`;
@@ -173,7 +173,7 @@ export function ProfileSection({
     return 'Заполняй дневник каждый день';
   })();
 
-  const showHomeSuggestion = false; // moved to onboarding
+  const _showHomeSuggestion = false; // moved to onboarding
 
   return (
     <div
@@ -1280,7 +1280,9 @@ export function ProfileSection({
                     try {
                       if (navigator.share) await navigator.share({ text });
                       else await navigator.clipboard.writeText(text);
-                    } catch {}
+                    } catch {
+                      /* best-effort: ошибку намеренно игнорируем */
+                    }
                   }}
                   className="btn-primary"
                 >

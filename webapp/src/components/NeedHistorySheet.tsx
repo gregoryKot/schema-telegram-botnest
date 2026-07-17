@@ -26,6 +26,10 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
   const goBack = useHistorySheet(onClose);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const NEED_DATA = useNeedData();
+  // Случайная доля для выбора совета — фиксируется один раз при монтировании.
+  // Хук объявляется ДО раннего `return null` ниже (react-hooks/rules-of-hooks);
+  // индекс выводится из неё уже после гварда, по актуальному пулу.
+  const [tipRand] = useState(() => Math.random());
   const data = NEED_DATA[need.id];
   if (!data) return null;
   const color = COLORS[need.id] ?? '#888';
@@ -41,7 +45,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
 
   const tipKey = value <= 3 ? 'low' : value <= 6 ? 'medium' : 'high';
   const tipPool = data.tips[tipKey];
-  const [tipIdx] = useState(() => Math.floor(Math.random() * tipPool.length));
+  const tipIdx = Math.floor(tipRand * tipPool.length);
   const tip = tipPool[tipIdx];
 
   // Sparkline

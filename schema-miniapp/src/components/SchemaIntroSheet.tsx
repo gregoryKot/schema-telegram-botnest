@@ -135,10 +135,10 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
       }
       saveNote={(data) => api.saveSchemaNote({ schemaId, ...data })}
       accentColor={colorHex}
-      emoji={(schema as any).emoji ?? '●'}
+      emoji={schema.emoji ?? '●'}
       title={schema.name}
       subtitle={schema.domainName}
-      description={(schema as any).desc}
+      description={schema.desc}
       showDescription
       answerPromptText={tr('Нажми чтобы ответить', 'Нажмите чтобы ответить')}
       nextButtonLabel="Следующий вопрос →"

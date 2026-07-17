@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Try Telegram WebApp auto-auth using initData
   const doTelegramWebAppAuth = useCallback(async (): Promise<boolean> => {
     try {
-      const tg = (window as any).Telegram?.WebApp;
+      const tg = window.Telegram?.WebApp;
       const initData = tg?.initData;
       if (!initData) return false;
 

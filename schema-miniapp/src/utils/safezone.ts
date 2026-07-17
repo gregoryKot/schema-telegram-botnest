@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react';
 
+// Минимальная форма Telegram.WebApp, которую реально читаем (insets + подписка
+// на события). Точечный тип вместо `any` — остальное API мини-аппа нам не нужно.
+type TgSafeArea = {
+  contentSafeAreaInset?: { top?: number };
+  safeAreaInset?: { top?: number };
+  onEvent?: (event: string, cb: () => void) => void;
+  offEvent?: (event: string, cb: () => void) => void;
+};
+
 function readSafeTop(): number {
-  const tg = window.Telegram?.WebApp as any;
+  const tg = window.Telegram?.WebApp as TgSafeArea | undefined;
   if (!tg) return 0;
   const contentTop: number = tg?.contentSafeAreaInset?.top ?? 0;
   const deviceTop: number = tg?.safeAreaInset?.top ?? 0;
@@ -22,7 +31,7 @@ export function useSafeTop(): number {
   });
 
   useEffect(() => {
-    const tg = window.Telegram?.WebApp as any;
+    const tg = window.Telegram?.WebApp as TgSafeArea | undefined;
     if (!tg) return;
 
     function update() {

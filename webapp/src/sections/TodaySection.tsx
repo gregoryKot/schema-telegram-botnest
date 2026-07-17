@@ -198,6 +198,9 @@ export function TodaySection({
   const [activeTaskId,   setActiveTaskId]   = useState<number | null>(null);
   const [therapyRelation, setTherapyRelation] = useState<TherapyRelationInfo | null>(null);
   const [history14,      setHistory14]      = useState<number[]>([]);
+  // «Сейчас» фиксируется при монтировании: Date.now() в теле рендера
+  // недетерминирован (react-hooks/purity). Значение — дневного масштаба.
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     let ignore = false;
@@ -309,7 +312,7 @@ export function TodaySection({
   })();
   const daysToSession = (() => {
     if (!nextSession) return null;
-    const diff = Math.round((new Date(nextSession).getTime() - Date.now()) / 86400000);
+    const diff = Math.round((new Date(nextSession).getTime() - now) / 86400000);
     if (diff === 0) return 'сегодня';
     if (diff === 1) return 'завтра';
     return `через ${diff} ${diff < 5 ? 'дня' : 'дней'}`;
