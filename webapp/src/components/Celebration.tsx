@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { botShortUrl } from '../utils/botConfig';
 import { getMilestoneText, pluralDays } from '../../../shared/src/utils/celebrationText';
 import { useConfetti } from '../../../shared/src/hooks/useConfetti';
+import { drawStreakCard } from '../../../shared/src/share/cards/streakCard';
+import { shareCanvasImage } from '../../../shared/src/share/shareImage';
+import { streakShareText } from '../../../shared/src/share/shareTexts';
 
 interface Props {
   streak: number;
@@ -51,10 +54,12 @@ export function Celebration({ streak, onDone, insight }: Props) {
         <button
           onClick={async (e) => {
             e.stopPropagation();
-            const text = `🔥 ${streak} ${streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'} подряд в дневнике потребностей!\n\nОтслеживаю своё состояние каждый день. ${botShortUrl}`;
+            const text = streakShareText(streak, botShortUrl);
             try {
-              if (navigator.share) { await navigator.share({ text }); }
-              else { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+              // Картинка-карточка стрика; текст уходит вместе с ней
+              const card = document.createElement('canvas');
+              drawStreakCard(card, streak);
+              await shareCanvasImage(card, text, 'streak.png');
             } catch {
               try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ }
             }
