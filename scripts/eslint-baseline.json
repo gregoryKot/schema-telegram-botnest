@@ -1,6 +1,6 @@
 {
-  "total": 83,
-  "errors": 73,
+  "total": 76,
+  "errors": 66,
   "warnings": 10,
   "byRule": {
     "react-hooks/exhaustive-deps": 11,
@@ -8,8 +8,8 @@
     "react-hooks/preserve-manual-memoization": 1,
     "react-refresh/only-export-components": 23,
     "react-hooks/set-state-in-effect": 21,
-    "react-hooks/refs": 9,
-    "react-hooks/static-components": 10,
-    "react-hooks/purity": 6
+    "react-hooks/refs": 8,
+    "react-hooks/static-components": 6,
+    "react-hooks/purity": 4
   }
 }
