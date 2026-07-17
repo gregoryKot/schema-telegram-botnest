@@ -19,10 +19,23 @@ function matches(row: Row, where: Row = {}): boolean {
     if (cond && typeof cond === 'object' && !Array.isArray(cond)) {
       if ('not' in cond) return row[key] !== cond.not;
       if ('in' in cond) return cond.in.includes(row[key]);
+      // Диапазонные операторы (practicesService.getPendingPlans/getPlanHistory
+      // фильтруют scheduledDate: { gte: ... }) — сравнение строк ISO-дат
+      // (YYYY-MM-DD) лексикографически совпадает с хронологическим.
+      if ('gte' in cond) return row[key] >= cond.gte;
+      if ('lte' in cond) return row[key] <= cond.lte;
+      if ('gt' in cond) return row[key] > cond.gt;
+      if ('lt' in cond) return row[key] < cond.lt;
       // Составной unique-ключ (userId_schemaId: { userId, schemaId }) —
       // Prisma называет его условно, реальные поля лежат внутри.
       return Object.entries(cond).every(([k, v]) => row[k] === v);
     }
+    // cond === null матчит и явный null, и отсутствующее поле (undefined) —
+    // реальный Postgres всегда возвращает колонку (NULL, если не задана при
+    // create()), а этот фейк просто не кладёт ключ в объект вовсе
+    // (practicePlan.create не передаёт `done` → row.done остаётся undefined,
+    // но getPendingPlans фильтрует `done: null` и должен находить такую строку).
+    if (cond === null) return row[key] == null;
     return row[key] === cond;
   });
 }
@@ -95,6 +108,32 @@ export function makeFakePrisma() {
       { key: 'articlesSeedVersion', value: '8' },
     ]),
     article: makeTable(),
+    // Auth flows (test/auth-flows.e2e-spec.ts): провайдеры, refresh-сессии,
+    // email magic-link токены.
+    authProvider: makeTable(),
+    webSession: makeTable(),
+    emailToken: makeTable(),
+    // Затрагивается TherapyTasksService.checkStreakTasks (fire-and-forget
+    // побочный вызов из tracker/diary контроллеров) — пустая таблица
+    // достаточна, чтобы findMany() вернул [] и метод рано вышел.
+    userTask: makeTable(),
+    // Ownership sweep (test/app-ownership-sweep.e2e-spec.ts): трекер,
+    // дневники, планы/практики, инструменты, тест на схемы.
+    rating: makeTable(),
+    note: makeTable(),
+    childhoodRating: makeTable(),
+    schemaDiaryEntry: makeTable(),
+    modeDiaryEntry: makeTable(),
+    gratitudeDiaryEntry: makeTable(),
+    userPractice: makeTable(),
+    practicePlan: makeTable(),
+    userBeliefCheck: makeTable(),
+    userLetter: makeTable(),
+    userSafePlace: makeTable(),
+    userFlashcard: makeTable(),
+    ysqProgress: makeTable(),
+    ysqResult: makeTable(),
+    ysqResultHistory: makeTable(),
   };
 
   const prisma: any = {
