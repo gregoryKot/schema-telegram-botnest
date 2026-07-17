@@ -18,7 +18,7 @@ const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'address-form-baseline.json');
 const UPDATE = process.argv.includes('--update');
 
-const SCAN_DIRS = ['webapp/src', 'schema-miniapp/src'];
+const SCAN_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
 const EXCLUDE = [
   /webapp\/src\/pages\/(LandingPage|ProductLandingPage|ArticlesPage|GamePage|ReviewsPage|articleDiagrams)/,
   /\.test\.(ts|tsx)$/,
