@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CalDavService } from './caldav.service';
 import { BookingStatus } from '@prisma/client';
 import { MIN_BOOK_LEAD_HOURS } from './booking.config';
+import { localDate, localMidnightUTC } from '../utils/tz';
 
 export interface Slot {
   startsAt: Date;
@@ -57,35 +58,56 @@ export class SlotService {
     // Earliest bookable instant: now + minimum lead time.
     const earliest = Date.now() + MIN_BOOK_LEAD_HOURS * 3_600_000;
 
-    const slots: Slot[] = [];
-    const cursor = new Date(fromDate);
-    cursor.setUTCHours(0, 0, 0, 0);
-    const end = new Date(toDate);
-    end.setUTCHours(23, 59, 59, 999);
+    // Окно, в которое обязан попасть каждый возвращённый слот — целые UTC-сутки
+    // fromDate..toDate (так исторически трактует диапазон вызывающий код,
+    // /api/booking/slots?from=YYYY-MM-DD&to=YYYY-MM-DD без времени).
+    const rangeStart = new Date(fromDate);
+    rangeStart.setUTCHours(0, 0, 0, 0);
+    const rangeEnd = new Date(toDate);
+    rangeEnd.setUTCHours(23, 59, 59, 999);
 
-    while (cursor <= end) {
-      const jsDay = cursor.getUTCDay();
+    // ПОДВОХ UTC-vs-местное время (был баг, см. slot.service.spec.ts): курсор
+    // ниже бежит по суткам В UTC, но день недели и календарная дата правила
+    // обязаны браться из ОДНОЙ И ТОЙ ЖЕ локальной даты в его же timezone —
+    // раньше jsDay брался из cursor.getUTCDay() (UTC-день), а календарная
+    // дата (dateStr) — уже из локального времени того же курсора; для
+    // таймзоны западнее UTC (America/New_York) в полночь UTC локально ещё
+    // предыдущие сутки, и день недели с датой расходились. Правильно:
+    // определить местную календарную дату курсора (localDate) и посчитать
+    // день недели ОТ НЕЁ, а не от cursor.getUTCDay(). Курсор бежит с запасом
+    // ±1 UTC-сутки — иначе крайний локальный день западной таймзоны выпадал
+    // бы из перебора; лишние (по запасу) кандидаты просто не проходят
+    // проверку rangeStart/rangeEnd ниже. Для Europe/Moscow (восточнее UTC,
+    // единственная прод-таймзона) местная дата совпадает с UTC-датой курсора,
+    // так что расширение диапазона и порядок вычислений не меняют результат.
+    const cursor = new Date(rangeStart);
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+    const cursorEnd = new Date(rangeEnd);
+    cursorEnd.setUTCDate(cursorEnd.getUTCDate() + 1);
+
+    const slots: Slot[] = [];
+    while (cursor <= cursorEnd) {
       for (const rule of rules) {
-        if (rule.dayOfWeek !== jsDay) continue;
         const tz = rule.timezone;
-        const dateStr = toDateStr(cursor, tz);
-        const slotStart = localToUtc(
-          `${dateStr}T${pad(rule.startHour)}:${pad(rule.startMinute)}:00`,
-          tz,
-        );
-        const slotEnd = localToUtc(
-          `${dateStr}T${pad(rule.endHour)}:${pad(rule.endMinute)}:00`,
-          tz,
-        );
+        const dateStr = localDate(tz, cursor);
+        const localDow = new Date(`${dateStr}T00:00:00Z`).getUTCDay();
+        if (rule.dayOfWeek !== localDow) continue;
+
+        const dayStartMs = localMidnightUTC(dateStr, tz).getTime();
+        const slotStartMs =
+          dayStartMs + (rule.startHour * 60 + rule.startMinute) * 60_000;
+        const slotEndMs =
+          dayStartMs + (rule.endHour * 60 + rule.endMinute) * 60_000;
         const step = (rule.sessionDuration + rule.bufferMin) * 60_000;
 
         for (
-          let t = slotStart.getTime();
-          t + rule.sessionDuration * 60_000 <= slotEnd.getTime();
+          let t = slotStartMs;
+          t + rule.sessionDuration * 60_000 <= slotEndMs;
           t += step
         ) {
           const start = new Date(t);
           const finish = new Date(t + rule.sessionDuration * 60_000);
+          if (start < rangeStart || start > rangeEnd) continue; // вне запрошенного окна (запас курсора)
           if (isOccupied(start, finish, busyBookings)) continue;
           if (overlapsBusy(start, finish, calBusy)) continue; // therapist's calendar
           if (start.getTime() <= earliest) continue; // past + min lead time (no last-minute)
@@ -116,32 +138,6 @@ function overlapsBusy(
       return true;
   }
   return false;
-}
-
-function pad(n: number): string {
-  return String(n).padStart(2, '0');
-}
-
-/** Format date as YYYY-MM-DD in given timezone */
-function toDateStr(utc: Date, tz: string): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(utc);
-}
-
-/** Convert a local wall-clock datetime string (no Z) to UTC Date using given tz */
-function localToUtc(localIso: string, tz: string): Date {
-  // Build a reference date at noon UTC on that calendar day, then compute offset
-  const [datePart, timePart] = localIso.split('T');
-  const [h, m] = timePart.split(':').map(Number);
-  const noonUtc = new Date(`${datePart}T12:00:00.000Z`);
-  const localNoon = new Date(noonUtc.toLocaleString('en-US', { timeZone: tz }));
-  const offset = Math.round((noonUtc.getTime() - localNoon.getTime()) / 60_000); // utc-local in minutes
-  const naive = new Date(`${datePart}T${timePart}.000Z`);
-  return new Date(naive.getTime() + offset * 60_000);
 }
 
 function isOccupied(
