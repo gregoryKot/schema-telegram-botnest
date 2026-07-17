@@ -41,7 +41,7 @@ async function post(path: string, body: unknown): Promise<void> {
   });
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch {}
+    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
     throw new Error(msg);
   }
 }
@@ -54,7 +54,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   });
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch {}
+    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
     throw new Error(msg);
   }
   return res.json();
@@ -68,7 +68,7 @@ async function patchJson<T>(path: string, body: unknown): Promise<T> {
   });
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch {}
+    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
     throw new Error(msg);
   }
   return res.json();
@@ -89,7 +89,7 @@ async function adminReq<T>(method: string, path: string, key: string, body?: unk
   });
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch {}
+    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
     throw new Error(msg);
   }
   if (res.status === 204) return undefined as T;

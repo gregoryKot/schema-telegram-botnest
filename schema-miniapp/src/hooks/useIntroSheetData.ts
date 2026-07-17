@@ -37,7 +37,7 @@ export function useIntroSheetData<T extends Record<string, string>>({
       if (stored) {
         try {
           setData(JSON.parse(stored));
-        } catch {}
+        } catch { /* best-effort: ошибку намеренно игнорируем */ }
       }
     };
     loadExisting()
@@ -67,7 +67,7 @@ export function useIntroSheetData<T extends Record<string, string>>({
     localStorage.setItem(storageKey, JSON.stringify(data));
     try {
       await saveNote(data);
-    } catch {}
+    } catch { /* best-effort: ошибку намеренно игнорируем */ }
     setSaving(false);
     setSaved(true);
     onComplete?.();
