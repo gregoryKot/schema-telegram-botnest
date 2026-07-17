@@ -41,6 +41,7 @@ export function DiaryShareButton({ emoji, title, color, entries }: Props) {
           draw={draw}
           shareText={diaryShareText(title, emoji, count, since, botShortUrl)}
           filename="diary.png"
+          eventKind="diary"
           onClose={() => setOpen(false)}
           therapyNote
         />

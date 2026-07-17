@@ -84,6 +84,7 @@ export function AchievementDetail({ meta, onClose }: Props) {
             draw={draw}
             shareText={achievementShareText(meta.emoji, meta.title, botShortUrl)}
             filename="achievement.png"
+            eventKind="achievement"
             onClose={() => setShowShare(false)}
             zIndex={450}
           />

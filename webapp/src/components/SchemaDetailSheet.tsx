@@ -164,6 +164,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
           draw={drawShareCard}
           shareText={schemaShareText(schema.name, botShortUrl)}
           filename="schema.png"
+          eventKind="schema"
           onClose={() => setShowShare(false)}
         />
       )}

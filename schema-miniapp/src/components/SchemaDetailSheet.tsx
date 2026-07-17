@@ -274,6 +274,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
             draw={drawShareCard}
             shareText={schemaShareText(schema.name, botShortUrl)}
             filename="schema.png"
+            eventKind="schema"
             onClose={() => setShowShare(false)}
             zIndex={200}
           />
