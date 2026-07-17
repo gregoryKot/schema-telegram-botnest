@@ -171,9 +171,15 @@ export default function App() {
 
   useEffect(() => {
     const handleOffline = () => setIsOffline(true);
-    const handleOnline = () => setIsOffline(false);
+    const handleOnline = () => {
+      setIsOffline(false);
+      api.flushOutbox().catch(() => {});
+    };
     window.addEventListener('offline', handleOffline);
     window.addEventListener('online', handleOnline);
+    // Флаш и при старте приложения — очередь могла накопиться в прошлой
+    // сессии (webview закрылся до восстановления сети).
+    api.flushOutbox().catch(() => {});
     return () => {
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('online', handleOnline);
