@@ -191,6 +191,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
   const [showHint, setShowHint] = useState(() => !localStorage.getItem(HISTORY_HINT_KEY));
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
     if (history.length > 0 && selectedIdx >= history.length) setSelectedIdx(history.length - 1);
   }, [history.length, selectedIdx]);
 

@@ -138,10 +138,12 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   useEffect(() => {
     const state = location.state as { openSchemaEx?: string } | null;
     if (state?.openSchemaEx) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
       setOpenEx('schema');
       setSchemaInitialId(state.openSchemaEx);
       window.history.replaceState({}, '', '/practice');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
   useEffect(() => {

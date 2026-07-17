@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- файл намеренно держит компонент рядом с его константами/хуками; вынос в отдельный файл — churn ради dev-only Fast Refresh, на прод-рантайм не влияет */
 import { useState, useRef, useLayoutEffect } from 'react';
 import { Handle, Position, NodeToolbar, type NodeProps } from '@xyflow/react';
 import { useNodeActions } from './modeMapActions';
@@ -369,8 +370,8 @@ export const TriggerNode = function TriggerNode({ id, data, selected }: NodeProp
     svgPath={TRIGGER_PATH} viewBox="0 0 100 60" textPadding="18px 22px 14px" minW={132} minH={76} maxW={210} />;
 };
 
-export const HealthyModeNode = makeRectNode(TYPE_COLORS.healthy, 10);
-export const CustomModeNode  = makeRectNode(TYPE_COLORS.custom,  10);
+const HealthyModeNode = makeRectNode(TYPE_COLORS.healthy, 10);
+const CustomModeNode  = makeRectNode(TYPE_COLORS.custom,  10);
 
 export const BehaviorNode = function BehaviorNode({ id, data, selected }: NodeProps) {
   const d = data as unknown as ModeNodeData;

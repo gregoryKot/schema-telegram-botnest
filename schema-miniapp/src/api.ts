@@ -70,7 +70,7 @@ async function get<T>(path: string): Promise<T> {
         }
         throw new HttpStatusError(res.status);
       }
-      return res.json();
+      return res.json() as Promise<T>;
     } catch (err) {
       if (isNetworkError(err) && attempt < GET_RETRY_DELAYS_MS.length) {
         await delay(GET_RETRY_DELAYS_MS[attempt]);
@@ -90,7 +90,7 @@ async function post(path: string, body: unknown): Promise<void> {
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
     try {
-      const j = await res.json();
+      const j = (await res.json()) as { message?: unknown };
       if (j?.message)
         msg =
           typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
@@ -110,7 +110,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
     try {
-      const j = await res.json();
+      const j = (await res.json()) as { message?: unknown };
       if (j?.message)
         msg =
           typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
@@ -119,7 +119,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     }
     throw new Error(msg);
   }
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 async function del(path: string): Promise<void> {
@@ -291,7 +291,7 @@ async function rawSaveRating(item: OutboxItem): Promise<SaveRatingResult> {
     body: JSON.stringify(item),
   });
   if (!res.ok) throw new HttpStatusError(res.status);
-  return res.json();
+  return res.json() as Promise<SaveRatingResult>;
 }
 
 export const api = {

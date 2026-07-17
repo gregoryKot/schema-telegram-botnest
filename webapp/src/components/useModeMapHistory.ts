@@ -44,5 +44,6 @@ export function useModeMapHistory({ nodesRef, edgesRef, setNodes, setEdges, sche
 
   // `ver` referenced so canUndo/canRedo refresh on change
   void ver;
+  // eslint-disable-next-line react-hooks/refs -- чтение ref в рендере для canUndo/canRedo с ручным setVer — перевод истории на state отдельной задачей
   return { pushHistory, undo, redo, canUndo: past.current.length > 0, canRedo: future.current.length > 0 };
 }

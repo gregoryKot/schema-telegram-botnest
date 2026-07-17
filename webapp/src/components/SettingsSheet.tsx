@@ -98,6 +98,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     api.getSettings()
       .then(setSettings)
       .catch(() => setSettings({ notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [], therapistShareCards: true, therapistShareProfile: true }));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
     setPairLoading(true);
     api.getPair().then(setPairData).catch(() => {}).finally(() => setPairLoading(false));
     api.getTherapyRelation().then(setTherapyRelation).catch(() => setTherapyRelation(null));

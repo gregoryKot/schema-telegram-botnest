@@ -204,6 +204,7 @@ export function TodaySection({
 
   useEffect(() => {
     let ignore = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
     setProfile(null);
     setDiariesLoaded(false);
 
@@ -254,6 +255,7 @@ export function TodaySection({
     }).catch(() => {});
 
     return () => { ignore = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, [refreshKey]);
 
   useEffect(() => {

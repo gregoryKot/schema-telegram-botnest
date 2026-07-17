@@ -16,6 +16,7 @@ const fmtTime = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', we
 export function BookingSection({ adminKey }: { adminKey: string }) {
   const [rules, setRules] = useState<AvailabilityRule[]>([]);
   const reload = useCallback(async () => { setRules(await api.adminListRules(adminKey)); }, [adminKey]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
   useEffect(() => { reload(); }, [reload]);
 
   return (

@@ -84,6 +84,7 @@ function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: 
       goBack();
       setTimeout(() => document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 60);
     } else {
+      // eslint-disable-next-line react-hooks/immutability -- react-compiler: паттерн намеренный, рефактор рискован
       window.location.href = href;
     }
   };
