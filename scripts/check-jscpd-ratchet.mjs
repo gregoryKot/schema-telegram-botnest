@@ -20,7 +20,7 @@ const out = mkdtempSync(join(tmpdir(), 'jscpd-'));
 const res = spawnSync(
   'npx',
   [
-    'jscpd', 'src', 'webapp/src', 'schema-miniapp/src',
+    'jscpd', 'src', 'webapp/src', 'schema-miniapp/src', 'shared/src',
     '--min-tokens', '70',
     '--reporters', 'json',
     '--output', out,
