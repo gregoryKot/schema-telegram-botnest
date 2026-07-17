@@ -514,6 +514,61 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    // Фолбэк-доступ к заявкам на роль терапевта: если пуш-уведомление не дошло
+    // (напр. после переезда бота), админ всё равно видит и обрабатывает заявки.
+    this.bot.command('zayavki', async (ctx) => {
+      try {
+        const adminId = adminIdNum();
+        if (!adminId || ctx.from?.id !== adminId) {
+          await ctx.reply('Только админ');
+          return;
+        }
+        const esc = (s: string) =>
+          s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        type PendingReq = {
+          id: number;
+          userId: bigint;
+          fullName: string;
+          qualification: string;
+          contacts: string;
+          message: string | null;
+        };
+        const pending = (await this.therapistRequestService.listPending(
+          adminId,
+        )) as PendingReq[];
+        if (pending.length === 0) {
+          await ctx.reply('Заявок на роль терапевта нет.');
+          return;
+        }
+        for (const req of pending) {
+          const text =
+            `🩺 <b>Заявка #${req.id}</b>\n\n` +
+            `<b>Имя:</b> ${esc(req.fullName)}\n` +
+            `<b>Квалификация:</b> ${esc(req.qualification)}\n` +
+            `<b>Контакты:</b> ${esc(req.contacts)}\n` +
+            (req.message ? `<b>Сообщение:</b> ${esc(req.message)}\n` : '') +
+            `<b>Telegram ID:</b> <code>${req.userId}</code>`;
+          await ctx.reply(text, {
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: '✅ Approve',
+                    callback_data: `treq:approve:${req.id}`,
+                  },
+                  { text: '❌ Reject', callback_data: `treq:reject:${req.id}` },
+                ],
+              ],
+            },
+          });
+        }
+      } catch (err) {
+        this.logger.error(`zayavki command failed: ${(err as Error).message}`);
+        await ctx.reply('Ошибка при получении заявок').catch(() => null);
+      }
+    });
+
     this.bot.command('broadcast', async (ctx) => {
       try {
         if (!isAdminSender(ctx.from)) {
