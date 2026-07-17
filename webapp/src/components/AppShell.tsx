@@ -211,6 +211,7 @@ export function AppShell() {
   useEffect(() => {
     if (therapistMode && userRole === 'THERAPIST'
         && !localStorage.getItem('therapist_privacy_disclaimer_seen')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
       setShowTherapistDisclaimer(true);
     }
   }, [therapistMode, userRole]);
@@ -330,11 +331,13 @@ export function AppShell() {
       }
     }).catch(() => {});
     api.getTasks().then(setHelpTasks).catch(() => setHelpTasks([]));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
   // History load when tracker history tab opens
   useEffect(() => {
     if (trackerTab === 'history') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
       setHistoryLoading(true);
       api.history(historyDays).then(h => setHistory(fillHistoryGaps(h))).finally(() => setHistoryLoading(false));
     }

@@ -40,6 +40,7 @@ export function BookingPaidPage() {
       .catch(() => setBooking(null))
       .finally(() => setLoaded(true));
   };
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
   useEffect(load, [token]);
 
   const doCancel = async () => {

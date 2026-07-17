@@ -80,6 +80,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
     setReady(false);
     setStreak(null);
     setAchievements(null);

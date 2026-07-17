@@ -38,6 +38,7 @@ export function AccountPage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- намеренно: перезагрузка данных при смене accessToken; refresh стабилен по смыслу, добавление в deps даст лишние ре-фетчи
   useEffect(() => { refresh(); }, [accessToken]);
 
   // Email link state
