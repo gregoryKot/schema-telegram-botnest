@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { AuthOAuthController } from './auth-oauth.controller';
+import { AuthFlowService } from './auth-flow.service';
 import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
@@ -17,6 +19,7 @@ import { PrismaModule } from '../prisma/prisma.module';
   imports: [PrismaModule],
   providers: [
     AuthService,
+    AuthFlowService,
     JwtAuthGuard,
     OptionalJwtGuard,
     MergeService,
@@ -29,7 +32,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     VkProvider,
     AuthProviderRegistry,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AuthOAuthController],
   exports: [AuthService, JwtAuthGuard, SecurityLogService, EmailService],
 })
 export class AuthModule {}

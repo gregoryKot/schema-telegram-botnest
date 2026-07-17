@@ -13,43 +13,20 @@ import {
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
-import { randomBytes } from 'crypto';
 import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
+import { JwtAuthGuard, WebUser } from './jwt.guard';
 import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
-import { ProviderIdentity } from './providers/types';
 import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
 import { EmailService } from './email.service';
-
-const REFRESH_COOKIE = 'refresh_token';
-const CSRF_HEADER = 'x-requested-with';
-
-function hasCsrfHeader(req: any): boolean {
-  // Primary check: x-requested-with header set by our webapp fetch calls.
-  const v = req.headers?.[CSRF_HEADER];
-  if (typeof v === 'string' && v.length > 0) return true;
-  // Fallback: Content-Type: application/json is also CSRF-safe.
-  // Cross-origin form submissions cannot set this content-type without
-  // triggering a CORS preflight, which our server rejects for unknown origins.
-  // Reverse proxies (e.g. Amvera load balancer) may strip x-requested-with,
-  // but they never strip Content-Type — it's required for request parsing.
-  const ct = String(req.headers?.['content-type'] ?? '');
-  return ct.startsWith('application/json');
-}
-
-function cookieOptions(maxAgeS: number) {
-  return {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'strict' as const,
-    path: '/api/auth',
-    maxAge: maxAgeS * 1000,
-  };
-}
+import {
+  AuthFlowService,
+  REFRESH_COOKIE,
+  cookieOptions,
+} from './auth-flow.service';
 
 @Controller('api/auth')
 export class AuthController {
@@ -63,571 +40,8 @@ export class AuthController {
     private readonly securityLog: SecurityLogService,
     private readonly totp: TotpService,
     private readonly emailSvc: EmailService,
+    private readonly flow: AuthFlowService,
   ) {}
-
-  // ─── Generic helper ───────────────────────────────────────────────────────
-  //
-  // signInOrLinkOrMerge handles the three outcomes after we obtain a
-  // ProviderIdentity from any provider:
-  //
-  //   1. No linkUserId given → sign-in or sign-up (findOrCreate). Issue tokens.
-  //   2. linkUserId given, no conflict → link provider to that user. Issue tokens
-  //      (refresh token of the active user is already valid; we re-issue for
-  //      consistency).
-  //   3. linkUserId given, but providerId already belongs to another user →
-  //      return a merge token; the UI asks the user to confirm before we
-  //      destroy the other account.
-  //
-  // Returns either { tokens } or { mergeToken, summary } so the caller can act.
-  private async signInOrLinkOrMerge(
-    providerId_: string,
-    identity: ProviderIdentity,
-    opts: { linkUserId: bigint | null; ip?: string; userAgent?: string },
-  ): Promise<
-    | {
-        kind: 'tokens';
-        userId: bigint;
-        tokens: Awaited<ReturnType<AuthService['issueTokens']>>;
-      }
-    | { kind: 'totp_challenge'; userId: bigint; challengeToken: string }
-    | {
-        kind: 'merge';
-        mergeToken: string;
-        summary: Record<string, number>;
-        otherDisplay: string | null;
-      }
-  > {
-    const { linkUserId, ip, userAgent } = opts;
-
-    if (linkUserId === null) {
-      const userId = await this.auth.findOrCreateUserByProvider(
-        providerId_ as any,
-        identity.providerId,
-        identity.displayName,
-        identity.email,
-      );
-      // 2FA gate: if user has TOTP enabled, don't issue tokens yet — return
-      // a challenge token that the client exchanges for tokens after typing
-      // a valid 6-digit code on /api/auth/2fa/challenge.
-      if (await this.totp.isEnabled(userId)) {
-        const challengeToken = this.auth.buildTotpChallengeToken(
-          userId,
-          ip,
-          userAgent,
-        );
-        return { kind: 'totp_challenge', userId, challengeToken };
-      }
-      const tokens = await this.auth.issueTokens(userId, ip, userAgent);
-      return { kind: 'tokens', userId, tokens };
-    }
-
-    const result = await this.auth.linkProviderToUser(
-      linkUserId,
-      providerId_,
-      identity.providerId,
-      identity.displayName,
-      identity.email,
-    );
-
-    if (result.ok) {
-      // Linking an additional provider doesn't need re-2FA — the user is
-      // already authed in this session.
-      const tokens = await this.auth.issueTokens(linkUserId, ip, userAgent);
-      return { kind: 'tokens', userId: linkUserId, tokens };
-    }
-
-    // Conflict — issue a signed merge token, return data summary for UI.
-    const sourceId = BigInt(result.conflictUserId);
-    const mergeToken = this.auth.buildMergeToken(
-      linkUserId,
-      sourceId,
-      providerId_,
-      identity.providerId,
-    );
-    const summary = await this.merge.summarize(sourceId);
-    return {
-      kind: 'merge',
-      mergeToken,
-      summary,
-      otherDisplay: identity.displayName ?? identity.email ?? null,
-    };
-  }
-
-  // Shared response handler for OAuth redirect callbacks (Google, VK, Telegram-OIDC).
-  // Routes the user to the right next page based on the outcome.
-  private finishOAuthRedirect(
-    outcome: Awaited<ReturnType<AuthController['signInOrLinkOrMerge']>>,
-    provider: string,
-    res: any,
-    frontendBase: string,
-  ): void {
-    if (outcome.kind === 'merge') {
-      const params = new URLSearchParams({
-        token: outcome.mergeToken,
-        summary: JSON.stringify(outcome.summary),
-        provider,
-        name: outcome.otherDisplay ?? '',
-      });
-      res.redirect(`${frontendBase}/account/merge?${params.toString()}`);
-      return;
-    }
-    if (outcome.kind === 'totp_challenge') {
-      res.redirect(
-        `${frontendBase}/auth/2fa?token=${encodeURIComponent(outcome.challengeToken)}`,
-      );
-      return;
-    }
-    res.cookie(
-      REFRESH_COOKIE,
-      outcome.tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
-    res.redirect(
-      `${frontendBase}/auth/callback#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`,
-    );
-  }
-
-  // ─── OAuth helpers ────────────────────────────────────────────────────────
-  //
-  // Each redirect-flow provider has a tiny stub that calls these helpers.
-  // Adding a new OAuth provider (Yandex, Apple, …) = add provider file,
-  // register in AuthProviderRegistry/AuthModule, add stub here:
-  //
-  //   @Get('yandex') @UseGuards(OptionalJwtGuard)
-  //   yandexRedirect(@Req() r,@Res() s) { return this.oauthRedirect('yandex', r, s); }
-  //   @Get('yandex/callback')
-  //   yandexCallback(...) { return this.oauthCallback('yandex', ...); }
-  //
-  // We don't use Get(':provider') because it would shadow /me, /refresh etc.
-
-  private oauthRedirect(provider: string, req: any, res: any): void {
-    const handler = this.providers.get(provider);
-    if (!handler.buildAuthUrl)
-      throw new BadRequestException(
-        `Provider ${provider} doesn't support OAuth`,
-      );
-    const state = Buffer.from(
-      JSON.stringify({
-        nonce: randomBytes(16).toString('hex'),
-        linkUserId: req.webUser?.userId?.toString() ?? null,
-      }),
-    ).toString('base64url');
-    res.cookie('oauth_state', state, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 10 * 60 * 1000,
-      path: '/api/auth',
-    });
-    res.redirect(handler.buildAuthUrl(state));
-  }
-
-  private requireCsrf(req: any, endpoint: string): void {
-    if (!hasCsrfHeader(req)) {
-      this.securityLog.log('csrf_blocked', {
-        endpoint,
-        ip: req.ip,
-        ua: (req.headers['user-agent'] ?? '').slice(0, 80),
-      });
-      throw new UnauthorizedException('Missing CSRF header');
-    }
-  }
-
-  private async oauthCallback(
-    provider: string,
-    code: string,
-    state: string,
-    error: string,
-    req: any,
-    res: any,
-  ): Promise<void> {
-    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
-    try {
-      const handler = this.providers.get(provider);
-      if (!handler.exchangeCode)
-        throw new BadRequestException(
-          `Provider ${provider} doesn't support OAuth`,
-        );
-      if (error) throw new UnauthorizedException(`${provider} auth denied`);
-      if (!code || !state)
-        throw new BadRequestException('Missing code or state');
-
-      const savedState = req.cookies?.['oauth_state'];
-      if (!savedState || savedState !== state)
-        throw new UnauthorizedException('OAuth state mismatch');
-      res.clearCookie('oauth_state', { path: '/api/auth' });
-
-      const identity = await handler.exchangeCode(code);
-      let linkUserId: bigint | null = null;
-      try {
-        const raw = JSON.parse(
-          Buffer.from(state, 'base64url').toString(),
-        ).linkUserId;
-        if (raw) linkUserId = BigInt(raw);
-      } catch {
-        /* ignore */
-      }
-
-      const outcome = await this.signInOrLinkOrMerge(provider, identity, {
-        linkUserId,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'],
-      });
-      this.finishOAuthRedirect(outcome, provider, res, frontendBase);
-    } catch (err) {
-      this.logger.error(
-        `${provider} callback error: ${(err as Error).message}`,
-      );
-      res.redirect(`${frontendBase}/auth/error?reason=${provider}_failed`);
-    }
-  }
-
-  // ─── Google OAuth ─────────────────────────────────────────────────────────
-
-  @Get('google')
-  @UseGuards(OptionalJwtGuard)
-  googleRedirect(@Req() req: any, @Res() res: any): void {
-    return this.oauthRedirect('google', req, res);
-  }
-
-  // Authorization Code flow: Google redirects back with ?code=&state= via a
-  // top-level GET. The generic helper exchanges the code server-side.
-  @Get('google/callback')
-  async googleCallback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Query('error') error: string,
-    @Req() req: any,
-    @Res() res: any,
-  ): Promise<void> {
-    return this.oauthCallback('google', code, state, error, req, res);
-  }
-
-  // ─── VK OAuth ─────────────────────────────────────────────────────────────
-
-  @Get('vk')
-  @UseGuards(OptionalJwtGuard)
-  vkRedirect(@Req() req: any, @Res() res: any): void {
-    return this.oauthRedirect('vk', req, res);
-  }
-
-  @Get('vk/callback')
-  async vkCallback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Query('device_id') deviceId: string,
-    @Query('error') error: string,
-    @Req() req: any,
-    @Res() res: any,
-  ): Promise<void> {
-    // VK ID needs device_id + PKCE state for token exchange. Bypass the
-    // generic helper and call the provider-specific method.
-    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
-    try {
-      const vk = this.providers.get('vk') as any;
-      if (error) throw new UnauthorizedException(`vk auth denied: ${error}`);
-      if (!code || !state || !deviceId)
-        throw new BadRequestException('Missing code / state / device_id');
-
-      const savedState = req.cookies?.['oauth_state'];
-      if (!savedState || savedState !== state)
-        throw new UnauthorizedException('OAuth state mismatch');
-      res.clearCookie('oauth_state', { path: '/api/auth' });
-
-      const identity = await vk.exchangeCodeWithContext(code, deviceId, state);
-
-      let linkUserId: bigint | null = null;
-      try {
-        const raw = JSON.parse(
-          Buffer.from(state, 'base64url').toString(),
-        ).linkUserId;
-        if (raw) linkUserId = BigInt(raw);
-      } catch {
-        /* ignore */
-      }
-
-      const outcome = await this.signInOrLinkOrMerge('vk', identity, {
-        linkUserId,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'],
-      });
-      this.finishOAuthRedirect(outcome, 'vk', res, frontendBase);
-    } catch (err) {
-      this.logger.error(`vk callback error: ${(err as Error).message}`);
-      res.redirect(`${frontendBase}/auth/error?reason=vk_failed`);
-    }
-  }
-
-  // ─── Telegram OIDC (new flow, PKCE) ──────────────────────────────────────
-
-  @Get('telegram-oidc')
-  @UseGuards(OptionalJwtGuard)
-  telegramOidcRedirect(@Req() req: any, @Res() res: any): void {
-    const provider = this.providers.get('telegram-oidc') as any;
-    const state = Buffer.from(
-      JSON.stringify({
-        nonce: randomBytes(16).toString('hex'),
-        linkUserId: req.webUser?.userId?.toString() ?? null,
-      }),
-    ).toString('base64url');
-    const { verifier, challenge } = provider.generatePkce();
-    res.cookie('oauth_state', state, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 10 * 60 * 1000,
-      path: '/api/auth',
-    });
-    res.cookie('tg_pkce_verifier', verifier, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 10 * 60 * 1000,
-      path: '/api/auth',
-    });
-    res.redirect(provider.buildAuthUrl(state, challenge));
-  }
-
-  @Get('telegram-oidc/callback')
-  async telegramOidcCallback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Query('error') error: string,
-    @Req() req: any,
-    @Res() res: any,
-  ): Promise<void> {
-    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
-    try {
-      if (error)
-        throw new UnauthorizedException(`Telegram OIDC auth denied: ${error}`);
-      if (!code || !state)
-        throw new BadRequestException('Missing code or state');
-
-      const savedState = req.cookies?.['oauth_state'];
-      if (!savedState || savedState !== state)
-        throw new UnauthorizedException('OAuth state mismatch');
-      res.clearCookie('oauth_state', { path: '/api/auth' });
-
-      const codeVerifier = req.cookies?.['tg_pkce_verifier'];
-      if (!codeVerifier)
-        throw new UnauthorizedException('Missing PKCE verifier');
-      res.clearCookie('tg_pkce_verifier', { path: '/api/auth' });
-
-      const provider = this.providers.get('telegram-oidc') as any;
-      const identity = await provider.exchangeCodePkce(code, codeVerifier);
-
-      let linkUserId: bigint | null = null;
-      try {
-        const raw = JSON.parse(
-          Buffer.from(state, 'base64url').toString(),
-        ).linkUserId;
-        if (raw) linkUserId = BigInt(raw);
-      } catch {
-        /* ignore */
-      }
-
-      const outcome = await this.signInOrLinkOrMerge(
-        'telegram-oidc',
-        identity,
-        {
-          linkUserId,
-          ip: req.ip,
-          userAgent: req.headers['user-agent'],
-        },
-      );
-      this.finishOAuthRedirect(outcome, 'telegram-oidc', res, frontendBase);
-    } catch (err) {
-      this.logger.error(
-        `telegram-oidc callback error: ${(err as Error).message}`,
-      );
-      res.redirect(`${frontendBase}/auth/error?reason=telegram_oidc_failed`);
-    }
-  }
-
-  // ─── Telegram Login Widget ────────────────────────────────────────────────
-
-  @Post('telegram/widget')
-  @UseGuards(OptionalJwtGuard)
-  @Throttle({
-    short: { limit: 5, ttl: 60_000 },
-    long: { limit: 30, ttl: 3_600_000 },
-  })
-  @HttpCode(200)
-  async telegramWidget(
-    // Не DTO: подписанный Telegram-payload, whitelist срежет поля и сломает hash-верификацию.
-    @Body() body: Record<string, string>,
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
-  ): Promise<any> {
-    this.requireCsrf(req, 'telegram/widget');
-    const telegramHandler = this.providers.get('telegram');
-    if (!telegramHandler.verifyClientData)
-      throw new BadRequestException(
-        'Telegram provider does not support direct verification',
-      );
-    const identity = telegramHandler.verifyClientData(body);
-
-    // JWT-based link (inline widget inside the app) takes priority.
-    // Cookie-based link is used by the redirect flow: the user left the app
-    // to authenticate on oauth.telegram.org, so the access token is gone but
-    // the httpOnly tg_link_user cookie is still present.
-    let linkUserId = req.webUser?.userId ?? null;
-    if (!linkUserId && req.cookies?.['tg_link_user']) {
-      try {
-        linkUserId = BigInt(req.cookies['tg_link_user']);
-      } catch {
-        /* ignore */
-      }
-    }
-    res.clearCookie('tg_link_user', { path: '/api/auth' });
-
-    const outcome = await this.signInOrLinkOrMerge('telegram', identity, {
-      linkUserId: linkUserId ? BigInt(String(linkUserId)) : null,
-      ip: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
-
-    if (outcome.kind === 'merge') {
-      return {
-        merge: true,
-        mergeToken: outcome.mergeToken,
-        summary: outcome.summary,
-        otherDisplay: outcome.otherDisplay,
-        provider: 'telegram',
-      };
-    }
-    if (outcome.kind === 'totp_challenge') {
-      return { totp: true, challengeToken: outcome.challengeToken };
-    }
-    res.cookie(
-      REFRESH_COOKIE,
-      outcome.tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
-    return {
-      accessToken: outcome.tokens.accessToken,
-      expiresIn: outcome.tokens.expiresIn,
-    };
-  }
-
-  // ─── Telegram Login Widget — redirect flow ───────────────────────────────
-  // Full-page redirect to oauth.telegram.org (no iframe, no domain setup in
-  // BotFather required). User authorizes in Telegram's own page, then comes
-  // back to widget-redirect with the signed user data as query params.
-
-  @Get('telegram/redirect')
-  @UseGuards(OptionalJwtGuard)
-  telegramRedirect(@Req() req: any, @Res() res: any): void {
-    const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
-    const botId = botToken.split(':')[0]; // BOT_TOKEN format: 123456789:HASH
-    const frontendBase = this.config
-      .getOrThrow<string>('WEBAPP_URL')
-      .replace(/\/$/, '');
-    // Return to the frontend SPA page that reads the hash fragment.
-    // oauth.telegram.org puts auth data in #tgAuthResult=BASE64URL_JSON (hash fragment),
-    // which browsers never send to the server. The frontend page reads window.location.hash
-    // and calls /api/auth/telegram/widget directly.
-    const returnTo = `${frontendBase}/auth/telegram`;
-    // Persist linkUserId in a short-lived cookie so we can restore it after redirect
-    const linkUserId = req.webUser?.userId?.toString() ?? null;
-    if (linkUserId) {
-      res.cookie('tg_link_user', linkUserId, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        maxAge: 10 * 60 * 1000,
-        path: '/api/auth',
-      });
-    }
-    const url = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(frontendBase)}&return_to=${encodeURIComponent(returnTo)}&request_access=write&lang=ru&embed=0`;
-    res.redirect(url);
-  }
-
-  @Get('telegram/widget-redirect')
-  async telegramWidgetRedirect(
-    @Query() query: Record<string, string>,
-    @Req() req: any,
-    @Res() res: any,
-  ): Promise<void> {
-    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
-
-    // oauth.telegram.org/auth?embed=0 sends auth data in the URL *hash fragment*
-    // (#tgAuthResult=BASE64URL_JSON), which browsers never send to the server.
-    // When we receive a request with no query params, serve a tiny HTML trampoline
-    // that reads the hash client-side and bounces back with the data as a query param.
-    if (Object.keys(query).length === 0) {
-      res.type('text/html').send(`<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Вход через Telegram...</title></head><body>
-<script>
-try {
-  var h = window.location.hash.slice(1);
-  var p = new URLSearchParams(h);
-  var r = p.get('tgAuthResult');
-  if (r) {
-    window.location.replace(window.location.pathname + '?tgAuthResult=' + encodeURIComponent(r));
-  } else {
-    window.location.replace('/auth/error?reason=telegram_no_data');
-  }
-} catch(e) {
-  window.location.replace('/auth/error?reason=telegram_fragment_error');
-}
-</script>
-<p style="font-family:sans-serif;text-align:center;margin-top:40px">Загрузка...</p>
-</body></html>`);
-      return;
-    }
-
-    try {
-      const telegramHandler = this.providers.get('telegram');
-      if (!telegramHandler.verifyClientData)
-        throw new BadRequestException('Telegram provider missing');
-
-      // oauth.telegram.org/auth?embed=0 may also return data as a query param:
-      //   ?tgAuthResult=BASE64URL_JSON  (wrapped format)
-      //   ?id=...&hash=...             (flat Login Widget format)
-      // Detect and normalise to plain fields before passing to verifyClientData.
-      let fields: Record<string, string> = { ...query };
-      if (query['tgAuthResult']) {
-        try {
-          const decoded = JSON.parse(
-            Buffer.from(query['tgAuthResult'], 'base64url').toString('utf8'),
-          ) as Record<string, unknown>;
-          fields = {};
-          for (const [k, v] of Object.entries(decoded)) {
-            if (v != null) fields[k] = String(v);
-          }
-          this.logger.debug(
-            `telegram widget-redirect: decoded tgAuthResult, id=${fields['id']}`,
-          );
-        } catch (e) {
-          throw new UnauthorizedException(
-            `Failed to decode tgAuthResult: ${(e as Error).message}`,
-          );
-        }
-      }
-
-      const identity = telegramHandler.verifyClientData(fields);
-
-      const savedLinkUserId = req.cookies?.['tg_link_user'] ?? null;
-      res.clearCookie('tg_link_user', { path: '/api/auth' });
-      const linkUserId = savedLinkUserId ? BigInt(savedLinkUserId) : null;
-
-      const outcome = await this.signInOrLinkOrMerge('telegram', identity, {
-        linkUserId,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'],
-      });
-      this.finishOAuthRedirect(outcome, 'telegram', res, frontendBase);
-    } catch (err) {
-      const msg = (err as Error).message ?? 'unknown';
-      this.logger.error(
-        `telegram widget-redirect error: ${msg} | query keys=${JSON.stringify(Object.keys(query))}`,
-      );
-      res.redirect(
-        `${frontendBase}/auth/error?reason=${encodeURIComponent(msg)}`,
-      );
-    }
-  }
 
   // ─── Email magic-link login ───────────────────────────────────────────────
 
@@ -641,7 +55,7 @@ try {
     @Body('email') email: string,
     @Req() req: any,
   ): Promise<{ ok: true }> {
-    this.requireCsrf(req, 'email/link');
+    this.flow.requireCsrf(req, 'email/link');
     return this.auth.requestEmailLogin(email);
   }
 
@@ -690,7 +104,7 @@ try {
     @Body('email') email: string,
     @Req() req: any,
   ): Promise<{ ok: true }> {
-    this.requireCsrf(req, 'email/link-to-account');
+    this.flow.requireCsrf(req, 'email/link-to-account');
     const webUser: WebUser = req.webUser;
     return this.auth.linkEmailToAccount(webUser.userId, email);
   }
@@ -726,91 +140,6 @@ try {
       tokens.refreshToken,
       cookieOptions(30 * 24 * 3600),
     );
-    return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
-  }
-
-  // ─── Confirm a pending merge ──────────────────────────────────────────────
-
-  @Post('merge')
-  @UseGuards(OptionalJwtGuard)
-  @Throttle({
-    short: { limit: 3, ttl: 60_000 },
-    long: { limit: 10, ttl: 3_600_000 },
-  })
-  @HttpCode(200)
-  async confirmMerge(
-    @Body('token') token: string,
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
-  ): Promise<{ accessToken: string; expiresIn: number }> {
-    // CSRF: require the custom header same way refresh/logout do. Browser
-    // cannot set it from a cross-origin form/img.
-    this.requireCsrf(req, 'merge');
-    if (!token) throw new BadRequestException('Missing merge token');
-    const { target, source, provider, providerId } =
-      this.auth.verifyMergeToken(token);
-
-    // Security: the caller MUST be authenticated as either:
-    //   - the target user (started a link from an active session), OR
-    //   - via the OAuth callback flow where the token was issued moments ago
-    //     and the caller went directly from /auth/google/callback to /merge.
-    //
-    // For (1) we verify via JWT. For (2) we accept if no JWT is present
-    // because the merge token itself is the proof of intent: it was just
-    // issued to the same browser session and we trust the signed payload.
-    // We do NOT accept if someone is logged in as a DIFFERENT user.
-    const webUser = req.webUser;
-    if (webUser && String(webUser.userId) !== String(target)) {
-      throw new UnauthorizedException(
-        'Merge token does not match current session',
-      );
-    }
-
-    // 1. Move data from source → target.
-    try {
-      await this.merge.merge(source, target);
-    } catch (err) {
-      const msg = (err as Error).message ?? 'merge failed';
-      // Full error → logs + admin alert (AlertLogger picks up .error).
-      this.logger.error(
-        `merge ${source} → ${target} failed: ${msg}`,
-        (err as Error).stack,
-      );
-      // Friendly message to client — no Prisma internals leaked.
-      throw new BadRequestException(
-        'Не удалось объединить аккаунты. Админ уведомлён — попробуйте позже.',
-      );
-    }
-
-    // 2. Link the provider that triggered the merge to the target user.
-    const linkRes = await this.auth.linkProviderToUser(
-      target,
-      provider,
-      providerId,
-    );
-    if (!linkRes.ok) {
-      // Should be impossible — source's provider row was moved to target by
-      // merge() above. Be defensive.
-      throw new BadRequestException('Provider link failed after merge');
-    }
-
-    // 3. Issue fresh tokens for the target user.
-    const tokens = await this.auth.issueTokens(
-      target,
-      req.ip,
-      req.headers['user-agent'],
-    );
-    res.cookie(
-      REFRESH_COOKIE,
-      tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
-    );
-    this.securityLog.log('merge_confirmed', {
-      target,
-      source,
-      provider,
-      ip: req.ip,
-    });
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
@@ -888,7 +217,7 @@ try {
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ): Promise<{ accessToken: string; expiresIn: number }> {
-    this.requireCsrf(req, 'refresh');
+    this.flow.requireCsrf(req, 'refresh');
     const rawRefresh = req.cookies?.[REFRESH_COOKIE];
     if (!rawRefresh) throw new UnauthorizedException('No refresh token');
     const tokens = await this.auth.rotateRefreshToken(
@@ -913,7 +242,7 @@ try {
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ): Promise<{ ok: boolean }> {
-    this.requireCsrf(req, 'logout');
+    this.flow.requireCsrf(req, 'logout');
     const rawRefresh = req.cookies?.[REFRESH_COOKIE];
     if (rawRefresh) {
       if (all === 'true') {
@@ -967,7 +296,7 @@ try {
   async totpSetup(
     @Req() req: any,
   ): Promise<{ otpauthUrl: string; qrDataUrl: string }> {
-    this.requireCsrf(req, '2fa/setup');
+    this.flow.requireCsrf(req, '2fa/setup');
     const webUser: WebUser = req.webUser;
     // Use one of the user's display names for the QR label
     const providers = await this.auth.getUserProviders(webUser.userId);
@@ -985,7 +314,7 @@ try {
     @Req() req: any,
     @Body('code') code: string,
   ): Promise<{ recoveryCodes: string[] }> {
-    this.requireCsrf(req, '2fa/enable');
+    this.flow.requireCsrf(req, '2fa/enable');
     if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser;
     const result = await this.totp.confirmSetup(webUser.userId, code);
@@ -1003,7 +332,7 @@ try {
     @Req() req: any,
     @Body('code') code: string,
   ): Promise<{ ok: true }> {
-    this.requireCsrf(req, '2fa/disable');
+    this.flow.requireCsrf(req, '2fa/disable');
     if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser;
     await this.totp.disable(webUser.userId, code);
@@ -1021,7 +350,7 @@ try {
     @Req() req: any,
     @Body('code') code: string,
   ): Promise<{ recoveryCodes: string[] }> {
-    this.requireCsrf(req, '2fa/recovery-codes');
+    this.flow.requireCsrf(req, '2fa/recovery-codes');
     if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser;
     return this.totp.regenerateRecoveryCodes(webUser.userId, code);
@@ -1040,7 +369,7 @@ try {
     @Req() req: any,
     @Body('email') email: string,
   ): Promise<{ ok: true }> {
-    this.requireCsrf(req, 'recovery-email/start');
+    this.flow.requireCsrf(req, 'recovery-email/start');
     const webUser: WebUser = req.webUser;
     return this.emailSvc.sendVerificationLink(webUser.userId, email);
   }
@@ -1083,7 +412,7 @@ try {
     @Res({ passthrough: true }) res: any,
     @Body('token') token: string,
   ): Promise<{ accessToken: string; expiresIn: number }> {
-    this.requireCsrf(req, 'recovery/confirm');
+    this.flow.requireCsrf(req, 'recovery/confirm');
     const { userId } = await this.emailSvc.consumeToken(token, 'recovery');
     // Recovery DOES skip 2FA — the email proves possession of a separate
     // factor. Otherwise losing TOTP + all providers = unrecoverable account.
@@ -1119,7 +448,7 @@ try {
     @Body('challengeToken') challengeToken: string,
     @Body('code') code: string,
   ): Promise<{ accessToken: string; expiresIn: number }> {
-    this.requireCsrf(req, '2fa/challenge');
+    this.flow.requireCsrf(req, '2fa/challenge');
     if (!challengeToken || !code)
       throw new BadRequestException('Missing token or code');
     const { userId } = this.auth.verifyTotpChallengeToken(challengeToken);
