@@ -120,7 +120,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
       const { url } = await api.createPairInvite();
       await api.getPair().then(setPairData);
       setPairInviteUrl(url);
-      try { if (navigator.share) await navigator.share({ text: `Давай отслеживать потребности вместе! ${url}` }); } catch {}
+      try { if (navigator.share) await navigator.share({ text: `Давай отслеживать потребности вместе! ${url}` }); } catch { /* best-effort: ошибку намеренно игнорируем */ }
     } finally { setPairLoading(false); }
   }
 
@@ -356,7 +356,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         const name = editName.trim(); if (!name) return;
                         setNameSaving(true);
                         try { await api.updateName(name); onNameChanged?.(name); setSavedToast(true); setTimeout(() => setSavedToast(false), 1800); }
-                        catch {} finally { setNameSaving(false); }
+                        catch { /* best-effort: ошибку намеренно игнорируем */ } finally { setNameSaving(false); }
                       }}
                       style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: 'inherit', flexShrink: 0 }}
                     >{nameSaving ? '...' : 'Сохранить'}</button>
@@ -509,7 +509,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <SRow title="Открыть кабинет" sub="Клиенты, задания, приглашения" onClick={onOpenTherapistCabinet} />
                   <div style={{ padding: '14px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                     <button onClick={async () => {
-                      try { const { url } = await api.createTherapyInvite(); setTherapyInviteUrl(url); try { await navigator.clipboard.writeText(url); } catch {} } catch {}
+                      try { const { url } = await api.createTherapyInvite(); setTherapyInviteUrl(url); try { await navigator.clipboard.writeText(url); } catch { /* best-effort: ошибку намеренно игнорируем */ } } catch { /* best-effort: ошибку намеренно игнорируем */ }
                     }} style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
                       + Создать приглашение клиенту
                     </button>
@@ -552,7 +552,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         <div>
                           <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 4 }}>Отправь другу:</div>
                           <div style={{ fontSize: 12, color: 'var(--text-sub)', wordBreak: 'break-all', marginBottom: 8, userSelect: 'all', fontFamily: 'monospace' }}>{pairInviteUrl}</div>
-                          <button onClick={async () => { try { await navigator.clipboard.writeText(pairInviteUrl); setPairInviteCopied(true); setTimeout(() => setPairInviteCopied(false), 2000); } catch {} }}
+                          <button onClick={async () => { try { await navigator.clipboard.writeText(pairInviteUrl); setPairInviteCopied(true); setTimeout(() => setPairInviteCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ } }}
                             style={{ background: 'none', border: 'none', color: pairInviteCopied ? 'var(--accent-green)' : 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                             {pairInviteCopied ? '✓ Скопировано' : 'Скопировать ссылку'}
                           </button>
@@ -580,13 +580,13 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 <SHead id="s-share" label="Поделиться" />
                 <SRow title="Пригласить друга" sub="Поделиться ссылкой на бота" onClick={async () => {
                   const text = `Трекер потребностей – отслеживай своё состояние каждый день. ${botShortUrl}`;
-                  try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); } catch { try { await navigator.clipboard.writeText(text); } catch {} }
+                  try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); } catch { try { await navigator.clipboard.writeText(text); } catch { /* best-effort: ошибку намеренно игнорируем */ } }
                 }} />
                 <SRow title="Сводка для терапевта" sub="Данные за 30 дней" onClick={async () => {
                   const { text } = await api.getExport();
                   let shared = false;
-                  try { if (navigator.share) { await navigator.share({ text }); shared = true; } } catch {}
-                  if (!shared) { try { await navigator.clipboard.writeText(text); } catch {} setExportText(text); }
+                  try { if (navigator.share) { await navigator.share({ text }); shared = true; } } catch { /* best-effort: ошибку намеренно игнорируем */ }
+                  if (!shared) { try { await navigator.clipboard.writeText(text); } catch { /* best-effort: ошибку намеренно игнорируем */ } setExportText(text); }
                 }} />
 
                 {/* О приложении */}
@@ -630,7 +630,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
           <pre style={{ fontSize: 11, color: 'var(--text-sub)', lineHeight: 1.6, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 8, padding: '12px 14px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: 14, userSelect: 'all', fontFamily: 'monospace' }}>
             {exportText}
           </pre>
-          <button onClick={async () => { try { await navigator.clipboard.writeText(exportText); setExportCopied(true); setTimeout(() => setExportCopied(false), 2000); } catch {} }}
+          <button onClick={async () => { try { await navigator.clipboard.writeText(exportText); setExportCopied(true); setTimeout(() => setExportCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ } }}
             style={{ width: '100%', padding: '12px 0', border: 'none', borderRadius: 10, background: exportCopied ? 'rgba(52,211,153,0.12)' : 'rgba(var(--fg-rgb),0.08)', color: exportCopied ? 'var(--accent-green)' : 'var(--text-sub)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
             {exportCopied ? '✓ Скопировано' : 'Скопировать'}
           </button>

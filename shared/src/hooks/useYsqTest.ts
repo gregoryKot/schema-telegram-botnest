@@ -722,7 +722,7 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     const activeLabel =
       activeCount === 0
         ? 'Активных схем не найдено'
-        : `${activeCount} ${activeCount === 1 ? 'выраженная схема' : activeCount < 5 ? 'выраженные схемы' : 'выраженных схем'}`;
+        : `${activeCount}\u00A0${activeCount === 1 ? 'выраженная схема' : activeCount < 5 ? 'выраженные схемы' : 'выраженных схем'}`;
 
     const prevEntry = history.length >= 2 ? history[1] : null;
     const getSchemaDelta = (schemaName: string): number | null => {

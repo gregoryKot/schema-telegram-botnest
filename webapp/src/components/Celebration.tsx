@@ -108,7 +108,7 @@ export function Celebration({ streak, onDone, insight }: Props) {
               if (navigator.share) { await navigator.share({ text }); }
               else { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }
             } catch {
-              try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
+              try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ }
             }
           }}
           style={{
