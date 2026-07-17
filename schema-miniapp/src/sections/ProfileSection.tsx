@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, Achievement } from '../api';
 import { useSafeTop } from '../utils/safezone';
+import { botShortUrl } from '../utils/botConfig';
 import { BottomSheet } from '../components/BottomSheet';
 import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
@@ -1275,7 +1276,7 @@ export function ProfileSection({
                 </div>
                 <button
                   onClick={async () => {
-                    const text = `${m.emoji} Получил достижение «${m.title}»!\n\nt.me/SchemaLabBot`;
+                    const text = `${m.emoji} Получил достижение «${m.title}»!\n\n${botShortUrl}`;
                     try {
                       if (navigator.share) await navigator.share({ text });
                       else await navigator.clipboard.writeText(text);

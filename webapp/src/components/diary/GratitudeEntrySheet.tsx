@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ExScreen, GlyphCheck, GlyphPlus } from '../exercises/ExScreen';
+import { ExScreen, GlyphPlus } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { fmtDateLong, todayStr } from '../../utils/format';
 import { haptic } from '../../haptic';
+import { SaveEntryButton } from './SaveEntryButton';
 
 interface Props {
   onClose: () => void;
@@ -100,15 +101,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
           {filled.length} / {items.length} заполнено
         </span>
         <span className="spacer" />
-        <button
-          className="ex-btn ex-btn-primary"
-          disabled={!canSave || saving}
-          onClick={handleSave}
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-        >
-          {saving ? 'Сохраняю…' : 'Сохранить запись'}
-          {!saving && <GlyphCheck />}
-        </button>
+        <SaveEntryButton canSave={canSave} saving={saving} onSave={handleSave} />
       </div>
     </ExScreen>
   );

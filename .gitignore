@@ -85,3 +85,7 @@ schema-telegram-botnest.zip
 # Generated Prisma config artifacts (prisma.config.js itself is a tracked source file)
 prisma.config.d.ts
 prisma.config.js.map
+
+# Воркспейс .claire — не код проекта (затреканный файл из чужого worktree
+# давал environment-зависимый eslint в CI)
+.claire/

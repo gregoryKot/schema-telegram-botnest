@@ -6,23 +6,21 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    // Не линтим билд-артефакты и конфиги сборки: коммитнутый бандл мини-аппа
-    // (минифицированный JS) и vite-конфиг вне tsconfig-проекта давали лишь
-    // parse-error-шум.
+    // .claire/.claude — воркспейсы агент-сессий (различаются между машинами →
+    // environment-зависимые счётчики храповика). dist — сборочный вывод.
+    // scripts/deploy + plain-Node конфиги (.mjs/.cjs, prisma.config.js) вне
+    // tsconfig-проекта: типизированный линтер их не парсит и даёт лишь
+    // parse-ошибки-шум. Приложение целиком на .ts/.tsx.
     ignores: [
       'eslint.config.mjs',
-      'schema-miniapp/dist/**',
-      '**/vite.config.ts',
-      // Стрэй-воркри и служебные каталоги тулинга — не исходники приложения,
-      // typed-парсер на них ругался «not found by the project service».
       '.claire/**',
       '.claude/**',
-      // Node-скрипты и конфиги на чистом JS не входят ни в один tsconfig-проект,
-      // поэтому typed-линт их не парсит (parse-error-шум). Приложение целиком на
-      // .ts/.tsx; .ts-скрипты в scripts/ линтятся как обычно.
+      '**/dist/**',
+      '**/vite.config.ts',
+      'scripts/**',
+      'deploy/**',
       '**/*.mjs',
       '**/*.cjs',
-      'scripts/**/*.js',
       'prisma.config.js',
     ],
   },

@@ -131,14 +131,22 @@ export async function updateFlags(patch: Partial<UserFlags>): Promise<void> {
  */
 export function useUserFlags(): {
   flags: UserFlags;
+  loaded: boolean;
   setFlag: typeof setFlag;
   updateFlags: typeof updateFlags;
 } {
   const [current, setCurrent] = useState<UserFlags>(() => ({ ...flags }));
+  // `loaded` нужен, чтобы стартовая логика не приняла дефолтные флаги за
+  // серверные (иначе экран моргнёт до подгрузки настроек).
+  const [isLoaded, setIsLoaded] = useState<boolean>(loaded);
 
   useEffect(() => {
     setCurrent({ ...flags }); // sync in case flags loaded between render and effect
-    const handler = (f: UserFlags) => setCurrent({ ...f });
+    setIsLoaded(loaded);
+    const handler = (f: UserFlags) => {
+      setCurrent({ ...f });
+      setIsLoaded(loaded);
+    };
     subscribers.add(handler);
     void ensureUserFlagsLoaded();
     return () => {
@@ -146,5 +154,5 @@ export function useUserFlags(): {
     };
   }, []);
 
-  return { flags: current, setFlag, updateFlags };
+  return { flags: current, loaded: isLoaded, setFlag, updateFlags };
 }

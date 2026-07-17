@@ -6,6 +6,8 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
+import { DiaryTextArea } from './DiaryTextArea';
+import { DiaryStickyHeader } from './DiaryStickyHeader';
 
 interface Props {
   onClose: () => void;
@@ -72,39 +74,6 @@ function StepLabel({
         )}
       </div>
     </div>
-  );
-}
-
-function Area({
-  value,
-  onChange,
-  placeholder,
-  rows = 3,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  rows?: number;
-}) {
-  return (
-    <textarea
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      className="field-input"
-      style={{
-        width: '100%',
-        background: 'rgba(var(--fg-rgb),0.05)',
-        border: '1px solid rgba(var(--fg-rgb),0.1)',
-        borderRadius: 12,
-        padding: '12px 14px',
-        color: 'var(--text)',
-        fontSize: 14,
-        lineHeight: 1.5,
-        outline: 'none',
-      }}
-    />
   );
 }
 
@@ -185,50 +154,14 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   return (
     <BottomSheet onClose={onClose}>
       <div>
-        {/* Sticky header */}
-        <div
-          style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 5,
-            background: 'var(--sheet-bg)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingTop: 4,
-            paddingBottom: 12,
-            borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
-            marginBottom: 8,
-          }}
-        >
-          <div>
-            <div
-              style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}
-            >
-              Дневник режимов
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-              {existing ? 'Продолжаем с того места' : 'Кто сейчас внутри?'}
-            </div>
-          </div>
-          <button
-            onClick={handleSave}
-            disabled={!canSave || saving}
-            style={{
-              padding: '9px 18px',
-              borderRadius: 12,
-              border: 'none',
-              background: canSave ? COLOR : 'rgba(var(--fg-rgb),0.08)',
-              color: canSave ? '#fff' : 'rgba(var(--fg-rgb),0.25)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: canSave ? 'pointer' : 'default',
-              flexShrink: 0,
-            }}
-          >
-            {saving ? 'Сохраняю...' : 'Сохранить'}
-          </button>
-        </div>
+        <DiaryStickyHeader
+          title="Дневник режимов"
+          subtitle={existing ? 'Продолжаем с того места' : 'Кто сейчас внутри?'}
+          color={COLOR}
+          canSave={canSave}
+          saving={saving}
+          onSave={handleSave}
+        />
 
         <StepLabel step={1} title="Режим" hint="кто взял управление" />
         {MODE_GROUPS.map((group) => (
@@ -281,7 +214,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         ))}
 
         <StepLabel step={2} title="Ситуация" hint="что случилось" />
-        <Area
+        <DiaryTextArea
           value={situation}
           onChange={setSituation}
           placeholder={tr(
@@ -291,7 +224,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         />
 
         <StepLabel step={3} title="Мысли" hint="что говорит этот режим" />
-        <Area
+        <DiaryTextArea
           value={thoughts}
           onChange={setThoughts}
           placeholder={tr(
@@ -302,7 +235,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         />
 
         <StepLabel step={4} title="Чувства" hint="что этот режим ощущает" />
-        <Area
+        <DiaryTextArea
           value={feelings}
           onChange={setFeelings}
           placeholder="Что этот режим чувствует? Страх, злость, пустоту..."
@@ -310,7 +243,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         />
 
         <StepLabel step={5} title="Тело" hint="что ощущаешь" />
-        <Area
+        <DiaryTextArea
           value={bodyFeelings}
           onChange={setBodyFeelings}
           placeholder="Что происходит с телом? Напряжение, онемение, тяжесть..."
@@ -322,7 +255,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           title="Действия"
           hint={tr('что ты делаешь или делал/а', 'что вы делаете или делали')}
         />
-        <Area
+        <DiaryTextArea
           value={actions}
           onChange={setActions}
           placeholder={tr(
@@ -339,7 +272,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
             'Что вам на самом деле нужно?',
           )}
         />
-        <Area
+        <DiaryTextArea
           value={actualNeed}
           onChange={setActualNeed}
           placeholder={tr(
@@ -354,7 +287,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           title="Детские воспоминания"
           hint="связанные с ситуацией"
         />
-        <Area
+        <DiaryTextArea
           value={childhoodMemories}
           onChange={setChildhoodMemories}
           placeholder="Напоминает что-то из детства? Похожее чувство, похожая ситуация?"

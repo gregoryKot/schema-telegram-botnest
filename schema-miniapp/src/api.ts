@@ -1,3 +1,6 @@
+import { todayStr } from './utils/format';
+import { OutboxItem, enqueueRating, flushRatingOutbox } from './utils/outbox';
+
 const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
 const BASE =
   rawBase && !rawBase.startsWith('http') ? `https://${rawBase}` : rawBase;
@@ -23,12 +26,59 @@ async function fetchWithTimeout(
   }
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// fetch() отклоняет промис TypeError-ом при обрыве связи/DNS-фейле; таймаут
+// из fetchWithTimeout отклоняет AbortError. Оба случая — «сети нет прямо
+// сейчас», а не осмысленный ответ сервера.
+function isNetworkError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'AbortError') return true;
+  return err instanceof TypeError;
+}
+
+// Статус ответа сервера (не сетевая ошибка) — отдельный класс, чтобы вызывающий
+// код мог различить «сервер ответил 4xx» и «ответа не было вообще».
+class HttpStatusError extends Error {
+  constructor(public status: number) {
+    super(`API error: ${status}`);
+  }
+}
+
+// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые
+// ошибки и статусы 502/503/504 (временная недоступность инфры). 4xx и
+// прочие 5xx не ретраятся — это осмысленный ответ сервера, повтор его не
+// изменит. POST/DELETE здесь не участвуют: они не идемпотентны на уровне
+// протокола (см. outbox.ts для единственного исключения — оценок).
+const GET_RETRY_DELAYS_MS = [800, 2500];
+const RETRYABLE_STATUSES = new Set([502, 503, 504]);
+
 async function get<T>(path: string): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    headers: authHeaders(),
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json() as Promise<T>;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetchWithTimeout(`${BASE}${path}`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) {
+        if (
+          RETRYABLE_STATUSES.has(res.status) &&
+          attempt < GET_RETRY_DELAYS_MS.length
+        ) {
+          await delay(GET_RETRY_DELAYS_MS[attempt]);
+          continue;
+        }
+        throw new HttpStatusError(res.status);
+      }
+      return res.json();
+    } catch (err) {
+      if (isNetworkError(err) && attempt < GET_RETRY_DELAYS_MS.length) {
+        await delay(GET_RETRY_DELAYS_MS[attempt]);
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 async function post(path: string, body: unknown): Promise<void> {
@@ -40,13 +90,11 @@ async function post(path: string, body: unknown): Promise<void> {
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
     try {
-      const j = (await res.json()) as { message?: unknown };
-      if (j.message)
+      const j = await res.json();
+      if (j?.message)
         msg =
           typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
-    }
+    } catch {}
     throw new Error(msg);
   }
 }
@@ -60,16 +108,14 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
     try {
-      const j = (await res.json()) as { message?: unknown };
-      if (j.message)
+      const j = await res.json();
+      if (j?.message)
         msg =
           typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-    } catch {
-      /* best-effort: ошибку намеренно игнорируем */
-    }
+    } catch {}
     throw new Error(msg);
   }
-  return res.json() as Promise<T>;
+  return res.json();
 }
 
 async function del(path: string): Promise<void> {
@@ -232,6 +278,18 @@ export interface ClientData {
   ysqHistory: YsqHistoryEntry[];
 }
 
+type SaveRatingResult = { ok: boolean; allDone: boolean; streak?: StreakData };
+
+async function rawSaveRating(item: OutboxItem): Promise<SaveRatingResult> {
+  const res = await fetchWithTimeout(`${BASE}/api/rating`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(item),
+  });
+  if (!res.ok) throw new HttpStatusError(res.status);
+  return res.json();
+}
+
 export const api = {
   init: (tzOffset?: number) => post('/api/init', { tzOffset }),
   getDisclaimer: () => get<{ accepted: boolean }>('/api/disclaimer'),
@@ -256,18 +314,26 @@ export const api = {
     needId: string,
     value: number,
     date?: string,
-  ): Promise<{ ok: boolean; allDone: boolean; streak?: StreakData }> => {
-    const res = await fetch(`${BASE}/api/rating`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ needId, value, date }),
-    });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return res.json() as Promise<{
-      ok: boolean;
-      allDone: boolean;
-      streak?: StreakData;
-    }>;
+  ): Promise<SaveRatingResult> => {
+    // Дата фиксируется здесь, на момент вызова: если отправка сорвётся в
+    // сеть и уйдёт в outbox для отложенного флаша, сервер должен записать
+    // именно «сегодня по мнению юзера сейчас», а не «сегодня в момент
+    // флаша» (который может случиться уже на следующий день).
+    const dt = date ?? todayStr();
+    const item: OutboxItem = { needId, value, date: dt };
+    try {
+      return await rawSaveRating(item);
+    } catch (err) {
+      // 4xx — осмысленная ошибка (невалидные данные и т.п.), кидаем как
+      // раньше. Всё остальное (сетевой обрыв, таймаут, 5xx) — оффлайн-путь:
+      // кладём в outbox и отвечаем успехом (запись идемпотентна по upsert
+      // на сервере, так что доедет при следующем флаше).
+      const isClientError =
+        err instanceof HttpStatusError && err.status >= 400 && err.status < 500;
+      if (isClientError) throw err;
+      enqueueRating(item);
+      return { ok: true, allDone: false };
+    }
   },
   history: (days = 7) =>
     get<import('./types').DayHistory[]>(`/api/history?days=${days}`),
@@ -432,6 +498,11 @@ export const api = {
     contacts: string;
     message?: string;
   }) => postJson<{ ok: boolean }>('/api/therapy/request', body),
+  // Запомнить предпочтение старта терапевта (кабинет vs клиентский режим).
+  setTherapistView: (on: boolean) =>
+    postJson<{ ok: boolean }>('/api/therapy/therapist-view', { on }),
+  // Отказаться от роли терапевта → снова CLIENT.
+  resignTherapist: () => del('/api/therapy/therapist-role'),
   createTask: (body: {
     type: string;
     text: string;
@@ -502,7 +573,6 @@ export const api = {
         reality: string;
         healthyView: string;
         behavior: string;
-        updatedAt: string;
       }>
     >('/api/schema-notes'),
   saveSchemaNote: (body: {
@@ -524,7 +594,6 @@ export const api = {
         thoughts: string;
         needs: string;
         behavior: string;
-        updatedAt: string;
       }>
     >('/api/mode-notes'),
   saveModeNote: (body: {
@@ -610,4 +679,10 @@ export const api = {
         behavior: string;
       }>
     >(`/api/therapy/client/${clientId}/mode-notes`),
+
+  // ─── Outbox ──────────────────────────────────────────────────────────────────
+  // Отправляет отложенные оценки (см. utils/outbox.ts). Вызывается при старте
+  // приложения и при возврате online — см. App.tsx.
+  flushOutbox: () =>
+    flushRatingOutbox((item) => rawSaveRating(item).then(() => undefined)),
 };

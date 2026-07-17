@@ -7,6 +7,7 @@ import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { haptic } from '../../haptic';
+import { DiaryAutosaveFooter } from './DiaryAutosaveFooter';
 
 interface Props {
   onClose: () => void;
@@ -260,22 +261,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
 
       {detectCrisisAny(situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories) && <CrisisCard />}
 
-      <div className="ex-foot">
-        <span style={{ fontSize: 12, color: 'var(--text-faint)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 3, background: 'var(--c-moss)' }} />
-          Автосохранение
-        </span>
-        <span className="spacer" />
-        <button
-          className="ex-btn ex-btn-primary"
-          disabled={!canSave || saving}
-          onClick={handleSave}
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-        >
-          {saving ? 'Сохраняю…' : 'Сохранить запись'}
-          {!saving && <GlyphCheck />}
-        </button>
-      </div>
+      <DiaryAutosaveFooter canSave={canSave} saving={saving} onSave={handleSave} />
     </ExScreen>
   );
 }

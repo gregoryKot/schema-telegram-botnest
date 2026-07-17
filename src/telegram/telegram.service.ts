@@ -303,16 +303,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
-        // Слот по текущему часу МСК: вечером тестируем вечернюю фразу.
-        const hour = Number(
-          new Intl.DateTimeFormat('en-US', {
-            timeZone: 'Europe/Moscow',
-            hour: 'numeric',
-            hour12: false,
-          }).format(new Date()),
-        );
-        const slot = hour >= 14 ? 1 : 0;
-        const result = await this.channelService.post(slot);
+        const result = await this.channelService.post();
         await ctx.reply(result.message);
       } catch (err) {
         this.logger.error('zv command failed', err);
@@ -526,6 +517,61 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    // Фолбэк-доступ к заявкам на роль терапевта: если пуш-уведомление не дошло
+    // (напр. после переезда бота), админ всё равно видит и обрабатывает заявки.
+    this.bot.command('zayavki', async (ctx) => {
+      try {
+        const adminId = adminIdNum();
+        if (!adminId || ctx.from?.id !== adminId) {
+          await ctx.reply('Только админ');
+          return;
+        }
+        const esc = (s: string) =>
+          s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        type PendingReq = {
+          id: number;
+          userId: bigint;
+          fullName: string;
+          qualification: string;
+          contacts: string;
+          message: string | null;
+        };
+        const pending = (await this.therapistRequestService.listPending(
+          adminId,
+        )) as PendingReq[];
+        if (pending.length === 0) {
+          await ctx.reply('Заявок на роль терапевта нет.');
+          return;
+        }
+        for (const req of pending) {
+          const text =
+            `🩺 <b>Заявка #${req.id}</b>\n\n` +
+            `<b>Имя:</b> ${esc(req.fullName)}\n` +
+            `<b>Квалификация:</b> ${esc(req.qualification)}\n` +
+            `<b>Контакты:</b> ${esc(req.contacts)}\n` +
+            (req.message ? `<b>Сообщение:</b> ${esc(req.message)}\n` : '') +
+            `<b>Telegram ID:</b> <code>${req.userId}</code>`;
+          await ctx.reply(text, {
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: '✅ Approve',
+                    callback_data: `treq:approve:${req.id}`,
+                  },
+                  { text: '❌ Reject', callback_data: `treq:reject:${req.id}` },
+                ],
+              ],
+            },
+          });
+        }
+      } catch (err) {
+        this.logger.error(`zayavki command failed: ${(err as Error).message}`);
+        await ctx.reply('Ошибка при получении заявок').catch(() => null);
+      }
+    });
+
     this.bot.command('broadcast', async (ctx) => {
       try {
         if (!isAdminSender(ctx.from)) {
@@ -641,17 +687,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       if (!ok) this.logger.warn('setChatMenuButton failed after retries');
     });
 
-    this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
-      const msg = String(err);
-      if (
-        !msg.includes('409') &&
-        !msg.includes('terminated by other') &&
-        !this.stopping
-      ) {
-        this.logger.error('Failed to launch bot', err);
-      }
-    });
-    this.logger.log('Bot launched');
+    this.launchBotWithRetry();
     const adminId = process.env.ADMIN_ID;
     if (adminId) {
       this.bot.telegram
@@ -711,7 +747,49 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     return true;
   }
 
-  onModuleDestroy() {
+  /**
+   * Запуск long-polling с ретраем. `bot.launch()` внутри дёргает `getMe()`;
+   * если сеть на старте контейнера ещё не поднялась (Amvera → Telegram
+   * ETIMEDOUT), launch() реджектится, и БЕЗ ретрая поллинг НИКОГДА не стартует
+   * — бот висит «живым» (Nest поднят, уведомления-`sendMessage` идут), но не
+   * отвечает на команды до следующего рестарта (инцидент 2026-07-16).
+   *
+   * 409 / «terminated by other» = поллит другой инстанс, ретрай навредит.
+   * `stopping` = штатная остановка, ретрай не нужен. Промис launch() на успехе
+   * резолвится лишь при остановке поллинга — поэтому только .catch, без await.
+   */
+  private launchBotWithRetry(attempt = 1): void {
+    const MAX_ATTEMPTS = 5;
+    if (attempt === 1) this.logger.log('Bot launch initiated');
+    this.bot!.launch({ dropPendingUpdates: true }).catch((err) => {
+      const msg = String(err);
+      if (
+        msg.includes('409') ||
+        msg.includes('terminated by other') ||
+        this.stopping
+      ) {
+        return;
+      }
+      if (attempt < MAX_ATTEMPTS) {
+        const delayMs = attempt * 5_000;
+        this.logger.warn(
+          `Bot launch failed (попытка ${attempt}/${MAX_ATTEMPTS}), ` +
+            `ретрай через ${delayMs}ms: ${msg}`,
+        );
+        setTimeout(() => {
+          if (!this.stopping) this.launchBotWithRetry(attempt + 1);
+        }, delayMs);
+      } else {
+        this.logger.error(
+          `Bot launch провалился после ${MAX_ATTEMPTS} попыток — ` +
+            `поллинг не стартовал`,
+          err,
+        );
+      }
+    });
+  }
+
+  async onModuleDestroy() {
     this.stopping = true;
     try {
       this.bot?.stop();

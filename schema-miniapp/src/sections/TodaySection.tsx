@@ -16,82 +16,14 @@ import { api, UserTask } from '../api';
 import { Section } from '../components/BottomNav';
 import { useSafeTop } from '../utils/safezone';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
-import {
-  TaskCreateSheet,
-  getTaskDisplayText,
-} from '../components/TaskCreateSheet';
+import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { BottomSheet } from '../components/BottomSheet';
-import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { fmtDate, todayStr } from '../utils/format';
-
-const TASK_EMOJI: Record<string, string> = {
-  diary_streak: '📔',
-  tracker_streak: '📊',
-  belief_check: '🔍',
-  letter_to_self: '✉️',
-  safe_place: '🏡',
-  childhood_wheel: '🌱',
-  flashcard: '🆘',
-  schema_intro: '🧩',
-  mode_intro: '🔄',
-  custom: '🎯',
-};
-
-function resolveTaskDisplayText(task: UserTask): string {
-  const text = getTaskDisplayText(task.type, task.text);
-  if (text === task.text) {
-    const schema = ALL_SCHEMAS.find((s) => s.id === task.text);
-    if (schema) return schema.name;
-    const mode = ALL_MODES.find((m) => m.id === task.text);
-    if (mode) return mode.name;
-  }
-  return text;
-}
-
-function resolveTaskEmoji(task: UserTask): string {
-  if (TASK_EMOJI[task.type]) return TASK_EMOJI[task.type];
-  if (ALL_SCHEMAS.some((s) => s.id === task.text)) return '🧩';
-  if (ALL_MODES.some((m) => m.id === task.text)) return '🔄';
-  return '🎯';
-}
-
-function TaskProgressBar({ task }: { task: UserTask }) {
-  if (task.type === 'custom' || !task.targetDays) return null;
-  const target = task.targetDays;
-  const progress =
-    task.progress !== undefined ? Math.min(task.progress, target) : 0;
-  const pct = target > 0 ? (progress / target) * 100 : 0;
-  return (
-    <div
-      style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}
-    >
-      <div
-        style={{
-          flex: 1,
-          height: 3,
-          background: 'rgba(var(--fg-rgb),0.08)',
-          borderRadius: 3,
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            width: `${pct}%`,
-            height: '100%',
-            background: 'var(--accent)',
-            borderRadius: 3,
-            transition: 'width 0.3s ease',
-          }}
-        />
-      </div>
-      <span style={{ fontSize: 10, color: 'var(--text-sub)' }}>
-        {progress}/{target}
-      </span>
-    </div>
-  );
-}
+import { TaskRow } from '../components/tasks/TaskRow';
+import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
+import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -433,17 +365,19 @@ export function TodaySection({
       case 'mode_intro':
         if (task.text) setIntroModeId(task.text);
         break;
-      default:
-        if (ALL_SCHEMAS.some((s) => s.id === task.text)) {
-          setIntroSchemaId(task.text);
+      default: {
+        const legacy = findLegacyTaskTarget(task.text);
+        if (legacy?.type === 'schema') {
+          setIntroSchemaId(legacy.id);
           break;
         }
-        if (ALL_MODES.some((m) => m.id === task.text)) {
-          setIntroModeId(task.text);
+        if (legacy?.type === 'mode') {
+          setIntroModeId(legacy.id);
           break;
         }
         // belief_check, letter_to_self etc — navigate to Help
         onNavigate('help');
+      }
     }
   }
 
@@ -1040,174 +974,27 @@ export function TodaySection({
           >
             Все задания
           </div>
-          {tasks.map((task) => {
-            const emoji =
-              task.done === true
-                ? '✅'
-                : task.done === false
-                  ? '❌'
-                  : resolveTaskEmoji(task);
-            return (
-              <div
-                key={task.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '11px 0',
-                  borderBottom: '1px solid rgba(var(--fg-rgb),0.05)',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 18,
-                    flexShrink: 0,
-                    width: 22,
-                    textAlign: 'center',
-                  }}
-                >
-                  {emoji}
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {task.assignedBy !== null && (
-                    <div
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: '0.07em',
-                        color: 'var(--accent)',
-                        textTransform: 'uppercase',
-                        marginBottom: 1,
-                      }}
-                    >
-                      от терапевта
-                    </div>
-                  )}
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 500,
-                      color: 'var(--text)',
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {resolveTaskDisplayText(task)}
-                  </div>
-                  <TaskProgressBar task={task} />
-                  {task.dueDate && (
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: 'var(--text-sub)',
-                        marginTop: 2,
-                      }}
-                    >
-                      до {fmtDate(task.dueDate)}
-                    </div>
-                  )}
-                </div>
-                {task.done === null &&
-                  task.assignedBy !== null &&
-                  task.type === 'custom' && (
-                    <button
-                      onClick={() =>
-                        api
-                          .completeTask(task.id, true)
-                          .then(() =>
-                            Promise.all([
-                              api.getTasks(),
-                              api.getTaskHistory(),
-                            ]).then(([t, h]) => {
-                              setTasks(t);
-                              setTaskHistory(h);
-                            }),
-                          )
-                          .catch(() => {})
-                      }
-                      style={{
-                        padding: '6px 12px',
-                        border: 'none',
-                        borderRadius: 10,
-                        background:
-                          'color-mix(in srgb, var(--accent-green) 14%, transparent)',
-                        color: 'var(--accent-green)',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}
-                    >
-                      Готово
-                    </button>
-                  )}
-              </div>
-            );
-          })}
-          {taskHistory.length > 0 && (
-            <>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.07em',
-                  color: 'var(--text-faint)',
-                  textTransform: 'uppercase',
-                  marginTop: 20,
-                  marginBottom: 8,
-                }}
-              >
-                Выполнено
-              </div>
-              {taskHistory.map((task) => (
-                <div
-                  key={task.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '9px 0',
-                    borderBottom: '1px solid rgba(var(--fg-rgb),0.04)',
-                    opacity: 0.5,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 16,
-                      flexShrink: 0,
-                      width: 22,
-                      textAlign: 'center',
-                    }}
-                  >
-                    {task.done === true ? '✅' : '❌'}
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: 'var(--text)',
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {resolveTaskDisplayText(task)}
-                    </div>
-                    {task.completedAt && (
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: 'var(--text-sub)',
-                          marginTop: 1,
-                        }}
-                      >
-                        {fmtDate(
-                          new Date(task.completedAt).toISOString().slice(0, 10),
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
+          {tasks.map((task) => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              variant="compact"
+              onComplete={() =>
+                api
+                  .completeTask(task.id, true)
+                  .then(() =>
+                    Promise.all([api.getTasks(), api.getTaskHistory()]).then(
+                      ([t, h]) => {
+                        setTasks(t);
+                        setTaskHistory(h);
+                      },
+                    ),
+                  )
+                  .catch(() => {})
+              }
+            />
+          ))}
+          <TaskHistoryList taskHistory={taskHistory} variant="compact" />
           <button
             onClick={() => {
               setShowAllTasks(false);

@@ -27,7 +27,7 @@ RUN npm run build
 
 # Build webapp (website) — output → webapp/dist/ → served at /
 # VITE_BOT_USERNAME is baked into the bundle so the Telegram Login Widget works
-ENV VITE_BOT_USERNAME=SchemaLabBot
+ENV VITE_BOT_USERNAME=SchemeHappensBot
 RUN npm run build --prefix webapp
 
 # Copy the pre-built Telegram mini-app into webapp/dist/app → served at /app by
@@ -56,6 +56,9 @@ COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/prisma.config.js ./
 COPY --from=build --chown=node:node /app/webapp/dist ./webapp/dist
+# Front + страница техработ (dependency-free) — держат порт 3000 всю жизнь
+# контейнера. См. deploy/front-server.mjs, deploy/entrypoint.mjs и CMD ниже.
+COPY --from=build --chown=node:node /app/deploy ./deploy
 
 # Непривилегированный пользователь (в node-образе уже есть `node`)
 USER node
@@ -64,9 +67,13 @@ USER node
 HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "fetch('http://localhost:'+(process.env.PORT||3000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-# exec — node замещает sh как PID 1, иначе SIGTERM от оркестратора не доходит
-# до node и graceful shutdown (bot.stop, prisma disconnect) никогда не срабатывает.
-# db execute снимает застрявшую failed-миграцию (P3009, инцидент 2026-07-16)
-# ДО migrate deploy; идемпотентно (удаляет только незавершённую запись), || true
-# — чтобы на здоровой БД не мешать старту. После стабилизации можно убрать.
-CMD ["sh", "-c", "npx prisma db execute --file prisma/recover-p3009.sql || true; npx prisma migrate deploy && exec node dist/main"]
+# Точка входа — Node-супервизор (deploy/entrypoint.mjs). Front держит публичный
+# порт 3000 с первой секунды; приложение слушает внутренний APP_PORT. Пока идёт
+# старт (recover-p3009 → migrate deploy → буст Nest) или пока приложение
+# крашлупит — клиент видит нашу страницу техработ, а не generic-503 Amvera;
+# приложение подняло APP_PORT — front прозрачно проксирует на него.
+# Node как PID 1 ловит SIGTERM/SIGINT и пробрасывает их дочернему процессу —
+# graceful shutdown (bot.stop, prisma disconnect) сохранён.
+# recover-p3009 снимает застрявшую failed-миграцию (P3009, инцидент 2026-07-16)
+# идемпотентно; после стабилизации env RECOVER_CMD можно свести к `true`.
+CMD ["node", "deploy/entrypoint.mjs"]

@@ -123,36 +123,7 @@ export class NotesService {
     await this.addToMyList(userId, 'myModeIds', modeId);
     return res;
   }
-
-  // ── Therapist: client notes access ───────────────────────────────────────────
-
-  async getClientSchemaNotes(therapistId: bigint, clientId: bigint) {
-    const [rel, client] = await Promise.all([
-      this.prisma.therapyRelation.findFirst({
-        where: { therapistId, clientId, status: 'active' },
-      }),
-      this.prisma.user.findUnique({
-        where: { id: clientId },
-        select: { therapistShareCards: true },
-      }),
-    ]);
-    if (!rel) return null;
-    if (client?.therapistShareCards === false) return [];
-    return this.prisma.userSchemaNote.findMany({ where: { userId: clientId } });
-  }
-
-  async getClientModeNotes(therapistId: bigint, clientId: bigint) {
-    const [rel, client] = await Promise.all([
-      this.prisma.therapyRelation.findFirst({
-        where: { therapistId, clientId, status: 'active' },
-      }),
-      this.prisma.user.findUnique({
-        where: { id: clientId },
-        select: { therapistShareCards: true },
-      }),
-    ]);
-    if (!rel) return null;
-    if (client?.therapistShareCards === false) return [];
-    return this.prisma.userModeNote.findMany({ where: { userId: clientId } });
-  }
 }
+// Доступ терапевта к карточкам клиента жил здесь дублем (без расшифровки!) —
+// единственная реализация теперь в therapy-client-data.service (assertHasClient
+// + therapistShareCards + decryptRecord).

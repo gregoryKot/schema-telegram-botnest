@@ -99,6 +99,32 @@ export class AccountService {
     return user?.role ?? 'CLIENT';
   }
 
+  // Запоминает, в каком представлении терапевт хочет стартовать (кабинет vs
+  // клиентский режим). `therapistMode` — серверный источник правды: localStorage
+  // в Telegram WebView ненадёжен и стирается, из-за чего терапевт «терял» кабинет.
+  // Вызывается только после проверки роли THERAPIST в контроллере (клиент не
+  // может поднять себе therapistMode — это privilege escalation в UI терапевта).
+  async setTherapistMode(userId: bigint, on: boolean): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { therapistMode: on },
+    });
+  }
+
+  // Отказ от роли терапевта: возврат в CLIENT, выключение кабинета и удаление
+  // заявки (чтобы можно было подать заново с чистого листа — иначе 'approved'
+  // блокирует повторную submit). Связи с клиентами не трогаем: role-гейтед
+  // эндпоинты терапевта всё равно вернут 403, пока роль не THERAPIST.
+  async resignTherapist(userId: bigint): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { role: 'CLIENT', therapistMode: false },
+      });
+      await tx.therapistRequest.deleteMany({ where: { userId } });
+    });
+  }
+
   async markUserBlocked(userId: bigint): Promise<void> {
     await this.prisma.user.updateMany({
       where: { id: userId, botBlockedAt: null },

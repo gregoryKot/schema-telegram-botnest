@@ -55,10 +55,13 @@ export function useAddClient({ setClients }: Params) {
     if (!inviteUrl) return;
     if (navigator.share) {
       navigator
-        .share({ text: 'Подключись ко мне в Схема-лабе:', url: inviteUrl })
+        .share({
+          text: 'Подключись ко мне в приложении «Всё по схеме»:',
+          url: inviteUrl,
+        })
         .catch(() => {});
     } else {
-      const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent('Подключись ко мне в Схема-лабе')}`;
+      const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent('Подключись ко мне в приложении «Всё по схеме»')}`;
       window.Telegram?.WebApp?.openLink(tgUrl);
     }
   }

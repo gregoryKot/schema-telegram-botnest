@@ -24,6 +24,7 @@ import {
   JoinTherapyDto,
   VirtualClientDto,
   AddClientDto,
+  TherapistViewDto,
 } from './dto/connection.dto';
 import { RenameClientDto } from './dto/client-data.dto';
 
@@ -170,5 +171,29 @@ export class TherapyConnectionController {
   async getMyRequest(@Req() req: AuthRequest) {
     const row = await this.therapistRequestService.getMine(uid(req));
     return row ?? null;
+  }
+
+  // ─── Therapist view preference / resignation ────────────────────────────
+
+  // Запоминает предпочтение старта (кабинет vs клиент). Только для THERAPIST —
+  // иначе клиент поднял бы себе UI терапевта (privilege escalation).
+  @Post('therapist-view')
+  async setTherapistView(
+    @Req() req: AuthRequest,
+    @Body() body: TherapistViewDto,
+  ) {
+    const role = await this.accountService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.accountService.setTherapistMode(uid(req), body.on);
+    return { ok: true };
+  }
+
+  // Отказ от роли терапевта — возврат в CLIENT (см. AccountService.resignTherapist).
+  @Delete('therapist-role')
+  async resignTherapist(@Req() req: AuthRequest) {
+    const role = await this.accountService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.accountService.resignTherapist(uid(req));
+    return { ok: true };
   }
 }

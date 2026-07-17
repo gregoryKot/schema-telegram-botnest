@@ -380,7 +380,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
       row('ЦЕЛИ СХЕМА-ТЕРАПИИ', c.goals),
       div,
       '',
-      '@SchemeHappens · Схема-лаб',
+      '@SchemeHappens · Всё по схеме',
     ].join('\n');
   }
 

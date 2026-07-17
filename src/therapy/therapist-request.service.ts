@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AccountService } from '../bot/account.service';
+import { notifyAdminWithFallback } from '../utils/admin-alert';
 
 const MAX_NAME = 100;
 const MAX_QUAL = 500;
@@ -27,15 +28,19 @@ export class TherapistRequestService {
   // the circular-import that would create (TelegramModule ↔ TherapyModule).
   // Uses HTML parse_mode to avoid legacy Markdown parse errors for arbitrary
   // user input (names, contacts, etc. may contain *, _, ., -, (, ) etc.).
+  // Returns true only when Telegram accepted the message. Callers that must
+  // reach the admin (notifyAdmin) fall back to e-mail when this returns false —
+  // e.g. after a bot migration the admin hasn't opened the new bot yet, so the
+  // DM fails and the request would otherwise vanish silently.
   private async sendTg(
     chatId: number,
     text: string,
     replyMarkup?: object,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const token = process.env.BOT_TOKEN;
     if (!token) {
       this.logger.warn('sendTg: BOT_TOKEN not set');
-      return;
+      return false;
     }
     const body: {
       chat_id: number;
@@ -55,7 +60,7 @@ export class TherapistRequestService {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       this.logger.warn(`sendTg network error to chat_id=${chatId}: ${msg}`);
-      return;
+      return false;
     }
     if (!res.ok) {
       const err = (await res.json().catch(() => ({}))) as {
@@ -64,7 +69,9 @@ export class TherapistRequestService {
       this.logger.warn(
         `sendTg HTTP ${res.status} for chat_id=${chatId}: ${err.description ?? '(no description)'}`,
       );
+      return false;
     }
+    return true;
   }
 
   private get adminId(): number | null {
@@ -241,7 +248,14 @@ export class TherapistRequestService {
     message: string | null;
   }) {
     if (!this.adminId) {
-      this.logger.warn('notifyAdmin: ADMIN_ID not set, skipping');
+      // Без ADMIN_ID пуш невозможен — но заявку всё равно надо доставить.
+      this.logger.error(
+        'notifyAdmin: ADMIN_ID not set — falling back to email',
+      );
+      await notifyAdminWithFallback(
+        this.plainText(req),
+        `🩺 Заявка на роль терапевта #${req.id}`,
+      );
       return;
     }
     // HTML mode: escape user-supplied text to avoid parse errors.
@@ -251,8 +265,9 @@ export class TherapistRequestService {
       `<b>Квалификация:</b> ${he(req.qualification)}\n` +
       `<b>Контакты:</b> ${he(req.contacts)}\n` +
       (req.message ? `<b>Сообщение:</b> ${he(req.message)}\n` : '') +
-      `<b>Telegram ID:</b> <code>${req.userId}</code>`;
-    await this.sendTg(this.adminId, text, {
+      `<b>Telegram ID:</b> <code>${req.userId}</code>\n\n` +
+      `Список заявок: /zayavki`;
+    const delivered = await this.sendTg(this.adminId, text, {
       inline_keyboard: [
         [
           { text: '✅ Approve', callback_data: `treq:approve:${req.id}` },
@@ -260,6 +275,36 @@ export class TherapistRequestService {
         ],
       ],
     });
+    // Пуш не дошёл (напр. после переезда бота админ ещё не нажал Start) —
+    // гарантированная доставка через e-mail, чтобы заявка не потерялась.
+    if (!delivered) {
+      this.logger.error(
+        `notifyAdmin: Telegram DM to admin failed for request #${req.id} — falling back to email`,
+      );
+      await notifyAdminWithFallback(
+        this.plainText(req),
+        `🩺 Заявка на роль терапевта #${req.id}`,
+      );
+    }
+  }
+
+  private plainText(req: {
+    id: number;
+    userId: bigint;
+    fullName: string;
+    qualification: string;
+    contacts: string;
+    message: string | null;
+  }): string {
+    return (
+      `Новая заявка на роль терапевта #${req.id}\n\n` +
+      `Имя: ${req.fullName}\n` +
+      `Квалификация: ${req.qualification}\n` +
+      `Контакты: ${req.contacts}\n` +
+      (req.message ? `Сообщение: ${req.message}\n` : '') +
+      `Telegram ID: ${req.userId}\n\n` +
+      `Одобрить/отклонить: открой бот и напиши /zayavki`
+    );
   }
 
   private async notifyApplicant(
