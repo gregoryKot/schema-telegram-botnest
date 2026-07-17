@@ -12,6 +12,7 @@ import {
   Theme,
 } from '../utils/theme';
 import { useSetAddressForm } from '../utils/addressForm';
+import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 
 const TIMEZONES = [
   { label: 'Лос-Анджелес (UTC−8)', iana: 'America/Los_Angeles' },
@@ -130,6 +131,10 @@ export function SettingsSheet({
   const [editName, setEditName] = useState(displayName ?? tgName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);
+  const motion = useReducedMotionPref(() => {
+    setSavedToast(true);
+    setTimeout(() => setSavedToast(false), 1800);
+  });
   const setAddressForm = useSetAddressForm();
 
   useEffect(() => {
@@ -636,6 +641,15 @@ export function SettingsSheet({
                       />
                     </div>
                   </div>
+                  {/* Нейроинклюзивность: сниженная анимация (WCAG 2.3.3) */}
+                  <Row
+                    label="Меньше движения"
+                    sub={motion.sub}
+                    divider
+                    right={
+                      <Toggle on={motion.reduced} onClick={motion.toggle} />
+                    }
+                  />
                   {userRole === 'THERAPIST' && onToggleTherapistMode && (
                     <div
                       style={{

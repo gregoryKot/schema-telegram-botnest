@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useUserFlags, setFlag as setServerFlag } from './useUserFlags';
 import { applyTheme, getTheme } from './utils/theme';
+import { syncMotionAttr } from './utils/reducedMotion';
 import { Need, DayHistory } from './types';
 
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
+syncMotionAttr();
 import { api } from './api';
 import { DEFAULT_SECTION_KEY } from './sections/ProfileSection';
 import { Section } from './components/BottomNav';

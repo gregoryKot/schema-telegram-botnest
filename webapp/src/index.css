@@ -1578,3 +1578,25 @@ textarea:focus-visible {
 /* Node body shows a grab hand, not the 4-arrow move cross (the confusing «крестик») */
 .react-flow__node { cursor: grab; }
 .react-flow__node:active { cursor: grabbing; }
+
+/* ── Reduced motion (нейроинклюзивность) ───────────────────────────────────────
+   Системный prefers-reduced-motion ИЛИ ручной выбор в настройках
+   (utils/reducedMotion.ts ставит html[data-reduce-motion="1"]).
+   Блок продублирован: media query и атрибут не объединить в один селектор.
+   !important нужен, чтобы перебить инлайновые style={{ transition, animation }}. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+html[data-reduce-motion="1"] *,
+html[data-reduce-motion="1"] *::before,
+html[data-reduce-motion="1"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
