@@ -8,70 +8,74 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overscroll-behavior: none; }
 
-/* ── Dark theme (default) ──────────────────────────────────────────────────── */
+/* ── Dark theme (default) ──────────────────────────────────────────────────────
+   Палитра дизайн-макета «СхемаЛаб — Сегодня» (тёплая «бумага» в светлой,
+   мягкий графит в тёмной). Имена токенов сохранены — все экраны и компоненты
+   перекрашиваются без правок. Карточки СПЛОШНЫЕ (не стекло) — как в макете.
+   Фоновые «блобы» убраны: макет — плоский, ровный фон (меньше сенсорного шума). */
 :root {
-  --fg-rgb:        238, 240, 250;
-  --bg:            #07091c;
-  --sheet-bg:      #111428;
-  --text:          #eef0fa;
-  --nav-bg:        rgba(7, 9, 28, 0.93);
-  --text-sub:      rgba(238, 240, 250, 0.50);
-  --text-faint:    rgba(238, 240, 250, 0.28);
+  --fg-rgb:        240, 240, 246;
+  --bg:            #191b25;
+  --sheet-bg:      #23252f;
+  --text:          #f0f0f6;
+  --nav-bg:        rgba(25, 27, 37, 0.82);
+  --text-sub:      rgba(240, 240, 246, 0.62);
+  --text-faint:    rgba(240, 240, 246, 0.40);
   --chip-sel-text: #ffffff;
   --on-accent:     #ffffff;
 
-  /* Accent palette — slightly warmer indigo */
-  --accent:        #7c72f8;
-  --accent-indigo: #818cf8;
-  --accent-orange: #fb923c;
-  --accent-blue:   #60a5fa;
-  --accent-green:  #4ade80;
+  /* Accent palette — макет (тёмная тема) */
+  --accent:        #8f86ff;
+  --accent-indigo: #9a8dff;
+  --accent-orange: #f7ad4d;
+  --accent-blue:   #5aa8f7;
+  --accent-green:  #42d19d;
   --accent-yellow: #facc15;
-  --accent-red:    #f87171;
-  --accent-pink:   #f472b6;
+  --accent-red:    #f7708a;
+  --accent-pink:   #f77aa3;
 
-  /* New surface tokens */
-  --surface:       rgba(255, 255, 255, 0.075);
-  --surface-2:     rgba(255, 255, 255, 0.11);
-  --border-color:  rgba(255, 255, 255, 0.13);
-  --track-color:   rgba(255, 255, 255, 0.07);
-  --sheet-bg-2:    #0c0e28;
+  /* Solid surfaces (как в макете) */
+  --surface:       #23252f;
+  --surface-2:     #282b37;
+  --border-color:  rgba(255, 255, 255, 0.09);
+  --track-color:   rgba(255, 255, 255, 0.10);
+  --sheet-bg-2:    #1f212b;
 
-  /* Ambient blobs */
-  --blob-1: rgba(42, 22, 128, 0.22);
-  --blob-2: rgba(14, 58, 110, 0.18);
+  /* Плоский фон макета — блобы отключены */
+  --blob-1: rgba(0, 0, 0, 0);
+  --blob-2: rgba(0, 0, 0, 0);
 }
 
-/* ── Light theme ───────────────────────────────────────────────────────────── */
+/* ── Light theme («бумага» макета) ─────────────────────────────────────────── */
 html[data-theme="light"] {
-  --fg-rgb:        22, 19, 44;
-  --bg:            #edeaf5;
+  --fg-rgb:        43, 41, 52;
+  --bg:            #f4f0e9;
   --sheet-bg:      #ffffff;
-  --text:          #16132c;
-  --nav-bg:        rgba(237, 234, 245, 0.97);
-  --text-sub:      rgba(22, 19, 44, 0.58);
-  --text-faint:    rgba(22, 19, 44, 0.35);
-  --chip-sel-text: #16132c;
+  --text:          #2b2934;
+  --nav-bg:        rgba(244, 240, 233, 0.86);
+  --text-sub:      rgba(43, 41, 52, 0.60);
+  --text-faint:    rgba(43, 41, 52, 0.40);
+  --chip-sel-text: #2b2934;
   --on-accent:     #ffffff;
 
-  /* Darker accents for WCAG AA on light bg */
-  --accent:        #4f46e5;
-  --accent-indigo: #4338ca;
-  --accent-orange: #c2410c;
-  --accent-blue:   #2563eb;
-  --accent-green:  #059669;
-  --accent-yellow: #92400e;
-  --accent-red:    #dc2626;
-  --accent-pink:   #db2777;
+  /* Accent palette — макет (светлая тема) */
+  --accent:        #6d5efc;
+  --accent-indigo: #6d5efc;
+  --accent-orange: #d97706;
+  --accent-blue:   #2f7fe0;
+  --accent-green:  #0f9d67;
+  --accent-yellow: #b45309;
+  --accent-red:    #e5484d;
+  --accent-pink:   #ec5f8b;
 
-  /* Pure white surfaces — cards pop against lavender background */
+  /* Тёплые бумажные поверхности */
   --surface:       #ffffff;
-  --surface-2:     rgba(22, 19, 44, 0.05);
-  --border-color:  rgba(22, 19, 44, 0.09);
-  --track-color:   rgba(22, 19, 44, 0.09);
-  --sheet-bg-2:    #f5f3ff;
+  --surface-2:     #faf8f3;
+  --border-color:  rgba(43, 41, 52, 0.08);
+  --track-color:   rgba(43, 41, 52, 0.07);
+  --sheet-bg-2:    #faf8f3;
 
-  /* No ambient blobs in light theme — clean flat background */
+  /* Плоский фон макета — блобов нет */
   --blob-1: rgba(0, 0, 0, 0);
   --blob-2: rgba(0, 0, 0, 0);
 }
