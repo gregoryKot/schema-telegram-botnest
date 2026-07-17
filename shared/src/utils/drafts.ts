@@ -15,7 +15,7 @@ export function saveDraft<T>(type: DiaryType, data: T) {
   const draft: DiaryDraft<T> = { startedAt: new Date().toISOString(), data };
   try {
     localStorage.setItem(DRAFT_KEYS[type], JSON.stringify(draft));
-  } catch {}
+  } catch { /* best-effort: ошибку намеренно игнорируем */ }
 }
 
 export function loadDraft<T>(type: DiaryType): DiaryDraft<T> | null {

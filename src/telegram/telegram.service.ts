@@ -789,7 +789,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async onModuleDestroy() {
+  onModuleDestroy() {
     this.stopping = true;
     try {
       this.bot?.stop();

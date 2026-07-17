@@ -11,7 +11,6 @@ import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { api, UserTask, TherapyRelationInfo } from '../api';
 import { BottomSheet } from '../components/BottomSheet';
-import { SectionLabel } from '../components/SectionLabel';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
@@ -107,8 +106,6 @@ export function HelpSection({
   refreshKey,
   initialTasks,
   onTasksChanged,
-  userRole,
-  onOpenTherapistCabinet,
 }: Props) {
   const safeTop = useSafeTop();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
@@ -155,7 +152,6 @@ export function HelpSection({
     };
   }, [refreshKey]);
 
-  const myTasks = tasks.filter((t) => t.assignedBy === null);
   const therapistTasks = tasks.filter((t) => t.assignedBy !== null);
 
   function openTask(task: UserTask) {
