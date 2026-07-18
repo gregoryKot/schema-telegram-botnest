@@ -5,7 +5,7 @@
 // на экран»). Когда трекер заполнен — спокойное состояние «на сегодня всё»,
 // без давления сделать больше.
 import { useTr } from '../utils/addressForm';
-import { pressable } from '../utils/a11y';
+import { HeroCta } from './HeroCta';
 
 interface Props {
   ratedCount: number;
@@ -144,94 +144,19 @@ export function TodayFocusCard({
     );
   }
 
-  // Крупная акцентная CTA по дизайн-макету: фиолетовая карточка, белая кнопка
+  // Крупная акцентная CTA по дизайн-макету — общий HeroCta
   return (
-    <div
-      {...pressable(onOpenTracker)}
-      style={{
-        borderRadius: 24,
-        padding: 20,
-        cursor: 'pointer',
-        WebkitTapHighlightColor: 'transparent',
-        background: 'var(--accent)',
-        color: 'var(--on-accent)',
-        boxShadow:
-          '0 14px 34px color-mix(in srgb, var(--accent) 35%, transparent)',
-        animation: 'slide-up 0.3s ease both',
-        animationDelay: '80ms',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            opacity: 0.85,
-          }}
-        >
-          Одно дело на сегодня
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            background: 'rgba(255,255,255,0.22)',
-            padding: '4px 10px',
-            borderRadius: 99,
-            flexShrink: 0,
-          }}
-        >
-          ⏱ ≈1 мин
-        </div>
-      </div>
-      <div
-        style={{
-          fontSize: 22,
-          fontWeight: 800,
-          letterSpacing: '-0.02em',
-          marginTop: 10,
-          lineHeight: 1.2,
-        }}
-      >
-        Заполнить трекер потребностей
-      </div>
-      <div
-        style={{ fontSize: 13, opacity: 0.9, marginTop: 6, lineHeight: 1.45 }}
-      >
-        {ratedCount > 0
+    <HeroCta
+      label="Одно дело на сегодня"
+      chip="⏱ ≈1 мин"
+      title="Заполнить трекер потребностей"
+      sub={
+        ratedCount > 0
           ? `Осталось ${left} из ${total} — сохраняется само`
-          : 'Пять оценок о том, как прошёл день. Сохраняется само.'}
-      </div>
-      <button
-        style={{
-          marginTop: 15,
-          width: '100%',
-          background: '#fff',
-          color: 'var(--accent)',
-          fontSize: 15,
-          fontWeight: 800,
-          padding: 13,
-          borderRadius: 14,
-          border: 'none',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 6,
-        }}
-      >
-        {ratedCount > 0 ? 'Продолжить' : 'Начать'}
-        <span style={{ fontSize: 17 }}>→</span>
-      </button>
-    </div>
+          : 'Пять оценок о том, как прошёл день. Сохраняется само.'
+      }
+      buttonLabel={ratedCount > 0 ? 'Продолжить' : 'Начать'}
+      onClick={onOpenTracker}
+    />
   );
 }

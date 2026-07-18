@@ -14,7 +14,12 @@ import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { PatternsHero } from '../components/PatternsHero';
-import { weekSchemaSummary, WeekSchemaSummary } from '../utils/patternsSummary';
+import { ModesHero, INTRO_MODE_ID } from '../components/ModesHero';
+import {
+  weekSchemaSummary,
+  weekModeSummary,
+  WeekTopSummary,
+} from '../utils/patternsSummary';
 
 /** color-mix: works with CSS vars AND hex. Replaces the old hex-alpha hack. */
 function cm(color: string, pct: number) {
@@ -77,20 +82,41 @@ interface Props {
 
 type Tab = 'schemas' | 'modes' | 'needs';
 
-// Заголовок сворачиваемой группы (домены схем / группы режимов) — одна
-// механика, один компонент: точка-цвет + название + счётчик + шеврон.
-function GroupHeader({
-  onToggle,
+// Скелетон чип-строки и заголовок группы каталога — общие для вкладок
+// «Схемы» и «Режимы» (правило «одна механика — один компонент»)
+function ChipsSkeleton({ widths }: { widths: number[] }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {widths.map((w, i) => (
+        <div
+          key={i}
+          style={{
+            height: 32,
+            width: w,
+            borderRadius: 20,
+            background:
+              'linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%)',
+            backgroundSize: '200% auto',
+            animation: 'shimmer 1.5s linear infinite',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function CatalogHeader({
   color,
-  title,
+  name,
   count,
-  isOpen,
+  open,
+  onToggle,
 }: {
-  onToggle: () => void;
   color: string;
-  title: string;
+  name: string;
   count: number;
-  isOpen: boolean;
+  open: boolean;
+  onToggle: () => void;
 }) {
   return (
     <div
@@ -109,12 +135,12 @@ function GroupHeader({
             width: 8,
             height: 8,
             borderRadius: '50%',
-            background: color,
+            background: hex(color),
             flexShrink: 0,
           }}
         />
         <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-          {title}
+          {name}
         </span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -132,7 +158,7 @@ function GroupHeader({
             color: 'var(--text-faint)',
             fontSize: 14,
             display: 'inline-block',
-            transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+            transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
             transition: 'transform 0.2s',
           }}
         >
@@ -172,9 +198,8 @@ export function SchemasSection({
     new Set(),
   );
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
-  const [weekSummary, setWeekSummary] = useState<WeekSchemaSummary | null>(
-    null,
-  );
+  const [weekSummary, setWeekSummary] = useState<WeekTopSummary | null>(null);
+  const [modeSummary, setModeSummary] = useState<WeekTopSummary | null>(null);
   const safeTop = useSafeTop();
 
   useEffect(() => {
@@ -200,6 +225,10 @@ export function SchemasSection({
     api
       .getSchemaDiary()
       .then((entries) => setWeekSummary(weekSchemaSummary(entries)))
+      .catch(() => {});
+    api
+      .getModeDiary()
+      .then((entries) => setModeSummary(weekModeSummary(entries)))
       .catch(() => {});
   }, []);
 
@@ -369,22 +398,7 @@ export function SchemasSection({
                   Мои схемы
                 </div>
                 {profileLoading ? (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {[80, 100, 90, 110].map((w, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          height: 32,
-                          width: w,
-                          borderRadius: 20,
-                          background:
-                            'linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%)',
-                          backgroundSize: '200% auto',
-                          animation: 'shimmer 1.5s linear infinite',
-                        }}
-                      />
-                    ))}
-                  </div>
+                  <ChipsSkeleton widths={[80, 100, 90, 110]} />
                 ) : (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {allSchemaIds.map((id) => {
@@ -516,12 +530,12 @@ export function SchemasSection({
                         overflow: 'hidden',
                       }}
                     >
-                      <GroupHeader
-                        onToggle={() => toggleDomain(domain.id)}
-                        color={hex(c)}
-                        title={domain.domain}
+                      <CatalogHeader
+                        color={c}
+                        name={domain.domain}
                         count={domain.schemas.length}
-                        isOpen={isOpen}
+                        open={isOpen}
+                        onToggle={() => toggleDomain(domain.id)}
                       />
                       {isOpen && (
                         <div
@@ -568,86 +582,86 @@ export function SchemasSection({
         {/* ══════════════════════ РЕЖИМЫ ══════════════════════ */}
         {tab === 'modes' && (
           <>
+            {/* Hero: новичку — знакомство с Критиком; опытному — сводка недели */}
+            {!profileLoading && (
+              <ModesHero
+                hasModes={myModeIds.length > 0}
+                summary={modeSummary}
+                onMeetCritic={() => setIntroModeId(INTRO_MODE_ID)}
+                onOpenLibrary={() => onOpenSchema({ tab: 'modes' })}
+                onPickManually={() => setShowModePicker(true)}
+                onOpenModeDetail={(id) => setIntroModeId(id)}
+                onOpenDiaries={onOpenDiaries}
+              />
+            )}
+
             {/* МОИ РЕЖИМЫ */}
-            <div>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.10em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text-faint)',
-                  marginBottom: 10,
-                }}
-              >
-                Мои режимы
-              </div>
-              {profileLoading ? (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {[90, 110, 80].map((w, i) => (
-                    <div
-                      key={i}
+            {myModeIds.length > 0 && (
+              <div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.10em',
+                    textTransform: 'uppercase',
+                    color: 'var(--text-faint)',
+                    marginBottom: 10,
+                  }}
+                >
+                  Мои режимы
+                </div>
+                {profileLoading ? (
+                  <ChipsSkeleton widths={[90, 110, 80]} />
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {myModes.map((m) => {
+                      const c = m.groupColor; // CSS variable
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => setIntroModeId(m.id)}
+                          style={{
+                            padding: '6px 13px',
+                            borderRadius: 20,
+                            border: `1.5px solid ${cm(c, 35)}`,
+                            background: cm(c, 9),
+                            color: c,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            WebkitTapHighlightColor: 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                          }}
+                        >
+                          <span style={{ fontSize: 14 }}>{m.emoji}</span>
+                          {m.name}
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => setShowModePicker(true)}
                       style={{
-                        height: 32,
-                        width: w,
+                        padding: '6px 13px',
                         borderRadius: 20,
-                        background:
-                          'linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%)',
-                        backgroundSize: '200% auto',
-                        animation: 'shimmer 1.5s linear infinite',
+                        border: '1.5px dashed var(--border-color)',
+                        background: 'transparent',
+                        color: 'var(--text-sub)',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        WebkitTapHighlightColor: 'transparent',
                       }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {myModes.map((m) => {
-                    const c = m.groupColor; // CSS variable
-                    return (
-                      <button
-                        key={m.id}
-                        onClick={() => setIntroModeId(m.id)}
-                        style={{
-                          padding: '6px 13px',
-                          borderRadius: 20,
-                          border: `1.5px solid ${cm(c, 35)}`,
-                          background: cm(c, 9),
-                          color: c,
-                          fontSize: 13,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          fontFamily: 'inherit',
-                          WebkitTapHighlightColor: 'transparent',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 5,
-                        }}
-                      >
-                        <span style={{ fontSize: 14 }}>{m.emoji}</span>
-                        {m.name}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => setShowModePicker(true)}
-                    style={{
-                      padding: '6px 13px',
-                      borderRadius: 20,
-                      border: '1.5px dashed var(--border-color)',
-                      background: 'transparent',
-                      color: 'var(--text-sub)',
-                      fontSize: 13,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      WebkitTapHighlightColor: 'transparent',
-                    }}
-                  >
-                    + Добавить
-                  </button>
-                </div>
-              )}
-            </div>
+                    >
+                      + Добавить
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* ВСЕ РЕЖИМЫ */}
             <div>
@@ -677,12 +691,12 @@ export function SchemasSection({
                         overflow: 'hidden',
                       }}
                     >
-                      <GroupHeader
-                        onToggle={() => toggleModeGroup(group.id)}
-                        color={hex(c)}
-                        title={group.group}
+                      <CatalogHeader
+                        color={c}
+                        name={group.group}
                         count={group.items.length}
-                        isOpen={isOpen}
+                        open={isOpen}
+                        onToggle={() => toggleModeGroup(group.id)}
                       />
                       {isOpen && (
                         <div
