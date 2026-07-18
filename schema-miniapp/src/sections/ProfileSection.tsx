@@ -8,6 +8,7 @@ import { MyNotesSheet } from '../components/MyNotesSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
+import { ComfortCard } from '../components/ComfortCard';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
@@ -282,6 +283,9 @@ export function ProfileSection({
             ))}
           </>
         )}
+
+        {/* ── Комфорт (дизайн-макет): тема/движение/напоминания в один тап ── */}
+        {ready && <ComfortCard onOpenNotifications={onOpenSettings} />}
 
         {/* ── Стрик ── */}
         {ready && streak !== null && (
