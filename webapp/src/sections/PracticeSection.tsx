@@ -10,6 +10,7 @@ import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { fmtDate } from '../utils/format';
 import type { UserTask, TherapyRelationInfo } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { pressable } from '../utils/a11y';
 
 const BeliefCheckEx    = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const SchemaEx         = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
@@ -79,7 +80,7 @@ function AllGoalsOverlay({ tasks, taskHistory, onClose, onOpen, onAdd }: {
       <div style={{ overflowY: 'auto', padding: '32px 24px 80px', maxWidth: 560, margin: '0 auto', width: '100%' }}>
         <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, marginBottom: 24 }}>Все цели</h1>
         {tasks.map(t => (
-          <div key={t.id} className="list-line" style={{ cursor: 'pointer' }} onClick={() => onOpen(t)}>
+          <div key={t.id} className="list-line" style={{ cursor: 'pointer' }} {...pressable(() => onOpen(t))}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="text-md" style={{ fontWeight: 500 }}>{resolveText(t)}</div>
               {t.dueDate && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>до {fmtDate(t.dueDate)}</div>}
@@ -255,7 +256,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
             <span className="hint">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>
           </div>
           {therapistTasks.map(task => (
-            <div key={task.id} className="list-line" style={{ cursor: 'pointer' }} onClick={() => openTask(task)}>
+            <div key={task.id} className="list-line" style={{ cursor: 'pointer' }} {...pressable(() => openTask(task))}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 4 }}>от терапевта</div>
                 <div className="text-md" style={{ fontWeight: 500 }}>{resolveText(task)}</div>
@@ -274,7 +275,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           {EXERCISES.map(ex => {
             const s = stats[ex.id];
             return (
-              <div key={ex.id} className="ex-card" onClick={() => { setSchemaInitialId(undefined); setOpenEx(ex.id); }}>
+              <div key={ex.id} className="ex-card" {...pressable(() => { setSchemaInitialId(undefined); setOpenEx(ex.id); })}>
                 <div className="ex-card-glyph" style={{ color: ex.color }}><ExGlyph id={ex.id} /></div>
                 <div className="ex-card-body">
                   <div className="ex-card-eyebrow" style={{ color: ex.color }}>№ {ex.num} · {ex.eyebrow}</div>
@@ -307,7 +308,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
             { label: 'Карта режимов',   sub: 'Найди Уязвимого Ребёнка, Критика, Защитника',         color: 'var(--c-slate)', onClick: () => onOpenSchema?.({ tab: 'modes' }) },
             { label: 'Колесо детства',  sub: 'Как удовлетворялись потребности в детстве',           color: 'var(--accent-indigo)', onClick: onOpenChildhoodWheel, done: childhoodDone },
           ].map(item => (
-            <div key={item.label} onClick={item.onClick}
+            <div key={item.label} {...pressable(item.onClick)}
                  style={{ cursor: 'pointer', padding: '20px 0', borderTop: `2px solid ${item.color}` }}>
               <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{item.label}</div>
               <div className="text-sm muted" style={{ lineHeight: 1.55 }}>{item.sub}</div>
@@ -329,7 +330,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           </div>
         ) : (
           myGoals.slice(0, 4).map(task => (
-            <div key={task.id} className="list-line" style={{ cursor: 'pointer' }} onClick={() => openTask(task)}>
+            <div key={task.id} className="list-line" style={{ cursor: 'pointer' }} {...pressable(() => openTask(task))}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="text-md" style={{ fontWeight: 500 }}>{resolveText(task)}</div>
                 {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>до {fmtDate(task.dueDate)}</div>}
@@ -341,7 +342,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         <div style={{ display: 'flex', gap: 18, marginTop: 16, alignItems: 'center' }}>
           <button className="btn btn-secondary" onClick={() => setShowTaskCreate(true)}>+ Поставить цель</button>
           {(myGoals.length > 4 || taskHistory.length > 0) && (
-            <span className="link" style={{ cursor: 'pointer' }} onClick={() => setShowAllGoals(true)}>все цели →</span>
+            <span className="link" style={{ cursor: 'pointer' }} {...pressable(() => setShowAllGoals(true))}>все цели →</span>
           )}
         </div>
       </div>
@@ -353,7 +354,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           { label: 'Практики',  sub: 'Рекомендованные упражнения по потребностям', onClick: onOpenPractices },
           { label: 'Планы',     sub: 'Планы поддержки и кризисов',                  onClick: onOpenPlans },
         ].map(item => (
-          <div key={item.label} className="list-line" style={{ cursor: 'pointer' }} onClick={item.onClick}>
+          <div key={item.label} className="list-line" style={{ cursor: 'pointer' }} {...pressable(item.onClick)}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="text-md" style={{ fontWeight: 500 }}>{item.label}</div>
               <div className="text-sm muted" style={{ marginTop: 3 }}>{item.sub}</div>

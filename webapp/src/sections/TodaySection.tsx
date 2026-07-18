@@ -11,6 +11,7 @@ import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { hasDraft } from '../utils/drafts';
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
@@ -342,7 +343,7 @@ export function TodaySection({
 
           {/* Therapist cabinet – calm link block */}
           {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
-            <div onClick={onOpenTherapistCabinet} className="list-line" style={{ cursor: 'pointer', marginBottom: 24 }}>
+            <div {...pressable(onOpenTherapistCabinet)} className="list-line" style={{ cursor: 'pointer', marginBottom: 24 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="eyebrow" style={{ marginBottom: 4 }}>Терапевт</div>
                 <div className="text-md" style={{ fontWeight: 600 }}>Кабинет терапевта</div>
@@ -377,7 +378,7 @@ export function TodaySection({
               const filled = value !== undefined;
               return (
                 <div key={n.id} style={{ borderBottom: '1px solid var(--line)' }}
-                     onClick={() => onOpenTrackerAt ? onOpenTrackerAt(n.id) : onOpenTracker()}>
+                     {...pressable(() => onOpenTrackerAt ? onOpenTrackerAt(n.id) : onOpenTracker())}>
                   <div className="need-row" style={{ cursor: 'pointer' }}>
                     <span style={{ fontSize: 13, color: 'var(--text)' }}>
                       {NEED_DATA[n.id]?.name ?? n.chartLabel}
@@ -458,7 +459,7 @@ export function TodaySection({
                   const labels = { schema: 'Дневник схем', mode: 'Дневник режимов', gratitude: 'Благодарность' };
                   const colors = { schema: 'var(--c-rose)', mode: 'var(--c-slate)', gratitude: 'var(--c-moss)' };
                   return (
-                    <div key={type} onClick={onOpenDiaries} className="list-line" style={{ cursor: 'pointer' }}>
+                    <div key={type} {...pressable(onOpenDiaries)} className="list-line" style={{ cursor: 'pointer' }}>
                       <div style={{ width: 3, height: 28, borderRadius: 3, background: colors[type], flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors[type] }}>Черновик</div>
@@ -485,7 +486,7 @@ export function TodaySection({
                 {recentDiaries.map((entry, i) => {
                   const color = DIARY_COLORS[entry.type] ?? '#aaa';
                   return (
-                    <div key={i} className="list-line" onClick={onOpenDiaries} style={{ cursor: 'pointer' }}>
+                    <div key={i} className="list-line" {...pressable(onOpenDiaries)} style={{ cursor: 'pointer' }}>
                       <div style={{ width: 3, height: 28, borderRadius: 3, background: color, flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.label}</div>
@@ -509,7 +510,7 @@ export function TodaySection({
 
           {/* Index */}
           <div className="eyebrow" style={{ marginBottom: 10 }}>Индекс сегодня</div>
-          <div onClick={onOpenTrackerHistory} style={{ cursor: onOpenTrackerHistory ? 'pointer' : undefined }}>
+          <div {...(onOpenTrackerHistory ? pressable(onOpenTrackerHistory) : {})} style={{ cursor: onOpenTrackerHistory ? 'pointer' : undefined }}>
             <div style={{ fontSize: 54, fontWeight: 500, letterSpacing: '-0.04em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
               {avgScore ?? '–'}
             </div>
@@ -721,7 +722,7 @@ function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdvanced, o
         const isCurrent = s.id === visibleStep.id;
         return (
           <div key={s.id} className="list-line" style={{ cursor: 'pointer', opacity: isSkipped ? 0.5 : 1 }}
-               onClick={() => setSelectedId(s.id)}>
+               {...pressable(() => setSelectedId(s.id))}>
             <span style={{
               width: 14, height: 14, borderRadius: 4,
               border: `1.5px solid ${isDone ? 'var(--c-moss)' : isCurrent ? 'var(--accent)' : 'var(--line-strong)'}`,
@@ -738,10 +739,23 @@ function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdvanced, o
             </div>
             {isCurrent && !isDone ? (
               <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexShrink: 0 }}>
-                <span className="link" style={{ cursor: 'pointer' }} onClick={e => { e.stopPropagation(); handleSkip(s); }}>
+                <span
+                  className="link"
+                  style={{ cursor: 'pointer' }}
+                  role="button"
+                  tabIndex={0}
+                  onClick={e => { e.stopPropagation(); handleSkip(s); }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSkip(s); } }}
+                >
                   отложить
                 </span>
-                <span className="link" onClick={e => { e.stopPropagation(); handleAction(s); }}>
+                <span
+                  className="link"
+                  role="button"
+                  tabIndex={0}
+                  onClick={e => { e.stopPropagation(); handleAction(s); }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAction(s); } }}
+                >
                   начать →
                 </span>
               </div>
@@ -757,7 +771,7 @@ function OnboardingWidget({ profile, hasSchemas, onOpenSchema, onOpenAdvanced, o
       {pendingSteps.length === 0 && skipped.length > 0 && (
         <div style={{ marginTop: 14 }}>
           <span className="link" style={{ cursor: 'pointer' }}
-                onClick={() => { setSkipped([]); localStorage.removeItem(ONBOARDING_SKIPPED_KEY); }}>
+                {...pressable(() => { setSkipped([]); localStorage.removeItem(ONBOARDING_SKIPPED_KEY); })}>
             вернуть отложенные →
           </span>
         </div>

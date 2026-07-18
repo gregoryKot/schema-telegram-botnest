@@ -3,6 +3,7 @@
 // в main.tsx остаётся последним рубежом (краш вне секций / в самом App).
 // Аналог webapp/src/components/ErrorBoundary.tsx, стили — миниаппные.
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportClientError } from '../api';
 
 interface Props {
   children: ReactNode;
@@ -25,6 +26,20 @@ export class ErrorBoundary extends Component<Props, State> {
       error,
       info?.componentStack,
     );
+    // Видимость прода (2026-07): краш раздела уезжает на бэкенд → DM админу.
+    // Chunk-load после деплоя — не баг, глобальный boundary/релоад его лечит.
+    const isChunk =
+      /Failed to fetch dynamically imported module|Loading chunk|Loading CSS chunk/i.test(
+        error.message,
+      );
+    if (!isChunk) {
+      reportClientError({
+        message: error.message,
+        section: this.props.section,
+        stack: error.stack,
+        componentStack: info?.componentStack ?? undefined,
+      });
+    }
   }
 
   render() {

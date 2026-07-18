@@ -114,7 +114,6 @@ export function ModeMapSelector({ clientId }: Props) {
                   border: '1.5px solid var(--accent)', background: 'var(--bg-elev)',
                   color: 'var(--text)', outline: 'none', width: 120,
                 }}
-                autoFocus
               />
             ) : (
               <div style={{
@@ -169,7 +168,10 @@ export function ModeMapSelector({ clientId }: Props) {
       {/* Kind picker — fixed so the tab bar's overflow can't clip it */}
       {pickKind && menuPos && (
         <>
-          <div onClick={() => setPickKind(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+          <div role="button" tabIndex={0} aria-label="Закрыть"
+            onClick={() => setPickKind(false)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPickKind(false); } }}
+            style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
           <div style={{
             position: 'fixed', left: menuPos.x, top: menuPos.y, zIndex: 61, width: 280,
             background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8,

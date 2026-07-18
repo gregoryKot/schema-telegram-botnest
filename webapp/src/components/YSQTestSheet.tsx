@@ -2,6 +2,7 @@ import { useTr } from '../utils/addressForm';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { getTherapistContact } from '../utils/therapistContact';
+import { pressable } from '../utils/a11y';
 import { api } from '../api';
 import {
   useYsqTest,
@@ -304,7 +305,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                       </div>
 
                       <div
-                        onClick={() => onViewSchemas ? onViewSchemas(schema.name) : goBack()}
+                        {...pressable(() => (onViewSchemas ? onViewSchemas(schema.name) : goBack()))}
                         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0', marginBottom: showDiaryHint ? 8 : 0 }}
                       >
                         <span style={{ fontSize: 13, color: 'var(--accent)' }}>Читать карточку схемы</span>

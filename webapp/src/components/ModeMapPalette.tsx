@@ -233,7 +233,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                     style={{ ...miniInputStyle, width: 34, textAlign: 'center', fontSize: 15 }} maxLength={2} />
                   <input value={newName} onChange={e => setNewName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveCustomMode(); if (e.key === 'Escape') setAdding(false); }}
-                    placeholder="Название…" style={{ ...miniInputStyle, flex: 1 }} autoFocus />
+                    placeholder="Название…" style={{ ...miniInputStyle, flex: 1 }} />
                 </div>
 
                 {/* Shape picker — visual buttons */}

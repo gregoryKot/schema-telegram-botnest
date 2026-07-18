@@ -5,6 +5,7 @@ import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
 import { fmtDate } from '../utils/format';
+import { pressable } from '../utils/a11y';
 
 interface Props {
   needs: Need[];
@@ -310,13 +311,22 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
             display: 'flex',
             alignItems: 'flex-end',
           }}
-          onClick={() => {
+          aria-label="Закрыть"
+          {...pressable(() => {
             setFallbackText(null);
             setFallbackCopied(false);
-          }}
+          })}
         >
           <div
+            role="button"
+            tabIndex={0}
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
             style={{
               background: 'var(--bg)',
               borderRadius: '20px 20px 0 0',

@@ -524,7 +524,9 @@ function Dropdown({ children, onClose, anchorRef }: {
   }, [anchorRef]);
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 39 }} />
+      <div role="button" tabIndex={0} aria-label="Закрыть" onClick={onClose}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
+        style={{ position: 'fixed', inset: 0, zIndex: 39 }} />
       {pos && (
         <div style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 40, width: 220,
           background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 8,

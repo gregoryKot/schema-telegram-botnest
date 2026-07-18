@@ -9,6 +9,7 @@ import { TrackerController } from './tracker.controller';
 import { HealthController } from './health.controller';
 import { DiaryController } from './diary.controller';
 import { BookingController } from './booking.controller';
+import { ClientErrorsController } from './client-errors.controller';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -35,6 +36,7 @@ import { AuthModule } from '../auth/auth.module';
     DiaryController,
     BookingController,
     HealthController,
+    ClientErrorsController,
   ],
   providers: [TelegramAuthGuard],
 })
