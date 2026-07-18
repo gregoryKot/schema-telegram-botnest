@@ -4,7 +4,7 @@ import '@xyflow/react/dist/style.css';
 
 import type { ModeMapNode, ModeMapEdge, ModeMapKind } from '../api';
 import { api } from '../api';
-import { NODE_DEFAULT_SIZES } from './ModeMapNodes';
+import { NODE_DEFAULT_SIZES } from './modeMapData';
 import { ModeMapPalette } from './ModeMapPalette';
 import { ModeMapNodeEditor, ModeMapEdgeEditor } from './ModeMapNodeEditor';
 import { ModeMapCanvas } from './ModeMapCanvas';

@@ -1,18 +1,7 @@
-/* eslint-disable react-refresh/only-export-components -- файл намеренно держит компонент рядом с его константами/хуками; вынос в отдельный файл — churn ради dev-only Fast Refresh, на прод-рантайм не влияет */
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { AuthContext } from './authContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-
-interface AuthState {
-  accessToken: string | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  setAccessToken: (token: string, expiresIn: number) => void;
-  logout: (all?: boolean) => Promise<void>;
-  refreshToken: () => Promise<boolean>;
-}
-
-const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setTokenState] = useState<string | null>(null);
@@ -135,8 +124,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
-}
