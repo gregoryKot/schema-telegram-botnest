@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams, NavLink } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/authContext';
 import { api } from '../api';
 import type { Need, DayHistory } from '../types';
 import { applyTheme, getTheme } from '../utils/theme';

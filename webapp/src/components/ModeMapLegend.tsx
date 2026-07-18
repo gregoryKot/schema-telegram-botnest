@@ -1,4 +1,4 @@
-import { TYPE_COLORS } from './ModeMapNodes';
+import { TYPE_COLORS } from './modeMapData';
 import { MMIcon } from './modeMapIcons';
 
 const ITEMS: { label: string; shape: 'cloud' | 'circle' | 'oct' | 'penta' | 'shield' | 'pill' | 'rect'; color: string }[] = [

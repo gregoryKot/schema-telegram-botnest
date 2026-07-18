@@ -1,10 +1,10 @@
 {
   "webapp/src/components/AddressFormPicker.tsx": 3,
   "webapp/src/components/NeedDetailSheet.tsx": 1,
-  "webapp/src/components/PlanSheet.tsx": 1,
   "webapp/src/components/SettingsSheet.tsx": 4,
   "webapp/src/components/exercises/ChildhoodWheelEx.tsx": 1,
   "webapp/src/components/modeMapTips.ts": 5,
+  "webapp/src/components/practiceCurated.ts": 1,
   "webapp/src/pages/AccountPage.tsx": 2,
   "webapp/src/pages/MergePage.tsx": 1,
   "webapp/src/pages/RecoveryPage.tsx": 1,

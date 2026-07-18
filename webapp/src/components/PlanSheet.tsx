@@ -1,10 +1,10 @@
-/* eslint-disable react-refresh/only-export-components -- файл намеренно держит компонент рядом с его константами/хуками; вынос в отдельный файл — churn ради dev-only Fast Refresh, на прод-рантайм не влияет */
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import type { UserPractice } from '../api';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
+import { CURATED } from './practiceCurated';
 
 function ianaToUtcOffset(iana: string): number {
   try {
@@ -15,38 +15,6 @@ function ianaToUtcOffset(iana: string): number {
   } catch { return 3; }
 }
 
-export const CURATED: Record<string, string[]> = {
-  attachment: [
-    'Написать кому-то близкому без повода',
-    'Провести вечер вместе – без телефонов',
-    'Спросить кого-то «Как ты на самом деле?»',
-    'Поделиться чем-то личным в разговоре',
-  ],
-  autonomy: [
-    'Принять одно решение самостоятельно, без совета',
-    'Сделать что-то только потому что я хочу',
-    'Выделить час на своё дело без объяснений',
-    'Сказать «нет» одной просьбе, если не хочу',
-  ],
-  expression: [
-    'Написать про момент дня, когда что-то было внутри – и осталось невысказанным',
-    'Назвать вслух одну свою эмоцию',
-    'Рассказать кому-то о чём-то, что меня трогает',
-    'Выразить несогласие мягко, но честно',
-  ],
-  play: [
-    'Сделать что-то без цели – просто потому что весело',
-    'Попробовать новое место или маршрут',
-    'Поиграть во что-нибудь – хоть в игру на телефоне',
-    'Сделать что-то руками – приготовить, нарисовать, смастерить',
-  ],
-  limits: [
-    'Закончить работу вовремя, не задерживаться',
-    'Выполнить одно дело, которое откладывал',
-    'Отказаться от одного лишнего обязательства',
-    'Соблюдать одно правило для себя весь день',
-  ],
-};
 
 const REMINDER_OPTIONS = [
   { label: 'Утром', localHour: 9 },

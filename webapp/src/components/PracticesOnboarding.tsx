@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components -- файл намеренно держит компонент рядом с его константами/хуками; вынос в отдельный файл — churn ради dev-only Fast Refresh, на прод-рантайм не влияет */
 import { useState } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
@@ -6,13 +5,9 @@ import type { Need } from '../types';
 import { api } from '../api';
 import { useNeedData } from '../needData';
 import { COLORS } from '../types';
-import { CURATED } from './PlanSheet';
+import { CURATED } from './practiceCurated';
 
-export const PRACTICES_ONBOARDING_KEY = 'practices_onboarding_done';
-
-export function shouldShowPracticesOnboarding(): boolean {
-  return !localStorage.getItem(PRACTICES_ONBOARDING_KEY);
-}
+import { PRACTICES_ONBOARDING_KEY } from './practicesOnboardingGate';
 
 interface Props {
   needs: Need[];

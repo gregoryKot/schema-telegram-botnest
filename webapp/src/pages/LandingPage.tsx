@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { BookingPicker } from '../components/BookingPicker';
-import { DARK_BG, INK_ON_DARK, Btn, ThemeIcon, useReveal, useTilt, useTheme } from '../components/landing-kit';
+import { Btn, ThemeIcon } from '../components/landing-kit';
+import { DARK_BG, INK_ON_DARK, useReveal, useTilt, useTheme } from '../components/landing-kit-hooks';
 import { botUrl, botHandle } from '../utils/botConfig';
 
 // ─── Design tokens (local to landing) ────────────────────────────────────────

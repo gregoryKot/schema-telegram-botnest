@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/authContext';
 
 // Handles redirect from backend after OAuth (Google, VK, Telegram widget).
 // Backend redirects to /auth/callback#access_token=...&expires_in=...

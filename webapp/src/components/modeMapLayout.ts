@@ -1,7 +1,7 @@
 import Dagre from '@dagrejs/dagre';
 import type { Node, Edge } from '@xyflow/react';
 import type { ModeMapNode } from '../api';
-import { NODE_DEFAULT_SIZES } from './ModeMapNodes';
+import { NODE_DEFAULT_SIZES } from './modeMapData';
 
 type FlowNode = Node<Record<string, unknown>>;
 type FlowEdge = Edge<Record<string, unknown>>;

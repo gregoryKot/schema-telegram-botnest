@@ -12,7 +12,8 @@ function MetrikaTracker() {
   }, [loc.pathname, loc.search]);
   return null;
 }
-import { AuthProvider, useAuth } from './auth/AuthContext';
+import { AuthProvider } from './auth/AuthContext';
+import { useAuth } from './auth/authContext';
 import { setTokenProvider } from './api';
 import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
