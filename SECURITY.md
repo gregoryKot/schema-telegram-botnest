@@ -305,3 +305,10 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   user не даёт 500 и не загрязняет прототип.
 - **XSS** (`webapp/src/security/xss.invariants.test.ts`):
   `dangerouslySetInnerHTML` только в allowlist и только с DOMPurify.
+- **Capability-токены** (`src/security/capability-token.spec.ts`):
+  `/by-token/:token` (booking/subscription) отдаёт строгий allowlist без
+  PII; cancelToken = `randomUUID()`.
+- **Утечка в логи** (`src/security/log-leak.invariants.spec.ts`): ни один
+  logger-вызов не интерполирует токен/секрет/`decrypt()`/`req.body`.
+- **SSRF** (`src/security/ssrf.invariants.spec.ts`): server-side `fetch`
+  не строит URL из пользовательского ввода.
