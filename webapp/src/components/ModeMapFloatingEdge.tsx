@@ -147,5 +147,3 @@ export function FloatingEdge({ id, source, target, selected, markerEnd, markerSt
     </>
   );
 }
-
-export const EDGE_TYPES = { floating: FloatingEdge };

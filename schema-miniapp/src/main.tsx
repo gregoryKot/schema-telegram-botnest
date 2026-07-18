@@ -2,7 +2,7 @@ import { StrictMode, Component, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
-import { AddressFormProvider } from './utils/addressForm';
+import { AddressFormProvider } from './utils/AddressFormProvider';
 
 class ErrorBoundary extends Component<
   { children: ReactNode },

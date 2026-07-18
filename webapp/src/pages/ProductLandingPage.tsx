@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
-import { useRecentArticles } from '../components/landing-kit';
+import { useAuth } from '../auth/authContext';
+import { useRecentArticles } from '../components/landing-kit-hooks';
 import type { ArticleSummary } from '../api';
 import { botUrl, botHandle } from '../utils/botConfig';
 

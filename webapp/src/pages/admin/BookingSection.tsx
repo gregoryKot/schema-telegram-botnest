@@ -6,6 +6,7 @@ import type {
   SessionOption,
   AdminBookingStatus,
 } from '../../api';
+import { useAsyncData } from '../../hooks/useAsyncData';
 import { card, btn, btnGhost, input } from './shared';
 
 const DAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -14,9 +15,8 @@ const fmtTime = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', we
 
 /** Booking admin tab: integrations status, prices, schedule, bookings list. */
 export function BookingSection({ adminKey }: { adminKey: string }) {
-  const [rules, setRules] = useState<AvailabilityRule[]>([]);
-  const reload = useCallback(async () => { setRules(await api.adminListRules(adminKey)); }, [adminKey]);
-  useEffect(() => { reload(); }, [reload]);
+  const fetcher = useCallback(() => api.adminListRules(adminKey), [adminKey]);
+  const { data: rules, reload } = useAsyncData<AvailabilityRule[]>(fetcher, []);
 
   return (
     <>

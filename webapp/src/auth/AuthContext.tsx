@@ -1,17 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { AuthContext } from './authContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-
-interface AuthState {
-  accessToken: string | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  setAccessToken: (token: string, expiresIn: number) => void;
-  logout: (all?: boolean) => Promise<void>;
-  refreshToken: () => Promise<boolean>;
-}
-
-const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setTokenState] = useState<string | null>(null);
@@ -23,10 +13,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Refresh 60s before expiry
     const delay = Math.max((expiresIn - 60) * 1000, 5000);
     refreshTimer.current = setTimeout(async () => {
+      // eslint-disable-next-line react-hooks/immutability -- react-compiler: паттерн намеренный, рефактор рискован
       await doRefresh();
     }, delay);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- react-compiler: ручная мемоизация намеренная
   const doRefresh = useCallback(async (clearOnFailure = true): Promise<boolean> => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/refresh`, {
@@ -131,8 +124,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
-}

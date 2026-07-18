@@ -1,9 +1,10 @@
 import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams, NavLink } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/authContext';
 import { api } from '../api';
 import type { Need, DayHistory } from '../types';
 import { applyTheme, getTheme } from '../utils/theme';
+import { syncMotionAttr } from '../utils/reducedMotion';
 import { todayStr } from '../utils/format';
 import { cacheTherapistContact } from '../utils/therapistContact';
 import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, shouldShowChildhoodWheel } from '../utils/storageKeys';
@@ -45,6 +46,7 @@ import type { PracticePlan, StreakData, UserTask, TherapyClientSummary } from '.
 
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
+syncMotionAttr();
 
 type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
 type TrackerTab = 'today' | 'history';
@@ -211,6 +213,7 @@ export function AppShell() {
   useEffect(() => {
     if (therapistMode && userRole === 'THERAPIST'
         && !localStorage.getItem('therapist_privacy_disclaimer_seen')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
       setShowTherapistDisclaimer(true);
     }
   }, [therapistMode, userRole]);
@@ -330,11 +333,13 @@ export function AppShell() {
       }
     }).catch(() => {});
     api.getTasks().then(setHelpTasks).catch(() => setHelpTasks([]));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
   // History load when tracker history tab opens
   useEffect(() => {
     if (trackerTab === 'history') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
       setHistoryLoading(true);
       api.history(historyDays).then(h => setHistory(fillHistoryGaps(h))).finally(() => setHistoryLoading(false));
     }

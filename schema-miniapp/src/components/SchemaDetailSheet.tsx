@@ -1,88 +1,12 @@
-import { useState } from 'react';
-import { pressable } from '../utils/a11y';
+import { useCallback, useState } from 'react';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
+import { SCHEMA_BELIEFS } from '../schemaBeliefs';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 import { api } from '../api';
-
-const BELIEFS: Record<string, string[]> = {
-  emotional_deprivation: [
-    'Никто никогда по-настоящему не позаботится обо мне',
-    'Я обречён(а) быть один(а) в своих переживаниях',
-  ],
-  abandonment: [
-    'Все рано или поздно уходят',
-    'Я не могу рассчитывать на близких',
-  ],
-  mistrust: [
-    'Если открыться — обязательно предадут',
-    'Люди используют тех, кто им доверяет',
-  ],
-  defectiveness: [
-    'Со мной что-то фундаментально не так',
-    'Если узнают правду — отвергнут',
-  ],
-  social_isolation: [
-    'Я не такой(ая) как все',
-    'Я не вписываюсь ни в одну группу или сообщество',
-  ],
-  dependence: ['Я не справлюсь сам(а)', 'Без поддержки я беспомощен(на)'],
-  vulnerability: [
-    'Что-то плохое вот-вот случится',
-    'Мир опасен, и я не защищён(а)',
-  ],
-  enmeshment: [
-    'Без этого человека я не знаю, кто я',
-    'Мы должны делить всё и всегда быть рядом',
-  ],
-  failure: [
-    'Я всегда проваливаюсь там, где другие успешны',
-    'Я глупее и некомпетентнее других',
-  ],
-  entitlement: [
-    'Правила существуют для других, не для меня',
-    'Я заслуживаю особого отношения',
-  ],
-  insufficient_self_control: [
-    'Я не могу себя контролировать',
-    'Терпеть дискомфорт или откладывать удовольствие невыносимо',
-  ],
-  subjugation: [
-    'Если скажу что думаю — будет только хуже',
-    'Мои желания и чувства неважны',
-  ],
-  self_sacrifice: [
-    'Сначала все остальные, потом я',
-    'Думать о своём — это эгоизм',
-  ],
-  approval_seeking: [
-    'Мне очень важно, что обо мне думают',
-    'Если не нравлюсь — значит, со мной что-то не так',
-  ],
-  negativity: [
-    'Всё равно ничего хорошего не выйдет',
-    'Лучше не надеяться, чтобы не разочароваться',
-  ],
-  emotion_inhibition_fear: [
-    'Если дам волю злости — потеряю контроль',
-    'Мои сильные эмоции опасны для других',
-  ],
-  emotional_inhibition: [
-    'Показывать чувства — это слабость',
-    'Лучше держаться и не показывать вида',
-  ],
-  unrelenting_standards: [
-    'Я должен(на) быть идеальным(ой)',
-    'Ошибаться — недопустимо',
-  ],
-  punitiveness_self: [
-    'Я заслуживаю наказания за ошибки',
-    'Прощать себя — значит оправдывать слабость',
-  ],
-  punitiveness_others: [
-    'Людей нужно жёстко наказывать за ошибки',
-    'Прощать слабости — значит поощрять их',
-  ],
-};
+import { ShareCardSheet } from '../share/ShareCardSheet';
+import { drawSchemaCard } from '../../../shared/src/share/cards/schemaCard';
+import { schemaShareText } from '../../../shared/src/share/shareTexts';
+import { botShortUrl } from '../utils/botConfig';
 
 function readSchemaIds(): string[] {
   try {
@@ -106,11 +30,26 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
   );
   const schema = domainEntry?.schemas.find((s) => s.id === schemaId);
   const [myIds, setMyIds] = useState<string[]>(readSchemaIds);
+  const [showShare, setShowShare] = useState(false);
   const isAdded = myIds.includes(schemaId);
+
+  const drawShareCard = useCallback(
+    (canvas: HTMLCanvasElement) => {
+      if (!schema || !domainEntry) return;
+      drawSchemaCard(canvas, {
+        domain: domainEntry.domain,
+        domainColor: domainEntry.color,
+        name: schema.name,
+        desc: schema.libraryDesc ?? schema.desc,
+        belief: SCHEMA_BELIEFS[schemaId]?.[0],
+      });
+    },
+    [schema, domainEntry, schemaId],
+  );
 
   if (!schema || !domainEntry) return null;
 
-  const beliefs = BELIEFS[schemaId] ?? [];
+  const beliefs = SCHEMA_BELIEFS[schemaId] ?? [];
   const domainColor = domainEntry.color;
 
   function toggleSchema() {
@@ -124,8 +63,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
 
   return (
     <div
-      {...pressable(onClose)}
-      aria-label="Закрыть"
+      onClick={onClose}
       style={{
         position: 'fixed',
         inset: 0,
@@ -136,7 +74,6 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
       }}
     >
       <div
-        role="presentation"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
@@ -178,7 +115,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
               marginTop: 7,
             }}
           />
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
                 fontSize: 9,
@@ -326,7 +263,62 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
             Познакомиться →
           </button>
         </div>
+
+        {/* Поделиться карточкой схемы — заметная, но спокойная кнопка */}
+        <button
+          onClick={() => setShowShare(true)}
+          style={{
+            marginTop: 10,
+            width: '100%',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            minHeight: 44,
+            padding: '0 16px',
+            borderRadius: 14,
+            border:
+              '1px solid color-mix(in srgb, var(--accent) 24%, transparent)',
+            background: 'color-mix(in srgb, var(--accent) 9%, transparent)',
+            color: 'var(--accent)',
+            fontSize: 14,
+            fontWeight: 600,
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+          }}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <path
+              d="M12 15V4m0 0L8 8m4-4 4 4M6 13v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Поделиться карточкой
+        </button>
       </div>
+
+      {showShare && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ShareCardSheet
+            title="Карточка схемы"
+            draw={drawShareCard}
+            shareText={schemaShareText(schema.name, botShortUrl)}
+            filename="schema.png"
+            eventKind="schema"
+            onClose={() => setShowShare(false)}
+            zIndex={200}
+          />
+        </div>
+      )}
     </div>
   );
 }

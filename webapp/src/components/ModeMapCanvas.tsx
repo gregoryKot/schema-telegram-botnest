@@ -7,9 +7,10 @@ import {
 } from '@xyflow/react';
 import type { ModeMapNode, ModeMapEdge, ModeMapKind } from '../api';
 import { api } from '../api';
-import { NODE_TYPES, NODE_DEFAULT_SIZES } from './ModeMapNodes';
-import { EDGE_TYPES } from './ModeMapFloatingEdge';
-import { DRAG_TYPE, GROUP_TO_TYPE } from './ModeMapPalette';
+import { NODE_TYPES } from './modeMapRegistry';
+import { NODE_DEFAULT_SIZES } from './modeMapData';
+import { EDGE_TYPES } from './modeMapRegistry';
+import { DRAG_TYPE, GROUP_TO_TYPE } from './modeMapData';
 import { MODE_GROUPS, getModeById, getSchemaById } from '../schemaTherapyData';
 import { ModeMapContextMenu, type MenuItem } from './ModeMapContextMenu';
 import { ModeMapLegend } from './ModeMapLegend';

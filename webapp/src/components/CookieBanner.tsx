@@ -5,7 +5,7 @@ const YM_ID = 109568051;
 
 type YmFn = ((...args: unknown[]) => void) & { a?: unknown[][]; l?: number };
 
-export function loadMetrika() {
+function loadMetrika() {
   if (typeof window === 'undefined') return;
   const w = window as unknown as { __ym_loaded?: boolean; ym?: YmFn };
   if (w.__ym_loaded) return;

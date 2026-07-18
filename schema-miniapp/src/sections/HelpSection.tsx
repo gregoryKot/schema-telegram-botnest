@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { pressable } from '../utils/a11y';
 import { useSafeTop } from '../utils/safezone';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { LetterToSelf } from '../components/LetterToSelf';
@@ -15,6 +14,11 @@ import { BottomSheet } from '../components/BottomSheet';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
+import { ToolRow } from '../components/ToolRow';
+import { BreathingCard } from '../components/BreathingCard';
+import { GroundingSheet } from '../components/GroundingSheet';
+import { CrisisCard } from '../components/CrisisCard';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   onOpenChildhoodWheel: () => void;
@@ -29,62 +33,6 @@ interface Props {
   onTasksChanged?: () => void;
   userRole?: 'CLIENT' | 'THERAPIST';
   onOpenTherapistCabinet?: () => void;
-}
-
-function ToolCard({
-  emoji,
-  label,
-  sub,
-  onClick,
-  accentColor,
-}: {
-  emoji: string;
-  label: string;
-  sub?: string;
-  onClick: () => void;
-  accentColor?: string;
-}) {
-  return (
-    <div
-      {...pressable(onClick)}
-      className="card"
-      style={{
-        cursor: 'pointer',
-        padding: '18px 16px',
-        borderRadius: 18,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        WebkitTapHighlightColor: 'transparent',
-      }}
-    >
-      <span style={{ fontSize: 30, lineHeight: 1 }}>{emoji}</span>
-      <div>
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 700,
-            color: accentColor || 'var(--text)',
-            lineHeight: 1.3,
-          }}
-        >
-          {label}
-        </div>
-        {sub && (
-          <div
-            style={{
-              fontSize: 11,
-              color: 'var(--text-sub)',
-              marginTop: 3,
-              lineHeight: 1.4,
-            }}
-          >
-            {sub}
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
 
 function plural(n: number, one: string, few: string, many: string) {
@@ -111,7 +59,10 @@ export function HelpSection({
   const safeTop = useSafeTop();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
+  const tr = useTr();
   const [showFlashcard, setShowFlashcard] = useState(false);
+  const [showGrounding, setShowGrounding] = useState(false);
+  const [showCrisis, setShowCrisis] = useState(false);
   const [showBeliefCheck, setShowBeliefCheck] = useState(false);
   const [showLetterToSelf, setShowLetterToSelf] = useState(false);
   const [showSafePlace, setShowSafePlace] = useState(false);
@@ -233,7 +184,7 @@ export function HelpSection({
             letterSpacing: '-0.5px',
           }}
         >
-          Помощь
+          Здесь и сейчас
         </div>
         <div
           style={{
@@ -243,7 +194,10 @@ export function HelpSection({
             lineHeight: 1.5,
           }}
         >
-          Инструменты и упражнения
+          {tr(
+            'Тяжёлый момент? Начни с одного вдоха',
+            'Тяжёлый момент? Начните с одного вдоха',
+          )}
         </div>
         {/* Next session banner for clients */}
         {relation?.role === 'client' &&
@@ -316,6 +270,30 @@ export function HelpSection({
           gap: 12,
         }}
       >
+        {/* ── «Здесь и сейчас» (дизайн-макет, волна 2): дыхание первым ── */}
+        <BreathingCard />
+
+        <div className="section-label" style={{ margin: '8px 4px -4px' }}>
+          Если нужно больше
+        </div>
+        <ToolRow
+          emoji="🌍"
+          label="Заземление 5-4-3-2-1"
+          sub="вернуться в тело и в комнату"
+          tint="var(--accent-blue)"
+          index={0}
+          onClick={() => setShowGrounding(true)}
+        />
+        <ToolRow
+          emoji="📞"
+          label="Мне очень плохо"
+          sub="контакты помощи прямо сейчас"
+          tint="var(--accent-red)"
+          danger
+          index={1}
+          onClick={() => setShowCrisis(true)}
+        />
+
         {/* Therapist tasks — shown prominently when assigned */}
         {therapistTasks.filter((t) => !t.doneToday).length > 0 && (
           <div
@@ -351,83 +329,90 @@ export function HelpSection({
           </div>
         )}
 
-        {/* 2-column tool grid */}
-        <div
-          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}
-        >
-          <ToolCard
-            emoji="🎯"
-            label="Мои цели"
-            sub={
-              tasks.length === 0
-                ? 'Нет активных'
-                : `${tasks.length} ${plural(tasks.length, 'цель', 'цели', 'целей')}`
-            }
-            accentColor="var(--accent-orange)"
-            onClick={() => setShowAllTasks(true)}
-          />
-          <ToolCard
-            emoji="🗂"
-            label="Практики"
-            sub={
-              practiceCount == null
-                ? undefined
-                : practiceCount === 0
-                  ? 'Нет практик'
-                  : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
-            }
-            accentColor="var(--accent)"
-            onClick={onOpenPractices}
-          />
-          <ToolCard
-            emoji="🗓"
-            label="Планы"
-            sub={
-              planCount == null
-                ? undefined
-                : planCount === 0
-                  ? 'История пуста'
-                  : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
-            }
-            accentColor="var(--accent-blue)"
-            onClick={onOpenPlans}
-          />
-          <ToolCard
-            emoji="🔍"
-            label="Проверка убеждений"
-            sub="Правда ли это?"
-            accentColor="var(--accent-yellow)"
-            onClick={() => setShowBeliefCheck(true)}
-          />
-          <ToolCard
-            emoji="🏡"
-            label="Безопасное место"
-            sub="Ресурс в тревожный момент"
-            accentColor="var(--accent-green)"
-            onClick={() => setShowSafePlace(true)}
-          />
-          <ToolCard
-            emoji="✉️"
-            label="Письмо себе"
-            sub="Уязвимому Ребёнку"
-            accentColor="var(--accent-pink)"
-            onClick={() => setShowLetterToSelf(true)}
-          />
-          <ToolCard
-            emoji="🆘"
-            label="Мне плохо"
-            sub="5 шагов чтобы разобраться"
-            accentColor="var(--accent-red)"
-            onClick={() => setShowFlashcard(true)}
-          />
-          <ToolCard
-            emoji="🌱"
-            label="Колесо детства"
-            sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'}
-            accentColor="var(--accent-green)"
-            onClick={onOpenChildhoodWheel}
-          />
+        {/* Инструменты — iOS-строки по макету, каскадное появление */}
+        <div className="section-label" style={{ margin: '8px 4px -4px' }}>
+          Инструменты
         </div>
+        <ToolRow
+          emoji="🎯"
+          label="Мои цели"
+          sub={
+            tasks.length === 0
+              ? 'Нет активных'
+              : `${tasks.length} ${plural(tasks.length, 'цель', 'цели', 'целей')}`
+          }
+          tint="var(--accent-orange)"
+          index={0}
+          onClick={() => setShowAllTasks(true)}
+        />
+        <ToolRow
+          emoji="🗂"
+          label="Практики"
+          sub={
+            practiceCount == null
+              ? undefined
+              : practiceCount === 0
+                ? 'Нет практик'
+                : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
+          }
+          tint="var(--accent)"
+          index={1}
+          onClick={onOpenPractices}
+        />
+        <ToolRow
+          emoji="🗓"
+          label="Планы"
+          sub={
+            planCount == null
+              ? undefined
+              : planCount === 0
+                ? 'История пуста'
+                : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
+          }
+          tint="var(--accent-blue)"
+          index={2}
+          onClick={onOpenPlans}
+        />
+        <ToolRow
+          emoji="🔍"
+          label="Проверка убеждений"
+          sub="Правда ли это?"
+          tint="var(--accent-yellow)"
+          index={3}
+          onClick={() => setShowBeliefCheck(true)}
+        />
+        <ToolRow
+          emoji="🏡"
+          label="Безопасное место"
+          sub="Ресурс в тревожный момент"
+          tint="var(--accent-green)"
+          index={4}
+          onClick={() => setShowSafePlace(true)}
+        />
+        <ToolRow
+          emoji="✉️"
+          label="Письмо себе"
+          sub="Уязвимому Ребёнку"
+          tint="var(--accent-pink)"
+          index={5}
+          onClick={() => setShowLetterToSelf(true)}
+        />
+        <ToolRow
+          emoji="🆘"
+          label="Схема включилась"
+          sub="5 шагов чтобы разобраться"
+          tint="var(--accent-indigo)"
+          index={6}
+          onClick={() => setShowFlashcard(true)}
+        />
+        <ToolRow
+          emoji="🌱"
+          label="Колесо детства"
+          sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'}
+          tint="var(--accent-green)"
+          index={7}
+          onClick={onOpenChildhoodWheel}
+        />
 
         <div style={{ paddingBottom: 4 }}>
           <TherapyNote compact />
@@ -478,6 +463,37 @@ export function HelpSection({
             handleTaskComplete();
           }}
         />
+      )}
+      {showGrounding && (
+        <GroundingSheet onClose={() => setShowGrounding(false)} />
+      )}
+      {showCrisis && (
+        <BottomSheet onClose={() => setShowCrisis(false)} zIndex={200}>
+          <div style={{ paddingTop: 4 }}>
+            <div
+              style={{
+                fontSize: 17,
+                fontWeight: 800,
+                color: 'var(--text)',
+                marginBottom: 4,
+              }}
+            >
+              Помощь рядом
+            </div>
+            <CrisisCard />
+            <div
+              style={{
+                fontSize: 12,
+                color: 'var(--text-sub)',
+                lineHeight: 1.6,
+                marginTop: 4,
+              }}
+            >
+              Если есть угроза жизни — 112. Разговор с близким человеком тоже
+              считается: иногда одно сообщение «мне плохо» — уже первый шаг.
+            </div>
+          </div>
+        </BottomSheet>
       )}
       {showTaskCreate && (
         <TaskCreateSheet

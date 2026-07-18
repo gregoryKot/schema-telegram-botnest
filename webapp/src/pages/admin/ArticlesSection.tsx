@@ -1,16 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { api } from '../../api';
 import type { Article } from '../../api';
+import { useAsyncData } from '../../hooks/useAsyncData';
 import { ArticleEditor } from './ArticleEditor';
 import { card, btn, btnGhost } from './shared';
 
 /** Articles admin tab: list with create/edit/delete, backed by the WYSIWYG editor. */
 export function ArticlesSection({ adminKey }: { adminKey: string }) {
-  const [articles, setArticles] = useState<Article[]>([]);
   const [editing, setEditing] = useState<Article | 'new' | null>(null);
 
-  const reload = useCallback(async () => { setArticles(await api.adminListArticles(adminKey)); }, [adminKey]);
-  useEffect(() => { reload(); }, [reload]);
+  const fetcher = useCallback(() => api.adminListArticles(adminKey), [adminKey]);
+  const { data: articles, reload } = useAsyncData<Article[]>(fetcher, []);
 
   if (editing) {
     return (

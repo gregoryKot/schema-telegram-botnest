@@ -35,6 +35,7 @@ export const USER_DATA_TABLES = [
   'userTask',
   'diaryDraft',
   'emailToken',
+  'analyticsEvent',
 ] as const;
 // Compile-time check: any invalid table name above becomes a TS error here.
 type _VerifyTables = {

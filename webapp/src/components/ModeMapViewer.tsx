@@ -2,8 +2,8 @@ import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Panel, use
 import '@xyflow/react/dist/style.css';
 import { useEffect, useState } from 'react';
 import { api, type ModeMapMeta, type ModeMapFull } from '../api';
-import { NODE_TYPES } from './ModeMapNodes';
-import { EDGE_TYPES } from './ModeMapFloatingEdge';
+import { NODE_TYPES } from './modeMapRegistry';
+import { EDGE_TYPES } from './modeMapRegistry';
 import { toFlowNodes, toFlowEdges } from './modeMapFlow';
 import { ModeMapLegend } from './ModeMapLegend';
 import { MMIcon } from './modeMapIcons';
