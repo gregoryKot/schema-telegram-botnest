@@ -5,6 +5,7 @@ import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
@@ -100,7 +101,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         }}
       >
         <span
-          onClick={onClose}
+          {...pressable(onClose)}
           style={{
             fontSize: 26,
             color: 'var(--text-sub)',
@@ -158,7 +159,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               {' '}
               Видишь что что-то просело?{' '}
               <span
-                onClick={onOpenTracker}
+                {...pressable(onOpenTracker)}
                 style={{ color: 'var(--accent)', cursor: 'pointer' }}
               >
                 {tr('Открой трекер →', 'Откройте трекер →')}
@@ -188,10 +189,10 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             return (
               <div
                 key={id}
-                onClick={() => {
+                {...pressable(() => {
                   setNeedIdx(i);
                   setInput('');
-                }}
+                })}
                 style={{
                   flexShrink: 0,
                   padding: '7px 12px',
@@ -337,7 +338,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
                   {p.text}
                 </div>
                 <div
-                  onClick={() => handleDelete(p.id)}
+                  {...pressable(() => handleDelete(p.id))}
                   style={{
                     width: 30,
                     height: 30,

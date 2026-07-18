@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ExScreen, GlyphArrowLeft, GlyphCheck } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
+import { pressable } from '../../utils/a11y';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
@@ -45,10 +46,15 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   const [childhoodMemories, setChildhoodMemories] = useState(d?.childhoodMemories ?? '');
   const [saving, setSaving]       = useState(false);
   const [showPicker, setShowPicker] = useState(!d?.modeId);
+  const situationRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     saveDraft('mode', { modeId, situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories });
   }, [modeId, situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories]);
+
+  useEffect(() => {
+    if (modeId && !showPicker) situationRef.current?.focus();
+  }, [modeId, showPicker]);
 
   const selectedMode = modeId
     ? MODE_GROUPS.flatMap(g => g.items.map(m => ({ ...m, color: g.color, groupName: g.group }))).find(m => m.id === modeId)
@@ -108,7 +114,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
                 key={m.id}
                 className={'mode-card ' + (modeId === m.id ? 'is-selected' : '')}
                 style={{ '--mode-color': g.color } as React.CSSProperties}
-                onClick={() => { haptic.select(); setModeId(m.id); setShowPicker(false); }}
+                {...pressable(() => { haptic.select(); setModeId(m.id); setShowPicker(false); })}
               >
                 <span className="mode-card-stripe" />
                 <div>
@@ -153,12 +159,12 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           <div className="prompt-label">Что случилось <span style={{ color: 'var(--c-rose)', marginLeft: 2 }}>*</span></div>
           <p className="prompt-hint">Что включило этот режим – конкретно, без обобщений.</p>
           <textarea
+            ref={situationRef}
             className={'paper-input ' + (situation.trim() ? 'is-filled' : '')}
             rows={3}
             value={situation}
             onChange={e => setSituation(e.target.value)}
             placeholder="Папа позвонил, начал спрашивать про работу. Почувствовал как «отключился»…"
-            autoFocus
           />
         </div>
       </div>

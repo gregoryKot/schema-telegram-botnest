@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
 import { BottomSheet } from './BottomSheet';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { getTherapistContact } from '../utils/therapistContact';
@@ -572,11 +573,11 @@ export function YSQTestSheet({
                           </div>
 
                           <div
-                            onClick={() =>
+                            {...pressable(() =>
                               onViewSchemas
                                 ? onViewSchemas(schema.name)
-                                : onClose()
-                            }
+                                : onClose(),
+                            )}
                             style={{
                               display: 'flex',
                               justifyContent: 'space-between',

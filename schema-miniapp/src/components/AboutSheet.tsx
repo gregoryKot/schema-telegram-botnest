@@ -1,6 +1,7 @@
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { useAboutText, NEEDS_EXPLAINER } from '../aboutData';
+import { pressable } from '../utils/a11y';
 
 // «Зачем это всё» — содержимое sheets.about. Перенесено из App.tsx как есть
 // (этап 3 REMEDIATION_PLAN), ABOUT_TEXT берётся хуком на месте вместо пропа.
@@ -86,7 +87,7 @@ export function AboutSheet({
         </div>
 
         <div
-          onClick={onOpenSchemaInfo}
+          {...pressable(onOpenSchemaInfo)}
           style={{
             background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
             border:

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ExScreen } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
+import { pressable } from '../../utils/a11y';
 import { EMOTIONS, INTENSITY_LABELS, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import type { EmotionEntry } from '../../types';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
@@ -61,6 +62,9 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   const [healthyBehavior, setHealthyBehavior] = useState(draft?.healthyBehavior ?? '');
   const [saving, setSaving] = useState(false);
   const [showAllSchemas, setShowAllSchemas] = useState(false);
+  const triggerRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => { triggerRef.current?.focus(); }, []);
 
   const hasPersonalSchemas = activeSchemaIds && activeSchemaIds.length > 0;
   const useFiltered = hasPersonalSchemas && !showAllSchemas;
@@ -152,12 +156,12 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           <div className="prompt-label">{tr('Опиши ситуацию', 'Опишите ситуацию')} <span style={{ color: 'var(--c-rose)', marginLeft: 2 }}>*</span></div>
           <p className="prompt-hint">Что произошло? Где, с кем, в какой момент. Конкретно – не обобщай.</p>
           <textarea
+            ref={triggerRef}
             className={'paper-input ' + (trigger.trim() ? 'is-filled' : '')}
             rows={3}
             value={trigger}
             onChange={e => setTrigger(e.target.value)}
             placeholder="Например: на созвоне А. сказал что мой ппт «слабо проработан»…"
-            autoFocus
           />
         </div>
       </div>
@@ -191,7 +195,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
                       <div
                         key={i}
                         className={'intensity-step ' + (em.intensity >= i + 1 ? 'is-on' : '')}
-                        onClick={() => setIntensity(em.id, i + 1)}
+                        {...pressable(() => setIntensity(em.id, i + 1))}
                         title={lbl}
                       />
                     ))}

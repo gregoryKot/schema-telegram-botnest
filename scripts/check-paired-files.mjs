@@ -22,6 +22,7 @@ const PAIRS = [
   'types.ts',
   'utils/therapistContact.ts',
   'utils/crisisMarkers.ts',
+  'utils/crisisMarkers.test.ts',
   'utils/todayInsight.ts',
   'utils/drafts.ts',
   'utils/addressForm.tsx',
@@ -30,6 +31,7 @@ const PAIRS = [
   'hooks/useYsqTest.ts',
   'utils/format.ts',
   'utils/storageKeys.ts',
+  'utils/a11y.ts',
   'utils/reducedMotion.ts',
   'hooks/useReducedMotionPref.ts',
 ];

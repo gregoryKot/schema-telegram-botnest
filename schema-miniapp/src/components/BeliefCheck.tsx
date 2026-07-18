@@ -3,6 +3,7 @@ import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
 
 const STORAGE_KEY = 'belief_checks';
 
@@ -484,9 +485,9 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                       • {f}
                     </span>
                     <span
-                      onClick={() =>
-                        setForList((l) => l.filter((_, j) => j !== i))
-                      }
+                      {...pressable(() =>
+                        setForList((l) => l.filter((_, j) => j !== i)),
+                      )}
                       style={{
                         fontSize: 16,
                         color: 'var(--text-faint)',
@@ -614,9 +615,9 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                       • {a}
                     </span>
                     <span
-                      onClick={() =>
-                        setAgainstList((l) => l.filter((_, j) => j !== i))
-                      }
+                      {...pressable(() =>
+                        setAgainstList((l) => l.filter((_, j) => j !== i)),
+                      )}
                       style={{
                         fontSize: 16,
                         color: 'var(--text-faint)',

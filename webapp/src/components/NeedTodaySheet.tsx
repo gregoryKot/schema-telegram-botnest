@@ -6,6 +6,7 @@ import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { getTherapistContact } from '../utils/therapistContact';
 import { PlanSheet } from './PlanSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { pressable } from '../utils/a11y';
 
 interface Props {
   need: Need;
@@ -258,8 +259,8 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
       )}
 
       {showDisclaimer && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowDisclaimer(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end' }} aria-label="Закрыть" {...pressable(() => setShowDisclaimer(false))}>
+          <div role="button" tabIndex={0} onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); } }} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--surface-3)', margin: '0 auto 20px' }} />
             <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>О советах</div>
             {DISCLAIMER_CONTENT.map((p, i) => (

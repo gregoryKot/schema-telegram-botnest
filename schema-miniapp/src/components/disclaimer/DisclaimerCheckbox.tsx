@@ -20,7 +20,16 @@ export function DisclaimerCheckbox({
       }}
     >
       <div
+        role="checkbox"
+        aria-checked={checked}
+        tabIndex={0}
         onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
         style={{
           width: 20,
           height: 20,
@@ -44,6 +53,7 @@ export function DisclaimerCheckbox({
         )}
       </div>
       <span
+        role="presentation"
         onClick={onToggle}
         style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}
       >

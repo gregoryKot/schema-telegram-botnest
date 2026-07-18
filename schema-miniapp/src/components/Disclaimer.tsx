@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { pressable } from '../utils/a11y';
 import { BottomSheet } from './BottomSheet';
 import { DisclaimerWelcomeStep } from './disclaimer/DisclaimerWelcomeStep';
 import { DisclaimerNeedsStep } from './disclaimer/DisclaimerNeedsStep';
@@ -48,7 +49,7 @@ export function Disclaimer({
         {Array.from({ length: TOTAL }).map((_, i) => (
           <div
             key={i}
-            onClick={() => setStep(i)}
+            {...pressable(() => setStep(i))}
             style={{
               width: i === step ? 20 : 8,
               height: 8,

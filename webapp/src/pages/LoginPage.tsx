@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 
@@ -15,10 +15,15 @@ export function LoginPage() {
   const [emailSent, setEmailSent] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
   const isTelegramContext = !!window.Telegram?.WebApp?.initData;
+  const emailInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isAuthenticated) navigate('/today', { replace: true });
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (showEmail && !emailSent) emailInputRef.current?.focus();
+  }, [showEmail, emailSent]);
 
   // ── Mini-app fallback ────────────────────────────────────────────────────
   const [miniAppLoading, setMiniAppLoading] = useState(false);
@@ -179,7 +184,7 @@ export function LoginPage() {
             <form onSubmit={handleEmailSubmit} style={{ marginTop: 16 }}>
               <input
                 type="email"
-                autoFocus
+                ref={emailInputRef}
                 placeholder="your@email.com"
                 value={emailValue}
                 onChange={e => setEmailValue(e.target.value)}

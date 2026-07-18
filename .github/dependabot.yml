@@ -1,0 +1,51 @@
+# Dependabot — автообновление зависимостей (best-practice, отсутствовал до 2026-07).
+# npm audit-гейт в CI ловит уже известные уязвимости, но НЕ предлагает апдейты —
+# секьюрити-патчи копились без движения. Для соло-мейнтейнера автоматизация PR
+# важнее, чем для команды. Три lockfile'а (корень + два фронтенда) + сами actions.
+#
+# Группируем patch/minor в один недельный PR на пакет, чтобы не заваливать ревью;
+# major — отдельными PR (ломающие, требуют внимания). CI (правило №1) всё равно
+# гоняет tsc+jest+eslint+сборки+migrate на каждом PR Dependabot'а.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      backend-minor-patch:
+        update-types: [minor, patch]
+    labels:
+      - dependencies
+
+  - package-ecosystem: npm
+    directory: /webapp
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      webapp-minor-patch:
+        update-types: [minor, patch]
+    labels:
+      - dependencies
+      - frontend
+
+  - package-ecosystem: npm
+    directory: /schema-miniapp
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      miniapp-minor-patch:
+        update-types: [minor, patch]
+    labels:
+      - dependencies
+      - frontend
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - ci

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry } from '../types';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
 import { SchemaEntrySheet } from '../components/diary/SchemaEntrySheet';
 import { ModeEntrySheet } from '../components/diary/ModeEntrySheet';
 import { GratitudeEntrySheet } from '../components/diary/GratitudeEntrySheet';
@@ -50,7 +51,7 @@ function DeleteBtn({ color, onClick }: { color: string; onClick: () => void }) {
     }}>Удалить</button>
   );
   return (
-    <div style={{ display: 'flex', gap: 8, marginTop: 12 }} onClick={e => e.stopPropagation()}>
+    <div style={{ display: 'flex', gap: 8, marginTop: 12 }} role="presentation" onClick={e => e.stopPropagation()}>
       <button onClick={onClick} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', background: 'var(--c-rose)18', color: 'var(--c-rose)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Удалить навсегда</button>
       <button onClick={() => setConfirm(false)} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--surface-2)', color: 'var(--text-sub)', fontSize: 12, cursor: 'pointer' }}>Отмена</button>
     </div>
@@ -66,7 +67,7 @@ function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: (
   const emotionMetas = EMOTIONS.filter(e => entry.emotions.some((em: EmotionEntry) => em.id === e.id));
 
   return (
-    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} onClick={() => setOpen(v => !v)}>
+    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} {...pressable(() => setOpen(v => !v))}>
       <span className="entry-time">{fmtTime(entry.createdAt)}</span>
       <span className="entry-rule" />
       <div className="entry-body">
@@ -93,7 +94,7 @@ function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: (
           </div>
         )}
         {open && (
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }} role="presentation" onClick={e => e.stopPropagation()}>
             {entry.thoughts && <ExpandField label="Мысли" text={entry.thoughts} />}
             {entry.bodyFeelings && <ExpandField label="Тело" text={entry.bodyFeelings} />}
             {entry.actualBehavior && <ExpandField label="Реакция" text={entry.actualBehavior} />}
@@ -115,7 +116,7 @@ function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () =>
   const mode = getModeById(entry.modeId);
 
   return (
-    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} onClick={() => setOpen(v => !v)}>
+    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} {...pressable(() => setOpen(v => !v))}>
       <span className="entry-time">{fmtTime(entry.createdAt)}</span>
       <span className="entry-rule" />
       <div className="entry-body">
@@ -136,7 +137,7 @@ function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () =>
           </div>
         )}
         {open && (
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }} role="presentation" onClick={e => e.stopPropagation()}>
             {entry.thoughts && <ExpandField label="Мысли режима" text={entry.thoughts} />}
             {entry.feelings && <ExpandField label="Чувства" text={entry.feelings} />}
             {entry.actualNeed && <ExpandField label="Что было нужно" text={entry.actualNeed} color="var(--accent)" />}
@@ -157,7 +158,7 @@ function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry; onDel
   const color = 'var(--c-moss)';
 
   return (
-    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} onClick={() => setOpen(v => !v)}>
+    <div className="entry" style={{ '--entry-color': color } as React.CSSProperties} {...pressable(() => setOpen(v => !v))}>
       <span className="entry-time" style={{ fontStyle: 'italic' }}>·</span>
       <span className="entry-rule" />
       <div className="entry-body">
@@ -182,7 +183,7 @@ function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry; onDel
           )}
         </ul>
         {open && (
-          <div onClick={e => e.stopPropagation()}>
+          <div role="presentation" onClick={e => e.stopPropagation()}>
             <DeleteBtn color="var(--c-moss)" onClick={onDelete} />
           </div>
         )}
@@ -435,7 +436,7 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
               key={card.type}
               className="quick-add-card"
               style={{ '--qa-color': card.color } as React.CSSProperties}
-              onClick={() => setNewEntry(card.type)}
+              {...pressable(() => setNewEntry(card.type))}
             >
               <div className="qa-stripe" style={{ background: card.color }} />
               <div className="qa-eyebrow">

@@ -1,35 +1,45 @@
-// Нейроинклюзивный экран «Сегодня», волна 1 (дизайн-макет ADHD-friendly).
-// Одна главная задача с оценкой времени вместо нескольких равнозначных
-// карточек: снижение когнитивной нагрузки (ADHD/РАС — один фокус, ясный
-// следующий шаг; правило CLAUDE.md «одно очевидное главное действие
-// на экран»). Когда трекер заполнен — спокойное состояние «на сегодня всё»,
-// без давления сделать больше.
+// Нейроинклюзивный экран «Сегодня» (дизайн-макет ADHD-friendly).
+// Одна главная задача с оценкой времени; какая именно — выбирает пользователь
+// (utils/todayFocus: трекер / дневник схем / режимов / благодарность).
+// Выполнено — спокойное «на сегодня всё», без давления сделать больше.
 import { useTr } from '../utils/addressForm';
+import { HeroCta } from './HeroCta';
+import { FocusPractice, focusCardContent } from '../utils/todayFocus';
 
 interface Props {
+  practice: FocusPractice;
   ratedCount: number;
   total: number;
   /** Средний индекс дня — есть только когда все потребности оценены */
   avgScore: string | null;
-  onOpenTracker: () => void;
+  /** Сделана ли сегодня запись выбранной дневниковой практики */
+  practiceDoneToday?: boolean;
+  /** Открыть трекер или форму выбранного дневника */
+  onAction: () => void;
   onOpenHistory?: () => void;
-  /** Поделиться карточкой заполненного дня (есть только когда день оценён) */
+  /** Поделиться карточкой заполненного дня (только для трекера) */
   onShareDay?: () => void;
 }
 
 export function TodayFocusCard({
+  practice,
   ratedCount,
   total,
   avgScore,
-  onOpenTracker,
+  practiceDoneToday,
+  onAction,
   onOpenHistory,
   onShareDay,
 }: Props) {
   const tr = useTr();
+  const isTracker = practice === 'tracker';
   const allRated = total > 0 && ratedCount === total;
-  const left = total - ratedCount;
+  const content = focusCardContent(practice, ratedCount, total);
+  const done = isTracker ? allRated && !!avgScore : !!practiceDoneToday;
 
-  if (allRated && avgScore) {
+  if (done) {
+    const sideAction = isTracker ? onOpenHistory : onAction;
+    const sideLabel = isTracker ? 'История' : 'Ещё';
     return (
       <div
         className="card"
@@ -70,16 +80,16 @@ export function TodayFocusCard({
                 lineHeight: 1.5,
               }}
             >
-              Индекс дня {avgScore}/10.{' '}
+              {isTracker ? `Индекс дня ${avgScore}/10.` : content.doneSub}{' '}
               {tr(
                 'Загляни завтра — или посмотри историю',
                 'Загляните завтра — или посмотрите историю',
               )}
             </div>
           </div>
-          {onOpenHistory && (
+          {sideAction && (
             <button
-              onClick={onOpenHistory}
+              onClick={sideAction}
               style={{
                 background:
                   'color-mix(in srgb, var(--accent) 10%, transparent)',
@@ -95,11 +105,11 @@ export function TodayFocusCard({
                 flexShrink: 0,
               }}
             >
-              История
+              {sideLabel}
             </button>
           )}
         </div>
-        {onShareDay && (
+        {isTracker && onShareDay && (
           <button
             onClick={onShareDay}
             style={{
@@ -143,94 +153,15 @@ export function TodayFocusCard({
     );
   }
 
-  // Крупная акцентная CTA по дизайн-макету: фиолетовая карточка, белая кнопка
+  // Крупная акцентная CTA по дизайн-макету — общий HeroCta
   return (
-    <div
-      onClick={onOpenTracker}
-      style={{
-        borderRadius: 24,
-        padding: 20,
-        cursor: 'pointer',
-        WebkitTapHighlightColor: 'transparent',
-        background: 'var(--accent)',
-        color: 'var(--on-accent)',
-        boxShadow:
-          '0 14px 34px color-mix(in srgb, var(--accent) 35%, transparent)',
-        animation: 'slide-up 0.3s ease both',
-        animationDelay: '80ms',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            opacity: 0.85,
-          }}
-        >
-          Одно дело на сегодня
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            background: 'rgba(255,255,255,0.22)',
-            padding: '4px 10px',
-            borderRadius: 99,
-            flexShrink: 0,
-          }}
-        >
-          ⏱ ≈1 мин
-        </div>
-      </div>
-      <div
-        style={{
-          fontSize: 22,
-          fontWeight: 800,
-          letterSpacing: '-0.02em',
-          marginTop: 10,
-          lineHeight: 1.2,
-        }}
-      >
-        Заполнить трекер потребностей
-      </div>
-      <div
-        style={{ fontSize: 13, opacity: 0.9, marginTop: 6, lineHeight: 1.45 }}
-      >
-        {ratedCount > 0
-          ? `Осталось ${left} из ${total} — сохраняется само`
-          : 'Пять оценок о том, как прошёл день. Сохраняется само.'}
-      </div>
-      <button
-        style={{
-          marginTop: 15,
-          width: '100%',
-          background: '#fff',
-          color: 'var(--accent)',
-          fontSize: 15,
-          fontWeight: 800,
-          padding: 13,
-          borderRadius: 14,
-          border: 'none',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 6,
-        }}
-      >
-        {ratedCount > 0 ? 'Продолжить' : 'Начать'}
-        <span style={{ fontSize: 17 }}>→</span>
-      </button>
-    </div>
+    <HeroCta
+      label="Одно дело на сегодня"
+      chip={content.chip}
+      title={content.title}
+      sub={content.sub}
+      buttonLabel={content.buttonLabel}
+      onClick={onAction}
+    />
   );
 }

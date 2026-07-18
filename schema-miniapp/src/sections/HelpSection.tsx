@@ -15,6 +15,10 @@ import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { ToolRow } from '../components/ToolRow';
+import {
+  SelfHelpBanner,
+  SelfHelpSheet,
+} from '../components/SelfHelpDisclaimer';
 import { BreathingCard } from '../components/BreathingCard';
 import { GroundingSheet } from '../components/GroundingSheet';
 import { CrisisCard } from '../components/CrisisCard';
@@ -63,6 +67,7 @@ export function HelpSection({
   const [showFlashcard, setShowFlashcard] = useState(false);
   const [showGrounding, setShowGrounding] = useState(false);
   const [showCrisis, setShowCrisis] = useState(false);
+  const [showSelfHelp, setShowSelfHelp] = useState(false);
   const [showBeliefCheck, setShowBeliefCheck] = useState(false);
   const [showLetterToSelf, setShowLetterToSelf] = useState(false);
   const [showSafePlace, setShowSafePlace] = useState(false);
@@ -273,6 +278,9 @@ export function HelpSection({
         {/* ── «Здесь и сейчас» (дизайн-макет, волна 2): дыхание первым ── */}
         <BreathingCard />
 
+        {/* Дисклеймер: границы самопомощи — заметный, рядом с практиками */}
+        <SelfHelpBanner onOpen={() => setShowSelfHelp(true)} />
+
         <div className="section-label" style={{ margin: '8px 4px -4px' }}>
           Если нужно больше
         </div>
@@ -461,6 +469,15 @@ export function HelpSection({
           onComplete={() => {
             setIntroModeId(null);
             handleTaskComplete();
+          }}
+        />
+      )}
+      {showSelfHelp && (
+        <SelfHelpSheet
+          onClose={() => setShowSelfHelp(false)}
+          onOpenCrisis={() => {
+            setShowSelfHelp(false);
+            setShowCrisis(true);
           }}
         />
       )}

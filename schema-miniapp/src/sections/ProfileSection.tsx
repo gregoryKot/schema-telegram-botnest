@@ -7,6 +7,8 @@ import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
+import { ComfortCard } from '../components/ComfortCard';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
@@ -281,6 +283,9 @@ export function ProfileSection({
             ))}
           </>
         )}
+
+        {/* ── Комфорт (дизайн-макет): тема/движение/напоминания в один тап ── */}
+        {ready && <ComfortCard onOpenNotifications={onOpenSettings} />}
 
         {/* ── Стрик ── */}
         {ready && streak !== null && (
@@ -637,7 +642,7 @@ export function ProfileSection({
         {/* ── Достижения ── */}
         {ready && achievements && (
           <div
-            onClick={() => setShowAchievements(true)}
+            {...pressable(() => setShowAchievements(true))}
             className="card"
             style={{
               borderRadius: 20,
@@ -964,7 +969,7 @@ export function ProfileSection({
         {/* ── Мои записи ── */}
         {ready && notesCount !== null && (
           <div
-            onClick={() => setNotesOpen(true)}
+            {...pressable(() => setNotesOpen(true))}
             className="card"
             style={{
               borderRadius: 20,
@@ -1153,7 +1158,9 @@ export function ProfileSection({
                 return (
                   <div
                     key={a.id}
-                    onClick={() => a.earned && setSelectedAchievement(a.id)}
+                    {...pressable(
+                      () => a.earned && setSelectedAchievement(a.id),
+                    )}
                     style={{
                       background: a.earned
                         ? 'color-mix(in srgb, var(--accent) 10%, transparent)'
