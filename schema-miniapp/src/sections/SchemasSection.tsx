@@ -77,6 +77,72 @@ interface Props {
 
 type Tab = 'schemas' | 'modes' | 'needs';
 
+// Заголовок сворачиваемой группы (домены схем / группы режимов) — одна
+// механика, один компонент: точка-цвет + название + счётчик + шеврон.
+function GroupHeader({
+  onToggle,
+  color,
+  title,
+  count,
+  isOpen,
+}: {
+  onToggle: () => void;
+  color: string;
+  title: string;
+  count: number;
+  isOpen: boolean;
+}) {
+  return (
+    <div
+      {...pressable(onToggle)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '14px 16px',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: color,
+            flexShrink: 0,
+          }}
+        />
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+          {title}
+        </span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span
+          style={{
+            fontSize: 14,
+            color: 'var(--text-faint)',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {count}
+        </span>
+        <span
+          style={{
+            color: 'var(--text-faint)',
+            fontSize: 14,
+            display: 'inline-block',
+            transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s',
+          }}
+        >
+          ›
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function SchemasSection({
   onOpenSchema,
   childhoodRatings = {},
@@ -450,73 +516,13 @@ export function SchemasSection({
                         overflow: 'hidden',
                       }}
                     >
-                      <div
-                        {...pressable(() => toggleDomain(domain.id))}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '14px 16px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              background: hex(c),
-                              flexShrink: 0,
-                            }}
-                          />
-                          <span
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 600,
-                              color: 'var(--text)',
-                            }}
-                          >
-                            {domain.domain}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 14,
-                              color: 'var(--text-faint)',
-                              fontVariantNumeric: 'tabular-nums',
-                            }}
-                          >
-                            {domain.schemas.length}
-                          </span>
-                          <span
-                            style={{
-                              color: 'var(--text-faint)',
-                              fontSize: 14,
-                              display: 'inline-block',
-                              transform: isOpen
-                                ? 'rotate(90deg)'
-                                : 'rotate(0deg)',
-                              transition: 'transform 0.2s',
-                            }}
-                          >
-                            ›
-                          </span>
-                        </div>
-                      </div>
+                      <GroupHeader
+                        onToggle={() => toggleDomain(domain.id)}
+                        color={hex(c)}
+                        title={domain.domain}
+                        count={domain.schemas.length}
+                        isOpen={isOpen}
+                      />
                       {isOpen && (
                         <div
                           style={{
@@ -671,73 +677,13 @@ export function SchemasSection({
                         overflow: 'hidden',
                       }}
                     >
-                      <div
-                        {...pressable(() => toggleModeGroup(group.id))}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '14px 16px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              background: hex(c),
-                              flexShrink: 0,
-                            }}
-                          />
-                          <span
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 600,
-                              color: 'var(--text)',
-                            }}
-                          >
-                            {group.group}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 14,
-                              color: 'var(--text-faint)',
-                              fontVariantNumeric: 'tabular-nums',
-                            }}
-                          >
-                            {group.items.length}
-                          </span>
-                          <span
-                            style={{
-                              color: 'var(--text-faint)',
-                              fontSize: 14,
-                              display: 'inline-block',
-                              transform: isOpen
-                                ? 'rotate(90deg)'
-                                : 'rotate(0deg)',
-                              transition: 'transform 0.2s',
-                            }}
-                          >
-                            ›
-                          </span>
-                        </div>
-                      </div>
+                      <GroupHeader
+                        onToggle={() => toggleModeGroup(group.id)}
+                        color={hex(c)}
+                        title={group.group}
+                        count={group.items.length}
+                        isOpen={isOpen}
+                      />
                       {isOpen && (
                         <div
                           style={{
