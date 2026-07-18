@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { api, Achievement } from '../api';
 import { useSafeTop } from '../utils/safezone';
+import { AchievementDetail } from '../components/AchievementDetail';
 import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
-import { StreakData, InsightsData } from './profile/types';
-import { NEED_NAMES } from './profile/constants';
+// prettier-ignore
+import { ACHIEVEMENT_META, NEED_NAMES, StreakData, InsightsData } from './profile/constants';
 import { StreakCard } from './profile/StreakCard';
 import { ActivityHeatmap } from './profile/ActivityHeatmap';
-import { AchievementsFeature } from './profile/AchievementsFeature';
+import { AchievementsCard } from './profile/AchievementsCard';
 import { InsightsCard } from './profile/InsightsCard';
 import { NotesCard } from './profile/NotesCard';
+import { AchievementsSheet } from './profile/AchievementsSheet';
+import { BestDayInfoSheet } from './profile/BestDayInfoSheet';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
@@ -44,7 +47,12 @@ export function ProfileSection({
   const [schemaNoteIds, setSchemaNotesIds] = useState<string[]>([]);
   const [modeNoteIds, setModeNoteIds] = useState<string[]>([]);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [selectedAchievement, setSelectedAchievement] = useState<string | null>(
+    null,
+  );
   const [_insightsOpen] = useState(false); // kept for future use
+  const [showBestDayInfo, setShowBestDayInfo] = useState(false);
   const [_homeScreenStatus] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,7 +88,11 @@ export function ProfileSection({
   }, [refreshKey]);
 
   const currentStreak = streak?.currentStreak ?? 0;
+  const longestStreak = streak?.longestStreak ?? 0;
   const totalDays = streak?.totalDays ?? 0;
+  const todayDone = streak?.todayDone ?? false;
+  const weekDots = streak?.weekDots ?? [];
+  const earnedList = achievements?.filter((a) => a.earned) ?? [];
   const hasInsights =
     insights && insights.weeklyStats.some((s) => s.avg !== null);
 
@@ -204,7 +216,14 @@ export function ProfileSection({
 
         {/* ── Стрик ── */}
         {ready && streak !== null && (
-          <StreakCard streak={streak} onOpenTracker={onOpenTracker} />
+          <StreakCard
+            currentStreak={currentStreak}
+            longestStreak={longestStreak}
+            totalDays={totalDays}
+            todayDone={todayDone}
+            weekDots={weekDots}
+            onOpenTracker={onOpenTracker}
+          />
         )}
 
         {/* ── Activity heatmap ── */}
@@ -214,16 +233,19 @@ export function ProfileSection({
 
         {/* ── Достижения ── */}
         {ready && achievements && (
-          <AchievementsFeature
+          <AchievementsCard
             achievements={achievements}
-            currentStreak={currentStreak}
-            totalDays={totalDays}
+            earnedList={earnedList}
+            onOpen={() => setShowAchievements(true)}
           />
         )}
 
         {/* ── Паттерны (инсайты) ── */}
         {ready && hasInsights && insights && (
-          <InsightsCard insights={insights} />
+          <InsightsCard
+            insights={insights}
+            onOpenBestDayInfo={() => setShowBestDayInfo(true)}
+          />
         )}
 
         {/* ── Мои записи ── */}
@@ -240,6 +262,34 @@ export function ProfileSection({
           <TherapyNote compact />
         </div>
       </div>
+
+      {/* ── BottomSheet: Достижения ── */}
+      {showAchievements && achievements && (
+        <AchievementsSheet
+          achievements={achievements}
+          earnedList={earnedList}
+          currentStreak={currentStreak}
+          totalDays={totalDays}
+          onClose={() => {
+            setShowAchievements(false);
+            setSelectedAchievement(null);
+          }}
+          onSelect={(id) => setSelectedAchievement(id)}
+        />
+      )}
+
+      {/* Achievement detail overlay (share-карточка внутри) */}
+      {selectedAchievement && ACHIEVEMENT_META[selectedAchievement] && (
+        <AchievementDetail
+          meta={ACHIEVEMENT_META[selectedAchievement]}
+          onClose={() => setSelectedAchievement(null)}
+        />
+      )}
+
+      {/* Best day tooltip */}
+      {showBestDayInfo && (
+        <BestDayInfoSheet onClose={() => setShowBestDayInfo(false)} />
+      )}
 
       {notesOpen && <MyNotesSheet onClose={() => setNotesOpen(false)} />}
     </div>

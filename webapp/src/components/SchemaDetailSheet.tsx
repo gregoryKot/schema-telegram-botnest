@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 import { api } from '../api';
+import { ShareCardSheet } from '../share/ShareCardSheet';
+import { drawSchemaCard } from '../../../shared/src/share/cards/schemaCard';
+import { schemaShareText } from '../../../shared/src/share/shareTexts';
+import { botShortUrl } from '../utils/botConfig';
 
 const BELIEFS: Record<string, string[]> = {
   emotional_deprivation:     ['Никто никогда по-настоящему не позаботится обо мне', 'Я обречён(а) быть один(а) в своих переживаниях'],
@@ -44,7 +48,22 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
   const domainEntry = SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.id === schemaId));
   const schema = domainEntry?.schemas.find(s => s.id === schemaId);
   const [myIds, setMyIds] = useState<string[]>(readSchemaIds);
+  const [showShare, setShowShare] = useState(false);
   const isAdded = myIds.includes(schemaId);
+
+  const drawShareCard = useCallback(
+    (canvas: HTMLCanvasElement) => {
+      if (!schema || !domainEntry) return;
+      drawSchemaCard(canvas, {
+        domain: domainEntry.domain,
+        domainColor: domainEntry.color,
+        name: schema.name,
+        desc: schema.libraryDesc ?? schema.desc,
+        belief: BELIEFS[schemaId]?.[0],
+      });
+    },
+    [schema, domainEntry, schemaId],
+  );
 
   if (!schema || !domainEntry) return null;
 
@@ -88,6 +107,13 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
             >
               Познакомиться →
             </button>
+            <button
+              onClick={() => setShowShare(true)}
+              className="ex-btn ex-btn-ghost"
+              style={{ width: '100%' }}
+            >
+              Поделиться
+            </button>
           </div>
         </div>
       }
@@ -124,7 +150,24 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
         >
           Познакомиться →
         </button>
+        <button
+          onClick={() => setShowShare(true)}
+          className="ex-btn ex-btn-ghost"
+        >
+          Поделиться
+        </button>
       </div>
+
+      {showShare && (
+        <ShareCardSheet
+          title="Карточка схемы"
+          draw={drawShareCard}
+          shareText={schemaShareText(schema.name, botShortUrl)}
+          filename="schema.png"
+          eventKind="schema"
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </ExScreen>
   );
 }

@@ -2,6 +2,21 @@ interface Props {
   activeDates: Set<string>;
 }
 
+const MONTH_RU = [
+  'янв',
+  'фев',
+  'мар',
+  'апр',
+  'май',
+  'июн',
+  'июл',
+  'авг',
+  'сен',
+  'окт',
+  'ноя',
+  'дек',
+];
+
 export function ActivityHeatmap({ activeDates }: Props) {
   // P7 UI-аудит: короче и крупнее — влезает без скрытого скролла
   const WEEKS = 10;
@@ -21,21 +36,6 @@ export function ActivityHeatmap({ activeDates }: Props) {
     }
     weeks.push(week);
   }
-
-  const MONTH_RU = [
-    'янв',
-    'фев',
-    'мар',
-    'апр',
-    'май',
-    'июн',
-    'июл',
-    'авг',
-    'сен',
-    'окт',
-    'ноя',
-    'дек',
-  ];
 
   return (
     <div

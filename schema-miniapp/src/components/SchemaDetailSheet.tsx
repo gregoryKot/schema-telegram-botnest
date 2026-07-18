@@ -1,87 +1,13 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
+import { SCHEMA_BELIEFS } from '../schemaBeliefs';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 import { api } from '../api';
-
-const BELIEFS: Record<string, string[]> = {
-  emotional_deprivation: [
-    'Никто никогда по-настоящему не позаботится обо мне',
-    'Я обречён(а) быть один(а) в своих переживаниях',
-  ],
-  abandonment: [
-    'Все рано или поздно уходят',
-    'Я не могу рассчитывать на близких',
-  ],
-  mistrust: [
-    'Если открыться — обязательно предадут',
-    'Люди используют тех, кто им доверяет',
-  ],
-  defectiveness: [
-    'Со мной что-то фундаментально не так',
-    'Если узнают правду — отвергнут',
-  ],
-  social_isolation: [
-    'Я не такой(ая) как все',
-    'Я не вписываюсь ни в одну группу или сообщество',
-  ],
-  dependence: ['Я не справлюсь сам(а)', 'Без поддержки я беспомощен(на)'],
-  vulnerability: [
-    'Что-то плохое вот-вот случится',
-    'Мир опасен, и я не защищён(а)',
-  ],
-  enmeshment: [
-    'Без этого человека я не знаю, кто я',
-    'Мы должны делить всё и всегда быть рядом',
-  ],
-  failure: [
-    'Я всегда проваливаюсь там, где другие успешны',
-    'Я глупее и некомпетентнее других',
-  ],
-  entitlement: [
-    'Правила существуют для других, не для меня',
-    'Я заслуживаю особого отношения',
-  ],
-  insufficient_self_control: [
-    'Я не могу себя контролировать',
-    'Терпеть дискомфорт или откладывать удовольствие невыносимо',
-  ],
-  subjugation: [
-    'Если скажу что думаю — будет только хуже',
-    'Мои желания и чувства неважны',
-  ],
-  self_sacrifice: [
-    'Сначала все остальные, потом я',
-    'Думать о своём — это эгоизм',
-  ],
-  approval_seeking: [
-    'Мне очень важно, что обо мне думают',
-    'Если не нравлюсь — значит, со мной что-то не так',
-  ],
-  negativity: [
-    'Всё равно ничего хорошего не выйдет',
-    'Лучше не надеяться, чтобы не разочароваться',
-  ],
-  emotion_inhibition_fear: [
-    'Если дам волю злости — потеряю контроль',
-    'Мои сильные эмоции опасны для других',
-  ],
-  emotional_inhibition: [
-    'Показывать чувства — это слабость',
-    'Лучше держаться и не показывать вида',
-  ],
-  unrelenting_standards: [
-    'Я должен(на) быть идеальным(ой)',
-    'Ошибаться — недопустимо',
-  ],
-  punitiveness_self: [
-    'Я заслуживаю наказания за ошибки',
-    'Прощать себя — значит оправдывать слабость',
-  ],
-  punitiveness_others: [
-    'Людей нужно жёстко наказывать за ошибки',
-    'Прощать слабости — значит поощрять их',
-  ],
-};
+import { SharePill } from '../share/SharePill';
+import { ShareCardSheet } from '../share/ShareCardSheet';
+import { drawSchemaCard } from '../../../shared/src/share/cards/schemaCard';
+import { schemaShareText } from '../../../shared/src/share/shareTexts';
+import { botShortUrl } from '../utils/botConfig';
 
 function readSchemaIds(): string[] {
   try {
@@ -105,11 +31,26 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
   );
   const schema = domainEntry?.schemas.find((s) => s.id === schemaId);
   const [myIds, setMyIds] = useState<string[]>(readSchemaIds);
+  const [showShare, setShowShare] = useState(false);
   const isAdded = myIds.includes(schemaId);
+
+  const drawShareCard = useCallback(
+    (canvas: HTMLCanvasElement) => {
+      if (!schema || !domainEntry) return;
+      drawSchemaCard(canvas, {
+        domain: domainEntry.domain,
+        domainColor: domainEntry.color,
+        name: schema.name,
+        desc: schema.libraryDesc ?? schema.desc,
+        belief: SCHEMA_BELIEFS[schemaId]?.[0],
+      });
+    },
+    [schema, domainEntry, schemaId],
+  );
 
   if (!schema || !domainEntry) return null;
 
-  const beliefs = BELIEFS[schemaId] ?? [];
+  const beliefs = SCHEMA_BELIEFS[schemaId] ?? [];
   const domainColor = domainEntry.color;
 
   function toggleSchema() {
@@ -175,7 +116,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
               marginTop: 7,
             }}
           />
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
                 fontSize: 9,
@@ -199,6 +140,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
               {schema.name}
             </div>
           </div>
+          <SharePill onClick={() => setShowShare(true)} />
         </div>
 
         {/* Description */}
@@ -324,6 +266,20 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
           </button>
         </div>
       </div>
+
+      {showShare && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ShareCardSheet
+            title="Карточка схемы"
+            draw={drawShareCard}
+            shareText={schemaShareText(schema.name, botShortUrl)}
+            filename="schema.png"
+            eventKind="schema"
+            onClose={() => setShowShare(false)}
+            zIndex={200}
+          />
+        </div>
+      )}
     </div>
   );
 }

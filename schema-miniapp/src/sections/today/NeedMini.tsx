@@ -1,9 +1,8 @@
+// NeedMini — one need indicator in the Today needs grid (extracted from TodaySection.tsx).
+
 import { Need, COLORS } from '../../types';
 import { useNeedData } from '../../needData';
-
-function hexToRgb(hex: string): string {
-  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',');
-}
+import { hexToRgb } from './helpers';
 
 export function NeedMini({
   need,

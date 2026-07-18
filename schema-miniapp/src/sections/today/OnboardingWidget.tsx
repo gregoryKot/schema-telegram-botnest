@@ -1,3 +1,6 @@
+// OnboardingWidget — step card with dot progress on the Today screen
+// (extracted from TodaySection.tsx).
+
 import { useState } from 'react';
 import { UserProfile } from '../../types';
 
@@ -49,13 +52,13 @@ const STEPS: StepDef[] = [
     description:
       'Зафиксировать момент, когда схема сработала — главная практика схема-терапии.',
     detail: 'Дневник схем · режимов · благодарности',
+    actionLabel: 'Открыть дневник',
     isDone: (p) =>
       !!(
         p?.lastActivity.schemaDiary ||
         p?.lastActivity.modeDiary ||
         p?.lastActivity.gratitudeDiary
       ),
-    actionLabel: 'Открыть дневник',
   },
   {
     id: 'notify',

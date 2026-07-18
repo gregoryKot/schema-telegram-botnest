@@ -1,3 +1,5 @@
+export const DOW = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+
 export const NEED_NAMES: Record<string, string> = {
   attachment: 'Привязанность',
   autonomy: 'Автономия',
@@ -6,10 +8,9 @@ export const NEED_NAMES: Record<string, string> = {
   limits: 'Границы',
 };
 
-export const ACHIEVEMENT_META: Record<
-  string,
-  { emoji: string; title: string; desc: string }
-> = {
+export type AchievementMeta = { emoji: string; title: string; desc: string };
+
+export const ACHIEVEMENT_META: Record<string, AchievementMeta> = {
   first_day: {
     emoji: '🌱',
     title: 'Первый шаг',
@@ -48,3 +49,24 @@ export const ACHIEVEMENT_META: Record<
     desc: 'Связался с партнёром',
   },
 };
+
+export type StreakData = {
+  currentStreak: number;
+  longestStreak: number;
+  totalDays: number;
+  todayDone: boolean;
+  weekDots: boolean[];
+};
+
+export type InsightsData = {
+  weeklyStats: Array<{
+    needId: string;
+    avg: number | null;
+    trend: '↑' | '↓' | '→';
+  }>;
+  bestDayOfWeek: string | null;
+  worstDayOfWeek: string | null;
+  totalDays: number;
+};
+
+export const TODAY_DOW_IDX = (new Date().getDay() + 6) % 7; // 0=пн ... 6=вс

@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { api } from '../api';
 import type { Need, DayHistory } from '../types';
 import { applyTheme, getTheme } from '../utils/theme';
+import { syncMotionAttr } from '../utils/reducedMotion';
 import { todayStr } from '../utils/format';
 import { cacheTherapistContact } from '../utils/therapistContact';
 import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, shouldShowChildhoodWheel } from '../utils/storageKeys';
@@ -45,6 +46,7 @@ import type { PracticePlan, StreakData, UserTask, TherapyClientSummary } from '.
 
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
+syncMotionAttr();
 
 type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
 type TrackerTab = 'today' | 'history';

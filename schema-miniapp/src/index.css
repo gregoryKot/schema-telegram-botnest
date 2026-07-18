@@ -192,3 +192,25 @@ html[data-theme="light"] .card {
 
 /* ── Chip / selection ───────────────────────────────────────────────────────── */
 .sel-btn { transition: background 150ms, border-color 150ms, color 150ms; -webkit-tap-highlight-color: transparent; }
+
+/* ── Reduced motion (нейроинклюзивность) ───────────────────────────────────────
+   Системный prefers-reduced-motion ИЛИ ручной выбор в настройках
+   (utils/reducedMotion.ts ставит html[data-reduce-motion="1"]).
+   Блок продублирован: media query и атрибут не объединить в один селектор.
+   !important нужен, чтобы перебить инлайновые style={{ transition, animation }}. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+html[data-reduce-motion="1"] *,
+html[data-reduce-motion="1"] *::before,
+html[data-reduce-motion="1"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

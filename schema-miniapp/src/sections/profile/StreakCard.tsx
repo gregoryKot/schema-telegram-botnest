@@ -1,20 +1,22 @@
-import { StreakData } from './types';
-
-const DOW = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
-const TODAY_DOW_IDX = (new Date().getDay() + 6) % 7; // 0=пн ... 6=вс
+import { DOW, TODAY_DOW_IDX } from './constants';
 
 interface Props {
-  streak: StreakData;
+  currentStreak: number;
+  longestStreak: number;
+  totalDays: number;
+  todayDone: boolean;
+  weekDots: boolean[];
   onOpenTracker?: () => void;
 }
 
-export function StreakCard({ streak, onOpenTracker }: Props) {
-  const currentStreak = streak?.currentStreak ?? 0;
-  const longestStreak = streak?.longestStreak ?? 0;
-  const totalDays = streak?.totalDays ?? 0;
-  const todayDone = streak?.todayDone ?? false;
-  const weekDots = streak?.weekDots ?? [];
-
+export function StreakCard({
+  currentStreak,
+  longestStreak,
+  totalDays,
+  todayDone,
+  weekDots,
+  onOpenTracker,
+}: Props) {
   return (
     <div
       className="card"

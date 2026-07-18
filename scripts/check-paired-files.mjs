@@ -30,6 +30,8 @@ const PAIRS = [
   'hooks/useYsqTest.ts',
   'utils/format.ts',
   'utils/storageKeys.ts',
+  'utils/reducedMotion.ts',
+  'hooks/useReducedMotionPref.ts',
 ];
 
 // Осознанно НЕ в списке (разошлись содержательно, или намеренное визуальное
