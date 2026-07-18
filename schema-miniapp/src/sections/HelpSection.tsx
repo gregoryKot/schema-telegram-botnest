@@ -14,6 +14,10 @@ import { BottomSheet } from '../components/BottomSheet';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
+import { BreathingCard } from '../components/BreathingCard';
+import { GroundingSheet } from '../components/GroundingSheet';
+import { CrisisCard } from '../components/CrisisCard';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   onOpenChildhoodWheel: () => void;
@@ -110,7 +114,10 @@ export function HelpSection({
   const safeTop = useSafeTop();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
+  const tr = useTr();
   const [showFlashcard, setShowFlashcard] = useState(false);
+  const [showGrounding, setShowGrounding] = useState(false);
+  const [showCrisis, setShowCrisis] = useState(false);
   const [showBeliefCheck, setShowBeliefCheck] = useState(false);
   const [showLetterToSelf, setShowLetterToSelf] = useState(false);
   const [showSafePlace, setShowSafePlace] = useState(false);
@@ -232,7 +239,7 @@ export function HelpSection({
             letterSpacing: '-0.5px',
           }}
         >
-          Помощь
+          Здесь и сейчас
         </div>
         <div
           style={{
@@ -242,7 +249,10 @@ export function HelpSection({
             lineHeight: 1.5,
           }}
         >
-          Инструменты и упражнения
+          {tr(
+            'Тяжёлый момент? Начни с одного вдоха',
+            'Тяжёлый момент? Начните с одного вдоха',
+          )}
         </div>
         {/* Next session banner for clients */}
         {relation?.role === 'client' &&
@@ -315,6 +325,31 @@ export function HelpSection({
           gap: 12,
         }}
       >
+        {/* ── «Здесь и сейчас» (дизайн-макет, волна 2): дыхание первым ── */}
+        <BreathingCard />
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 12,
+          }}
+        >
+          <ToolCard
+            emoji="🌍"
+            label="Заземление 5-4-3-2-1"
+            sub="вернуться в тело и в комнату"
+            onClick={() => setShowGrounding(true)}
+          />
+          <ToolCard
+            emoji="📞"
+            label="Мне очень плохо"
+            sub="контакты помощи прямо сейчас"
+            accentColor="var(--accent-red)"
+            onClick={() => setShowCrisis(true)}
+          />
+        </div>
+
         {/* Therapist tasks — shown prominently when assigned */}
         {therapistTasks.filter((t) => !t.doneToday).length > 0 && (
           <div
@@ -414,9 +449,8 @@ export function HelpSection({
           />
           <ToolCard
             emoji="🆘"
-            label="Мне плохо"
+            label="Схема включилась"
             sub="5 шагов чтобы разобраться"
-            accentColor="var(--accent-red)"
             onClick={() => setShowFlashcard(true)}
           />
           <ToolCard
@@ -477,6 +511,37 @@ export function HelpSection({
             handleTaskComplete();
           }}
         />
+      )}
+      {showGrounding && (
+        <GroundingSheet onClose={() => setShowGrounding(false)} />
+      )}
+      {showCrisis && (
+        <BottomSheet onClose={() => setShowCrisis(false)} zIndex={200}>
+          <div style={{ paddingTop: 4 }}>
+            <div
+              style={{
+                fontSize: 17,
+                fontWeight: 800,
+                color: 'var(--text)',
+                marginBottom: 4,
+              }}
+            >
+              Помощь рядом
+            </div>
+            <CrisisCard />
+            <div
+              style={{
+                fontSize: 12,
+                color: 'var(--text-sub)',
+                lineHeight: 1.6,
+                marginTop: 4,
+              }}
+            >
+              Если есть угроза жизни — 112. Разговор с близким человеком тоже
+              считается: иногда одно сообщение «мне плохо» — уже первый шаг.
+            </div>
+          </div>
+        </BottomSheet>
       )}
       {showTaskCreate && (
         <TaskCreateSheet
