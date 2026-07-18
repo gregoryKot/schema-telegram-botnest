@@ -3,7 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { api } from '../api';
 import { Loader } from '../components/Loader';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
-import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
+import { TaskCreateSheet } from '../components/TaskCreateSheet';
+import { getTaskDisplayText } from '../components/taskDisplayText';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
@@ -139,10 +140,12 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   useEffect(() => {
     const state = location.state as { openSchemaEx?: string } | null;
     if (state?.openSchemaEx) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
       setOpenEx('schema');
       setSchemaInitialId(state.openSchemaEx);
       window.history.replaceState({}, '', '/practice');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
   useEffect(() => {

@@ -5,13 +5,9 @@ import type { Need } from '../types';
 import { api } from '../api';
 import { useNeedData } from '../needData';
 import { COLORS } from '../types';
-import { CURATED } from './PlanSheet';
+import { CURATED } from './practiceCurated';
 
-export const PRACTICES_ONBOARDING_KEY = 'practices_onboarding_done';
-
-export function shouldShowPracticesOnboarding(): boolean {
-  return !localStorage.getItem(PRACTICES_ONBOARDING_KEY);
-}
+import { PRACTICES_ONBOARDING_KEY } from './practicesOnboardingGate';
 
 interface Props {
   needs: Need[];

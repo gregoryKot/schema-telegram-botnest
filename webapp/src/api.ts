@@ -425,6 +425,12 @@ export interface Insights {
 // ─── API object (identical endpoints, different auth header) ──────────────────
 export const api = {
   init:           (tzOffset?: number) => post('/api/init', { tzOffset }),
+
+  // Продуктовая аналитика (правило №8). Fire-and-forget: аналитика НИКОГДА не
+  // влияет на UX — ошибки/сеть глотаем, промис не пробрасываем.
+  trackEvent: (name: string, meta?: Record<string, unknown>): void => {
+    void post('/api/event', { name, meta }).catch(() => undefined);
+  },
   getDisclaimer:  () => get<{ accepted: boolean }>('/api/disclaimer'),
   acceptDisclaimer: () => post('/api/disclaimer', {}),
   getYsqProgress: () => get<{ answers: number[]; page: number } | null>('/api/ysq-progress'),
@@ -484,7 +490,7 @@ export const api = {
   createGratitudeDiary: (date: string, items: string[]) => postJson<GratitudeDiaryEntry>('/api/diary/gratitude', { date, items }),
   deleteGratitudeDiary: (id: number) => del(`/api/diary/gratitude/${id}`),
   createTherapyInvite:  () => postJson<{ code: string; url: string }>('/api/therapy/invite', {}),
-  getTherapyRelation:   () => get<any | null>('/api/therapy/relation'),
+  getTherapyRelation:   () => get<TherapyRelationInfo | null>('/api/therapy/relation'),
   joinTherapy:          (code: string) => post('/api/therapy/join', { code }),
   leaveTherapy:         () => del('/api/therapy/relation'),
   getTherapyClients:    () => get<TherapyClientSummary[]>('/api/therapy/clients'),
@@ -523,7 +529,7 @@ export const api = {
   getLetters:           () => get<LetterEntry[]>('/api/letters'),
   createLetter:         (text: string) => post('/api/letters', { text }),
   deleteLetter:         (id: number) => del(`/api/letters/${id}`),
-  getSafePlace:         () => get<any | null>('/api/safe-place'),
+  getSafePlace:         () => get<{ description: string; updatedAt: string } | null>('/api/safe-place'),
   saveSafePlace:        (description: string) => post('/api/safe-place', { description }),
   getFlashcards:        () => get<FlashcardEntry[]>('/api/flashcards'),
   createFlashcard:      (body: { modeId: string; needId: string; reflection?: string; action?: string }) => post('/api/flashcards', body),

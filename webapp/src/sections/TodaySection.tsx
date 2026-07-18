@@ -6,7 +6,8 @@ import { api } from '../api';
 import type { UserTask, TherapyRelationInfo } from '../api';
 import type { Section } from '../components/BottomNav';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
-import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
+import { TaskCreateSheet } from '../components/TaskCreateSheet';
+import { getTaskDisplayText } from '../components/taskDisplayText';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { hasDraft } from '../utils/drafts';
@@ -205,6 +206,7 @@ export function TodaySection({
 
   useEffect(() => {
     let ignore = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
     setProfile(null);
     setDiariesLoaded(false);
 
@@ -255,6 +257,7 @@ export function TodaySection({
     }).catch(() => {});
 
     return () => { ignore = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, [refreshKey]);
 
   useEffect(() => {

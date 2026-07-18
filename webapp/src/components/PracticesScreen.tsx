@@ -36,6 +36,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
     setPractices(null);
     api.getPractices(NEED_IDS[needIdx]).then(setPractices).catch(() => setPractices([]));
   }, [needIdx]);

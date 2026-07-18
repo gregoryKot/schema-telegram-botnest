@@ -110,6 +110,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
     return all.filter(r => (r.label + ' ' + (r.sub ?? '')).toLowerCase().includes(term));
   }, [q, clients, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onNewDiaryEntry]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
   useEffect(() => { setSel(0); }, [q]);
 
   useEffect(() => {

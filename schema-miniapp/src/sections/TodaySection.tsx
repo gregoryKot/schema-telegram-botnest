@@ -24,9 +24,20 @@ import { fmtDate, todayStr } from '../utils/format';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
-import { pressable } from '../utils/a11y';
+import { TodayFocusCard } from '../components/TodayFocusCard';
+import { useTr } from '../utils/addressForm';
+import { ShareCardSheet } from '../share/ShareCardSheet';
+import {
+  drawDayCard,
+  buildDayShareText,
+} from '../../../shared/src/share/cards/dayCard';
+import { botShortUrl } from '../utils/botConfig';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
+
+// Прогрессивное раскрытие (нейроинклюзивность, волна 1): вторичные карточки
+// свёрнуты по умолчанию, выбор запоминается на устройстве.
+const TODAY_MORE_KEY = 'today_more_open';
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -34,7 +45,7 @@ function hexToRgb(hex: string): string {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',');
 }
 
-function _plural(n: number, one: string, few: string, many: string): string {
+function plural(n: number, one: string, few: string, many: string): string {
   const m10 = n % 10,
     m100 = n % 100;
   if (m100 >= 11 && m100 <= 19) return many;
@@ -50,7 +61,7 @@ function formatGreetingDate(): string {
     day: 'numeric',
     month: 'long',
   });
-  return `${dow[0].toUpperCase()}${dow.slice(1)}, ${date}`;
+  return `${dow}, ${date}`;
 }
 
 function readLocalIds(key: string): string[] {
@@ -82,17 +93,9 @@ function NeedMini({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
       onClick={(e) => {
         e.stopPropagation();
         onTap();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onTap();
-        }
       }}
       style={{
         display: 'flex',
@@ -262,6 +265,7 @@ export function TodaySection({
   onOpenTherapistCabinet,
   onTasksChanged,
 }: Props) {
+  const tr = useTr();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() =>
     readLocalIds(MY_SCHEMA_IDS_KEY),
@@ -278,7 +282,20 @@ export function TodaySection({
   const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [introModeId, setIntroModeId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
+  const [showDayShare, setShowDayShare] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(
+    () => localStorage.getItem(TODAY_MORE_KEY) === '1',
+  );
   const safeTop = useSafeTop();
+
+  function toggleMore() {
+    setMoreOpen((prev) => {
+      const next = !prev;
+      if (next) localStorage.setItem(TODAY_MORE_KEY, '1');
+      else localStorage.removeItem(TODAY_MORE_KEY);
+      return next;
+    });
+  }
 
   const firstName =
     window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
@@ -421,89 +438,35 @@ export function TodaySection({
 
   return (
     <div
-      style={{ minHeight: '100vh', paddingBottom: 120, paddingTop: safeTop }}
+      style={{
+        minHeight: '100vh',
+        paddingBottom: 120,
+        paddingTop: safeTop,
+        animation: 'fade-in 0.25s ease',
+      }}
     >
-      {/* ── Header ── */}
+      {/* ── Header (по дизайн-макету: приветствие + темп без давления) ── */}
       <div style={{ padding: '24px 20px 0' }}>
         <div
           style={{
-            fontSize: 11,
-            color: 'var(--text-faint)',
-            fontWeight: 500,
-            marginBottom: 5,
-            letterSpacing: '0.03em',
+            fontSize: 24,
+            fontWeight: 800,
+            color: 'var(--text)',
+            letterSpacing: '-0.03em',
+            lineHeight: 1.15,
           }}
         >
-          {formatGreetingDate()}
+          {firstName ? `Привет, ${firstName} 👋` : 'Добро пожаловать 👋'}
         </div>
         <div
           style={{
             fontSize: 13,
-            color: 'var(--text-faint)',
+            color: 'var(--text-sub)',
+            marginTop: 4,
             fontWeight: 500,
-            marginBottom: 2,
           }}
         >
-          {firstName ? 'Привет,' : ''}
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <div
-            style={{
-              fontSize: 26,
-              fontWeight: 700,
-              color: 'var(--text)',
-              letterSpacing: '-0.5px',
-              lineHeight: 1.2,
-            }}
-          >
-            {firstName ?? 'Добро пожаловать'}
-          </div>
-          {/* Streak */}
-          {profile !== null && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                flexShrink: 0,
-                background:
-                  streak > 0 ? 'rgba(251,146,60,0.12)' : 'var(--surface)',
-                border: `1px solid ${streak > 0 ? 'rgba(251,146,60,0.22)' : 'var(--border-color)'}`,
-                borderRadius: 20,
-                padding: '5px 10px',
-              }}
-            >
-              {streak > 7 ? (
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="#fb923c"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M12 2C12 2 9 7 9 10.5C9 12.43 10.57 14 12.5 14C14.43 14 16 12.43 16 10.5C16 9.5 15.5 8.5 15 7.5C15 7.5 17 9 17 12C17 15.31 14.31 18 11 18C7.69 18 5 15.31 5 12C5 7 12 2 12 2Z" />
-                </svg>
-              ) : (
-                <span style={{ fontSize: 13 }}>{streak > 0 ? '✨' : '💤'}</span>
-              )}
-              <span
-                style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: streak > 0 ? '#fb923c' : 'var(--text-faint)',
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {streak}
-              </span>
-            </div>
-          )}
+          {formatGreetingDate()} · {tr('твой темп', 'ваш темп')}
         </div>
       </div>
 
@@ -518,7 +481,7 @@ export function TodaySection({
         {/* ── Therapist cabinet banner ── */}
         {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
           <div
-            {...pressable(onOpenTherapistCabinet)}
+            onClick={onOpenTherapistCabinet}
             className="card"
             style={{
               borderRadius: 18,
@@ -575,364 +538,310 @@ export function TodaySection({
           onOpenChildhoodWheel={onOpenChildhoodWheel}
         />
 
-        {/* ── Needs card — tap card = history, tap need = tracker ── */}
-        <div
-          className="card"
-          {...(onOpenTrackerHistory ? pressable(onOpenTrackerHistory) : {})}
+        {/* ── Стрик-карточка (макет): мягкая, без наказания за пропуск ── */}
+        {streak > 0 && (
+          <div
+            className="card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 16px',
+              borderRadius: 18,
+              animation: 'slide-up 0.3s ease both',
+              animationDelay: '40ms',
+            }}
+          >
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                flexShrink: 0,
+                background:
+                  'color-mix(in srgb, var(--accent-orange) 14%, transparent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 20,
+              }}
+            >
+              🔥
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}
+              >
+                {streak} {plural(streak, 'день', 'дня', 'дней')} подряд
+              </div>
+              <div
+                style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 1 }}
+              >
+                {tr(
+                  'сбиться — не страшно, просто продолжай',
+                  'сбиться — не страшно, просто продолжайте',
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Фокус дня: одна главная задача (нейроинклюзивность, волна 1) ── */}
+        <TodayFocusCard
+          ratedCount={ratedCount}
+          total={needs.length}
+          avgScore={avgScore}
+          onOpenTracker={onOpenTracker}
+          onOpenHistory={onOpenTrackerHistory}
+          onShareDay={() => setShowDayShare(true)}
+        />
+
+        {/* ── Прогрессивное раскрытие: остальное — по желанию ── */}
+        <button
+          onClick={toggleMore}
+          aria-expanded={moreOpen}
           style={{
-            padding: '18px 18px 14px',
-            cursor: onOpenTrackerHistory ? 'pointer' : undefined,
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            color: 'var(--text-sub)',
+            fontSize: 13,
+            fontWeight: 600,
+            padding: '6px 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          <div
+          {moreOpen ? 'Свернуть' : 'Что ещё можно сегодня'}
+          <span
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 16,
+              display: 'inline-block',
+              transition: 'transform 0.2s',
+              transform: moreOpen ? 'rotate(180deg)' : 'none',
             }}
           >
+            ⌄
+          </span>
+        </button>
+
+        {moreOpen && (
+          <>
+            {/* ── Needs card — tap card = history, tap need = tracker ── */}
             <div
+              className="card"
+              onClick={onOpenTrackerHistory}
               style={{
-                fontSize: 12,
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: 'var(--text-sub)',
+                padding: '18px 18px 14px',
+                cursor: onOpenTrackerHistory ? 'pointer' : undefined,
+                WebkitTapHighlightColor: 'transparent',
               }}
             >
-              Потребности
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-                {allRated ? 'Готово ✓' : `${ratedCount} / ${needs.length}`}
-              </span>
-              {onOpenTrackerHistory && (
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--text-faint)"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                >
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              )}
-            </div>
-          </div>
-
-          {/* 5 mini indicators */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: 14,
-            }}
-          >
-            {needs.map((n) => (
-              <NeedMini
-                key={n.id}
-                need={n}
-                value={ratings[n.id]}
-                yesterday={yesterdayRatings[n.id]}
-                onTap={() =>
-                  onOpenTrackerAt ? onOpenTrackerAt(n.id) : onOpenTracker()
-                }
-              />
-            ))}
-          </div>
-
-          {/* Primary CTA */}
-          {allRated && avgScore ? (
-            (() => {
-              const sc = parseFloat(avgScore);
-              const scoreColor =
-                sc >= 7
-                  ? 'var(--accent-green)'
-                  : sc >= 4
-                    ? 'var(--accent-yellow)'
-                    : 'var(--accent-red)';
-              const scoreLabel =
-                sc >= 7
-                  ? 'Хороший день'
-                  : sc >= 4
-                    ? 'Средний день'
-                    : 'Сложный день';
-              return (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 16,
+                }}
+              >
                 <div
                   style={{
-                    background: 'var(--surface-2)',
-                    borderRadius: 14,
-                    padding: '12px 14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'var(--text-sub)',
                   }}
                 >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: 'var(--text-faint)',
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        marginBottom: 2,
-                      }}
-                    >
-                      Средний индекс
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 26,
-                        fontWeight: 800,
-                        letterSpacing: '-1.5px',
-                        color: scoreColor,
-                        fontVariantNumeric: 'tabular-nums',
-                      }}
-                    >
-                      {avgScore}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: scoreColor,
-                        fontWeight: 600,
-                        marginTop: 2,
-                      }}
-                    >
-                      {scoreLabel}
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenTrackerHistory?.();
-                    }}
-                    style={{
-                      background:
-                        'color-mix(in srgb, var(--accent) 10%, transparent)',
-                      border:
-                        '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-                      borderRadius: 10,
-                      padding: '8px 12px',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: 'var(--accent)',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 2,
-                    }}
-                  >
-                    <span>📊</span>
-                    <span>История</span>
-                  </button>
+                  Потребности
                 </div>
-              );
-            })()
-          ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+                    {allRated ? 'Готово ✓' : `${ratedCount} / ${needs.length}`}
+                  </span>
+                  {onOpenTrackerHistory && (
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="var(--text-faint)"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    >
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+
+              {/* 5 mini indicators */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: 14,
+                }}
+              >
+                {needs.map((n) => (
+                  <NeedMini
+                    key={n.id}
+                    need={n}
+                    value={ratings[n.id]}
+                    yesterday={yesterdayRatings[n.id]}
+                    onTap={() =>
+                      onOpenTrackerAt ? onOpenTrackerAt(n.id) : onOpenTracker()
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* ── Diary card ── */}
             <div
-              role="button"
-              tabIndex={0}
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenTracker();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onOpenTracker();
-                }
-              }}
+              onClick={onOpenDiaries}
+              className="card"
               style={{
-                borderRadius: 14,
-                padding: '12px 14px',
+                padding: '18px 18px 14px',
                 cursor: 'pointer',
-                background:
-                  'color-mix(in srgb, var(--accent) 8%, var(--surface-2))',
-                border:
-                  '1px solid color-mix(in srgb, var(--accent) 18%, transparent)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
               }}
             >
-              <div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 14,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    color: 'var(--text-sub)',
+                  }}
+                >
+                  Дневник
+                </div>
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--accent)',
+                    fontWeight: 500,
+                  }}
+                >
+                  Все →
+                </span>
+              </div>
+
+              {!diariesLoaded ? (
+                <SkeletonLines />
+              ) : recentDiaries.length > 0 ? (
+                recentDiaries.map((entry, i) => {
+                  const typeColor =
+                    (
+                      {
+                        schema: '#818cf8',
+                        mode: '#f472b6',
+                        gratitude: '#4ade80',
+                      } as Record<string, string>
+                    )[entry.type] ?? '#aaa';
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '7px 0',
+                        borderTop:
+                          i > 0 ? '1px solid var(--border-color)' : undefined,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 4,
+                          height: 36,
+                          borderRadius: 4,
+                          flexShrink: 0,
+                          background: typeColor,
+                        }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: 'var(--text)',
+                            fontWeight: 500,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {entry.label}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: 'var(--text-sub)',
+                            marginTop: 2,
+                          }}
+                        >
+                          {entry.dateStr}
+                          {entry.time ? ` · ${entry.time}` : ''}
+                        </div>
+                      </div>
+                      <DiaryTypeBadge type={entry.type} />
+                    </div>
+                  );
+                })
+              ) : (
                 <div
                   style={{
                     fontSize: 13,
-                    fontWeight: 600,
-                    color: 'var(--accent)',
+                    color: 'var(--text-sub)',
+                    lineHeight: 1.55,
                   }}
                 >
-                  Оценить потребности
+                  Замечать моменты, когда схемы активируются — главная практика
                 </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--text-faint)',
-                    marginTop: 2,
-                  }}
-                >
-                  Займёт 2 минуты
-                </div>
-              </div>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
+              )}
+
+              <div
+                style={{
+                  paddingTop: 10,
+                  marginTop: 2,
+                  borderTop: '1px solid var(--border-color)',
+                }}
               >
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </div>
-          )}
-        </div>
-
-        {/* ── Diary card ── */}
-        <div
-          {...pressable(onOpenDiaries)}
-          className="card"
-          style={{
-            padding: '18px 18px 14px',
-            cursor: 'pointer',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 14,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: 'var(--text-sub)',
-              }}
-            >
-              Дневник
-            </div>
-            <span
-              style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500 }}
-            >
-              Все →
-            </span>
-          </div>
-
-          {!diariesLoaded ? (
-            <SkeletonLines />
-          ) : recentDiaries.length > 0 ? (
-            recentDiaries.map((entry, i) => {
-              const typeColor =
-                (
-                  {
-                    schema: '#818cf8',
-                    mode: '#f472b6',
-                    gratitude: '#4ade80',
-                  } as Record<string, string>
-                )[entry.type] ?? '#aaa';
-              return (
-                <div
-                  key={i}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDiaryTask(true);
+                  }}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '7px 0',
-                    borderTop:
-                      i > 0 ? '1px solid var(--border-color)' : undefined,
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    fontSize: 12,
+                    color: 'var(--accent)',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    fontFamily: 'inherit',
                   }}
                 >
-                  <div
-                    style={{
-                      width: 4,
-                      height: 36,
-                      borderRadius: 4,
-                      flexShrink: 0,
-                      background: typeColor,
-                    }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: 'var(--text)',
-                        fontWeight: 500,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {entry.label}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: 'var(--text-sub)',
-                        marginTop: 2,
-                      }}
-                    >
-                      {entry.dateStr}
-                      {entry.time ? ` · ${entry.time}` : ''}
-                    </div>
-                  </div>
-                  <DiaryTypeBadge type={entry.type} />
-                </div>
-              );
-            })
-          ) : (
-            <div
-              style={{
-                fontSize: 13,
-                color: 'var(--text-sub)',
-                lineHeight: 1.55,
-              }}
-            >
-              Замечать моменты, когда схемы активируются — главная практика
+                  + Поставить цель на дневник
+                </button>
+              </div>
             </div>
-          )}
-
-          <div
-            style={{
-              paddingTop: 10,
-              marginTop: 2,
-              borderTop: '1px solid var(--border-color)',
-            }}
-          >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDiaryTask(true);
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                fontSize: 12,
-                color: 'var(--accent)',
-                cursor: 'pointer',
-                fontWeight: 500,
-                fontFamily: 'inherit',
-              }}
-            >
-              + Поставить цель на дневник
-            </button>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       {showDiaryTask && (
@@ -975,6 +884,25 @@ export function TodaySection({
             setIntroModeId(null);
             handleTaskComplete();
           }}
+        />
+      )}
+
+      {showDayShare && (
+        <ShareCardSheet
+          title="Карточка дня"
+          draw={(canvas) =>
+            drawDayCard(canvas, needs, ratings, fmtDate(todayStr()))
+          }
+          shareText={buildDayShareText(
+            needs,
+            ratings,
+            fmtDate(todayStr()),
+            botShortUrl,
+          )}
+          filename="needs-day.png"
+          eventKind="day"
+          onClose={() => setShowDayShare(false)}
+          therapyNote
         />
       )}
 
@@ -1494,10 +1422,10 @@ function OnboardingWidget({
           return (
             <div
               key={s.id}
-              {...pressable(() => {
+              onClick={() => {
                 setSelectedId(s.id === current.id ? null : s.id);
                 setSlideKey((k) => k + 1);
-              })}
+              }}
               style={{ cursor: 'pointer' }}
             >
               <div

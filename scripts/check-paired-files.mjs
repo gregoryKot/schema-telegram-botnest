@@ -26,11 +26,14 @@ const PAIRS = [
   'utils/todayInsight.ts',
   'utils/drafts.ts',
   'utils/addressForm.tsx',
+  'utils/AddressFormProvider.tsx',
   'components/CrisisCard.tsx',
   'hooks/useYsqTest.ts',
   'utils/format.ts',
   'utils/storageKeys.ts',
   'utils/a11y.ts',
+  'utils/reducedMotion.ts',
+  'hooks/useReducedMotionPref.ts',
 ];
 
 // Осознанно НЕ в списке (разошлись содержательно, или намеренное визуальное

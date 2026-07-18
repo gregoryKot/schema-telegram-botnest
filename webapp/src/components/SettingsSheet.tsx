@@ -7,6 +7,7 @@ import { Loader } from './Loader';
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
 import type { Theme } from '../utils/theme';
 import { useSetAddressForm } from '../utils/addressForm';
+import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 import { botHandle, botShortUrl } from '../utils/botConfig';
 
 const TIMEZONES = [
@@ -84,6 +85,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [editName, setEditName] = useState(displayName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);
+  const motion = useReducedMotionPref(() => {
+    setSavedToast(true);
+    setTimeout(() => setSavedToast(false), 1800);
+  });
   const setAddressForm = useSetAddressForm();
   const [therapistReq, setTherapistReq] = useState<{ status: string; rejectReason: string | null } | null | undefined>(undefined);
   const [showReqForm, setShowReqForm] = useState(false);
@@ -98,6 +103,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     api.getSettings()
       .then(setSettings)
       .catch(() => setSettings({ notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [], therapistShareCards: true, therapistShareProfile: true }));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
     setPairLoading(true);
     api.getPair().then(setPairData).catch(() => {}).finally(() => setPairLoading(false));
     api.getTherapyRelation().then(setTherapyRelation).catch(() => setTherapyRelation(null));
@@ -304,6 +310,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); setTheme(resetToSystemTheme()); } }}
                     style={{ color: 'var(--accent)', cursor: 'pointer' }}>Авто (по системе) →</span>}
                   right={<Toggle on={theme === 'dark'} onClick={() => setTheme(toggleTheme())} />}
+                />
+                {/* Нейроинклюзивность: сниженная анимация (WCAG 2.3.3) */}
+                <SRow
+                  title="Меньше движения"
+                  sub={motion.sub}
+                  right={<Toggle on={motion.reduced} onClick={motion.toggle} />}
                 />
                 {userRole === 'THERAPIST' && onToggleTherapistMode && (
                   <SRow

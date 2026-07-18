@@ -149,6 +149,7 @@ model User {
   modeDiaries            ModeDiaryEntry[]
   gratitudeDiaries       GratitudeDiaryEntry[]
   appActivities          AppActivity[]
+  analyticsEvents        AnalyticsEvent[]
 }
 
 // Email magic-link tokens — for recovery, email verification, etc.
@@ -369,6 +370,23 @@ model AppActivity {
 
   @@unique([userId, date])
   @@index([userId])
+}
+
+// Продуктовая аналитика (правило №8 CLAUDE.md: фича = событие). Событие —
+// это факт «юзер сделал X» для проверки гипотез метриками (D1/D7/D30 и т.п.).
+// name — из allow-list на бэке (src/analytics/analytics.constants.ts).
+// meta — маленький СТРУКТУРНЫЙ non-PII JSON (напр. { kind: 'weekly' }). НИКОГДА
+// не класть сюда свободный текст пользователя — это не шифруется.
+model AnalyticsEvent {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   // событие, напр. 'share_card'
+  meta      Json?    // структурные параметры события (без PII)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([name, createdAt])
 }
 
 model TherapyRelation {
