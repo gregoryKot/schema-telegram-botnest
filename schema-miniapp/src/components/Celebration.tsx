@@ -26,6 +26,7 @@ export function Celebration({ streak, onDone, insight }: Props) {
 
   return (
     <div
+      role="presentation"
       onClick={onDone}
       style={{
         position: 'fixed',

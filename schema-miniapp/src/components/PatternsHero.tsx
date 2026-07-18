@@ -5,6 +5,7 @@
 // Опытный: сводка недели «Чаще всего звучит» из дневника схем.
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
 import { ToolRow } from './ToolRow';
 import { WeekSchemaSummary } from '../utils/patternsSummary';
 
@@ -33,7 +34,7 @@ export function PatternsHero({
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div
-          onClick={onStartTest}
+          {...pressable(onStartTest)}
           style={{
             borderRadius: 24,
             padding: 20,
@@ -154,7 +155,7 @@ export function PatternsHero({
     return (
       <div
         className="card"
-        onClick={() => onOpenSchemaDetail(summary.schemaId)}
+        {...pressable(() => onOpenSchemaDetail(summary.schemaId))}
         style={{
           padding: 18,
           cursor: 'pointer',
