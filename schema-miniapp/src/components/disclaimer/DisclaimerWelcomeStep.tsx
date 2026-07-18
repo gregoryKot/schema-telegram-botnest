@@ -1,6 +1,9 @@
-// Шаг 0 онбординга Disclaimer: приветствие. Перенесено из Disclaimer.tsx
-// как есть (этап 3 REMEDIATION_PLAN) — без смены поведения.
+import { useTr } from '../../utils/addressForm';
+
+// Шаг 0 онбординга Disclaimer: приветствие. Форма обращения ты/вы уже выбрана
+// на предыдущем шаге (AddressFormPicker) — приветствие звучит в ней.
 export function DisclaimerWelcomeStep() {
+  const tr = useTr();
   return (
     <div>
       <div style={{ textAlign: 'center', marginBottom: 24, paddingTop: 4 }}>
@@ -53,7 +56,10 @@ export function DisclaimerWelcomeStep() {
         style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 12 }}
       >
         <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>
-          Хорошо, что ты здесь. Замечать свои потребности — это уже немало.
+          {tr(
+            'Хорошо, что ты здесь. Замечать свои потребности — это уже немало.',
+            'Хорошо, что вы здесь. Замечать свои потребности — это уже немало.',
+          )}
         </div>
       </div>
       <div className="card" style={{ borderRadius: 16, padding: '16px 18px' }}>
@@ -65,8 +71,10 @@ export function DisclaimerWelcomeStep() {
           терапевтом.
           <br />
           <br />
-          Если чувствуешь, что что-то важное требует внимания — терапия это
-          место, где можно разобраться по-настоящему.
+          {tr(
+            'Если чувствуешь, что что-то важное требует внимания — терапия это место, где можно разобраться по-настоящему.',
+            'Если чувствуете, что что-то важное требует внимания — терапия это место, где можно разобраться по-настоящему.',
+          )}
         </div>
       </div>
     </div>
