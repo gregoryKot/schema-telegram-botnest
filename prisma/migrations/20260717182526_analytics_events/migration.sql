@@ -1,14 +1,12 @@
 -- Продуктовая аналитика (правило №8): таблица событий.
--- ВАЖНО: миграция содержит ТОЛЬКО создание новой таблицы AnalyticsEvent.
--- `prisma migrate dev` дополнительно предложил свернуть сюда накопившийся
--- дрейф схемы (недостающие миграции индексов Rating/TherapyRelation/UserTask,
--- пересоздание FK, снятие DEFAULT с updatedAt в ModeMap/UserSafePlace) — он
--- НЕ относится к этой фиче и опасен: если объекты уже есть на проде (db push),
--- CREATE INDEX без IF NOT EXISTS уронит deploy (риск P3009). Дрейф оставлен
--- как есть — это отдельная, до-существующая проблема.
+-- Идемпотентно (IF NOT EXISTS + guard на constraint) — правило миграций №3.
+-- Инцидент 2026-07-18: исходная версия делала CREATE TABLE/INDEX/ADD CONSTRAINT
+-- без IF NOT EXISTS; на проде таблица уже существовала (заведена вне migrate),
+-- поэтому `migrate deploy` падал 42P07 → P3009 → крашлуп старта. Переписано
+-- идемпотентно: безопасно и на чистой БД, и когда объекты уже есть.
 
 -- CreateTable
-CREATE TABLE "AnalyticsEvent" (
+CREATE TABLE IF NOT EXISTS "AnalyticsEvent" (
     "id" SERIAL NOT NULL,
     "userId" BIGINT NOT NULL,
     "name" TEXT NOT NULL,
@@ -19,10 +17,17 @@ CREATE TABLE "AnalyticsEvent" (
 );
 
 -- CreateIndex
-CREATE INDEX "AnalyticsEvent_userId_idx" ON "AnalyticsEvent"("userId");
+CREATE INDEX IF NOT EXISTS "AnalyticsEvent_userId_idx" ON "AnalyticsEvent"("userId");
 
 -- CreateIndex
-CREATE INDEX "AnalyticsEvent_name_createdAt_idx" ON "AnalyticsEvent"("name", "createdAt");
+CREATE INDEX IF NOT EXISTS "AnalyticsEvent_name_createdAt_idx" ON "AnalyticsEvent"("name", "createdAt");
 
--- AddForeignKey
-ALTER TABLE "AnalyticsEvent" ADD CONSTRAINT "AnalyticsEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey (guarded: pg_constraint не поддерживает IF NOT EXISTS для ADD)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'AnalyticsEvent_userId_fkey'
+  ) THEN
+    ALTER TABLE "AnalyticsEvent" ADD CONSTRAINT "AnalyticsEvent_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
