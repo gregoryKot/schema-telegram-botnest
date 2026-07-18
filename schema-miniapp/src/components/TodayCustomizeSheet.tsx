@@ -1,26 +1,91 @@
-// Лист «Настроить экран» (волна 2 нейродизайна): выбор главной практики
-// фокус-карточки и скрытие карточки серии. Живёт прямо на экране «Сегодня»
-// (правило «управление там, где пользователь и так идёт»). Для кого серия —
-// источник тревоги/стыда, а не мотивации, её можно убрать.
+// Лист «Настроить экран» (волна 2 нейродизайна): что показывать на «Сегодня»
+// и как. Живёт прямо на экране (правило «управление там, где пользователь и
+// так идёт»): выбор главной практики, тема, скрытие серии / баннера кабинета /
+// второстепенного, и вход в общие настройки приложения.
+import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { FOCUS_OPTIONS, FocusPractice } from '../utils/todayFocus';
+import { getTheme, toggleTheme, Theme } from '../utils/theme';
 import { pressable } from '../utils/a11y';
 
 interface Props {
   practice: FocusPractice;
   streakHidden: boolean;
+  secondaryHidden: boolean;
+  therapistBannerHidden: boolean;
+  showTherapistToggle: boolean;
   onPractice: (p: FocusPractice) => void;
   onToggleStreak: () => void;
+  onToggleSecondary: () => void;
+  onToggleTherapistBanner: () => void;
+  onOpenSettings: () => void;
   onClose: () => void;
+}
+
+function ToggleRow({
+  emoji,
+  title,
+  sub,
+  on,
+  onToggle,
+}: {
+  emoji: string;
+  title: string;
+  sub: string;
+  on: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      {...pressable(onToggle)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '12px 14px',
+        borderRadius: 14,
+        cursor: 'pointer',
+        background: 'rgba(var(--fg-rgb),0.04)',
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
+      <span style={{ fontSize: 20, flexShrink: 0 }}>{emoji}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+          {title}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>
+          {sub}
+        </div>
+      </div>
+      <span
+        style={{
+          fontSize: 15,
+          fontWeight: 800,
+          color: on ? 'var(--accent)' : 'var(--text-faint)',
+        }}
+      >
+        {on ? '✓' : '—'}
+      </span>
+    </div>
+  );
 }
 
 export function TodayCustomizeSheet({
   practice,
   streakHidden,
+  secondaryHidden,
+  therapistBannerHidden,
+  showTherapistToggle,
   onPractice,
   onToggleStreak,
+  onToggleSecondary,
+  onToggleTherapistBanner,
+  onOpenSettings,
   onClose,
 }: Props) {
+  const [theme, setTheme] = useState<Theme>(getTheme);
+
   return (
     <BottomSheet onClose={onClose} zIndex={200}>
       <div style={{ paddingTop: 4 }}>
@@ -104,10 +169,10 @@ export function TodayCustomizeSheet({
         </div>
 
         <div className="section-label" style={{ margin: '16px 4px 8px' }}>
-          Показывать
+          Оформление
         </div>
         <div
-          {...pressable(onToggleStreak)}
+          {...pressable(() => setTheme(toggleTheme()))}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -119,33 +184,90 @@ export function TodayCustomizeSheet({
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          <span style={{ fontSize: 20, flexShrink: 0 }}>🔥</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}
-            >
-              Карточка серии
-            </div>
-            <div
-              style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}
-            >
-              можно убрать, если счёт дней давит
-            </div>
-          </div>
-          <span
+          <span style={{ fontSize: 20, flexShrink: 0 }}>
+            {theme === 'dark' ? '🌙' : '☀️'}
+          </span>
+          <div
             style={{
-              fontSize: 15,
-              fontWeight: 800,
-              color: streakHidden ? 'var(--text-faint)' : 'var(--accent)',
+              flex: 1,
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--text)',
             }}
           >
-            {streakHidden ? '—' : '✓'}
+            Тема
+          </div>
+          <span
+            style={{ fontSize: 13, color: 'var(--text-sub)', fontWeight: 600 }}
+          >
+            {theme === 'dark' ? 'Тёмная' : 'Светлая'}
           </span>
         </div>
 
+        <div className="section-label" style={{ margin: '16px 4px 8px' }}>
+          Показывать на главном
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <ToggleRow
+            emoji="🔥"
+            title="Карточка серии"
+            sub="можно убрать, если счёт дней давит"
+            on={!streakHidden}
+            onToggle={onToggleStreak}
+          />
+          <ToggleRow
+            emoji="🗂"
+            title="«Что ещё можно сегодня»"
+            sub="потребности и дневник под сворачиванием"
+            on={secondaryHidden}
+            onToggle={onToggleSecondary}
+          />
+          {showTherapistToggle && (
+            <ToggleRow
+              emoji="🧑‍⚕️"
+              title="Кабинет терапевта"
+              sub="баннер входа в кабинет на главном"
+              on={!therapistBannerHidden}
+              onToggle={onToggleTherapistBanner}
+            />
+          )}
+        </div>
+
+        <button
+          {...pressable(onOpenSettings)}
+          style={{
+            marginTop: 16,
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '13px 14px',
+            borderRadius: 14,
+            border: '1px solid var(--border-color)',
+            background: 'var(--surface)',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <span style={{ fontSize: 20, flexShrink: 0 }}>⚙️</span>
+          <span
+            style={{
+              flex: 1,
+              textAlign: 'left',
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--text)',
+            }}
+          >
+            Общие настройки приложения
+          </span>
+          <span style={{ color: 'var(--text-faint)', fontSize: 18 }}>›</span>
+        </button>
+
         <button
           className="btn-primary"
-          style={{ marginTop: 16 }}
+          style={{ marginTop: 10 }}
           onClick={onClose}
         >
           Готово

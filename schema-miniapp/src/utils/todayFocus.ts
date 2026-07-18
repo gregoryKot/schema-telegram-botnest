@@ -7,6 +7,8 @@ export type FocusPractice = 'tracker' | 'schema' | 'mode' | 'gratitude';
 
 const PRACTICE_KEY = 'today_focus_practice';
 const STREAK_KEY = 'today_streak_hidden';
+const SECONDARY_KEY = 'today_secondary_hidden';
+const THERAPIST_BANNER_KEY = 'today_therapist_banner_hidden';
 
 export const FOCUS_OPTIONS: {
   id: FocusPractice;
@@ -63,6 +65,27 @@ export function isStreakHidden(): boolean {
 export function setStreakHidden(hidden: boolean): void {
   if (hidden) localStorage.setItem(STREAK_KEY, '1');
   else localStorage.removeItem(STREAK_KEY);
+}
+
+// Скрывать ли второстепенное («Что ещё можно сегодня») под сворачиванием.
+// По умолчанию — да (собранный экран, меньше нагрузки).
+export function isSecondaryHidden(): boolean {
+  return localStorage.getItem(SECONDARY_KEY) !== '0';
+}
+
+export function setSecondaryHidden(hidden: boolean): void {
+  if (hidden) localStorage.removeItem(SECONDARY_KEY);
+  else localStorage.setItem(SECONDARY_KEY, '0');
+}
+
+// Скрывать ли баннер «Кабинет терапевта» с главного (только роль THERAPIST).
+export function isTherapistBannerHidden(): boolean {
+  return localStorage.getItem(THERAPIST_BANNER_KEY) === '1';
+}
+
+export function setTherapistBannerHidden(hidden: boolean): void {
+  if (hidden) localStorage.setItem(THERAPIST_BANNER_KEY, '1');
+  else localStorage.removeItem(THERAPIST_BANNER_KEY);
 }
 
 export interface FocusCardContent {
