@@ -25,7 +25,6 @@ import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { TodayFocusCard } from '../components/TodayFocusCard';
-import { getTheme, toggleTheme, Theme } from '../utils/theme';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
 import {
   FocusPractice,
@@ -33,6 +32,10 @@ import {
   setFocusPractice,
   isStreakHidden,
   setStreakHidden,
+  isSecondaryHidden,
+  setSecondaryHidden,
+  isTherapistBannerHidden,
+  setTherapistBannerHidden,
 } from '../utils/todayFocus';
 import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
@@ -308,7 +311,11 @@ export function TodaySection({
     useState<FocusPractice>(getFocusPractice);
   const [streakHidden, setStreakHiddenState] = useState(isStreakHidden);
   const [showCustomize, setShowCustomize] = useState(false);
-  const [theme, setTheme] = useState<Theme>(getTheme);
+  const [secondaryHidden, setSecondaryHiddenState] =
+    useState(isSecondaryHidden);
+  const [therapistBannerHidden, setTherapistBannerHiddenState] = useState(
+    isTherapistBannerHidden,
+  );
   const [todayDone, setTodayDone] = useState({
     schema: false,
     mode: false,
@@ -502,52 +509,27 @@ export function TodaySection({
           >
             {firstName ? `Привет, ${firstName} 👋` : 'Добро пожаловать 👋'}
           </div>
-          <div
-            style={{ display: 'flex', gap: 8, flexShrink: 0, marginTop: -6 }}
+          <button
+            onClick={() => setShowCustomize(true)}
+            aria-label="Настроить экран"
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              border: '1px solid var(--border-color)',
+              background: 'var(--surface)',
+              color: 'var(--text-sub)',
+              fontSize: 17,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              marginTop: -6,
+            }}
           >
-            <button
-              onClick={() => setTheme(toggleTheme())}
-              aria-label={
-                theme === 'dark'
-                  ? 'Включить светлую тему'
-                  : 'Включить тёмную тему'
-              }
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 14,
-                border: '1px solid var(--border-color)',
-                background: 'var(--surface)',
-                color: 'var(--text)',
-                fontSize: 18,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {theme === 'dark' ? '☀' : '☾'}
-            </button>
-            <button
-              onClick={() => setShowCustomize(true)}
-              aria-label="Настроить экран"
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 14,
-                border: '1px solid var(--border-color)',
-                background: 'var(--surface)',
-                color: 'var(--text-sub)',
-                fontSize: 17,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              ⚙
-            </button>
-          </div>
+            ⚙
+          </button>
         </div>
         <div
           style={{
@@ -570,53 +552,57 @@ export function TodaySection({
         }}
       >
         {/* ── Therapist cabinet banner ── */}
-        {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
-          <div
-            {...pressable(onOpenTherapistCabinet)}
-            className="card"
-            style={{
-              borderRadius: 18,
-              padding: '12px 16px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-            }}
-          >
+        {userRole === 'THERAPIST' &&
+          onOpenTherapistCabinet &&
+          !therapistBannerHidden && (
             <div
+              {...pressable(onOpenTherapistCabinet)}
+              className="card"
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 13,
-                flexShrink: 0,
-                background:
-                  'color-mix(in srgb, var(--accent) 10%, transparent)',
+                borderRadius: 18,
+                padding: '12px 16px',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 20,
+                gap: 14,
               }}
             >
-              🧑‍⚕️
-            </div>
-            <div style={{ flex: 1 }}>
               <div
                 style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: 'var(--text)',
-                  marginBottom: 2,
+                  width: 42,
+                  height: 42,
+                  borderRadius: 13,
+                  flexShrink: 0,
+                  background:
+                    'color-mix(in srgb, var(--accent) 10%, transparent)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 20,
                 }}
               >
-                Кабинет терапевта
+                🧑‍⚕️
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-                Клиенты · Задания · Концептуализация
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    marginBottom: 2,
+                  }}
+                >
+                  Кабинет терапевта
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+                  Клиенты · Задания · Концептуализация
+                </div>
               </div>
+              <span style={{ fontSize: 18, color: 'var(--text-faint)' }}>
+                ›
+              </span>
             </div>
-            <span style={{ fontSize: 18, color: 'var(--text-faint)' }}>›</span>
-          </div>
-        )}
+          )}
 
         {/* ── Onboarding widget ── */}
         <OnboardingWidget
@@ -696,38 +682,40 @@ export function TodaySection({
         />
 
         {/* ── Прогрессивное раскрытие: остальное — по желанию ── */}
-        <button
-          onClick={toggleMore}
-          aria-expanded={moreOpen}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            color: 'var(--text-sub)',
-            fontSize: 13,
-            fontWeight: 600,
-            padding: '6px 0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          {moreOpen ? 'Свернуть' : 'Что ещё можно сегодня'}
-          <span
+        {secondaryHidden && (
+          <button
+            onClick={toggleMore}
+            aria-expanded={moreOpen}
             style={{
-              display: 'inline-block',
-              transition: 'transform 0.2s',
-              transform: moreOpen ? 'rotate(180deg)' : 'none',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              color: 'var(--text-sub)',
+              fontSize: 13,
+              fontWeight: 600,
+              padding: '6px 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
-            ⌄
-          </span>
-        </button>
+            {moreOpen ? 'Свернуть' : 'Что ещё можно сегодня'}
+            <span
+              style={{
+                display: 'inline-block',
+                transition: 'transform 0.2s',
+                transform: moreOpen ? 'rotate(180deg)' : 'none',
+              }}
+            >
+              ⌄
+            </span>
+          </button>
+        )}
 
-        {moreOpen && (
+        {(!secondaryHidden || moreOpen) && (
           <>
             {/* ── Needs card — tap card = history, tap need = tracker ── */}
             <div
@@ -947,6 +935,11 @@ export function TodaySection({
         <TodayCustomizeSheet
           practice={focusPractice}
           streakHidden={streakHidden}
+          secondaryHidden={secondaryHidden}
+          therapistBannerHidden={therapistBannerHidden}
+          showTherapistToggle={
+            userRole === 'THERAPIST' && !!onOpenTherapistCabinet
+          }
           onPractice={(p) => {
             setFocusPractice(p);
             setFocusPracticeState(p);
@@ -957,6 +950,20 @@ export function TodaySection({
             setStreakHidden(next);
             setStreakHiddenState(next);
             api.trackEvent('today_streak_toggle', { hidden: next });
+          }}
+          onToggleSecondary={() => {
+            const next = !secondaryHidden;
+            setSecondaryHidden(next);
+            setSecondaryHiddenState(next);
+          }}
+          onToggleTherapistBanner={() => {
+            const next = !therapistBannerHidden;
+            setTherapistBannerHidden(next);
+            setTherapistBannerHiddenState(next);
+          }}
+          onOpenSettings={() => {
+            setShowCustomize(false);
+            onOpenAdvanced();
           }}
           onClose={() => setShowCustomize(false)}
         />

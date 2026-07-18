@@ -1,10 +1,47 @@
 // Тесты настраиваемого «Сегодня» (волна 2 нейродизайна).
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   parseFocusPractice,
   focusCardContent,
   isFocusDone,
+  isSecondaryHidden,
+  setSecondaryHidden,
+  isTherapistBannerHidden,
+  setTherapistBannerHidden,
 } from './todayFocus';
+
+// В node-окружении vitest нет localStorage — простой in-memory стаб.
+beforeEach(() => {
+  const store = new Map<string, string>();
+  globalThis.localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
+    clear: () => store.clear(),
+    key: (i: number) => [...store.keys()][i] ?? null,
+    get length() {
+      return store.size;
+    },
+  } as Storage;
+});
+
+describe('флаги видимости «Сегодня»', () => {
+  it('второстепенное скрыто по умолчанию; выключается и включается', () => {
+    localStorage.clear();
+    expect(isSecondaryHidden()).toBe(true);
+    setSecondaryHidden(false);
+    expect(isSecondaryHidden()).toBe(false);
+    setSecondaryHidden(true);
+    expect(isSecondaryHidden()).toBe(true);
+  });
+
+  it('баннер терапевта показан по умолчанию; скрывается', () => {
+    localStorage.clear();
+    expect(isTherapistBannerHidden()).toBe(false);
+    setTherapistBannerHidden(true);
+    expect(isTherapistBannerHidden()).toBe(true);
+  });
+});
 
 describe('parseFocusPractice', () => {
   it('валидные значения проходят, мусор и null — tracker', () => {
