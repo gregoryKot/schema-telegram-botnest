@@ -47,7 +47,7 @@ export function useTelegramBackButton({
                       : sheets.pairSheet
                         ? () => {
                             sheets.close('pairSheet');
-                            api.getPair().then(setPairData);
+                            void api.getPair().then(setPairData);
                           }
                         : sheets.childhoodWheel
                           ? () => sheets.close('childhoodWheel')

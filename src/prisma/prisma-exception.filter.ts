@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import type { Request, Response } from 'express';
 
 // Global filter that maps Prisma errors to friendly 4xx responses.
 //
@@ -22,9 +23,9 @@ export class PrismaExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(PrismaExceptionFilter.name);
 
   catch(exception: Error, host: ArgumentsHost) {
-    const res = host.switchToHttp().getResponse();
-    const req = host.switchToHttp().getRequest();
-    const path = req?.url ?? '?';
+    const res = host.switchToHttp().getResponse<Response>();
+    const req = host.switchToHttp().getRequest<Request>();
+    const path = req.url ?? '?';
 
     // Always log the full internal message — admin gets the alert via
     // AlertLogger and we keep the trail in case we need to debug.
@@ -76,19 +77,20 @@ export class PrismaExceptionFilter implements ExceptionFilter {
 export class GenericExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GenericExceptionFilter.name);
 
-  catch(exception: any, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost) {
     if (exception instanceof HttpException) {
       // Nest's normal exception flow — pass through.
-      const res = host.switchToHttp().getResponse();
+      const res = host.switchToHttp().getResponse<Response>();
       const body = exception.getResponse();
       return res.status(exception.getStatus()).json(body);
     }
-    const req = host.switchToHttp().getRequest();
+    const req = host.switchToHttp().getRequest<Request>();
+    const err = exception instanceof Error ? exception : undefined;
     this.logger.error(
-      `Unhandled error on ${req?.url ?? '?'}: ${exception?.message ?? exception}`,
-      exception?.stack,
+      `Unhandled error on ${req.url ?? '?'}: ${err?.message ?? String(exception)}`,
+      err?.stack,
     );
-    host.switchToHttp().getResponse().status(500).json({
+    host.switchToHttp().getResponse<Response>().status(500).json({
       statusCode: 500,
       error: 'Internal Server Error',
       message: 'Внутренняя ошибка сервера',

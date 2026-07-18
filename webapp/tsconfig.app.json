@@ -9,6 +9,12 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
+    /* ../shared резолвит react вверх от СВОЕГО каталога — в CI-джобе webapp
+       корневой node_modules пуст и типов там нет. Прибиваем к webapp'овским. */
+    "paths": {
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"]
+    },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",

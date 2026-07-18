@@ -63,7 +63,7 @@ export class DonationService {
           status: 'pending',
         },
         SCHEMA,
-      ) as any,
+      ),
     });
     this.logger.log(`Donation ${row.id} created (${amount}₽, ${source})`);
 
@@ -107,7 +107,7 @@ export class DonationService {
       data: { status: 'paid', paidAt: new Date() },
     });
     if (claimed.count === 0) return { ok: true };
-    const plain = decryptRecord(row, SCHEMA) as any;
+    const plain = decryptRecord(row, SCHEMA);
     await this.notify.alertAdmin(
       `💛 <b>Донат ${row.amount} ₽</b> (${row.source})` +
         (plain.email ? `\n📬 ${plain.email}` : '') +

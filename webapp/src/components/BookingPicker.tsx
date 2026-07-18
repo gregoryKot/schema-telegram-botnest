@@ -53,7 +53,15 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
   const [returning, setReturning] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'not_found' | 'payment_fail' | 'await_payment'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'not_found' | 'payment_fail' | 'await_payment'>(() => {
+    // Начальный статус выводится из ?payment= на маунте (lazy-init), а не через
+    // setState в эффекте (react-hooks/set-state-in-effect). Чистка URL —
+    // в эффекте ниже (побочный эффект).
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('payment') === 'ok') return 'done';
+    if (p.get('payment') === 'fail') return 'payment_fail';
+    return 'idle';
+  });
   const [payUrl, setPayUrl] = useState<string | null>(null);
   const [cancelToken, setCancelToken] = useState('');
   const [cancelled, setCancelled] = useState(false);
@@ -65,8 +73,9 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
   // Handle ?payment=ok / ?payment=fail redirect back from Robokassa
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    if (p.get('payment') === 'ok') { setStatus('done'); window.history.replaceState({}, '', window.location.pathname + window.location.hash); }
-    if (p.get('payment') === 'fail') { setStatus('payment_fail'); window.history.replaceState({}, '', window.location.pathname + window.location.hash); }
+    if (p.get('payment') === 'ok' || p.get('payment') === 'fail') {
+      window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+    }
   }, []);
 
   useEffect(() => {

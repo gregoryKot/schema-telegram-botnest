@@ -109,7 +109,7 @@ export class TelegramSettingsService implements OnModuleInit {
     private readonly scheduleService: TelegramScheduleService,
   ) {}
 
-  async onModuleInit() {
+  onModuleInit() {
     if (!this.bot) return;
 
     this.bot.command('settings', async (ctx) => {

@@ -2,10 +2,6 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 
 export const THERAPIST_DISCLAIMER_KEY = 'therapist_privacy_disclaimer_seen';
 
-export function shouldShowTherapistDisclaimer(): boolean {
-  return !localStorage.getItem(THERAPIST_DISCLAIMER_KEY);
-}
-
 interface Props {
   onDone: () => void;
 }

@@ -7,6 +7,21 @@ declare global {
           start_param?: string;
           user?: { id: number; first_name: string; username?: string };
         };
+        contentSafeAreaInset?: {
+          top?: number;
+          bottom?: number;
+          left?: number;
+          right?: number;
+        };
+        safeAreaInset?: {
+          top?: number;
+          bottom?: number;
+          left?: number;
+          right?: number;
+        };
+        onEvent?(event: string, cb: () => void): void;
+        offEvent?(event: string, cb: () => void): void;
+        addToHomeScreen?(): void;
         colorScheme: 'light' | 'dark';
         themeParams: Record<string, string>;
         ready(): void;

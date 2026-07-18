@@ -37,6 +37,7 @@ function makePrisma() {
     'userTask',
     'diaryDraft',
     'emailToken',
+    'analyticsEvent',
     // отдельно обрабатываемые
     'clientConceptualization',
     'therapistNote',
@@ -90,5 +91,43 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
     // Выборочно: типовая user-owned таблица чистится по userId.
     expect(prisma._calls['rating'][0].where).toEqual({ userId: uid });
     expect(prisma._calls['webSession'][0].where).toEqual({ userId: uid });
+  });
+});
+
+describe('AccountService — режим/роль терапевта', () => {
+  const uid = 777n;
+
+  it('setTherapistMode пишет therapistMode в User', async () => {
+    const update = jest.fn(() => Promise.resolve({}));
+    const prisma = { user: { update } } as never;
+    const service = new AccountService(prisma);
+
+    await service.setTherapistMode(uid, false);
+    expect(update).toHaveBeenCalledWith({
+      where: { id: uid },
+      data: { therapistMode: false },
+    });
+  });
+
+  it('resignTherapist: CLIENT + therapistMode=false + удаление заявки, всё в одной транзакции', async () => {
+    const userUpdate = jest.fn(() => Promise.resolve({}));
+    const reqDeleteMany = jest.fn(() => Promise.resolve({ count: 1 }));
+    const tx = {
+      user: { update: userUpdate },
+      therapistRequest: { deleteMany: reqDeleteMany },
+    };
+    const transaction = jest.fn((fn: (t: typeof tx) => unknown) => fn(tx));
+    const prisma = { $transaction: transaction } as never;
+    const service = new AccountService(prisma);
+
+    await service.resignTherapist(uid);
+
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(userUpdate).toHaveBeenCalledWith({
+      where: { id: uid },
+      data: { role: 'CLIENT', therapistMode: false },
+    });
+    // Заявка удаляется, иначе status 'approved' заблокирует повторную подачу.
+    expect(reqDeleteMany).toHaveBeenCalledWith({ where: { userId: uid } });
   });
 });

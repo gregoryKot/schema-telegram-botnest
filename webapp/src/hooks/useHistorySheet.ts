@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useId } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 /**
@@ -16,15 +16,21 @@ export function useHistorySheet(onClose: () => void) {
   const navigate = useNavigate();
   const location = useLocation();
   const ref = useRef(onClose);
-  ref.current = onClose;
-  // Unique ID for this sheet instance so nested sheets don't interfere
-  const id = useRef(`sheet_${Date.now()}_${Math.random()}`);
+  // Держим ref.current актуальным в эффекте, а не в рендере (react-hooks/refs):
+  // ref.current читается только из пост-коммит эффекта ниже, так что этого
+  // достаточно.
+  useEffect(() => {
+    ref.current = onClose;
+  });
+  // Стабильный уникальный ID инстанса (useId вместо Date.now/Math.random в
+  // рендере — react-hooks/purity), чтобы вложенные листы не пересекались.
+  const id = useId();
   const ready = useRef(false);
 
   useEffect(() => {
     navigate(location.pathname + location.search + location.hash, {
       replace: false,
-      state: { ...(location.state ?? {}), __sheetId: id.current },
+      state: { ...(location.state ?? {}), __sheetId: id },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -32,15 +38,14 @@ export function useHistorySheet(onClose: () => void) {
   useEffect(() => {
     if (!ready.current) {
       // Wait until our navigate has committed
-      if ((location.state as any)?.__sheetId === id.current) ready.current = true;
+      if ((location.state as { __sheetId?: string } | null)?.__sheetId === id) ready.current = true;
       return;
     }
     // Our entry is gone from history (user pressed back) – close the sheet
-    if ((location.state as any)?.__sheetId !== id.current) {
+    if ((location.state as { __sheetId?: string } | null)?.__sheetId !== id) {
       ref.current();
     }
-     
-  }, [location]);
+  }, [location, id]);
 
   return () => navigate(-1);
 }

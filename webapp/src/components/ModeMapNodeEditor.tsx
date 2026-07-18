@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ModeMapNode, ModeMapEdge, EdgeType } from '../api';
-import { TYPE_COLORS } from './ModeMapNodes';
+import { TYPE_COLORS } from './modeMapData';
 import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
 import { NEED_ORDER, getNeedData } from '../needData';

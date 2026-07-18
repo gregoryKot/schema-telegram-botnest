@@ -3,7 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { api } from '../api';
 import { Loader } from '../components/Loader';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
-import { TaskCreateSheet, getTaskDisplayText } from '../components/TaskCreateSheet';
+import { TaskCreateSheet } from '../components/TaskCreateSheet';
+import { getTaskDisplayText } from '../components/taskDisplayText';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
@@ -138,10 +139,12 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   useEffect(() => {
     const state = location.state as { openSchemaEx?: string } | null;
     if (state?.openSchemaEx) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
       setOpenEx('schema');
       setSchemaInitialId(state.openSchemaEx);
       window.history.replaceState({}, '', '/practice');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
   useEffect(() => {
@@ -159,11 +162,11 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       api.getLetters(), api.getSafePlace(), api.getChildhoodRatings(),
     ]).then(([beliefs, schemas, modes, letters, safe, wheel]) => {
       const upd: Partial<Record<ExId, ExStats>> = {};
-      if (beliefs.status === 'fulfilled') { const b = beliefs.value as any[]; if (b.length) upd.belief = { count: b.length, lastDone: b[0]?.createdAt ?? null }; }
-      if (schemas.status === 'fulfilled') { const s = schemas.value as any[]; if (s.length) { const sr = [...s].sort((a, b) => b.updatedAt > a.updatedAt ? 1 : -1); upd.schema = { count: s.length, lastDone: sr[0]?.updatedAt ?? null }; } }
-      if (modes.status === 'fulfilled')   { const m = modes.value as any[];   if (m.length) { const mr = [...m].sort((a, b) => b.updatedAt > a.updatedAt ? 1 : -1); upd.mode   = { count: m.length, lastDone: mr[0]?.updatedAt ?? null }; } }
-      if (letters.status === 'fulfilled') { const l = letters.value as any[]; if (l.length) upd.letter = { count: l.length, lastDone: l[0]?.createdAt ?? null }; }
-      if (safe.status === 'fulfilled' && safe.value) upd.safe = { count: 1, lastDone: (safe.value as any).updatedAt ?? null };
+      if (beliefs.status === 'fulfilled') { const b = beliefs.value; if (b.length) upd.belief = { count: b.length, lastDone: b[0]?.createdAt ?? null }; }
+      if (schemas.status === 'fulfilled') { const s = schemas.value; if (s.length) { const sr = [...s].sort((a, b) => b.updatedAt > a.updatedAt ? 1 : -1); upd.schema = { count: s.length, lastDone: sr[0]?.updatedAt ?? null }; } }
+      if (modes.status === 'fulfilled')   { const m = modes.value;   if (m.length) { const mr = [...m].sort((a, b) => b.updatedAt > a.updatedAt ? 1 : -1); upd.mode   = { count: m.length, lastDone: mr[0]?.updatedAt ?? null }; } }
+      if (letters.status === 'fulfilled') { const l = letters.value; if (l.length) upd.letter = { count: l.length, lastDone: l[0]?.createdAt ?? null }; }
+      if (safe.status === 'fulfilled' && safe.value) upd.safe = { count: 1, lastDone: safe.value.updatedAt ?? null };
       if (wheel.status === 'fulfilled' && Object.keys(wheel.value as object).length > 0) upd.wheel = { count: 1, lastDone: null };
       setStats(upd);
     });

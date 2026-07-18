@@ -24,7 +24,9 @@ function fmtDate(iso: string) {
 
 function loadLocal(): BeliefEntry[] {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ?? '[]',
+    ) as BeliefEntry[];
   } catch {
     return [];
   }
@@ -82,7 +84,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
     setAgainstInput('');
   }
 
-  async function handleSave() {
+  function handleSave() {
     const entry: BeliefEntry = {
       id: Date.now().toString(),
       date: new Date().toLocaleDateString('ru-RU', {

@@ -18,5 +18,18 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // `_`-префикс — общепринятый маркер «намеренно не используется»
+      // (в коде фронта уже так помечены пропсы/деструктуры); rest-siblings
+      // при omit-через-spread тоже не мусор.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
+    },
   },
 ])

@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../api';
-import type { AvailabilityRule, AdminBooking, SessionOption } from '../../api';
+import type {
+  AvailabilityRule,
+  AdminBooking,
+  SessionOption,
+  AdminBookingStatus,
+} from '../../api';
+import { useAsyncData } from '../../hooks/useAsyncData';
 import { card, btn, btnGhost, input } from './shared';
 
 const DAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -9,9 +15,8 @@ const fmtTime = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', we
 
 /** Booking admin tab: integrations status, prices, schedule, bookings list. */
 export function BookingSection({ adminKey }: { adminKey: string }) {
-  const [rules, setRules] = useState<AvailabilityRule[]>([]);
-  const reload = useCallback(async () => { setRules(await api.adminListRules(adminKey)); }, [adminKey]);
-  useEffect(() => { reload(); }, [reload]);
+  const fetcher = useCallback(() => api.adminListRules(adminKey), [adminKey]);
+  const { data: rules, reload } = useAsyncData<AvailabilityRule[]>(fetcher, []);
 
   return (
     <>
@@ -26,32 +31,33 @@ export function BookingSection({ adminKey }: { adminKey: string }) {
 
 // ── Integration status ──────────────────────────────────────────────────────
 
+const StatusDot = ({ on }: { on: boolean }) => (
+  <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: 9, marginRight: 7, background: on ? '#4a6335' : '#b8860b' }} />
+);
+const StatusRow = ({ label, on, note }: { label: string; on: boolean; note?: string }) => (
+  <div style={{ display: 'flex', alignItems: 'center', fontSize: 14, padding: '5px 0' }}>
+    <StatusDot on={on} /><span style={{ color: 'var(--text)' }}>{label}</span>
+    <span style={{ flex: 1 }} />
+    <span style={{ color: on ? 'var(--text-sub)' : '#b8860b', fontSize: 13 }}>{on ? (note ?? 'вкл') : 'выкл'}</span>
+  </div>
+);
+
 function IntegrationStatus({ adminKey }: { adminKey: string }) {
-  const [s, setS] = useState<Record<string, any> | null>(null);
+  const [s, setS] = useState<AdminBookingStatus | null>(null);
   useEffect(() => { api.adminStatus(adminKey).then(setS).catch(() => setS(null)); }, [adminKey]);
   if (!s) return null;
-  const dot = (on: boolean) => (
-    <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: 9, marginRight: 7, background: on ? '#4a6335' : '#b8860b' }} />
-  );
-  const Row = ({ label, on, note }: { label: string; on: boolean; note?: string }) => (
-    <div style={{ display: 'flex', alignItems: 'center', fontSize: 14, padding: '5px 0' }}>
-      {dot(on)}<span style={{ color: 'var(--text)' }}>{label}</span>
-      <span style={{ flex: 1 }} />
-      <span style={{ color: on ? 'var(--text-sub)' : '#b8860b', fontSize: 13 }}>{on ? (note ?? 'вкл') : 'выкл'}</span>
-    </div>
-  );
   return (
     <section style={card}>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 12 }}>Интеграции</h2>
-      <Row label="Zoom (видео-ссылки)" on={!!s.zoom} note="вкл" />
+      <StatusRow label="Zoom (видео-ссылки)" on={!!s.zoom} note="вкл" />
       {!s.zoom && (
         <div style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 8px 16px', lineHeight: 1.5 }}>
           Без Zoom выдаётся Jitsi-комната. Проверьте переменные:
           ACCOUNT_ID {s.zoomVars?.accountId ? '✓' : '✗'} · CLIENT_ID {s.zoomVars?.clientId ? '✓' : '✗'} · CLIENT_SECRET {s.zoomVars?.clientSecret ? '✓' : '✗'}
         </div>
       )}
-      <Row label="Robokassa (оплата)" on={!!s.robokassa} note={s.robokassaTest ? 'тест-режим' : 'боевой'} />
-      <Row label="Apple Calendar" on={!!s.appleCalendar} note={s.appleCalendar ? `вкл · занято: ${s.calendarBusyCount ?? '?'}` : undefined} />
+      <StatusRow label="Robokassa (оплата)" on={!!s.robokassa} note={s.robokassaTest ? 'тест-режим' : 'боевой'} />
+      <StatusRow label="Apple Calendar" on={!!s.appleCalendar} note={s.appleCalendar ? `вкл · занято: ${s.calendarBusyCount ?? '?'}` : undefined} />
       {s.appleCalendar && (
         <div style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 8px 16px', lineHeight: 1.5 }}>
           {Array.isArray(s.calendarNames) && s.calendarNames.length > 0
@@ -70,7 +76,7 @@ function IntegrationStatus({ adminKey }: { adminKey: string }) {
           Блокировка слотов по календарю включена — занятое время скрывается из записи.
         </div>
       )}
-      <Row label="Резерв уведомлений на почту" on={!!s.emailFallback} />
+      <StatusRow label="Резерв уведомлений на почту" on={!!s.emailFallback} />
       <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 10 }}>
         Запись: {s.siteUrl} · Приложение: {s.appUrl}
       </div>

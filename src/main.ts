@@ -1,6 +1,9 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AlertLogger } from './logger/alert.logger';
 import { PrismaService } from './prisma/prisma.service';
@@ -9,13 +12,11 @@ import {
   PrismaExceptionFilter,
   GenericExceptionFilter,
 } from './prisma/prisma-exception.filter';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const cookieParser = require('cookie-parser');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const helmet = require('helmet');
 
 // BigInt → number in JSON responses (Telegram user IDs fit safely in Number)
-(BigInt.prototype as any).toJSON = function () {
+(BigInt.prototype as unknown as { toJSON: () => number }).toJSON = function (
+  this: bigint,
+) {
   return Number(this);
 };
 
@@ -31,7 +32,7 @@ async function bootstrap() {
   //   • everything else (incl. kotlarewski.ru/.gr aliases) → just force HTTPS
   if (process.env.NODE_ENV === 'production') {
     const LEGACY_HOSTS = new Set(['schemalab.ru', 'www.schemalab.ru']);
-    app.use((req: any, res: any, next: any) => {
+    app.use((req: Request, res: Response, next: NextFunction) => {
       const host = (req.headers.host ?? '').toLowerCase();
       if (LEGACY_HOSTS.has(host) || host === 'www.schemehappens.ru') {
         return res.redirect(301, `https://schemehappens.ru${req.url}`);
@@ -129,8 +130,8 @@ async function bootstrap() {
     console.error('Clinical-label migration failed:', e),
   );
 
-  process.on('SIGTERM', () => app.close());
-  process.on('SIGINT', () => app.close());
+  process.on('SIGTERM', () => void app.close());
+  process.on('SIGINT', () => void app.close());
 }
 
 bootstrap().catch((err) => {

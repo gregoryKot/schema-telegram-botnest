@@ -46,8 +46,8 @@ interface Props {
   displayName: string | null;
   setDisplayName: (name: string) => void;
   therapistMode: boolean;
-  setTherapistMode: (v: boolean) => void;
   switchTherapistMode: (on: boolean) => void;
+  onResignTherapist: () => Promise<void> | void;
   diaryActiveSchemaIds: string[] | undefined;
   newDiaryEntry: 'schema' | 'mode' | 'gratitude' | null;
   setNewDiaryEntry: (v: 'schema' | 'mode' | 'gratitude' | null) => void;
@@ -82,8 +82,8 @@ export function AppOverlays({
   displayName,
   setDisplayName,
   therapistMode,
-  setTherapistMode,
   switchTherapistMode,
+  onResignTherapist,
   diaryActiveSchemaIds,
   newDiaryEntry,
   setNewDiaryEntry,
@@ -196,7 +196,7 @@ export function AppOverlays({
         <PairSheet
           onClose={() => {
             sheets.close('pairSheet');
-            api.getPair().then(setPairData);
+            void api.getPair().then(setPairData);
           }}
         />
       )}
@@ -219,10 +219,11 @@ export function AppOverlays({
           onNameChanged={setDisplayName}
           onOpenTherapistCabinet={() => {
             sheets.close('settings');
-            setTherapistMode(true);
+            switchTherapistMode(true);
           }}
           therapistMode={therapistMode}
           onToggleTherapistMode={() => switchTherapistMode(!therapistMode)}
+          onResignTherapist={onResignTherapist}
         />
       )}
       {sheets.addressPicker && (

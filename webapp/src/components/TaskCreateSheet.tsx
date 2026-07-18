@@ -33,18 +33,6 @@ const TASK_OPTIONS: TaskOption[] = [
 
 const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(s => ({ id: s.id, name: s.name, domainColor: d.color })));
 
-export function getTaskDisplayText(type: string, text: string): string {
-  if (type === 'schema_intro') {
-    const s = ALL_SCHEMAS_FLAT.find(x => x.id === text);
-    return s ? `Карточка схемы: ${s.name}` : 'Карточка схемы';
-  }
-  if (type === 'mode_intro') {
-    const m = ALL_MODES.find(x => x.id === text);
-    return m ? `Карточка режима: ${m.name}` : 'Карточка режима';
-  }
-  return text;
-}
-
 export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const [type, setType] = useState<TaskType>(defaultType ?? 'tracker_streak');

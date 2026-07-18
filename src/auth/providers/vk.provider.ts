@@ -73,7 +73,7 @@ export class VkProvider implements AuthProviderHandler {
   //
   // Simplification: VK puts device_id as a query param. We read it from the
   // current request URL via a side channel — see exchangeCodeWithRequest below.
-  async exchangeCode(code: string): Promise<ProviderIdentity> {
+  exchangeCode(): Promise<ProviderIdentity> {
     // This signature is kept for type compatibility but VK needs device_id +
     // state. Use exchangeCodeWithContext via the OAuth callback wrapper.
     throw new Error(

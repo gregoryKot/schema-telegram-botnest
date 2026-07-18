@@ -43,6 +43,24 @@ function makeDb() {
         return Promise.resolve(rows.splice(i, 1)[0]);
       }),
     },
+    healthyAdultPost: (() => {
+      const posts: any[] = [];
+      let pseq = 0;
+      return {
+        create: jest.fn(({ data }: any) => {
+          posts.push({ id: ++pseq, ...data });
+          return Promise.resolve(posts[posts.length - 1]);
+        }),
+        findMany: jest.fn(({ take }: any) => {
+          const out = posts
+            .slice()
+            .sort((a, b) => b.id - a.id)
+            .slice(0, take)
+            .map((r) => ({ text: r.text }));
+          return Promise.resolve(out);
+        }),
+      };
+    })(),
   } as any;
 }
 
@@ -83,5 +101,31 @@ describe('HealthyAdultService', () => {
     const svc = new HealthyAdultService(makeDb());
     await expect(svc.update(999, { text: 'x' })).rejects.toThrow();
     await expect(svc.remove(999)).rejects.toThrow();
+  });
+
+  it('pickFromPool: LRU обходит весь пул без повторов подряд (фикс дубля)', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    await svc.create('a');
+    await svc.create('b');
+    await svc.create('c');
+    const seen: string[] = [];
+    for (let i = 0; i < 3; i++) seen.push((await svc.pickFromPool())!);
+    // За полный обход — все три разные (никакая не повторилась подряд).
+    expect(new Set(seen).size).toBe(3);
+  });
+
+  it('pickFromPool на пустой БД берёт встроенный пул, не дублируя недавнее', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    const recent = [HEALTHY_ADULT_PHRASES[0]];
+    const picked = await svc.pickFromPool(recent);
+    expect(HEALTHY_ADULT_PHRASES).toContain(picked!);
+    expect(picked).not.toBe(HEALTHY_ADULT_PHRASES[0]);
+  });
+
+  it('recordPost → recentPostTexts возвращает новые первыми', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    await svc.recordPost('первое', 'pool');
+    await svc.recordPost('второе', 'ai');
+    expect(await svc.recentPostTexts(10)).toEqual(['второе', 'первое']);
   });
 });

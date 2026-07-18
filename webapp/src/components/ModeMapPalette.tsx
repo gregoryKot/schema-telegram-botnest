@@ -3,6 +3,7 @@ import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
 import type { ModeMapNode, TherapistCustomMode } from '../api';
 import { api } from '../api';
 import { MMIcon } from './modeMapIcons';
+import { DRAG_TYPE, GROUP_TO_TYPE, type NodeType } from './modeMapData';
 
 // Maps a mode id → which palette group/type it belongs to (for client modes)
 function findModeMeta(modeId: string): { type: NodeType; copingSubtype?: 'over' | 'avoid' | 'surr'; emoji: string; name: string } | null {
@@ -15,21 +16,8 @@ function findModeMeta(modeId: string): { type: NodeType; copingSubtype?: 'over' 
   return null;
 }
 
-type NodeType = ModeMapNode['type'];
-
-export const DRAG_TYPE = 'application/modemap-node';
-
 // Clinical display order: child → critic → coping(×3) → healthy
 const GROUP_ORDER = ['child', 'critic', 'coping_overcompensation', 'coping_avoidance', 'coping_surrender', 'healthy'];
-
-export const GROUP_TO_TYPE: Record<string, { type: NodeType; color: string; copingSubtype?: 'over' | 'avoid' | 'surr' }> = {
-  child:                   { type: 'child',   color: 'var(--c-teal)' },
-  coping_surrender:        { type: 'coping',  color: 'var(--c-clay)', copingSubtype: 'surr' },
-  coping_avoidance:        { type: 'coping',  color: 'var(--c-clay)', copingSubtype: 'avoid' },
-  coping_overcompensation: { type: 'coping',  color: 'var(--c-clay)', copingSubtype: 'over' },
-  critic:                  { type: 'critic',  color: 'var(--c-rose)' },
-  healthy:                 { type: 'healthy', color: 'var(--c-moss)' },
-};
 
 interface Props {
   onAdd: (node: Omit<ModeMapNode, 'position'>) => void;
@@ -88,7 +76,8 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
 
   const toggleGroup = (id: string) => setOpenGroups(prev => {
     const next = new Set(prev);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     return next;
   });
 
