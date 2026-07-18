@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { pressable } from '../utils/a11y';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { useIntroSheetData } from '../hooks/useIntroSheetData';
@@ -137,10 +138,10 @@ export function IntroSheetShell<T extends Record<string, string>>({
             return (
               <div
                 key={i}
-                onClick={() => {
+                {...pressable(() => {
                   setStep(i);
                   setFlipped(false);
-                }}
+                })}
                 style={{
                   flex: 1,
                   height: 4,

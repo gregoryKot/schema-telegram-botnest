@@ -70,6 +70,37 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
+// Отправка пойманной ErrorBoundary ошибки на бэкенд (best-practice «видимость
+// прода», 2026-07). Без auth, fire-and-forget, keepalive — чтобы долетело даже
+// если краш случился на выгрузке. Никогда не бросает: телеметрия не мешает UI.
+export function reportClientError(payload: {
+  message: string;
+  section: string;
+  stack?: string;
+  componentStack?: string;
+}): void {
+  try {
+    void fetch(`${BASE}/api/client-errors`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: payload.message.slice(0, 500),
+        section: payload.section.slice(0, 120),
+        stack: payload.stack?.slice(0, 4000),
+        componentStack: payload.componentStack?.slice(0, 4000),
+        source: 'webapp',
+        url:
+          typeof location !== 'undefined'
+            ? location.href.slice(0, 500)
+            : undefined,
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* best-effort */
+  }
+}
+
 async function patchJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetchWithTimeout(`${BASE}${path}`, {
     method: 'PATCH',

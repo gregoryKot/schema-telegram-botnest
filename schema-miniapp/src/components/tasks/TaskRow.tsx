@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { pressable } from '../../utils/a11y';
 import { UserTask } from '../../api';
 import { fmtDate } from '../../utils/format';
 import { resolveTaskDisplayText, resolveTaskEmoji } from './taskEmoji';
@@ -52,7 +53,7 @@ function FullTaskRow({
 
   return (
     <div
-      onClick={task.doneToday ? undefined : onOpen}
+      {...(task.doneToday ? {} : pressable(onOpen))}
       style={{
         padding: '14px',
         background: 'var(--surface)',

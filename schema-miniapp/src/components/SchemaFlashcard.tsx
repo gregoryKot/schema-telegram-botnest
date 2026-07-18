@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { pressable } from '../utils/a11y';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { useTr } from '../utils/addressForm';
@@ -282,7 +283,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
               return (
                 <div
                   key={card.id}
-                  onClick={() => setViewing(card)}
+                  {...pressable(() => setViewing(card))}
                   style={{
                     padding: '12px 14px',
                     background: 'var(--surface)',

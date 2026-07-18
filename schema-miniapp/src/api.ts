@@ -130,6 +130,37 @@ async function del(path: string): Promise<void> {
   if (!res.ok) throw new Error(`API error: ${res.status}`);
 }
 
+// Отправка пойманной ErrorBoundary ошибки на бэкенд (best-practice «видимость
+// прода», 2026-07). Без auth, fire-and-forget, keepalive — чтобы долетело даже
+// если краш случился на выгрузке. Никогда не бросает: телеметрия не мешает UI.
+export function reportClientError(payload: {
+  message: string;
+  section: string;
+  stack?: string;
+  componentStack?: string;
+}): void {
+  try {
+    void fetch(`${BASE}/api/client-errors`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: payload.message.slice(0, 500),
+        section: payload.section.slice(0, 120),
+        stack: payload.stack?.slice(0, 4000),
+        componentStack: payload.componentStack?.slice(0, 4000),
+        source: 'miniapp',
+        url:
+          typeof location !== 'undefined'
+            ? location.href.slice(0, 500)
+            : undefined,
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* best-effort */
+  }
+}
+
 export interface UserSettings {
   notifyEnabled: boolean;
   notifyLocalHour: number;

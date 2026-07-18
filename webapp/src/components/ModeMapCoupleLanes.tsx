@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useViewport } from '@xyflow/react';
 
 // Couple "Mode Cycle Clash" lanes: Partner A on the left, Partner B on the right.
@@ -18,6 +18,8 @@ export function ModeMapCoupleLanes({ mapId }: { mapId: number }) {
   const { x, y, zoom } = useViewport();
   const [names, setNames] = useState(() => readNames(mapId));
   const [editing, setEditing] = useState<'a' | 'b' | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
 
   const save = (next: { a: string; b: string }) => {
     setNames(next);
@@ -28,7 +30,7 @@ export function ModeMapCoupleLanes({ mapId }: { mapId: number }) {
     const color = side === 'a' ? A_COLOR : B_COLOR;
     const val = side === 'a' ? names.a : names.b;
     return editing === side ? (
-      <input autoFocus defaultValue={val}
+      <input ref={inputRef} defaultValue={val}
         onBlur={e => { save({ ...names, [side]: e.target.value.trim() || (side === 'a' ? 'Партнёр А' : 'Партнёр Б') }); setEditing(null); }}
         onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditing(null); }}
         style={{ width: 130, fontSize: 12.5, fontWeight: 600, textAlign: 'center', padding: '4px 8px', borderRadius: 999,

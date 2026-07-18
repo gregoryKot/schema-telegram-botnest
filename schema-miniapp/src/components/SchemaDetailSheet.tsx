@@ -63,6 +63,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
 
   return (
     <div
+      role="presentation"
       onClick={onClose}
       style={{
         position: 'fixed',
@@ -74,6 +75,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
       }}
     >
       <div
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
@@ -307,7 +309,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
       </div>
 
       {showShare && (
-        <div onClick={(e) => e.stopPropagation()}>
+        <div role="presentation" onClick={(e) => e.stopPropagation()}>
           <ShareCardSheet
             title="Карточка схемы"
             draw={drawShareCard}
