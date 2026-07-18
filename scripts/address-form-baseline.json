@@ -12,9 +12,10 @@
   "webapp/src/utils/addressForm.tsx": 2,
   "schema-miniapp/src/components/AddressFormPicker.tsx": 3,
   "schema-miniapp/src/components/PlanSheet.tsx": 1,
-  "schema-miniapp/src/components/SettingsSheet.tsx": 7,
+  "schema-miniapp/src/components/SettingsSheet.tsx": 2,
   "schema-miniapp/src/components/childhoodWheelSheet/data.ts": 1,
   "schema-miniapp/src/components/disclaimer/DisclaimerWelcomeStep.tsx": 1,
+  "schema-miniapp/src/components/settingsSheet/InfoOverlays.tsx": 5,
   "schema-miniapp/src/utils/addressForm.tsx": 2,
   "shared/src/hooks/useYsqTest.ts": 1
 }
