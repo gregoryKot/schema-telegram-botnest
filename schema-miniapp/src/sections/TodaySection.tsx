@@ -25,6 +25,7 @@ import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { TodayFocusCard } from '../components/TodayFocusCard';
+import { getTheme, toggleTheme, Theme } from '../utils/theme';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
 import {
   FocusPractice,
@@ -307,6 +308,7 @@ export function TodaySection({
     useState<FocusPractice>(getFocusPractice);
   const [streakHidden, setStreakHiddenState] = useState(isStreakHidden);
   const [showCustomize, setShowCustomize] = useState(false);
+  const [theme, setTheme] = useState<Theme>(getTheme);
   const [todayDone, setTodayDone] = useState({
     schema: false,
     mode: false,
@@ -500,27 +502,52 @@ export function TodaySection({
           >
             {firstName ? `Привет, ${firstName} 👋` : 'Добро пожаловать 👋'}
           </div>
-          <button
-            onClick={() => setShowCustomize(true)}
-            aria-label="Настроить экран"
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 14,
-              border: '1px solid var(--border-color)',
-              background: 'var(--surface)',
-              color: 'var(--text-sub)',
-              fontSize: 17,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              marginTop: -6,
-            }}
+          <div
+            style={{ display: 'flex', gap: 8, flexShrink: 0, marginTop: -6 }}
           >
-            ⚙
-          </button>
+            <button
+              onClick={() => setTheme(toggleTheme())}
+              aria-label={
+                theme === 'dark'
+                  ? 'Включить светлую тему'
+                  : 'Включить тёмную тему'
+              }
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                border: '1px solid var(--border-color)',
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                fontSize: 18,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {theme === 'dark' ? '☀' : '☾'}
+            </button>
+            <button
+              onClick={() => setShowCustomize(true)}
+              aria-label="Настроить экран"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                border: '1px solid var(--border-color)',
+                background: 'var(--surface)',
+                color: 'var(--text-sub)',
+                fontSize: 17,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              ⚙
+            </button>
+          </div>
         </div>
         <div
           style={{
