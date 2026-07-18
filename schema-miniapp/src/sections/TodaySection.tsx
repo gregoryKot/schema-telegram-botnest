@@ -25,6 +25,7 @@ import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { TodayFocusCard } from '../components/TodayFocusCard';
+import { useTr } from '../utils/addressForm';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import {
   drawDayCard,
@@ -44,7 +45,7 @@ function hexToRgb(hex: string): string {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',');
 }
 
-function _plural(n: number, one: string, few: string, many: string): string {
+function plural(n: number, one: string, few: string, many: string): string {
   const m10 = n % 10,
     m100 = n % 100;
   if (m100 >= 11 && m100 <= 19) return many;
@@ -60,7 +61,7 @@ function formatGreetingDate(): string {
     day: 'numeric',
     month: 'long',
   });
-  return `${dow[0].toUpperCase()}${dow.slice(1)}, ${date}`;
+  return `${dow}, ${date}`;
 }
 
 function readLocalIds(key: string): string[] {
@@ -264,6 +265,7 @@ export function TodaySection({
   onOpenTherapistCabinet,
   onTasksChanged,
 }: Props) {
+  const tr = useTr();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() =>
     readLocalIds(MY_SCHEMA_IDS_KEY),
@@ -438,87 +440,28 @@ export function TodaySection({
     <div
       style={{ minHeight: '100vh', paddingBottom: 120, paddingTop: safeTop }}
     >
-      {/* ── Header ── */}
+      {/* ── Header (по дизайн-макету: приветствие + темп без давления) ── */}
       <div style={{ padding: '24px 20px 0' }}>
         <div
           style={{
-            fontSize: 11,
-            color: 'var(--text-faint)',
-            fontWeight: 500,
-            marginBottom: 5,
-            letterSpacing: '0.03em',
+            fontSize: 24,
+            fontWeight: 800,
+            color: 'var(--text)',
+            letterSpacing: '-0.03em',
+            lineHeight: 1.15,
           }}
         >
-          {formatGreetingDate()}
+          {firstName ? `Привет, ${firstName} 👋` : 'Добро пожаловать 👋'}
         </div>
         <div
           style={{
             fontSize: 13,
-            color: 'var(--text-faint)',
+            color: 'var(--text-sub)',
+            marginTop: 4,
             fontWeight: 500,
-            marginBottom: 2,
           }}
         >
-          {firstName ? 'Привет,' : ''}
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <div
-            style={{
-              fontSize: 26,
-              fontWeight: 700,
-              color: 'var(--text)',
-              letterSpacing: '-0.5px',
-              lineHeight: 1.2,
-            }}
-          >
-            {firstName ?? 'Добро пожаловать'}
-          </div>
-          {/* Streak */}
-          {profile !== null && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                flexShrink: 0,
-                background:
-                  streak > 0 ? 'rgba(251,146,60,0.12)' : 'var(--surface)',
-                border: `1px solid ${streak > 0 ? 'rgba(251,146,60,0.22)' : 'var(--border-color)'}`,
-                borderRadius: 20,
-                padding: '5px 10px',
-              }}
-            >
-              {streak > 7 ? (
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="#fb923c"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M12 2C12 2 9 7 9 10.5C9 12.43 10.57 14 12.5 14C14.43 14 16 12.43 16 10.5C16 9.5 15.5 8.5 15 7.5C15 7.5 17 9 17 12C17 15.31 14.31 18 11 18C7.69 18 5 15.31 5 12C5 7 12 2 12 2Z" />
-                </svg>
-              ) : (
-                <span style={{ fontSize: 13 }}>{streak > 0 ? '✨' : '💤'}</span>
-              )}
-              <span
-                style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: streak > 0 ? '#fb923c' : 'var(--text-faint)',
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {streak}
-              </span>
-            </div>
-          )}
+          {formatGreetingDate()} · {tr('твой темп', 'ваш темп')}
         </div>
       </div>
 
@@ -589,6 +532,52 @@ export function TodaySection({
           onOpenDiaries={onOpenDiaries}
           onOpenChildhoodWheel={onOpenChildhoodWheel}
         />
+
+        {/* ── Стрик-карточка (макет): мягкая, без наказания за пропуск ── */}
+        {streak > 0 && (
+          <div
+            className="card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 16px',
+              borderRadius: 18,
+            }}
+          >
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                flexShrink: 0,
+                background:
+                  'color-mix(in srgb, var(--accent-orange) 14%, transparent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 20,
+              }}
+            >
+              🔥
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}
+              >
+                {streak} {plural(streak, 'день', 'дня', 'дней')} подряд
+              </div>
+              <div
+                style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 1 }}
+              >
+                {tr(
+                  'сбиться — не страшно, просто продолжай',
+                  'сбиться — не страшно, просто продолжайте',
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Фокус дня: одна главная задача (нейроинклюзивность, волна 1) ── */}
         <TodayFocusCard

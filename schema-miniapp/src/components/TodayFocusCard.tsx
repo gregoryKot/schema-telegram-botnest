@@ -136,16 +136,19 @@ export function TodayFocusCard({
     );
   }
 
+  // Крупная акцентная CTA по дизайн-макету: фиолетовая карточка, белая кнопка
   return (
     <div
-      className="card"
       onClick={onOpenTracker}
       style={{
-        padding: 18,
+        borderRadius: 24,
+        padding: 20,
         cursor: 'pointer',
         WebkitTapHighlightColor: 'transparent',
-        background: 'color-mix(in srgb, var(--accent) 8%, var(--surface))',
-        border: '1px solid color-mix(in srgb, var(--accent) 18%, transparent)',
+        background: 'var(--accent)',
+        color: 'var(--on-accent)',
+        boxShadow:
+          '0 14px 34px color-mix(in srgb, var(--accent) 35%, transparent)',
       }}
     >
       <div
@@ -153,16 +156,15 @@ export function TodayFocusCard({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 10,
         }}
       >
         <div
           style={{
             fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.08em',
+            fontWeight: 800,
+            letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            color: 'var(--accent)',
+            opacity: 0.85,
           }}
         >
           Одно дело на сегодня
@@ -170,12 +172,11 @@ export function TodayFocusCard({
         <div
           style={{
             fontSize: 11,
-            fontWeight: 600,
-            color: 'var(--text-sub)',
-            flexShrink: 0,
-            background: 'rgba(var(--fg-rgb),0.06)',
-            padding: '3px 10px',
+            fontWeight: 700,
+            background: 'rgba(255,255,255,0.22)',
+            padding: '4px 10px',
             borderRadius: 99,
+            flexShrink: 0,
           }}
         >
           ⏱ ≈1 мин
@@ -183,28 +184,43 @@ export function TodayFocusCard({
       </div>
       <div
         style={{
-          fontSize: 17,
-          fontWeight: 700,
-          color: 'var(--text)',
-          lineHeight: 1.3,
+          fontSize: 22,
+          fontWeight: 800,
+          letterSpacing: '-0.02em',
+          marginTop: 10,
+          lineHeight: 1.2,
         }}
       >
-        Отметить, как прошёл день
+        Заполнить трекер потребностей
       </div>
       <div
-        style={{
-          fontSize: 13,
-          color: 'var(--text-sub)',
-          marginTop: 5,
-          lineHeight: 1.5,
-        }}
+        style={{ fontSize: 13, opacity: 0.9, marginTop: 6, lineHeight: 1.45 }}
       >
         {ratedCount > 0
           ? `Осталось ${left} из ${total} — сохраняется само`
-          : 'Пять оценок потребностей — сохраняется само'}
+          : 'Пять оценок о том, как прошёл день. Сохраняется само.'}
       </div>
-      <button className="btn-primary" style={{ marginTop: 14 }}>
-        {ratedCount > 0 ? 'Продолжить' : 'Начать'} →
+      <button
+        style={{
+          marginTop: 15,
+          width: '100%',
+          background: '#fff',
+          color: 'var(--accent)',
+          fontSize: 15,
+          fontWeight: 800,
+          padding: 13,
+          borderRadius: 14,
+          border: 'none',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+        }}
+      >
+        {ratedCount > 0 ? 'Продолжить' : 'Начать'}
+        <span style={{ fontSize: 17 }}>→</span>
       </button>
     </div>
   );
