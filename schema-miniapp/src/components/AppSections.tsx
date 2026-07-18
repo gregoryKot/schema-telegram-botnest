@@ -105,6 +105,7 @@ export function AppSections({
             }}
             childhoodRatings={childhoodRatings}
             onOpenChildhoodWheel={() => sheets.open('childhoodWheel')}
+            onOpenDiaries={() => sheets.open('diaries')}
           />
         </ErrorBoundary>
       )}
