@@ -26,6 +26,7 @@ import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { TodayFocusCard } from '../components/TodayFocusCard';
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import {
   drawDayCard,
@@ -93,9 +94,18 @@ function NeedMini({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={(e) => {
         e.stopPropagation();
         onTap();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          onTap();
+        }
       }}
       style={{
         display: 'flex',
@@ -481,7 +491,7 @@ export function TodaySection({
         {/* ── Therapist cabinet banner ── */}
         {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
           <div
-            onClick={onOpenTherapistCabinet}
+            {...pressable(onOpenTherapistCabinet)}
             className="card"
             style={{
               borderRadius: 18,
@@ -633,7 +643,7 @@ export function TodaySection({
             {/* ── Needs card — tap card = history, tap need = tracker ── */}
             <div
               className="card"
-              onClick={onOpenTrackerHistory}
+              {...pressable(() => onOpenTrackerHistory?.())}
               style={{
                 padding: '18px 18px 14px',
                 cursor: onOpenTrackerHistory ? 'pointer' : undefined,
@@ -703,7 +713,7 @@ export function TodaySection({
 
             {/* ── Diary card ── */}
             <div
-              onClick={onOpenDiaries}
+              {...pressable(onOpenDiaries)}
               className="card"
               style={{
                 padding: '18px 18px 14px',
@@ -1422,10 +1432,10 @@ function OnboardingWidget({
           return (
             <div
               key={s.id}
-              onClick={() => {
+              {...pressable(() => {
                 setSelectedId(s.id === current.id ? null : s.id);
                 setSlideKey((k) => k + 1);
-              }}
+              })}
               style={{ cursor: 'pointer' }}
             >
               <div

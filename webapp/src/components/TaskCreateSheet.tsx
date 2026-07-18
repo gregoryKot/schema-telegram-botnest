@@ -4,6 +4,7 @@ import { api } from '../api';
 import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { haptic } from '../haptic';
+import { pressable } from '../utils/a11y';
 
 type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
 
@@ -44,11 +45,16 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const configRef = useRef<HTMLDivElement>(null);
+  const customTextRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if ((type === 'schema_intro' || type === 'mode_intro') && configRef.current) {
       setTimeout(() => configRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
     }
+  }, [type]);
+
+  useEffect(() => {
+    if (type === 'custom') customTextRef.current?.focus();
   }, [type]);
 
   const selected = TASK_OPTIONS.find(o => o.type === type)!;
@@ -117,7 +123,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
               return (
                 <div
                   key={opt.type}
-                  onClick={() => { haptic.select(); setType(opt.type); }}
+                  {...pressable(() => { haptic.select(); setType(opt.type); })}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 16,
                     padding: '14px 0',
@@ -204,7 +210,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                   {ALL_SCHEMAS_FLAT.map((s, i) => (
                     <div
                       key={s.id}
-                      onClick={() => setSelectedSchemaId(s.id)}
+                      {...pressable(() => setSelectedSchemaId(s.id))}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '11px 0',
@@ -238,7 +244,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                   {ALL_MODES.map((m, i) => (
                     <div
                       key={m.id}
-                      onClick={() => setSelectedModeId(m.id)}
+                      {...pressable(() => setSelectedModeId(m.id))}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '11px 0',
@@ -268,12 +274,12 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                   Описание задания
                 </div>
                 <textarea
+                  ref={customTextRef}
                   value={text}
                   onChange={e => setText(e.target.value)}
                   placeholder="Например: позвонить другу раз в неделю"
                   className={'paper-input ' + (text.trim() ? 'is-filled' : '')}
                   rows={3}
-                  autoFocus
                   style={{ width: '100%' }}
                 />
               </div>

@@ -217,13 +217,13 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         <button onClick={onClose} title="Закрыть" aria-label="Закрыть" style={closeBtnStyle}><MMIcon name="close" size={15} /></button>
       </div>
 
-      <label style={labelStyle}>Название</label>
-      <input ref={nameRef} style={inputStyle} value={node.data.label}
+      <label style={labelStyle} htmlFor="mm-node-name">Название</label>
+      <input id="mm-node-name" ref={nameRef} style={inputStyle} value={node.data.label}
         onChange={e => patchData({ label: e.target.value })} placeholder="Название режима" />
 
       {coupleMode && (
         <>
-          <label style={labelStyle}>Чей режим</label>
+          <div style={labelStyle}>Чей режим</div>
           <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
             {([
               { v: 'A' as const, label: 'Партнёр А', color: 'var(--accent-blue)' },
@@ -246,7 +246,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         </>
       )}
 
-      <label style={labelStyle}>Форма и тип</label>
+      <div style={labelStyle}>Форма и тип</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 14 }}>
         {SHAPE_OPTIONS.map((opt, i) => {
           const isActive = node.type === opt.type &&
@@ -268,7 +268,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         })}
       </div>
 
-      <label style={labelStyle}>Цвет</label>
+      <div style={labelStyle}>Цвет</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
         {COLOR_PRESETS.map(c => (
           <button key={c} onClick={() => patchData({ customColor: c })}
@@ -281,7 +281,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
             border: '2px dashed var(--line-strong)', color: 'var(--text-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MMIcon name="close" size={11} /></button>
       </div>
 
-      <label style={labelStyle}>Заливка</label>
+      <div style={labelStyle}>Заливка</div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
         {([
           { label: 'Лёгкая', filled: false, fillFull: false },
@@ -301,7 +301,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         })}
       </div>
 
-      <label style={labelStyle}>Толщина контура</label>
+      <div style={labelStyle}>Толщина контура</div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
         {([
           { v: 'thin' as const,   label: 'Тонкий', h: 1.5 },
@@ -322,7 +322,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         })}
       </div>
 
-      <label style={labelStyle}>Размер текста</label>
+      <div style={labelStyle}>Размер текста</div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
         {([
           { v: 'sm' as const, label: 'A', fs: 11 },
@@ -343,7 +343,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         })}
       </div>
 
-      <label style={labelStyle}>Что показывать на фигуре</label>
+      <div style={labelStyle}>Что показывать на фигуре</div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
         {([
           { v: 'name' as const, label: 'Имя' },
@@ -369,13 +369,13 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         onPickNeed={() => { needRef.current?.focus(); }}
         onPickHealthy={() => { healthyRef.current?.focus(); healthyRef.current?.scrollIntoView({ block: 'nearest' }); }} />
 
-      <label style={labelStyle}>Заметка</label>
-      <textarea ref={noteRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 56 }} rows={3}
+      <label style={labelStyle} htmlFor="mm-node-note">Заметка</label>
+      <textarea id="mm-node-note" ref={noteRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 56 }} rows={3}
         value={node.data.note ?? ''} onChange={e => patchData({ note: e.target.value || undefined })}
         placeholder="Как этот режим проявляется у клиента" />
 
-      <label style={labelStyle}>Связанная схема</label>
-      <select value={node.data.schemaId ?? ''} onChange={e => patchData({ schemaId: e.target.value || undefined })}
+      <label style={labelStyle} htmlFor="mm-node-schema">Связанная схема</label>
+      <select id="mm-node-schema" value={node.data.schemaId ?? ''} onChange={e => patchData({ schemaId: e.target.value || undefined })}
         style={{ ...inputStyle, appearance: 'auto', cursor: 'pointer' }}>
         <option value="">— не выбрана —</option>
         {SCHEMA_DOMAINS.map(d => (
@@ -387,8 +387,8 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
 
       {(node.type === 'child' || node.type === 'custom') && (
         <>
-          <label style={labelStyle}>Неудовлетворённая потребность</label>
-          <input ref={needRef} style={inputStyle} list="modemap-needs" value={node.data.unmetNeed ?? ''}
+          <label style={labelStyle} htmlFor="mm-node-need">Неудовлетворённая потребность</label>
+          <input id="mm-node-need" ref={needRef} style={inputStyle} list="modemap-needs" value={node.data.unmetNeed ?? ''}
             onChange={e => patchData({ unmetNeed: e.target.value || undefined })}
             placeholder="Выбери или впиши свою…" />
           <datalist id="modemap-needs">
@@ -399,8 +399,8 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
 
       {(node.type === 'child' || node.type === 'critic' || node.type === 'coping') && (
         <>
-          <label style={{ ...labelStyle, color: 'var(--accent-green)' }}>🌿 Что сказал бы Здоровый Взрослый</label>
-          <textarea ref={healthyRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 48,
+          <label style={{ ...labelStyle, color: 'var(--accent-green)' }} htmlFor="mm-node-healthy">🌿 Что сказал бы Здоровый Взрослый</label>
+          <textarea id="mm-node-healthy" ref={healthyRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 48,
             borderColor: 'color-mix(in srgb, var(--c-moss) 45%, transparent)' }} rows={2}
             value={node.data.healthyResponse ?? ''} onChange={e => patchData({ healthyResponse: e.target.value || undefined })}
             placeholder={node.type === 'critic' ? tr('Ответ критику: «Ты не обязан быть идеальным…»', 'Ответ критику: «Вы не обязаны быть идеальным…»')
@@ -443,7 +443,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
         <button onClick={onClose} title="Закрыть" aria-label="Закрыть" style={closeBtnStyle}><MMIcon name="close" size={15} /></button>
       </div>
 
-      <label style={labelStyle}>Тип связи (вставит подпись)</label>
+      <div style={labelStyle}>Тип связи (вставит подпись)</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
         {Object.entries(EDGE_TYPE_LABELS).map(([k, v]) => (
           <button key={k}
@@ -484,13 +484,13 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
         </div>
       </div>
 
-      <label style={labelStyle}>Подпись (необязательно)</label>
-      <input style={inputStyle}
+      <label style={labelStyle} htmlFor="mm-edge-label">Подпись (необязательно)</label>
+      <input id="mm-edge-label" style={inputStyle}
         value={edge.label ?? ''}
         onChange={e => onChange({ ...edge, label: e.target.value || undefined })}
         placeholder="Текст на стрелке" />
 
-      <label style={labelStyle}>Стиль линии</label>
+      <div style={labelStyle}>Стиль линии</div>
       <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
         {([
           { k: 'solid'  as const, label: 'Сплошная', dash: 'none' },
@@ -515,7 +515,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
         })}
       </div>
 
-      <label style={labelStyle}>Толщина линии</label>
+      <div style={labelStyle}>Толщина линии</div>
       <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
         {([
           { v: 'thin' as const,   label: 'Тонкая', h: 2 },
@@ -536,7 +536,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
         })}
       </div>
 
-      <label style={labelStyle}>Направление</label>
+      <div style={labelStyle}>Направление</div>
       <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
         {/* One-way (current direction) */}
         <button onClick={() => onChange({ ...edge, data: { ...edge.data, bidirectional: false } })}
@@ -560,7 +560,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
         </button>
       </div>
 
-      <label style={labelStyle}>Цвет стрелки</label>
+      <div style={labelStyle}>Цвет стрелки</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
         {['var(--c-rose)','var(--c-moss)','var(--c-clay)','var(--c-teal)','var(--c-plum)','var(--c-slate)'].map(c => (
           <button key={c} onClick={() => onChange({ ...edge, data: { ...edge.data, color: c } })}

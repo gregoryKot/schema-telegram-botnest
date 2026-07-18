@@ -2,6 +2,7 @@ import { DiaryType } from '../../types';
 import { useSafeTop } from '../../utils/safezone';
 import { fmtDateLong } from '../../utils/format';
 import { haptic } from '../../haptic';
+import { pressable } from '../../utils/a11y';
 import { useTr } from '../../utils/addressForm';
 
 interface DiaryMeta {
@@ -28,10 +29,10 @@ interface Props {
 function DiaryCard({ meta, onOpen }: { meta: DiaryMeta; onOpen: () => void }) {
   return (
     <div
-      onClick={() => {
+      {...pressable(() => {
         haptic.tap();
         onOpen();
-      }}
+      })}
       className="card"
       style={{
         borderRadius: 20,
@@ -179,7 +180,7 @@ export function HomeView({
       >
         {onClose && (
           <span
-            onClick={onClose}
+            {...pressable(onClose)}
             style={{
               fontSize: 26,
               color: 'var(--text-sub)',

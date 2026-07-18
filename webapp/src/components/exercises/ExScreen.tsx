@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { pressable } from '../../utils/a11y';
 
 // ── Shared SVG icons ─────────────────────────────────────────────────────────
 export function GlyphArrowLeft() {
@@ -96,7 +97,7 @@ export function StepsBar({ steps, current, completed, onJump }: StepsBarProps) {
           <div
             key={i}
             className={'ex-step ' + (active ? 'is-active' : done ? 'is-done' : '')}
-            onClick={() => (done || active) && onJump?.(i)}
+            {...pressable(() => (done || active) && onJump?.(i))}
           >
             <span className="sn">{String(i + 1).padStart(2, '0')}</span>
             <span>{s}</span>

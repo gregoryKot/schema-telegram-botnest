@@ -208,7 +208,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
       {options.length > 1 && (
         <div>
-          <label style={labelSt}>Формат встречи</label>
+          <div style={labelSt}>Формат встречи</div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {options.map((o) => {
               const active = o.type === sessionType;
@@ -230,7 +230,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
         </div>
       )}
       <div>
-        <label style={labelSt}>Выберите день</label>
+        <div style={labelSt}>Выберите день</div>
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
           {dayList.map((k) => (
             <Chip key={k} active={k === day} onClick={() => { setDay(k); setSlot(null); }}>
@@ -241,7 +241,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       </div>
 
       <div>
-        <label style={labelSt}>Время · МСК</label>
+        <div style={labelSt}>Время · МСК</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {(days.get(day) ?? []).map((s) => (
             <Chip key={s.startsAt} active={slot?.startsAt === s.startsAt} onClick={() => setSlot(s)}>
@@ -254,8 +254,8 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       {slot && (
         <>
           <div className="form-grid">
-            <div><label style={labelSt}>Имя *</label><input style={field} placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} /></div>
-            <div><label style={labelSt}>Telegram / телефон *</label><input style={field} placeholder="@username или телефон" value={contact} onChange={(e) => setContact(e.target.value)} required maxLength={100} /></div>
+            <div><label style={labelSt} htmlFor="bp-name">Имя *</label><input id="bp-name" style={field} placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} /></div>
+            <div><label style={labelSt} htmlFor="bp-contact">Telegram / телефон *</label><input id="bp-contact" style={field} placeholder="@username или телефон" value={contact} onChange={(e) => setContact(e.target.value)} required maxLength={100} /></div>
           </div>
           {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
@@ -272,8 +272,8 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
               : 'Если занимаемся впервые — я заведу для вас персональную комнату для встреч. Она будет одна и та же для всех наших будущих сессий, чтобы не искать новую ссылку каждый раз. 🙂'}
           </p>
           <div>
-            <label style={labelSt}>Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
-            <textarea style={{ ...field, resize: 'vertical', minHeight: 84 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
+            <label style={labelSt} htmlFor="bp-message">Запрос <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(необязательно)</span></label>
+            <textarea id="bp-message" style={{ ...field, resize: 'vertical', minHeight: 84 }} placeholder="Пара слов о том, с чем хотите разобраться" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
           </div>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />

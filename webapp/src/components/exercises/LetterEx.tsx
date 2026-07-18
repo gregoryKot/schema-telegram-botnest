@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
@@ -27,6 +27,11 @@ export function LetterEx({
   const [text, setText] = useState('');
   const [done, setDone] = useState(false);
   const [pastLetters, setPastLetters] = useState<Awaited<ReturnType<typeof api.getLetters>>>([]);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!done) textRef.current?.focus();
+  }, [done]);
 
   useEffect(() => {
     if (done)
@@ -175,10 +180,10 @@ export function LetterEx({
       <div className="letter-paper">
         <div className="letter-salutation">Дорогой маленький я,</div>
         <textarea
+          ref={textRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="…"
-          autoFocus
         />
       </div>
       <div

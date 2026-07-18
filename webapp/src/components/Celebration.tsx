@@ -22,7 +22,7 @@ export function Celebration({ streak, onDone, insight }: Props) {
   const isMilestone = [3, 7, 14, 21, 30, 60, 100].includes(streak);
 
   return (
-    <div onClick={onDone} style={{ position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div role="presentation" onClick={onDone} style={{ position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
       <div style={{
         position: 'relative', zIndex: 1, textAlign: 'center',

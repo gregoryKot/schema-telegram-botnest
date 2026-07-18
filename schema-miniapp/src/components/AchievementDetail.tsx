@@ -21,6 +21,7 @@ export function AchievementDetail({ meta, onClose }: Props) {
 
   return (
     <div
+      role="presentation"
       onClick={onClose}
       style={{
         position: 'fixed',
@@ -35,6 +36,7 @@ export function AchievementDetail({ meta, onClose }: Props) {
       }}
     >
       <div
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'var(--sheet-bg)',
@@ -75,7 +77,7 @@ export function AchievementDetail({ meta, onClose }: Props) {
       </div>
 
       {showShare && (
-        <div onClick={(e) => e.stopPropagation()}>
+        <div role="presentation" onClick={(e) => e.stopPropagation()}>
           <ShareCardSheet
             title="Достижение"
             draw={draw}

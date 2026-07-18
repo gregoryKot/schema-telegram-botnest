@@ -1,5 +1,6 @@
 import type { UserTask } from '../../api';
 import { fmtDate } from '../../utils/format';
+import { pressable } from '../../utils/a11y';
 
 interface Props {
   allTasks: { clientId: number; clientName: string; tasks: UserTask[] }[] | null;
@@ -53,7 +54,7 @@ export function KanbanView({ allTasks, loading, onOpenClient }: Props) {
             {col.items.map(task => (
               <div
                 key={task.id}
-                onClick={() => onOpenClient(task.userId)}
+                {...pressable(() => onOpenClient(task.userId))}
                 style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '12px 14px', cursor: 'pointer', border: '1px solid var(--line)', transition: 'border-color 0.15s' }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = col.color)}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}

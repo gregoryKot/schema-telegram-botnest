@@ -8,6 +8,7 @@ export function GamePage() {
       padding: '16px',
     }}>
       <iframe
+        title="Игра «Всё по схеме»"
         src="/phaser-game/index.html"
         style={{
           width: '100%',

@@ -1,4 +1,5 @@
 import { PartnerInfo } from '../api';
+import { pressable } from '../utils/a11y';
 
 interface Props {
   partners: PartnerInfo[];
@@ -155,7 +156,7 @@ export function PairCard({
             </div>
           </div>
           <span
-            onClick={onOpen}
+            {...pressable(onOpen)}
             style={{
               fontSize: 16,
               color: 'var(--text-faint)',

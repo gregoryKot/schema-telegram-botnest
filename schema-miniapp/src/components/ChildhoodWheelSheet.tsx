@@ -6,6 +6,7 @@ import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { TherapyNote } from './TherapyNote';
+import { pressable } from '../utils/a11y';
 
 export const CHILDHOOD_DONE_KEY = 'childhood_wheel_done';
 
@@ -919,7 +920,9 @@ export function ChildhoodWheelSheet({
                         return (
                           <div
                             key={i}
-                            onClick={() => setOpenExampleIdx(isOpen ? null : i)}
+                            {...pressable(() =>
+                              setOpenExampleIdx(isOpen ? null : i),
+                            )}
                             style={{
                               padding: '10px 12px',
                               cursor: 'pointer',
@@ -1154,9 +1157,9 @@ export function ChildhoodWheelSheet({
                           return (
                             <span
                               key={s}
-                              onClick={() =>
-                                schemaData && setActiveSchema(schemaData)
-                              }
+                              {...pressable(() => {
+                                if (schemaData) setActiveSchema(schemaData);
+                              })}
                               style={{
                                 fontSize: 11,
                                 padding: '3px 10px',
@@ -1180,10 +1183,10 @@ export function ChildhoodWheelSheet({
                 })}
 
                 <div
-                  onClick={() => {
+                  {...pressable(() => {
                     finish();
                     onOpenSchemas();
-                  }}
+                  })}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

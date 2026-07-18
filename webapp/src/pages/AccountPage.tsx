@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 
@@ -46,6 +46,7 @@ export function AccountPage() {
   const [emailInput, setEmailInput] = useState('');
   const [emailLinkSent, setEmailLinkSent] = useState(false);
   const [emailLinkBusy, setEmailLinkBusy] = useState(false);
+  const emailInputRef = useRef<HTMLInputElement>(null);
 
   // Запрос ставит httpOnly-cookie `link_token` (60 c) — токен больше не
   // передаётся в URL (не попадает в логи/историю браузера).
@@ -119,6 +120,10 @@ export function AccountPage() {
   const hasTelegram = providers.some(p => p.provider === 'telegram');
   const hasVk = providers.some(p => p.provider === 'vk');
   const hasEmail = providers.some(p => p.provider === 'email');
+
+  useEffect(() => {
+    if (showEmailLink && !hasEmail && !emailLinkSent) emailInputRef.current?.focus();
+  }, [showEmailLink, hasEmail, emailLinkSent]);
 
   return (
     <div style={{ flex: 1, padding: 24, maxWidth: 480, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
@@ -254,7 +259,7 @@ export function AccountPage() {
               ) : (
                 <form onSubmit={sendEmailLink} style={{ marginTop: 12, display: 'flex', gap: 8 }}>
                   <input
-                    type="email" required autoFocus
+                    type="email" required ref={emailInputRef}
                     placeholder="your@email.com"
                     value={emailInput}
                     onChange={e => setEmailInput(e.target.value)}

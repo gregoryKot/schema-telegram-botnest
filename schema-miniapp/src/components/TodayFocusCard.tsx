@@ -5,6 +5,7 @@
 // на экран»). Когда трекер заполнен — спокойное состояние «на сегодня всё»,
 // без давления сделать больше.
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
 
 interface Props {
   ratedCount: number;
@@ -146,7 +147,7 @@ export function TodayFocusCard({
   // Крупная акцентная CTA по дизайн-макету: фиолетовая карточка, белая кнопка
   return (
     <div
-      onClick={onOpenTracker}
+      {...pressable(onOpenTracker)}
       style={{
         borderRadius: 24,
         padding: 20,
