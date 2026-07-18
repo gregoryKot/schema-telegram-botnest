@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components -- файл намеренно держит компонент рядом с его константами/хуками; вынос в отдельный файл — churn ради dev-only Fast Refresh, на прод-рантайм не влияет */
 import {
   BaseEdge, EdgeLabelRenderer, useInternalNode, getStraightPath, useReactFlow,
   type EdgeProps, type InternalNode, type Node,
@@ -148,5 +147,3 @@ export function FloatingEdge({ id, source, target, selected, markerEnd, markerSt
     </>
   );
 }
-
-export const EDGE_TYPES = { floating: FloatingEdge };
