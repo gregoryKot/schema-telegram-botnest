@@ -29,6 +29,12 @@ import {
   Row,
 } from './settingsSheet/primitives';
 import { NotifySubViews } from './settingsSheet/SubViews';
+import {
+  NotifyInfoOverlay,
+  PairInfoOverlay,
+  TherapistInfoOverlay,
+} from './settingsSheet/InfoOverlays';
+import { ExportOverlay } from './settingsSheet/ExportOverlay';
 
 interface Props {
   onClose: () => void;
@@ -62,7 +68,6 @@ export function SettingsSheet({
   const [joinView, setJoinView] = useState<'main' | 'join'>('main');
   const [joinError, setJoinError] = useState(false);
   const [exportText, setExportText] = useState<string | null>(null);
-  const [exportCopied, setExportCopied] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [showNotifyInfo, setShowNotifyInfo] = useState(false);
@@ -2062,220 +2067,25 @@ export function SettingsSheet({
 
       {/* Export text overlay */}
       {exportText && (
-        <BottomSheet
+        <ExportOverlay
+          text={exportText}
           onClose={() => {
             setExportText(null);
-            setExportCopied(false);
           }}
-          zIndex={300}
-        >
-          <div style={{ paddingTop: 4 }}>
-            <div
-              style={{
-                fontSize: 16,
-                fontWeight: 600,
-                color: 'var(--text)',
-                marginBottom: 12,
-              }}
-            >
-              Сводка для терапевта
-            </div>
-            <pre
-              style={{
-                fontSize: 11,
-                color: 'var(--text-sub)',
-                lineHeight: 1.6,
-                background: 'rgba(var(--fg-rgb),0.04)',
-                borderRadius: 12,
-                padding: '12px 14px',
-                overflowX: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                marginBottom: 14,
-                userSelect: 'all',
-                fontFamily: 'monospace',
-              }}
-            >
-              {exportText}
-            </pre>
-            <button
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(exportText);
-                  setExportCopied(true);
-                  setTimeout(() => setExportCopied(false), 2000);
-                } catch {
-                  /* best-effort: ошибку намеренно игнорируем */
-                }
-              }}
-              style={{
-                width: '100%',
-                padding: '13px 0',
-                border: 'none',
-                borderRadius: 12,
-                background: exportCopied
-                  ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)'
-                  : 'rgba(var(--fg-rgb),0.08)',
-                color: exportCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.7)',
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {exportCopied ? '✓ Скопировано' : 'Скопировать'}
-            </button>
-          </div>
-        </BottomSheet>
+        />
       )}
 
       {/* Notify info */}
       {showNotifyInfo && (
-        <BottomSheet onClose={() => setShowNotifyInfo(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: 'var(--accent)',
-                marginBottom: 16,
-              }}
-            >
-              Зачем уведомления
-            </div>
-            <p
-              style={{
-                fontSize: 15,
-                color: 'rgba(var(--fg-rgb),0.8)',
-                lineHeight: 1.7,
-                marginBottom: 14,
-              }}
-            >
-              Регулярность — это всё. Один раз в день, в одно и то же время,
-              формирует привычку наблюдать за собой.
-            </p>
-            <p
-              style={{
-                fontSize: 15,
-                color: 'rgba(var(--fg-rgb),0.8)',
-                lineHeight: 1.7,
-              }}
-            >
-              <b style={{ color: 'var(--text)' }}>Итоги дня</b> — приходят в это
-              же время, если дневник заполнен.
-            </p>
-          </div>
-        </BottomSheet>
+        <NotifyInfoOverlay onClose={() => setShowNotifyInfo(false)} />
       )}
 
-      {/* Pair info */}
       {showPairInfo && (
-        <BottomSheet onClose={() => setShowPairInfo(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: 'var(--accent)',
-                marginBottom: 16,
-              }}
-            >
-              Зачем привязывать друга
-            </div>
-            <p
-              style={{
-                fontSize: 15,
-                color: 'var(--text)',
-                lineHeight: 1.7,
-                marginBottom: 12,
-              }}
-            >
-              Это необязательно — но может помочь.
-            </p>
-            <p
-              style={{
-                fontSize: 14,
-                color: 'var(--text-sub)',
-                lineHeight: 1.7,
-                marginBottom: 12,
-              }}
-            >
-              Ты и друг (партнёр, коллега) видите{' '}
-              <b style={{ color: 'var(--text)' }}>индексы дня</b> друг друга —
-              просто число от 0 до 10. Никаких деталей, дневников или оценок.
-            </p>
-            <p
-              style={{
-                fontSize: 14,
-                color: 'var(--text-sub)',
-                lineHeight: 1.7,
-              }}
-            >
-              Иногда знать, что кому-то важно как у тебя дела — уже достаточно.
-              Это мягкая взаимная видимость, без осуждения.
-            </p>
-          </div>
-        </BottomSheet>
+        <PairInfoOverlay onClose={() => setShowPairInfo(false)} />
       )}
 
-      {/* Therapist info */}
       {showTherapistInfo && (
-        <BottomSheet onClose={() => setShowTherapistInfo(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: 'var(--accent)',
-                marginBottom: 16,
-              }}
-            >
-              Зачем подключать терапевта
-            </div>
-            <p
-              style={{
-                fontSize: 15,
-                color: 'var(--text)',
-                lineHeight: 1.7,
-                marginBottom: 12,
-              }}
-            >
-              Если ты работаешь со схема-терапевтом — приложение может стать
-              частью этой работы.
-            </p>
-            <p
-              style={{
-                fontSize: 14,
-                color: 'var(--text-sub)',
-                lineHeight: 1.7,
-                marginBottom: 12,
-              }}
-            >
-              Терапевт, которому ты дашь код, видит{' '}
-              <b style={{ color: 'var(--text)' }}>
-                трекер потребностей и задания
-              </b>
-              . Карточки схем, профиль и дневники ты контролируешь сам — можно
-              закрыть в настройках.
-            </p>
-            <p
-              style={{
-                fontSize: 14,
-                color: 'var(--text-sub)',
-                lineHeight: 1.7,
-              }}
-            >
-              Это даёт терапевту контекст без лишних объяснений — и позволяет
-              работать с реальными паттернами, не с тем, что вспомнилось на
-              сессии.
-            </p>
-          </div>
-        </BottomSheet>
+        <TherapistInfoOverlay onClose={() => setShowTherapistInfo(false)} />
       )}
 
       {/* Privacy */}
