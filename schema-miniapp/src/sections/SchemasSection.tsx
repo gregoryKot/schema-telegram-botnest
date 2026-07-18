@@ -83,6 +83,7 @@ export function SchemasSection({
   onOpenDiaries,
 }: Props) {
   const NEED_DATA = useNeedData();
+  const tr = useTr();
   const [tab, setTab] = useState<Tab>('schemas');
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() =>
     readLocalIds(MY_SCHEMA_IDS_KEY),
@@ -105,6 +106,9 @@ export function SchemasSection({
     new Set(),
   );
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
+  const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(
+    null,
+  );
   const [weekSummary, setWeekSummary] = useState<WeekSchemaSummary | null>(
     null,
   );
@@ -133,6 +137,16 @@ export function SchemasSection({
     api
       .getSchemaDiary()
       .then((entries) => setWeekSummary(weekSchemaSummary(entries)))
+      .catch(() => {});
+    api
+      .getYsqProgress()
+      .then((progress) =>
+        setYsqProgressAnswered(
+          Array.isArray(progress?.answers)
+            ? progress.answers.filter((a) => a > 0).length
+            : null,
+        ),
+      )
       .catch(() => {});
   }, []);
 
@@ -278,6 +292,7 @@ export function SchemasSection({
               <PatternsHero
                 hasSchemas={allSchemaIds.length > 0 || !!ysqCompletedAt}
                 summary={weekSummary}
+                progressAnswered={ysqProgressAnswered}
                 onStartTest={() => onOpenSchema({ startTest: true })}
                 onOpenLibrary={() => onOpenSchema()}
                 onPickManually={() => setShowSchemaPicker(true)}
@@ -396,8 +411,13 @@ export function SchemasSection({
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
                     {ysqCompletedAt
-                      ? `Пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · 116 вопросов`
-                      : 'Определи схемы автоматически'}
+                      ? `Пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты и «поделиться» внутри`
+                      : ysqProgressAnswered != null
+                        ? `Начат · отвечено ${ysqProgressAnswered} из 116`
+                        : tr(
+                            'Определи схемы автоматически',
+                            'Определите схемы автоматически',
+                          )}
                   </div>
                 </div>
                 <button
@@ -416,7 +436,11 @@ export function SchemasSection({
                     fontFamily: 'inherit',
                   }}
                 >
-                  {ysqCompletedAt ? 'Снова' : 'Начать'}
+                  {ysqCompletedAt
+                    ? 'Результаты'
+                    : ysqProgressAnswered != null
+                      ? 'Продолжить'
+                      : 'Начать'}
                 </button>
               </div>
             )}

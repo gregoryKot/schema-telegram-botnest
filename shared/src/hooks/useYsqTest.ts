@@ -343,6 +343,21 @@ export interface SchemaScore {
   max: number;
   pct: number;
   pct5plus: number;
+  /** Средний балл по вопросам схемы, 1–6 (0 если ни одного ответа). */
+  avg: number;
+}
+
+// Порог активности по среднему баллу: «часто так» и выше в среднем по схеме.
+// Классический подсчёт (>50% ответов 5–6) ловит только крайние ответы: профиль
+// из сплошных «4» давал 0% по всем схемам (инцидент 2026-07). Схема считается
+// выраженной по ЛЮБОМУ из двух критериев.
+export const AVG_ACTIVE_THRESHOLD = 4;
+
+export function isSchemaScoreActive(s: {
+  pct5plus: number;
+  avg?: number;
+}): boolean {
+  return s.pct5plus > 50 || (s.avg ?? 0) >= AVG_ACTIVE_THRESHOLD;
 }
 
 export function computeScores(answers: number[]): Record<string, SchemaScore> {
@@ -360,9 +375,18 @@ export function computeScores(answers: number[]): Record<string, SchemaScore> {
             (vals.filter((v) => v >= 5).length / schema.questions.length) * 100,
           )
         : 0;
-    result[schema.name] = { sum, max, pct, pct5plus };
+    const avg =
+      vals.length > 0
+        ? Math.round((sum / schema.questions.length) * 10) / 10
+        : 0;
+    result[schema.name] = { sum, max, pct, pct5plus, avg };
   }
   return result;
+}
+
+/** Ширина бара для среднего балла: 1 → 0%, 6 → 100%. */
+export function avgBarPct(avg: number): number {
+  return Math.max(0, Math.round(((avg - 1) / 5) * 100));
 }
 
 export const TIP_VY: Record<string, string> = {
@@ -436,7 +460,14 @@ const SCHEMA_NAME_TO_ID: Record<string, string> = {
 export interface YsqHistoryEntry {
   id: number;
   completedAt: string;
-  scores: { id: string; pct5plus: number }[];
+  // avg опционален: старые ответы сервера могли его не содержать —
+  // тогда активность считается только по классике.
+  scores: { id: string; pct5plus: number; avg?: number }[];
+}
+
+/** Число выраженных схем в записи истории (оба критерия). */
+export function countActiveInHistory(entry: YsqHistoryEntry): number {
+  return entry.scores.filter(isSchemaScoreActive).length;
 }
 
 export interface YsqApi {
@@ -501,9 +532,31 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     setPage(newPage);
   };
 
+  // Загрузка сохранённого состояния. autoResume означает «сразу к месту, где
+  // пользователь остановился»: есть незаконченный прогресс → внутрь теста;
+  // прогресса нет, но есть результат → показать результат (раньше autoResume
+  // вовсе не грузил результат, и после прохождения кнопка входа открывала
+  // интро с «Начать тест» — результаты было не найти).
   useEffect(() => {
+    let resumedToTest = false;
     try {
-      if (!autoResume) {
+      const saved = localStorage.getItem(YSQ_PROGRESS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as { answers: number[]; page: number };
+        if (
+          Array.isArray(parsed.answers) &&
+          parsed.answers.length === QUESTIONS.length
+        ) {
+          setHasProgress(true);
+          setAnswers(parsed.answers);
+          if (autoResume) {
+            setPage(parsed.page ?? 0);
+            setPhase('test');
+            resumedToTest = true;
+          }
+        }
+      }
+      if (!resumedToTest) {
         const result = localStorage.getItem(YSQ_RESULT_KEY);
         if (result) {
           const parsed = JSON.parse(result) as {
@@ -521,26 +574,11 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
           }
         }
       }
-      const saved = localStorage.getItem(YSQ_PROGRESS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as { answers: number[]; page: number };
-        if (
-          Array.isArray(parsed.answers) &&
-          parsed.answers.length === QUESTIONS.length
-        ) {
-          setHasProgress(true);
-          setAnswers(parsed.answers);
-          if (autoResume) {
-            setPage(parsed.page ?? 0);
-            setPhase('test');
-          }
-        }
-      }
     } catch {
       /* ignore */
     }
 
-    if (!autoResume) {
+    if (!resumedToTest) {
       api
         .getYsqHistory()
         .then((h) => {
@@ -551,7 +589,25 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
       Promise.all([api.getYsqResult(), api.getYsqProgress()])
         .then(([serverResult, serverProgress]) => {
           if (userStartedRef.current) return;
-          if (
+          const serverHasProgress =
+            serverProgress?.answers &&
+            Array.isArray(serverProgress.answers) &&
+            serverProgress.answers.length === QUESTIONS.length;
+          if (serverHasProgress) {
+            localStorage.setItem(
+              YSQ_PROGRESS_KEY,
+              JSON.stringify({
+                answers: serverProgress.answers,
+                page: serverProgress.page,
+              }),
+            );
+            setHasProgress(true);
+          }
+          if (autoResume && serverHasProgress) {
+            setAnswers(serverProgress.answers);
+            setPage(serverProgress.page);
+            setPhase('test');
+          } else if (
             serverResult?.answers &&
             Array.isArray(serverResult.answers) &&
             serverResult.answers.length === QUESTIONS.length
@@ -565,21 +621,9 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
             setAnswers(serverResult.answers);
             setCompletedAt(dateStr);
             setPhase('result');
-          } else if (
-            serverProgress?.answers &&
-            Array.isArray(serverProgress.answers) &&
-            serverProgress.answers.length === QUESTIONS.length
-          ) {
-            localStorage.setItem(
-              YSQ_PROGRESS_KEY,
-              JSON.stringify({
-                answers: serverProgress.answers,
-                page: serverProgress.page,
-              }),
-            );
+          } else if (serverHasProgress) {
             setAnswers(serverProgress.answers);
             setPage(serverProgress.page);
-            setHasProgress(true);
           }
         })
         .catch(() => {});
@@ -697,13 +741,15 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
   const resultView = useMemo<ResultView | null>(() => {
     if (!scores) return null;
     const sortedSchemas = [...SCHEMAS].sort(
-      (a, b) => scores[b.name].pct5plus - scores[a.name].pct5plus,
+      (a, b) =>
+        scores[b.name].pct5plus - scores[a.name].pct5plus ||
+        scores[b.name].avg - scores[a.name].avg,
     );
-    const activeSchemas = sortedSchemas.filter(
-      (s) => scores[s.name].pct5plus > 50,
+    const activeSchemas = sortedSchemas.filter((s) =>
+      isSchemaScoreActive(scores[s.name]),
     );
     const inactiveSchemas = sortedSchemas.filter(
-      (s) => scores[s.name].pct5plus <= 50,
+      (s) => !isSchemaScoreActive(scores[s.name]),
     );
 
     const activeByDomain = DOMAIN_ORDER.map((needId) => ({
@@ -770,4 +816,62 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     scores,
     resultView,
   };
+}
+
+// ── Шаринг результата ────────────────────────────────────────────────────────
+
+// Текст для «Поделиться»: обе метрики по каждой выраженной схеме.
+// Формулировки нейтральные (без ты/вы) — текст уходит третьим лицам.
+export function buildShareText(
+  scores: Record<string, SchemaScore>,
+  dateLabel: string | null,
+): string {
+  const active = SCHEMAS.filter((s) => isSchemaScoreActive(scores[s.name]));
+  const lines: string[] = [
+    `Мой результат теста на схемы${dateLabel ? ` — ${dateLabel}` : ''}`,
+    '',
+  ];
+  if (active.length === 0) {
+    lines.push('Выраженных схем не обнаружено.');
+  } else {
+    lines.push(`Выраженные схемы (${active.length}):`);
+    for (const s of active) {
+      const sc = scores[s.name];
+      lines.push(
+        `• ${s.name} — ответы 5–6: ${sc.pct5plus}%, средний балл ${sc.avg} из 6`,
+      );
+    }
+  }
+  lines.push(
+    '',
+    'Два способа подсчёта: доля ответов «5–6» (классический) и средний балл по схеме (выражена от 4 из 6).',
+    'Образовательный опросник для самонаблюдения, не диагноз. schemehappens.ru',
+  );
+  return lines.join('\n');
+}
+
+// Одна механика шаринга на оба фронтенда: Web Share API, фолбэк — буфер
+// обмена с флагом «Скопировано» на 2 секунды.
+export function useShareResult(getText: () => string, onShared?: () => void) {
+  const [copied, setCopied] = useState(false);
+  const share = async () => {
+    const text = getText();
+    onShared?.();
+    try {
+      if (typeof navigator.share === 'function') {
+        await navigator.share({ text });
+        return;
+      }
+    } catch {
+      return; // пользователь закрыл системный диалог — не дублируем в буфер
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+  return { share, copied };
 }

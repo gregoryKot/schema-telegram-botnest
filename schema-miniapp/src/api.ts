@@ -270,7 +270,7 @@ export interface ClientConceptualization {
 export interface YsqHistoryEntry {
   id: number;
   completedAt: string;
-  scores: { id: string; pct5plus: number }[];
+  scores: { id: string; pct5plus: number; avg?: number }[];
 }
 
 export interface ClientData {

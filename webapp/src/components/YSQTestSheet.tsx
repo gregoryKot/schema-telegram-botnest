@@ -11,11 +11,30 @@ import {
   ANSWER_LABELS,
   TIP_VY,
   getSchemaForQuestion,
+  avgBarPct,
+  buildShareText,
+  useShareResult,
+  countActiveInHistory,
   YSQ_RESULT_KEY,
   YSQ_PROGRESS_KEY,
 } from '../hooks/useYsqTest';
 
 export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY };
+
+// Ряд одной метрики результата (классика / средний балл): подпись, бар, значение.
+function ScoreBarRow({ label, barPct, value, color, mb }: {
+  label: string; barPct: number; value: string; color: string; mb: number;
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: mb }}>
+      <span style={{ fontSize: 11, color: 'var(--text-faint)', width: 78, flexShrink: 0 }}>{label}</span>
+      <div style={{ flex: 1, height: 3, background: 'rgba(var(--fg-rgb),0.1)', borderRadius: 2 }}>
+        <div style={{ height: '100%', width: `${barPct}%`, background: color, borderRadius: 2 }} />
+      </div>
+      <span style={{ fontSize: 11, fontWeight: 600, color, width: 44, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+    </div>
+  );
+}
 
 interface Props {
   onClose: () => void;
@@ -45,6 +64,11 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
     scores,
     resultView,
   } = useYsqTest({ api, autoResume });
+
+  const { share, copied } = useShareResult(
+    () => (scores ? buildShareText(scores, resultView?.dateLabel ?? null) : ''),
+    () => api.trackEvent('ysq_share_result'),
+  );
 
   // ── Full-screen test phase ────────────────────────────────────────────────────
   if (phase === 'test') {
@@ -246,7 +270,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             </div>
 
             <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, marginBottom: 20, fontStyle: 'italic' }}>
-              Схема считается выраженной если больше половины ответов – 5 или 6. Это инструмент самоисследования, не диагноз.
+              Считаем двумя способами: классический – доля ответов «5» и «6» (выражена, если их больше половины) – и средний балл по схеме (выражена от 4 из 6). Достаточно любого из двух. Это инструмент самоисследования, не диагноз.
             </div>
 
             {activeCount === 0 && (
@@ -290,9 +314,9 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                         </div>
                       </div>
 
-                      <div style={{ height: 3, background: 'rgba(var(--fg-rgb),0.1)', borderRadius: 2, marginBottom: 10 }}>
-                        <div style={{ height: '100%', width: `${s.pct5plus}%`, background: color, borderRadius: 2 }} />
-                      </div>
+                      {/* Две метрики: классика (5–6) и средний балл */}
+                      <ScoreBarRow label="Ответы 5–6" barPct={s.pct5plus} value={`${s.pct5plus}%`} color={color} mb={4} />
+                      <ScoreBarRow label="Ср. балл" barPct={avgBarPct(s.avg)} value={`${s.avg} / 6`} color={color} mb={10} />
 
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, marginBottom: 8 }}>
                         {schema.desc}
@@ -347,7 +371,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                         <div key={schema.name} style={{ marginBottom: 8, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '12px 14px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
                             <div style={{ fontSize: 13, color: 'var(--text-sub)', flex: 1, paddingRight: 8, lineHeight: 1.3 }}>{schema.name}</div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: barColor, flexShrink: 0 }}>{s.pct5plus}%</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: barColor, flexShrink: 0 }}>{s.pct5plus}% · ср. {s.avg}</div>
                           </div>
                           <div style={{ height: 3, background: 'rgba(var(--fg-rgb),0.1)', borderRadius: 2 }}>
                             <div style={{ height: '100%', width: `${s.pct5plus}%`, background: barColor, borderRadius: 2 }} />
@@ -393,10 +417,10 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {history.map((entry, idx) => {
-                    const entryActive = entry.scores.filter(s => s.pct5plus > 50).length;
+                    const entryActive = countActiveInHistory(entry);
                     const prevEntryItem = history[idx + 1];
                     const entryDelta = prevEntryItem
-                      ? entryActive - prevEntryItem.scores.filter(s => s.pct5plus > 50).length
+                      ? entryActive - countActiveInHistory(prevEntryItem)
                       : null;
                     const entryDate = new Date(entry.completedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
                     return (
@@ -421,7 +445,14 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
               </div>
             )}
 
-            <button onClick={goBack} className="ex-btn ex-btn-primary" style={{ marginTop: 4, marginBottom: 10 }}>
+            <button
+              onClick={share}
+              style={{ width: '100%', padding: '14px 0', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)', borderRadius: 14, background: 'color-mix(in srgb, var(--accent) 10%, transparent)', color: 'var(--accent)', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginTop: 4, marginBottom: 10 }}
+            >
+              {copied ? 'Скопировано в буфер ✓' : '📤 Поделиться результатами'}
+            </button>
+
+            <button onClick={goBack} className="ex-btn ex-btn-primary" style={{ marginBottom: 10 }}>
               Сохранить и закрыть
             </button>
 

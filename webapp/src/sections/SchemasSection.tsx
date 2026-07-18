@@ -59,7 +59,8 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(MY_SCHEMA_IDS_KEY));
   const [myModeIds, setMyModeIds]         = useState<string[]>(() => readLocalIds(MY_MODE_IDS_KEY));
   const [ysqSchemaIds, setYsqSchemaIds]   = useState<string[]>([]);
-  const [ysqScores, setYsqScores]         = useState<Record<string, number>>({});
+  const [ysqScores, setYsqScores]         = useState<Record<string, { pct5plus: number; avg: number }>>({});
+  const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
   const [showModePicker, setShowModePicker]     = useState(false);
@@ -71,7 +72,16 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const [showMyMap, setShowMyMap]         = useState(false);
 
   useEffect(() => {
-    Promise.all([api.getProfile(), api.getYsqHistory()]).then(([p, history]) => {
+    Promise.all([
+      api.getProfile(),
+      api.getYsqHistory(),
+      api.getYsqProgress().catch(() => null),
+    ]).then(([p, history, progress]) => {
+      setYsqProgressAnswered(
+        Array.isArray(progress?.answers)
+          ? progress.answers.filter(a => a > 0).length
+          : null,
+      );
       const serverSchemas = Array.isArray(p?.mySchemaIds) ? p.mySchemaIds : [];
       const serverModes   = Array.isArray(p?.myModeIds)   ? p.myModeIds   : [];
       setManualSchemaIds(serverSchemas);
@@ -83,9 +93,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       // Build scores map from latest YSQ history entry
       if (Array.isArray(history) && history.length > 0) {
         const latest = history[0];
-        const map: Record<string, number> = {};
+        const map: Record<string, { pct5plus: number; avg: number }> = {};
         if (Array.isArray(latest.scores)) {
-          for (const s of latest.scores) map[s.id] = Math.round(s.pct5plus);
+          for (const s of latest.scores)
+            map[s.id] = { pct5plus: Math.round(s.pct5plus), avg: s.avg ?? 0 };
         }
         setYsqScores(map);
       }
@@ -145,7 +156,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                 const schema = domain?.schemas.find(s => s.id === sid);
                 if (!schema || !domain) return null;
                 const c = domain.color;
-                const score = ysqScores[sid] ?? 0;
+                const score = ysqScores[sid];
+                // Классика может быть честным нулём (схема активна по среднему
+                // баллу) — бар и цифра рисуются по среднему баллу.
+                const barPct = score ? Math.max(0, Math.round(((score.avg - 1) / 5) * 100)) : 0;
                 return (
                   <div
                     key={sid}
@@ -161,10 +175,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                       <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{schema.name}</span>
                     </div>
                     <div style={{ height: 4, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ width: `${score}%`, height: '100%', background: c, borderRadius: 4 }} />
+                      <div style={{ width: `${barPct}%`, height: '100%', background: c, borderRadius: 4 }} />
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 500, color: c, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {score > 0 ? `${score}%` : '–'}
+                      {score && score.avg > 0 ? `${score.avg}/6` : score && score.pct5plus > 0 ? `${score.pct5plus}%` : '–'}
                     </span>
                   </div>
                 );
@@ -178,11 +192,19 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           <div className="section-head">
             <h3>Тест на схемы</h3>
             <button onClick={() => onOpenSchema({ startTest: true })} className="link">
-              {ysqCompletedAt ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · пройти снова →` : 'Начать →'}
+              {ysqCompletedAt
+                ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты →`
+                : ysqProgressAnswered !== null
+                  ? `продолжить (${ysqProgressAnswered} из 116) →`
+                  : 'Начать →'}
             </button>
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-            {ysqCompletedAt ? '116 вопросов · определяет активные схемы автоматически' : 'Определи схемы автоматически – 116 вопросов, 10 минут'}
+            {ysqCompletedAt
+              ? 'Результаты, история прохождений и «поделиться» – внутри'
+              : ysqProgressAnswered !== null
+                ? 'Тест начат – прогресс сохранён, можно продолжить с того же места'
+                : tr('Определи схемы автоматически – 116 вопросов, 10 минут', 'Определите схемы автоматически – 116 вопросов, 10 минут')}
           </div>
         </div>
 

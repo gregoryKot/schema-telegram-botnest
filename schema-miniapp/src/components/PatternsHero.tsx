@@ -11,6 +11,8 @@ import { WeekSchemaSummary } from '../utils/patternsSummary';
 interface Props {
   hasSchemas: boolean;
   summary: WeekSchemaSummary | null;
+  /** Отвеченных вопросов незаконченного теста (null — тест не начат). */
+  progressAnswered?: number | null;
   onStartTest: () => void;
   onOpenLibrary: () => void;
   onPickManually: () => void;
@@ -21,6 +23,7 @@ interface Props {
 export function PatternsHero({
   hasSchemas,
   summary,
+  progressAnswered,
   onStartTest,
   onOpenLibrary,
   onPickManually,
@@ -120,7 +123,9 @@ export function PatternsHero({
               gap: 6,
             }}
           >
-            Начать тест
+            {progressAnswered != null
+              ? `Продолжить тест (${progressAnswered} из 116)`
+              : 'Начать тест'}
             <span style={{ fontSize: 17 }}>→</span>
           </button>
         </div>
