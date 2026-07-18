@@ -42,8 +42,8 @@
     "vite": "^8.0.12",
     "vitest": "^4.1.10"
   },
+  "overridesComment": "eslint-plugin-jsx-a11y@6.10 ещё не расширил peer-диапазон на ESLint 10 (объявляет ^3..^9), хотя с flat-config ESLint 10 работает. Точечный override релаксит ТОЛЬКО его peer к нашей версии eslint — без глобального legacy-peer-deps, чтобы npm ci не падал на ложном конфликте.",
   "overrides": {
-    "_comment": "eslint-plugin-jsx-a11y@6.10 ещё не расширил peer-диапазон на ESLint 10 (объявляет ^3..^9), хотя с flat-config ESLint 10 работает. Точечный override релаксит ТОЛЬКО его peer к нашей версии eslint — без глобального legacy-peer-deps, чтобы npm ci не падал на ложном конфликте.",
     "eslint-plugin-jsx-a11y": {
       "eslint": "$eslint"
     }
