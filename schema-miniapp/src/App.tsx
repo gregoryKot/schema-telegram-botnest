@@ -604,6 +604,7 @@ export default function App() {
         setHelpTasksKey={setHelpTasksKey}
         profileRefreshKey={profileRefreshKey}
         displayName={displayName}
+        onNewDiaryEntry={setNewDiaryEntry}
       />
 
       {/* ── История потребностей ── */}
