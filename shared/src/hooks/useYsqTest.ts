@@ -819,9 +819,12 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
 }
 
 // ── Шаринг результата ────────────────────────────────────────────────────────
+// Картинка и короткий текст — shared/src/share/cards/ysqCard.ts через общий
+// ShareCardSheet. Здесь только подробный текстовый фолбэк.
 
-// Текст для «Поделиться»: обе метрики по каждой выраженной схеме.
-// Формулировки нейтральные (без ты/вы) — текст уходит третьим лицам.
+// Развёрнутый текст (фолбэк «поделиться текстом»): обе метрики по каждой
+// выраженной схеме. Формулировки нейтральные (без ты/вы) — текст уходит
+// третьим лицам.
 export function buildShareText(
   scores: Record<string, SchemaScore>,
   dateLabel: string | null,
@@ -848,30 +851,4 @@ export function buildShareText(
     'Образовательный опросник для самонаблюдения, не диагноз. schemehappens.ru',
   );
   return lines.join('\n');
-}
-
-// Одна механика шаринга на оба фронтенда: Web Share API, фолбэк — буфер
-// обмена с флагом «Скопировано» на 2 секунды.
-export function useShareResult(getText: () => string, onShared?: () => void) {
-  const [copied, setCopied] = useState(false);
-  const share = async () => {
-    const text = getText();
-    onShared?.();
-    try {
-      if (typeof navigator.share === 'function') {
-        await navigator.share({ text });
-        return;
-      }
-    } catch {
-      return; // пользователь закрыл системный диалог — не дублируем в буфер
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* ignore */
-    }
-  };
-  return { share, copied };
 }
