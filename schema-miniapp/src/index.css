@@ -115,9 +115,9 @@ button { font-family: inherit; }
   cursor: pointer;
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.15s;
 }
-.btn-primary:active { opacity: 0.82; }
+.btn-primary:active { opacity: 0.82; transform: scale(0.97); }
 .btn-primary:disabled { opacity: 0.4; cursor: default; }
 
 /* Light theme: softer gradient instead of flat saturated color */
@@ -148,10 +148,10 @@ html[data-theme="light"] .btn-primary {
   background: var(--surface);
   border: 1px solid var(--border-color);
   border-radius: 20px;
-  transition: opacity 0.12s;
+  transition: opacity 0.12s, transform 0.12s;
   -webkit-tap-highlight-color: transparent;
 }
-.card:active { opacity: 0.72; }
+.card:active { opacity: 0.72; transform: scale(0.98); }
 
 /* Light theme: white cards with subtle shadow (iOS-style) */
 html[data-theme="light"] .card {
