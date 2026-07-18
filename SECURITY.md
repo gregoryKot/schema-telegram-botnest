@@ -275,3 +275,33 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   `auth.service.ts` и стале́ env `THERAPIST_CODE`; `joinPair` сделан атомарным;
   `logout()` чистит `localStorage`; `window.open` получил `noopener`. Остаток —
   в §12.
+
+## 15. Security-трипваеры (тесты-храповики, 2026-07)
+
+Инварианты безопасности закреплены исполняемыми тестами — регрессия
+роняет CI, а не всплывает на проде. Все allowlist'ы **могут только
+сокращаться**. Пробит по классам уязвимостей: реальных дыр в контуре не
+найдено (код уже крепок), тесты фиксируют это и ловят будущие регрессии.
+
+- **JWT-форджинг** (`src/auth/auth.service.security.spec.ts`): alg:none,
+  смена алгоритма, type-confusion access/refresh/link/merge, подмена
+  iss/aud, tamper — всё отклоняется; пин `algorithms:['HS256']`.
+- **Обход авторизации** (`src/security/route-auth.invariants.spec.ts`):
+  каждый контроллер под guard, либо admin-key на каждом методе, либо в
+  явном публичном allowlist. Новый контроллер без защиты роняет тест.
+- **Инъекции/RCE/pollution** (`src/security/injection.invariants.spec.ts`):
+  бан eval/Function/child_process; `*RawUnsafe` только с литералом;
+  `Prisma.raw` всегда через whitelist `ident()`; `__proto__` не загрязняет
+  прототип.
+- **Constant-time** (`src/security/timing-safe.invariants.spec.ts`): сайты
+  сравнения секретов зовут `timingSafeEqual`, запрет `===` на секрете.
+- **CSRF** (`src/security/csrf.invariants.spec.ts`): каждый читатель
+  refresh-куки зовёт `requireCsrf`; куки не `sameSite:none`.
+- **Hardening** (`src/security/hardening.invariants.spec.ts`): helmet+CSP,
+  ValidationPipe whitelist, cap тела, exception-фильтры, HTTPS-редирект.
+- **ReDoS** (`webapp/src/utils/crisisMarkers.redos.test.ts`): детект на
+  патологическом вводе укладывается в 100мс.
+- **initData-фаззинг** (`src/security/initdata-fuzz.spec.ts`): патологический
+  user не даёт 500 и не загрязняет прототип.
+- **XSS** (`webapp/src/security/xss.invariants.test.ts`):
+  `dangerouslySetInnerHTML` только в allowlist и только с DOMPurify.
