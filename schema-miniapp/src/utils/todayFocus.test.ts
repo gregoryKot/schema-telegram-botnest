@@ -22,7 +22,7 @@ beforeEach(() => {
     get length() {
       return store.size;
     },
-  } as Storage;
+  };
 });
 
 describe('флаги видимости «Сегодня»', () => {
