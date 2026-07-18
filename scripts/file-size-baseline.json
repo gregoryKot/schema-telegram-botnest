@@ -1,6 +1,6 @@
 {
-  "schema-miniapp/src/components/SettingsSheet.tsx": 2321,
   "schema-miniapp/src/needData.ts": 1968,
+  "schema-miniapp/src/components/SettingsSheet.tsx": 1783,
   "webapp/src/components/TrackerOverlay.tsx": 999,
   "src/bot/bot.analytics.service.ts": 851,
   "schema-miniapp/src/components/TrackerOverlay.tsx": 833,
@@ -201,6 +201,7 @@
   "webapp/src/pages/landing/data.ts": 156,
   "schema-miniapp/src/components/childhoodWheelSheet/SchemaHintsSection.tsx": 155,
   "src/api/diary.controller.ts": 155,
+  "schema-miniapp/src/components/settingsSheet/InfoOverlays.tsx": 153,
   "shared/src/share/cards/weeklyCard.ts": 153,
   "src/utils/encrypt-migration.ts": 152,
   "webapp/src/components/ModeMapFloatingEdge.tsx": 152,
@@ -348,6 +349,7 @@
   "schema-miniapp/src/components/disclaimer/DisclaimerWelcomeStep.tsx": 74,
   "schema-miniapp/src/main.tsx": 74,
   "src/booking/caldav-event.util.ts": 74,
+  "schema-miniapp/src/components/settingsSheet/ExportOverlay.tsx": 73,
   "scripts/check-jscpd-ratchet.mjs": 73,
   "src/api/booking.controller.ts": 73,
   "src/bot/ysq.service.ts": 73,
