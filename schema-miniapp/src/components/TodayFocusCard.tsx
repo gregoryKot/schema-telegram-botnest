@@ -31,7 +31,14 @@ export function TodayFocusCard({
 
   if (allRated && avgScore) {
     return (
-      <div className="card" style={{ padding: 18 }}>
+      <div
+        className="card"
+        style={{
+          padding: 18,
+          animation: 'slide-up 0.3s ease both',
+          animationDelay: '80ms',
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div
             style={{
@@ -149,6 +156,8 @@ export function TodayFocusCard({
         color: 'var(--on-accent)',
         boxShadow:
           '0 14px 34px color-mix(in srgb, var(--accent) 35%, transparent)',
+        animation: 'slide-up 0.3s ease both',
+        animationDelay: '80ms',
       }}
     >
       <div

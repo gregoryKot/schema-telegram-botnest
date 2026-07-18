@@ -34,40 +34,66 @@ interface Props {
   onOpenTherapistCabinet?: () => void;
 }
 
-function ToolCard({
+// iOS-строка по дизайн-макету: плашка-иконка, заголовок с подписью, шеврон.
+// Каскадное появление (index → задержка); глушится reduced-motion блоком CSS.
+function ToolRow({
   emoji,
   label,
   sub,
   onClick,
-  accentColor,
+  tint = 'var(--accent)',
+  danger,
+  index = 0,
 }: {
   emoji: string;
   label: string;
   sub?: string;
   onClick: () => void;
-  accentColor?: string;
+  tint?: string;
+  danger?: boolean;
+  index?: number;
 }) {
   return (
-    <div
+    <button
       onClick={onClick}
       className="card"
       style={{
+        width: '100%',
+        textAlign: 'left',
         cursor: 'pointer',
-        padding: '18px 16px',
+        fontFamily: 'inherit',
+        padding: '13px 16px',
         borderRadius: 18,
         display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
+        alignItems: 'center',
+        gap: 13,
+        minHeight: 66,
+        animation: 'slide-up 0.3s ease both',
+        animationDelay: `${index * 45}ms`,
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <span style={{ fontSize: 30, lineHeight: 1 }}>{emoji}</span>
-      <div>
+      <div
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          flexShrink: 0,
+          background: `color-mix(in srgb, ${tint} 14%, transparent)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 19,
+        }}
+      >
+        {emoji}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 700,
-            color: accentColor || 'var(--text)',
+            color: danger ? 'var(--accent-red)' : 'var(--text)',
             lineHeight: 1.3,
           }}
         >
@@ -76,9 +102,9 @@ function ToolCard({
         {sub && (
           <div
             style={{
-              fontSize: 11,
+              fontSize: 12,
               color: 'var(--text-sub)',
-              marginTop: 3,
+              marginTop: 1,
               lineHeight: 1.4,
             }}
           >
@@ -86,7 +112,10 @@ function ToolCard({
           </div>
         )}
       </div>
-    </div>
+      <span style={{ color: 'var(--text-faint)', fontSize: 18, flexShrink: 0 }}>
+        ›
+      </span>
+    </button>
   );
 }
 
@@ -328,27 +357,26 @@ export function HelpSection({
         {/* ── «Здесь и сейчас» (дизайн-макет, волна 2): дыхание первым ── */}
         <BreathingCard />
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 12,
-          }}
-        >
-          <ToolCard
-            emoji="🌍"
-            label="Заземление 5-4-3-2-1"
-            sub="вернуться в тело и в комнату"
-            onClick={() => setShowGrounding(true)}
-          />
-          <ToolCard
-            emoji="📞"
-            label="Мне очень плохо"
-            sub="контакты помощи прямо сейчас"
-            accentColor="var(--accent-red)"
-            onClick={() => setShowCrisis(true)}
-          />
+        <div className="section-label" style={{ margin: '8px 4px -4px' }}>
+          Если нужно больше
         </div>
+        <ToolRow
+          emoji="🌍"
+          label="Заземление 5-4-3-2-1"
+          sub="вернуться в тело и в комнату"
+          tint="var(--accent-blue)"
+          index={0}
+          onClick={() => setShowGrounding(true)}
+        />
+        <ToolRow
+          emoji="📞"
+          label="Мне очень плохо"
+          sub="контакты помощи прямо сейчас"
+          tint="var(--accent-red)"
+          danger
+          index={1}
+          onClick={() => setShowCrisis(true)}
+        />
 
         {/* Therapist tasks — shown prominently when assigned */}
         {therapistTasks.filter((t) => !t.doneToday).length > 0 && (
@@ -385,82 +413,90 @@ export function HelpSection({
           </div>
         )}
 
-        {/* 2-column tool grid */}
-        <div
-          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}
-        >
-          <ToolCard
-            emoji="🎯"
-            label="Мои цели"
-            sub={
-              tasks.length === 0
-                ? 'Нет активных'
-                : `${tasks.length} ${plural(tasks.length, 'цель', 'цели', 'целей')}`
-            }
-            accentColor="var(--accent-orange)"
-            onClick={() => setShowAllTasks(true)}
-          />
-          <ToolCard
-            emoji="🗂"
-            label="Практики"
-            sub={
-              practiceCount == null
-                ? undefined
-                : practiceCount === 0
-                  ? 'Нет практик'
-                  : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
-            }
-            accentColor="var(--accent)"
-            onClick={onOpenPractices}
-          />
-          <ToolCard
-            emoji="🗓"
-            label="Планы"
-            sub={
-              planCount == null
-                ? undefined
-                : planCount === 0
-                  ? 'История пуста'
-                  : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
-            }
-            accentColor="var(--accent-blue)"
-            onClick={onOpenPlans}
-          />
-          <ToolCard
-            emoji="🔍"
-            label="Проверка убеждений"
-            sub="Правда ли это?"
-            accentColor="var(--accent-yellow)"
-            onClick={() => setShowBeliefCheck(true)}
-          />
-          <ToolCard
-            emoji="🏡"
-            label="Безопасное место"
-            sub="Ресурс в тревожный момент"
-            accentColor="var(--accent-green)"
-            onClick={() => setShowSafePlace(true)}
-          />
-          <ToolCard
-            emoji="✉️"
-            label="Письмо себе"
-            sub="Уязвимому Ребёнку"
-            accentColor="var(--accent-pink)"
-            onClick={() => setShowLetterToSelf(true)}
-          />
-          <ToolCard
-            emoji="🆘"
-            label="Схема включилась"
-            sub="5 шагов чтобы разобраться"
-            onClick={() => setShowFlashcard(true)}
-          />
-          <ToolCard
-            emoji="🌱"
-            label="Колесо детства"
-            sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'}
-            accentColor="var(--accent-green)"
-            onClick={onOpenChildhoodWheel}
-          />
+        {/* Инструменты — iOS-строки по макету, каскадное появление */}
+        <div className="section-label" style={{ margin: '8px 4px -4px' }}>
+          Инструменты
         </div>
+        <ToolRow
+          emoji="🎯"
+          label="Мои цели"
+          sub={
+            tasks.length === 0
+              ? 'Нет активных'
+              : `${tasks.length} ${plural(tasks.length, 'цель', 'цели', 'целей')}`
+          }
+          tint="var(--accent-orange)"
+          index={0}
+          onClick={() => setShowAllTasks(true)}
+        />
+        <ToolRow
+          emoji="🗂"
+          label="Практики"
+          sub={
+            practiceCount == null
+              ? undefined
+              : practiceCount === 0
+                ? 'Нет практик'
+                : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
+          }
+          tint="var(--accent)"
+          index={1}
+          onClick={onOpenPractices}
+        />
+        <ToolRow
+          emoji="🗓"
+          label="Планы"
+          sub={
+            planCount == null
+              ? undefined
+              : planCount === 0
+                ? 'История пуста'
+                : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
+          }
+          tint="var(--accent-blue)"
+          index={2}
+          onClick={onOpenPlans}
+        />
+        <ToolRow
+          emoji="🔍"
+          label="Проверка убеждений"
+          sub="Правда ли это?"
+          tint="var(--accent-yellow)"
+          index={3}
+          onClick={() => setShowBeliefCheck(true)}
+        />
+        <ToolRow
+          emoji="🏡"
+          label="Безопасное место"
+          sub="Ресурс в тревожный момент"
+          tint="var(--accent-green)"
+          index={4}
+          onClick={() => setShowSafePlace(true)}
+        />
+        <ToolRow
+          emoji="✉️"
+          label="Письмо себе"
+          sub="Уязвимому Ребёнку"
+          tint="var(--accent-pink)"
+          index={5}
+          onClick={() => setShowLetterToSelf(true)}
+        />
+        <ToolRow
+          emoji="🆘"
+          label="Схема включилась"
+          sub="5 шагов чтобы разобраться"
+          tint="var(--accent-indigo)"
+          index={6}
+          onClick={() => setShowFlashcard(true)}
+        />
+        <ToolRow
+          emoji="🌱"
+          label="Колесо детства"
+          sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'}
+          tint="var(--accent-green)"
+          index={7}
+          onClick={onOpenChildhoodWheel}
+        />
 
         <div style={{ paddingBottom: 4 }}>
           <TherapyNote compact />

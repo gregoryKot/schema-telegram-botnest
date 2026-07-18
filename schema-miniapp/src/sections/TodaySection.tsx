@@ -438,7 +438,12 @@ export function TodaySection({
 
   return (
     <div
-      style={{ minHeight: '100vh', paddingBottom: 120, paddingTop: safeTop }}
+      style={{
+        minHeight: '100vh',
+        paddingBottom: 120,
+        paddingTop: safeTop,
+        animation: 'fade-in 0.25s ease',
+      }}
     >
       {/* ── Header (по дизайн-макету: приветствие + темп без давления) ── */}
       <div style={{ padding: '24px 20px 0' }}>
@@ -543,6 +548,8 @@ export function TodaySection({
               gap: 12,
               padding: '12px 16px',
               borderRadius: 18,
+              animation: 'slide-up 0.3s ease both',
+              animationDelay: '40ms',
             }}
           >
             <div
