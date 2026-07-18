@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
@@ -44,6 +44,11 @@ export function SafePlaceEx({
     smell: '',
   });
   const [done, setDone] = useState(false);
+  const overviewRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!done) overviewRef.current?.focus();
+  }, [done]);
 
   const filled = overview.trim() && Object.values(senses).some((s) => s.trim());
   function update(k: string, v: string) {
@@ -197,11 +202,11 @@ export function SafePlaceEx({
             Одно-два предложения. Общее впечатление.
           </p>
           <input
+            ref={overviewRef}
             className={'paper-input ' + (overview.trim() ? 'is-filled' : '')}
             value={overview}
             onChange={(e) => setOverview(e.target.value)}
             placeholder="Например: небольшая полянка в лесу, где играл в детстве…"
-            autoFocus
           />
         </div>
       </div>

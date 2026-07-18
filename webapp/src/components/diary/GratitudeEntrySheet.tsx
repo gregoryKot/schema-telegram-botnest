@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ExScreen, GlyphPlus } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
@@ -30,6 +30,9 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
 
   const [items, setItems] = useState<string[]>(initItems);
   const [saving, setSaving] = useState(false);
+  const firstItemRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => { firstItemRef.current?.focus(); }, []);
 
   const update = (i: number, v: string) => setItems(prev => prev.map((it, idx) => idx === i ? v : it));
   const addItem = () => { haptic.select(); setItems(prev => prev.length < 5 ? [...prev, ''] : prev); };
@@ -79,11 +82,11 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
           <div key={i} className={'grat-row ' + (item.trim() ? 'is-filled' : '')}>
             <span className="grat-num-big">{String(i + 1).padStart(2, '0')}</span>
             <textarea
+              ref={i === 0 ? firstItemRef : undefined}
               value={item}
               onChange={e => update(i, e.target.value)}
               placeholder={PLACEHOLDERS[i] ?? PLACEHOLDERS[PLACEHOLDERS.length - 1]}
               rows={1}
-              autoFocus={i === 0}
             />
           </div>
         ))}

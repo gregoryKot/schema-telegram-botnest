@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { api } from '../../api';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { ExScreen, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
+import { pressable } from '../../utils/a11y';
 
 const SCHEMA_QUESTIONS = [
   { key: 'triggers',    label: 'Что запускает эту схему?',        hint: 'Ситуации, слова, интонации – типичные триггеры', placeholder: 'Когда не отвечают на сообщения; когда критикуют при других…' },
@@ -29,6 +30,8 @@ function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; acc
   const [data, setData] = useState<Record<string,string>>(() => Object.fromEntries(questions.map(q => [q.key, ''])));
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
+  const areaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { areaRef.current?.focus(); }, []);
 
   const filled = questions.map(q => !!data[q.key].trim());
   const q = questions[step];
@@ -53,7 +56,7 @@ function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; acc
 
   return (<>
     <div className="tick-strip">
-      {questions.map((_, i) => <div key={i} className={'tick ' + (filled[i] ? 'is-filled ' : '') + (i === step ? 'is-active' : '')} style={{ '--accent': accentColor } as React.CSSProperties} onClick={() => setStep(i)} />)}
+      {questions.map((_, i) => <div key={i} className={'tick ' + (filled[i] ? 'is-filled ' : '') + (i === step ? 'is-active' : '')} style={{ '--accent': accentColor } as React.CSSProperties} {...pressable(() => setStep(i))} />)}
     </div>
     <div className="flash" style={{ borderColor: data[q.key].trim() ? accentColor + '55' : 'var(--line)' }}>
       <div className="flash-eyebrow" style={{ color: accentColor }}>
@@ -64,7 +67,7 @@ function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; acc
       </div>
       <div className="flash-q">{q.label}</div>
       <div className="flash-hint">{q.hint}</div>
-      <textarea className="paper-area" rows={5} value={data[q.key]} onChange={e => setData(d => ({ ...d, [q.key]: e.target.value }))} placeholder={q.placeholder} autoFocus />
+      <textarea ref={areaRef} className="paper-area" rows={5} value={data[q.key]} onChange={e => setData(d => ({ ...d, [q.key]: e.target.value }))} placeholder={q.placeholder} />
     </div>
     <div className="ex-foot">
       <button className="ex-btn ex-btn-ghost" disabled={step === 0} onClick={() => setStep(s => Math.max(0, s - 1))}><GlyphArrowLeft /> Назад</button>
@@ -100,7 +103,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
           <div key={d.id}>
             <div className="eyebrow" style={{ color: d.color, marginBottom: 10, marginTop: 24 }}>{d.domain}</div>
             {d.schemas.map(s => (
-              <div key={s.id} onClick={() => setPicked({ id: s.id, name: s.name, desc: s.libraryDesc, color: d.color, domain: d.domain })}
+              <div key={s.id} {...pressable(() => setPicked({ id: s.id, name: s.name, desc: s.libraryDesc, color: d.color, domain: d.domain }))}
                 style={{ display: 'grid', gridTemplateColumns: '8px 1fr auto', gap: 18, alignItems: 'start', padding: '16px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}>
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color, marginTop: 10 }} />
                 <div>
@@ -155,7 +158,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
           <div key={g.id}>
             <div className="eyebrow" style={{ color: g.color, marginBottom: 10, marginTop: 24 }}>{g.group}</div>
             {g.items.map(m => (
-              <div key={m.id} onClick={() => setPicked({ id: m.id, name: m.name, short: m.short, color: g.color, group: g.group })}
+              <div key={m.id} {...pressable(() => setPicked({ id: m.id, name: m.name, short: m.short, color: g.color, group: g.group }))}
                 style={{ display: 'grid', gridTemplateColumns: '8px 1fr auto', gap: 18, alignItems: 'start', padding: '14px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}>
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: g.color, marginTop: 8 }} />
                 <div>

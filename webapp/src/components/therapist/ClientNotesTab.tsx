@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../../schemaTherapyData';
 import { fmtDate } from '../../utils/format';
+import { pressable } from '../../utils/a11y';
 
 type DiaryEntry = {
   type: 'schema' | 'mode' | 'gratitude';
@@ -85,7 +86,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
                 <div
                   key={i}
                   style={{ borderLeft: `3px solid ${color}`, paddingLeft: 16, paddingBottom: 20, marginBottom: 4, cursor: 'pointer' }}
-                  onClick={() => setExpandedDiary(expanded ? null : i)}
+                  {...pressable(() => setExpandedDiary(expanded ? null : i))}
                 >
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
                     <div>

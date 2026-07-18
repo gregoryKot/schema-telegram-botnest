@@ -8,6 +8,7 @@ import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { useAuth } from '../auth/AuthContext';
 import { useTr } from '../utils/addressForm';
 import { botShortUrl } from '../utils/botConfig';
+import { pressable } from '../utils/a11y';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
@@ -303,7 +304,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
         {/* ── Достижения ── */}
         {ready && achievements && (
-          <div onClick={() => setShowAchievements(true)} className="section" style={{ cursor: 'pointer', overflow: 'hidden' }}>
+          <div {...pressable(() => setShowAchievements(true))} className="section" style={{ cursor: 'pointer', overflow: 'hidden' }}>
             <div className="section-head">
               <h3>Достижения</h3>
               <span className="hint">{earnedList.length} из {achievements.length} →</span>
@@ -369,7 +370,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                       <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>лучший день</div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-yellow)' }}>{insights.bestDayOfWeek}</div>
                     </div>
-                    <span onClick={e => { e.stopPropagation(); setShowBestDayInfo(true); }} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, borderRadius: '50%', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 8, fontWeight: 600, cursor: 'pointer', marginLeft: 2 }}>?</span>
+                    <span role="button" tabIndex={0} aria-label="Что это" onClick={e => { e.stopPropagation(); setShowBestDayInfo(true); }} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowBestDayInfo(true); } }} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 14, height: 14, borderRadius: '50%', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 8, fontWeight: 600, cursor: 'pointer', marginLeft: 2 }}>?</span>
                   </div>
                 )}
                 {insights?.worstDayOfWeek && (
@@ -409,7 +410,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
         {/* ── Мои записи ── */}
         {ready && notesCount !== null && (
-          <div onClick={() => setNotesOpen(true)} className="section" style={{ cursor: 'pointer' }}>
+          <div {...pressable(() => setNotesOpen(true))} className="section" style={{ cursor: 'pointer' }}>
             <div className="section-head">
               <h3>Мои записи</h3>
               <span className="hint">→</span>
@@ -513,7 +514,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           <span
             className="link"
             style={{ color: 'var(--c-rose)', cursor: 'pointer', fontSize: 13 }}
-            onClick={() => setShowDeleteConfirm(true)}
+            {...pressable(() => setShowDeleteConfirm(true))}
           >
             Удалить аккаунт
           </span>
@@ -523,10 +524,11 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       {/* ── Достижения ── */}
       {showAchievements && achievements && (
         <div
+          aria-label="Закрыть"
           style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={() => { setShowAchievements(false); setSelectedAchievement(null); }}
+          {...pressable(() => { setShowAchievements(false); setSelectedAchievement(null); })}
         >
-        <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto', border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
+        <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 520, maxHeight: '80vh', overflowY: 'auto', border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Достижения</span>
               <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{earnedList.length} из {achievements.length}</span>
@@ -550,7 +552,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                 return (
                   <div
                     key={a.id}
-                    onClick={() => a.earned && setSelectedAchievement(a.id)}
+                    {...pressable(() => a.earned && setSelectedAchievement(a.id))}
                     style={{
                       background: a.earned ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'rgba(var(--fg-rgb),0.03)',
                       border: `1px solid ${a.earned ? 'color-mix(in srgb, var(--accent) 22%, transparent)' : 'rgba(var(--fg-rgb),0.06)'}`,
@@ -578,8 +580,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
         const m = ACHIEVEMENT_META[selectedAchievement];
         if (!m) return null;
         return (
-          <div onClick={() => setSelectedAchievement(null)} style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, animation: 'fade-in 0.18s ease' }}>
-            <div onClick={e => e.stopPropagation()} style={{ background: 'var(--sheet-bg)', borderRadius: 28, padding: '36px 28px 28px', width: '100%', maxWidth: 320, textAlign: 'center', animation: 'sheet-up 0.2s cubic-bezier(0.34,1.56,0.64,1)' }}>
+          <div aria-label="Закрыть" {...pressable(() => setSelectedAchievement(null))} style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, animation: 'fade-in 0.18s ease' }}>
+            <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--sheet-bg)', borderRadius: 28, padding: '36px 28px 28px', width: '100%', maxWidth: 320, textAlign: 'center', animation: 'sheet-up 0.2s cubic-bezier(0.34,1.56,0.64,1)' }}>
               <div style={{ fontSize: 72, marginBottom: 16, lineHeight: 1 }}>{m.emoji}</div>
               <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{m.title}</div>
               <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 28 }}>{m.desc}</div>
@@ -597,10 +599,11 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       {/* Best day tooltip */}
       {showBestDayInfo && (
         <div
+          aria-label="Закрыть"
           style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={() => setShowBestDayInfo(false)}
+          {...pressable(() => setShowBestDayInfo(false))}
         >
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 32px', width: '100%', maxWidth: 400, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
+          <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 32px', width: '100%', maxWidth: 400, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div className="eyebrow" style={{ marginBottom: 16 }}>Лучший день</div>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7, marginBottom: 14 }}>{tr('День недели, в который твои оценки в среднем выше всего.', 'День недели, в который ваши оценки в среднем выше всего.')}</p>
             <p style={{ fontSize: 15, color: 'rgba(var(--fg-rgb),0.8)', lineHeight: 1.7 }}>Становится точнее с каждой неделей.</p>
@@ -613,10 +616,11 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       {/* Delete account confirm */}
       {showDeleteConfirm && (
         <div
+          aria-label="Закрыть"
           style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={() => !deleting && setShowDeleteConfirm(false)}
+          {...pressable(() => !deleting && setShowDeleteConfirm(false))}
         >
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 420, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
+          <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 420, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
             <div style={{ fontSize: 22, marginBottom: 12 }}>⚠️</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Удалить аккаунт?</div>
             <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 24 }}>

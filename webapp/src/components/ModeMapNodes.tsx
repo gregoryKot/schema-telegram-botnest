@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Handle, Position, NodeToolbar, type NodeProps } from '@xyflow/react';
 import { useNodeActions } from './modeMapActions';
 import { MMIcon } from './modeMapIcons';
@@ -155,6 +155,8 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
   const actions = useNodeActions();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(data.label);
+  const editRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (editing) editRef.current?.focus(); }, [editing]);
 
   const display = data.display ?? 'full';
   const showNote = display !== 'name' && !!data.note;
@@ -171,7 +173,7 @@ function NodeLabel({ id, data, light }: { id?: string; data: ModeNodeData; light
   return (
     <div style={{ textAlign: 'center', pointerEvents: 'all' }}>
       {editing ? (
-        <input autoFocus value={draft}
+        <input ref={editRef} value={draft}
           onChange={e => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); e.stopPropagation(); }}

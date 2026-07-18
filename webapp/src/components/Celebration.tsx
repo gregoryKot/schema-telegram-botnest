@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { botShortUrl } from '../utils/botConfig';
 import { getMilestoneText, pluralDays } from '../../../shared/src/utils/celebrationText';
+import { pressable } from '../utils/a11y';
 
 // Canvas fillStyle не понимает CSS-переменные – только hex
 const COLORS = ['#ff6b9d', '#facc15', '#06d6a0', '#a78bfa', '#4fa3f7', '#ff9a3c'];
@@ -69,7 +70,7 @@ export function Celebration({ streak, onDone, insight }: Props) {
   const isMilestone = [3, 7, 14, 21, 30, 60, 100].includes(streak);
 
   return (
-    <div onClick={onDone} style={{ position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div aria-label="Закрыть" {...pressable(onDone)} style={{ position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
       <div style={{
         position: 'relative', zIndex: 1, textAlign: 'center',

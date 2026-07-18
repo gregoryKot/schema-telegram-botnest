@@ -32,6 +32,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.3.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
@@ -40,5 +41,11 @@
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "_comment": "eslint-plugin-jsx-a11y@6.10 ещё не расширил peer-диапазон на ESLint 10 (объявляет ^3..^9), хотя с flat-config ESLint 10 работает. Точечный override релаксит ТОЛЬКО его peer к нашей версии eslint — без глобального legacy-peer-deps, чтобы npm ci не падал на ложном конфликте.",
+    "eslint-plugin-jsx-a11y": {
+      "eslint": "$eslint"
+    }
   }
 }
