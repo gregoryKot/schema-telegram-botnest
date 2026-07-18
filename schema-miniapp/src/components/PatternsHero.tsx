@@ -12,6 +12,8 @@ import { WeekTopSummary } from '../utils/patternsSummary';
 interface Props {
   hasSchemas: boolean;
   summary: WeekTopSummary | null;
+  /** Отвеченных вопросов незаконченного теста (null — тест не начат). */
+  progressAnswered?: number | null;
   onStartTest: () => void;
   onOpenLibrary: () => void;
   onPickManually: () => void;
@@ -22,6 +24,7 @@ interface Props {
 export function PatternsHero({
   hasSchemas,
   summary,
+  progressAnswered,
   onStartTest,
   onOpenLibrary,
   onPickManually,
@@ -41,7 +44,11 @@ export function PatternsHero({
             'Схемы — привычные реакции родом из детства. Тест покажет, какие включаются у тебя чаще всего.',
             'Схемы — привычные реакции родом из детства. Тест покажет, какие включаются у вас чаще всего.',
           )}
-          buttonLabel="Начать тест"
+          buttonLabel={
+            progressAnswered != null
+              ? `Продолжить тест (${progressAnswered} из 116)`
+              : 'Начать тест'
+          }
           onClick={onStartTest}
         />
         <ToolRow

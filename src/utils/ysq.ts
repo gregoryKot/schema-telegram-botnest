@@ -1,6 +1,10 @@
 /**
- * Minimal scoring for the schema test: mirrors YSQTestSheet.tsx logic.
- * Returns schema IDs with pct5plus > 50% (same threshold as frontend).
+ * Minimal scoring for the schema test: mirrors shared/src/hooks/useYsqTest.ts.
+ * Активность по любому из двух критериев (паритет с фронтендом закреплён
+ * тестом в webapp/src/hooks/useYsqTest.test.ts):
+ *  - классический: >50% ответов схемы — «5» или «6»;
+ *  - средний балл: avg >= 4 из 6 (профиль из сплошных «4» давал 0% по
+ *    классике и пустой список активных схем — инцидент 2026-07).
  */
 
 const YSQ_SCHEMAS: { id: string; questions: number[] }[] = [
@@ -26,26 +30,36 @@ const YSQ_SCHEMAS: { id: string; questions: number[] }[] = [
   { id: 'punitiveness_others', questions: [113, 114, 115, 116] },
 ];
 
+export const YSQ_AVG_ACTIVE_THRESHOLD = 4;
+
 export interface YsqSchemaScore {
   id: string;
   pct5plus: number; // % of questions rated ≥5
+  avg: number; // средний балл 1–6 (0 если нет ответов)
 }
 
 export function computeYsqScores(answers: number[]): YsqSchemaScore[] {
   return YSQ_SCHEMAS.map((schema) => {
-    const vals = schema.questions.map((q) => answers[q - 1] ?? 0);
+    const vals = schema.questions
+      .map((q) => answers[q - 1] ?? 0)
+      .filter((v) => v > 0);
     const pct5plus =
       vals.length > 0
         ? Math.round(
             (vals.filter((v) => v >= 5).length / schema.questions.length) * 100,
           )
         : 0;
-    return { id: schema.id, pct5plus };
+    const sum = vals.reduce((a, b) => a + b, 0);
+    const avg =
+      vals.length > 0
+        ? Math.round((sum / schema.questions.length) * 10) / 10
+        : 0;
+    return { id: schema.id, pct5plus, avg };
   });
 }
 
 export function computeActiveSchemas(answers: number[]): string[] {
   return computeYsqScores(answers)
-    .filter((s) => s.pct5plus > 50)
+    .filter((s) => s.pct5plus > 50 || s.avg >= YSQ_AVG_ACTIVE_THRESHOLD)
     .map((s) => s.id);
 }
