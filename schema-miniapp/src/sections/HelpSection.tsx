@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { pressable } from '../utils/a11y';
 import { useSafeTop } from '../utils/safezone';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { LetterToSelf } from '../components/LetterToSelf';
@@ -45,7 +46,7 @@ function ToolCard({
 }) {
   return (
     <div
-      onClick={onClick}
+      {...pressable(onClick)}
       className="card"
       style={{
         cursor: 'pointer',

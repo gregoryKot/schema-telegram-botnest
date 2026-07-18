@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
 
 // Periodic in-app donate nudge: shows at most once every ~30 days, skips the
 // very first session + first 3 days, fully dismissible. Opens the donate page
@@ -39,7 +40,8 @@ export function DonateNudge() {
 
   return (
     <div
-      onClick={close}
+      {...pressable(close)}
+      aria-label="Закрыть"
       style={{
         position: 'fixed',
         inset: 0,
@@ -51,6 +53,7 @@ export function DonateNudge() {
       }}
     >
       <div
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',

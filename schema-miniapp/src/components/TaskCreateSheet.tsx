@@ -3,6 +3,7 @@ import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { api } from '../api';
 import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
+import { pressable } from '../utils/a11y';
 
 type TaskType =
   | 'diary_streak'
@@ -214,7 +215,7 @@ export function TaskCreateSheet({
         {TASK_OPTIONS.map((opt) => (
           <div
             key={opt.type}
-            onClick={() => setType(opt.type)}
+            {...pressable(() => setType(opt.type))}
             style={{
               padding: '10px 14px',
               borderRadius: 12,
@@ -261,7 +262,7 @@ export function TaskCreateSheet({
             {STREAK_OPTIONS.map((d) => (
               <div
                 key={d}
-                onClick={() => setTargetDays(d)}
+                {...pressable(() => setTargetDays(d))}
                 style={{
                   flex: 1,
                   textAlign: 'center',
@@ -296,7 +297,7 @@ export function TaskCreateSheet({
             {ALL_SCHEMAS_FLAT.map((s) => (
               <div
                 key={s.id}
-                onClick={() => setSelectedSchemaId(s.id)}
+                {...pressable(() => setSelectedSchemaId(s.id))}
                 style={{
                   padding: '10px 14px',
                   borderRadius: 12,
@@ -349,7 +350,7 @@ export function TaskCreateSheet({
             {ALL_MODES.map((m) => (
               <div
                 key={m.id}
-                onClick={() => setSelectedModeId(m.id)}
+                {...pressable(() => setSelectedModeId(m.id))}
                 style={{
                   padding: '10px 14px',
                   borderRadius: 12,

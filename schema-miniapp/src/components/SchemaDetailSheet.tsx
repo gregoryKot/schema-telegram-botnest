@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { pressable } from '../utils/a11y';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 import { api } from '../api';
@@ -123,7 +124,8 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
 
   return (
     <div
-      onClick={onClose}
+      {...pressable(onClose)}
+      aria-label="Закрыть"
       style={{
         position: 'fixed',
         inset: 0,
@@ -134,6 +136,7 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
       }}
     >
       <div
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { pressable } from '../utils/a11y';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { YSQTestSheet, YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './YSQTestSheet';
@@ -781,9 +782,11 @@ function ModesTab() {
             justifyContent: 'flex-end',
             animation: 'fade-in 150ms ease',
           }}
-          onClick={() => setShowCheckin(false)}
+          {...pressable(() => setShowCheckin(false))}
+          aria-label="Закрыть"
         >
           <div
+            role="presentation"
             onClick={(e) => e.stopPropagation()}
             style={{
               background: 'var(--sheet-bg)',
@@ -888,12 +891,14 @@ function ModesTab() {
             padding: 24,
             animation: 'fade-in 150ms ease',
           }}
-          onClick={() => {
+          {...pressable(() => {
             setCheckinMode(null);
             setShowCheckin(false);
-          }}
+          })}
+          aria-label="Закрыть"
         >
           <div
+            role="presentation"
             onClick={(e) => e.stopPropagation()}
             style={{
               background:

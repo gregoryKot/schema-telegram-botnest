@@ -1,5 +1,6 @@
 import { Need } from '../types';
 import { NeedExtra } from '../needData';
+import { pressable } from '../utils/a11y';
 
 interface Props {
   need: Need;
@@ -21,22 +22,11 @@ export function NeedSheetHeader({
   keyboardAccessible,
 }: Props) {
   const a11yProps = keyboardAccessible
-    ? {
-        role: 'button' as const,
-        tabIndex: 0,
-        'aria-label': 'Закрыть',
-        onKeyDown: (e: React.KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClose();
-          }
-        },
-      }
-    : {};
+    ? { ...pressable(onClose), 'aria-label': 'Закрыть' }
+    : pressable(onClose);
 
   return (
     <div
-      onClick={onClose}
       {...a11yProps}
       style={{
         display: 'flex',

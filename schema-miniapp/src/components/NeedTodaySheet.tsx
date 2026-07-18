@@ -8,6 +8,7 @@ import { PlanSheet } from './PlanSheet';
 import { NeedRatingBar } from './NeedRatingBar';
 import { NeedSheetHeader } from './NeedSheetHeader';
 import { NeedDisclaimerSheet } from './NeedDisclaimerSheet';
+import { pressable } from '../utils/a11y';
 
 interface Props {
   need: Need;
@@ -114,7 +115,7 @@ export function NeedTodaySheet({
       {/* Section 1b: Examples — collapsible */}
       <div style={{ marginBottom: 24 }}>
         <div
-          onClick={() => setShowExamples((v) => !v)}
+          {...pressable(() => setShowExamples((v) => !v))}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -173,7 +174,7 @@ export function NeedTodaySheet({
       {data.reflection?.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <div
-            onClick={() => setShowReflection((v) => !v)}
+            {...pressable(() => setShowReflection((v) => !v))}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -232,7 +233,7 @@ export function NeedTodaySheet({
       {/* Section 2: Range pills — collapsible */}
       <div style={{ marginBottom: 24 }}>
         <div
-          onClick={() => setShowRanges((v) => !v)}
+          {...pressable(() => setShowRanges((v) => !v))}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -253,7 +254,7 @@ export function NeedTodaySheet({
               return (
                 <div
                   key={range.label}
-                  onClick={() => onChange(RANGE_VALUES[i])}
+                  {...pressable(() => onChange(RANGE_VALUES[i]))}
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
@@ -318,7 +319,7 @@ export function NeedTodaySheet({
           }}
         >
           <div
-            onClick={() => setShowPlan(true)}
+            {...pressable(() => setShowPlan(true))}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -346,10 +347,10 @@ export function NeedTodaySheet({
           </div>
           {onOpenHelp && (
             <div
-              onClick={() => {
+              {...pressable(() => {
                 onClose();
                 onOpenHelp();
-              }}
+              })}
               style={{
                 display: 'flex',
                 alignItems: 'center',

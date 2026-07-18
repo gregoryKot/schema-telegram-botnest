@@ -12,6 +12,7 @@ import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
+import { pressable } from '../utils/a11y';
 
 /** color-mix: works with CSS vars AND hex. Replaces the old hex-alpha hack. */
 function cm(color: string, pct: number) {
@@ -422,7 +423,7 @@ export function SchemasSection({
                       }}
                     >
                       <div
-                        onClick={() => toggleDomain(domain.id)}
+                        {...pressable(() => toggleDomain(domain.id))}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -643,7 +644,7 @@ export function SchemasSection({
                       }}
                     >
                       <div
-                        onClick={() => toggleModeGroup(group.id)}
+                        {...pressable(() => toggleModeGroup(group.id))}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -760,7 +761,7 @@ export function SchemasSection({
           <>
             {!hasChildhood && (
               <div
-                onClick={() => onOpenChildhoodWheel?.()}
+                {...pressable(() => onOpenChildhoodWheel?.())}
                 style={{
                   background:
                     'color-mix(in srgb, var(--accent) 7%, transparent)',
@@ -809,7 +810,7 @@ export function SchemasSection({
                 return (
                   <div
                     key={id}
-                    onClick={() => setDetailNeedId(id)}
+                    {...pressable(() => setDetailNeedId(id))}
                     style={{
                       background: 'var(--surface)',
                       border: `1px solid ${color}22`,
@@ -899,7 +900,7 @@ export function SchemasSection({
 
             {hasChildhood && (
               <div
-                onClick={() => onOpenChildhoodWheel?.()}
+                {...pressable(() => onOpenChildhoodWheel?.())}
                 style={{
                   textAlign: 'center',
                   paddingTop: 4,
@@ -1085,7 +1086,7 @@ function ModePickerSheet({
               return (
                 <div
                   key={id}
-                  onClick={() => toggle(id)}
+                  {...pressable(() => toggle(id))}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -1180,7 +1181,7 @@ function ModePickerSheet({
                     return (
                       <div
                         key={m.id}
-                        onClick={() => toggle(m.id)}
+                        {...pressable(() => toggle(m.id))}
                         style={{
                           display: 'flex',
                           alignItems: 'center',

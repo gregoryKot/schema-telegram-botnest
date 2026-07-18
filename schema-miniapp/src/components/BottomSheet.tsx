@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { pressable } from '../utils/a11y';
 
 interface Props {
   onClose: () => void;
@@ -58,7 +59,8 @@ export function BottomSheet({
   return (
     <>
       <div
-        onClick={onClose}
+        {...pressable(onClose)}
+        aria-label="Закрыть"
         style={{
           position: 'fixed',
           inset: 0,
