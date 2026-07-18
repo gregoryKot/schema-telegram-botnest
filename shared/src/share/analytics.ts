@@ -7,6 +7,7 @@ export type ShareCardKind =
   | 'achievement'
   | 'streak'
   | 'schema'
-  | 'diary';
+  | 'diary'
+  | 'ysq';
 
 export const SHARE_CARD_EVENT = 'share_card';

@@ -8,6 +8,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Ручной запуск на любой ветке: пуши агента через интеграцию не триггерят
+  # pull_request-раны, а правило 1а требует зелёный CI перед мержем — агент
+  # запускает воркфлоу сам (gh/API workflow_dispatch) и ждёт результата.
+  workflow_dispatch:
 
 jobs:
   backend:
