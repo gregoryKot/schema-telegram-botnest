@@ -3,6 +3,7 @@
 // src/analytics/analytics.constants.ts — при добавлении вида синхронь оба.
 export type ShareCardKind =
   | 'weekly'
+  | 'day'
   | 'achievement'
   | 'streak'
   | 'schema'

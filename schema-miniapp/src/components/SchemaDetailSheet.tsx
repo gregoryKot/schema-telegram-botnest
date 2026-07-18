@@ -3,7 +3,6 @@ import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { SCHEMA_BELIEFS } from '../schemaBeliefs';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 import { api } from '../api';
-import { SharePill } from '../share/SharePill';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { drawSchemaCard } from '../../../shared/src/share/cards/schemaCard';
 import { schemaShareText } from '../../../shared/src/share/shareTexts';
@@ -140,7 +139,6 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
               {schema.name}
             </div>
           </div>
-          <SharePill onClick={() => setShowShare(true)} />
         </div>
 
         {/* Description */}
@@ -265,6 +263,47 @@ export function SchemaDetailSheet({ schemaId, onClose, onOpenDiary }: Props) {
             Познакомиться →
           </button>
         </div>
+
+        {/* Поделиться карточкой схемы — заметная, но спокойная кнопка */}
+        <button
+          onClick={() => setShowShare(true)}
+          style={{
+            marginTop: 10,
+            width: '100%',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            minHeight: 44,
+            padding: '0 16px',
+            borderRadius: 14,
+            border:
+              '1px solid color-mix(in srgb, var(--accent) 24%, transparent)',
+            background: 'color-mix(in srgb, var(--accent) 9%, transparent)',
+            color: 'var(--accent)',
+            fontSize: 14,
+            fontWeight: 600,
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+          }}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <path
+              d="M12 15V4m0 0L8 8m4-4 4 4M6 13v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Поделиться карточкой
+        </button>
       </div>
 
       {showShare && (

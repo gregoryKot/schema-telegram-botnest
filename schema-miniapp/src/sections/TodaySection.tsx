@@ -29,6 +29,12 @@ import { TodayHeader } from './today/TodayHeader';
 import { NeedsCard } from './today/NeedsCard';
 import { DiaryCard, RecentDiary } from './today/DiaryCard';
 import { AllTasksSheet } from './today/AllTasksSheet';
+import { ShareCardSheet } from '../share/ShareCardSheet';
+import {
+  drawDayCard,
+  buildDayShareText,
+} from '../../../shared/src/share/cards/dayCard';
+import { botShortUrl } from '../utils/botConfig';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -93,6 +99,7 @@ export function TodaySection({
   const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [introModeId, setIntroModeId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
+  const [showDayShare, setShowDayShare] = useState(false);
   const [moreOpen, setMoreOpen] = useState(
     () => localStorage.getItem(TODAY_MORE_KEY) === '1',
   );
@@ -328,6 +335,7 @@ export function TodaySection({
           avgScore={avgScore}
           onOpenTracker={onOpenTracker}
           onOpenHistory={onOpenTrackerHistory}
+          onShareDay={() => setShowDayShare(true)}
         />
 
         {/* ── Прогрессивное раскрытие: остальное — по желанию ── */}
@@ -427,6 +435,25 @@ export function TodaySection({
             setIntroModeId(null);
             handleTaskComplete();
           }}
+        />
+      )}
+
+      {showDayShare && (
+        <ShareCardSheet
+          title="Карточка дня"
+          draw={(canvas) =>
+            drawDayCard(canvas, needs, ratings, fmtDate(todayStr()))
+          }
+          shareText={buildDayShareText(
+            needs,
+            ratings,
+            fmtDate(todayStr()),
+            botShortUrl,
+          )}
+          filename="needs-day.png"
+          eventKind="day"
+          onClose={() => setShowDayShare(false)}
+          therapyNote
         />
       )}
 
