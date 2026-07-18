@@ -138,6 +138,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
 
       {fallbackText && (
         <div
+          role="presentation"
           style={{
             position: 'fixed',
             inset: 0,
@@ -152,6 +153,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
           }}
         >
           <div
+            role="presentation"
             onClick={(e) => e.stopPropagation()}
             style={{
               background: 'var(--bg)',
