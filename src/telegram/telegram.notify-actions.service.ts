@@ -92,7 +92,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
     return normalizeAddressForm(s?.addressForm);
   }
 
-  async onModuleInit() {
+  onModuleInit() {
     if (!this.bot) return;
 
     // Выбор обращения при первом входе: addr:ty / addr:vy

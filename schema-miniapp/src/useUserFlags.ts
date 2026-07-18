@@ -48,7 +48,7 @@ const subscribers = new Set<(f: UserFlags) => void>();
 let fetchPromise: Promise<void> | null = null;
 
 function getHeaders(): Record<string, string> {
-  const initData = (window as any).Telegram?.WebApp?.initData ?? '';
+  const initData = window.Telegram?.WebApp?.initData ?? '';
   return {
     'x-telegram-init-data': initData,
     'Content-Type': 'application/json',
@@ -63,7 +63,7 @@ async function doFetch(): Promise<void> {
   try {
     const res = await fetch('/api/user-flags', { headers: getHeaders() });
     if (res.ok) {
-      const data = await res.json();
+      const data = (await res.json()) as Partial<UserFlags>;
       flags = { ...DEFAULT_FLAGS, ...data };
     }
   } catch {
@@ -115,7 +115,9 @@ export async function updateFlags(patch: Partial<UserFlags>): Promise<void> {
       headers: getHeaders(),
       body: JSON.stringify(patch),
     });
-  } catch {}
+  } catch {
+    /* best-effort: ошибку намеренно игнорируем */
+  }
 }
 
 /**
@@ -129,20 +131,28 @@ export async function updateFlags(patch: Partial<UserFlags>): Promise<void> {
  */
 export function useUserFlags(): {
   flags: UserFlags;
+  loaded: boolean;
   setFlag: typeof setFlag;
   updateFlags: typeof updateFlags;
 } {
   const [current, setCurrent] = useState<UserFlags>(() => ({ ...flags }));
+  // `loaded` нужен, чтобы стартовая логика не приняла дефолтные флаги за
+  // серверные (иначе экран моргнёт до подгрузки настроек).
+  const [isLoaded, setIsLoaded] = useState<boolean>(loaded);
 
   useEffect(() => {
     setCurrent({ ...flags }); // sync in case flags loaded between render and effect
-    const handler = (f: UserFlags) => setCurrent({ ...f });
+    setIsLoaded(loaded);
+    const handler = (f: UserFlags) => {
+      setCurrent({ ...f });
+      setIsLoaded(loaded);
+    };
     subscribers.add(handler);
-    ensureUserFlagsLoaded();
+    void ensureUserFlagsLoaded();
     return () => {
       subscribers.delete(handler);
     };
   }, []);
 
-  return { flags: current, setFlag, updateFlags };
+  return { flags: current, loaded: isLoaded, setFlag, updateFlags };
 }

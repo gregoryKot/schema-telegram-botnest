@@ -1,9 +1,10 @@
 import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams, NavLink } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/authContext';
 import { api } from '../api';
 import type { Need, DayHistory } from '../types';
 import { applyTheme, getTheme } from '../utils/theme';
+import { syncMotionAttr } from '../utils/reducedMotion';
 import { todayStr } from '../utils/format';
 import { cacheTherapistContact } from '../utils/therapistContact';
 import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY, shouldShowChildhoodWheel } from '../utils/storageKeys';
@@ -45,6 +46,7 @@ import type { PracticePlan, StreakData, UserTask, TherapyClientSummary } from '.
 
 // Apply saved theme immediately before first render
 applyTheme(getTheme());
+syncMotionAttr();
 
 type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
 type TrackerTab = 'today' | 'history';
@@ -148,8 +150,12 @@ export function AppShell() {
     }
   }, [location.pathname, therapistMode]);
 
-  const switchTherapistMode = useCallback((on: boolean) => {
+  const switchTherapistMode = useCallback((on: boolean, persist = true) => {
     localStorage.setItem('therapist_mode', on ? '1' : '0');
+    // Запоминаем стартовое предпочтение на сервере (source of truth, единое с
+    // мини-аппом). Сервер принимает флаг только у THERAPIST — эндпоинт вернёт
+    // 403 для клиента, поэтому просто глушим ошибку.
+    if (persist) api.setTherapistView(on).catch(() => {});
     if (on) {
       const last = localStorage.getItem('last_cabinet_path');
       navigate(last && last.startsWith('/cabinet') ? last : '/cabinet');
@@ -207,6 +213,7 @@ export function AppShell() {
   useEffect(() => {
     if (therapistMode && userRole === 'THERAPIST'
         && !localStorage.getItem('therapist_privacy_disclaimer_seen')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
       setShowTherapistDisclaimer(true);
     }
   }, [therapistMode, userRole]);
@@ -294,10 +301,20 @@ export function AppShell() {
     }).catch(() => {});
     api.getProfile().then(p => {
       setUserRole(p.role);
-      // Auto-redirect therapists to cabinet on first login
-      if (p.role === 'THERAPIST' && localStorage.getItem('therapist_mode') === null) {
-        localStorage.setItem('therapist_mode', '1');
-        navigate('/cabinet');
+      // Психолог по умолчанию попадает в кабинет (запрос: «если я психолог —
+      // всегда начинать со странички психолога»). Уважаем явный выбор
+      // клиентского режима (localStorage '0'); при заходе на дефолтный лендинг
+      // (/, /today) без такого выбора — ведём в кабинет.
+      if (p.role === 'THERAPIST') {
+        const pref = localStorage.getItem('therapist_mode');
+        const onDefaultLanding =
+          location.pathname === '/' || location.pathname === '/today';
+        if (pref !== '0' && !location.pathname.startsWith('/cabinet') && onDefaultLanding) {
+          localStorage.setItem('therapist_mode', '1');
+          navigate('/cabinet');
+        } else if (pref === null) {
+          localStorage.setItem('therapist_mode', '1');
+        }
       }
       if (p.role !== 'THERAPIST' && location.pathname.startsWith('/cabinet')) {
         navigate('/today');
@@ -316,11 +333,13 @@ export function AppShell() {
       }
     }).catch(() => {});
     api.getTasks().then(setHelpTasks).catch(() => setHelpTasks([]));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
   // History load when tracker history tab opens
   useEffect(() => {
     if (trackerTab === 'history') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
       setHistoryLoading(true);
       api.history(historyDays).then(h => setHistory(fillHistoryGaps(h))).finally(() => setHistoryLoading(false));
     }
@@ -671,6 +690,13 @@ export function AppShell() {
             onOpenTherapistCabinet={() => { setShowSettings(false); navigate('/cabinet'); }}
             therapistMode={therapistMode}
             onToggleTherapistMode={() => switchTherapistMode(!therapistMode)}
+            onResignTherapist={async () => {
+              await api.resignTherapist();
+              setUserRole('CLIENT');
+              localStorage.setItem('therapist_mode', '0');
+              setShowSettings(false);
+              navigate('/today');
+            }}
           />
         )}
         {showPractices && (

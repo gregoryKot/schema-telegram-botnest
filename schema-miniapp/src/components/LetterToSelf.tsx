@@ -14,7 +14,7 @@ interface Letter {
 
 function loadLocal(): Letter[] {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') as Letter[];
   } catch {
     return [];
   }
@@ -71,7 +71,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
       .catch(() => {});
   }, []);
 
-  async function handleSave() {
+  function handleSave() {
     if (!text.trim()) return;
     const trimmed = text.trim();
     const letter: Letter = {

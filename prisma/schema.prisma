@@ -149,6 +149,7 @@ model User {
   modeDiaries            ModeDiaryEntry[]
   gratitudeDiaries       GratitudeDiaryEntry[]
   appActivities          AppActivity[]
+  analyticsEvents        AnalyticsEvent[]
 }
 
 // Email magic-link tokens — for recovery, email verification, etc.
@@ -369,6 +370,23 @@ model AppActivity {
 
   @@unique([userId, date])
   @@index([userId])
+}
+
+// Продуктовая аналитика (правило №8 CLAUDE.md: фича = событие). Событие —
+// это факт «юзер сделал X» для проверки гипотез метриками (D1/D7/D30 и т.п.).
+// name — из allow-list на бэке (src/analytics/analytics.constants.ts).
+// meta — маленький СТРУКТУРНЫЙ non-PII JSON (напр. { kind: 'weekly' }). НИКОГДА
+// не класть сюда свободный текст пользователя — это не шифруется.
+model AnalyticsEvent {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   // событие, напр. 'share_card'
+  meta      Json?    // структурные параметры события (без PII)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([name, createdAt])
 }
 
 model TherapyRelation {
@@ -712,10 +730,22 @@ model Article {
 // Управляются из админки (вкладка «Канал ЗВ»). Глобальный контент, не
 // пользовательские данные — вне чеклиста удаления аккаунта/merge.
 model HealthyAdultPhrase {
+  id           Int       @id @default(autoincrement())
+  text         String
+  enabled      Boolean   @default(true)
+  sortOrder    Int       @default(0)
+  lastPostedAt DateTime? // когда фраза последний раз выходила в канал (для LRU-ротации — не повторять подряд)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// Лог реально опубликованных сообщений канала «Здоровый Взрослый».
+// Нужен, чтобы (1) не постить точный дубль недавнего и (2) отдавать
+// генератору последние N сообщений как контекст «не повторяй форму».
+// Глобальный контент, не пользовательские данные.
+model HealthyAdultPost {
   id        Int      @id @default(autoincrement())
   text      String
-  enabled   Boolean  @default(true)
-  sortOrder Int      @default(0)
+  source    String // 'ai' | 'pool'
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }

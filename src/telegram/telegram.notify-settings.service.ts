@@ -44,7 +44,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
     await ctx.editMessageText(text, keyboard);
   }
 
-  async onModuleInit() {
+  onModuleInit() {
     if (!this.bot) return;
 
     this.bot.action('settings:pick_freq', async (ctx) => {

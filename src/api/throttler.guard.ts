@@ -1,9 +1,21 @@
-import { Injectable, ExecutionContext } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Injectable()
 export class UserThrottlerGuard extends ThrottlerGuard {
-  protected async getTracker(req: Record<string, any>): Promise<string> {
+  protected getTracker(req: {
+    telegramUserId?: number;
+    ip?: string;
+    headers?: Record<string, string | string[] | undefined>;
+  }): Promise<string> {
+    return Promise.resolve(this.resolveTracker(req));
+  }
+
+  private resolveTracker(req: {
+    telegramUserId?: number;
+    ip?: string;
+    headers?: Record<string, string | string[] | undefined>;
+  }): string {
     // req.telegramUserId is set by TelegramAuthGuard which runs AFTER this guard.
     // Extract userId eagerly from the raw headers so throttling is per-user, not per-IP.
     if (req.telegramUserId) return `uid:${req.telegramUserId}`;
@@ -22,8 +34,8 @@ export class UserThrottlerGuard extends ThrottlerGuard {
       try {
         const payload = JSON.parse(
           Buffer.from(auth.slice(7).split('.')[1], 'base64url').toString(),
-        );
-        if (payload?.sub) return `uid:${payload.sub}|ip:${ip}`;
+        ) as { sub?: string | number };
+        if (payload.sub) return `uid:${payload.sub}|ip:${ip}`;
       } catch {
         /* fall through */
       }
@@ -37,7 +49,7 @@ export class UserThrottlerGuard extends ThrottlerGuard {
       try {
         const user = JSON.parse(
           new URLSearchParams(initData).get('user') ?? '{}',
-        );
+        ) as { id?: string | number };
         if (user.id) return `uid:${user.id}|ip:${ip}`;
       } catch {
         /* fall through */

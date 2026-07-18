@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import type { Request } from 'express';
 
 export interface WebUser {
   userId: bigint;
@@ -17,8 +18,8 @@ export class JwtAuthGuard implements CanActivate {
   constructor(private readonly auth: AuthService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const req = context.switchToHttp().getRequest();
-    const header = req.headers['authorization'] as string | undefined;
+    const req = context.switchToHttp().getRequest<Request>();
+    const header = req.headers['authorization'];
     if (!header?.startsWith('Bearer '))
       throw new UnauthorizedException('Missing Bearer token');
 
@@ -37,8 +38,8 @@ export class OptionalJwtGuard implements CanActivate {
   constructor(private readonly auth: AuthService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const req = context.switchToHttp().getRequest();
-    const header = req.headers['authorization'] as string | undefined;
+    const req = context.switchToHttp().getRequest<Request>();
+    const header = req.headers['authorization'];
     if (header?.startsWith('Bearer ')) {
       try {
         const { userId } = this.auth.verifyAccessToken(header.slice(7));
@@ -52,7 +53,8 @@ export class OptionalJwtGuard implements CanActivate {
     // (ставится эндпоинтом /link-token); query-параметр оставлен как legacy
     // fallback для закэшированных клиентов и будет удалён (аудит 2026-07,
     // S-4: токены в URL утекают в логи прокси и историю браузера).
-    const linkToken = (req.cookies?.['link_token'] ?? req.query?.link_token) as
+    const cookies = req.cookies as Record<string, string | undefined>;
+    const linkToken = (cookies?.['link_token'] ?? req.query?.link_token) as
       | string
       | undefined;
     if (!req.webUser && linkToken) {

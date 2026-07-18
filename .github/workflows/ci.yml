@@ -30,6 +30,9 @@ jobs:
       - run: node scripts/check-route-collisions.mjs
       # Храповик копипасты: новая дублированная логика ≥70 токенов не проходит.
       - run: node scripts/check-jscpd-ratchet.mjs
+      # Старое имя продукта «СхемаЛаб»/«Схема-лаб» не возвращается (переехали на
+      # «Всё по схеме»); первый проход искал только латиницей и кириллицу упустил.
+      - run: node scripts/check-legacy-name.mjs
 
   # Миграции гоняются на РЕАЛЬНОМ Postgres (инцидент 2026-07-16: битый сид
   # healthy_adult_phrases — updatedAt NOT NULL без значения — уронил прод
@@ -115,6 +118,7 @@ jobs:
           cache-dependency-path: schema-miniapp/package-lock.json
       - run: npm ci --prefix schema-miniapp
       - run: npm run build --prefix schema-miniapp
+      - run: npm test --prefix schema-miniapp
       # dist коммитится в git (Docker его только копирует) — проверяем,
       # что закоммиченный dist не разошёлся с исходником.
       - name: dist актуален

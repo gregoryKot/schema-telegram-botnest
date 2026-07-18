@@ -729,26 +729,26 @@ export class BotAnalyticsService {
     const month30Count = Number(month30CountRows[0]?.c ?? 0);
 
     // Retention funnel — count users with N+ distinct fill days (raw SQL for efficiency)
-    const retentionRows = (await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
+    const retentionRows = await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
       SELECT COUNT(*) AS cnt FROM (
         SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 1
-      ) t`) as any[];
+      ) t`;
     const ret1 = Number(retentionRows[0]?.cnt ?? 0);
     const ret3 = Number(
       (
-        await this.prisma.$queryRaw<any[]>`
+        await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
       SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 3) t`
       )[0]?.cnt ?? 0,
     );
     const ret7 = Number(
       (
-        await this.prisma.$queryRaw<any[]>`
+        await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
       SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 7) t`
       )[0]?.cnt ?? 0,
     );
     const ret30 = Number(
       (
-        await this.prisma.$queryRaw<any[]>`
+        await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
       SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 30) t`
       )[0]?.cnt ?? 0,
     );
@@ -783,7 +783,7 @@ export class BotAnalyticsService {
 
     // Best fill day of week (last 30 days) — count user-day pairs per DOW
     const DOW = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
-    const dowCounts = new Array(7).fill(0);
+    const dowCounts: number[] = new Array<number>(7).fill(0);
     for (const r of fillsByDow) {
       dowCounts[new Date(r.date + 'T12:00:00Z').getUTCDay()]++;
     }

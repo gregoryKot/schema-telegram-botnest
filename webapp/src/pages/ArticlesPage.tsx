@@ -91,6 +91,7 @@ export function ArticlePage() {
 
   useEffect(() => {
     if (!slug) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
     setArticle(undefined);
     api.getArticle(slug)
       .then(setArticle)

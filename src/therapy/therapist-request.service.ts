@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AccountService } from '../bot/account.service';
+import { notifyAdminWithFallback } from '../utils/admin-alert';
 
 const MAX_NAME = 100;
 const MAX_QUAL = 500;
@@ -27,17 +28,26 @@ export class TherapistRequestService {
   // the circular-import that would create (TelegramModule ↔ TherapyModule).
   // Uses HTML parse_mode to avoid legacy Markdown parse errors for arbitrary
   // user input (names, contacts, etc. may contain *, _, ., -, (, ) etc.).
+  // Returns true only when Telegram accepted the message. Callers that must
+  // reach the admin (notifyAdmin) fall back to e-mail when this returns false —
+  // e.g. after a bot migration the admin hasn't opened the new bot yet, so the
+  // DM fails and the request would otherwise vanish silently.
   private async sendTg(
     chatId: number,
     text: string,
     replyMarkup?: object,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const token = process.env.BOT_TOKEN;
     if (!token) {
       this.logger.warn('sendTg: BOT_TOKEN not set');
-      return;
+      return false;
     }
-    const body: any = { chat_id: chatId, text, parse_mode: 'HTML' };
+    const body: {
+      chat_id: number;
+      text: string;
+      parse_mode: string;
+      reply_markup?: object;
+    } = { chat_id: chatId, text, parse_mode: 'HTML' };
     if (replyMarkup) body.reply_markup = replyMarkup;
     let res: Response | undefined;
     try {
@@ -47,11 +57,10 @@ export class TherapistRequestService {
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(10_000),
       });
-    } catch (e: any) {
-      this.logger.warn(
-        `sendTg network error to chat_id=${chatId}: ${e.message}`,
-      );
-      return;
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`sendTg network error to chat_id=${chatId}: ${msg}`);
+      return false;
     }
     if (!res.ok) {
       const err = (await res.json().catch(() => ({}))) as {
@@ -60,7 +69,9 @@ export class TherapistRequestService {
       this.logger.warn(
         `sendTg HTTP ${res.status} for chat_id=${chatId}: ${err.description ?? '(no description)'}`,
       );
+      return false;
     }
+    return true;
   }
 
   private get adminId(): number | null {
@@ -97,7 +108,7 @@ export class TherapistRequestService {
     if (message && message.length > MAX_MSG)
       throw new BadRequestException('Message too long');
 
-    const existing = await (this.prisma as any).therapistRequest.findUnique({
+    const existing = await this.prisma.therapistRequest.findUnique({
       where: { userId },
     });
     if (existing?.status === 'pending')
@@ -106,7 +117,7 @@ export class TherapistRequestService {
       throw new ConflictException('Request already approved');
 
     const row = existing
-      ? await (this.prisma as any).therapistRequest.update({
+      ? await this.prisma.therapistRequest.update({
           where: { userId },
           data: {
             fullName,
@@ -119,7 +130,7 @@ export class TherapistRequestService {
             rejectReason: null,
           },
         })
-      : await (this.prisma as any).therapistRequest.create({
+      : await this.prisma.therapistRequest.create({
           data: {
             userId,
             fullName,
@@ -130,14 +141,16 @@ export class TherapistRequestService {
           },
         });
 
-    this.notifyAdmin(row).catch((e) =>
-      this.logger.warn(`notifyAdmin failed: ${e?.message ?? e}`),
+    this.notifyAdmin(row).catch((e: unknown) =>
+      this.logger.warn(
+        `notifyAdmin failed: ${e instanceof Error ? e.message : String(e)}`,
+      ),
     );
     return { id: row.id, status: row.status };
   }
 
   async getMine(userId: bigint) {
-    return (this.prisma as any).therapistRequest.findUnique({
+    return this.prisma.therapistRequest.findUnique({
       where: { userId },
       select: {
         id: true,
@@ -158,7 +171,7 @@ export class TherapistRequestService {
 
   async listPending(adminId: number) {
     this.assertAdmin(adminId);
-    return (this.prisma as any).therapistRequest.findMany({
+    return this.prisma.therapistRequest.findMany({
       where: { status: 'pending' },
       orderBy: { createdAt: 'asc' },
       // D-4 (аудит 2026-07): страховка от роста таблицы (не пагинация) —
@@ -169,7 +182,7 @@ export class TherapistRequestService {
 
   async approve(adminId: number, requestId: number) {
     this.assertAdmin(adminId);
-    const req = await (this.prisma as any).therapistRequest.findUnique({
+    const req = await this.prisma.therapistRequest.findUnique({
       where: { id: requestId },
     });
     if (!req) throw new NotFoundException('Request not found');
@@ -177,7 +190,7 @@ export class TherapistRequestService {
       throw new ConflictException(`Request is ${req.status}`);
 
     await this.prisma.$transaction(async (tx) => {
-      await (tx as any).therapistRequest.update({
+      await tx.therapistRequest.update({
         where: { id: requestId },
         data: {
           status: 'approved',
@@ -200,14 +213,14 @@ export class TherapistRequestService {
 
   async reject(adminId: number, requestId: number, reason: string) {
     this.assertAdmin(adminId);
-    const req = await (this.prisma as any).therapistRequest.findUnique({
+    const req = await this.prisma.therapistRequest.findUnique({
       where: { id: requestId },
     });
     if (!req) throw new NotFoundException('Request not found');
     if (req.status !== 'pending')
       throw new ConflictException(`Request is ${req.status}`);
 
-    await (this.prisma as any).therapistRequest.update({
+    await this.prisma.therapistRequest.update({
       where: { id: requestId },
       data: {
         status: 'rejected',
@@ -235,7 +248,14 @@ export class TherapistRequestService {
     message: string | null;
   }) {
     if (!this.adminId) {
-      this.logger.warn('notifyAdmin: ADMIN_ID not set, skipping');
+      // Без ADMIN_ID пуш невозможен — но заявку всё равно надо доставить.
+      this.logger.error(
+        'notifyAdmin: ADMIN_ID not set — falling back to email',
+      );
+      await notifyAdminWithFallback(
+        this.plainText(req),
+        `🩺 Заявка на роль терапевта #${req.id}`,
+      );
       return;
     }
     // HTML mode: escape user-supplied text to avoid parse errors.
@@ -245,8 +265,9 @@ export class TherapistRequestService {
       `<b>Квалификация:</b> ${he(req.qualification)}\n` +
       `<b>Контакты:</b> ${he(req.contacts)}\n` +
       (req.message ? `<b>Сообщение:</b> ${he(req.message)}\n` : '') +
-      `<b>Telegram ID:</b> <code>${req.userId}</code>`;
-    await this.sendTg(this.adminId, text, {
+      `<b>Telegram ID:</b> <code>${req.userId}</code>\n\n` +
+      `Список заявок: /zayavki`;
+    const delivered = await this.sendTg(this.adminId, text, {
       inline_keyboard: [
         [
           { text: '✅ Approve', callback_data: `treq:approve:${req.id}` },
@@ -254,6 +275,36 @@ export class TherapistRequestService {
         ],
       ],
     });
+    // Пуш не дошёл (напр. после переезда бота админ ещё не нажал Start) —
+    // гарантированная доставка через e-mail, чтобы заявка не потерялась.
+    if (!delivered) {
+      this.logger.error(
+        `notifyAdmin: Telegram DM to admin failed for request #${req.id} — falling back to email`,
+      );
+      await notifyAdminWithFallback(
+        this.plainText(req),
+        `🩺 Заявка на роль терапевта #${req.id}`,
+      );
+    }
+  }
+
+  private plainText(req: {
+    id: number;
+    userId: bigint;
+    fullName: string;
+    qualification: string;
+    contacts: string;
+    message: string | null;
+  }): string {
+    return (
+      `Новая заявка на роль терапевта #${req.id}\n\n` +
+      `Имя: ${req.fullName}\n` +
+      `Квалификация: ${req.qualification}\n` +
+      `Контакты: ${req.contacts}\n` +
+      (req.message ? `Сообщение: ${req.message}\n` : '') +
+      `Telegram ID: ${req.userId}\n\n` +
+      `Одобрить/отклонить: открой бот и напиши /zayavki`
+    );
   }
 
   private async notifyApplicant(

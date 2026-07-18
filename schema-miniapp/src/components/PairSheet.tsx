@@ -46,8 +46,12 @@ export function PairSheet({ onClose }: Props) {
           await navigator.share({
             text: `Давай отслеживать потребности вместе! ${url}`,
           });
-      } catch {}
-    } catch {}
+      } catch {
+        /* best-effort: ошибку намеренно игнорируем */
+      }
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
     setLoading(false);
   }
 
@@ -56,7 +60,9 @@ export function PairSheet({ onClose }: Props) {
       await navigator.clipboard.writeText(text);
       setCopiedPending(true);
       setTimeout(() => setCopiedPending(false), 2000);
-    } catch {}
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
   }
 
   async function handleCopyInvite(text: string) {
@@ -64,7 +70,9 @@ export function PairSheet({ onClose }: Props) {
       await navigator.clipboard.writeText(text);
       setCopiedInvite(true);
       setTimeout(() => setCopiedInvite(false), 2000);
-    } catch {}
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
   }
 
   async function handleJoin() {

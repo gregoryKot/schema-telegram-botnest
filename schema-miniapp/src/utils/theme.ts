@@ -4,7 +4,7 @@ const KEY = 'app_theme';
 
 function detectTheme(): Theme {
   // 1. Telegram colorScheme
-  const tg = (window as any).Telegram?.WebApp;
+  const tg = window.Telegram?.WebApp;
   if (tg?.colorScheme === 'light') return 'light';
   if (tg?.colorScheme === 'dark') return 'dark';
   // 2. System preference

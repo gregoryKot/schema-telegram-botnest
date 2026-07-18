@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
 
 export interface EmotionEntry {
@@ -34,15 +33,14 @@ export class DiaryService {
       data: {
         userId,
         trigger: encrypt(data.trigger) ?? data.trigger,
-        emotions: (encryptJson(data.emotions) ??
-          JSON.stringify(data.emotions)) as any,
+        emotions: encryptJson(data.emotions) ?? JSON.stringify(data.emotions),
         thoughts: encrypt(data.thoughts),
         bodyFeelings: encrypt(data.bodyFeelings),
         actualBehavior: encrypt(data.actualBehavior),
         // Clinical labels — encrypted JSON string. decryptRecord-style
         // helper isn't used here because the schema is small enough.
-        schemaIds: (encryptJson(data.schemaIds) ??
-          JSON.stringify(data.schemaIds)) as any,
+        schemaIds:
+          encryptJson(data.schemaIds) ?? JSON.stringify(data.schemaIds),
         schemaOrigin: encrypt(data.schemaOrigin),
         healthyView: encrypt(data.healthyView),
         realProblems: encrypt(data.realProblems),
@@ -171,7 +169,7 @@ export class DiaryService {
     date: string,
     items: string[],
   ) {
-    const enc = (encryptJson(items) ?? JSON.stringify(items)) as any;
+    const enc = encryptJson(items) ?? JSON.stringify(items);
     const row = await this.prisma.gratitudeDiaryEntry.upsert({
       where: { userId_date: { userId, date } },
       create: { userId, date, items: enc },

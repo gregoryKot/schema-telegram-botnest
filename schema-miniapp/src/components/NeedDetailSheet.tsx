@@ -193,7 +193,7 @@ export function NeedDetailSheet({
                   }}
                 >
                   <span style={{ fontSize: 16, flexShrink: 0 }}>
-                    {(s as any).emoji ?? '●'}
+                    {s.emoji ?? '●'}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div

@@ -250,14 +250,15 @@ export function useClientDetail({ switchView, setClients }: Params) {
       setConcept(saved);
       setLocalConcept(saved);
       setConceptDirty(false);
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '';
       setConceptError(
-        e?.message?.startsWith('API')
+        msg.startsWith('API')
           ? tr(
               'Ошибка сервера. Попробуй позже.',
               'Ошибка сервера. Попробуйте позже.',
             )
-          : (e?.message ?? 'Ошибка сохранения'),
+          : msg || 'Ошибка сохранения',
       );
     } finally {
       setConceptSaving(false);
@@ -334,8 +335,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
   function buildExportText(): string {
     if (!selectedClient || !concept) return '';
     const therapistName =
-      (window.Telegram?.WebApp as any)?.initDataUnsafe?.user?.first_name ??
-      'Терапевт';
+      window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? 'Терапевт';
     const clientName =
       selectedClient.clientAlias ??
       selectedClient.name ??
@@ -380,7 +380,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
       row('ЦЕЛИ СХЕМА-ТЕРАПИИ', c.goals),
       div,
       '',
-      '@SchemeHappens · Схема-лаб',
+      '@SchemeHappens · Всё по схеме',
     ].join('\n');
   }
 

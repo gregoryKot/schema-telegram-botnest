@@ -3,6 +3,7 @@ import { Handle, Position, NodeToolbar, type NodeProps } from '@xyflow/react';
 import { useNodeActions } from './modeMapActions';
 import { MMIcon } from './modeMapIcons';
 import { getSchemaById } from '../schemaTherapyData';
+import { TYPE_COLORS } from './modeMapData';
 
 export interface ModeNodeData {
   label: string;
@@ -20,18 +21,8 @@ export interface ModeNodeData {
   schemaId?: string;
 }
 
-// Node colours now come from the site's earthy palette tokens (index.css --c-*),
-// so they're consistent with the rest of the app and adapt to light/dark. Coping
-// subtypes share ONE colour (clay) and are told apart by SHAPE, not hue.
-export const TYPE_COLORS: Record<string, string> = {
-  trigger:  'var(--c-slate)',
-  child:    'var(--c-teal)',
-  critic:   'var(--c-rose)',
-  coping:   'var(--c-clay)',
-  healthy:  'var(--c-moss)',
-  custom:   'var(--c-plum)',
-  behavior: 'var(--c-ochre)',
-};
+// TYPE_COLORS/NODE_DEFAULT_SIZES/NODE_TYPES вынесены в modeMapData.ts /
+// modeMapRegistry.ts — этот файл экспортирует только компоненты.
 
 // Connection dots at the 4 sides. Hidden by default, revealed on node hover
 // (CSS rule .react-flow__node:hover .mm-handle in index.css) so it's obvious
@@ -369,8 +360,16 @@ export const TriggerNode = function TriggerNode({ id, data, selected }: NodeProp
     svgPath={TRIGGER_PATH} viewBox="0 0 100 60" textPadding="18px 22px 14px" minW={132} minH={76} maxW={210} />;
 };
 
-export const HealthyModeNode = makeRectNode(TYPE_COLORS.healthy, 10);
-export const CustomModeNode  = makeRectNode(TYPE_COLORS.custom,  10);
+// Обёрнуты в настоящие функ-компоненты (не `const = makeRectNode(...)`), чтобы
+// react-refresh распознавал их как компоненты, а файл экспортировал только их.
+const RectHealthyNode = makeRectNode(TYPE_COLORS.healthy, 10);
+export function HealthyModeNode(props: NodeProps) {
+  return <RectHealthyNode {...props} />;
+}
+const RectCustomNode = makeRectNode(TYPE_COLORS.custom, 10);
+export function CustomModeNode(props: NodeProps) {
+  return <RectCustomNode {...props} />;
+}
 
 export const BehaviorNode = function BehaviorNode({ id, data, selected }: NodeProps) {
   const d = data as unknown as ModeNodeData;
@@ -380,14 +379,3 @@ export const BehaviorNode = function BehaviorNode({ id, data, selected }: NodePr
 };
 
 // Nodes auto-size to their content now — no fixed sizes.
-export const NODE_DEFAULT_SIZES: Partial<Record<string, { width: number; height: number }>> = {};
-
-export const NODE_TYPES = {
-  trigger:  TriggerNode,
-  child:    ChildModeNode,
-  critic:   CriticModeNode,
-  coping:   CopingModeNode,
-  healthy:  HealthyModeNode,
-  custom:   CustomModeNode,
-  behavior: BehaviorNode,
-};

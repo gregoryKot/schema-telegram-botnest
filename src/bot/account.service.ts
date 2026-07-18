@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 
 // ── User data registry ───────────────────────────────────────────────────────
@@ -34,6 +35,7 @@ export const USER_DATA_TABLES = [
   'userTask',
   'diaryDraft',
   'emailToken',
+  'analyticsEvent',
 ] as const;
 // Compile-time check: any invalid table name above becomes a TS error here.
 type _VerifyTables = {
@@ -96,6 +98,32 @@ export class AccountService {
       select: { role: true },
     });
     return user?.role ?? 'CLIENT';
+  }
+
+  // Запоминает, в каком представлении терапевт хочет стартовать (кабинет vs
+  // клиентский режим). `therapistMode` — серверный источник правды: localStorage
+  // в Telegram WebView ненадёжен и стирается, из-за чего терапевт «терял» кабинет.
+  // Вызывается только после проверки роли THERAPIST в контроллере (клиент не
+  // может поднять себе therapistMode — это privilege escalation в UI терапевта).
+  async setTherapistMode(userId: bigint, on: boolean): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { therapistMode: on },
+    });
+  }
+
+  // Отказ от роли терапевта: возврат в CLIENT, выключение кабинета и удаление
+  // заявки (чтобы можно было подать заново с чистого листа — иначе 'approved'
+  // блокирует повторную submit). Связи с клиентами не трогаем: role-гейтед
+  // эндпоинты терапевта всё равно вернут 403, пока роль не THERAPIST.
+  async resignTherapist(userId: bigint): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { role: 'CLIENT', therapistMode: false },
+      });
+      await tx.therapistRequest.deleteMany({ where: { userId } });
+    });
   }
 
   async markUserBlocked(userId: bigint): Promise<void> {
@@ -189,7 +217,13 @@ export class AccountService {
     await this.prisma.$transaction([
       // All user-owned tables (USER_DATA_TABLES registry above).
       ...USER_DATA_TABLES.map((table) =>
-        (this.prisma[table] as any).deleteMany({ where: { userId: uid } }),
+        (
+          this.prisma[table] as unknown as {
+            deleteMany(args: {
+              where: { userId: bigint };
+            }): Prisma.PrismaPromise<Prisma.BatchPayload>;
+          }
+        ).deleteMany({ where: { userId: uid } }),
       ),
       // Clinical rows about a person: remove when EITHER side deletes account.
       // clientId matters no less than therapistId — right-to-erasure клиента
@@ -204,10 +238,10 @@ export class AccountService {
         where: { OR: [{ therapistId: uid }, { clientId: uid }] },
       }),
       // Mode maps (about a client, created by a therapist) — remove if either side leaves.
-      (this.prisma as any).modeMap.deleteMany({
+      this.prisma.modeMap.deleteMany({
         where: { OR: [{ therapistId: uid }, { clientId: uid }] },
       }),
-      (this.prisma as any).therapistCustomMode.deleteMany({
+      this.prisma.therapistCustomMode.deleteMany({
         where: { therapistId: uid },
       }),
       // Pairs (two refs).
@@ -215,16 +249,16 @@ export class AccountService {
         where: { OR: [{ userId1: uid }, { userId2: uid }] },
       }),
       // Auth: providers + web sessions + therapist requests.
-      (this.prisma as any).authProvider.deleteMany({ where: { userId: uid } }),
-      (this.prisma as any).webSession.deleteMany({ where: { userId: uid } }),
-      (this.prisma as any).therapistRequest.deleteMany({
+      this.prisma.authProvider.deleteMany({ where: { userId: uid } }),
+      this.prisma.webSession.deleteMany({ where: { userId: uid } }),
+      this.prisma.therapistRequest.deleteMany({
         where: { userId: uid },
       }),
       // Recurring subscriptions: for Telegram users userId === telegramId, so
       // remove (and stop billing) any subscription tied to this person. Charges
       // cascade-delete via the FK. (Web-only subs without telegramId aren't
       // account-linked — managed by their own cancel token.)
-      (this.prisma as any).subscription.deleteMany({
+      this.prisma.subscription.deleteMany({
         where: { telegramId: uid },
       }),
       // Finally — the user row itself.
