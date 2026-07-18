@@ -14,6 +14,7 @@
 //   )}
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { pressable } from '../utils/a11y';
 import { Need, COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { NeedRatingBar } from './NeedRatingBar';
@@ -525,7 +526,7 @@ export function TrackerOverlay({
         }}
       >
         <div
-          onClick={() => setDetailNeed(need)}
+          {...pressable(() => setDetailNeed(need))}
           style={{
             display: 'inline-flex',
             alignItems: 'center',

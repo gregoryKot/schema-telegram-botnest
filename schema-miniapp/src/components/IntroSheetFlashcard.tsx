@@ -1,3 +1,6 @@
+import { useEffect, useRef } from 'react';
+import { pressable } from '../utils/a11y';
+
 export interface IntroSheetQuestion<T extends Record<string, string>> {
   key: keyof T;
   label: string;
@@ -33,9 +36,15 @@ export function IntroSheetFlashcard<T extends Record<string, string>>({
   onChange,
   answerPromptText,
 }: Props<T>) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (flipped) textareaRef.current?.focus();
+  }, [flipped]);
   return (
     <div
-      onClick={() => !flipped && onFlip()}
+      {...pressable(() => {
+        if (!flipped) onFlip();
+      })}
       style={{
         background: flipped ? `${accentColor}06` : 'var(--surface)',
         border: `1px solid ${flipped ? `${accentColor}40` : 'var(--border-color)'}`,
@@ -173,7 +182,7 @@ export function IntroSheetFlashcard<T extends Record<string, string>>({
             {question.label}
           </div>
           <textarea
-            autoFocus
+            ref={textareaRef}
             value={answer}
             onChange={(e) => onChange(e.target.value)}
             placeholder={question.placeholder}

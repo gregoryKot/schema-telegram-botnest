@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { pressable } from '../utils/a11y';
 import { api, PairsData } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { miniappDeepLink } from '../utils/botConfig';
@@ -530,7 +531,7 @@ export function PairSheet({ onClose }: Props) {
                   }}
                 >
                   <span
-                    onClick={() => setView('main')}
+                    {...pressable(() => setView('main'))}
                     style={{
                       fontSize: 22,
                       color: 'var(--text-sub)',

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { pressable } from '../utils/a11y';
 import { botShortUrl } from '../utils/botConfig';
 import {
   getMilestoneText,
@@ -92,7 +93,8 @@ export function Celebration({ streak, onDone, insight }: Props) {
 
   return (
     <div
-      onClick={onDone}
+      {...pressable(onDone)}
+      aria-label="Закрыть"
       style={{
         position: 'fixed',
         inset: 0,

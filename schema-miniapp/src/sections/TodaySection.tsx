@@ -24,6 +24,7 @@ import { fmtDate, todayStr } from '../utils/format';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
+import { pressable } from '../utils/a11y';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
@@ -81,9 +82,17 @@ function NeedMini({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={(e) => {
         e.stopPropagation();
         onTap();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onTap();
+        }
       }}
       style={{
         display: 'flex',
@@ -509,7 +518,7 @@ export function TodaySection({
         {/* ── Therapist cabinet banner ── */}
         {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
           <div
-            onClick={onOpenTherapistCabinet}
+            {...pressable(onOpenTherapistCabinet)}
             className="card"
             style={{
               borderRadius: 18,
@@ -569,7 +578,7 @@ export function TodaySection({
         {/* ── Needs card — tap card = history, tap need = tracker ── */}
         <div
           className="card"
-          onClick={onOpenTrackerHistory}
+          {...(onOpenTrackerHistory ? pressable(onOpenTrackerHistory) : {})}
           style={{
             padding: '18px 18px 14px',
             cursor: onOpenTrackerHistory ? 'pointer' : undefined,
@@ -729,9 +738,17 @@ export function TodaySection({
             })()
           ) : (
             <div
+              role="button"
+              tabIndex={0}
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenTracker();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onOpenTracker();
+                }
               }}
               style={{
                 borderRadius: 14,
@@ -783,7 +800,7 @@ export function TodaySection({
 
         {/* ── Diary card ── */}
         <div
-          onClick={onOpenDiaries}
+          {...pressable(onOpenDiaries)}
           className="card"
           style={{
             padding: '18px 18px 14px',
@@ -1477,10 +1494,10 @@ function OnboardingWidget({
           return (
             <div
               key={s.id}
-              onClick={() => {
+              {...pressable(() => {
                 setSelectedId(s.id === current.id ? null : s.id);
                 setSlideKey((k) => k + 1);
-              }}
+              })}
               style={{ cursor: 'pointer' }}
             >
               <div

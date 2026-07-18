@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { pressable } from '../../utils/a11y';
 import {
   SchemaDiaryEntry,
   ModeDiaryEntry,
@@ -176,7 +177,10 @@ function SchemaCard({
       className="card"
       style={{ borderRadius: 16, padding: '14px 16px', marginBottom: 10 }}
     >
-      <div onClick={() => setOpen((v) => !v)} style={{ cursor: 'pointer' }}>
+      <div
+        {...pressable(() => setOpen((v) => !v))}
+        style={{ cursor: 'pointer' }}
+      >
         <div
           style={{
             display: 'flex',
@@ -294,7 +298,10 @@ function ModeCard({
       className="card"
       style={{ borderRadius: 16, padding: '14px 16px', marginBottom: 10 }}
     >
-      <div onClick={() => setOpen((v) => !v)} style={{ cursor: 'pointer' }}>
+      <div
+        {...pressable(() => setOpen((v) => !v))}
+        style={{ cursor: 'pointer' }}
+      >
         <div
           style={{
             display: 'flex',
@@ -364,7 +371,10 @@ function GratitudeCard({
       className="card"
       style={{ borderRadius: 16, padding: '14px 16px', marginBottom: 10 }}
     >
-      <div onClick={() => setOpen((v) => !v)} style={{ cursor: 'pointer' }}>
+      <div
+        {...pressable(() => setOpen((v) => !v))}
+        style={{ cursor: 'pointer' }}
+      >
         <div
           style={{
             display: 'flex',

@@ -20,15 +20,23 @@ export interface PressableProps {
   onKeyDown: (e: KeyboardEvent) => void;
 }
 
-export function pressable(handler: () => void): PressableProps {
+export function pressable(handler: () => unknown): PressableProps {
+  // handler: () => unknown — принимает любой возврат: sync, async
+  // (`() => openClient(c)`) и короткие `() => cond && doX()` (`false | void`).
+  // void-обёртка гасит результат: onClick/onKeyDown обязаны возвращать void,
+  // иначе no-misused-promises на спреде `{...pressable(...)}`. Поведение для
+  // sync-хендлеров не меняется; ошибки ловят сами обработчики.
+  const run = () => {
+    void handler();
+  };
   return {
     role: 'button',
     tabIndex: 0,
-    onClick: handler,
+    onClick: run,
     onKeyDown: (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        handler();
+        run();
       }
     },
   };
