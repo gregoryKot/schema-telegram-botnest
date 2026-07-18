@@ -10,3 +10,10 @@
 DELETE FROM "_prisma_migrations"
 WHERE migration_name = '20260716120000_healthy_adult_ai_pool'
   AND finished_at IS NULL;
+
+-- Инцидент 2026-07-18: 20260717182526_analytics_events упала на проде
+-- (CREATE TABLE без IF NOT EXISTS, объект уже существовал → 42P07 → P3009).
+-- Снимаем незавершённую запись — deploy накатит уже идемпотентную версию.
+DELETE FROM "_prisma_migrations"
+WHERE migration_name = '20260717182526_analytics_events'
+  AND finished_at IS NULL;
