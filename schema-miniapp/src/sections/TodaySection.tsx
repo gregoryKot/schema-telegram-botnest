@@ -25,6 +25,14 @@ import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { TodayFocusCard } from '../components/TodayFocusCard';
+import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
+import {
+  FocusPractice,
+  getFocusPractice,
+  setFocusPractice,
+  isStreakHidden,
+  setStreakHidden,
+} from '../utils/todayFocus';
 import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
 import { ShareCardSheet } from '../share/ShareCardSheet';
@@ -254,6 +262,7 @@ interface Props {
   userRole?: 'CLIENT' | 'THERAPIST';
   onOpenTherapistCabinet?: () => void;
   onTasksChanged?: () => void;
+  onNewDiaryEntry?: (t: 'schema' | 'mode' | 'gratitude') => void;
 }
 
 // ── TodaySection ──────────────────────────────────────────────────────────────
@@ -274,6 +283,7 @@ export function TodaySection({
   userRole,
   onOpenTherapistCabinet,
   onTasksChanged,
+  onNewDiaryEntry,
 }: Props) {
   const tr = useTr();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -293,6 +303,15 @@ export function TodaySection({
   const [introModeId, setIntroModeId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
   const [showDayShare, setShowDayShare] = useState(false);
+  const [focusPractice, setFocusPracticeState] =
+    useState<FocusPractice>(getFocusPractice);
+  const [streakHidden, setStreakHiddenState] = useState(isStreakHidden);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [todayDone, setTodayDone] = useState({
+    schema: false,
+    mode: false,
+    gratitude: false,
+  });
   const [moreOpen, setMoreOpen] = useState(
     () => localStorage.getItem(TODAY_MORE_KEY) === '1',
   );
@@ -365,6 +384,11 @@ export function TodaySection({
         ];
         all.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
         setRecentDiaries(all.slice(0, 3));
+        setTodayDone({
+          schema: schema.some((e) => e.createdAt.slice(0, 10) === today),
+          mode: mode.some((e) => e.createdAt.slice(0, 10) === today),
+          gratitude: gratitude.some((e) => e.date === today),
+        });
       })
       .catch(() => {})
       .finally(() => {
@@ -459,14 +483,44 @@ export function TodaySection({
       <div style={{ padding: '24px 20px 0' }}>
         <div
           style={{
-            fontSize: 24,
-            fontWeight: 800,
-            color: 'var(--text)',
-            letterSpacing: '-0.03em',
-            lineHeight: 1.15,
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 12,
           }}
         >
-          {firstName ? `Привет, ${firstName} 👋` : 'Добро пожаловать 👋'}
+          <div
+            style={{
+              fontSize: 24,
+              fontWeight: 800,
+              color: 'var(--text)',
+              letterSpacing: '-0.03em',
+              lineHeight: 1.15,
+            }}
+          >
+            {firstName ? `Привет, ${firstName} 👋` : 'Добро пожаловать 👋'}
+          </div>
+          <button
+            onClick={() => setShowCustomize(true)}
+            aria-label="Настроить экран"
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              border: '1px solid var(--border-color)',
+              background: 'var(--surface)',
+              color: 'var(--text-sub)',
+              fontSize: 17,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              marginTop: -6,
+            }}
+          >
+            ⚙
+          </button>
         </div>
         <div
           style={{
@@ -549,7 +603,7 @@ export function TodaySection({
         />
 
         {/* ── Стрик-карточка (макет): мягкая, без наказания за пропуск ── */}
-        {streak > 0 && (
+        {!streakHidden && streak > 0 && (
           <div
             className="card"
             style={{
@@ -598,10 +652,18 @@ export function TodaySection({
 
         {/* ── Фокус дня: одна главная задача (нейроинклюзивность, волна 1) ── */}
         <TodayFocusCard
+          practice={focusPractice}
           ratedCount={ratedCount}
           total={needs.length}
           avgScore={avgScore}
-          onOpenTracker={onOpenTracker}
+          practiceDoneToday={
+            focusPractice !== 'tracker' && todayDone[focusPractice]
+          }
+          onAction={() =>
+            focusPractice === 'tracker'
+              ? onOpenTracker()
+              : onNewDiaryEntry?.(focusPractice)
+          }
           onOpenHistory={onOpenTrackerHistory}
           onShareDay={() => setShowDayShare(true)}
         />
@@ -854,6 +916,24 @@ export function TodaySection({
         )}
       </div>
 
+      {showCustomize && (
+        <TodayCustomizeSheet
+          practice={focusPractice}
+          streakHidden={streakHidden}
+          onPractice={(p) => {
+            setFocusPractice(p);
+            setFocusPracticeState(p);
+            api.trackEvent('today_focus_change', { practice: p });
+          }}
+          onToggleStreak={() => {
+            const next = !streakHidden;
+            setStreakHidden(next);
+            setStreakHiddenState(next);
+            api.trackEvent('today_streak_toggle', { hidden: next });
+          }}
+          onClose={() => setShowCustomize(false)}
+        />
+      )}
       {showDiaryTask && (
         <TaskCreateSheet
           defaultType="diary_streak"
