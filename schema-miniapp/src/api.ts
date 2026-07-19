@@ -1,5 +1,6 @@
 import { todayStr } from './utils/format';
 import { OutboxItem, enqueueRating, flushRatingOutbox } from './utils/outbox';
+import type { TherapyClientSummary } from '../../shared/src/types';
 
 const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
 const BASE =
@@ -246,18 +247,8 @@ export interface TherapyRelationInfo {
   nextSession: string | null;
 }
 
-export interface TherapyClientSummary {
-  telegramId: number;
-  name: string | null;
-  clientAlias: string | null;
-  streak: number;
-  lastActiveDate: string | null;
-  todayIndex: number | null;
-  relationCreatedAt: string;
-  therapyStartDate: string | null;
-  nextSession: string | null;
-  meetingDays: number[];
-}
+// Единственная фронтовая копия — в shared (правило №3).
+export type { TherapyClientSummary } from '../../shared/src/types';
 
 export interface TherapistNote {
   id: number;

@@ -8,7 +8,10 @@ import type {
   SchemaDiaryEntry,
   ModeDiaryEntry,
   GratitudeDiaryEntry,
+  TherapyClientSummary,
 } from '../../shared/src/types';
+// Единственная фронтовая копия типа — в shared (правило №3).
+export type { TherapyClientSummary } from '../../shared/src/types';
 
 const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
 const BASE = rawBase && !rawBase.startsWith('http') ? `https://${rawBase}` : rawBase;
@@ -242,20 +245,6 @@ export interface TherapyRelationInfo {
   partnerId: number | null;
   code: string;
   nextSession: string | null;
-}
-export interface TherapyClientSummary {
-  telegramId: number;
-  name: string | null;
-  clientAlias: string | null;
-  streak: number;
-  lastActiveDate: string | null;
-  todayIndex: number | null;
-  recentIndexHistory: (number | null)[];
-  relationCreatedAt: string;
-  therapyStartDate: string | null;
-  nextSession: string | null;
-  meetingDays: number[];
-  schemaIds: string[];
 }
 export interface TherapistNote {
   id: number;

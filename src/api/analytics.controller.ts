@@ -10,6 +10,7 @@ import {
   SHARE_CARD_KIND_SET,
   CRISIS_SURFACE_SET,
   TODAY_FOCUS_PRACTICE_SET,
+  WEB_BANNER_ID_SET,
 } from './dto/analytics.dto';
 
 interface AuthRequest extends Request {
@@ -91,6 +92,13 @@ function sanitizeMeta(
     const hidden = meta.hidden;
     if (typeof hidden === 'boolean') {
       return { hidden };
+    }
+    return undefined;
+  }
+  if (name === 'web_banner_open' || name === 'web_banner_dismiss') {
+    const banner = meta.banner;
+    if (typeof banner === 'string' && WEB_BANNER_ID_SET.has(banner)) {
+      return { banner };
     }
     return undefined;
   }

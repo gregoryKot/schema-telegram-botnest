@@ -3,26 +3,7 @@
 // замокан обычным объектом.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { enqueueRating, flushRatingOutbox, OutboxItem } from './outbox';
-
-function createLocalStorageMock() {
-  let store: Record<string, string> = {};
-  return {
-    getItem: (key: string) => (key in store ? store[key] : null),
-    setItem: (key: string, value: string) => {
-      store[key] = value;
-    },
-    removeItem: (key: string) => {
-      delete store[key];
-    },
-    clear: () => {
-      store = {};
-    },
-    get length() {
-      return Object.keys(store).length;
-    },
-    key: () => null,
-  };
-}
+import { createLocalStorageMock } from './localStorageMock';
 
 const OUTBOX_KEY = 'rating_outbox_v1';
 
