@@ -522,7 +522,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           realProblems,
           excessiveReactions,
           healthyBehavior,
-        ) && <CrisisCard />}
+        ) && <CrisisCard surface="schema" />}
 
         {!canSave && (
           <div

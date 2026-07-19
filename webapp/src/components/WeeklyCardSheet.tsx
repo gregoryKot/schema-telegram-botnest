@@ -11,7 +11,10 @@ import {
   buildWeeklyShareText,
 } from '../../../shared/src/share/cards/weeklyCard';
 import { shareCanvasImage } from '../../../shared/src/share/shareImage';
-import { SHARE_CARD_EVENT } from '../../../shared/src/share/analytics';
+import {
+  SHARE_CARD_EVENT,
+  SHARE_RESULT_EVENT,
+} from '../../../shared/src/share/analytics';
 import { botShortUrl } from '../utils/botConfig';
 
 interface Props {
@@ -56,7 +59,9 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
         { downloadFallback: true },
       );
       api.trackEvent(SHARE_CARD_EVENT, { kind: 'weekly' });
+      api.trackEvent(SHARE_RESULT_EVENT, { kind: 'weekly', ok: true });
     } catch {
+      api.trackEvent(SHARE_RESULT_EVENT, { kind: 'weekly', ok: false });
       const text = buildWeeklyShareText(needs, history, streak, true, botShortUrl);
       try {
         await navigator.clipboard.writeText(text);

@@ -5,7 +5,10 @@ import { useConfetti } from '../../../shared/src/hooks/useConfetti';
 import { drawStreakCard } from '../../../shared/src/share/cards/streakCard';
 import { shareCanvasImage } from '../../../shared/src/share/shareImage';
 import { streakShareText } from '../../../shared/src/share/shareTexts';
-import { SHARE_CARD_EVENT } from '../../../shared/src/share/analytics';
+import {
+  SHARE_CARD_EVENT,
+  SHARE_RESULT_EVENT,
+} from '../../../shared/src/share/analytics';
 import { api } from '../api';
 
 interface Props {
@@ -63,7 +66,9 @@ export function Celebration({ streak, onDone, insight }: Props) {
               drawStreakCard(card, streak);
               await shareCanvasImage(card, text, 'streak.png');
               api.trackEvent(SHARE_CARD_EVENT, { kind: 'streak' });
+              api.trackEvent(SHARE_RESULT_EVENT, { kind: 'streak', ok: true });
             } catch {
+              api.trackEvent(SHARE_RESULT_EVENT, { kind: 'streak', ok: false });
               try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ }
             }
           }}

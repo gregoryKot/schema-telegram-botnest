@@ -1,6 +1,7 @@
 import { IsIn, IsObject, IsOptional } from 'class-validator';
 import {
   ANALYTICS_EVENTS,
+  CRISIS_SURFACES,
   SHARE_CARD_KINDS,
 } from '../../analytics/analytics.constants';
 
@@ -17,8 +18,8 @@ export class TrackEventDto {
   meta?: Record<string, unknown>;
 }
 
-// Допустимые значения meta.kind для события share_card — экспортируются для
-// проверки в контроллере (санитизация meta перед записью).
+// Допустимые значения meta для санитизации в контроллере (перед записью).
 export const SHARE_CARD_KIND_SET: ReadonlySet<string> = new Set(
   SHARE_CARD_KINDS,
 );
+export const CRISIS_SURFACE_SET: ReadonlySet<string> = new Set(CRISIS_SURFACES);

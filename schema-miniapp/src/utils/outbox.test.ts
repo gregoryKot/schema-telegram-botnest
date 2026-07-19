@@ -123,6 +123,27 @@ describe('flushRatingOutbox', () => {
     expect(post).toHaveBeenCalledTimes(2);
     expect(localStorage.getItem(OUTBOX_KEY)).toBeNull();
   });
+
+  it('onRecovered зовётся с числом реально доехавших (для аналитики)', async () => {
+    enqueueRating(item('safety', 1, '2026-07-15'));
+    enqueueRating(item('autonomy', 2, '2026-07-16'));
+
+    const post = vi.fn().mockResolvedValue(undefined);
+    const onRecovered = vi.fn();
+    await flushRatingOutbox(post, onRecovered);
+
+    expect(onRecovered).toHaveBeenCalledTimes(1);
+    expect(onRecovered).toHaveBeenCalledWith(2);
+  });
+
+  it('onRecovered НЕ зовётся, если ничего не доехало', async () => {
+    enqueueRating(item('safety', 1, '2026-07-15'));
+    const post = vi.fn().mockRejectedValue(new TypeError('offline'));
+    const onRecovered = vi.fn();
+    await flushRatingOutbox(post, onRecovered);
+
+    expect(onRecovered).not.toHaveBeenCalled();
+  });
 });
 
 describe('битый JSON в localStorage', () => {
