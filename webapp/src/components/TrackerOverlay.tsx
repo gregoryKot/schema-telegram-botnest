@@ -145,6 +145,7 @@ export function TrackerOverlay({
         needs={needs}
         effectiveRatings={effectiveRatings}
         isBackfill={isBackfill}
+        date={date}
         onDone={onDone}
         goBack={goBack}
       />
