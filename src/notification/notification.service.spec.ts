@@ -13,6 +13,56 @@ function makePrisma() {
   } as any;
 }
 
+// ── Stateful in-memory fake (like src/bot/notes.service.spec.ts) ───────────
+// Instead of mirroring the service's where-clause via toHaveBeenCalledWith
+// (a change to the clause and its test happen in the same PR by the same
+// person and prove nothing), this fake actually applies the where-semantics
+// to a rows array and we assert on what getDue()/markSent() RETURN or MUTATE.
+type Row = {
+  id: number;
+  userId: bigint;
+  type: string;
+  sendAt: Date;
+  sentAt: Date | null;
+  cancelledAt: Date | null;
+  payload: unknown;
+};
+
+function matchesWhere(row: Row, where: Record<string, any>): boolean {
+  return Object.entries(where).every(([key, cond]) => {
+    const value = (row as any)[key];
+    if (cond === null) return value === null;
+    if (cond && typeof cond === 'object') {
+      if ('lte' in cond) return value <= cond.lte;
+      if ('not' in cond) return value !== cond.not;
+      if ('in' in cond) return cond.in.includes(value);
+    }
+    return value === cond;
+  });
+}
+
+function makeStatefulPrisma(rows: Row[]) {
+  return {
+    scheduledNotification: {
+      findMany: jest.fn(({ where, orderBy }: any) => {
+        let result = rows.filter((r) => matchesWhere(r, where));
+        if (orderBy?.sendAt) {
+          const dir = orderBy.sendAt === 'asc' ? 1 : -1;
+          result = [...result].sort(
+            (a, b) => dir * (a.sendAt.getTime() - b.sendAt.getTime()),
+          );
+        }
+        return Promise.resolve(result);
+      }),
+      updateMany: jest.fn(({ where, data }: any) => {
+        const matched = rows.filter((r) => matchesWhere(r, where));
+        for (const r of matched) Object.assign(r, data);
+        return Promise.resolve({ count: matched.length });
+      }),
+    },
+  } as any;
+}
+
 describe('NotificationService', () => {
   describe('schedule', () => {
     it('creates a scheduled notification', async () => {
@@ -60,43 +110,93 @@ describe('NotificationService', () => {
   });
 
   describe('getDue', () => {
-    it('queries notifications where sendAt <= now, not sent, not cancelled', async () => {
-      const prisma = makePrisma();
-      const svc = new NotificationService(prisma);
-      await svc.getDue();
-      expect(prisma.scheduledNotification.findMany).toHaveBeenCalledWith({
-        where: {
-          sendAt: { lte: expect.any(Date) },
-          sentAt: null,
-          cancelledAt: null,
-        },
-        orderBy: { sendAt: 'asc' },
-      });
+    const now = Date.now();
+    const base = (over: Partial<Row>): Row => ({
+      id: 0,
+      userId: BigInt(1),
+      type: 'reminder',
+      sendAt: new Date(now - 1_000),
+      sentAt: null,
+      cancelledAt: null,
+      payload: null,
+      ...over,
     });
 
-    it('returns rows with numeric userId', async () => {
-      const prisma = makePrisma();
-      const row = {
-        id: 1,
-        userId: BigInt(42),
-        type: 'reminder',
-        sendAt: new Date(),
-      };
-      prisma.scheduledNotification.findMany.mockResolvedValue([row]);
+    it('returns only due rows: sendAt in the past, not sent, not cancelled — with numeric userId', async () => {
+      const due = base({ id: 1, userId: BigInt(42) });
+      const future = base({ id: 2, sendAt: new Date(now + 100_000) }); // not due yet
+      const alreadySent = base({ id: 3, sentAt: new Date(now - 500) });
+      const cancelled = base({ id: 4, cancelledAt: new Date(now - 500) });
+      const rows = [due, future, alreadySent, cancelled];
+
+      const prisma = makeStatefulPrisma(rows);
       const svc = new NotificationService(prisma);
-      expect(await svc.getDue()).toEqual([{ ...row, userId: 42 }]);
+      const result = await svc.getDue();
+
+      expect(result).toEqual([{ ...due, userId: 42 }]);
+    });
+
+    it('orders due rows by sendAt ascending', async () => {
+      const later = base({ id: 1, sendAt: new Date(now - 1_000) });
+      const earlier = base({ id: 2, sendAt: new Date(now - 5_000) });
+      const rows = [later, earlier];
+
+      const prisma = makeStatefulPrisma(rows);
+      const svc = new NotificationService(prisma);
+      const result = await svc.getDue();
+
+      expect(result.map((r) => r.id)).toEqual([2, 1]);
     });
   });
 
   describe('markSent', () => {
-    it('sets sentAt only on not-yet-sent rows (idempotent)', async () => {
-      const prisma = makePrisma();
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('sets sentAt on the row', async () => {
+      const row: Row = {
+        id: 7,
+        userId: BigInt(1),
+        type: 'reminder',
+        sendAt: new Date('2026-07-01T09:00:00Z'),
+        sentAt: null,
+        cancelledAt: null,
+        payload: null,
+      };
+      const prisma = makeStatefulPrisma([row]);
       const svc = new NotificationService(prisma);
+
       await svc.markSent(7);
-      expect(prisma.scheduledNotification.updateMany).toHaveBeenCalledWith({
-        where: { id: 7, sentAt: null },
-        data: expect.objectContaining({ sentAt: expect.any(Date) }),
-      });
+
+      expect(row.sentAt).toBeInstanceOf(Date);
+    });
+
+    it('is idempotent: a second call does not move sentAt (behavioral, not just call-shape)', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-07-01T10:00:00Z'));
+
+      const row: Row = {
+        id: 7,
+        userId: BigInt(1),
+        type: 'reminder',
+        sendAt: new Date('2026-07-01T09:00:00Z'),
+        sentAt: null,
+        cancelledAt: null,
+        payload: null,
+      };
+      const prisma = makeStatefulPrisma([row]);
+      const svc = new NotificationService(prisma);
+
+      await svc.markSent(7);
+      expect(row.sentAt).toEqual(new Date('2026-07-01T10:00:00Z'));
+
+      // Time moves on, but the row is already sent — a naive implementation
+      // without the `sentAt: null` guard would overwrite sentAt here.
+      jest.setSystemTime(new Date('2026-07-01T11:00:00Z'));
+      await svc.markSent(7);
+
+      expect(row.sentAt).toEqual(new Date('2026-07-01T10:00:00Z'));
     });
   });
 

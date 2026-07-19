@@ -1,15 +1,62 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { encrypt, decrypt, encryptJson } from './crypto';
+import { encrypt, decrypt, encryptJson, looksLikeCiphertext } from './crypto';
 
 const logger = new Logger('EncryptMigration');
 
 // Heuristic — a value is plaintext iff decrypt() returns it unchanged
 // (and it's non-empty). Decrypt is no-op for non-base64 / wrong-tag input.
-function looksPlaintext(v: string): boolean {
-  if (!v) return false;
-  return decrypt(v) === v;
+//
+// БАГ (найден аудитом, см. encrypt-migration.spec.ts): если ключ, которым
+// строка была зашифрована, больше не сконфигурирован (ENCRYPTION_KEY_OLD
+// убрали раньше времени), decrypt(v) === v тоже — не потому что v плейнтекст,
+// а потому что decrypt() тихо возвращает вход как есть, не подобрав ключ.
+// Раньше это трактовалось как «плейнтекст» и шифровалось ЕЩЁ РАЗ — оригинал
+// становился нечитаемым без старого ключа.
+//
+// Фикс: если строка decrypt-инвариантна, но ПОХОЖА на наш формат шифротекста
+// (looksLikeCiphertext — строгий base64 + длина ≥29 байт), это не плейнтекст,
+// а неизвестный/утерянный ключ — строку нельзя трогать. Тред-офф: настоящий
+// плейнтекст, случайно являющийся валидным base64 ≥29 байт (редко, но
+// возможно), тоже будет пропущен и останется незашифрованным — миграция
+// идемпотентна и дошифрует его позже, после починки ключей. Это дешевле, чем
+// необратимая потеря данных от двойного шифрования.
+type PlaintextCheck = 'plaintext' | 'encrypted' | 'unknown-key';
+
+function classify(v: string): PlaintextCheck {
+  if (!v) return 'encrypted'; // пусто — трогать нечего
+  if (decrypt(v) !== v) return 'encrypted';
+  if (looksLikeCiphertext(v)) return 'unknown-key';
+  return 'plaintext';
+}
+
+function warnUnknownKey(table: string, id: unknown): void {
+  console.warn(
+    `[encrypt-migration] ${table}#${String(id)}: возможна неполная ротация ` +
+      'ENCRYPTION_KEY — строка похожа на шифротекст, пропущена',
+  );
+}
+
+// Обёртка над prisma.update — одна упавшая строка не должна обрывать всю
+// миграцию (раньше падение for-цикла на первой же ошибке БД оставляло
+// необработанными все остальные строки и таблицы, см. spec).
+async function safeUpdate(
+  table: string,
+  id: unknown,
+  run: () => Promise<unknown>,
+  failures: { count: number },
+): Promise<boolean> {
+  try {
+    await run();
+    return true;
+  } catch (e) {
+    failures.count++;
+    logger.warn(
+      `${table}#${String(id)}: update failed, skipping — ${(e as Error).message}`,
+    );
+    return false;
+  }
 }
 
 // Force-encrypt clinical labels that were stored before encryption was added
@@ -37,6 +84,7 @@ export async function migrateClinicalLabels(
     ModeDiaryEntry: 0,
     ClientConceptualization: 0,
   };
+  const failures = { count: 0 };
 
   // ── Note.tags ──────────────────────────────────────────────────────────────
   // Stored as comma-separated string. Encrypt the whole thing as one blob.
@@ -45,11 +93,21 @@ export async function migrateClinicalLabels(
     select: { id: true, tags: true },
   });
   for (const n of notes) {
-    if (!looksPlaintext(n.tags)) continue;
+    const status = classify(n.tags);
+    if (status === 'unknown-key') {
+      warnUnknownKey('Note', n.id);
+      continue;
+    }
+    if (status !== 'plaintext') continue;
     const enc = encrypt(n.tags);
     if (!enc) continue;
-    await prisma.note.update({ where: { id: n.id }, data: { tags: enc } });
-    totals.Note++;
+    const ok = await safeUpdate(
+      'Note',
+      n.id,
+      () => prisma.note.update({ where: { id: n.id }, data: { tags: enc } }),
+      failures,
+    );
+    if (ok) totals.Note++;
   }
 
   // ── User.mySchemaIds / User.myModeIds ──────────────────────────────────────
@@ -68,8 +126,13 @@ export async function migrateClinicalLabels(
       if (enc) patch.myModeIds = enc;
     }
     if (Object.keys(patch).length > 0) {
-      await prisma.user.update({ where: { id: u.id }, data: patch });
-      totals.User++;
+      const ok = await safeUpdate(
+        'User',
+        u.id,
+        () => prisma.user.update({ where: { id: u.id }, data: patch }),
+        failures,
+      );
+      if (ok) totals.User++;
     }
   }
 
@@ -81,11 +144,17 @@ export async function migrateClinicalLabels(
     if (!Array.isArray(e.schemaIds)) continue; // string → already encrypted
     const enc = encryptJson(e.schemaIds);
     if (!enc) continue;
-    await prisma.schemaDiaryEntry.update({
-      where: { id: e.id },
-      data: { schemaIds: enc },
-    });
-    totals.SchemaDiaryEntry++;
+    const ok = await safeUpdate(
+      'SchemaDiaryEntry',
+      e.id,
+      () =>
+        prisma.schemaDiaryEntry.update({
+          where: { id: e.id },
+          data: { schemaIds: enc },
+        }),
+      failures,
+    );
+    if (ok) totals.SchemaDiaryEntry++;
   }
 
   // ── ModeDiaryEntry.modeId (single string) ─────────────────────────────────
@@ -93,14 +162,25 @@ export async function migrateClinicalLabels(
     select: { id: true, modeId: true },
   });
   for (const e of modeEntries) {
-    if (!looksPlaintext(e.modeId)) continue;
+    const status = classify(e.modeId);
+    if (status === 'unknown-key') {
+      warnUnknownKey('ModeDiaryEntry', e.id);
+      continue;
+    }
+    if (status !== 'plaintext') continue;
     const enc = encrypt(e.modeId);
     if (!enc) continue;
-    await prisma.modeDiaryEntry.update({
-      where: { id: e.id },
-      data: { modeId: enc },
-    });
-    totals.ModeDiaryEntry++;
+    const ok = await safeUpdate(
+      'ModeDiaryEntry',
+      e.id,
+      () =>
+        prisma.modeDiaryEntry.update({
+          where: { id: e.id },
+          data: { modeId: enc },
+        }),
+      failures,
+    );
+    if (ok) totals.ModeDiaryEntry++;
   }
 
   // ── ClientConceptualization.schemaIds / modeIds (+ history snapshots) ────
@@ -108,6 +188,7 @@ export async function migrateClinicalLabels(
     select: { id: true, schemaIds: true, modeIds: true, history: true },
   });
   for (const c of concepts) {
+    const cid = c.id; // единственный доступ к c.id — переиспользуем ниже
     const patch: Prisma.ClientConceptualizationUpdateInput = {};
     if (Array.isArray(c.schemaIds)) {
       const enc = encryptJson(c.schemaIds);
@@ -130,16 +211,28 @@ export async function migrateClinicalLabels(
         patch.history = newHistory as unknown as Prisma.InputJsonValue;
     }
     if (Object.keys(patch).length > 0) {
-      await prisma.clientConceptualization.update({
-        where: { id: c.id },
-        data: patch,
-      });
-      totals.ClientConceptualization++;
+      const ok = await safeUpdate(
+        'ClientConceptualization',
+        cid,
+        () =>
+          prisma.clientConceptualization.update({
+            where: { id: cid },
+            data: patch,
+          }),
+        failures,
+      );
+      if (ok) totals.ClientConceptualization++;
     }
   }
 
   const total = Object.values(totals).reduce((a, b) => a + b, 0);
   const ms = Date.now() - startedAt;
+  if (failures.count > 0) {
+    logger.warn(
+      `Clinical-label migration finished with ${failures.count} row failure(s) ` +
+        `— see warnings above for affected ids (${ms}ms)`,
+    );
+  }
   if (total > 0) {
     logger.log(
       `Encrypted clinical labels: ${JSON.stringify(totals)} (${ms}ms)`,

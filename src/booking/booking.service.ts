@@ -46,6 +46,16 @@ function isEmail(s: string): boolean {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
 }
 
+/**
+ * Thrown by confirm() specifically when the webhook-reported paid amount
+ * doesn't match the expected price. Deliberately a distinct subclass of
+ * ConflictException (not a plain one) so PaymentController can tell it apart
+ * from the ordinary idempotent-repeat ConflictException: the two need
+ * opposite Robokassa acks — repeat → "OK" (stop retrying, already handled),
+ * mismatch → "FAIL" (keep retrying / keep it visible, it is NOT handled).
+ */
+export class PaymentAmountMismatchError extends ConflictException {}
+
 @Injectable()
 export class BookingService {
   private readonly logger = new Logger(BookingService.name);
@@ -210,7 +220,7 @@ export class BookingService {
         await this.notify.alertAdmin(
           `⚠️ <b>Бронь #${id}: сумма расходится</b>\nОжидали ${expected} ₽, оплатили ${paidAmount} ₽. Бронь НЕ подтверждена автоматически — проверьте и подтвердите вручную.`,
         );
-        throw new ConflictException('Amount mismatch — manual review');
+        throw new PaymentAmountMismatchError('Amount mismatch — manual review');
       }
     }
 

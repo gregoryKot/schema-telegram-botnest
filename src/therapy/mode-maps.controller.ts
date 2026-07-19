@@ -102,8 +102,12 @@ export class ModeMapsController {
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     try {
       return await this.modeMapsService.getModeMap(uid(req), parseId(mapId));
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message === 'Not found')
+    } catch (e) {
+      // 'No active relation' — вторая линия защиты в сервисе (связь разорвана)
+      if (
+        e instanceof Error &&
+        (e.message === 'Not found' || e.message === 'No active relation')
+      )
         throw new ForbiddenException();
       throw e;
     }
@@ -146,8 +150,12 @@ export class ModeMapsController {
         parseId(mapId),
         body,
       );
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message === 'Not found')
+    } catch (e) {
+      // 'No active relation' — вторая линия защиты в сервисе (связь разорвана)
+      if (
+        e instanceof Error &&
+        (e.message === 'Not found' || e.message === 'No active relation')
+      )
         throw new ForbiddenException();
       throw e;
     }
@@ -160,8 +168,12 @@ export class ModeMapsController {
     try {
       await this.modeMapsService.deleteModeMap(uid(req), parseId(mapId));
       return { ok: true };
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message === 'Not found')
+    } catch (e) {
+      // 'No active relation' — вторая линия защиты в сервисе (связь разорвана)
+      if (
+        e instanceof Error &&
+        (e.message === 'Not found' || e.message === 'No active relation')
+      )
         throw new ForbiddenException();
       throw e;
     }
@@ -178,8 +190,12 @@ export class ModeMapsController {
   async getMyModeMap(@Req() req: AuthRequest, @Param('mapId') mapId: string) {
     try {
       return await this.modeMapsService.getMyModeMap(uid(req), parseId(mapId));
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message === 'Not found')
+    } catch (e) {
+      // 'No active relation' — вторая линия защиты в сервисе (связь разорвана)
+      if (
+        e instanceof Error &&
+        (e.message === 'Not found' || e.message === 'No active relation')
+      )
         throw new ForbiddenException();
       throw e;
     }

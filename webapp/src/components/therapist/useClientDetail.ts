@@ -15,6 +15,11 @@ interface Params {
 export function useClientDetail({ onOpenClient, switchView, setClients }: Params) {
   const openClientIdRef = useRef<number | null>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Зеркало localConcept, обновляется СИНХРОННО (setLocalConceptSynced ниже).
+  // Нужно autoSave: setTimeout(autoSave, 700) в patchConcept захватывает
+  // autoSave текущего рендера, т.е. ДО коммита setState в следующем рендере —
+  // раньше autoSave читал state и слал значение на один патч позади (баг).
+  const localConceptRef = useRef<Partial<ClientConceptualization>>({});
 
   // Selected client + all its data
   const [selectedClient, setSelectedClient] = useState<TherapyClientSummary | null>(null);
@@ -34,6 +39,17 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   const [clientHistory, setClientHistory] = useState<{ date: string; index: number | null; ratings: Record<string, number> }[]>([]);
   const [clientDiary, setClientDiary] = useState<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>([]);
   const [localConcept, setLocalConcept] = useState<Partial<ClientConceptualization>>({});
+  // Пишет и в state (для рендера/деривативов), и синхронно в localConceptRef
+  // (для autoSave) — см. комментарий у объявления localConceptRef выше.
+  function setLocalConceptSynced(
+    value: Partial<ClientConceptualization> | ((prev: Partial<ClientConceptualization>) => Partial<ClientConceptualization>),
+  ) {
+    setLocalConcept(prev => {
+      const next = typeof value === 'function' ? value(prev) : value;
+      localConceptRef.current = next;
+      return next;
+    });
+  }
   const [conceptError, setConceptError] = useState('');
   const [expandedSnapshot, setExpandedSnapshot] = useState<number | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved'>('idle');
@@ -91,7 +107,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setClientData(null);
     setClientHistory([]);
     setClientDiary([]);
-    setLocalConcept({});
+    setLocalConceptSynced({});
     setConceptError('');
     setExpandedSnapshot(null);
     setYsqRequested(false);
@@ -130,7 +146,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setClientModeNotesData(mn);
     setClientHistory(hist);
     setClientDiary(diary);
-    if (fetchedConcept) setLocalConcept(fetchedConcept);
+    if (fetchedConcept) setLocalConceptSynced(fetchedConcept);
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────────
@@ -170,7 +186,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
 
   // ── Conceptualization ──────────────────────────────────────────────────────────
   function patchConcept(patch: Partial<ClientConceptualization>) {
-    setLocalConcept(prev => ({ ...prev, ...patch }));
+    setLocalConceptSynced(prev => ({ ...prev, ...patch }));
     setSaveStatus('pending');
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(autoSave, 700);
@@ -179,17 +195,18 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   async function autoSave() {
     if (!selectedClient) return;
     setSaveStatus('saving');
+    const c = localConceptRef.current; // не state — см. комментарий у localConceptRef
     try {
       const saved = await api.saveConceptualization(selectedClient.telegramId, {
-        schemaIds: (localConcept.schemaIds ?? []) as string[],
-        modeIds: (localConcept.modeIds ?? []) as string[],
-        earlyExperience: (localConcept.earlyExperience as string) ?? '',
-        unmetNeeds: (localConcept.unmetNeeds as string) ?? '',
-        triggers: (localConcept.triggers as string) ?? '',
-        copingStyles: (localConcept.copingStyles as string) ?? '',
-        goals: (localConcept.goals as string) ?? '',
-        currentProblems: (localConcept.currentProblems as string) ?? '',
-        modeTransitions: (localConcept.modeTransitions as string) ?? '',
+        schemaIds: (c.schemaIds ?? []) as string[],
+        modeIds: (c.modeIds ?? []) as string[],
+        earlyExperience: (c.earlyExperience as string) ?? '',
+        unmetNeeds: (c.unmetNeeds as string) ?? '',
+        triggers: (c.triggers as string) ?? '',
+        copingStyles: (c.copingStyles as string) ?? '',
+        goals: (c.goals as string) ?? '',
+        currentProblems: (c.currentProblems as string) ?? '',
+        modeTransitions: (c.modeTransitions as string) ?? '',
       });
       setConcept(saved);
       setConceptError('');
