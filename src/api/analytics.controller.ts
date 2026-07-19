@@ -5,7 +5,11 @@ import { uid } from './request-utils';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { AnalyticsEventName } from '../analytics/analytics.constants';
-import { TrackEventDto, SHARE_CARD_KIND_SET } from './dto/analytics.dto';
+import {
+  TrackEventDto,
+  SHARE_CARD_KIND_SET,
+  CRISIS_SURFACE_SET,
+} from './dto/analytics.dto';
 
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
@@ -42,6 +46,33 @@ function sanitizeMeta(
     const kind = meta.kind;
     if (typeof kind === 'string' && SHARE_CARD_KIND_SET.has(kind)) {
       return { kind };
+    }
+    return undefined;
+  }
+  if (name === 'share_result') {
+    const kind = meta.kind;
+    const ok = meta.ok;
+    if (
+      typeof kind === 'string' &&
+      SHARE_CARD_KIND_SET.has(kind) &&
+      typeof ok === 'boolean'
+    ) {
+      return { kind, ok };
+    }
+    return undefined;
+  }
+  if (name === 'crisis_card_shown' || name === 'crisis_hotline_tapped') {
+    const surface = meta.surface;
+    if (typeof surface === 'string' && CRISIS_SURFACE_SET.has(surface)) {
+      return { surface };
+    }
+    return undefined;
+  }
+  if (name === 'outbox_flush') {
+    const count = meta.count;
+    // Только положительное целое, с потолком — защита от мусора/переполнения.
+    if (typeof count === 'number' && Number.isInteger(count) && count > 0) {
+      return { count: Math.min(count, 1000) };
     }
     return undefined;
   }

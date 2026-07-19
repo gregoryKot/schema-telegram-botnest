@@ -373,7 +373,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         </div>
       </div>
 
-      {detectCrisisAny(trigger, thoughts, bodyFeelings, actualBehavior, schemaOrigin, healthyView, realProblems, excessiveReactions, healthyBehavior) && <CrisisCard />}
+      {detectCrisisAny(trigger, thoughts, bodyFeelings, actualBehavior, schemaOrigin, healthyView, realProblems, excessiveReactions, healthyBehavior) && <CrisisCard surface="schema" />}
 
       <DiaryAutosaveFooter canSave={canSave} saving={saving} onSave={handleSave} />
     </ExScreen>

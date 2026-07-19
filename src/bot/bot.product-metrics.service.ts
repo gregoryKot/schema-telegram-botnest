@@ -1,0 +1,159 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
+
+// Продуктовые метрики для /stats (правило №8). Всё выводится из БД: часть — из
+// таблиц-фич (онбординг/adoption/распределения), часть — из событий
+// AnalyticsEvent (кризис/шэр/офлайн). Один сервис = запросы, форматтер отдельно
+// (product-metrics.format.ts, покрыт тестом).
+@Injectable()
+export class ProductMetricsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  /** Готовый текстовый блок для /stats. */
+  async render(): Promise<string> {
+    return formatProductMetrics(await this.getMetrics());
+  }
+
+  async getMetrics(): Promise<ProductMetrics> {
+    const since7 = new Date(Date.now() - 7 * 86_400_000);
+    const since30 = new Date(Date.now() - 30 * 86_400_000);
+    const num = (rows: Array<{ c: bigint }>): number => Number(rows[0]?.c ?? 0);
+    const activeUser = { deletedAt: null } as const;
+    const ev = (name: string) =>
+      this.prisma.analyticsEvent.count({
+        where: { name, createdAt: { gte: since30 } },
+      });
+
+    const [
+      cohort30,
+      completed30,
+      diaries,
+      ysqDone,
+      exercises,
+      practices,
+      childhood,
+      ysqStarted,
+      ty,
+      vy,
+      notChosen,
+      sectionsRaw,
+      themeLight,
+      themeDark,
+      themeSystem,
+      crisisShown,
+      crisisTapped,
+      shareRows,
+      outboxRows,
+      shareCard7,
+      shareCard30,
+      shareKindRows,
+    ] = await Promise.all([
+      this.prisma.user.count({
+        where: { ...activeUser, createdAt: { gte: since30 } },
+      }),
+      this.prisma.user.count({
+        where: {
+          ...activeUser,
+          createdAt: { gte: since30 },
+          onboardingV2Done: true,
+        },
+      }),
+      // Дневники и упражнения — разные люди, объединение таблиц (COUNT DISTINCT).
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(DISTINCT uid)::bigint AS c FROM (
+          SELECT "userId" AS uid FROM "SchemaDiaryEntry"
+          UNION SELECT "userId" FROM "ModeDiaryEntry"
+          UNION SELECT "userId" FROM "GratitudeDiaryEntry"
+        ) t`,
+      this.prisma.ysqResult.count(),
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(DISTINCT uid)::bigint AS c FROM (
+          SELECT "userId" AS uid FROM "UserFlashcard"
+          UNION SELECT "userId" FROM "UserBeliefCheck"
+          UNION SELECT "userId" FROM "UserLetter"
+          UNION SELECT "userId" FROM "UserSafePlace"
+        ) t`,
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(DISTINCT "userId")::bigint AS c FROM "UserPractice"`,
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(DISTINCT "userId")::bigint AS c FROM "ChildhoodRating"`,
+      this.prisma.ysqProgress.count(),
+      this.prisma.user.count({ where: { ...activeUser, addressForm: 'ty' } }),
+      this.prisma.user.count({ where: { ...activeUser, addressForm: 'vy' } }),
+      this.prisma.user.count({ where: { ...activeUser, addressForm: null } }),
+      this.prisma.user.groupBy({
+        by: ['defaultSection'],
+        where: { ...activeUser, defaultSection: { not: null } },
+        _count: { _all: true },
+      }),
+      this.prisma.user.count({ where: { ...activeUser, themePref: 'light' } }),
+      this.prisma.user.count({ where: { ...activeUser, themePref: 'dark' } }),
+      this.prisma.user.count({ where: { ...activeUser, themePref: null } }),
+      ev('crisis_card_shown'),
+      ev('crisis_hotline_tapped'),
+      this.prisma.$queryRaw<Array<{ ok: string | null; c: bigint }>>`
+        SELECT "meta"->>'ok' AS ok, count(*)::bigint AS c FROM "AnalyticsEvent"
+        WHERE "name" = 'share_result' AND "createdAt" >= ${since30}
+        GROUP BY "meta"->>'ok'`,
+      this.prisma.$queryRaw<Array<{ flushes: bigint; recovered: bigint }>>`
+        SELECT count(*)::bigint AS flushes,
+               COALESCE(SUM(("meta"->>'count')::int), 0)::bigint AS recovered
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'outbox_flush' AND "createdAt" >= ${since30}`,
+      this.prisma.analyticsEvent.count({
+        where: { name: 'share_card', createdAt: { gte: since7 } },
+      }),
+      this.prisma.analyticsEvent.count({
+        where: { name: 'share_card', createdAt: { gte: since30 } },
+      }),
+      this.prisma.$queryRaw<Array<{ kind: string | null; c: bigint }>>`
+        SELECT "meta"->>'kind' AS kind, count(*)::bigint AS c
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'share_card' AND "createdAt" >= ${since30}
+        GROUP BY "meta"->>'kind'
+        ORDER BY c DESC`,
+    ]);
+
+    const sections = sectionsRaw
+      .map((r) => ({
+        key: r.defaultSection ?? 'другое',
+        count: r._count._all,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    const shareOk = Number(shareRows.find((r) => r.ok === 'true')?.c ?? 0n);
+    const shareFallback = Number(
+      shareRows.find((r) => r.ok === 'false')?.c ?? 0n,
+    );
+
+    return {
+      onboarding: { cohort30, completed30 },
+      adoption: {
+        diaries: num(diaries),
+        ysqDone,
+        exercises: num(exercises),
+        practices: num(practices),
+        childhood: num(childhood),
+      },
+      ysq: { started: ysqStarted, completed: ysqDone },
+      addressForm: { ty, vy, notChosen },
+      sections,
+      themes: { light: themeLight, dark: themeDark, system: themeSystem },
+      shareCard: {
+        total7: shareCard7,
+        total30: shareCard30,
+        byKind30: shareKindRows.map((r) => ({
+          kind: r.kind ?? 'другое',
+          count: Number(r.c),
+        })),
+      },
+      crisis: { shown: crisisShown, hotlineTapped: crisisTapped },
+      shareResult: { ok: shareOk, fallback: shareFallback },
+      outbox: {
+        flushes: Number(outboxRows[0]?.flushes ?? 0n),
+        recovered: Number(outboxRows[0]?.recovered ?? 0n),
+      },
+    };
+  }
+}
