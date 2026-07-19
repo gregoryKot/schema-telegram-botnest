@@ -26,6 +26,10 @@ function makeDeps(overrides: Record<string, any> = {}) {
     ...overrides.botService,
   };
   const analyticsService = { ...overrides.analyticsService };
+  const productMetricsService = {
+    render: jest.fn().mockResolvedValue(''),
+    ...overrides.productMetricsService,
+  };
   const accountService = {
     registerUser: jest.fn().mockResolvedValue(undefined),
     ...overrides.accountService,
@@ -54,6 +58,7 @@ function makeDeps(overrides: Record<string, any> = {}) {
     fakeBot.bot,
     botService,
     analyticsService,
+    productMetricsService,
     accountService,
     pairsService,
     practicesService,

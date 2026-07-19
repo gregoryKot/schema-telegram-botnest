@@ -4,11 +4,25 @@
 // запрос, поэтому без CSRF-проверки злоумышленный сайт мог бы разлогинить
 // или провернуть ротацию токена жертвы. Инвариант: каждый хендлер, читающий
 // REFRESH_COOKIE, ПЕРВЫМ делом зовёт requireCsrf; куки не sameSite:none.
-import { readFileSync } from 'fs';
+//
+// 2026-07 (#111): auth.controller распилен на доменные контроллеры, а
+// CSRF/cookie-примитивы (requireCsrf, hasCsrfHeader, cookieOptions,
+// REFRESH_COOKIE) вынесены в auth-http.util.ts. Трипваер читает util для
+// определений примитивов и ВСЕ auth*.controller.ts для блоков-хендлеров.
+import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
-const CTRL = join(__dirname, '../auth/auth.controller.ts');
-const src = readFileSync(CTRL, 'utf8');
+const AUTH_DIR = join(__dirname, '../auth');
+const UTIL = join(AUTH_DIR, 'auth-http.util.ts');
+const util = readFileSync(UTIL, 'utf8');
+
+// Исходники всех auth-контроллеров (auth.controller.ts + auth-*.controller.ts).
+const ctrlFiles = readdirSync(AUTH_DIR).filter((f) =>
+  /\.controller\.ts$/.test(f),
+);
+const ctrlSrc = ctrlFiles
+  .map((f) => readFileSync(join(AUTH_DIR, f), 'utf8'))
+  .join('\n');
 
 // Разбиваем на блоки-хендлеры по декораторам маршрутов.
 function handlerBlocks(text: string): { head: string; body: string }[] {
@@ -18,8 +32,8 @@ function handlerBlocks(text: string): { head: string; body: string }[] {
     .map((p) => ({ head: p.split('\n')[1] ?? p.split('\n')[0], body: p }));
 }
 
-describe('CSRF-трипваер auth.controller', () => {
-  const blocks = handlerBlocks(src);
+describe('CSRF-трипваер auth-контроллеры', () => {
+  const blocks = handlerBlocks(ctrlSrc);
 
   it('нашлись хендлеры (санити парсера)', () => {
     expect(blocks.length).toBeGreaterThan(5);
@@ -46,12 +60,12 @@ describe('CSRF-трипваер auth.controller', () => {
       .filter((b) => !b.body.includes('requireCsrf'))
       .map((b) => b.head.trim());
     expect(offenders).toEqual([]);
-    expect(READ_REFRESH.test(src)).toBe(true);
+    expect(READ_REFRESH.test(ctrlSrc)).toBe(true);
   });
 
   it('requireCsrf: зовёт hasCsrfHeader и бросает UnauthorizedException', () => {
-    const m = src.match(
-      /private requireCsrf[\s\S]*?throw new UnauthorizedException\([^)]*\)/,
+    const m = util.match(
+      /function requireCsrf[\s\S]*?throw new UnauthorizedException\([^)]*\)/,
     );
     expect(m).not.toBeNull();
     expect(m![0]).toMatch(/hasCsrfHeader/);
@@ -59,19 +73,20 @@ describe('CSRF-трипваер auth.controller', () => {
   });
 
   it('hasCsrfHeader реально проверяет заголовок, а не заглушка true', () => {
-    const m = src.match(/function hasCsrfHeader[\s\S]*?\n}/);
+    const m = util.match(/function hasCsrfHeader[\s\S]*?\n}/);
     expect(m).not.toBeNull();
     expect(m![0]).toMatch(/x-requested-with|CSRF_HEADER/);
     expect(m![0]).not.toMatch(/^\s*return true;\s*$/m); // не безусловный true
   });
 
   it('ни одна кука не выставлена sameSite:none (кросс-сайт отправка)', () => {
-    expect(src).not.toMatch(/sameSite:\s*['"]none['"]/i);
+    expect(util).not.toMatch(/sameSite:\s*['"]none['"]/i);
+    expect(ctrlSrc).not.toMatch(/sameSite:\s*['"]none['"]/i);
   });
 
   it('REFRESH_COOKIE выставляется httpOnly и sameSite strict', () => {
     // cookieOptions — источник флагов рефреш-куки.
-    const co = src.match(/function cookieOptions[\s\S]*?\n}/);
+    const co = util.match(/function cookieOptions[\s\S]*?\n}/);
     expect(co).not.toBeNull();
     expect(co![0]).toMatch(/httpOnly:\s*true/);
     expect(co![0]).toMatch(/sameSite:\s*['"]strict['"]/);
