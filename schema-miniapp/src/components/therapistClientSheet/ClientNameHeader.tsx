@@ -123,7 +123,9 @@ export function ClientNameHeader({
       </div>
       <button
         onClick={() => {
-          setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? '');
+          setAliasInput(
+            selectedClient.clientAlias ?? selectedClient.name ?? '',
+          );
           setRenamingAlias(true);
         }}
         aria-label="Переименовать"
