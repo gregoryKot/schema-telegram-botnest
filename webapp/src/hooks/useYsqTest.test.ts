@@ -65,6 +65,14 @@ describe('computeScores', () => {
     expect(computeScores(answers)['Эмоциональная депривация'].pct5plus).toBe(20);
   });
 
+  it('n5plus/nQuestions для человекочитаемого «N из M»', () => {
+    const answers = Array(QUESTIONS.length).fill(0);
+    answers[0] = 6; answers[1] = 5; answers[2] = 3; answers[3] = 4; answers[4] = 6;
+    const s = computeScores(answers)['Эмоциональная депривация'];
+    expect(s.n5plus).toBe(3); // ответы 6,5,6
+    expect(s.nQuestions).toBe(5);
+  });
+
   // Регрессия (инцидент 2026-07): результат считался только «классикой» —
   // профиль из сплошных «4» давал 0% по всем схемам и пустой результат.
   it('все ответы «4»: классика 0%, но схема активна по среднему баллу', () => {
@@ -108,8 +116,9 @@ describe('buildShareText', () => {
     const text = buildShareText(computeScores(answers), '17 июля 2026');
     expect(text).toContain('17 июля 2026');
     expect(text).toContain('Выраженные схемы (20)');
-    expect(text).toContain('ответы 5–6: 0%');
+    // Главная метрика — средний балл; классика читаемой строкой «N из M».
     expect(text).toContain('средний балл 4 из 6');
+    expect(text).toContain('ответов «5–6»: 0 из');
     expect(text).toContain('не диагноз');
   });
 
