@@ -180,6 +180,10 @@ function SparklineRow({ need, history, selectedIdx, selectedRatings, onClick }: 
 export function HistoryView({ needs, history, currentRatings, childhoodRatings = {}, onOpenSchemas, onOpenChildhoodWheel, days = 7, onChangeDays, onGoToToday, onBackfill }: Props) {
   const tr = useTr();
   const contact = getTherapistContact();
+  // Терапевту не предлагаем запись к самому себе (null); один элемент на оба блока.
+  const bookingLink = contact.isTherapist ? null : (
+    <a href={contact.bookingUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>Записаться →</a>
+  );
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [subView, setSubView] = useState<'day' | 'week'>('day');
   const dateBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -425,13 +429,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                       </div>
                     </div>
                   </div>
-                  {/* Терапевту не предлагаем запись к самому себе. */}
-                  {!contact.isTherapist && (
-                    <a href={contact.bookingUrl} target="_blank" rel="noreferrer"
-                      style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
-                      Записаться →
-                    </a>
-                  )}
+                  {bookingLink}
                 </div>
               );
             })()}
@@ -488,13 +486,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                 <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 8 }}>
                   <strong style={{ color: 'var(--text)' }}>{needsLow[0].chartLabel}</strong> остаётся низкой несколько дней{!contact.isTherapist && ' – разобраться рядом с живым человеком бывает легче'}.
                 </div>
-                {/* Терапевту не предлагаем запись к самому себе. */}
-                {!contact.isTherapist && (
-                  <a href={contact.bookingUrl} target="_blank" rel="noreferrer"
-                    style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
-                    Записаться →
-                  </a>
-                )}
+                {bookingLink}
               </div>
             )}
 

@@ -2,132 +2,17 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { COLORS, YESTERDAY } from '../types';
-import type { Need } from '../types';
 import { useNeedData } from '../needData';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { api } from '../api';
-import type { StreakData } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-
-interface Props {
-  needs: Need[];
-  ratings: Record<string, number>;
-  saved: Record<string, boolean>;
-  isOffline?: boolean;
-  onChange: (needId: string, value: number) => void;
-  onSaved: (needId: string, streak?: StreakData) => void;
-  onClose: () => void;
-  initialNeedId?: string | null;
-  onOpenNote?: () => void;
-  onOpenGoal?: () => void;
-  onOpenHistory?: () => void;
-  yesterdayRatings?: Record<string, number>;
-  date?: string;
-  onDone?: () => void;
-}
-
-function useIsDesktop() {
-  const [d, setD] = useState(() => window.innerWidth >= 900);
-  useEffect(() => {
-    const h = () => setD(window.innerWidth >= 900);
-    window.addEventListener('resize', h);
-    return () => window.removeEventListener('resize', h);
-  }, []);
-  return d;
-}
-
-function PickerRail({
-  value,
-  onChange,
-  color,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  color: string;
-}) {
-  return (
-    <div style={{ width: '100%' }}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(11, 1fr)',
-          gap: 4,
-        }}
-      >
-        {Array.from({ length: 11 }, (_, i) => {
-          const active = i === value;
-          const passed = value > 0 && i < value;
-          return (
-            <button
-              key={i}
-              onClick={() => onChange(i)}
-              style={{
-                aspectRatio: '1 / 1.2',
-                border: 'none',
-                borderRadius: 8,
-                padding: 0,
-                background: active
-                  ? color
-                  : passed
-                    ? `color-mix(in srgb, ${color} 12%, transparent)`
-                    : 'transparent',
-                boxShadow: active
-                  ? 'none'
-                  : `inset 0 0 0 1px rgba(var(--fg-rgb),0.12)`,
-                color: active
-                  ? 'var(--bg)'
-                  : passed
-                    ? color
-                    : 'var(--text-sub)',
-                fontFamily: 'var(--serif)',
-                fontSize: active ? 26 : 20,
-                fontWeight: 400,
-                fontStyle: active ? 'italic' : 'normal',
-                letterSpacing: '-0.02em',
-                cursor: 'pointer',
-                transition: 'all 0.18s',
-              }}
-            >
-              {i}
-            </button>
-          );
-        })}
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginTop: 10,
-          fontSize: 11,
-          color: 'var(--text-faint)',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          fontWeight: 600,
-        }}
-      >
-        <span>низко</span>
-        <span>средне</span>
-        <span>хорошо</span>
-      </div>
-      {value === 0 && (
-        <div
-          style={{
-            textAlign: 'center',
-            marginTop: 14,
-            fontSize: 11,
-            color: 'var(--text-ghost)',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            fontWeight: 600,
-          }}
-        >
-          ни одна цифра не выбрана
-        </div>
-      )}
-    </div>
-  );
-}
+import type { Props } from './trackerOverlay/types';
+import { useIsDesktop } from './trackerOverlay/useIsDesktop';
+import { CompletionScreen } from './trackerOverlay/CompletionScreen';
+import { DesktopLayout } from './trackerOverlay/DesktopLayout';
+import { MobileLayout } from './trackerOverlay/MobileLayout';
+import type { Need } from '../types';
 
 export function TrackerOverlay({
   needs,
@@ -255,111 +140,14 @@ export function TrackerOverlay({
     );
 
   if (showCompletion) {
-    const allVals = needs.map((n) => effectiveRatings[n.id] ?? 0);
-    const avgIdx = allVals.reduce((a, b) => a + b, 0) / allVals.length;
     return (
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 80,
-          background: 'var(--bg)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '40px 24px',
-        }}
-      >
-        <div style={{ textAlign: 'center', maxWidth: 320 }}>
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              background: 'var(--accent-soft)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 24px',
-              fontSize: 28,
-            }}
-          >
-            ✓
-          </div>
-          <h2
-            style={{
-              fontFamily: 'var(--serif)',
-              fontSize: 44,
-              fontWeight: 400,
-              color: 'var(--text)',
-              lineHeight: 1.0,
-              marginBottom: 20,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            Заполнено
-          </h2>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              justifyContent: 'center',
-              gap: 4,
-              marginBottom: 6,
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--serif)',
-                fontSize: 72,
-                color: 'var(--text)',
-                lineHeight: 1,
-                letterSpacing: '-0.03em',
-                fontWeight: 400,
-              }}
-            >
-              {avgIdx.toFixed(1)}
-            </span>
-            <span
-              style={{
-                fontSize: 20,
-                color: 'var(--text-sub)',
-                paddingBottom: 6,
-              }}
-            >
-              /10
-            </span>
-          </div>
-          <div
-            style={{
-              fontSize: 11,
-              color: 'var(--text-faint)',
-              letterSpacing: '0.10em',
-              textTransform: 'uppercase',
-              fontWeight: 600,
-              marginBottom: 36,
-            }}
-          >
-            индекс дня
-          </div>
-          <button
-            onClick={isBackfill ? (onDone ?? goBack) : goBack}
-            style={{
-              padding: '13px 40px',
-              borderRadius: 10,
-              border: 'none',
-              background: 'var(--text)',
-              color: 'var(--bg)',
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Готово
-          </button>
-        </div>
-      </div>
+      <CompletionScreen
+        needs={needs}
+        effectiveRatings={effectiveRatings}
+        isBackfill={isBackfill}
+        onDone={onDone}
+        goBack={goBack}
+      />
     );
   }
 
@@ -650,449 +438,42 @@ export function TrackerOverlay({
   // ── Desktop triptych ───────────────────────────────────────────────────────
   if (isDesktop)
     return (
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 80,
-          background: 'var(--bg)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        {topbar}
-        {/* Hero header */}
-        <div
-          style={{
-            padding: '24px 80px 20px',
-            borderBottom: '1px solid rgba(var(--fg-rgb),0.07)',
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'space-between',
-              gap: 40,
-            }}
-          >
-            <div>
-              <div
-                className="eyebrow"
-                style={{
-                  marginBottom: 12,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  color,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: 'var(--serif)',
-                    fontStyle: 'italic',
-                    fontSize: 14,
-                    textTransform: 'none',
-                    letterSpacing: 0,
-                    color: 'var(--text-ghost)',
-                  }}
-                >
-                  {String(idx + 1).padStart(2, '0')} /{' '}
-                  {String(needs.length).padStart(2, '0')}
-                </span>
-                <span
-                  style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: 3,
-                    background: 'currentColor',
-                    display: 'inline-block',
-                  }}
-                />
-                <span>{extra?.subtitle ?? ''}</span>
-              </div>
-              <h1
-                style={{
-                  fontFamily: 'var(--serif)',
-                  fontSize: 64,
-                  fontWeight: 400,
-                  lineHeight: 0.96,
-                  letterSpacing: '-0.025em',
-                  color: 'var(--text)',
-                  margin: 0,
-                }}
-              >
-                <button
-                  onClick={() => setDetailNeed(need)}
-                  style={{ all: 'unset', cursor: 'pointer' }}
-                >
-                  {needName}
-                </button>
-                <span style={{ marginLeft: 14, fontSize: 48 }}>
-                  {need.emoji}
-                </span>
-              </h1>
-              {extra?.desc && (
-                <p
-                  style={{
-                    margin: '10px 0 0',
-                    fontSize: 14,
-                    lineHeight: 1.55,
-                    color: 'var(--text-sub)',
-                    maxWidth: 520,
-                  }}
-                >
-                  {extra.desc}
-                </p>
-              )}
-            </div>
-            {steps}
-          </div>
-        </div>
-        {/* 3 columns */}
-        <div
-          style={{
-            flex: 1,
-            display: 'grid',
-            gridTemplateColumns: '1fr 1.25fr 1fr',
-            overflow: 'hidden',
-            minHeight: 0,
-          }}
-        >
-          {/* Left – question */}
-          <div
-            style={{
-              padding: '28px 28px 28px 80px',
-              borderRight: '1px solid rgba(var(--fg-rgb),0.07)',
-              display: 'flex',
-              flexDirection: 'column',
-              overflowY: 'auto',
-            }}
-          >
-            <div
-              className="eyebrow"
-              style={{ marginBottom: 16, color: 'var(--text-faint)' }}
-            >
-              вопрос дня
-            </div>
-            <p
-              style={{
-                fontFamily: 'var(--serif)',
-                fontStyle: 'italic',
-                fontSize: 21,
-                lineHeight: 1.4,
-                color: 'var(--text)',
-                margin: 0,
-              }}
-            >
-              {extra?.question ?? ''}
-            </p>
-            {delta !== null && delta !== 0 && (
-              <div
-                style={{
-                  marginTop: 'auto',
-                  paddingTop: 20,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: 'var(--serif)',
-                    fontStyle: 'italic',
-                    fontSize: 13,
-                    color: 'var(--text-faint)',
-                  }}
-                >
-                  вчера
-                </span>
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: delta > 0 ? 'var(--c-moss)' : 'var(--c-rose)',
-                  }}
-                >
-                  {delta > 0 ? '+' : ''}
-                  {delta}
-                </span>
-              </div>
-            )}
-          </div>
-          {/* Center – picker */}
-          <div
-            style={{
-              padding: '28px 44px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRight: '1px solid rgba(var(--fg-rgb),0.07)',
-            }}
-          >
-            <PickerRail
-              value={value}
-              onChange={(v) => handleChange(need.id, v)}
-              color={color}
-            />
-          </div>
-          {/* Right – examples */}
-          <div
-            style={{
-              padding: '28px 80px 28px 28px',
-              display: 'flex',
-              flexDirection: 'column',
-              overflowY: 'auto',
-            }}
-          >
-            <div
-              className="eyebrow"
-              style={{ marginBottom: 16, color: 'var(--text-faint)' }}
-            >
-              что считается
-            </div>
-            <ul
-              style={{
-                listStyle: 'none',
-                padding: 0,
-                margin: 0,
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              {(extra?.examples ?? []).map((ex, i, arr) => (
-                <li
-                  key={i}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '24px 1fr',
-                    gap: 10,
-                    padding: '10px 0',
-                    borderBottom:
-                      i < arr.length - 1
-                        ? '1px solid rgba(var(--fg-rgb),0.07)'
-                        : 'none',
-                    alignItems: 'start',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: 'var(--serif)',
-                      fontStyle: 'italic',
-                      fontSize: 15,
-                      color: 'var(--text-ghost)',
-                    }}
-                  >
-                    {i + 1}.
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      lineHeight: 1.55,
-                      color: 'var(--text-sub)',
-                    }}
-                  >
-                    {ex}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        {footer}
-        {DetailSheet}
-      </div>
+      <DesktopLayout
+        need={need}
+        color={color}
+        value={value}
+        needName={needName}
+        extra={extra}
+        idx={idx}
+        needsLength={needs.length}
+        handleChange={handleChange}
+        setDetailNeed={setDetailNeed}
+        delta={delta}
+        topbar={topbar}
+        footer={footer}
+        steps={steps}
+        detailSheet={DetailSheet}
+      />
     );
 
   // ── Mobile layout ──────────────────────────────────────────────────────────
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 80,
-        background: 'var(--bg)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-      onTouchStart={onTS}
-      onTouchEnd={onTE}
-    >
-      {topbar}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 20px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 12,
-          }}
-        >
-          <div
-            className="eyebrow"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              color,
-            }}
-          >
-            <span
-              style={{
-                width: 5,
-                height: 5,
-                borderRadius: 3,
-                background: 'currentColor',
-                display: 'inline-block',
-              }}
-            />
-            <span>{extra?.subtitle ?? ''}</span>
-          </div>
-          {steps}
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            marginBottom: 14,
-          }}
-        >
-          <div style={{ flex: 1 }}>
-            <button
-              onClick={() => setDetailNeed(need)}
-              style={{ all: 'unset', cursor: 'pointer' }}
-            >
-              <h1
-                style={{
-                  fontFamily: 'var(--serif)',
-                  fontSize: 34,
-                  fontWeight: 400,
-                  lineHeight: 1.0,
-                  letterSpacing: '-0.02em',
-                  color: 'var(--text)',
-                  margin: 0,
-                }}
-              >
-                {needName}
-              </h1>
-            </button>
-            {extra?.desc && (
-              <div
-                style={{
-                  fontSize: 13,
-                  color: 'var(--text-sub)',
-                  lineHeight: 1.55,
-                  marginTop: 6,
-                }}
-              >
-                {extra.desc}
-              </div>
-            )}
-          </div>
-          <span style={{ fontSize: 38, lineHeight: 1, flexShrink: 0 }}>
-            {need.emoji}
-          </span>
-        </div>
-        <div
-          style={{
-            padding: '14px 0',
-            borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
-            borderBottom: '1px solid rgba(var(--fg-rgb),0.07)',
-            marginBottom: 20,
-          }}
-        >
-          <div
-            className="eyebrow"
-            style={{ marginBottom: 10, color: 'var(--text-faint)' }}
-          >
-            вопрос дня
-          </div>
-          <p
-            style={{
-              fontFamily: 'var(--serif)',
-              fontStyle: 'italic',
-              fontSize: 17,
-              lineHeight: 1.45,
-              color: 'var(--text)',
-              margin: 0,
-            }}
-          >
-            {extra?.question ?? ''}
-          </p>
-        </div>
-        <div style={{ marginBottom: 24 }}>
-          <PickerRail
-            value={value}
-            onChange={(v) => handleChange(need.id, v)}
-            color={color}
-          />
-        </div>
-        <div
-          style={{
-            paddingTop: 4,
-            borderTop: '1px solid rgba(var(--fg-rgb),0.07)',
-          }}
-        >
-          <div
-            className="eyebrow"
-            style={{ marginBottom: 12, color: 'var(--text-faint)' }}
-          >
-            что считается
-          </div>
-          <ul
-            style={{
-              listStyle: 'none',
-              padding: 0,
-              margin: 0,
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            {(extra?.examples ?? []).map((ex, i, arr) => (
-              <li
-                key={i}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '20px 1fr',
-                  gap: 10,
-                  padding: '10px 0',
-                  borderBottom:
-                    i < arr.length - 1
-                      ? '1px solid rgba(var(--fg-rgb),0.07)'
-                      : 'none',
-                  alignItems: 'start',
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: 'var(--serif)',
-                    fontStyle: 'italic',
-                    fontSize: 14,
-                    color: 'var(--text-ghost)',
-                  }}
-                >
-                  {i + 1}.
-                </span>
-                <span
-                  style={{
-                    fontSize: 13,
-                    lineHeight: 1.55,
-                    color: 'var(--text-sub)',
-                  }}
-                >
-                  {ex}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-      {footer}
-      {DetailSheet}
-    </div>
+    <MobileLayout
+      need={need}
+      color={color}
+      value={value}
+      needName={needName}
+      extra={extra}
+      idx={idx}
+      needsLength={needs.length}
+      handleChange={handleChange}
+      setDetailNeed={setDetailNeed}
+      onTS={onTS}
+      onTE={onTE}
+      topbar={topbar}
+      footer={footer}
+      steps={steps}
+      detailSheet={DetailSheet}
+    />
   );
 }
