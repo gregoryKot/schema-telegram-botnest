@@ -37,6 +37,32 @@ export function buildDayShareText(
   return `Мои потребности сегодня, ${dateLabel}\nИндекс дня: ${idxStr}/10\n${link}`;
 }
 
+/**
+ * Готовый набор пропсов для ShareCardSheet карточки дня — единственная копия
+ * для DayShareButton обоих фронтендов (во фронте остаётся только вёрстка).
+ * dateLabel — уже отформатированная дата («17 июл»), link — botShortUrl фронта.
+ */
+export function makeDayShare(
+  needs: Need[],
+  ratings: Record<string, number>,
+  dateLabel: string,
+  link: string,
+): {
+  title: string;
+  draw: (canvas: HTMLCanvasElement) => void;
+  shareText: string;
+  filename: string;
+  eventKind: 'day';
+} {
+  return {
+    title: 'Карточка дня',
+    draw: (canvas) => drawDayCard(canvas, needs, ratings, dateLabel),
+    shareText: buildDayShareText(needs, ratings, dateLabel, link),
+    filename: 'needs-day.png',
+    eventKind: 'day',
+  };
+}
+
 export function drawDayCard(
   canvas: HTMLCanvasElement,
   needs: Need[],

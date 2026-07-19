@@ -23,6 +23,7 @@ import { NeedTodaySheet } from './NeedTodaySheet';
 import { useSafeTop } from '../utils/safezone';
 import { api, StreakData } from '../api';
 import { useTr } from '../utils/addressForm';
+import { DayShareButton } from '../share/DayShareButton';
 
 interface Props {
   needs: Need[];
@@ -770,6 +771,11 @@ export function TrackerOverlay({
           >
             Готово — сохранить всё ✓
           </button>
+        )}
+
+        {/* Поделиться заполненным днём — карточка-картинка */}
+        {allRated && (
+          <DayShareButton needs={needs} ratings={ratings} date={date} />
         )}
 
         {/* Nav */}
