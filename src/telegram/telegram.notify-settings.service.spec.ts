@@ -49,7 +49,7 @@ describe('TelegramNotifySettingsService — частота (settings:freq:N)', (
     const botService = makeBotService({ notifyFrequency: 1 });
     const { service, fakeBot, accountService, scheduleService } =
       makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:freq:2');
     expect(ctx.answerCbQuery).toHaveBeenCalled();
     expect(botService._get().notifyFrequency).toBe(2);
@@ -61,7 +61,7 @@ describe('TelegramNotifySettingsService — частота (settings:freq:N)', (
   it('settings:pick_freq — только показывает варианты, БД не трогает', async () => {
     const botService = makeBotService();
     const { service, fakeBot, accountService } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:pick_freq');
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
     expect(accountService.setAdaptiveLevel).not.toHaveBeenCalled();
@@ -73,7 +73,7 @@ describe('TelegramNotifySettingsService — тихие часы (settings:quiet:
   it('валидный пресет 22:00–08:00 сохраняется', async () => {
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:quiet:22:8');
     expect(botService._get().notifyQuietStart).toBe(22);
     expect(botService._get().notifyQuietEnd).toBe(8);
@@ -83,7 +83,7 @@ describe('TelegramNotifySettingsService — тихие часы (settings:quiet:
   it('пресет "выключить" (0:0) — совпадает по значениям start===end', async () => {
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     await runAction(fakeBot, 'settings:quiet:0:0');
     expect(botService._get().notifyQuietStart).toBe(0);
     expect(botService._get().notifyQuietEnd).toBe(0);
@@ -92,7 +92,7 @@ describe('TelegramNotifySettingsService — тихие часы (settings:quiet:
   it('пара, отсутствующая в списке пресетов — отклоняется, БД не пишется', async () => {
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     // regex допускает 1-2 цифры, но нет такого пресета в QUIET_PRESETS
     const ctx = await runAction(fakeBot, 'settings:quiet:5:5');
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
@@ -102,7 +102,7 @@ describe('TelegramNotifySettingsService — тихие часы (settings:quiet:
   it('вне диапазона часов (>23) — отклоняется', async () => {
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:quiet:99:5');
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
     expect(ctx.editMessageText).not.toHaveBeenCalled();
@@ -113,7 +113,7 @@ describe('TelegramNotifySettingsService — форма обращения (setti
   it('settings:addr:vy пишет addressForm=vy и возвращается на главный экран', async () => {
     const botService = makeBotService({ addressForm: 'ty' });
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:addr:vy');
     expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
       addressForm: 'vy',
@@ -126,7 +126,7 @@ describe('TelegramNotifySettingsService — форма обращения (setti
   it('settings:addr:ty пишет addressForm=ty', async () => {
     const botService = makeBotService({ addressForm: 'vy' });
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     await runAction(fakeBot, 'settings:addr:ty');
     expect(botService._get().addressForm).toBe('ty');
   });

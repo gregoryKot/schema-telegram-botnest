@@ -87,7 +87,7 @@ afterEach(() => {
 describe('TelegramService — plan_(done|skip):<id>', () => {
   it('plan_done:42 — done=true, checkinPlan(userId, 42, true), правит сообщение', async () => {
     const { service, fakeBot, practicesService } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'plan_done:42');
     expect(ctx.answerCbQuery).toHaveBeenCalled();
     expect(practicesService.checkinPlan).toHaveBeenCalledWith(1n, 42, true);
@@ -98,14 +98,14 @@ describe('TelegramService — plan_(done|skip):<id>', () => {
 
   it('plan_skip:7 — done=false, checkinPlan(userId, 7, false)', async () => {
     const { service, fakeBot, practicesService } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     await runAction(fakeBot, 'plan_skip:7');
     expect(practicesService.checkinPlan).toHaveBeenCalledWith(1n, 7, false);
   });
 
   it('мусорный callback_data (не число) не матчится ни на один action', async () => {
     const { service, fakeBot } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     await expect(runAction(fakeBot, 'plan_done:abc')).rejects.toThrow(
       /ни один action-хендлер/,
     );
@@ -115,7 +115,7 @@ describe('TelegramService — plan_(done|skip):<id>', () => {
 describe('TelegramService — snooze_reminder', () => {
   it('переносит на +1 час, отменяет reminder, планирует pre_reminder', async () => {
     const { service, fakeBot, notificationService } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'snooze_reminder');
     expect(ctx.answerCbQuery).toHaveBeenCalledWith(
       expect.stringContaining('через час'),
@@ -134,7 +134,7 @@ describe('TelegramService — snooze_reminder', () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-07-16T21:15:00+03:00'));
     const { service, fakeBot, notificationService } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     await runAction(fakeBot, 'snooze_reminder');
     const [, , sendAt] = notificationService.schedule.mock.calls[0];
     // Конец тихих часов — 08:00 МСК того же/следующего дня, а не 23:30
@@ -154,7 +154,7 @@ describe('TelegramService — treq:approve|reject (только админ)', ()
   it('не-админ получает отказ, therapistRequestService не вызывается', async () => {
     process.env.ADMIN_ID = '999';
     const { service, fakeBot, therapistRequestService } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'treq:approve:5', {
       from: { id: 1 }, // не 999
     });
@@ -167,7 +167,7 @@ describe('TelegramService — treq:approve|reject (только админ)', ()
   it('админ approve вызывает approve(adminId, reqId)', async () => {
     process.env.ADMIN_ID = '999';
     const { service, fakeBot, therapistRequestService } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'treq:approve:5', {
       from: { id: 999 },
     });
@@ -178,7 +178,7 @@ describe('TelegramService — treq:approve|reject (только админ)', ()
   it('админ reject вызывает reject(adminId, reqId, "")', async () => {
     process.env.ADMIN_ID = '999';
     const { service, fakeBot, therapistRequestService } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'treq:reject:5', {
       from: { id: 999 },
     });
@@ -191,7 +191,7 @@ describe('TelegramService — treq:approve|reject (только админ)', ()
   it('ADMIN_ID не задан на сервере — доступ закрыт даже якобы-совпадающему id', async () => {
     delete process.env.ADMIN_ID;
     const { service, fakeBot, therapistRequestService } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'treq:approve:5', {
       from: { id: 0 },
     });
@@ -205,7 +205,7 @@ describe('TelegramService — treq:approve|reject (только админ)', ()
 describe('TelegramService — accept:(ty|vy) сохраняет согласие + форму', () => {
   it('accept:vy: acceptDisclaimer + addressForm=vy, приветствие на «вы»', async () => {
     const { service, fakeBot, botService } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'accept:vy');
     expect(botService.acceptDisclaimer).toHaveBeenCalledWith(1n);
     expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
@@ -221,7 +221,7 @@ describe('TelegramService — accept:(ty|vy) сохраняет согласие
     const { service, fakeBot, botService, pairsService } = makeDeps({
       botService: { hasAcceptedDisclaimer: jest.fn().mockResolvedValue(false) },
     });
-    await service.onModuleInit();
+    service.onModuleInit();
     // /start pair_ABC123 без согласия — код кладётся в pendingPairCodes, ждём согласия
     const startCtx = await runCommand(fakeBot, 'start', {
       from: { id: 1 },
@@ -249,7 +249,7 @@ describe('TelegramService — accept:(ty|vy) сохраняет согласие
 describe('TelegramService — cancel / back:welcome', () => {
   it('cancel: answerCbQuery + deleteMessage', async () => {
     const { service, fakeBot } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'cancel');
     expect(ctx.answerCbQuery).toHaveBeenCalled();
     expect(ctx.deleteMessage).toHaveBeenCalled();
@@ -257,7 +257,7 @@ describe('TelegramService — cancel / back:welcome', () => {
 
   it('back:welcome: правит на приветственный текст', async () => {
     const { service, fakeBot } = makeDeps();
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'back:welcome');
     expect(ctx.editMessageText).toHaveBeenCalledWith(
       expect.stringContaining('Привет!'),

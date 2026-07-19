@@ -6,12 +6,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import {
-  AddressFormProvider,
   useAddressForm,
   useSetAddressForm,
   useTr,
   pickForm,
 } from './addressForm';
+import { AddressFormProvider } from './AddressFormProvider';
 
 // ── Mock api: провайдер грузит настройки через api.getSettings() ─────────────
 vi.mock('../api', () => ({

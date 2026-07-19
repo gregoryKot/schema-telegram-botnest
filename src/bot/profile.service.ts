@@ -102,13 +102,12 @@ export class ProfileService {
       },
       mySchemaIds: toStringArray(
         user
-          ? decryptRecord(user as any, { jsonArrays: ['mySchemaIds'] })
-              .mySchemaIds
+          ? decryptRecord(user, { jsonArrays: ['mySchemaIds'] }).mySchemaIds
           : null,
       ),
       myModeIds: toStringArray(
         user
-          ? decryptRecord(user as any, { jsonArrays: ['myModeIds'] }).myModeIds
+          ? decryptRecord(user, { jsonArrays: ['myModeIds'] }).myModeIds
           : null,
       ),
     };

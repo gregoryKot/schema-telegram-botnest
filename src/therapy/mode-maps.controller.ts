@@ -89,8 +89,9 @@ export class ModeMapsController {
         uid(req),
         parseId(clientId),
       );
-    } catch (e: any) {
-      if (e?.message === 'No active relation') throw new ForbiddenException();
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'No active relation')
+        throw new ForbiddenException();
       throw e;
     }
   }
@@ -128,8 +129,9 @@ export class ModeMapsController {
         title,
         body.kind,
       );
-    } catch (e: any) {
-      if (e?.message === 'No active relation') throw new ForbiddenException();
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'No active relation')
+        throw new ForbiddenException();
       throw e;
     }
   }

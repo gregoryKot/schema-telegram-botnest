@@ -12,7 +12,8 @@ function MetrikaTracker() {
   }, [loc.pathname, loc.search]);
   return null;
 }
-import { AuthProvider, useAuth } from './auth/AuthContext';
+import { AuthProvider } from './auth/AuthContext';
+import { useAuth } from './auth/authContext';
 import { setTokenProvider } from './api';
 import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
@@ -24,7 +25,7 @@ import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { AddressFormPicker } from './components/AddressFormPicker';
-import { AddressFormProvider } from './utils/addressForm';
+import { AddressFormProvider } from './utils/AddressFormProvider';
 import { LandingPage } from './pages/LandingPage';
 import { ProductLandingPage } from './pages/ProductLandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';

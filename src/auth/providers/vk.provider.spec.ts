@@ -65,7 +65,9 @@ describe('VkProvider.buildAuthUrl', () => {
 describe('VkProvider.exchangeCode (без контекста)', () => {
   it('всегда бросает — VK требует device_id/state через exchangeCodeWithContext', async () => {
     const provider = new VkProvider(makeConfig());
-    await expect(provider.exchangeCode('any-code')).rejects.toThrow(
+    // Бросает СИНХРОННО (метод не async, throw в теле) — .rejects тут не
+    // подходит, ловим синхронное исключение.
+    expect(() => provider.exchangeCode()).toThrow(
       'VkProvider.exchangeCode requires context',
     );
   });

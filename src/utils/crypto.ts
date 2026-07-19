@@ -166,32 +166,33 @@ export function encryptRecord<T extends Record<string, unknown>>(
   data: T,
   schema: EncryptSchema,
 ): T {
-  const out: any = { ...data };
+  const out: Record<string, unknown> = { ...data };
   for (const f of schema.strings ?? []) {
-    if (out[f] != null) out[f] = encrypt(String(out[f]));
+    if (out[f] != null) out[f] = encrypt(out[f] as string);
   }
   for (const f of schema.jsonArrays ?? []) {
     if (out[f] != null) out[f] = encryptJson(out[f]) ?? JSON.stringify(out[f]);
   }
-  return out;
+  return out as T;
 }
 
 export function decryptRecord<T extends Record<string, unknown>>(
   row: T,
   schema: EncryptSchema,
 ): T {
-  const out: any = { ...row };
+  const out: Record<string, unknown> = { ...row };
   for (const f of schema.strings ?? []) {
-    if (out[f] != null) out[f] = decrypt(String(out[f]));
+    if (out[f] != null) out[f] = decrypt(out[f] as string);
   }
   for (const f of schema.jsonArrays ?? []) {
-    if (out[f] == null) continue;
+    const v = out[f];
+    if (v == null) continue;
     // Forward-compat: if Prisma already deserialised the JSON column into an
     // array/object (legacy plaintext rows), return as-is. Only attempt
     // decrypt+parse when the column comes back as a string (new encrypted form).
-    if (typeof out[f] === 'string') {
-      out[f] = decryptJson(out[f]) ?? out[f];
+    if (typeof v === 'string') {
+      out[f] = decryptJson(v) ?? v;
     }
   }
-  return out;
+  return out as T;
 }

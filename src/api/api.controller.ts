@@ -10,18 +10,16 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request, Response } from 'express';
 import { uid } from './request-utils';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import { ProfileService } from '../bot/profile.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
-import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
-import { VALID_TIMEZONES } from '../telegram/telegram.constants';
 import { SaveDraftDto, UpdateNameDto, InitDto } from './dto/misc.dto';
-import { UpdateSettingsDto } from './dto/settings.dto';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -40,7 +38,6 @@ export class ApiController {
     private readonly botService: BotService,
     private readonly accountService: AccountService,
     private readonly profileService: ProfileService,
-    private readonly scheduleService: TelegramScheduleService,
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
   ) {}
@@ -52,10 +49,10 @@ export class ApiController {
   // ?link_token=… on the redirect. This endpoint issues one.
 
   @Get('link-token')
-  async issueLinkToken(
+  issueLinkToken(
     @Req() req: AuthRequest,
-    @Res({ passthrough: true }) res: any,
-  ): Promise<{ linkToken: string; expiresIn: number }> {
+    @Res({ passthrough: true }) res: Response,
+  ): { linkToken: string; expiresIn: number } {
     const linkToken = this.authService.buildLinkToken(uid(req));
     // httpOnly-cookie — основной канал (S-4, токен не в URL); тело ответа —
     // обратная совместимость со старыми клиентами (?link_token=).
@@ -102,10 +99,9 @@ export class ApiController {
 
   @Get('user-flags')
   async getUserFlags(@Req() req: AuthRequest) {
-    const select = Object.fromEntries(
-      this.FLAG_FIELDS_READ.map((f) => [f, true]),
-    );
-    const u = await (this.prisma.user as any).findUnique({
+    const select: Prisma.UserSelect = {};
+    for (const f of this.FLAG_FIELDS_READ) select[f] = true;
+    const u = await this.prisma.user.findUnique({
       where: { id: uid(req) },
       select,
     });
@@ -121,9 +117,9 @@ export class ApiController {
     if (!body || typeof body !== 'object')
       throw new BadRequestException('Invalid body');
     const data: Record<string, unknown> = {};
-    for (const k of this.FLAG_FIELDS) if (k in body) data[k] = (body as any)[k];
+    for (const k of this.FLAG_FIELDS) if (k in body) data[k] = body[k];
     if (Object.keys(data).length === 0) return { ok: true };
-    await (this.prisma.user as any).update({
+    await this.prisma.user.update({
       where: { id: uid(req) },
       data,
     });
@@ -134,12 +130,12 @@ export class ApiController {
 
   @Get('drafts')
   async getDrafts(@Req() req: AuthRequest) {
-    const rows = await (this.prisma as any).diaryDraft.findMany({
+    const rows = await this.prisma.diaryDraft.findMany({
       where: { userId: uid(req) },
       select: { type: true, startedAt: true, data: true },
     });
     return Object.fromEntries(
-      rows.map((r: any) => [
+      rows.map((r) => [
         r.type,
         { startedAt: r.startedAt.toISOString(), data: r.data },
       ]),
@@ -160,10 +156,11 @@ export class ApiController {
     const startedAt = new Date(body.startedAt);
     if (isNaN(startedAt.getTime()))
       throw new BadRequestException('Invalid startedAt value');
-    await (this.prisma as any).diaryDraft.upsert({
+    const data = body.data as Prisma.InputJsonValue;
+    await this.prisma.diaryDraft.upsert({
       where: { userId_type: { userId: uid(req), type } },
-      update: { data: body.data, startedAt },
-      create: { userId: uid(req), type, data: body.data, startedAt },
+      update: { data, startedAt },
+      create: { userId: uid(req), type, data, startedAt },
     });
     return { ok: true };
   }
@@ -175,7 +172,7 @@ export class ApiController {
   ): Promise<{ ok: true }> {
     if (!['schema', 'mode', 'gratitude'].includes(type))
       throw new BadRequestException('Invalid type');
-    await (this.prisma as any).diaryDraft.deleteMany({
+    await this.prisma.diaryDraft.deleteMany({
       where: { userId: uid(req), type },
     });
     return { ok: true };
@@ -219,119 +216,8 @@ export class ApiController {
     return { ok: true };
   }
 
-  // ─── Settings ───────────────────────────────────────────────────────────────
-
-  @Get('settings')
-  async getSettings(@Req() req: AuthRequest) {
-    const s = await this.botService.getUserSettings(uid(req));
-    return {
-      notifyEnabled: s?.notifyEnabled ?? true,
-      notifyLocalHour: s?.notifyLocalHour ?? 21,
-      notifyTimezone: s?.notifyTimezone ?? 'Europe/Moscow',
-      notifyReminderEnabled: s?.notifyReminderEnabled ?? true,
-      notifyFrequency: s?.notifyFrequency ?? 0,
-      notifyQuietStart: s?.notifyQuietStart ?? 22,
-      notifyQuietEnd: s?.notifyQuietEnd ?? 8,
-      notifyGamified: s?.notifyGamified ?? false,
-      notifyPausedUntil: s?.notifyPausedUntil?.toISOString() ?? null,
-      addressForm: s?.addressForm ?? null,
-      pairCardDismissed: s?.pairCardDismissed ?? false,
-      mySchemaIds: Array.isArray(s?.mySchemaIds)
-        ? (s.mySchemaIds as string[])
-        : [],
-      myModeIds: Array.isArray(s?.myModeIds) ? (s.myModeIds as string[]) : [],
-      therapistShareCards: s?.therapistShareCards ?? true,
-      therapistShareProfile: s?.therapistShareProfile ?? true,
-    };
-  }
-
-  @Post('settings')
-  async updateSettings(
-    @Req() req: AuthRequest,
-    @Body() body: UpdateSettingsDto,
-  ) {
-    const clean: Parameters<typeof this.botService.updateUserSettings>[1] = {};
-    if (typeof body.notifyEnabled === 'boolean')
-      clean.notifyEnabled = body.notifyEnabled;
-    if (typeof body.notifyReminderEnabled === 'boolean')
-      clean.notifyReminderEnabled = body.notifyReminderEnabled;
-    if (typeof body.notifyGamified === 'boolean')
-      clean.notifyGamified = body.notifyGamified;
-    if (typeof body.pairCardDismissed === 'boolean')
-      clean.pairCardDismissed = body.pairCardDismissed;
-    if (
-      Number.isInteger(body.notifyLocalHour) &&
-      body.notifyLocalHour! >= 0 &&
-      body.notifyLocalHour! <= 23
-    )
-      clean.notifyLocalHour = body.notifyLocalHour;
-    if (
-      typeof body.notifyTimezone === 'string' &&
-      VALID_TIMEZONES.includes(body.notifyTimezone)
-    )
-      clean.notifyTimezone = body.notifyTimezone;
-    if (
-      Number.isInteger(body.notifyFrequency) &&
-      body.notifyFrequency! >= 0 &&
-      body.notifyFrequency! <= 3
-    )
-      clean.notifyFrequency = body.notifyFrequency;
-    if (
-      Number.isInteger(body.notifyQuietStart) &&
-      body.notifyQuietStart! >= 0 &&
-      body.notifyQuietStart! <= 23
-    )
-      clean.notifyQuietStart = body.notifyQuietStart;
-    if (
-      Number.isInteger(body.notifyQuietEnd) &&
-      body.notifyQuietEnd! >= 0 &&
-      body.notifyQuietEnd! <= 23
-    )
-      clean.notifyQuietEnd = body.notifyQuietEnd;
-    // Возобновление паузы из UI: единственное допустимое значение — null
-    if (body.notifyPausedUntil === null) clean.notifyPausedUntil = null;
-    if (body.addressForm === 'ty' || body.addressForm === 'vy')
-      clean.addressForm = body.addressForm;
-    if (
-      Array.isArray(body.mySchemaIds) &&
-      body.mySchemaIds.length <= 200 &&
-      body.mySchemaIds.every((id) => typeof id === 'string' && id.length < 100)
-    )
-      clean.mySchemaIds = body.mySchemaIds;
-    if (
-      Array.isArray(body.myModeIds) &&
-      body.myModeIds.length <= 200 &&
-      body.myModeIds.every((id) => typeof id === 'string' && id.length < 100)
-    )
-      clean.myModeIds = body.myModeIds;
-    if (typeof body.therapistShareCards === 'boolean')
-      clean.therapistShareCards = body.therapistShareCards;
-    if (typeof body.therapistShareProfile === 'boolean')
-      clean.therapistShareProfile = body.therapistShareProfile;
-    await this.botService.updateUserSettings(uid(req), clean);
-
-    // Явный выбор частоты сбрасывает адаптацию на выбранный уровень
-    if ('notifyFrequency' in clean) {
-      await this.accountService.setAdaptiveLevel(
-        uid(req),
-        clean.notifyFrequency!,
-      );
-    }
-
-    // Reschedule reminder if notification time/toggle changed
-    if (
-      'notifyEnabled' in clean ||
-      'notifyLocalHour' in clean ||
-      'notifyTimezone' in clean ||
-      'notifyReminderEnabled' in clean ||
-      'notifyFrequency' in clean ||
-      'notifyPausedUntil' in clean
-    ) {
-      await this.scheduleService.rescheduleForUser(uid(req));
-    }
-
-    return { ok: true };
-  }
+  // Settings живут в settings.controller.ts — здесь был маршрут-дубль
+  // (аудит 2026-07: GET/POST /api/settings регистрировались дважды).
 
   @Delete('user')
   async deleteUser(@Req() req: AuthRequest) {

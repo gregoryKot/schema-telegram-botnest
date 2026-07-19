@@ -26,7 +26,7 @@ export class ModeMapsService {
 
   async listModeMaps(therapistId: bigint, clientId: number) {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    const rows = await (this.prisma.modeMap as any).findMany({
+    const rows = await this.prisma.modeMap.findMany({
       where: { therapistId, clientId: BigInt(clientId) },
       orderBy: { createdAt: 'asc' },
       select: {
@@ -37,11 +37,11 @@ export class ModeMapsService {
         updatedAt: true,
       },
     });
-    return rows.map((r: any) => decryptRecord(r, MODE_MAP_SCHEMA));
+    return rows.map((r) => decryptRecord(r, MODE_MAP_SCHEMA));
   }
 
   async getModeMap(therapistId: bigint, mapId: number) {
-    const row = await (this.prisma.modeMap as any).findUnique({
+    const row = await this.prisma.modeMap.findUnique({
       where: { id: mapId },
     });
     if (!row || row.therapistId.toString() !== therapistId.toString())
@@ -65,8 +65,10 @@ export class ModeMapsService {
     kind?: string,
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    const k = MODE_MAP_KINDS.includes(kind as any) ? kind : 'problem';
-    const row = await (this.prisma.modeMap as any).create({
+    const k = MODE_MAP_KINDS.includes(kind as (typeof MODE_MAP_KINDS)[number])
+      ? kind
+      : 'problem';
+    const row = await this.prisma.modeMap.create({
       data: {
         therapistId,
         clientId: BigInt(clientId),
@@ -86,7 +88,7 @@ export class ModeMapsService {
       edges?: unknown[];
     },
   ) {
-    const existing = await (this.prisma.modeMap as any).findUnique({
+    const existing = await this.prisma.modeMap.findUnique({
       where: { id: mapId },
     });
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
@@ -101,7 +103,7 @@ export class ModeMapsService {
     if (body.title !== undefined) fields.title = body.title;
     if (body.nodes !== undefined) fields.nodes = body.nodes;
     if (body.edges !== undefined) fields.edges = body.edges;
-    const row = await (this.prisma.modeMap as any).update({
+    const row = await this.prisma.modeMap.update({
       where: { id: mapId },
       data: encryptRecord(fields, MODE_MAP_SCHEMA),
     });
@@ -109,7 +111,7 @@ export class ModeMapsService {
   }
 
   async deleteModeMap(therapistId: bigint, mapId: number) {
-    const existing = await (this.prisma.modeMap as any).findUnique({
+    const existing = await this.prisma.modeMap.findUnique({
       where: { id: mapId },
     });
     if (!existing || existing.therapistId.toString() !== therapistId.toString())
@@ -120,22 +122,22 @@ export class ModeMapsService {
       therapistId,
       Number((existing as { clientId: bigint }).clientId),
     );
-    await (this.prisma.modeMap as any).delete({ where: { id: mapId } });
+    await this.prisma.modeMap.delete({ where: { id: mapId } });
   }
 
   // ─── Client's read-only view of their own maps ───────────────────────────────
 
   async listMyModeMaps(userId: bigint) {
-    const rows = await (this.prisma.modeMap as any).findMany({
+    const rows = await this.prisma.modeMap.findMany({
       where: { clientId: userId },
       orderBy: { updatedAt: 'desc' },
       select: { id: true, title: true, kind: true, updatedAt: true },
     });
-    return rows.map((r: any) => decryptRecord(r, MODE_MAP_SCHEMA));
+    return rows.map((r) => decryptRecord(r, MODE_MAP_SCHEMA));
   }
 
   async getMyModeMap(userId: bigint, mapId: number) {
-    const row = await (this.prisma.modeMap as any).findUnique({
+    const row = await this.prisma.modeMap.findUnique({
       where: { id: mapId },
     });
     if (!row || row.clientId.toString() !== userId.toString())
@@ -146,11 +148,11 @@ export class ModeMapsService {
   // ─── Therapist Custom Modes ──────────────────────────────────────────────────
 
   async listCustomModes(therapistId: bigint) {
-    const rows = await (this.prisma.therapistCustomMode as any).findMany({
+    const rows = await this.prisma.therapistCustomMode.findMany({
       where: { therapistId },
       orderBy: { createdAt: 'asc' },
     });
-    return rows.map((r: any) => decryptRecord(r, CUSTOM_MODE_SCHEMA));
+    return rows.map((r) => decryptRecord(r, CUSTOM_MODE_SCHEMA));
   }
 
   async createCustomMode(
@@ -168,7 +170,7 @@ export class ModeMapsService {
     const nodeType = allowed.includes(body.nodeType ?? '')
       ? body.nodeType
       : 'custom';
-    const row = await (this.prisma.therapistCustomMode as any).create({
+    const row = await this.prisma.therapistCustomMode.create({
       data: {
         therapistId,
         nodeType,
@@ -180,7 +182,7 @@ export class ModeMapsService {
   }
 
   async deleteCustomMode(therapistId: bigint, modeId: number) {
-    await (this.prisma.therapistCustomMode as any).deleteMany({
+    await this.prisma.therapistCustomMode.deleteMany({
       where: { id: modeId, therapistId },
     });
   }

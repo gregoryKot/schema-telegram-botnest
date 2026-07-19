@@ -75,20 +75,19 @@ export class NotesService {
     await this.prisma.$transaction(async (tx) => {
       const row = await tx.user.findUnique({
         where: { id: userId },
-        select: { [field]: true } as any,
+        select: { [field]: true },
       });
       if (!row) return;
-      const dec = decryptRecord(row as any, { jsonArrays: [field] }) as Record<
-        string,
-        unknown
-      >;
+      const dec = decryptRecord(row as Record<string, unknown>, {
+        jsonArrays: [field],
+      });
       const list = Array.isArray(dec[field]) ? (dec[field] as string[]) : [];
       if (list.includes(id)) return;
       const enc = encryptRecord(
         { [field]: [...list, id] },
         { jsonArrays: [field] },
       );
-      await tx.user.update({ where: { id: userId }, data: enc as any });
+      await tx.user.update({ where: { id: userId }, data: enc });
     });
   }
 
@@ -124,36 +123,7 @@ export class NotesService {
     await this.addToMyList(userId, 'myModeIds', modeId);
     return res;
   }
-
-  // ── Therapist: client notes access ───────────────────────────────────────────
-
-  async getClientSchemaNotes(therapistId: bigint, clientId: bigint) {
-    const [rel, client] = await Promise.all([
-      this.prisma.therapyRelation.findFirst({
-        where: { therapistId, clientId, status: 'active' },
-      }),
-      this.prisma.user.findUnique({
-        where: { id: clientId },
-        select: { therapistShareCards: true },
-      }),
-    ]);
-    if (!rel) return null;
-    if (client?.therapistShareCards === false) return [];
-    return this.prisma.userSchemaNote.findMany({ where: { userId: clientId } });
-  }
-
-  async getClientModeNotes(therapistId: bigint, clientId: bigint) {
-    const [rel, client] = await Promise.all([
-      this.prisma.therapyRelation.findFirst({
-        where: { therapistId, clientId, status: 'active' },
-      }),
-      this.prisma.user.findUnique({
-        where: { id: clientId },
-        select: { therapistShareCards: true },
-      }),
-    ]);
-    if (!rel) return null;
-    if (client?.therapistShareCards === false) return [];
-    return this.prisma.userModeNote.findMany({ where: { userId: clientId } });
-  }
 }
+// Доступ терапевта к карточкам клиента жил здесь дублем (без расшифровки!) —
+// единственная реализация теперь в therapy-client-data.service (assertHasClient
+// + therapistShareCards + decryptRecord).

@@ -8,6 +8,7 @@ import {
 import { EMOTIONS, getModeById, getSchemaById } from '../../schemaTherapyData';
 import { useSafeTop } from '../../utils/safezone';
 import { loadDraft, clearDraft, formatDraftAge } from '../../utils/drafts';
+import { DiaryShareButton } from '../../share/DiaryShareButton';
 
 /** color-mix helper: works with CSS variables AND hex strings */
 const cm = (color: string, pct: number) =>
@@ -439,7 +440,11 @@ function DraftCard({
   onDelete: () => void;
 }) {
   const [confirm, setConfirm] = useState(false);
-  const draft = loadDraft<any>(type);
+  const draft = loadDraft<{
+    trigger?: string;
+    situation?: string;
+    items?: string[];
+  }>(type);
   if (!draft) return null;
 
   const preview =
@@ -637,6 +642,20 @@ export function DiaryListView({
           <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
             {meta.title}
           </span>
+          <div style={{ marginLeft: 'auto' }}>
+            <DiaryShareButton
+              emoji={meta.emoji}
+              title={meta.title}
+              color={meta.color}
+              entries={
+                type === 'schema'
+                  ? schemaEntries
+                  : type === 'mode'
+                    ? modeEntries
+                    : gratitudeEntries
+              }
+            />
+          </div>
         </div>
       </div>
 

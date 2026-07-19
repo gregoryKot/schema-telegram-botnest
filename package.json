@@ -21,6 +21,7 @@
     "rotate-encryption": "ts-node scripts/rotate-encryption-key.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
@@ -64,6 +65,7 @@
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^17.6.0",
     "jest": "^30.0.0",
+    "jscpd": "^5.0.12",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",

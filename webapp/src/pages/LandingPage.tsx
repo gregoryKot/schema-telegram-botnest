@@ -2,7 +2,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { BookingPicker } from '../components/BookingPicker';
-import { DARK_BG, INK_ON_DARK, Btn, ThemeIcon, useReveal, useTilt, useTheme } from '../components/landing-kit';
+import { Btn, ThemeIcon } from '../components/landing-kit';
+import { DARK_BG, INK_ON_DARK, useReveal, useTilt, useTheme } from '../components/landing-kit-hooks';
+import { botUrl, botHandle } from '../utils/botConfig';
 
 // ─── Design tokens (local to landing) ────────────────────────────────────────
 const MOSS = '#4a6335';        // green status (passes WCAG AA on paper bg)
@@ -83,6 +85,7 @@ function MobileMenu({ onClose, active, onBook }: { onClose: () => void; active: 
       goBack();
       setTimeout(() => document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 60);
     } else {
+      // eslint-disable-next-line react-hooks/immutability -- react-compiler: паттерн намеренный, рефактор рискован
       window.location.href = href;
     }
   };
@@ -361,7 +364,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Что такое «Всё по схеме» и зачем оно нужно?',
-    a: '«Всё по схеме» – бесплатное веб-приложение, которое я создал для самостоятельной работы между сессиями. Дневник состояний, диагностика схем (тест по схемам), упражнения из схема-терапии и КПТ, отслеживание динамики. Работает в браузере и через Telegram-бот @SchemaLabBot.',
+    a: `«Всё по схеме» – бесплатное веб-приложение, которое я создал для самостоятельной работы между сессиями. Дневник состояний, диагностика схем (тест по схемам), упражнения из схема-терапии и КПТ, отслеживание динамики. Работает в браузере и через Telegram-бот ${botHandle}.`,
   },
 ];
 
@@ -874,7 +877,7 @@ export function LandingPage() {
       </section>
 
       {/* ── BOOKING ─────────────────────────────────────────────────────── */}
-      <section id="booking" ref={bookingRef as any} style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)' }}>
+      <section id="booking" ref={bookingRef} style={{ background: 'var(--bg-rail)', borderTop: '1px solid var(--line)' }}>
         <section ref={formRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 660, margin: '0 auto', padding: '80px 40px 96px' }}>
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Запись</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 12px', letterSpacing: '-.01em' }}>
@@ -906,7 +909,7 @@ export function LandingPage() {
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <Btn href="https://schemehappens.ru" newTab={false}>Попробовать бесплатно</Btn>
-                <Btn variant="ghost" href="https://t.me/SchemaLabBot">Telegram-бот</Btn>
+                <Btn variant="ghost" href={botUrl}>Telegram-бот</Btn>
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

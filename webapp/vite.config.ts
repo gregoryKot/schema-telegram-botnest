@@ -4,7 +4,12 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  // shared/ импортирует react: без dedupe он резолвится в КОРНЕВОЙ
+  // node_modules → два инстанса React (hooks dispatcher = null).
+  resolve: { dedupe: ['react', 'react-dom'] },
   server: {
+    // dev-сервер должен читать ../shared (реэкспорты выходят за root)
+    fs: { allow: ['..'] },
     port: 5174,
     proxy: {
       '/api': {

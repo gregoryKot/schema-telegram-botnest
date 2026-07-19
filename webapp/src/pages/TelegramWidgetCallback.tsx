@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/authContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 

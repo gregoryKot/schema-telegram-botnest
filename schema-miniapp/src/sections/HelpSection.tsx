@@ -6,17 +6,18 @@ import { BeliefCheck } from '../components/BeliefCheck';
 import { SafePlace } from '../components/SafePlace';
 import { TherapyNote } from '../components/TherapyNote';
 import { CHILDHOOD_DONE_KEY } from '../components/ChildhoodWheelSheet';
-import {
-  TaskCreateSheet,
-  getTaskDisplayText,
-} from '../components/TaskCreateSheet';
+import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
 import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { api, UserTask, TherapyRelationInfo } from '../api';
 import { BottomSheet } from '../components/BottomSheet';
-import { SectionLabel } from '../components/SectionLabel';
-import { fmtDate } from '../utils/format';
-import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
+import { TaskRow } from '../components/tasks/TaskRow';
+import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
+import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
+import { BreathingCard } from '../components/BreathingCard';
+import { GroundingSheet } from '../components/GroundingSheet';
+import { CrisisCard } from '../components/CrisisCard';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   onOpenChildhoodWheel: () => void;
@@ -33,40 +34,66 @@ interface Props {
   onOpenTherapistCabinet?: () => void;
 }
 
-function ToolCard({
+// iOS-строка по дизайн-макету: плашка-иконка, заголовок с подписью, шеврон.
+// Каскадное появление (index → задержка); глушится reduced-motion блоком CSS.
+function ToolRow({
   emoji,
   label,
   sub,
   onClick,
-  accentColor,
+  tint = 'var(--accent)',
+  danger,
+  index = 0,
 }: {
   emoji: string;
   label: string;
   sub?: string;
   onClick: () => void;
-  accentColor?: string;
+  tint?: string;
+  danger?: boolean;
+  index?: number;
 }) {
   return (
-    <div
+    <button
       onClick={onClick}
       className="card"
       style={{
+        width: '100%',
+        textAlign: 'left',
         cursor: 'pointer',
-        padding: '18px 16px',
+        fontFamily: 'inherit',
+        padding: '13px 16px',
         borderRadius: 18,
         display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
+        alignItems: 'center',
+        gap: 13,
+        minHeight: 66,
+        animation: 'slide-up 0.3s ease both',
+        animationDelay: `${index * 45}ms`,
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <span style={{ fontSize: 30, lineHeight: 1 }}>{emoji}</span>
-      <div>
+      <div
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          flexShrink: 0,
+          background: `color-mix(in srgb, ${tint} 14%, transparent)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 19,
+        }}
+      >
+        {emoji}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 700,
-            color: accentColor || 'var(--text)',
+            color: danger ? 'var(--accent-red)' : 'var(--text)',
             lineHeight: 1.3,
           }}
         >
@@ -75,9 +102,9 @@ function ToolCard({
         {sub && (
           <div
             style={{
-              fontSize: 11,
+              fontSize: 12,
               color: 'var(--text-sub)',
-              marginTop: 3,
+              marginTop: 1,
               lineHeight: 1.4,
             }}
           >
@@ -85,7 +112,10 @@ function ToolCard({
           </div>
         )}
       </div>
-    </div>
+      <span style={{ color: 'var(--text-faint)', fontSize: 18, flexShrink: 0 }}>
+        ›
+      </span>
+    </button>
   );
 }
 
@@ -96,211 +126,6 @@ function plural(n: number, one: string, few: string, many: string) {
   if (m10 === 1) return one;
   if (m10 >= 2 && m10 <= 4) return few;
   return many;
-}
-
-const TASK_EMOJI: Record<string, string> = {
-  diary_streak: '📔',
-  tracker_streak: '📊',
-  belief_check: '🔍',
-  letter_to_self: '✉️',
-  safe_place: '🏡',
-  childhood_wheel: '🌱',
-  flashcard: '🆘',
-  schema_intro: '🧩',
-  mode_intro: '🔄',
-  custom: '✏️',
-};
-
-// Resolve display text for tasks that may have raw IDs as text
-function resolveTaskDisplayText(task: UserTask): string {
-  const text = getTaskDisplayText(task.type, task.text);
-  // If still raw (didn't resolve via type), try ID lookup
-  if (text === task.text) {
-    const schema = ALL_SCHEMAS.find((s) => s.id === task.text);
-    if (schema) return `Карточка схемы: ${schema.name}`;
-    const mode = ALL_MODES.find((m) => m.id === task.text);
-    if (mode) return `Карточка режима: ${mode.name}`;
-  }
-  return text;
-}
-
-function resolveTaskEmoji(task: UserTask): string {
-  if (TASK_EMOJI[task.type]) return TASK_EMOJI[task.type];
-  // Fallback: check if text is a schema or mode ID
-  if (ALL_SCHEMAS.some((s) => s.id === task.text)) return '🧩';
-  if (ALL_MODES.some((m) => m.id === task.text)) return '🔄';
-  return '⏳';
-}
-
-function TaskRow({
-  task,
-  onOpen,
-  onComplete,
-}: {
-  task: UserTask;
-  onOpen: () => void;
-  onComplete?: () => void;
-}) {
-  const isStreakTask =
-    task.type === 'diary_streak' || task.type === 'tracker_streak';
-  const isAssigned = task.assignedBy !== null;
-  const [completing, setCompleting] = useState(false);
-  const emoji = task.doneToday ? '✅' : resolveTaskEmoji(task);
-
-  return (
-    <div
-      onClick={task.doneToday ? undefined : onOpen}
-      style={{
-        padding: '14px',
-        background: task.doneToday ? 'var(--surface)' : 'var(--surface)',
-        border: `1px solid ${isAssigned && !task.doneToday ? 'color-mix(in srgb, var(--accent) 30%, transparent)' : 'var(--border-color)'}`,
-        borderRadius: 16,
-        marginBottom: 8,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        cursor: task.doneToday ? 'default' : 'pointer',
-        opacity: task.doneToday ? 0.55 : 1,
-        transition: 'all 0.15s',
-      }}
-    >
-      {/* Icon bubble */}
-      <div
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 12,
-          flexShrink: 0,
-          background: task.doneToday
-            ? 'rgba(52,211,153,0.1)'
-            : 'var(--surface-2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 19,
-        }}
-      >
-        {emoji}
-      </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {isAssigned && !task.doneToday && (
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: '0.07em',
-              color: 'var(--accent)',
-              textTransform: 'uppercase',
-              marginBottom: 3,
-            }}
-          >
-            от терапевта
-          </div>
-        )}
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 500,
-            color: 'var(--text)',
-            lineHeight: 1.35,
-          }}
-        >
-          {resolveTaskDisplayText(task)}
-        </div>
-        {task.doneToday && isStreakTask && (
-          <div
-            style={{ fontSize: 11, color: 'var(--accent-green)', marginTop: 3 }}
-          >
-            Сделано сегодня — завтра снова
-          </div>
-        )}
-        <TaskProgressBar task={task} />
-        {task.dueDate && (
-          <div
-            style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}
-          >
-            до {fmtDate(task.dueDate)}
-          </div>
-        )}
-      </div>
-
-      {/* Action */}
-      {!task.doneToday &&
-      task.done === null &&
-      task.type === 'custom' &&
-      onComplete ? (
-        <button
-          disabled={completing}
-          onClick={(e) => {
-            e.stopPropagation();
-            setCompleting(true);
-            onComplete();
-          }}
-          style={{
-            background: 'rgba(52,211,153,0.12)',
-            outline: '1px solid rgba(52,211,153,0.22)',
-            border: 'none',
-            borderRadius: 10,
-            padding: '7px 12px',
-            color: 'var(--accent-green)',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: completing ? 'default' : 'pointer',
-            flexShrink: 0,
-            opacity: completing ? 0.5 : 1,
-            fontFamily: 'inherit',
-          }}
-        >
-          {completing ? '...' : 'Готово'}
-        </button>
-      ) : !task.doneToday && task.type !== 'custom' ? (
-        <span
-          style={{ color: 'var(--text-faint)', fontSize: 18, flexShrink: 0 }}
-        >
-          ›
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-function TaskProgressBar({ task }: { task: UserTask }) {
-  if (task.type === 'custom' || !task.targetDays) return null;
-  const target = task.targetDays;
-  // Use server-computed progress (actual days done) if available, else fall back to elapsed days
-  const progress =
-    task.progress !== undefined ? Math.min(task.progress, target) : 0;
-  const pct = target > 0 ? (progress / target) * 100 : 0;
-  return (
-    <div
-      style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}
-    >
-      <div
-        style={{
-          flex: 1,
-          height: 4,
-          background: 'rgba(var(--fg-rgb),0.08)',
-          borderRadius: 4,
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            width: `${pct}%`,
-            height: '100%',
-            background: 'var(--accent)',
-            borderRadius: 4,
-            transition: 'width 0.3s ease',
-          }}
-        />
-      </div>
-      <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>
-        {progress}/{target}
-      </span>
-    </div>
-  );
 }
 
 export function HelpSection({
@@ -314,13 +139,14 @@ export function HelpSection({
   refreshKey,
   initialTasks,
   onTasksChanged,
-  userRole,
-  onOpenTherapistCabinet,
 }: Props) {
   const safeTop = useSafeTop();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
+  const tr = useTr();
   const [showFlashcard, setShowFlashcard] = useState(false);
+  const [showGrounding, setShowGrounding] = useState(false);
+  const [showCrisis, setShowCrisis] = useState(false);
   const [showBeliefCheck, setShowBeliefCheck] = useState(false);
   const [showLetterToSelf, setShowLetterToSelf] = useState(false);
   const [showSafePlace, setShowSafePlace] = useState(false);
@@ -362,7 +188,6 @@ export function HelpSection({
     };
   }, [refreshKey]);
 
-  const myTasks = tasks.filter((t) => t.assignedBy === null);
   const therapistTasks = tasks.filter((t) => t.assignedBy !== null);
 
   function openTask(task: UserTask) {
@@ -398,17 +223,13 @@ export function HelpSection({
       case 'mode_intro':
         if (task.text) setIntroModeId(task.text);
         break;
-      default:
-        // Fallback: if text is a raw schema/mode ID (old task format)
-        if (ALL_SCHEMAS.some((s) => s.id === task.text)) {
-          setIntroSchemaId(task.text);
-          break;
-        }
-        if (ALL_MODES.some((m) => m.id === task.text)) {
-          setIntroModeId(task.text);
-          break;
-        }
+      default: {
+        // Fallback: raw schema/mode ID stored as text (old task format)
+        const legacy = findLegacyTaskTarget(task.text);
+        if (legacy?.type === 'schema') setIntroSchemaId(legacy.id);
+        else if (legacy?.type === 'mode') setIntroModeId(legacy.id);
         break;
+      }
     }
   }
 
@@ -447,7 +268,7 @@ export function HelpSection({
             letterSpacing: '-0.5px',
           }}
         >
-          Помощь
+          Здесь и сейчас
         </div>
         <div
           style={{
@@ -457,7 +278,10 @@ export function HelpSection({
             lineHeight: 1.5,
           }}
         >
-          Инструменты и упражнения
+          {tr(
+            'Тяжёлый момент? Начни с одного вдоха',
+            'Тяжёлый момент? Начните с одного вдоха',
+          )}
         </div>
         {/* Next session banner for clients */}
         {relation?.role === 'client' &&
@@ -530,6 +354,30 @@ export function HelpSection({
           gap: 12,
         }}
       >
+        {/* ── «Здесь и сейчас» (дизайн-макет, волна 2): дыхание первым ── */}
+        <BreathingCard />
+
+        <div className="section-label" style={{ margin: '8px 4px -4px' }}>
+          Если нужно больше
+        </div>
+        <ToolRow
+          emoji="🌍"
+          label="Заземление 5-4-3-2-1"
+          sub="вернуться в тело и в комнату"
+          tint="var(--accent-blue)"
+          index={0}
+          onClick={() => setShowGrounding(true)}
+        />
+        <ToolRow
+          emoji="📞"
+          label="Мне очень плохо"
+          sub="контакты помощи прямо сейчас"
+          tint="var(--accent-red)"
+          danger
+          index={1}
+          onClick={() => setShowCrisis(true)}
+        />
+
         {/* Therapist tasks — shown prominently when assigned */}
         {therapistTasks.filter((t) => !t.doneToday).length > 0 && (
           <div
@@ -565,83 +413,90 @@ export function HelpSection({
           </div>
         )}
 
-        {/* 2-column tool grid */}
-        <div
-          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}
-        >
-          <ToolCard
-            emoji="🎯"
-            label="Мои цели"
-            sub={
-              tasks.length === 0
-                ? 'Нет активных'
-                : `${tasks.length} ${plural(tasks.length, 'цель', 'цели', 'целей')}`
-            }
-            accentColor="var(--accent-orange)"
-            onClick={() => setShowAllTasks(true)}
-          />
-          <ToolCard
-            emoji="🗂"
-            label="Практики"
-            sub={
-              practiceCount == null
-                ? undefined
-                : practiceCount === 0
-                  ? 'Нет практик'
-                  : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
-            }
-            accentColor="var(--accent)"
-            onClick={onOpenPractices}
-          />
-          <ToolCard
-            emoji="🗓"
-            label="Планы"
-            sub={
-              planCount == null
-                ? undefined
-                : planCount === 0
-                  ? 'История пуста'
-                  : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
-            }
-            accentColor="var(--accent-blue)"
-            onClick={onOpenPlans}
-          />
-          <ToolCard
-            emoji="🔍"
-            label="Проверка убеждений"
-            sub="Правда ли это?"
-            accentColor="var(--accent-yellow)"
-            onClick={() => setShowBeliefCheck(true)}
-          />
-          <ToolCard
-            emoji="🏡"
-            label="Безопасное место"
-            sub="Ресурс в тревожный момент"
-            accentColor="var(--accent-green)"
-            onClick={() => setShowSafePlace(true)}
-          />
-          <ToolCard
-            emoji="✉️"
-            label="Письмо себе"
-            sub="Уязвимому Ребёнку"
-            accentColor="var(--accent-pink)"
-            onClick={() => setShowLetterToSelf(true)}
-          />
-          <ToolCard
-            emoji="🆘"
-            label="Мне плохо"
-            sub="5 шагов чтобы разобраться"
-            accentColor="var(--accent-red)"
-            onClick={() => setShowFlashcard(true)}
-          />
-          <ToolCard
-            emoji="🌱"
-            label="Колесо детства"
-            sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'}
-            accentColor="var(--accent-green)"
-            onClick={onOpenChildhoodWheel}
-          />
+        {/* Инструменты — iOS-строки по макету, каскадное появление */}
+        <div className="section-label" style={{ margin: '8px 4px -4px' }}>
+          Инструменты
         </div>
+        <ToolRow
+          emoji="🎯"
+          label="Мои цели"
+          sub={
+            tasks.length === 0
+              ? 'Нет активных'
+              : `${tasks.length} ${plural(tasks.length, 'цель', 'цели', 'целей')}`
+          }
+          tint="var(--accent-orange)"
+          index={0}
+          onClick={() => setShowAllTasks(true)}
+        />
+        <ToolRow
+          emoji="🗂"
+          label="Практики"
+          sub={
+            practiceCount == null
+              ? undefined
+              : practiceCount === 0
+                ? 'Нет практик'
+                : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
+          }
+          tint="var(--accent)"
+          index={1}
+          onClick={onOpenPractices}
+        />
+        <ToolRow
+          emoji="🗓"
+          label="Планы"
+          sub={
+            planCount == null
+              ? undefined
+              : planCount === 0
+                ? 'История пуста'
+                : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
+          }
+          tint="var(--accent-blue)"
+          index={2}
+          onClick={onOpenPlans}
+        />
+        <ToolRow
+          emoji="🔍"
+          label="Проверка убеждений"
+          sub="Правда ли это?"
+          tint="var(--accent-yellow)"
+          index={3}
+          onClick={() => setShowBeliefCheck(true)}
+        />
+        <ToolRow
+          emoji="🏡"
+          label="Безопасное место"
+          sub="Ресурс в тревожный момент"
+          tint="var(--accent-green)"
+          index={4}
+          onClick={() => setShowSafePlace(true)}
+        />
+        <ToolRow
+          emoji="✉️"
+          label="Письмо себе"
+          sub="Уязвимому Ребёнку"
+          tint="var(--accent-pink)"
+          index={5}
+          onClick={() => setShowLetterToSelf(true)}
+        />
+        <ToolRow
+          emoji="🆘"
+          label="Схема включилась"
+          sub="5 шагов чтобы разобраться"
+          tint="var(--accent-indigo)"
+          index={6}
+          onClick={() => setShowFlashcard(true)}
+        />
+        <ToolRow
+          emoji="🌱"
+          label="Колесо детства"
+          sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'}
+          tint="var(--accent-green)"
+          index={7}
+          onClick={onOpenChildhoodWheel}
+        />
 
         <div style={{ paddingBottom: 4 }}>
           <TherapyNote compact />
@@ -692,6 +547,37 @@ export function HelpSection({
             handleTaskComplete();
           }}
         />
+      )}
+      {showGrounding && (
+        <GroundingSheet onClose={() => setShowGrounding(false)} />
+      )}
+      {showCrisis && (
+        <BottomSheet onClose={() => setShowCrisis(false)} zIndex={200}>
+          <div style={{ paddingTop: 4 }}>
+            <div
+              style={{
+                fontSize: 17,
+                fontWeight: 800,
+                color: 'var(--text)',
+                marginBottom: 4,
+              }}
+            >
+              Помощь рядом
+            </div>
+            <CrisisCard />
+            <div
+              style={{
+                fontSize: 12,
+                color: 'var(--text-sub)',
+                lineHeight: 1.6,
+                marginTop: 4,
+              }}
+            >
+              Если есть угроза жизни — 112. Разговор с близким человеком тоже
+              считается: иногда одно сообщение «мне плохо» — уже первый шаг.
+            </div>
+          </div>
+        </BottomSheet>
       )}
       {showTaskCreate && (
         <TaskCreateSheet
@@ -819,83 +705,7 @@ export function HelpSection({
           )}
 
           {/* Completed history */}
-          {taskHistory.length > 0 && (
-            <>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.10em',
-                  color: 'var(--text-faint)',
-                  textTransform: 'uppercase',
-                  marginTop: 20,
-                  marginBottom: 10,
-                }}
-              >
-                Выполнено
-              </div>
-              <div
-                style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 16,
-                  overflow: 'hidden',
-                }}
-              >
-                {taskHistory.map((task, i) => (
-                  <div
-                    key={task.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '11px 14px',
-                      borderTop:
-                        i > 0 ? '1px solid var(--border-color)' : 'none',
-                      opacity: 0.6,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 15,
-                        flexShrink: 0,
-                        width: 20,
-                        textAlign: 'center',
-                      }}
-                    >
-                      {task.done === true ? '✅' : '❌'}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: 13,
-                          color: 'var(--text)',
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        {resolveTaskDisplayText(task)}
-                      </div>
-                      {task.completedAt && (
-                        <div
-                          style={{
-                            fontSize: 10,
-                            color: 'var(--text-faint)',
-                            marginTop: 2,
-                          }}
-                        >
-                          {fmtDate(
-                            new Date(task.completedAt)
-                              .toISOString()
-                              .slice(0, 10),
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          <TaskHistoryList taskHistory={taskHistory} variant="full" />
 
           {/* Add button */}
           <button

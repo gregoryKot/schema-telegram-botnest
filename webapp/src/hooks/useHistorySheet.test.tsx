@@ -54,9 +54,24 @@ describe('useHistorySheet — монтирование пушит запись �
 
     renderHook(() => useHistorySheet(onClose), { wrapper: makeWrapper(snap, ['/target'], 0) });
 
-    expect(sheetState(snap.loc!)?.__sheetId).toEqual(expect.stringMatching(/^sheet_/));
+    // ID берётся из React useId() (см. useHistorySheet.ts) — формат внутренний
+    // и не гарантирован конкретным префиксом, важна лишь непустая метка.
+    expect(sheetState(snap.loc!)?.__sheetId).toEqual(expect.any(String));
+    expect(sheetState(snap.loc!)?.__sheetId).not.toBe('');
     // onClose не вызван при монтировании — это не закрытие, а постановка метки.
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('два независимых листа получают разные __sheetId (useId уникален на инстанс)', () => {
+    const snapA = makeSnapshot();
+    const snapB = makeSnapshot();
+    const onCloseA = vi.fn();
+    const onCloseB = vi.fn();
+
+    renderHook(() => useHistorySheet(onCloseA), { wrapper: makeWrapper(snapA, ['/target-a'], 0) });
+    renderHook(() => useHistorySheet(onCloseB), { wrapper: makeWrapper(snapB, ['/target-b'], 0) });
+
+    expect(sheetState(snapA.loc!)?.__sheetId).not.toBe(sheetState(snapB.loc!)?.__sheetId);
   });
 
   it('нажатие «Назад» (POP на предыдущую запись) закрывает лист один раз', () => {

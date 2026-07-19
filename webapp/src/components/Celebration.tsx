@@ -1,35 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-
-// Canvas fillStyle не понимает CSS-переменные – только hex
-const COLORS = ['#ff6b9d', '#facc15', '#06d6a0', '#a78bfa', '#4fa3f7', '#ff9a3c'];
-
-const MILESTONE_TEXT: Record<number, string> = {
-  3:   'Хорошее начало – паттерн уже виден',
-  7:   'Неделя подряд. Это настоящий сдвиг',
-  14:  'Две недели подряд. Паттерн становится стабильным',
-  21:  '21 день. Тело и ум уже запомнили этот ритм',
-  30:  'Месяц. Взгляд на себя меняется',
-  60:  'Два месяца подряд. Это уже часть жизни',
-  100: '100 дней. Это уже не привычка, а образ жизни',
-};
-
-function getMilestoneText(streak: number): string {
-  const milestones = [100, 60, 30, 21, 14, 7, 3];
-  const hit = milestones.find(m => streak === m);
-  if (hit) return MILESTONE_TEXT[hit];
-  return streak === 1 ? 'Первый день – самый важный' : `${streak} ${pluralDays(streak)} подряд`;
-}
-
-function pluralDays(n: number) {
-  if (n % 10 === 1 && n % 100 !== 11) return 'день';
-  if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'дня';
-  return 'дней';
-}
-
-interface Particle {
-  x: number; y: number; vx: number; vy: number;
-  color: string; size: number; rotation: number; vr: number; opacity: number;
-}
+import { useState } from 'react';
+import { botShortUrl } from '../utils/botConfig';
+import { getMilestoneText, pluralDays } from '../../../shared/src/utils/celebrationText';
+import { useConfetti } from '../../../shared/src/hooks/useConfetti';
+import { drawStreakCard } from '../../../shared/src/share/cards/streakCard';
+import { shareCanvasImage } from '../../../shared/src/share/shareImage';
+import { streakShareText } from '../../../shared/src/share/shareTexts';
+import { SHARE_CARD_EVENT } from '../../../shared/src/share/analytics';
+import { api } from '../api';
 
 interface Props {
   streak: number;
@@ -39,53 +16,8 @@ interface Props {
 }
 
 export function Celebration({ streak, onDone, insight }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
+  const canvasRef = useConfetti(onDone);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d')!;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const particles: Particle[] = Array.from({ length: 80 }, () => ({
-      x: Math.random() * canvas.width,
-      y: -10 - Math.random() * 100,
-      vx: (Math.random() - 0.5) * 3,
-      vy: 2 + Math.random() * 4,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      size: 6 + Math.random() * 8,
-      rotation: Math.random() * 360,
-      vr: (Math.random() - 0.5) * 8,
-      opacity: 1,
-    }));
-
-    let frame = 0;
-    function draw() {
-      ctx.clearRect(0, 0, canvas!.width, canvas!.height);
-      frame++;
-      let alive = false;
-      for (const p of particles) {
-        p.x += p.vx; p.y += p.vy; p.rotation += p.vr;
-        if (frame > 60) p.opacity -= 0.015;
-        if (p.opacity <= 0 || p.y > canvas!.height) continue;
-        alive = true;
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, p.opacity);
-        ctx.translate(p.x, p.y);
-        ctx.rotate((p.rotation * Math.PI) / 180);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
-        ctx.restore();
-      }
-      if (alive) { rafRef.current = requestAnimationFrame(draw); }
-      else { onDone(); }
-    }
-    rafRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [onDone]);
 
   const isMilestone = [3, 7, 14, 21, 30, 60, 100].includes(streak);
 
@@ -124,12 +56,15 @@ export function Celebration({ streak, onDone, insight }: Props) {
         <button
           onClick={async (e) => {
             e.stopPropagation();
-            const text = `🔥 ${streak} ${streak === 1 ? 'день' : streak < 5 ? 'дня' : 'дней'} подряд в дневнике потребностей!\n\nОтслеживаю своё состояние каждый день. t.me/SchemaLabBot`;
+            const text = streakShareText(streak, botShortUrl);
             try {
-              if (navigator.share) { await navigator.share({ text }); }
-              else { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+              // Картинка-карточка стрика; текст уходит вместе с ней
+              const card = document.createElement('canvas');
+              drawStreakCard(card, streak);
+              await shareCanvasImage(card, text, 'streak.png');
+              api.trackEvent(SHARE_CARD_EVENT, { kind: 'streak' });
             } catch {
-              try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
+              try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ }
             }
           }}
           style={{

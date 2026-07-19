@@ -10,6 +10,7 @@ export function ArticlesSection({ adminKey }: { adminKey: string }) {
   const [editing, setEditing] = useState<Article | 'new' | null>(null);
 
   const reload = useCallback(async () => { setArticles(await api.adminListArticles(adminKey)); }, [adminKey]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
   useEffect(() => { reload(); }, [reload]);
 
   if (editing) {

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import type { HealthyAdultPhrase } from '../../api';
 import { card, btn, btnGhost, input } from './shared';
-import { hasSecondPerson } from '../../utils/secondPerson';
 
 /** Админ-вкладка: управление пулом фраз «Здорового Взрослого» для канала. */
 export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
@@ -38,11 +37,11 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
     setPhrases((p) => p.map((x) => (x.id === row.id ? row : x)));
   const drop = (id: number) => setPhrases((p) => p.filter((x) => x.id !== id));
 
-  const testPost = async (slot: 0 | 1) => {
+  const testPost = async () => {
     setTesting(true);
     setTestMsg(null);
     try {
-      const res = await api.adminTestPhrasePost(adminKey, slot);
+      const res = await api.adminTestPhrasePost(adminKey);
       setTestMsg(res.message);
     } catch (e) {
       setTestMsg(e instanceof Error ? e.message : 'Ошибка отправки');
@@ -60,14 +59,15 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
           Канал «Здоровый Взрослый»
         </h2>
         <p style={{ color: 'var(--text-sub)', fontSize: 14, margin: '0 0 14px', lineHeight: 1.5 }}>
-          Заботливые схематерапевтичные фразы уходят в Telegram-канал автоматически
-          дважды в день (09:00 и 20:00 МСК). Ниже — весь пул: фразы перебираются
-          по кругу, повтора не будет, пока не пройдёт весь список. Канал задаётся
-          переменной окружения <code>HEALTHY_ADULT_CHANNEL</code>, бот должен быть
+          Сообщения голосом «Здорового Взрослого» уходят в Telegram-канал
+          автоматически дважды в день (09:00 и 20:00 МСК). Основной путь —
+          генерация через Claude (если задан <code>ANTHROPIC_API_KEY</code>); если
+          он недоступен, берётся фраза из пула ниже (без повторов подряд). Канал
+          задаётся переменной <code>HEALTHY_ADULT_CHANNEL</code>, бот должен быть
           администратором канала.
         </p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button style={btnGhost} onClick={() => testPost(0)} disabled={testing}>
+          <button style={btnGhost} onClick={() => testPost()} disabled={testing}>
             {testing ? 'Отправка…' : 'Проверить: отправить сейчас'}
           </button>
           <span style={{ color: 'var(--text-sub)', fontSize: 13 }}>
@@ -94,11 +94,6 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
           />
           <button style={btn} onClick={add} disabled={!draft.trim()}>Добавить</button>
         </div>
-        {draft.trim() && hasSecondPerson(draft) && (
-          <p style={{ color: 'var(--accent-red)', fontSize: 12.5, margin: '8px 0 0' }}>
-            ⚠️ Похоже на обращение «ты/вы». Канал общий — лучше переформулировать безлично.
-          </p>
-        )}
         {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '10px 0 0' }}>{error}</p>}
       </section>
 
@@ -160,11 +155,6 @@ function PhraseRow({ adminKey, row, onPatch, onDrop }: {
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
-      {hasSecondPerson(text) && (
-        <p style={{ color: 'var(--accent-red)', fontSize: 12, margin: '6px 0 0' }}>
-          ⚠️ Возможное «ты/вы» — канал общий, лучше безлично.
-        </p>
-      )}
       <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <button style={btn} onClick={save} disabled={busy || !dirty}>Сохранить</button>
         <button style={btnGhost} onClick={toggle} disabled={busy}>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, PairsData } from '../api';
 import { BottomSheet } from './BottomSheet';
+import { miniappDeepLink } from '../utils/botConfig';
 
 interface Props {
   onClose: () => void;
@@ -45,8 +46,12 @@ export function PairSheet({ onClose }: Props) {
           await navigator.share({
             text: `Давай отслеживать потребности вместе! ${url}`,
           });
-      } catch {}
-    } catch {}
+      } catch {
+        /* best-effort: ошибку намеренно игнорируем */
+      }
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
     setLoading(false);
   }
 
@@ -55,7 +60,9 @@ export function PairSheet({ onClose }: Props) {
       await navigator.clipboard.writeText(text);
       setCopiedPending(true);
       setTimeout(() => setCopiedPending(false), 2000);
-    } catch {}
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
   }
 
   async function handleCopyInvite(text: string) {
@@ -63,7 +70,9 @@ export function PairSheet({ onClose }: Props) {
       await navigator.clipboard.writeText(text);
       setCopiedInvite(true);
       setTimeout(() => setCopiedInvite(false), 2000);
-    } catch {}
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
   }
 
   async function handleJoin() {
@@ -92,7 +101,7 @@ export function PairSheet({ onClose }: Props) {
   }
 
   const pendingUrl = data?.pendingCode
-    ? `https://t.me/SchemaLabBot/diary?startapp=pair_${data.pendingCode}`
+    ? miniappDeepLink(`pair_${data.pendingCode}`)
     : '';
 
   return (

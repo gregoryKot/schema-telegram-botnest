@@ -4,7 +4,7 @@ import '@xyflow/react/dist/style.css';
 
 import type { ModeMapNode, ModeMapEdge, ModeMapKind } from '../api';
 import { api } from '../api';
-import { NODE_DEFAULT_SIZES } from './ModeMapNodes';
+import { NODE_DEFAULT_SIZES } from './modeMapData';
 import { ModeMapPalette } from './ModeMapPalette';
 import { ModeMapNodeEditor, ModeMapEdgeEditor } from './ModeMapNodeEditor';
 import { ModeMapCanvas } from './ModeMapCanvas';
@@ -40,9 +40,15 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => { if (!mobile) localStorage.setItem('modemap_palette', paletteOpen ? '1' : '0'); }, [paletteOpen, mobile]);
 
-  // Always-fresh refs (for deferred saves after React Flow internal updates)
-  const nodesRef = useRef(nodes); nodesRef.current = nodes;
-  const edgesRef = useRef(edges); edgesRef.current = edges;
+  // Always-fresh refs (for deferred saves after React Flow internal updates).
+  // Пишем в эффекте, а не в рендере (react-hooks/refs): читаются только в
+  // отложенных сохранениях/undo-redo — уже после коммита.
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+  useEffect(() => {
+    nodesRef.current = nodes;
+    edgesRef.current = edges;
+  });
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId) ?? null;
   const selectedEdge = edges.find(e => e.id === selectedEdgeId) ?? null;

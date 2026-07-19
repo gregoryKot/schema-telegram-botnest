@@ -45,7 +45,9 @@ const CONSENT_TEXT = `🔐 Соглашение об обработке данн
 
 Кнопка ниже — это согласие с условиями, подтверждение 18+ и выбор формы обращения (поменять можно в любой момент в /settings).`;
 
-export function buildWelcomeKeyboard(): any {
+export function buildWelcomeKeyboard(): ReturnType<
+  typeof Markup.inlineKeyboard
+> {
   return Markup.inlineKeyboard([
     [Markup.button.webApp('🧠 Открыть «Всё по схеме»', MINIAPP_URL)],
     [Markup.button.url('💛 Поддержать проект', DONATE_URL)],
@@ -98,7 +100,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     { code: string; expiresAt: number }
   >();
 
-  async onModuleInit() {
+  onModuleInit() {
     if (!this.bot) {
       this.logger.warn('BOT_TOKEN not provided — bot will not start.');
       return;
@@ -120,7 +122,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await ctx.reply(redirectText).catch(() => null);
       });
       this.bot.on('callback_query', async (ctx) => {
-        await (ctx as any)
+        await ctx
           .answerCbQuery(redirectText, { show_alert: true })
           .catch(() => null);
       });
@@ -139,7 +141,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         const existingSettings = await this.botService.getUserSettings(userId);
         const isReturning = !!existingSettings;
         await this.accountService.registerUser(userId, ctx.from?.first_name);
-        const payload = (ctx as any).startPayload as string | undefined;
+        const payload = (ctx as Context & { startPayload?: string })
+          .startPayload;
         if (payload?.startsWith('pair_')) {
           const code = payload.slice(5).toUpperCase();
           const hasConsent =
@@ -300,16 +303,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
-        // Слот по текущему часу МСК: вечером тестируем вечернюю фразу.
-        const hour = Number(
-          new Intl.DateTimeFormat('en-US', {
-            timeZone: 'Europe/Moscow',
-            hour: 'numeric',
-            hour12: false,
-          }).format(new Date()),
-        );
-        const slot = hour >= 14 ? 1 : 0;
-        const result = await this.channelService.post(slot);
+        const result = await this.channelService.post();
         await ctx.reply(result.message);
       } catch (err) {
         this.logger.error('zv command failed', err);
@@ -415,7 +409,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await ctx.answerCbQuery('Только админ');
           return;
         }
-        const match = (ctx as any).match as RegExpMatchArray;
+        const match = ctx.match as RegExpMatchArray;
         const action = match[1] as 'approve' | 'reject';
         const reqId = parseInt(match[2], 10);
         // answerCbQuery ДО обращения к БД — иначе при зависшем approve/reject
@@ -523,13 +517,68 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    // Фолбэк-доступ к заявкам на роль терапевта: если пуш-уведомление не дошло
+    // (напр. после переезда бота), админ всё равно видит и обрабатывает заявки.
+    this.bot.command('zayavki', async (ctx) => {
+      try {
+        const adminId = adminIdNum();
+        if (!adminId || ctx.from?.id !== adminId) {
+          await ctx.reply('Только админ');
+          return;
+        }
+        const esc = (s: string) =>
+          s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        type PendingReq = {
+          id: number;
+          userId: bigint;
+          fullName: string;
+          qualification: string;
+          contacts: string;
+          message: string | null;
+        };
+        const pending = (await this.therapistRequestService.listPending(
+          adminId,
+        )) as PendingReq[];
+        if (pending.length === 0) {
+          await ctx.reply('Заявок на роль терапевта нет.');
+          return;
+        }
+        for (const req of pending) {
+          const text =
+            `🩺 <b>Заявка #${req.id}</b>\n\n` +
+            `<b>Имя:</b> ${esc(req.fullName)}\n` +
+            `<b>Квалификация:</b> ${esc(req.qualification)}\n` +
+            `<b>Контакты:</b> ${esc(req.contacts)}\n` +
+            (req.message ? `<b>Сообщение:</b> ${esc(req.message)}\n` : '') +
+            `<b>Telegram ID:</b> <code>${req.userId}</code>`;
+          await ctx.reply(text, {
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: '✅ Approve',
+                    callback_data: `treq:approve:${req.id}`,
+                  },
+                  { text: '❌ Reject', callback_data: `treq:reject:${req.id}` },
+                ],
+              ],
+            },
+          });
+        }
+      } catch (err) {
+        this.logger.error(`zayavki command failed: ${(err as Error).message}`);
+        await ctx.reply('Ошибка при получении заявок').catch(() => null);
+      }
+    });
+
     this.bot.command('broadcast', async (ctx) => {
       try {
         if (!isAdminSender(ctx.from)) {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
-        const text = ((ctx.message as any)?.text as string | undefined)
+        const text = (ctx.message as { text?: string } | undefined)?.text
           ?.slice('/broadcast '.length)
           .trim();
         if (!text) {
@@ -550,12 +599,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
               parse_mode: undefined,
             });
             sent++;
-          } catch (err: any) {
+          } catch (err: unknown) {
             failed++;
-            const code = err?.response?.error_code;
-            const desc = String(
-              err?.response?.description ?? err?.message ?? '',
-            );
+            const e = err as {
+              response?: { error_code?: number; description?: string };
+              message?: string;
+            };
+            const code = e.response?.error_code;
+            const desc = String(e.response?.description ?? e.message ?? '');
             const isPermanent =
               code === 403 ||
               (code === 400 &&
@@ -625,7 +676,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     });
 
     void retryWithBackoff(() =>
-      this.bot!.telegram.callApi('setChatMenuButton' as any, {
+      this.bot!.telegram.callApi('setChatMenuButton', {
         menu_button: {
           type: 'web_app',
           text: 'Всё по схеме',
@@ -636,17 +687,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       if (!ok) this.logger.warn('setChatMenuButton failed after retries');
     });
 
-    this.bot.launch({ dropPendingUpdates: true }).catch((err) => {
-      const msg = String(err);
-      if (
-        !msg.includes('409') &&
-        !msg.includes('terminated by other') &&
-        !this.stopping
-      ) {
-        this.logger.error('Failed to launch bot', err);
-      }
-    });
-    this.logger.log('Bot launched');
+    this.launchBotWithRetry();
     const adminId = process.env.ADMIN_ID;
     if (adminId) {
       this.bot.telegram
@@ -684,7 +725,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
    * возобновляем подключение пары. true = флоу завершён (сообщение показано).
    * Общий для accept:(ty|vy) и легаси accept_consent.
    */
-  private async resumePendingPair(ctx: any, rawId: number): Promise<boolean> {
+  private async resumePendingPair(
+    ctx: Context,
+    rawId: number,
+  ): Promise<boolean> {
     const pending = this.pendingPairCodes.get(rawId);
     if (!pending || pending.expiresAt <= Date.now()) return false;
     this.pendingPairCodes.delete(rawId);
@@ -703,10 +747,52 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     return true;
   }
 
-  async onModuleDestroy() {
+  /**
+   * Запуск long-polling с ретраем. `bot.launch()` внутри дёргает `getMe()`;
+   * если сеть на старте контейнера ещё не поднялась (Amvera → Telegram
+   * ETIMEDOUT), launch() реджектится, и БЕЗ ретрая поллинг НИКОГДА не стартует
+   * — бот висит «живым» (Nest поднят, уведомления-`sendMessage` идут), но не
+   * отвечает на команды до следующего рестарта (инцидент 2026-07-16).
+   *
+   * 409 / «terminated by other» = поллит другой инстанс, ретрай навредит.
+   * `stopping` = штатная остановка, ретрай не нужен. Промис launch() на успехе
+   * резолвится лишь при остановке поллинга — поэтому только .catch, без await.
+   */
+  private launchBotWithRetry(attempt = 1): void {
+    const MAX_ATTEMPTS = 5;
+    if (attempt === 1) this.logger.log('Bot launch initiated');
+    this.bot!.launch({ dropPendingUpdates: true }).catch((err) => {
+      const msg = String(err);
+      if (
+        msg.includes('409') ||
+        msg.includes('terminated by other') ||
+        this.stopping
+      ) {
+        return;
+      }
+      if (attempt < MAX_ATTEMPTS) {
+        const delayMs = attempt * 5_000;
+        this.logger.warn(
+          `Bot launch failed (попытка ${attempt}/${MAX_ATTEMPTS}), ` +
+            `ретрай через ${delayMs}ms: ${msg}`,
+        );
+        setTimeout(() => {
+          if (!this.stopping) this.launchBotWithRetry(attempt + 1);
+        }, delayMs);
+      } else {
+        this.logger.error(
+          `Bot launch провалился после ${MAX_ATTEMPTS} попыток — ` +
+            `поллинг не стартовал`,
+          err,
+        );
+      }
+    });
+  }
+
+  onModuleDestroy() {
     this.stopping = true;
     try {
-      await this.bot?.stop();
+      this.bot?.stop();
     } catch {
       /* expected on graceful shutdown */
     }

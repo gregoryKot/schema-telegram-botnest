@@ -3,10 +3,11 @@ import { Need, COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
-import { getTherapistContact } from '../utils/therapistContact';
 import { useTr } from '../utils/addressForm';
 import { PlanSheet } from './PlanSheet';
 import { NeedRatingBar } from './NeedRatingBar';
+import { NeedSheetHeader } from './NeedSheetHeader';
+import { NeedDisclaimerSheet } from './NeedDisclaimerSheet';
 
 interface Props {
   need: Need;
@@ -17,12 +18,6 @@ interface Props {
   onPlanSaved?: (needId: string) => void;
   onOpenHelp?: () => void;
 }
-
-const DISCLAIMER_CONTENT = [
-  'Дневник помогает видеть паттерны и чуть лучше понимать себя.',
-  'Советы внутри — это приглашение к размышлению, не инструкция.',
-  'Если что-то важное требует внимания — терапия это место, где можно разобраться по-настоящему. Безопасно, глубоко, рядом живой человек.',
-];
 
 export function NeedTodaySheet({
   need,
@@ -49,73 +44,12 @@ export function NeedTodaySheet({
 
   return (
     <BottomSheet onClose={onClose}>
-      {/* Header — tap to close */}
-      <div
-        onClick={onClose}
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 14,
-          marginBottom: 24,
-          cursor: 'pointer',
-        }}
-      >
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 14,
-            flexShrink: 0,
-            background: color + '26',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 22,
-          }}
-        >
-          {data.emoji}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontSize: 20,
-              fontWeight: 600,
-              color: 'var(--text)',
-              lineHeight: 1.2,
-              marginBottom: 8,
-            }}
-          >
-            {need.chartLabel}
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {data.tags.map((tag) => (
-              <span
-                key={tag}
-                style={{
-                  fontSize: 11,
-                  padding: '3px 8px',
-                  borderRadius: 20,
-                  background: color + '1f',
-                  color,
-                }}
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div
-          style={{
-            fontSize: 20,
-            color: 'var(--text-faint)',
-            flexShrink: 0,
-            lineHeight: 1,
-            paddingTop: 2,
-          }}
-        >
-          ✕
-        </div>
-      </div>
+      <NeedSheetHeader
+        need={need}
+        data={data}
+        color={color}
+        onClose={onClose}
+      />
 
       {/* Section 5: Slider — at top for immediate access */}
       <div style={{ marginBottom: 28 }}>
@@ -479,43 +413,7 @@ export function NeedTodaySheet({
       )}
 
       {showDisclaimer && (
-        <BottomSheet onClose={() => setShowDisclaimer(false)} zIndex={300}>
-          <div style={{ paddingTop: 8 }}>
-            <SectionLabel purple mb={16}>
-              О советах
-            </SectionLabel>
-            {DISCLAIMER_CONTENT.map((p, i) => (
-              <p
-                key={i}
-                style={{
-                  fontSize: 15,
-                  color: 'rgba(var(--fg-rgb),0.8)',
-                  lineHeight: 1.7,
-                  marginBottom: 14,
-                }}
-              >
-                {p}
-              </p>
-            ))}
-            <a
-              href={getTherapistContact().url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-block',
-                fontSize: 14,
-                color: 'var(--accent)',
-                textDecoration: 'none',
-                fontWeight: 500,
-              }}
-            >
-              →{' '}
-              {getTherapistContact().name === 'автору'
-                ? 'Поговорить с психологом'
-                : `Написать ${getTherapistContact().name}`}
-            </a>
-          </div>
-        </BottomSheet>
+        <NeedDisclaimerSheet onClose={() => setShowDisclaimer(false)} />
       )}
     </BottomSheet>
   );

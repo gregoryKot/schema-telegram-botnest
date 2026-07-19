@@ -48,7 +48,7 @@ describe('TelegramNotifyActionsService — addr:ty|vy (первый вход)', 
   it('addr:vy сохраняет форму и показывает приветствие на «вы»', async () => {
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'addr:vy');
     expect(ctx.answerCbQuery).toHaveBeenCalled();
     expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
@@ -63,7 +63,7 @@ describe('TelegramNotifyActionsService — addr:ty|vy (первый вход)', 
   it('addr:ty сохраняет форму «ты»', async () => {
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'addr:ty');
     expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
       addressForm: 'ty',
@@ -78,7 +78,7 @@ describe('TelegramNotifyActionsService — пауза', () => {
   it('notify:pause показывает выбор срока, не пишет в БД', async () => {
     const botService = makeBotService();
     const { service, fakeBot, cadenceService } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:pause');
     expect(cadenceService.pause).not.toHaveBeenCalled();
     expect(ctx.editMessageReplyMarkup).toHaveBeenCalled();
@@ -87,7 +87,7 @@ describe('TelegramNotifyActionsService — пауза', () => {
   it('notify:pause:7 вызывает cadenceService.pause(userId, 7) и подтверждает', async () => {
     const botService = makeBotService();
     const { service, fakeBot, cadenceService } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:pause:7');
     expect(cadenceService.pause).toHaveBeenCalledWith(1n, 7);
     expect(ctx.answerCbQuery).toHaveBeenCalledWith(
@@ -99,7 +99,7 @@ describe('TelegramNotifyActionsService — пауза', () => {
   it('notify:pause:30 — месяц, текст отличается от недельного', async () => {
     const botService = makeBotService();
     const { service, fakeBot, cadenceService } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:pause:30');
     expect(cadenceService.pause).toHaveBeenCalledWith(1n, 30);
     const [text] = ctx.editMessageText.mock.calls[0];
@@ -109,7 +109,7 @@ describe('TelegramNotifyActionsService — пауза', () => {
   it('notify:pause:cancel — ничего не пишет в БД, просто убирает клавиатуру', async () => {
     const botService = makeBotService();
     const { service, fakeBot, cadenceService } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:pause:cancel');
     expect(cadenceService.pause).not.toHaveBeenCalled();
     expect(ctx.editMessageReplyMarkup).toHaveBeenCalledWith(undefined);
@@ -122,7 +122,7 @@ describe('TelegramNotifyActionsService — реже / скип', () => {
     const { service, fakeBot, cadenceService } = makeService(botService, {
       slower: jest.fn().mockResolvedValue(3),
     });
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:slower');
     expect(cadenceService.slower).toHaveBeenCalledWith(1n);
     expect(ctx.editMessageText).toHaveBeenCalled();
@@ -131,7 +131,7 @@ describe('TelegramNotifyActionsService — реже / скип', () => {
   it('notify:skip зовёт cadenceService.skipToday(userId)', async () => {
     const botService = makeBotService();
     const { service, fakeBot, cadenceService } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:skip');
     expect(cadenceService.skipToday).toHaveBeenCalledWith(1n);
     expect(ctx.editMessageText).toHaveBeenCalled();
@@ -145,7 +145,7 @@ describe('TelegramNotifyActionsService — ошибки не роняют хен
     const { service, fakeBot } = makeService(botService, {
       pause: jest.fn().mockRejectedValue(new Error('db down')),
     });
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:pause:7');
     expect(ctx.answerCbQuery).toHaveBeenCalledWith('⏸ Пауза включена');
     expect(ctx.answerCbQuery).toHaveBeenCalledWith(

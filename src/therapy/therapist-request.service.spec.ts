@@ -6,6 +6,13 @@
 // (f) Сервис вызывает SecurityLogService: submit() → 'therapist_request_submitted',
 // approve() → 'role_changed' (см. security-log.service.ts ALERT_EVENTS →
 // DM админу). securityLog — фейк ({ log: jest.fn() }), как в auth.service.spec.ts.
+//
+// Регрессия на инцидент «заявка на психолога не доходит до бота»:
+// после переезда бота (@SchemaLabBot → @SchemeHappensBot) DM админу мог
+// молча падать (админ ещё не нажал Start у нового бота), а старый sendTg
+// только писал warn в лог — заявка терялась. Фикс: при неудачной доставке
+// в Telegram уходит e-mail-фолбэк (notifyAdminWithFallback), покрыто ниже
+// в describe('TherapistRequestService.notifyAdmin — доставка заявки админу').
 import {
   BadRequestException,
   ConflictException,
@@ -13,6 +20,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { TherapistRequestService } from './therapist-request.service';
+import * as adminAlert from '../utils/admin-alert';
+
+jest.mock('../utils/admin-alert', () => ({
+  notifyAdminWithFallback: jest.fn(() => Promise.resolve()),
+}));
+
+const fallback = adminAlert.notifyAdminWithFallback as jest.Mock;
 
 const ADMIN_ID = 111;
 const NOT_ADMIN_ID = 222; // не совпадает с process.env.ADMIN_ID
@@ -325,5 +339,79 @@ describe('approve/reject — только для админа, плюс пове
     await expect(svc.reject(ADMIN_ID, 999, 'x')).rejects.toThrow(
       NotFoundException,
     );
+  });
+});
+
+// notifyAdmin — приватный; вызываем через типизированный доступ, без `any`.
+const NOTIFY_REQ = {
+  id: 42,
+  userId: 123n,
+  fullName: 'Мария Иванова',
+  qualification: 'Схема-терапевт',
+  contacts: '@maria',
+  message: null,
+};
+
+type WithNotify = { notifyAdmin: (r: typeof NOTIFY_REQ) => Promise<void> };
+function makeNotifyAdminService(): TherapistRequestService & WithNotify {
+  const prisma = {} as never;
+  const accountService = {} as never;
+  const securityLog = { log: jest.fn() } as any;
+  return new TherapistRequestService(
+    prisma,
+    accountService,
+    securityLog,
+  ) as TherapistRequestService & WithNotify;
+}
+
+function mockFetchForNotify(ok: boolean, status = ok ? 200 : 403): jest.Mock {
+  const fn = jest.fn(() =>
+    Promise.resolve({
+      ok,
+      status,
+      json: () => Promise.resolve({ description: ok ? '' : 'blocked' }),
+    }),
+  );
+  global.fetch = fn;
+  return fn;
+}
+
+describe('TherapistRequestService.notifyAdmin — доставка заявки админу', () => {
+  const NOTIFY_OLD_ENV = process.env;
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    process.env = {
+      ...NOTIFY_OLD_ENV,
+      BOT_TOKEN: 'test-token',
+      ADMIN_ID: '999',
+    };
+  });
+  afterAll(() => {
+    process.env = NOTIFY_OLD_ENV;
+  });
+
+  it('DM админу не прошёл (Telegram 403) → e-mail-фолбэк вызван', async () => {
+    mockFetchForNotify(false);
+    await makeNotifyAdminService().notifyAdmin(NOTIFY_REQ);
+
+    expect(fallback).toHaveBeenCalledTimes(1);
+    expect(fallback.mock.calls[0][0]).toContain('#42');
+  });
+
+  it('ADMIN_ID не задан → пуш невозможен, e-mail-фолбэк вызван', async () => {
+    delete process.env.ADMIN_ID;
+    const fetchMockLocal = mockFetchForNotify(true);
+    await makeNotifyAdminService().notifyAdmin(NOTIFY_REQ);
+
+    expect(fetchMockLocal).not.toHaveBeenCalled();
+    expect(fallback).toHaveBeenCalledTimes(1);
+  });
+
+  it('DM админу прошёл (Telegram ok) → e-mail-фолбэк НЕ нужен', async () => {
+    mockFetchForNotify(true);
+    await makeNotifyAdminService().notifyAdmin(NOTIFY_REQ);
+
+    expect(fallback).not.toHaveBeenCalled();
   });
 });

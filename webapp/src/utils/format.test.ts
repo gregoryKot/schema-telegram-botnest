@@ -1,12 +1,6 @@
-// Тест форматирования дат (format.ts).
-// ВНИМАНИЕ (аудит): этот файл разошёлся с schema-miniapp/src/utils/format.ts
-// по числу строк (23 vs 49) — но разница чисто форматная (перенос строк
-// массивов месяцев, тире «–» vs «—» в комментариях), логика идентична.
-// Файл сознательно НЕ в списке парных (scripts/check-paired-files.mjs) —
-// кандидат на выравнивание/вынос в shared в волне 2. Тесты здесь и в
-// schema-miniapp/src/utils/format.test.ts написаны раздельно и намеренно
-// зеркалят друг друга — если поведение когда-нибудь разойдётся содержательно,
-// один из наборов тестов покраснеет первым.
+// Тест объединённой версии format.ts (правило №3 CLAUDE.md, волна 2 —
+// webapp/format.ts и schema-miniapp/format.ts были почти-парой, различались
+// только форматированием кода; единственная копия теперь в shared/src/utils).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { fmtDate, fmtDateLong, todayStr } from './format';
 
@@ -17,6 +11,7 @@ afterEach(() => {
 describe('fmtDate', () => {
   it('форматирует дату как "<день> <короткий месяц>" без сдвига часового пояса', () => {
     expect(fmtDate('2026-04-07')).toBe('7 апр');
+    expect(fmtDate('2026-12-31')).toBe('31 дек');
   });
 
   it('не добавляет ведущий ноль к дню (parseInt отбрасывает его)', () => {
@@ -51,5 +46,13 @@ describe('todayStr', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 9, 0, 0, 0)); // 9 сентября 2026
     expect(todayStr()).toBe('2026-09-09');
+  });
+
+  it('возвращает сегодняшнюю дату в формате YYYY-MM-DD (реальные часы)', () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    expect(todayStr()).toBe(`${y}-${m}-${d}`);
   });
 });

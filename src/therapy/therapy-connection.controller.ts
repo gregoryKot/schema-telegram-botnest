@@ -24,6 +24,7 @@ import {
   JoinTherapyDto,
   VirtualClientDto,
   AddClientDto,
+  TherapistViewDto,
 } from './dto/connection.dto';
 import { RenameClientDto } from './dto/client-data.dto';
 
@@ -109,7 +110,7 @@ export class TherapyConnectionController {
   }
 
   @Post('clients/add')
-  async addClientManually(@Req() req: AuthRequest, @Body() body: AddClientDto) {
+  addClientManually(@Req() req: AuthRequest, @Body() body: AddClientDto) {
     // SECURITY: silently attaching a therapist to a real user's account (and
     // gaining read access to their schema/mode notes, ratings, etc) without
     // the client's consent is unacceptable for a therapy app. Manual add is
@@ -145,7 +146,7 @@ export class TherapyConnectionController {
   // Kept returning 410 Gone so any clients still using the old endpoint get
   // a clear error rather than silent failure.
   @Post('become-therapist')
-  async becomeTherapist() {
+  becomeTherapist() {
     throw new HttpException(
       'Этот способ отключён. Используй /api/therapy/request — заявку рассмотрит администратор.',
       410,
@@ -170,5 +171,29 @@ export class TherapyConnectionController {
   async getMyRequest(@Req() req: AuthRequest) {
     const row = await this.therapistRequestService.getMine(uid(req));
     return row ?? null;
+  }
+
+  // ─── Therapist view preference / resignation ────────────────────────────
+
+  // Запоминает предпочтение старта (кабинет vs клиент). Только для THERAPIST —
+  // иначе клиент поднял бы себе UI терапевта (privilege escalation).
+  @Post('therapist-view')
+  async setTherapistView(
+    @Req() req: AuthRequest,
+    @Body() body: TherapistViewDto,
+  ) {
+    const role = await this.accountService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.accountService.setTherapistMode(uid(req), body.on);
+    return { ok: true };
+  }
+
+  // Отказ от роли терапевта — возврат в CLIENT (см. AccountService.resignTherapist).
+  @Delete('therapist-role')
+  async resignTherapist(@Req() req: AuthRequest) {
+    const role = await this.accountService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    await this.accountService.resignTherapist(uid(req));
+    return { ok: true };
   }
 }

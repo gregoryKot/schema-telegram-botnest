@@ -11,6 +11,8 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
+import { DiaryTextArea } from './DiaryTextArea';
+import { DiaryStickyHeader } from './DiaryStickyHeader';
 
 interface Props {
   activeSchemaIds?: string[];
@@ -95,39 +97,6 @@ function StepLabel({
         )}
       </div>
     </div>
-  );
-}
-
-function Area({
-  value,
-  onChange,
-  placeholder,
-  rows = 3,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  rows?: number;
-}) {
-  return (
-    <textarea
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      className="field-input"
-      style={{
-        width: '100%',
-        background: 'rgba(var(--fg-rgb),0.05)',
-        border: '1px solid rgba(var(--fg-rgb),0.1)',
-        borderRadius: 12,
-        padding: '12px 14px',
-        color: 'var(--text)',
-        fontSize: 14,
-        lineHeight: 1.5,
-        outline: 'none',
-      }}
-    />
   );
 }
 
@@ -268,50 +237,14 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   return (
     <BottomSheet onClose={onClose}>
       <div>
-        {/* Sticky header */}
-        <div
-          style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 5,
-            background: 'var(--sheet-bg)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingTop: 4,
-            paddingBottom: 12,
-            borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
-            marginBottom: 8,
-          }}
-        >
-          <div>
-            <div
-              style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}
-            >
-              Дневник схем
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-              {hasDraft ? 'Продолжаем с того места' : 'С чего начнём?'}
-            </div>
-          </div>
-          <button
-            onClick={handleSave}
-            disabled={!canSave || saving}
-            style={{
-              padding: '9px 18px',
-              borderRadius: 12,
-              border: 'none',
-              background: canSave ? COLOR : 'rgba(var(--fg-rgb),0.08)',
-              color: canSave ? '#fff' : 'rgba(var(--fg-rgb),0.25)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: canSave ? 'pointer' : 'default',
-              flexShrink: 0,
-            }}
-          >
-            {saving ? 'Сохраняю...' : 'Сохранить'}
-          </button>
-        </div>
+        <DiaryStickyHeader
+          title="Дневник схем"
+          subtitle={hasDraft ? 'Продолжаем с того места' : 'С чего начнём?'}
+          color={COLOR}
+          canSave={canSave}
+          saving={saving}
+          onSave={handleSave}
+        />
 
         <StepLabel
           step={1}
@@ -319,7 +252,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           hint="опиши ситуацию — где, с кем, когда"
           required
         />
-        <Area
+        <DiaryTextArea
           value={trigger}
           onChange={setTrigger}
           placeholder={tr(
@@ -415,7 +348,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         })}
 
         <StepLabel step={3} title="Мысли" hint="о чём думаешь" />
-        <Area
+        <DiaryTextArea
           value={thoughts}
           onChange={setThoughts}
           placeholder={tr(
@@ -425,7 +358,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
         />
 
         <StepLabel step={4} title="Тело" hint="что ощущаешь физически" />
-        <Area
+        <DiaryTextArea
           value={bodyFeelings}
           onChange={setBodyFeelings}
           placeholder="Где в теле это чувствуется? Сжатие, тяжесть, пульс, дыхание..."
@@ -440,7 +373,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
             'что вы делаете или хотите сделать',
           )}
         />
-        <Area
+        <DiaryTextArea
           value={actualBehavior}
           onChange={setActualBehavior}
           placeholder={tr(
@@ -523,7 +456,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
             {showAllSchemas ? '↑ Только мои' : '↓ Показать все'}
           </button>
         )}
-        <Area
+        <DiaryTextArea
           value={schemaOrigin}
           onChange={setSchemaOrigin}
           placeholder="Это напоминает что-то из прошлого? Из детства?"
@@ -535,7 +468,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           title="Здоровый взгляд"
           hint="если смотреть трезво"
         />
-        <Area
+        <DiaryTextArea
           value={healthyView}
           onChange={setHealthyView}
           placeholder="Если убрать схему в сторону — что на самом деле здесь происходит?"
@@ -546,7 +479,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           title="Что реально трудно"
           hint="без преувеличения"
         />
-        <Area
+        <DiaryTextArea
           value={realProblems}
           onChange={setRealProblems}
           placeholder="Что в этом моменте по-настоящему трудно — если не раздувать?"
@@ -558,7 +491,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           title="Где я раздул/а"
           hint="что оказалось крупнее, чем есть"
         />
-        <Area
+        <DiaryTextArea
           value={excessiveReactions}
           onChange={setExcessiveReactions}
           placeholder="Где реакция оказалась больше, чем требовала ситуация?"
@@ -570,7 +503,7 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           title="Здоровое поведение"
           hint="как поступил бы Здоровый Взрослый"
         />
-        <Area
+        <DiaryTextArea
           value={healthyBehavior}
           onChange={setHealthyBehavior}
           placeholder={tr(

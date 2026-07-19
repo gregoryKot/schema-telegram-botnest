@@ -4,6 +4,7 @@ import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './YSQTestSheet';
 import { BottomSheet } from './BottomSheet';
 import { Loader } from './Loader';
 import { useSafeTop } from '../utils/safezone';
+import { botUrl, botHandle, botShortUrl } from '../utils/botConfig';
 import {
   getTheme,
   toggleTheme,
@@ -11,6 +12,7 @@ import {
   Theme,
 } from '../utils/theme';
 import { useSetAddressForm } from '../utils/addressForm';
+import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 
 const TIMEZONES = [
   { label: 'Лос-Анджелес (UTC−8)', iana: 'America/Los_Angeles' },
@@ -71,6 +73,7 @@ interface Props {
   onOpenTherapistCabinet?: () => void;
   therapistMode?: boolean;
   onToggleTherapistMode?: () => void;
+  onResignTherapist?: () => Promise<void> | void;
 }
 
 export function SettingsSheet({
@@ -81,6 +84,7 @@ export function SettingsSheet({
   onOpenTherapistCabinet,
   therapistMode,
   onToggleTherapistMode,
+  onResignTherapist,
 }: Props) {
   const safeTop = useSafeTop();
   const [view, setView] = useState<View>('main');
@@ -120,11 +124,17 @@ export function SettingsSheet({
   const [reqMsg, setReqMsg] = useState('');
   const [reqBusy, setReqBusy] = useState(false);
   const [reqError, setReqError] = useState('');
+  const [resignConfirm, setResignConfirm] = useState(false);
+  const [resignBusy, setResignBusy] = useState(false);
   const tgName =
-    (window.Telegram?.WebApp as any)?.initDataUnsafe?.user?.first_name ?? '';
+    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
   const [editName, setEditName] = useState(displayName ?? tgName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);
+  const motion = useReducedMotionPref(() => {
+    setSavedToast(true);
+    setTimeout(() => setSavedToast(false), 1800);
+  });
   const setAddressForm = useSetAddressForm();
 
   useEffect(() => {
@@ -179,7 +189,9 @@ export function SettingsSheet({
           await navigator.share({
             text: `Давай отслеживать потребности вместе! ${url}`,
           });
-      } catch {}
+      } catch {
+        /* best-effort: ошибку намеренно игнорируем */
+      }
     } finally {
       setPairLoading(false);
     }
@@ -190,7 +202,9 @@ export function SettingsSheet({
       await navigator.clipboard.writeText(pairInviteUrl);
       setPairInviteCopied(true);
       setTimeout(() => setPairInviteCopied(false), 2000);
-    } catch {}
+    } catch {
+      /* best-effort: ошибку намеренно игнорируем */
+    }
   }
 
   async function handleJoin() {
@@ -268,7 +282,8 @@ export function SettingsSheet({
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                view !== 'main' ? setView('main') : onClose();
+                if (view !== 'main') setView('main');
+                else onClose();
               }
             }}
             style={{
@@ -626,6 +641,15 @@ export function SettingsSheet({
                       />
                     </div>
                   </div>
+                  {/* Нейроинклюзивность: сниженная анимация (WCAG 2.3.3) */}
+                  <Row
+                    label="Меньше движения"
+                    sub={motion.sub}
+                    divider
+                    right={
+                      <Toggle on={motion.reduced} onClick={motion.toggle} />
+                    }
+                  />
                   {userRole === 'THERAPIST' && onToggleTherapistMode && (
                     <div
                       style={{
@@ -707,6 +731,92 @@ export function SettingsSheet({
                       </div>
                     </div>
                   )}
+                  {userRole === 'THERAPIST' && onResignTherapist && (
+                    <div
+                      style={{
+                        borderTop: '1px solid rgba(var(--fg-rgb),0.06)',
+                        padding: '14px 16px',
+                      }}
+                    >
+                      {!resignConfirm ? (
+                        <button
+                          onClick={() => setResignConfirm(true)}
+                          style={{
+                            width: '100%',
+                            padding: '9px 0',
+                            borderRadius: 10,
+                            border: '1px solid rgba(var(--fg-rgb),0.1)',
+                            background: 'transparent',
+                            color: 'var(--text-sub)',
+                            fontSize: 13,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Перестать быть специалистом
+                        </button>
+                      ) : (
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: 'var(--text-sub)',
+                              lineHeight: 1.5,
+                              marginBottom: 10,
+                            }}
+                          >
+                            Роль специалиста будет снята: кабинет и доступ к
+                            данным клиентов пропадут. Свои данные не теряешь.
+                            Заявку можно подать заново.
+                          </div>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              disabled={resignBusy}
+                              onClick={() => setResignConfirm(false)}
+                              style={{
+                                flex: 1,
+                                padding: '9px 0',
+                                borderRadius: 10,
+                                border: '1px solid rgba(var(--fg-rgb),0.1)',
+                                background: 'transparent',
+                                color: 'var(--text-sub)',
+                                fontSize: 13,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Отмена
+                            </button>
+                            <button
+                              disabled={resignBusy}
+                              onClick={() => {
+                                setResignBusy(true);
+                                void (async () => {
+                                  try {
+                                    await onResignTherapist();
+                                    setResignConfirm(false);
+                                  } finally {
+                                    setResignBusy(false);
+                                  }
+                                })();
+                              }}
+                              style={{
+                                flex: 1,
+                                padding: '9px 0',
+                                borderRadius: 10,
+                                border: 'none',
+                                background: 'var(--accent-red)',
+                                color: '#fff',
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {resignBusy ? '...' : 'Снять роль'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -750,6 +860,7 @@ export function SettingsSheet({
                           setSavedToast(true);
                           setTimeout(() => setSavedToast(false), 1800);
                         } catch {
+                          /* best-effort: ошибку намеренно игнорируем */
                         } finally {
                           setNameSaving(false);
                         }
@@ -958,12 +1069,12 @@ export function SettingsSheet({
                   >
                     Приходят через{' '}
                     <a
-                      href="https://t.me/SchemaLabBot"
+                      href={botUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: 'var(--accent)', textDecoration: 'none' }}
                     >
-                      @SchemaLabBot
+                      {botHandle}
                     </a>
                   </div>
                 )}
@@ -988,7 +1099,7 @@ export function SettingsSheet({
                         key={form}
                         onClick={() => {
                           setAddressForm(form);
-                          patch({ addressForm: form });
+                          void patch({ addressForm: form });
                         }}
                         role="button"
                         tabIndex={0}
@@ -996,7 +1107,7 @@ export function SettingsSheet({
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             setAddressForm(form);
-                            patch({ addressForm: form });
+                            void patch({ addressForm: form });
                           }
                         }}
                         style={{
@@ -1106,7 +1217,7 @@ export function SettingsSheet({
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                   e.preventDefault();
-                                  patch({
+                                  void patch({
                                     therapistShareCards:
                                       !settings.therapistShareCards,
                                   });
@@ -1181,7 +1292,7 @@ export function SettingsSheet({
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                   e.preventDefault();
-                                  patch({
+                                  void patch({
                                     therapistShareProfile:
                                       !settings.therapistShareProfile,
                                   });
@@ -1559,8 +1670,14 @@ export function SettingsSheet({
                               const req = await api.getTherapistRequest();
                               setTherapistReq(req);
                               setShowReqForm(false);
-                            } catch {
-                              setReqError('Ошибка. Попробуй ещё раз.');
+                            } catch (e) {
+                              // Показываем реальную причину (парность с webapp):
+                              // «Request already pending», лимит и т.п. — иначе
+                              // ошибка выглядит необъяснимой.
+                              setReqError(
+                                String(e).replace('Error: ', '') ||
+                                  'Ошибка. Попробуй ещё раз.',
+                              );
                             } finally {
                               setReqBusy(false);
                             }
@@ -1988,15 +2105,16 @@ export function SettingsSheet({
                     sub="Поделиться ссылкой на бота"
                     emoji="🔗"
                     onClick={async () => {
-                      const text =
-                        'Трекер потребностей — отслеживай своё состояние каждый день. t.me/SchemaLabBot';
+                      const text = `Трекер потребностей — отслеживай своё состояние каждый день. ${botShortUrl}`;
                       try {
                         if (navigator.share) await navigator.share({ text });
                         else await navigator.clipboard.writeText(text);
                       } catch {
                         try {
                           await navigator.clipboard.writeText(text);
-                        } catch {}
+                        } catch {
+                          /* best-effort: ошибку намеренно игнорируем */
+                        }
                       }
                     }}
                   />
@@ -2013,11 +2131,15 @@ export function SettingsSheet({
                           await navigator.share({ text });
                           shared = true;
                         }
-                      } catch {}
+                      } catch {
+                        /* best-effort: ошибку намеренно игнорируем */
+                      }
                       if (!shared) {
                         try {
                           await navigator.clipboard.writeText(text);
-                        } catch {}
+                        } catch {
+                          /* best-effort: ошибку намеренно игнорируем */
+                        }
                         setExportText(text);
                       }
                     }}
@@ -2041,7 +2163,7 @@ export function SettingsSheet({
                       marginBottom: 10,
                     }}
                   >
-                    СхемаЛаб
+                    Всё по схеме
                   </div>
                   <p
                     style={{
@@ -2226,7 +2348,9 @@ export function SettingsSheet({
                   await navigator.clipboard.writeText(exportText);
                   setExportCopied(true);
                   setTimeout(() => setExportCopied(false), 2000);
-                } catch {}
+                } catch {
+                  /* best-effort: ошибку намеренно игнорируем */
+                }
               }}
               style={{
                 width: '100%',

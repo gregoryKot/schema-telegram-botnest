@@ -26,15 +26,17 @@ describe('CSRF-трипваер auth.controller', () => {
   });
 
   // ЧИТАНИЕ refresh-куки для аутентификации изменяющего состояние действия
-  // (не установка её при логине — та защищена oauth-state). Паттерн чтения:
-  // req.cookies?.[REFRESH_COOKIE].
-  const READ_REFRESH = /cookies\??\.?\[?\s*REFRESH_COOKIE/;
+  // (не установка её при логине — та защищена oauth-state). Паттерны чтения:
+  // `req.cookies?.[REFRESH_COOKIE]` или `getCookie(req, REFRESH_COOKIE)`.
+  const READ_REFRESH =
+    /(cookies\??\.?\[?\s*|getCookie\([^,]+,\s*)REFRESH_COOKIE/;
   it('каждый хендлер, ЧИТАЮЩИЙ REFRESH_COOKIE, зовёт requireCsrf', () => {
     const readers = blocks.filter((b) => {
-      // читает, но не только устанавливает res.cookie(REFRESH_COOKIE,...)
+      // читает (req.cookies[...] или getCookie(req, ...)), а не только
+      // устанавливает res.cookie(REFRESH_COOKIE, ...).
       const reads = [...b.body.matchAll(/REFRESH_COOKIE/g)].some((m) => {
         const before = b.body.slice(Math.max(0, m.index - 30), m.index);
-        return /req\.cookies/.test(before);
+        return /req\.cookies|getCookie\(/.test(before);
       });
       return reads;
     });

@@ -114,7 +114,7 @@ export class BookingService {
       : new Date(Date.now() + HOLD_MINUTES * 60_000);
     const cancelToken = randomUUID();
 
-    const data: any = encryptRecord(
+    const data = encryptRecord(
       {
         startsAt: dto.startsAt,
         durationMin: dto.durationMin,
@@ -145,7 +145,7 @@ export class BookingService {
     );
 
     if (isFree) {
-      const plain = decryptRecord(booking, SCHEMA) as any;
+      const plain = decryptRecord(booking, SCHEMA);
       await this.notify.onConfirmed(plain);
       return {
         id: booking.id,
@@ -158,7 +158,7 @@ export class BookingService {
     }
 
     // Paid session — build Robokassa payment URL if configured.
-    let paymentUrl: string | null = null;
+    let paymentUrl: string | null;
     const meetingUrl: string | null = null;
     if (this.robokassa.enabled) {
       const price = await this.pricing.getPrice(dto.type);
@@ -182,7 +182,7 @@ export class BookingService {
         where: { id: booking.id },
         data: { status: BookingStatus.CONFIRMED, heldUntil: null },
       });
-      const plain = decryptRecord(booking, SCHEMA) as any;
+      const plain = decryptRecord(booking, SCHEMA);
       await this.notify.onConfirmed(plain);
       return {
         id: booking.id,
@@ -352,7 +352,7 @@ export class BookingService {
     });
     this.logger.log(`Expired ${expiring.length} HELD booking(s)`);
     await this.notify.notifyExpired(
-      expiring.map((b) => decryptRecord(b, SCHEMA) as any),
+      expiring.map((b) => decryptRecord(b, SCHEMA)),
     );
   }
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, Achievement } from '../api';
 import { useSafeTop } from '../utils/safezone';
 import { BottomSheet } from '../components/BottomSheet';
+import { AchievementDetail } from '../components/AchievementDetail';
 import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
@@ -98,7 +99,7 @@ export function ProfileSection({
   const tr = useTr();
   const safeTop = useSafeTop();
   const tgName =
-    (window.Telegram?.WebApp as any)?.initDataUnsafe?.user?.first_name ?? '';
+    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
   const firstName = displayName || tgName;
 
   const [streak, setStreak] = useState<StreakData | null>(null);
@@ -118,16 +119,16 @@ export function ProfileSection({
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(
     null,
   );
-  const [insightsOpen] = useState(false); // kept for future use
+  const [_insightsOpen] = useState(false); // kept for future use
   const [showBestDayInfo, setShowBestDayInfo] = useState(false);
-  const [homeScreenStatus] = useState<string | null>(null);
+  const [_homeScreenStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setReady(false);
     setStreak(null);
     setAchievements(null);
     setInsights(null);
-    Promise.all([
+    void Promise.all([
       api
         .getStreak()
         .then(setStreak)
@@ -163,7 +164,7 @@ export function ProfileSection({
   const hasInsights =
     insights && insights.weeklyStats.some((s) => s.avg !== null);
 
-  const insightSummary = (() => {
+  const _insightSummary = (() => {
     if (!insights) return null;
     if (insights.bestDayOfWeek && insights.totalDays >= 7)
       return `Лучший день — ${insights.bestDayOfWeek}`;
@@ -172,7 +173,7 @@ export function ProfileSection({
     return 'Заполняй дневник каждый день';
   })();
 
-  const showHomeSuggestion = false; // moved to onboarding
+  const _showHomeSuggestion = false; // moved to onboarding
 
   return (
     <div
@@ -1218,77 +1219,13 @@ export function ProfileSection({
         </BottomSheet>
       )}
 
-      {/* Achievement detail overlay */}
-      {selectedAchievement &&
-        (() => {
-          const m = ACHIEVEMENT_META[selectedAchievement];
-          if (!m) return null;
-          return (
-            <div
-              onClick={() => setSelectedAchievement(null)}
-              style={{
-                position: 'fixed',
-                inset: 0,
-                zIndex: 400,
-                background: 'rgba(0,0,0,0.7)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 32,
-                animation: 'fade-in 0.18s ease',
-              }}
-            >
-              <div
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  background: 'var(--sheet-bg)',
-                  borderRadius: 28,
-                  padding: '36px 28px 28px',
-                  width: '100%',
-                  maxWidth: 320,
-                  textAlign: 'center',
-                  animation: 'sheet-up 0.2s cubic-bezier(0.34,1.56,0.64,1)',
-                }}
-              >
-                <div style={{ fontSize: 72, marginBottom: 16, lineHeight: 1 }}>
-                  {m.emoji}
-                </div>
-                <div
-                  style={{
-                    fontSize: 22,
-                    fontWeight: 700,
-                    color: 'var(--text)',
-                    marginBottom: 8,
-                  }}
-                >
-                  {m.title}
-                </div>
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: 'var(--text-sub)',
-                    lineHeight: 1.6,
-                    marginBottom: 28,
-                  }}
-                >
-                  {m.desc}
-                </div>
-                <button
-                  onClick={async () => {
-                    const text = `${m.emoji} Получил достижение «${m.title}»!\n\nt.me/SchemaLabBot`;
-                    try {
-                      if (navigator.share) await navigator.share({ text });
-                      else await navigator.clipboard.writeText(text);
-                    } catch {}
-                  }}
-                  className="btn-primary"
-                >
-                  Поделиться
-                </button>
-              </div>
-            </div>
-          );
-        })()}
+      {/* Achievement detail overlay (share-карточка внутри) */}
+      {selectedAchievement && ACHIEVEMENT_META[selectedAchievement] && (
+        <AchievementDetail
+          meta={ACHIEVEMENT_META[selectedAchievement]}
+          onClose={() => setSelectedAchievement(null)}
+        />
+      )}
 
       {/* Best day tooltip */}
       {showBestDayInfo && (

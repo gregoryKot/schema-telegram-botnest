@@ -15,6 +15,7 @@ import { PairsService } from '../bot/pairs.service';
 import {
   NotificationService,
   QUIET_EXEMPT_TYPES,
+  NotificationType,
 } from '../notification/notification.service';
 import { NotificationCadenceService } from '../notification/notification.cadence.service';
 import { NotificationPlannerService } from '../notification/notification.planner.service';
@@ -49,7 +50,7 @@ export class TelegramScheduleService implements OnModuleInit {
 
   private isProcessing = false;
 
-  async onModuleInit() {
+  onModuleInit() {
     // Catch-up: if midnight cron was missed (deploy/restart), run the planner.
     // Delay 30s: give CNPG time to come up after a container restart, and let
     // the bot finish connecting.  Use warn (not error) so a transient DB blip
@@ -107,12 +108,13 @@ export class TelegramScheduleService implements OnModuleInit {
     }, 4 * 60_000);
     try {
       await this.runProcessQueue();
-    } catch (err: any) {
+    } catch (err: unknown) {
       // P1017 "Server has closed the connection" and other transient connection
       // errors should not page the admin on every cron tick — they resolve on
       // the next tick once the DB comes back.  Log as warn so AlertLogger
       // doesn't send a DM.
-      const msg = String(err?.message ?? err);
+      const e = err instanceof Error ? err : undefined;
+      const msg = e?.message ?? String(err);
       const isConnError =
         /server has closed the connection|connection.*refused|ECONNREFUSED|connect ETIMEDOUT|P1001|P1017/i.test(
           msg,
@@ -122,7 +124,7 @@ export class TelegramScheduleService implements OnModuleInit {
           `processQueue DB connection error (will retry): ${msg.slice(0, 120)}`,
         );
       } else {
-        this.logger.error(`processQueue failed: ${msg}`, err?.stack);
+        this.logger.error(`processQueue failed: ${msg}`, e?.stack);
       }
     } finally {
       clearTimeout(killTimer);
@@ -144,7 +146,7 @@ export class TelegramScheduleService implements OnModuleInit {
         const s = sendSettings.get(String(notif.userId));
         // Тихие часы: проактивные придерживаем до утра. Покрывает и catch-up после
         // даунтайма — уведомление за 21:00 не улетит в 3 ночи.
-        if (!QUIET_EXEMPT_TYPES.includes(notif.type as any)) {
+        if (!QUIET_EXEMPT_TYPES.includes(notif.type as NotificationType)) {
           if (s && isQuietHours(s.tz, s.start, s.end)) {
             await this.notificationService.defer(
               notif.id,
@@ -157,7 +159,7 @@ export class TelegramScheduleService implements OnModuleInit {
         let template: ReturnType<typeof renderTemplate>;
         try {
           template = renderTemplate(
-            notif.type as any,
+            notif.type as NotificationType,
             payload ?? undefined,
             normalizeAddressForm(s?.form),
           );
@@ -190,9 +192,13 @@ export class TelegramScheduleService implements OnModuleInit {
           ),
         ]);
         await this.notificationService.markSent(notif.id);
-      } catch (err: any) {
-        const code = err?.response?.error_code;
-        const desc = String(err?.response?.description ?? err?.message ?? '');
+      } catch (err: unknown) {
+        const e = err as {
+          response?: { error_code?: number; description?: string };
+          message?: string;
+        };
+        const code = e.response?.error_code;
+        const desc = String(e.response?.description ?? e.message ?? '');
         // Treat as permanently blocked only on explicit signals.
         // 400 + "chat not found" / 403 + "blocked"/"deactivated" / "kicked".
         // Other 400s (markdown parse error, message too long, etc) are bugs

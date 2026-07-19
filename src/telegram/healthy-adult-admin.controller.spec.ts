@@ -86,7 +86,7 @@ describe('HealthyAdultAdminController — гейтинг по x-admin-key', () =
     await expect(controller.remove(1, 'wrong')).rejects.toThrow(
       ForbiddenException,
     );
-    await expect(controller.testPost({ slot: 0 }, 'wrong')).rejects.toThrow(
+    await expect(controller.testPost('wrong')).rejects.toThrow(
       ForbiddenException,
     );
     expect(phrases.create).not.toHaveBeenCalled();
@@ -117,17 +117,10 @@ describe('HealthyAdultAdminController — действия делегируют 
     expect(res).toEqual({ ok: true });
   });
 
-  it('testPost: slot=1 постит вечерний слот', async () => {
+  it('testPost с валидным ключом публикует в канал (channel.post)', async () => {
     const { controller, channel } = makeController();
-    await controller.testPost({ slot: 1 }, ADMIN_KEY);
-    expect(channel.post).toHaveBeenCalledWith(1);
-  });
-
-  it('testPost: любое значение slot кроме 1 (в т.ч. отсутствие) — слот 0 (утро)', async () => {
-    const { controller, channel } = makeController();
-    await controller.testPost({}, ADMIN_KEY);
-    expect(channel.post).toHaveBeenCalledWith(0);
-    await controller.testPost({ slot: 5 }, ADMIN_KEY);
-    expect(channel.post).toHaveBeenLastCalledWith(0);
+    const res = await controller.testPost(ADMIN_KEY);
+    expect(channel.post).toHaveBeenCalledTimes(1);
+    expect(res).toEqual(expect.objectContaining({ ok: true }));
   });
 });

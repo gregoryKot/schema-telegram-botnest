@@ -2,8 +2,11 @@
 // терапевту клинические данные КЛИЕНТА. Единственная граница — assertHasClient
 // (активная связь). Тестируем: (a) доступ с активной связью, (b) отказ без
 // связи/с pending-связью, (c) изоляция между клиентами, (d) расшифровка на
-// чтении, (e) ownership на write-путях. Ключа шифрования нет — encrypt()/
-// decrypt() passthrough, но реально вызываются на пути чтения.
+// чтении, (e) ownership на write-путях, (f) приватность карточек клиента
+// (therapistShareCards — регрессия privacy-бага аудита 2026-07: маршрут-дубль
+// GET /api/therapy/client/:id/{schema,mode}-notes игнорировал эту настройку,
+// дубль удалён). Ключа шифрования нет — encrypt()/decrypt() passthrough, но
+// реально вызываются на пути чтения.
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
@@ -284,11 +287,9 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
     expect((rels[0] as any).nextSession).toBe('2026-08-01');
   });
 
-  // Находка для отчёта (не баг-фикс): removeClient НЕ вызывает assertHasClient
-  // явно — в отличие от всех остальных методов сервиса. Функционально не дыра:
-  // WHERE в therapyRelation.deleteMany ограничен therapistId, чужой терапевт
-  // не может удалить чужую связь физически. Но поведение отличается от
-  // остальных методов (нет 403 вместо no-op) — тест фиксирует текущее поведение.
+  // Находка: removeClient не вызывает assertHasClient явно (в отличие от
+  // остальных методов) — но WHERE в deleteMany ограничен therapistId, так что
+  // чужой терапевт физически не может удалить чужую связь. Фиксируем поведение.
   it('removeClient: чужой терапевт не выбрасывает и не удаляет связь, владелец — удаляет', async () => {
     const { svc, rels } = makeService([relA]);
     await expect(svc.removeClient(T2, CID_A)).resolves.toBeUndefined();
@@ -296,5 +297,31 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
 
     await svc.removeClient(T1, CID_A);
     expect(rels).toHaveLength(0);
+  });
+});
+
+// Переиспользует makeService()/makeDb() выше — граница assertHasClient уже
+// покрыта it.each в первом describe; здесь только приватность карточек.
+describe('доступ терапевта к карточкам клиента (therapistShareCards)', () => {
+  it('therapistShareCards=false → пусто, сами заметки не читаются', async () => {
+    const { svc, users, schemaNotes, db } = makeService([relA]);
+    users.push({ ...mkUser(CLIENT_A, 'Аня', []), therapistShareCards: false });
+    schemaNotes.push(mkSchemaNote(1, CLIENT_A, 'abandonment'));
+    expect(await svc.getClientSchemaNotes(T1, CID_A)).toEqual([]);
+    expect(await svc.getClientModeNotes(T1, CID_A)).toEqual([]);
+    expect(db.userSchemaNote.findMany).not.toHaveBeenCalled();
+  });
+
+  it('therapistShareCards=null (дефолт «делюсь», поле не задано) → заметки отдаются', async () => {
+    const { svc, users, schemaNotes } = makeService([relA]);
+    users.push({ ...mkUser(CLIENT_A, 'Аня', []), therapistShareCards: null });
+    schemaNotes.push(mkSchemaNote(1, CLIENT_A, 'abandonment'));
+    expect(await svc.getClientSchemaNotes(T1, CID_A)).toHaveLength(1);
+  });
+
+  it('виртуальный клиент (id<0) → пусто без обращений к БД', async () => {
+    const { svc, db } = makeService([relA]);
+    expect(await svc.getClientSchemaNotes(T1, -5)).toEqual([]);
+    expect(db.user.findUnique).not.toHaveBeenCalled();
   });
 });

@@ -114,7 +114,7 @@ export class SubscriptionService {
           acceptedOfferAt: new Date(),
         },
         SCHEMA,
-      ) as any,
+      ),
     });
     const charge = await this.prisma.subscriptionCharge.create({
       data: { subscriptionId: sub.id, amount, isFirst: true },
@@ -189,7 +189,7 @@ export class SubscriptionService {
       },
     });
 
-    const plain = decryptRecord(sub, SCHEMA) as any;
+    const plain = decryptRecord(sub, SCHEMA);
     await this.notify.alertAdmin(
       `${charge.isFirst ? '🎉 <b>Новая подписка</b>' : '🔁 <b>Продление подписки</b>'} ${sub.amount} ₽/${sub.period === 'year' ? 'год' : 'мес'}` +
         (plain.email ? `\n📬 ${plain.email}` : '') +

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/authContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -38,6 +38,7 @@ export function AccountPage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- намеренно: перезагрузка данных при смене accessToken; refresh стабилен по смыслу, добавление в deps даст лишние ре-фетчи
   useEffect(() => { refresh(); }, [accessToken]);
 
   // Email link state
@@ -69,7 +70,7 @@ export function AccountPage() {
     window.location.href = `${API_BASE}/api/auth/telegram/redirect`;
   };
 
-  const unlink = async (provider: 'google' | 'telegram' | 'vk') => {
+  const unlink = async (provider: 'google' | 'telegram' | 'vk' | 'email') => {
     if (!confirm(`Отвязать ${provider === 'google' ? 'Google' : 'Telegram'}?`)) return;
     setBusy(true);
     setError(null);
@@ -233,7 +234,7 @@ export function AccountPage() {
                 </div>
               </div>
               {hasEmail ? (
-                <button disabled={busy} onClick={() => unlink('email' as any)} style={{ background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
+                <button disabled={busy} onClick={() => unlink('email')} style={{ background: 'transparent', border: '1px solid rgba(var(--fg-rgb),0.15)', color: 'var(--text-sub)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
                   Отвязать
                 </button>
               ) : (

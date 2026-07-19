@@ -24,12 +24,15 @@ import { ProviderIdentity } from './providers/types';
 import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
 import { EmailService } from './email.service';
+import type { Request, Response } from 'express';
+import { VkProvider } from './providers/vk.provider';
+import { TelegramOidcProvider } from './providers/telegram-oidc.provider';
 import { TwoFaCodeDto, TwoFaChallengeDto } from './dto/twofa.dto';
 
 const REFRESH_COOKIE = 'refresh_token';
 const CSRF_HEADER = 'x-requested-with';
 
-function hasCsrfHeader(req: any): boolean {
+function hasCsrfHeader(req: Request): boolean {
   // Primary check: x-requested-with header set by our webapp fetch calls.
   const v = req.headers?.[CSRF_HEADER];
   if (typeof v === 'string' && v.length > 0) return true;
@@ -50,6 +53,13 @@ function cookieOptions(maxAgeS: number) {
     path: '/api/auth',
     maxAge: maxAgeS * 1000,
   };
+}
+
+// express типизирует Request.cookies как any — читаем куки через одну
+// типобезопасную обёртку вместо россыпи unsafe-обращений по контроллеру.
+function getCookie(req: Request, name: string): string | undefined {
+  const jar = req.cookies as Record<string, string | undefined> | undefined;
+  return jar?.[name];
 }
 
 @Controller('api/auth')
@@ -102,7 +112,7 @@ export class AuthController {
 
     if (linkUserId === null) {
       const userId = await this.auth.findOrCreateUserByProvider(
-        providerId_ as any,
+        providerId_,
         identity.providerId,
         identity.displayName,
         identity.email,
@@ -159,7 +169,7 @@ export class AuthController {
   private finishOAuthRedirect(
     outcome: Awaited<ReturnType<AuthController['signInOrLinkOrMerge']>>,
     provider: string,
-    res: any,
+    res: Response,
     frontendBase: string,
   ): void {
     if (outcome.kind === 'merge') {
@@ -188,6 +198,20 @@ export class AuthController {
     );
   }
 
+  // Достаёт linkUserId из подписанного state (base64url JSON). Битый/чужой
+  // state → null (аноним-вход), не бросаем — три колбэка разбирали это
+  // одинаковым копипастом с `JSON.parse(...).linkUserId as any`.
+  private linkUserIdFromState(state: string): bigint | null {
+    try {
+      const parsed = JSON.parse(Buffer.from(state, 'base64url').toString()) as {
+        linkUserId?: string | null;
+      };
+      return parsed.linkUserId ? BigInt(parsed.linkUserId) : null;
+    } catch {
+      return null;
+    }
+  }
+
   // ─── OAuth helpers ────────────────────────────────────────────────────────
   //
   // Each redirect-flow provider has a tiny stub that calls these helpers.
@@ -201,7 +225,7 @@ export class AuthController {
   //
   // We don't use Get(':provider') because it would shadow /me, /refresh etc.
 
-  private oauthRedirect(provider: string, req: any, res: any): void {
+  private oauthRedirect(provider: string, req: Request, res: Response): void {
     const handler = this.providers.get(provider);
     if (!handler.buildAuthUrl)
       throw new BadRequestException(
@@ -223,7 +247,7 @@ export class AuthController {
     res.redirect(handler.buildAuthUrl(state));
   }
 
-  private requireCsrf(req: any, endpoint: string): void {
+  private requireCsrf(req: Request, endpoint: string): void {
     if (!hasCsrfHeader(req)) {
       this.securityLog.log('csrf_blocked', {
         endpoint,
@@ -239,8 +263,8 @@ export class AuthController {
     code: string,
     state: string,
     error: string,
-    req: any,
-    res: any,
+    req: Request,
+    res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
@@ -253,21 +277,13 @@ export class AuthController {
       if (!code || !state)
         throw new BadRequestException('Missing code or state');
 
-      const savedState = req.cookies?.['oauth_state'];
+      const savedState = getCookie(req, 'oauth_state');
       if (!savedState || savedState !== state)
         throw new UnauthorizedException('OAuth state mismatch');
       res.clearCookie('oauth_state', { path: '/api/auth' });
 
       const identity = await handler.exchangeCode(code);
-      let linkUserId: bigint | null = null;
-      try {
-        const raw = JSON.parse(
-          Buffer.from(state, 'base64url').toString(),
-        ).linkUserId;
-        if (raw) linkUserId = BigInt(raw);
-      } catch {
-        /* ignore */
-      }
+      const linkUserId = this.linkUserIdFromState(state);
 
       const outcome = await this.signInOrLinkOrMerge(provider, identity, {
         linkUserId,
@@ -287,7 +303,7 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(OptionalJwtGuard)
-  googleRedirect(@Req() req: any, @Res() res: any): void {
+  googleRedirect(@Req() req: Request, @Res() res: Response): void {
     return this.oauthRedirect('google', req, res);
   }
 
@@ -298,8 +314,8 @@ export class AuthController {
     @Query('code') code: string,
     @Query('state') state: string,
     @Query('error') error: string,
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: Request,
+    @Res() res: Response,
   ): Promise<void> {
     return this.oauthCallback('google', code, state, error, req, res);
   }
@@ -308,7 +324,7 @@ export class AuthController {
 
   @Get('vk')
   @UseGuards(OptionalJwtGuard)
-  vkRedirect(@Req() req: any, @Res() res: any): void {
+  vkRedirect(@Req() req: Request, @Res() res: Response): void {
     return this.oauthRedirect('vk', req, res);
   }
 
@@ -318,34 +334,26 @@ export class AuthController {
     @Query('state') state: string,
     @Query('device_id') deviceId: string,
     @Query('error') error: string,
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: Request,
+    @Res() res: Response,
   ): Promise<void> {
     // VK ID needs device_id + PKCE state for token exchange. Bypass the
     // generic helper and call the provider-specific method.
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
-      const vk = this.providers.get('vk') as any;
+      const vk = this.providers.get('vk') as VkProvider;
       if (error) throw new UnauthorizedException(`vk auth denied: ${error}`);
       if (!code || !state || !deviceId)
         throw new BadRequestException('Missing code / state / device_id');
 
-      const savedState = req.cookies?.['oauth_state'];
+      const savedState = getCookie(req, 'oauth_state');
       if (!savedState || savedState !== state)
         throw new UnauthorizedException('OAuth state mismatch');
       res.clearCookie('oauth_state', { path: '/api/auth' });
 
       const identity = await vk.exchangeCodeWithContext(code, deviceId, state);
 
-      let linkUserId: bigint | null = null;
-      try {
-        const raw = JSON.parse(
-          Buffer.from(state, 'base64url').toString(),
-        ).linkUserId;
-        if (raw) linkUserId = BigInt(raw);
-      } catch {
-        /* ignore */
-      }
+      const linkUserId = this.linkUserIdFromState(state);
 
       const outcome = await this.signInOrLinkOrMerge('vk', identity, {
         linkUserId,
@@ -363,8 +371,10 @@ export class AuthController {
 
   @Get('telegram-oidc')
   @UseGuards(OptionalJwtGuard)
-  telegramOidcRedirect(@Req() req: any, @Res() res: any): void {
-    const provider = this.providers.get('telegram-oidc') as any;
+  telegramOidcRedirect(@Req() req: Request, @Res() res: Response): void {
+    const provider = this.providers.get(
+      'telegram-oidc',
+    ) as TelegramOidcProvider;
     const state = Buffer.from(
       JSON.stringify({
         nonce: randomBytes(16).toString('hex'),
@@ -394,8 +404,8 @@ export class AuthController {
     @Query('code') code: string,
     @Query('state') state: string,
     @Query('error') error: string,
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: Request,
+    @Res() res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
@@ -404,28 +414,22 @@ export class AuthController {
       if (!code || !state)
         throw new BadRequestException('Missing code or state');
 
-      const savedState = req.cookies?.['oauth_state'];
+      const savedState = getCookie(req, 'oauth_state');
       if (!savedState || savedState !== state)
         throw new UnauthorizedException('OAuth state mismatch');
       res.clearCookie('oauth_state', { path: '/api/auth' });
 
-      const codeVerifier = req.cookies?.['tg_pkce_verifier'];
+      const codeVerifier = getCookie(req, 'tg_pkce_verifier');
       if (!codeVerifier)
         throw new UnauthorizedException('Missing PKCE verifier');
       res.clearCookie('tg_pkce_verifier', { path: '/api/auth' });
 
-      const provider = this.providers.get('telegram-oidc') as any;
+      const provider = this.providers.get(
+        'telegram-oidc',
+      ) as TelegramOidcProvider;
       const identity = await provider.exchangeCodePkce(code, codeVerifier);
 
-      let linkUserId: bigint | null = null;
-      try {
-        const raw = JSON.parse(
-          Buffer.from(state, 'base64url').toString(),
-        ).linkUserId;
-        if (raw) linkUserId = BigInt(raw);
-      } catch {
-        /* ignore */
-      }
+      const linkUserId = this.linkUserIdFromState(state);
 
       const outcome = await this.signInOrLinkOrMerge(
         'telegram-oidc',
@@ -457,9 +461,19 @@ export class AuthController {
   async telegramWidget(
     // Не DTO: подписанный Telegram-payload, whitelist срежет поля и сломает hash-верификацию.
     @Body() body: Record<string, string>,
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
-  ): Promise<any> {
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<
+    | {
+        merge: true;
+        mergeToken: string;
+        summary: Record<string, number>;
+        otherDisplay: string | null;
+        provider: string;
+      }
+    | { totp: true; challengeToken: string }
+    | { accessToken: string; expiresIn: number }
+  > {
     this.requireCsrf(req, 'telegram/widget');
     const telegramHandler = this.providers.get('telegram');
     if (!telegramHandler.verifyClientData)
@@ -473,9 +487,10 @@ export class AuthController {
     // to authenticate on oauth.telegram.org, so the access token is gone but
     // the httpOnly tg_link_user cookie is still present.
     let linkUserId = req.webUser?.userId ?? null;
-    if (!linkUserId && req.cookies?.['tg_link_user']) {
+    const tgLinkCookie = getCookie(req, 'tg_link_user');
+    if (!linkUserId && tgLinkCookie) {
       try {
-        linkUserId = BigInt(req.cookies['tg_link_user']);
+        linkUserId = BigInt(tgLinkCookie);
       } catch {
         /* ignore */
       }
@@ -518,7 +533,7 @@ export class AuthController {
 
   @Get('telegram/redirect')
   @UseGuards(OptionalJwtGuard)
-  telegramRedirect(@Req() req: any, @Res() res: any): void {
+  telegramRedirect(@Req() req: Request, @Res() res: Response): void {
     const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
     const botId = botToken.split(':')[0]; // BOT_TOKEN format: 123456789:HASH
     const frontendBase = this.config
@@ -547,8 +562,8 @@ export class AuthController {
   @Get('telegram/widget-redirect')
   async telegramWidgetRedirect(
     @Query() query: Record<string, string>,
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: Request,
+    @Res() res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
 
@@ -592,7 +607,7 @@ try {
         try {
           const decoded = JSON.parse(
             Buffer.from(query['tgAuthResult'], 'base64url').toString('utf8'),
-          ) as Record<string, unknown>;
+          ) as Record<string, string | number | boolean | null>;
           fields = {};
           for (const [k, v] of Object.entries(decoded)) {
             if (v != null) fields[k] = String(v);
@@ -609,7 +624,7 @@ try {
 
       const identity = telegramHandler.verifyClientData(fields);
 
-      const savedLinkUserId = req.cookies?.['tg_link_user'] ?? null;
+      const savedLinkUserId = getCookie(req, 'tg_link_user') ?? null;
       res.clearCookie('tg_link_user', { path: '/api/auth' });
       const linkUserId = savedLinkUserId ? BigInt(savedLinkUserId) : null;
 
@@ -640,7 +655,7 @@ try {
   @HttpCode(200)
   async emailLoginLink(
     @Body('email') email: string,
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<{ ok: true }> {
     this.requireCsrf(req, 'email/link');
     return this.auth.requestEmailLogin(email);
@@ -649,8 +664,8 @@ try {
   @Get('email/callback')
   async emailLoginCallback(
     @Query('token') token: string,
-    @Req() req: any,
-    @Res() res: any,
+    @Req() req: Request,
+    @Res() res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
@@ -689,10 +704,10 @@ try {
   @HttpCode(200)
   async emailLinkToAccount(
     @Body('email') email: string,
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<{ ok: true }> {
     this.requireCsrf(req, 'email/link-to-account');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     return this.auth.linkEmailToAccount(webUser.userId, email);
   }
 
@@ -706,8 +721,8 @@ try {
   @HttpCode(200)
   async telegramWebApp(
     @Body('initData') initData: string,
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     if (!initData) throw new BadRequestException('Missing initData');
     const { id: telegramId, firstName } =
@@ -741,8 +756,8 @@ try {
   @HttpCode(200)
   async confirmMerge(
     @Body('token') token: string,
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     // CSRF: require the custom header same way refresh/logout do. Browser
     // cannot set it from a cross-origin form/img.
@@ -824,7 +839,7 @@ try {
     @Param('provider') provider: string,
     // Не DTO: подписанный Telegram-payload, whitelist срежет поля и сломает hash-верификацию.
     @Body() body: Record<string, unknown>,
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<
     | { ok: true }
     | { merge: true; mergeToken: string; summary: Record<string, number> }
@@ -836,7 +851,7 @@ try {
       );
     }
     const identity = handler.verifyClientData(body);
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
 
     const result = await this.auth.linkProviderToUser(
       webUser.userId,
@@ -866,13 +881,13 @@ try {
   @HttpCode(200)
   async unlink(
     @Param('provider') provider: string,
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<{ ok: boolean }> {
     if (!this.providers.list().some((p) => p.id === provider)) {
       throw new BadRequestException('Unknown provider');
     }
-    const webUser: WebUser = req.webUser;
-    await this.auth.unlinkProvider(webUser.userId, provider as any);
+    const webUser: WebUser = req.webUser!;
+    await this.auth.unlinkProvider(webUser.userId, provider);
     this.securityLog.log('provider_unlinked', {
       userId: webUser.userId,
       provider,
@@ -886,11 +901,11 @@ try {
   @Post('refresh')
   @HttpCode(200)
   async refresh(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     this.requireCsrf(req, 'refresh');
-    const rawRefresh = req.cookies?.[REFRESH_COOKIE];
+    const rawRefresh = getCookie(req, REFRESH_COOKIE);
     if (!rawRefresh) throw new UnauthorizedException('No refresh token');
     const tokens = await this.auth.rotateRefreshToken(
       rawRefresh,
@@ -911,11 +926,11 @@ try {
   @HttpCode(200)
   async logout(
     @Query('all') all: string,
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ ok: boolean }> {
     this.requireCsrf(req, 'logout');
-    const rawRefresh = req.cookies?.[REFRESH_COOKIE];
+    const rawRefresh = getCookie(req, REFRESH_COOKIE);
     if (rawRefresh) {
       if (all === 'true') {
         try {
@@ -943,7 +958,7 @@ try {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@Req() req: any): Promise<{
+  async me(@Req() req: Request): Promise<{
     userId: string;
     providers: Array<{
       provider: string;
@@ -952,7 +967,7 @@ try {
     }>;
     totp: { enabled: boolean; recoveryCodesLeft: number };
   }> {
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     const [providers, totp] = await Promise.all([
       this.auth.getUserProviders(webUser.userId),
       this.totp.getStatus(webUser.userId),
@@ -966,10 +981,10 @@ try {
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
   async totpSetup(
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<{ otpauthUrl: string; qrDataUrl: string }> {
     this.requireCsrf(req, '2fa/setup');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     // Use one of the user's display names for the QR label
     const providers = await this.auth.getUserProviders(webUser.userId);
     const label =
@@ -983,11 +998,11 @@ try {
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
   async totpEnable(
-    @Req() req: any,
+    @Req() req: Request,
     @Body() dto: TwoFaCodeDto,
   ): Promise<{ recoveryCodes: string[] }> {
     this.requireCsrf(req, '2fa/enable');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     const result = await this.totp.confirmSetup(webUser.userId, dto.code);
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
@@ -1000,11 +1015,11 @@ try {
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
   async totpDisable(
-    @Req() req: any,
+    @Req() req: Request,
     @Body() dto: TwoFaCodeDto,
   ): Promise<{ ok: true }> {
     this.requireCsrf(req, '2fa/disable');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     await this.totp.disable(webUser.userId, dto.code);
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
@@ -1017,11 +1032,11 @@ try {
   @UseGuards(JwtAuthGuard)
   @HttpCode(200)
   async totpRegenerateRecovery(
-    @Req() req: any,
+    @Req() req: Request,
     @Body() dto: TwoFaCodeDto,
   ): Promise<{ recoveryCodes: string[] }> {
     this.requireCsrf(req, '2fa/recovery-codes');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     return this.totp.regenerateRecoveryCodes(webUser.userId, dto.code);
   }
 
@@ -1035,18 +1050,18 @@ try {
   })
   @HttpCode(200)
   async recoveryEmailStart(
-    @Req() req: any,
+    @Req() req: Request,
     @Body('email') email: string,
   ): Promise<{ ok: true }> {
     this.requireCsrf(req, 'recovery-email/start');
-    const webUser: WebUser = req.webUser;
+    const webUser: WebUser = req.webUser!;
     return this.emailSvc.sendVerificationLink(webUser.userId, email);
   }
 
   @Get('recovery-email/verify')
   async recoveryEmailVerify(
     @Query('token') token: string,
-    @Res() res: any,
+    @Res() res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
     try {
@@ -1077,8 +1092,8 @@ try {
   @Post('recovery/confirm')
   @HttpCode(200)
   async recoveryConfirm(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
     @Body('token') token: string,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     this.requireCsrf(req, 'recovery/confirm');
@@ -1112,8 +1127,8 @@ try {
   })
   @HttpCode(200)
   async totpChallenge(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
     @Body() dto: TwoFaChallengeDto,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     this.requireCsrf(req, '2fa/challenge');
@@ -1145,11 +1160,11 @@ try {
 
   @Get('link-token')
   @UseGuards(JwtAuthGuard)
-  async issueLinkToken(
-    @Req() req: any,
-    @Res({ passthrough: true }) res: any,
-  ): Promise<{ linkToken: string; expiresIn: number }> {
-    const webUser: WebUser = req.webUser;
+  issueLinkToken(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): { linkToken: string; expiresIn: number } {
+    const webUser: WebUser = req.webUser!;
     const linkToken = this.auth.buildLinkToken(webUser.userId);
     // Основной канал доставки — httpOnly-cookie (S-4): токен не попадает в
     // URL/логи. Тело ответа сохранено для обратной совместимости со старыми

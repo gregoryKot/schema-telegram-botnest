@@ -6,7 +6,23 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    // .claire/.claude — воркспейсы агент-сессий (различаются между машинами →
+    // environment-зависимые счётчики храповика). dist — сборочный вывод.
+    // scripts/deploy + plain-Node конфиги (.mjs/.cjs, prisma.config.js) вне
+    // tsconfig-проекта: типизированный линтер их не парсит и даёт лишь
+    // parse-ошибки-шум. Приложение целиком на .ts/.tsx.
+    ignores: [
+      'eslint.config.mjs',
+      '.claire/**',
+      '.claude/**',
+      '**/dist/**',
+      '**/vite.config.ts',
+      'scripts/**',
+      'deploy/**',
+      '**/*.mjs',
+      '**/*.cjs',
+      'prisma.config.js',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -32,7 +48,27 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-unsafe-argument': 'warn',
+      // async-обработчики событий в JSX (onClick/onKeyDown = async () => …) —
+      // штатный и безопасный паттерн React: возвращаемый промис игнорируется
+      // фреймворком, а сами хендлеры внутри обёрнуты в try/catch. Точечно
+      // отключаем проверку void-return ТОЛЬКО для JSX-атрибутов (документир.
+      // опция typescript-eslint), в остальных местах правило действует.
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { attributes: false } },
+      ],
       "prettier/prettier": ["error", { endOfLine: "auto" }],
+      // `_`-префикс — общепринятый маркер «намеренно не используется» (omit
+      // через rest, compile-time type-assert `_VerifyTables`); rest-siblings
+      // при omit-через-spread тоже не считаем мусором.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
     },
   },
   {
@@ -57,6 +93,7 @@ export default tseslint.config(
       '**/*.test.ts',
       '**/*.test.tsx',
       '**/*.e2e-spec.ts',
+      '**/*.test-helpers.ts',
       'test/e2e-support/**/*.ts',
     ],
     rules: {
@@ -67,6 +104,10 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
       '@typescript-eslint/unbound-method': 'off',
+      // Поддельные Prisma-делегаты в тестах — `jest.fn(async () => …)`,
+      // чтобы сигнатура совпадала с Promise-возвращающим методом; await внутри
+      // мока не нужен. Тот же «заведомый шум», что и unsafe-* выше.
+      '@typescript-eslint/require-await': 'off',
     },
   },
 );

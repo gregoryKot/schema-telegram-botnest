@@ -91,7 +91,7 @@ describe('buildSettingsView', () => {
 describe('TelegramSettingsService — /settings command', () => {
   it('отвечает reply (первый вход в меню — это команда, не правка)', async () => {
     const { service, fakeBot } = makeService(makeBotService());
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'settings');
     expect(ctx.reply).toHaveBeenCalledTimes(1);
     expect(ctx.reply.mock.calls[0][0]).toContain('Настройки уведомлений');
@@ -103,7 +103,7 @@ describe('TelegramSettingsService — settings:toggle', () => {
     const botService = makeBotService({ notifyEnabled: true });
     const { service, fakeBot, notificationService, scheduleService } =
       makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:toggle');
     expect(ctx.answerCbQuery).toHaveBeenCalled();
     expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
@@ -120,7 +120,7 @@ describe('TelegramSettingsService — settings:toggle', () => {
     const botService = makeBotService({ notifyEnabled: false });
     const { service, fakeBot, notificationService, scheduleService } =
       makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     await runAction(fakeBot, 'settings:toggle');
     expect(botService._get().notifyEnabled).toBe(true);
     expect(scheduleService.rescheduleForUser).toHaveBeenCalledWith(1n);
@@ -132,7 +132,7 @@ describe('TelegramSettingsService — settings:toggle_gamified', () => {
   it('переключает notifyGamified и перепланирует', async () => {
     const botService = makeBotService({ notifyGamified: false });
     const { service, fakeBot, scheduleService } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:toggle_gamified');
     expect(botService._get().notifyGamified).toBe(true);
     expect(scheduleService.rescheduleForUser).toHaveBeenCalledWith(1n);
@@ -144,7 +144,7 @@ describe('TelegramSettingsService — час напоминания', () => {
   it('settings:hour:9 пишет notifyLocalHour=9 и перепланирует', async () => {
     const botService = makeBotService();
     const { service, fakeBot, scheduleService } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:hour:9');
     expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
       notifyLocalHour: 9,
@@ -156,7 +156,7 @@ describe('TelegramSettingsService — час напоминания', () => {
   it('settings:pick_hour показывает клавиатуру часов, не трогает БД', async () => {
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:pick_hour');
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
     expect(ctx.editMessageText).toHaveBeenCalled();
@@ -167,7 +167,7 @@ describe('TelegramSettingsService — часовой пояс', () => {
   it('settings:tz:Europe/Berlin пишет валидную таймзону из списка', async () => {
     const botService = makeBotService();
     const { service, fakeBot, scheduleService } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:tz:Europe/Berlin');
     expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
       notifyTimezone: 'Europe/Berlin',
@@ -179,7 +179,7 @@ describe('TelegramSettingsService — часовой пояс', () => {
   it('таймзона не из белого списка — тихо игнорируется (без записи в БД)', async () => {
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:tz:Mars/Colony');
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
     expect(ctx.editMessageText).not.toHaveBeenCalled();
@@ -191,7 +191,7 @@ describe('TelegramSettingsService — settings:back', () => {
   it('просто перерисовывает экран настроек, без записи', async () => {
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:back');
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
     expect(ctx.editMessageText).toHaveBeenCalled();
@@ -206,7 +206,7 @@ describe('TelegramSettingsService — ошибки', () => {
       updateUserSettings: jest.fn(),
     };
     const { service, fakeBot } = makeService(botService);
-    await service.onModuleInit();
+    service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:toggle');
     expect(ctx.answerCbQuery).toHaveBeenCalledWith(
       expect.stringContaining('Не удалось'),

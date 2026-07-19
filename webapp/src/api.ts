@@ -1,5 +1,15 @@
 // Shared API client for the web app.
 // Uses Authorization: Bearer <token> instead of x-telegram-init-data.
+import type {
+  Need,
+  UserProfile,
+  DayHistory,
+  EmotionEntry,
+  SchemaDiaryEntry,
+  ModeDiaryEntry,
+  GratitudeDiaryEntry,
+} from '../../shared/src/types';
+
 const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
 const BASE = rawBase && !rawBase.startsWith('http') ? `https://${rawBase}` : rawBase;
 
@@ -41,7 +51,7 @@ async function post(path: string, body: unknown): Promise<void> {
   });
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch {}
+    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
     throw new Error(msg);
   }
 }
@@ -54,7 +64,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   });
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch {}
+    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
     throw new Error(msg);
   }
   return res.json();
@@ -68,7 +78,7 @@ async function patchJson<T>(path: string, body: unknown): Promise<T> {
   });
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch {}
+    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
     throw new Error(msg);
   }
   return res.json();
@@ -89,7 +99,7 @@ async function adminReq<T>(method: string, path: string, key: string, body?: unk
   });
   if (!res.ok) {
     let msg = `API error: ${res.status}`;
-    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch {}
+    try { const j = await res.json(); if (j?.message) msg = typeof j.message === 'string' ? j.message : JSON.stringify(j.message); } catch { /* best-effort: ошибку намеренно игнорируем */ }
     throw new Error(msg);
   }
   if (res.status === 204) return undefined as T;
@@ -137,6 +147,21 @@ export interface AdminBooking {
   id: number; startsAt: string; durationMin: number; type: string; status: string;
   clientName: string; clientContact: string; message: string | null;
   cancelToken: string; meetingUrl: string | null;
+}
+/** Diagnostics snapshot from GET /api/booking/admin/status (no secrets). */
+export interface AdminBookingStatus {
+  siteUrl: string;
+  appUrl: string;
+  robokassa: boolean;
+  robokassaTest: boolean;
+  zoom: boolean;
+  zoomVars: { accountId: boolean; clientId: boolean; clientSecret: boolean };
+  meetingStaticUrl: boolean;
+  appleCalendar: boolean;
+  calendarBusyCount: number | null;
+  calendarNames: string[];
+  calendarBlocking: boolean;
+  emailFallback: boolean;
 }
 export interface ArticleSummary {
   id: number; slug: string; title: string; description: string; date: string; readMin: number; heroImage?: string | null; diagramKey?: string | null;
@@ -314,41 +339,98 @@ export interface ClientData {
   ysqActiveSchemaIds: string[];
   ysqHistory: YsqHistoryEntry[];
 }
+export interface UserSchemaNote {
+  schemaId: string;
+  triggers: string;
+  feelings: string;
+  thoughts: string;
+  origins: string;
+  reality: string;
+  healthyView: string;
+  behavior: string;
+  updatedAt: string;
+}
+export interface UserModeNote {
+  modeId: string;
+  triggers: string;
+  feelings: string;
+  thoughts: string;
+  needs: string;
+  behavior: string;
+  updatedAt: string;
+}
+export interface BeliefCheckEntry {
+  id: number;
+  belief: string;
+  evidenceFor: string[];
+  evidenceAgainst: string[];
+  reframe: string | null;
+  createdAt: string;
+}
+export interface LetterEntry {
+  id: number;
+  text: string;
+  createdAt: string;
+}
+export interface FlashcardEntry {
+  id: number;
+  modeId: string;
+  needId: string;
+  reflection: string | null;
+  action: string | null;
+  createdAt: string;
+}
+export interface Insights {
+  weeklyStats: Array<{
+    needId: string;
+    avg: number | null;
+    trend: '↑' | '↓' | '→';
+  }>;
+  bestDayOfWeek: string | null;
+  worstDayOfWeek: string | null;
+  totalDays: number;
+}
 
 // ─── API object (identical endpoints, different auth header) ──────────────────
 export const api = {
   init:           (tzOffset?: number) => post('/api/init', { tzOffset }),
+
+  // Продуктовая аналитика (правило №8). Fire-and-forget: аналитика НИКОГДА не
+  // влияет на UX — ошибки/сеть глотаем, промис не пробрасываем.
+  trackEvent: (name: string, meta?: Record<string, unknown>): void => {
+    void post('/api/event', { name, meta }).catch(() => undefined);
+  },
   getDisclaimer:  () => get<{ accepted: boolean }>('/api/disclaimer'),
   acceptDisclaimer: () => post('/api/disclaimer', {}),
   getYsqProgress: () => get<{ answers: number[]; page: number } | null>('/api/ysq-progress'),
   saveYsqProgress: (answers: number[], page: number) => post('/api/ysq-progress', { answers, page }),
   deleteYsqProgress: () => del('/api/ysq-progress'),
-  needs:          () => get<any[]>('/api/needs'),
+  needs:          () => get<Need[]>('/api/needs'),
   ratings:        (date?: string) => get<Record<string, number>>(`/api/ratings${date ? `?date=${encodeURIComponent(date)}` : ''}`),
-  saveRating:     async (needId: string, value: number, date?: string): Promise<{ ok: boolean; allDone: boolean; streak?: any }> => {
+  saveRating:     async (needId: string, value: number, date?: string): Promise<{ ok: boolean; allDone: boolean; streak?: StreakData }> => {
     const res = await fetch(`${BASE}/api/rating`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ needId, value, date }), credentials: 'include' });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     return res.json();
   },
-  history:        (days = 7) => get<any[]>(`/api/history?days=${days}`),
-  getSettings:    () => get<any>('/api/settings'),
-  updateSettings: (body: any) => post('/api/settings', body),
-  getAchievements: () => get<any[]>('/api/achievements'),
+  history:        (days = 7) => get<DayHistory[]>(`/api/history?days=${days}`),
+  getSettings:    () => get<UserSettings>('/api/settings'),
+  updateSettings: (body: Partial<UserSettings>) => post('/api/settings', body),
+  getAchievements: () => get<Achievement[]>('/api/achievements'),
   getNote:         (date: string) => get<{ text: string | null; tags: string[] }>(`/api/note?date=${date}`),
   saveNote:        (date: string, text: string, tags?: string[]) => post('/api/note', { date, text, tags }),
-  getStreak:      () => get<any>('/api/streak'),
+  getStreak:      () => get<StreakData>('/api/streak'),
   recordActivity: () => post('/api/activity', {}),
-  getInsights:    () => get<any>('/api/insights'),
+  getInsights:    () => get<Insights>('/api/insights'),
   getExport:      () => get<{ text: string }>('/api/export'),
-  getPractices:   (needId: string) => get<any[]>(`/api/practices?needId=${needId}`),
+  getPractices:   (needId: string) => get<UserPractice[]>(`/api/practices?needId=${needId}`),
   addPractice:    (needId: string, text: string) => post('/api/practices', { needId, text }),
   deletePractice: (id: number) => del(`/api/practices/${id}`),
   deleteAllUserData: () => del('/api/user'),
-  getPendingPlans: () => get<any[]>('/api/plan/pending'),
-  getPlanHistory:  (days = 30) => get<any[]>(`/api/plans/history?days=${days}`),
+  getPendingPlans: () => get<PracticePlan[]>('/api/plan/pending'),
+  getPlanHistory:  (days = 30) => get<PracticePlan[]>(`/api/plans/history?days=${days}`),
   createPlan:      (needId: string, practiceText: string, reminderUtcHour?: number) => post('/api/plan', { needId, practiceText, reminderUtcHour }),
   checkinPlan:     (id: number, done: boolean) => post(`/api/plan/${id}/checkin`, { done }),
-  getPair:         () => get<any>('/api/pair'),
+  getPair:         () => get<PairsData>('/api/pair'),
   createPairInvite: async () => {
     const res = await fetch(`${BASE}/api/pair/invite`, { method: 'POST', headers: authHeaders(), body: '{}', credentials: 'include' });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -364,25 +446,25 @@ export const api = {
   getYsqResult:    () => get<{ answers: number[]; completedAt: string } | null>('/api/ysq-result'),
   saveYsqResult:   (answers: number[]) => post('/api/ysq-result', { answers }),
   deleteYsqResult: () => del('/api/ysq-result'),
-  getYsqHistory:   () => get<any[]>('/api/ysq-history'),
-  getProfile:      () => get<any>('/api/profile'),
+  getYsqHistory:   () => get<YsqHistoryEntry[]>('/api/ysq-history'),
+  getProfile:      () => get<UserProfile>('/api/profile'),
   updateName:      (name: string) => postJson<{ ok: boolean }>('/api/profile/name', { name }),
-  getSchemaDiary:    () => get<any[]>('/api/diary/schema'),
-  createSchemaDiary: (data: any) => postJson<any>('/api/diary/schema', data),
+  getSchemaDiary:    () => get<SchemaDiaryEntry[]>('/api/diary/schema'),
+  createSchemaDiary: (data: { trigger: string; emotions: EmotionEntry[]; thoughts?: string; bodyFeelings?: string; actualBehavior?: string; schemaIds: string[]; schemaOrigin?: string; healthyView?: string; realProblems?: string; excessiveReactions?: string; healthyBehavior?: string }) => postJson<SchemaDiaryEntry>('/api/diary/schema', data),
   deleteSchemaDiary: (id: number) => del(`/api/diary/schema/${id}`),
-  getModeDiary:      () => get<any[]>('/api/diary/mode'),
-  createModeDiary:   (data: any) => postJson<any>('/api/diary/mode', data),
+  getModeDiary:      () => get<ModeDiaryEntry[]>('/api/diary/mode'),
+  createModeDiary:   (data: { modeId: string; situation: string; thoughts?: string; feelings?: string; bodyFeelings?: string; actions?: string; actualNeed?: string; childhoodMemories?: string }) => postJson<ModeDiaryEntry>('/api/diary/mode', data),
   deleteModeDiary:   (id: number) => del(`/api/diary/mode/${id}`),
-  getGratitudeDiary:    () => get<any[]>('/api/diary/gratitude'),
-  createGratitudeDiary: (date: string, items: string[]) => postJson<any>('/api/diary/gratitude', { date, items }),
+  getGratitudeDiary:    () => get<GratitudeDiaryEntry[]>('/api/diary/gratitude'),
+  createGratitudeDiary: (date: string, items: string[]) => postJson<GratitudeDiaryEntry>('/api/diary/gratitude', { date, items }),
   deleteGratitudeDiary: (id: number) => del(`/api/diary/gratitude/${id}`),
   createTherapyInvite:  () => postJson<{ code: string; url: string }>('/api/therapy/invite', {}),
-  getTherapyRelation:   () => get<any | null>('/api/therapy/relation'),
+  getTherapyRelation:   () => get<TherapyRelationInfo | null>('/api/therapy/relation'),
   joinTherapy:          (code: string) => post('/api/therapy/join', { code }),
   leaveTherapy:         () => del('/api/therapy/relation'),
-  getTherapyClients:    () => get<any[]>('/api/therapy/clients'),
-  addClientManually:    (clientTelegramId: number) => postJson<any[]>('/api/therapy/clients/add', { clientTelegramId }),
-  addVirtualClient:     (name: string) => postJson<any[]>('/api/therapy/clients/virtual', { name }),
+  getTherapyClients:    () => get<TherapyClientSummary[]>('/api/therapy/clients'),
+  addClientManually:    (clientTelegramId: number) => postJson<TherapyClientSummary[]>('/api/therapy/clients/add', { clientTelegramId }),
+  addVirtualClient:     (name: string) => postJson<TherapyClientSummary[]>('/api/therapy/clients/virtual', { name }),
   removeClient:         (clientId: number) => del(`/api/therapy/clients/${clientId}`),
   renameClient:         (clientId: number, alias: string) => post(`/api/therapy/rename-client/${clientId}`, { alias }),
   requestYsq:           (clientId: number) => post(`/api/therapy/request-ysq/${clientId}`, {}),
@@ -390,37 +472,39 @@ export const api = {
   getTherapistRequest:  () => get<{ id: number; status: string; rejectReason: string | null } | null>('/api/therapy/request'),
   submitTherapistRequest: (body: { fullName: string; qualification: string; contacts: string; message?: string }) =>
     postJson<{ ok: boolean }>('/api/therapy/request', body),
-  createTask:           (body: any) => postJson<any>('/api/therapy/tasks', body),
-  getTasks:             () => get<any[]>('/api/therapy/tasks'),
-  getTaskHistory:       () => get<any[]>('/api/therapy/tasks/history'),
+  setTherapistView:     (on: boolean) => postJson<{ ok: boolean }>('/api/therapy/therapist-view', { on }),
+  resignTherapist:      () => del('/api/therapy/therapist-role'),
+  createTask:           (body: { type: string; text: string; targetDays?: number; needId?: string; dueDate?: string; clientId?: number }) => postJson<UserTask>('/api/therapy/tasks', body),
+  getTasks:             () => get<UserTask[]>('/api/therapy/tasks'),
+  getTaskHistory:       () => get<UserTask[]>('/api/therapy/tasks/history'),
   completeTask:         (id: number, done: boolean) => post(`/api/therapy/tasks/${id}/complete`, { done }),
-  getTherapyTasksForClient: (clientId: number) => get<any[]>(`/api/therapy/tasks/client/${clientId}`),
+  getTherapyTasksForClient: (clientId: number) => get<UserTask[]>(`/api/therapy/tasks/client/${clientId}`),
   getAllTherapyTasks:       () => get<{ clientId: number; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
-  getTherapistNotes:    (clientId: number) => get<any[]>(`/api/therapy/notes/${clientId}`),
-  createTherapistNote:  (clientId: number, date: string, text: string) => postJson<any>(`/api/therapy/notes/${clientId}`, { date, text }),
+  getTherapistNotes:    (clientId: number) => get<TherapistNote[]>(`/api/therapy/notes/${clientId}`),
+  createTherapistNote:  (clientId: number, date: string, text: string) => postJson<TherapistNote>(`/api/therapy/notes/${clientId}`, { date, text }),
   deleteTherapistNote:  (noteId: number) => del(`/api/therapy/notes/${noteId}`),
   getConceptualization: (clientId: number) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
   saveConceptualization: (clientId: number, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
-  updateSessionInfo:    (clientId: number, body: any) => post(`/api/therapy/session-info/${clientId}`, body),
-  getTherapyClientData: (clientId: number) => get<any>(`/api/therapy/client-data/${clientId}`),
+  updateSessionInfo:    (clientId: number, body: { therapyStartDate?: string | null; nextSession?: string | null; meetingDays?: number[] }) => post(`/api/therapy/session-info/${clientId}`, body),
+  getTherapyClientData: (clientId: number) => get<ClientData>(`/api/therapy/client-data/${clientId}`),
   getTherapyClientHistory: (clientId: number) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
-  getSchemaNotes:       () => get<any[]>('/api/schema-notes'),
-  saveSchemaNote:       (body: any) => post('/api/schema-notes', body),
-  getModeNotes:         () => get<any[]>('/api/mode-notes'),
-  saveModeNote:         (body: any) => post('/api/mode-notes', body),
-  getBeliefChecks:      () => get<any[]>('/api/belief-checks'),
-  createBeliefCheck:    (body: any) => post('/api/belief-checks', body),
+  getSchemaNotes:       () => get<UserSchemaNote[]>('/api/schema-notes'),
+  saveSchemaNote:       (body: { schemaId: string; triggers?: string; feelings?: string; thoughts?: string; origins?: string; reality?: string; healthyView?: string; behavior?: string }) => post('/api/schema-notes', body),
+  getModeNotes:         () => get<UserModeNote[]>('/api/mode-notes'),
+  saveModeNote:         (body: { modeId: string; triggers?: string; feelings?: string; thoughts?: string; needs?: string; behavior?: string }) => post('/api/mode-notes', body),
+  getBeliefChecks:      () => get<BeliefCheckEntry[]>('/api/belief-checks'),
+  createBeliefCheck:    (body: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) => post('/api/belief-checks', body),
   deleteBeliefCheck:    (id: number) => del(`/api/belief-checks/${id}`),
-  getLetters:           () => get<any[]>('/api/letters'),
+  getLetters:           () => get<LetterEntry[]>('/api/letters'),
   createLetter:         (text: string) => post('/api/letters', { text }),
   deleteLetter:         (id: number) => del(`/api/letters/${id}`),
-  getSafePlace:         () => get<any | null>('/api/safe-place'),
+  getSafePlace:         () => get<{ description: string; updatedAt: string } | null>('/api/safe-place'),
   saveSafePlace:        (description: string) => post('/api/safe-place', { description }),
-  getFlashcards:        () => get<any[]>('/api/flashcards'),
-  createFlashcard:      (body: any) => post('/api/flashcards', body),
+  getFlashcards:        () => get<FlashcardEntry[]>('/api/flashcards'),
+  createFlashcard:      (body: { modeId: string; needId: string; reflection?: string; action?: string }) => post('/api/flashcards', body),
   deleteFlashcard:      (id: number) => del(`/api/flashcards/${id}`),
-  getClientSchemaNotes: (clientId: number) => get<any[]>(`/api/therapy/client/${clientId}/schema-notes`),
-  getClientModeNotes:   (clientId: number) => get<any[]>(`/api/therapy/client/${clientId}/mode-notes`),
+  getClientSchemaNotes: (clientId: number) => get<UserSchemaNote[]>(`/api/therapy/client/${clientId}/schema-notes`),
+  getClientModeNotes:   (clientId: number) => get<UserModeNote[]>(`/api/therapy/client/${clientId}/mode-notes`),
   getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
   submitBooking:        (body: { name: string; contact: string; message?: string }) => postJson<{ ok: true }>('/api/booking', body),
   // Slot-based booking
@@ -445,7 +529,7 @@ export const api = {
   getSubscriptionByToken: (token: string) => get<{ status: string; period: string; amount: number; nextChargeAt: string | null }>(`/api/subscription/by-token/${token}`),
   cancelSubscription:   (token: string) => postJson<{ ok: true }>(`/api/subscription/cancel/${token}`, {}),
   // Booking admin — key travels in the x-admin-key header (never in URL/logs)
-  adminStatus:       (key: string) => adminReq<Record<string, any>>('GET', '/api/booking/admin/status', key),
+  adminStatus:       (key: string) => adminReq<AdminBookingStatus>('GET', '/api/booking/admin/status', key),
   adminGetPrices:    (key: string) => adminReq<SessionOption[]>('GET', '/api/booking/admin/prices', key),
   adminSetPrice:     (key: string, type: 'INTRO_15' | 'SESSION_50', amount: number) => adminReq<{ ok: true }>('PATCH', '/api/booking/admin/price', key, { type, amount }),
   adminGetSubPrices: (key: string) => adminReq<{ period: 'month' | 'year'; price: number }[]>('GET', '/api/booking/admin/sub-prices', key),
@@ -473,7 +557,7 @@ export const api = {
   adminCreatePhrase: (key: string, text: string) => adminReq<HealthyAdultPhrase>('POST', '/api/healthy-adult/admin', key, { text }),
   adminUpdatePhrase: (key: string, id: number, patch: { text?: string; enabled?: boolean }) => adminReq<HealthyAdultPhrase>('PATCH', `/api/healthy-adult/admin/${id}`, key, patch),
   adminDeletePhrase: (key: string, id: number) => adminReq<void>('DELETE', `/api/healthy-adult/admin/${id}`, key),
-  adminTestPhrasePost: (key: string, slot: 0 | 1) => adminReq<{ ok: boolean; message: string }>('POST', '/api/healthy-adult/admin/test-post', key, { slot }),
+  adminTestPhrasePost: (key: string) => adminReq<{ ok: boolean; message: string }>('POST', '/api/healthy-adult/admin/test-post', key, {}),
   // Therapist custom modes
   listCustomModes:   ()                               => get<TherapistCustomMode[]>('/api/therapy/custom-modes'),
   createCustomMode:  (body: { name: string; emoji?: string; nodeType?: string }) => postJson<TherapistCustomMode>('/api/therapy/custom-modes', body),

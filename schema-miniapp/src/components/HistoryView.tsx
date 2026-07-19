@@ -641,7 +641,7 @@ export function HistoryView({
     if (history.length === 0) return;
     const date = history[selectedIdx]?.date;
     if (date)
-      api.getNote(date).then((r) => {
+      void api.getNote(date).then((r) => {
         setNoteText(r.text);
         setNoteTags(r.tags ?? []);
       });
@@ -1341,7 +1341,7 @@ export function HistoryView({
         <NoteSheet
           date={history[selectedIdx].date}
           onClose={() => {
-            api.getNote(history[selectedIdx].date).then((r) => {
+            void api.getNote(history[selectedIdx].date).then((r) => {
               setNoteText(r.text);
               setNoteTags(r.tags ?? []);
             });

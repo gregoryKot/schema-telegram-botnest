@@ -2,8 +2,8 @@ import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
-import { pickHealthyAdultPhrase } from '../bot/healthy-adult.data';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
+import { HealthyAdultGeneratorService } from '../bot/healthy-adult.generator';
 
 /** Часовой пояс расписания канала (единый для broadcast, не per-user). */
 const POST_TZ = 'Europe/Moscow';
@@ -11,13 +11,13 @@ const MORNING_CRON = '0 9 * * *';
 const EVENING_CRON = '0 20 * * *';
 
 /**
- * Публикация фраз «Здорового Взрослого» в отдельный Telegram-канал пару раз
- * в день. Канал задаётся env `HEALTHY_ADULT_CHANNEL` (@username или -100…id);
- * без него фича выключена — ничего не постим (безопасный дефолт, чтобы не
- * спамить основной канал). Бизнес-логика выбора фразы — в bot/healthy-adult.data.
+ * Публикация сообщений «Здорового Взрослого» в Telegram-канал дважды в день.
+ * Гибрид (по решению владельца): сначала генерация через Claude API, при сбое
+ * или без ключа — фраза из пула (LRU, без повторов подряд). Каждый пост пишем
+ * в лог HealthyAdultPost — для дедупа и как контекст следующей генерации.
  *
- * Аналитика: охват/подписчики канала измеряются штатной статистикой Telegram,
- * не нашей БД (пост не привязан к userId). Каждый пост пишем в лог для трейсинга.
+ * Канал задаётся env `HEALTHY_ADULT_CHANNEL` (@username или -100…id); без него
+ * фича выключена (безопасный дефолт, чтобы не спамить основной канал).
  */
 @Injectable()
 export class TelegramChannelService {
@@ -28,6 +28,7 @@ export class TelegramChannelService {
     @Optional()
     private readonly bot: Telegraf<Context> | null,
     private readonly phrases: HealthyAdultService,
+    private readonly generator: HealthyAdultGeneratorService,
   ) {}
 
   /** Целевой канал из env (null → фича выключена). */
@@ -38,20 +39,20 @@ export class TelegramChannelService {
 
   @Cron(MORNING_CRON, { name: 'healthyAdultMorning', timeZone: POST_TZ })
   async postMorning() {
-    await this.post(0);
+    await this.post();
   }
 
   @Cron(EVENING_CRON, { name: 'healthyAdultEvening', timeZone: POST_TZ })
   async postEvening() {
-    await this.post(1);
+    await this.post();
   }
 
   /**
-   * Опубликовать фразу для слота (0 = утро, 1 = вечер). Возвращает статус для
-   * диагностики (крон игнорирует, админ-команда /zv показывает): выключенная
-   * фича и ошибка отправки различимы, чтобы было видно, дошёл ли пост.
+   * Опубликовать одно сообщение сейчас. Возвращает статус для диагностики
+   * (крон игнорирует, /zv и админка показывают): выключенная фича, пустой пул
+   * и ошибка отправки различимы, чтобы было видно, дошёл ли пост.
    */
-  async post(slot: number): Promise<{ ok: boolean; message: string }> {
+  async post(): Promise<{ ok: boolean; message: string }> {
     const channel = this.channel();
     if (!channel) {
       return {
@@ -66,20 +67,27 @@ export class TelegramChannelService {
       };
     }
 
-    const pool = await this.phrases.enabledTexts();
-    if (pool.length === 0) {
+    const recent = await this.phrases.recentPostTexts(10);
+    let text = await this.generator.generate(recent);
+    let source: 'ai' | 'pool' = 'ai';
+    if (!text) {
+      text = await this.phrases.pickFromPool(recent);
+      source = 'pool';
+    }
+    if (!text) {
       return {
         ok: false,
-        message: '⚠️ Нет активных фраз — добавь или включи хотя бы одну.',
+        message: '⚠️ Нет активных фраз и генерация недоступна — добавь фразу.',
       };
     }
-    const phrase = pickHealthyAdultPhrase(new Date(), slot, pool);
+
     try {
-      await this.bot.telegram.sendMessage(channel, phrase);
-      this.logger.log(`healthy_adult_post slot=${slot} channel=${channel}`);
+      await this.bot.telegram.sendMessage(channel, text);
+      await this.phrases.recordPost(text, source);
+      this.logger.log(`healthy_adult_post source=${source} channel=${channel}`);
       return {
         ok: true,
-        message: `✅ Опубликовано в ${channel}:\n\n${phrase}`,
+        message: `✅ Опубликовано в ${channel} (${source}):\n\n${text}`,
       };
     } catch (err) {
       // Телеграм кладёт причину в err.response.description; типобезопасно
@@ -91,7 +99,7 @@ export class TelegramChannelService {
       const desc =
         resp?.description ?? (err instanceof Error ? err.message : String(err));
       this.logger.error(
-        `Failed to post healthy-adult phrase (slot=${slot}, channel=${channel}): ${desc}`,
+        `Failed to post healthy-adult message (channel=${channel}): ${desc}`,
       );
       return {
         ok: false,

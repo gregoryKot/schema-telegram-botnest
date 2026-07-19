@@ -81,9 +81,10 @@ export class TelegramOidcProvider implements AuthProviderHandler {
         }),
         signal: AbortSignal.timeout(10_000),
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       this.logger.error(
-        `Telegram OIDC token fetch error: ${e?.message} | cause: ${String(e?.cause)}`,
+        `Telegram OIDC token fetch error: ${err.message} | cause: ${String((err as { cause?: unknown }).cause)}`,
       );
       throw new UnauthorizedException(
         'Telegram OIDC token exchange network error',
@@ -109,9 +110,10 @@ export class TelegramOidcProvider implements AuthProviderHandler {
         headers: { Authorization: `Bearer ${access_token}` },
         signal: AbortSignal.timeout(10_000),
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       this.logger.error(
-        `Telegram OIDC userinfo fetch error: ${e?.message} | cause: ${String(e?.cause)}`,
+        `Telegram OIDC userinfo fetch error: ${err.message} | cause: ${String((err as { cause?: unknown }).cause)}`,
       );
       throw new UnauthorizedException('Telegram OIDC userinfo network error');
     }

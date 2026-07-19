@@ -7,6 +7,8 @@ import { Loader } from './Loader';
 import { getTheme, toggleTheme, resetToSystemTheme } from '../utils/theme';
 import type { Theme } from '../utils/theme';
 import { useSetAddressForm } from '../utils/addressForm';
+import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
+import { botHandle, botShortUrl } from '../utils/botConfig';
 
 const TIMEZONES = [
   { label: 'Лос-Анджелес (UTC−8)', iana: 'America/Los_Angeles' },
@@ -53,9 +55,10 @@ interface Props {
   onOpenTherapistCabinet?: () => void;
   therapistMode?: boolean;
   onToggleTherapistMode?: () => void;
+  onResignTherapist?: () => Promise<void> | void;
 }
 
-export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode }: Props) {
+export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, onOpenTherapistCabinet, therapistMode, onToggleTherapistMode, onResignTherapist }: Props) {
   const goBack = useHistorySheet(onClose);
   const [subView, setSubView] = useState<'main' | 'time' | 'tz' | 'freq' | 'quiet'>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
@@ -72,6 +75,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting]     = useState(false);
+  const [resignConfirm, setResignConfirm] = useState(false);
+  const [resignBusy, setResignBusy] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
   const [therapyRelation, setTherapyRelation] = useState<TherapyRelationInfo | null | undefined>(undefined);
   const [therapyJoinCode, setTherapyJoinCode] = useState('');
@@ -80,6 +85,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [editName, setEditName] = useState(displayName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);
+  const motion = useReducedMotionPref(() => {
+    setSavedToast(true);
+    setTimeout(() => setSavedToast(false), 1800);
+  });
   const setAddressForm = useSetAddressForm();
   const [therapistReq, setTherapistReq] = useState<{ status: string; rejectReason: string | null } | null | undefined>(undefined);
   const [showReqForm, setShowReqForm] = useState(false);
@@ -94,6 +103,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     api.getSettings()
       .then(setSettings)
       .catch(() => setSettings({ notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [], therapistShareCards: true, therapistShareProfile: true }));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
     setPairLoading(true);
     api.getPair().then(setPairData).catch(() => {}).finally(() => setPairLoading(false));
     api.getTherapyRelation().then(setTherapyRelation).catch(() => setTherapyRelation(null));
@@ -116,7 +126,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
       const { url } = await api.createPairInvite();
       await api.getPair().then(setPairData);
       setPairInviteUrl(url);
-      try { if (navigator.share) await navigator.share({ text: `Давай отслеживать потребности вместе! ${url}` }); } catch {}
+      try { if (navigator.share) await navigator.share({ text: `Давай отслеживать потребности вместе! ${url}` }); } catch { /* best-effort: ошибку намеренно игнорируем */ }
     } finally { setPairLoading(false); }
   }
 
@@ -301,12 +311,45 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     style={{ color: 'var(--accent)', cursor: 'pointer' }}>Авто (по системе) →</span>}
                   right={<Toggle on={theme === 'dark'} onClick={() => setTheme(toggleTheme())} />}
                 />
+                {/* Нейроинклюзивность: сниженная анимация (WCAG 2.3.3) */}
+                <SRow
+                  title="Меньше движения"
+                  sub={motion.sub}
+                  right={<Toggle on={motion.reduced} onClick={motion.toggle} />}
+                />
                 {userRole === 'THERAPIST' && onToggleTherapistMode && (
                   <SRow
                     title="Режим специалиста"
                     sub={therapistMode ? 'Кабинет терапевта' : 'Режим клиента'}
                     right={<Toggle on={!!therapistMode} onClick={onToggleTherapistMode} />}
                   />
+                )}
+                {userRole === 'THERAPIST' && onResignTherapist && (
+                  !resignConfirm ? (
+                    <div style={{ padding: '10px 0' }}>
+                      <button onClick={() => setResignConfirm(true)}
+                        style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
+                        Перестать быть специалистом
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '10px 0' }}>
+                      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 10 }}>
+                        Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряешь. Заявку можно подать заново.
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button disabled={resignBusy} onClick={() => setResignConfirm(false)}
+                          style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid rgba(var(--fg-rgb),0.12)', background: 'transparent', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer' }}>
+                          Отмена
+                        </button>
+                        <button disabled={resignBusy}
+                          onClick={() => { setResignBusy(true); void (async () => { try { await onResignTherapist(); setResignConfirm(false); } finally { setResignBusy(false); } })(); }}
+                          style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: 'var(--accent-red, #e5484d)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                          {resignBusy ? '…' : 'Снять роль'}
+                        </button>
+                      </div>
+                    </div>
+                  )
                 )}
 
                 {/* Имя */}
@@ -325,7 +368,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         const name = editName.trim(); if (!name) return;
                         setNameSaving(true);
                         try { await api.updateName(name); onNameChanged?.(name); setSavedToast(true); setTimeout(() => setSavedToast(false), 1800); }
-                        catch {} finally { setNameSaving(false); }
+                        catch { /* best-effort: ошибку намеренно игнорируем */ } finally { setNameSaving(false); }
                       }}
                       style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: 'inherit', flexShrink: 0 }}
                     >{nameSaving ? '...' : 'Сохранить'}</button>
@@ -333,7 +376,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 </div>
 
                 {/* Уведомления */}
-                <SHead id="s-notifications" label="Уведомления" hint="Приходят через Telegram — @SchemaLabBot" />
+                <SHead id="s-notifications" label="Уведомления" hint={`Приходят через Telegram — ${botHandle}`} />
                 {settings.notifyPausedUntil && new Date(settings.notifyPausedUntil) > new Date() && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '13px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                     <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
@@ -478,7 +521,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   <SRow title="Открыть кабинет" sub="Клиенты, задания, приглашения" onClick={onOpenTherapistCabinet} />
                   <div style={{ padding: '14px 0', borderBottom: '1px solid rgba(var(--fg-rgb),0.06)' }}>
                     <button onClick={async () => {
-                      try { const { url } = await api.createTherapyInvite(); setTherapyInviteUrl(url); try { await navigator.clipboard.writeText(url); } catch {} } catch {}
+                      try { const { url } = await api.createTherapyInvite(); setTherapyInviteUrl(url); try { await navigator.clipboard.writeText(url); } catch { /* best-effort: ошибку намеренно игнорируем */ } } catch { /* best-effort: ошибку намеренно игнорируем */ }
                     }} style={{ background: 'none', border: '1px solid rgba(var(--fg-rgb),0.15)', borderRadius: 7, padding: '7px 14px', color: 'var(--text-sub)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
                       + Создать приглашение клиенту
                     </button>
@@ -521,7 +564,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                         <div>
                           <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 4 }}>Отправь другу:</div>
                           <div style={{ fontSize: 12, color: 'var(--text-sub)', wordBreak: 'break-all', marginBottom: 8, userSelect: 'all', fontFamily: 'monospace' }}>{pairInviteUrl}</div>
-                          <button onClick={async () => { try { await navigator.clipboard.writeText(pairInviteUrl); setPairInviteCopied(true); setTimeout(() => setPairInviteCopied(false), 2000); } catch {} }}
+                          <button onClick={async () => { try { await navigator.clipboard.writeText(pairInviteUrl); setPairInviteCopied(true); setTimeout(() => setPairInviteCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ } }}
                             style={{ background: 'none', border: 'none', color: pairInviteCopied ? 'var(--accent-green)' : 'var(--accent)', fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                             {pairInviteCopied ? '✓ Скопировано' : 'Скопировать ссылку'}
                           </button>
@@ -548,14 +591,14 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 {/* Поделиться */}
                 <SHead id="s-share" label="Поделиться" />
                 <SRow title="Пригласить друга" sub="Поделиться ссылкой на бота" onClick={async () => {
-                  const text = 'Трекер потребностей – отслеживай своё состояние каждый день. t.me/SchemaLabBot';
-                  try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); } catch { try { await navigator.clipboard.writeText(text); } catch {} }
+                  const text = `Трекер потребностей – отслеживай своё состояние каждый день. ${botShortUrl}`;
+                  try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); } catch { try { await navigator.clipboard.writeText(text); } catch { /* best-effort: ошибку намеренно игнорируем */ } }
                 }} />
                 <SRow title="Сводка для терапевта" sub="Данные за 30 дней" onClick={async () => {
                   const { text } = await api.getExport();
                   let shared = false;
-                  try { if (navigator.share) { await navigator.share({ text }); shared = true; } } catch {}
-                  if (!shared) { try { await navigator.clipboard.writeText(text); } catch {} setExportText(text); }
+                  try { if (navigator.share) { await navigator.share({ text }); shared = true; } } catch { /* best-effort: ошибку намеренно игнорируем */ }
+                  if (!shared) { try { await navigator.clipboard.writeText(text); } catch { /* best-effort: ошибку намеренно игнорируем */ } setExportText(text); }
                 }} />
 
                 {/* О приложении */}
@@ -599,7 +642,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
           <pre style={{ fontSize: 11, color: 'var(--text-sub)', lineHeight: 1.6, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 8, padding: '12px 14px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: 14, userSelect: 'all', fontFamily: 'monospace' }}>
             {exportText}
           </pre>
-          <button onClick={async () => { try { await navigator.clipboard.writeText(exportText); setExportCopied(true); setTimeout(() => setExportCopied(false), 2000); } catch {} }}
+          <button onClick={async () => { try { await navigator.clipboard.writeText(exportText); setExportCopied(true); setTimeout(() => setExportCopied(false), 2000); } catch { /* best-effort: ошибку намеренно игнорируем */ } }}
             style={{ width: '100%', padding: '12px 0', border: 'none', borderRadius: 10, background: exportCopied ? 'rgba(52,211,153,0.12)' : 'rgba(var(--fg-rgb),0.08)', color: exportCopied ? 'var(--accent-green)' : 'var(--text-sub)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
             {exportCopied ? '✓ Скопировано' : 'Скопировать'}
           </button>

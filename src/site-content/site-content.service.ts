@@ -61,11 +61,15 @@ export class SiteContentService {
   ): MarqueeTopic[] {
     if (!raw) return fallback;
     try {
-      const parsed = JSON.parse(raw);
+      const parsed: unknown = JSON.parse(raw);
       if (
         Array.isArray(parsed) &&
         parsed.every(
-          (t) => typeof t?.label === 'string' && typeof t?.href === 'string',
+          (t): t is MarqueeTopic =>
+            typeof t === 'object' &&
+            t !== null &&
+            typeof (t as { label?: unknown }).label === 'string' &&
+            typeof (t as { href?: unknown }).href === 'string',
         )
       ) {
         return parsed;

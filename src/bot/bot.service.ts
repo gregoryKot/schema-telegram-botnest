@@ -158,7 +158,7 @@ export class BotService {
     const enc = encryptRecord(data as Record<string, unknown>, {
       jsonArrays: ['mySchemaIds', 'myModeIds'],
     });
-    await this.prisma.user.update({ where: { id: userId }, data: enc as any });
+    await this.prisma.user.update({ where: { id: userId }, data: enc });
   }
 
   async getNote(
