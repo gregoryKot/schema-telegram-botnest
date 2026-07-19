@@ -111,7 +111,7 @@ export function drawYsqCard(
 
   for (const s of rows) {
     const color = th.color(s.color);
-    const metric = `${s.avg}/6 · ${s.pct5plus}%`;
+    const metric = `${s.avg}/6`;
     ctx.font = cardFont(12, 'bold');
     const metricW = ctx.measureText(metric).width;
 

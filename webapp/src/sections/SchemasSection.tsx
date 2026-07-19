@@ -192,19 +192,22 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         <div className="section">
           <div className="section-head">
             <h3>Тест на схемы</h3>
+            {/* Незаконченный прогресс приоритетнее результата: кнопка ведёт
+                в тест на сохранённый вопрос (autoResume), поэтому и подпись —
+                «продолжить», иначе «Результаты» открывали бы сам тест. */}
             <button onClick={() => onOpenSchema({ startTest: true })} className="link">
-              {ysqCompletedAt
-                ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты →`
-                : ysqProgressAnswered !== null
-                  ? `продолжить (${ysqProgressAnswered} из 116) →`
+              {ysqProgressAnswered !== null
+                ? `продолжить (${ysqProgressAnswered} из 116) →`
+                : ysqCompletedAt
+                  ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты →`
                   : 'Начать →'}
             </button>
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-            {ysqCompletedAt
-              ? 'Результаты, история прохождений и «поделиться» – внутри'
-              : ysqProgressAnswered !== null
-                ? 'Тест начат – прогресс сохранён, можно продолжить с того же места'
+            {ysqProgressAnswered !== null
+              ? 'Тест начат – прогресс сохранён, можно продолжить с того же места'
+              : ysqCompletedAt
+                ? 'Результаты, история прохождений и «поделиться» – внутри'
                 : tr('Определи схемы автоматически – 116 вопросов, 10 минут', 'Определите схемы автоматически – 116 вопросов, 10 минут')}
           </div>
         </div>
