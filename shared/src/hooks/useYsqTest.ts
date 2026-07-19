@@ -345,6 +345,10 @@ export interface SchemaScore {
   pct5plus: number;
   /** Средний балл по вопросам схемы, 1–6 (0 если ни одного ответа). */
   avg: number;
+  /** Число ответов «5» или «6» — для человекочитаемого «N из M». */
+  n5plus: number;
+  /** Всего вопросов в схеме (знаменатель метрик). */
+  nQuestions: number;
 }
 
 // Порог активности по среднему баллу: «часто так» и выше в среднем по схеме.
@@ -369,17 +373,15 @@ export function computeScores(answers: number[]): Record<string, SchemaScore> {
     const sum = vals.reduce((a, b) => a + b, 0);
     const max = schema.questions.length * 6;
     const pct = Math.round((sum / max) * 100);
+    const n5plus = vals.filter((v) => v >= 5).length;
+    const nQuestions = schema.questions.length;
     const pct5plus =
-      vals.length > 0
-        ? Math.round(
-            (vals.filter((v) => v >= 5).length / schema.questions.length) * 100,
-          )
-        : 0;
+      vals.length > 0 ? Math.round((n5plus / nQuestions) * 100) : 0;
     const avg =
       vals.length > 0
         ? Math.round((sum / schema.questions.length) * 10) / 10
         : 0;
-    result[schema.name] = { sum, max, pct, pct5plus, avg };
+    result[schema.name] = { sum, max, pct, pct5plus, avg, n5plus, nQuestions };
   }
   return result;
 }
@@ -772,14 +774,17 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
         ? 'Активных схем не найдено'
         : `${activeCount}\u00A0${activeCount === 1 ? 'выраженная схема' : activeCount < 5 ? 'выраженные схемы' : 'выраженных схем'}`;
 
+    // Дельта со прошлого прохождения — в единицах среднего балла (главная
+    // метрика карточки), напр. «+0.4». Старые записи истории могли не хранить
+    // avg — тогда дельту не показываем (null), а не смешиваем с pct5plus.
     const prevEntry = history.length >= 2 ? history[1] : null;
     const getSchemaDelta = (schemaName: string): number | null => {
       if (!prevEntry) return null;
       const id = SCHEMA_NAME_TO_ID[schemaName];
       if (!id) return null;
       const prev = prevEntry.scores.find((s) => s.id === id);
-      if (prev == null) return null;
-      return (scores[schemaName]?.pct5plus ?? 0) - prev.pct5plus;
+      if (prev == null || prev.avg == null) return null;
+      return Math.round(((scores[schemaName]?.avg ?? 0) - prev.avg) * 10) / 10;
     };
 
     return {
@@ -841,13 +846,13 @@ export function buildShareText(
     for (const s of active) {
       const sc = scores[s.name];
       lines.push(
-        `• ${s.name} — ответы 5–6: ${sc.pct5plus}%, средний балл ${sc.avg} из 6`,
+        `• ${s.name} — средний балл ${sc.avg} из 6 (ответов «5–6»: ${sc.n5plus} из ${sc.nQuestions})`,
       );
     }
   }
   lines.push(
     '',
-    'Два способа подсчёта: доля ответов «5–6» (классический) и средний балл по схеме (выражена от 4 из 6).',
+    'Средний балл — насколько утверждения схемы в среднем про меня (от 4 из 6 — выражена).',
     'Образовательный опросник для самонаблюдения, не диагноз. schemehappens.ru',
   );
   return lines.join('\n');

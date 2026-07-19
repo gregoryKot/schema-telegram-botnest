@@ -490,11 +490,15 @@ export function SchemasSection({
                   >
                     Тест на схемы
                   </div>
+                  {/* Незаконченный прогресс приоритетнее результата: кнопка
+                      ведёт в тест на сохранённый вопрос (autoResume), поэтому
+                      и подпись «Продолжить», иначе «Результаты» открывали бы
+                      сам тест. */}
                   <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-                    {ysqCompletedAt
-                      ? `Пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты и «поделиться» внутри`
-                      : ysqProgressAnswered != null
-                        ? `Начат · отвечено ${ysqProgressAnswered} из 116`
+                    {ysqProgressAnswered != null
+                      ? `Начат · отвечено ${ysqProgressAnswered} из 116`
+                      : ysqCompletedAt
+                        ? `Пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты и «поделиться» внутри`
                         : tr(
                             'Определи схемы автоматически',
                             'Определите схемы автоматически',
@@ -507,20 +511,24 @@ export function SchemasSection({
                     padding: '9px 20px',
                     borderRadius: 12,
                     border: 'none',
-                    background: ysqCompletedAt
-                      ? 'rgba(var(--fg-rgb),0.08)'
-                      : 'linear-gradient(135deg, var(--accent), var(--accent-blue))',
-                    color: ysqCompletedAt ? 'var(--text-sub)' : '#fff',
+                    background:
+                      ysqCompletedAt && ysqProgressAnswered == null
+                        ? 'rgba(var(--fg-rgb),0.08)'
+                        : 'linear-gradient(135deg, var(--accent), var(--accent-blue))',
+                    color:
+                      ysqCompletedAt && ysqProgressAnswered == null
+                        ? 'var(--text-sub)'
+                        : '#fff',
                     fontSize: 14,
                     fontWeight: 600,
                     cursor: 'pointer',
                     fontFamily: 'inherit',
                   }}
                 >
-                  {ysqCompletedAt
-                    ? 'Результаты'
-                    : ysqProgressAnswered != null
-                      ? 'Продолжить'
+                  {ysqProgressAnswered != null
+                    ? 'Продолжить'
+                    : ysqCompletedAt
+                      ? 'Результаты'
                       : 'Начать'}
                 </button>
               </div>

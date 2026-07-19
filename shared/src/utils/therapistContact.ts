@@ -38,6 +38,30 @@ export function getTherapistContact(): TherapistContact {
   };
 }
 
+// Готовая CTA-кнопка «написать терапевту». Главное — когда сам пользователь
+// является терапевтом (isTherapist), «Написать вам» бессмысленно: возвращаем
+// isSelf=true, и вызывающий не показывает кнопку «написать себе».
+export interface ContactCta {
+  /** Пользователь сам — специалист: кнопку «написать» показывать не нужно. */
+  isSelf: boolean;
+  /** Готовая подпись со стрелкой (пусто при isSelf). */
+  label: string;
+  url: string;
+}
+
+export function contactCta(
+  contact: TherapistContact = getTherapistContact(),
+): ContactCta {
+  if (contact.isTherapist) {
+    return { isSelf: true, label: '', url: contact.url };
+  }
+  const label =
+    contact.name === AUTHOR_NAME
+      ? 'Поговорить с психологом →'
+      : `Написать ${contact.name} →`;
+  return { isSelf: false, label, url: contact.url };
+}
+
 /** Call from App.tsx after profile + relation are loaded. */
 export function cacheTherapistContact(opts: {
   role: 'CLIENT' | 'THERAPIST';

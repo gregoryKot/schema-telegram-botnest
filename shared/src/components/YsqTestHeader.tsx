@@ -6,14 +6,18 @@ export function YsqTestHeader({
   page,
   onBack,
   onClose,
+  topInset = 0,
 }: {
   page: number;
   onBack: () => void;
   onClose: () => void;
+  /** Safe-area сверху (мини-апп: панель Telegram перекрывает шапку и
+      прогресс-шкалу). Webapp передаёт 0. */
+  topInset?: number;
 }) {
   const progressPct = ((page + 1) / TOTAL_PAGES) * 100;
   return (
-    <div style={{ flexShrink: 0, padding: '16px 20px 0' }}>
+    <div style={{ flexShrink: 0, padding: `${16 + topInset}px 20px 0` }}>
       <div
         style={{
           display: 'flex',

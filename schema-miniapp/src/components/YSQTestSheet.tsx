@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
+import { useSafeTop } from '../utils/safezone';
 import { BottomSheet } from './BottomSheet';
 import { ShareCardSheet } from '../share/ShareCardSheet';
-import { getTherapistContact } from '../utils/therapistContact';
+import { contactCta } from '../utils/therapistContact';
 import { botShortUrl } from '../utils/botConfig';
 import { ysqShareCard } from '../../../shared/src/share/cards/ysqCard';
 import { ScoreBarRow } from '../../../shared/src/components/ScoreBarRow';
@@ -40,6 +41,8 @@ export function YSQTestSheet({
   onViewSchemas,
 }: Props) {
   const tr = useTr();
+  const safeTop = useSafeTop();
+  const cta = contactCta();
   const {
     phase,
     setPhase,
@@ -89,6 +92,7 @@ export function YSQTestSheet({
         >
           <YsqTestHeader
             page={page}
+            topInset={safeTop}
             onBack={handleBack}
             onClose={() => setPhase('intro')}
           />
@@ -397,10 +401,12 @@ export function YSQTestSheet({
                     fontStyle: 'italic',
                   }}
                 >
-                  Считаем двумя способами: классический — доля ответов «5» и «6»
-                  (выражена, если их больше половины) — и средний балл по схеме
-                  (выражена от 4 из 6). Достаточно любого из двух. Это
-                  инструмент самоисследования, не диагноз.
+                  Главный показатель — средний балл по схеме (1–6): насколько её
+                  утверждения в среднем про вас. От 4 из 6 схема считается
+                  выраженной. Рядом — сколько утверждений вы отметили на «5» или
+                  «6» (сильное согласие): даже нескольких хватает, чтобы схема
+                  считалась выраженной. Это инструмент самоисследования, не
+                  диагноз.
                 </div>
 
                 {activeCount === 0 && (
@@ -495,7 +501,7 @@ export function YSQTestSheet({
                                 flexShrink: 0,
                               }}
                             >
-                              {delta !== null && Math.abs(delta) >= 5 && (
+                              {delta !== null && Math.abs(delta) >= 0.3 && (
                                 <span
                                   style={{
                                     fontSize: 12,
@@ -507,32 +513,46 @@ export function YSQTestSheet({
                                   }}
                                 >
                                   {delta > 0 ? '+' : ''}
-                                  {delta}%
+                                  {delta}
                                 </span>
                               )}
                               <div
                                 style={{ fontSize: 15, fontWeight: 700, color }}
                               >
-                                {s.pct5plus}%
+                                {s.avg}
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    color: 'var(--text-faint)',
+                                  }}
+                                >
+                                  {' '}
+                                  / 6
+                                </span>
                               </div>
                             </div>
                           </div>
 
-                          {/* Две метрики: классика (5–6) и средний балл */}
+                          {/* Главная метрика — средний балл (1–6); классика
+                              (ответы «5–6») — понятной строкой «N из M», а не
+                              голым «0%». */}
                           <ScoreBarRow
-                            label="Ответы 5–6"
-                            barPct={s.pct5plus}
-                            value={`${s.pct5plus}%`}
-                            color={color}
-                            mb={4}
-                          />
-                          <ScoreBarRow
-                            label="Ср. балл"
+                            label="Средний балл"
                             barPct={avgBarPct(s.avg)}
-                            value={`${s.avg} / 6`}
+                            value={`${s.avg} из 6`}
                             color={color}
-                            mb={10}
+                            mb={6}
                           />
+                          <div
+                            style={{
+                              fontSize: 11,
+                              color: 'var(--text-faint)',
+                              marginBottom: 10,
+                            }}
+                          >
+                            Ответов «5» или «6»: {s.n5plus} из {s.nQuestions}
+                          </div>
 
                           <div
                             style={{
@@ -650,7 +670,9 @@ export function YSQTestSheet({
                       <div style={{ marginTop: 8 }}>
                         {inactiveSchemas.map((schema) => {
                           const s = scores[schema.name];
-                          const mid = s.pct5plus >= 30 && s.pct5plus <= 50;
+                          // «На грани»: средний балл близок к порогу 4 —
+                          // подсвечиваем жёлтым, стоит понаблюдать.
+                          const mid = s.avg >= 3;
                           const barColor = mid
                             ? 'var(--accent-yellow)'
                             : 'rgba(var(--fg-rgb),0.2)';
@@ -691,7 +713,7 @@ export function YSQTestSheet({
                                     flexShrink: 0,
                                   }}
                                 >
-                                  {s.pct5plus}% · ср. {s.avg}
+                                  {s.avg} из 6
                                 </div>
                               </div>
                               <div
@@ -704,7 +726,7 @@ export function YSQTestSheet({
                                 <div
                                   style={{
                                     height: '100%',
-                                    width: `${s.pct5plus}%`,
+                                    width: `${avgBarPct(s.avg)}%`,
                                     background: barColor,
                                     borderRadius: 2,
                                   }}
@@ -718,8 +740,9 @@ export function YSQTestSheet({
                   </div>
                 )}
 
-                {/* CTA */}
-                {activeCount > 0 && (
+                {/* CTA — прячем целиком, если сам пользователь терапевт
+                    (isSelf): «Написать вам» бессмысленно. */}
+                {activeCount > 0 && !cta.isSelf && (
                   <div
                     style={{
                       marginTop: 8,
@@ -758,7 +781,7 @@ export function YSQTestSheet({
                       самых эффективных методов для этой работы.
                     </div>
                     <a
-                      href={getTherapistContact().url}
+                      href={cta.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
@@ -774,9 +797,7 @@ export function YSQTestSheet({
                         textDecoration: 'none',
                       }}
                     >
-                      {getTherapistContact().name === 'автору'
-                        ? 'Поговорить с психологом →'
-                        : `Написать ${getTherapistContact().name} →`}
+                      {cta.label}
                     </a>
                   </div>
                 )}
