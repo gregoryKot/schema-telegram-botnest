@@ -43,8 +43,7 @@ export class UserThrottlerGuard extends ThrottlerGuard {
 
     // Telegram initData — extract user.id from the URL-encoded string
     const initData = req.headers?.['x-telegram-init-data'] as
-      | string
-      | undefined;
+      string | undefined;
     if (initData) {
       try {
         const user = JSON.parse(
