@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTr } from '../utils/addressForm';
+import { SkeletonList } from './Skeleton';
 import { pressable } from '../utils/a11y';
 import { api, TherapyClientSummary, ClientConceptualization } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
@@ -805,16 +806,7 @@ export function TherapistClientSheet({
 
             {/* Client list */}
             {loading ? (
-              <div
-                style={{
-                  color: 'var(--text-sub)',
-                  fontSize: 14,
-                  textAlign: 'center',
-                  paddingTop: 40,
-                }}
-              >
-                Загружаю...
-              </div>
+              <SkeletonList rows={4} h={72} />
             ) : clients.length === 0 ? (
               <div
                 style={{

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { api, UserSettings, PairsData, TherapyRelationInfo } from '../api';
+import { SkeletonList, SkeletonLines } from './Skeleton';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './YSQTestSheet';
 import { BottomSheet } from './BottomSheet';
-import { Loader } from './Loader';
 import { useSafeTop } from '../utils/safezone';
 import { botUrl, botHandle, botShortUrl } from '../utils/botConfig';
 import {
@@ -243,7 +243,17 @@ export function SettingsSheet({
           justifyContent: 'center',
         }}
       >
-        <Loader minHeight="40vh" />
+        <div
+          style={{
+            padding: '8px 16px',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          <SkeletonList rows={5} h={64} />
+        </div>
       </div>
     );
   }
@@ -1150,7 +1160,7 @@ export function SettingsSheet({
                           padding: '8px 0',
                         }}
                       >
-                        Загрузка...
+                        <SkeletonLines widths={['80%', '60%']} />
                       </div>
                     ) : therapyRelation?.status === 'active' ? (
                       <div>
@@ -1826,7 +1836,7 @@ export function SettingsSheet({
                         padding: '12px 0',
                       }}
                     >
-                      Загрузка...
+                      <SkeletonLines widths={['70%', '50%']} />
                     </div>
                   ) : pairData && pairData.partners.length > 0 ? (
                     <div>
