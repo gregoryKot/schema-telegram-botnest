@@ -24,10 +24,11 @@ export function formatRetentionBlock(s: RetentionStats): string {
   const fp = (n: number) =>
     f.registered30 === 0 ? '' : ` (${Math.round((n / f.registered30) * 100)}%)`;
   return [
-    `📉 <b>Когортный retention</b> (недельные когорты)`,
+    `📉 <b>Возвращаются ли новенькие</b>`,
+    `(заходят ли снова на 1-й, 7-й и 30-й день после первого раза)`,
     `D1: ${pct(s.d1)} · D7: ${pct(s.d7)} · D30: ${pct(s.d30)}`,
     '',
-    `🚪 <b>Воронка онбординга</b> (регистрации за 30д)`,
+    `🚪 <b>Первые шаги новичка</b> (кто дошёл до какого шага за месяц)`,
     `Регистрация: ${f.registered30}`,
     `→ Приняли согласие: ${f.consented30}${fp(f.consented30)}`,
     `→ Заполнили трекер хоть раз: ${f.filledOnce30}${fp(f.filledOnce30)}`,
@@ -792,28 +793,28 @@ export class BotAnalyticsService {
       month30Count > 0 ? Math.round((todayCount / month30Count) * 100) : 0;
 
     const lines = [
-      `📊 <b>Статистика бота</b> · ${today}`,
+      `📊 <b>Что происходит в приложении</b> · ${today}`,
       '',
-      `👥 <b>Пользователи</b>`,
-      `Всего: ${totalUsers} (новых за 7д: ${newUsers7}, за 30д: ${newUsers30})`,
-      `Отключили уведомления: ${notifyOff} · заблокировали: ${blockedUsers}`,
+      `👥 <b>Люди</b>`,
+      `Всего людей: ${totalUsers} (новых за неделю: ${newUsers7}, за месяц: ${newUsers30})`,
+      `Выключили напоминания: ${notifyOff} · заблокировали бота: ${blockedUsers}`,
       '',
-      `📔 <b>Дневник</b>`,
-      `Сегодня: ${todayCount} (${fillRate}% от MAU)`,
-      `Активных за 7д: ${week7Ratings.length} · за 30д: ${month30Count}`,
-      `⚠️ Риск оттока (были 8-30д, нет 7д): ${churnRisk}`,
+      `📔 <b>Дневник настроения</b>`,
+      `Заполнили сегодня: ${todayCount} (это ${fillRate}% от тех, кто заходил за месяц)`,
+      `Заходили за неделю: ${week7Ratings.length} · за месяц: ${month30Count}`,
+      `⚠️ Могут уйти (заходили раньше, а всю неделю — ни разу): ${churnRisk}`,
       '',
-      `📈 <b>Retention (все время)</b>`,
-      `1+ день: ${ret1}  ·  3+ дня: ${ret3}  ·  7+ дней: ${ret7}  ·  30+ дней: ${ret30}`,
+      `📈 <b>Сколько дней люди ведут дневник</b> (за всё время)`,
+      `Хотя бы 1 день: ${ret1}  ·  3 дня и больше: ${ret3}  ·  неделю и больше: ${ret7}  ·  месяц и больше: ${ret30}`,
       '',
-      `🔍 <b>Инсайты за 7 дней</b>`,
+      `🔍 <b>Что заметили за неделю</b>`,
       lowestNeed
-        ? `Западает: ${needLabels[lowestNeed.needId] ?? lowestNeed.needId} (avg ${lowestNeed._avg.value?.toFixed(1)})`
-        : 'Нет данных по потребностям',
-      `Лучший день для заполнения: ${DOW[bestDow]}`,
+        ? `Людям больше всего не хватает: ${needLabels[lowestNeed.needId] ?? lowestNeed.needId} (в среднем ${lowestNeed._avg.value?.toFixed(1)} из 10)`
+        : 'Пока мало данных о потребностях',
+      `Чаще всего заполняют: ${DOW[bestDow]}`,
       '',
-      `💑 <b>Пары</b>`,
-      `Активных пар: ${activePairs}`,
+      `💑 <b>Пары</b> (кто ведёт дневник вдвоём)`,
+      `Сейчас вместе: ${activePairs}`,
     ];
 
     const retention = await this.getRetentionStats();

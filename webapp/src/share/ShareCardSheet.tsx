@@ -6,6 +6,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { shareCanvasImage } from '../../../shared/src/share/shareImage';
 import {
   SHARE_CARD_EVENT,
+  SHARE_RESULT_EVENT,
   type ShareCardKind,
 } from '../../../shared/src/share/analytics';
 import { api } from '../api';
@@ -57,8 +58,10 @@ export function ShareCardSheet({
         downloadFallback: true,
       });
       api.trackEvent(SHARE_CARD_EVENT, { kind: eventKind });
+      api.trackEvent(SHARE_RESULT_EVENT, { kind: eventKind, ok: true });
     } catch {
       // Шэр не удался — текстовый фолбэк + клипборд
+      api.trackEvent(SHARE_RESULT_EVENT, { kind: eventKind, ok: false });
       try {
         await navigator.clipboard.writeText(textForFallback);
         setCopied(true);

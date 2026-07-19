@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BotService } from './bot.service';
 import { BotAnalyticsService } from './bot.analytics.service';
+import { ProductMetricsService } from './bot.product-metrics.service';
 import { DiaryService } from './diary.service';
 import { ProfileService } from './profile.service';
 import { AccountService } from './account.service';
@@ -16,6 +17,7 @@ import { HealthyAdultGeneratorService } from './healthy-adult.generator';
   providers: [
     BotService,
     BotAnalyticsService,
+    ProductMetricsService,
     DiaryService,
     ProfileService,
     AccountService,
@@ -30,6 +32,7 @@ import { HealthyAdultGeneratorService } from './healthy-adult.generator';
   exports: [
     BotService,
     BotAnalyticsService,
+    ProductMetricsService,
     DiaryService,
     ProfileService,
     AccountService,

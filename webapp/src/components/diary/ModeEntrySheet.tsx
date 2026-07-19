@@ -265,7 +265,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         </div>
       </div>
 
-      {detectCrisisAny(situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories) && <CrisisCard />}
+      {detectCrisisAny(situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories) && <CrisisCard surface="mode" />}
 
       <DiaryAutosaveFooter canSave={canSave} saving={saving} onSave={handleSave} />
     </ExScreen>

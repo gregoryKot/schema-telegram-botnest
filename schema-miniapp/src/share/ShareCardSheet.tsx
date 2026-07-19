@@ -7,6 +7,7 @@ import { TherapyNote } from '../components/TherapyNote';
 import { shareCanvasImage } from '../../../shared/src/share/shareImage';
 import {
   SHARE_CARD_EVENT,
+  SHARE_RESULT_EVENT,
   type ShareCardKind,
 } from '../../../shared/src/share/analytics';
 import { api } from '../api';
@@ -62,8 +63,10 @@ export function ShareCardSheet({
         downloadFallback: true,
       });
       api.trackEvent(SHARE_CARD_EVENT, { kind: eventKind });
+      api.trackEvent(SHARE_RESULT_EVENT, { kind: eventKind, ok: true });
     } catch {
       // Шэр не удался — показываем текстовый фолбэк
+      api.trackEvent(SHARE_RESULT_EVENT, { kind: eventKind, ok: false });
       const text = fallbackText ?? shareText;
       try {
         await navigator.clipboard.writeText(text);

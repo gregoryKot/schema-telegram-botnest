@@ -302,7 +302,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           actions,
           actualNeed,
           childhoodMemories,
-        ) && <CrisisCard />}
+        ) && <CrisisCard surface="mode" />}
 
         {!canSave && (
           <div

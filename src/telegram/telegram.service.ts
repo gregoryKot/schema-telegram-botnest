@@ -11,6 +11,7 @@ import { TELEGRAF_BOT, MINIAPP_URL, DONATE_URL } from './telegram.constants';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { ProductMetricsService } from '../bot/bot.product-metrics.service';
 import { AccountService } from '../bot/account.service';
 import { PairsService } from '../bot/pairs.service';
 import { PracticesService } from '../bot/practices.service';
@@ -85,6 +86,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
+    private readonly productMetricsService: ProductMetricsService,
     private readonly accountService: AccountService,
     private readonly pairsService: PairsService,
     private readonly practicesService: PracticesService,
@@ -286,8 +288,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
-        const text = await this.analyticsService.getAdminStats();
-        await ctx.reply(text, { parse_mode: 'HTML' });
+        // Двумя сообщениями — суммарно отчёт длиннее лимита Telegram (4096).
+        const [core, product] = await Promise.all([
+          this.analyticsService.getAdminStats(),
+          this.productMetricsService.render(),
+        ]);
+        await ctx.reply(core, { parse_mode: 'HTML' });
+        await ctx.reply(product, { parse_mode: 'HTML' });
       } catch (err) {
         this.logger.error('stats command failed', err);
         await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);
