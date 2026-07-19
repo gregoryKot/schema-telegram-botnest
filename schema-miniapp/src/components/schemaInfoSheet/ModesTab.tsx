@@ -1,9 +1,22 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { pressable } from '../../utils/a11y';
 import { SectionLabel } from '../SectionLabel';
 import { useTr } from '../../utils/addressForm';
 import { buildModes } from './modesData';
 import { buildModeCheckin, type ModeCheckinItem } from './modeCheckinData';
+import { SharePill } from '../../share/SharePill';
+import { ShareCardSheet } from '../../share/ShareCardSheet';
+import { drawSchemaCard } from '../../../../shared/src/share/cards/schemaCard';
+import { modeShareText } from '../../../../shared/src/share/shareTexts';
+import { botShortUrl } from '../../utils/botConfig';
+
+interface ShareMode {
+  group: string;
+  color: string;
+  name: string;
+  feel: string;
+  desc: string;
+}
 
 export function ModesTab() {
   const tr = useTr();
@@ -11,6 +24,22 @@ export function ModesTab() {
   const MODE_CHECKIN = buildModeCheckin(tr);
   const [checkinMode, setCheckinMode] = useState<ModeCheckinItem | null>(null);
   const [showCheckin, setShowCheckin] = useState(false);
+  const [shareMode, setShareMode] = useState<ShareMode | null>(null);
+
+  const drawModeCard = useCallback(
+    (canvas: HTMLCanvasElement) => {
+      if (!shareMode) return;
+      drawSchemaCard(canvas, {
+        domain: shareMode.group,
+        domainColor: shareMode.color,
+        name: shareMode.name,
+        desc: shareMode.desc,
+        belief: `Чувствуется как: ${shareMode.feel}`,
+        footerLabel: 'Режимы',
+      });
+    },
+    [shareMode],
+  );
 
   return (
     <div>
@@ -99,7 +128,7 @@ export function ModesTab() {
                 }}
               >
                 <span style={{ fontSize: 20 }}>{m.emoji}</span>
-                <div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
                       fontSize: 14,
@@ -119,6 +148,18 @@ export function ModesTab() {
                     Чувствуется как: {m.feel}
                   </div>
                 </div>
+                <SharePill
+                  compact
+                  onClick={() =>
+                    setShareMode({
+                      group: g.group,
+                      color: g.color,
+                      name: m.name,
+                      feel: m.feel,
+                      desc: m.desc,
+                    })
+                  }
+                />
               </div>
               <div
                 style={{
@@ -344,6 +385,18 @@ export function ModesTab() {
             </button>
           </div>
         </div>
+      )}
+
+      {shareMode && (
+        <ShareCardSheet
+          title="Карточка режима"
+          draw={drawModeCard}
+          shareText={modeShareText(shareMode.name, botShortUrl)}
+          filename="mode.png"
+          eventKind="mode"
+          onClose={() => setShareMode(null)}
+          zIndex={300}
+        />
       )}
     </div>
   );

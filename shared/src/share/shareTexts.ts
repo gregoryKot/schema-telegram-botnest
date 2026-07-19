@@ -37,3 +37,33 @@ export function diaryShareText(
   const sinceStr = since ? ` с ${since}` : '';
   return `${emoji} ${title}: ${count} ${pluralEntries(count)}${sinceStr}.\n\n${link}`;
 }
+
+export function modeShareText(name: string, link: string): string {
+  return `🎭 Изучаю режим «${name}» в схема-терапии.\n\n${link}`;
+}
+
+/** Приглашение в пару: код + deep-link мини-аппа (miniappDeepLink фронта). */
+export function pairInviteShareText(code: string, deepLink: string): string {
+  return `🤝 Присоединяйся — отслеживаем эмоциональные потребности вместе.\n\nКод пары: ${code}\n${deepLink}`;
+}
+
+export function monthShareText(activeDays: number, link: string): string {
+  return `🗓 Мой месяц в трекере потребностей: ${activeDays} ${pluralDays(activeDays)} с записями.\n\n${link}`;
+}
+
+export function achievementsShareText(
+  earned: number,
+  total: number,
+  link: string,
+): string {
+  return `🏅 Достижения в дневнике потребностей: ${earned} из ${total}.\n\n${link}`;
+}
+
+export function phraseShareText(phrase: string, link: string): string {
+  return `«${phrase}»\n\nФраза Здорового взрослого · ${link}`;
+}
+
+/** Текст записи в сообщение не кладём — он на картинке (юзер видит превью). */
+export function gratitudeShareText(link: string): string {
+  return `🌱 Моя благодарность сегодня.\n\n${link}`;
+}

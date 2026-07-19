@@ -1,7 +1,13 @@
+import { useCallback, useState } from 'react';
 import { Achievement } from '../../api';
 import { BottomSheet } from '../../components/BottomSheet';
 import { pressable } from '../../utils/a11y';
 import { ACHIEVEMENT_META } from './constants';
+import { SharePill } from '../../share/SharePill';
+import { ShareCardSheet } from '../../share/ShareCardSheet';
+import { drawAchievementsCard } from '../../../../shared/src/share/cards/achievementsCard';
+import { achievementsShareText } from '../../../../shared/src/share/shareTexts';
+import { botShortUrl } from '../../utils/botConfig';
 
 interface AchievementsSheetProps {
   achievements: Achievement[];
@@ -19,6 +25,23 @@ export function AchievementsSheet({
   onSelect,
 }: AchievementsSheetProps) {
   const earnedList = achievements.filter((a) => a.earned);
+  const [showShare, setShowShare] = useState(false);
+
+  const drawAll = useCallback(
+    (canvas: HTMLCanvasElement) => {
+      drawAchievementsCard(
+        canvas,
+        achievements
+          .filter((a) => ACHIEVEMENT_META[a.id])
+          .map((a) => ({
+            emoji: ACHIEVEMENT_META[a.id].emoji,
+            earned: a.earned,
+          })),
+      );
+    },
+    [achievements],
+  );
+
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
@@ -26,16 +49,25 @@ export function AchievementsSheet({
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            gap: 10,
             marginBottom: 20,
           }}
         >
           <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
             Достижения
           </span>
-          <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+          <span
+            style={{
+              fontSize: 13,
+              color: 'var(--text-sub)',
+              marginRight: 'auto',
+            }}
+          >
             {earnedList.length} из {achievements.length}
           </span>
+          {earnedList.length > 0 && (
+            <SharePill compact onClick={() => setShowShare(true)} />
+          )}
         </div>
         <div
           style={{
@@ -131,6 +163,22 @@ export function AchievementsSheet({
           })}
         </div>
       </div>
+
+      {showShare && (
+        <ShareCardSheet
+          title="Мои достижения"
+          draw={drawAll}
+          shareText={achievementsShareText(
+            earnedList.length,
+            achievements.length,
+            botShortUrl,
+          )}
+          filename="achievements.png"
+          eventKind="achievements"
+          onClose={() => setShowShare(false)}
+          zIndex={300}
+        />
+      )}
     </BottomSheet>
   );
 }

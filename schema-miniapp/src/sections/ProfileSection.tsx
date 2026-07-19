@@ -169,7 +169,7 @@ export function ProfileSection({
 
         {/* ── Activity heatmap ── */}
         {ready && activeDates.size > 0 && (
-          <ActivityHeatmap activeDates={activeDates} />
+          <ActivityHeatmap activeDates={activeDates} totalDays={totalDays} />
         )}
 
         {/* ── Достижения ── */}
