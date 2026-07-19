@@ -55,8 +55,7 @@ export class OptionalJwtGuard implements CanActivate {
     // S-4: токены в URL утекают в логи прокси и историю браузера).
     const cookies = req.cookies as Record<string, string | undefined>;
     const linkToken = (cookies?.['link_token'] ?? req.query?.link_token) as
-      | string
-      | undefined;
+      string | undefined;
     if (!req.webUser && linkToken) {
       try {
         const { userId } = this.auth.verifyLinkToken(linkToken);

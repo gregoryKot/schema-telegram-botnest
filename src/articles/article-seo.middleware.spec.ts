@@ -36,7 +36,9 @@ function mockReqRes(path: string, hostname = 'schemehappens.ru') {
   let sent: string | null = null;
   const res = {
     setHeader: jest.fn(),
-    send: jest.fn((body: string) => { sent = body; }),
+    send: jest.fn((body: string) => {
+      sent = body;
+    }),
   } as any;
   return { req, res, getSent: () => sent };
 }
@@ -61,9 +63,15 @@ describe('ArticleSeoMiddleware', () => {
 
     expect(next).not.toHaveBeenCalled();
     const html = getSent()!;
-    expect(html).toContain('<title>18 схем Янга: полный список | schemehappens.ru</title>');
-    expect(html).toContain('content="Полный список 18 ранних дезадаптивных схем по Джеффри Янгу."');
-    expect(html).toContain('<link rel="canonical" href="https://schemehappens.ru/articles/skhemy-yanga-spisok" />');
+    expect(html).toContain(
+      '<title>18 схем Янга: полный список | schemehappens.ru</title>',
+    );
+    expect(html).toContain(
+      'content="Полный список 18 ранних дезадаптивных схем по Джеффри Янгу."',
+    );
+    expect(html).toContain(
+      '<link rel="canonical" href="https://schemehappens.ru/articles/skhemy-yanga-spisok" />',
+    );
     expect(html).toContain('property="og:type" content="article"');
   });
 
@@ -97,10 +105,15 @@ describe('ArticleSeoMiddleware', () => {
 
   it('rewrites canonical host for alias domains', async () => {
     const mw = makeMiddleware(ARTICLE);
-    const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok', 'kotlarewski.ru');
+    const { req, res, getSent } = mockReqRes(
+      '/articles/skhemy-yanga-spisok',
+      'kotlarewski.ru',
+    );
     await mw.use(req, res, () => {});
     const html = getSent()!;
-    expect(html).toContain('href="https://kotlarewski.ru/articles/skhemy-yanga-spisok"');
+    expect(html).toContain(
+      'href="https://kotlarewski.ru/articles/skhemy-yanga-spisok"',
+    );
     expect(html).not.toContain('https://schemehappens.ru');
   });
 
@@ -109,11 +122,16 @@ describe('ArticleSeoMiddleware', () => {
     const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
     await mw.use(req, res, () => {});
     const html = getSent()!;
-    expect(html).toContain('<title>КПТ &amp; «схемы» &lt;тест&gt; | schemehappens.ru</title>');
+    expect(html).toContain(
+      '<title>КПТ &amp; «схемы» &lt;тест&gt; | schemehappens.ru</title>',
+    );
   });
 
   it('strips <script> from article content before injecting', async () => {
-    const mw = makeMiddleware({ ...ARTICLE, content: '<p>ok</p><script>alert(1)</script>' });
+    const mw = makeMiddleware({
+      ...ARTICLE,
+      content: '<p>ok</p><script>alert(1)</script>',
+    });
     const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
     await mw.use(req, res, () => {});
     const html = getSent()!;
