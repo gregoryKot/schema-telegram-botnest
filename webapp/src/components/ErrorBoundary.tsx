@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportClientError } from '../api';
 
 interface Props { children: ReactNode; section: string }
 interface State { error: Error | null; info: ErrorInfo | null }
@@ -19,6 +20,16 @@ export class ErrorBoundary extends Component<Props, State> {
     if (isChunk && !sessionStorage.getItem('chunk-reload')) {
       sessionStorage.setItem('chunk-reload', '1');
       window.location.reload();
+    }
+    // Видимость прода: реальные краши уезжают на бэкенд → DM админу. Chunk-load
+    // после деплоя — не баг (лечится авто-релоадом выше), его не шлём.
+    if (!isChunk) {
+      reportClientError({
+        message: error.message,
+        section: this.props.section,
+        stack: error.stack,
+        componentStack: info?.componentStack ?? undefined,
+      });
     }
   }
 

@@ -29,6 +29,8 @@ const CONTROLLERS = walk(SRC).map((p) => p.replace(SRC + '/', ''));
 // можно, добавлять — только с ревью безопасности.
 const PUBLIC_BY_DESIGN: Record<string, string> = {
   'api/health.controller.ts': 'liveness-проба, без данных',
+  'api/client-errors.controller.ts':
+    'телеметрия крашей фронта — без auth (краш до логина), троттлинг по IP + AlertLogger',
   'api/booking.controller.ts':
     'лид-форма с лендинга (XSS-экран, cap), уведомляет админа',
   'articles/articles.controller.ts': 'публичные статьи (GET)',
@@ -94,7 +96,7 @@ describe('трипваер: каждый контроллер защищён (gu
   });
 
   it('allowlist публичных не разросся сверх известного (может только сокращаться)', () => {
-    expect(Object.keys(PUBLIC_BY_DESIGN).length).toBeLessThanOrEqual(8);
+    expect(Object.keys(PUBLIC_BY_DESIGN).length).toBeLessThanOrEqual(9);
     expect(ADMIN_KEY_GATED.size).toBeLessThanOrEqual(4);
   });
 });

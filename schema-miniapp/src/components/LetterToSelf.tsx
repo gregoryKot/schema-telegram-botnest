@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { pressable } from '../utils/a11y';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
@@ -256,7 +257,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
             {letters.slice(0, 5).map((l) => (
               <div
                 key={l.id}
-                onClick={() => setViewing(l)}
+                {...pressable(() => setViewing(l))}
                 style={{
                   padding: '11px 14px',
                   background: 'rgba(var(--fg-rgb),0.03)',

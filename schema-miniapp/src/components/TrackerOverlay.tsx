@@ -14,6 +14,8 @@
 //   )}
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { pressable } from '../utils/a11y';
+import { SkeletonList } from './Skeleton';
 import { Need, COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { NeedRatingBar } from './NeedRatingBar';
@@ -277,8 +279,17 @@ export function TrackerOverlay({
           justifyContent: 'center',
         }}
       >
-        <div style={{ fontSize: 14, color: 'var(--text-sub)' }}>
-          Загрузка...
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 420,
+            padding: '0 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+          }}
+        >
+          <SkeletonList rows={5} h={56} />
         </div>
       </div>
     );
@@ -525,7 +536,7 @@ export function TrackerOverlay({
         }}
       >
         <div
-          onClick={() => setDetailNeed(need)}
+          {...pressable(() => setDetailNeed(need))}
           style={{
             display: 'inline-flex',
             alignItems: 'center',

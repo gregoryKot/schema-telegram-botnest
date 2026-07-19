@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTr } from '../utils/addressForm';
+import { SkeletonList } from './Skeleton';
+import { pressable } from '../utils/a11y';
 import { api, TherapyClientSummary, ClientConceptualization } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { BottomSheet } from './BottomSheet';
@@ -307,6 +309,29 @@ export function TherapistClientSheet({
   } = addClient;
 
   const today = todayStr();
+
+  // ─── Autofocus via refs (jsx-a11y/no-autofocus) ──────────────────────────────
+  const telegramInputRef = useRef<HTMLInputElement>(null);
+  const virtualInputRef = useRef<HTMLInputElement>(null);
+  const aliasInputRef = useRef<HTMLInputElement>(null);
+  const startDateInputRef = useRef<HTMLInputElement>(null);
+  const nextSessionInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (addMode === 'telegram') telegramInputRef.current?.focus();
+  }, [addMode]);
+  useEffect(() => {
+    if (addMode === 'virtual') virtualInputRef.current?.focus();
+  }, [addMode]);
+  useEffect(() => {
+    if (renamingAlias) aliasInputRef.current?.focus();
+  }, [renamingAlias]);
+  useEffect(() => {
+    if (editingStartDate) startDateInputRef.current?.focus();
+  }, [editingStartDate]);
+  useEffect(() => {
+    if (editingNextSession) nextSessionInputRef.current?.focus();
+  }, [editingNextSession]);
 
   // ─── Render ──────────────────────────────────────────────────────────────────
 
@@ -658,7 +683,7 @@ export function TherapistClientSheet({
                         }
                         placeholder="Telegram ID клиента"
                         inputMode="numeric"
-                        autoFocus
+                        ref={telegramInputRef}
                         style={{
                           flex: 1,
                           background: 'rgba(var(--fg-rgb),0.06)',
@@ -718,7 +743,7 @@ export function TherapistClientSheet({
                           e.key === 'Enter' && addVirtualClient()
                         }
                         placeholder="Имя клиента"
-                        autoFocus
+                        ref={virtualInputRef}
                         style={{
                           flex: 1,
                           background: 'rgba(var(--fg-rgb),0.06)',
@@ -781,16 +806,7 @@ export function TherapistClientSheet({
 
             {/* Client list */}
             {loading ? (
-              <div
-                style={{
-                  color: 'var(--text-sub)',
-                  fontSize: 14,
-                  textAlign: 'center',
-                  paddingTop: 40,
-                }}
-              >
-                Загружаю...
-              </div>
+              <SkeletonList rows={4} h={72} />
             ) : clients.length === 0 ? (
               <div
                 style={{
@@ -834,7 +850,7 @@ export function TherapistClientSheet({
                 return (
                   <div
                     key={c.telegramId}
-                    onClick={() => openClient(c)}
+                    {...pressable(() => openClient(c))}
                     className="card"
                     style={{
                       borderRadius: 16,
@@ -924,7 +940,7 @@ export function TherapistClientSheet({
             {/* Invite button */}
             {!loading && clients.length > 0 && (
               <div
-                onClick={() => openAddMode('invite')}
+                {...pressable(() => openAddMode('invite'))}
                 style={{
                   border: '1px dashed rgba(var(--fg-rgb),0.18)',
                   borderRadius: 16,
@@ -975,11 +991,11 @@ export function TherapistClientSheet({
             >
               {/* Back button — large touch target */}
               <div
-                onClick={() => {
+                {...pressable(() => {
                   switchView('list');
                   setRenamingAlias(false);
                   setYsqRequested(false);
-                }}
+                })}
                 style={{
                   width: 44,
                   height: 44,
@@ -1009,7 +1025,7 @@ export function TherapistClientSheet({
                     style={{ display: 'flex', gap: 8, alignItems: 'center' }}
                   >
                     <input
-                      autoFocus
+                      ref={aliasInputRef}
                       value={aliasInput}
                       onChange={(e) => setAliasInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && saveAlias()}
@@ -1215,7 +1231,7 @@ export function TherapistClientSheet({
                             type="date"
                             value={localStartDate}
                             onChange={(e) => setLocalStartDate(e.target.value)}
-                            autoFocus
+                            ref={startDateInputRef}
                             style={{
                               background: 'rgba(var(--fg-rgb),0.07)',
                               border: '1px solid rgba(var(--fg-rgb),0.15)',
@@ -1271,7 +1287,7 @@ export function TherapistClientSheet({
                             gap: 6,
                             cursor: 'pointer',
                           }}
-                          onClick={() => {
+                          {...pressable(() => {
                             setLocalStartDate(
                               selectedClient.therapyStartDate ??
                                 selectedClient.relationCreatedAt?.slice(
@@ -1281,7 +1297,7 @@ export function TherapistClientSheet({
                                 '',
                             );
                             setEditingStartDate(true);
-                          }}
+                          })}
                         >
                           <span
                             style={{ fontSize: 13, color: 'var(--text-sub)' }}
@@ -1423,10 +1439,10 @@ export function TherapistClientSheet({
                           alignItems: 'center',
                           cursor: 'pointer',
                         }}
-                        onClick={() => {
+                        {...pressable(() => {
                           setLocalMeetingDays(selectedClient.meetingDays ?? []);
                           setEditingDays(true);
-                        }}
+                        })}
                       >
                         {displayDays.length === 0 ? (
                           <span
@@ -1489,7 +1505,7 @@ export function TherapistClientSheet({
                             onChange={(e) =>
                               setLocalNextSession(e.target.value)
                             }
-                            autoFocus
+                            ref={nextSessionInputRef}
                             style={{
                               background: 'rgba(var(--fg-rgb),0.07)',
                               border: '1px solid rgba(var(--fg-rgb),0.15)',
@@ -1546,12 +1562,12 @@ export function TherapistClientSheet({
                             alignItems: 'center',
                             gap: 4,
                           }}
-                          onClick={() => {
+                          {...pressable(() => {
                             setLocalNextSession(
                               selectedClient.nextSession ?? '',
                             );
                             setEditingNextSession(true);
-                          }}
+                          })}
                         >
                           {selectedClient.nextSession ? (
                             <>
@@ -1874,7 +1890,7 @@ export function TherapistClientSheet({
             {/* ── ACTION BUTTONS ── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div
-                onClick={() => setShowTasksSheet(true)}
+                {...pressable(() => setShowTasksSheet(true))}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1920,7 +1936,7 @@ export function TherapistClientSheet({
                 </span>
               </div>
               <div
-                onClick={() => setShowNotesSheet(true)}
+                {...pressable(() => setShowNotesSheet(true))}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1960,7 +1976,7 @@ export function TherapistClientSheet({
                 </span>
               </div>
               <div
-                onClick={() => setShowConceptSheet(true)}
+                {...pressable(() => setShowConceptSheet(true))}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -2000,7 +2016,7 @@ export function TherapistClientSheet({
                 </span>
               </div>
               <div
-                onClick={() => setShowClientNotesSheet(true)}
+                {...pressable(() => setShowClientNotesSheet(true))}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

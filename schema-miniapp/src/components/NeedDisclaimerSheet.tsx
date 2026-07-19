@@ -1,6 +1,6 @@
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
-import { getTherapistContact } from '../utils/therapistContact';
+import { contactCta } from '../utils/therapistContact';
 
 const DISCLAIMER_CONTENT = [
   'Дневник помогает видеть паттерны и чуть лучше понимать себя.',
@@ -11,6 +11,7 @@ const DISCLAIMER_CONTENT = [
 // Пояснение "О советах" под шитами потребности — общее для NeedHistorySheet
 // и NeedTodaySheet (правило №11 CLAUDE.md, jscpd-свип).
 export function NeedDisclaimerSheet({ onClose }: { onClose: () => void }) {
+  const cta = contactCta();
   return (
     <BottomSheet onClose={onClose} zIndex={300}>
       <div style={{ paddingTop: 8 }}>
@@ -30,23 +31,23 @@ export function NeedDisclaimerSheet({ onClose }: { onClose: () => void }) {
             {p}
           </p>
         ))}
-        <a
-          href={getTherapistContact().url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-block',
-            fontSize: 14,
-            color: 'var(--accent)',
-            textDecoration: 'none',
-            fontWeight: 500,
-          }}
-        >
-          →{' '}
-          {getTherapistContact().name === 'автору'
-            ? 'Поговорить с психологом'
-            : `Написать ${getTherapistContact().name}`}
-        </a>
+        {/* Терапевту «написать себе» не предлагаем (isSelf). */}
+        {!cta.isSelf && (
+          <a
+            href={cta.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-block',
+              fontSize: 14,
+              color: 'var(--accent)',
+              textDecoration: 'none',
+              fontWeight: 500,
+            }}
+          >
+            → {cta.label.replace(/ →$/, '')}
+          </a>
+        )}
       </div>
     </BottomSheet>
   );

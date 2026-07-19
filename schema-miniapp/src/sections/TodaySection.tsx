@@ -25,7 +25,21 @@ import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { TodayFocusCard } from '../components/TodayFocusCard';
+import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
+import { SkeletonLines } from '../components/Skeleton';
+import {
+  FocusPractice,
+  getFocusPractice,
+  setFocusPractice,
+  isStreakHidden,
+  setStreakHidden,
+  isSecondaryHidden,
+  setSecondaryHidden,
+  isTherapistBannerHidden,
+  setTherapistBannerHidden,
+} from '../utils/todayFocus';
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import {
   drawDayCard,
@@ -93,9 +107,18 @@ function NeedMini({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={(e) => {
         e.stopPropagation();
         onTap();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          onTap();
+        }
       }}
       style={{
         display: 'flex',
@@ -244,6 +267,7 @@ interface Props {
   userRole?: 'CLIENT' | 'THERAPIST';
   onOpenTherapistCabinet?: () => void;
   onTasksChanged?: () => void;
+  onNewDiaryEntry?: (t: 'schema' | 'mode' | 'gratitude') => void;
 }
 
 // ── TodaySection ──────────────────────────────────────────────────────────────
@@ -264,6 +288,7 @@ export function TodaySection({
   userRole,
   onOpenTherapistCabinet,
   onTasksChanged,
+  onNewDiaryEntry,
 }: Props) {
   const tr = useTr();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -283,6 +308,20 @@ export function TodaySection({
   const [introModeId, setIntroModeId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
   const [showDayShare, setShowDayShare] = useState(false);
+  const [focusPractice, setFocusPracticeState] =
+    useState<FocusPractice>(getFocusPractice);
+  const [streakHidden, setStreakHiddenState] = useState(isStreakHidden);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [secondaryHidden, setSecondaryHiddenState] =
+    useState(isSecondaryHidden);
+  const [therapistBannerHidden, setTherapistBannerHiddenState] = useState(
+    isTherapistBannerHidden,
+  );
+  const [todayDone, setTodayDone] = useState({
+    schema: false,
+    mode: false,
+    gratitude: false,
+  });
   const [moreOpen, setMoreOpen] = useState(
     () => localStorage.getItem(TODAY_MORE_KEY) === '1',
   );
@@ -355,6 +394,11 @@ export function TodaySection({
         ];
         all.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
         setRecentDiaries(all.slice(0, 3));
+        setTodayDone({
+          schema: schema.some((e) => e.createdAt.slice(0, 10) === today),
+          mode: mode.some((e) => e.createdAt.slice(0, 10) === today),
+          gratitude: gratitude.some((e) => e.date === today),
+        });
       })
       .catch(() => {})
       .finally(() => {
@@ -449,14 +493,44 @@ export function TodaySection({
       <div style={{ padding: '24px 20px 0' }}>
         <div
           style={{
-            fontSize: 24,
-            fontWeight: 800,
-            color: 'var(--text)',
-            letterSpacing: '-0.03em',
-            lineHeight: 1.15,
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 12,
           }}
         >
-          {firstName ? `Привет, ${firstName} 👋` : 'Добро пожаловать 👋'}
+          <div
+            style={{
+              fontSize: 24,
+              fontWeight: 800,
+              color: 'var(--text)',
+              letterSpacing: '-0.03em',
+              lineHeight: 1.15,
+            }}
+          >
+            {firstName ? `Привет, ${firstName} 👋` : 'Добро пожаловать 👋'}
+          </div>
+          <button
+            onClick={() => setShowCustomize(true)}
+            aria-label="Настроить экран"
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              border: '1px solid var(--border-color)',
+              background: 'var(--surface)',
+              color: 'var(--text-sub)',
+              fontSize: 17,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              marginTop: -6,
+            }}
+          >
+            ⚙
+          </button>
         </div>
         <div
           style={{
@@ -479,53 +553,57 @@ export function TodaySection({
         }}
       >
         {/* ── Therapist cabinet banner ── */}
-        {userRole === 'THERAPIST' && onOpenTherapistCabinet && (
-          <div
-            onClick={onOpenTherapistCabinet}
-            className="card"
-            style={{
-              borderRadius: 18,
-              padding: '12px 16px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-            }}
-          >
+        {userRole === 'THERAPIST' &&
+          onOpenTherapistCabinet &&
+          !therapistBannerHidden && (
             <div
+              {...pressable(onOpenTherapistCabinet)}
+              className="card"
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 13,
-                flexShrink: 0,
-                background:
-                  'color-mix(in srgb, var(--accent) 10%, transparent)',
+                borderRadius: 18,
+                padding: '12px 16px',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 20,
+                gap: 14,
               }}
             >
-              🧑‍⚕️
-            </div>
-            <div style={{ flex: 1 }}>
               <div
                 style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: 'var(--text)',
-                  marginBottom: 2,
+                  width: 42,
+                  height: 42,
+                  borderRadius: 13,
+                  flexShrink: 0,
+                  background:
+                    'color-mix(in srgb, var(--accent) 10%, transparent)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 20,
                 }}
               >
-                Кабинет терапевта
+                🧑‍⚕️
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-                Клиенты · Задания · Концептуализация
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    marginBottom: 2,
+                  }}
+                >
+                  Кабинет терапевта
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+                  Клиенты · Задания · Концептуализация
+                </div>
               </div>
+              <span style={{ fontSize: 18, color: 'var(--text-faint)' }}>
+                ›
+              </span>
             </div>
-            <span style={{ fontSize: 18, color: 'var(--text-faint)' }}>›</span>
-          </div>
-        )}
+          )}
 
         {/* ── Onboarding widget ── */}
         <OnboardingWidget
@@ -539,7 +617,7 @@ export function TodaySection({
         />
 
         {/* ── Стрик-карточка (макет): мягкая, без наказания за пропуск ── */}
-        {streak > 0 && (
+        {!streakHidden && streak > 0 && (
           <div
             className="card"
             style={{
@@ -588,52 +666,62 @@ export function TodaySection({
 
         {/* ── Фокус дня: одна главная задача (нейроинклюзивность, волна 1) ── */}
         <TodayFocusCard
+          practice={focusPractice}
           ratedCount={ratedCount}
           total={needs.length}
           avgScore={avgScore}
-          onOpenTracker={onOpenTracker}
+          practiceDoneToday={
+            focusPractice !== 'tracker' && todayDone[focusPractice]
+          }
+          onAction={() =>
+            focusPractice === 'tracker'
+              ? onOpenTracker()
+              : onNewDiaryEntry?.(focusPractice)
+          }
           onOpenHistory={onOpenTrackerHistory}
           onShareDay={() => setShowDayShare(true)}
         />
 
         {/* ── Прогрессивное раскрытие: остальное — по желанию ── */}
-        <button
-          onClick={toggleMore}
-          aria-expanded={moreOpen}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            color: 'var(--text-sub)',
-            fontSize: 13,
-            fontWeight: 600,
-            padding: '6px 0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          {moreOpen ? 'Свернуть' : 'Что ещё можно сегодня'}
-          <span
+        {secondaryHidden && (
+          <button
+            onClick={toggleMore}
+            aria-expanded={moreOpen}
             style={{
-              display: 'inline-block',
-              transition: 'transform 0.2s',
-              transform: moreOpen ? 'rotate(180deg)' : 'none',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              color: 'var(--text-sub)',
+              fontSize: 13,
+              fontWeight: 600,
+              padding: '6px 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
-            ⌄
-          </span>
-        </button>
+            {moreOpen ? 'Свернуть' : 'Что ещё можно сегодня'}
+            <span
+              style={{
+                display: 'inline-block',
+                transition: 'transform 0.2s',
+                transform: moreOpen ? 'rotate(180deg)' : 'none',
+              }}
+            >
+              ⌄
+            </span>
+          </button>
+        )}
 
-        {moreOpen && (
+        {(!secondaryHidden || moreOpen) && (
           <>
             {/* ── Needs card — tap card = history, tap need = tracker ── */}
             <div
               className="card"
-              onClick={onOpenTrackerHistory}
+              {...pressable(() => onOpenTrackerHistory?.())}
               style={{
                 padding: '18px 18px 14px',
                 cursor: onOpenTrackerHistory ? 'pointer' : undefined,
@@ -703,7 +791,7 @@ export function TodaySection({
 
             {/* ── Diary card ── */}
             <div
-              onClick={onOpenDiaries}
+              {...pressable(onOpenDiaries)}
               className="card"
               style={{
                 padding: '18px 18px 14px',
@@ -844,6 +932,43 @@ export function TodaySection({
         )}
       </div>
 
+      {showCustomize && (
+        <TodayCustomizeSheet
+          practice={focusPractice}
+          streakHidden={streakHidden}
+          secondaryHidden={secondaryHidden}
+          therapistBannerHidden={therapistBannerHidden}
+          showTherapistToggle={
+            userRole === 'THERAPIST' && !!onOpenTherapistCabinet
+          }
+          onPractice={(p) => {
+            setFocusPractice(p);
+            setFocusPracticeState(p);
+            api.trackEvent('today_focus_change', { practice: p });
+          }}
+          onToggleStreak={() => {
+            const next = !streakHidden;
+            setStreakHidden(next);
+            setStreakHiddenState(next);
+            api.trackEvent('today_streak_toggle', { hidden: next });
+          }}
+          onToggleSecondary={() => {
+            const next = !secondaryHidden;
+            setSecondaryHidden(next);
+            setSecondaryHiddenState(next);
+          }}
+          onToggleTherapistBanner={() => {
+            const next = !therapistBannerHidden;
+            setTherapistBannerHidden(next);
+            setTherapistBannerHiddenState(next);
+          }}
+          onOpenSettings={() => {
+            setShowCustomize(false);
+            onOpenAdvanced();
+          }}
+          onClose={() => setShowCustomize(false)}
+        />
+      )}
       {showDiaryTask && (
         <TaskCreateSheet
           defaultType="diary_streak"
@@ -962,29 +1087,6 @@ export function TodaySection({
           </button>
         </BottomSheet>
       )}
-    </div>
-  );
-}
-
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-
-function SkeletonLines() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {[80, 65, 90].map((w, i) => (
-        <div
-          key={i}
-          style={{
-            height: 12,
-            borderRadius: 6,
-            width: `${w}%`,
-            background:
-              'linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%)',
-            backgroundSize: '200% auto',
-            animation: 'shimmer 1.5s linear infinite',
-          }}
-        />
-      ))}
     </div>
   );
 }
@@ -1422,10 +1524,10 @@ function OnboardingWidget({
           return (
             <div
               key={s.id}
-              onClick={() => {
+              {...pressable(() => {
                 setSelectedId(s.id === current.id ? null : s.id);
                 setSlideKey((k) => k + 1);
-              }}
+              })}
               style={{ cursor: 'pointer' }}
             >
               <div

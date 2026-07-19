@@ -10,6 +10,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Ручной запуск на любой ветке: пуши агента через интеграцию не триггерят
+  # pull_request-раны, а правило 1а требует зелёный CI перед мержем — агент
+  # запускает воркфлоу сам (gh/API workflow_dispatch) и ждёт результата.
+  workflow_dispatch:
 
 jobs:
   backend:
@@ -33,7 +37,12 @@ jobs:
       # TELEGRAF_BOT подменены фейками — ловит то, что юнит-тесты не могут:
       # гард не примонтирован, DTO-пайп не применён глобально, утечку чужих
       # данных через HTTP. См. test/app-auth.e2e-spec.ts, test/app-ownership.e2e-spec.ts.
-      - run: npm run test:e2e
+      # read-after-write.e2e-spec гоняется отдельно в джобе migrations (нужен
+      # реальный Postgres) — здесь исключён, наши специи на фейк-Prisma.
+      - run: >-
+          npx jest --config ./test/jest-e2e.json
+          test/app-auth test/app-ownership test/app-ownership-sweep
+          test/auth-flows
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high
@@ -78,6 +87,13 @@ jobs:
         run: npx prisma migrate deploy
       - name: повторный migrate deploy — все миграции зарегистрированы, состояние чистое
         run: npx prisma migrate deploy
+      - run: npx prisma generate
+      # E2E read-after-write smoke на реальном Postgres (best-practice 2026-07):
+      # сохранил карточку → читается обратно + попала в денормализованный
+      # профиль. Только этот спек (app.e2e-spec поднимает весь AppModule и
+      # требует полного env — здесь не нужен). --runInBand: одна БД, без гонок.
+      - name: e2e read-after-write smoke
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/read-after-write.e2e-spec.ts
 
   webapp:
     runs-on: ubuntu-latest

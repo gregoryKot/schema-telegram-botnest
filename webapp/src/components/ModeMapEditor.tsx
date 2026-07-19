@@ -215,7 +215,9 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   // the canvas always has the full width; on desktop they're flex columns.
   const overlay = (sideBtn: React.ReactNode, content: React.ReactNode, side: 'left' | 'right') => (
     <>
-      <div onClick={() => { setPaletteOpen(false); setSelectedNodeId(null); setSelectedEdgeId(null); }}
+      <div role="button" tabIndex={0} aria-label="Закрыть"
+        onClick={() => { setPaletteOpen(false); setSelectedNodeId(null); setSelectedEdgeId(null); }}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPaletteOpen(false); setSelectedNodeId(null); setSelectedEdgeId(null); } }}
         style={{ position: 'absolute', inset: 0, zIndex: 39, background: 'rgba(0,0,0,0.25)' }} />
       <div style={{ position: 'absolute', top: 0, bottom: 0, [side]: 0, zIndex: 40, display: 'flex',
         boxShadow: side === 'left' ? '4px 0 16px rgba(0,0,0,0.15)' : '-4px 0 16px rgba(0,0,0,0.15)' }}>

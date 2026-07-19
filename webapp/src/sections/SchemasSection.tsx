@@ -10,6 +10,7 @@ import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
+import { pressable } from '../utils/a11y';
 
 const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 const ModeMapViewer = lazy(() => import('../components/ModeMapViewer').then(m => ({ default: m.ModeMapViewer })));
@@ -59,7 +60,8 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(MY_SCHEMA_IDS_KEY));
   const [myModeIds, setMyModeIds]         = useState<string[]>(() => readLocalIds(MY_MODE_IDS_KEY));
   const [ysqSchemaIds, setYsqSchemaIds]   = useState<string[]>([]);
-  const [ysqScores, setYsqScores]         = useState<Record<string, number>>({});
+  const [ysqScores, setYsqScores]         = useState<Record<string, { pct5plus: number; avg: number }>>({});
+  const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
   const [showModePicker, setShowModePicker]     = useState(false);
@@ -71,7 +73,16 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const [showMyMap, setShowMyMap]         = useState(false);
 
   useEffect(() => {
-    Promise.all([api.getProfile(), api.getYsqHistory()]).then(([p, history]) => {
+    Promise.all([
+      api.getProfile(),
+      api.getYsqHistory(),
+      api.getYsqProgress().catch(() => null),
+    ]).then(([p, history, progress]) => {
+      setYsqProgressAnswered(
+        Array.isArray(progress?.answers)
+          ? progress.answers.filter(a => a > 0).length
+          : null,
+      );
       const serverSchemas = Array.isArray(p?.mySchemaIds) ? p.mySchemaIds : [];
       const serverModes   = Array.isArray(p?.myModeIds)   ? p.myModeIds   : [];
       setManualSchemaIds(serverSchemas);
@@ -83,9 +94,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       // Build scores map from latest YSQ history entry
       if (Array.isArray(history) && history.length > 0) {
         const latest = history[0];
-        const map: Record<string, number> = {};
+        const map: Record<string, { pct5plus: number; avg: number }> = {};
         if (Array.isArray(latest.scores)) {
-          for (const s of latest.scores) map[s.id] = Math.round(s.pct5plus);
+          for (const s of latest.scores)
+            map[s.id] = { pct5plus: Math.round(s.pct5plus), avg: s.avg ?? 0 };
         }
         setYsqScores(map);
       }
@@ -145,11 +157,14 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                 const schema = domain?.schemas.find(s => s.id === sid);
                 if (!schema || !domain) return null;
                 const c = domain.color;
-                const score = ysqScores[sid] ?? 0;
+                const score = ysqScores[sid];
+                // Классика может быть честным нулём (схема активна по среднему
+                // баллу) — бар и цифра рисуются по среднему баллу.
+                const barPct = score ? Math.max(0, Math.round(((score.avg - 1) / 5) * 100)) : 0;
                 return (
                   <div
                     key={sid}
-                    onClick={() => setDetailSchemaId(sid)}
+                    {...pressable(() => setDetailSchemaId(sid))}
                     style={{
                       display: 'grid', gridTemplateColumns: '1.5fr 1fr 52px',
                       gap: 24, alignItems: 'center',
@@ -161,10 +176,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                       <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{schema.name}</span>
                     </div>
                     <div style={{ height: 4, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ width: `${score}%`, height: '100%', background: c, borderRadius: 4 }} />
+                      <div style={{ width: `${barPct}%`, height: '100%', background: c, borderRadius: 4 }} />
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 500, color: c, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {score > 0 ? `${score}%` : '–'}
+                      {score && score.avg > 0 ? `${score.avg}/6` : score && score.pct5plus > 0 ? `${score.pct5plus}%` : '–'}
                     </span>
                   </div>
                 );
@@ -177,12 +192,23 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         <div className="section">
           <div className="section-head">
             <h3>Тест на схемы</h3>
+            {/* Незаконченный прогресс приоритетнее результата: кнопка ведёт
+                в тест на сохранённый вопрос (autoResume), поэтому и подпись —
+                «продолжить», иначе «Результаты» открывали бы сам тест. */}
             <button onClick={() => onOpenSchema({ startTest: true })} className="link">
-              {ysqCompletedAt ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · пройти снова →` : 'Начать →'}
+              {ysqProgressAnswered !== null
+                ? `продолжить (${ysqProgressAnswered} из 116) →`
+                : ysqCompletedAt
+                  ? `пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты →`
+                  : 'Начать →'}
             </button>
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-            {ysqCompletedAt ? '116 вопросов · определяет активные схемы автоматически' : 'Определи схемы автоматически – 116 вопросов, 10 минут'}
+            {ysqProgressAnswered !== null
+              ? 'Тест начат – прогресс сохранён, можно продолжить с того же места'
+              : ysqCompletedAt
+                ? 'Результаты, история прохождений и «поделиться» – внутри'
+                : tr('Определи схемы автоматически – 116 вопросов, 10 минут', 'Определите схемы автоматически – 116 вопросов, 10 минут')}
           </div>
         </div>
 
@@ -249,7 +275,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                     {domain.schemas.map(s => {
                       const isMine = allSchemaIds.includes(s.id);
                       return (
-                        <div key={s.id} onClick={() => setDetailSchemaId(s.id)} style={{
+                        <div key={s.id} {...pressable(() => setDetailSchemaId(s.id))} style={{
                           cursor: 'pointer', borderRadius: 10,
                           background: isMine ? cm(c, 7) : 'var(--surface-2)',
                           border: `1px solid ${isMine ? cm(c, 22) : 'var(--line)'}`,
@@ -349,7 +375,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
                     {group.items.map(m => {
                       const active = myModeIds.includes(m.id);
                       return (
-                        <div key={m.id} onClick={() => setIntroModeId(m.id)} style={{
+                        <div key={m.id} {...pressable(() => setIntroModeId(m.id))} style={{
                           padding: '12px 14px', borderRadius: 12, cursor: 'pointer',
                           background: active ? cm(c, 8) : 'var(--surface-2)',
                           border: `1px solid ${active ? cm(c, 28) : 'var(--line)'}`,
@@ -388,7 +414,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           </div>
 
           {!hasChildhood && (
-            <div onClick={() => onOpenChildhoodWheel?.()} className="list-line" style={{ cursor: 'pointer', marginBottom: 8 }}>
+            <div {...pressable(() => onOpenChildhoodWheel?.())} className="list-line" style={{ cursor: 'pointer', marginBottom: 8 }}>
               <div style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🌱</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>Колесо детства</div>
@@ -403,7 +429,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             if (!d) return null;
             const childScore = childhoodRatings[id];
             return (
-              <div key={id} onClick={() => setDetailNeedId(id)} className="list-line" style={{ cursor: 'pointer' }}>
+              <div key={id} {...pressable(() => setDetailNeedId(id))} className="list-line" style={{ cursor: 'pointer' }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: 9, flexShrink: 0,
                   background: `${color}18`, border: `1px solid ${color}30`,
@@ -567,7 +593,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
               const active = ids.includes(id);
               const c = mode.groupColor; // CSS variable
               return (
-                <div key={id} onClick={() => toggle(id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.04)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.08)'}`, transition: 'all 0.15s' }}>
+                <div key={id} {...pressable(() => toggle(id))} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.04)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.08)'}`, transition: 'all 0.15s' }}>
                   <span style={{ fontSize: 18, flexShrink: 0 }}>{mode.emoji}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{mode.name}</div>
@@ -594,7 +620,7 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
                 {group.items.filter(m => !POPULAR_MODE_IDS.includes(m.id)).map(m => {
                   const active = ids.includes(m.id);
                   return (
-                    <div key={m.id} onClick={() => toggle(m.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.03)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.06)'}`, transition: 'all 0.15s' }}>
+                    <div key={m.id} {...pressable(() => toggle(m.id))} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: active ? cm(c, 9) : 'rgba(var(--fg-rgb),0.03)', border: `1px solid ${active ? cm(c, 20) : 'rgba(var(--fg-rgb),0.06)'}`, transition: 'all 0.15s' }}>
                       <span style={{ fontSize: 18, flexShrink: 0 }}>{m.emoji}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, color: active ? 'var(--text)' : 'var(--text-sub)', fontWeight: active ? 500 : 400 }}>{m.name}</div>

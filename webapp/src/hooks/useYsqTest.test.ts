@@ -9,12 +9,16 @@ import { act, renderHook } from '@testing-library/react';
 import {
   useYsqTest,
   computeScores,
+  isSchemaScoreActive,
+  buildShareText,
+  SCHEMAS,
   QUESTIONS,
   TOTAL_PAGES,
   YSQ_PROGRESS_KEY,
   YSQ_RESULT_KEY,
   type YsqApi,
 } from './useYsqTest';
+import { computeActiveSchemas } from '../../../src/utils/ysq';
 
 function makeApi(overrides: Partial<YsqApi> = {}): YsqApi {
   return {
@@ -71,6 +75,69 @@ describe('computeScores', () => {
     answers[0] = 5; // отвечен только 1 из 5 вопросов схемы
     // 1 из 5 вопросов схемы >= 5 → 20%, а не 100% (знаменатель — вся схема, не только отвеченные)
     expect(computeScores(answers)['Эмоциональная депривация'].pct5plus).toBe(20);
+  });
+
+  it('n5plus/nQuestions для человекочитаемого «N из M»', () => {
+    const answers = Array(QUESTIONS.length).fill(0);
+    answers[0] = 6; answers[1] = 5; answers[2] = 3; answers[3] = 4; answers[4] = 6;
+    const s = computeScores(answers)['Эмоциональная депривация'];
+    expect(s.n5plus).toBe(3); // ответы 6,5,6
+    expect(s.nQuestions).toBe(5);
+  });
+
+  // Регрессия (инцидент 2026-07): результат считался только «классикой» —
+  // профиль из сплошных «4» давал 0% по всем схемам и пустой результат.
+  it('все ответы «4»: классика 0%, но схема активна по среднему баллу', () => {
+    const answers = Array(QUESTIONS.length).fill(4);
+    const s = computeScores(answers)['Эмоциональная депривация'];
+    expect(s.pct5plus).toBe(0);
+    expect(s.avg).toBe(4);
+    expect(isSchemaScoreActive(s)).toBe(true);
+  });
+
+  it('все ответы «3»: не активна ни по одному критерию', () => {
+    const answers = Array(QUESTIONS.length).fill(3);
+    const s = computeScores(answers)['Эмоциональная депривация'];
+    expect(isSchemaScoreActive(s)).toBe(false);
+  });
+
+  // Правило №4 CLAUDE.md: активность считается в двух местах (shared-хук для
+  // фронтендов, src/utils/ysq.ts для профиля/бота) — сверка, что критерии
+  // не разъехались. Иначе «схемы из теста не добавились в профиль».
+  it('паритет с бэкендом: одинаковый набор активных схем', () => {
+    const fixtures = [
+      Array(QUESTIONS.length).fill(4),
+      Array(QUESTIONS.length).fill(3),
+      Array(QUESTIONS.length).fill(6),
+      Array.from({ length: QUESTIONS.length }, (_, i) => (i % 6) + 1),
+      Array.from({ length: QUESTIONS.length }, (_, i) => (i % 2 ? 5 : 2)),
+    ];
+    for (const answers of fixtures) {
+      const frontActive = SCHEMAS.filter(sch =>
+        isSchemaScoreActive(computeScores(answers)[sch.name]),
+      ).length;
+      expect(computeActiveSchemas(answers).length).toBe(frontActive);
+    }
+  });
+});
+
+// ── Шаринг ───────────────────────────────────────────────────────────────────
+describe('buildShareText', () => {
+  it('содержит обе метрики по каждой выраженной схеме и дату', () => {
+    const answers = Array(QUESTIONS.length).fill(4);
+    const text = buildShareText(computeScores(answers), '17 июля 2026');
+    expect(text).toContain('17 июля 2026');
+    expect(text).toContain('Выраженные схемы (20)');
+    // Главная метрика — средний балл; классика читаемой строкой «N из M».
+    expect(text).toContain('средний балл 4 из 6');
+    expect(text).toContain('ответов «5–6»: 0 из');
+    expect(text).toContain('не диагноз');
+  });
+
+  it('без активных схем — явная формулировка, а не пустой список', () => {
+    const answers = Array(QUESTIONS.length).fill(1);
+    const text = buildShareText(computeScores(answers), null);
+    expect(text).toContain('Выраженных схем не обнаружено');
   });
 });
 
@@ -168,5 +235,53 @@ describe('useYsqTest — завершение', () => {
     expect(r2.current.answers[TOTAL_PAGES - 1]).toBe(5);
     expect(r2.current.scores).not.toBeNull();
     expect(r2.current.resultView).not.toBeNull();
+  });
+
+  // Регрессия (инцидент 2026-07): autoResume вовсе не грузил результат —
+  // после прохождения кнопка входа («пройти снова») открывала интро с
+  // «Начать тест», и результаты было не найти.
+  it('autoResume без прогресса, но с результатом → показывает результат', async () => {
+    const answers = Array(QUESTIONS.length).fill(4);
+    localStorage.setItem(
+      YSQ_RESULT_KEY,
+      JSON.stringify({ date: '2026-07-17T00:00:00.000Z', answers }),
+    );
+
+    const api = makeApi();
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+
+    expect(result.current.phase).toBe('result');
+    // Все «4» → 20 активных схем по среднему баллу (а не «Активных схем не найдено»)
+    expect(result.current.resultView?.activeCount).toBe(20);
+  });
+
+  it('autoResume: незаконченный прогресс важнее результата — сразу в тест', async () => {
+    const answers = Array(QUESTIONS.length).fill(0);
+    answers[0] = 4;
+    localStorage.setItem(YSQ_PROGRESS_KEY, JSON.stringify({ answers, page: 1 }));
+
+    const api = makeApi();
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+
+    expect(result.current.phase).toBe('test');
+    expect(result.current.page).toBe(1);
+  });
+
+  it('autoResume: результат только на сервере → подтягивается и показывается', async () => {
+    const answers = Array(QUESTIONS.length).fill(5);
+    const api = makeApi({
+      getYsqResult: vi.fn().mockResolvedValue({
+        answers,
+        completedAt: '2026-07-17T00:00:00.000Z',
+      }),
+    });
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+    // фейковые таймеры: флашим микротаски промиса autoResume
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.phase).toBe('result');
+    expect(result.current.completedAt).toBe('2026-07-17T00:00:00.000Z');
   });
 });

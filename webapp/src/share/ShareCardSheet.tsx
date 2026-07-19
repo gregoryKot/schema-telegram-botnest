@@ -74,6 +74,7 @@ export function ShareCardSheet({
 
   return (
     <div
+      role="presentation"
       style={{
         position: 'fixed',
         inset: 0,
@@ -85,6 +86,7 @@ export function ShareCardSheet({
       onClick={goBack}
     >
       <div
+        role="presentation"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'var(--bg)',

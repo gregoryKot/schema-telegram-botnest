@@ -14,7 +14,9 @@ export function ModeMapContextMenu({ x, y, items, onClose }: Props) {
   return (
     <>
       {/* Backdrop to close on any click */}
-      <div onClick={onClose} onContextMenu={e => { e.preventDefault(); onClose(); }}
+      <div role="button" tabIndex={0} aria-label="Закрыть" onClick={onClose}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
+        onContextMenu={e => { e.preventDefault(); onClose(); }}
         style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
       <div style={{
         position: 'fixed', left: x, top: y, zIndex: 1000,

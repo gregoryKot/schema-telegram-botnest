@@ -29,6 +29,7 @@ interface Props {
   setHelpTasksKey: (updater: (k: number) => number) => void;
   profileRefreshKey: number;
   displayName: string | null;
+  onNewDiaryEntry: (t: 'schema' | 'mode' | 'gratitude') => void;
 }
 
 // Четыре главных экрана (Сегодня/Паттерны/Помощь/Профиль). Перенесено из
@@ -54,6 +55,7 @@ export function AppSections({
   setHelpTasksKey,
   profileRefreshKey,
   displayName,
+  onNewDiaryEntry,
 }: Props) {
   return (
     <>
@@ -89,6 +91,7 @@ export function AppSections({
               setCabinetView('list');
               switchTherapistMode(true);
             }}
+            onNewDiaryEntry={onNewDiaryEntry}
           />
         </ErrorBoundary>
       )}
@@ -105,6 +108,7 @@ export function AppSections({
             }}
             childhoodRatings={childhoodRatings}
             onOpenChildhoodWheel={() => sheets.open('childhoodWheel')}
+            onOpenDiaries={() => sheets.open('diaries')}
           />
         </ErrorBoundary>
       )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import {
   ExScreen,
@@ -102,6 +102,13 @@ export function BeliefCheckEx({
   const [againstInput, setAgainstInput] = useState('');
   const [done, setDone] = useState(false);
   const [history, setHistory] = useState<Awaited<ReturnType<typeof api.getBeliefChecks>>>([]);
+  const beliefRef = useRef<HTMLTextAreaElement>(null);
+  const reframeRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (step === 0) beliefRef.current?.focus();
+    else if (step === 3) reframeRef.current?.focus();
+  }, [step]);
 
   useEffect(() => {
     if (done)
@@ -299,12 +306,12 @@ export function BeliefCheckEx({
                 голове.
               </p>
               <textarea
+                ref={beliefRef}
                 className={'paper-input ' + (belief.trim() ? 'is-filled' : '')}
                 rows={3}
                 value={belief}
                 onChange={(e) => setBelief(e.target.value)}
                 placeholder="Например: я всегда всё порчу, меня никто не любит…"
-                autoFocus
               />
             </div>
           </div>
@@ -472,12 +479,12 @@ export function BeliefCheckEx({
             </div>
           </div>
           <textarea
+            ref={reframeRef}
             className="paper-area"
             value={reframe}
             onChange={(e) => setReframe(e.target.value)}
             placeholder="Иногда я действительно ошибаюсь, но это не значит что я всегда всё порчу…"
             rows={6}
-            autoFocus
           />
           <div className="ex-foot">
             <button className="ex-btn ex-btn-ghost" onClick={() => setStep(2)}>

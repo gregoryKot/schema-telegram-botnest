@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api, PracticePlan } from '../api';
-import { Loader } from './Loader';
+import { SkeletonList } from './Skeleton';
 import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
 import { useNeedData } from '../needData';
@@ -131,7 +131,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
 
       <div style={{ padding: '16px 20px 140px' }}>
         {!plans ? (
-          <Loader minHeight="30vh" />
+          <SkeletonList rows={4} h={96} />
         ) : plans.length === 0 ? (
           /* Empty state */
           <div style={{ paddingTop: 60, textAlign: 'center' }}>

@@ -1,0 +1,16 @@
+# CODEOWNERS — авто-назначение ревьюера (best-practice, отсутствовал до 2026-07).
+# Соло-мейнтейнер: владелец на всё, плюс явные владельцы на критичные зоны,
+# чтобы правки auth/шифрования/миграций/кризисного пути нельзя было проглядеть.
+# Требует включённого branch protection «Require review from Code Owners».
+
+*                                   @gregorykot
+
+# Критичные зоны — читать SECURITY.md / правила CLAUDE.md перед правкой.
+/src/auth/                          @gregorykot
+/src/prisma/                        @gregorykot
+/prisma/                            @gregorykot
+/src/utils/encrypt*.ts              @gregorykot
+/shared/src/utils/crisisMarkers.ts  @gregorykot
+/.github/                           @gregorykot
+/CLAUDE.md                          @gregorykot
+/SECURITY.md                        @gregorykot

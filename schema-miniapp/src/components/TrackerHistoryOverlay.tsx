@@ -1,6 +1,6 @@
 import { Need, DayHistory, COLORS } from '../types';
+import { SkeletonCard, SkeletonList } from './Skeleton';
 import { api, PracticePlan } from '../api';
-import { Loader } from './Loader';
 import { HistoryView } from './HistoryView';
 import { CheckInSheet } from './CheckInSheet';
 import { TrackerOverlay } from './TrackerOverlay';
@@ -148,7 +148,17 @@ export function TrackerHistoryOverlay({
       </div>
 
       {historyLoading ? (
-        <Loader minHeight="60vh" />
+        <div
+          style={{
+            padding: '16px 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+          }}
+        >
+          <SkeletonCard h={180} />
+          <SkeletonList rows={4} h={54} />
+        </div>
       ) : (
         <HistoryView
           needs={needs}

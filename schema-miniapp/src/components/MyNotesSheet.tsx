@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BottomSheet } from './BottomSheet';
+import { SkeletonList } from './Skeleton';
 import { api } from '../api';
 import { SCHEMA_DOMAINS, getModeById } from '../schemaTherapyData';
 import { SchemaIntroSheet } from './SchemaIntroSheet';
@@ -261,15 +262,7 @@ export function MyNotesSheet({ onClose }: Props) {
         </div>
 
         {loading ? (
-          <div
-            style={{
-              fontSize: 14,
-              color: 'var(--text-sub)',
-              padding: '16px 0',
-            }}
-          >
-            Загрузка…
-          </div>
+          <SkeletonList rows={4} h={72} />
         ) : (
           <>
             {/* ── Карточки ── */}

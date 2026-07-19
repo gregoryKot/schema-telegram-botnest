@@ -1,19 +1,29 @@
+import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
+import { ShareCardSheet } from '../share/ShareCardSheet';
+import { contactCta } from '../utils/therapistContact';
+import { botShortUrl } from '../utils/botConfig';
 import { GlyphArrowLeft } from './exercises/ExScreen';
+import { pressable } from '../utils/a11y';
+import { ysqShareCard } from '../../../shared/src/share/cards/ysqCard';
+import { ScoreBarRow } from '../../../shared/src/components/ScoreBarRow';
+import { YsqDisclaimer } from '../../../shared/src/components/YsqDisclaimer';
+import { YsqTestHeader } from '../../../shared/src/components/YsqTestHeader';
+import { YsqAnswerList } from '../../../shared/src/components/YsqAnswerList';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { getTherapistContact } from '../utils/therapistContact';
-import { api } from '../api';
 import {
   useYsqTest,
   QUESTIONS,
   NEED_LABELS,
-  TOTAL_PAGES,
-  ANSWER_LABELS,
   TIP_VY,
   getSchemaForQuestion,
+  avgBarPct,
+  buildShareText,
+  countActiveInHistory,
   YSQ_RESULT_KEY,
   YSQ_PROGRESS_KEY,
 } from '../hooks/useYsqTest';
+import { api } from '../api';
 
 export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY };
 
@@ -27,6 +37,7 @@ interface Props {
 export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
+  const cta = contactCta();
   const {
     phase, setPhase,
     answers,
@@ -46,12 +57,13 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
     resultView,
   } = useYsqTest({ api, autoResume });
 
+  const [showShare, setShowShare] = useState(false);
+
   // ── Full-screen test phase ────────────────────────────────────────────────────
   if (phase === 'test') {
     const qIdx = page;
     const currentAnswer = answers[qIdx];
     const schema = getSchemaForQuestion(qIdx);
-    const progressPct = ((page + 1) / TOTAL_PAGES) * 100;
 
     return (
       <>
@@ -60,26 +72,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
           @keyframes slideFromLeft  { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
         `}</style>
         <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-          {/* Header */}
-          <div style={{ flexShrink: 0, padding: '16px 20px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <button
-                onClick={handleBack}
-                disabled={page === 0}
-                aria-label="Назад"
-                style={{ width: 36, height: 36, borderRadius: 12, border: 'none', background: page === 0 ? 'transparent' : 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 16, cursor: page === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: page === 0 ? 0 : 1, transition: 'opacity 0.15s' }}
-              >←</button>
-              <span style={{ fontSize: 13, color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>{page + 1} / {TOTAL_PAGES}</span>
-              <button
-                onClick={() => setPhase('intro')}
-                aria-label="Закрыть"
-                style={{ width: 36, height: 36, borderRadius: 12, border: 'none', background: 'rgba(var(--fg-rgb),0.08)', color: 'var(--text-sub)', fontSize: 17, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >✕</button>
-            </div>
-            <div style={{ height: 3, background: 'rgba(var(--fg-rgb),0.08)', borderRadius: 3 }}>
-              <div style={{ height: '100%', width: `${progressPct}%`, background: 'var(--accent)', borderRadius: 3, transition: 'width 0.25s ease' }} />
-            </div>
-          </div>
+          <YsqTestHeader page={page} onBack={handleBack} onClose={() => setPhase('intro')} />
 
           {/* Question – animated on page change */}
           <div
@@ -101,40 +94,12 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             </div>
           </div>
 
-          {/* Answer buttons */}
-          <div style={{ padding: '0 16px 32px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-            {ANSWER_LABELS.map((label, i) => {
-              const value = i + 1;
-              const selected = currentAnswer === value;
-              return (
-                <button
-                  key={value}
-                  onClick={() => selectAnswer(qIdx, value)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '13px 16px', borderRadius: 16,
-                    border: `1.5px solid ${selected ? 'var(--accent)' : 'rgba(var(--fg-rgb),0.08)'}`,
-                    background: selected ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
-                    cursor: 'pointer', textAlign: 'left', WebkitTapHighlightColor: 'transparent',
-                    transition: 'background 0.12s, border-color 0.12s',
-                  }}
-                >
-                  <div style={{
-                    width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                    border: `2px solid ${selected ? 'var(--text)' : 'rgba(var(--fg-rgb),0.2)'}`,
-                    background: selected ? 'var(--text)' : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.12s',
-                  }}>
-                    {selected && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />}
-                  </div>
-                  <span style={{ fontSize: 15, color: selected ? 'var(--text)' : 'var(--text-sub)', fontWeight: selected ? 500 : 400 }}>
-                    {label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <YsqAnswerList
+            currentAnswer={currentAnswer}
+            onSelect={(value) => selectAnswer(qIdx, value)}
+            unselectedBg="transparent"
+            radioColor="var(--text)"
+          />
         </div>
       </>
     );
@@ -142,6 +107,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
   // ── Intro + Result ────────────────────────────────────────────────────────────
   return (
+    <>
     <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
       <div className="ex-topbar">
         <button className="ex-back" onClick={goBack}>
@@ -223,9 +189,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             Отмена
           </button>
 
-          <div style={{ marginTop: 20, fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.7, textAlign: 'center' }}>
-            Это не официальный клинический тест и не диагностика. Профессиональные опросники по схемам защищены авторским правом и требуют лицензии — их здесь нет. Это самостоятельный образовательный опросник для самонаблюдения: помогает примерно сориентироваться в своих паттернах, но не ставит диагноз и не заменяет консультацию специалиста.
-          </div>
+          <YsqDisclaimer mt={20} />
         </div>
       )}
 
@@ -246,7 +210,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             </div>
 
             <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, marginBottom: 20, fontStyle: 'italic' }}>
-              Схема считается выраженной если больше половины ответов – 5 или 6. Это инструмент самоисследования, не диагноз.
+              Главный показатель – средний балл по схеме (1–6): насколько её утверждения в среднем про вас. От 4 из 6 схема считается выраженной. Рядом – сколько утверждений отмечено на «5» или «6» (сильное согласие). Это инструмент самоисследования, не диагноз.
             </div>
 
             {activeCount === 0 && (
@@ -281,17 +245,20 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35 }}>{schema.name}</div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                          {delta !== null && Math.abs(delta) >= 5 && (
+                          {delta !== null && Math.abs(delta) >= 0.3 && (
                             <span style={{ fontSize: 12, fontWeight: 600, color: delta < 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                              {delta > 0 ? '+' : ''}{delta}%
+                              {delta > 0 ? '+' : ''}{delta}
                             </span>
                           )}
-                          <div style={{ fontSize: 15, fontWeight: 700, color }}>{s.pct5plus}%</div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color }}>{s.avg}<span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)' }}> / 6</span></div>
                         </div>
                       </div>
 
-                      <div style={{ height: 3, background: 'rgba(var(--fg-rgb),0.1)', borderRadius: 2, marginBottom: 10 }}>
-                        <div style={{ height: '100%', width: `${s.pct5plus}%`, background: color, borderRadius: 2 }} />
+                      {/* Главная метрика — средний балл (1–6); классика (ответы
+                          «5–6») — понятной строкой «N из M», а не голым «0%». */}
+                      <ScoreBarRow label="Средний балл" barPct={avgBarPct(s.avg)} value={`${s.avg} из 6`} color={color} mb={6} />
+                      <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 10 }}>
+                        Ответов «5» или «6»: {s.n5plus} из {s.nQuestions}
                       </div>
 
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, marginBottom: 8 }}>
@@ -304,7 +271,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                       </div>
 
                       <div
-                        onClick={() => onViewSchemas ? onViewSchemas(schema.name) : goBack()}
+                        {...pressable(() => (onViewSchemas ? onViewSchemas(schema.name) : goBack()))}
                         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0', marginBottom: showDiaryHint ? 8 : 0 }}
                       >
                         <span style={{ fontSize: 13, color: 'var(--accent)' }}>Читать карточку схемы</span>
@@ -341,16 +308,17 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                   <div style={{ marginTop: 8 }}>
                     {inactiveSchemas.map(schema => {
                       const s = scores[schema.name];
-                      const mid = s.pct5plus >= 30 && s.pct5plus <= 50;
+                      // «На грани»: средний балл близок к порогу 4 — жёлтым.
+                      const mid = s.avg >= 3;
                       const barColor = mid ? 'var(--accent-yellow)' : 'rgba(var(--fg-rgb),0.2)';
                       return (
                         <div key={schema.name} style={{ marginBottom: 8, background: 'rgba(var(--fg-rgb),0.04)', borderRadius: 12, padding: '12px 14px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
                             <div style={{ fontSize: 13, color: 'var(--text-sub)', flex: 1, paddingRight: 8, lineHeight: 1.3 }}>{schema.name}</div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: barColor, flexShrink: 0 }}>{s.pct5plus}%</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: barColor, flexShrink: 0 }}>{s.avg} из 6</div>
                           </div>
                           <div style={{ height: 3, background: 'rgba(var(--fg-rgb),0.1)', borderRadius: 2 }}>
-                            <div style={{ height: '100%', width: `${s.pct5plus}%`, background: barColor, borderRadius: 2 }} />
+                            <div style={{ height: '100%', width: `${avgBarPct(s.avg)}%`, background: barColor, borderRadius: 2 }} />
                           </div>
                         </div>
                       );
@@ -361,7 +329,9 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             )}
 
             {/* CTA */}
-            {activeCount > 0 && (
+            {/* CTA прячем целиком, если сам пользователь терапевт (isSelf):
+                «Написать вам» бессмысленно. */}
+            {activeCount > 0 && !cta.isSelf && (
               <div style={{
                 marginTop: 8, marginBottom: 16,
                 background: 'color-mix(in srgb, var(--accent) 7%, transparent)',
@@ -375,12 +345,12 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                   Схемы – паттерны, сложившиеся давно. Их можно менять, но это требует времени и поддержки. Схема-терапия – один из самых эффективных методов для этой работы.
                 </div>
                 <a
-                  href={getTherapistContact().url}
+                  href={cta.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ display: 'block', textAlign: 'center', padding: '11px 0', borderRadius: 12, background: 'color-mix(in srgb, var(--accent) 15%, transparent)', color: 'var(--accent)', fontSize: 14, fontWeight: 500, textDecoration: 'none' }}
                 >
-                  {getTherapistContact().name === 'автору' ? 'Поговорить с психологом →' : `Написать ${getTherapistContact().name} →`}
+                  {cta.label}
                 </a>
               </div>
             )}
@@ -393,10 +363,10 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {history.map((entry, idx) => {
-                    const entryActive = entry.scores.filter(s => s.pct5plus > 50).length;
+                    const entryActive = countActiveInHistory(entry);
                     const prevEntryItem = history[idx + 1];
                     const entryDelta = prevEntryItem
-                      ? entryActive - prevEntryItem.scores.filter(s => s.pct5plus > 50).length
+                      ? entryActive - countActiveInHistory(prevEntryItem)
                       : null;
                     const entryDate = new Date(entry.completedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
                     return (
@@ -421,7 +391,14 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
               </div>
             )}
 
-            <button onClick={goBack} className="ex-btn ex-btn-primary" style={{ marginTop: 4, marginBottom: 10 }}>
+            <button
+              onClick={() => setShowShare(true)}
+              style={{ width: '100%', padding: '14px 0', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)', borderRadius: 14, background: 'color-mix(in srgb, var(--accent) 10%, transparent)', color: 'var(--accent)', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginTop: 4, marginBottom: 10 }}
+            >
+              📤 Поделиться результатами
+            </button>
+
+            <button onClick={goBack} className="ex-btn ex-btn-primary" style={{ marginBottom: 10 }}>
               Сохранить и закрыть
             </button>
 
@@ -439,14 +416,23 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
               </button>
             )}
 
-            <div style={{ marginTop: 16, fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.7, textAlign: 'center' }}>
-              Это не официальный клинический тест и не диагностика. Профессиональные опросники по схемам защищены авторским правом и требуют лицензии — их здесь нет. Это самостоятельный образовательный опросник для самонаблюдения: помогает примерно сориентироваться в своих паттернах, но не ставит диагноз и не заменяет консультацию специалиста.
-            </div>
+            <YsqDisclaimer mt={16} />
           </div>
         );
       })()}
       </div>
       </div> {/* .page */}
     </div>
+
+    {/* Шаринг результата — общий механизм share-карточек (kind 'ysq') */}
+    {showShare && scores && resultView && (
+      <ShareCardSheet
+        {...ysqShareCard(scores, resultView, botShortUrl)}
+        fallbackText={buildShareText(scores, resultView.dateLabel)}
+        onClose={() => setShowShare(false)}
+        zIndex={400}
+      />
+    )}
+    </>
   );
 }

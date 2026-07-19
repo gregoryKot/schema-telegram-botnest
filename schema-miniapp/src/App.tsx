@@ -11,7 +11,7 @@ import { api } from './api';
 import { DEFAULT_SECTION_KEY } from './sections/ProfileSection';
 import { Section } from './components/BottomNav';
 import { TherapistClientSheet } from './components/TherapistClientSheet';
-import { Loader } from './components/Loader';
+import { TodayScreenSkeleton, ScreenSkeleton } from './components/Skeleton';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './components/YSQTestSheet';
 import { shouldShowWeeklyQuestion } from './components/WeeklyQuestion';
 import {
@@ -68,6 +68,11 @@ export default function App() {
   );
   const [onboardingSeen, setOnboardingSeen] = useState(
     () => !!localStorage.getItem(ONBOARDING_SEEN_KEY),
+  );
+  // Онбординг ждёт, пока не выбрана форма обращения (ты/вы) — иначе приветствие
+  // прозвучит «на ты» до выбора. Если уже спрашивали за сессию — не ждём.
+  const [addressFormReady, setAddressFormReady] = useState(
+    () => !!sessionStorage.getItem('addr_form_asked'),
   );
   const historyDays = 30;
   const _tabScrollPositions = useRef<Record<TrackerTab, number>>({
@@ -297,13 +302,18 @@ export default function App() {
         if (s.pairCardDismissed)
           localStorage.setItem('pair_card_dismissed', '1');
         else localStorage.removeItem('pair_card_dismissed');
-        // Форма обращения ещё не выбрана — спросить (не чаще раза за сессию)
+        // Форма обращения ещё не выбрана — спросить ДО онбординга (не чаще раза
+        // за сессию), чтобы весь онбординг звучал в выбранной форме.
         if (!s.addressForm && !sessionStorage.getItem('addr_form_asked')) {
           sheets.open('addressPicker');
+        } else {
+          setAddressFormReady(true);
         }
       })
       .catch(() => {
         setPairCardDismissed(!!localStorage.getItem('pair_card_dismissed'));
+        // Настройки не загрузились — не блокируем онбординг из-за формы.
+        setAddressFormReady(true);
       });
     api
       .getPendingPlans()
@@ -532,7 +542,13 @@ export default function App() {
   }, []);
 
   if (loading) {
-    return <Loader minHeight="100vh" />;
+    // Скелетон по форме будущего экрана вместо полноэкранного спиннера
+    // (правило CLAUDE.md «Скелетоны, а не спиннеры»).
+    return section === 'today' ? (
+      <TodayScreenSkeleton />
+    ) : (
+      <ScreenSkeleton cards={section === 'profile' ? 4 : 3} />
+    );
   }
 
   if (error) {
@@ -594,6 +610,7 @@ export default function App() {
         setHelpTasksKey={setHelpTasksKey}
         profileRefreshKey={profileRefreshKey}
         displayName={displayName}
+        onNewDiaryEntry={setNewDiaryEntry}
       />
 
       {/* ── История потребностей ── */}
@@ -626,6 +643,8 @@ export default function App() {
         onSaved={handleSaved}
         yesterdayRatings={yesterdayRatings}
         onboardingSeen={onboardingSeen}
+        addressFormReady={addressFormReady}
+        onAddressPickerDone={() => setAddressFormReady(true)}
         consentGiven={disclaimerDone}
         onAcceptDisclaimer={() => {
           localStorage.setItem(ONBOARDING_SEEN_KEY, '1');

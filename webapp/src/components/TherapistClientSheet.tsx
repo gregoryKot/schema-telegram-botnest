@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTr } from '../utils/addressForm';
+import { pressable } from '../utils/a11y';
 import { api } from '../api';
 import type { TherapyClientSummary, UserTask, ClientConceptualization } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
@@ -151,6 +152,11 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
     inputRef: addInputRef,
     submit: submitAddClient, reset: resetAddClient, copyInvite: copyAddInvite,
   } = addClient;
+
+  const aliasInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (renamingAlias) aliasInputRef.current?.focus();
+  }, [renamingAlias]);
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 
@@ -328,7 +334,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                         const [, timePart] = (client.nextSession ?? '').includes('T') ? (client.nextSession ?? '').split('T') : ['', null];
                         const name = client.clientAlias ?? client.name ?? `ID ${client.telegramId}`;
                         return (
-                          <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
+                          <div key={client.telegramId} className="list-line" {...pressable(() => openClient(client))} style={{ cursor: 'pointer' }}>
                             <span className="num text-md" style={{ width: 52, flexShrink: 0, color: 'var(--text-sub)', fontWeight: 500 }}>{timePart ?? '–'}</span>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div className="text-md" style={{ fontWeight: 600 }}>{name}</div>
@@ -409,7 +415,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                           <span className="eyebrow">Активные схемы</span>
                         </div>
                         {filtered.filter(c => !!c.name).map(client => (
-                          <div key={client.telegramId} className="r-row" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
+                          <div key={client.telegramId} className="r-row" {...pressable(() => openClient(client))} style={{ cursor: 'pointer' }}>
                             <div style={{ minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <span className="text-base" style={{ fontWeight: 600 }}>{client.clientAlias ?? client.name}</span>
@@ -453,7 +459,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                         {filtered.filter(c => !c.name).map(client => {
                           const name = client.clientAlias ?? `ID ${client.telegramId}`;
                           return (
-                            <div key={client.telegramId} className="list-line" onClick={() => openClient(client)} style={{ cursor: 'pointer' }}>
+                            <div key={client.telegramId} className="list-line" {...pressable(() => openClient(client))} style={{ cursor: 'pointer' }}>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                   <span className="text-md" style={{ fontWeight: 600 }}>{name}</span>
@@ -495,7 +501,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
               {/* Name / inline edit */}
               {renamingAlias ? (
                 <>
-                  <input autoFocus value={aliasInput} onChange={e => setAliasInput(e.target.value)}
+                  <input ref={aliasInputRef} value={aliasInput} onChange={e => setAliasInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveAlias(); if (e.key === 'Escape') setRenamingAlias(false); }}
                     style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', background: 'transparent', border: 'none', borderBottom: '2px solid var(--accent)', outline: 'none', width: 220, padding: '1px 0', color: 'var(--text)' }} />
                   <button onClick={saveAlias} disabled={aliasSaving} style={{ padding: '3px 10px', borderRadius: 5, border: 'none', background: 'var(--text)', color: 'var(--bg)', fontSize: 12, cursor: 'pointer' }}>
@@ -1300,7 +1306,7 @@ export function TherapistClientSheet({ view, openClientId: openClientIdProp, onV
                     { t: 'Письмо себе', sub: 'От Здорового Взрослого к Уязвимому Ребёнку' },
                     { t: 'Imagery rescripting', sub: 'Аудио-практика, 12 минут' },
                   ].map(card => (
-                    <div key={card.t} className="list-line" onClick={() => setShowAssign(true)} style={{ cursor: 'pointer' }}>
+                    <div key={card.t} className="list-line" {...pressable(() => setShowAssign(true))} style={{ cursor: 'pointer' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="text-md" style={{ fontWeight: 600 }}>{card.t}</div>
                         <div className="text-sm muted" style={{ marginTop: 3, lineHeight: 1.5 }}>{card.sub}</div>

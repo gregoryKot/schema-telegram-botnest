@@ -42,8 +42,12 @@ function DonateNudgeSheet({ onClose }: { onClose: () => void }) {
   const close = () => { localStorage.setItem(SHOWN_KEY, String(Date.now())); goBack(); };
 
   return (
-    <div onClick={close} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 440, background: 'var(--bg)', borderRadius: '18px 18px 0 0', padding: '28px 22px calc(28px + env(safe-area-inset-bottom))', textAlign: 'center', boxShadow: '0 -8px 40px rgba(0,0,0,0.25)' }}>
+    <div onClick={close} role="button" tabIndex={0} aria-label="Закрыть"
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); close(); } }}
+      style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={(e) => e.stopPropagation()} role="button" tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
+        style={{ width: '100%', maxWidth: 440, background: 'var(--bg)', borderRadius: '18px 18px 0 0', padding: '28px 22px calc(28px + env(safe-area-inset-bottom))', textAlign: 'center', boxShadow: '0 -8px 40px rgba(0,0,0,0.25)' }}>
         <div style={{ fontSize: 44, marginBottom: 12 }}>💛</div>
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 24, fontWeight: 400, color: 'var(--text)', margin: '0 0 8px' }}>Поддержать проект</h2>
         <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.6, margin: '0 0 22px' }}>
