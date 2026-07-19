@@ -5,7 +5,7 @@ import { Btn, ThemeIcon } from '../components/landing-kit';
 import { DARK_BG, INK_ON_DARK, useReveal, useTheme } from '../components/landing-kit-hooks';
 import { botUrl } from '../utils/botConfig';
 import {
-  TG_URL, menuBtnStyle, burgerLine,
+  TG_URL, PRACTICE_BOOKING_URL, menuBtnStyle, burgerLine,
   TOPICS_A, TOPICS_B, EDUCATION, WORK_THEMES, TRUST, BOUNDARIES, APP_FEATURES,
 } from './landing/constants';
 import { TgLink, SectionNav, MobileMenu } from './landing/nav';
@@ -49,8 +49,15 @@ export function LandingPage() {
   const boundRef    = useReveal() as React.RefObject<HTMLElement>;
   const formRef     = useReveal() as React.RefObject<HTMLElement>;
 
+  // Запись живёт на сайте практики (kotlarewski). На самом kotlarewski —
+  // плавно скроллим к форме; на schemehappens и прочих — уводим на практику.
   const scrollToBooking = useCallback(() => {
-    bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const onPractice = /(^|\.)kotlarewski\./.test(window.location.hostname);
+    if (onPractice) {
+      bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.location.href = PRACTICE_BOOKING_URL;
+    }
   }, []);
 
   useEffect(() => {
