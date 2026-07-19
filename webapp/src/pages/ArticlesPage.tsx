@@ -72,7 +72,7 @@ export function ArticlesListPage() {
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 20px' }}>
             Первая встреча – 15 минут, бесплатно. Расскажете о запросе, я расскажу о подходе.
           </p>
-          <a href="/#booking" style={{
+          <a href="https://kotlarewski.ru/#booking" style={{
             display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white',
             borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none',
           }}>
@@ -231,7 +231,7 @@ export function ArticlePage() {
             Первая встреча – 15 минут, бесплатно. Обсудим ваш запрос и я расскажу, как работает схема-терапия в индивидуальном случае.
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <a href="/#booking" style={{ display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white', borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+            <a href="https://kotlarewski.ru/#booking" style={{ display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white', borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
               Записаться →
             </a>
             <a href="/articles" style={{ display: 'inline-block', padding: '12px 20px', background: 'transparent', border: '1.5px solid var(--line-strong)', color: 'var(--text-sub)', borderRadius: 100, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
