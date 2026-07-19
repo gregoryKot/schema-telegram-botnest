@@ -142,6 +142,8 @@ export function SchemasTab({
             onSelect={onOpenSchemaDetail}
             addLabel="+ Добавить схему"
             onAdd={onShowSchemaPicker}
+            anyFreq={Object.values(schemaFreq).some((v) => v > 0)}
+            hint="Полоска рядом со схемой — сколько дней за неделю она всплывала в дневнике. Это наблюдение, а не оценка."
           />
         ) : (
           <button

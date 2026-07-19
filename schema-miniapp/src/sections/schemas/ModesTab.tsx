@@ -67,6 +67,8 @@ export function ModesTab({
             onSelect={onOpenModeIntro}
             addLabel="+ Добавить режим"
             onAdd={onShowModePicker}
+            anyFreq={Object.values(modeFreq).some((v) => v > 0)}
+            hint="Полоска рядом с режимом — сколько дней за неделю он включался по дневнику. Это наблюдение, а не оценка."
           />
         ))}
     </>
