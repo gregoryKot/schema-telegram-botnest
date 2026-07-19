@@ -1,11 +1,34 @@
 // Тесты недельной сводки схем («Паттерны», волна 2 нейродизайна).
 import { describe, it, expect } from 'vitest';
-import { weekSchemaSummary, weekModeSummary } from './patternsSummary';
+import {
+  weekSchemaSummary,
+  weekModeSummary,
+  weekSchemaFrequency,
+} from './patternsSummary';
 
 const NOW = new Date('2026-07-17T20:00:00');
 const entry = (iso: string, ids: string[]) => ({
   createdAt: iso,
   schemaIds: ids,
+});
+
+describe('weekSchemaFrequency', () => {
+  it('id → число уникальных дней за неделю', () => {
+    const freq = weekSchemaFrequency(
+      [
+        entry('2026-07-17T09:00:00', ['abandonment', 'mistrust']),
+        entry('2026-07-17T21:00:00', ['abandonment']), // тот же день — не +1
+        entry('2026-07-16T10:00:00', ['abandonment']),
+        entry('2026-07-01T10:00:00', ['mistrust']), // старше 7 дней — вне окна
+      ],
+      NOW,
+    );
+    expect(freq).toEqual({ abandonment: 2, mistrust: 1 });
+  });
+
+  it('пусто — пустая карта', () => {
+    expect(weekSchemaFrequency([], NOW)).toEqual({});
+  });
 });
 
 describe('weekSchemaSummary', () => {
