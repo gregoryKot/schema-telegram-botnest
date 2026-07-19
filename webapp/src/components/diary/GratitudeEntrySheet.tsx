@@ -90,7 +90,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
             />
           </div>
         ))}
-        {detectCrisisAny(...items) && <CrisisCard />}
+        {detectCrisisAny(...items) && <CrisisCard surface="gratitude" />}
         {items.length < 5 && (
           <button className="add-row-btn" onClick={addItem}>
             <GlyphPlus />

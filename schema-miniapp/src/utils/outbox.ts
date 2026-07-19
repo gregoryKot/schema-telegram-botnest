@@ -83,6 +83,8 @@ function dedupe(items: OutboxItem[]): OutboxItem[] {
  */
 export async function flushRatingOutbox(
   post: (item: OutboxItem) => Promise<void>,
+  // Вызывается один раз, если что-то реально доехало (аналитика outbox_flush).
+  onRecovered?: (count: number) => void,
 ): Promise<void> {
   const items = dedupe(readOutbox());
   if (items.length === 0) return;
@@ -97,4 +99,5 @@ export async function flushRatingOutbox(
     }
   }
   writeOutbox(items.slice(sentCount));
+  if (sentCount > 0) onRecovered?.(sentCount);
 }

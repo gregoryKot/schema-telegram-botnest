@@ -725,5 +725,9 @@ export const api = {
   // Отправляет отложенные оценки (см. utils/outbox.ts). Вызывается при старте
   // приложения и при возврате online — см. App.tsx.
   flushOutbox: () =>
-    flushRatingOutbox((item) => rawSaveRating(item).then(() => undefined)),
+    flushRatingOutbox(
+      (item) => rawSaveRating(item).then(() => undefined),
+      // Спасли записи, сделанные без интернета (правило №8), fire-and-forget.
+      (count) => api.trackEvent('outbox_flush', { count }),
+    ),
 };

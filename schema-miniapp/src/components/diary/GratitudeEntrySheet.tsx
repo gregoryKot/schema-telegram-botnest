@@ -150,7 +150,7 @@ export function GratitudeEntrySheet({
           </div>
         ))}
 
-        {detectCrisisAny(...items) && <CrisisCard />}
+        {detectCrisisAny(...items) && <CrisisCard surface="gratitude" />}
 
         {items.length < 5 && (
           <button
