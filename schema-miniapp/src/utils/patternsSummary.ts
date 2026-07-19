@@ -19,11 +19,11 @@ interface DatedIds {
   ids: string[];
 }
 
-/** Топ-сущность за последние 7 дней по числу уникальных дней; null — данных нет. */
-export function weekTopSummary(
+/** Частота за последние 7 дней: id → число РАЗНЫХ дней, где сущность встретилась. */
+export function weekFrequencyMap(
   entries: DatedIds[],
   now: Date = new Date(),
-): WeekTopSummary | null {
+): Record<string, number> {
   const from = new Date(now);
   from.setDate(from.getDate() - (SUMMARY_WINDOW_DAYS - 1));
   from.setHours(0, 0, 0, 0);
@@ -42,11 +42,32 @@ export function weekTopSummary(
       set.add(dayKey);
     }
   }
+  const out: Record<string, number> = {};
+  for (const [id, days] of daysById) out[id] = days.size;
+  return out;
+}
 
+/** Частота по схемам: schemaId → дней/неделю. */
+export function weekSchemaFrequency(
+  entries: Pick<SchemaDiaryEntry, 'createdAt' | 'schemaIds'>[],
+  now: Date = new Date(),
+): Record<string, number> {
+  return weekFrequencyMap(
+    entries.map((e) => ({ createdAt: e.createdAt, ids: e.schemaIds })),
+    now,
+  );
+}
+
+/** Топ-сущность за последние 7 дней по числу уникальных дней; null — данных нет. */
+export function weekTopSummary(
+  entries: DatedIds[],
+  now: Date = new Date(),
+): WeekTopSummary | null {
+  const freq = weekFrequencyMap(entries, now);
   let top: WeekTopSummary | null = null;
-  for (const [id, days] of daysById) {
-    if (!top || days.size > top.days) {
-      top = { id, days: days.size, windowDays: SUMMARY_WINDOW_DAYS };
+  for (const id in freq) {
+    if (!top || freq[id] > top.days) {
+      top = { id, days: freq[id], windowDays: SUMMARY_WINDOW_DAYS };
     }
   }
   return top;
@@ -58,6 +79,16 @@ export function weekSchemaSummary(
 ): WeekTopSummary | null {
   return weekTopSummary(
     entries.map((e) => ({ createdAt: e.createdAt, ids: e.schemaIds })),
+    now,
+  );
+}
+
+export function weekModeFrequency(
+  entries: Pick<ModeDiaryEntry, 'createdAt' | 'modeId'>[],
+  now: Date = new Date(),
+): Record<string, number> {
+  return weekFrequencyMap(
+    entries.map((e) => ({ createdAt: e.createdAt, ids: [e.modeId] })),
     now,
   );
 }

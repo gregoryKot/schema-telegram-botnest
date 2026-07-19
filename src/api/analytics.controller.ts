@@ -9,6 +9,8 @@ import {
   TrackEventDto,
   SHARE_CARD_KIND_SET,
   CRISIS_SURFACE_SET,
+  TODAY_FOCUS_PRACTICE_SET,
+  WEB_BANNER_ID_SET,
 } from './dto/analytics.dto';
 
 interface AuthRequest extends Request {
@@ -76,5 +78,30 @@ function sanitizeMeta(
     }
     return undefined;
   }
+  if (name === 'today_focus_change') {
+    const practice = meta.practice;
+    if (
+      typeof practice === 'string' &&
+      TODAY_FOCUS_PRACTICE_SET.has(practice)
+    ) {
+      return { practice };
+    }
+    return undefined;
+  }
+  if (name === 'today_streak_toggle') {
+    const hidden = meta.hidden;
+    if (typeof hidden === 'boolean') {
+      return { hidden };
+    }
+    return undefined;
+  }
+  if (name === 'web_banner_open' || name === 'web_banner_dismiss') {
+    const banner = meta.banner;
+    if (typeof banner === 'string' && WEB_BANNER_ID_SET.has(banner)) {
+      return { banner };
+    }
+    return undefined;
+  }
+  // breath_start — без meta; любые поля отбрасываются.
   return undefined;
 }

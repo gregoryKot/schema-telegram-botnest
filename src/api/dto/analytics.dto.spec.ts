@@ -22,6 +22,15 @@ describe('TrackEventDto', () => {
     await expect(errorsFor({ name: 'share_card' })).resolves.toEqual([]);
   });
 
+  it('события баннеров сайта проходят', async () => {
+    await expect(
+      errorsFor({ name: 'web_banner_open', meta: { banner: 'cabinet_full' } }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor({ name: 'web_banner_dismiss', meta: { banner: 'mode_map' } }),
+    ).resolves.toEqual([]);
+  });
+
   it('неизвестное имя — отказ', async () => {
     await expect(errorsFor({ name: 'hack_event' })).resolves.toContain('name');
   });
@@ -71,6 +80,26 @@ describe('AnalyticsController — санитизация meta', () => {
       meta: { kind: 'evil' },
     });
     expect(track).toHaveBeenCalledWith(uid, 'share_card', undefined);
+  });
+
+  it('web_banner_open: пропускает известный banner, режет остальное', async () => {
+    const { controller, track } = makeController();
+    await controller.track(req, {
+      name: 'web_banner_open',
+      meta: { banner: 'mode_map', extra: 'pii' },
+    });
+    expect(track).toHaveBeenCalledWith(uid, 'web_banner_open', {
+      banner: 'mode_map',
+    });
+  });
+
+  it('web_banner_dismiss: неизвестный banner → meta отбрасывается', async () => {
+    const { controller, track } = makeController();
+    await controller.track(req, {
+      name: 'web_banner_dismiss',
+      meta: { banner: 'evil' },
+    });
+    expect(track).toHaveBeenCalledWith(uid, 'web_banner_dismiss', undefined);
   });
 
   it('возвращает { ok: true }', async () => {

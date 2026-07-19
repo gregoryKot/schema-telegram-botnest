@@ -30,6 +30,8 @@ const FULL: ProductMetrics = {
   crisis: { shown: 12, hotlineTapped: 3 },
   shareResult: { ok: 35, fallback: 5 },
   outbox: { flushes: 8, recovered: 21 },
+  today: { focusChanged: 15, streakHidden: 7 },
+  breath: { started: 33 },
 };
 
 const EMPTY: ProductMetrics = {
@@ -49,6 +51,8 @@ const EMPTY: ProductMetrics = {
   crisis: { shown: 0, hotlineTapped: 0 },
   shareResult: { ok: 0, fallback: 0 },
   outbox: { flushes: 0, recovered: 0 },
+  today: { focusChanged: 0, streakHidden: 0 },
+  breath: { started: 0 },
 };
 
 describe('formatProductMetrics', () => {
@@ -70,8 +74,12 @@ describe('formatProductMetrics', () => {
     expect(t).toContain('за неделю: 12, за месяц: 40');
     expect(t).toContain('🔥 сколько дней подряд — 20');
     expect(t).toContain('🧩 схема — 3');
+    expect(t).toContain(
+      'Сменили главную практику: 15 · прятали счётчик серии: 7',
+    );
+    expect(t).toContain('Запускали: 33 раз');
     // никакого жаргона
-    expect(t).not.toMatch(/YSQ|retention|adoption|event/i);
+    expect(t).not.toMatch(/YSQ|retention|adoption|event|toggle|focus/i);
   });
 
   it('пустая БД: без NaN и без «висящих» процентов', () => {

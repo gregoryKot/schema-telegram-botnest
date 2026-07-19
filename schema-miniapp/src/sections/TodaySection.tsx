@@ -36,12 +36,7 @@ import {
   setTherapistBannerHidden,
 } from '../utils/todayFocus';
 import { useTr } from '../utils/addressForm';
-import { ShareCardSheet } from '../share/ShareCardSheet';
-import {
-  drawDayCard,
-  buildDayShareText,
-} from '../../../shared/src/share/cards/dayCard';
-import { botShortUrl } from '../utils/botConfig';
+import { DayShareButton } from '../share/DayShareButton';
 import { Props } from './today/types';
 import {
   TODAY_MORE_KEY,
@@ -92,7 +87,6 @@ export function TodaySection({
   const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [introModeId, setIntroModeId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
-  const [showDayShare, setShowDayShare] = useState(false);
   const [focusPractice, setFocusPracticeState] =
     useState<FocusPractice>(getFocusPractice);
   const [streakHidden, setStreakHiddenState] = useState(isStreakHidden);
@@ -373,7 +367,7 @@ export function TodaySection({
               : onNewDiaryEntry?.(focusPractice)
           }
           onOpenHistory={onOpenTrackerHistory}
-          onShareDay={() => setShowDayShare(true)}
+          shareSlot={<DayShareButton needs={needs} ratings={ratings} />}
         />
 
         {/* ── Прогрессивное раскрытие: остальное — по желанию ── */}
@@ -505,25 +499,6 @@ export function TodaySection({
             setIntroModeId(null);
             handleTaskComplete();
           }}
-        />
-      )}
-
-      {showDayShare && (
-        <ShareCardSheet
-          title="Карточка дня"
-          draw={(canvas) =>
-            drawDayCard(canvas, needs, ratings, fmtDate(todayStr()))
-          }
-          shareText={buildDayShareText(
-            needs,
-            ratings,
-            fmtDate(todayStr()),
-            botShortUrl,
-          )}
-          filename="needs-day.png"
-          eventKind="day"
-          onClose={() => setShowDayShare(false)}
-          therapyNote
         />
       )}
 

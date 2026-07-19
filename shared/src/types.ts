@@ -94,3 +94,22 @@ export interface UserProfile {
   mySchemaIds: string[];
   myModeIds: string[];
 }
+
+// Сводка клиента в кабинете терапевта — единственная фронтовая копия
+// (правило №3). Источник правды — src/therapy/therapy.types.ts на бэке
+// (бэк не может импортировать shared из-за rootDir=src, поэтому пара
+// бэк↔shared остаётся; при изменении — синхронь оба).
+export interface TherapyClientSummary {
+  telegramId: number;
+  name: string | null;
+  clientAlias: string | null;
+  streak: number;
+  lastActiveDate: string | null;
+  todayIndex: number | null;
+  recentIndexHistory: (number | null)[]; // 14 значений, index 0 = сегодня
+  relationCreatedAt: string;
+  therapyStartDate: string | null;
+  nextSession: string | null;
+  meetingDays: number[];
+  schemaIds: string[];
+}
