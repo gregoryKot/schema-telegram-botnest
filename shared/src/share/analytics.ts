@@ -8,7 +8,13 @@ export type ShareCardKind =
   | 'streak'
   | 'schema'
   | 'diary'
-  | 'ysq';
+  | 'ysq'
+  | 'mode'
+  | 'pair_invite'
+  | 'month'
+  | 'achievements'
+  | 'phrase'
+  | 'gratitude';
 
 export const SHARE_CARD_EVENT = 'share_card';
 // Исход системного шэра: meta { kind, ok }. Позволяет мерить «получилось ли

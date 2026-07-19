@@ -21,6 +21,8 @@ export interface SchemaCardData {
   name: string;
   desc: string;
   belief?: string;
+  /** Подпись в футере; по умолчанию «Схема-терапия» (для режимов — «Режимы») */
+  footerLabel?: string;
 }
 
 export function drawSchemaCard(canvas: HTMLCanvasElement, d: SchemaCardData) {
@@ -81,5 +83,5 @@ export function drawSchemaCard(canvas: HTMLCanvasElement, d: SchemaCardData) {
     }
   }
 
-  footer(c, 'Схема-терапия');
+  footer(c, d.footerLabel ?? 'Схема-терапия');
 }

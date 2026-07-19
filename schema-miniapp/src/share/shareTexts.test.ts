@@ -7,6 +7,12 @@ import {
   streakShareText,
   schemaShareText,
   diaryShareText,
+  modeShareText,
+  pairInviteShareText,
+  monthShareText,
+  achievementsShareText,
+  phraseShareText,
+  gratitudeShareText,
 } from '../../../shared/src/share/shareTexts';
 
 describe('pluralEntries', () => {
@@ -64,5 +70,42 @@ describe('тексты шаринга', () => {
   it('дневник без даты — без хвоста «с …»', () => {
     const text = diaryShareText('Дневник схем', '📓', 1, null, 't.me/TestBot');
     expect(text).toContain('1 запись.');
+  });
+
+  it('режим: название в кавычках + ссылка', () => {
+    const text = modeShareText('Внутренний Критик', 't.me/TestBot');
+    expect(text).toContain('«Внутренний Критик»');
+    expect(text).toContain('t.me/');
+  });
+
+  it('приглашение в пару: код и диплинк, без рода', () => {
+    const text = pairInviteShareText(
+      'AB12CD',
+      'https://t.me/x/app?startapp=AB12CD',
+    );
+    expect(text).toContain('Код пары: AB12CD');
+    expect(text).toContain('startapp=AB12CD');
+    expect(text).not.toMatch(/готов[а]?\b/i);
+  });
+
+  it('месяц: склонение дней', () => {
+    expect(monthShareText(21, 't.me/TestBot')).toContain('21 день с записями');
+    expect(monthShareText(5, 't.me/TestBot')).toContain('5 дней с записями');
+  });
+
+  it('достижения: N из M', () => {
+    expect(achievementsShareText(9, 13, 't.me/TestBot')).toContain('9 из 13');
+  });
+
+  it('фраза: в кавычках-ёлочках + подпись', () => {
+    const text = phraseShareText('Я имею право на отдых', 't.me/TestBot');
+    expect(text).toContain('«Я имею право на отдых»');
+    expect(text).toContain('Здорового взрослого');
+  });
+
+  it('благодарность: без текста записи в сообщении (текст на картинке)', () => {
+    const text = gratitudeShareText('t.me/TestBot');
+    expect(text).toContain('🌱');
+    expect(text).toContain('t.me/');
   });
 });

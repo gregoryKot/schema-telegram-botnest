@@ -324,6 +324,9 @@ export const api = {
   trackEvent: (name: string, meta?: Record<string, unknown>): void => {
     void post('/api/event', { name, meta }).catch(() => undefined);
   },
+
+  // Случайная фраза Здорового взрослого (пул канала; готовый контент).
+  getHealthyPhrase: () => get<{ text: string | null }>('/api/healthy-phrase'),
   getDisclaimer: () => get<{ accepted: boolean }>('/api/disclaimer'),
   acceptDisclaimer: () => post('/api/disclaimer', {}),
   getYsqProgress: () =>
