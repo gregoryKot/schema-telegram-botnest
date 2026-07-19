@@ -9,6 +9,7 @@ import {
   TrackEventDto,
   SHARE_CARD_KIND_SET,
   CRISIS_SURFACE_SET,
+  TODAY_FOCUS_PRACTICE_SET,
 } from './dto/analytics.dto';
 
 interface AuthRequest extends Request {
@@ -76,5 +77,23 @@ function sanitizeMeta(
     }
     return undefined;
   }
+  if (name === 'today_focus_change') {
+    const practice = meta.practice;
+    if (
+      typeof practice === 'string' &&
+      TODAY_FOCUS_PRACTICE_SET.has(practice)
+    ) {
+      return { practice };
+    }
+    return undefined;
+  }
+  if (name === 'today_streak_toggle') {
+    const hidden = meta.hidden;
+    if (typeof hidden === 'boolean') {
+      return { hidden };
+    }
+    return undefined;
+  }
+  // breath_start — без meta; любые поля отбрасываются.
   return undefined;
 }

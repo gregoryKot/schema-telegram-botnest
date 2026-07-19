@@ -48,6 +48,9 @@ export class ProductMetricsService {
       shareCard7,
       shareCard30,
       shareKindRows,
+      todayFocusChanged,
+      streakHiddenRows,
+      breathStarted,
     ] = await Promise.all([
       this.prisma.user.count({
         where: { ...activeUser, createdAt: { gte: since30 } },
@@ -113,6 +116,12 @@ export class ProductMetricsService {
         WHERE "name" = 'share_card' AND "createdAt" >= ${since30}
         GROUP BY "meta"->>'kind'
         ORDER BY c DESC`,
+      ev('today_focus_change'),
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(*)::bigint AS c FROM "AnalyticsEvent"
+        WHERE "name" = 'today_streak_toggle' AND "meta"->>'hidden' = 'true'
+          AND "createdAt" >= ${since30}`,
+      ev('breath_start'),
     ]);
 
     const sections = sectionsRaw
@@ -154,6 +163,11 @@ export class ProductMetricsService {
         flushes: Number(outboxRows[0]?.flushes ?? 0n),
         recovered: Number(outboxRows[0]?.recovered ?? 0n),
       },
+      today: {
+        focusChanged: todayFocusChanged,
+        streakHidden: num(streakHiddenRows),
+      },
+      breath: { started: breathStarted },
     };
   }
 }
