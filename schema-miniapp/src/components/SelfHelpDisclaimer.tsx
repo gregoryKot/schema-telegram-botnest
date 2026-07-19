@@ -6,59 +6,6 @@
 import { BottomSheet } from './BottomSheet';
 import { useTr } from '../utils/addressForm';
 
-export function SelfHelpBanner({ onOpen }: { onOpen: () => void }) {
-  return (
-    <button
-      onClick={onOpen}
-      style={{
-        width: '100%',
-        textAlign: 'left',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        padding: '13px 16px',
-        borderRadius: 18,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 13,
-        background: 'color-mix(in srgb, var(--accent-yellow) 9%, transparent)',
-        border:
-          '1px solid color-mix(in srgb, var(--accent-yellow) 28%, transparent)',
-        animation: 'slide-up 0.3s ease both',
-        animationDelay: '60ms',
-        WebkitTapHighlightColor: 'transparent',
-      }}
-    >
-      <span style={{ fontSize: 26, flexShrink: 0, lineHeight: 1 }}>⚠️</span>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span
-          style={{
-            display: 'block',
-            fontSize: 14,
-            fontWeight: 700,
-            color: 'var(--text)',
-            lineHeight: 1.3,
-          }}
-        >
-          Практики — передышка, не лечение
-        </span>
-        <span
-          style={{
-            display: 'block',
-            fontSize: 12,
-            color: 'var(--text-sub)',
-            marginTop: 1,
-          }}
-        >
-          важное о границах самопомощи
-        </span>
-      </span>
-      <span style={{ color: 'var(--text-faint)', fontSize: 18, flexShrink: 0 }}>
-        ›
-      </span>
-    </button>
-  );
-}
-
 export function SelfHelpSheet({
   onClose,
   onOpenCrisis,

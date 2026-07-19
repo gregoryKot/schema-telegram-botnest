@@ -15,10 +15,8 @@ import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { ToolRow } from '../components/ToolRow';
-import {
-  SelfHelpBanner,
-  SelfHelpSheet,
-} from '../components/SelfHelpDisclaimer';
+import { SelfHelpSheet } from '../components/SelfHelpDisclaimer';
+import { pressable } from '../utils/a11y';
 import { BreathingCard } from '../components/BreathingCard';
 import { GroundingSheet } from '../components/GroundingSheet';
 import { CrisisCard } from '../components/CrisisCard';
@@ -183,13 +181,44 @@ export function HelpSection({
       <div style={{ padding: '20px 20px 12px' }}>
         <div
           style={{
-            fontSize: 26,
-            fontWeight: 800,
-            color: 'var(--text)',
-            letterSpacing: '-0.5px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
           }}
         >
-          Здесь и сейчас
+          <div
+            style={{
+              fontSize: 26,
+              fontWeight: 800,
+              color: 'var(--text)',
+              letterSpacing: '-0.5px',
+            }}
+          >
+            Здесь и сейчас
+          </div>
+          <button
+            {...pressable(() => setShowSelfHelp(true))}
+            aria-label="О границах самопомощи"
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              flexShrink: 0,
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 15,
+              lineHeight: 1,
+              background:
+                'color-mix(in srgb, var(--accent-yellow) 16%, transparent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            ⚠️
+          </button>
         </div>
         <div
           style={{
@@ -277,9 +306,6 @@ export function HelpSection({
       >
         {/* ── «Здесь и сейчас» (дизайн-макет, волна 2): дыхание первым ── */}
         <BreathingCard />
-
-        {/* Дисклеймер: границы самопомощи — заметный, рядом с практиками */}
-        <SelfHelpBanner onOpen={() => setShowSelfHelp(true)} />
 
         <div className="section-label" style={{ margin: '8px 4px -4px' }}>
           Если нужно больше
