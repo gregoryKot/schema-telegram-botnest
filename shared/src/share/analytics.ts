@@ -11,3 +11,6 @@ export type ShareCardKind =
   | 'ysq';
 
 export const SHARE_CARD_EVENT = 'share_card';
+// Исход системного шэра: meta { kind, ok }. Позволяет мерить «получилось ли
+// поделиться» (картинка vs текстовый фолбэк). Allow-list — analytics.constants.
+export const SHARE_RESULT_EVENT = 'share_result';
