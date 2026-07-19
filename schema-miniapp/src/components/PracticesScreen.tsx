@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api, UserPractice } from '../api';
-import { Loader } from './Loader';
+import { SkeletonList } from './Skeleton';
 import { useSafeTop } from '../utils/safezone';
 import { COLORS } from '../types';
 import { useNeedData } from '../needData';
@@ -293,7 +293,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
 
         {/* Practices list */}
         {!practices ? (
-          <Loader minHeight="20vh" />
+          <SkeletonList rows={4} h={84} />
         ) : (
           <div
             style={{

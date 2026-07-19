@@ -11,7 +11,7 @@ import { api } from './api';
 import { DEFAULT_SECTION_KEY } from './sections/ProfileSection';
 import { Section } from './components/BottomNav';
 import { TherapistClientSheet } from './components/TherapistClientSheet';
-import { Loader } from './components/Loader';
+import { TodayScreenSkeleton, ScreenSkeleton } from './components/Skeleton';
 import { YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from './components/YSQTestSheet';
 import { shouldShowWeeklyQuestion } from './components/WeeklyQuestion';
 import {
@@ -542,7 +542,13 @@ export default function App() {
   }, []);
 
   if (loading) {
-    return <Loader minHeight="100vh" />;
+    // Скелетон по форме будущего экрана вместо полноэкранного спиннера
+    // (правило CLAUDE.md «Скелетоны, а не спиннеры»).
+    return section === 'today' ? (
+      <TodayScreenSkeleton />
+    ) : (
+      <ScreenSkeleton cards={section === 'profile' ? 4 : 3} />
+    );
   }
 
   if (error) {
