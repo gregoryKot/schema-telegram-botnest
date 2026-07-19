@@ -6,6 +6,10 @@ import { fmtDate } from '../../utils/format';
 import { AddMode } from '../therapist/useAddClient';
 import { indexColor } from './helpers';
 import { ClientDetail, AddClient } from './types';
+import { WebBanner } from '../WebBanner';
+import { WEB_CABINET_URL } from '../../utils/webBanner';
+import { RosterSparkline } from '../../../../shared/src/components/Sparklines';
+import { StatCards } from './StatCards';
 
 interface ClientListViewProps {
   clients: TherapyClientSummary[];
@@ -165,62 +169,18 @@ export function ClientListView({
           </div>
         </div>
 
-        {/* Stat cards */}
+        {/* Stat cards — вынесены в StatCards (правило №10) */}
+        {!loading && <StatCards clients={clients} today={today} />}
+
+        {/* Полная версия кабинета — на сайте (скрываемый баннер) */}
         {!loading && (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr',
-              gap: 10,
-              marginBottom: 20,
-            }}
-          >
-            {[
-              { value: clients.length, label: 'КЛИЕНТОВ' },
-              {
-                value: clients.filter((c) => c.lastActiveDate === today).length,
-                label: 'АКТИВНЫХ',
-              },
-              {
-                value: clients.filter((c) => c.todayIndex !== null).length,
-                label: 'ОЦЕНИЛИ',
-              },
-            ].map(({ value, label }) => (
-              <div
-                key={label}
-                className="card"
-                style={{
-                  borderRadius: 16,
-                  padding: '14px 12px',
-                  textAlign: 'center',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 28,
-                    fontWeight: 800,
-                    color: 'var(--text)',
-                    lineHeight: 1,
-                    letterSpacing: '-0.5px',
-                  }}
-                >
-                  {value}
-                </div>
-                <div
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: 'var(--text-faint)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    marginTop: 4,
-                  }}
-                >
-                  {label}
-                </div>
-              </div>
-            ))}
-          </div>
+          <WebBanner
+            id="cabinet_full"
+            emoji="🖥"
+            title="Полная версия кабинета — на сайте"
+            text="На schemehappens.ru: карта режимов клиента, канбан-доска, дашборд дня и большой экран для сессий. Вход через Telegram — данные общие с мини-аппом."
+            url={WEB_CABINET_URL}
+          />
         )}
 
         {/* Add client panel */}
@@ -605,6 +565,14 @@ export function ClientListView({
                       ? 'Без Telegram'
                       : `${isToday ? 'Сегодня' : c.lastActiveDate ? fmtDate(c.lastActiveDate) : 'Не активен'} · Стрик ${c.streak} дн`}
                   </div>
+                  {/* Динамика индекса за 14 дней (index 0 = сегодня →
+                      разворачиваем). Меньше 2 точек — не занимаем место. */}
+                  {(c.recentIndexHistory ?? []).filter((v) => v != null)
+                    .length >= 2 && (
+                    <RosterSparkline
+                      values={(c.recentIndexHistory ?? []).slice().reverse()}
+                    />
+                  )}
                 </div>
                 {c.todayIndex !== null && (
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
