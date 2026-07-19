@@ -128,7 +128,9 @@ export class ArticleSeoMiddleware implements NestMiddleware {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(out);
     } catch (err) {
-      this.logger.warn(`SEO injection failed for ${slug}: ${(err as Error).message}`);
+      this.logger.warn(
+        `SEO injection failed for ${slug}: ${(err as Error).message}`,
+      );
       next();
     }
   }
