@@ -179,6 +179,7 @@ function SparklineRow({ need, history, selectedIdx, selectedRatings, onClick }: 
 
 export function HistoryView({ needs, history, currentRatings, childhoodRatings = {}, onOpenSchemas, onOpenChildhoodWheel, days = 7, onChangeDays, onGoToToday, onBackfill }: Props) {
   const tr = useTr();
+  const contact = getTherapistContact();
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [subView, setSubView] = useState<'day' | 'week'>('day');
   const dateBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -420,14 +421,17 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
                       <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 4 }}>Стоит уделить внимание</div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{low.chartLabel}</div>
                       <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                        Остаётся низкой несколько дней подряд. Терапевт поможет разобраться.
+                        Остаётся низкой несколько дней подряд.{!contact.isTherapist && ' Терапевт поможет разобраться.'}
                       </div>
                     </div>
                   </div>
-                  <a href={getTherapistContact().bookingUrl} target="_blank" rel="noreferrer"
-                    style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
-                    Записаться →
-                  </a>
+                  {/* Терапевту не предлагаем запись к самому себе. */}
+                  {!contact.isTherapist && (
+                    <a href={contact.bookingUrl} target="_blank" rel="noreferrer"
+                      style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
+                      Записаться →
+                    </a>
+                  )}
                 </div>
               );
             })()}
@@ -482,12 +486,15 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
             {needsLow.length > 0 && (
               <div style={{ marginTop: 20, padding: '14px 0', borderTop: '1px solid rgba(var(--fg-rgb),0.07)' }}>
                 <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 8 }}>
-                  <strong style={{ color: 'var(--text)' }}>{needsLow[0].chartLabel}</strong> остаётся низкой несколько дней – разобраться рядом с живым человеком бывает легче.
+                  <strong style={{ color: 'var(--text)' }}>{needsLow[0].chartLabel}</strong> остаётся низкой несколько дней{!contact.isTherapist && ' – разобраться рядом с живым человеком бывает легче'}.
                 </div>
-                <a href={getTherapistContact().bookingUrl} target="_blank" rel="noreferrer"
-                  style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
-                  Записаться →
-                </a>
+                {/* Терапевту не предлагаем запись к самому себе. */}
+                {!contact.isTherapist && (
+                  <a href={contact.bookingUrl} target="_blank" rel="noreferrer"
+                    style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
+                    Записаться →
+                  </a>
+                )}
               </div>
             )}
 

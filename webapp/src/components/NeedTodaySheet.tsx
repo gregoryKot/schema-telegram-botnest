@@ -3,10 +3,9 @@ import { COLORS } from '../types';
 import type { Need } from '../types';
 import { useNeedData } from '../needData';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
-import { getTherapistContact } from '../utils/therapistContact';
+import { NeedAdviceModal } from './NeedAdviceModal';
 import { PlanSheet } from './PlanSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { pressable } from '../utils/a11y';
 
 interface Props {
   need: Need;
@@ -17,12 +16,6 @@ interface Props {
   onPlanSaved?: (needId: string) => void;
   onOpenHelp?: () => void;
 }
-
-const DISCLAIMER_CONTENT = [
-  'Дневник помогает видеть паттерны и чуть лучше понимать себя.',
-  'Советы внутри – это приглашение к размышлению, не инструкция.',
-  'Если что-то важное требует внимания – терапия это место, где можно разобраться по-настоящему. Безопасно, глубоко, рядом живой человек.',
-];
 
 export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
   const goBack = useHistorySheet(onClose);
@@ -258,20 +251,7 @@ export function NeedTodaySheet({ need, value, onChange, onClose, onPlanSaved, on
         />
       )}
 
-      {showDisclaimer && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end' }} aria-label="Закрыть" {...pressable(() => setShowDisclaimer(false))}>
-          <div role="button" tabIndex={0} onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); } }} style={{ background: 'var(--bg)', borderRadius: '20px 20px 0 0', padding: '24px 24px 48px', width: '100%', maxWidth: 560, margin: '0 auto' }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--surface-3)', margin: '0 auto 20px' }} />
-            <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>О советах</div>
-            {DISCLAIMER_CONTENT.map((p, i) => (
-              <p key={i} style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 14 }}>{p}</p>
-            ))}
-            <a href={getTherapistContact().url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', fontSize: 14, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
-              → Поговорить с психологом
-            </a>
-          </div>
-        </div>
-      )}
+      {showDisclaimer && <NeedAdviceModal onClose={() => setShowDisclaimer(false)} />}
     </ExScreen>
   );
 }

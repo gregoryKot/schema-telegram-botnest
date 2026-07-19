@@ -611,6 +611,7 @@ export function HistoryView({
   onBackfill,
 }: Props) {
   const tr = useTr();
+  const contact = getTherapistContact();
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [subView, setSubView] = useState<'day' | 'week'>('day');
   const dateBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -1138,22 +1139,26 @@ export function HistoryView({
                   <strong style={{ color: 'var(--text)' }}>
                     {needsLow[0].chartLabel}
                   </strong>{' '}
-                  остаётся низкой несколько дней подряд. Иногда за этим стоит
-                  что-то важное — терапевт поможет разобраться.
+                  остаётся низкой несколько дней подряд.
+                  {!contact.isTherapist &&
+                    ' Иногда за этим стоит что-то важное — терапевт поможет разобраться.'}
                 </div>
-                <a
-                  href={getTherapistContact().bookingUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--accent)',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                  }}
-                >
-                  Записаться и взять сводку →
-                </a>
+                {/* Терапевту не предлагаем запись к самому себе. */}
+                {!contact.isTherapist && (
+                  <a
+                    href={contact.bookingUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      fontSize: 13,
+                      color: 'var(--accent)',
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Записаться и взять сводку →
+                  </a>
+                )}
               </div>
             )}
 
@@ -1293,22 +1298,27 @@ export function HistoryView({
                   <strong style={{ color: 'var(--text)' }}>
                     {needsLow[0].chartLabel}
                   </strong>{' '}
-                  остаётся низкой несколько дней — разобраться с живым человеком
-                  рядом бывает легче.
+                  остаётся низкой несколько дней
+                  {!contact.isTherapist &&
+                    ' — разобраться с живым человеком рядом бывает легче'}
+                  .
                 </div>
-                <a
-                  href={getTherapistContact().bookingUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--accent)',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                  }}
-                >
-                  Записаться →
-                </a>
+                {/* Терапевту не предлагаем запись к самому себе. */}
+                {!contact.isTherapist && (
+                  <a
+                    href={contact.bookingUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      fontSize: 13,
+                      color: 'var(--accent)',
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Записаться →
+                  </a>
+                )}
               </div>
             )}
 
