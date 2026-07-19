@@ -29,13 +29,16 @@ describe('ProductMetricsService.getMetrics', () => {
       .mockResolvedValueOnce([
         { kind: 'streak', c: 20n },
         { kind: 'schema', c: 3n },
-      ]); // share_card by kind
+      ]) // share_card by kind
+      .mockResolvedValueOnce([{ c: 7n }]); // today_streak_toggle hidden=true
     const eventCount = jest
       .fn()
       .mockResolvedValueOnce(12) // crisis_card_shown
       .mockResolvedValueOnce(3) // crisis_hotline_tapped
       .mockResolvedValueOnce(12) // share_card total7
-      .mockResolvedValueOnce(40); // share_card total30
+      .mockResolvedValueOnce(40) // share_card total30
+      .mockResolvedValueOnce(15) // today_focus_change
+      .mockResolvedValueOnce(33); // breath_start
 
     const prisma: any = {
       user: {
@@ -80,5 +83,7 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(m.crisis).toEqual({ shown: 12, hotlineTapped: 3 });
     expect(m.shareResult).toEqual({ ok: 35, fallback: 5 });
     expect(m.outbox).toEqual({ flushes: 8, recovered: 21 });
+    expect(m.today).toEqual({ focusChanged: 15, streakHidden: 7 });
+    expect(m.breath).toEqual({ started: 33 });
   });
 });

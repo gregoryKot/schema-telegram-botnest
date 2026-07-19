@@ -57,4 +57,32 @@ describe('AnalyticsController — sanitizeMeta (новые события)', () 
     await fire({ name: 'outbox_flush', meta: { count: 0 } });
     expect(track).toHaveBeenCalledWith(7n, 'outbox_flush', undefined);
   });
+
+  it('today_focus_change: practice из allow-list', async () => {
+    const { track, fire } = setup();
+    await fire({ name: 'today_focus_change', meta: { practice: 'gratitude' } });
+    expect(track).toHaveBeenCalledWith(7n, 'today_focus_change', {
+      practice: 'gratitude',
+    });
+  });
+
+  it('today_focus_change: неизвестная practice → отброшено', async () => {
+    const { track, fire } = setup();
+    await fire({ name: 'today_focus_change', meta: { practice: 'evil' } });
+    expect(track).toHaveBeenCalledWith(7n, 'today_focus_change', undefined);
+  });
+
+  it('today_streak_toggle: boolean hidden', async () => {
+    const { track, fire } = setup();
+    await fire({ name: 'today_streak_toggle', meta: { hidden: true } });
+    expect(track).toHaveBeenCalledWith(7n, 'today_streak_toggle', {
+      hidden: true,
+    });
+  });
+
+  it('breath_start: meta игнорируется (событие без meta)', async () => {
+    const { track, fire } = setup();
+    await fire({ name: 'breath_start', meta: { junk: 'x' } });
+    expect(track).toHaveBeenCalledWith(7n, 'breath_start', undefined);
+  });
 });

@@ -3,6 +3,7 @@ import {
   ANALYTICS_EVENTS,
   CRISIS_SURFACES,
   SHARE_CARD_KINDS,
+  TODAY_FOCUS_PRACTICES,
 } from '../../analytics/analytics.constants';
 
 // DTO для POST /api/event (правило №6: рантайм-валидация декораторами +
@@ -23,3 +24,6 @@ export const SHARE_CARD_KIND_SET: ReadonlySet<string> = new Set(
   SHARE_CARD_KINDS,
 );
 export const CRISIS_SURFACE_SET: ReadonlySet<string> = new Set(CRISIS_SURFACES);
+export const TODAY_FOCUS_PRACTICE_SET: ReadonlySet<string> = new Set(
+  TODAY_FOCUS_PRACTICES,
+);

@@ -31,6 +31,9 @@ export interface ProductMetrics {
   crisis: { shown: number; hotlineTapped: number };
   shareResult: { ok: number; fallback: number };
   outbox: { flushes: number; recovered: number };
+  // Настройка экрана «Сегодня» и дыхание «Здесь и сейчас» (за месяц).
+  today: { focusChanged: number; streakHidden: number };
+  breath: { started: number };
 }
 
 const pct = (part: number, whole: number): string =>
@@ -108,5 +111,11 @@ export function formatProductMetrics(m: ProductMetrics): string {
     '',
     `📦 <b>Спасли записи, сделанные без интернета</b> (за месяц)`,
     `Случаев: ${m.outbox.flushes} · записей вернули: ${m.outbox.recovered}`,
+    '',
+    `🎛 <b>Настраивают главный экран</b> (за месяц)`,
+    `Сменили главную практику: ${m.today.focusChanged} · прятали счётчик серии: ${m.today.streakHidden}`,
+    '',
+    `🌬 <b>Дыхание «Здесь и сейчас»</b> (за месяц)`,
+    `Запускали: ${m.breath.started} раз`,
   ].join('\n');
 }
