@@ -87,6 +87,29 @@ export function decrypt(value: string | null | undefined): string | null {
   return value; // legacy plaintext (или мусор) — возвращаем как есть
 }
 
+// Strict base64 charset + minimum length check for "this looks like our
+// ciphertext wire format" (iv 12 + tag 16 + ≥1 byte of data = ≥29 bytes).
+// Deliberately stricter than the passthrough check inside decrypt() above
+// (which uses the lenient Buffer.from(..., 'base64') decode and only checks
+// length) — this is used by callers that need to distinguish "real plaintext"
+// from "ciphertext whose key is no longer configured" BEFORE re-encrypting,
+// see encrypt-migration.ts. Does not verify the GCM tag, so it can't tell
+// ciphertext from a plaintext string that *happens* to be valid base64 of
+// the right length — callers must treat a positive match plus a failed
+// decrypt() as "unknown, do not touch", not as "definitely ciphertext".
+const STRICT_BASE64_RE = /^[A-Za-z0-9+/]*={0,2}$/;
+
+export function looksLikeCiphertext(value: string | null | undefined): boolean {
+  if (!value) return false;
+  if (value.length % 4 !== 0) return false;
+  if (!STRICT_BASE64_RE.test(value)) return false;
+  try {
+    return Buffer.from(value, 'base64').length >= 29;
+  } catch {
+    return false;
+  }
+}
+
 let lastDecryptWarnAt = 0;
 function warnDecryptFailure(): void {
   const now = Date.now();

@@ -21,14 +21,14 @@ function captureRawSql() {
   return {
     calls,
     spy: jest.fn(
-      async (query: { strings?: TemplateStringsArray; values?: unknown[] }) => {
+      (query: { strings?: TemplateStringsArray; values?: unknown[] }) => {
         // Prisma.sql tagged templates expose .strings; join them for inspection.
         const sql = (query?.strings ?? [])
           .join('?')
           .replace(/\s+/g, ' ')
           .trim();
         calls.push(sql);
-        return 0;
+        return Promise.resolve(0);
       },
     ),
   };
@@ -83,6 +83,11 @@ describe('MergeService — SQL safety', () => {
       (s) => s.includes('TherapyRelation') && s.includes('SET "clientId"'),
     );
     expect(sql).toBeDefined();
+    // therapistId is NOT NULL, so plain <> is safe here — this is the one
+    // deliberate exception to the IS DISTINCT FROM rule; assert the real SQL,
+    // not just its existence.
+    expect(sql).toContain('"therapistId" <>');
+    expect(sql).not.toContain('IS DISTINCT FROM');
   });
 
   // ── TherapistNote ───────────────────────────────────────────────────────────

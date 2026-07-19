@@ -73,17 +73,29 @@ export default tseslint.config(
     },
   },
   {
+    // scripts/*.mjs — plain-Node скрипты вне tsconfig: projectService не видит
+    // их и давал каждому файлу структурную (parse)-ошибку, из-за чего любой
+    // новый скрипт ронял храповик. Линтим без typed-правил.
+    files: ['scripts/**/*.mjs'],
+    extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: { sourceType: 'module' },
+  },
+  {
     // Тесты: паттерн проекта — сервис инстанцируется с поддельной Prisma
     // на any (см. CLAUDE.md «Тесты»), плюс jest-глобалы без типов в typed-линте.
     // unsafe-* здесь — заведомый шум, который наказывал храповиком каждый
     // новый spec (а тесты обязательны). Глушим ТОЛЬКО в тестах; для
     // продакшен-кода правила действуют в полную силу.
+    // `**/*.e2e-spec.ts` и `test/e2e-support/**` — e2e-смоук (TEST_COVERAGE_PLAN.md,
+    // этап 1 п.7): тот же паттерн (in-memory фейк Prisma на any), не матчился
+    // старым glob'ом (`app.e2e-spec.ts` не оканчивается на `.spec.ts`).
     files: [
       '**/*.spec.ts',
-      '**/*.e2e-spec.ts',
       '**/*.test.ts',
       '**/*.test.tsx',
+      '**/*.e2e-spec.ts',
       '**/*.test-helpers.ts',
+      'test/e2e-support/**/*.ts',
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',

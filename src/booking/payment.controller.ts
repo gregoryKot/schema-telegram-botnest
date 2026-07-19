@@ -13,7 +13,7 @@ import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { ConflictException } from '@nestjs/common';
 import { RobokassaService } from './robokassa.service';
-import { BookingService } from './booking.service';
+import { BookingService, PaymentAmountMismatchError } from './booking.service';
 import { BookingNotifyService } from './booking-notify.service';
 import { DonationService } from '../donation/donation.service';
 import { SubscriptionService } from '../subscription/subscription.service';
@@ -104,6 +104,14 @@ export class PaymentController {
     try {
       await this.booking.confirm(id, paid);
     } catch (e) {
+      // Amount mismatch is NOT a benign repeat — do not ack money we didn't
+      // verify as correct. BookingService.confirm already alerted the admin;
+      // FAIL keeps Robokassa retrying/visible instead of silently swallowing
+      // a potential fraud/misconfig case (see CLAUDE.md «Аудит-события»).
+      if (e instanceof PaymentAmountMismatchError) {
+        this.logger.warn(`Confirm booking ${id}: ${(e as Error).message}`);
+        return `FAIL${invId}`;
+      }
       // Already confirmed/cancelled → benign double-delivery, ack so Robokassa stops.
       if (e instanceof ConflictException) {
         this.logger.warn(`Confirm booking ${id}: ${(e as Error).message}`);

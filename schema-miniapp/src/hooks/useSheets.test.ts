@@ -1,41 +1,80 @@
 // @vitest-environment jsdom
+// Бутстрап тестов miniapp (TEST_COVERAGE_PLAN.md, этап 2 п.9): первый тест
+// пакета — реестр видимости оверлеев useSheets.ts. Раньше на каждый оверлей
+// был отдельный useState в App.tsx; useSheets свёл их в один reducer, чтобы
+// open/close было унифицировано и не разъезжалось между экранами.
+//
 // Тест единого реестра видимости оверлеев/шитов App.tsx (этап 3 REMEDIATION_PLAN).
 // Логика — open/close reducer с мёрджем payload и мемоизацией — раньше была
 // набором отдельных useState на каждый showX; здесь фиксируем инварианты,
 // которые легко сломать при рефакторинге: открытие одного шита не задевает
 // остальные, payload мёрджится в состояние, close сбрасывает флаг.
 import { describe, it, expect } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { useSheets } from './useSheets';
 
-describe('useSheets — open/close', () => {
-  it('изначально все шиты закрыты', () => {
+describe('useSheets — начальное состояние', () => {
+  it('все оверлеи закрыты, табы на дефолтах', () => {
     const { result } = renderHook(() => useSheets());
     expect(result.current.about).toBe(false);
+    expect(result.current.schemaInfo).toBe(false);
+    expect(result.current.schemaAutoStartTest).toBe(false);
     expect(result.current.settings).toBe(false);
+    expect(result.current.practices).toBe(false);
+    expect(result.current.plans).toBe(false);
+    expect(result.current.todayNote).toBe(false);
+    expect(result.current.pairSheet).toBe(false);
+    expect(result.current.practicesOnboarding).toBe(false);
+    expect(result.current.childhoodWheel).toBe(false);
     expect(result.current.tracker).toBe(false);
+    expect(result.current.trackerOverlay).toBe(false);
+    expect(result.current.trackerGoal).toBe(false);
+    expect(result.current.diaries).toBe(false);
+    expect(result.current.addressPicker).toBe(false);
+    expect(result.current.schemaInitialTab).toBe('needs');
+    expect(result.current.trackerTab).toBe('today');
+    expect(result.current.trackerNeedId).toBeNull();
+    expect(result.current.schemaHighlight).toBeUndefined();
   });
+});
 
-  it('open() открывает только указанный шит, остальные не трогает', () => {
+describe('useSheets — open/close без payload', () => {
+  it('open переключает конкретный ключ в true, остальные не трогает', () => {
     const { result } = renderHook(() => useSheets());
-    act(() => {
-      result.current.open('about');
-    });
-    expect(result.current.about).toBe(true);
-    expect(result.current.settings).toBe(false);
-    expect(result.current.tracker).toBe(false);
+    act(() => result.current.open('settings'));
+    expect(result.current.settings).toBe(true);
+    expect(result.current.practices).toBe(false);
+    expect(result.current.about).toBe(false);
   });
 
-  it('close() закрывает шит', () => {
+  it('close переключает ключ обратно в false', () => {
+    const { result } = renderHook(() => useSheets());
+    act(() => result.current.open('practices'));
+    expect(result.current.practices).toBe(true);
+    act(() => result.current.close('practices'));
+    expect(result.current.practices).toBe(false);
+  });
+
+  it('несколько оверлеев могут быть открыты одновременно (разные ключи)', () => {
     const { result } = renderHook(() => useSheets());
     act(() => {
       result.current.open('settings');
+      result.current.open('about');
     });
     expect(result.current.settings).toBe(true);
-    act(() => {
-      result.current.close('settings');
-    });
+    expect(result.current.about).toBe(true);
+    act(() => result.current.close('settings'));
     expect(result.current.settings).toBe(false);
+    expect(result.current.about).toBe(true); // close одного не гасит другой
+  });
+});
+
+describe('useSheets — open/close с payload (доп. поля вроде трекер-таба)', () => {
+  it('open с payload проставляет доп. поля вместе с флагом', () => {
+    const { result } = renderHook(() => useSheets());
+    act(() => result.current.open('tracker', { trackerTab: 'history' }));
+    expect(result.current.tracker).toBe(true);
+    expect(result.current.trackerTab).toBe('history');
   });
 
   it('open() с payload мёрджит дополнительные поля состояния (напр. открытие схемы с вкладкой/хайлайтом)', () => {
@@ -53,34 +92,34 @@ describe('useSheets — open/close', () => {
     expect(result.current.schemaAutoStartTest).toBe(true);
   });
 
-  it('close() с payload может одновременно сбросить сопутствующее поле (напр. trackerNeedId при закрытии оверлея)', () => {
+  it('close с payload тоже применяет payload (напр. сброс trackerNeedId)', () => {
     const { result } = renderHook(() => useSheets());
-    act(() => {
-      result.current.open('trackerOverlay', { trackerNeedId: 'safety' });
-    });
-    expect(result.current.trackerOverlay).toBe(true);
+    act(() =>
+      result.current.open('trackerOverlay', { trackerNeedId: 'safety' }),
+    );
     expect(result.current.trackerNeedId).toBe('safety');
-
-    act(() => {
-      result.current.close('trackerOverlay', { trackerNeedId: null });
-    });
+    act(() => result.current.close('trackerOverlay', { trackerNeedId: null }));
     expect(result.current.trackerOverlay).toBe(false);
     expect(result.current.trackerNeedId).toBeNull();
   });
 
-  it('несколько независимых open() не сбрасывают друг друга', () => {
+  it('payload не открывает и не закрывает другие ключи, кроме указанного sheet', () => {
     const { result } = renderHook(() => useSheets());
-    act(() => {
-      result.current.open('practices');
-    });
-    act(() => {
-      result.current.open('plans');
-    });
-    expect(result.current.practices).toBe(true);
-    expect(result.current.plans).toBe(true);
+    act(() =>
+      result.current.open('schemaInfo', {
+        schemaInitialTab: 'schemas',
+        schemaHighlight: 'abandonment',
+      }),
+    );
+    expect(result.current.schemaInfo).toBe(true);
+    expect(result.current.schemaInitialTab).toBe('schemas');
+    expect(result.current.schemaHighlight).toBe('abandonment');
+    expect(result.current.settings).toBe(false);
   });
+});
 
-  it('open/close сохраняют идентичность функций между рендерами (стабильны для deps-массивов)', () => {
+describe('useSheets — стабильность идентичности open/close', () => {
+  it('open и close — стабильные ссылки между рендерами (useCallback без deps)', () => {
     const { result, rerender } = renderHook(() => useSheets());
     const openBefore = result.current.open;
     const closeBefore = result.current.close;
@@ -89,10 +128,26 @@ describe('useSheets — open/close', () => {
     expect(result.current.close).toBe(closeBefore);
   });
 
+  it('после реального изменения состояния open/close остаются той же ссылкой', () => {
+    const { result } = renderHook(() => useSheets());
+    const openBefore = result.current.open;
+    act(() => result.current.open('plans'));
+    expect(result.current.open).toBe(openBefore);
+  });
+
   it('идентичность возвращаемого объекта не меняется без реального open/close (мемоизация)', () => {
     const { result, rerender } = renderHook(() => useSheets());
     const before = result.current;
     rerender();
     expect(result.current).toBe(before);
+  });
+});
+
+describe('useSheets — независимость от Telegram API (санити)', () => {
+  it('работает без window.Telegram — чистый reducer-хук, никаких side-эффектов', () => {
+    expect(window.Telegram).toBeUndefined();
+    const { result } = renderHook(() => useSheets());
+    act(() => result.current.open('diaries'));
+    expect(result.current.diaries).toBe(true);
   });
 });

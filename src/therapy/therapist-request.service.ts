@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AccountService } from '../bot/account.service';
+import { SecurityLogService } from '../auth/security-log.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 
 const MAX_NAME = 100;
@@ -22,6 +23,7 @@ export class TherapistRequestService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly accountService: AccountService,
+    private readonly securityLog: SecurityLogService,
   ) {}
 
   // Raw Telegram Bot API call. Avoids depending on Telegraf instance and
@@ -141,12 +143,22 @@ export class TherapistRequestService {
           },
         });
 
+    // Явный каст в одном месте — вместо `any`-member-access на каждое
+    // обращение к row.id/row.status ниже (eslint-храповик, правило 9).
+    const rowId = row.id;
+    const rowStatus = row.status;
+
+    this.securityLog.log('therapist_request_submitted', {
+      userId,
+      requestId: rowId,
+      summary: qualification.slice(0, 120),
+    });
     this.notifyAdmin(row).catch((e: unknown) =>
       this.logger.warn(
         `notifyAdmin failed: ${e instanceof Error ? e.message : String(e)}`,
       ),
     );
-    return { id: row.id, status: row.status };
+    return { id: rowId, status: rowStatus };
   }
 
   async getMine(userId: bigint) {
@@ -188,6 +200,9 @@ export class TherapistRequestService {
     if (!req) throw new NotFoundException('Request not found');
     if (req.status !== 'pending')
       throw new ConflictException(`Request is ${req.status}`);
+    // Явный каст в одном месте — вместо `any`-member-access на каждое
+    // обращение к req.userId ниже (eslint-храповик, правило 9).
+    const reqUserId = req.userId;
 
     await this.prisma.$transaction(async (tx) => {
       await tx.therapistRequest.update({
@@ -200,14 +215,22 @@ export class TherapistRequestService {
         },
       });
       await tx.user.update({
-        where: { id: req.userId },
+        where: { id: reqUserId },
         data: { role: 'THERAPIST', therapistMode: true },
       });
     });
 
-    this.notifyApplicant(Number(req.userId), 'approved').catch(() => null);
+    // Аудит эскалации привилегий: кто получил роль THERAPIST и кем (см.
+    // CLAUDE.md «Аудит-события» / security-log.service.ts ALERT_EVENTS).
+    this.securityLog.log('role_changed', {
+      userId: reqUserId,
+      role: 'THERAPIST',
+      adminId,
+      requestId,
+    });
+    this.notifyApplicant(Number(reqUserId), 'approved').catch(() => null);
     this.logger.log(
-      `Therapist request ${requestId} approved by admin ${adminId} → user ${req.userId}`,
+      `Therapist request ${requestId} approved by admin ${adminId} → user ${reqUserId}`,
     );
   }
 

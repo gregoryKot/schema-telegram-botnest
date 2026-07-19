@@ -1,7 +1,9 @@
 # CI-гейт (правило №1 CLAUDE.md: ничего не мержится с красным CI).
-# Бэкенд: типы + юнит-тесты. Фронтенды: сборка (ловит TS-ошибки).
-# eslint — храповиком (правило №9): исторический долг зафиксирован
-# в scripts/eslint-baseline.json, рост счётчика роняет джобу eslint.
+# Бэкенд: типы + юнит-тесты + coverage-храповик. Фронтенды: сборка (ловит
+# TS-ошибки). eslint — храповиком (правило №9): исторический долг
+# зафиксирован в scripts/eslint-baseline.json, рост счётчика роняет джобу
+# eslint. Покрытие бэкенда — храповиком в scripts/coverage-baseline.json
+# (TEST_COVERAGE_PLAN.md, этап 4, п.14).
 name: CI
 
 on:
@@ -25,10 +27,22 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npx tsc --noEmit -p tsconfig.build.json
-      # --coverage включает порог покрытия (jest.coverageThreshold в
-      # package.json, best-practice 2026-07): новая логика без теста роняет
-      # покрытие ниже пола → CI падает. Порог = floor, растёт только вверх.
-      - run: npx jest --coverage --silent
+      # coverage-храповик (TEST_COVERAGE_PLAN.md, этап 4, п.14): сам гоняет
+      # jest --coverage, отдельный `npx jest` не нужен. Падает при просадке
+      # покрытия ниже scripts/coverage-baseline.json (общей или по полу
+      # src/auth и src/utils).
+      - run: node scripts/check-coverage-ratchet.mjs
+      # e2e-смоук (TEST_COVERAGE_PLAN.md, этап 1 п.7): реальный AppModule
+      # целиком (ValidationPipe, гарды, фильтры), только PrismaService и
+      # TELEGRAF_BOT подменены фейками — ловит то, что юнит-тесты не могут:
+      # гард не примонтирован, DTO-пайп не применён глобально, утечку чужих
+      # данных через HTTP. См. test/app-auth.e2e-spec.ts, test/app-ownership.e2e-spec.ts.
+      # read-after-write.e2e-spec гоняется отдельно в джобе migrations (нужен
+      # реальный Postgres) — здесь исключён, наши специи на фейк-Prisma.
+      - run: >-
+          npx jest --config ./test/jest-e2e.json
+          test/app-auth test/app-ownership test/app-ownership-sweep
+          test/auth-flows
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high

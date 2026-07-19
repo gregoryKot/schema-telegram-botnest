@@ -7,7 +7,6 @@ import {
   Res,
   Query,
   UnauthorizedException,
-  BadRequestException,
   Logger,
   UseGuards,
   HttpCode,
@@ -18,6 +17,7 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard, WebUser } from './jwt.guard';
 import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
+import { TwoFaCodeDto, TwoFaChallengeDto } from './dto/twofa.dto';
 import { EmailService } from './email.service';
 import type { Request, Response } from 'express';
 import { REFRESH_COOKIE, cookieOptions, requireCsrf } from './auth-http.util';
@@ -58,12 +58,11 @@ export class Auth2faController {
   @HttpCode(200)
   async totpEnable(
     @Req() req: Request,
-    @Body('code') code: string,
+    @Body() dto: TwoFaCodeDto,
   ): Promise<{ recoveryCodes: string[] }> {
     requireCsrf(req, '2fa/enable', this.securityLog);
-    if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser!;
-    const result = await this.totp.confirmSetup(webUser.userId, code);
+    const result = await this.totp.confirmSetup(webUser.userId, dto.code);
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
       event: '2fa_enabled',
@@ -76,12 +75,11 @@ export class Auth2faController {
   @HttpCode(200)
   async totpDisable(
     @Req() req: Request,
-    @Body('code') code: string,
+    @Body() dto: TwoFaCodeDto,
   ): Promise<{ ok: true }> {
     requireCsrf(req, '2fa/disable', this.securityLog);
-    if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser!;
-    await this.totp.disable(webUser.userId, code);
+    await this.totp.disable(webUser.userId, dto.code);
     this.securityLog.log('role_changed', {
       userId: webUser.userId,
       event: '2fa_disabled',
@@ -94,12 +92,11 @@ export class Auth2faController {
   @HttpCode(200)
   async totpRegenerateRecovery(
     @Req() req: Request,
-    @Body('code') code: string,
+    @Body() dto: TwoFaCodeDto,
   ): Promise<{ recoveryCodes: string[] }> {
     requireCsrf(req, '2fa/recovery-codes', this.securityLog);
-    if (!code) throw new BadRequestException('Missing code');
     const webUser: WebUser = req.webUser!;
-    return this.totp.regenerateRecoveryCodes(webUser.userId, code);
+    return this.totp.regenerateRecoveryCodes(webUser.userId, dto.code);
   }
 
   // ─── Recovery email ──────────────────────────────────────────────────────
@@ -191,14 +188,11 @@ export class Auth2faController {
   async totpChallenge(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-    @Body('challengeToken') challengeToken: string,
-    @Body('code') code: string,
+    @Body() dto: TwoFaChallengeDto,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     requireCsrf(req, '2fa/challenge', this.securityLog);
-    if (!challengeToken || !code)
-      throw new BadRequestException('Missing token or code');
-    const { userId } = this.auth.verifyTotpChallengeToken(challengeToken);
-    const ok = await this.totp.verifyCode(userId, code);
+    const { userId } = this.auth.verifyTotpChallengeToken(dto.challengeToken);
+    const ok = await this.totp.verifyCode(userId, dto.code);
     if (!ok) throw new UnauthorizedException('Invalid 2FA code');
     const tokens = await this.auth.issueTokens(
       userId,

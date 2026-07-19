@@ -62,7 +62,7 @@ export class TelegramScheduleService implements OnModuleInit {
           `Startup planner catch-up failed (non-critical, retries at midnight): ${(e as Error).message}`,
         ),
       );
-    }, 30_000);
+    }, 30_000).unref(); // не держать процесс (jest/e2e воркеры не выходили)
   }
 
   /** Reschedule reminder for a single user (called after settings change). */

@@ -3,7 +3,13 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
-  "setupFiles": ["<rootDir>/setup-e2e.ts"],
+  "setupFiles": [
+    "<rootDir>/e2e-support/env.setup.ts",
+    "<rootDir>/setup-e2e.ts"
+  ],
+  "moduleNameMapper": {
+    "^jose$": "<rootDir>/e2e-support/jose.stub.ts"
+  },
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   }
