@@ -9,7 +9,7 @@ export const MOSS = '#4a6335';        // green status (passes WCAG AA on paper b
 export const TG_URL = 'https://t.me/kotlarewski';
 // Сайт практики: запись на консультации. schemehappens уводит сюда,
 // на самом kotlarewski кнопки скроллят к форме на странице.
-export const PRACTICE_BOOKING_URL = 'https://kotlarewski.ru/#booking';
+export const PRACTICE_BOOKING_URL = 'https://kotlarewski.gr/#booking';
 
 // Hamburger button (mobile nav trigger) – shown only via .menu-btn CSS
 export const menuBtnStyle: CSSProperties = {
