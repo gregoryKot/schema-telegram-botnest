@@ -63,7 +63,7 @@ export function ReviewsPage() {
             не подойдём друг другу, я честно скажу и при необходимости
             порекомендую коллегу.
           </p>
-          <a href="/#booking" style={{
+          <a href="https://kotlarewski.ru/#booking" style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '13px 26px', background: 'var(--accent)', color: '#fff',
             borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none',
