@@ -55,6 +55,12 @@ const SHARE_KIND_LABELS: Record<string, string> = {
   schema: '🧩 схема',
   diary: '📔 дневник',
   ysq: '📋 тест схем',
+  mode: '🎭 режим',
+  pair_invite: '🤝 приглашение в пару',
+  month: '🗓 итоги месяца',
+  achievements: '🏅 все награды разом',
+  phrase: '💬 фраза поддержки',
+  gratitude: '🌱 благодарность',
 };
 
 /** Собирает все продуктовые блоки /stats простыми словами. Чистая функция. */

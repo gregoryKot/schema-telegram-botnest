@@ -12,6 +12,7 @@ import {
 import { Request } from 'express';
 import { uid, parseId } from './request-utils';
 import { ExercisesService } from '../bot/exercises.service';
+import { HealthyAdultService } from '../bot/healthy-adult.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import {
   BeliefCheckDto,
@@ -29,7 +30,20 @@ interface AuthRequest extends Request {
 @Controller('api')
 @UseGuards(TelegramAuthGuard)
 export class ExercisesController {
-  constructor(private readonly exercisesService: ExercisesService) {}
+  constructor(
+    private readonly exercisesService: ExercisesService,
+    private readonly healthyAdult: HealthyAdultService,
+  ) {}
+
+  // ── Фраза Здорового взрослого ────────────────────────────────────────────────
+  // Случайная фраза поддержки из включённого пула (тот же, что постит канал).
+  // Свободного текста от юзера нет — только готовый контент.
+  @Get('healthy-phrase')
+  async getHealthyPhrase(): Promise<{ text: string | null }> {
+    const pool = await this.healthyAdult.enabledTexts();
+    if (pool.length === 0) return { text: null };
+    return { text: pool[Math.floor(Math.random() * pool.length)] };
+  }
 
   // ── Belief checks ─────────────────────────────────────────────────────────────
 

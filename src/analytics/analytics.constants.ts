@@ -40,6 +40,12 @@ export const SHARE_CARD_KINDS = [
   'schema',
   'diary',
   'ysq',
+  'mode',
+  'pair_invite',
+  'month',
+  'achievements',
+  'phrase',
+  'gratitude',
 ] as const;
 export type ShareCardKind = (typeof SHARE_CARD_KINDS)[number];
 

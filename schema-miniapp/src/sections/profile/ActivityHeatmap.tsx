@@ -1,8 +1,15 @@
+import { MonthShareButton } from './heatmapShare';
+
 interface ActivityHeatmapProps {
   activeDates: Set<string>;
+  /** Для карточки «Мой месяц» (шэр) */
+  totalDays?: number;
 }
 
-export function ActivityHeatmap({ activeDates }: ActivityHeatmapProps) {
+export function ActivityHeatmap({
+  activeDates,
+  totalDays = 0,
+}: ActivityHeatmapProps) {
   // P7 UI-аудит: короче и крупнее — влезает без скрытого скролла
   const WEEKS = 10;
   const today = new Date();
@@ -44,15 +51,24 @@ export function ActivityHeatmap({ activeDates }: ActivityHeatmapProps) {
     >
       <div
         style={{
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: '0.09em',
-          textTransform: 'uppercase',
-          color: 'var(--text-faint)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           marginBottom: 12,
         }}
       >
-        Активность
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.09em',
+            textTransform: 'uppercase',
+            color: 'var(--text-faint)',
+          }}
+        >
+          Активность
+        </div>
+        <MonthShareButton activeDates={activeDates} totalDays={totalDays} />
       </div>
       <div style={{ overflowX: 'auto' }}>
         <div style={{ display: 'flex', gap: 3, minWidth: 'max-content' }}>

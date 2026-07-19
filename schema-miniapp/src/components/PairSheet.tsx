@@ -4,6 +4,9 @@ import { SkeletonLines } from './Skeleton';
 import { api, PairsData } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { miniappDeepLink } from '../utils/botConfig';
+import { ShareCardSheet } from '../share/ShareCardSheet';
+import { drawInviteCard } from '../../../shared/src/share/cards/inviteCard';
+import { pairInviteShareText } from '../../../shared/src/share/shareTexts';
 
 interface Props {
   onClose: () => void;
@@ -23,6 +26,8 @@ export function PairSheet({ onClose }: Props) {
   const [joinError, setJoinError] = useState('');
   const [loading, setLoading] = useState(false);
   const [inviteUrl, setInviteUrl] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [showInviteShare, setShowInviteShare] = useState(false);
   const [copiedPending, setCopiedPending] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [confirmLeaveCode, setConfirmLeaveCode] = useState<string | null>(null);
@@ -37,20 +42,15 @@ export function PairSheet({ onClose }: Props) {
   async function handleCreateInvite() {
     setLoading(true);
     try {
-      const { url } = await api.createPairInvite();
+      const { code, url } = await api.createPairInvite();
       setInviteUrl(url);
+      setInviteCode(code);
       api
         .getPair()
         .then(setData)
         .catch(() => {});
-      try {
-        if (navigator.share)
-          await navigator.share({
-            text: `Давай отслеживать потребности вместе! ${url}`,
-          });
-      } catch {
-        /* best-effort: ошибку намеренно игнорируем */
-      }
+      // Красивая карточка-приглашение вместо голого текста
+      setShowInviteShare(true);
     } catch {
       /* best-effort: ошибку намеренно игнорируем */
     }
@@ -609,6 +609,24 @@ export function PairSheet({ onClose }: Props) {
           </>
         )}
       </div>
+
+      {showInviteShare && inviteCode && (
+        <ShareCardSheet
+          title="Пригласить в пару"
+          draw={(canvas) =>
+            drawInviteCard(canvas, {
+              title: 'Приглашение в пару',
+              code: inviteCode,
+              hint: 'Ввести этот код в мини-аппе — и отслеживать потребности вместе',
+            })
+          }
+          shareText={pairInviteShareText(inviteCode, inviteUrl)}
+          filename="pair-invite.png"
+          eventKind="pair_invite"
+          onClose={() => setShowInviteShare(false)}
+          zIndex={300}
+        />
+      )}
     </BottomSheet>
   );
 }
