@@ -1,6 +1,3 @@
-import { pressable } from '../../utils/a11y';
-import { hex } from './utils';
-
 // Скелетон чип-строки и заголовок группы каталога — общие для вкладок
 // «Схемы» и «Режимы» (правило «одна механика — один компонент»)
 export function ChipsSkeleton({ widths }: { widths: number[] }) {
