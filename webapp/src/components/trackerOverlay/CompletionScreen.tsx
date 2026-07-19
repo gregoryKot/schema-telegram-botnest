@@ -1,15 +1,19 @@
 import type { Need } from '../../types';
+import { DayShareButton } from '../../share/DayShareButton';
 
 export function CompletionScreen({
   needs,
   effectiveRatings,
   isBackfill,
+  date,
   onDone,
   goBack,
 }: {
   needs: Need[];
   effectiveRatings: Record<string, number>;
   isBackfill: boolean;
+  /** Дата backfill-дня (YYYY-MM-DD); undefined = сегодня */
+  date?: string;
   onDone?: () => void;
   goBack: () => void;
 }) {
@@ -101,21 +105,35 @@ export function CompletionScreen({
         >
           индекс дня
         </div>
-        <button
-          onClick={isBackfill ? (onDone ?? goBack) : goBack}
+        <div
           style={{
-            padding: '13px 40px',
-            borderRadius: 10,
-            border: 'none',
-            background: 'var(--text)',
-            color: 'var(--bg)',
-            fontSize: 15,
-            fontWeight: 600,
-            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            alignItems: 'center',
           }}
         >
-          Готово
-        </button>
+          <button
+            onClick={isBackfill ? (onDone ?? goBack) : goBack}
+            style={{
+              padding: '13px 40px',
+              borderRadius: 10,
+              border: 'none',
+              background: 'var(--text)',
+              color: 'var(--bg)',
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Готово
+          </button>
+          <DayShareButton
+            needs={needs}
+            ratings={effectiveRatings}
+            date={date}
+          />
+        </div>
       </div>
     </div>
   );
