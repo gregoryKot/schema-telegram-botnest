@@ -1,9 +1,12 @@
 // Сгруппированный список паттернов с недельной частотой (дизайн-макет
-// «Паттерны»). Каждая строка: имя + тихая полоска частоты (дней/7) + «N/7».
-// ОДИН спокойный акцент вместо разноцветья доменов — снижение сенсорного
-// шума (нейроинклюзивность; в макете это named «not color chaos»).
-// Сортировка внутри группы — по убыванию частоты (что звучит чаще — выше).
-// Переиспользуется схемами и режимами (правило «одна механика — один компонент»).
+// «Паттерны»). ОДИН спокойный акцент вместо разноцветья доменов — снижение
+// сенсорного шума. Переиспользуется схемами и режимами.
+//
+// ВАЖНО (нейроинклюзивность, анти-стыд): частота — НЕ табло успеваемости.
+// Схемы, которые за неделю не всплывали, показываем просто названием — без
+// полоски и без цифры. Знаменателя-квоты «/7» нет вовсе: он читается как
+// цель, которую ты «не выполнил». У тех, что были, — мягкая полоска и «N дн.»
+// как наблюдение, а не оценка. Что не звучало — уходит вниз списка тихо.
 import { pressable } from '../utils/a11y';
 
 export const FREQ_WINDOW = 7;
@@ -19,8 +22,16 @@ export interface FreqGroup {
   items: FreqItem[];
 }
 
-function FreqBar({ freq, active }: { freq: number; active: boolean }) {
-  // ширина 8..38px по частоте; тихий один хью
+function dayWord(n: number): string {
+  const m10 = n % 10,
+    m100 = n % 100;
+  if (m100 >= 11 && m100 <= 14) return 'дней';
+  if (m10 === 1) return 'день';
+  if (m10 >= 2 && m10 <= 4) return 'дня';
+  return 'дней';
+}
+
+function FreqBar({ freq }: { freq: number }) {
   const w = 8 + Math.round((Math.min(freq, FREQ_WINDOW) / FREQ_WINDOW) * 30);
   return (
     <span
@@ -30,9 +41,7 @@ function FreqBar({ freq, active }: { freq: number; active: boolean }) {
         width: w,
         height: 5,
         borderRadius: 3,
-        background: active
-          ? 'var(--accent)'
-          : 'color-mix(in srgb, var(--accent) 32%, transparent)',
+        background: 'color-mix(in srgb, var(--accent) 45%, transparent)',
       }}
     />
   );
@@ -44,16 +53,35 @@ export function PatternFrequencyList({
   onSelect,
   addLabel,
   onAdd,
+  hint,
+  anyFreq,
 }: {
   groups: FreqGroup[];
   selectedId?: string | null;
   onSelect: (id: string) => void;
   addLabel: string;
   onAdd: () => void;
+  /** Пояснение к полоскам — показываем только когда есть что пояснять */
+  hint?: string;
+  /** Есть ли вообще ненулевая частота (иначе полоски/подсказку не показываем) */
+  anyFreq?: boolean;
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+      {anyFreq && hint && (
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--text-sub)',
+            lineHeight: 1.45,
+            margin: '-6px 2px -8px',
+          }}
+        >
+          {hint}
+        </div>
+      )}
       {groups.map((g) => {
+        // Что всплывало — выше (по убыванию), остальное — тихо ниже.
         const items = [...g.items].sort((a, b) => b.freq - a.freq);
         return (
           <div key={g.title}>
@@ -82,6 +110,7 @@ export function PatternFrequencyList({
             >
               {items.map((it, i) => {
                 const active = it.id === selectedId;
+                const shown = it.freq > 0;
                 return (
                   <button
                     key={it.id}
@@ -109,34 +138,49 @@ export function PatternFrequencyList({
                         flex: 1,
                         fontSize: 15,
                         fontWeight: active ? 700 : 500,
-                        color: active ? 'var(--accent)' : 'var(--text)',
+                        color: active
+                          ? 'var(--accent)'
+                          : shown
+                            ? 'var(--text)'
+                            : 'var(--text-sub)',
                         letterSpacing: '-0.1px',
                       }}
                     >
                       {it.name}
                     </span>
-                    <span
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 9,
-                        flexShrink: 0,
-                      }}
-                    >
-                      <FreqBar freq={it.freq} active={active} />
+                    {shown ? (
                       <span
                         style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: 'var(--text-faint)',
-                          minWidth: 30,
-                          textAlign: 'right',
-                          fontVariantNumeric: 'tabular-nums',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 9,
+                          flexShrink: 0,
                         }}
                       >
-                        {it.freq}/{FREQ_WINDOW}
+                        <FreqBar freq={it.freq} />
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 500,
+                            color: 'var(--text-faint)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {it.freq} {dayWord(it.freq)}
+                        </span>
                       </span>
-                    </span>
+                    ) : (
+                      <span
+                        aria-hidden
+                        style={{
+                          color: 'var(--text-faint)',
+                          fontSize: 18,
+                          flexShrink: 0,
+                        }}
+                      >
+                        ›
+                      </span>
+                    )}
                   </button>
                 );
               })}

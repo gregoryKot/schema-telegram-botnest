@@ -22,6 +22,7 @@ import { TherapyModule } from './therapy/therapy.module';
 import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { ArticlesModule } from './articles/articles.module';
+import { ArticleSeoMiddleware } from './articles/article-seo.middleware';
 import { SiteContentModule } from './site-content/site-content.module';
 
 // Domains that are aliases of schemehappens.ru and need their own og:url / canonical
@@ -86,5 +87,11 @@ export class AppModule implements NestModule {
         return res.send(modified);
       })
       .forRoutes({ path: '/', method: RequestMethod.GET });
+
+    // Server-side SEO for article pages: inject real title/description/OG +
+    // article text so crawlers (esp. Yandex) index them instead of an empty SPA.
+    consumer
+      .apply(ArticleSeoMiddleware)
+      .forRoutes({ path: 'articles/*path', method: RequestMethod.GET });
   }
 }

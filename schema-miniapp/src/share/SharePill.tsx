@@ -1,6 +1,8 @@
 // Аккуратная, но ЗАМЕТНАЯ кнопка «Поделиться»: иконка-стрелка + подпись.
 // Лёгкий акцентный фон, чтобы её было видно и понятно, что это шэр (а не
 // просто серый значок). Цель ≥ 44px по высоте (тач-таргет).
+import { ShareIcon } from '../../../shared/src/share/ShareIcon';
+
 interface Props {
   onClick: () => void;
   /** Подпись рядом с иконкой; по умолчанию «Поделиться» */
@@ -8,18 +10,6 @@ interface Props {
   /** compact — только иконка (для тесных мест), но всё равно акцентная */
   compact?: boolean;
 }
-
-const Icon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-    <path
-      d="M12 15V4m0 0L8 8m4-4 4 4M6 13v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
 
 export function SharePill({ onClick, label, compact }: Props) {
   const text = label ?? 'Поделиться';
@@ -46,7 +36,7 @@ export function SharePill({ onClick, label, compact }: Props) {
         flexShrink: 0,
       }}
     >
-      <Icon />
+      <ShareIcon />
       {!compact && text}
     </button>
   );
