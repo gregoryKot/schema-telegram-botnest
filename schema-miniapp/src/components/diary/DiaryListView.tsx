@@ -10,6 +10,11 @@ import { EMOTIONS, getModeById, getSchemaById } from '../../schemaTherapyData';
 import { useSafeTop } from '../../utils/safezone';
 import { loadDraft, clearDraft, formatDraftAge } from '../../utils/drafts';
 import { DiaryShareButton } from '../../share/DiaryShareButton';
+import { SharePill } from '../../share/SharePill';
+import { ShareCardSheet } from '../../share/ShareCardSheet';
+import { drawGratitudeCard } from '../../../../shared/src/share/cards/gratitudeCard';
+import { gratitudeShareText } from '../../../../shared/src/share/shareTexts';
+import { botShortUrl } from '../../utils/botConfig';
 
 /** color-mix helper: works with CSS variables AND hex strings */
 const cm = (color: string, pct: number) =>
@@ -366,6 +371,11 @@ function GratitudeCard({
   onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const dateLabel = new Date(entry.date + 'T12:00:00').toLocaleDateString(
+    'ru',
+    { day: 'numeric', month: 'long' },
+  );
 
   return (
     <div
@@ -384,10 +394,7 @@ function GratitudeCard({
           }}
         >
           <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>
-            {new Date(entry.date + 'T12:00:00').toLocaleDateString('ru', {
-              day: 'numeric',
-              month: 'long',
-            })}
+            {dateLabel}
           </span>
           <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>
             {open ? '▲' : '▼'}
@@ -431,8 +438,30 @@ function GratitudeCard({
               {item}
             </div>
           ))}
-          <DeleteBtn color={color} onClick={onDelete} />
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+            }}
+          >
+            <DeleteBtn color={color} onClick={onDelete} />
+            {/* Шэр СВОЕЙ записи — только по явному тапу, с превью карточки */}
+            <SharePill compact onClick={() => setShowShare(true)} />
+          </div>
         </div>
+      )}
+
+      {showShare && (
+        <ShareCardSheet
+          title="Поделиться благодарностью"
+          draw={(canvas) => drawGratitudeCard(canvas, entry.items, dateLabel)}
+          shareText={gratitudeShareText(botShortUrl)}
+          filename="gratitude.png"
+          eventKind="gratitude"
+          onClose={() => setShowShare(false)}
+        />
       )}
     </div>
   );
