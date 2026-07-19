@@ -9,7 +9,9 @@ import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import {
   weekSchemaSummary,
+  weekSchemaFrequency,
   weekModeSummary,
+  weekModeFrequency,
   WeekTopSummary,
 } from '../utils/patternsSummary';
 import { readLocalIds } from './schemas/utils';
@@ -40,18 +42,14 @@ export function SchemasSection({
   const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
   const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [detailNeedId, setDetailNeedId] = useState<string | null>(null);
-  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(
-    new Set(),
-  );
-  const [expandedModeGroups, setExpandedModeGroups] = useState<Set<string>>(
-    new Set(),
-  );
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
   const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(
     null,
   );
   const [weekSummary, setWeekSummary] = useState<WeekTopSummary | null>(null);
   const [modeSummary, setModeSummary] = useState<WeekTopSummary | null>(null);
+  const [schemaFreq, setSchemaFreq] = useState<Record<string, number>>({});
+  const [modeFreq, setModeFreq] = useState<Record<string, number>>({});
   const safeTop = useSafeTop();
 
   useEffect(() => {
@@ -76,11 +74,17 @@ export function SchemasSection({
       .catch(() => setProfileLoading(false));
     api
       .getSchemaDiary()
-      .then((entries) => setWeekSummary(weekSchemaSummary(entries)))
+      .then((entries) => {
+        setWeekSummary(weekSchemaSummary(entries));
+        setSchemaFreq(weekSchemaFrequency(entries));
+      })
       .catch(() => {});
     api
       .getModeDiary()
-      .then((entries) => setModeSummary(weekModeSummary(entries)))
+      .then((entries) => {
+        setModeSummary(weekModeSummary(entries));
+        setModeFreq(weekModeFrequency(entries));
+      })
       .catch(() => {});
     api
       .getYsqProgress()
@@ -100,24 +104,6 @@ export function SchemasSection({
     localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
     setManualSchemaIds(ids);
     api.updateSettings({ mySchemaIds: ids }).catch(() => {});
-  }
-
-  function toggleDomain(id: string) {
-    setExpandedDomains((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleModeGroup(id: string) {
-    setExpandedModeGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   }
 
   const TABS: { id: Tab; label: string }[] = [
@@ -231,8 +217,7 @@ export function SchemasSection({
             ysqCompletedAt={ysqCompletedAt}
             ysqProgressAnswered={ysqProgressAnswered}
             weekSummary={weekSummary}
-            expandedDomains={expandedDomains}
-            onToggleDomain={toggleDomain}
+            schemaFreq={schemaFreq}
             onOpenSchema={onOpenSchema}
             onOpenDiaries={onOpenDiaries}
             onShowSchemaPicker={() => setShowSchemaPicker(true)}
@@ -246,8 +231,7 @@ export function SchemasSection({
             profileLoading={profileLoading}
             myModeIds={myModeIds}
             modeSummary={modeSummary}
-            expandedModeGroups={expandedModeGroups}
-            onToggleModeGroup={toggleModeGroup}
+            modeFreq={modeFreq}
             onOpenSchema={onOpenSchema}
             onOpenDiaries={onOpenDiaries}
             onShowModePicker={() => setShowModePicker(true)}

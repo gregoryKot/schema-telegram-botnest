@@ -2,9 +2,13 @@ import { fmtDate } from '../../utils/format';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { useTr } from '../../utils/addressForm';
 import { PatternsHero } from '../../components/PatternsHero';
+import {
+  PatternFrequencyList,
+  FreqGroup,
+} from '../../components/PatternFrequencyList';
 import { WeekTopSummary } from '../../utils/patternsSummary';
-import { ChipsSkeleton, CatalogHeader } from './CatalogParts';
-import { cm, shortName } from './utils';
+import { ChipsSkeleton } from './CatalogParts';
+import { shortName } from './utils';
 import { SchemasSectionProps } from './types';
 
 interface SchemasTabProps {
@@ -13,8 +17,7 @@ interface SchemasTabProps {
   ysqCompletedAt: string | null;
   ysqProgressAnswered: number | null;
   weekSummary: WeekTopSummary | null;
-  expandedDomains: Set<string>;
-  onToggleDomain: (id: string) => void;
+  schemaFreq: Record<string, number>;
   onOpenSchema: SchemasSectionProps['onOpenSchema'];
   onOpenDiaries?: () => void;
   onShowSchemaPicker: () => void;
@@ -27,20 +30,33 @@ export function SchemasTab({
   ysqCompletedAt,
   ysqProgressAnswered,
   weekSummary,
-  expandedDomains,
-  onToggleDomain,
+  schemaFreq,
   onOpenSchema,
   onOpenDiaries,
   onShowSchemaPicker,
   onOpenSchemaDetail,
 }: SchemasTabProps) {
   const tr = useTr();
+  const hasSchemas = allSchemaIds.length > 0 || !!ysqCompletedAt;
+
+  // Схемы пользователя, сгруппированные по домену, с недельной частотой.
+  const groups: FreqGroup[] = SCHEMA_DOMAINS.map((domain) => ({
+    title: domain.domain,
+    items: domain.schemas
+      .filter((sc) => allSchemaIds.includes(sc.id))
+      .map((sc) => ({
+        id: sc.id,
+        name: shortName(sc.name),
+        freq: schemaFreq[sc.id] ?? 0,
+      })),
+  })).filter((g) => g.items.length > 0);
+
   return (
     <>
-      {/* Hero: новичку — один очевидный вход; опытному — сводка недели */}
+      {/* Hero: новичку — один очевидный вход; опытному — «чаще всего звучит» */}
       {!profileLoading && (
         <PatternsHero
-          hasSchemas={allSchemaIds.length > 0 || !!ysqCompletedAt}
+          hasSchemas={hasSchemas}
           summary={weekSummary}
           progressAnswered={ysqProgressAnswered}
           onStartTest={() => onOpenSchema({ startTest: true })}
@@ -51,77 +67,8 @@ export function SchemasTab({
         />
       )}
 
-      {/* МОИ СХЕМЫ */}
-      {(allSchemaIds.length > 0 || ysqCompletedAt) && (
-        <div>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.10em',
-              textTransform: 'uppercase',
-              color: 'var(--text-faint)',
-              marginBottom: 10,
-            }}
-          >
-            Мои схемы
-          </div>
-          {profileLoading ? (
-            <ChipsSkeleton widths={[80, 100, 90, 110]} />
-          ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {allSchemaIds.map((id) => {
-                const domain = SCHEMA_DOMAINS.find((d) =>
-                  d.schemas.some((s) => s.id === id),
-                );
-                const schema = domain?.schemas.find((s) => s.id === id);
-                if (!schema || !domain) return null;
-                const c = domain.color; // CSS variable — use directly
-                return (
-                  <button
-                    key={id}
-                    onClick={() => onOpenSchemaDetail(id)}
-                    style={{
-                      padding: '6px 13px',
-                      borderRadius: 20,
-                      border: `1.5px solid ${cm(c, 35)}`,
-                      background: cm(c, 9),
-                      color: c,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      WebkitTapHighlightColor: 'transparent',
-                    }}
-                  >
-                    {shortName(schema.name)}
-                  </button>
-                );
-              })}
-              <button
-                onClick={onShowSchemaPicker}
-                style={{
-                  padding: '6px 13px',
-                  borderRadius: 20,
-                  border: '1.5px dashed var(--border-color)',
-                  background: 'transparent',
-                  color: 'var(--text-sub)',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                + Добавить
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* YSQ card — прячем у новичка: hero и так зовёт к тесту */}
-      {(allSchemaIds.length > 0 || ysqCompletedAt) && (
+      {/* Тест на схемы — компактный вход к результатам/продолжению */}
+      {hasSchemas && (
         <div
           style={{
             background: 'var(--surface)',
@@ -144,15 +91,11 @@ export function SchemasTab({
             >
               Тест на схемы
             </div>
-            {/* Незаконченный прогресс приоритетнее результата: кнопка
-                ведёт в тест на сохранённый вопрос (autoResume), поэтому
-                и подпись «Продолжить», иначе «Результаты» открывали бы
-                сам тест. */}
             <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
               {ysqProgressAnswered != null
                 ? `Начат · отвечено ${ysqProgressAnswered} из 116`
                 : ysqCompletedAt
-                  ? `Пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты и «поделиться» внутри`
+                  ? `Пройден ${fmtDate(ysqCompletedAt.slice(0, 10))} · результаты внутри`
                   : tr(
                       'Определи схемы автоматически',
                       'Определите схемы автоматически',
@@ -188,80 +131,37 @@ export function SchemasTab({
         </div>
       )}
 
-      {/* ВСЕ СХЕМЫ */}
-      <div>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.10em',
-            textTransform: 'uppercase',
-            color: 'var(--text-faint)',
-            marginBottom: 10,
-          }}
-        >
-          Все схемы
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {SCHEMA_DOMAINS.map((domain) => {
-            const isOpen = expandedDomains.has(domain.id);
-            const c = domain.color; // CSS variable
-            return (
-              <div
-                key={domain.id}
-                style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 16,
-                  overflow: 'hidden',
-                }}
-              >
-                <CatalogHeader
-                  color={c}
-                  name={domain.domain}
-                  count={domain.schemas.length}
-                  open={isOpen}
-                  onToggle={() => onToggleDomain(domain.id)}
-                />
-                {isOpen && (
-                  <div
-                    style={{
-                      padding: '0 16px 14px',
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                    }}
-                  >
-                    {domain.schemas.map((s) => {
-                      const active = allSchemaIds.includes(s.id);
-                      return (
-                        <button
-                          key={s.id}
-                          onClick={() => onOpenSchemaDetail(s.id)}
-                          style={{
-                            padding: '6px 13px',
-                            borderRadius: 20,
-                            border: `1.5px solid ${cm(c, active ? 42 : 18)}`,
-                            background: cm(c, active ? 11 : 5),
-                            color: active ? c : 'var(--text-sub)',
-                            fontSize: 13,
-                            fontWeight: active ? 600 : 400,
-                            cursor: 'pointer',
-                            fontFamily: 'inherit',
-                            WebkitTapHighlightColor: 'transparent',
-                          }}
-                        >
-                          {shortName(s.name)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Мои схемы по группам с недельной частотой (дизайн-макет «Паттерны») */}
+      {hasSchemas &&
+        (profileLoading ? (
+          <ChipsSkeleton widths={[80, 100, 90, 110]} />
+        ) : groups.length > 0 ? (
+          <PatternFrequencyList
+            groups={groups}
+            selectedId={weekSummary?.id}
+            onSelect={onOpenSchemaDetail}
+            addLabel="+ Добавить схему"
+            onAdd={onShowSchemaPicker}
+          />
+        ) : (
+          <button
+            onClick={onShowSchemaPicker}
+            style={{
+              width: '100%',
+              padding: 15,
+              background: 'transparent',
+              border: '1.5px dashed var(--border-color)',
+              borderRadius: 14,
+              color: 'var(--text-sub)',
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: 'inherit',
+              cursor: 'pointer',
+            }}
+          >
+            + Добавить схему
+          </button>
+        ))}
     </>
   );
 }
