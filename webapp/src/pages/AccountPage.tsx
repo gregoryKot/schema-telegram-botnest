@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 
@@ -21,14 +21,20 @@ export function AccountPage() {
   const success = searchParams.get('linked') === 'email' ? '✓ Email успешно привязан' : null;
   const [busy, setBusy] = useState(false);
 
+  // Pure fetch (no setState), so it can be shared by the mount effect and the
+  // manual refresh without either duplicating the request.
+  const loadAccount = useCallback(async () => {
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) throw new Error('Failed to load account');
+    return await res.json() as { providers: Provider[]; totp?: { enabled: boolean; recoveryCodesLeft: number } };
+  }, [accessToken]);
+
   const refresh = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (!res.ok) throw new Error('Failed to load account');
-      const data = await res.json() as { providers: Provider[]; totp?: { enabled: boolean; recoveryCodesLeft: number } };
+      const data = await loadAccount();
       setProviders(data.providers);
       if (data.totp) setTotp(data.totp);
     } catch (e) {
@@ -38,8 +44,21 @@ export function AccountPage() {
     }
   };
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps -- намеренно: перезагрузка данных при смене accessToken; refresh стабилен по смыслу, добавление в deps даст лишние ре-фетчи
-  useEffect(() => { refresh(); }, [accessToken]);
+  // Re-show loading when the token changes (adjust during render, not in an
+  // effect); on mount `loading` already starts true.
+  const [seenToken, setSeenToken] = useState(accessToken);
+  if (accessToken !== seenToken) { setSeenToken(accessToken); setLoading(true); }
+
+  // Load account on mount / token change. Fetch lives inside the effect, guarded
+  // by `alive`, so nothing sets state synchronously and deps are complete.
+  useEffect(() => {
+    let alive = true;
+    loadAccount()
+      .then((data) => { if (alive) { setProviders(data.providers); if (data.totp) setTotp(data.totp); } })
+      .catch((e) => { if (alive) setError(String(e)); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [loadAccount]);
 
   // Email link state
   const [showEmailLink, setShowEmailLink] = useState(false);
