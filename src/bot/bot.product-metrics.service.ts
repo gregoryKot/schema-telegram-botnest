@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
+import { ONBOARDING_STEPS } from '../analytics/analytics.constants';
 
 // Продуктовые метрики для /stats (правило №8). Всё выводится из БД: часть — из
 // таблиц-фич (онбординг/adoption/распределения), часть — из событий
@@ -51,6 +52,7 @@ export class ProductMetricsService {
       todayFocusChanged,
       streakHiddenRows,
       breathStarted,
+      onboardingStepRows,
     ] = await Promise.all([
       this.prisma.user.count({
         where: { ...activeUser, createdAt: { gte: since30 } },
@@ -122,6 +124,13 @@ export class ProductMetricsService {
         WHERE "name" = 'today_streak_toggle' AND "meta"->>'hidden' = 'true'
           AND "createdAt" >= ${since30}`,
       ev('breath_start'),
+      // Воронка обучения: люди (не события) на каждом шаге — один человек мог
+      // вернуться к шагу точками навигации, это не должно раздувать счёт.
+      this.prisma.$queryRaw<Array<{ step: string | null; c: bigint }>>`
+        SELECT "meta"->>'step' AS step, count(DISTINCT "userId")::bigint AS c
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'onboarding_step' AND "createdAt" >= ${since30}
+        GROUP BY "meta"->>'step'`,
     ]);
 
     const sections = sectionsRaw
@@ -136,8 +145,18 @@ export class ProductMetricsService {
       shareRows.find((r) => r.ok === 'false')?.c ?? 0n,
     );
 
+    // Порядок — как в онбординге (ONBOARDING_STEPS), а не по убыванию счёта:
+    // воронка читается сверху вниз, видно, на каком шаге обрыв.
+    const stepCounts = new Map(
+      onboardingStepRows.map((r) => [r.step ?? '', Number(r.c)]),
+    );
+    const onboardingSteps = ONBOARDING_STEPS.filter((s) =>
+      stepCounts.has(s),
+    ).map((step) => ({ step, count: stepCounts.get(step) ?? 0 }));
+
     return {
       onboarding: { cohort30, completed30 },
+      onboardingSteps,
       adoption: {
         diaries: num(diaries),
         ysqDone,

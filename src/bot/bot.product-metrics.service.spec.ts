@@ -30,7 +30,13 @@ describe('ProductMetricsService.getMetrics', () => {
         { kind: 'streak', c: 20n },
         { kind: 'schema', c: 3n },
       ]) // share_card by kind
-      .mockResolvedValueOnce([{ c: 7n }]); // today_streak_toggle hidden=true
+      .mockResolvedValueOnce([{ c: 7n }]) // today_streak_toggle hidden=true
+      // воронка обучения приходит из БД в произвольном порядке
+      .mockResolvedValueOnce([
+        { step: 'done', c: 70n },
+        { step: 'welcome', c: 100n },
+        { step: 'needs_what', c: 80n },
+      ]);
     const eventCount = jest
       .fn()
       .mockResolvedValueOnce(12) // crisis_card_shown
@@ -57,6 +63,12 @@ describe('ProductMetricsService.getMetrics', () => {
     const m = await new ProductMetricsService(prisma).getMetrics();
 
     expect(m.onboarding).toEqual({ cohort30: 118, completed30: 70 });
+    // шаги пересортированы в порядок показа, счётчики bigint→number
+    expect(m.onboardingSteps).toEqual([
+      { step: 'welcome', count: 100 },
+      { step: 'needs_what', count: 80 },
+      { step: 'done', count: 70 },
+    ]);
     expect(m.adoption).toEqual({
       diaries: 320,
       ysqDone: 210,

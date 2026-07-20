@@ -1,14 +1,21 @@
 import { DisclaimerCheckbox } from './DisclaimerCheckbox';
+import { useTr } from '../../utils/addressForm';
 
-// Шаг 2 онбординга Disclaimer: «это не терапия». Перенесено из
-// Disclaimer.tsx как есть (этап 3 REMEDIATION_PLAN) — без смены поведения.
+// Последний шаг с галочкой: «это не терапия». На нём же — гейт согласий
+// (дальше не пускаем, пока обе галочки не стоят), поэтому здесь живёт
+// напоминание про пропущенную галочку предыдущего шага.
 export function DisclaimerNotTherapyStep({
   c1,
   setC1,
+  ready,
+  c2,
 }: {
   c1: boolean;
   setC1: (updater: (p: boolean) => boolean) => void;
+  ready: boolean;
+  c2: boolean;
 }) {
+  const tr = useTr();
   return (
     <div>
       <div
@@ -46,6 +53,28 @@ export function DisclaimerNotTherapyStep({
           label="Я понимаю, что это инструмент самоисследования, а не клиническая диагностика"
         />
       </div>
+      {!ready && (
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--accent-orange)',
+            textAlign: 'center',
+            lineHeight: 1.5,
+          }}
+        >
+          {!c2 && !c1
+            ? tr(
+                'Отметь оба согласия — здесь и на предыдущем шаге',
+                'Отметьте оба согласия — здесь и на предыдущем шаге',
+              )
+            : !c2
+              ? tr(
+                  'Вернись на шаг назад и подтверди согласие',
+                  'Вернитесь на шаг назад и подтвердите согласие',
+                )
+              : tr('Отметь согласие выше', 'Отметьте согласие выше')}
+        </div>
+      )}
     </div>
   );
 }

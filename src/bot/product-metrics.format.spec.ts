@@ -4,6 +4,12 @@ import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
 
 const FULL: ProductMetrics = {
   onboarding: { cohort30: 118, completed30: 70 },
+  onboardingSteps: [
+    { step: 'welcome', count: 100 },
+    { step: 'not_therapy', count: 88 },
+    { step: 'needs_what', count: 80 },
+    { step: 'done', count: 70 },
+  ],
   adoption: {
     diaries: 320,
     ysqDone: 210,
@@ -36,6 +42,7 @@ const FULL: ProductMetrics = {
 
 const EMPTY: ProductMetrics = {
   onboarding: { cohort30: 0, completed30: 0 },
+  onboardingSteps: [],
   adoption: {
     diaries: 0,
     ysqDone: 0,
@@ -59,6 +66,15 @@ describe('formatProductMetrics', () => {
   it('простыми словами, с процентами и человекочитаемыми экранами', () => {
     const t = formatProductMetrics(FULL);
     expect(t).toContain('Дошли до конца: 70 из 118 (59%)');
+    // воронка обучения: подписи шагов простыми словами, в порядке показа
+    expect(t).toContain('поздоровались — 100');
+    expect(t).toContain('это не терапия — 88');
+    expect(t).toContain('что за пять потребностей — 80');
+    expect(t).toContain('дошли до конца — 70');
+    expect(t.indexOf('поздоровались')).toBeLessThan(
+      t.indexOf('что за пять потребностей'),
+    );
+    expect(t).not.toContain('needs_what');
     expect(t).toContain('Дневники: 320');
     expect(t).toContain('Начали: 260 · дошли до конца: 210 (81%)');
     // ключи секций переводятся в подписи
@@ -89,5 +105,6 @@ describe('formatProductMetrics', () => {
     expect(t).toContain('Дошли до конца: 0 из 0');
     expect(t).toContain('пока нет данных'); // пустое распределение экранов
     expect(t).toContain('Пока никто не делился'); // пустой share_card
+    expect(t).toContain('Пока обучение никто не открывал');
   });
 });
