@@ -39,7 +39,6 @@ function makeSheets(overrides: Partial<UseSheetsReturn> = {}): UseSheetsReturn {
     plans: false,
     todayNote: false,
     pairSheet: false,
-    practicesOnboarding: false,
     childhoodWheel: false,
     tracker: false,
     trackerTab: 'today',
