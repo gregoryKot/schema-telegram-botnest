@@ -23,6 +23,7 @@ import { TaskRow } from '../components/tasks/TaskRow';
 import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { TodayFocusCard } from '../components/TodayFocusCard';
+import { PhraseShareCard } from '../components/PhraseShareCard';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
 import {
   FocusPractice,
@@ -369,6 +370,9 @@ export function TodaySection({
           onOpenHistory={onOpenTrackerHistory}
           shareSlot={<DayShareButton needs={needs} ratings={ratings} />}
         />
+
+        {/* ── Фраза Здорового взрослого (перенесена с «Помощи») ── */}
+        <PhraseShareCard />
 
         {/* ── Прогрессивное раскрытие: остальное — по желанию ── */}
         {secondaryHidden && (
