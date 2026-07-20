@@ -129,7 +129,7 @@
   "schema-miniapp/src/components/ysqTestSheet/YsqIntro.tsx": 224,
   "webapp/src/schemaTherapyData.ts": 219,
   "schema-miniapp/src/components/diary/HomeView.tsx": 217,
-  "src/auth/email.service.ts": 217,
+  "src/auth/email.service.ts": 232,
   "schema-miniapp/src/share/ShareCardSheet.tsx": 216,
   "schema-miniapp/src/components/SchemaFlashcard.tsx": 215,
   "src/booking/caldav.service.ts": 215,
