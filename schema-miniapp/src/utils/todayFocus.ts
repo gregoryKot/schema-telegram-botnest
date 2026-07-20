@@ -9,6 +9,7 @@ const PRACTICE_KEY = 'today_focus_practice';
 const STREAK_KEY = 'today_streak_hidden';
 const SECONDARY_KEY = 'today_secondary_hidden';
 const THERAPIST_BANNER_KEY = 'today_therapist_banner_hidden';
+const PHRASE_KEY = 'today_phrase_hidden';
 
 export const FOCUS_OPTIONS: {
   id: FocusPractice;
@@ -86,6 +87,17 @@ export function isTherapistBannerHidden(): boolean {
 export function setTherapistBannerHidden(hidden: boolean): void {
   if (hidden) localStorage.setItem(THERAPIST_BANNER_KEY, '1');
   else localStorage.removeItem(THERAPIST_BANNER_KEY);
+}
+
+// Скрывать ли «Фразу для себя» (цитата Здорового взрослого). По умолчанию
+// показываем; кому цитаты не заходят — убирают, как и счётчик серии.
+export function isPhraseHidden(): boolean {
+  return localStorage.getItem(PHRASE_KEY) === '1';
+}
+
+export function setPhraseHidden(hidden: boolean): void {
+  if (hidden) localStorage.setItem(PHRASE_KEY, '1');
+  else localStorage.removeItem(PHRASE_KEY);
 }
 
 export interface FocusCardContent {

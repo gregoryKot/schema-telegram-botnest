@@ -17,7 +17,9 @@
 //   breath_start        — запустил дыхание «Здесь и сейчас» (без meta);
 //   web_banner_open     — открыл сайт из баннера кабинета (meta.banner);
 //   web_banner_dismiss  — скрыл баннер кабинета (meta.banner);
-//   onboarding_step     — новичок дошёл до шага обучения (meta.step).
+//   onboarding_step     — новичок дошёл до шага обучения (meta.step);
+//   today_block_toggle  — показал/скрыл блок «Сегодня» (meta.block + meta.hidden);
+//   today_customize_open — открыл «Настроить экран» (meta.via: как открыл).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -30,8 +32,27 @@ export const ANALYTICS_EVENTS = [
   'web_banner_open',
   'web_banner_dismiss',
   'onboarding_step',
+  'today_block_toggle',
+  'today_customize_open',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
+
+// Блоки главного экрана, которые можно скрыть (meta.block). Заменяет частное
+// событие today_streak_toggle: блоков стало больше одного, и заводить событие
+// на каждый — плодить реестры. Старое имя остаётся в allow-list ради уже
+// накопленных строк, /stats суммирует оба.
+export const TODAY_BLOCKS = [
+  'streak',
+  'phrase',
+  'secondary',
+  'therapist_banner',
+] as const;
+export type TodayBlock = (typeof TODAY_BLOCKS)[number];
+
+// Как открыли «Настроить экран»: шестерёнка в шапке или долгое нажатие на
+// блок. Нужно, чтобы понять, находят ли жест вообще (он без аффорданса).
+export const CUSTOMIZE_ENTRY_POINTS = ['gear', 'longpress'] as const;
+export type CustomizeEntryPoint = (typeof CUSTOMIZE_ENTRY_POINTS)[number];
 
 // Шаги обучающего онбординга мини-аппа (meta.step для onboarding_step).
 // Порядок = порядок показа: по нему строится воронка «докуда доходят».

@@ -30,12 +30,20 @@ describe('ProductMetricsService.getMetrics', () => {
         { kind: 'streak', c: 20n },
         { kind: 'schema', c: 3n },
       ]) // share_card by kind
-      .mockResolvedValueOnce([{ c: 7n }]) // today_streak_toggle hidden=true
+      // скрытия блоков: новое событие + подмешанная история today_streak_toggle
+      .mockResolvedValueOnce([
+        { block: 'phrase', c: 4n },
+        { block: 'streak', c: 7n },
+      ])
       // воронка обучения приходит из БД в произвольном порядке
       .mockResolvedValueOnce([
         { step: 'done', c: 70n },
         { step: 'welcome', c: 100n },
         { step: 'needs_what', c: 80n },
+      ])
+      .mockResolvedValueOnce([
+        { via: 'longpress', c: 12n },
+        { via: 'gear', c: 30n },
       ]);
     const eventCount = jest
       .fn()
@@ -63,6 +71,13 @@ describe('ProductMetricsService.getMetrics', () => {
     const m = await new ProductMetricsService(prisma).getMetrics();
 
     expect(m.onboarding).toEqual({ cohort30: 118, completed30: 70 });
+    // блоки — в порядке листа настройки, не по убыванию счёта
+    expect(m.today.blocksHidden).toEqual([
+      { block: 'streak', count: 7 },
+      { block: 'phrase', count: 4 },
+    ]);
+    expect(m.today.customizeGear).toBe(30);
+    expect(m.today.customizeLongpress).toBe(12);
     // шаги пересортированы в порядок показа, счётчики bigint→number
     expect(m.onboardingSteps).toEqual([
       { step: 'welcome', count: 100 },
@@ -95,7 +110,7 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(m.crisis).toEqual({ shown: 12, hotlineTapped: 3 });
     expect(m.shareResult).toEqual({ ok: 35, fallback: 5 });
     expect(m.outbox).toEqual({ flushes: 8, recovered: 21 });
-    expect(m.today).toEqual({ focusChanged: 15, streakHidden: 7 });
+    expect(m.today.focusChanged).toBe(15);
     expect(m.breath).toEqual({ started: 33 });
   });
 });

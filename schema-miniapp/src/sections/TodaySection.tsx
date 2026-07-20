@@ -25,17 +25,7 @@ import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { TodayFocusCard } from '../components/TodayFocusCard';
 import { PhraseShareCard } from '../components/PhraseShareCard';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
-import {
-  FocusPractice,
-  getFocusPractice,
-  setFocusPractice,
-  isStreakHidden,
-  setStreakHidden,
-  isSecondaryHidden,
-  setSecondaryHidden,
-  isTherapistBannerHidden,
-  setTherapistBannerHidden,
-} from '../utils/todayFocus';
+import { useTodayCustomization } from '../hooks/useTodayCustomization';
 import { useTr } from '../utils/addressForm';
 import { DayShareButton } from '../share/DayShareButton';
 import { Props } from './today/types';
@@ -88,15 +78,7 @@ export function TodaySection({
   const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [introModeId, setIntroModeId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
-  const [focusPractice, setFocusPracticeState] =
-    useState<FocusPractice>(getFocusPractice);
-  const [streakHidden, setStreakHiddenState] = useState(isStreakHidden);
-  const [showCustomize, setShowCustomize] = useState(false);
-  const [secondaryHidden, setSecondaryHiddenState] =
-    useState(isSecondaryHidden);
-  const [therapistBannerHidden, setTherapistBannerHiddenState] = useState(
-    isTherapistBannerHidden,
-  );
+  const today = useTodayCustomization();
   const [todayDone, setTodayDone] = useState({
     schema: false,
     mode: false,
@@ -291,7 +273,7 @@ export function TodaySection({
             {firstName ? `Привет, ${firstName} 👋` : 'Добро пожаловать 👋'}
           </div>
           <button
-            onClick={() => setShowCustomize(true)}
+            onClick={today.openByGear}
             aria-label="Настроить экран"
             style={{
               width: 44,
@@ -335,7 +317,7 @@ export function TodaySection({
         {/* ── Therapist cabinet banner ── */}
         {userRole === 'THERAPIST' &&
           onOpenTherapistCabinet &&
-          !therapistBannerHidden && (
+          !today.therapistBannerHidden && (
             <TherapistBanner onOpen={onOpenTherapistCabinet} />
           )}
 
@@ -351,31 +333,41 @@ export function TodaySection({
         />
 
         {/* ── Стрик-карточка (макет): мягкая, без наказания за пропуск ── */}
-        {!streakHidden && streak > 0 && <StreakCard streak={streak} />}
+        {!today.streakHidden && streak > 0 && (
+          <div {...today.holdStreak}>
+            <StreakCard streak={streak} />
+          </div>
+        )}
 
         {/* ── Фокус дня: одна главная задача (нейроинклюзивность, волна 1) ── */}
-        <TodayFocusCard
-          practice={focusPractice}
-          ratedCount={ratedCount}
-          total={needs.length}
-          avgScore={avgScore}
-          practiceDoneToday={
-            focusPractice !== 'tracker' && todayDone[focusPractice]
-          }
-          onAction={() =>
-            focusPractice === 'tracker'
-              ? onOpenTracker()
-              : onNewDiaryEntry?.(focusPractice)
-          }
-          onOpenHistory={onOpenTrackerHistory}
-          shareSlot={<DayShareButton needs={needs} ratings={ratings} />}
-        />
+        <div {...today.holdFocus}>
+          <TodayFocusCard
+            practice={today.practice}
+            ratedCount={ratedCount}
+            total={needs.length}
+            avgScore={avgScore}
+            practiceDoneToday={
+              today.practice !== 'tracker' && todayDone[today.practice]
+            }
+            onAction={() =>
+              today.practice === 'tracker'
+                ? onOpenTracker()
+                : onNewDiaryEntry?.(today.practice)
+            }
+            onOpenHistory={onOpenTrackerHistory}
+            shareSlot={<DayShareButton needs={needs} ratings={ratings} />}
+          />
+        </div>
 
         {/* ── Фраза Здорового взрослого (перенесена с «Помощи») ── */}
-        <PhraseShareCard />
+        {!today.phraseHidden && (
+          <div {...today.holdPhrase}>
+            <PhraseShareCard />
+          </div>
+        )}
 
         {/* ── Прогрессивное раскрытие: остальное — по желанию ── */}
-        {secondaryHidden && (
+        {today.secondaryHidden && (
           <button
             onClick={toggleMore}
             aria-expanded={moreOpen}
@@ -408,7 +400,7 @@ export function TodaySection({
           </button>
         )}
 
-        {(!secondaryHidden || moreOpen) && (
+        {(!today.secondaryHidden || moreOpen) && (
           <SecondaryCards
             needs={needs}
             ratings={ratings}
@@ -426,41 +418,27 @@ export function TodaySection({
         )}
       </div>
 
-      {showCustomize && (
+      {today.sheet && (
         <TodayCustomizeSheet
-          practice={focusPractice}
-          streakHidden={streakHidden}
-          secondaryHidden={secondaryHidden}
-          therapistBannerHidden={therapistBannerHidden}
+          practice={today.practice}
+          highlight={today.highlight}
+          streakHidden={today.streakHidden}
+          phraseHidden={today.phraseHidden}
+          secondaryHidden={today.secondaryHidden}
+          therapistBannerHidden={today.therapistBannerHidden}
           showTherapistToggle={
             userRole === 'THERAPIST' && !!onOpenTherapistCabinet
           }
-          onPractice={(p) => {
-            setFocusPractice(p);
-            setFocusPracticeState(p);
-            api.trackEvent('today_focus_change', { practice: p });
-          }}
-          onToggleStreak={() => {
-            const next = !streakHidden;
-            setStreakHidden(next);
-            setStreakHiddenState(next);
-            api.trackEvent('today_streak_toggle', { hidden: next });
-          }}
-          onToggleSecondary={() => {
-            const next = !secondaryHidden;
-            setSecondaryHidden(next);
-            setSecondaryHiddenState(next);
-          }}
-          onToggleTherapistBanner={() => {
-            const next = !therapistBannerHidden;
-            setTherapistBannerHidden(next);
-            setTherapistBannerHiddenState(next);
-          }}
+          onPractice={today.choosePractice}
+          onToggleStreak={today.toggleStreak}
+          onTogglePhrase={today.togglePhrase}
+          onToggleSecondary={today.toggleSecondary}
+          onToggleTherapistBanner={today.toggleTherapistBanner}
           onOpenSettings={() => {
-            setShowCustomize(false);
+            today.closeSheet();
             onOpenAdvanced();
           }}
-          onClose={() => setShowCustomize(false)}
+          onClose={today.closeSheet}
         />
       )}
       {showDiaryTask && (
