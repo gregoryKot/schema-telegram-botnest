@@ -63,7 +63,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [subView, setSubView] = useState<'main' | 'time' | 'tz' | 'freq' | 'quiet'>('main');
   const [settings, setSettings]     = useState<UserSettings | null>(null);
   const [pairData, setPairData]     = useState<PairsData | null>(null);
-  const [pairLoading, setPairLoading] = useState(false);
+  const [pairLoading, setPairLoading] = useState(true);
   const [pairInviteUrl, setPairInviteUrl] = useState('');
   const [pairInviteCopied, setPairInviteCopied] = useState(false);
   const [joinCode, setJoinCode]     = useState('');
@@ -99,12 +99,16 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [reqBusy, setReqBusy] = useState(false);
   const [reqError, setReqError] = useState('');
 
+  // Re-show the pair loading state when the role context changes. Adjusting
+  // state during render (not in an effect) keeps this off set-state-in-effect;
+  // on mount pairLoading already starts true.
+  const [seenRole, setSeenRole] = useState(userRole);
+  if (userRole !== seenRole) { setSeenRole(userRole); setPairLoading(true); }
+
   useEffect(() => {
     api.getSettings()
       .then(setSettings)
       .catch(() => setSettings({ notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow', notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [], therapistShareCards: true, therapistShareProfile: true }));
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
-    setPairLoading(true);
     api.getPair().then(setPairData).catch(() => {}).finally(() => setPairLoading(false));
     api.getTherapyRelation().then(setTherapyRelation).catch(() => setTherapyRelation(null));
     if (userRole !== 'THERAPIST') {
