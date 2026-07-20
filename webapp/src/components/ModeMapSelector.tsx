@@ -33,18 +33,32 @@ export function ModeMapSelector({ clientId }: Props) {
     setPickKind(o => !o);
   }
 
-  // Load list on mount
+  // Reset to the loading state when the viewed client changes. Adjusting state
+  // during render (not in an effect) is the documented pattern for deriving
+  // fresh state from a changing prop — no set-state-in-effect needed.
+  const [seenClient, setSeenClient] = useState(clientId);
+  if (clientId !== seenClient) { setSeenClient(clientId); setLoading(true); }
+
+  // Load the client's maps on mount / client change, then auto-open the first.
+  // The whole load lives inside the effect (setState only after `await`, guarded
+  // by `alive`), so deps are complete ([clientId]) and nothing sets state
+  // synchronously in the effect body.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
-    setLoading(true);
+    let alive = true;
     api.listModeMaps(clientId)
-      .then(list => {
+      .then(async (list) => {
+        if (!alive) return;
         setMaps(list);
-        if (list.length > 0) selectMap(list[0].id);
-        else setLoading(false);
+        if (list.length > 0) {
+          const full = await api.getModeMap(list[0].id);
+          if (!alive) return;
+          setActiveId(list[0].id);
+          setActiveMap(full);
+        }
+        setLoading(false);
       })
-      .catch(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
+      .catch(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
   }, [clientId]);
 
   async function selectMap(id: number) {

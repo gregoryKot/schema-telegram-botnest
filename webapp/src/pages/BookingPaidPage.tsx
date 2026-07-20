@@ -22,7 +22,9 @@ export function BookingPaidPage() {
   const [failed] = useState<boolean>(() => new URLSearchParams(window.location.search).get('fail') === '1');
 
   const [booking, setBooking] = useState<Booking | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  // No token → nothing to fetch, so we're already "loaded" from the start.
+  const [loaded, setLoaded] = useState(() => !token);
+  const [reloadTick, setReloadTick] = useState(0);
   const [cancelled, setCancelled] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -33,15 +35,18 @@ export function BookingPaidPage() {
     if (token) window.history.replaceState(window.history.state, '', window.location.pathname);
   }, [token]);
 
-  const load = () => {
-    if (!token) { setLoaded(true); return; }
+  // Load the booking behind the token. The fetch lives inside the effect and
+  // only sets state after `await` (guarded by `alive`), so nothing sets state
+  // synchronously in the effect body and deps are complete.
+  useEffect(() => {
+    if (!token) return; // loaded already true from init — nothing to fetch
+    let alive = true;
     api.getBookingByToken(token)
-      .then((b) => { setBooking(b); setCancelled(b.status === 'CANCELLED'); })
-      .catch(() => setBooking(null))
-      .finally(() => setLoaded(true));
-  };
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
-  useEffect(load, [token]);
+      .then((b) => { if (alive) { setBooking(b); setCancelled(b.status === 'CANCELLED'); } })
+      .catch(() => { if (alive) setBooking(null); })
+      .finally(() => { if (alive) setLoaded(true); });
+    return () => { alive = false; };
+  }, [token, reloadTick]);
 
   const doCancel = async () => {
     if (!token) return;
@@ -98,7 +103,7 @@ export function BookingPaidPage() {
         ) : (
           <>
             <p style={{ ...sub, fontSize: 14, margin: '0 0 10px' }}>Ссылку на видеовстречу готовим — обновите через минуту.</p>
-            <button onClick={load} style={ghostBtn}>Обновить</button>
+            <button onClick={() => setReloadTick(t => t + 1)} style={ghostBtn}>Обновить</button>
           </>
         )}
         <p style={hint}>Эту же ссылку я продублирую перед сессией.</p>
