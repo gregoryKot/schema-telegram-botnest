@@ -30,6 +30,22 @@ function makeDb() {
         rows.push(row);
         return Promise.resolve({ ...row });
       }),
+      createManyAndReturn: jest.fn(({ data }: any) => {
+        const created = (data as any[]).map((d) => {
+          const row = { id: ++seq, enabled: true, lastPostedAt: null, ...d };
+          rows.push(row);
+          return { ...row };
+        });
+        return Promise.resolve(created);
+      }),
+      count: jest.fn(({ where }: any = {}) => {
+        let out = rows.slice();
+        if (where?.enabled !== undefined)
+          out = out.filter((r) => r.enabled === where.enabled);
+        if (where?.lastPostedAt === null)
+          out = out.filter((r) => !r.lastPostedAt);
+        return Promise.resolve(out.length);
+      }),
       findUnique: jest.fn(({ where }: any) =>
         Promise.resolve(rows.find((r) => r.id === where.id) ?? null),
       ),
@@ -127,5 +143,70 @@ describe('HealthyAdultService', () => {
     await svc.recordPost('первое', 'pool');
     await svc.recordPost('второе', 'ai');
     expect(await svc.recentPostTexts(10)).toEqual(['второе', 'первое']);
+  });
+
+  // Импорт: связка «вставил пачку → фразы реально в пуле», а не только
+  // «метод не упал» — читаем результат тем же путём, что и админка.
+  it('importMany → list показывает добавленные с растущим sortOrder', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    const { created, report } = await svc.importMany('первая\nвторая');
+    expect(report.accepted).toHaveLength(2);
+    expect(created).toHaveLength(2);
+    const list = await svc.list();
+    expect(list.map((r) => r.text)).toEqual(['первая', 'вторая']);
+    expect(list[1].sortOrder).toBeGreaterThan(list[0].sortOrder);
+  });
+
+  it('importMany не заводит дубль уже лежащей в пуле фразы', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    await svc.create('уже есть');
+    const { created, report } = await svc.importMany('уже есть\nновая');
+    expect(created).toHaveLength(1);
+    expect(report.rejected[0].reason).toBe('уже есть в пуле');
+    expect((await svc.list()).map((r) => r.text)).toEqual([
+      'уже есть',
+      'новая',
+    ]);
+  });
+
+  it('importMany на пустом вводе ничего не создаёт', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    const { created } = await svc.importMany('   \n\n');
+    expect(created).toEqual([]);
+    expect(await svc.list()).toEqual([]);
+  });
+
+  it('импортированные фразы сразу доступны каналу (enabled по умолчанию)', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    await svc.importMany('свежая фраза');
+    expect(await svc.enabledTexts()).toEqual(['свежая фраза']);
+  });
+
+  it('poolStatus считает остаток неповторённых и дни', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    await svc.importMany('раз\nдва\nтри\nчетыре\nпять');
+    expect(await svc.poolStatus()).toEqual({
+      enabled: 5,
+      unused: 5,
+      daysLeft: 2, // два поста в день
+    });
+  });
+
+  it('poolStatus не считает уже отзвучавшие фразы остатком', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    await svc.importMany('раз\nдва');
+    await svc.pickFromPool(); // одна ушла в канал — помечается lastPostedAt
+    const status = await svc.poolStatus();
+    expect(status.enabled).toBe(2);
+    expect(status.unused).toBe(1);
+  });
+
+  it('poolStatus на пустом пуле не даёт NaN', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    expect(await svc.poolStatus()).toEqual({
+      enabled: 0,
+      unused: 0,
+      daysLeft: 0,
+    });
   });
 });
