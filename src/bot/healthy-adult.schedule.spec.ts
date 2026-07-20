@@ -22,7 +22,10 @@ describe('plannedOffset', () => {
   it('всегда внутри окна [0, 116)', () => {
     for (const day of [1, 15, 20, 28]) {
       for (const slot of ['morning', 'evening'] as const) {
-        const o = plannedOffset(`2026-07-${String(day).padStart(2, '0')}`, slot);
+        const o = plannedOffset(
+          `2026-07-${String(day).padStart(2, '0')}`,
+          slot,
+        );
         expect(o).toBeGreaterThanOrEqual(0);
         expect(o).toBeLessThan(116);
       }

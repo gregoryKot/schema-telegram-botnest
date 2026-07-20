@@ -118,7 +118,10 @@ describe('TelegramChannelService', () => {
       const { svc, recordPost } = makePhrases();
       // 10:55 МСК — offset 115 ≥ любой planned (<116), lastPostAt=null.
       await new TelegramChannelService(bot, svc).maybePost(msk(10, 55));
-      expect(sendMessage).toHaveBeenCalledWith('@test_channel', 'фраза из пула');
+      expect(sendMessage).toHaveBeenCalledWith(
+        '@test_channel',
+        'фраза из пула',
+      );
       expect(recordPost).toHaveBeenCalled();
     });
 
