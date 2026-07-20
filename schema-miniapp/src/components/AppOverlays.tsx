@@ -31,10 +31,10 @@ interface Props {
   onChange: (needId: string, value: number) => void;
   onSaved: (needId: string, streak?: StreakData) => void;
   yesterdayRatings: Record<string, number>;
-  onboardingSeen: boolean;
-  addressFormReady: boolean;
+  showOnboarding: boolean;
   onAddressPickerDone: () => void;
   consentGiven: boolean;
+  onConsentDisclaimer: () => void;
   onAcceptDisclaimer: () => void;
   celebrationStreak: number | null;
   setCelebrationStreak: (v: number | null) => void;
@@ -67,10 +67,10 @@ export function AppOverlays({
   onChange,
   onSaved,
   yesterdayRatings,
-  onboardingSeen,
-  addressFormReady,
+  showOnboarding,
   onAddressPickerDone,
   consentGiven,
+  onConsentDisclaimer,
   onAcceptDisclaimer,
   celebrationStreak,
   setCelebrationStreak,
@@ -130,10 +130,14 @@ export function AppOverlays({
         </div>
       )}
 
-      {/* Онбординг ждёт выбора формы обращения — иначе приветствие покажется
-          в дефолтной форме до того, как пользователь её выбрал. */}
-      {!onboardingSeen && addressFormReady && (
-        <Disclaimer consentGiven={consentGiven} onAccept={onAcceptDisclaimer} />
+      {/* Условие показа — shouldShowOnboarding в App.tsx (ждёт выбора формы
+          обращения и загрузки серверных флагов). */}
+      {showOnboarding && (
+        <Disclaimer
+          consentGiven={consentGiven}
+          onConsent={onConsentDisclaimer}
+          onAccept={onAcceptDisclaimer}
+        />
       )}
 
       {celebrationStreak !== null && (

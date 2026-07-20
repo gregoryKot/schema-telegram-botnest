@@ -36,14 +36,9 @@ import { AppOverlays } from './components/AppOverlays';
 import { AppErrorScreen } from './components/AppErrorScreen';
 import { AmbientBackground } from './components/AmbientBackground';
 import { OfflineBanner } from './components/OfflineBanner';
+import { useOnboardingGate } from './hooks/useOnboardingGate';
 
 type TrackerTab = 'today' | 'history';
-
-const DISCLAIMER_KEY = 'disclaimer_v2_accepted';
-// Отдельно от согласия: образовательный онбординг показываем один раз на
-// устройство, даже если согласие уже дано в боте/на сайте (иначе новичок
-// пропускает объяснение «откуда потребности и зачем»).
-const ONBOARDING_SEEN_KEY = 'app_onboarding_seen_v1';
 
 function getInitialSection(): Section {
   const params = new URLSearchParams(window.location.search);
@@ -60,19 +55,13 @@ function getInitialSection(): Section {
 const SECTIONS: Section[] = ['today', 'help', 'schemas', 'profile'];
 
 export default function App() {
-  const { flags: serverFlags, loaded: flagsLoaded, setFlag } = useUserFlags();
+  const { flags: serverFlags, loaded: flagsLoaded } = useUserFlags();
   const [section, setSection] = useState<Section>(getInitialSection);
   const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
-  const [disclaimerDone, setDisclaimerDone] = useState(
-    () => !!localStorage.getItem(DISCLAIMER_KEY),
-  );
-  const [onboardingSeen, setOnboardingSeen] = useState(
-    () => !!localStorage.getItem(ONBOARDING_SEEN_KEY),
-  );
-  // Онбординг ждёт, пока не выбрана форма обращения (ты/вы) — иначе приветствие
-  // прозвучит «на ты» до выбора. Если уже спрашивали за сессию — не ждём.
-  const [addressFormReady, setAddressFormReady] = useState(
-    () => !!sessionStorage.getItem('addr_form_asked'),
+  // Первый вход (онбординг + согласие) целиком в хуке — см. useOnboardingGate.
+  const onboarding = useOnboardingGate(
+    serverFlags.onboardingV2Done,
+    flagsLoaded,
   );
   const historyDays = 30;
   const _tabScrollPositions = useRef<Record<TrackerTab, number>>({
@@ -175,15 +164,6 @@ export default function App() {
     if (serverFlags.childhoodWheelDone)
       localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
   }, [serverFlags.childhoodWheelDone]);
-  // Educational onboarding is server-backed (onboardingV2Done): Telegram WebView
-  // localStorage is not reliably persistent, so a device-only flag re-shows the
-  // onboarding on almost every entry. Server flag = show once per account.
-  useEffect(() => {
-    if (serverFlags.onboardingV2Done) {
-      localStorage.setItem(ONBOARDING_SEEN_KEY, '1');
-      setOnboardingSeen(true);
-    }
-  }, [serverFlags.onboardingV2Done]);
   const [needs, setNeeds] = useState<Need[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [saved, setSaved] = useState<Record<string, boolean>>({});
@@ -249,19 +229,6 @@ export default function App() {
         .catch(() => {});
     }
     api.recordActivity().catch(() => {});
-    // If disclaimer wasn't accepted in this WebView, check server state.
-    // Covers the case where the user accepted on the website or another device.
-    if (!localStorage.getItem(DISCLAIMER_KEY)) {
-      api
-        .getDisclaimer()
-        .then((d) => {
-          if (d.accepted) {
-            localStorage.setItem(DISCLAIMER_KEY, '1');
-            setDisclaimerDone(true);
-          }
-        })
-        .catch(() => {});
-    }
     const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
     Promise.all(NEED_IDS.map((id) => api.getPractices(id)))
       .then((r) => setHelpPracticeCount(r.reduce((s, a) => s + a.length, 0)))
@@ -307,13 +274,13 @@ export default function App() {
         if (!s.addressForm && !sessionStorage.getItem('addr_form_asked')) {
           sheets.open('addressPicker');
         } else {
-          setAddressFormReady(true);
+          onboarding.markAddressFormReady();
         }
       })
       .catch(() => {
         setPairCardDismissed(!!localStorage.getItem('pair_card_dismissed'));
         // Настройки не загрузились — не блокируем онбординг из-за формы.
-        setAddressFormReady(true);
+        onboarding.markAddressFormReady();
       });
     api
       .getPendingPlans()
@@ -642,20 +609,11 @@ export default function App() {
         onChange={handleChange}
         onSaved={handleSaved}
         yesterdayRatings={yesterdayRatings}
-        onboardingSeen={onboardingSeen}
-        addressFormReady={addressFormReady}
-        onAddressPickerDone={() => setAddressFormReady(true)}
-        consentGiven={disclaimerDone}
-        onAcceptDisclaimer={() => {
-          localStorage.setItem(ONBOARDING_SEEN_KEY, '1');
-          setOnboardingSeen(true);
-          setFlag('onboardingV2Done', true).catch(() => {});
-          if (!disclaimerDone) {
-            localStorage.setItem(DISCLAIMER_KEY, '1');
-            api.acceptDisclaimer().catch(() => {});
-            setDisclaimerDone(true);
-          }
-        }}
+        showOnboarding={onboarding.visible}
+        onAddressPickerDone={onboarding.markAddressFormReady}
+        consentGiven={onboarding.consentGiven}
+        onConsentDisclaimer={onboarding.persist}
+        onAcceptDisclaimer={onboarding.accept}
         celebrationStreak={celebrationStreak}
         setCelebrationStreak={setCelebrationStreak}
         childhoodWheelPending={childhoodWheelPending}

@@ -21,6 +21,7 @@ declare global {
         };
         onEvent?(event: string, cb: () => void): void;
         offEvent?(event: string, cb: () => void): void;
+        platform?: string;
         addToHomeScreen?(): void;
         colorScheme: 'light' | 'dark';
         themeParams: Record<string, string>;
