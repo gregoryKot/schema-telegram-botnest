@@ -521,6 +521,14 @@ const MY_SCHEMA: EncryptSchema = { strings: ['text', 'note'], jsonArrays: ['item
 Использовать `encryptRecord(data, MY_SCHEMA)` при записи и `decryptRecord(row, MY_SCHEMA)` при чтении.
 Не шифровать: `id`, `userId`, `createdAt`, `updatedAt`, типы-перечисления (modeId, schemaId, needId).
 
+Механизм принуждения: `src/utils/encryption-coverage.spec.ts` — реестр решений
+о шифровании для КАЖДОГО String/Json-поля каждой модели. Новое поле без записи
+в реестре роняет jest в CI; `enc`-запись проверяется по исходнику сервиса,
+`plain`-запись требует причину. Молча добавить plaintext-колонку со свободным
+текстом невозможно (найдено аудитом 2026-07-20: черновики дневников, ответы
+YSQ, заявки терапевтов, алиасы клиентов и email в magic-link токенах лежали
+в открытом виде).
+
 **3. Каскадное удаление в Prisma**
 ```prisma
 user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)

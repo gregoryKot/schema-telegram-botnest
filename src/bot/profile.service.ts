@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from './bot.analytics.service';
 import { computeActiveSchemas } from '../utils/ysq';
 import { decryptRecord } from '../utils/crypto';
+import { decodeYsqAnswers } from './ysq.service';
 
 function toStringArray(val: unknown): string[] {
   return Array.isArray(val) ? (val as string[]) : [];
@@ -80,7 +81,7 @@ export class ProfileService {
       ysq: {
         completedAt: ysqResult?.completedAt ?? null,
         activeSchemaIds: ysqResult
-          ? computeActiveSchemas(ysqResult.answers as number[])
+          ? computeActiveSchemas(decodeYsqAnswers(ysqResult.answers))
           : [],
       },
       notifications: {

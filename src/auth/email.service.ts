@@ -8,6 +8,9 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+// encField/decField: адрес в EmailToken — PII, шифруется (поиск токена идёт
+// по tokenHash, не по email, поэтому шифрование лукапы не ломает).
+import { encrypt as encField, decrypt as decField } from '../utils/crypto';
 
 const TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
 
@@ -60,7 +63,7 @@ export class EmailService {
         id: crypto.randomUUID(),
         userId: user.id,
         tokenHash: hashToken(raw),
-        email: lower,
+        email: encField(lower) ?? lower,
         purpose: 'recovery',
         expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
       },
@@ -97,7 +100,7 @@ export class EmailService {
         id: crypto.randomUUID(),
         userId,
         tokenHash: hashToken(raw),
-        email: lower,
+        email: encField(lower) ?? lower,
         purpose: 'verify_email',
         expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
       },
@@ -140,15 +143,16 @@ export class EmailService {
       data: { usedAt: new Date() },
     });
 
+    const email = decField(row.email) ?? row.email;
     if (expectedPurpose === 'verify_email') {
       // Bind verified email to user.
       await this.prisma.user.update({
         where: { id: row.userId },
-        data: { recoveryEmail: row.email, recoveryEmailVerifiedAt: new Date() },
+        data: { recoveryEmail: email, recoveryEmailVerifiedAt: new Date() },
       });
     }
 
-    return { userId: row.userId, email: row.email };
+    return { userId: row.userId, email };
   }
 
   // ─── Magic-link login ────────────────────────────────────────────────────

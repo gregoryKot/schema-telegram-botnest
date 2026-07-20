@@ -20,6 +20,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { SaveDraftDto, UpdateNameDto, InitDto } from './dto/misc.dto';
+import { encryptJson, decryptJson } from '../utils/crypto';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -137,7 +138,11 @@ export class ApiController {
     return Object.fromEntries(
       rows.map((r) => [
         r.type,
-        { startedAt: r.startedAt.toISOString(), data: r.data },
+        {
+          startedAt: r.startedAt.toISOString(),
+          // Черновик — шифрованный JSON-блоб; легаси-строки хранят объект как есть.
+          data: typeof r.data === 'string' ? decryptJson(r.data) : r.data,
+        },
       ]),
     );
   }
@@ -156,7 +161,9 @@ export class ApiController {
     const startedAt = new Date(body.startedAt);
     if (isNaN(startedAt.getTime()))
       throw new BadRequestException('Invalid startedAt value');
-    const data = body.data as Prisma.InputJsonValue;
+    // Черновик содержит тот же свободный текст, что и готовая запись дневника —
+    // шифруется так же (в Json-колонке лежит зашифрованная строка).
+    const data = (encryptJson(body.data) ?? body.data) as Prisma.InputJsonValue;
     await this.prisma.diaryDraft.upsert({
       where: { userId_type: { userId: uid(req), type } },
       update: { data, startedAt },

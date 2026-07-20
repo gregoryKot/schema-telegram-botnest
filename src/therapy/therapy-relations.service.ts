@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
-import { decryptJson } from '../utils/crypto';
+import { encrypt, decrypt, decryptJson } from '../utils/crypto';
+
+// Имена клиентов, введённые терапевтом (алиас и офлайн-клиент) — PII,
+// шифруются; легаси plaintext читается как есть (decrypt tolerant).
+const decName = (v: string | null): string | null =>
+  v == null ? null : (decrypt(v) ?? v);
 import { randomBytes } from 'crypto';
 import { TherapyRelationInfo, TherapyClientSummary } from './therapy.types';
 
@@ -160,7 +165,7 @@ export class TherapyRelationsService {
         return {
           telegramId: clientId,
           name: rel.client!.firstName,
-          clientAlias: rel.clientAlias ?? null,
+          clientAlias: decName(rel.clientAlias),
           streak,
           lastActiveDate,
           todayIndex,
@@ -178,8 +183,8 @@ export class TherapyRelationsService {
       .filter((rel) => rel.client === null && rel.virtualClientName)
       .map((rel) => ({
         telegramId: -rel.id,
-        name: rel.virtualClientName as string,
-        clientAlias: rel.clientAlias ?? null,
+        name: decName(rel.virtualClientName) as string,
+        clientAlias: decName(rel.clientAlias),
         streak: 0,
         lastActiveDate: null,
         todayIndex: null,
@@ -205,7 +210,7 @@ export class TherapyRelationsService {
         therapistId,
         clientId: null,
         status: 'active',
-        virtualClientName: name.trim(),
+        virtualClientName: encrypt(name.trim()) ?? name.trim(),
       },
     });
     return this.getClients(therapistId);
@@ -269,15 +274,16 @@ export class TherapyRelationsService {
     clientId: number,
     alias: string,
   ): Promise<void> {
+    const encAlias = alias.trim() ? encrypt(alias.trim()) : null;
     if (clientId < 0) {
       await this.prisma.therapyRelation.updateMany({
         where: { id: -clientId, therapistId, status: 'active' },
-        data: { clientAlias: alias.trim() || null },
+        data: { clientAlias: encAlias },
       });
     } else {
       await this.prisma.therapyRelation.updateMany({
         where: { therapistId, clientId: BigInt(clientId), status: 'active' },
-        data: { clientAlias: alias.trim() || null },
+        data: { clientAlias: encAlias },
       });
     }
   }
