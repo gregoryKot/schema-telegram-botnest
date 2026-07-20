@@ -8,6 +8,7 @@
 import { TherapyTasksViewService } from './therapy-tasks-view.service';
 import { TherapyTasksService } from './therapy-tasks.service';
 import { encrypt } from '../utils/crypto';
+import { localDate } from '../utils/tz';
 
 function matchWhere(row: any, where: any): boolean {
   return Object.entries(where ?? {}).every(([k, v]) => {
@@ -249,7 +250,10 @@ describe('TherapyTasksViewService.getTasksForClient — доступ по акт
       status: 'active',
     });
     users.push({ id: CLIENT_A, notifyTimezone: 'Europe/Moscow' });
-    const today = new Date().toISOString().slice(0, 10);
+    // «Сегодня» строим той же зоной, что и сервис (notifyTimezone юзера), а не
+    // UTC: иначе вечером по UTC (когда в Москве уже завтра) даты расходятся и
+    // doneToday ложно = false. Тест падал стабильно в окне UTC 21:00–24:00.
+    const today = localDate('Europe/Moscow');
     ratings.push({ userId: CLIENT_A, date: today });
     tasks.push({
       id: 1,
