@@ -14,6 +14,8 @@ import {
   ONBOARDING_STEP_SET,
   TODAY_BLOCK_SET,
   CUSTOMIZE_ENTRY_SET,
+  HOME_SCREEN_ACTION_SET,
+  HOME_SCREEN_SURFACE_SET,
 } from './dto/analytics.dto';
 
 interface AuthRequest extends Request {
@@ -128,6 +130,19 @@ function sanitizeMeta(
     const via = meta.via;
     if (typeof via === 'string' && CUSTOMIZE_ENTRY_SET.has(via)) {
       return { via };
+    }
+    return undefined;
+  }
+  if (name === 'home_screen_offer') {
+    const action = meta.action;
+    const surface = meta.surface;
+    if (
+      typeof action === 'string' &&
+      HOME_SCREEN_ACTION_SET.has(action) &&
+      typeof surface === 'string' &&
+      HOME_SCREEN_SURFACE_SET.has(surface)
+    ) {
+      return { action, surface };
     }
     return undefined;
   }

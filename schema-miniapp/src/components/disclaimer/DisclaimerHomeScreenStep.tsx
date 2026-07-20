@@ -1,8 +1,11 @@
 import { useTr } from '../../utils/addressForm';
+import { buildHomeScreenHint } from '../../utils/homeScreen';
+import { useHomeScreenOffer } from '../../hooks/useHomeScreenOffer';
 
-// Последний шаг онбординга: «добавь на главный экран». Показывается только там,
-// где нативный экран Telegram корректен (см. utils/homeScreen.ts — на iOS он
-// показывает инструкцию про «три точки», а открывает «Поделиться»).
+// Последний шаг онбординга: «добавь на главный экран» (Android и iOS).
+// Нативная картинка Telegram на iOS показывает Android-инструкцию про «три
+// точки», а открывает «Поделиться» — поэтому СВОЮ подводку даём заранее
+// (buildHomeScreenHint), чтобы человек не растерялся от чужого экрана.
 //
 // onBeforeAdd персистит согласие ДО вызова addToHomeScreen: Telegram открывает
 // свой нативный шит поверх аппки, и пользователь часто уже не возвращается к
@@ -13,6 +16,7 @@ export function DisclaimerHomeScreenStep({
   onBeforeAdd: () => void;
 }) {
   const tr = useTr();
+  const offer = useHomeScreenOffer('onboarding');
   return (
     <div style={{ textAlign: 'center', paddingTop: 8 }}>
       <div style={{ fontSize: 64, marginBottom: 20, lineHeight: 1 }}>📲</div>
@@ -37,10 +41,24 @@ export function DisclaimerHomeScreenStep({
         Так дневник будет всегда под рукой — как обычное приложение. Займёт две
         секунды.
       </div>
+      <div
+        style={{
+          fontSize: 12.5,
+          color: 'var(--text-faint)',
+          lineHeight: 1.6,
+          marginBottom: 22,
+          textAlign: 'left',
+          padding: '12px 14px',
+          borderRadius: 12,
+          background: 'rgba(var(--fg-rgb),0.05)',
+        }}
+      >
+        {buildHomeScreenHint(offer.platform, tr)}
+      </div>
       <button
         onClick={() => {
           onBeforeAdd();
-          window.Telegram?.WebApp?.addToHomeScreen?.();
+          offer.add();
         }}
         className="btn-primary"
         style={{ marginBottom: 10 }}

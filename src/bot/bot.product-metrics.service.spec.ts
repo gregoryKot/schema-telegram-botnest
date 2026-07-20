@@ -44,6 +44,11 @@ describe('ProductMetricsService.getMetrics', () => {
       .mockResolvedValueOnce([
         { via: 'longpress', c: 12n },
         { via: 'gear', c: 30n },
+      ])
+      .mockResolvedValueOnce([
+        { action: 'shown', c: 200n },
+        { action: 'add', c: 60n },
+        { action: 'added', c: 45n },
       ]);
     const eventCount = jest
       .fn()
@@ -112,5 +117,13 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(m.outbox).toEqual({ flushes: 8, recovered: 21 });
     expect(m.today.focusChanged).toBe(15);
     expect(m.breath).toEqual({ started: 33 });
+    // отсутствующие в выборке действия — нули, а не undefined/NaN
+    expect(m.homeScreen).toEqual({
+      shown: 200,
+      add: 60,
+      later: 0,
+      never: 0,
+      added: 45,
+    });
   });
 });

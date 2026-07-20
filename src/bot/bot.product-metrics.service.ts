@@ -57,6 +57,7 @@ export class ProductMetricsService {
       breathStarted,
       onboardingStepRows,
       customizeRows,
+      homeScreenRows,
     ] = await Promise.all([
       this.prisma.user.count({
         where: { ...activeUser, createdAt: { gte: since30 } },
@@ -152,6 +153,11 @@ export class ProductMetricsService {
         FROM "AnalyticsEvent"
         WHERE "name" = 'today_customize_open' AND "createdAt" >= ${since30}
         GROUP BY "meta"->>'via'`,
+      this.prisma.$queryRaw<Array<{ action: string | null; c: bigint }>>`
+        SELECT "meta"->>'action' AS action, count(*)::bigint AS c
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'home_screen_offer' AND "createdAt" >= ${since30}
+        GROUP BY "meta"->>'action'`,
     ]);
 
     const sections = sectionsRaw
@@ -169,6 +175,8 @@ export class ProductMetricsService {
     const blockCounts = new Map(
       blocksHiddenRows.map((r) => [r.block ?? '', Number(r.c)]),
     );
+    const hsCount = (action: string): number =>
+      Number(homeScreenRows.find((r) => r.action === action)?.c ?? 0n);
     const viaCount = (via: string): number =>
       Number(customizeRows.find((r) => r.via === via)?.c ?? 0n);
 
@@ -219,6 +227,13 @@ export class ProductMetricsService {
         customizeLongpress: viaCount('longpress'),
       },
       breath: { started: breathStarted },
+      homeScreen: {
+        shown: hsCount('shown'),
+        add: hsCount('add'),
+        later: hsCount('later'),
+        never: hsCount('never'),
+        added: hsCount('added'),
+      },
     };
   }
 }
