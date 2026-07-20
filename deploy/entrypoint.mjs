@@ -21,6 +21,7 @@
 // закрывает front и выходит.
 import { spawn } from 'node:child_process';
 import { startFront } from './front-server.mjs';
+import { parseDbTarget, waitForDb } from './wait-for-db.mjs';
 
 const PORT =
   process.env.PORT !== undefined && process.env.PORT !== ''
@@ -35,6 +36,13 @@ const MIGRATE_CMD = process.env.MIGRATE_CMD ?? 'npx prisma migrate deploy';
 const APP_CMD = process.env.APP_CMD ?? 'exec node dist/main';
 const MAX_FAILS = Number(process.env.STARTUP_MAX_FAILS ?? 3);
 const BACKOFF_MS = Number(process.env.STARTUP_BACKOFF_MS ?? 2000);
+// Ожидание готовности БД перед миграциями (инцидент 2026-07-20, см.
+// wait-for-db.mjs) и ретраи migrate deploy на окне инициализации Postgres.
+const DB_WAIT_TIMEOUT_MS = Number(process.env.DB_WAIT_TIMEOUT_MS ?? 120000);
+const DB_WAIT_INTERVAL_MS = Number(process.env.DB_WAIT_INTERVAL_MS ?? 2000);
+const DB_WAIT_CONNECT_MS = Number(process.env.DB_WAIT_CONNECT_MS ?? 3000);
+const MIGRATE_MAX_ATTEMPTS = Number(process.env.MIGRATE_MAX_ATTEMPTS ?? 3);
+const MIGRATE_BACKOFF_MS = Number(process.env.MIGRATE_BACKOFF_MS ?? 3000);
 // Проработал дольше — считаем следующий краш «свежим», а не частью крашлупа.
 const HEALTHY_UPTIME_MS = Number(process.env.STARTUP_HEALTHY_MS ?? 60000);
 
@@ -86,12 +94,50 @@ function run(cmdStr, extraEnv) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
+  // Ждём готовности БД перед recover/migrate: при рестарте контейнера
+  // Postgres-под Amvera (CNPG) поднимается медленнее приложения, и migrate
+  // deploy падал с P1001 (БД недоступна) → entrypoint навсегда парковался на
+  // техработах, хотя схема цела (инцидент 2026-07-20). Ждём именно TCP-порт:
+  // P1001 — это и есть отказ connect. Пока ждём, front и так отдаёт техработы,
+  // так что ожидание ничего не ухудшает — только даёт БД время встать.
+  const dbTarget = parseDbTarget(process.env.DATABASE_URL);
+  if (dbTarget) {
+    const reachable = await waitForDb({
+      target: dbTarget,
+      timeoutMs: DB_WAIT_TIMEOUT_MS,
+      intervalMs: DB_WAIT_INTERVAL_MS,
+      connectTimeoutMs: DB_WAIT_CONNECT_MS,
+      log: (m) => console.warn(m),
+    });
+    if (shuttingDown) return;
+    if (!reachable) {
+      console.error('[entrypoint] БД не поднялась в отведённое время — держу техработы');
+      return;
+    }
+  }
+
   await run(RECOVER_CMD);
   if (shuttingDown) return;
 
-  const migrate = await run(MIGRATE_CMD);
-  if (shuttingDown) return;
-  if (migrate.signal || migrate.code !== 0) {
+  // migrate deploy с ретраями: доступность TCP ещё не гарантирует, что Postgres
+  // готов обслуживать запросы (короткое окно инициализации). Персистентную
+  // ошибку миграции (битый SQL/P3009) ретраи не «вылечат» — просто отложат
+  // техработы на backoff; это приемлемо и не роняет прод в крашлуп.
+  let migrateOk = false;
+  for (let attempt = 1; attempt <= MIGRATE_MAX_ATTEMPTS; attempt++) {
+    const migrate = await run(MIGRATE_CMD);
+    if (shuttingDown) return;
+    if (!migrate.signal && migrate.code === 0) {
+      migrateOk = true;
+      break;
+    }
+    console.error(
+      `[entrypoint] migrate deploy упал (попытка ${attempt}/${MIGRATE_MAX_ATTEMPTS}, code=${migrate.code})`,
+    );
+    if (attempt < MIGRATE_MAX_ATTEMPTS) await sleep(MIGRATE_BACKOFF_MS);
+    if (shuttingDown) return;
+  }
+  if (!migrateOk) {
     console.error('[entrypoint] migrate deploy не прошёл — держу страницу техработ');
     return; // front уже отдаёт техработы; приложение не стартуем
   }
