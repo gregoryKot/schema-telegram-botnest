@@ -42,9 +42,11 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
-# Claude Code local settings (may contain env vars from permission prompts)
-.claude/settings.local.json
-.claude/worktrees/
+# Claude Code local settings (may contain env vars from permission prompts).
+# Шаблон с `**/` — иначе правило якорится к корню и вложенные .claude
+# (schema-miniapp/.claude/) остаются затреканными.
+**/.claude/settings.local.json
+**/.claude/worktrees/
 
 # temp directory
 .temp
@@ -73,6 +75,23 @@ schema-miniapp/node_modules/
 # macOS junk
 .DS_Store
 **/.DS_Store
+
+# Дампы и бэкапы БД — НИКОГДА в git (репозиторий публичный).
+# Инцидент 2026-07-20: scripts/railway_data.sql (дамп с 17 реальными юзерами,
+# незашифрованными клиническими заметками и живыми session-токенами) лежал
+# в публичном репо с мая. Файл удалён; для полной зачистки нужна перезапись
+# истории (см. docs/README.md).
+*.sql.gz
+*.dump
+*.pgdump
+scripts/*_data.sql
+backup*.sql
+dump*.sql
+
+# Аудиты с ОТКРЫТЫМИ (ещё не закрытыми) находками — репозиторий публичный,
+# коммит такого файла = публикация карты уязвимостей. Держать локально, пока
+# находки не закрыты; после закрытия — переносить в docs/archive/ и коммитить.
+docs/SECOND_AUDIT.md
 
 # Accidental project duplicates (never commit these)
 schema-telegram-botnest
