@@ -13,12 +13,17 @@ function makePhrases(pool: string | null = 'фраза из пула', unused = 
     recentPostTexts: jest.fn().mockResolvedValue([]),
     pickFromPool: jest.fn().mockResolvedValue(pool),
     recordPost,
+    lastPostAt: jest.fn().mockResolvedValue(null),
     poolStatus: jest
       .fn()
       .mockResolvedValue({ enabled: 40, unused, daysLeft: unused / 2 }),
   } as unknown as HealthyAdultService;
   return { svc, recordPost };
 }
+
+// Момент по МСК → UTC (МСК = UTC+3).
+const msk = (hour: number, minute = 0): Date =>
+  new Date(Date.UTC(2026, 6, 20, hour - 3, minute));
 
 describe('TelegramChannelService', () => {
   const OLD_ENV = process.env.HEALTHY_ADULT_CHANNEL;
@@ -96,5 +101,45 @@ describe('TelegramChannelService', () => {
     expect(res.ok).toBe(false);
     expect(res.message).toContain('chat not found');
     expect(res.message).toContain('администратор');
+  });
+
+  describe('maybePost — тик расписания с jitter', () => {
+    it('вне окна (день) — тик молчит', async () => {
+      process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
+      const { bot, sendMessage } = makeBot();
+      const { svc } = makePhrases();
+      await new TelegramChannelService(bot, svc).maybePost(msk(13, 0));
+      expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('в конце утреннего окна публикует, если сегодня ещё не постили', async () => {
+      process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
+      const { bot, sendMessage } = makeBot();
+      const { svc, recordPost } = makePhrases();
+      // 10:55 МСК — offset 115 ≥ любой planned (<116), lastPostAt=null.
+      await new TelegramChannelService(bot, svc).maybePost(msk(10, 55));
+      expect(sendMessage).toHaveBeenCalledWith('@test_channel', 'фраза из пула');
+      expect(recordPost).toHaveBeenCalled();
+    });
+
+    it('не постит второй раз в тот же слот (lastPostAt в окне)', async () => {
+      process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
+      const { bot, sendMessage } = makeBot();
+      const { svc } = makePhrases();
+      (svc.lastPostAt as jest.Mock).mockResolvedValue(msk(10, 0)); // уже постили утром
+      await new TelegramChannelService(bot, svc).maybePost(msk(10, 55));
+      expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('сбой чтения последнего поста не роняет тик', async () => {
+      process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
+      const { bot } = makeBot();
+      const { svc } = makePhrases();
+      (svc.lastPostAt as jest.Mock).mockRejectedValue(new Error('db down'));
+      jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+      await expect(
+        new TelegramChannelService(bot, svc).maybePost(msk(10, 55)),
+      ).resolves.toBeUndefined();
+    });
   });
 });

@@ -112,6 +112,15 @@ export class HealthyAdultService {
     return { enabled, unused, daysLeft: Math.floor(unused / POSTS_PER_DAY) };
   }
 
+  /** Время последней публикации (null — ещё ни одной). Для jitter-расписания. */
+  async lastPostAt(): Promise<Date | null> {
+    const row = await this.prisma.healthyAdultPost.findFirst({
+      orderBy: { id: 'desc' },
+      select: { createdAt: true },
+    });
+    return row?.createdAt ?? null;
+  }
+
   /** Последние N опубликованных текстов (новые первыми). */
   async recentPostTexts(n = 10): Promise<string[]> {
     const rows = await this.prisma.healthyAdultPost.findMany({
