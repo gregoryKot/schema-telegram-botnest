@@ -18,7 +18,6 @@ import { ToolRow } from '../components/ToolRow';
 import { SelfHelpSheet } from '../components/SelfHelpDisclaimer';
 import { pressable } from '../utils/a11y';
 import { BreathingCard } from '../components/BreathingCard';
-import { PhraseShareCard } from '../components/PhraseShareCard';
 import { GroundingSheet } from '../components/GroundingSheet';
 import { CrisisCard } from '../components/CrisisCard';
 import { useTr } from '../utils/addressForm';
@@ -307,9 +306,6 @@ export function HelpSection({
       >
         {/* ── «Здесь и сейчас» (дизайн-макет, волна 2): дыхание первым ── */}
         <BreathingCard />
-
-        {/* Фраза Здорового взрослого + шэр карточкой */}
-        <PhraseShareCard />
 
         <div className="section-label" style={{ margin: '8px 4px -4px' }}>
           Если нужно больше

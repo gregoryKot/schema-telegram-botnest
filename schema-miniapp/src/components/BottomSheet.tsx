@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { pressable } from '../utils/a11y';
 
 interface Props {
@@ -56,7 +57,10 @@ export function BottomSheet({
     if (dy > 80) onClose();
   };
 
-  return (
+  // Портал в body: шит могут открывать из глубины карточек с CSS transform
+  // (.card:active { transform: scale() } создаёт containing block — fixed
+  // привязывался к карточке, бэкдроп уезжал и тап «мимо» не закрывал шит).
+  return createPortal(
     <>
       <div
         {...pressable(onClose)}
@@ -133,6 +137,7 @@ export function BottomSheet({
           {children}
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
