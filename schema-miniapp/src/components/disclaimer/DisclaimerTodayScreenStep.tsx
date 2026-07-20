@@ -24,7 +24,7 @@ export function DisclaimerTodayScreenStep() {
         className="card"
         style={{ borderRadius: 16, padding: '16px 18px', marginBottom: 12 }}
       >
-        {/* Строка безличная — вилка ты/вы не нужна (правило CLAUDE.md). */}
+        {/* Строка безличная — вилка обращения не нужна (правило CLAUDE.md). */}
         <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.7 }}>
           На «Сегодня» всегда одно главное дело. По умолчанию это трекер
           потребностей, но можно выбрать другое:
