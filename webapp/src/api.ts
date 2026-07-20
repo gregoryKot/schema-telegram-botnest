@@ -12,6 +12,7 @@ import type {
 } from '../../shared/src/types';
 // Единственная фронтовая копия типа — в shared (правило №3).
 export type { TherapyClientSummary } from '../../shared/src/types';
+import { telemetryUrl } from './utils/telemetryUrl';
 
 const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
 const BASE = rawBase && !rawBase.startsWith('http') ? `https://${rawBase}` : rawBase;
@@ -92,9 +93,13 @@ export function reportClientError(payload: {
         stack: payload.stack?.slice(0, 4000),
         componentStack: payload.componentStack?.slice(0, 4000),
         source: 'webapp',
+        // H0 (аудит 2026-07-20): ТОЛЬКО путь, без query/fragment. После логина
+        // вебапп попадает на `/auth/callback#access_token=<JWT>` (TTL 15 мин),
+        // а хеш чистится лишь в useEffect — краш на фазе рендера успевал
+        // отправить токен в логи сервера и в DM админа.
         url:
           typeof location !== 'undefined'
-            ? location.href.slice(0, 500)
+            ? telemetryUrl(location.href)
             : undefined,
       }),
       keepalive: true,

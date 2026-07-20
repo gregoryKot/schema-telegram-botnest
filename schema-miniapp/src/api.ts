@@ -1,5 +1,6 @@
 import { todayStr } from './utils/format';
 import { OutboxItem, enqueueRating, flushRatingOutbox } from './utils/outbox';
+import { telemetryUrl } from './utils/telemetryUrl';
 import type { TherapyClientSummary } from '../../shared/src/types';
 
 const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
@@ -150,9 +151,13 @@ export function reportClientError(payload: {
         stack: payload.stack?.slice(0, 4000),
         componentStack: payload.componentStack?.slice(0, 4000),
         source: 'miniapp',
+        // H0 (аудит 2026-07-20): ТОЛЬКО путь, без query/fragment. Мини-апп
+        // грузится с `#tgWebAppData=…&hash=<подпись>` — это живая initData
+        // (реплей 1 ч = полная имперсонация), и целиком href уезжал в логи
+        // сервера и в DM админа.
         url:
           typeof location !== 'undefined'
-            ? location.href.slice(0, 500)
+            ? telemetryUrl(location.href)
             : undefined,
       }),
       keepalive: true,
