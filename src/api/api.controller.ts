@@ -78,7 +78,6 @@ export class ApiController {
     'onboardingV1Done',
     'onboardingV2Done',
     'onboardingSkipped',
-    'practicesOnboardingDone',
     'childhoodWheelDone',
     'ysqBannerDismissed',
     'hintSheetCloseShown',

@@ -5,7 +5,6 @@ export type UserFlags = {
   onboardingV1Done: boolean;
   onboardingV2Done: boolean;
   onboardingSkipped: string[];
-  practicesOnboardingDone: boolean;
   childhoodWheelDone: boolean;
   ysqBannerDismissed: boolean;
   hintSheetCloseShown: boolean;
@@ -25,7 +24,6 @@ const DEFAULT_FLAGS: UserFlags = {
   onboardingV1Done: false,
   onboardingV2Done: false,
   onboardingSkipped: [],
-  practicesOnboardingDone: false,
   childhoodWheelDone: false,
   ysqBannerDismissed: false,
   hintSheetCloseShown: false,

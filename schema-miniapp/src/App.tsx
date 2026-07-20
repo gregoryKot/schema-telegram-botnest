@@ -458,7 +458,6 @@ export default function App() {
     sheets.about ||
     sheets.pairSheet ||
     sheets.childhoodWheel ||
-    sheets.practicesOnboarding ||
     sheets.todayNote
   );
 

@@ -24,7 +24,6 @@ describe('useSheets — начальное состояние', () => {
     expect(result.current.plans).toBe(false);
     expect(result.current.todayNote).toBe(false);
     expect(result.current.pairSheet).toBe(false);
-    expect(result.current.practicesOnboarding).toBe(false);
     expect(result.current.childhoodWheel).toBe(false);
     expect(result.current.tracker).toBe(false);
     expect(result.current.trackerOverlay).toBe(false);
