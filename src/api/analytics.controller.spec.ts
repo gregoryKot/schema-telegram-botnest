@@ -46,6 +46,21 @@ describe('AnalyticsController — sanitizeMeta (новые события)', () 
     expect(track).toHaveBeenCalledWith(7n, 'crisis_hotline_tapped', undefined);
   });
 
+  it.each(['letter', 'safe_place', 'weekly', 'belief_check', 'flashcard'])(
+    'crisis_card_shown: новый surface %s из allow-list проходит',
+    async (surface) => {
+      const { track, fire } = setup();
+      await fire({ name: 'crisis_card_shown', meta: { surface } });
+      expect(track).toHaveBeenCalledWith(7n, 'crisis_card_shown', { surface });
+    },
+  );
+
+  it('crisis_card_shown: неизвестный surface (junk) → meta отброшена целиком', async () => {
+    const { track, fire } = setup();
+    await fire({ name: 'crisis_card_shown', meta: { surface: 'junk' } });
+    expect(track).toHaveBeenCalledWith(7n, 'crisis_card_shown', undefined);
+  });
+
   it('outbox_flush: положительный count с потолком 1000', async () => {
     const { track, fire } = setup();
     await fire({ name: 'outbox_flush', meta: { count: 5000 } });
