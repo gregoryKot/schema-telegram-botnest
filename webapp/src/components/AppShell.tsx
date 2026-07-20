@@ -336,13 +336,23 @@ export function AppShell() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
   }, []);
 
-  // History load when tracker history tab opens
+  // Show the history loading state the moment the history tab is opened.
+  // Adjusting state during render (not in an effect) keeps this off
+  // set-state-in-effect; the fetch itself runs in the effect below.
+  const [seenTrackerTab, setSeenTrackerTab] = useState(trackerTab);
+  if (trackerTab !== seenTrackerTab) {
+    setSeenTrackerTab(trackerTab);
+    if (trackerTab === 'history') setHistoryLoading(true);
+  }
+
+  // History load when tracker history tab opens (historyDays is a constant).
   useEffect(() => {
-    if (trackerTab === 'history') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
-      setHistoryLoading(true);
-      api.history(historyDays).then(h => setHistory(fillHistoryGaps(h))).finally(() => setHistoryLoading(false));
-    }
+    if (trackerTab !== 'history') return;
+    let alive = true;
+    api.history(historyDays)
+      .then(h => { if (alive) setHistory(fillHistoryGaps(h)); })
+      .finally(() => { if (alive) setHistoryLoading(false); });
+    return () => { alive = false; };
   }, [trackerTab]);
 
   // Refresh Today after overlays close
