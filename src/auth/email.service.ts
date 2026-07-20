@@ -51,8 +51,14 @@ export class EmailService {
     });
     // Pretend success even if no user / unverified — don't leak existence.
     if (!user || !user.recoveryEmailVerifiedAt) {
+      // M8 (аудит 2026-07): не логируем сырой адрес — публичный
+      // неаутентифицированный эндпоинт, полный email в логах = PII + сбор
+      // проверявшихся адресов по логам. Короткий хеш даёт корреляцию
+      // (брутфорс одного адреса виден) без раскрытия самого адреса.
       this.logger.warn(
-        `Recovery requested for ${lower}: ${user ? 'unverified' : 'no match'} (silent)`,
+        `Recovery requested (${user ? 'unverified' : 'no match'}) emailHash=${hashToken(
+          lower,
+        ).slice(0, 12)}`,
       );
       return { ok: true };
     }
@@ -185,7 +191,16 @@ export class EmailService {
       process.env.EMAIL_FROM ?? 'Schema Happens <no-reply@schemehappens.ru>';
 
     if (!apiKey) {
-      // Dev / not-configured — log instead of failing silently.
+      // M9 (аудит 2026-07): в проде тело письма НЕ логируем — `text` несёт
+      // живой magic-link-токен, а .error() уходит ещё и в DM админа. Отсутствие
+      // ключа в проде = мисконфиг: громкий алерт без токена/адреса.
+      if (process.env.NODE_ENV === 'production') {
+        this.logger.error(
+          'RESEND_API_KEY not configured — magic-link email NOT sent (misconfiguration)',
+        );
+        return;
+      }
+      // Dev / CI — тело можно логировать для локальной проверки ссылки.
       this.logger.warn(
         `[DEV: no RESEND_API_KEY] would send to ${to}:\n  Subject: ${subject}\n  Body: ${text}`,
       );
