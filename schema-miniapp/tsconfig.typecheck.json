@@ -1,0 +1,18 @@
+{
+  // Конфиг ТОЛЬКО для CI-гейта типов (`npm run typecheck`). Отдельный от
+  // tsconfig.json намеренно: eslint (projectService) ищет ближайший
+  // tsconfig.json и требует, чтобы все линтуемые файлы были в проекте —
+  // поэтому основной конфиг ДОЛЖЕН включать тесты. А tsc-гейту тесты мешают
+  // (node-globals) и не нужны — их проверяет vitest. projectService файлы с
+  // именем tsconfig.typecheck.json не подхватывает, так что eslint это не задевает.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // ../shared резолвит react вверх от своего каталога — в CI-джобе miniapp
+    // корневой node_modules пуст. Прибиваем к мини-апповским (как webapp).
+    "paths": {
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"]
+    }
+  },
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+}
