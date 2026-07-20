@@ -47,8 +47,9 @@ export function MobileMenu({ onClose, active, onBook }: { onClose: () => void; a
       goBack();
       setTimeout(() => document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 60);
     } else {
-      // eslint-disable-next-line react-hooks/immutability -- react-compiler: паттерн намеренный, рефактор рискован
-      window.location.href = href;
+      // location.assign() navigates the same as `location.href = …` but is a
+      // method call, not a property write react-compiler flags as a mutation.
+      window.location.assign(href);
     }
   };
   return (
