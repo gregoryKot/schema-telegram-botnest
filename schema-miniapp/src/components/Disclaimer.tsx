@@ -2,12 +2,25 @@ import { useState } from 'react';
 import { pressable } from '../utils/a11y';
 import { BottomSheet } from './BottomSheet';
 import { DisclaimerWelcomeStep } from './disclaimer/DisclaimerWelcomeStep';
-import { DisclaimerNeedsStep } from './disclaimer/DisclaimerNeedsStep';
 import { DisclaimerPrivacyStep } from './disclaimer/DisclaimerPrivacyStep';
 import { DisclaimerNotTherapyStep } from './disclaimer/DisclaimerNotTherapyStep';
+import { DisclaimerNeedsWhatStep } from './disclaimer/DisclaimerNeedsWhatStep';
+import { DisclaimerNeedsWhyStep } from './disclaimer/DisclaimerNeedsWhyStep';
+import { DisclaimerNeedsResultStep } from './disclaimer/DisclaimerNeedsResultStep';
+import { DisclaimerTodayScreenStep } from './disclaimer/DisclaimerTodayScreenStep';
 import { DisclaimerAuthorStep } from './disclaimer/DisclaimerAuthorStep';
 import { DisclaimerHomeScreenStep } from './disclaimer/DisclaimerHomeScreenStep';
 import { canOfferHomeScreenNow } from '../utils/homeScreen';
+import {
+  buildSteps,
+  canAdvance,
+  initialStepIndex,
+  CONSENT_STEP,
+} from './disclaimer/steps';
+import {
+  useOnboardingStepTracking,
+  trackOnboardingDone,
+} from '../hooks/useOnboardingStepTracking';
 
 export function Disclaimer({
   onAccept,
@@ -15,31 +28,41 @@ export function Disclaimer({
   consentGiven = false,
 }: {
   onAccept: () => void;
-  // Согласие персистится здесь, а не в финальной кнопке: последний шаг
-  // («добавить на экран») уводит пользователя из аппки, и раньше согласие
-  // терялось — при заходе с ярлыка онбординг начинался заново.
+  // Согласие персистится здесь, а не в финальной кнопке: шаг «добавить на
+  // экран» уводит пользователя из аппки, и раньше согласие терялось — при
+  // заходе с ярлыка онбординг начинался заново.
   onConsent: () => void;
-  // Согласие уже дано раньше (напр. в боте/на сайте) — тогда онбординг
-  // остаётся образовательным, но галочки не заставляем ставить заново.
+  // Согласие уже дано раньше (бот, сайт, другое устройство) — юридические шаги
+  // не показываем повторно, открываемся сразу на содержательной части.
   consentGiven?: boolean;
 }) {
-  const [step, setStep] = useState(0);
+  const canAddToHome = canOfferHomeScreenNow();
+  const [steps] = useState(() => buildSteps(canAddToHome));
+  const [step, setStep] = useState(() => initialStepIndex(steps, consentGiven));
   const [c1, setC1] = useState(consentGiven);
   const [c2, setC2] = useState(consentGiven);
-  const canAddToHome = canOfferHomeScreenNow();
-  const TOTAL = canAddToHome ? 6 : 5;
   const ready = c1 && c2;
-  // Шаг «Об авторе» — на нём собираются согласия, до них дальше не пускаем.
-  const CONSENT_STEP = 4;
+  const stepId = steps[step];
+  const isLast = step === steps.length - 1;
 
-  const steps = [
-    <DisclaimerWelcomeStep key={0} />,
-    <DisclaimerNeedsStep key={1} />,
-    <DisclaimerPrivacyStep key={2} c2={c2} setC2={setC2} />,
-    <DisclaimerNotTherapyStep key={3} c1={c1} setC1={setC1} />,
-    <DisclaimerAuthorStep key={4} ready={ready} c1={c1} c2={c2} />,
-    <DisclaimerHomeScreenStep key={5} onBeforeAdd={onConsent} />,
-  ];
+  useOnboardingStepTracking(stepId);
+
+  const content = {
+    welcome: <DisclaimerWelcomeStep />,
+    privacy: <DisclaimerPrivacyStep c2={c2} setC2={setC2} />,
+    not_therapy: (
+      <DisclaimerNotTherapyStep c1={c1} setC1={setC1} ready={ready} c2={c2} />
+    ),
+    needs_what: <DisclaimerNeedsWhatStep />,
+    needs_why: <DisclaimerNeedsWhyStep />,
+    needs_result: <DisclaimerNeedsResultStep />,
+    today_screen: <DisclaimerTodayScreenStep />,
+    author: <DisclaimerAuthorStep />,
+    home_screen: <DisclaimerHomeScreenStep onBeforeAdd={onConsent} />,
+    done: null,
+  }[stepId];
+
+  const blocked = !canAdvance(stepId, ready);
 
   return (
     <BottomSheet onClose={() => {}} zIndex={300}>
@@ -52,9 +75,9 @@ export function Disclaimer({
           marginBottom: 24,
         }}
       >
-        {Array.from({ length: TOTAL }).map((_, i) => (
+        {steps.map((id, i) => (
           <div
-            key={i}
+            key={id}
             {...pressable(() => setStep(i))}
             style={{
               width: i === step ? 20 : 8,
@@ -74,7 +97,7 @@ export function Disclaimer({
       </div>
 
       {/* Content */}
-      <div style={{ minHeight: 260 }}>{steps[step]}</div>
+      <div style={{ minHeight: 260 }}>{content}</div>
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
@@ -95,26 +118,26 @@ export function Disclaimer({
             ← Назад
           </button>
         )}
-        {step < TOTAL - 1 ? (
+        {!isLast ? (
           <button
             onClick={() => {
-              if (step === CONSENT_STEP && !ready) return;
-              // Согласие сохраняем сразу, как только оно дано: дальше идёт шаг
-              // «добавить на экран», с которого пользователь уходит из аппки.
-              if (step === CONSENT_STEP) onConsent();
+              if (blocked) return;
+              // Согласие сохраняем сразу, как только обе галочки стоят: дальше
+              // человек может уйти из аппки, не дойдя до финальной кнопки.
+              if (stepId === CONSENT_STEP) onConsent();
               setStep((s) => s + 1);
             }}
             className="btn-primary"
-            style={{
-              flex: 2,
-              opacity: step === CONSENT_STEP && !ready ? 0.35 : 1,
-            }}
+            style={{ flex: 2, opacity: blocked ? 0.35 : 1 }}
           >
             Далее →
           </button>
         ) : (
           <button
-            onClick={onAccept}
+            onClick={() => {
+              trackOnboardingDone();
+              onAccept();
+            }}
             className="btn-primary"
             style={{ flex: 2 }}
           >

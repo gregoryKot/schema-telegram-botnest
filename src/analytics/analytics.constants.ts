@@ -16,7 +16,8 @@
 //   today_streak_toggle — скрыл/показал счётчик серии (meta.hidden);
 //   breath_start        — запустил дыхание «Здесь и сейчас» (без meta);
 //   web_banner_open     — открыл сайт из баннера кабинета (meta.banner);
-//   web_banner_dismiss  — скрыл баннер кабинета (meta.banner).
+//   web_banner_dismiss  — скрыл баннер кабинета (meta.banner);
+//   onboarding_step     — новичок дошёл до шага обучения (meta.step).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -28,8 +29,27 @@ export const ANALYTICS_EVENTS = [
   'breath_start',
   'web_banner_open',
   'web_banner_dismiss',
+  'onboarding_step',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
+
+// Шаги обучающего онбординга мини-аппа (meta.step для onboarding_step).
+// Порядок = порядок показа: по нему строится воронка «докуда доходят».
+// 'done' — нажал финальную кнопку. Парный список на фронте:
+// shared/src/share/analytics.ts (при добавлении шага синхронь оба).
+export const ONBOARDING_STEPS = [
+  'welcome',
+  'privacy',
+  'not_therapy',
+  'needs_what',
+  'needs_why',
+  'needs_result',
+  'today_screen',
+  'author',
+  'home_screen',
+  'done',
+] as const;
+export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
 // Тип карточки для событий share_card / share_result (meta.kind).
 export const SHARE_CARD_KINDS = [

@@ -5,6 +5,8 @@
 export interface ProductMetrics {
   // Новички за месяц: сколько дошло до конца обучающего онбординга.
   onboarding: { cohort30: number; completed30: number };
+  // Воронка обучения: сколько человек увидело каждый шаг (в порядке показа).
+  onboardingSteps: Array<{ step: string; count: number }>;
   // Кто чем пользовался хоть раз (за всё время), число разных людей.
   adoption: {
     diaries: number;
@@ -63,6 +65,20 @@ const SHARE_KIND_LABELS: Record<string, string> = {
   gratitude: '🌱 благодарность',
 };
 
+// Подписи шагов обучения — тем же простым языком, каким шаг звучит для юзера.
+const ONBOARDING_STEP_LABELS: Record<string, string> = {
+  welcome: 'поздоровались',
+  privacy: 'что будет с записями',
+  not_therapy: 'это не терапия',
+  needs_what: 'что за пять потребностей',
+  needs_why: 'зачем отмечать',
+  needs_result: 'что увидят через 3–5 дней',
+  today_screen: 'главный экран под себя',
+  author: 'об авторе',
+  home_screen: 'значок на телефон',
+  done: 'дошли до конца',
+};
+
 /** Собирает все продуктовые блоки /stats простыми словами. Чистая функция. */
 export function formatProductMetrics(m: ProductMetrics): string {
   const sections =
@@ -78,6 +94,14 @@ export function formatProductMetrics(m: ProductMetrics): string {
       m.onboarding.completed30,
       m.onboarding.cohort30,
     )}`,
+    m.onboardingSteps.length === 0
+      ? 'Пока обучение никто не открывал'
+      : 'Сколько человек увидело каждый экран: ' +
+        m.onboardingSteps
+          .map(
+            (s) => `${ONBOARDING_STEP_LABELS[s.step] ?? s.step} — ${s.count}`,
+          )
+          .join(' · '),
     '',
     `🧩 <b>Кто чем пользуется</b> (за всё время, число людей)`,
     `Дневники: ${m.adoption.diaries} · Тест схем: ${m.adoption.ysqDone} · ` +

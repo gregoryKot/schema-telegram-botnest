@@ -1,15 +1,6 @@
-// Шаг 3 онбординга Disclaimer: об авторе + напоминание о неподтверждённых
-// шагах. Перенесено из Disclaimer.tsx как есть (этап 3 REMEDIATION_PLAN) —
-// без смены поведения.
-export function DisclaimerAuthorStep({
-  ready,
-  c1,
-  c2,
-}: {
-  ready: boolean;
-  c1: boolean;
-  c2: boolean;
-}) {
+// Шаг онбординга: об авторе. Напоминание о неподтверждённых согласиях уехало
+// на шаг «Важно знать» — гейт теперь там, сразу после галочек.
+export function DisclaimerAuthorStep() {
   return (
     <div>
       <div
@@ -88,23 +79,6 @@ export function DisclaimerAuthorStep({
           </a>
         </div>
       </div>
-      {!ready && (
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--accent-orange)',
-            textAlign: 'center',
-            marginBottom: 12,
-            lineHeight: 1.5,
-          }}
-        >
-          {!c2 && !c1
-            ? 'Вернись к шагам 3 и 4 и подтверди согласие'
-            : !c2
-              ? 'Вернись к шагу 3 и подтверди согласие'
-              : 'Вернись к шагу 4 и подтверди согласие'}
-        </div>
-      )}
     </div>
   );
 }

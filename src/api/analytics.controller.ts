@@ -11,6 +11,7 @@ import {
   CRISIS_SURFACE_SET,
   TODAY_FOCUS_PRACTICE_SET,
   WEB_BANNER_ID_SET,
+  ONBOARDING_STEP_SET,
 } from './dto/analytics.dto';
 
 interface AuthRequest extends Request {
@@ -99,6 +100,13 @@ function sanitizeMeta(
     const banner = meta.banner;
     if (typeof banner === 'string' && WEB_BANNER_ID_SET.has(banner)) {
       return { banner };
+    }
+    return undefined;
+  }
+  if (name === 'onboarding_step') {
+    const step = meta.step;
+    if (typeof step === 'string' && ONBOARDING_STEP_SET.has(step)) {
+      return { step };
     }
     return undefined;
   }
