@@ -3,19 +3,9 @@ import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-
-const TAGS = [
-  { id: 'work',       label: 'Работа',      emoji: '💼' },
-  { id: 'relations',  label: 'Отношения',   emoji: '🤝' },
-  { id: 'health',     label: 'Здоровье',    emoji: '🏃' },
-  { id: 'loneliness', label: 'Одиночество', emoji: '🌙' },
-  { id: 'rest',       label: 'Отдых',       emoji: '🛋️' },
-  { id: 'family',     label: 'Семья',       emoji: '🏠' },
-  { id: 'creativity', label: 'Творчество',  emoji: '🎨' },
-  { id: 'anxiety',    label: 'Тревога',     emoji: '😰' },
-  { id: 'joy',        label: 'Радость',     emoji: '✨' },
-  { id: 'body',       label: 'Тело',        emoji: '💆' },
-];
+import { detectCrisisAny } from '../utils/crisisMarkers';
+import { CrisisCard } from './CrisisCard';
+import { NoteTagsPicker } from './NoteTagsPicker';
 
 interface Props {
   date: string;
@@ -86,41 +76,7 @@ export function NoteSheet({ date, onClose }: Props) {
       }
     >
       {/* Tags */}
-      <div className="prompt">
-        <div className="prompt-num">·</div>
-        <div style={{ width: '100%' }}>
-          <div className="prompt-label">Темы дня</div>
-          <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-            {TAGS.map(t => {
-              const on = selectedTags.has(t.id);
-              return (
-                <div
-                  key={t.id}
-                  onClick={() => toggleTag(t.id)}
-                  role="button" tabIndex={0}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTag(t.id); } }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '7px 14px', borderRadius: 20, cursor: 'pointer',
-                    background: on
-                      ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
-                      : 'rgba(var(--fg-rgb),0.05)',
-                    border: `1px solid ${on
-                      ? 'color-mix(in srgb, var(--accent) 40%, transparent)'
-                      : 'rgba(var(--fg-rgb),0.07)'}`,
-                    color: on ? 'var(--accent)' : 'var(--text-faint)',
-                    fontSize: 13, fontWeight: on ? 600 : 400,
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <span>{t.emoji}</span>
-                  <span>{t.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      <NoteTagsPicker selectedTags={selectedTags} onToggle={toggleTag} />
 
       {/* Text */}
       <div className="prompt">
@@ -140,6 +96,8 @@ export function NoteSheet({ date, onClose }: Props) {
           </div>
         </div>
       </div>
+
+      {detectCrisisAny(text) && <CrisisCard surface="note" />}
 
       {error && (
         <div style={{ fontSize: 13, color: 'var(--c-rose)', textAlign: 'center', marginBottom: 12 }}>

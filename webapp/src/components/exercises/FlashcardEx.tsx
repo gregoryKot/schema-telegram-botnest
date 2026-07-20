@@ -5,26 +5,9 @@ import { ExScreen, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScree
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
-
-const SCHEMA_QUESTIONS = [
-  { key: 'triggers',    label: 'Что запускает эту схему?',        hint: 'Ситуации, слова, интонации – типичные триггеры', placeholder: 'Когда не отвечают на сообщения; когда критикуют при других…' },
-  { key: 'feelings',    label: 'Как проявляется в теле и чувствах?', hint: 'Эмоции и ощущения когда схема активна', placeholder: 'Тревога и ком в горле; злость и напряжение в груди…' },
-  { key: 'thoughts',    label: 'Что говорит голос схемы?',         hint: 'Устойчивые убеждения – про себя, про других, про будущее', placeholder: '«Меня никто не ценит», «Я всегда облажаюсь»…' },
-  { key: 'origins',     label: 'Откуда эта схема пришла?',         hint: 'Опыт из детства или юности', placeholder: 'Папа говорил что я недостаточно стараюсь; в школе чувствовал себя чужим…', optional: true },
-  { key: 'reality',     label: 'Что реально, а что говорит схема?', hint: 'Факты, которые противоречат голосу схемы', placeholder: 'Есть люди которые ценят меня; большинство прогнозов схемы не сбылись…' },
-  { key: 'healthyView', label: 'Слова Здорового Взрослого',        hint: 'Что говорит зрелая, сострадательная часть', placeholder: '«Эта боль из прошлого, сейчас я в безопасности»…' },
-  { key: 'behavior',    label: 'Что помогает когда схема активна?', hint: 'Действия и практики вместо привычных реакций', placeholder: 'Написать что чувствую; позвонить другу; короткая медитация…' },
-];
-
-const MODE_QUESTIONS = [
-  { key: 'triggers',  label: 'Когда этот режим активируется?', hint: 'Ситуации, люди, слова – что его запускает', placeholder: 'Когда меня критикуют, когда нужно выступить…' },
-  { key: 'feelings',  label: 'Что чувствуется в этом режиме?',  hint: 'Эмоции и ощущения в теле', placeholder: 'Тревога, комок в горле, напряжение в плечах…' },
-  { key: 'thoughts',  label: 'Что говорит этот режим внутри?', hint: 'Убеждения, монолог, голос', placeholder: '«Я недостаточно хорош», «Лучше не рисковать»…' },
-  { key: 'needs',     label: 'Чего он на самом деле хочет?',   hint: 'Глубинная потребность за этим режимом', placeholder: 'Безопасности, признания, контакта…' },
-  { key: 'behavior',  label: 'Как проявляется в поведении?',   hint: 'Что происходит в поведении в этом режиме', placeholder: 'Замолкаю, избегаю, злюсь, переусердствую…' },
-];
-
-type Q = { key: string; label: string; hint: string; placeholder: string; optional?: boolean };
+import { detectCrisisAny } from '../../utils/crisisMarkers';
+import { CrisisCard } from '../CrisisCard';
+import { SCHEMA_QUESTIONS, MODE_QUESTIONS, type Q } from './flashcardQuestions';
 
 function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; accentColor: string; onSave: (data: Record<string,string>) => Promise<void> }) {
   const [data, setData] = useState<Record<string,string>>(() => Object.fromEntries(questions.map(q => [q.key, ''])));
@@ -69,6 +52,7 @@ function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; acc
       <div className="flash-hint">{q.hint}</div>
       <textarea ref={areaRef} className="paper-area" rows={5} value={data[q.key]} onChange={e => setData(d => ({ ...d, [q.key]: e.target.value }))} placeholder={q.placeholder} />
     </div>
+    {detectCrisisAny(...Object.values(data)) && <CrisisCard surface="flashcard" />}
     <div className="ex-foot">
       <button className="ex-btn ex-btn-ghost" disabled={step === 0} onClick={() => setStep(s => Math.max(0, s - 1))}><GlyphArrowLeft /> Назад</button>
       <span className="spacer" />
