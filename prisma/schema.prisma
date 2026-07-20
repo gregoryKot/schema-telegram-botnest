@@ -185,7 +185,14 @@ model TherapistRequest {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // onUpdate: NoAction — это НЕ ослабление, а фиксация реальности. Эти 6 FK
+  // созданы своими CREATE TABLE как «ON DELETE CASCADE» без ON UPDATE, т.е. в
+  // БД лежит NO ACTION, а дефолт Prisma (Cascade) давал вечный дрейф в diff.
+  // User.id — Telegram-id, он не меняется нигде (merge переносит userId у
+  // дочерних строк, а не правит User.id), поэтому ON UPDATE — мёртвая ветка.
+  // Переписывать 6 констрейнтов на живых таблицах ради no-op — лишний
+  // ACCESS EXCLUSIVE lock, дешевле объявить правду в схеме.
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([status])
 }
@@ -197,7 +204,7 @@ model DiaryDraft {
   startedAt DateTime
   data      Json
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([userId, type])
 }
@@ -484,7 +491,11 @@ model ModeMap {
   nodes       Json     @default("[]")
   edges       Json     @default("[]")
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  // @default(now()) — не косметика: колонка NOT NULL без DEFAULT роняет любой
+  // сырой INSERT без явного updatedAt (ловушка правила №2 «Миграции БД»).
+  // DEFAULT есть в БД с самого CREATE TABLE — фиксируем его в схеме, а не
+  // снимаем с прода.
+  updatedAt   DateTime @default(now()) @updatedAt
 
   @@index([therapistId, clientId, createdAt])
 }
@@ -529,7 +540,7 @@ model UserBeliefCheck {
   evidenceAgainst String
   reframe         String?
   createdAt       DateTime @default(now())
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId, createdAt])
 }
@@ -539,7 +550,7 @@ model UserLetter {
   userId    BigInt
   text      String
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId, createdAt])
 }
@@ -547,8 +558,9 @@ model UserLetter {
 model UserSafePlace {
   userId      BigInt   @id
   description String
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // См. комментарий у ModeMap.updatedAt — DEFAULT сохраняем.
+  updatedAt   DateTime @default(now()) @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model UserFlashcard {
@@ -559,7 +571,7 @@ model UserFlashcard {
   reflection String?
   action     String?
   createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId, createdAt])
 }
