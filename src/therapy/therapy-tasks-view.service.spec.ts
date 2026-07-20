@@ -8,6 +8,7 @@
 import { TherapyTasksViewService } from './therapy-tasks-view.service';
 import { TherapyTasksService } from './therapy-tasks.service';
 import { encrypt } from '../utils/crypto';
+import { localDate } from '../utils/tz';
 
 function matchWhere(row: any, where: any): boolean {
   return Object.entries(where ?? {}).every(([k, v]) => {
@@ -249,7 +250,11 @@ describe('TherapyTasksViewService.getTasksForClient — доступ по акт
       status: 'active',
     });
     users.push({ id: CLIENT_A, notifyTimezone: 'Europe/Moscow' });
-    const today = new Date().toISOString().slice(0, 10);
+    // «Сегодня» — тем же хелпером, что и сервис (МОСКОВСКАЯ дата юзера).
+    // `toISOString().slice(0,10)` давал UTC-дату: с 21:00 до 24:00 UTC
+    // (до московской полуночи) она на день меньше — тест падал каждый
+    // вечер (CI-инцидент 2026-07-20, тот же класс, что caldav-TZID).
+    const today = localDate('Europe/Moscow', new Date());
     ratings.push({ userId: CLIENT_A, date: today });
     tasks.push({
       id: 1,
