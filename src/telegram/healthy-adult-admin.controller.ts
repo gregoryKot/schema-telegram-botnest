@@ -15,7 +15,12 @@ import { ConfigService } from '@nestjs/config';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
 import { TelegramChannelService } from './telegram.channel.service';
 import { assertAdminKey } from '../booking/admin-key.util';
-import { CreatePhraseDto, UpdatePhraseDto } from '../bot/healthy-adult.dto';
+import {
+  CreatePhraseDto,
+  ImportPhrasesDto,
+  UpdatePhraseDto,
+} from '../bot/healthy-adult.dto';
+import { formatImportReport } from '../bot/healthy-adult.import';
 
 /**
  * Админ-эндпоинты управления фразами «Здорового Взрослого», защищены тем же
@@ -67,6 +72,28 @@ export class HealthyAdultAdminController {
   ) {
     assertAdminKey(key, this.adminKey);
     return this.phrases.remove(id);
+  }
+
+  /**
+   * Добавить пачку фраз списком (по одной на строку). Отчёт возвращаем
+   * текстом: сколько добавлено и что отсеялось с причиной.
+   */
+  @Post('import')
+  @HttpCode(HttpStatus.OK)
+  async import(
+    @Body() dto: ImportPhrasesDto,
+    @Headers('x-admin-key') key: string,
+  ) {
+    assertAdminKey(key, this.adminKey);
+    const { created, report } = await this.phrases.importMany(dto.text);
+    return { created, message: formatImportReport(report) };
+  }
+
+  /** Остаток пула — на сколько дней хватит неповторённых фраз. */
+  @Get('pool-status')
+  async poolStatus(@Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    return this.phrases.poolStatus();
   }
 
   /** Опубликовать сообщение в канал прямо сейчас — проверка связки из админки. */

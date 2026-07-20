@@ -1,6 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { HEALTHY_ADULT_PHRASES } from './healthy-adult.data';
+import { prepareImport, type ImportPreparation } from './healthy-adult.import';
+
+/** Остаток пула: сколько включённых фраз ещё не звучало и на сколько хватит. */
+export interface HealthyAdultPoolStatus {
+  enabled: number;
+  unused: number;
+  daysLeft: number;
+}
 
 export interface HealthyAdultPhraseRow {
   id: number;
@@ -8,6 +16,17 @@ export interface HealthyAdultPhraseRow {
   enabled: boolean;
   sortOrder: number;
 }
+
+/** Канал публикует дважды в день — из этого считаем, на сколько хватит пула. */
+const POSTS_PER_DAY = 2;
+
+/** Что отдаём админке (одним объектом, чтобы поля не разъезжались по методам). */
+const PHRASE_FIELDS = {
+  id: true,
+  text: true,
+  enabled: true,
+  sortOrder: true,
+} as const;
 
 /**
  * Управление пулом фраз «Здорового Взрослого» (админка + чтение каналом).
@@ -77,6 +96,22 @@ export class HealthyAdultService {
     await this.prisma.healthyAdultPost.create({ data: { text, source } });
   }
 
+  /**
+   * Остаток пула: сколько включённых фраз ещё ни разу не выходило в канал.
+   * Пул конечен (пополняется вручную), поэтому этот остаток — то, за чем
+   * владельцу надо следить, чтобы канал не начал повторяться.
+   */
+  async poolStatus(): Promise<HealthyAdultPoolStatus> {
+    const [enabled, unused] = await Promise.all([
+      this.prisma.healthyAdultPhrase.count({ where: { enabled: true } }),
+      this.prisma.healthyAdultPhrase.count({
+        where: { enabled: true, lastPostedAt: null },
+      }),
+    ]);
+    // Два поста в день — столько дней продержится запас неповторённого.
+    return { enabled, unused, daysLeft: Math.floor(unused / POSTS_PER_DAY) };
+  }
+
   /** Последние N опубликованных текстов (новые первыми). */
   async recentPostTexts(n = 10): Promise<string[]> {
     const rows = await this.prisma.healthyAdultPost.findMany({
@@ -95,6 +130,35 @@ export class HealthyAdultService {
       data: { text: text.trim(), sortOrder: (max._max.sortOrder ?? -1) + 1 },
       select: { id: true, text: true, enabled: true, sortOrder: true },
     });
+  }
+
+  /**
+   * Добавить пачку фраз из админки. Дубли и повторы зачинов отсекаются
+   * (prepareImport), поэтому возвращаем отчёт — сколько доехало и что
+   * пропущено: «вставил 20, появилось 14» без объяснения выглядит как баг.
+   */
+  async importMany(raw: string): Promise<{
+    created: HealthyAdultPhraseRow[];
+    report: ImportPreparation;
+  }> {
+    const existing = await this.prisma.healthyAdultPhrase.findMany({
+      select: { text: true },
+    });
+    const report = prepareImport(
+      raw,
+      existing.map((r) => r.text),
+    );
+    if (report.accepted.length === 0) return { created: [], report };
+
+    const max = await this.prisma.healthyAdultPhrase.aggregate({
+      _max: { sortOrder: true },
+    });
+    let sortOrder = (max._max.sortOrder ?? -1) + 1;
+    const created = await this.prisma.healthyAdultPhrase.createManyAndReturn({
+      data: report.accepted.map((text) => ({ text, sortOrder: sortOrder++ })),
+      select: PHRASE_FIELDS,
+    });
+    return { created, report };
   }
 
   async update(

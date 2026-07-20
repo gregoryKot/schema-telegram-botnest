@@ -12,6 +12,8 @@ import { renderTemplate } from '../notification/notification.templates';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { ProductMetricsService } from '../bot/bot.product-metrics.service';
+import { HealthyAdultService } from '../bot/healthy-adult.service';
+import { formatPoolStatus } from '../bot/healthy-adult.pool-alert';
 import { AccountService } from '../bot/account.service';
 import { PairsService } from '../bot/pairs.service';
 import { PracticesService } from '../bot/practices.service';
@@ -87,6 +89,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
     private readonly productMetricsService: ProductMetricsService,
+    private readonly healthyAdult: HealthyAdultService,
     private readonly accountService: AccountService,
     private readonly pairsService: PairsService,
     private readonly practicesService: PracticesService,
@@ -289,12 +292,15 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           return;
         }
         // Двумя сообщениями — суммарно отчёт длиннее лимита Telegram (4096).
-        const [core, product] = await Promise.all([
+        const [core, product, pool] = await Promise.all([
           this.analyticsService.getAdminStats(),
           this.productMetricsService.render(),
+          this.healthyAdult.poolStatus(),
         ]);
         await ctx.reply(core, { parse_mode: 'HTML' });
-        await ctx.reply(product, { parse_mode: 'HTML' });
+        await ctx.reply(`${product}\n\n${formatPoolStatus(pool)}`, {
+          parse_mode: 'HTML',
+        });
       } catch (err) {
         this.logger.error('stats command failed', err);
         await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);
