@@ -4,6 +4,7 @@ import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
+import { CrisisGate } from './CrisisGate';
 
 const STORAGE_KEY = 'belief_checks';
 
@@ -404,6 +405,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 marginBottom: 14,
               }}
             />
+            <CrisisGate texts={[belief]} surface="belief_check" />
             <button
               onClick={() => setStep('for')}
               disabled={!belief.trim()}
@@ -535,6 +537,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 +
               </button>
             </div>
+            <CrisisGate texts={[forInput, ...forList]} surface="belief_check" />
             <button
               onClick={() => setStep('against')}
               style={{
@@ -665,6 +668,10 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 +
               </button>
             </div>
+            <CrisisGate
+              texts={[againstInput, ...againstList]}
+              surface="belief_check"
+            />
             <button
               onClick={() => setStep('reframe')}
               style={{
@@ -739,6 +746,7 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 marginBottom: 14,
               }}
             />
+            <CrisisGate texts={[reframe]} surface="belief_check" />
             <button
               onClick={handleSave}
               style={{

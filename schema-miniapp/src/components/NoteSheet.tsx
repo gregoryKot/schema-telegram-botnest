@@ -3,6 +3,7 @@ import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
+import { CrisisGate } from './CrisisGate';
 
 const TAGS = [
   { id: 'work', label: 'Работа', emoji: '💼' },
@@ -152,6 +153,7 @@ export function NoteSheet({ date, onClose }: Props) {
         >
           {text.length}/500
         </div>
+        <CrisisGate texts={[text]} surface="note" />
 
         {error && (
           <div

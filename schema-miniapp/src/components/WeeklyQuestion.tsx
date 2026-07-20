@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../api';
 import { SectionLabel } from './SectionLabel';
 import { useTr } from '../utils/addressForm';
+import { CrisisGate } from './CrisisGate';
 
 const buildQuestions = (tr: (ty: string, vy: string) => string) => [
   'Что было самым трудным на этой неделе?',
@@ -123,6 +124,7 @@ export function WeeklyQuestion({ date, onDismiss }: Props) {
           marginBottom: 10,
         }}
       />
+      <CrisisGate texts={[text]} surface="weekly" />
       <div style={{ display: 'flex', gap: 8 }}>
         <button
           onClick={handleSkip}

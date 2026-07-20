@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { pressable } from '../utils/a11y';
+import { CrisisGate } from './CrisisGate';
 
 export interface IntroSheetQuestion<T extends Record<string, string>> {
   key: keyof T;
@@ -203,6 +204,7 @@ export function IntroSheetFlashcard<T extends Record<string, string>>({
               transition: 'border-color 0.2s',
             }}
           />
+          <CrisisGate texts={[answer]} surface="flashcard" />
         </>
       )}
     </div>

@@ -1,5 +1,6 @@
 import { BottomSheet } from '../BottomSheet';
 import { TherapyNote } from '../TherapyNote';
+import { CrisisGate } from '../CrisisGate';
 import { ProgressBar } from './ProgressBar';
 import type { ModeData } from './types';
 
@@ -90,6 +91,7 @@ export function ResponseStep({
             marginBottom: 16,
           }}
         />
+        <CrisisGate texts={[reflection]} surface="flashcard" />
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={onBack}
