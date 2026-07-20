@@ -15,7 +15,7 @@
 //
 // Re-runnable: re-encrypting an already-current value is a no-op cost-wise.
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { reencrypt } from '../src/utils/crypto';
 
 const prisma = new PrismaClient();
@@ -32,6 +32,10 @@ interface Delegate {
 }
 
 // (table prismaName, fields to rotate)
+// ПОЛНОТА этого списка проверяется тестом
+// src/utils/encryption-rotation-coverage.spec.ts — он падает, если в src/
+// появилось зашифрованное поле, которого тут нет (иначе ротация оставит его
+// под старым ключом → потеря данных при удалении ENCRYPTION_KEY_OLD).
 const TARGETS: Array<{ name: string; fields: string[] }> = [
   { name: 'note', fields: ['text', 'tags'] },
   {
@@ -50,7 +54,10 @@ const TARGETS: Array<{ name: string; fields: string[] }> = [
     name: 'userModeNote',
     fields: ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'],
   },
-  { name: 'userBeliefCheck', fields: ['belief', 'reframe'] },
+  {
+    name: 'userBeliefCheck',
+    fields: ['belief', 'evidenceFor', 'evidenceAgainst', 'reframe'],
+  },
   { name: 'userLetter', fields: ['text'] },
   { name: 'userSafePlace', fields: ['description'] },
   { name: 'userFlashcard', fields: ['reflection', 'action'] },
@@ -60,6 +67,7 @@ const TARGETS: Array<{ name: string; fields: string[] }> = [
     name: 'schemaDiaryEntry',
     fields: [
       'trigger',
+      'emotions',
       'thoughts',
       'bodyFeelings',
       'actualBehavior',
@@ -89,6 +97,8 @@ const TARGETS: Array<{ name: string; fields: string[] }> = [
   { name: 'therapistNote', fields: ['text'] },
   {
     name: 'clientConceptualization',
+    // history — вложенный JSON-массив снапшотов, ротируется отдельным блоком
+    // ниже (общий цикл трогает только строковые колонки).
     fields: [
       'earlyExperience',
       'unmetNeeds',
@@ -99,8 +109,24 @@ const TARGETS: Array<{ name: string; fields: string[] }> = [
       'modeTransitions',
       'schemaIds',
       'modeIds',
+      'modeMapNodes',
+      'modeMapEdges',
     ],
   },
+  // ── Достроено аудитом 2026-07-20 (H4): целые модели, которые ротация
+  //    пропускала → при удалении ENCRYPTION_KEY_OLD их данные превращались бы
+  //    в мусор. Все перечисленные поля хранятся как зашифрованные строки
+  //    (encrypt / encryptJson), поэтому общий строковый цикл их покрывает.
+  { name: 'booking', fields: ['clientName', 'clientContact', 'message'] },
+  { name: 'donation', fields: ['email', 'comment'] },
+  { name: 'subscription', fields: ['email'] },
+  { name: 'modeMap', fields: ['title', 'nodes', 'edges'] },
+  { name: 'therapistCustomMode', fields: ['name'] },
+  {
+    name: 'therapistRequest',
+    fields: ['fullName', 'qualification', 'contacts', 'message'],
+  },
+  { name: 'therapyRelation', fields: ['virtualClientName', 'clientAlias'] },
 ];
 
 async function rotate() {
@@ -150,14 +176,27 @@ async function rotate() {
     }
   }
 
-  // Also rotate User.mySchemaIds / myModeIds (JSON columns).
+  // User-колонки: клинические ярлыки (mySchemaIds/myModeIds) + 2FA-секреты
+  // (totpSecret, totpRecoveryCodes) — H4: без них ротация оставляла бы 2FA под
+  // старым ключом и убивала бы её при удалении ENCRYPTION_KEY_OLD.
   const users = await prisma.user.findMany({
-    select: { id: true, mySchemaIds: true, myModeIds: true },
+    select: {
+      id: true,
+      mySchemaIds: true,
+      myModeIds: true,
+      totpSecret: true,
+      totpRecoveryCodes: true,
+    },
   });
   let userTouched = 0;
   for (const u of users) {
     const patch: Record<string, string> = {};
-    for (const f of ['mySchemaIds', 'myModeIds'] as const) {
+    for (const f of [
+      'mySchemaIds',
+      'myModeIds',
+      'totpSecret',
+      'totpRecoveryCodes',
+    ] as const) {
       const v = u[f];
       if (typeof v !== 'string') continue;
       const fresh = reencrypt(v);
@@ -175,6 +214,48 @@ async function rotate() {
     console.log(`✓ user (clinical labels): ${userTouched}`);
     grand += userTouched;
   } else console.log(`  user (clinical labels): nothing to do`);
+
+  // clientConceptualization.history — JSON-массив снапшотов концептуализации,
+  // у каждого поля зашифрованы ОТДЕЛЬНЫМИ строками (не одна строка-колонка),
+  // поэтому общий цикл выше их не трогает (значение — массив, не строка).
+  // Ротируем вложенно: у каждого снапшота перешифровываем каждое строковое
+  // поле. reencrypt безопасен на не-шифртексте (дата/версия) — возвращает его
+  // без изменений (crypto.ts: decrypted===value → return value).
+  const concepts = await prisma.clientConceptualization.findMany({
+    select: { id: true, history: true },
+  });
+  let histTouched = 0;
+  for (const c of concepts) {
+    const hist = c.history;
+    if (!Array.isArray(hist)) continue;
+    let changed = false;
+    const rotated = hist.map((snap) => {
+      if (!snap || typeof snap !== 'object' || Array.isArray(snap)) return snap;
+      const out: Record<string, unknown> = {
+        ...(snap as Record<string, unknown>),
+      };
+      for (const [k, v] of Object.entries(out)) {
+        if (typeof v !== 'string') continue;
+        const fresh = reencrypt(v);
+        if (fresh !== null && fresh !== v) {
+          out[k] = fresh;
+          changed = true;
+        }
+      }
+      return out;
+    });
+    if (changed) {
+      await prisma.clientConceptualization.update({
+        where: { id: c.id },
+        data: { history: rotated as Prisma.InputJsonValue },
+      });
+      histTouched++;
+    }
+  }
+  if (histTouched > 0) {
+    console.log(`✓ clientConceptualization.history: ${histTouched}`);
+    grand += histTouched;
+  } else console.log(`  clientConceptualization.history: nothing to do`);
 
   console.log(
     `\nDone in ${Date.now() - startedAt}ms — ${grand} rows re-encrypted.`,
