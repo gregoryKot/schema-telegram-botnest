@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import {
   getOfferMemory,
+  homeScreenAddSupported,
   homeScreenPlatform,
+  homeScreenStatusSupported,
   markHomeScreenAdded,
   markHomeScreenNever,
   shouldOfferHomeScreen,
@@ -21,10 +23,21 @@ export function useHomeScreenOffer(surface: OfferSurface) {
   const [status, setStatus] = useState<TgHomeScreenStatus | undefined>();
   const [dismissed, setDismissed] = useState(false);
 
+  // Методы добавления на экран (Bot API 8.0) присутствуют как заглушки и в
+  // старых клиентах, где они НЕ работают. Реальную поддержку определяем по
+  // версии (homeScreen*Supported) — иначе показываем нерабочую кнопку.
+  const supported = homeScreenAddSupported();
+  const statusApiAvailable = homeScreenStatusSupported();
+
   // Статус значка спрашиваем у Telegram, а не у человека: он мог добавить
   // приложение с другого устройства или снести значок с экрана.
   useEffect(() => {
-    tg?.checkHomeScreenStatus?.((s) => setStatus(s));
+    if (statusApiAvailable) {
+      tg?.checkHomeScreenStatus?.((s) => {
+        if (s === 'added') markHomeScreenAdded();
+        setStatus(s);
+      });
+    }
     const onAdded = () => {
       markHomeScreenAdded();
       setStatus('added');
@@ -32,13 +45,14 @@ export function useHomeScreenOffer(surface: OfferSurface) {
     };
     tg?.onEvent?.('homeScreenAdded', onAdded);
     return () => tg?.offEvent?.('homeScreenAdded', onAdded);
-  }, [tg, surface]);
+  }, [tg, surface, statusApiAvailable]);
 
   const visible =
     !dismissed &&
     shouldOfferHomeScreen({
       platform: tg?.platform,
-      hasApi: !!tg?.addToHomeScreen,
+      hasApi: supported,
+      statusApiAvailable,
       tgStatus: status,
       memory: getOfferMemory(),
       now: Date.now(),
@@ -56,8 +70,10 @@ export function useHomeScreenOffer(surface: OfferSurface) {
     add: useCallback(() => {
       api.trackEvent('home_screen_offer', { action: 'add', surface });
       // Если человек передумает в нативном шите — не спрашиваем снова сразу,
-      // вернёмся через неделю.
+      // вернёмся через неделю. Карточку убираем сразу (иначе висит до
+      // следующего ре-рендера — snooze в localStorage сам его не вызывает).
       snoozeHomeScreen();
+      setDismissed(true);
       tg?.addToHomeScreen?.();
     }, [tg, surface]),
     later: useCallback(() => {
