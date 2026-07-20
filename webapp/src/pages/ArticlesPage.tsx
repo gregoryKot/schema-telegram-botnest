@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { api } from '../api';
 import type { ArticleSummary, Article } from '../api';
+import { useAsyncData } from '../hooks/useAsyncData';
 import { DIAGRAMS } from './articleDiagrams';
 import { PRACTICE_BOOKING_URL } from './landing/constants';
 
@@ -88,16 +89,15 @@ export function ArticlesListPage() {
 // ─── Single article page ──────────────────────────────────────────────────────
 export function ArticlePage() {
   const { slug } = useParams<{ slug: string }>();
-  const [article, setArticle] = useState<Article | null | undefined>(undefined);
 
-  useEffect(() => {
-    if (!slug) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
-    setArticle(undefined);
-    api.getArticle(slug)
-      .then(setArticle)
-      .catch(() => setArticle(null));
-  }, [slug]);
+  // resetKey=slug → back to the loading state (undefined) on navigation between
+  // articles, then null on 404 or the loaded article.
+  const articleFetcher = useCallback(
+    (): Promise<Article | null | undefined> =>
+      slug ? api.getArticle(slug).catch(() => null) : Promise.resolve(undefined),
+    [slug],
+  );
+  const { data: article } = useAsyncData<Article | null | undefined>(articleFetcher, undefined, slug);
 
   useEffect(() => {
     if (article) document.title = `${article.title} | schemehappens.ru`;

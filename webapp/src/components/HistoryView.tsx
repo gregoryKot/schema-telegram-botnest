@@ -195,10 +195,12 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
   const [showWeekCard, setShowWeekCard] = useState(false);
   const [showHint, setShowHint] = useState(() => !localStorage.getItem(HISTORY_HINT_KEY));
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
-    if (history.length > 0 && selectedIdx >= history.length) setSelectedIdx(history.length - 1);
-  }, [history.length, selectedIdx]);
+  // Clamp the selected index when history shrinks. Adjusting state during render
+  // (not in an effect) is the documented pattern for deriving state from props;
+  // the guard turns false after the set, so it settles in one extra render.
+  if (history.length > 0 && selectedIdx >= history.length) {
+    setSelectedIdx(history.length - 1);
+  }
 
   useEffect(() => {
     dateBtnRefs.current[selectedIdx]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
