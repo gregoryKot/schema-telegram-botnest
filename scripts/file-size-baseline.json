@@ -169,7 +169,7 @@
   "src/bot/product-metrics.format.ts": 192,
   "webapp/src/components/exercises/FlashcardEx.tsx": 191,
   "src/therapy/mode-maps.service.ts": 189,
-  "scripts/rotate-encryption-key.ts": 188,
+  "scripts/rotate-encryption-key.ts": 269,
   "schema-miniapp/src/components/settingsSheet/MiscSections.tsx": 186,
   "src/auth/auth-oauth.controller.ts": 186,
   "src/booking/booking-notify.service.ts": 186,
