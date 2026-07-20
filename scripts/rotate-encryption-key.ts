@@ -93,6 +93,10 @@ const TARGETS: Array<{ name: string; fields: string[] }> = [
     ],
   },
   { name: 'gratitudeDiaryEntry', fields: ['items'] },
+  // DiaryDraft.data — черновик дневника (тот же клинический текст, что запись),
+  // шифруется encryptJson в api.controller. Присваивание `const data = …`, а не
+  // свойство объекта, поэтому авто-сверка его не видит (см. spec).
+  { name: 'diaryDraft', fields: ['data'] },
   { name: 'userTask', fields: ['text'] },
   { name: 'therapistNote', fields: ['text'] },
   {

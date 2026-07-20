@@ -80,8 +80,22 @@ function discoverEncryptedFields(): Map<string, string> {
   return found;
 }
 
+// Поля, зашифрованные ПРИСВАИВАНИЕМ (`const data = encryptJson(...)`), а не
+// свойством объекта или EncryptSchema — авто-обнаружение их не видит (LHS-имя
+// переменной ненадёжно: у большинства это generic `enc`/`encText`, дало бы
+// false-positive). Такие поля перечисляются здесь ВРУЧНУЮ и всё равно
+// проверяются против скрипта ротации. Реальный инцидент: DiaryDraft.data
+// (клинический текст черновика) шифровался, но в ротацию не попал, и обе
+// авто-защиты (эта сверка + ручной обзор) его пропустили — 2026-07-20, H3.
+const ASSIGNMENT_ENCRYPTED: Record<string, string> = {
+  data: 'src/api/api.controller.ts (DiaryDraft.data)',
+};
+
 describe('покрытие ротации ENCRYPTION_KEY (H4)', () => {
   const encrypted = discoverEncryptedFields();
+  for (const [field, where] of Object.entries(ASSIGNMENT_ENCRYPTED)) {
+    if (!encrypted.has(field)) encrypted.set(field, where);
+  }
 
   it('обнаружены зашифрованные поля (санити — парсер не сломан)', () => {
     // Если обнаружений мало — регэксп протух и тест стал бесполезен.
