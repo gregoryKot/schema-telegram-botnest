@@ -18,6 +18,11 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    # Диагностика зависаний 2026-07-20 (шаг coverage висел бесконечно на
+    # раннере, локально не воспроизводится): таймаут вместо вечного
+    # in_progress — убитый шаг отдаёт лог с последней строкой вывода,
+    # вечная джоба не отдаёт ничего и жрёт слот раннера 6 часов.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -27,11 +32,19 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npx tsc --noEmit -p tsconfig.build.json
+      # Диагностический прогон БЕЗ coverage и БЕЗ --silent (зависания
+      # 2026-07-20): если висит и он — дело в jest/тестах на раннере,
+      # если проходит, а ratchet ниже висит — дело в istanbul/spawnSync.
+      # verbose-вывод показывает последний стартовавший сьют перед смертью.
+      - name: jest диагностический (без coverage, с выводом)
+        run: npx jest --verbose
+        timeout-minutes: 6
       # coverage-храповик (TEST_COVERAGE_PLAN.md, этап 4, п.14): сам гоняет
       # jest --coverage, отдельный `npx jest` не нужен. Падает при просадке
       # покрытия ниже scripts/coverage-baseline.json (общей или по полу
       # src/auth и src/utils).
       - run: node scripts/check-coverage-ratchet.mjs
+        timeout-minutes: 6
       # Тот же пакет тестов под НЕ-UTC зоной (инцидент 2026-07-20).
       # Раннер всегда UTC, поэтому баги «время считается от зоны сервера»
       # в CI невидимы: парсер TZID в caldav-busy.ts был сломан для любой
