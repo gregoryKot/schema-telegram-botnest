@@ -60,6 +60,12 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Reset the highlighted row to the top whenever the query changes. Adjusting
+  // state during render (not in an effect) is the documented pattern for
+  // deriving state from a changing value.
+  const [prevQ, setPrevQ] = useState(q);
+  if (q !== prevQ) { setPrevQ(q); setSel(0); }
+
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   // Fetch clients for therapists
@@ -109,9 +115,6 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
     if (!term) return all;
     return all.filter(r => (r.label + ' ' + (r.sub ?? '')).toLowerCase().includes(term));
   }, [q, clients, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onNewDiaryEntry]);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
-  useEffect(() => { setSel(0); }, [q]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

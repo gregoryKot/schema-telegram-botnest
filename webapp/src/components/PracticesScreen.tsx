@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import type { UserPractice } from '../api';
+import { useAsyncData } from '../hooks/useAsyncData';
 import { Loader } from './Loader';
 import { COLORS } from '../types';
 import { useHistorySheet } from '../hooks/useHistorySheet';
@@ -24,7 +25,6 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [needIdx, setNeedIdx] = useState(0);
-  const [practices, setPractices] = useState<UserPractice[] | null>(null);
   const [input, setInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [addedToast, setAddedToast] = useState(false);
@@ -35,11 +35,13 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
     api.ratings().then(setRatings).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
-    setPractices(null);
-    api.getPractices(NEED_IDS[needIdx]).then(setPractices).catch(() => setPractices([]));
-  }, [needIdx]);
+  // resetKey=needIdx → list flashes back to loading on tab switch, then fills.
+  const practicesFetcher = useCallback(
+    () => api.getPractices(NEED_IDS[needIdx]).catch(() => [] as UserPractice[]),
+    [needIdx],
+  );
+  const { data: practices, reload: reloadPractices, setData: setPractices } =
+    useAsyncData<UserPractice[] | null>(practicesFetcher, null, needIdx);
 
   async function handleAdd() {
     const text = input.trim();
@@ -50,7 +52,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
       setInput('');
       setAddedToast(true);
       setTimeout(() => setAddedToast(false), 2000);
-      api.getPractices(NEED_IDS[needIdx]).then(setPractices).catch(() => {});
+      reloadPractices();
     } catch {
       setErrorToast(true);
       setTimeout(() => setErrorToast(false), 2500);
