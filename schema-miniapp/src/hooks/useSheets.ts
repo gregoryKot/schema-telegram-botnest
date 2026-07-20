@@ -14,7 +14,6 @@ export interface SheetsValues {
   plans: boolean;
   todayNote: boolean;
   pairSheet: boolean;
-  practicesOnboarding: boolean;
   childhoodWheel: boolean;
   tracker: boolean;
   trackerTab: TrackerTabName;
@@ -33,7 +32,6 @@ export type SheetKey =
   | 'plans'
   | 'todayNote'
   | 'pairSheet'
-  | 'practicesOnboarding'
   | 'childhoodWheel'
   | 'tracker'
   | 'trackerOverlay'
@@ -52,7 +50,6 @@ const initialState: SheetsValues = {
   plans: false,
   todayNote: false,
   pairSheet: false,
-  practicesOnboarding: false,
   childhoodWheel: false,
   tracker: false,
   trackerTab: 'today',

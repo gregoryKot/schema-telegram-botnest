@@ -51,13 +51,11 @@ export function useTelegramBackButton({
                           }
                         : sheets.childhoodWheel
                           ? () => sheets.close('childhoodWheel')
-                          : sheets.practicesOnboarding
-                            ? () => sheets.close('practicesOnboarding')
-                            : sheets.todayNote
-                              ? () => sheets.close('todayNote')
-                              : therapistMode && cabinetView === 'client'
-                                ? () => therapistBackHandlerRef.current()
-                                : () => {};
+                          : sheets.todayNote
+                            ? () => sheets.close('todayNote')
+                            : therapistMode && cabinetView === 'client'
+                              ? () => therapistBackHandlerRef.current()
+                              : () => {};
     const bb = window.Telegram?.WebApp?.BackButton;
     if (!bb) return;
     const anyOpen =
@@ -72,7 +70,6 @@ export function useTelegramBackButton({
       sheets.about ||
       sheets.pairSheet ||
       sheets.childhoodWheel ||
-      sheets.practicesOnboarding ||
       sheets.todayNote ||
       (therapistMode && cabinetView === 'client');
     if (anyOpen) bb.show();
@@ -89,7 +86,6 @@ export function useTelegramBackButton({
     sheets.about,
     sheets.pairSheet,
     sheets.childhoodWheel,
-    sheets.practicesOnboarding,
     sheets.todayNote,
     therapistMode,
     cabinetView,

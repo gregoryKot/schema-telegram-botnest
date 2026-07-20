@@ -37,7 +37,6 @@ const SchemaInfoSheet      = lazy(() => import('./SchemaInfoSheet').then(m => ({
 const ChildhoodWheelEx     = lazy(() => import('./exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
 const TherapistClientSheet  = lazy(() => import('./TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
 const TherapistTodaySection = lazy(() => import('../sections/TherapistTodaySection').then(m => ({ default: m.TherapistTodaySection })));
-const PracticesOnboarding  = lazy(() => import('./PracticesOnboarding').then(m => ({ default: m.PracticesOnboarding })));
 const TherapistPrivacyDisclaimer = lazy(() => import('./TherapistPrivacyDisclaimer').then(m => ({ default: m.TherapistPrivacyDisclaimer })));
 
 const LazyLoader = () => <Loader minHeight="100dvh" />;
@@ -206,7 +205,6 @@ export function AppShell() {
   const [showDiaries, setShowDiaries] = useState(false);
   const [showChildhoodWheel, setShowChildhoodWheel] = useState(false);
   const [showTodayNote, setShowTodayNote] = useState(false);
-  const [showPracticesOnboarding, setShowPracticesOnboarding] = useState(false);
   const [showTherapistDisclaimer, setShowTherapistDisclaimer] = useState(false);
 
   // First entry into the cabinet as a therapist → one-time privacy disclaimer
@@ -750,12 +748,6 @@ export function AppShell() {
             onCreated={() => setShowTrackerGoal(false)}
             onClose={() => setShowTrackerGoal(false)}
           />
-        )}
-        {showPracticesOnboarding && needs.length > 0 && (
-          <PracticesOnboarding needs={needs} onDone={() => {
-            setShowPracticesOnboarding(false);
-            if (childhoodWheelPending) { setChildhoodWheelPending(false); setShowChildhoodWheel(true); }
-          }} />
         )}
         {showTherapistDisclaimer && (
           <TherapistPrivacyDisclaimer onDone={() => {

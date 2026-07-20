@@ -14,7 +14,6 @@ import { todayInsightPhrase } from '../utils/todayInsight';
 import { NoteSheet } from './NoteSheet';
 import { SchemaInfoSheet } from './SchemaInfoSheet';
 import { PairSheet } from './PairSheet';
-import { PracticesOnboarding } from './PracticesOnboarding';
 import { ChildhoodWheelSheet } from './ChildhoodWheelSheet';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { AboutSheet } from './AboutSheet';
@@ -169,19 +168,6 @@ export function AppOverlays({
           defaultType="tracker_streak"
           onCreated={() => sheets.close('trackerGoal')}
           onClose={() => sheets.close('trackerGoal')}
-        />
-      )}
-
-      {sheets.practicesOnboarding && needs.length > 0 && (
-        <PracticesOnboarding
-          needs={needs}
-          onDone={() => {
-            sheets.close('practicesOnboarding');
-            if (childhoodWheelPending) {
-              setChildhoodWheelPending(false);
-              sheets.open('childhoodWheel');
-            }
-          }}
         />
       )}
 
