@@ -6,8 +6,11 @@ import {
   isFocusDone,
   isSecondaryHidden,
   setSecondaryHidden,
+  isStreakHidden,
   isTherapistBannerHidden,
   setTherapistBannerHidden,
+  isPhraseHidden,
+  setPhraseHidden,
 } from './todayFocus';
 
 // В node-окружении vitest нет localStorage — простой in-memory стаб.
@@ -33,6 +36,25 @@ describe('флаги видимости «Сегодня»', () => {
     expect(isSecondaryHidden()).toBe(false);
     setSecondaryHidden(true);
     expect(isSecondaryHidden()).toBe(true);
+  });
+
+  it('цитата показана по умолчанию; скрывается и возвращается', () => {
+    localStorage.clear();
+    expect(isPhraseHidden()).toBe(false);
+    setPhraseHidden(true);
+    expect(isPhraseHidden()).toBe(true);
+    // read-after-write: флаг переживает «перезапуск» (читается из storage)
+    expect(localStorage.getItem('today_phrase_hidden')).toBe('1');
+    setPhraseHidden(false);
+    expect(isPhraseHidden()).toBe(false);
+    expect(localStorage.getItem('today_phrase_hidden')).toBe(null);
+  });
+
+  it('скрытие цитаты не задевает соседние блоки', () => {
+    localStorage.clear();
+    setPhraseHidden(true);
+    expect(isStreakHidden()).toBe(false);
+    expect(isTherapistBannerHidden()).toBe(false);
   });
 
   it('баннер терапевта показан по умолчанию; скрывается', () => {

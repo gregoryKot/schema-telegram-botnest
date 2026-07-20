@@ -2,7 +2,9 @@ import { IsIn, IsObject, IsOptional } from 'class-validator';
 import {
   ANALYTICS_EVENTS,
   CRISIS_SURFACES,
+  CUSTOMIZE_ENTRY_POINTS,
   ONBOARDING_STEPS,
+  TODAY_BLOCKS,
   SHARE_CARD_KINDS,
   TODAY_FOCUS_PRACTICES,
   WEB_BANNER_IDS,
@@ -32,4 +34,8 @@ export const TODAY_FOCUS_PRACTICE_SET: ReadonlySet<string> = new Set(
 export const WEB_BANNER_ID_SET: ReadonlySet<string> = new Set(WEB_BANNER_IDS);
 export const ONBOARDING_STEP_SET: ReadonlySet<string> = new Set(
   ONBOARDING_STEPS,
+);
+export const TODAY_BLOCK_SET: ReadonlySet<string> = new Set(TODAY_BLOCKS);
+export const CUSTOMIZE_ENTRY_SET: ReadonlySet<string> = new Set(
+  CUSTOMIZE_ENTRY_POINTS,
 );

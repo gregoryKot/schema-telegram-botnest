@@ -12,6 +12,8 @@ import {
   TODAY_FOCUS_PRACTICE_SET,
   WEB_BANNER_ID_SET,
   ONBOARDING_STEP_SET,
+  TODAY_BLOCK_SET,
+  CUSTOMIZE_ENTRY_SET,
 } from './dto/analytics.dto';
 
 interface AuthRequest extends Request {
@@ -107,6 +109,25 @@ function sanitizeMeta(
     const step = meta.step;
     if (typeof step === 'string' && ONBOARDING_STEP_SET.has(step)) {
       return { step };
+    }
+    return undefined;
+  }
+  if (name === 'today_block_toggle') {
+    const block = meta.block;
+    const hidden = meta.hidden;
+    if (
+      typeof block === 'string' &&
+      TODAY_BLOCK_SET.has(block) &&
+      typeof hidden === 'boolean'
+    ) {
+      return { block, hidden };
+    }
+    return undefined;
+  }
+  if (name === 'today_customize_open') {
+    const via = meta.via;
+    if (typeof via === 'string' && CUSTOMIZE_ENTRY_SET.has(via)) {
+      return { via };
     }
     return undefined;
   }

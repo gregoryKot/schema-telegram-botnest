@@ -34,7 +34,14 @@ export interface ProductMetrics {
   shareResult: { ok: number; fallback: number };
   outbox: { flushes: number; recovered: number };
   // Настройка экрана «Сегодня» и дыхание «Здесь и сейчас» (за месяц).
-  today: { focusChanged: number; streakHidden: number };
+  today: {
+    focusChanged: number;
+    // Сколько раз прятали каждый блок (цитата, счётчик серии и т.д.).
+    blocksHidden: Array<{ block: string; count: number }>;
+    // Как открывали «Настроить экран»: шестерёнкой и долгим нажатием.
+    customizeGear: number;
+    customizeLongpress: number;
+  };
   breath: { started: number };
 }
 
@@ -63,6 +70,14 @@ const SHARE_KIND_LABELS: Record<string, string> = {
   achievements: '🏅 все награды разом',
   phrase: '💬 фраза поддержки',
   gratitude: '🌱 благодарность',
+};
+
+// Подписи блоков главного экрана — словами пользователя, не ключами.
+const TODAY_BLOCK_LABELS: Record<string, string> = {
+  streak: '🔥 счётчик дней подряд',
+  phrase: '💬 цитата',
+  secondary: '🗂 «что ещё можно сегодня»',
+  therapist_banner: '🧑‍⚕️ баннер кабинета',
 };
 
 // Подписи шагов обучения — тем же простым языком, каким шаг звучит для юзера.
@@ -143,7 +158,15 @@ export function formatProductMetrics(m: ProductMetrics): string {
     `Случаев: ${m.outbox.flushes} · записей вернули: ${m.outbox.recovered}`,
     '',
     `🎛 <b>Настраивают главный экран</b> (за месяц)`,
-    `Сменили главную практику: ${m.today.focusChanged} · прятали счётчик серии: ${m.today.streakHidden}`,
+    `Сменили главную практику: ${m.today.focusChanged}`,
+    `Заходили в настройку экрана: шестерёнкой ${m.today.customizeGear} · ` +
+      `долгим нажатием ${m.today.customizeLongpress}`,
+    m.today.blocksHidden.length === 0
+      ? 'Блоки с главного пока не прятали'
+      : 'Что прятали: ' +
+        m.today.blocksHidden
+          .map((b) => `${TODAY_BLOCK_LABELS[b.block] ?? b.block} — ${b.count}`)
+          .join(' · '),
     '',
     `🌬 <b>Дыхание «Здесь и сейчас»</b> (за месяц)`,
     `Запускали: ${m.breath.started} раз`,

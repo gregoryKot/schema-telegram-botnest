@@ -7,78 +7,41 @@ import { BottomSheet } from './BottomSheet';
 import { FOCUS_OPTIONS, FocusPractice } from '../utils/todayFocus';
 import { getTheme, toggleTheme, Theme } from '../utils/theme';
 import { pressable } from '../utils/a11y';
+import { ToggleRow } from './todayCustomize/ToggleRow';
+
+// Какую строку подсветить при открытии: долгое нажатие на блок открывает лист
+// и показывает, где этот блок выключается (иначе жест приводит «куда-то в
+// настройки», и человек сам ищет нужный тумблер).
+export type CustomizeHighlight = 'practice' | 'streak' | 'phrase';
 
 interface Props {
   practice: FocusPractice;
   streakHidden: boolean;
+  phraseHidden: boolean;
+  highlight?: CustomizeHighlight;
   secondaryHidden: boolean;
   therapistBannerHidden: boolean;
   showTherapistToggle: boolean;
   onPractice: (p: FocusPractice) => void;
   onToggleStreak: () => void;
+  onTogglePhrase: () => void;
   onToggleSecondary: () => void;
   onToggleTherapistBanner: () => void;
   onOpenSettings: () => void;
   onClose: () => void;
 }
 
-function ToggleRow({
-  emoji,
-  title,
-  sub,
-  on,
-  onToggle,
-}: {
-  emoji: string;
-  title: string;
-  sub: string;
-  on: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div
-      {...pressable(onToggle)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '12px 14px',
-        borderRadius: 14,
-        cursor: 'pointer',
-        background: 'rgba(var(--fg-rgb),0.04)',
-        WebkitTapHighlightColor: 'transparent',
-      }}
-    >
-      <span style={{ fontSize: 20, flexShrink: 0 }}>{emoji}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-          {title}
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 1 }}>
-          {sub}
-        </div>
-      </div>
-      <span
-        style={{
-          fontSize: 15,
-          fontWeight: 800,
-          color: on ? 'var(--accent)' : 'var(--text-faint)',
-        }}
-      >
-        {on ? '✓' : '—'}
-      </span>
-    </div>
-  );
-}
-
 export function TodayCustomizeSheet({
   practice,
   streakHidden,
+  phraseHidden,
+  highlight,
   secondaryHidden,
   therapistBannerHidden,
   showTherapistToggle,
   onPractice,
   onToggleStreak,
+  onTogglePhrase,
   onToggleSecondary,
   onToggleTherapistBanner,
   onOpenSettings,
@@ -207,6 +170,17 @@ export function TodayCustomizeSheet({
         <div className="section-label" style={{ margin: '16px 4px 8px' }}>
           Показывать на главном
         </div>
+        <div
+          style={{
+            fontSize: 11,
+            color: 'var(--text-faint)',
+            lineHeight: 1.5,
+            margin: '0 4px 8px',
+          }}
+        >
+          Подсказка: долгое нажатие на любой блок главного экрана открывает эту
+          настройку.
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <ToggleRow
             emoji="🔥"
@@ -214,6 +188,15 @@ export function TodayCustomizeSheet({
             sub="можно убрать, если счёт дней давит"
             on={!streakHidden}
             onToggle={onToggleStreak}
+            highlighted={highlight === 'streak'}
+          />
+          <ToggleRow
+            emoji="💬"
+            title="Фраза для себя"
+            sub="цитата Здорового взрослого на главном"
+            on={!phraseHidden}
+            onToggle={onTogglePhrase}
+            highlighted={highlight === 'phrase'}
           />
           <ToggleRow
             emoji="🗂"

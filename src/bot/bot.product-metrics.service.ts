@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
-import { ONBOARDING_STEPS } from '../analytics/analytics.constants';
+import {
+  ONBOARDING_STEPS,
+  TODAY_BLOCKS,
+} from '../analytics/analytics.constants';
 
 // Продуктовые метрики для /stats (правило №8). Всё выводится из БД: часть — из
 // таблиц-фич (онбординг/adoption/распределения), часть — из событий
@@ -50,9 +53,10 @@ export class ProductMetricsService {
       shareCard30,
       shareKindRows,
       todayFocusChanged,
-      streakHiddenRows,
+      blocksHiddenRows,
       breathStarted,
       onboardingStepRows,
+      customizeRows,
     ] = await Promise.all([
       this.prisma.user.count({
         where: { ...activeUser, createdAt: { gte: since30 } },
@@ -119,10 +123,22 @@ export class ProductMetricsService {
         GROUP BY "meta"->>'kind'
         ORDER BY c DESC`,
       ev('today_focus_change'),
-      this.prisma.$queryRaw<Array<{ c: bigint }>>`
-        SELECT count(*)::bigint AS c FROM "AnalyticsEvent"
-        WHERE "name" = 'today_streak_toggle' AND "meta"->>'hidden' = 'true'
-          AND "createdAt" >= ${since30}`,
+      // Скрытия блоков главного. Старое событие today_streak_toggle (до того,
+      // как блоков стало несколько) подмешиваем как блок 'streak' — иначе
+      // накопленная история молча обнулится в отчёте.
+      this.prisma.$queryRaw<Array<{ block: string | null; c: bigint }>>`
+        SELECT block, SUM(c)::bigint AS c FROM (
+          SELECT "meta"->>'block' AS block, count(*)::bigint AS c
+            FROM "AnalyticsEvent"
+           WHERE "name" = 'today_block_toggle' AND "meta"->>'hidden' = 'true'
+             AND "createdAt" >= ${since30}
+           GROUP BY "meta"->>'block'
+          UNION ALL
+          SELECT 'streak' AS block, count(*)::bigint AS c
+            FROM "AnalyticsEvent"
+           WHERE "name" = 'today_streak_toggle' AND "meta"->>'hidden' = 'true'
+             AND "createdAt" >= ${since30}
+        ) t GROUP BY block`,
       ev('breath_start'),
       // Воронка обучения: люди (не события) на каждом шаге — один человек мог
       // вернуться к шагу точками навигации, это не должно раздувать счёт.
@@ -131,6 +147,11 @@ export class ProductMetricsService {
         FROM "AnalyticsEvent"
         WHERE "name" = 'onboarding_step' AND "createdAt" >= ${since30}
         GROUP BY "meta"->>'step'`,
+      this.prisma.$queryRaw<Array<{ via: string | null; c: bigint }>>`
+        SELECT "meta"->>'via' AS via, count(*)::bigint AS c
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'today_customize_open' AND "createdAt" >= ${since30}
+        GROUP BY "meta"->>'via'`,
     ]);
 
     const sections = sectionsRaw
@@ -144,6 +165,12 @@ export class ProductMetricsService {
     const shareFallback = Number(
       shareRows.find((r) => r.ok === 'false')?.c ?? 0n,
     );
+
+    const blockCounts = new Map(
+      blocksHiddenRows.map((r) => [r.block ?? '', Number(r.c)]),
+    );
+    const viaCount = (via: string): number =>
+      Number(customizeRows.find((r) => r.via === via)?.c ?? 0n);
 
     // Порядок — как в онбординге (ONBOARDING_STEPS), а не по убыванию счёта:
     // воронка читается сверху вниз, видно, на каком шаге обрыв.
@@ -184,7 +211,12 @@ export class ProductMetricsService {
       },
       today: {
         focusChanged: todayFocusChanged,
-        streakHidden: num(streakHiddenRows),
+        // Порядок — как в листе настройки, а не по убыванию счёта.
+        blocksHidden: TODAY_BLOCKS.filter((b) => blockCounts.has(b)).map(
+          (block) => ({ block, count: blockCounts.get(block) ?? 0 }),
+        ),
+        customizeGear: viaCount('gear'),
+        customizeLongpress: viaCount('longpress'),
       },
       breath: { started: breathStarted },
     };
