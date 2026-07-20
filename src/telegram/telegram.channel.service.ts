@@ -4,19 +4,25 @@ import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
 import { poolAlertText } from '../bot/healthy-adult.pool-alert';
+import { dueSlot } from '../bot/healthy-adult.schedule';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 
 /** Часовой пояс расписания канала (единый для broadcast, не per-user). */
 const POST_TZ = 'Europe/Moscow';
-const MORNING_CRON = '0 9 * * *';
-const EVENING_CRON = '0 20 * * *';
+// Тики каждые 5 минут внутри окон 09:00–10:55 и 18:00–19:55 МСК. Публикует не
+// каждый тик — а один раз за окно, в детерминированно-случайную минуту (jitter,
+// см. healthy-adult.schedule). Так время гуляет ото дня ко дню, но переживает
+// рестарт: setTimeout-задержка потерялась бы при деплое.
+const MORNING_CRON = '*/5 9,10 * * *';
+const EVENING_CRON = '*/5 18,19 * * *';
 
 /**
- * Публикация сообщений «Здорового Взрослого» в Telegram-канал дважды в день.
- * Берём фразу из пула (LRU, без повторов подряд) — пул пополняется пачками
- * через админку, см. HEALTHY_ADULT.md. Генерации на лету нет намеренно:
- * подписка Claude Max не списывается из прод-кода, а в канал уходит только
- * то, что владелец прочитал глазами.
+ * Публикация сообщений «Здорового Взрослого» в Telegram-канал дважды в день —
+ * утром (~10:00 ±час) и вечером (~19:00 ±час), в случайную минуту, чтобы не
+ * выглядеть ботом. Берём фразу из пула (LRU, без повторов подряд) — пул
+ * пополняется пачками через админку, см. HEALTHY_ADULT.md. Генерации на лету
+ * нет намеренно: подписка Claude Max не списывается из прод-кода, а в канал
+ * уходит только то, что владелец прочитал глазами.
  *
  * Каждый пост пишем в лог HealthyAdultPost — для дедупа и истории.
  *
@@ -41,13 +47,29 @@ export class TelegramChannelService {
   }
 
   @Cron(MORNING_CRON, { name: 'healthyAdultMorning', timeZone: POST_TZ })
-  async postMorning() {
-    await this.post();
+  async tickMorning() {
+    await this.maybePost();
   }
 
   @Cron(EVENING_CRON, { name: 'healthyAdultEvening', timeZone: POST_TZ })
-  async postEvening() {
-    await this.post();
+  async tickEvening() {
+    await this.maybePost();
+  }
+
+  /**
+   * Тик расписания: публикует, только если настала запланированная на сегодня
+   * минута слота и в этот слот ещё не постили. Иначе тихо выходит.
+   * Ручная публикация (кнопка в админке, /zv) идёт мимо — через post().
+   */
+  async maybePost(now = new Date()): Promise<void> {
+    try {
+      const slot = dueSlot(now, await this.phrases.lastPostAt());
+      if (slot) await this.post();
+    } catch (err) {
+      this.logger.error(
+        `healthy-adult tick failed: ${(err as Error)?.message}`,
+      );
+    }
   }
 
   /**
