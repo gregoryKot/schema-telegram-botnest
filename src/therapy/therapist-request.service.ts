@@ -10,11 +10,20 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AccountService } from '../bot/account.service';
 import { SecurityLogService } from '../auth/security-log.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
+import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 
 const MAX_NAME = 100;
 const MAX_QUAL = 500;
 const MAX_CONTACTS = 200;
 const MAX_MSG = 1000;
+
+// ФИО, квалификация, контакты и сопроводительное письмо — PII в свободном
+// тексте, шифруются как и остальной пользовательский текст (правило
+// «Шифрование» из чеклиста новых таблиц). Легаси plaintext-строки читаются
+// как есть (decrypt plaintext-tolerant).
+const REQUEST_SCHEMA: EncryptSchema = {
+  strings: ['fullName', 'qualification', 'contacts', 'message'],
+};
 
 @Injectable()
 export class TherapistRequestService {
@@ -118,14 +127,15 @@ export class TherapistRequestService {
     if (existing?.status === 'approved')
       throw new ConflictException('Request already approved');
 
+    const fields = encryptRecord(
+      { fullName, qualification, contacts, message },
+      REQUEST_SCHEMA,
+    );
     const row = existing
       ? await this.prisma.therapistRequest.update({
           where: { userId },
           data: {
-            fullName,
-            qualification,
-            contacts,
-            message,
+            ...fields,
             status: 'pending',
             reviewedAt: null,
             reviewedBy: null,
@@ -133,14 +143,7 @@ export class TherapistRequestService {
           },
         })
       : await this.prisma.therapistRequest.create({
-          data: {
-            userId,
-            fullName,
-            qualification,
-            contacts,
-            message,
-            status: 'pending',
-          },
+          data: { userId, ...fields, status: 'pending' },
         });
 
     // Явный каст в одном месте — вместо `any`-member-access на каждое
@@ -153,7 +156,14 @@ export class TherapistRequestService {
       requestId: rowId,
       summary: qualification.slice(0, 120),
     });
-    this.notifyAdmin(row).catch((e: unknown) =>
+    // В Telegram/e-mail админу уходит plaintext (row в БД — шифрованный).
+    this.notifyAdmin({
+      ...row,
+      fullName,
+      qualification,
+      contacts,
+      message,
+    }).catch((e: unknown) =>
       this.logger.warn(
         `notifyAdmin failed: ${e instanceof Error ? e.message : String(e)}`,
       ),
@@ -183,13 +193,14 @@ export class TherapistRequestService {
 
   async listPending(adminId: number) {
     this.assertAdmin(adminId);
-    return this.prisma.therapistRequest.findMany({
+    const rows = await this.prisma.therapistRequest.findMany({
       where: { status: 'pending' },
       orderBy: { createdAt: 'asc' },
       // D-4 (аудит 2026-07): страховка от роста таблицы (не пагинация) —
       // админский список заявок не должен читаться без ограничения.
       take: 5000,
     });
+    return rows.map((r) => decryptRecord(r, REQUEST_SCHEMA));
   }
 
   async approve(adminId: number, requestId: number) {

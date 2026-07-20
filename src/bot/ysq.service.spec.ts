@@ -167,3 +167,39 @@ describe('YsqService.saveYsqResult — история накапливается
     expect(await svc.getYsqHistory(1n)).toHaveLength(1);
   });
 });
+
+// Аудит 2026-07-20: ответы YSQ — клинический профиль схем, до этого лежали
+// в БД plaintext-массивом. Теперь в Json-колонке — строка-блоб (шифроблоб,
+// без ключа в тестовом окружении — JSON-строка), наружу — числа.
+describe('YsqService — ответы не лежат в БД plaintext-массивом', () => {
+  it('в хранилище строка-блоб, а не массив (result, history, progress)', async () => {
+    const db = makeDb();
+    const svc = new YsqService(db);
+
+    await svc.saveYsqResult(1n, [1, 2, 3]);
+    await svc.saveYsqProgress(1n, [4, 5], 1);
+
+    const storedResult = db.ysqResult.upsert.mock.calls[0][0].create.answers;
+    const storedHistory =
+      db.ysqResultHistory.create.mock.calls[0][0].data.answers;
+    const storedProgress =
+      db.ysqProgress.upsert.mock.calls[0][0].create.answers;
+    for (const stored of [storedResult, storedHistory, storedProgress]) {
+      expect(typeof stored).toBe('string');
+      expect(Array.isArray(stored)).toBe(false);
+    }
+  });
+
+  it('легаси-строки с plaintext-массивом читаются как есть', async () => {
+    const db = makeDb();
+    // Строка старого формата: answers — массив прямо в Json-колонке.
+    db.ysqResult.findUnique.mockReturnValueOnce({
+      userId: 1n,
+      answers: [1, 2, 3],
+      completedAt: new Date(),
+    });
+    const svc = new YsqService(db);
+
+    expect((await svc.getYsqResult(1n))?.answers).toEqual([1, 2, 3]);
+  });
+});

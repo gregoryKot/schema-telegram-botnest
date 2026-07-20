@@ -1,7 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { encryptJson, decryptJson } from '../utils/crypto';
 
 // Тест на схемы — прогресс прохождения и итоговые результаты.
+// Ответы (116 оценок 0–6) — клинический профиль схем, хранятся зашифрованным
+// JSON-блобом в Json-колонке (как GratitudeDiaryEntry.items). Легаси-строки
+// с plaintext-массивом читаются как есть (decrypt plaintext-tolerant).
+const decAnswers = (v: unknown): number[] =>
+  typeof v === 'string'
+    ? (decryptJson<number[]>(v) ?? [])
+    : ((v as number[]) ?? []);
+const encAnswers = (answers: number[]): string =>
+  encryptJson(answers) ?? JSON.stringify(answers);
+
 @Injectable()
 export class YsqService {
   constructor(private readonly prisma: PrismaService) {}
@@ -11,7 +22,7 @@ export class YsqService {
   ): Promise<{ answers: number[]; page: number } | null> {
     const r = await this.prisma.ysqProgress.findUnique({ where: { userId } });
     if (!r) return null;
-    return { answers: r.answers as number[], page: r.page };
+    return { answers: decAnswers(r.answers), page: r.page };
   }
 
   async saveYsqProgress(
@@ -19,10 +30,11 @@ export class YsqService {
     answers: number[],
     page: number,
   ): Promise<void> {
+    const enc = encAnswers(answers);
     await this.prisma.ysqProgress.upsert({
       where: { userId },
-      update: { answers, page, updatedAt: new Date() },
-      create: { userId, answers, page },
+      update: { answers: enc, page, updatedAt: new Date() },
+      create: { userId, answers: enc, page },
     });
   }
 
@@ -35,7 +47,7 @@ export class YsqService {
   ): Promise<{ answers: number[]; completedAt: Date } | null> {
     const r = await this.prisma.ysqResult.findUnique({ where: { userId } });
     if (!r) return null;
-    return { answers: r.answers as number[], completedAt: r.completedAt };
+    return { answers: decAnswers(r.answers), completedAt: r.completedAt };
   }
 
   async deleteYsqResult(userId: bigint): Promise<void> {
@@ -44,14 +56,15 @@ export class YsqService {
 
   async saveYsqResult(userId: bigint, answers: number[]): Promise<void> {
     const now = new Date();
+    const enc = encAnswers(answers);
     await this.prisma.$transaction([
       this.prisma.ysqResult.upsert({
         where: { userId },
-        update: { answers, completedAt: now },
-        create: { userId, answers },
+        update: { answers: enc, completedAt: now },
+        create: { userId, answers: enc },
       }),
       this.prisma.ysqResultHistory.create({
-        data: { userId, answers, completedAt: now },
+        data: { userId, answers: enc, completedAt: now },
       }),
     ]);
   }
@@ -67,7 +80,12 @@ export class YsqService {
     return rows.map((r) => ({
       id: r.id,
       completedAt: r.completedAt,
-      answers: r.answers as number[],
+      answers: decAnswers(r.answers),
     }));
   }
 }
+
+// Единственный экспортируемый декодер для читателей YsqResult вне сервиса
+// (profile.service, therapy-client-data.service) — чтобы tolerant-чтение
+// не копипастилось (правило «одна механика — один компонент»).
+export { decAnswers as decodeYsqAnswers };

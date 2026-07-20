@@ -11,6 +11,7 @@ import {
   EncryptSchema,
 } from '../utils/crypto';
 import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
+import { decodeYsqAnswers } from '../bot/ysq.service';
 
 const SCHEMA_NOTE_SCHEMA: EncryptSchema = {
   strings: [
@@ -81,12 +82,12 @@ export class TherapyClientDataService {
     }
 
     const ysqActiveSchemaIds = ysq?.answers
-      ? computeActiveSchemas(ysq.answers as number[])
+      ? computeActiveSchemas(decodeYsqAnswers(ysq.answers))
       : [];
     const ysqHistory = rawHistory.map((r) => ({
       id: r.id,
       completedAt: r.completedAt.toISOString(),
-      scores: computeYsqScores(r.answers as number[]),
+      scores: computeYsqScores(decodeYsqAnswers(r.answers)),
     }));
 
     return {

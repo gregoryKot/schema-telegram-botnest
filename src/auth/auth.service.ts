@@ -11,6 +11,8 @@ import { SecurityLogService } from './security-log.service';
 import { EmailService } from './email.service';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
+// Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
+import { encrypt as encField, decrypt as decField } from '../utils/crypto';
 
 const EMAIL_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 min
 
@@ -133,7 +135,7 @@ export class AuthService {
         id: crypto.randomUUID(),
         userId,
         tokenHash,
-        email: lower,
+        email: encField(lower) ?? lower,
         purpose: 'login',
         expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
       },
@@ -186,14 +188,15 @@ export class AuthService {
       data: { usedAt: new Date() },
     });
 
+    const rowEmail = decField(row.email) ?? row.email;
     if (row.purpose === 'link_email_auth') {
       // Link email as auth provider to the existing (already-authed) user.
       const result = await this.linkProviderToUser(
         row.userId,
         'email',
-        row.email,
-        row.email,
-        row.email,
+        rowEmail,
+        rowEmail,
+        rowEmail,
       );
       if (!result.ok) {
         throw new ConflictException(
@@ -234,7 +237,7 @@ export class AuthService {
         id: crypto.randomUUID(),
         userId: targetUserId,
         tokenHash,
-        email: lower,
+        email: encField(lower) ?? lower,
         purpose: 'link_email_auth',
         expiresAt: new Date(Date.now() + EMAIL_TOKEN_TTL_MS),
       },
