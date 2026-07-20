@@ -7,12 +7,18 @@ import { DisclaimerPrivacyStep } from './disclaimer/DisclaimerPrivacyStep';
 import { DisclaimerNotTherapyStep } from './disclaimer/DisclaimerNotTherapyStep';
 import { DisclaimerAuthorStep } from './disclaimer/DisclaimerAuthorStep';
 import { DisclaimerHomeScreenStep } from './disclaimer/DisclaimerHomeScreenStep';
+import { canOfferHomeScreenNow } from '../utils/homeScreen';
 
 export function Disclaimer({
   onAccept,
+  onConsent,
   consentGiven = false,
 }: {
   onAccept: () => void;
+  // Согласие персистится здесь, а не в финальной кнопке: последний шаг
+  // («добавить на экран») уводит пользователя из аппки, и раньше согласие
+  // терялось — при заходе с ярлыка онбординг начинался заново.
+  onConsent: () => void;
   // Согласие уже дано раньше (напр. в боте/на сайте) — тогда онбординг
   // остаётся образовательным, но галочки не заставляем ставить заново.
   consentGiven?: boolean;
@@ -20,7 +26,7 @@ export function Disclaimer({
   const [step, setStep] = useState(0);
   const [c1, setC1] = useState(consentGiven);
   const [c2, setC2] = useState(consentGiven);
-  const canAddToHome = !!window.Telegram?.WebApp?.addToHomeScreen;
+  const canAddToHome = canOfferHomeScreenNow();
   const TOTAL = canAddToHome ? 6 : 5;
   const ready = c1 && c2;
   // Шаг «Об авторе» — на нём собираются согласия, до них дальше не пускаем.
@@ -32,7 +38,7 @@ export function Disclaimer({
     <DisclaimerPrivacyStep key={2} c2={c2} setC2={setC2} />,
     <DisclaimerNotTherapyStep key={3} c1={c1} setC1={setC1} />,
     <DisclaimerAuthorStep key={4} ready={ready} c1={c1} c2={c2} />,
-    <DisclaimerHomeScreenStep key={5} />,
+    <DisclaimerHomeScreenStep key={5} onBeforeAdd={onConsent} />,
   ];
 
   return (
@@ -93,6 +99,9 @@ export function Disclaimer({
           <button
             onClick={() => {
               if (step === CONSENT_STEP && !ready) return;
+              // Согласие сохраняем сразу, как только оно дано: дальше идёт шаг
+              // «добавить на экран», с которого пользователь уходит из аппки.
+              if (step === CONSENT_STEP) onConsent();
               setStep((s) => s + 1);
             }}
             className="btn-primary"

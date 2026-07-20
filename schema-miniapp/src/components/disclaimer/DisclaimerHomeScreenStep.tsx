@@ -1,7 +1,18 @@
-// Шаг 4 онбординга Disclaimer: «добавь на главный экран» (только если
-// Telegram.WebApp.addToHomeScreen доступен). Перенесено из Disclaimer.tsx
-// как есть (этап 3 REMEDIATION_PLAN) — без смены поведения.
-export function DisclaimerHomeScreenStep() {
+import { useTr } from '../../utils/addressForm';
+
+// Последний шаг онбординга: «добавь на главный экран». Показывается только там,
+// где нативный экран Telegram корректен (см. utils/homeScreen.ts — на iOS он
+// показывает инструкцию про «три точки», а открывает «Поделиться»).
+//
+// onBeforeAdd персистит согласие ДО вызова addToHomeScreen: Telegram открывает
+// свой нативный шит поверх аппки, и пользователь часто уже не возвращается к
+// финальной кнопке. Раньше из-за этого согласие терялось.
+export function DisclaimerHomeScreenStep({
+  onBeforeAdd,
+}: {
+  onBeforeAdd: () => void;
+}) {
+  const tr = useTr();
   return (
     <div style={{ textAlign: 'center', paddingTop: 8 }}>
       <div style={{ fontSize: 64, marginBottom: 20, lineHeight: 1 }}>📲</div>
@@ -13,7 +24,7 @@ export function DisclaimerHomeScreenStep() {
           marginBottom: 10,
         }}
       >
-        Добавь на главный экран
+        {tr('Добавь на главный экран', 'Добавьте на главный экран')}
       </div>
       <div
         style={{
@@ -28,6 +39,7 @@ export function DisclaimerHomeScreenStep() {
       </div>
       <button
         onClick={() => {
+          onBeforeAdd();
           window.Telegram?.WebApp?.addToHomeScreen?.();
         }}
         className="btn-primary"
