@@ -43,6 +43,14 @@ export interface ProductMetrics {
     customizeLongpress: number;
   };
   breath: { started: number };
+  // Значок на экране телефона (за месяц): предлагали / что ответили.
+  homeScreen: {
+    shown: number;
+    add: number;
+    later: number;
+    never: number;
+    added: number;
+  };
 }
 
 const pct = (part: number, whole: number): string =>
@@ -170,5 +178,15 @@ export function formatProductMetrics(m: ProductMetrics): string {
     '',
     `🌬 <b>Дыхание «Здесь и сейчас»</b> (за месяц)`,
     `Запускали: ${m.breath.started} раз`,
+    '',
+    `📲 <b>Значок приложения на экране телефона</b> (за месяц)`,
+    m.homeScreen.shown === 0
+      ? 'Пока никому не предлагали'
+      : `Предложили: ${m.homeScreen.shown} · нажали «добавить»: ${m.homeScreen.add}` +
+        `${pct(m.homeScreen.add, m.homeScreen.shown)}`,
+    m.homeScreen.shown === 0
+      ? ''
+      : `Значок реально появился: ${m.homeScreen.added} · отложили: ${m.homeScreen.later} · ` +
+        `попросили не предлагать: ${m.homeScreen.never}`,
   ].join('\n');
 }

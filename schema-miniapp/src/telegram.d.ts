@@ -23,6 +23,11 @@ declare global {
         offEvent?(event: string, cb: () => void): void;
         platform?: string;
         addToHomeScreen?(): void;
+        // Bot API 8.0: статус значка приходит колбэком — не надо спрашивать
+        // пользователя «ты добавил?».
+        checkHomeScreenStatus?(
+          cb: (status: 'unsupported' | 'unknown' | 'added' | 'missed') => void,
+        ): void;
         colorScheme: 'light' | 'dark';
         themeParams: Record<string, string>;
         ready(): void;

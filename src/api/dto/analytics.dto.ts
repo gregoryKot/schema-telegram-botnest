@@ -3,6 +3,8 @@ import {
   ANALYTICS_EVENTS,
   CRISIS_SURFACES,
   CUSTOMIZE_ENTRY_POINTS,
+  HOME_SCREEN_ACTIONS,
+  HOME_SCREEN_SURFACES,
   ONBOARDING_STEPS,
   TODAY_BLOCKS,
   SHARE_CARD_KINDS,
@@ -38,4 +40,10 @@ export const ONBOARDING_STEP_SET: ReadonlySet<string> = new Set(
 export const TODAY_BLOCK_SET: ReadonlySet<string> = new Set(TODAY_BLOCKS);
 export const CUSTOMIZE_ENTRY_SET: ReadonlySet<string> = new Set(
   CUSTOMIZE_ENTRY_POINTS,
+);
+export const HOME_SCREEN_ACTION_SET: ReadonlySet<string> = new Set(
+  HOME_SCREEN_ACTIONS,
+);
+export const HOME_SCREEN_SURFACE_SET: ReadonlySet<string> = new Set(
+  HOME_SCREEN_SURFACES,
 );

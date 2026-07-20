@@ -15,6 +15,7 @@ import { BecomeTherapistSection } from './settingsSheet/BecomeTherapistSection';
 import { TherapistCabinetSection } from './settingsSheet/TherapistCabinetSection';
 import { PartnerSection } from './settingsSheet/PartnerSection';
 import { AboutSection } from './settingsSheet/AboutSection';
+import { HomeScreenSection } from './settingsSheet/HomeScreenSection';
 import {
   NameSection,
   ShareSection,
@@ -313,6 +314,8 @@ export function SettingsSheet({
                 resignBusy={resignBusy}
                 setResignBusy={setResignBusy}
               />
+
+              <HomeScreenSection />
 
               <NameSection
                 editName={editName}
