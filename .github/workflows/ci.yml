@@ -32,6 +32,19 @@ jobs:
       # покрытия ниже scripts/coverage-baseline.json (общей или по полу
       # src/auth и src/utils).
       - run: node scripts/check-coverage-ratchet.mjs
+      # Тот же пакет тестов под НЕ-UTC зоной (инцидент 2026-07-20).
+      # Раннер всегда UTC, поэтому баги «время считается от зоны сервера»
+      # в CI невидимы: парсер TZID в caldav-busy.ts был сломан для любой
+      # не-UTC машины, но CI был зелёный, а разработчик в Asia/Jerusalem
+      # ловил два красных теста и искал причину в своём окружении.
+      # Sydney выбран намеренно: ненулевое смещение + DST в противофазе к
+      # северному полушарию. Мутировать process.env.TZ внутри jest нельзя —
+      # песочница не пробрасывает смену зоны в V8, только env процесса.
+      # Прогон стоит ~20 секунд.
+      - name: jest под не-UTC таймзоной — ловит зависимость от зоны сервера
+        run: npx jest
+        env:
+          TZ: Australia/Sydney
       # e2e-смоук (TEST_COVERAGE_PLAN.md, этап 1 п.7): реальный AppModule
       # целиком (ValidationPipe, гарды, фильтры), только PrismaService и
       # TELEGRAF_BOT подменены фейками — ловит то, что юнит-тесты не могут:
@@ -90,6 +103,13 @@ jobs:
         run: npx prisma migrate deploy
       - name: повторный migrate deploy — все миграции зарегистрированы, состояние чистое
         run: npx prisma migrate deploy
+      # Джоба проверяла только что SQL исполняется, но не что миграции дают ту
+      # же БД, что объявлена в schema.prisma. Из-за этого дрейф копился
+      # незаметно: 4 индекса были в схеме, но их не создавала ни одна миграция —
+      # на проде их просто не было, запросы шли последовательным сканом.
+      # --exit-code: 0 = дифф пуст, 2 = есть расхождение → джоба падает.
+      - name: schema.prisma == миграции — дрейф роняет PR, а не копится годами
+        run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
       - run: npx prisma generate
       # E2E read-after-write smoke на реальном Postgres (best-practice 2026-07):
       # сохранил карточку → читается обратно + попала в денормализованный

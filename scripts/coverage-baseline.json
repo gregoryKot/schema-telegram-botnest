@@ -1,8 +1,8 @@
 {
-  "lines": 68.28,
-  "branches": 58.42,
+  "lines": 67.95,
+  "branches": 58.31,
   "floors": {
-    "src/auth": 81.59,
+    "src/auth": 81.62,
     "src/utils": 95.47
   }
 }

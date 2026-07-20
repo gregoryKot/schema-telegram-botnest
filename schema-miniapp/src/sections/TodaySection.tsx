@@ -24,6 +24,7 @@ import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { TodayFocusCard } from '../components/TodayFocusCard';
 import { PhraseShareCard } from '../components/PhraseShareCard';
+import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
 import { TodayCustomizeSheet } from '../components/TodayCustomizeSheet';
 import { useTodayCustomization } from '../hooks/useTodayCustomization';
 import { useTr } from '../utils/addressForm';
@@ -365,6 +366,9 @@ export function TodaySection({
             <PhraseShareCard />
           </div>
         )}
+
+        {/* ── Значок на экран: тем, кто продолжает заходить ── */}
+        <HomeScreenOfferCard />
 
         {/* ── Прогрессивное раскрытие: остальное — по желанию ── */}
         {today.secondaryHidden && (

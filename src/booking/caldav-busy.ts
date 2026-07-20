@@ -3,6 +3,8 @@
 // Best-effort: recurring events (RRULE) are ignored; on any parse issue we
 // simply return fewer/no intervals (fail-open — slots still show).
 
+import { zonedWallClockToUtc } from '../utils/tz';
+
 export interface Interval {
   start: Date;
   end: Date;
@@ -61,17 +63,20 @@ function findDate(ev: string, field: 'DTSTART' | 'DTEND'): Date | null {
   const [, Y, Mo, D, h, mi, s, z] = dt;
   if (z === 'Z') return new Date(`${Y}-${Mo}-${D}T${h}:${mi}:${s}.000Z`);
   const tzid = params.match(/TZID=([^;:]+)/)?.[1];
-  if (tzid) return localToUtc(`${Y}-${Mo}-${D}T${h}:${mi}:${s}`, tzid);
+  if (tzid) {
+    // Стенное время в зоне события. Перевод — общий хелпер (src/utils/tz.ts):
+    // локальная копия этой логики была сломана и игнорировала смещение TZID
+    // на любом не-UTC сервере, см. комментарий к zonedWallClockToUtc.
+    try {
+      return zonedWallClockToUtc(`${Y}-${Mo}-${D}T${h}:${mi}:${s}`, tzid);
+    } catch {
+      // Нестандартный TZID (Outlook шлёт «Russian Standard Time») — Intl бросает
+      // RangeError. Деградируем до floating (UTC) ниже, а не роняем разбор
+      // всего календаря из-за одного кривого ивента (fail-open — правило файла).
+    }
+  }
   // Floating time — assume UTC (best effort).
   return new Date(`${Y}-${Mo}-${D}T${h}:${mi}:${s}.000Z`);
-}
-
-/** Local wall-clock (no Z) in tzid → UTC Date. */
-function localToUtc(localIso: string, tz: string): Date {
-  const naive = new Date(`${localIso}.000Z`);
-  const local = new Date(naive.toLocaleString('en-US', { timeZone: tz }));
-  const offset = naive.getTime() - local.getTime(); // (UTC - local) ms
-  return new Date(naive.getTime() + offset);
 }
 
 function fmtUtc(d: Date): string {

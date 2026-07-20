@@ -19,7 +19,8 @@
 //   web_banner_dismiss  — скрыл баннер кабинета (meta.banner);
 //   onboarding_step     — новичок дошёл до шага обучения (meta.step);
 //   today_block_toggle  — показал/скрыл блок «Сегодня» (meta.block + meta.hidden);
-//   today_customize_open — открыл «Настроить экран» (meta.via: как открыл).
+//   today_customize_open — открыл «Настроить экран» (meta.via: как открыл);
+//   home_screen_offer   — предложение значка на экран (meta.action + surface).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -34,6 +35,7 @@ export const ANALYTICS_EVENTS = [
   'onboarding_step',
   'today_block_toggle',
   'today_customize_open',
+  'home_screen_offer',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -53,6 +55,25 @@ export type TodayBlock = (typeof TODAY_BLOCKS)[number];
 // блок. Нужно, чтобы понять, находят ли жест вообще (он без аффорданса).
 export const CUSTOMIZE_ENTRY_POINTS = ['gear', 'longpress'] as const;
 export type CustomizeEntryPoint = (typeof CUSTOMIZE_ENTRY_POINTS)[number];
+
+// Что произошло с предложением «добавить значок на экран» (meta.action) и где
+// оно показывалось (meta.surface). 'added' приходит событием от Telegram —
+// это единственный достоверный признак, что значок реально появился.
+export const HOME_SCREEN_ACTIONS = [
+  'shown',
+  'add',
+  'later',
+  'never',
+  'added',
+] as const;
+export type HomeScreenAction = (typeof HOME_SCREEN_ACTIONS)[number];
+
+export const HOME_SCREEN_SURFACES = [
+  'onboarding',
+  'today',
+  'settings',
+] as const;
+export type HomeScreenSurface = (typeof HOME_SCREEN_SURFACES)[number];
 
 // Шаги обучающего онбординга мини-аппа (meta.step для onboarding_step).
 // Порядок = порядок показа: по нему строится воронка «докуда доходят».
