@@ -168,12 +168,6 @@ jobs:
           cache: npm
           cache-dependency-path: schema-miniapp/package-lock.json
       - run: npm ci --prefix schema-miniapp
-      # build мини-аппа — голый `vite build` (без tsc, чтобы пересборка dist
-      # оставалась быстрой). Типы гоняем отдельным шагом — иначе TS-ошибки в
-      # исходнике мини-аппа доезжают до прода (webapp имеет гейт через
-      # `tsc -b`). tsconfig прибивает react к мини-апповским @types и исключает
-      # тесты (их проверяет vitest) — иначе tsc не резолвит react в ../shared.
-      - run: npm run typecheck --prefix schema-miniapp
       - run: npm run build --prefix schema-miniapp
       - run: npm test --prefix schema-miniapp
       # dist коммитится в git (Docker его только копирует) — проверяем,

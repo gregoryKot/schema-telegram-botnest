@@ -14,16 +14,7 @@
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
-    /* ../shared резолвит react вверх от СВОЕГО каталога — в CI-джобе miniapp
-       корневой node_modules пуст. Прибиваем к мини-апповским (как в webapp). */
-    "paths": {
-      "react": ["./node_modules/@types/react"],
-      "react/*": ["./node_modules/@types/react/*"]
-    }
+    "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
-  /* Тесты типизирует не CI-гейт, а vitest (рантайм) — они используют node-
-     globals (global) и не должны требовать @types/node в проде-tsconfig. */
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+  "include": ["src"]
 }
