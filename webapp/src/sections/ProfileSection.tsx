@@ -80,12 +80,19 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
+  // Reset to the loading state when a refresh is requested. Adjusting state
+  // during render (not in an effect) keeps this off set-state-in-effect; on
+  // mount these already start null/false.
+  const [seenRefresh, setSeenRefresh] = useState(refreshKey);
+  if (refreshKey !== seenRefresh) {
+    setSeenRefresh(refreshKey);
     setReady(false);
     setStreak(null);
     setAchievements(null);
     setInsights(null);
+  }
+
+  useEffect(() => {
     Promise.all([
       api.getStreak().then(setStreak).catch(() => {}),
       api.getAchievements().then(setAchievements).catch(() => {}),

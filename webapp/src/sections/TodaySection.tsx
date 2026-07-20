@@ -204,11 +204,18 @@ export function TodaySection({
   // недетерминирован (react-hooks/purity). Значение — дневного масштаба.
   const [now] = useState(() => Date.now());
 
-  useEffect(() => {
-    let ignore = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренно: загрузка/сброс состояния при монтировании или смене зависимости (fetch-эффект); рефактор на key/data-layer — отдельная задача
+  // Reset to the loading state when a refresh is requested. Adjusting state
+  // during render (not in an effect) keeps this off set-state-in-effect; on
+  // mount profile/diariesLoaded already start null/false.
+  const [seenRefresh, setSeenRefresh] = useState(refreshKey);
+  if (refreshKey !== seenRefresh) {
+    setSeenRefresh(refreshKey);
     setProfile(null);
     setDiariesLoaded(false);
+  }
+
+  useEffect(() => {
+    let ignore = false;
 
     api.getProfile().then(p => {
       if (ignore) return;
