@@ -57,16 +57,16 @@ export function HealthyAdultImport({
         Добавить списком
       </h3>
       <p style={{ color: 'var(--text-sub)', fontSize: 13, margin: '0 0 12px', lineHeight: 1.5 }}>
-        По одной фразе на строку. Попроси Claude Code сгенерировать пачку по
-        брифу из <code>HEALTHY_ADULT.md</code>, прочитай и вставь сюда удачные.
-        Дубли и повторы зачинов отсеются сами — что пропущено, покажу ниже.
+        По одной фразе на строку. Пачка генерируется через Claude Code по
+        брифу из <code>HEALTHY_ADULT.md</code> — удачные фразы можно вставить
+        сюда. Дубли и повторы зачинов отсеются сами, отчёт будет ниже.
       </p>
 
       <PoolMeter status={status} />
 
       <textarea
         style={{ ...input, width: '100%', minHeight: 160, resize: 'vertical', lineHeight: 1.6, marginTop: 12 }}
-        placeholder={'Устал – значит устал.\nОшибка не делает тебя ошибкой.\n…'}
+        placeholder={'Устал – значит устал.\nОшибка не делает человека плохим.\n…'}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
       />
