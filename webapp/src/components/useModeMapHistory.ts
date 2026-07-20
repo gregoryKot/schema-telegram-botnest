@@ -1,7 +1,8 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { FlowNode, FlowEdge } from './modeMapFlow';
 
 type Snapshot = { nodes: FlowNode[]; edges: FlowEdge[] };
+const LIMIT = 60; // глубина истории; самые старые снапшоты вытесняются с начала стека
 
 interface Params {
   nodesRef: React.MutableRefObject<FlowNode[]>;
@@ -13,37 +14,36 @@ interface Params {
 }
 
 export function useModeMapHistory({ nodesRef, edgesRef, setNodes, setEdges, scheduleSave, clearSelection }: Params) {
-  const past = useRef<Snapshot[]>([]);
-  const future = useRef<Snapshot[]>([]);
-  const [ver, setVer] = useState(0);
+  // Стеки живут в state, а не в ref: canUndo/canRedo выводятся из них без чтения ref в рендере.
+  const [past, setPast] = useState<Snapshot[]>([]);
+  const [future, setFuture] = useState<Snapshot[]>([]);
+  // Снимок холста; рефы читаются только внутри колбэков — уже после коммита.
+  const snapshot = useCallback((): Snapshot => ({ nodes: nodesRef.current, edges: edgesRef.current }), [nodesRef, edgesRef]);
 
   const pushHistory = useCallback(() => {
-    past.current.push({ nodes: nodesRef.current, edges: edgesRef.current });
-    if (past.current.length > 60) past.current.shift();
-    future.current = [];
-    setVer(v => v + 1);
-  }, [nodesRef, edgesRef]);
+    setPast(p => [...p, snapshot()].slice(-LIMIT));
+    setFuture([]);
+  }, [snapshot]);
 
   const undo = useCallback(() => {
-    const prev = past.current.pop();
+    const prev = past[past.length - 1];
     if (!prev) return;
-    future.current.push({ nodes: nodesRef.current, edges: edgesRef.current });
+    const current = snapshot();
+    setPast(p => p.slice(0, -1));
+    setFuture(f => [...f, current]);
     setNodes(prev.nodes); setEdges(prev.edges);
-    clearSelection(); setVer(v => v + 1);
-    scheduleSave(prev.nodes, prev.edges);
-  }, [nodesRef, edgesRef, setNodes, setEdges, scheduleSave, clearSelection]);
+    clearSelection(); scheduleSave(prev.nodes, prev.edges);
+  }, [past, snapshot, setNodes, setEdges, scheduleSave, clearSelection]);
 
   const redo = useCallback(() => {
-    const next = future.current.pop();
+    const next = future[future.length - 1];
     if (!next) return;
-    past.current.push({ nodes: nodesRef.current, edges: edgesRef.current });
+    const current = snapshot();
+    setFuture(f => f.slice(0, -1));
+    setPast(p => [...p, current].slice(-LIMIT));
     setNodes(next.nodes); setEdges(next.edges);
-    clearSelection(); setVer(v => v + 1);
-    scheduleSave(next.nodes, next.edges);
-  }, [nodesRef, edgesRef, setNodes, setEdges, scheduleSave, clearSelection]);
+    clearSelection(); scheduleSave(next.nodes, next.edges);
+  }, [future, snapshot, setNodes, setEdges, scheduleSave, clearSelection]);
 
-  // `ver` referenced so canUndo/canRedo refresh on change
-  void ver;
-  // eslint-disable-next-line react-hooks/refs -- чтение ref в рендере для canUndo/canRedo с ручным setVer — перевод истории на state отдельной задачей
-  return { pushHistory, undo, redo, canUndo: past.current.length > 0, canRedo: future.current.length > 0 };
+  return { pushHistory, undo, redo, canUndo: past.length > 0, canRedo: future.length > 0 };
 }
