@@ -36,7 +36,7 @@ export function HomeScreenOfferCard() {
           <div
             style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
           >
-            {/* Строка безличная — вилка ты/вы не нужна. */}
+            {/* Строка безличная — вилка обращения не нужна. */}
             Значок на экране телефона — заходить не через Telegram, а в одно
             касание.
           </div>
