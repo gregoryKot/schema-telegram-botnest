@@ -53,12 +53,20 @@ function makeDeps(overrides: Record<string, any> = {}) {
     ...overrides.therapistRequestService,
   };
   const channelService = { ...overrides.channelService };
+  // Пул канала: /stats показывает остаток, поэтому сервис нужен и здесь.
+  const healthyAdultService = {
+    poolStatus: jest
+      .fn()
+      .mockResolvedValue({ enabled: 0, unused: 0, daysLeft: 0 }),
+    ...overrides.healthyAdultService,
+  };
   const fakeBot = makeFakeBot();
   const service = new TelegramService(
     fakeBot.bot,
     botService,
     analyticsService,
     productMetricsService,
+    healthyAdultService,
     accountService,
     pairsService,
     practicesService,

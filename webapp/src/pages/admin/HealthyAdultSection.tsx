@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import type { HealthyAdultPhrase } from '../../api';
 import { card, btn, btnGhost, input } from './shared';
+import { HealthyAdultImport } from './HealthyAdultImport';
 
 /** Админ-вкладка: управление пулом фраз «Здорового Взрослого» для канала. */
 export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
@@ -60,10 +61,11 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
         </h2>
         <p style={{ color: 'var(--text-sub)', fontSize: 14, margin: '0 0 14px', lineHeight: 1.5 }}>
           Сообщения голосом «Здорового Взрослого» уходят в Telegram-канал
-          автоматически дважды в день (09:00 и 20:00 МСК). Основной путь —
-          генерация через Claude (если задан <code>ANTHROPIC_API_KEY</code>); если
-          он недоступен, берётся фраза из пула ниже (без повторов подряд). Канал
-          задаётся переменной <code>HEALTHY_ADULT_CHANNEL</code>, бот должен быть
+          автоматически дважды в день (09:00 и 20:00 МСК). Публикуется фраза из
+          пула ниже — та, что дольше всех не звучала. Пул пополняется вручную:
+          просишь Claude Code сгенерировать пачку по брифу из{' '}
+          <code>HEALTHY_ADULT.md</code> и вставляешь списком. Канал задаётся
+          переменной <code>HEALTHY_ADULT_CHANNEL</code>, бот должен быть
           администратором канала.
         </p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -96,6 +98,11 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
         </div>
         {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '10px 0 0' }}>{error}</p>}
       </section>
+
+      <HealthyAdultImport
+        adminKey={adminKey}
+        onImported={(rows) => setPhrases((p) => [...p, ...rows])}
+      />
 
       {loading ? (
         <p style={{ color: 'var(--text-sub)', fontSize: 14 }}>Загрузка…</p>

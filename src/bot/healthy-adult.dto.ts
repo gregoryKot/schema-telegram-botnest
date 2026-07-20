@@ -26,3 +26,14 @@ export class UpdatePhraseDto {
   @IsBoolean()
   enabled?: boolean;
 }
+
+/**
+ * Массовое добавление: весь блок текста, по фразе на строку. Валидируем
+ * размер блока целиком — фразы разбираются и отсеиваются в prepareImport.
+ */
+export class ImportPhrasesDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(20000)
+  text!: string;
+}

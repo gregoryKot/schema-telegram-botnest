@@ -3,7 +3,8 @@ import { Cron } from '@nestjs/schedule';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
-import { HealthyAdultGeneratorService } from '../bot/healthy-adult.generator';
+import { poolAlertText } from '../bot/healthy-adult.pool-alert';
+import { notifyAdminWithFallback } from '../utils/admin-alert';
 
 /** Часовой пояс расписания канала (единый для broadcast, не per-user). */
 const POST_TZ = 'Europe/Moscow';
@@ -12,9 +13,12 @@ const EVENING_CRON = '0 20 * * *';
 
 /**
  * Публикация сообщений «Здорового Взрослого» в Telegram-канал дважды в день.
- * Гибрид (по решению владельца): сначала генерация через Claude API, при сбое
- * или без ключа — фраза из пула (LRU, без повторов подряд). Каждый пост пишем
- * в лог HealthyAdultPost — для дедупа и как контекст следующей генерации.
+ * Берём фразу из пула (LRU, без повторов подряд) — пул пополняется пачками
+ * через админку, см. HEALTHY_ADULT.md. Генерации на лету нет намеренно:
+ * подписка Claude Max не списывается из прод-кода, а в канал уходит только
+ * то, что владелец прочитал глазами.
+ *
+ * Каждый пост пишем в лог HealthyAdultPost — для дедупа и истории.
  *
  * Канал задаётся env `HEALTHY_ADULT_CHANNEL` (@username или -100…id); без него
  * фича выключена (безопасный дефолт, чтобы не спамить основной канал).
@@ -28,7 +32,6 @@ export class TelegramChannelService {
     @Optional()
     private readonly bot: Telegraf<Context> | null,
     private readonly phrases: HealthyAdultService,
-    private readonly generator: HealthyAdultGeneratorService,
   ) {}
 
   /** Целевой канал из env (null → фича выключена). */
@@ -68,26 +71,31 @@ export class TelegramChannelService {
     }
 
     const recent = await this.phrases.recentPostTexts(10);
-    let text = await this.generator.generate(recent);
-    let source: 'ai' | 'pool' = 'ai';
-    if (!text) {
-      text = await this.phrases.pickFromPool(recent);
-      source = 'pool';
-    }
+    const text = await this.phrases.pickFromPool(recent);
     if (!text) {
       return {
         ok: false,
-        message: '⚠️ Нет активных фраз и генерация недоступна — добавь фразу.',
+        message:
+          '⚠️ Нет активных фраз — добавь их в админке (вкладка «Канал ЗВ»).',
       };
     }
 
     try {
       await this.bot.telegram.sendMessage(channel, text);
-      await this.phrases.recordPost(text, source);
-      this.logger.log(`healthy_adult_post source=${source} channel=${channel}`);
+      await this.phrases.recordPost(text, 'pool');
+      this.logger.log(`healthy_adult_post channel=${channel}`);
+      // Пул конечен — предупреждаем владельца заранее, а не когда канал
+      // начнёт повторяться (пороги внутри, спама не будет). Сбой этой
+      // побочной проверки не должен превращать уже отправленный пост в
+      // «не опубликовано» — отсюда catch.
+      const alert = await this.phrases
+        .poolStatus()
+        .then(poolAlertText)
+        .catch(() => null);
+      if (alert) await notifyAdminWithFallback(alert, 'Пул канала ЗВ');
       return {
         ok: true,
-        message: `✅ Опубликовано в ${channel} (${source}):\n\n${text}`,
+        message: `✅ Опубликовано в ${channel}:\n\n${text}`,
       };
     } catch (err) {
       // Телеграм кладёт причину в err.response.description; типобезопасно
