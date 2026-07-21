@@ -67,3 +67,7 @@ export function phraseShareText(phrase: string, link: string): string {
 export function gratitudeShareText(link: string): string {
   return `🌱 Моя благодарность сегодня.\n\n${link}`;
 }
+
+export function journeyShareText(total: number, link: string): string {
+  return `🧭 Мой путь: ${total} ${pluralEntries(total)} заботы о себе — дневники, практики, тесты.\n\n${link}`;
+}

@@ -4,6 +4,7 @@ import { api } from '../api';
 import type { Achievement, TherapyRelationInfo } from '../api';
 import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
+import { JourneySheet } from '../components/JourneySheet';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
@@ -63,6 +64,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [schemaNoteIds, setSchemaNotesIds] = useState<string[]>([]);
   const [modeNoteIds, setModeNoteIds] = useState<string[]>([]);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [journeyOpen, setJourneyOpen] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
   const [_insightsOpen] = useState(false); // kept for future use
@@ -463,6 +465,22 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           </div>
         )}
 
+        {/* ── Мой путь (архив всей активности) ── */}
+        {ready && (
+          <div {...pressable(() => setJourneyOpen(true))} className="section" style={{ cursor: 'pointer' }}>
+            <div className="section-head">
+              <h3>🧭 Мой путь</h3>
+              <span className="hint">→</span>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+              {tr(
+                'Вся твоя история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
+                'Вся ваша история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── Терапевт ── */}
         {relation?.role === 'client' && relation.partnerName && (
           <div className="section">
@@ -607,6 +625,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       )}
 
       {notesOpen && <MyNotesSheet onClose={() => setNotesOpen(false)} />}
+
+      {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
 
       {/* Delete account confirm */}
       {showDeleteConfirm && (

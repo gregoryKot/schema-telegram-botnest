@@ -13,6 +13,8 @@ import { ActivityHeatmap } from './profile/ActivityHeatmap';
 import { AchievementsCard } from './profile/AchievementsCard';
 import { InsightsCard } from './profile/InsightsCard';
 import { MyNotesCard } from './profile/MyNotesCard';
+import { JourneyEntryCard } from './profile/JourneyEntryCard';
+import { JourneySheet } from '../components/JourneySheet';
 import { AchievementsSheet } from './profile/AchievementsSheet';
 import { BestDayInfoSheet } from './profile/BestDayInfoSheet';
 
@@ -49,6 +51,7 @@ export function ProfileSection({
   const [schemaNoteIds, setSchemaNotesIds] = useState<string[]>([]);
   const [modeNoteIds, setModeNoteIds] = useState<string[]>([]);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [journeyOpen, setJourneyOpen] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(
     null,
@@ -198,6 +201,9 @@ export function ProfileSection({
           />
         )}
 
+        {/* ── Мой путь (архив всей активности) ── */}
+        {ready && <JourneyEntryCard onOpen={() => setJourneyOpen(true)} />}
+
         <div style={{ padding: '4px 0' }}>
           <TherapyNote compact />
         </div>
@@ -231,6 +237,8 @@ export function ProfileSection({
       )}
 
       {notesOpen && <MyNotesSheet onClose={() => setNotesOpen(false)} />}
+
+      {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
     </div>
   );
 }

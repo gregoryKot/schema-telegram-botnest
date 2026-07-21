@@ -398,6 +398,10 @@ export const api = {
       totalDays: number;
     }>('/api/insights'),
   getExport: () => get<{ text: string }>('/api/export'),
+  getJourney: () =>
+    get<import('../../shared/src/journey/journeyMeta').JourneyData>(
+      '/api/journey',
+    ),
   getPractices: (needId: string) =>
     get<UserPractice[]>(`/api/practices?needId=${needId}`),
   addPractice: (needId: string, text: string) =>

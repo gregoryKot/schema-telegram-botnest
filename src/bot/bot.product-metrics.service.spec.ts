@@ -57,7 +57,8 @@ describe('ProductMetricsService.getMetrics', () => {
       .mockResolvedValueOnce(12) // share_card total7
       .mockResolvedValueOnce(40) // share_card total30
       .mockResolvedValueOnce(15) // today_focus_change
-      .mockResolvedValueOnce(33); // breath_start
+      .mockResolvedValueOnce(33) // breath_start
+      .mockResolvedValueOnce(18); // journey_open
 
     const prisma: any = {
       user: {
@@ -117,6 +118,7 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(m.outbox).toEqual({ flushes: 8, recovered: 21 });
     expect(m.today.focusChanged).toBe(15);
     expect(m.breath).toEqual({ started: 33 });
+    expect(m.journey).toEqual({ opens: 18 });
     // отсутствующие в выборке действия — нули, а не undefined/NaN
     expect(m.homeScreen).toEqual({
       shown: 200,

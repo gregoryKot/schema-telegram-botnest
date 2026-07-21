@@ -58,6 +58,7 @@ export class ProductMetricsService {
       onboardingStepRows,
       customizeRows,
       homeScreenRows,
+      journeyOpens,
     ] = await Promise.all([
       this.prisma.user.count({
         where: { ...activeUser, createdAt: { gte: since30 } },
@@ -158,6 +159,7 @@ export class ProductMetricsService {
         FROM "AnalyticsEvent"
         WHERE "name" = 'home_screen_offer' AND "createdAt" >= ${since30}
         GROUP BY "meta"->>'action'`,
+      ev('journey_open'),
     ]);
 
     const sections = sectionsRaw
@@ -227,6 +229,7 @@ export class ProductMetricsService {
         customizeLongpress: viaCount('longpress'),
       },
       breath: { started: breathStarted },
+      journey: { opens: journeyOpens },
       homeScreen: {
         shown: hsCount('shown'),
         add: hsCount('add'),
