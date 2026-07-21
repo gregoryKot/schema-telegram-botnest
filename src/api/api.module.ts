@@ -11,6 +11,7 @@ import { DiaryController } from './diary.controller';
 import { BookingController } from './booking.controller';
 import { ClientErrorsController } from './client-errors.controller';
 import { AnalyticsController } from './analytics.controller';
+import { JourneyController } from './journey.controller';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -39,6 +40,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     DiaryController,
     BookingController,
     AnalyticsController,
+    JourneyController,
     HealthController,
     ClientErrorsController,
   ],

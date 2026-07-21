@@ -14,7 +14,8 @@ export type ShareCardKind =
   | 'month'
   | 'achievements'
   | 'phrase'
-  | 'gratitude';
+  | 'gratitude'
+  | 'journey';
 
 export const SHARE_CARD_EVENT = 'share_card';
 // Исход системного шэра: meta { kind, ok }. Позволяет мерить «получилось ли
@@ -25,6 +26,10 @@ export const SHARE_RESULT_EVENT = 'share_result';
 // «докуда доходят новички». Парный allow-list (ONBOARDING_STEPS) —
 // src/analytics/analytics.constants.ts, при добавлении шага синхронь оба.
 export const ONBOARDING_STEP_EVENT = 'onboarding_step';
+
+// Открытие архива «Мой путь» (без meta). Парное имя — в ANALYTICS_EVENTS
+// на бэке; метрика видна в /stats («Архив „Мой путь“»).
+export const JOURNEY_OPEN_EVENT = 'journey_open';
 export type OnboardingStep =
   | 'welcome'
   | 'privacy'

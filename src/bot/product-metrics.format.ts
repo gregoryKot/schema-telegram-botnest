@@ -43,6 +43,8 @@ export interface ProductMetrics {
     customizeLongpress: number;
   };
   breath: { started: number };
+  // Архив «Мой путь» (за месяц): сколько раз открывали свою историю.
+  journey: { opens: number };
   // Значок на экране телефона (за месяц): предлагали / что ответили.
   homeScreen: {
     shown: number;
@@ -78,6 +80,7 @@ const SHARE_KIND_LABELS: Record<string, string> = {
   achievements: '🏅 все награды разом',
   phrase: '💬 фраза поддержки',
   gratitude: '🌱 благодарность',
+  journey: '🧭 мой путь (вся история)',
 };
 
 // Подписи блоков главного экрана — словами пользователя, не ключами.
@@ -178,6 +181,11 @@ export function formatProductMetrics(m: ProductMetrics): string {
     '',
     `🌬 <b>Дыхание «Здесь и сейчас»</b> (за месяц)`,
     `Запускали: ${m.breath.started} раз`,
+    '',
+    `🧭 <b>Архив «Мой путь»</b> (за месяц)`,
+    m.journey.opens === 0
+      ? 'Свою историю пока никто не открывал'
+      : `Открывали свою историю: ${m.journey.opens} раз`,
     '',
     `📲 <b>Значок приложения на экране телефона</b> (за месяц)`,
     m.homeScreen.shown === 0

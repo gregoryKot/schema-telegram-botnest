@@ -449,6 +449,7 @@ export const api = {
   recordActivity: () => post('/api/activity', {}),
   getInsights:    () => get<Insights>('/api/insights'),
   getExport:      () => get<{ text: string }>('/api/export'),
+  getJourney:     () => get<import('../../shared/src/journey/journeyMeta').JourneyData>('/api/journey'),
   getPractices:   (needId: string) => get<UserPractice[]>(`/api/practices?needId=${needId}`),
   addPractice:    (needId: string, text: string) => post('/api/practices', { needId, text }),
   deletePractice: (id: number) => del(`/api/practices/${id}`),

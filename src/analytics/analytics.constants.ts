@@ -20,7 +20,8 @@
 //   onboarding_step     — новичок дошёл до шага обучения (meta.step);
 //   today_block_toggle  — показал/скрыл блок «Сегодня» (meta.block + meta.hidden);
 //   today_customize_open — открыл «Настроить экран» (meta.via: как открыл);
-//   home_screen_offer   — предложение значка на экран (meta.action + surface).
+//   home_screen_offer   — предложение значка на экран (meta.action + surface);
+//   journey_open        — открыл архив «Мой путь» (без meta).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -36,6 +37,7 @@ export const ANALYTICS_EVENTS = [
   'today_block_toggle',
   'today_customize_open',
   'home_screen_offer',
+  'journey_open',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -108,6 +110,7 @@ export const SHARE_CARD_KINDS = [
   'achievements',
   'phrase',
   'gratitude',
+  'journey',
 ] as const;
 export type ShareCardKind = (typeof SHARE_CARD_KINDS)[number];
 

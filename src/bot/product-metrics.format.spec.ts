@@ -46,6 +46,7 @@ const FULL: ProductMetrics = {
     customizeLongpress: 12,
   },
   breath: { started: 33 },
+  journey: { opens: 18 },
   homeScreen: { shown: 200, add: 60, later: 90, never: 30, added: 45 },
 };
 
@@ -74,6 +75,7 @@ const EMPTY: ProductMetrics = {
     customizeLongpress: 0,
   },
   breath: { started: 0 },
+  journey: { opens: 0 },
   homeScreen: { shown: 0, add: 0, later: 0, never: 0, added: 0 },
 };
 
@@ -113,6 +115,7 @@ describe('formatProductMetrics', () => {
     expect(t).toContain('💬 цитата — 4');
     expect(t).not.toContain('therapist_banner');
     expect(t).toContain('Запускали: 33 раз');
+    expect(t).toContain('Открывали свою историю: 18 раз');
     // значок на экране: доля согласившихся и реально появившиеся значки
     expect(t).toContain('Предложили: 200 · нажали «добавить»: 60 (30%)');
     expect(t).toContain('Значок реально появился: 45');
@@ -131,5 +134,6 @@ describe('formatProductMetrics', () => {
     expect(t).toContain('Пока обучение никто не открывал');
     expect(t).toContain('Блоки с главного пока не прятали');
     expect(t).toContain('Пока никому не предлагали');
+    expect(t).toContain('Свою историю пока никто не открывал');
   });
 });
