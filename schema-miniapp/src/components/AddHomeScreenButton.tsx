@@ -1,8 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import {
-  ADD_ICON_HOP_URL,
-  homeScreenPlatform,
-} from '../utils/homeScreen';
+import { ADD_ICON_HOP_URL, homeScreenPlatform } from '../utils/homeScreen';
 
 // Единая кнопка «добавить значок на экран» (одна механика — один компонент).
 //

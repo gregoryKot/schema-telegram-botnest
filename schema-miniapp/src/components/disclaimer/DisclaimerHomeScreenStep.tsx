@@ -51,7 +51,10 @@ export function DisclaimerHomeScreenStep({
       >
         {buildHomeScreenHint(offer.platform, tr)}
       </div>
-      <AddHomeScreenButton onActivated={onBeforeAdd} style={{ marginBottom: 10 }}>
+      <AddHomeScreenButton
+        onActivated={onBeforeAdd}
+        style={{ marginBottom: 10 }}
+      >
         Добавить на экран
       </AddHomeScreenButton>
     </div>
