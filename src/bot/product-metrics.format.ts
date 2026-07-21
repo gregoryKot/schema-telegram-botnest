@@ -81,6 +81,7 @@ const SHARE_KIND_LABELS: Record<string, string> = {
   phrase: '💬 фраза поддержки',
   gratitude: '🌱 благодарность',
   journey: '🧭 мой путь (вся история)',
+  journey_item: '🧭 один шаг пути',
 };
 
 // Подписи блоков главного экрана — словами пользователя, не ключами.
