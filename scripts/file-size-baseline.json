@@ -417,7 +417,7 @@
   "schema-miniapp/src/components/disclaimer/DisclaimerPrivacyStep.tsx": 72,
   "schema-miniapp/src/utils/onboardingState.ts": 72,
   "schema-miniapp/src/components/schemaFlashcard/constants.ts": 71,
-  "schema-miniapp/src/components/settingsSheet/HomeScreenSection.tsx": 71,
+  "schema-miniapp/src/components/settingsSheet/HomeScreenSection.tsx": 70,
   "shared/src/share/cards/achievementsCard.ts": 70,
   "webapp/src/components/therapist/ClientSessionsTab.tsx": 70,
   "shared/src/share/shareTexts.ts": 69,

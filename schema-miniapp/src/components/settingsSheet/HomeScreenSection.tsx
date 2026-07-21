@@ -1,69 +1,68 @@
 import { useState } from 'react';
-import { Row, SettingsLabel, RowRight } from './ui';
-import {
-  canOfferHomeScreenNow,
-  getOfferMemory,
-  resetHomeScreenOffer,
-} from '../../utils/homeScreen';
-// Значок на экране — из настроек. Нужен на два случая: человек отказался
-// «не предлагать», а потом передумал; и человек хочет добавить значок сам,
-// не дожидаясь напоминания.
+import { SettingsLabel } from './ui';
+import { canOfferHomeScreenNow } from '../../utils/homeScreen';
+
+// Значок на экране — из настроек.
+// ВРЕМЕННАЯ ДИАГНОСТИКА: голая <button> + вывод прямо на экран (не через
+// showAlert/alert — они на этом клиенте, похоже, не работают). Если после
+// тапа текст сменится — клик доходит, увидим version/platform.
 export function HomeScreenSection() {
-  const [memory, setMemory] = useState(getOfferMemory);
+  const [debug, setDebug] = useState<string>('');
 
-  // Платформа не поддерживает (десктоп, веб) — строки просто нет.
   if (!canOfferHomeScreenNow()) return null;
-
-  const declined = memory.kind === 'never';
 
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ЗНАЧОК НА ЭКРАНЕ</SettingsLabel>
-      <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
-        <Row
-          emoji="📲"
-          label="Добавить значок"
-          sub="открывать приложение с экрана телефона"
+      <div className="card" style={{ borderRadius: 16, padding: 14 }}>
+        <button
           onClick={() => {
-            // ВРЕМЕННАЯ ДИАГНОСТИКА. showAlert СИНХРОННО первым — чтобы окошко
-            // точно выскочило и подтвердило, что клик доходит (прошлая версия
-            // прятала showAlert в колбэк checkHomeScreenStatus, который на iOS
-            // не вызывается — окошка не было). Убрать после диагностики.
             const tg = window.Telegram?.WebApp;
-            const info =
-              `version=${tg?.version}\n` +
-              `platform=${tg?.platform}\n` +
-              `addToHomeScreen=${typeof tg?.addToHomeScreen}\n` +
-              `showAlert=${typeof tg?.showAlert}\n` +
-              `checkStatus=${typeof tg?.checkHomeScreenStatus}`;
-            // Сначала показываем факты (подтверждает, что клик дошёл), потом
-            // пробуем сам вызов.
-            if (tg?.showAlert) tg.showAlert(info);
-            else alert(info);
-            let result = 'вызван без ошибки';
+            let result = 'ok';
             try {
               tg?.addToHomeScreen?.();
             } catch (e) {
-              result = 'ОШИБКА: ' + String(e);
+              result = 'ERR:' + String(e);
             }
-            // результат вызова — отдельным окошком после
-            const after = `addToHomeScreen(): ${result}`;
-            if (tg?.showAlert) tg.showAlert(after);
-            else alert(after);
+            setDebug(
+              `КЛИК ДОШЁЛ ✓\n` +
+                `version=${tg?.version}\n` +
+                `platform=${tg?.platform}\n` +
+                `addToHomeScreen=${typeof tg?.addToHomeScreen}\n` +
+                `showAlert=${typeof tg?.showAlert}\n` +
+                `вызов=${result}`,
+            );
           }}
-          divider={declined}
-        />
-        {declined && (
-          <Row
-            emoji="🔔"
-            label="Вернуть напоминание"
-            sub="сейчас напоминание отключено"
-            right={<RowRight text="Включить" small />}
-            onClick={() => {
-              resetHomeScreenOffer();
-              setMemory(getOfferMemory());
+          style={{
+            width: '100%',
+            padding: '14px',
+            borderRadius: 12,
+            border: 'none',
+            background: 'var(--accent)',
+            color: '#fff',
+            fontSize: 15,
+            fontWeight: 600,
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+          }}
+        >
+          📲 Добавить значок (тест)
+        </button>
+        {debug && (
+          <pre
+            style={{
+              marginTop: 12,
+              padding: 12,
+              borderRadius: 10,
+              background: 'rgba(var(--fg-rgb),0.06)',
+              color: 'var(--text)',
+              fontSize: 12,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
             }}
-          />
+          >
+            {debug}
+          </pre>
         )}
       </div>
     </div>
