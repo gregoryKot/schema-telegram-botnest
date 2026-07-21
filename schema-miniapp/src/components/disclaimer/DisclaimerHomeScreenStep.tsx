@@ -1,9 +1,6 @@
 import { useTr } from '../../utils/addressForm';
-import {
-  buildHomeScreenHint,
-  homeScreenButtonWorks,
-  triggerAddToHomeScreen,
-} from '../../utils/homeScreen';
+import { buildHomeScreenHint } from '../../utils/homeScreen';
+import { AddHomeScreenButton } from '../AddHomeScreenButton';
 import { useHomeScreenOffer } from '../../hooks/useHomeScreenOffer';
 
 // Последний шаг онбординга: «добавь на главный экран».
@@ -54,20 +51,9 @@ export function DisclaimerHomeScreenStep({
       >
         {buildHomeScreenHint(offer.platform, tr)}
       </div>
-      {homeScreenButtonWorks(offer.platform) && (
-        <button
-          onClick={() => {
-            // Триггер ПЕРВЫМ, прямо в жесте; согласие сразу после
-            // (localStorage синхронный успевает до ухода из аппки).
-            triggerAddToHomeScreen(offer.platform);
-            onBeforeAdd();
-          }}
-          className="btn-primary"
-          style={{ marginBottom: 10 }}
-        >
-          Добавить на экран
-        </button>
-      )}
+      <AddHomeScreenButton onActivated={onBeforeAdd} style={{ marginBottom: 10 }}>
+        Добавить на экран
+      </AddHomeScreenButton>
     </div>
   );
 }

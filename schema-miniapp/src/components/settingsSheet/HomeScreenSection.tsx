@@ -4,12 +4,11 @@ import {
   canOfferHomeScreenNow,
   homeScreenPlatform,
   buildHomeScreenHint,
-  triggerAddToHomeScreen,
 } from '../../utils/homeScreen';
+import { AddHomeScreenButton } from '../AddHomeScreenButton';
 
-// Значок на экране — из настроек. Android — нативный addToHomeScreen; iOS —
-// открытие страницы-инструкции браузером (нативный вызов на новых iOS молчит,
-// см. triggerAddToHomeScreen).
+// Значок на экране — из настроек. Механика кнопки (Android — нативный вызов,
+// iOS — настоящая ссылка) — в AddHomeScreenButton.
 export function HomeScreenSection() {
   const tr = useTr();
   if (!canOfferHomeScreenNow()) return null;
@@ -20,23 +19,7 @@ export function HomeScreenSection() {
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ЗНАЧОК НА ЭКРАНЕ</SettingsLabel>
       <div className="card" style={{ borderRadius: 16, padding: 14 }}>
-        <button
-          onClick={() => triggerAddToHomeScreen(platform)}
-          style={{
-            width: '100%',
-            padding: 14,
-            borderRadius: 12,
-            border: 'none',
-            background: 'var(--accent)',
-            color: '#fff',
-            fontSize: 15,
-            fontWeight: 600,
-            fontFamily: 'inherit',
-            cursor: 'pointer',
-          }}
-        >
-          📲 Добавить значок
-        </button>
+        <AddHomeScreenButton>📲 Добавить значок на экран</AddHomeScreenButton>
         <div
           style={{
             marginTop: 10,
