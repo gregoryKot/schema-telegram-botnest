@@ -6,14 +6,18 @@ import {
   JOURNEY_TYPE_META,
   journeyTypeMeta,
   journeyItemSubtitle,
-  journeyStatRows,
-  journeyTotal,
   sortJourneyItems,
   filterJourneyItems,
   formatJourneyDate,
   groupJourneyByMonth,
   buildJourneyCardRows,
+  filterJourneyByPeriod,
 } from '../../../shared/src/journey/journeyMeta';
+import {
+  journeyStatRows,
+  journeyTotal,
+} from '../../../shared/src/journey/journeyStats';
+import { buildJourneyResultParts } from '../../../shared/src/journey/journeyContent';
 import {
   journeyShareText,
   journeyItemShareText,
@@ -211,5 +215,59 @@ describe('journeyItemShareText', () => {
     expect(t).toContain('✅ Практика по плану');
     expect(t).toContain('t.me/bot');
     expect(t).not.toMatch(/\b(ты|тебя|тебе|вы|вас|вам)\b/i);
+  });
+});
+
+describe('filterJourneyByPeriod', () => {
+  const now = new Date('2026-07-21T12:00:00');
+  const items = [
+    { type: 'tracker_day', at: '2026-07-20' },
+    { type: 'note', at: '2026-07-10' },
+    { type: 'ysq', at: '2026-05-01T10:00:00.000Z' },
+    { type: 'letter', at: 'мусор' },
+  ];
+
+  it('неделя и месяц — скользящие 7/30 дней; «всё время» не режет', () => {
+    expect(filterJourneyByPeriod(items, 'all', now)).toHaveLength(4);
+    expect(filterJourneyByPeriod(items, 'week', now).map((i) => i.at)).toEqual([
+      '2026-07-20',
+    ]);
+    expect(filterJourneyByPeriod(items, 'month', now).map((i) => i.at)).toEqual(
+      ['2026-07-20', '2026-07-10'],
+    );
+  });
+});
+
+describe('buildJourneyResultParts', () => {
+  it('проверка убеждения → убеждение + здоровый взгляд', () => {
+    const parts = buildJourneyResultParts('belief_check', {
+      id: 1,
+      belief: 'Я всегда всё порчу',
+      reframe: 'Ошибки — часть обучения',
+    });
+    expect(parts).toEqual([
+      { title: 'Убеждение', text: 'Я всегда всё порчу' },
+      { title: 'Здоровый взгляд', text: 'Ошибки — часть обучения' },
+    ]);
+  });
+
+  it('пустые/отсутствующие поля не создают частей; длинное режется с многоточием', () => {
+    expect(buildJourneyResultParts('belief_check', { belief: '  ' })).toEqual(
+      [],
+    );
+    expect(buildJourneyResultParts('letter', null)).toEqual([]);
+    const long = 'слово '.repeat(60).trim();
+    const [part] = buildJourneyResultParts('letter', { text: long });
+    expect(part.text.length).toBeLessThanOrEqual(221);
+    expect(part.text.endsWith('…')).toBe(true);
+  });
+
+  it('благодарность → до трёх пунктов; неизвестный тип → пусто', () => {
+    expect(
+      buildJourneyResultParts('gratitude', {
+        items: ['солнце', 'кофе', 'разговор', 'четвёртое'],
+      }),
+    ).toHaveLength(3);
+    expect(buildJourneyResultParts('tracker_day', { any: 1 })).toEqual([]);
   });
 });

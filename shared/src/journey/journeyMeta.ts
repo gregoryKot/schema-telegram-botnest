@@ -59,6 +59,8 @@ export interface JourneyItem {
   type: string;
   /** ISO-датавремя или YYYY-MM-DD */
   at: string;
+  /** id строки-источника — для подтяжки содержимого записи */
+  id?: number;
   needId?: string;
   modeId?: string;
   schemaIds?: string[];
@@ -108,6 +110,30 @@ export const JOURNEY_GROUP_COLORS: Record<
   cards: { css: 'var(--accent-indigo)', hex: '#818cf8' },
 };
 
+// Период ленты: за всё время / последние 7 / последние 30 дней.
+export type JourneyPeriod = 'all' | 'week' | 'month';
+
+export const JOURNEY_PERIODS: Array<{ id: JourneyPeriod; label: string }> = [
+  { id: 'all', label: 'Всё время' },
+  { id: 'week', label: 'Неделя' },
+  { id: 'month', label: 'Месяц' },
+];
+
+/** Фильтр по периоду (скользящие 7/30 дней). Чистая, не мутирует вход. */
+export function filterJourneyByPeriod(
+  items: readonly JourneyItem[],
+  period: JourneyPeriod,
+  now = new Date(),
+): JourneyItem[] {
+  if (period === 'all') return [...items];
+  const days = period === 'week' ? 7 : 30;
+  const from = now.getTime() - days * 86_400_000;
+  return items.filter((i) => {
+    const t = Date.parse(i.at.length === 10 ? `${i.at}T00:00:00` : i.at);
+    return !Number.isNaN(t) && t >= from;
+  });
+}
+
 export type SortDir = 'desc' | 'asc';
 
 /** Сортировка ленты по времени; не мутирует вход. */
@@ -127,45 +153,6 @@ export function filterJourneyItems(
 ): JourneyItem[] {
   if (group === 'all') return [...items];
   return items.filter((i) => journeyTypeMeta(i.type).group === group);
-}
-
-export interface JourneyStatRow {
-  emoji: string;
-  label: string;
-  count: number;
-}
-
-/**
- * Строки-счётчики «сколько чего сделано» (только ненулевые), по убыванию.
- * Подписи — номинативные, без формы обращения. Идут и на экран, и на карточку.
- */
-export function journeyStatRows(counts: JourneyCounts): JourneyStatRow[] {
-  const rows: Array<[string, string, number]> = [
-    ['📊', 'Дни с трекером', counts.trackerDays],
-    ['📔', 'Схемный дневник', counts.schemaDiary],
-    ['🎭', 'Дневник режимов', counts.modeDiary],
-    ['🌱', 'Благодарности', counts.gratitudeDays],
-    ['📝', 'Заметки дня', counts.notes],
-    ['🌿', 'Свои практики', counts.practices],
-    ['✅', 'Практики по плану', counts.plansDone],
-    ['📋', 'Тест схем', counts.ysqTests],
-    ['⚖️', 'Проверки убеждений', counts.beliefChecks],
-    ['✉️', 'Письма себе', counts.letters],
-    ['🆘', 'Кризисные карточки', counts.flashcards],
-    ['🧩', 'Карточки схем', counts.schemaNotes],
-    ['🎪', 'Карточки режимов', counts.modeNotes],
-    ['🏝', 'Безопасное место', counts.safePlace ? 1 : 0],
-    ['🎡', 'Колесо детства', counts.childhoodDone ? 1 : 0],
-  ];
-  return rows
-    .filter(([, , count]) => count > 0)
-    .sort((a, b) => b[2] - a[2])
-    .map(([emoji, label, count]) => ({ emoji, label, count }));
-}
-
-/** Всего шагов — сумма всех счётчиков (булевы считаются одним шагом). */
-export function journeyTotal(counts: JourneyCounts): number {
-  return journeyStatRows(counts).reduce((sum, r) => sum + r.count, 0);
 }
 
 // Имена потребностей для подписи строки ленты (источник — needData фронтендов;

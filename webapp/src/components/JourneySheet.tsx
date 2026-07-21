@@ -23,7 +23,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const j = useJourney(jp.deps);
-  const sh = useJourneyShare(j, jp.subtitle, botShortUrl);
+  const sh = useJourneyShare(j, jp.subtitle, botShortUrl, jp.fetchResult);
 
   return (
     <div

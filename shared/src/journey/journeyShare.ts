@@ -15,11 +15,14 @@ import {
   drawJourneyCard,
 } from '../share/cards/journeyCard';
 import { drawJourneyItemCard } from '../share/cards/journeyItemCard';
+import { drawJourneyResultCard } from '../share/cards/journeyResultCard';
+import type { JourneyResultPart } from './journeyContent';
 import { journeyItemShareText, journeyShareText } from '../share/shareTexts';
 import type { ShareCardKind } from '../share/analytics';
 
 export type JourneyShareState =
-  { kind: 'feed' } | { kind: 'item'; item: JourneyItem };
+  | { kind: 'feed' }
+  | { kind: 'item'; item: JourneyItem; parts: JourneyResultPart[] | null };
 
 export interface JourneySharePayload {
   title: string;
@@ -52,17 +55,37 @@ export function buildJourneySharePayload(
     };
   }
   const meta = journeyTypeMeta(share.item.type);
+  const hex = JOURNEY_GROUP_COLORS[meta.group].hex;
+  const day = formatJourneyDay(share.item.at);
+  const shareText = journeyItemShareText(meta.emoji, meta.label, link);
+  // Есть содержимое → карточка-результат с текстом; нет — карточка шага.
+  if (share.parts?.length) {
+    const data = {
+      emoji: meta.emoji,
+      label: meta.label,
+      day,
+      hex,
+      parts: share.parts,
+    };
+    return {
+      title: 'Результат',
+      draw: (canvas) => drawJourneyResultCard(canvas, data),
+      shareText,
+      filename: 'journey-result.png',
+      eventKind: 'journey_item',
+    };
+  }
   const data = {
     emoji: meta.emoji,
     label: meta.label,
     sub: subtitle(share.item),
-    day: formatJourneyDay(share.item.at),
-    hex: JOURNEY_GROUP_COLORS[meta.group].hex,
+    day,
+    hex,
   };
   return {
     title: 'Шаг пути',
     draw: (canvas) => drawJourneyItemCard(canvas, data),
-    shareText: journeyItemShareText(meta.emoji, meta.label, link),
+    shareText,
     filename: 'journey-step.png',
     eventKind: 'journey_item',
   };
@@ -76,6 +99,7 @@ export function useJourneyShare(
   j: { items: JourneyItem[]; total: number },
   subtitle: (item: JourneyItem) => string | null,
   link: string,
+  fetchResult: (item: JourneyItem) => Promise<JourneyResultPart[] | null>,
 ) {
   const [share, setShare] = useState<JourneyShareState | null>(null);
   const payload = useMemo(
@@ -88,7 +112,13 @@ export function useJourneyShare(
   return {
     payload,
     shareFeed: () => setShare({ kind: 'feed' }),
-    shareItem: (item: JourneyItem) => setShare({ kind: 'item', item }),
+    // Сначала тянем содержимое записи (расшифровывающий эндпоинт) — если
+    // не вышло/нечего, показываем обычную карточку шага.
+    shareItem: (item: JourneyItem) => {
+      void fetchResult(item)
+        .catch(() => null)
+        .then((parts) => setShare({ kind: 'item', item, parts }));
+    },
     close: () => setShare(null),
   };
 }
