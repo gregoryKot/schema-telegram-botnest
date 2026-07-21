@@ -1,11 +1,14 @@
-// Регрессия: в полноэкранном режиме Telegram (fullscreen) кнопки шапки
-// оказывались ПОД плавающими кнопками Telegram и не нажимались, когда клиент
-// ещё не прислал contentSafeAreaInset. computeSafeTop обязан всегда очищать
-// эту полосу. См. баг «кнопки некликабельны сверху» (июль 2026).
+// Регрессия: в полноэкранном режиме Telegram (fullscreen) текст и кнопки шапки
+// оказывались ПОД плавающими кнопками Telegram, когда клиент не прислал
+// contentSafeAreaInset. computeSafeTop обязан: (а) брать точное значение, когда
+// клиент реально сообщил инсеты; (б) держать щедрую границу, когда не сообщил.
+// См. баг «кнопки некликабельны / крестик закрывает текст» (июль 2026).
 import { describe, it, expect } from 'vitest';
 import { computeSafeTop } from './safezone';
 
-const FULLSCREEN_CONTROLS_TOP = 48;
+const FS_BAND_IOS = 76;
+const FS_BAND_ANDROID = 48;
+const IOS_FULLSCREEN_MIN = 100;
 
 describe('computeSafeTop — не-полноэкранный режим', () => {
   it('складывает device + content, когда инсеты пришли', () => {
@@ -15,6 +18,7 @@ describe('computeSafeTop — не-полноэкранный режим', () => 
         deviceTop: 47,
         isFullscreen: false,
         ios: true,
+        contentReported: true,
       }),
     ).toBe(67);
   });
@@ -26,6 +30,7 @@ describe('computeSafeTop — не-полноэкранный режим', () => 
         deviceTop: undefined,
         isFullscreen: false,
         ios: true,
+        contentReported: false,
       }),
     ).toBe(56);
   });
@@ -37,6 +42,7 @@ describe('computeSafeTop — не-полноэкранный режим', () => 
         deviceTop: undefined,
         isFullscreen: false,
         ios: false,
+        contentReported: false,
       }),
     ).toBe(0);
   });
@@ -48,53 +54,86 @@ describe('computeSafeTop — не-полноэкранный режим', () => 
         deviceTop: 0,
         isFullscreen: false,
         ios: true,
+        contentReported: true,
       }),
     ).toBe(0);
   });
 });
 
-describe('computeSafeTop — полноэкранный режим (регрессия кликабельности)', () => {
-  it('инсеты не пришли: держим нижнюю границу device + полоса кнопок', () => {
+describe('computeSafeTop — fullscreen, инсеты РЕАЛЬНО пришли (точное значение)', () => {
+  it('device + content, без лишнего отступа (notch)', () => {
+    expect(
+      computeSafeTop({
+        contentTop: 46,
+        deviceTop: 47,
+        isFullscreen: true,
+        ios: true,
+        contentReported: true,
+      }),
+    ).toBe(93);
+  });
+
+  it('iPhone SE — маленький статус-бар не раздуваем', () => {
+    // 20 + 46 = 66; фолбэк 100 НЕ применяется, т.к. клиент сообщил инсеты.
+    expect(
+      computeSafeTop({
+        contentTop: 46,
+        deviceTop: 20,
+        isFullscreen: true,
+        ios: true,
+        contentReported: true,
+      }),
+    ).toBe(66);
+  });
+});
+
+describe('computeSafeTop — fullscreen, инсеты НЕ пришли (щедрый фолбэк)', () => {
+  it('device есть, content не сообщён: очищаем высокую полосу (device + 76)', () => {
     expect(
       computeSafeTop({
         contentTop: undefined,
         deviceTop: 47,
         isFullscreen: true,
         ios: true,
+        contentReported: false,
       }),
-    ).toBe(47 + FULLSCREEN_CONTROLS_TOP);
+    ).toBe(47 + FS_BAND_IOS);
   });
 
-  it('contentTop явно 0 — всё равно очищаем полосу кнопок (не доверяем нулю)', () => {
+  it('content сообщён, но device НЕ пришёл — не доверяем частичным, фолбэк iOS', () => {
+    // device 0 → real 40 недостаточно (нет статус-бара) → минимум iOS 100.
     expect(
       computeSafeTop({
-        contentTop: 0,
-        deviceTop: 47,
+        contentTop: 40,
+        deviceTop: 0,
         isFullscreen: true,
-        ios: false,
+        ios: true,
+        contentReported: true,
       }),
-    ).toBe(47 + FULLSCREEN_CONTROLS_TOP);
+    ).toBe(IOS_FULLSCREEN_MIN);
   });
 
-  it('реальный contentTop больше границы — используем его (device + content)', () => {
-    expect(
-      computeSafeTop({
-        contentTop: 60,
-        deviceTop: 47,
-        isFullscreen: true,
-        ios: false,
-      }),
-    ).toBe(107);
-  });
-
-  it('совсем без инсетов — минимум = полоса кнопок, не ноль', () => {
+  it('совсем без инсетов на iOS — минимум 100, не ноль и не 48', () => {
     const v = computeSafeTop({
       contentTop: undefined,
       deviceTop: undefined,
       isFullscreen: true,
-      ios: false,
+      ios: true,
+      contentReported: false,
     });
-    expect(v).toBe(FULLSCREEN_CONTROLS_TOP);
+    expect(v).toBe(IOS_FULLSCREEN_MIN);
     expect(v).toBeGreaterThan(0);
+  });
+
+  it('Android без инсетов — полоса кнопок Android (48)', () => {
+    expect(
+      computeSafeTop({
+        contentTop: undefined,
+        deviceTop: undefined,
+        isFullscreen: true,
+        ios: false,
+        contentReported: false,
+      }),
+    ).toBe(FS_BAND_ANDROID);
   });
 });
