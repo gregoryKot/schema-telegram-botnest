@@ -114,7 +114,8 @@ export class PlansController {
 
   @Get('plans/history')
   async getPlanHistory(@Req() req: AuthRequest, @Query('days') days?: string) {
-    const n = Math.min(Number(days) || 30, 90);
+    // 365: архив «Мой путь» тянет текст практики и для старых записей
+    const n = Math.min(Number(days) || 30, 365);
     return this.practicesService.getPlanHistory(uid(req), n);
   }
 

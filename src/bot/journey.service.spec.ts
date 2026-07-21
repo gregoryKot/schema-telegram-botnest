@@ -118,8 +118,8 @@ describe('JourneyService', () => {
     const prisma = makePrisma({
       ysqResultHistory: {
         findMany: jest.fn(async () => [
-          { completedAt: D('2026-07-01T00:00:00Z') },
-          { completedAt: D('2026-07-05T00:00:00Z') },
+          { id: 11, completedAt: D('2026-07-01T00:00:00Z') },
+          { id: 12, completedAt: D('2026-07-05T00:00:00Z') },
         ]),
       },
       ysqResult: {
@@ -131,6 +131,8 @@ describe('JourneyService', () => {
     const { counts, items } = await new JourneyService(prisma).getJourney(uid);
     expect(counts.ysqTests).toBe(2);
     expect(items.filter((i) => i.type === 'ysq')).toHaveLength(2);
+    // id истории доезжает — по нему фронт находит запись для карточки-результата
+    expect(items.map((i) => i.id).sort()).toEqual([11, 12]);
   });
 
   it('YSQ-фолбэк: старый юзер без истории, но с результатом → 1 прохождение', async () => {

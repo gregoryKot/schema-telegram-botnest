@@ -271,3 +271,51 @@ describe('buildJourneyResultParts', () => {
     expect(buildJourneyResultParts('tracker_day', { any: 1 })).toEqual([]);
   });
 });
+
+describe('buildJourneyResultParts — трекер, карточки, тест', () => {
+  it('день трекера → оценки потребностей одной строкой в фиксированном порядке', () => {
+    const [part] = buildJourneyResultParts('tracker_day', {
+      play: 4,
+      attachment: 7,
+      limits: 6,
+    });
+    expect(part.title).toBe('Оценки дня (из 10)');
+    expect(part.text).toBe(
+      'Привязанность — 7 · Спонтанность — 4 · Границы — 6',
+    );
+  });
+
+  it('день трекера без оценок → пусто (нет выдуманных цифр)', () => {
+    expect(buildJourneyResultParts('tracker_day', {})).toEqual([]);
+  });
+
+  it('карточка схемы/режима → заполненные поля с подписями', () => {
+    expect(
+      buildJourneyResultParts('schema_note', {
+        schemaId: 'abandonment',
+        triggers: 'Молчание в ответ',
+        healthyView: 'Пауза — не уход',
+        behavior: '',
+      }),
+    ).toEqual([
+      { title: 'Триггеры', text: 'Молчание в ответ' },
+      { title: 'Здоровый взгляд', text: 'Пауза — не уход' },
+    ]);
+    expect(
+      buildJourneyResultParts('mode_note', { needs: 'Поддержка' }),
+    ).toEqual([{ title: 'Что мне нужно', text: 'Поддержка' }]);
+  });
+
+  it('тест схем → число выраженных схем из scores', () => {
+    const [part] = buildJourneyResultParts('ysq', {
+      id: 1,
+      completedAt: '2026-07-01',
+      scores: [
+        { id: 'abandonment', pct5plus: 60 },
+        { id: 'mistrust', pct5plus: 10 },
+      ],
+    });
+    expect(part.text).toBe('Выраженных схем: 1 из 20');
+    expect(buildJourneyResultParts('ysq', { scores: 'мусор' })).toEqual([]);
+  });
+});
