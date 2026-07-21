@@ -22,6 +22,8 @@ declare global {
         onEvent?(event: string, cb: () => void): void;
         offEvent?(event: string, cb: () => void): void;
         platform?: string;
+        version?: string;
+        showAlert?(message: string, callback?: () => void): void;
         addToHomeScreen?(): void;
         // Bot API 8.0: статус значка приходит колбэком — не надо спрашивать
         // пользователя «ты добавил?».
