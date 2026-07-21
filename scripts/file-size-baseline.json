@@ -96,7 +96,7 @@
   "scripts/encrypt-existing.ts": 273,
   "webapp/src/components/diary/ModeEntrySheet.tsx": 273,
   "webapp/src/pages/admin/BookingSection.tsx": 270,
-  "scripts/rotate-encryption-key.ts": 269,
+  "scripts/rotate-encryption-key.ts": 273,
   "webapp/src/components/therapist/ClientListView.tsx": 265,
   "schema-miniapp/src/components/TodayCustomizeSheet.tsx": 261,
   "schema-miniapp/src/components/IntroSheetShell.tsx": 258,
