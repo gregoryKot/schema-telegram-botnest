@@ -6,6 +6,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
@@ -278,5 +279,70 @@ describe('EmailService — consumeToken', () => {
       BadRequestException,
     );
     expect(prisma.emailToken.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+// Аудит 2026-07: логи (и DM админа через AlertLogger) не должны содержать
+// сырой email (M8) или magic-link-токен (M9).
+describe('EmailService — не логирует PII/секреты (M8/M9)', () => {
+  let warn: jest.SpyInstance;
+  let error: jest.SpyInstance;
+  const origEnv = process.env.NODE_ENV;
+  const origKey = process.env.RESEND_API_KEY;
+
+  beforeEach(() => {
+    warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
+    error = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    warn.mockRestore();
+    error.mockRestore();
+    process.env.NODE_ENV = origEnv;
+    if (origKey === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = origKey;
+  });
+
+  const allLogged = () =>
+    [...warn.mock.calls, ...error.mock.calls].flat().join(' | ');
+
+  it('M8: recovery для неизвестного адреса не пишет сырой email (только хеш)', async () => {
+    const prisma = makeFakePrisma();
+    const service = new EmailService(prisma as never, makeConfig());
+    await service.sendRecoveryLink('victim@secret.com');
+    const logged = allLogged();
+    expect(logged).not.toContain('victim@secret.com');
+    expect(logged).not.toContain('secret.com');
+    expect(logged).toContain('emailHash=');
+  });
+
+  // send() приватный — зовём напрямую (как captureRawToken выше), чтобы
+  // проверить ветку «нет ключа», не задевая путь шифрования/БД.
+  const callSend = (service: EmailService) =>
+    (service as any).send(
+      'a@test.com',
+      'Subject',
+      'Открой https://schemehappens.ru/verify?token=SECRETTOKEN123',
+    ) as Promise<void>;
+
+  it('M9: в проде без RESEND_API_KEY тело письма/токен НЕ логируются', async () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.RESEND_API_KEY;
+    const service = new EmailService(makeFakePrisma() as never, makeConfig());
+    await callSend(service);
+    const logged = allLogged();
+    expect(logged).not.toContain('SECRETTOKEN123');
+    expect(logged).not.toContain('token=');
+    expect(logged).not.toContain('a@test.com');
+    // Мисконфиг всё же громко замечен (→ DM админа через AlertLogger).
+    expect(error).toHaveBeenCalled();
+    expect(logged).toContain('RESEND_API_KEY not configured');
+  });
+
+  it('M9: в dev (не prod) тело по-прежнему логируется для локальной проверки', async () => {
+    process.env.NODE_ENV = 'test';
+    delete process.env.RESEND_API_KEY;
+    const service = new EmailService(makeFakePrisma() as never, makeConfig());
+    await callSend(service);
+    expect(allLogged()).toContain('token=SECRETTOKEN123');
   });
 });

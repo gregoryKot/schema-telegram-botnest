@@ -250,10 +250,10 @@ describe('TherapyTasksViewService.getTasksForClient — доступ по акт
       status: 'active',
     });
     users.push({ id: CLIENT_A, notifyTimezone: 'Europe/Moscow' });
-    // «Сегодня» — тем же хелпером, что и сервис (МОСКОВСКАЯ дата юзера).
-    // `toISOString().slice(0,10)` давал UTC-дату: с 21:00 до 24:00 UTC
-    // (до московской полуночи) она на день меньше — тест падал каждый
-    // вечер (CI-инцидент 2026-07-20, тот же класс, что caldav-TZID).
+    // TZ-стабильность: сервис считает «сегодня» в зоне клиента (localDate),
+    // а не в UTC. Фикстура обязана совпасть — иначе в окне 21:00–24:00 UTC
+    // Москва уже следующий день и doneToday ложно false (пред-существующий
+    // флейк, аудит 2026-07: Ось 3, TZ-хрупкие тесты).
     const today = localDate('Europe/Moscow', new Date());
     ratings.push({ userId: CLIENT_A, date: today });
     tasks.push({
