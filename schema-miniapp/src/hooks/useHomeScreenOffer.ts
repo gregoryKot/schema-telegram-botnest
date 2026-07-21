@@ -2,9 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import {
   getOfferMemory,
-  homeScreenAddSupported,
   homeScreenPlatform,
-  homeScreenStatusSupported,
   markHomeScreenAdded,
   markHomeScreenNever,
   shouldOfferHomeScreen,
@@ -23,21 +21,10 @@ export function useHomeScreenOffer(surface: OfferSurface) {
   const [status, setStatus] = useState<TgHomeScreenStatus | undefined>();
   const [dismissed, setDismissed] = useState(false);
 
-  // Методы добавления на экран (Bot API 8.0) присутствуют как заглушки и в
-  // старых клиентах, где они НЕ работают. Реальную поддержку определяем по
-  // версии (homeScreen*Supported) — иначе показываем нерабочую кнопку.
-  const supported = homeScreenAddSupported();
-  const statusApiAvailable = homeScreenStatusSupported();
-
   // Статус значка спрашиваем у Telegram, а не у человека: он мог добавить
   // приложение с другого устройства или снести значок с экрана.
   useEffect(() => {
-    if (statusApiAvailable) {
-      tg?.checkHomeScreenStatus?.((s) => {
-        if (s === 'added') markHomeScreenAdded();
-        setStatus(s);
-      });
-    }
+    tg?.checkHomeScreenStatus?.((s) => setStatus(s));
     const onAdded = () => {
       markHomeScreenAdded();
       setStatus('added');
@@ -45,14 +32,13 @@ export function useHomeScreenOffer(surface: OfferSurface) {
     };
     tg?.onEvent?.('homeScreenAdded', onAdded);
     return () => tg?.offEvent?.('homeScreenAdded', onAdded);
-  }, [tg, surface, statusApiAvailable]);
+  }, [tg, surface]);
 
   const visible =
     !dismissed &&
     shouldOfferHomeScreen({
       platform: tg?.platform,
-      hasApi: supported,
-      statusApiAvailable,
+      hasApi: !!tg?.addToHomeScreen,
       tgStatus: status,
       memory: getOfferMemory(),
       now: Date.now(),
@@ -68,13 +54,13 @@ export function useHomeScreenOffer(surface: OfferSurface) {
     platform,
     /** Нажал «Добавить»: дальше ведёт Telegram, факт добавления придёт событием. */
     add: useCallback(() => {
-      api.trackEvent('home_screen_offer', { action: 'add', surface });
-      // Если человек передумает в нативном шите — не спрашиваем снова сразу,
-      // вернёмся через неделю. Карточку убираем сразу (иначе висит до
-      // следующего ре-рендера — snooze в localStorage сам его не вызывает).
-      snoozeHomeScreen();
-      setDismissed(true);
+      // addToHomeScreen ПЕРВЫМ, прямо в user-gesture. На iOS нативный вызов
+      // должен идти синхронно в обработчике тапа; предшествующий api.trackEvent
+      // (fetch) «съедает» жест, и Telegram молча не открывает экран — из-за
+      // этого кнопка «не работала». Трекинг и снуз — уже после.
       tg?.addToHomeScreen?.();
+      snoozeHomeScreen();
+      api.trackEvent('home_screen_offer', { action: 'add', surface });
     }, [tg, surface]),
     later: useCallback(() => {
       api.trackEvent('home_screen_offer', { action: 'later', surface });

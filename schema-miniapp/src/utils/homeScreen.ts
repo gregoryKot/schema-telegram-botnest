@@ -34,34 +34,9 @@ export function canOfferHomeScreen(
   return hasApi && homeScreenPlatform(platform) !== 'other';
 }
 
-// Минимальная версия Bot API, где addToHomeScreen/checkHomeScreenStatus реально
-// работают. В клиентах ниже методы присутствуют как заглушки (кнопка «есть, но
-// не жмётся»), поэтому наличие метода в объекте — недостаточный признак.
-export const HOME_SCREEN_MIN_VERSION = '8.0';
-
-/** Рабочая ли кнопка «добавить на экран» в текущем клиенте (метод + версия). */
-export function homeScreenAddSupported(): boolean {
-  const tg = window.Telegram?.WebApp;
-  return (
-    !!tg?.addToHomeScreen &&
-    (tg?.isVersionAtLeast?.(HOME_SCREEN_MIN_VERSION) ?? false)
-  );
-}
-
-/** Рабочий ли checkHomeScreenStatus (метод + версия) — можно ли ждать статус. */
-export function homeScreenStatusSupported(): boolean {
-  const tg = window.Telegram?.WebApp;
-  return (
-    !!tg?.checkHomeScreenStatus &&
-    (tg?.isVersionAtLeast?.(HOME_SCREEN_MIN_VERSION) ?? false)
-  );
-}
-
 export function canOfferHomeScreenNow(): boolean {
-  return canOfferHomeScreen(
-    window.Telegram?.WebApp?.platform,
-    homeScreenAddSupported(),
-  );
+  const tg = window.Telegram?.WebApp;
+  return canOfferHomeScreen(tg?.platform, !!tg?.addToHomeScreen);
 }
 
 // ── Память предложения ──────────────────────────────────────────────────────
@@ -126,9 +101,6 @@ export function resetHomeScreenOffer(): void {
 export function shouldOfferHomeScreen(input: {
   platform: string | undefined;
   hasApi: boolean;
-  // Доступен ли РАБОЧИЙ checkHomeScreenStatus (метод есть И версия ≥ 8.0).
-  // Если да — ждём его ответа, а не показываем оптимистично.
-  statusApiAvailable: boolean;
   tgStatus?: TgHomeScreenStatus;
   memory: OfferMemory;
   now: number;
@@ -137,18 +109,9 @@ export function shouldOfferHomeScreen(input: {
   // Слово Telegram важнее нашей памяти: значок мог появиться или пропасть мимо
   // нас (добавили с другого устройства, снесли с экрана).
   if (input.tgStatus === 'added') return false;
-  // Клиент сам говорит, что добавить нельзя (старая версия/платформа) —
-  // не мучаем нерабочей кнопкой (была причина «кнопка есть, но не жмётся»).
-  if (input.tgStatus === 'unsupported') return false;
-  // Статус ещё не пришёл, но API рабочий — НЕ показываем оптимистично: иначе
-  // при уже существующем значке карточка мелькает до ответа (или висит, если
-  // ответ не придёт). Дожидаемся 'missed'/'unknown'.
-  if (input.tgStatus === undefined && input.statusApiAvailable) return false;
-  // Сюда попадаем при 'missed' | 'unknown' | (нет status-API вовсе).
   switch (input.memory.kind) {
     case 'added':
-      // Наша отметка «добавлено» устарела — показываем только если Telegram
-      // явно подтвердил, что значка нет.
+      // Telegram говорит, что значка нет → наша отметка устарела, предлагаем.
       return input.tgStatus === 'missed';
     case 'never':
       return false;
