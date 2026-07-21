@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import {
   getOfferMemory,
+  triggerAddToHomeScreen,
   homeScreenPlatform,
   markHomeScreenAdded,
   markHomeScreenNever,
@@ -54,14 +55,12 @@ export function useHomeScreenOffer(surface: OfferSurface) {
     platform,
     /** Нажал «Добавить»: дальше ведёт Telegram, факт добавления придёт событием. */
     add: useCallback(() => {
-      // addToHomeScreen ПЕРВЫМ, прямо в user-gesture. На iOS нативный вызов
-      // должен идти синхронно в обработчике тапа; предшествующий api.trackEvent
-      // (fetch) «съедает» жест, и Telegram молча не открывает экран — из-за
-      // этого кнопка «не работала». Трекинг и снуз — уже после.
-      tg?.addToHomeScreen?.();
+      // Триггер ПЕРВЫМ, прямо в user-gesture (клиент требует свежий тап);
+      // трекинг и снуз — после. Ветвление платформ — в triggerAddToHomeScreen.
+      triggerAddToHomeScreen();
       snoozeHomeScreen();
       api.trackEvent('home_screen_offer', { action: 'add', surface });
-    }, [tg, surface]),
+    }, [surface]),
     later: useCallback(() => {
       api.trackEvent('home_screen_offer', { action: 'later', surface });
       snoozeHomeScreen();

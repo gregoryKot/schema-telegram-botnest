@@ -1,9 +1,12 @@
 // Предложение «добавить значок на экран»: где показываем и когда возвращаем.
 // Матрица целиком под тестом — часть веток наступает только через неделю,
 // вживую их не прощёлкать.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
+  addToHomeScreenUrl,
   canOfferHomeScreen,
+  homeScreenButtonWorks,
+  triggerAddToHomeScreen,
   homeScreenPlatform,
   parseOfferMemory,
   shouldOfferHomeScreen,
@@ -107,5 +110,40 @@ describe('shouldOfferHomeScreen', () => {
     expect(offer({ platform: 'tdesktop' })).toBe(false);
     expect(offer({ platform: 'tdesktop', tgStatus: 'missed' })).toBe(false);
     expect(offer({ hasApi: false })).toBe(false);
+  });
+});
+
+// Регресс «кнопка не работает» (21.07.2026): нативный addToHomeScreen на новых
+// iOS открывает ссылку приватной схемой x-safari-https и молча умирает
+// (WebAppController.swift). Кнопка обязана вести на ту же t.me-страницу через
+// openLink — и матрица платформ зафиксирована тестом.
+describe('triggerAddToHomeScreen', () => {
+  it('ссылка — ровно как у нативного клиента (startapp&addToHomeScreen)', () => {
+    const url = addToHomeScreenUrl();
+    expect(url).toMatch(/^https:\/\/t\.me\/.+\/.+\?startapp&addToHomeScreen$/);
+  });
+
+  it('кнопка есть на обеих мобильных платформах, но не на десктопе', () => {
+    expect(homeScreenButtonWorks('android')).toBe(true);
+    expect(homeScreenButtonWorks('ios')).toBe(true);
+    expect(homeScreenButtonWorks('other')).toBe(false);
+  });
+
+  it('Android — нативный вызов; iOS — openLink той же ссылкой', () => {
+    const addToHomeScreen = vi.fn();
+    const openLink = vi.fn();
+    (globalThis as never as { window: unknown }).window = {
+      Telegram: { WebApp: { addToHomeScreen, openLink } },
+    };
+
+    triggerAddToHomeScreen('android');
+    expect(addToHomeScreen).toHaveBeenCalledTimes(1);
+    expect(openLink).not.toHaveBeenCalled();
+
+    triggerAddToHomeScreen('ios');
+    expect(openLink).toHaveBeenCalledWith(addToHomeScreenUrl());
+    expect(addToHomeScreen).toHaveBeenCalledTimes(1); // не вызвался второй раз
+
+    delete (globalThis as never as { window?: unknown }).window;
   });
 });

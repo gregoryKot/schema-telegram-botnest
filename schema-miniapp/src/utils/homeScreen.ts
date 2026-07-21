@@ -1,3 +1,5 @@
+import { miniappDeepLink } from './botConfig';
+
 // Предложение «добавить мини-апп на домашний экран».
 //
 // Картинку с инструкцией рисует САМ Telegram — мы только зовём
@@ -132,12 +134,9 @@ export function buildHomeScreenHint(
   tr: (ty: string, vy: string) => string,
 ): string {
   if (platform === 'ios') {
-    // На iOS Telegram (проверено на 9.6) программный addToHomeScreen молча не
-    // срабатывает — раньше открывал браузер с картинкой, в обновлении убрали.
-    // Единственный рабочий путь — нативное меню «⋯».
     return tr(
-      'Нажми «⋯» справа вверху (рядом с «Закрыть») и выбери «На экран „Домой“».',
-      'Нажмите «⋯» справа вверху (рядом с «Закрыть») и выберите «На экран „Домой“».',
+      'Откроется страница в браузере — следуй инструкции на ней. Запасной путь: «⋯» справа вверху → «На экран „Домой“».',
+      'Откроется страница в браузере — следуйте инструкции на ней. Запасной путь: «⋯» справа вверху → «На экран „Домой“».',
     );
   }
   return tr(
@@ -146,11 +145,43 @@ export function buildHomeScreenHint(
   );
 }
 
-// Работает ли ПРОГРАММНОЕ добавление (кнопка addToHomeScreen). На iOS
-// (проверено на Telegram 9.6) метод есть, но вызывается впустую — там показываем
-// инструкцию про «⋯», а не бесполезную кнопку. На Android кнопка работает.
-export function homeScreenButtonWorks(platform = homeScreenPlatform(
-  window.Telegram?.WebApp?.platform,
-)): boolean {
-  return platform === 'android';
+// Ссылка «добавить на экран» — ровно та, которую строит сам Telegram-iOS в
+// нативном addToHomeScreen (WebAppController.swift:
+// t.me/<bot>/<app>?startapp&addToHomeScreen). Открытая в браузере, страница
+// t.me ведёт человека по добавлению значка.
+export function addToHomeScreenUrl(): string {
+  return `${miniappDeepLink()}?startapp&addToHomeScreen`;
+}
+
+/**
+ * Запустить добавление на экран.
+ * Android — нативный addToHomeScreen (работает штатно).
+ * iOS — нативный вызов сломан на новых iOS: клиент открывает ссылку приватной
+ * схемой x-safari-https (WebAppController.swift, ветка iOS 18+), и она молча
+ * не срабатывает. Поэтому открываем ТУ ЖЕ ссылку сами через openLink — он идёт
+ * другим путём (openExternalUrl, forceExternal: true) и открывает внешний
+ * браузер: ровно прежнее поведение «браузер со страницей-инструкцией».
+ */
+export function triggerAddToHomeScreen(
+  platform: HomeScreenPlatform = homeScreenPlatform(
+    window.Telegram?.WebApp?.platform,
+  ),
+): void {
+  const tg = window.Telegram?.WebApp;
+  if (platform === 'android') {
+    tg?.addToHomeScreen?.();
+    return;
+  }
+  if (tg?.openLink) tg.openLink(addToHomeScreenUrl());
+  else window.open(addToHomeScreenUrl(), '_blank');
+}
+
+// Кнопка есть на обеих мобильных платформах: Android — нативный вызов, iOS —
+// открытие страницы-инструкции браузером (см. triggerAddToHomeScreen).
+export function homeScreenButtonWorks(
+  platform: HomeScreenPlatform = homeScreenPlatform(
+    window.Telegram?.WebApp?.platform,
+  ),
+): boolean {
+  return platform === 'android' || platform === 'ios';
 }

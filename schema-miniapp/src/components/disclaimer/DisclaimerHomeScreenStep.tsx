@@ -2,13 +2,13 @@ import { useTr } from '../../utils/addressForm';
 import {
   buildHomeScreenHint,
   homeScreenButtonWorks,
+  triggerAddToHomeScreen,
 } from '../../utils/homeScreen';
 import { useHomeScreenOffer } from '../../hooks/useHomeScreenOffer';
 
 // Последний шаг онбординга: «добавь на главный экран».
-// На Android — рабочая кнопка (addToHomeScreen). На iOS программный вызов
-// молчит (Telegram 9.6 убрал экран добавления), поэтому кнопки нет — только
-// инструкция про нативное меню «⋯» (buildHomeScreenHint).
+// Android — нативный addToHomeScreen; iOS — открытие страницы-инструкции
+// браузером (нативный вызов на новых iOS молчит, см. triggerAddToHomeScreen).
 export function DisclaimerHomeScreenStep({
   onBeforeAdd,
 }: {
@@ -54,14 +54,12 @@ export function DisclaimerHomeScreenStep({
       >
         {buildHomeScreenHint(offer.platform, tr)}
       </div>
-      {/* Кнопка — только на Android (там addToHomeScreen работает). На iOS
-          вызов молчит, ведёт к цели инструкция про «⋯» выше. */}
       {homeScreenButtonWorks(offer.platform) && (
         <button
           onClick={() => {
-            // addToHomeScreen ПЕРВЫМ, прямо в жесте; согласие сразу после
+            // Триггер ПЕРВЫМ, прямо в жесте; согласие сразу после
             // (localStorage синхронный успевает до ухода из аппки).
-            window.Telegram?.WebApp?.addToHomeScreen?.();
+            triggerAddToHomeScreen(offer.platform);
             onBeforeAdd();
           }}
           className="btn-primary"
