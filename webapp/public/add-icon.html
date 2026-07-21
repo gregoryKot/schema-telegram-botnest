@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Значок на экран — Всё по схеме</title>
+    <!--
+      Прыжковая страница для «добавить значок на экран» из мини-аппа (iOS).
+      Зачем: WebApp.openLink с t.me-ссылкой на iOS уходит в universal link и
+      молча возвращается в Telegram; нативный addToHomeScreen сломан на новых
+      iOS (x-safari-https, см. WebAppController.swift). Наш домен Telegram
+      честно открывает в браузере, а уже ИЗ браузера редирект на t.me рендерит
+      обычную веб-страницу с инструкцией добавления значка.
+      Значения бота — parные к schema-miniapp/.env.production
+      (VITE_BOT_USERNAME/VITE_MINIAPP_APP_NAME); меняешь там — поменяй тут.
+    -->
+    <meta
+      http-equiv="refresh"
+      content="0;url=https://t.me/SchemeHappensBot/diary?startapp&addToHomeScreen"
+    />
+    <style>
+      body {
+        font-family: -apple-system, system-ui, sans-serif;
+        display: flex;
+        min-height: 100vh;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        background: #12121a;
+        color: #eee;
+        text-align: center;
+        padding: 24px;
+      }
+      a { color: #8b8bf5; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <p>
+      Открываем страницу добавления значка…<br /><br />
+      Если ничего не произошло —
+      <a href="https://t.me/SchemeHappensBot/diary?startapp&addToHomeScreen"
+        >нажми сюда</a
+      >.
+    </p>
+  </body>
+</html>

@@ -3,6 +3,7 @@
 // вживую их не прощёлкать.
 import { describe, it, expect, vi } from 'vitest';
 import {
+  ADD_ICON_HOP_URL,
   addToHomeScreenUrl,
   canOfferHomeScreen,
   homeScreenButtonWorks,
@@ -129,7 +130,12 @@ describe('triggerAddToHomeScreen', () => {
     expect(homeScreenButtonWorks('other')).toBe(false);
   });
 
-  it('Android — нативный вызов; iOS — openLink той же ссылкой', () => {
+  it('прыжковая ссылка — наш домен (t.me напрямую = universal link, умирает)', () => {
+    expect(ADD_ICON_HOP_URL).toMatch(/^https:\/\/schemehappens\.ru\//);
+    expect(ADD_ICON_HOP_URL).not.toContain('t.me');
+  });
+
+  it('Android — нативный вызов; iOS — openLink прыжковой страницей', () => {
     const addToHomeScreen = vi.fn();
     const openLink = vi.fn();
     (globalThis as never as { window: unknown }).window = {
@@ -141,7 +147,7 @@ describe('triggerAddToHomeScreen', () => {
     expect(openLink).not.toHaveBeenCalled();
 
     triggerAddToHomeScreen('ios');
-    expect(openLink).toHaveBeenCalledWith(addToHomeScreenUrl());
+    expect(openLink).toHaveBeenCalledWith(ADD_ICON_HOP_URL);
     expect(addToHomeScreen).toHaveBeenCalledTimes(1); // не вызвался второй раз
 
     delete (globalThis as never as { window?: unknown }).window;

@@ -153,14 +153,21 @@ export function addToHomeScreenUrl(): string {
   return `${miniappDeepLink()}?startapp&addToHomeScreen`;
 }
 
+// Прыжковая страница на НАШЕМ домене (webapp/public/add-icon.html): открывать
+// t.me напрямую через openLink нельзя — на iOS t.me это universal link, вызов
+// молча возвращается в уже открытый Telegram. Наш домен открывается в браузере
+// честно, а страница сама переправляет на t.me-инструкцию (внутри браузера
+// t.me рендерится как обычная веб-страница).
+export const ADD_ICON_HOP_URL = 'https://schemehappens.ru/add-icon.html';
+
 /**
  * Запустить добавление на экран.
  * Android — нативный addToHomeScreen (работает штатно).
  * iOS — нативный вызов сломан на новых iOS: клиент открывает ссылку приватной
  * схемой x-safari-https (WebAppController.swift, ветка iOS 18+), и она молча
- * не срабатывает. Поэтому открываем ТУ ЖЕ ссылку сами через openLink — он идёт
- * другим путём (openExternalUrl, forceExternal: true) и открывает внешний
- * браузер: ровно прежнее поведение «браузер со страницей-инструкцией».
+ * не срабатывает. Открываем браузер сами через openLink, но через прыжковую
+ * страницу нашего домена (см. ADD_ICON_HOP_URL) — прямая t.me-ссылка тоже
+ * умирает (universal link обратно в Telegram).
  */
 export function triggerAddToHomeScreen(
   platform: HomeScreenPlatform = homeScreenPlatform(
@@ -172,8 +179,8 @@ export function triggerAddToHomeScreen(
     tg?.addToHomeScreen?.();
     return;
   }
-  if (tg?.openLink) tg.openLink(addToHomeScreenUrl());
-  else window.open(addToHomeScreenUrl(), '_blank');
+  if (tg?.openLink) tg.openLink(ADD_ICON_HOP_URL);
+  else window.open(ADD_ICON_HOP_URL, '_blank');
 }
 
 // Кнопка есть на обеих мобильных платформах: Android — нативный вызов, iOS —
