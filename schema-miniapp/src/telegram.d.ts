@@ -22,11 +22,6 @@ declare global {
         onEvent?(event: string, cb: () => void): void;
         offEvent?(event: string, cb: () => void): void;
         platform?: string;
-        version?: string;
-        // Метод-заглушка присутствует и в клиентах < 8.0, где addToHomeScreen
-        // и checkHomeScreenStatus не работают. Реальную поддержку определяем
-        // только через версию, а не по наличию метода в объекте.
-        isVersionAtLeast?(version: string): boolean;
         addToHomeScreen?(): void;
         // Bot API 8.0: статус значка приходит колбэком — не надо спрашивать
         // пользователя «ты добавил?».
