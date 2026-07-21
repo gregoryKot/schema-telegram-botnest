@@ -71,3 +71,12 @@ export function gratitudeShareText(link: string): string {
 export function journeyShareText(total: number, link: string): string {
   return `🧭 Мой путь: ${total} ${pluralEntries(total)} заботы о себе — дневники, практики, тесты.\n\n${link}`;
 }
+
+/** Один шаг из ленты «Мой путь» (выполненная практика, запись дневника…). */
+export function journeyItemShareText(
+  emoji: string,
+  label: string,
+  link: string,
+): string {
+  return `${emoji} ${label} — ещё один шаг заботы о себе.\n\n${link}`;
+}

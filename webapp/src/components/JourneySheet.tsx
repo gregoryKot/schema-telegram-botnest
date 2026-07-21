@@ -1,20 +1,20 @@
 // «Мой путь» (webapp) — обёртка над общими useJourney/JourneyView
 // (shared/src/journey, правило №3): fixed-оверлей с useHistorySheet,
-// заголовок, шаринг. Парный файл: schema-miniapp/src/components/JourneySheet.tsx.
-import { useCallback, useState } from 'react';
+// заголовок, шаринг ленты (кнопка) и одного шага (тап по записи).
+// Парный файл: schema-miniapp/src/components/JourneySheet.tsx.
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { api } from '../api';
 import { getModeById, getSchemaById } from '../schemaTherapyData';
-import { journeyShareText } from '../../../shared/src/share/shareTexts';
-import { drawJourneyCard } from '../../../shared/src/share/cards/journeyCard';
 import { JourneyView } from '../../../shared/src/journey/JourneyView';
+import { useJourneyShare } from '../../../shared/src/journey/journeyShare';
 import {
-  makeJourneyProps,
   useJourney,
+  makeJourneyProps,
 } from '../../../shared/src/journey/useJourney';
 import { botShortUrl } from '../utils/botConfig';
+import { ShareIcon } from '../../../shared/src/share/ShareIcon';
 
 // Уровень модуля — стабильные ссылки (см. комментарий makeJourneyProps).
 const jp = makeJourneyProps(api, { getModeById, getSchemaById });
@@ -23,12 +23,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const j = useJourney(jp.deps);
-  const [showShare, setShowShare] = useState(false);
-
-  const drawCard = useCallback(
-    (canvas: HTMLCanvasElement) => drawJourneyCard(canvas, j.stats, j.total),
-    [j.stats, j.total],
-  );
+  const sh = useJourneyShare(j, jp.subtitle, botShortUrl);
 
   return (
     <div
@@ -41,7 +36,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
       }}
     >
       <div
-        style={{ maxWidth: 720, margin: '0 auto', padding: '24px 20px 80px' }}
+        style={{ maxWidth: 680, margin: '0 auto', padding: '24px 20px 80px' }}
       >
         <button
           onClick={goBack}
@@ -73,8 +68,11 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
           <span style={{ marginRight: 'auto' }} />
           {j.total > 0 && (
             <button
-              onClick={() => setShowShare(true)}
+              onClick={sh.shareFeed}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
                 minHeight: 40,
                 padding: '0 16px',
                 borderRadius: 12,
@@ -89,6 +87,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
                 cursor: 'pointer',
               }}
             >
+              <ShareIcon size={15} />
               Поделиться
             </button>
           )}
@@ -98,14 +97,15 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
           tr={tr}
           j={j}
           subtitle={jp.subtitle}
+          onShareItem={sh.shareItem}
           skeleton={
             <>
-              {[36, 36, 56, 56, 56, 56].map((h, i) => (
+              {[96, 64, 56, 56, 56, 56].map((h, i) => (
                 <div
                   key={i}
                   style={{
                     height: h,
-                    borderRadius: 14,
+                    borderRadius: 16,
                     marginBottom: 8,
                     background:
                       'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)',
@@ -119,16 +119,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
         />
       </div>
 
-      {showShare && (
-        <ShareCardSheet
-          title="Мой путь"
-          draw={drawCard}
-          shareText={journeyShareText(j.total, botShortUrl)}
-          filename="journey.png"
-          eventKind="journey"
-          onClose={() => setShowShare(false)}
-        />
-      )}
+      {sh.payload && <ShareCardSheet {...sh.payload} onClose={sh.close} />}
     </div>
   );
 }

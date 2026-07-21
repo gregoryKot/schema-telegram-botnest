@@ -11,8 +11,13 @@ import {
   sortJourneyItems,
   filterJourneyItems,
   formatJourneyDate,
+  groupJourneyByMonth,
+  buildJourneyCardRows,
 } from '../../../shared/src/journey/journeyMeta';
-import { journeyShareText } from '../../../shared/src/share/shareTexts';
+import {
+  journeyShareText,
+  journeyItemShareText,
+} from '../../../shared/src/share/shareTexts';
 
 const EMPTY: JourneyCounts = {
   trackerDays: 0,
@@ -155,6 +160,56 @@ describe('journeyShareText', () => {
     const t = journeyShareText(21, 'https://t.me/bot');
     expect(t).toContain('21 запись');
     expect(t).toContain('https://t.me/bot');
+    expect(t).not.toMatch(/\b(ты|тебя|тебе|вы|вас|вам)\b/i);
+  });
+});
+
+describe('groupJourneyByMonth', () => {
+  const now = new Date('2026-07-21T12:00:00');
+  it('группирует отсортированную ленту по месяцам, сохраняя порядок', () => {
+    const groups = groupJourneyByMonth(
+      [
+        { type: 'tracker_day', at: '2026-07-20' },
+        { type: 'note', at: '2026-07-01' },
+        { type: 'ysq', at: '2025-12-31T10:00:00.000Z' },
+        { type: 'letter', at: 'мусор' },
+      ],
+      now,
+    );
+    expect(groups.map((g) => g.key)).toEqual(['2026-07', '2025-12', 'undated']);
+    expect(groups[0].label).toBe('Июль');
+    expect(groups[1].label).toContain('2025'); // чужой год — с годом
+    expect(groups[2].label).toBe('Раньше'); // нечитаемая дата не теряется
+    expect(groups[0].items).toHaveLength(2);
+  });
+
+  it('пустая лента → без групп', () => {
+    expect(groupJourneyByMonth([], now)).toEqual([]);
+  });
+});
+
+describe('buildJourneyCardRows', () => {
+  it('режет по максимуму и подставляет мету с цветом группы', () => {
+    const rows = buildJourneyCardRows(
+      Array.from({ length: 12 }, (_, i) => ({
+        type: 'plan_done',
+        at: `2026-07-${String(i + 1).padStart(2, '0')}`,
+      })),
+      8,
+    );
+    expect(rows).toHaveLength(8);
+    expect(rows[0].label).toBe('Практика по плану');
+    expect(rows[0].emoji).toBe('✅');
+    expect(rows[0].hex).toMatch(/^#/);
+    expect(rows[0].day).toContain('июля');
+  });
+});
+
+describe('journeyItemShareText', () => {
+  it('без ты/вы-форм, с эмодзи и ссылкой', () => {
+    const t = journeyItemShareText('✅', 'Практика по плану', 't.me/bot');
+    expect(t).toContain('✅ Практика по плану');
+    expect(t).toContain('t.me/bot');
     expect(t).not.toMatch(/\b(ты|тебя|тебе|вы|вас|вам)\b/i);
   });
 });

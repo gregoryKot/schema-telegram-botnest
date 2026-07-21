@@ -94,6 +94,20 @@ export const JOURNEY_FILTERS: Array<{
   { id: 'cards', label: 'Карточки' },
 ];
 
+// Цвет группы: css — переменная для UI (есть в обоих фронтендах),
+// hex — тот же цвет для canvas-карточек (canvas не резолвит var()).
+export const JOURNEY_GROUP_COLORS: Record<
+  JourneyGroup,
+  { css: string; hex: string }
+> = {
+  tracker: { css: 'var(--accent-blue)', hex: '#60a5fa' },
+  diary: { css: 'var(--accent)', hex: '#a78bfa' },
+  practice: { css: 'var(--accent-green)', hex: '#34d399' },
+  test: { css: 'var(--accent-yellow)', hex: '#facc15' },
+  exercise: { css: 'var(--accent-orange)', hex: '#fb923c' },
+  cards: { css: 'var(--accent-indigo)', hex: '#818cf8' },
+};
+
 export type SortDir = 'desc' | 'asc';
 
 /** Сортировка ленты по времени; не мутирует вход. */
@@ -194,5 +208,77 @@ export function formatJourneyDate(at: string, now = new Date()): string {
     day: 'numeric',
     month: 'long',
     ...(sameYear ? {} : { year: 'numeric' }),
+  });
+}
+
+export interface JourneyMonthGroup {
+  /** YYYY-MM */
+  key: string;
+  /** «Июль» / «Декабрь 2025» (год — только чужой) */
+  label: string;
+  items: JourneyItem[];
+}
+
+/**
+ * Группирует УЖЕ отсортированную ленту по месяцам, сохраняя порядок.
+ * Записи с нечитаемой датой собираются в группу «Раньше» в конце. Чистая.
+ */
+export function groupJourneyByMonth(
+  items: readonly JourneyItem[],
+  now = new Date(),
+): JourneyMonthGroup[] {
+  const groups: JourneyMonthGroup[] = [];
+  const undated: JourneyItem[] = [];
+  for (const item of items) {
+    const d = new Date(item.at.length === 10 ? `${item.at}T00:00:00` : item.at);
+    if (Number.isNaN(d.getTime())) {
+      undated.push(item);
+      continue;
+    }
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) {
+      last.items.push(item);
+      continue;
+    }
+    const raw = d.toLocaleDateString('ru-RU', {
+      month: 'long',
+      ...(d.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+    });
+    const label = raw.charAt(0).toUpperCase() + raw.slice(1);
+    groups.push({ key, label, items: [item] });
+  }
+  if (undated.length)
+    groups.push({ key: 'undated', label: 'Раньше', items: undated });
+  return groups;
+}
+
+/** «21 июля» без года — для компактной строки таймлайна. Чистая. */
+export function formatJourneyDay(at: string): string {
+  const d = new Date(at.length === 10 ? `${at}T00:00:00` : at);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+}
+
+export interface JourneyCardRow {
+  emoji: string;
+  label: string;
+  day: string;
+  hex: string;
+}
+
+/** Готовые строки для canvas-карточки «лента по времени». Чистая. */
+export function buildJourneyCardRows(
+  items: readonly JourneyItem[],
+  max = 8,
+): JourneyCardRow[] {
+  return items.slice(0, max).map((item) => {
+    const meta = journeyTypeMeta(item.type);
+    return {
+      emoji: meta.emoji,
+      label: meta.label,
+      day: formatJourneyDay(item.at),
+      hex: JOURNEY_GROUP_COLORS[meta.group].hex,
+    };
   });
 }
