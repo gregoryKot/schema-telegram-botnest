@@ -1,5 +1,8 @@
 import { useTr } from '../utils/addressForm';
-import { buildHomeScreenHint } from '../utils/homeScreen';
+import {
+  buildHomeScreenHint,
+  homeScreenButtonWorks,
+} from '../utils/homeScreen';
 import { useHomeScreenOffer } from '../hooks/useHomeScreenOffer';
 
 // Напоминание «добавь значок на экран» на «Сегодня». Появляется у тех, кто
@@ -53,9 +56,13 @@ export function HomeScreenOfferCard() {
         </div>
       </div>
 
-      <button onClick={offer.add} className="btn-primary">
-        Добавить значок
-      </button>
+      {/* Кнопка — только там, где addToHomeScreen реально работает (Android).
+          На iOS вызов молчит, вести к ручному пути должна инструкция выше. */}
+      {homeScreenButtonWorks(offer.platform) && (
+        <button onClick={offer.add} className="btn-primary">
+          Добавить значок
+        </button>
+      )}
 
       <div style={{ display: 'flex', gap: 8 }}>
         <button

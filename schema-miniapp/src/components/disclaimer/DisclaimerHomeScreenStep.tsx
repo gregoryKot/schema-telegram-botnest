@@ -1,15 +1,14 @@
 import { useTr } from '../../utils/addressForm';
-import { buildHomeScreenHint } from '../../utils/homeScreen';
+import {
+  buildHomeScreenHint,
+  homeScreenButtonWorks,
+} from '../../utils/homeScreen';
 import { useHomeScreenOffer } from '../../hooks/useHomeScreenOffer';
 
-// Последний шаг онбординга: «добавь на главный экран» (Android и iOS).
-// Нативная картинка Telegram на iOS показывает Android-инструкцию про «три
-// точки», а открывает «Поделиться» — поэтому СВОЮ подводку даём заранее
-// (buildHomeScreenHint), чтобы человек не растерялся от чужого экрана.
-//
-// onBeforeAdd персистит согласие ДО вызова addToHomeScreen: Telegram открывает
-// свой нативный шит поверх аппки, и пользователь часто уже не возвращается к
-// финальной кнопке. Раньше из-за этого согласие терялось.
+// Последний шаг онбординга: «добавь на главный экран».
+// На Android — рабочая кнопка (addToHomeScreen). На iOS программный вызов
+// молчит (Telegram 9.6 убрал экран добавления), поэтому кнопки нет — только
+// инструкция про нативное меню «⋯» (buildHomeScreenHint).
 export function DisclaimerHomeScreenStep({
   onBeforeAdd,
 }: {
@@ -55,20 +54,22 @@ export function DisclaimerHomeScreenStep({
       >
         {buildHomeScreenHint(offer.platform, tr)}
       </div>
-      <button
-        onClick={() => {
-          // addToHomeScreen ПЕРВЫМ, прямо в жесте (как в исходной рабочей
-          // версии): на iOS предшествующий fetch (onBeforeAdd → acceptDisclaimer)
-          // «съедает» user-gesture, и нативный экран не открывается. Согласие
-          // персистим сразу после — localStorage синхронный, успевает до ухода.
-          window.Telegram?.WebApp?.addToHomeScreen?.();
-          onBeforeAdd();
-        }}
-        className="btn-primary"
-        style={{ marginBottom: 10 }}
-      >
-        Добавить на экран
-      </button>
+      {/* Кнопка — только на Android (там addToHomeScreen работает). На iOS
+          вызов молчит, ведёт к цели инструкция про «⋯» выше. */}
+      {homeScreenButtonWorks(offer.platform) && (
+        <button
+          onClick={() => {
+            // addToHomeScreen ПЕРВЫМ, прямо в жесте; согласие сразу после
+            // (localStorage синхронный успевает до ухода из аппки).
+            window.Telegram?.WebApp?.addToHomeScreen?.();
+            onBeforeAdd();
+          }}
+          className="btn-primary"
+          style={{ marginBottom: 10 }}
+        >
+          Добавить на экран
+        </button>
+      )}
     </div>
   );
 }

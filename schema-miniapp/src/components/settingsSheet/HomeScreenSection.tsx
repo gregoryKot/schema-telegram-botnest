@@ -1,68 +1,69 @@
-import { useState } from 'react';
 import { SettingsLabel } from './ui';
-import { canOfferHomeScreenNow } from '../../utils/homeScreen';
+import { useTr } from '../../utils/addressForm';
+import {
+  canOfferHomeScreenNow,
+  homeScreenPlatform,
+  homeScreenButtonWorks,
+  buildHomeScreenHint,
+} from '../../utils/homeScreen';
 
-// Значок на экране — из настроек.
-// ВРЕМЕННАЯ ДИАГНОСТИКА: голая <button> + вывод прямо на экран (не через
-// showAlert/alert — они на этом клиенте, похоже, не работают). Если после
-// тапа текст сменится — клик доходит, увидим version/platform.
+// Значок на экране — из настроек. На Android — рабочая кнопка (addToHomeScreen).
+// На iOS программный вызов молчит (Telegram 9.6), поэтому показываем инструкцию
+// про нативное меню «⋯» — единственный рабочий путь.
 export function HomeScreenSection() {
-  const [debug, setDebug] = useState<string>('');
-
+  const tr = useTr();
   if (!canOfferHomeScreenNow()) return null;
+
+  const platform = homeScreenPlatform(window.Telegram?.WebApp?.platform);
+  const buttonWorks = homeScreenButtonWorks(platform);
 
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ЗНАЧОК НА ЭКРАНЕ</SettingsLabel>
       <div className="card" style={{ borderRadius: 16, padding: 14 }}>
-        <button
-          onClick={() => {
-            const tg = window.Telegram?.WebApp;
-            let result = 'ok';
-            try {
-              tg?.addToHomeScreen?.();
-            } catch (e) {
-              result = 'ERR:' + String(e);
-            }
-            setDebug(
-              `КЛИК ДОШЁЛ ✓\n` +
-                `version=${tg?.version}\n` +
-                `platform=${tg?.platform}\n` +
-                `addToHomeScreen=${typeof tg?.addToHomeScreen}\n` +
-                `showAlert=${typeof tg?.showAlert}\n` +
-                `вызов=${result}`,
-            );
-          }}
-          style={{
-            width: '100%',
-            padding: '14px',
-            borderRadius: 12,
-            border: 'none',
-            background: 'var(--accent)',
-            color: '#fff',
-            fontSize: 15,
-            fontWeight: 600,
-            fontFamily: 'inherit',
-            cursor: 'pointer',
-          }}
-        >
-          📲 Добавить значок (тест)
-        </button>
-        {debug && (
-          <pre
+        {buttonWorks ? (
+          <button
+            onClick={() => window.Telegram?.WebApp?.addToHomeScreen?.()}
             style={{
-              marginTop: 12,
-              padding: 12,
-              borderRadius: 10,
-              background: 'rgba(var(--fg-rgb),0.06)',
-              color: 'var(--text)',
-              fontSize: 12,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
+              width: '100%',
+              padding: 14,
+              borderRadius: 12,
+              border: 'none',
+              background: 'var(--accent)',
+              color: '#fff',
+              fontSize: 15,
+              fontWeight: 600,
+              fontFamily: 'inherit',
+              cursor: 'pointer',
             }}
           >
-            {debug}
-          </pre>
+            📲 Добавить значок
+          </button>
+        ) : (
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>📲</span>
+            <div>
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: 'var(--text)',
+                  marginBottom: 4,
+                }}
+              >
+                Значок на экране
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: 'var(--text-sub)',
+                  lineHeight: 1.6,
+                }}
+              >
+                {buildHomeScreenHint(platform, tr)}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
