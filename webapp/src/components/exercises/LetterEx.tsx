@@ -3,17 +3,9 @@ import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
-
-function fmtAgo(d: string): string {
-  const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-  if (days === 0) return 'сегодня';
-  if (days === 1) return 'вчера';
-  if (days < 7) return `${days} дн. назад`;
-  return new Date(d).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
+import { fmtAgo } from '../../utils/format';
+import { detectCrisisAny } from '../../utils/crisisMarkers';
+import { CrisisCard } from '../CrisisCard';
 
 export function LetterEx({
   onBack,
@@ -199,6 +191,7 @@ export function LetterEx({
         <span>Сохраняется в дневнике</span>
         <span>{text.split(/\s+/).filter(Boolean).length} слов</span>
       </div>
+      {detectCrisisAny(text) && <CrisisCard surface="letter" />}
       <div className="ex-foot">
         <span className="spacer" />
         <button

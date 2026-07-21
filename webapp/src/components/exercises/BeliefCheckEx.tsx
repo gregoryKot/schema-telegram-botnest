@@ -11,6 +11,9 @@ import {
 } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
+import { fmtAgo } from '../../utils/format';
+import { detectCrisisAny } from '../../utils/crisisMarkers';
+import { CrisisCard } from '../CrisisCard';
 
 const STEPS = [
   'Убеждение',
@@ -71,17 +74,6 @@ const buildSideHints = (
     ],
   },
 });
-
-function fmtAgo(d: string): string {
-  const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-  if (days === 0) return 'сегодня';
-  if (days === 1) return 'вчера';
-  if (days < 7) return `${days} дн. назад`;
-  return new Date(d).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
 
 export function BeliefCheckEx({
   onBack,
@@ -315,6 +307,7 @@ export function BeliefCheckEx({
               />
             </div>
           </div>
+          {detectCrisisAny(belief) && <CrisisCard surface="belief_check" />}
           <div className="ex-foot">
             <span className="spacer" />
             <button
@@ -351,6 +344,7 @@ export function BeliefCheckEx({
             onAdd={addFor}
             placeholder="Добавить доказательство…"
           />
+          {detectCrisisAny(forInput, ...forList) && <CrisisCard surface="belief_check" />}
           <div className="ex-foot">
             <button className="ex-btn ex-btn-ghost" onClick={() => setStep(0)}>
               <GlyphArrowLeft /> Назад
@@ -392,6 +386,7 @@ export function BeliefCheckEx({
             onAdd={addAgainst}
             placeholder="Добавить контр-доказательство…"
           />
+          {detectCrisisAny(againstInput, ...againstList) && <CrisisCard surface="belief_check" />}
           <div className="ex-foot">
             <button className="ex-btn ex-btn-ghost" onClick={() => setStep(1)}>
               <GlyphArrowLeft /> Назад
@@ -486,6 +481,7 @@ export function BeliefCheckEx({
             placeholder="Иногда я действительно ошибаюсь, но это не значит что я всегда всё порчу…"
             rows={6}
           />
+          {detectCrisisAny(reframe) && <CrisisCard surface="belief_check" />}
           <div className="ex-foot">
             <button className="ex-btn ex-btn-ghost" onClick={() => setStep(2)}>
               <GlyphArrowLeft /> Назад

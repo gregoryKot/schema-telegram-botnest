@@ -3,6 +3,7 @@ import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
+import { CrisisGate } from './CrisisGate';
 
 const STORAGE_KEY = 'safe_place';
 
@@ -311,6 +312,7 @@ export function SafePlace({ onClose, onComplete }: Props) {
             marginBottom: 14,
           }}
         />
+        <CrisisGate texts={[text]} surface="safe_place" />
 
         <button
           onClick={handleSave}

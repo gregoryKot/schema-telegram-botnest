@@ -1,5 +1,6 @@
 import { BottomSheet } from '../BottomSheet';
 import { TherapyNote } from '../TherapyNote';
+import { CrisisGate } from '../CrisisGate';
 import { ProgressBar } from './ProgressBar';
 import { NEEDS } from './constants';
 
@@ -106,6 +107,7 @@ export function ActionStep({
             transition: 'border-color 0.2s',
           }}
         />
+        <CrisisGate texts={[action]} surface="flashcard" />
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={onBack}

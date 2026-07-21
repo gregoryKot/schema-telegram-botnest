@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { TherapyNote } from './TherapyNote';
-import { GlyphArrowLeft } from './exercises/ExScreen';
 import { api } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
+import { detectCrisisAny } from '../utils/crisisMarkers';
+import { CrisisCard } from './CrisisCard';
+import { Topbar } from './SchemaFlashcardTopbar';
 
 const STORAGE_KEY = 'schema_flashcards';
 
@@ -64,16 +66,6 @@ const STEPS: Step[] = ['mode', 'response', 'need', 'action'];
 
 function loadLocal(): FlashcardEntry[] {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'); } catch { return []; }
-}
-
-function Topbar({ onBack, label = 'Закрыть' }: { onBack: () => void; label?: string }) {
-  return (
-    <div className="ex-topbar">
-      <button className="ex-back" onClick={onBack}>
-        <GlyphArrowLeft /> {label}
-      </button>
-    </div>
-  );
 }
 
 interface Props { onClose: () => void; onOpenTracker?: () => void; onComplete?: () => void; }
@@ -381,6 +373,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
             className="paper-area"
             style={{ marginBottom: 20 }}
           />
+          {detectCrisisAny(reflection) && <CrisisCard surface="flashcard" />}
           <button onClick={() => setStep('need')} className="ex-btn ex-btn-primary" style={{ width: '100%' }}>
             Дальше →
           </button>
@@ -458,6 +451,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           className="paper-area"
           style={{ marginBottom: 20, borderColor: action.trim() ? 'var(--accent)' : 'var(--line)' }}
         />
+        {detectCrisisAny(action) && <CrisisCard surface="flashcard" />}
         <button onClick={save} disabled={!action.trim()} className="ex-btn ex-btn-primary" style={{ width: '100%' }}>
           Сохранить
         </button>

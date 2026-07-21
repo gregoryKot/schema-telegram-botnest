@@ -4,6 +4,7 @@ import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
+import { CrisisGate } from './CrisisGate';
 
 const STORAGE_KEY = 'letters_to_self';
 
@@ -210,6 +211,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
             marginBottom: 14,
           }}
         />
+        <CrisisGate texts={[text]} surface="letter" />
 
         <button
           onClick={handleSave}
