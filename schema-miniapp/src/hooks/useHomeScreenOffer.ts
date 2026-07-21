@@ -54,11 +54,13 @@ export function useHomeScreenOffer(surface: OfferSurface) {
     platform,
     /** Нажал «Добавить»: дальше ведёт Telegram, факт добавления придёт событием. */
     add: useCallback(() => {
-      api.trackEvent('home_screen_offer', { action: 'add', surface });
-      // Если человек передумает в нативном шите — не спрашиваем снова сразу,
-      // вернёмся через неделю.
-      snoozeHomeScreen();
+      // addToHomeScreen ПЕРВЫМ, прямо в user-gesture. На iOS нативный вызов
+      // должен идти синхронно в обработчике тапа; предшествующий api.trackEvent
+      // (fetch) «съедает» жест, и Telegram молча не открывает экран — из-за
+      // этого кнопка «не работала». Трекинг и снуз — уже после.
       tg?.addToHomeScreen?.();
+      snoozeHomeScreen();
+      api.trackEvent('home_screen_offer', { action: 'add', surface });
     }, [tg, surface]),
     later: useCallback(() => {
       api.trackEvent('home_screen_offer', { action: 'later', surface });

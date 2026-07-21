@@ -57,8 +57,12 @@ export function DisclaimerHomeScreenStep({
       </div>
       <button
         onClick={() => {
+          // addToHomeScreen ПЕРВЫМ, прямо в жесте (как в исходной рабочей
+          // версии): на iOS предшествующий fetch (onBeforeAdd → acceptDisclaimer)
+          // «съедает» user-gesture, и нативный экран не открывается. Согласие
+          // персистим сразу после — localStorage синхронный, успевает до ухода.
+          window.Telegram?.WebApp?.addToHomeScreen?.();
           onBeforeAdd();
-          offer.add();
         }}
         className="btn-primary"
         style={{ marginBottom: 10 }}
