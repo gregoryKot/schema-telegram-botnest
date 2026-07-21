@@ -8,6 +8,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import {
   type JourneyItem,
   JOURNEY_FILTERS,
+  JOURNEY_PERIODS,
   groupJourneyByMonth,
 } from './journeyMeta';
 import type { JourneyState } from './useJourney';
@@ -52,8 +53,18 @@ export function JourneyView({
   onShareItem,
   skeleton,
 }: JourneyViewProps) {
-  const { failed, stats, total, items, group, setGroup, sortDir, setSortDir } =
-    j;
+  const {
+    failed,
+    stats,
+    total,
+    items,
+    group,
+    setGroup,
+    period,
+    setPeriod,
+    sortDir,
+    setSortDir,
+  } = j;
   const loading = !j.data && !failed;
 
   // Откуда это и зачем — до первого действия (правило онбординга).
@@ -201,34 +212,25 @@ export function JourneyView({
             ))}
           </div>
 
-          {/* Фильтр по типу + сортировка по времени */}
+          {/* Период (всё время/неделя/месяц) + сортировка по времени */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              margin: '6px 0 12px',
+              gap: 6,
+              margin: '6px 0 8px',
             }}
           >
-            <div
-              style={{
-                display: 'flex',
-                gap: 6,
-                overflowX: 'auto',
-                flex: 1,
-                paddingBottom: 2,
-              }}
-            >
-              {JOURNEY_FILTERS.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setGroup(f.id)}
-                  style={chipStyle(group === f.id)}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+            {JOURNEY_PERIODS.map((pOpt) => (
+              <button
+                key={pOpt.id}
+                onClick={() => setPeriod(pOpt.id)}
+                style={chipStyle(period === pOpt.id)}
+              >
+                {pOpt.label}
+              </button>
+            ))}
+            <span style={{ marginRight: 'auto' }} />
             <button
               onClick={() => setSortDir(sortDir === 'desc' ? 'asc' : 'desc')}
               aria-label={
@@ -240,6 +242,27 @@ export function JourneyView({
             </button>
           </div>
 
+          {/* Фильтр по типу */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 6,
+              overflowX: 'auto',
+              margin: '0 0 12px',
+              paddingBottom: 2,
+            }}
+          >
+            {JOURNEY_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setGroup(f.id)}
+                style={chipStyle(group === f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
           {items.length === 0 ? (
             <div
               style={{
@@ -248,7 +271,7 @@ export function JourneyView({
                 padding: '10px 2px',
               }}
             >
-              В этой группе пока пусто
+              Здесь пока пусто — в другом периоде или группе записи есть
             </div>
           ) : (
             <>

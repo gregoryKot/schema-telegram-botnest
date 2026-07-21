@@ -27,6 +27,9 @@ export interface JourneyItem {
   type: JourneyItemType;
   /** ISO-датавремя или YYYY-MM-DD (у дневных записей время не хранится) */
   at: string;
+  /** id строки-источника — по нему фронт подтягивает содержимое записи
+   * (через обычные расшифровывающие эндпоинты) для карточки-результата */
+  id?: number;
   needId?: string;
   modeId?: string;
   schemaIds?: string[];
@@ -91,20 +94,28 @@ export class JourneyService {
       p.note.findMany({ where: by, select: { date: true } }),
       p.schemaDiaryEntry.findMany({
         where: by,
-        select: { createdAt: true, schemaIds: true },
+        select: { id: true, createdAt: true, schemaIds: true },
       }),
       p.modeDiaryEntry.findMany({
         where: by,
-        select: { createdAt: true, modeId: true },
+        select: { id: true, createdAt: true, modeId: true },
       }),
-      p.gratitudeDiaryEntry.findMany({ where: by, select: { date: true } }),
+      p.gratitudeDiaryEntry.findMany({
+        where: by,
+        select: { id: true, date: true },
+      }),
       p.userPractice.findMany({
         where: by,
-        select: { createdAt: true, needId: true },
+        select: { id: true, createdAt: true, needId: true },
       }),
       p.practicePlan.findMany({
         where: { userId, done: true },
-        select: { checkedAt: true, scheduledDate: true, needId: true },
+        select: {
+          id: true,
+          checkedAt: true,
+          scheduledDate: true,
+          needId: true,
+        },
       }),
       p.ysqResultHistory.findMany({ where: by, select: { completedAt: true } }),
       p.ysqResult.findUnique({
@@ -112,11 +123,17 @@ export class JourneyService {
         select: { completedAt: true },
       }),
       p.childhoodRating.count({ where: by }),
-      p.userBeliefCheck.findMany({ where: by, select: { createdAt: true } }),
-      p.userLetter.findMany({ where: by, select: { createdAt: true } }),
+      p.userBeliefCheck.findMany({
+        where: by,
+        select: { id: true, createdAt: true },
+      }),
+      p.userLetter.findMany({
+        where: by,
+        select: { id: true, createdAt: true },
+      }),
       p.userFlashcard.findMany({
         where: by,
-        select: { createdAt: true, modeId: true },
+        select: { id: true, createdAt: true, modeId: true },
       }),
       p.userSafePlace.findUnique({
         where: { userId },
@@ -148,36 +165,47 @@ export class JourneyService {
       ...notes.map((n) => ({ type: 'note' as const, at: n.date })),
       ...schemaDiary.map((e) => ({
         type: 'schema_diary' as const,
+        id: e.id,
         at: iso(e.createdAt),
         schemaIds: asIds(e.schemaIds),
       })),
       ...modeDiary.map((e) => ({
         type: 'mode_diary' as const,
+        id: e.id,
         at: iso(e.createdAt),
         modeId: e.modeId,
       })),
-      ...gratitude.map((e) => ({ type: 'gratitude' as const, at: e.date })),
+      ...gratitude.map((e) => ({
+        type: 'gratitude' as const,
+        id: e.id,
+        at: e.date,
+      })),
       ...practices.map((e) => ({
         type: 'practice' as const,
+        id: e.id,
         at: iso(e.createdAt),
         needId: e.needId,
       })),
       ...plansDone.map((e) => ({
         type: 'plan_done' as const,
+        id: e.id,
         at: e.checkedAt ? iso(e.checkedAt) : e.scheduledDate,
         needId: e.needId,
       })),
       ...ysqFeed,
       ...beliefChecks.map((e) => ({
         type: 'belief_check' as const,
+        id: e.id,
         at: iso(e.createdAt),
       })),
       ...letters.map((e) => ({
         type: 'letter' as const,
+        id: e.id,
         at: iso(e.createdAt),
       })),
       ...flashcards.map((e) => ({
         type: 'flashcard' as const,
+        id: e.id,
         at: iso(e.createdAt),
         modeId: e.modeId,
       })),

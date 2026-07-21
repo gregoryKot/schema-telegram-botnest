@@ -7,22 +7,28 @@ import {
   type JourneyData,
   type JourneyGroup,
   type JourneyItem,
+  type JourneyPeriod,
   type JourneySubtitleSources,
   type SortDir,
+  filterJourneyByPeriod,
   filterJourneyItems,
   journeyItemSubtitle,
-  journeyStatRows,
-  journeyTotal,
   sortJourneyItems,
 } from './journeyMeta';
+import { journeyStatRows, journeyTotal } from './journeyStats';
 import { JOURNEY_OPEN_EVENT } from '../share/analytics';
+import {
+  type JourneyContentApi,
+  type JourneyResultPart,
+  fetchJourneyResult,
+} from './journeyContent';
 
 export interface JourneyDeps {
   getJourney(): Promise<JourneyData>;
   trackEvent(name: string): void;
 }
 
-export interface JourneyApiLike {
+export interface JourneyApiLike extends JourneyContentApi {
   getJourney(): Promise<JourneyData>;
   trackEvent(name: string, meta?: Record<string, unknown>): void;
 }
@@ -38,6 +44,7 @@ export function makeJourneyProps(
 ): {
   deps: JourneyDeps;
   subtitle: (item: JourneyItem) => string | null;
+  fetchResult: (item: JourneyItem) => Promise<JourneyResultPart[] | null>;
 } {
   return {
     deps: {
@@ -45,6 +52,7 @@ export function makeJourneyProps(
       trackEvent: (name) => api.trackEvent(name),
     },
     subtitle: (item) => journeyItemSubtitle(item, src),
+    fetchResult: (item) => fetchJourneyResult(api, item),
   };
 }
 
@@ -53,6 +61,7 @@ export function useJourney(deps: JourneyDeps) {
   const [failed, setFailed] = useState(false);
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [group, setGroup] = useState<JourneyGroup | 'all'>('all');
+  const [period, setPeriod] = useState<JourneyPeriod>('all');
 
   useEffect(() => {
     deps.trackEvent(JOURNEY_OPEN_EVENT);
@@ -70,9 +79,15 @@ export function useJourney(deps: JourneyDeps) {
   const items = useMemo(
     () =>
       data
-        ? sortJourneyItems(filterJourneyItems(data.items, group), sortDir)
+        ? sortJourneyItems(
+            filterJourneyItems(
+              filterJourneyByPeriod(data.items, period),
+              group,
+            ),
+            sortDir,
+          )
         : [],
-    [data, group, sortDir],
+    [data, group, period, sortDir],
   );
 
   return {
@@ -82,6 +97,8 @@ export function useJourney(deps: JourneyDeps) {
     setSortDir,
     group,
     setGroup,
+    period,
+    setPeriod,
     stats,
     total,
     items,

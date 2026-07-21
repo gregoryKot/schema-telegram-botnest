@@ -71,7 +71,11 @@ describe('JourneyService', () => {
       },
       modeDiaryEntry: {
         findMany: jest.fn(async () => [
-          { createdAt: D('2026-07-02T10:00:00Z'), modeId: 'vulnerable_child' },
+          {
+            id: 7,
+            createdAt: D('2026-07-02T10:00:00Z'),
+            modeId: 'vulnerable_child',
+          },
         ]),
       },
       schemaDiaryEntry: {
@@ -101,6 +105,8 @@ describe('JourneyService', () => {
     // Нестроковые элементы Json-поля schemaIds отбрасываются, а не ломают ответ
     expect(items[0].schemaIds).toEqual(['abandonment']);
     expect(items[2].modeId).toBe('vulnerable_child');
+    // id доезжает до ленты — по нему фронт тянет содержимое для карточки-результата
+    expect(items[2].id).toBe(7);
     expect(items[4].needId).toBe('play');
     expect(counts.trackerDays).toBe(2);
     expect(counts.schemaDiary).toBe(1);
