@@ -117,7 +117,10 @@ export class JourneyService {
           needId: true,
         },
       }),
-      p.ysqResultHistory.findMany({ where: by, select: { completedAt: true } }),
+      p.ysqResultHistory.findMany({
+        where: by,
+        select: { id: true, completedAt: true },
+      }),
       p.ysqResult.findUnique({
         where: { userId },
         select: { completedAt: true },
@@ -154,6 +157,7 @@ export class JourneyService {
     const ysqFeed = ysqHistory.length
       ? ysqHistory.map((h) => ({
           type: 'ysq' as const,
+          id: h.id,
           at: iso(h.completedAt),
         }))
       : ysqResult

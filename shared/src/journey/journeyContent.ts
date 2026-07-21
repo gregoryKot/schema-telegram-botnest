@@ -2,7 +2,12 @@
 // намеренно не несёт свободный текст — он подтягивается здесь, через обычные
 // расшифровывающие эндпоинты, ТОЛЬКО по явному тапу пользователя на записи
 // (и перед отправкой виден в превью, как у карточки благодарности).
-import type { JourneyItem } from './journeyMeta';
+import { type JourneyItem, JOURNEY_NEED_NAMES } from './journeyMeta';
+import {
+  SCHEMAS,
+  type YsqHistoryEntry,
+  countActiveInHistory,
+} from '../hooks/useYsqTest';
 
 export interface JourneyResultPart {
   title?: string;
@@ -31,6 +36,10 @@ export interface JourneyContentApi {
   getPlanHistory(
     days?: number,
   ): Promise<Array<{ id: number; practiceText: string }>>;
+  ratings(date?: string): Promise<Record<string, number>>;
+  getSchemaNotes(): Promise<Array<{ schemaId: string }>>;
+  getModeNotes(): Promise<Array<{ modeId: string }>>;
+  getYsqHistory(): Promise<YsqHistoryEntry[]>;
 }
 
 const EXCERPT = 220;
@@ -88,6 +97,37 @@ export function buildJourneyResultParts(
       return part(str('text'), 'Моя практика');
     case 'plan_done':
       return part(str('practiceText'), 'Практика');
+    case 'tracker_day': {
+      // entry = Record<needId, value> — оценки дня из /api/ratings?date=…
+      const line = Object.entries(JOURNEY_NEED_NAMES)
+        .filter(([needId]) => typeof e[needId] === 'number')
+        .map(([needId, name]) => `${name} — ${e[needId] as number}`)
+        .join(' · ');
+      return line ? [{ title: 'Оценки дня (из 10)', text: line }] : [];
+    }
+    case 'schema_note':
+      return [
+        ...part(str('triggers'), 'Триггеры'),
+        ...part(str('healthyView'), 'Здоровый взгляд'),
+        ...part(str('behavior'), 'Что помогает'),
+      ];
+    case 'mode_note':
+      return [
+        ...part(str('triggers'), 'Триггеры'),
+        ...part(str('needs'), 'Что мне нужно'),
+        ...part(str('behavior'), 'Что помогает'),
+      ];
+    case 'ysq': {
+      // entry = YsqHistoryEntry (id, scores)
+      if (!Array.isArray(e.scores)) return [];
+      const n = countActiveInHistory(e as unknown as YsqHistoryEntry);
+      return [
+        {
+          title: 'Результат',
+          text: `Выраженных схем: ${n} из ${SCHEMAS.length}`,
+        },
+      ];
+    }
     default:
       return [];
   }
@@ -135,6 +175,24 @@ export async function fetchJourneyResult(
       break;
     case 'plan_done':
       entry = byId(await api.getPlanHistory(365));
+      break;
+    case 'tracker_day':
+      entry = await api.ratings(item.at.slice(0, 10));
+      break;
+    case 'schema_note': {
+      const schemaId = item.schemaIds?.[0];
+      entry = schemaId
+        ? (await api.getSchemaNotes()).find((n) => n.schemaId === schemaId)
+        : null;
+      break;
+    }
+    case 'mode_note':
+      entry = (await api.getModeNotes()).find((n) => n.modeId === item.modeId);
+      break;
+    case 'ysq':
+      entry = item.id
+        ? (await api.getYsqHistory()).find((h) => h.id === item.id)
+        : null;
       break;
     default:
       return null;
