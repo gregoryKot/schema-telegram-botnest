@@ -19,6 +19,9 @@ declare global {
           left?: number;
           right?: number;
         };
+        // Bot API 8.0: приложение открыто в полноэкранном режиме (сверху висят
+        // плавающие кнопки Telegram) — влияет на верхний отступ шапки.
+        isFullscreen?: boolean;
         onEvent?(event: string, cb: () => void): void;
         offEvent?(event: string, cb: () => void): void;
         platform?: string;
