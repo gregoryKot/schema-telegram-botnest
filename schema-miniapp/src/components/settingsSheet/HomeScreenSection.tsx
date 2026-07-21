@@ -25,28 +25,31 @@ export function HomeScreenSection() {
           label="Добавить значок"
           sub="открывать приложение с экрана телефона"
           onClick={() => {
-            // ВРЕМЕННАЯ ДИАГНОСТИКА: понять, почему addToHomeScreen молчит на
-            // iOS. Вызываем метод и показываем факты об окружении. Убрать после.
+            // ВРЕМЕННАЯ ДИАГНОСТИКА. showAlert СИНХРОННО первым — чтобы окошко
+            // точно выскочило и подтвердило, что клик доходит (прошлая версия
+            // прятала showAlert в колбэк checkHomeScreenStatus, который на iOS
+            // не вызывается — окошка не было). Убрать после диагностики.
             const tg = window.Telegram?.WebApp;
+            const info =
+              `version=${tg?.version}\n` +
+              `platform=${tg?.platform}\n` +
+              `addToHomeScreen=${typeof tg?.addToHomeScreen}\n` +
+              `showAlert=${typeof tg?.showAlert}\n` +
+              `checkStatus=${typeof tg?.checkHomeScreenStatus}`;
+            // Сначала показываем факты (подтверждает, что клик дошёл), потом
+            // пробуем сам вызов.
+            if (tg?.showAlert) tg.showAlert(info);
+            else alert(info);
             let result = 'вызван без ошибки';
             try {
               tg?.addToHomeScreen?.();
             } catch (e) {
               result = 'ОШИБКА: ' + String(e);
             }
-            const base =
-              `version=${tg?.version}\n` +
-              `platform=${tg?.platform}\n` +
-              `addToHomeScreen=${typeof tg?.addToHomeScreen}\n` +
-              `результат=${result}\n` +
-              `checkStatus=${typeof tg?.checkHomeScreenStatus}`;
-            if (tg?.checkHomeScreenStatus) {
-              tg.checkHomeScreenStatus((s) =>
-                tg?.showAlert?.(base + `\nstatus=${s}`),
-              );
-            } else {
-              tg?.showAlert?.(base);
-            }
+            // результат вызова — отдельным окошком после
+            const after = `addToHomeScreen(): ${result}`;
+            if (tg?.showAlert) tg.showAlert(after);
+            else alert(after);
           }}
           divider={declined}
         />
