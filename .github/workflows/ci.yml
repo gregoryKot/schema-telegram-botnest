@@ -68,7 +68,7 @@ jobs:
       - run: >-
           npx jest --config ./test/jest-e2e.json
           test/app-auth test/app-ownership test/app-ownership-sweep
-          test/auth-flows
+          test/auth-flows test/public-quizzes
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high
