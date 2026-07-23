@@ -21,8 +21,9 @@ export class AnalyticsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** userId = null — анонимное событие публичного сайта (мини-тесты). */
   async track(
-    userId: bigint,
+    userId: bigint | null,
     name: AnalyticsEventName,
     meta?: Record<string, unknown>,
   ): Promise<void> {

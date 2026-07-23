@@ -386,8 +386,10 @@ model AppActivity {
 // не класть сюда свободный текст пользователя — это не шифруется.
 model AnalyticsEvent {
   id        Int      @id @default(autoincrement())
-  userId    BigInt
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // null = анонимное событие с публичного сайта (мини-тесты без регистрации,
+  // POST /api/public-event). Все авторизованные события пишутся с userId.
+  userId    BigInt?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String   // событие, напр. 'share_card'
   meta      Json?    // структурные параметры события (без PII)
   createdAt DateTime @default(now())

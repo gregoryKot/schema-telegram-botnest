@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Telegraf, Context, Markup } from 'telegraf';
 import { TELEGRAF_BOT, MINIAPP_URL, DONATE_URL } from './telegram.constants';
+import { BOT_COMMANDS } from './telegram.constants';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
@@ -53,6 +54,7 @@ export function buildWelcomeKeyboard(): ReturnType<
 > {
   return Markup.inlineKeyboard([
     [Markup.button.webApp('🧠 Открыть «Всё по схеме»', MINIAPP_URL)],
+    [Markup.button.callback('🎲 Мини-тесты на 2 минуты', 'qz:list')],
     [Markup.button.url('💛 Поддержать проект', DONATE_URL)],
   ]);
 }
@@ -678,12 +680,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     // без них (инцидент 2026-07-12: «🚨 setMyCommands failed» на деплое).
     // fire-and-forget — не задерживаем launch().
     void retryWithBackoff(() =>
-      this.bot!.telegram.setMyCommands([
-        { command: 'start', description: 'Открыть «Всё по схеме»' },
-        { command: 'settings', description: 'Настройки уведомлений' },
-        { command: 'donate', description: 'Поддержать проект 💛' },
-        { command: 'about', description: 'О приложении и авторе' },
-      ]),
+      this.bot!.telegram.setMyCommands(BOT_COMMANDS),
     ).then((ok) => {
       if (!ok) this.logger.warn('setMyCommands failed after retries');
     });

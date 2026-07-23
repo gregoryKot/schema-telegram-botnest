@@ -4,6 +4,9 @@ import { useAuth } from '../auth/authContext';
 import { useRecentArticles } from '../components/landing-kit-hooks';
 import type { ArticleSummary } from '../api';
 import { botUrl, botHandle } from '../utils/botConfig';
+// Палитра, логотип и CTA — в общих модулях бренда (используются и в /tests).
+import { INK, SUB, FAINT, GLASS, GLASS_BORDER, VIOLET, PINK, CYAN, AMBER, EMERALD, ROSE, AURORA, glow } from './landing/aurora';
+import { Logo, Cta } from './landing/BrandKit';
 
 // Продуктовый лендинг «Всё по схеме» — главная app-домена (schemehappens.ru).
 // САМОСТОЯТЕЛЬНАЯ айдентика: тёмный «ночной» холст + аврора-градиенты, глассморфизм,
@@ -13,57 +16,6 @@ import { botUrl, botHandle } from '../utils/botConfig';
 const BOT_URL = botUrl;
 const AUTHOR_SITE = 'https://kotlarewski.gr';
 
-// ─── Палитра (self-contained, тёмная) ────────────────────────────────────────
-const INK = '#f3f1fb';
-const SUB = 'rgba(243,241,251,.62)';
-const FAINT = 'rgba(243,241,251,.40)';
-const GLASS = 'rgba(255,255,255,.045)';
-const GLASS_BORDER = 'rgba(255,255,255,.10)';
-const VIOLET = '#a78bfa';
-const PINK = '#f472b6';
-const CYAN = '#38e0d0';
-const AMBER = '#fbbf24';
-const EMERALD = '#34d399';
-const ROSE = '#fb7185';
-const AURORA = 'linear-gradient(115deg, #a78bfa 0%, #f472b6 52%, #fb923c 100%)';
-const glow = (c: string, a = 0.5) => `color-mix(in srgb, ${c} ${a * 100}%, transparent)`;
-
-// ─── Логотип ──────────────────────────────────────────────────────────────────
-function Logo({ size = 30 }: { size?: number }) {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-      <span style={{
-        width: size, height: size, borderRadius: size * 0.32, flexShrink: 0,
-        background: AURORA, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: size * 0.55, boxShadow: `0 0 22px ${glow(PINK, .5)}`,
-      }}>🧠</span>
-      <span style={{ fontSize: 16.5, fontWeight: 800, color: INK, letterSpacing: '-.02em' }}>Всё по схеме</span>
-    </span>
-  );
-}
-
-// ─── Кнопки ───────────────────────────────────────────────────────────────────
-function Cta({ href, children, variant = 'primary', size = 'md' }: { href: string; children: React.ReactNode; variant?: 'primary' | 'ghost'; size?: 'md' | 'lg' }) {
-  const pad = size === 'lg' ? '15px 30px' : '11px 22px';
-  const fs = size === 'lg' ? 15 : 13.5;
-  const base: React.CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-    padding: pad, fontSize: fs, fontWeight: 700, fontFamily: 'inherit', borderRadius: 14,
-    textDecoration: 'none', cursor: 'pointer', transition: 'transform .15s, box-shadow .15s, background .15s',
-    border: '1px solid transparent', boxSizing: 'border-box',
-  };
-  const styles: React.CSSProperties = variant === 'primary'
-    ? { ...base, background: AURORA, color: '#1a0f2e', boxShadow: `0 8px 30px ${glow(VIOLET, .45)}` }
-    : { ...base, background: 'rgba(255,255,255,.04)', color: INK, borderColor: GLASS_BORDER };
-  const ext = href.startsWith('http');
-  return (
-    <a href={href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined} style={styles}
-      onMouseEnter={(e) => { const el = e.currentTarget; el.style.transform = 'translateY(-2px)'; if (variant === 'primary') el.style.boxShadow = `0 14px 44px ${glow(PINK, .55)}`; else el.style.background = 'rgba(255,255,255,.09)'; }}
-      onMouseLeave={(e) => { const el = e.currentTarget; el.style.transform = ''; if (variant === 'primary') el.style.boxShadow = `0 8px 30px ${glow(VIOLET, .45)}`; else el.style.background = 'rgba(255,255,255,.04)'; }}>
-      {children}
-    </a>
-  );
-}
 
 // ─── Мокап приложения (тёмное стекло) ─────────────────────────────────────────
 const MOCK_NEEDS = [
@@ -241,7 +193,7 @@ export function ProductLandingPage() {
         <header style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 24px', boxSizing: 'border-box', background: 'rgba(11,8,23,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: `1px solid ${GLASS_BORDER}` }}>
           <a href="/" style={{ textDecoration: 'none' }}><Logo /></a>
           <nav className="pl2-nav" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {[['Как это работает', '#how'], ['Возможности', '#features'], ['Статьи', '#articles'], ['Вопросы', '#faq']].map(([label, href]) => (
+            {[['Как это работает', '#how'], ['Возможности', '#features'], ['Тесты', '/tests'], ['Статьи', '#articles'], ['Вопросы', '#faq']].map(([label, href]) => (
               <a key={href} href={href} style={{ fontSize: 13.5, fontWeight: 600, color: SUB, textDecoration: 'none', padding: '7px 12px', borderRadius: 10, whiteSpace: 'nowrap', transition: 'color .15s' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = INK; }} onMouseLeave={(e) => { e.currentTarget.style.color = SUB; }}>{label}</a>
             ))}
@@ -267,7 +219,7 @@ export function ProductLandingPage() {
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                 <Cta href="/login" size="lg">Начать бесплатно →</Cta>
-                <Cta href="#how" variant="ghost" size="lg">Как это работает</Cta>
+                <Cta href="/tests" variant="ghost" size="lg">🎲 Мини-тесты без регистрации</Cta>
               </div>
               <p style={{ fontSize: 12.5, color: FAINT, margin: '18px 0 0' }}>Вход через Google, ВКонтакте, Telegram или email · регистрация не нужна</p>
             </div>
