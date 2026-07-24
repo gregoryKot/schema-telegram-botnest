@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BottomSheet } from '../BottomSheet';
-import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
@@ -8,6 +7,7 @@ import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 import { DiaryTextArea } from './DiaryTextArea';
 import { DiaryStickyHeader } from './DiaryStickyHeader';
+import { ModeSelectStep } from './ModeSelectStep';
 
 interface Props {
   onClose: () => void;
@@ -164,54 +164,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         />
 
         <StepLabel step={1} title="Режим" hint="кто взял управление" />
-        {MODE_GROUPS.map((group) => (
-          <div key={group.id} style={{ marginBottom: 12 }}>
-            <div
-              style={{
-                fontSize: 10,
-                color: group.color,
-                fontWeight: 600,
-                marginBottom: 6,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}
-            >
-              {group.group}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {group.items.map((m) => {
-                const sel = modeId === m.id;
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => {
-                      haptic.select();
-                      setModeId(sel ? '' : m.id);
-                    }}
-                    className="sel-btn"
-                    style={{
-                      background: sel
-                        ? `${group.color}33`
-                        : 'rgba(var(--fg-rgb),0.06)',
-                      border: sel
-                        ? `1px solid ${group.color}`
-                        : '1px solid transparent',
-                      borderRadius: 16,
-                      padding: '6px 11px',
-                      color: sel
-                        ? 'var(--chip-sel-text)'
-                        : 'rgba(var(--fg-rgb),0.6)',
-                      fontSize: 13,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {m.emoji} {m.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+        <ModeSelectStep modeId={modeId} onChange={setModeId} />
 
         <StepLabel step={2} title="Ситуация" hint="что случилось" />
         <DiaryTextArea
