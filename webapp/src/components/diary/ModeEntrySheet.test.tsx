@@ -15,7 +15,9 @@ function renderSheetOnFormStep() {
       <ModeEntrySheet onClose={vi.fn()} onSave={vi.fn().mockResolvedValue(undefined)} />
     </MemoryRouter>,
   );
-  // Пикер режима — выбираем любой, чтобы попасть на форму с полями.
+  // Шаг 1 теперь test-first: список режимов свёрнут. Раскрываем его и
+  // выбираем любой режим, чтобы попасть на форму с полями.
+  fireEvent.click(screen.getByText('Знаю режим – выбрать из списка'));
   fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
   return utils;
 }

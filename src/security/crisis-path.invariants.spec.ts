@@ -106,8 +106,10 @@ const EXPECTED_CRISIS_FILES = [
   'webapp/src/components/exercises/BeliefCheckEx.tsx',
   'webapp/src/components/exercises/FlashcardEx.tsx',
   // Дневниковые шиты — образец правильного пути (уже сделаны), санити-якорь
-  // на случай, если грепы выше молча сломаются.
-  'webapp/src/components/diary/ModeEntrySheet.tsx',
+  // на случай, если грепы выше молча сломаются. В webapp форма дневника режимов
+  // вынесена в ModeEntryForm — детекция живёт там (ModeEntrySheet теперь без
+  // <textarea>: только выбор режима/тест).
+  'webapp/src/components/diary/ModeEntryForm.tsx',
   'webapp/src/components/diary/GratitudeEntrySheet.tsx',
   'webapp/src/components/diary/SchemaEntrySheet.tsx',
   'schema-miniapp/src/components/diary/ModeEntrySheet.tsx',

@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { ExScreen, GlyphArrowLeft, GlyphCheck } from '../exercises/ExScreen';
+import { ExScreen, GlyphCheck } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
-import { detectCrisisAny } from '../../utils/crisisMarkers';
-import { CrisisCard } from '../CrisisCard';
 import { haptic } from '../../haptic';
-import { DiaryAutosaveFooter } from './DiaryAutosaveFooter';
+import { ModeTestScreen } from './ModeTestScreen';
+import { ModeEntryForm, type ModeFormFields } from './ModeEntryForm';
 
 interface Props {
   onClose: () => void;
@@ -46,7 +45,16 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   const [childhoodMemories, setChildhoodMemories] = useState(d?.childhoodMemories ?? '');
   const [saving, setSaving]       = useState(false);
   const [showPicker, setShowPicker] = useState(!d?.modeId);
+  const [testOpen, setTestOpen]   = useState(false);
+  const [listOpen, setListOpen]   = useState(false);
   const situationRef = useRef<HTMLTextAreaElement>(null);
+
+  const pickMode = (id: string) => {
+    haptic.select();
+    setModeId(id);
+    setShowPicker(false);
+    setTestOpen(false);
+  };
 
   useEffect(() => {
     saveDraft('mode', { modeId, situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories });
@@ -61,6 +69,14 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     : null;
 
   const canSave = modeId.length > 0 && situation.trim().length > 0;
+
+  const values: ModeFormFields = { situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories };
+  const setters: Record<keyof ModeFormFields, (v: string) => void> = {
+    situation: setSituation, thoughts: setThoughts, feelings: setFeelings,
+    bodyFeelings: setBodyFeelings, actions: setActions, actualNeed: setActualNeed,
+    childhoodMemories: setChildhoodMemories,
+  };
+  const setField = (k: keyof ModeFormFields, v: string) => setters[k](v);
 
   const handleSave = async () => {
     if (!canSave || saving) return;
@@ -87,6 +103,10 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
 
   // ── Step 1: picker ──
   if (!modeId || showPicker) {
+    // Тест «определим по чувству» — отдельный экран (ModeTestScreen).
+    if (testOpen) {
+      return <ModeTestScreen onPick={pickMode} onBack={() => setTestOpen(false)} />;
+    }
     return (
       <ExScreen
         onBack={goBack}
@@ -94,7 +114,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         eyebrow="Дневник режимов · новая запись"
         eyebrowColor="var(--c-slate)"
         title={<>Кто сейчас<br /><span className="it">взял управление?</span></>}
-        lede={tr('Выбери режим – состояние, которое сейчас включено. Если не уверен – выбери самый похожий.', 'Выберите режим – состояние, которое сейчас включено. Если не уверены – выберите самый похожий.')}
+        lede={tr('Режим – состояние, которое сейчас «за рулём». Не знаешь названия – определим по чувству, в пару тапов.', 'Режим – состояние, которое сейчас «за рулём». Не знаете названия – определим по чувству, в пару тапов.')}
         aside={
           <div className="aside-card" style={{ borderColor: 'var(--c-slate)40', background: 'var(--c-slate)08' }}>
             <div className="aside-card-eyebrow" style={{ color: 'var(--c-slate)' }}>Подсказка</div>
@@ -103,7 +123,29 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           </div>
         }
       >
-        {MODE_GROUPS.map(g => (
+        {/* Главное действие: тест по чувству */}
+        <button
+          type="button"
+          className="mode-test-cta"
+          onClick={() => { haptic.select(); setTestOpen(true); }}
+        >
+          <span className="mode-test-cta-emoji">🧭</span>
+          <span className="mode-test-cta-text">
+            <span className="mode-test-cta-title">{tr('Не знаешь, какой режим?', 'Не знаете, какой режим?')}</span>
+            <span className="mode-test-cta-sub">Определим по чувству – пара тапов</span>
+          </span>
+        </button>
+
+        {/* Вторичное: полный список для тех, кто знает режим */}
+        <button
+          type="button"
+          className="ex-btn ex-btn-ghost mode-list-toggle"
+          onClick={() => { haptic.tap(); setListOpen(v => !v); }}
+        >
+          {listOpen ? 'Скрыть список' : 'Знаю режим – выбрать из списка'}
+        </button>
+
+        {listOpen && MODE_GROUPS.map(g => (
           <div key={g.id} style={{ marginBottom: 28 }}>
             <div className="chip-section-eyebrow" style={{ color: g.color }}>
               <span className="dot" style={{ background: g.color }} />
@@ -114,7 +156,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
                 key={m.id}
                 className={'mode-card ' + (modeId === m.id ? 'is-selected' : '')}
                 style={{ '--mode-color': g.color } as React.CSSProperties}
-                {...pressable(() => { haptic.select(); setModeId(m.id); setShowPicker(false); })}
+                {...pressable(() => pickMode(m.id))}
               >
                 <span className="mode-card-stripe" />
                 <div>
@@ -131,143 +173,17 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   }
 
   // ── Step 2: form ──
-  const modeColor = selectedMode?.color ?? 'var(--c-slate)';
   return (
-    <ExScreen
+    <ModeEntryForm
+      selectedMode={selectedMode ?? null}
+      values={values}
+      set={setField}
+      situationRef={situationRef}
+      saving={saving}
+      canSave={canSave}
+      onSave={handleSave}
       onBack={goBack}
-      backLabel="Назад к дневнику"
-      eyebrow={selectedMode?.groupName ?? 'Режим'}
-      eyebrowColor={modeColor}
-      title={selectedMode?.name ?? ''}
-      lede={selectedMode?.short ?? ''}
-      aside={
-        <>
-          <div className="aside-card" style={{ borderColor: modeColor + '40', background: modeColor + '08', position: 'sticky', top: 40 }}>
-            <div className="aside-card-eyebrow" style={{ color: modeColor }}>Подсказка</div>
-            <h3>Говори от лица режима</h3>
-            <p className="body">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
-          </div>
-          <button className="ex-btn ex-btn-ghost" onClick={() => setShowPicker(true)} style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <GlyphArrowLeft /> Сменить режим
-          </button>
-        </>
-      }
-    >
-      <div className="prompt" style={{ marginTop: 8 }}>
-        <div className="prompt-num">1.</div>
-        <div>
-          <div className="prompt-label">Что случилось <span style={{ color: 'var(--c-rose)', marginLeft: 2 }}>*</span></div>
-          <p className="prompt-hint">Что включило этот режим – конкретно, без обобщений.</p>
-          <textarea
-            ref={situationRef}
-            className={'paper-input ' + (situation.trim() ? 'is-filled' : '')}
-            rows={3}
-            value={situation}
-            onChange={e => setSituation(e.target.value)}
-            placeholder="Папа позвонил, начал спрашивать про работу. Почувствовал как «отключился»…"
-          />
-        </div>
-      </div>
-
-      <div className="prompt">
-        <div className="prompt-num">2.</div>
-        <div>
-          <div className="prompt-label">Что говорит этот режим</div>
-          <p className="prompt-hint">Внутренний монолог – что он повторяет, во что верит.</p>
-          <textarea
-            className={'paper-input ' + (thoughts.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={thoughts}
-            onChange={e => setThoughts(e.target.value)}
-            placeholder="«Не лезь. Не показывай. Никому не интересно по-настоящему»…"
-          />
-        </div>
-      </div>
-
-      <div className="prompt">
-        <div className="prompt-num">3.</div>
-        <div>
-          <div className="prompt-label">Что он чувствует</div>
-          <p className="prompt-hint">Эмоции этого режима – даже если он сам их «не чувствует».</p>
-          <textarea
-            className={'paper-input ' + (feelings.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={feelings}
-            onChange={e => setFeelings(e.target.value)}
-            placeholder="Пустота, отрешённость. Под этим – обида и страх…"
-          />
-        </div>
-      </div>
-
-      <div className="prompt">
-        <div className="prompt-num">4.</div>
-        <div>
-          <div className="prompt-label">Тело</div>
-          <textarea
-            className={'paper-input ' + (bodyFeelings.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={bodyFeelings}
-            onChange={e => setBodyFeelings(e.target.value)}
-            placeholder="Тяжесть в груди, голос становится плоским, плечи сводит…"
-          />
-        </div>
-      </div>
-
-      <div className="prompt">
-        <div className="prompt-num">5.</div>
-        <div>
-          <div className="prompt-label">{tr('Что он тебя тянет сделать', 'Что он вас тянет сделать')}</div>
-          <textarea
-            className={'paper-input ' + (actions.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={actions}
-            onChange={e => setActions(e.target.value)}
-            placeholder="Закончить разговор быстрее. Лечь и листать ленту…"
-          />
-        </div>
-      </div>
-
-      <div className="flow-section-head">
-        <span className="flow-section-num">·</span>
-        <div>
-          <div className="flow-section-title">Под режимом</div>
-          <div className="flow-section-sub">За каждым режимом – настоящая потребность, которой он не умеет напрямую попросить.</div>
-        </div>
-      </div>
-
-      <div className="prompt">
-        <div className="prompt-num">6.</div>
-        <div>
-          <div className="prompt-label">Чего на самом деле нужно</div>
-          <p className="prompt-hint">{tr('Не режиму – тебе. Чего не хватает в этот момент.', 'Не режиму – вам. Чего не хватает в этот момент.')}</p>
-          <textarea
-            className={'paper-input ' + (actualNeed.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={actualNeed}
-            onChange={e => setActualNeed(e.target.value)}
-            placeholder="Чтобы папа спросил как я, а не как работа…"
-          />
-        </div>
-      </div>
-
-      <div className="prompt">
-        <div className="prompt-num">7.</div>
-        <div>
-          <div className="prompt-label">Откуда это знакомо</div>
-          <p className="prompt-hint">Из детства? Похожее чувство, похожая ситуация?</p>
-          <textarea
-            className={'paper-input ' + (childhoodMemories.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={childhoodMemories}
-            onChange={e => setChildhoodMemories(e.target.value)}
-            placeholder="Когда мама приходила с работы – я уже знал что лучше не лезть…"
-          />
-        </div>
-      </div>
-
-      {detectCrisisAny(situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories) && <CrisisCard surface="mode" />}
-
-      <DiaryAutosaveFooter canSave={canSave} saving={saving} onSave={handleSave} />
-    </ExScreen>
+      onChangeMode={() => setShowPicker(true)}
+    />
   );
 }
