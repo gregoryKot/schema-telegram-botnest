@@ -172,7 +172,7 @@ export function ModeTestSheet({
                   })}
                   style={{
                     display: 'flex',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
                     gap: 12,
                     background: 'rgba(var(--fg-rgb),0.05)',
                     border: '1px solid rgba(var(--fg-rgb),0.06)',
@@ -181,14 +181,29 @@ export function ModeTestSheet({
                     cursor: 'pointer',
                   }}
                 >
-                  <span style={{ fontSize: 22, flexShrink: 0 }}>{l.emoji}</span>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      color: 'var(--text)',
-                    }}
-                  >
-                    {l.label}
+                  <span style={{ fontSize: 22, flexShrink: 0, marginTop: 1 }}>
+                    {l.emoji}
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: 'var(--text)',
+                      }}
+                    >
+                      {l.label}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12.5,
+                        color: 'var(--text-sub)',
+                        lineHeight: 1.5,
+                        marginTop: 3,
+                      }}
+                    >
+                      {l.desc}
+                    </div>
                   </div>
                 </div>
               ))}
