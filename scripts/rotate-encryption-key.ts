@@ -90,6 +90,7 @@ const TARGETS: Array<{ name: string; fields: string[] }> = [
       'actions',
       'actualNeed',
       'childhoodMemories',
+      'healthyResponse',
     ],
   },
   { name: 'gratitudeDiaryEntry', fields: ['items'] },
