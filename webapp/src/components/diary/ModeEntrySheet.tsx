@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { ExScreen, GlyphCheck } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
@@ -47,7 +47,6 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   const [showPicker, setShowPicker] = useState(!d?.modeId);
   const [testOpen, setTestOpen]   = useState(false);
   const [listOpen, setListOpen]   = useState(false);
-  const situationRef = useRef<HTMLTextAreaElement>(null);
 
   const pickMode = (id: string) => {
     haptic.select();
@@ -59,10 +58,6 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   useEffect(() => {
     saveDraft('mode', { modeId, situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories });
   }, [modeId, situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories]);
-
-  useEffect(() => {
-    if (modeId && !showPicker) situationRef.current?.focus();
-  }, [modeId, showPicker]);
 
   const selectedMode = modeId
     ? MODE_GROUPS.flatMap(g => g.items.map(m => ({ ...m, color: g.color, groupName: g.group }))).find(m => m.id === modeId)
@@ -178,7 +173,6 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
       selectedMode={selectedMode ?? null}
       values={values}
       set={setField}
-      situationRef={situationRef}
       saving={saving}
       canSave={canSave}
       onSave={handleSave}
