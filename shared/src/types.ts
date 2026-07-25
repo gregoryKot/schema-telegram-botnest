@@ -62,6 +62,7 @@ export interface ModeDiaryEntry {
   actions?: string | null;
   actualNeed?: string | null;
   childhoodMemories?: string | null;
+  healthyResponse?: string | null;
 }
 
 export interface GratitudeDiaryEntry {

@@ -142,6 +142,7 @@ function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () =>
             {entry.feelings && <ExpandField label="Чувства" text={entry.feelings} />}
             {entry.actualNeed && <ExpandField label="Что было нужно" text={entry.actualNeed} color="var(--accent)" />}
             {entry.childhoodMemories && <ExpandField label="Откуда знакомо" text={entry.childhoodMemories} />}
+            {entry.healthyResponse && <ExpandField label="Здоровый Взрослый" text={entry.healthyResponse} color="var(--c-moss)" />}
             <DeleteBtn color="var(--c-slate)" onClick={onDelete} />
           </div>
         )}

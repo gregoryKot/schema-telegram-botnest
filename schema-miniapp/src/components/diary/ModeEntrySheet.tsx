@@ -8,6 +8,7 @@ import { DiaryStickyHeader } from './DiaryStickyHeader';
 import { ModeSelectStep } from './ModeSelectStep';
 import { ModeDiaryWizard } from './ModeDiaryWizard';
 import type { ModeDiaryFieldKey } from '../../../../shared/src/mode/modeDiarySteps';
+import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
 
 interface Props {
   onClose: () => void;
@@ -20,6 +21,7 @@ interface Props {
     actions?: string;
     actualNeed?: string;
     childhoodMemories?: string;
+    healthyResponse?: string;
   }) => Promise<void>;
 }
 
@@ -35,6 +37,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     actions: string;
     actualNeed: string;
     childhoodMemories: string;
+    healthyResponse: string;
   }>('mode');
   const d = existing?.data;
 
@@ -47,6 +50,9 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   const [actualNeed, setActualNeed] = useState(d?.actualNeed ?? '');
   const [childhoodMemories, setChildhoodMemories] = useState(
     d?.childhoodMemories ?? '',
+  );
+  const [healthyResponse, setHealthyResponse] = useState(
+    d?.healthyResponse ?? '',
   );
   const [saving, setSaving] = useState(false);
 
@@ -71,16 +77,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   const setField = (k: ModeDiaryFieldKey, v: string) => setters[k](v);
 
   useEffect(() => {
-    saveDraft('mode', {
-      modeId,
-      situation,
-      thoughts,
-      feelings,
-      bodyFeelings,
-      actions,
-      actualNeed,
-      childhoodMemories,
-    });
+    saveDraft('mode', { modeId, ...values, healthyResponse });
   }, [
     modeId,
     situation,
@@ -90,6 +87,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     actions,
     actualNeed,
     childhoodMemories,
+    healthyResponse,
   ]);
 
   const canSave = modeId.length > 0 && situation.trim().length > 0;
@@ -99,15 +97,18 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     haptic.success();
     setSaving(true);
     try {
+      // Опциональные поля собираем программно — пустые не отправляем (и без
+      // повторного перечисления имён полей, jscpd-храповик).
+      const optional = Object.fromEntries(
+        (Object.keys(values) as ModeDiaryFieldKey[])
+          .filter((k) => k !== 'situation' && values[k].trim().length > 0)
+          .map((k) => [k, values[k]]),
+      );
       await onSave({
         modeId,
         situation,
-        thoughts: thoughts || undefined,
-        feelings: feelings || undefined,
-        bodyFeelings: bodyFeelings || undefined,
-        actions: actions || undefined,
-        actualNeed: actualNeed || undefined,
-        childhoodMemories: childhoodMemories || undefined,
+        ...optional,
+        healthyResponse: healthyResponse || undefined,
       });
       clearDraft('mode');
     } catch {
@@ -136,6 +137,9 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           <ModeDiaryWizard
             values={values}
             onChange={setField}
+            healthyResponse={healthyResponse}
+            onHealthyChange={setHealthyResponse}
+            healthyHint={healthyAdultHint(modeId)}
             onSave={handleSave}
             canSave={canSave}
             saving={saving}
@@ -150,6 +154,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           actions,
           actualNeed,
           childhoodMemories,
+          healthyResponse,
         ) && <CrisisCard surface="mode" />}
       </div>
     </BottomSheet>

@@ -354,6 +354,9 @@ function ModeCard({
           {entry.childhoodMemories && (
             <Field label="Воспоминания" text={entry.childhoodMemories} />
           )}
+          {entry.healthyResponse && (
+            <Field label="Здоровый Взрослый" text={entry.healthyResponse} />
+          )}
           <DeleteBtn color={color} onClick={onDelete} />
         </div>
       )}

@@ -104,6 +104,7 @@ export class DiaryController {
       actions: body.actions?.slice(0, LIMIT),
       actualNeed: body.actualNeed?.slice(0, LIMIT),
       childhoodMemories: body.childhoodMemories?.slice(0, LIMIT),
+      healthyResponse: body.healthyResponse?.slice(0, LIMIT),
     };
     const entry = await this.diaryService.createModeDiaryEntry(
       uid(req),
