@@ -1,14 +1,16 @@
-import type { RefObject } from 'react';
-import { ExScreen, GlyphArrowLeft } from '../exercises/ExScreen';
+import { useState, useRef, useEffect } from 'react';
+import { ExScreen, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from '../exercises/ExScreen';
 import { useTr } from '../../utils/addressForm';
+import { pressable } from '../../utils/a11y';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
-import { DiaryAutosaveFooter } from './DiaryAutosaveFooter';
+import { buildModeDiarySteps } from '../../../../shared/src/mode/modeDiarySteps';
 
-// Шаг 2 дневника режимов: 7-полевая форма разбора режима. Вынесено из
-// ModeEntrySheet (лимит размера файла, CLAUDE.md правило №10). Контент шагов
-// 2+ не менялся — только относокация. Состояние живёт в родителе (автосейв
-// черновика, кризисная детекция, сохранение).
+// Шаг 2 дневника режимов: визард-разбор режима — один вопрос на экран
+// (правило онбординга «одно главное действие на экран», низкий порог для СДВГ).
+// Обязательна только ситуация; остальное можно пропустить или сохранить рано.
+// Шаги/тексты/примеры — из общего конфига shared/mode/modeDiarySteps (правило №3).
+// Состояние живёт в родителе (ModeEntrySheet): автосейв черновика, сохранение.
 
 export interface ModeFormFields {
   situation: string; thoughts: string; feelings: string; bodyFeelings: string;
@@ -21,7 +23,6 @@ interface Props {
   selectedMode: { name: string; short: string; color: string; groupName: string } | null;
   values: ModeFormFields;
   set: (key: FieldKey, value: string) => void;
-  situationRef: RefObject<HTMLTextAreaElement | null>;
   saving: boolean;
   canSave: boolean;
   onSave: () => void;
@@ -29,10 +30,26 @@ interface Props {
   onChangeMode: () => void;
 }
 
-export function ModeEntryForm({ selectedMode, values, set, situationRef, saving, canSave, onSave, onBack, onChangeMode }: Props) {
+export function ModeEntryForm({ selectedMode, values, set, saving, canSave, onSave, onBack, onChangeMode }: Props) {
   const tr = useTr();
+  const steps = buildModeDiarySteps(tr);
   const modeColor = selectedMode?.color ?? 'var(--c-slate)';
   const v = values;
+
+  const [stepIdx, setStepIdx] = useState(0);
+  const areaRef = useRef<HTMLTextAreaElement>(null);
+  // Фокус на поле при смене шага — сразу видно, куда писать.
+  useEffect(() => { areaRef.current?.focus(); }, [stepIdx]);
+
+  const cur = steps[stepIdx];
+  const curValue = v[cur.key];
+  const curFilled = curValue.trim().length > 0;
+  const isLast = stepIdx === steps.length - 1;
+  const isFirst = stepIdx === 0;
+  const filledCount = steps.filter(s => v[s.key].trim().length > 0).length;
+
+  const goPrev = () => (isFirst ? onChangeMode() : setStepIdx(s => Math.max(0, s - 1)));
+  const goNext = () => setStepIdx(s => Math.min(steps.length - 1, s + 1));
 
   return (
     <ExScreen
@@ -55,121 +72,62 @@ export function ModeEntryForm({ selectedMode, values, set, situationRef, saving,
         </>
       }
     >
-      <div className="prompt" style={{ marginTop: 8 }}>
-        <div className="prompt-num">1.</div>
-        <div>
-          <div className="prompt-label">Что случилось <span style={{ color: 'var(--c-rose)', marginLeft: 2 }}>*</span></div>
-          <p className="prompt-hint">Что включило этот режим – конкретно, без обобщений.</p>
-          <textarea
-            ref={situationRef}
-            className={'paper-input ' + (v.situation.trim() ? 'is-filled' : '')}
-            rows={3}
-            value={v.situation}
-            onChange={e => set('situation', e.target.value)}
-            placeholder="Папа позвонил, начал спрашивать про работу. Почувствовал как «отключился»…"
+      {/* Прогресс: сегменты по числу шагов + «шаг N из M» */}
+      <div className="tick-strip">
+        {steps.map((s, i) => (
+          <div
+            key={s.key}
+            className={'tick ' + (v[s.key].trim() ? 'is-filled ' : '') + (i === stepIdx ? 'is-active' : '')}
+            style={{ '--accent': modeColor } as React.CSSProperties}
+            {...pressable(() => setStepIdx(i))}
           />
-        </div>
+        ))}
       </div>
 
-      <div className="prompt">
-        <div className="prompt-num">2.</div>
-        <div>
-          <div className="prompt-label">Что говорит этот режим</div>
-          <p className="prompt-hint">Внутренний монолог – что он повторяет, во что верит.</p>
-          <textarea
-            className={'paper-input ' + (v.thoughts.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={v.thoughts}
-            onChange={e => set('thoughts', e.target.value)}
-            placeholder="«Не лезь. Не показывай. Никому не интересно по-настоящему»…"
-          />
+      <div className="flash" style={{ borderColor: curFilled ? modeColor + '55' : 'var(--line)' }}>
+        <div className="flash-eyebrow" style={{ color: modeColor }}>
+          <span style={{ width: 6, height: 6, borderRadius: 3, background: 'currentColor' }} />
+          Шаг {stepIdx + 1} из {steps.length}
+          {cur.required
+            ? <span style={{ marginLeft: 6, fontWeight: 600, color: 'var(--c-rose)' }}>· обязательно</span>
+            : <span style={{ marginLeft: 6, fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-faint)' }}>· можно пропустить</span>}
+          <span className="flash-counter">{filledCount} / {steps.length} заполнено</span>
         </div>
-      </div>
-
-      <div className="prompt">
-        <div className="prompt-num">3.</div>
-        <div>
-          <div className="prompt-label">Что он чувствует</div>
-          <p className="prompt-hint">Эмоции этого режима – даже если он сам их «не чувствует».</p>
-          <textarea
-            className={'paper-input ' + (v.feelings.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={v.feelings}
-            onChange={e => set('feelings', e.target.value)}
-            placeholder="Пустота, отрешённость. Под этим – обида и страх…"
-          />
-        </div>
-      </div>
-
-      <div className="prompt">
-        <div className="prompt-num">4.</div>
-        <div>
-          <div className="prompt-label">Тело</div>
-          <textarea
-            className={'paper-input ' + (v.bodyFeelings.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={v.bodyFeelings}
-            onChange={e => set('bodyFeelings', e.target.value)}
-            placeholder="Тяжесть в груди, голос становится плоским, плечи сводит…"
-          />
-        </div>
-      </div>
-
-      <div className="prompt">
-        <div className="prompt-num">5.</div>
-        <div>
-          <div className="prompt-label">{tr('Что он тебя тянет сделать', 'Что он вас тянет сделать')}</div>
-          <textarea
-            className={'paper-input ' + (v.actions.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={v.actions}
-            onChange={e => set('actions', e.target.value)}
-            placeholder="Закончить разговор быстрее. Лечь и листать ленту…"
-          />
-        </div>
-      </div>
-
-      <div className="flow-section-head">
-        <span className="flow-section-num">·</span>
-        <div>
-          <div className="flow-section-title">Под режимом</div>
-          <div className="flow-section-sub">За каждым режимом – настоящая потребность, которой он не умеет напрямую попросить.</div>
-        </div>
-      </div>
-
-      <div className="prompt">
-        <div className="prompt-num">6.</div>
-        <div>
-          <div className="prompt-label">Чего на самом деле нужно</div>
-          <p className="prompt-hint">{tr('Не режиму – тебе. Чего не хватает в этот момент.', 'Не режиму – вам. Чего не хватает в этот момент.')}</p>
-          <textarea
-            className={'paper-input ' + (v.actualNeed.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={v.actualNeed}
-            onChange={e => set('actualNeed', e.target.value)}
-            placeholder="Чтобы папа спросил как я, а не как работа…"
-          />
-        </div>
-      </div>
-
-      <div className="prompt">
-        <div className="prompt-num">7.</div>
-        <div>
-          <div className="prompt-label">Откуда это знакомо</div>
-          <p className="prompt-hint">Из детства? Похожее чувство, похожая ситуация?</p>
-          <textarea
-            className={'paper-input ' + (v.childhoodMemories.trim() ? 'is-filled' : '')}
-            rows={2}
-            value={v.childhoodMemories}
-            onChange={e => set('childhoodMemories', e.target.value)}
-            placeholder="Когда мама приходила с работы – я уже знал что лучше не лезть…"
-          />
-        </div>
+        <div className="flash-q">{cur.title}</div>
+        <div className="flash-hint">{cur.hint}</div>
+        <textarea
+          ref={areaRef}
+          className={'paper-area ' + (curFilled ? 'is-filled' : '')}
+          rows={cur.rows ?? 3}
+          value={curValue}
+          onChange={e => set(cur.key, e.target.value)}
+          placeholder={cur.example}
+        />
       </div>
 
       {detectCrisisAny(v.situation, v.thoughts, v.feelings, v.bodyFeelings, v.actions, v.actualNeed, v.childhoodMemories) && <CrisisCard surface="mode" />}
 
-      <DiaryAutosaveFooter canSave={canSave} saving={saving} onSave={onSave} />
+      <div className="ex-foot">
+        <button className="ex-btn ex-btn-ghost" onClick={goPrev} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <GlyphArrowLeft /> {isFirst ? 'К режимам' : 'Назад'}
+        </button>
+        <span className="spacer" />
+        {/* Ранний выход: сохранить, не проходя все шаги (низкий порог) */}
+        {canSave && !isLast && (
+          <button className="ex-btn ex-btn-ghost" disabled={saving} onClick={onSave} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {saving ? 'Сохраняю…' : 'Сохранить'} {!saving && <GlyphCheck />}
+          </button>
+        )}
+        {isLast ? (
+          <button className="ex-btn ex-btn-primary" disabled={!canSave || saving} onClick={onSave} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {saving ? 'Сохраняю…' : 'Сохранить запись'} {!saving && <GlyphCheck />}
+          </button>
+        ) : (
+          <button className="ex-btn ex-btn-primary" disabled={cur.required && !curFilled} onClick={goNext} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {curFilled || cur.required ? 'Дальше' : 'Пропустить'} <GlyphArrowRight />
+          </button>
+        )}
+      </div>
     </ExScreen>
   );
 }
