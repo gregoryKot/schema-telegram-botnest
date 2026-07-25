@@ -82,6 +82,7 @@ export function ModeTestScreen({ onPick, onBack }: Props) {
           <span className="mode-test-row-emoji">{l.emoji}</span>
           <span className="mode-test-row-text">
             <span className="mode-test-row-title">{l.label}</span>
+            <span className="mode-test-row-hint">{l.desc}</span>
           </span>
         </button>
       ))}
