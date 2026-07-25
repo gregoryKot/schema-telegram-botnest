@@ -14,6 +14,7 @@ import { SharePill } from '../../share/SharePill';
 import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { drawGratitudeCard } from '../../../../shared/src/share/cards/gratitudeCard';
 import { gratitudeShareText } from '../../../../shared/src/share/shareTexts';
+import { ModeEntryShare } from './ModeEntryShare';
 import { botShortUrl } from '../../utils/botConfig';
 
 /** color-mix helper: works with CSS variables AND hex strings */
@@ -298,6 +299,15 @@ function ModeCard({
 }) {
   const [open, setOpen] = useState(false);
   const mode = getModeById(entry.modeId);
+  const rows: [string, string | null | undefined][] = [
+    ['Мысли', entry.thoughts],
+    ['Чувства', entry.feelings],
+    ['Тело', entry.bodyFeelings],
+    ['Действия', entry.actions],
+    ['Что было нужно', entry.actualNeed],
+    ['Воспоминания', entry.childhoodMemories],
+    ['Здоровый Взрослый', entry.healthyResponse],
+  ];
 
   return (
     <div
@@ -342,22 +352,13 @@ function ModeCard({
       </div>
       {open && (
         <div style={{ marginTop: 10 }}>
-          {entry.thoughts && <Field label="Мысли" text={entry.thoughts} />}
-          {entry.feelings && <Field label="Чувства" text={entry.feelings} />}
-          {entry.bodyFeelings && (
-            <Field label="Тело" text={entry.bodyFeelings} />
-          )}
-          {entry.actions && <Field label="Действия" text={entry.actions} />}
-          {entry.actualNeed && (
-            <Field label="Что было нужно" text={entry.actualNeed} />
-          )}
-          {entry.childhoodMemories && (
-            <Field label="Воспоминания" text={entry.childhoodMemories} />
-          )}
-          {entry.healthyResponse && (
-            <Field label="Здоровый Взрослый" text={entry.healthyResponse} />
-          )}
+          {rows
+            .filter(([, text]) => text)
+            .map(([label, text]) => (
+              <Field key={label} label={label} text={text!} />
+            ))}
           <DeleteBtn color={color} onClick={onDelete} />
+          <ModeEntryShare mode={mode} healthyResponse={entry.healthyResponse} />
         </div>
       )}
     </div>

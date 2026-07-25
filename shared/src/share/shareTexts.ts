@@ -68,6 +68,11 @@ export function gratitudeShareText(link: string): string {
   return `🌱 Моя благодарность сегодня.\n\n${link}`;
 }
 
+/** Карточка записи режима: слова самоподдержки — на картинке, не в тексте. */
+export function modeEntryShareText(link: string): string {
+  return `🌿 Голос моего Здорового Взрослого.\n\n${link}`;
+}
+
 export function journeyShareText(total: number, link: string): string {
   return `🧭 Мой путь: ${total} ${pluralEntries(total)} заботы о себе — дневники, практики, тесты.\n\n${link}`;
 }
