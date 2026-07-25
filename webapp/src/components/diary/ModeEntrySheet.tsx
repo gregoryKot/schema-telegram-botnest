@@ -20,13 +20,14 @@ interface Props {
     actions?: string;
     actualNeed?: string;
     childhoodMemories?: string;
+    healthyResponse?: string;
   }) => Promise<void>;
 }
 
 type DraftData = {
   modeId: string; situation: string; thoughts: string;
   feelings: string; bodyFeelings: string; actions: string;
-  actualNeed: string; childhoodMemories: string;
+  actualNeed: string; childhoodMemories: string; healthyResponse: string;
 };
 
 export function ModeEntrySheet({ onClose, onSave }: Props) {
@@ -43,6 +44,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   const [actions, setActions]     = useState(d?.actions ?? '');
   const [actualNeed, setActualNeed] = useState(d?.actualNeed ?? '');
   const [childhoodMemories, setChildhoodMemories] = useState(d?.childhoodMemories ?? '');
+  const [healthyResponse, setHealthyResponse] = useState(d?.healthyResponse ?? '');
   const [saving, setSaving]       = useState(false);
   const [showPicker, setShowPicker] = useState(!d?.modeId);
   const [testOpen, setTestOpen]   = useState(false);
@@ -56,8 +58,8 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   };
 
   useEffect(() => {
-    saveDraft('mode', { modeId, situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories });
-  }, [modeId, situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories]);
+    saveDraft('mode', { modeId, situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories, healthyResponse });
+  }, [modeId, situation, thoughts, feelings, bodyFeelings, actions, actualNeed, childhoodMemories, healthyResponse]);
 
   const selectedMode = modeId
     ? MODE_GROUPS.flatMap(g => g.items.map(m => ({ ...m, color: g.color, groupName: g.group }))).find(m => m.id === modeId)
@@ -86,6 +88,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         actions: actions || undefined,
         actualNeed: actualNeed || undefined,
         childhoodMemories: childhoodMemories || undefined,
+        healthyResponse: healthyResponse || undefined,
       });
       clearDraft('mode');
     } catch {
@@ -171,8 +174,11 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   return (
     <ModeEntryForm
       selectedMode={selectedMode ?? null}
+      modeId={modeId}
       values={values}
       set={setField}
+      healthyResponse={healthyResponse}
+      setHealthyResponse={setHealthyResponse}
       saving={saving}
       canSave={canSave}
       onSave={handleSave}

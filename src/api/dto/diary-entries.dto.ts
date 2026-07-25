@@ -108,6 +108,12 @@ export class ModeDiaryDto {
   @IsString()
   @MaxLength(FREE_TEXT_MAX)
   childhoodMemories?: string;
+
+  // Что бы сказал Здоровый Взрослый — свободный текст, пишет клиент сам.
+  @IsOptional()
+  @IsString()
+  @MaxLength(FREE_TEXT_MAX)
+  healthyResponse?: string;
 }
 
 export class GratitudeDiaryDto {

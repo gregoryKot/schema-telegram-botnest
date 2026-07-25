@@ -9,31 +9,41 @@ import {
 
 /**
  * Визард дневника режимов: один вопрос — один экран (после выбора режима).
- * Обязательна только ситуация; остальное можно пропустить. Сохранить можно в
- * любой момент, как только выбран режим и заполнена ситуация (кнопка в шапке).
+ * Последний шаг — Здоровый Взрослый: показываем пример-ориентир, а клиент пишет
+ * СВОЁ (не готовый ответ). Обязательна только ситуация; остальное можно
+ * пропустить, сохранить можно с любого шага (кнопка в шапке).
  * Контент шагов — shared/mode/modeDiarySteps (правило №3).
  */
 export function ModeDiaryWizard({
   values,
   onChange,
+  healthyResponse,
+  onHealthyChange,
+  healthyHint,
   onSave,
   canSave,
   saving,
 }: {
   values: Record<ModeDiaryFieldKey, string>;
   onChange: (key: ModeDiaryFieldKey, value: string) => void;
+  healthyResponse: string;
+  onHealthyChange: (value: string) => void;
+  healthyHint: string;
   onSave: () => void;
   canSave: boolean;
   saving: boolean;
 }) {
   const tr = useTr();
   const STEPS = buildModeDiarySteps(tr);
+  const TOTAL = STEPS.length + 1; // +1 — шаг Здорового Взрослого
   const [step, setStep] = useState(0);
 
-  const cur = STEPS[step];
-  const val = values[cur.key];
-  const isLast = step === STEPS.length - 1;
-  const canNext = cur.required ? val.trim().length > 0 : true;
+  const isHa = step === STEPS.length;
+  const cur = isHa ? null : STEPS[step];
+  const val = isHa ? healthyResponse : values[cur!.key];
+  const isLast = step === TOTAL - 1;
+  const canNext = isHa ? true : cur!.required ? val.trim().length > 0 : true;
+  const optional = isHa || !cur!.required;
 
   const btn = (
     label: string,
@@ -67,9 +77,9 @@ export function ModeDiaryWizard({
     <div style={{ marginTop: 18 }}>
       {/* Прогресс */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-        {STEPS.map((s, i) => (
+        {Array.from({ length: TOTAL }).map((_, i) => (
           <div
-            key={s.key}
+            key={i}
             style={{
               flex: 1,
               height: 4,
@@ -88,8 +98,8 @@ export function ModeDiaryWizard({
       <div
         style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 16 }}
       >
-        Шаг {step + 1} из {STEPS.length}
-        {!cur.required && ' · можно пропустить'}
+        Шаг {step + 1} из {TOTAL}
+        {optional && ' · можно пропустить'}
       </div>
 
       {/* Вопрос */}
@@ -101,17 +111,64 @@ export function ModeDiaryWizard({
           marginBottom: 4,
         }}
       >
-        {cur.title}
+        {isHa
+          ? tr(
+              'Что бы сказал твой Здоровый Взрослый?',
+              'Что бы сказал ваш Здоровый Взрослый?',
+            )
+          : cur!.title}
       </div>
       <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12 }}>
-        {cur.hint}
+        {isHa
+          ? tr(
+              'Своими словами — как поддержал бы тот, кто на твоей стороне.',
+              'Своими словами — как поддержал бы тот, кто на вашей стороне.',
+            )
+          : cur!.hint}
       </div>
+
+      {isHa && (
+        <div
+          style={{
+            background: 'rgba(52,211,153,0.08)',
+            border: '1px solid rgba(52,211,153,0.2)',
+            borderRadius: 14,
+            padding: '12px 14px',
+            marginBottom: 12,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'var(--accent-green)',
+              marginBottom: 6,
+            }}
+          >
+            🌿 Например, можно сказать себе
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              color: 'var(--text-sub)',
+              lineHeight: 1.6,
+              fontStyle: 'italic',
+            }}
+          >
+            «{healthyHint}»
+          </div>
+        </div>
+      )}
 
       <DiaryTextArea
         value={val}
-        onChange={(v) => onChange(cur.key, v)}
-        placeholder={cur.example}
-        rows={cur.rows}
+        onChange={(v) => (isHa ? onHealthyChange(v) : onChange(cur!.key, v))}
+        placeholder={
+          isHa
+            ? tr('Напиши своими словами…', 'Напишите своими словами…')
+            : cur!.example
+        }
+        rows={isHa ? 3 : cur!.rows}
       />
 
       {/* Навигация */}
@@ -127,7 +184,7 @@ export function ModeDiaryWizard({
               disabled: !canSave || saving,
             })
           : btn(
-              val.trim() || cur.required ? 'Далее →' : 'Пропустить',
+              val.trim() || !optional ? 'Далее →' : 'Пропустить',
               () => {
                 haptic.tap();
                 setStep((s) => s + 1);

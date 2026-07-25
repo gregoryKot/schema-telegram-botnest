@@ -110,6 +110,7 @@ export class DiaryService {
       actions?: string;
       actualNeed?: string;
       childhoodMemories?: string;
+      healthyResponse?: string;
     },
   ) {
     const row = await this.prisma.modeDiaryEntry.create({
@@ -124,6 +125,7 @@ export class DiaryService {
         actions: encrypt(data.actions),
         actualNeed: encrypt(data.actualNeed),
         childhoodMemories: encrypt(data.childhoodMemories),
+        healthyResponse: encrypt(data.healthyResponse),
       },
     });
     // Return plaintext so caller doesn't receive encrypted strings
@@ -136,6 +138,7 @@ export class DiaryService {
       actions: data.actions ?? null,
       actualNeed: data.actualNeed ?? null,
       childhoodMemories: data.childhoodMemories ?? null,
+      healthyResponse: data.healthyResponse ?? null,
     };
   }
 
@@ -155,6 +158,7 @@ export class DiaryService {
       actions: decrypt(r.actions),
       actualNeed: decrypt(r.actualNeed),
       childhoodMemories: decrypt(r.childhoodMemories),
+      healthyResponse: decrypt(r.healthyResponse),
     }));
   }
 
