@@ -8,6 +8,7 @@ import {
   type YsqHistoryEntry,
   countActiveInHistory,
 } from '../hooks/useYsqTest';
+import { DETAIL_FIELDS } from './journeyDetailFields';
 
 export interface JourneyResultPart {
   title?: string;
@@ -133,15 +134,39 @@ export function buildJourneyResultParts(
   }
 }
 
+/** Части ДЕТАЛЬНОГО просмотра — все поля, без обрезки. Чистая (тестируется). */
+export function buildJourneyDetailParts(
+  type: string,
+  entry: unknown,
+): JourneyResultPart[] {
+  if (!entry || typeof entry !== 'object') return [];
+  const e = entry as Record<string, unknown>;
+  const str = (k: string) => (typeof e[k] === 'string' ? e[k] : '');
+  const fields = DETAIL_FIELDS[type];
+  if (fields) {
+    return fields.flatMap(([k, title]) =>
+      str(k).trim() ? [{ title: title || undefined, text: str(k).trim() }] : [],
+    );
+  }
+  if (type === 'gratitude') {
+    const items = Array.isArray(e.items)
+      ? e.items.filter((i): i is string => typeof i === 'string')
+      : [];
+    return items.map((text) => ({ text }));
+  }
+  // tracker_day / ysq — те же строки, что и в карточке (обрезка им не грозит).
+  return buildJourneyResultParts(type, entry);
+}
+
 /**
  * Тянет запись по item.id (или дате) и собирает части карточки.
  * null — содержимого нет (трекер, тест) или запись не нашлась: тогда
  * показывается обычная карточка шага.
  */
-export async function fetchJourneyResult(
+async function fetchJourneyEntry(
   api: JourneyContentApi,
   item: JourneyItem,
-): Promise<JourneyResultPart[] | null> {
+): Promise<unknown> {
   const byId = <T extends { id: number }>(rows: T[]): T | undefined =>
     rows.find((r) => r.id === item.id);
   let entry: unknown;
@@ -197,6 +222,25 @@ export async function fetchJourneyResult(
     default:
       return null;
   }
-  const parts = buildJourneyResultParts(item.type, entry);
+  return entry;
+}
+
+/** Части карточки (короткие, обрезанные) — по тапу для шаринга. */
+export async function fetchJourneyResult(
+  api: JourneyContentApi,
+  item: JourneyItem,
+): Promise<JourneyResultPart[] | null> {
+  const parts = buildJourneyResultParts(
+    item.type,
+    await fetchJourneyEntry(api, item),
+  );
   return parts.length ? parts : null;
+}
+
+/** Части детального просмотра (все поля, без обрезки). */
+export async function fetchJourneyDetail(
+  api: JourneyContentApi,
+  item: JourneyItem,
+): Promise<JourneyResultPart[]> {
+  return buildJourneyDetailParts(item.type, await fetchJourneyEntry(api, item));
 }

@@ -9,12 +9,11 @@ import {
   formatJourneyDay,
   journeyTypeMeta,
 } from './journeyMeta';
-import { ShareIcon } from '../share/ShareIcon';
 
 export interface JourneyTimelineProps {
   groups: JourneyMonthGroup[];
   subtitle: (item: JourneyItem) => string | null;
-  onShareItem: (item: JourneyItem) => void;
+  onOpenItem: (item: JourneyItem) => void;
 }
 
 const BADGE = 36;
@@ -22,7 +21,7 @@ const BADGE = 36;
 export function JourneyTimeline({
   groups,
   subtitle,
-  onShareItem,
+  onOpenItem,
 }: JourneyTimelineProps) {
   return (
     <div>
@@ -61,8 +60,8 @@ export function JourneyTimeline({
               return (
                 <button
                   key={`${item.type}-${item.at}-${i}`}
-                  onClick={() => onShareItem(item)}
-                  aria-label={`Поделиться: ${meta.label}`}
+                  onClick={() => onOpenItem(item)}
+                  aria-label={`Открыть: ${meta.label}`}
                   style={{
                     position: 'relative',
                     display: 'flex',
@@ -128,10 +127,10 @@ export function JourneyTimeline({
                       color: 'var(--text-faint)',
                       opacity: 0.6,
                       flexShrink: 0,
-                      display: 'flex',
+                      fontSize: 18,
                     }}
                   >
-                    <ShareIcon size={14} />
+                    ›
                   </span>
                 </button>
               );
