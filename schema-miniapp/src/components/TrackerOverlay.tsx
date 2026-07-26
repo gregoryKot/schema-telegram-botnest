@@ -22,8 +22,9 @@ import { NeedRatingBar } from './NeedRatingBar';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { useSafeTop } from '../utils/safezone';
 import { api, StreakData } from '../api';
-import { useTr } from '../utils/addressForm';
 import { DayShareButton } from '../share/DayShareButton';
+import { SummaryDonut } from './trackerOverlay/SummaryDonut';
+import { OnboardingOverlay } from './trackerOverlay/OnboardingOverlay';
 
 interface Props {
   needs: Need[];
@@ -44,76 +45,6 @@ interface Props {
 }
 
 const ONBOARDING_KEY = 'tracker_onboarding_v1';
-const buildOnboardingSteps = (tr: (ty: string, vy: string) => string) => [
-  {
-    emoji: '👆',
-    title: tr('Оценивай действия', 'Оценивайте действия'),
-    text: 'Не «я вроде чувствую», а конкретные моменты. Тап по дуге или +/−.',
-  },
-  {
-    emoji: '💡',
-    title: tr('Нажми на название', 'Нажмите на название'),
-    text: 'Там вопрос для рефлексии, примеры и диапазоны оценки.',
-  },
-  {
-    emoji: '📊',
-    title: 'Паттерн — через 3–5 дней',
-    text: 'Всё сохраняется. Динамика появится в разделе «История».',
-  },
-];
-
-// ── Donut ring ─────────────────────────────────────────────────────────────────
-function SummaryDonut({ avg }: { avg: number }) {
-  const s = 52,
-    r = 20,
-    cx = 26,
-    cy = 26;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - Math.min(avg / 10, 1));
-  return (
-    <svg width={s} height={s}>
-      <defs>
-        <linearGradient id="dg2" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="var(--accent-pink)" />
-          <stop offset="50%" stopColor="var(--accent-yellow)" />
-          <stop offset="100%" stopColor="var(--accent-green)" />
-        </linearGradient>
-      </defs>
-      <circle
-        cx={cx}
-        cy={cy}
-        r={r}
-        fill="none"
-        stroke="var(--surface-2)"
-        strokeWidth={5}
-      />
-      <circle
-        cx={cx}
-        cy={cy}
-        r={r}
-        fill="none"
-        stroke="url(#dg2)"
-        strokeWidth={5}
-        strokeLinecap="round"
-        strokeDasharray={circ}
-        strokeDashoffset={offset}
-        transform={`rotate(-90 ${cx} ${cy})`}
-        style={{ transition: 'stroke-dashoffset 0.35s ease' }}
-      />
-      <text
-        x={cx}
-        y={cy}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize={11}
-        fontWeight={600}
-        fill="var(--text)"
-      >
-        {Math.round((avg / 10) * 100)}%
-      </text>
-    </svg>
-  );
-}
 
 export function TrackerOverlay({
   needs,
@@ -133,8 +64,6 @@ export function TrackerOverlay({
 }: Props) {
   const NEED_DATA = useNeedData();
   const safeTop = useSafeTop();
-  const tr = useTr();
-  const onbSteps = buildOnboardingSteps(tr);
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const unlockTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>(
     {},
@@ -431,101 +360,11 @@ export function TrackerOverlay({
 
       {/* Onboarding */}
       {showOnb && (
-        <div style={{ padding: '0 20px 8px', flexShrink: 0 }}>
-          <div
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 16,
-              padding: '14px 16px',
-            }}
-          >
-            <div style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
-              {onbSteps.map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: i === onbStep ? 16 : 6,
-                    height: 6,
-                    borderRadius: 3,
-                    background:
-                      i === onbStep ? 'var(--accent)' : 'var(--surface-2)',
-                    transition: 'all 0.2s',
-                  }}
-                />
-              ))}
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                gap: 12,
-                alignItems: 'flex-start',
-                marginBottom: 12,
-              }}
-            >
-              <span style={{ fontSize: 22, flexShrink: 0 }}>
-                {onbSteps[onbStep].emoji}
-              </span>
-              <div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: 'var(--text)',
-                    marginBottom: 4,
-                  }}
-                >
-                  {onbSteps[onbStep].title}
-                </div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: 'var(--text-sub)',
-                    lineHeight: 1.55,
-                  }}
-                >
-                  {onbSteps[onbStep].text}
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={dismissOnb}
-                style={{
-                  padding: '7px 12px',
-                  border: 'none',
-                  fontFamily: 'inherit',
-                  borderRadius: 10,
-                  background: 'transparent',
-                  color: 'var(--text-faint)',
-                  fontSize: 11,
-                  cursor: 'pointer',
-                }}
-              >
-                Пропустить
-              </button>
-              <button
-                onClick={() =>
-                  onbStep < 2 ? setOnbStep((s) => s + 1) : dismissOnb()
-                }
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  border: 'none',
-                  fontFamily: 'inherit',
-                  borderRadius: 10,
-                  background: 'var(--surface-2)',
-                  color: 'var(--accent)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                {onbStep < 2 ? 'Далее →' : 'Понятно, начнём'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <OnboardingOverlay
+          onbStep={onbStep}
+          setOnbStep={setOnbStep}
+          dismissOnb={dismissOnb}
+        />
       )}
 
       {/* Need name pill — top */}
