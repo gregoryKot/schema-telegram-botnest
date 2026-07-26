@@ -5,12 +5,7 @@
 
 // Группы для фильтра ленты (чипы «что показать»).
 export type JourneyGroup =
-  | 'tracker'
-  | 'diary'
-  | 'practice'
-  | 'test'
-  | 'exercise'
-  | 'cards';
+  'tracker' | 'diary' | 'practice' | 'test' | 'exercise' | 'cards';
 
 export interface JourneyTypeMeta {
   emoji: string;
