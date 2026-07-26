@@ -2,135 +2,34 @@ import { todayStr } from './utils/format';
 import { OutboxItem, enqueueRating, flushRatingOutbox } from './utils/outbox';
 import { telemetryUrl } from './utils/telemetryUrl';
 import type { TherapyClientSummary } from '../../shared/src/types';
+import {
+  BASE,
+  authHeaders,
+  fetchWithTimeout,
+  HttpStatusError,
+  get,
+  post,
+  postJson,
+  del,
+} from './apiClient';
 
-const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
-const BASE =
-  rawBase && !rawBase.startsWith('http') ? `https://${rawBase}` : rawBase;
-
-function authHeaders(): Record<string, string> {
-  return {
-    'x-telegram-init-data': window.Telegram?.WebApp?.initData ?? '',
-    'Content-Type': 'application/json',
-  };
-}
-
-async function fetchWithTimeout(
-  input: string,
-  init: RequestInit,
-  ms = 15000,
-): Promise<Response> {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(input, { ...init, signal: ctrl.signal });
-  } finally {
-    clearTimeout(id);
-  }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// fetch() отклоняет промис TypeError-ом при обрыве связи/DNS-фейле; таймаут
-// из fetchWithTimeout отклоняет AbortError. Оба случая — «сети нет прямо
-// сейчас», а не осмысленный ответ сервера.
-function isNetworkError(err: unknown): boolean {
-  if (err instanceof DOMException && err.name === 'AbortError') return true;
-  return err instanceof TypeError;
-}
-
-// Статус ответа сервера (не сетевая ошибка) — отдельный класс, чтобы вызывающий
-// код мог различить «сервер ответил 4xx» и «ответа не было вообще».
-class HttpStatusError extends Error {
-  constructor(public status: number) {
-    super(`API error: ${status}`);
-  }
-}
-
-// GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые
-// ошибки и статусы 502/503/504 (временная недоступность инфры). 4xx и
-// прочие 5xx не ретраятся — это осмысленный ответ сервера, повтор его не
-// изменит. POST/DELETE здесь не участвуют: они не идемпотентны на уровне
-// протокола (см. outbox.ts для единственного исключения — оценок).
-const GET_RETRY_DELAYS_MS = [800, 2500];
-const RETRYABLE_STATUSES = new Set([502, 503, 504]);
-
-async function get<T>(path: string): Promise<T> {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      const res = await fetchWithTimeout(`${BASE}${path}`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) {
-        if (
-          RETRYABLE_STATUSES.has(res.status) &&
-          attempt < GET_RETRY_DELAYS_MS.length
-        ) {
-          await delay(GET_RETRY_DELAYS_MS[attempt]);
-          continue;
-        }
-        throw new HttpStatusError(res.status);
-      }
-      return res.json() as Promise<T>;
-    } catch (err) {
-      if (isNetworkError(err) && attempt < GET_RETRY_DELAYS_MS.length) {
-        await delay(GET_RETRY_DELAYS_MS[attempt]);
-        continue;
-      }
-      throw err;
-    }
-  }
-}
-
-async function post(path: string, body: unknown): Promise<void> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try {
-      const j = (await res.json()) as { message?: unknown };
-      if (j?.message)
-        msg =
-          typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-    } catch {
-      /* тело ответа не распарсилось — оставляем дефолтный msg */
-    }
-    throw new Error(msg);
-  }
-}
-
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try {
-      const j = (await res.json()) as { message?: unknown };
-      if (j?.message)
-        msg =
-          typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-    } catch {
-      /* тело ответа не распарсилось — оставляем дефолтный msg */
-    }
-    throw new Error(msg);
-  }
-  return res.json() as Promise<T>;
-}
-
-async function del(path: string): Promise<void> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-}
+// Типы вынесены в ./apiTypes и ре-экспортируются здесь, чтобы импорты
+// потребителей из '../api' продолжали работать без изменений.
+export * from './apiTypes';
+import type {
+  UserSettings,
+  StreakData,
+  Achievement,
+  UserPractice,
+  PairsData,
+  PracticePlan,
+  UserTask,
+  TherapyRelationInfo,
+  TherapistNote,
+  ClientConceptualization,
+  YsqHistoryEntry,
+  ClientData,
+} from './apiTypes';
 
 // Отправка пойманной ErrorBoundary ошибки на бэкенд (best-practice «видимость
 // прода», 2026-07). Без auth, fire-and-forget, keepalive — чтобы долетело даже
@@ -165,148 +64,6 @@ export function reportClientError(payload: {
   } catch {
     /* best-effort */
   }
-}
-
-export interface UserSettings {
-  notifyEnabled: boolean;
-  notifyLocalHour: number;
-  notifyTimezone: string;
-  notifyReminderEnabled: boolean;
-  notifyFrequency?: number; // 0=каждый день, 1=через день, 2=2×/нед, 3=раз/нед
-  notifyQuietStart?: number; // тихие часы: начало (локальный час)
-  notifyQuietEnd?: number; // тихие часы: конец; start===end → выключены
-  notifyGamified?: boolean; // opt-in игровой режим: серии + «ещё день до вехи»
-  notifyPausedUntil?: string | null; // ISO-дата конца паузы; POST null = возобновить
-  addressForm?: 'ty' | 'vy' | null; // null = ещё не выбрано → показать выбор
-  pairCardDismissed: boolean;
-  mySchemaIds: string[];
-  myModeIds: string[];
-  therapistShareCards: boolean;
-  therapistShareProfile: boolean;
-}
-
-export interface StreakData {
-  currentStreak: number;
-  longestStreak: number;
-  totalDays: number;
-  todayDone: boolean;
-  weekDots: boolean[];
-}
-
-export interface Achievement {
-  id: string;
-  earned: boolean;
-}
-
-export interface UserPractice {
-  id: number;
-  needId: string;
-  text: string;
-}
-
-export interface PartnerInfo {
-  code: string;
-  partnerIndex: number | null;
-  partnerTodayDone: boolean;
-  partnerName: string | null;
-  partnerTelegramId: number | null;
-  partnerWeekAvgs: (number | null)[];
-}
-
-export interface PairsData {
-  partners: PartnerInfo[];
-  pendingCode: string | null;
-}
-
-export interface PracticePlan {
-  id: number;
-  needId: string;
-  practiceText: string;
-  scheduledDate: string;
-  reminderUtcHour: number | null;
-  done: boolean | null;
-}
-
-export interface UserTask {
-  id: number;
-  userId: number;
-  assignedBy: number | null;
-  type: string;
-  text: string;
-  targetDays: number | null;
-  needId: string | null;
-  dueDate: string | null;
-  done: boolean | null;
-  completedAt: string | null;
-  createdAt: string;
-  doneToday?: boolean;
-  progress?: number;
-}
-
-export interface TherapyRelationInfo {
-  role: 'therapist' | 'client';
-  status: string;
-  partnerName: string | null;
-  partnerId: number | null;
-  code: string;
-  nextSession: string | null;
-}
-
-// Единственная фронтовая копия — в shared (правило №3).
-export type { TherapyClientSummary } from '../../shared/src/types';
-
-export interface TherapistNote {
-  id: number;
-  therapistId: number;
-  clientId: number;
-  date: string;
-  text: string;
-  createdAt: string;
-}
-
-export interface ConceptSnapshot {
-  savedAt: string;
-  schemaIds: string[];
-  modeIds: string[];
-  earlyExperience: string | null;
-  unmetNeeds: string | null;
-  triggers: string | null;
-  copingStyles: string | null;
-  goals: string | null;
-  currentProblems: string | null;
-  modeTransitions?: string | null;
-}
-
-export interface ClientConceptualization {
-  id: number;
-  therapistId: number;
-  clientId: number;
-  schemaIds: string[];
-  modeIds: string[];
-  earlyExperience: string | null;
-  unmetNeeds: string | null;
-  triggers: string | null;
-  copingStyles: string | null;
-  goals: string | null;
-  currentProblems: string | null;
-  modeTransitions: string | null;
-  history: ConceptSnapshot[];
-  updatedAt: string;
-}
-
-export interface YsqHistoryEntry {
-  id: number;
-  completedAt: string;
-  scores: { id: string; pct5plus: number; avg?: number }[];
-}
-
-export interface ClientData {
-  name: string | null;
-  mySchemaIds: string[];
-  myModeIds: string[];
-  ysqCompletedAt: string | null;
-  ysqActiveSchemaIds: string[];
-  ysqHistory: YsqHistoryEntry[];
 }
 
 type SaveRatingResult = { ok: boolean; allDone: boolean; streak?: StreakData };
