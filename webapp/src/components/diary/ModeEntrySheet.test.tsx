@@ -15,7 +15,9 @@ function renderSheetOnFormStep() {
       <ModeEntrySheet onClose={vi.fn()} onSave={vi.fn().mockResolvedValue(undefined)} />
     </MemoryRouter>,
   );
-  // Пикер режима — выбираем любой, чтобы попасть на форму с полями.
+  // Шаг 1 теперь test-first: список режимов свёрнут. Раскрываем его и
+  // выбираем любой режим, чтобы попасть на форму с полями.
+  fireEvent.click(screen.getByText('Знаю режим – выбрать из списка'));
   fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
   return utils;
 }
@@ -32,7 +34,7 @@ afterEach(() => {
 describe('ModeEntrySheet — кризисная детекция', () => {
   it('кризисная фраза в описании ситуации показывает CrisisCard', () => {
     renderSheetOnFormStep();
-    const textarea = screen.getByPlaceholderText('Папа позвонил, начал спрашивать про работу. Почувствовал как «отключился»…');
+    const textarea = screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я почувствовал, что «выключаюсь».');
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
     expect(screen.getByRole('status')).toBeTruthy();
     expect(screen.getByText('8-800-2000-122')).toBeTruthy();
@@ -40,7 +42,7 @@ describe('ModeEntrySheet — кризисная детекция', () => {
 
   it('нейтральный текст не показывает CrisisCard', () => {
     renderSheetOnFormStep();
-    const textarea = screen.getByPlaceholderText('Папа позвонил, начал спрашивать про работу. Почувствовал как «отключился»…');
+    const textarea = screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я почувствовал, что «выключаюсь».');
     fireEvent.change(textarea, { target: { value: 'Обычный звонок с папой' } });
     expect(screen.queryByRole('status')).toBeNull();
   });

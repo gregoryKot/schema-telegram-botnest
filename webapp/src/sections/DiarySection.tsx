@@ -9,6 +9,7 @@ import { GratitudeEntrySheet } from '../components/diary/GratitudeEntrySheet';
 import { EMOTIONS, getModeById, getSchemaById } from '../schemaTherapyData';
 import type { EmotionEntry } from '../types';
 import { loadDraft, clearDraft, formatDraftAge } from '../utils/drafts';
+import { ModeEntryShare } from '../components/diary/ModeEntryShare';
 
 const TODAY = new Date().toISOString().split('T')[0];
 
@@ -142,7 +143,9 @@ function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () =>
             {entry.feelings && <ExpandField label="Чувства" text={entry.feelings} />}
             {entry.actualNeed && <ExpandField label="Что было нужно" text={entry.actualNeed} color="var(--accent)" />}
             {entry.childhoodMemories && <ExpandField label="Откуда знакомо" text={entry.childhoodMemories} />}
+            {entry.healthyResponse && <ExpandField label="Здоровый Взрослый" text={entry.healthyResponse} color="var(--c-moss)" />}
             <DeleteBtn color="var(--c-slate)" onClick={onDelete} />
+            <ModeEntryShare mode={mode} healthyResponse={entry.healthyResponse} color={color} />
           </div>
         )}
       </div>

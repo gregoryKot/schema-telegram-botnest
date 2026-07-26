@@ -19,8 +19,8 @@ export interface JourneyViewProps {
   /** Состояние из useJourney — одним объектом */
   j: JourneyState;
   subtitle: (item: JourneyItem) => string | null;
-  /** Тап по записи ленты → карточка этого шага */
-  onShareItem: (item: JourneyItem) => void;
+  /** Тап по записи ленты → открыть запись целиком (детальный вид) */
+  onOpenItem: (item: JourneyItem) => void;
   /** Скелетон по форме контента — из примитивов конкретного фронтенда */
   skeleton: ReactNode;
 }
@@ -50,7 +50,7 @@ export function JourneyView({
   tr,
   j,
   subtitle,
-  onShareItem,
+  onOpenItem,
   skeleton,
 }: JourneyViewProps) {
   const {
@@ -278,7 +278,7 @@ export function JourneyView({
               <JourneyTimeline
                 groups={groupJourneyByMonth(items)}
                 subtitle={subtitle}
-                onShareItem={onShareItem}
+                onOpenItem={onOpenItem}
               />
               <div
                 style={{
@@ -287,7 +287,7 @@ export function JourneyView({
                   padding: '2px 2px 0',
                 }}
               >
-                Тап по записи — поделиться этим шагом
+                Тап по записи — открыть и поделиться
               </div>
             </>
           )}

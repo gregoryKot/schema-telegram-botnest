@@ -10,6 +10,7 @@ export type ShareCardKind =
   | 'diary'
   | 'ysq'
   | 'mode'
+  | 'mode_entry'
   | 'pair_invite'
   | 'month'
   | 'achievements'

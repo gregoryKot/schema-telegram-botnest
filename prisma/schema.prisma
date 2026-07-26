@@ -353,6 +353,7 @@ model ModeDiaryEntry {
   actions           String?  // Действия (что конкретно делали)
   actualNeed        String?  // Что на самом деле было нужно
   childhoodMemories String?  // Детские воспоминания связанные с ситуацией
+  healthyResponse   String?  // Что бы сказал Здоровый Взрослый (пишет клиент сам)
 
   @@index([userId, createdAt])
 }

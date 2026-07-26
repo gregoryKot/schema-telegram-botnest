@@ -125,6 +125,7 @@ export const SHARE_CARD_KINDS = [
   'diary',
   'ysq',
   'mode',
+  'mode_entry',
   'pair_invite',
   'month',
   'achievements',

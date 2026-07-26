@@ -124,6 +124,7 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     actions: e(`${BOT}/diary.service.ts`),
     actualNeed: e(`${BOT}/diary.service.ts`),
     childhoodMemories: e(`${BOT}/diary.service.ts`),
+    healthyResponse: e(`${BOT}/diary.service.ts`),
   },
   GratitudeDiaryEntry: { date: DATE, items: e(`${BOT}/diary.service.ts`) },
   AppActivity: { date: DATE },

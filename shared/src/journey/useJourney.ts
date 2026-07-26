@@ -21,6 +21,7 @@ import {
   type JourneyContentApi,
   type JourneyResultPart,
   fetchJourneyResult,
+  fetchJourneyDetail,
 } from './journeyContent';
 
 export interface JourneyDeps {
@@ -45,6 +46,7 @@ export function makeJourneyProps(
   deps: JourneyDeps;
   subtitle: (item: JourneyItem) => string | null;
   fetchResult: (item: JourneyItem) => Promise<JourneyResultPart[] | null>;
+  fetchDetail: (item: JourneyItem) => Promise<JourneyResultPart[]>;
 } {
   return {
     deps: {
@@ -53,6 +55,7 @@ export function makeJourneyProps(
     },
     subtitle: (item) => journeyItemSubtitle(item, src),
     fetchResult: (item) => fetchJourneyResult(api, item),
+    fetchDetail: (item) => fetchJourneyDetail(api, item),
   };
 }
 

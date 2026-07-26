@@ -499,6 +499,7 @@ export const api = {
     actions?: string;
     actualNeed?: string;
     childhoodMemories?: string;
+    healthyResponse?: string;
   }) => postJson<import('./types').ModeDiaryEntry>('/api/diary/mode', data),
   deleteModeDiary: (id: number) => del(`/api/diary/mode/${id}`),
 

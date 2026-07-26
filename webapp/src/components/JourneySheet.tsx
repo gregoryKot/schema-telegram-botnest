@@ -15,6 +15,10 @@ import {
 } from '../../../shared/src/journey/useJourney';
 import { botShortUrl } from '../utils/botConfig';
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
+import {
+  JourneyItemDetail,
+  useJourneyDetail,
+} from '../../../shared/src/journey/JourneyItemDetail';
 
 // Уровень модуля — стабильные ссылки (см. комментарий makeJourneyProps).
 const jp = makeJourneyProps(api, { getModeById, getSchemaById });
@@ -24,6 +28,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
   const goBack = useHistorySheet(onClose);
   const j = useJourney(jp.deps);
   const sh = useJourneyShare(j, jp.subtitle, botShortUrl, jp.fetchResult);
+  const detail = useJourneyDetail(jp.fetchDetail);
 
   return (
     <div
@@ -38,67 +43,75 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
       <div
         style={{ maxWidth: 680, margin: '0 auto', padding: '24px 20px 80px' }}
       >
-        <button
-          onClick={goBack}
-          style={{
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--text-sub)',
-            fontSize: 14,
-            fontFamily: 'inherit',
-            cursor: 'pointer',
-            padding: '10px 0',
-            marginBottom: 8,
-          }}
-        >
-          ← Назад
-        </button>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h1
-            style={{
-              fontSize: 24,
-              fontWeight: 700,
-              color: 'var(--text)',
-              margin: 0,
-            }}
-          >
-            🧭 Мой путь
-          </h1>
-          <span style={{ marginRight: 'auto' }} />
-          {j.total > 0 && (
+        {detail.item ? (
+          <JourneyItemDetail
+            detail={detail}
+            subtitle={jp.subtitle}
+            onShare={() => detail.item && sh.shareItem(detail.item)}
+          />
+        ) : (
+          <>
             <button
-              onClick={sh.shareFeed}
+              onClick={goBack}
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 7,
-                minHeight: 40,
-                padding: '0 16px',
-                borderRadius: 12,
-                border:
-                  '1px solid color-mix(in srgb, var(--accent) 28%, transparent)',
-                background:
-                  'color-mix(in srgb, var(--accent) 12%, transparent)',
-                color: 'var(--accent)',
-                fontSize: 13,
-                fontWeight: 600,
+                border: 'none',
+                background: 'transparent',
+                color: 'var(--text-sub)',
+                fontSize: 14,
                 fontFamily: 'inherit',
                 cursor: 'pointer',
+                padding: '10px 0',
+                marginBottom: 8,
               }}
             >
-              <ShareIcon size={15} />
-              Поделиться
+              ← Назад
             </button>
-          )}
-        </div>
 
-        <JourneyView
-          tr={tr}
-          j={j}
-          subtitle={jp.subtitle}
-          onShareItem={sh.shareItem}
-          skeleton={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <h1
+                style={{
+                  fontSize: 24,
+                  fontWeight: 700,
+                  color: 'var(--text)',
+                  margin: 0,
+                }}
+              >
+                🧭 Мой путь
+              </h1>
+              <span style={{ marginRight: 'auto' }} />
+              {j.total > 0 && (
+                <button
+                  onClick={sh.shareFeed}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    minHeight: 40,
+                    padding: '0 16px',
+                    borderRadius: 12,
+                    border:
+                      '1px solid color-mix(in srgb, var(--accent) 28%, transparent)',
+                    background:
+                      'color-mix(in srgb, var(--accent) 12%, transparent)',
+                    color: 'var(--accent)',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fontFamily: 'inherit',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <ShareIcon size={15} />
+                  Поделиться
+                </button>
+              )}
+            </div>
+
+            <JourneyView
+              tr={tr}
+              j={j}
+              subtitle={jp.subtitle}
+              onOpenItem={detail.open}
+              skeleton={
             <>
               {[96, 64, 56, 56, 56, 56].map((h, i) => (
                 <div
@@ -116,7 +129,9 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               ))}
             </>
           }
-        />
+            />
+          </>
+        )}
       </div>
 
       {sh.payload && <ShareCardSheet {...sh.payload} onClose={sh.close} />}
