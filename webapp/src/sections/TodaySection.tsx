@@ -7,151 +7,19 @@ import type { UserTask, TherapyRelationInfo } from '../api';
 import type { Section } from '../components/BottomNav';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
-import { getTaskDisplayText } from '../components/taskDisplayText';
-import { GlyphArrowLeft } from '../components/exercises/ExScreen';
-import { useHistorySheet } from '../hooks/useHistorySheet';
 import { hasDraft } from '../utils/drafts';
 import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
 const SchemaEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
 const ModeEx   = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
-import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { fmtDate, todayStr } from '../utils/format';
+import { greeting, formatHeaderDate, readLocalIds, resolveTaskText } from './today/helpers';
+import { AllTasksOverlay } from './today/AllTasksOverlay';
+import { Sparkline } from './today/Sparkline';
+import { SkeletonLines } from './today/SkeletonLines';
 
 export { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h >= 5  && h < 12) return 'Доброе утро';
-  if (h >= 12 && h < 18) return 'Добрый день';
-  if (h >= 18 && h < 23) return 'Добрый вечер';
-  return 'Доброй ночи';
-}
-
-function formatHeaderDate(): string {
-  const now = new Date();
-  const dow  = now.toLocaleDateString('ru-RU', { weekday: 'long' });
-  const date = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-  return `${dow[0].toUpperCase()}${dow.slice(1)}, ${date}`;
-}
-
-function readLocalIds(key: string): string[] {
-  try { return JSON.parse(localStorage.getItem(key) ?? '[]'); } catch { return []; }
-}
-
-const TASK_EMOJI: Record<string, string> = {
-  diary_streak: '📔', tracker_streak: '📊', belief_check: '🔍',
-  letter_to_self: '✉️', safe_place: '🏡', childhood_wheel: '🌱',
-  flashcard: '🆘', schema_intro: '🧩', mode_intro: '🔄', custom: '🎯',
-};
-
-function resolveTaskText(task: UserTask): string {
-  const text = getTaskDisplayText(task.type, task.text);
-  if (text === task.text) {
-    const schema = ALL_SCHEMAS.find(s => s.id === task.text);
-    if (schema) return schema.name;
-    const mode = ALL_MODES.find(m => m.id === task.text);
-    if (mode) return mode.name;
-  }
-  return text;
-}
-
-function resolveTaskEmoji(task: UserTask): string {
-  if (TASK_EMOJI[task.type]) return TASK_EMOJI[task.type];
-  if (ALL_SCHEMAS.some(s => s.id === task.text)) return '🧩';
-  if (ALL_MODES.some(m => m.id === task.text)) return '🔄';
-  return '🎯';
-}
-
-function AllTasksOverlay({ tasks, taskHistory, onClose, onTaskDone, onAddTask }: {
-  tasks: UserTask[];
-  taskHistory: UserTask[];
-  onClose: () => void;
-  onTaskDone: (id: number) => void;
-  onAddTask: () => void;
-}) {
-  const goBack = useHistorySheet(onClose);
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'var(--bg)', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}>
-      <div className="ex-topbar">
-        <button className="ex-back" onClick={goBack}><GlyphArrowLeft /> Назад</button>
-      </div>
-      <div style={{ overflowY: 'auto' }}>
-      <div style={{ maxWidth: 560, margin: '0 auto', padding: '32px 24px 80px' }}>
-        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', marginBottom: 24 }}>Все задания</h1>
-        {tasks.map(task => (
-          <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
-            <span style={{ fontSize: 18, flexShrink: 0, width: 22, textAlign: 'center' }}>
-              {task.done === true ? '✅' : task.done === false ? '❌' : resolveTaskEmoji(task)}
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              {task.assignedBy !== null && <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 1 }}>от терапевта</div>}
-              <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
-              {task.dueDate && <div style={{ fontSize: 11, color: 'var(--text-sub)', marginTop: 2 }}>до {fmtDate(task.dueDate)}</div>}
-            </div>
-            {task.done === null && task.assignedBy !== null && task.type === 'custom' && (
-              <button onClick={() => onTaskDone(task.id as number)}
-                style={{ padding: '6px 12px', border: 'none', borderRadius: 10, background: 'color-mix(in srgb, var(--c-moss) 14%, transparent)', color: 'var(--c-moss)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
-                Готово
-              </button>
-            )}
-          </div>
-        ))}
-        {taskHistory.length > 0 && (
-          <>
-            <div className="eyebrow" style={{ marginTop: 20, marginBottom: 8 }}>Выполнено</div>
-            {taskHistory.map(task => (
-              <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--line)', opacity: 0.5 }}>
-                <span style={{ fontSize: 16, flexShrink: 0, width: 22, textAlign: 'center' }}>{task.done === true ? '✅' : '❌'}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, lineHeight: 1.35 }}>{resolveTaskText(task)}</div>
-                  {task.completedAt && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1 }}>{fmtDate(new Date(task.completedAt).toISOString().slice(0, 10))}</div>}
-                </div>
-              </div>
-            ))}
-          </>
-        )}
-        <button onClick={onAddTask} className="ex-btn ex-btn-primary" style={{ marginTop: 20, width: '100%' }}>
-          + Поставить цель
-        </button>
-      </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Sparkline ─────────────────────────────────────────────────────────────────
-
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) return <div style={{ height: 40 }} />;
-  const min = 0;
-  const max = 10;
-  const W = 240, H = 40;
-  const pts = values.map((v, i) => [
-    (i / (values.length - 1)) * W,
-    H - ((v - min) / (max - min)) * (H - 6) - 3,
-  ]);
-  const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', display: 'block', height: 40 }}>
-      <path d={d} fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" opacity="0.7" />
-    </svg>
-  );
-}
-
-// ── SkeletonLines ─────────────────────────────────────────────────────────────
-
-function SkeletonLines() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {[70, 55, 80].map((w, i) => (
-        <div key={i} style={{ height: 11, borderRadius: 6, width: `${w}%`, background: 'var(--surface-3)' }} />
-      ))}
-    </div>
-  );
-}
 
 // ── Right panel label caps ────────────────────────────────────────────────────
 
