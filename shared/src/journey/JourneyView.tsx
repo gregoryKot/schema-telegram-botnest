@@ -13,6 +13,7 @@ import {
 } from './journeyMeta';
 import type { JourneyState } from './useJourney';
 import { JourneyTimeline } from './JourneyTimeline';
+import { JourneyEmptyHero, JourneyHero } from './JourneyHero';
 
 export interface JourneyViewProps {
   tr: (ty: string, vy: string) => string;
@@ -21,6 +22,8 @@ export interface JourneyViewProps {
   subtitle: (item: JourneyItem) => string | null;
   /** Тап по записи ленты → открыть запись целиком (детальный вид) */
   onOpenItem: (item: JourneyItem) => void;
+  /** Кнопка в hero → карточка итогов («дневник 5 раз, трекер 7 раз…») */
+  onShareTotals: () => void;
   /** Скелетон по форме контента — из примитивов конкретного фронтенда */
   skeleton: ReactNode;
 }
@@ -43,14 +46,12 @@ const chipStyle = (active: boolean): CSSProperties => ({
   color: active ? 'var(--accent)' : 'var(--text-sub)',
 });
 
-const heroBg = (a: number, b: number) =>
-  `linear-gradient(135deg, color-mix(in srgb, var(--accent) ${a}%, transparent), color-mix(in srgb, var(--accent-blue) ${b}%, transparent))`;
-
 export function JourneyView({
   tr,
   j,
   subtitle,
   onOpenItem,
+  onShareTotals,
   skeleton,
 }: JourneyViewProps) {
   const {
@@ -94,82 +95,16 @@ export function JourneyView({
       )}
 
       {!loading && !failed && total === 0 && (
-        <div
-          style={{
-            marginTop: 12,
-            borderRadius: 20,
-            padding: '28px 20px',
-            textAlign: 'center',
-            background: heroBg(9, 7),
-          }}
-        >
-          <div style={{ fontSize: 34, marginBottom: 10 }}>🧭</div>
-          <div
-            style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: 'var(--text)',
-              marginBottom: 8,
-            }}
-          >
-            Путь ещё впереди
-          </div>
-          <div
-            style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}
-          >
-            {explainer}{' '}
-            {tr(
-              'Начни с трекера или любого дневника — первый шаг появится здесь.',
-              'Начните с трекера или любого дневника — первый шаг появится здесь.',
-            )}
-          </div>
-        </div>
+        <JourneyEmptyHero tr={tr} explainer={explainer} />
       )}
 
       {!loading && !failed && total > 0 && (
         <>
-          {/* Hero: итог + пояснение */}
-          <div
-            style={{
-              marginTop: 12,
-              borderRadius: 20,
-              padding: '18px 18px 16px',
-              background: heroBg(11, 8),
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span
-                style={{
-                  fontSize: 40,
-                  fontWeight: 800,
-                  lineHeight: 1,
-                  letterSpacing: '-1.5px',
-                  color: 'var(--text)',
-                }}
-              >
-                {total}
-              </span>
-              <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: 'var(--text-sub)',
-                }}
-              >
-                шагов заботы о себе
-              </span>
-            </div>
-            <div
-              style={{
-                marginTop: 8,
-                fontSize: 12.5,
-                color: 'var(--text-sub)',
-                lineHeight: 1.5,
-              }}
-            >
-              {explainer}
-            </div>
-          </div>
+          <JourneyHero
+            total={total}
+            explainer={explainer}
+            onShareTotals={onShareTotals}
+          />
 
           {/* Счётчики «сколько чего» — лента мини-карточек */}
           <div
