@@ -7,18 +7,13 @@ import { IndexInfoSheet } from './IndexInfoSheet';
 import { NoteSheet } from './NoteSheet';
 import { WeeklyCardSheet } from './WeeklyCardSheet';
 import { api } from '../api';
-import {
-  TODAY_STR,
-  HISTORY_HINT_KEY,
-  DAYS_OPTIONS,
-  getDayAbbr,
-  getDayNum,
-  dayAvg,
-} from './historyView/constants';
+import { TODAY_STR, HISTORY_HINT_KEY } from './historyView/constants';
 import { NeedsWheel } from './historyView/NeedsWheel';
 import { NeedRow } from './historyView/NeedRow';
-import { SparklineRow } from './historyView/SparklineRow';
 import { InsightCard } from './historyView/InsightCard';
+import { HistoryDatePicker } from './historyView/HistoryDatePicker';
+import { HistoryControls } from './historyView/HistoryControls';
+import { HistoryWeekView } from './historyView/HistoryWeekView';
 
 interface Props {
   needs: Need[];
@@ -177,181 +172,21 @@ export function HistoryView({
       }}
     >
       {/* ── Date picker ── */}
-      <div
-        style={{
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-          padding: '0 16px 16px',
-        }}
-      >
-        <div style={{ display: 'flex', gap: 6 }}>
-          {history.map((day, i) => {
-            const active = i === selectedIdx;
-            const avg = dayAvg(day, needs);
-            const hasData = avg !== null;
-            const barColor = !hasData
-              ? 'rgba(var(--fg-rgb),0.1)'
-              : avg >= 7
-                ? 'var(--accent-green)'
-                : avg >= 4
-                  ? 'var(--accent-yellow)'
-                  : 'var(--accent-red)';
-            const barW = hasData ? Math.round((avg / 10) * 100) : 0;
-
-            return (
-              <button
-                key={day.date}
-                ref={(el) => {
-                  dateBtnRefs.current[i] = el;
-                }}
-                onClick={() => setSelectedIdx(i)}
-                style={{
-                  flexShrink: 0,
-                  width: 44,
-                  padding: '8px 0 10px',
-                  border: 'none',
-                  borderRadius: 14,
-                  fontFamily: 'inherit',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  background: active
-                    ? 'var(--accent)'
-                    : 'rgba(var(--fg-rgb),0.05)',
-                  transition: 'all 0.15s ease',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                    color: active
-                      ? 'rgba(255,255,255,0.75)'
-                      : 'var(--text-faint)',
-                  }}
-                >
-                  {getDayAbbr(day.date)}
-                </span>
-                <span
-                  style={{
-                    fontSize: 17,
-                    fontWeight: 700,
-                    lineHeight: 1,
-                    color: active ? '#fff' : 'var(--text)',
-                  }}
-                >
-                  {getDayNum(day.date)}
-                </span>
-                {/* Mini score bar */}
-                <div
-                  style={{
-                    width: 24,
-                    height: 3,
-                    borderRadius: 2,
-                    background: active
-                      ? 'rgba(255,255,255,0.25)'
-                      : 'rgba(var(--fg-rgb),0.08)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {hasData && (
-                    <div
-                      style={{
-                        width: `${barW}%`,
-                        height: '100%',
-                        borderRadius: 2,
-                        background: active ? '#fff' : barColor,
-                      }}
-                    />
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <HistoryDatePicker
+        history={history}
+        needs={needs}
+        selectedIdx={selectedIdx}
+        onSelect={setSelectedIdx}
+        dateBtnRefs={dateBtnRefs}
+      />
 
       {/* ── Controls ── */}
-      <div style={{ padding: '0 16px 16px', display: 'flex', gap: 8 }}>
-        {/* Day / Week toggle */}
-        <div
-          style={{
-            display: 'flex',
-            flex: 1,
-            background: 'rgba(var(--fg-rgb),0.06)',
-            borderRadius: 12,
-            padding: 3,
-          }}
-        >
-          {(['day', 'week'] as const).map((v) => {
-            const active = subView === v;
-            return (
-              <button
-                key={v}
-                onClick={() => setSubView(v)}
-                style={{
-                  flex: 1,
-                  padding: '7px 0',
-                  border: 'none',
-                  borderRadius: 10,
-                  fontFamily: 'inherit',
-                  background: active ? 'var(--surface)' : 'transparent',
-                  boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
-                  color: active ? 'var(--text)' : 'var(--text-faint)',
-                  fontSize: 13,
-                  fontWeight: active ? 600 : 400,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                {v === 'day' ? 'День' : 'Неделя'}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Depth */}
-        {onChangeDays && (
-          <div
-            style={{
-              display: 'flex',
-              background: 'rgba(var(--fg-rgb),0.06)',
-              borderRadius: 12,
-              padding: 3,
-            }}
-          >
-            {DAYS_OPTIONS.map((d) => {
-              const active = days === d;
-              return (
-                <button
-                  key={d}
-                  onClick={() => onChangeDays(d)}
-                  style={{
-                    padding: '7px 10px',
-                    border: 'none',
-                    borderRadius: 10,
-                    fontFamily: 'inherit',
-                    background: active ? 'var(--surface)' : 'transparent',
-                    boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
-                    color: active ? 'var(--text)' : 'var(--text-faint)',
-                    fontSize: 12,
-                    fontWeight: active ? 600 : 400,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  {d}д
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <HistoryControls
+        subView={subView}
+        onSubView={setSubView}
+        days={days}
+        onChangeDays={onChangeDays}
+      />
 
       {/* ── Content ── */}
       <div key={subView} style={{ animation: 'fade-in 200ms ease' }}>
@@ -691,82 +526,18 @@ export function HistoryView({
             )}
           </div>
         ) : (
-          /* ── Неделя ── */
-          <div
-            style={{
-              padding: '0 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-            }}
-          >
-            <div className="section-label" style={{ marginBottom: 4 }}>
-              За {days} дней
-            </div>
-
-            {needs.map((need) => (
-              <SparklineRow
-                key={need.id}
-                need={need}
-                history={history}
-                selectedIdx={selectedIdx}
-                selectedRatings={selectedRatings}
-                onClick={() => handleTapNeed(need)}
-              />
-            ))}
-
-            <InsightCard
-              needs={needs}
-              ratings={selectedRatings}
-              onTap={handleTapNeed}
-            />
-
-            {needsLow.length > 0 && (
-              <div
-                className="card"
-                style={{ borderRadius: 16, padding: '16px' }}
-              >
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--text-sub)',
-                    lineHeight: 1.65,
-                    marginBottom: 10,
-                  }}
-                >
-                  <strong style={{ color: 'var(--text)' }}>
-                    {needsLow[0].chartLabel}
-                  </strong>{' '}
-                  остаётся низкой несколько дней
-                  {!contact.isTherapist &&
-                    ' — разобраться с живым человеком рядом бывает легче'}
-                  .
-                </div>
-                {bookingLink('Записаться →')}
-              </div>
-            )}
-
-            <button
-              onClick={() => setShowWeekCard(true)}
-              className="card"
-              style={{
-                width: '100%',
-                padding: '14px 0',
-                borderRadius: 16,
-                fontFamily: 'inherit',
-                color: 'var(--text-sub)',
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              <span style={{ fontSize: 16 }}>🪄</span> Карточка недели
-            </button>
-          </div>
+          <HistoryWeekView
+            needs={needs}
+            history={history}
+            selectedIdx={selectedIdx}
+            selectedRatings={selectedRatings}
+            days={days}
+            needsLow={needsLow}
+            isTherapist={contact.isTherapist}
+            bookingLink={bookingLink}
+            onTapNeed={handleTapNeed}
+            onShowWeekCard={() => setShowWeekCard(true)}
+          />
         )}
       </div>
 
