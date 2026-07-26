@@ -17,6 +17,7 @@ import {
   journeyStatRows,
   journeyTotal,
 } from '../../../shared/src/journey/journeyStats';
+import { totalsCardRows } from '../../../shared/src/share/cards/journeyTotalsCard';
 import { buildJourneyResultParts } from '../../../shared/src/journey/journeyContent';
 import {
   journeyShareText,
@@ -317,5 +318,17 @@ describe('buildJourneyResultParts — трекер, карточки, тест',
     });
     expect(part.text).toBe('Выраженных схем: 1 из 20');
     expect(buildJourneyResultParts('ysq', { scores: 'мусор' })).toEqual([]);
+  });
+});
+
+describe('totalsCardRows', () => {
+  const stat = (label: string, count: number) => ({ emoji: '·', label, count });
+  it('до 8 строк без хвоста; сверх — хвост «и ещё N»', () => {
+    const eight = Array.from({ length: 8 }, (_, i) => stat(`t${i}`, 8 - i));
+    expect(totalsCardRows(eight)).toEqual({ shown: eight, restCount: 0 });
+    const eleven = Array.from({ length: 11 }, (_, i) => stat(`t${i}`, 11 - i));
+    const { shown, restCount } = totalsCardRows(eleven);
+    expect(shown).toHaveLength(8);
+    expect(restCount).toBe(3);
   });
 });

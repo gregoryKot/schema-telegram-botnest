@@ -56,6 +56,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               j={j}
               subtitle={jp.subtitle}
               onOpenItem={detail.open}
+              onShareTotals={sh.shareTotals}
               skeleton={
                 <>
                   <SkeletonCard h={96} />

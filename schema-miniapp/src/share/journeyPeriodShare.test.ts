@@ -8,6 +8,9 @@ const items: JourneyItem[] = [
   { type: 'tracker_day', at: '2026-07-18T10:00:00Z' },
 ] as JourneyItem[];
 const noSub = () => null;
+// Сигнатура: (share, items, total, stats, subtitle, link, period) —
+// stats нужен карточке итогов (kind 'totals'), для ленты пустой ок.
+const noStats: [] = [];
 
 describe('buildJourneySharePayload — лента по периоду', () => {
   it('всё время: заголовок «Мой путь», счётчик = total', () => {
@@ -15,6 +18,7 @@ describe('buildJourneySharePayload — лента по периоду', () => {
       { kind: 'feed' },
       items,
       99,
+      noStats,
       noSub,
       'link',
       'all',
@@ -30,6 +34,7 @@ describe('buildJourneySharePayload — лента по периоду', () => {
       { kind: 'feed' },
       items,
       99,
+      noStats,
       noSub,
       'link',
       'week',
@@ -47,6 +52,7 @@ describe('buildJourneySharePayload — лента по периоду', () => {
       { kind: 'feed' },
       items,
       99,
+      noStats,
       noSub,
       'link',
       'month',
