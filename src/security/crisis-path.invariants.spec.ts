@@ -63,7 +63,10 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   'schema-miniapp/src/components/TaskCreateSheet.tsx':
     'создание задачи — операционный текст',
   'webapp/src/components/SettingsSheet.tsx': 'настройки аккаунта, не дневник',
-  'webapp/src/pages/AccountPage.tsx': 'данные аккаунта, не дневник',
+  // AccountPage распилен: <textarea> (анкета заявки терапевта) уехал в
+  // TherapistRequestSection; сам AccountPage больше без свободного текста.
+  'webapp/src/pages/account/TherapistRequestSection.tsx':
+    'анкета заявки терапевта, не дневник',
   'webapp/src/components/ModeMapNodeEditor.tsx':
     'подпись узла карты режимов — короткая метка, не рефлексия',
   // Терапевтская сторона — заметки специалиста о клиенте, не собственный
