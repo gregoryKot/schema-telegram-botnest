@@ -15,7 +15,14 @@
 type Row = Record<string, any>;
 
 function matches(row: Row, where: Row = {}): boolean {
-  return Object.entries(where).every(([key, cond]) => {
+  // Top-level `OR` (TherapyRelationsService.disconnect: `{ OR: [{therapistId},
+  // {clientId}] }`) — не было нужно ownership-свипу до therapy e2e (план
+  // TEST_IMPROVEMENT_PLAN.md, этап 1.2). Остальные ключи (если есть) matches()
+  // проверяет как обычно — `OR` комбинируется с ними через AND.
+  const { OR, ...rest } = where;
+  if (Array.isArray(OR) && !OR.some((sub: Row) => matches(row, sub)))
+    return false;
+  return Object.entries(rest).every(([key, cond]) => {
     if (cond && typeof cond === 'object' && !Array.isArray(cond)) {
       if ('not' in cond) return row[key] !== cond.not;
       if ('in' in cond) return cond.in.includes(row[key]);
@@ -95,10 +102,70 @@ function makeTable(rows: Row[] = []) {
   };
 }
 
+/**
+ * Оборачивает findMany/findFirst/findUnique таблицы, добавляя минимальную
+ * поддержку `include: { client / therapist: {...} }` — TherapyRelationsService
+ * и TherapyTasksViewService (therapy-ownership e2e, TEST_IMPROVEMENT_PLAN.md
+ * этап 1.2) джойнят TherapyRelation → User этим способом; generic makeTable
+ * джойны не умеет, `include` целиком игнорируется. Без этого `rel.client`
+ * всегда был бы `undefined`, и getAllTasksForTherapist молча фильтровал бы
+ * задачи по несуществующему userId.
+ */
+function withUserJoin(
+  table: ReturnType<typeof makeTable>,
+  userTable: ReturnType<typeof makeTable>,
+) {
+  const join = (row: Row | null, include?: Row): Row | null => {
+    if (!row || !include) return row;
+    const result = { ...row };
+    if (include.client) {
+      result.client =
+        userTable._rows.find((u) => u.id === row.clientId) ?? null;
+    }
+    if (include.therapist) {
+      result.therapist =
+        userTable._rows.find((u) => u.id === row.therapistId) ?? null;
+    }
+    return result;
+  };
+  const { findMany, findFirst, findUnique } = table;
+  table.findMany = jest.fn(({ where, include }: any = {}) =>
+    (findMany({ where }) as Row[]).map((r) => join(r, include)),
+  );
+  table.findFirst = jest.fn(({ where, include }: any = {}) =>
+    join(findFirst({ where }), include),
+  );
+  table.findUnique = jest.fn(({ where, include }: any = {}) =>
+    join(findUnique({ where }), include),
+  );
+  return table;
+}
+
+/**
+ * Применяет schema.prisma `@default(...)` значения на create/upsert, которые
+ * generic makeTable не знает (он не парсит schema.prisma — только `data`
+ * как есть). Нужно для полей, от которых зависит бизнес-логика: например
+ * `TherapyRelation.status @default(pending)` — TherapyRelationsService.createInvite
+ * не передаёт `status` явно (рассчитывает на дефолт БД), и без него
+ * `joinAsClient` всегда отклонял бы код инвайта (`rel.status !== 'pending'`
+ * при фактическом `undefined`).
+ */
+function withDefaults(table: ReturnType<typeof makeTable>, defaults: Row) {
+  const { create, upsert } = table;
+  table.create = jest.fn(({ data }: any) =>
+    create({ data: { ...defaults, ...data } }),
+  );
+  table.upsert = jest.fn(({ where, create: c, update }: any) =>
+    upsert({ where, create: { ...defaults, ...c }, update }),
+  );
+  return table;
+}
+
 /** Собирает фейковый PrismaService, готовый к .overrideProvider(PrismaService). */
 export function makeFakePrisma() {
+  const userTable = makeTable();
   const tables: Record<string, ReturnType<typeof makeTable>> = {
-    user: makeTable(),
+    user: userTable,
     userSchemaNote: makeTable(),
     userModeNote: makeTable(),
     bookingSetting: makeTable([
@@ -135,6 +202,25 @@ export function makeFakePrisma() {
     ysqResult: makeTable(),
     ysqResultHistory: makeTable(),
     analyticsEvent: makeTable(),
+    // Therapy ownership smoke (test/therapy-ownership*.e2e-spec.ts, план
+    // TEST_IMPROVEMENT_PLAN.md этап 1.2): связь терапевт↔клиент (join на
+    // User через withUserJoin — см. выше) и клинические данные, которые
+    // терапевт ведёт по клиенту.
+    // clientId: null — не косметика: TherapyRelationsService.joinAsClient
+    // читает сырое поле строки (`rel.clientId !== null`), а не where-условие
+    // (matches() трактует cond===null как «== null», но здесь прямое сравнение
+    // в сервисе — `undefined !== null` даёт true и ломает инвайт-флоу).
+    therapyRelation: withUserJoin(
+      withDefaults(makeTable(), { status: 'pending', clientId: null }),
+      userTable,
+    ),
+    therapistNote: makeTable(),
+    clientConceptualization: makeTable(),
+    modeMap: makeTable(),
+    therapistCustomMode: makeTable(),
+    // TherapyTasksService.scheduleTaskNotification (POST /api/therapy/tasks
+    // с clientId вызывает notificationService.schedule).
+    scheduledNotification: makeTable(),
   };
 
   const prisma: any = {
