@@ -119,6 +119,13 @@ export const JOURNEY_PERIODS: Array<{ id: JourneyPeriod; label: string }> = [
   { id: 'month', label: 'Месяц' },
 ];
 
+/** Заголовок карточки/шеринга по выбранному периоду. */
+export const JOURNEY_PERIOD_TITLE: Record<JourneyPeriod, string> = {
+  all: 'Мой путь',
+  week: 'Моя неделя',
+  month: 'Мой месяц',
+};
+
 /** Фильтр по периоду (скользящие 7/30 дней). Чистая, не мутирует вход. */
 export function filterJourneyByPeriod(
   items: readonly JourneyItem[],

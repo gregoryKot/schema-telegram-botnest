@@ -21,6 +21,8 @@ export function drawJourneyCard(
   canvas: HTMLCanvasElement,
   rows: JourneyCardRow[],
   total: number,
+  title = 'Мой путь',
+  subtitle?: string,
 ) {
   const ROW_H = 42;
   const LIST_H = rows.length * ROW_H;
@@ -31,8 +33,9 @@ export function drawJourneyCard(
   accentBar(c, '#34d399', '#4fa3f7');
   const contentY = header(
     c,
-    'Мой путь',
-    `${total} ${pluralEntries(total)} заботы о себе · последние шаги`,
+    title,
+    subtitle ??
+      `${total} ${pluralEntries(total)} заботы о себе · последние шаги`,
   );
 
   const DATE_W = 86;
