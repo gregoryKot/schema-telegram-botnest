@@ -24,6 +24,12 @@ import type { Quiz } from '../quiz/quiz.types';
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+// Номера вариантов ответа. Полные тексты живут в СООБЩЕНИИ, кнопки — только
+// цифры: Telegram обрезает длинные подписи инлайн-кнопок («…идеал…»),
+// а варианты мини-теста — целые реплики, их нельзя резать (прод-скрин
+// 2026-07-26). Спека quiz-data гарантирует ≤9 вариантов на вопрос.
+const NUM = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
+
 @Injectable()
 export class TelegramQuizService implements OnModuleInit {
   private readonly logger = new Logger(TelegramQuizService.name);
@@ -39,7 +45,9 @@ export class TelegramQuizService implements OnModuleInit {
   onModuleInit(): void {
     if (!this.bot) return;
 
-    this.bot.command('tests', async (ctx) => {
+    // 'test' — алиас: единственное число набирают не реже множественного
+    // (прод-скрин 2026-07-26: «/test» ушёл в пустоту).
+    this.bot.command(['tests', 'test'], async (ctx) => {
       try {
         const form = await this.getForm(ctx.from?.id);
         const { text, keyboard } = this.listView(form);
@@ -108,14 +116,15 @@ export class TelegramQuizService implements OnModuleInit {
         const q = quiz.questions[n];
         const text =
           `${quiz.emoji} <b>${esc(quiz.title)}</b> — вопрос ${n + 1} из ` +
-          `${quiz.questions.length}\n\n${esc(q.text)}`;
+          `${quiz.questions.length}\n\n${esc(q.text)}\n\n` +
+          q.options.map((o, idx) => `${NUM[idx]} ${esc(o.label)}`).join('\n');
         const keyboard = Markup.inlineKeyboard([
-          ...q.options.map((o, idx) => [
+          q.options.map((o, idx) =>
             Markup.button.callback(
-              o.label,
+              NUM[idx],
               `qz:q:${quiz.id}:${n + 1}:${m[3]}${idx}`,
             ),
-          ]),
+          ),
           [Markup.button.callback('⏹ Выйти из теста', 'qz:list')],
         ]);
         await this.show(ctx, text, keyboard);

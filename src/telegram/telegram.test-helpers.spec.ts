@@ -39,8 +39,11 @@ export function makeFakeBot(): FakeBot {
     callApi: jest.fn().mockResolvedValue(undefined),
   };
   const bot: any = {
-    command: jest.fn((name: string, handler: Handler) => {
-      commands.set(name, handler);
+    // Как реальный Telegraf: имя команды может быть массивом алиасов.
+    command: jest.fn((name: string | string[], handler: Handler) => {
+      for (const n of Array.isArray(name) ? name : [name]) {
+        commands.set(n, handler);
+      }
     }),
     action: jest.fn((matcher: string | RegExp, handler: Handler) => {
       actions.push({ matcher, handler });
@@ -164,6 +167,15 @@ describe('telegram.test-helpers — matching callback_data', () => {
     await expect(runCommand(fakeBot, 'ghost')).rejects.toThrow(
       /не зарегистрирован/,
     );
+  });
+
+  it('command с массивом имён регистрирует хендлер на каждый алиас', async () => {
+    const fakeBot = makeFakeBot();
+    const handler = jest.fn();
+    fakeBot.bot.command(['tests', 'test'], handler);
+    await runCommand(fakeBot, 'tests');
+    await runCommand(fakeBot, 'test');
+    expect(handler).toHaveBeenCalledTimes(2);
   });
 
   it('makeCtx даёт jest.fn() для всех методов, которые обычно дёргают хендлеры', () => {
