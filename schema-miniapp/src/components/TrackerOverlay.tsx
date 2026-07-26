@@ -22,9 +22,8 @@ import { NeedRatingBar } from './NeedRatingBar';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { useSafeTop } from '../utils/safezone';
 import { api, StreakData } from '../api';
-import { DayShareButton } from '../share/DayShareButton';
-import { SummaryDonut } from './trackerOverlay/SummaryDonut';
 import { OnboardingOverlay } from './trackerOverlay/OnboardingOverlay';
+import { TrackerDoneSummary } from './trackerOverlay/TrackerDoneSummary';
 
 interface Props {
   needs: Need[];
@@ -556,65 +555,15 @@ export function TrackerOverlay({
       >
         {/* Summary when all done */}
         {allRated && (
-          <div
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 16,
-              padding: '14px 18px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: 'var(--text-faint)',
-                  marginBottom: 4,
-                }}
-              >
-                Индекс дня
-              </div>
-              <div
-                style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}
-              >
-                {avg.toFixed(1)}
-                <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-                  /10
-                </span>
-              </div>
-            </div>
-            <SummaryDonut avg={avg} />
-          </div>
-        )}
-
-        {allRated && (
-          <button
-            onClick={isBackfill ? (onDone ?? onClose) : onClose}
-            style={{
-              width: '100%',
-              padding: '14px',
-              borderRadius: 16,
-              border:
-                '1px solid color-mix(in srgb, var(--accent-green) 25%, transparent)',
-              background:
-                'color-mix(in srgb, var(--accent-green) 12%, transparent)',
-              color: 'var(--accent-green)',
-              fontSize: 15,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
-          >
-            Готово — сохранить всё ✓
-          </button>
-        )}
-
-        {/* Поделиться заполненным днём — карточка-картинка */}
-        {allRated && (
-          <DayShareButton needs={needs} ratings={ratings} date={date} />
+          <TrackerDoneSummary
+            avg={avg}
+            isBackfill={isBackfill}
+            onDone={onDone}
+            onClose={onClose}
+            needs={needs}
+            ratings={ratings}
+            date={date}
+          />
         )}
 
         {/* Nav */}
