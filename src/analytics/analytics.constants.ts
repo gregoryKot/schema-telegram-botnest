@@ -67,9 +67,15 @@ export const QUIZ_EVENT_SOURCES = ['bot', 'web'] as const;
 export type QuizEventSource = (typeof QUIZ_EVENT_SOURCES)[number];
 
 // Откуда кликнули по ссылке на сайт практики автора (meta.place для
-// practice_link_click): блок «Кто это делает», подвал лендинга, ответ FAQ.
-// Парная константа на фронте — shared/src/share/analytics.ts (синхронно).
-export const PRACTICE_LINK_PLACES = ['author', 'footer', 'faq'] as const;
+// practice_link_click): блок «Кто это делает», подвал лендинга, ответ FAQ,
+// экран результата мини-теста. Парная константа на фронте —
+// shared/src/share/analytics.ts (синхронно).
+export const PRACTICE_LINK_PLACES = [
+  'author',
+  'footer',
+  'faq',
+  'quiz',
+] as const;
 export type PracticeLinkPlace = (typeof PRACTICE_LINK_PLACES)[number];
 
 // Блоки главного экрана, которые можно скрыть (meta.block). Заменяет частное

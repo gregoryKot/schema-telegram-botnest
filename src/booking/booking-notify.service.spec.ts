@@ -110,6 +110,21 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     expect(text).toContain('@maria');
   });
 
+  it('source (атрибуция лида) попадает в уведомление с HTML-экранированием', async () => {
+    const { service, telegram } = makeService();
+    await service.onConfirmed(
+      booking({ meetingUrl: 'x', source: 'site/#a ← <b>ref</b>' }),
+    );
+    const text = telegram.notifyAdmin.mock.calls[0][0] as string;
+    expect(text).toContain('Откуда: site/#a ← &lt;b&gt;ref&lt;/b&gt;');
+  });
+
+  it('без source строки «Откуда» в уведомлении нет (старые брони)', async () => {
+    const { service, telegram } = makeService();
+    await service.onConfirmed(booking({ meetingUrl: 'x' }));
+    expect(telegram.notifyAdmin.mock.calls[0][0]).not.toContain('Откуда');
+  });
+
   it('CalDAV включён, но push не удался (null) — отдельное предупреждение админу вторым сообщением', async () => {
     const { service, telegram, calDav } = makeService({ calDavEnabled: true });
     calDav.pushEvent.mockResolvedValueOnce(null);

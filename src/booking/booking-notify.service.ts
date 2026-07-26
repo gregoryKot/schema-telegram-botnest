@@ -7,6 +7,7 @@ import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
 import { EmailService } from '../auth/email.service';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
+import { escapeHtml } from '../utils/escape-html';
 import { sessionLabel } from './caldav-event.util';
 import { BookingStatus, SessionType } from '@prisma/client';
 
@@ -24,6 +25,8 @@ interface PlainBooking {
   message: string | null;
   meetingUrl: string | null;
   cancelToken: string;
+  /** Атрибуция лида (страница + referrer), хранится открыто. */
+  source?: string | null;
 }
 
 /** All side-effects of the booking lifecycle: Telegram, CalDAV, reminders. */
@@ -154,6 +157,7 @@ export class BookingNotifyService {
       `🗓 ${formatTime(b.startsAt)}`,
       b.message ? `💬 ${b.message}` : null,
       b.meetingUrl ? `🔗 ${b.meetingUrl}` : null,
+      b.source ? `🧭 Откуда: ${escapeHtml(b.source)}` : null,
     ]
       .filter(Boolean)
       .join('\n');

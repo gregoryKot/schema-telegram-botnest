@@ -65,6 +65,7 @@ export class BookingController {
         : undefined,
       returning: dto.returning ?? false,
       acceptedOffer: dto.acceptedOffer ?? false,
+      source: dto.source?.trim() || undefined,
     };
     return this.booking.book(payload);
   }

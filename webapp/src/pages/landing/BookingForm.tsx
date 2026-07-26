@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../../api';
 import { Btn } from '../../components/landing-kit';
+import { leadSource } from '../../utils/leadSource';
 import { TG_URL } from './constants';
 
 // ─── Booking form (fallback when slot picker unavailable) ────────────────────
@@ -16,7 +17,7 @@ export function BookingForm() {
     if (!name.trim() || !contact.trim() || !consent) return;
     setStatus('loading');
     try {
-      await api.submitBooking({ name: name.trim(), contact: contact.trim(), message: message.trim() || undefined });
+      await api.submitBooking({ name: name.trim(), contact: contact.trim(), message: message.trim() || undefined, source: leadSource() });
       setStatus('done');
       (window as Window & { ym?: (...a: unknown[]) => void }).ym?.(109568051, 'reachGoal', 'booking_submit');
     } catch { setStatus('error'); }

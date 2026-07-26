@@ -152,6 +152,7 @@ describe('ProductMetricsService.getMetrics', () => {
         author30: 2,
         footer30: 1,
         faq30: 0,
+        quiz30: 0,
       })),
     } as never;
     const service = new ProductMetricsService(

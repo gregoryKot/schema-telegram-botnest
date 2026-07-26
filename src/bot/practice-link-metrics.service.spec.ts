@@ -14,12 +14,14 @@ describe('PracticeLinkMetricsService.getMetrics', () => {
       { place: 'author', c: 5n },
       { place: 'footer', c: 2n },
       { place: 'faq', c: 1n },
+      { place: 'quiz', c: 1n },
     ]);
     await expect(service.getMetrics()).resolves.toEqual({
-      total30: 8,
+      total30: 9,
       author30: 5,
       footer30: 2,
       faq30: 1,
+      quiz30: 1,
     });
   });
 
@@ -30,6 +32,7 @@ describe('PracticeLinkMetricsService.getMetrics', () => {
       author30: 0,
       footer30: 0,
       faq30: 0,
+      quiz30: 0,
     });
   });
 
@@ -43,6 +46,7 @@ describe('PracticeLinkMetricsService.getMetrics', () => {
       author30: 3,
       footer30: 0,
       faq30: 0,
+      quiz30: 0,
     });
   });
 });

@@ -33,13 +33,14 @@ export const ONBOARDING_STEP_EVENT = 'onboarding_step';
 // на бэке; метрика видна в /stats («Архив „Мой путь“»).
 export const JOURNEY_OPEN_EVENT = 'journey_open';
 
-// Клик по ссылке на сайт практики автора (kotlarewski.gr) с продуктового
-// лендинга: meta { place } — блок об авторе / подвал / ответ FAQ. Лендинг
-// видят только гости, событие анонимное — через api.trackPublicEvent
-// (userId = null). Парный allow-list (PRACTICE_LINK_PLACES) —
-// src/analytics/analytics.constants.ts, при добавлении места синхронь оба.
+// Клик по ссылке на сайт практики автора (kotlarewski.gr) с публичного сайта:
+// meta { place } — блок об авторе / подвал / ответ FAQ / экран результата
+// мини-теста. Страницы видят только гости, событие анонимное — через
+// api.trackPublicEvent (userId = null). Парный allow-list
+// (PRACTICE_LINK_PLACES) — src/analytics/analytics.constants.ts, при
+// добавлении места синхронь оба.
 export const PRACTICE_LINK_CLICK_EVENT = 'practice_link_click';
-export type PracticeLinkPlace = 'author' | 'footer' | 'faq';
+export type PracticeLinkPlace = 'author' | 'footer' | 'faq' | 'quiz';
 export type OnboardingStep =
   | 'welcome'
   | 'privacy'

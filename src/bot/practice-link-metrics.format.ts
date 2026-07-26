@@ -9,6 +9,7 @@ export interface PracticeLinkMetrics {
   author30: number;
   footer30: number;
   faq30: number;
+  quiz30: number;
 }
 
 /** Текстовый блок для /stats. Чистая функция. */
@@ -21,7 +22,7 @@ export function formatPracticeLinkMetrics(m: PracticeLinkMetrics): string {
   lines.push(
     `Переходили на сайт практики: ${m.total30} ` +
       `(из блока об авторе — ${m.author30}, из подвала — ${m.footer30}, ` +
-      `из вопросов — ${m.faq30})`,
+      `из вопросов — ${m.faq30}, из тестов — ${m.quiz30})`,
   );
   return lines.join('\n');
 }

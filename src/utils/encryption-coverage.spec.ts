@@ -219,6 +219,9 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     cancelToken: TOKEN,
     meetingUrl: p('ссылка на Zoom/Телемост, задаётся терапевтом'),
     calDavUid: ID,
+    source: p(
+      'страница + referrer при брони — структурная атрибуция лида, не PII',
+    ),
   },
   ClientMeeting: {
     clientKey: p('sha256 от контакта — уже псевдонимизирован'),

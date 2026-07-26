@@ -102,7 +102,7 @@ describe('PublicEventsController', () => {
   });
 
   it('practice_link_click пишется анонимно с местом клика из allow-list', async () => {
-    for (const place of ['author', 'footer', 'faq']) {
+    for (const place of ['author', 'footer', 'faq', 'quiz']) {
       await controller.track({ name: 'practice_link_click', meta: { place } });
       expect(track).toHaveBeenLastCalledWith(null, 'practice_link_click', {
         place,

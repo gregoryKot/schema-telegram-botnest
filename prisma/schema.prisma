@@ -639,6 +639,9 @@ model Booking {
   meetingUrl      String?       // Zoom/Телемост link, set after confirmation
   // CalDAV sync
   calDavUid       String?       @unique  // iCloud event UID
+  // Атрибуция лида: страница + referrer в момент брони (собирает фронт).
+  // Структурные данные, не PII — хранится открыто, идёт в уведомление админу.
+  source          String?
   // Legal: when the client accepted the public offer (consent checkbox) — proof
   // of the basis on which payment is taken. Not encrypted (a timestamp only).
   acceptedOfferAt  DateTime?

@@ -28,6 +28,7 @@ export class PracticeLinkMetricsService {
       author30: byPlace('author'),
       footer30: byPlace('footer'),
       faq30: byPlace('faq'),
+      quiz30: byPlace('quiz'),
     };
   }
 }

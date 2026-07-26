@@ -29,6 +29,8 @@ export interface CreateBookingDto {
   returning?: boolean;
   /** Client ticked the public-offer consent checkbox. Required to take payment. */
   acceptedOffer?: boolean;
+  /** Атрибуция лида (страница + referrer). Не PII, хранится открыто. */
+  source?: string;
 }
 
 const SCHEMA: EncryptSchema = {
@@ -127,6 +129,7 @@ export class BookingService {
         heldUntil,
         cancelToken,
         acceptedOfferAt: new Date(),
+        source: dto.source?.slice(0, 200) ?? null,
       },
       SCHEMA,
     );
