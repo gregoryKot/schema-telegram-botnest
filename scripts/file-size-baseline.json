@@ -1,6 +1,6 @@
 {
   "schema-miniapp/src/needData.ts": 1968,
-  "src/bot/bot.analytics.service.ts": 841,
+  "src/bot/bot.analytics.service.ts": 814,
   "src/telegram/telegram.service.ts": 810,
   "webapp/src/components/AppShell.tsx": 803,
   "webapp/src/components/SettingsSheet.tsx": 789,
@@ -608,6 +608,7 @@
   "src/logger/alert.logger.ts": 36,
   "src/api/request-utils.ts": 35,
   "src/auth/providers/registry.ts": 35,
+  "src/bot/retention.format.ts": 35,
   "src/site-content/site-content-admin.dto.ts": 35,
   "webapp/src/hooks/useQuizzes.ts": 35,
   "schema-miniapp/src/components/IndexInfoSheet.tsx": 34,
