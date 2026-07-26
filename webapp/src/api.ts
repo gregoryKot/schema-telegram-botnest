@@ -430,8 +430,8 @@ export const api = {
     void post('/api/event', { name, meta }).catch(() => undefined);
   },
 
-  // Публичные мини-тесты (лид-магнит, БЕЗ auth): контент из quiz-registry
-  // бэкенда и анонимная аналитика quiz_started/quiz_completed (userId = null).
+  // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и
+  // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
   getQuizzes: (form?: 'ty' | 'vy') =>
     get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
   trackPublicEvent: (name: string, meta?: Record<string, unknown>): void => {

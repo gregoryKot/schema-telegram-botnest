@@ -74,9 +74,14 @@ describe('ProductMetricsService.getMetrics', () => {
       $queryRaw: queryRaw,
     };
 
-    // quizMetrics в getMetrics не участвует — нужен только для render().
+    // quizMetrics/practiceLink в getMetrics не участвуют — нужны для render().
     const quizMetrics = { getMetrics: jest.fn() } as never;
-    const m = await new ProductMetricsService(prisma, quizMetrics).getMetrics();
+    const practiceLink = { getMetrics: jest.fn() } as never;
+    const m = await new ProductMetricsService(
+      prisma,
+      quizMetrics,
+      practiceLink,
+    ).getMetrics();
 
     expect(m.onboarding).toEqual({ cohort30: 118, completed30: 70 });
     // блоки — в порядке листа настройки, не по убыванию счёта
@@ -131,7 +136,7 @@ describe('ProductMetricsService.getMetrics', () => {
     });
   });
 
-  it('render: блок мини-тестов подклеен к продуктовому отчёту', async () => {
+  it('render: блоки мини-тестов и переходов к автору подклеены к отчёту', async () => {
     const quizMetrics = {
       getMetrics: jest.fn(async () => ({
         started30: 7,
@@ -141,13 +146,27 @@ describe('ProductMetricsService.getMetrics', () => {
         byQuiz30: [{ quiz: 'drives', count: 5 }],
       })),
     } as never;
-    const service = new ProductMetricsService({} as never, quizMetrics);
+    const practiceLink = {
+      getMetrics: jest.fn(async () => ({
+        total30: 3,
+        author30: 2,
+        footer30: 1,
+        faq30: 0,
+      })),
+    } as never;
+    const service = new ProductMetricsService(
+      {} as never,
+      quizMetrics,
+      practiceLink,
+    );
     // Сами запросы к БД покрыты тестом выше — здесь проверяем склейку.
     jest.spyOn(service, 'getMetrics').mockResolvedValue(EMPTY_METRICS);
 
     const text = await service.render();
     expect(text).toContain('Мини-тесты без регистрации');
     expect(text).toContain('Начали: 7 · дошли до результата: 5');
+    expect(text).toContain('Переходы к автору-терапевту');
+    expect(text).toContain('Переходили на сайт практики: 3');
     // Продуктовый блок тоже на месте (склейка ничего не потеряла).
     expect(text).toContain('Новички проходят обучение');
   });

@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
 import { formatQuizMetrics } from './quiz-metrics.format';
 import { QuizMetricsService } from './quiz-metrics.service';
+import { formatPracticeLinkMetrics } from './practice-link-metrics.format';
+import { PracticeLinkMetricsService } from './practice-link-metrics.service';
 import {
   ONBOARDING_STEPS,
   TODAY_BLOCKS,
@@ -17,15 +19,17 @@ export class ProductMetricsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly quizMetrics: QuizMetricsService,
+    private readonly practiceLink: PracticeLinkMetricsService,
   ) {}
 
-  /** Готовый текстовый блок для /stats (+ блок мини-тестов, правило №8). */
+  /** Готовый текстовый блок для /stats (+ мини-тесты и переходы к автору). */
   async render(): Promise<string> {
-    const [metrics, quiz] = await Promise.all([
+    const [metrics, quiz, practice] = await Promise.all([
       this.getMetrics(),
       this.quizMetrics.getMetrics(),
+      this.practiceLink.getMetrics(),
     ]);
-    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}`;
+    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}`;
   }
 
   async getMetrics(): Promise<ProductMetrics> {
