@@ -4,7 +4,9 @@
 import { useMemo, useState } from 'react';
 import {
   type JourneyItem,
+  type JourneyPeriod,
   JOURNEY_GROUP_COLORS,
+  JOURNEY_PERIOD_TITLE,
   buildJourneyCardRows,
   formatJourneyDay,
   journeyTypeMeta,
@@ -17,7 +19,11 @@ import {
 import { drawJourneyItemCard } from '../share/cards/journeyItemCard';
 import { drawJourneyResultCard } from '../share/cards/journeyResultCard';
 import type { JourneyResultPart } from './journeyContent';
-import { journeyItemShareText, journeyShareText } from '../share/shareTexts';
+import {
+  journeyItemShareText,
+  journeyShareText,
+  pluralEntries,
+} from '../share/shareTexts';
 import type { ShareCardKind } from '../share/analytics';
 
 export type JourneyShareState =
@@ -38,19 +44,25 @@ export function buildJourneySharePayload(
   total: number,
   subtitle: (item: JourneyItem) => string | null,
   link: string,
+  period: JourneyPeriod = 'all',
 ): JourneySharePayload {
   if (share.kind === 'feed') {
-    // Карточка-лента всегда показывает последние шаги, независимо от
-    // выбранной на экране сортировки.
     const rows = buildJourneyCardRows(
       sortJourneyItems(items, 'desc'),
       JOURNEY_CARD_MAX_ROWS,
     );
+    // За период счётчик и подпись — по выбранному периоду (не «всё время»).
+    const count = period === 'all' ? total : items.length;
+    const title = JOURNEY_PERIOD_TITLE[period];
+    const sub =
+      period === 'all'
+        ? undefined
+        : `${count} ${pluralEntries(count)} заботы о себе`;
     return {
-      title: 'Мой путь',
-      draw: (canvas) => drawJourneyCard(canvas, rows, total),
-      shareText: journeyShareText(total, link),
-      filename: 'journey.png',
+      title,
+      draw: (canvas) => drawJourneyCard(canvas, rows, count, title, sub),
+      shareText: journeyShareText(count, link, period),
+      filename: period === 'all' ? 'journey.png' : `journey-${period}.png`,
       eventKind: 'journey',
     };
   }
@@ -96,7 +108,7 @@ export function buildJourneySharePayload(
  * один шаг. payload — готовые пропсы для ShareCardSheet (null = шит закрыт).
  */
 export function useJourneyShare(
-  j: { items: JourneyItem[]; total: number },
+  j: { items: JourneyItem[]; total: number; period: JourneyPeriod },
   subtitle: (item: JourneyItem) => string | null,
   link: string,
   fetchResult: (item: JourneyItem) => Promise<JourneyResultPart[] | null>,
@@ -105,9 +117,16 @@ export function useJourneyShare(
   const payload = useMemo(
     () =>
       share
-        ? buildJourneySharePayload(share, j.items, j.total, subtitle, link)
+        ? buildJourneySharePayload(
+            share,
+            j.items,
+            j.total,
+            subtitle,
+            link,
+            j.period,
+          )
         : null,
-    [share, j.items, j.total, subtitle, link],
+    [share, j.items, j.total, j.period, subtitle, link],
   );
   return {
     payload,

@@ -5,7 +5,12 @@
 
 // Группы для фильтра ленты (чипы «что показать»).
 export type JourneyGroup =
-  'tracker' | 'diary' | 'practice' | 'test' | 'exercise' | 'cards';
+  | 'tracker'
+  | 'diary'
+  | 'practice'
+  | 'test'
+  | 'exercise'
+  | 'cards';
 
 export interface JourneyTypeMeta {
   emoji: string;
@@ -118,6 +123,13 @@ export const JOURNEY_PERIODS: Array<{ id: JourneyPeriod; label: string }> = [
   { id: 'week', label: 'Неделя' },
   { id: 'month', label: 'Месяц' },
 ];
+
+/** Заголовок карточки/шеринга по выбранному периоду. */
+export const JOURNEY_PERIOD_TITLE: Record<JourneyPeriod, string> = {
+  all: 'Мой путь',
+  week: 'Моя неделя',
+  month: 'Мой месяц',
+};
 
 /** Фильтр по периоду (скользящие 7/30 дней). Чистая, не мутирует вход. */
 export function filterJourneyByPeriod(
