@@ -12,7 +12,6 @@ import { ModeIntroSheet } from '../components/ModeIntroSheet';
 import { api, UserTask, TherapyRelationInfo } from '../api';
 import { BottomSheet } from '../components/BottomSheet';
 import { TaskRow } from '../components/tasks/TaskRow';
-import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
 import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { ToolRow } from '../components/ToolRow';
 import { SelfHelpSheet } from '../components/SelfHelpDisclaimer';
@@ -21,6 +20,8 @@ import { BreathingCard } from '../components/BreathingCard';
 import { GroundingSheet } from '../components/GroundingSheet';
 import { CrisisCard } from '../components/CrisisCard';
 import { useTr } from '../utils/addressForm';
+import { plural } from './today/helpers';
+import { AllTasksSheet } from './helpSection/AllTasksSheet';
 
 interface Props {
   onOpenChildhoodWheel: () => void;
@@ -35,15 +36,6 @@ interface Props {
   onTasksChanged?: () => void;
   userRole?: 'CLIENT' | 'THERAPIST';
   onOpenTherapistCabinet?: () => void;
-}
-
-function plural(n: number, one: string, few: string, many: string) {
-  const m10 = n % 10,
-    m100 = n % 100;
-  if (m100 >= 11 && m100 <= 19) return many;
-  if (m10 === 1) return one;
-  if (m10 >= 2 && m10 <= 4) return few;
-  return many;
 }
 
 export function HelpSection({
@@ -554,147 +546,25 @@ export function HelpSection({
         />
       )}
       {showAllTasks && (
-        <BottomSheet onClose={() => setShowAllTasks(false)} zIndex={200}>
-          {/* Header */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              marginBottom: 18,
-              paddingTop: 4,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: 'var(--text)',
-                  letterSpacing: '-0.3px',
-                  lineHeight: 1.2,
-                }}
-              >
-                Мои цели
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--text-faint)',
-                  marginTop: 4,
-                }}
-              >
-                {tasks.length === 0
-                  ? 'Поставь себе цель и иди к ней маленькими шагами'
-                  : `${tasks.length} ${plural(tasks.length, 'активная', 'активные', 'активных')}${taskHistory.length > 0 ? ` · ${taskHistory.length} выполнено` : ''}`}
-              </div>
-            </div>
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                flexShrink: 0,
-                background: 'rgba(251,146,60,0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 22,
-              }}
-            >
-              🎯
-            </div>
-          </div>
-
-          {/* Active tasks */}
-          {tasks.length === 0 ? (
-            <div
-              style={{
-                padding: '36px 20px',
-                textAlign: 'center',
-                background: 'var(--surface)',
-                borderRadius: 16,
-                border: '1px dashed var(--border-color)',
-                marginBottom: 16,
-              }}
-            >
-              <div style={{ fontSize: 36, marginBottom: 10 }}>✨</div>
-              <div
-                style={{
-                  fontSize: 14,
-                  color: 'var(--text-sub)',
-                  lineHeight: 1.55,
-                  maxWidth: 240,
-                  margin: '0 auto',
-                }}
-              >
-                Пока нет активных целей. Поставь первую — большие изменения
-                начинаются с малого.
-              </div>
-            </div>
-          ) : (
-            <div style={{ marginBottom: 8 }}>
-              {tasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  onOpen={() => openTask(task)}
-                  onComplete={
-                    task.done === null && task.type === 'custom'
-                      ? () =>
-                          api
-                            .completeTask(task.id, true)
-                            .then(() =>
-                              Promise.all([
-                                api.getTasks(),
-                                api.getTaskHistory(),
-                              ]),
-                            )
-                            .then(([t, h]) => {
-                              setTasks(t);
-                              setTaskHistory(h);
-                              onTasksChanged?.();
-                            })
-                            .catch(() => {})
-                      : undefined
-                  }
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Completed history */}
-          <TaskHistoryList taskHistory={taskHistory} variant="full" />
-
-          {/* Add button */}
-          <button
-            onClick={() => {
-              setShowAllTasks(false);
-              setShowTaskCreate(true);
-            }}
-            style={{
-              width: '100%',
-              padding: '14px',
-              borderRadius: 14,
-              border: 'none',
-              background:
-                'linear-gradient(135deg, rgba(167,139,250,0.18), rgba(167,139,250,0.10))',
-              outline: '1px solid rgba(167,139,250,0.28)',
-              color: 'var(--accent)',
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: 'pointer',
-              marginTop: 18,
-              fontFamily: 'inherit',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-            }}
-          >
-            <span style={{ fontSize: 17 }}>+</span> Поставить цель
-          </button>
-        </BottomSheet>
+        <AllTasksSheet
+          tasks={tasks}
+          taskHistory={taskHistory}
+          onClose={() => setShowAllTasks(false)}
+          onOpenTask={openTask}
+          onReload={() =>
+            Promise.all([api.getTasks(), api.getTaskHistory()])
+              .then(([t, h]) => {
+                setTasks(t);
+                setTaskHistory(h);
+                onTasksChanged?.();
+              })
+              .catch(() => {})
+          }
+          onAdd={() => {
+            setShowAllTasks(false);
+            setShowTaskCreate(true);
+          }}
+        />
       )}
     </div>
   );
