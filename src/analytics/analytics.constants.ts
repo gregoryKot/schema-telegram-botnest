@@ -21,7 +21,11 @@
 //   today_block_toggle  — показал/скрыл блок «Сегодня» (meta.block + meta.hidden);
 //   today_customize_open — открыл «Настроить экран» (meta.via: как открыл);
 //   home_screen_offer   — предложение значка на экран (meta.action + surface);
-//   journey_open        — открыл архив «Мой путь» (без meta).
+//   journey_open        — открыл архив «Мой путь» (без meta);
+//   quiz_started        — начал мини-тест (meta.quiz + meta.src);
+//   quiz_completed      — дошёл до результата мини-теста (meta.quiz +
+//                         meta.result + meta.src). С сайта идут анонимно
+//                         (userId = null) через POST /api/public-event.
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -38,8 +42,24 @@ export const ANALYTICS_EVENTS = [
   'today_customize_open',
   'home_screen_offer',
   'journey_open',
+  'quiz_started',
+  'quiz_completed',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
+
+// События мини-тестов, которые разрешено слать БЕЗ авторизации (лид-магнит
+// «тесты без регистрации», POST /api/public-event). Только этот срез —
+// остальная аналитика по-прежнему требует верифицированной идентичности.
+export const PUBLIC_ANALYTICS_EVENTS = [
+  'quiz_started',
+  'quiz_completed',
+] as const;
+export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
+
+// Откуда пришло событие мини-теста (meta.src): бот или сайт. Сайт пишет
+// 'web' на сервере (клиенту не верим), бот — 'bot' сам.
+export const QUIZ_EVENT_SOURCES = ['bot', 'web'] as const;
+export type QuizEventSource = (typeof QUIZ_EVENT_SOURCES)[number];
 
 // Блоки главного экрана, которые можно скрыть (meta.block). Заменяет частное
 // событие today_streak_toggle: блоков стало больше одного, и заводить событие

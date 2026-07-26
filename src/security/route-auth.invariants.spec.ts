@@ -42,6 +42,12 @@ const PUBLIC_BY_DESIGN: Record<string, string> = {
   'donation/donation.controller.ts': 'анонимные пожертвования + вебхук',
   'subscription/subscription.controller.ts':
     'подписка: honeypot + capability-token by-token/cancel',
+  'api/quiz.controller.ts':
+    'мини-тесты без регистрации: статический контент из quiz-registry (GET), ' +
+    'пользовательских данных нет, троттлинг по IP',
+  'api/public-events.controller.ts':
+    'анонимная аналитика мини-тестов: только quiz_started/quiz_completed, ' +
+    'meta режется по реестру тестов, userId = null, троттлинг по IP',
 };
 
 // (B) Admin-key-gated: защита через заголовок x-admin-key (assertAdminKey),
@@ -96,7 +102,10 @@ describe('трипваер: каждый контроллер защищён (gu
   });
 
   it('allowlist публичных не разросся сверх известного (может только сокращаться)', () => {
-    expect(Object.keys(PUBLIC_BY_DESIGN).length).toBeLessThanOrEqual(9);
+    // 9 → 11 (2026-07-23): +quiz.controller +public-events.controller —
+    // публичные по дизайну фичи «мини-тесты без регистрации» (лид-магнит);
+    // обоснование в PUBLIC_BY_DESIGN выше, ревью безопасности — в PR фичи.
+    expect(Object.keys(PUBLIC_BY_DESIGN).length).toBeLessThanOrEqual(11);
     expect(ADMIN_KEY_GATED.size).toBeLessThanOrEqual(4);
   });
 });

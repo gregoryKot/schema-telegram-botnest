@@ -134,6 +134,7 @@ export function makeFakePrisma() {
     ysqProgress: makeTable(),
     ysqResult: makeTable(),
     ysqResultHistory: makeTable(),
+    analyticsEvent: makeTable(),
   };
 
   const prisma: any = {

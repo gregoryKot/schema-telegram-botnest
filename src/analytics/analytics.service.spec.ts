@@ -32,6 +32,21 @@ describe('AnalyticsService.track', () => {
     expect(arg.data.meta).toBeDefined();
   });
 
+  it('userId = null (аноним с сайта) пишется как null, не падает', async () => {
+    const create = jest.fn(async () => ({ id: 1 }));
+    const service = new AnalyticsService(makePrisma(create));
+
+    await service.track(null, 'quiz_completed', {
+      quiz: 'drives',
+      result: 'adult',
+      src: 'web',
+    });
+
+    const arg = create.mock.calls[0][0];
+    expect(arg.data.userId).toBeNull();
+    expect(arg.data.name).toBe('quiz_completed');
+  });
+
   it('неизвестное имя не пишется (defence in depth)', async () => {
     const create = jest.fn(async () => ({ id: 1 }));
     const service = new AnalyticsService(makePrisma(create));

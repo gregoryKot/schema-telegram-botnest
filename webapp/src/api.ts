@@ -12,6 +12,8 @@ import type {
 } from '../../shared/src/types';
 // Единственная фронтовая копия типа — в shared (правило №3).
 export type { TherapyClientSummary } from '../../shared/src/types';
+import type { QuizDto } from '../../shared/src/quiz/quizEngine';
+export type { QuizDto } from '../../shared/src/quiz/quizEngine';
 import { telemetryUrl } from './utils/telemetryUrl';
 
 const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
@@ -426,6 +428,14 @@ export const api = {
   // влияет на UX — ошибки/сеть глотаем, промис не пробрасываем.
   trackEvent: (name: string, meta?: Record<string, unknown>): void => {
     void post('/api/event', { name, meta }).catch(() => undefined);
+  },
+
+  // Публичные мини-тесты (лид-магнит, БЕЗ auth): контент из quiz-registry
+  // бэкенда и анонимная аналитика quiz_started/quiz_completed (userId = null).
+  getQuizzes: (form?: 'ty' | 'vy') =>
+    get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
+  trackPublicEvent: (name: string, meta?: Record<string, unknown>): void => {
+    void post('/api/public-event', { name, meta }).catch(() => undefined);
   },
   getDisclaimer:  () => get<{ accepted: boolean }>('/api/disclaimer'),
   acceptDisclaimer: () => post('/api/disclaimer', {}),

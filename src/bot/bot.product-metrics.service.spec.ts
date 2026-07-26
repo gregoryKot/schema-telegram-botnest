@@ -74,7 +74,9 @@ describe('ProductMetricsService.getMetrics', () => {
       $queryRaw: queryRaw,
     };
 
-    const m = await new ProductMetricsService(prisma).getMetrics();
+    // quizMetrics в getMetrics не участвует — нужен только для render().
+    const quizMetrics = { getMetrics: jest.fn() } as never;
+    const m = await new ProductMetricsService(prisma, quizMetrics).getMetrics();
 
     expect(m.onboarding).toEqual({ cohort30: 118, completed30: 70 });
     // блоки — в порядке листа настройки, не по убыванию счёта
@@ -128,4 +130,55 @@ describe('ProductMetricsService.getMetrics', () => {
       added: 45,
     });
   });
+
+  it('render: блок мини-тестов подклеен к продуктовому отчёту', async () => {
+    const quizMetrics = {
+      getMetrics: jest.fn(async () => ({
+        started30: 7,
+        completed30: 5,
+        completedBot30: 3,
+        completedWeb30: 2,
+        byQuiz30: [{ quiz: 'drives', count: 5 }],
+      })),
+    } as never;
+    const service = new ProductMetricsService({} as never, quizMetrics);
+    // Сами запросы к БД покрыты тестом выше — здесь проверяем склейку.
+    jest.spyOn(service, 'getMetrics').mockResolvedValue(EMPTY_METRICS);
+
+    const text = await service.render();
+    expect(text).toContain('Мини-тесты без регистрации');
+    expect(text).toContain('Начали: 7 · дошли до результата: 5');
+    // Продуктовый блок тоже на месте (склейка ничего не потеряла).
+    expect(text).toContain('Новички проходят обучение');
+  });
 });
+
+// Минимальный валидный ProductMetrics для render-теста (пустая БД).
+const EMPTY_METRICS = {
+  onboarding: { cohort30: 0, completed30: 0 },
+  onboardingSteps: [],
+  adoption: {
+    diaries: 0,
+    ysqDone: 0,
+    exercises: 0,
+    practices: 0,
+    childhood: 0,
+  },
+  ysq: { started: 0, completed: 0 },
+  addressForm: { ty: 0, vy: 0, notChosen: 0 },
+  sections: [],
+  themes: { light: 0, dark: 0, system: 0 },
+  shareCard: { total7: 0, total30: 0, byKind30: [] },
+  crisis: { shown: 0, hotlineTapped: 0 },
+  shareResult: { ok: 0, fallback: 0 },
+  outbox: { flushes: 0, recovered: 0 },
+  today: {
+    focusChanged: 0,
+    blocksHidden: [],
+    customizeGear: 0,
+    customizeLongpress: 0,
+  },
+  breath: { started: 0 },
+  journey: { opens: 0 },
+  homeScreen: { shown: 0, add: 0, later: 0, never: 0, added: 0 },
+};

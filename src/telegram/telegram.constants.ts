@@ -20,6 +20,15 @@ export const MINIAPP_URL =
 export const MINIAPP_TGLINK = `https://t.me/${BOT_USERNAME}/${MINIAPP_APP_NAME}`;
 export const DIARIES_URL = `${MINIAPP_URL}?section=diaries`;
 
+/** Меню команд бота (setMyCommands). Единый список — правится здесь. */
+export const BOT_COMMANDS = [
+  { command: 'start', description: 'Открыть «Всё по схеме»' },
+  { command: 'tests', description: 'Мини-тесты на 2 минуты 🎲' },
+  { command: 'settings', description: 'Настройки уведомлений' },
+  { command: 'donate', description: 'Поддержать проект 💛' },
+  { command: 'about', description: 'О приложении и авторе' },
+];
+
 export const VALID_TIMEZONES = [
   'America/Los_Angeles',
   'America/New_York',

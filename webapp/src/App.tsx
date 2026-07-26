@@ -31,6 +31,8 @@ import { ProductLandingPage } from './pages/ProductLandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { OfferPage } from './pages/OfferPage';
 import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
+import { TestsPage } from './pages/tests/TestsPage';
+import { QuizPage } from './pages/tests/QuizPage';
 import { ReviewsPage } from './pages/ReviewsPage';
 import { GamePage } from './pages/GamePage';
 // Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main
@@ -114,6 +116,9 @@ const appRoutes = [
   { path: '/',               element: <ProductLandingPage /> },
   { path: '/articles',       element: <ArticlesListPage /> },
   { path: '/articles/:slug', element: <ArticlePage /> },
+  // Мини-тесты — публичный лид-магнит, регистрация не нужна.
+  { path: '/tests',          element: <TestsPage /> },
+  { path: '/tests/:quizId',  element: <QuizPage /> },
   { path: '/subscribe',      element: <SubscribePage /> },
   { path: '/donate',         element: <DonatePage /> },
   // Admin panel is gated by its own key (not the app login), so it's reachable

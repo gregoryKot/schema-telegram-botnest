@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
+import { formatQuizMetrics } from './quiz-metrics.format';
+import { QuizMetricsService } from './quiz-metrics.service';
 import {
   ONBOARDING_STEPS,
   TODAY_BLOCKS,
@@ -12,11 +14,18 @@ import {
 // (product-metrics.format.ts, покрыт тестом).
 @Injectable()
 export class ProductMetricsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly quizMetrics: QuizMetricsService,
+  ) {}
 
-  /** Готовый текстовый блок для /stats. */
+  /** Готовый текстовый блок для /stats (+ блок мини-тестов, правило №8). */
   async render(): Promise<string> {
-    return formatProductMetrics(await this.getMetrics());
+    const [metrics, quiz] = await Promise.all([
+      this.getMetrics(),
+      this.quizMetrics.getMetrics(),
+    ]);
+    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}`;
   }
 
   async getMetrics(): Promise<ProductMetrics> {
