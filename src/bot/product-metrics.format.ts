@@ -15,8 +15,9 @@ export interface ProductMetrics {
     practices: number;
     childhood: number;
   };
-  // Тест схем (YSQ): начали → дошли до конца.
-  ysq: { started: number; completed: number };
+  // Тест схем (YSQ): начали → дошли до конца; helpOpens — сколько раз за
+  // месяц раскрывали объяснение «как понимать результат».
+  ysq: { started: number; completed: number; helpOpens: number };
   // Как просят обращаться.
   addressForm: { ty: number; vy: number; notChosen: number };
   // С каким экраном заходят (defaultSection): today/help/schemas/profile.
@@ -141,6 +142,7 @@ export function formatProductMetrics(m: ProductMetrics): string {
       m.ysq.completed,
       m.ysq.started,
     )}`,
+    `Читали «как понимать результат»: ${m.ysq.helpOpens} раз (за месяц)`,
     '',
     `📱 <b>С каким экраном заходят</b>`,
     sections,

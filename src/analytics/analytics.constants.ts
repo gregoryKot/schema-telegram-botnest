@@ -22,6 +22,8 @@
 //   today_customize_open — открыл «Настроить экран» (meta.via: как открыл);
 //   home_screen_offer   — предложение значка на экран (meta.action + surface);
 //   journey_open        — открыл архив «Мой путь» (без meta);
+//   ysq_help_open       — раскрыл «Как понимать» в результатах теста схем
+//                         (без meta);
 //   quiz_started        — начал мини-тест (meta.quiz + meta.src);
 //   quiz_completed      — дошёл до результата мини-теста (meta.quiz +
 //                         meta.result + meta.src). С сайта идут анонимно
@@ -45,6 +47,7 @@ export const ANALYTICS_EVENTS = [
   'today_customize_open',
   'home_screen_offer',
   'journey_open',
+  'ysq_help_open',
   'quiz_started',
   'quiz_completed',
   'practice_link_click',

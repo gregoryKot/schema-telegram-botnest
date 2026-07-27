@@ -1,5 +1,8 @@
 import { contactCta } from '../../utils/therapistContact';
+import { useTr } from '../../utils/addressForm';
+import { api } from '../../api';
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
+import { YsqResultTopBar } from '../../../../shared/src/components/YsqResultTopBar';
 import { YsqActiveSchemaCard } from './YsqActiveSchemaCard';
 import { YsqInactiveSchemas } from './YsqInactiveSchemas';
 import { YsqTherapyCta } from './YsqTherapyCta';
@@ -38,6 +41,7 @@ export function YsqResultView({
   onRetake,
 }: Props) {
   const cta = contactCta();
+  const tr = useTr();
   const {
     inactiveSchemas,
     activeByDomain,
@@ -49,6 +53,13 @@ export function YsqResultView({
 
   return (
     <div style={{ padding: '8px 0 16px' }}>
+      {/* «Как понимать» + «Поделиться» — с самого верха (правило онбординга) */}
+      <YsqResultTopBar
+        tr={tr}
+        onShare={onShare}
+        onHelpOpen={() => api.trackEvent('ysq_help_open')}
+      />
+
       {/* Header */}
       <div style={{ marginBottom: 16 }}>
         <div
@@ -67,22 +78,6 @@ export function YsqResultView({
             Пройдено {dateLabel}
           </div>
         )}
-      </div>
-
-      <div
-        style={{
-          fontSize: 13,
-          color: 'var(--text-sub)',
-          lineHeight: 1.55,
-          marginBottom: 20,
-          fontStyle: 'italic',
-        }}
-      >
-        Главный показатель — средний балл по схеме (1–6): насколько её
-        утверждения в среднем про вас. От 4 из 6 схема считается выраженной.
-        Рядом — сколько утверждений вы отметили на «5» или «6» (сильное
-        согласие): даже нескольких хватает, чтобы схема считалась выраженной.
-        Это инструмент самоисследования, не диагноз.
       </div>
 
       {activeCount === 0 && (
@@ -145,7 +140,6 @@ export function YsqResultView({
       <YsqResultActions
         retakeConfirm={retakeConfirm}
         setRetakeConfirm={setRetakeConfirm}
-        onShare={onShare}
         onClose={onClose}
         onRetake={onRetake}
       />

@@ -19,7 +19,7 @@ const FULL: ProductMetrics = {
     practices: 90,
     childhood: 60,
   },
-  ysq: { started: 260, completed: 210 },
+  ysq: { started: 260, completed: 210, helpOpens: 44 },
   addressForm: { ty: 900, vy: 250, notChosen: 90 },
   sections: [
     { key: 'today', count: 300 },
@@ -62,7 +62,7 @@ const EMPTY: ProductMetrics = {
     practices: 0,
     childhood: 0,
   },
-  ysq: { started: 0, completed: 0 },
+  ysq: { started: 0, completed: 0, helpOpens: 0 },
   addressForm: { ty: 0, vy: 0, notChosen: 0 },
   sections: [],
   themes: { light: 0, dark: 0, system: 0 },
@@ -97,6 +97,7 @@ describe('formatProductMetrics', () => {
     expect(t).not.toContain('needs_what');
     expect(t).toContain('Дневники: 320');
     expect(t).toContain('Начали: 260 · дошли до конца: 210 (81%)');
+    expect(t).toContain('Читали «как понимать результат»: 44 раз');
     // ключи секций переводятся в подписи
     expect(t).toContain('Сегодня: 300');
     expect(t).toContain('Помощь: 80');

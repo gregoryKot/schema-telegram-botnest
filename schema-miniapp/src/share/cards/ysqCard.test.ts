@@ -1,35 +1,11 @@
 // Тест чистой логики карточки результата теста на схемы (шаринг).
+// Профиль-часть карточки (группировка, подписи, высота) — ysqProfileCard.test.ts.
 import { describe, it, expect } from 'vitest';
 import {
-  ysqCardRows,
   buildYsqShareText,
   pluralActiveSchemas,
-  YSQ_CARD_MAX_ROWS,
-  type YsqCardSchema,
+  ysqCardHeadline,
 } from '../../../../shared/src/share/cards/ysqCard';
-
-function schemas(n: number): YsqCardSchema[] {
-  return Array.from({ length: n }, (_, i) => ({
-    name: `Схема ${i + 1}`,
-    color: 'var(--accent-red)',
-    pct5plus: 60,
-    avg: 4.5,
-  }));
-}
-
-describe('ysqCardRows', () => {
-  it('обрезает до лимита и считает остаток', () => {
-    const { rows, moreCount } = ysqCardRows(schemas(9));
-    expect(rows).toHaveLength(YSQ_CARD_MAX_ROWS);
-    expect(moreCount).toBe(9 - YSQ_CARD_MAX_ROWS);
-  });
-
-  it('меньше лимита — без остатка', () => {
-    const { rows, moreCount } = ysqCardRows(schemas(2));
-    expect(rows).toHaveLength(2);
-    expect(moreCount).toBe(0);
-  });
-});
 
 describe('buildYsqShareText', () => {
   it('содержит счёт выраженных схем и ссылку на бота', () => {
@@ -42,6 +18,17 @@ describe('buildYsqShareText', () => {
     expect(buildYsqShareText(0, 't.me/TestBot')).toContain(
       'выраженных схем не обнаружено',
     );
+  });
+});
+
+describe('ysqCardHeadline', () => {
+  it('счёт с правильным склонением и знаменателем', () => {
+    expect(ysqCardHeadline(1)).toBe('1 выраженная схема из 20');
+    expect(ysqCardHeadline(7)).toBe('7 выраженных схем из 20');
+  });
+
+  it('ноль — явная формулировка без числа', () => {
+    expect(ysqCardHeadline(0)).toBe('Выраженных схем не обнаружено');
   });
 });
 
