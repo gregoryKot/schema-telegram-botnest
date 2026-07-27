@@ -3,6 +3,9 @@
   "branches": 65.38,
   "floors": {
     "src/auth": 82.11,
-    "src/utils": 95.59
+    "src/utils": 95.59,
+    "src/therapy": 91.75,
+    "src/api": 47.21,
+    "src/booking": 80.18
   }
 }
