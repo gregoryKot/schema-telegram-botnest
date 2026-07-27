@@ -127,6 +127,27 @@ const TRAUMA = `
   <figcaption><b>Травма травме рознь.</b> При одном остром событии первой линией идут EMDR и травмофокусированная КПТ; при хронической травме развития раскрывается схема-терапия.</figcaption>
 </figure>`;
 
+const STANDARDS = `
+<figure class="dg">
+  <svg viewBox="0 0 640 250" role="img" aria-label="Здоровые стандарты и перфекционизм">
+    <rect class="dg-node" x="14" y="14" width="300" height="222" rx="16"/>
+    <text class="dg-cap-acc" x="34" y="44">ЗДОРОВАЯ ПЛАНКА</text>
+    <text class="dg-t" x="34" y="76">Высокие стандарты</text>
+    <text class="dg-s" x="34" y="100">ошибка – информация</text>
+    <text class="dg-s" x="34" y="124">«неидеально, но достаточно»</text>
+    <text class="dg-cap" x="34" y="164">ЦЕННОСТЬ</text>
+    <text class="dg-s" x="34" y="188">не зависит от результата</text>
+    <rect class="dg-accent" x="326" y="14" width="300" height="222" rx="16"/>
+    <text class="dg-cap-on" x="346" y="44">ПЕРФЕКЦИОНИЗМ · СХЕМА</text>
+    <text class="dg-t-on" x="346" y="76">Жёсткие стандарты</text>
+    <text class="dg-s-on" x="346" y="100">ошибка – катастрофа</text>
+    <text class="dg-s-on" x="346" y="124">«достаточно» не бывает</text>
+    <text class="dg-cap-on" x="346" y="164">ЦЕННОСТЬ</text>
+    <text class="dg-s-on" x="346" y="188">равна последнему результату</text>
+  </svg>
+  <figcaption><b>Разница не в высоте планки.</b> Дело в том, что происходит, когда до неё не дотягиваешь – и от чего тогда зависит ваша ценность.</figcaption>
+</figure>`;
+
 const FORK = `
 <figure class="dg">
   <svg viewBox="0 0 640 300" role="img" aria-label="Подходит ли мне схема-терапия">
@@ -258,6 +279,7 @@ const DURATION = `
 </figure>`;
 
 export const DIAGRAMS: Record<string, string> = {
+  standards: STANDARDS,
   duration: DURATION,
   cycle: CYCLE,
   iceberg: ICEBERG,
@@ -272,6 +294,7 @@ export const DIAGRAMS: Record<string, string> = {
 
 // For the admin editor's diagram picker.
 export const DIAGRAM_OPTIONS: { key: string; label: string }[] = [
+  { key: 'standards', label: 'Здоровая планка vs перфекционизм' },
   { key: 'duration', label: 'Сколько длится (таймлайн этапов)' },
   { key: 'cycle', label: 'Порочный круг' },
   { key: 'iceberg', label: 'Айсберг' },
