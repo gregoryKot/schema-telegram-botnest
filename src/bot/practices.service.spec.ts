@@ -1,72 +1,18 @@
 import { PracticesService } from './practices.service';
+import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 
-// Stateful in-memory fake Prisma для UserPractice + PracticePlan.
+// Stateful in-memory fake Prisma для UserPractice + PracticePlan (общий
+// src/test-support/fake-prisma.spec-helper.ts, этап 2.4 TEST_IMPROVEMENT_PLAN.md).
 // Приоритет: read-after-write через шифрование practiceText/text, и
 // изоляция по userId на checkinPlan (чужой план нельзя отметить выполненным).
 function makeDb() {
-  const practices: any[] = [];
   const plans: any[] = [];
-  let nextId = 1;
 
   const db: any = {
-    userPractice: {
-      create: jest.fn(({ data }: any) => {
-        const row = { id: nextId++, createdAt: new Date(), ...data };
-        practices.push(row);
-        return row;
-      }),
-      findMany: jest.fn(({ where }: any) =>
-        practices.filter(
-          (r) => r.userId === where.userId && r.needId === where.needId,
-        ),
-      ),
-      deleteMany: jest.fn(({ where }: any) => {
-        const before = practices.length;
-        const kept = practices.filter(
-          (r) => !(r.id === where.id && r.userId === where.userId),
-        );
-        practices.length = 0;
-        practices.push(...kept);
-        return { count: before - kept.length };
-      }),
-    },
-    practicePlan: {
-      create: jest.fn(({ data }: any) => {
-        const row = {
-          id: nextId++,
-          createdAt: new Date(),
-          done: null,
-          ...data,
-        };
-        plans.push(row);
-        return row;
-      }),
-      updateMany: jest.fn(({ where, data }: any) => {
-        const matched = plans.filter(
-          (p) => p.id === where.id && p.userId === where.userId,
-        );
-        matched.forEach((p) => Object.assign(p, data));
-        return { count: matched.length };
-      }),
-      findMany: jest.fn(({ where }: any) =>
-        plans.filter((p) => {
-          if (p.userId !== where.userId) return false;
-          if (
-            where.scheduledDate?.gte &&
-            p.scheduledDate < where.scheduledDate.gte
-          )
-            return false;
-          if (
-            where.scheduledDate &&
-            !where.scheduledDate.gte &&
-            p.scheduledDate !== where.scheduledDate
-          )
-            return false;
-          if ('done' in where && p.done !== where.done) return false;
-          return true;
-        }),
-      ),
-    },
+    userPractice: createFakeTable([], { defaults: { createdAt: new Date() } }),
+    practicePlan: createFakeTable(plans, {
+      defaults: { createdAt: new Date(), done: null },
+    }),
     _plans: plans,
   };
   return db;

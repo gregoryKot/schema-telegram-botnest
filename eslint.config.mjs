@@ -96,6 +96,10 @@ export default tseslint.config(
       '**/*.e2e-spec.ts',
       '**/*.test-helpers.ts',
       'test/e2e-support/**/*.ts',
+      // Общий юнит-фейк Prisma (TEST_IMPROVEMENT_PLAN.md, этап 2.4) — тот же
+      // паттерн, что test/e2e-support выше: in-memory фейк на широких типах,
+      // импортируется спеками разных доменов.
+      'src/test-support/**/*.ts',
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',

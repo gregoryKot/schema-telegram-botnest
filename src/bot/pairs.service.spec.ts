@@ -1,69 +1,22 @@
 import { PairsService } from './pairs.service';
+import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 
-// Stateful in-memory fake Prisma для Pair. Приоритет: связь двух юзеров
-// симметрична (оба видят друг друга как partnerId) и идемпотентна
-// (повторный createPairInvite не плодит новые pending-пары).
+// Stateful in-memory fake Prisma для Pair (общий src/test-support/fake-prisma.spec-helper.ts,
+// этап 2.4 TEST_IMPROVEMENT_PLAN.md). Приоритет: связь двух юзеров симметрична
+// (оба видят друг друга как partnerId) и идемпотентна (повторный
+// createPairInvite не плодит новые pending-пары).
 function makeDb() {
   const pairs: any[] = [];
+  const pair = createFakeTable(pairs, {
+    idField: 'code',
+    defaults: () => ({
+      userId2: null,
+      status: 'pending',
+      createdAt: new Date(Date.now() + pairs.length),
+    }),
+  });
 
-  const db: any = {
-    pair: {
-      findFirst: jest.fn(({ where, orderBy }: any) => {
-        let rows = pairs.filter((p) => matchesWhere(p, where));
-        if (orderBy?.createdAt === 'desc') {
-          rows = [...rows].sort((a, b) => b.createdAt - a.createdAt);
-        }
-        return rows[0] ?? null;
-      }),
-      findMany: jest.fn(({ where, orderBy }: any) => {
-        let rows = pairs.filter((p) => matchesWhere(p, where));
-        if (orderBy?.createdAt === 'desc') {
-          rows = [...rows].sort((a, b) => b.createdAt - a.createdAt);
-        }
-        return rows;
-      }),
-      findUnique: jest.fn(
-        ({ where }: any) => pairs.find((p) => p.code === where.code) ?? null,
-      ),
-      create: jest.fn(({ data }: any) => {
-        const row = {
-          userId2: null,
-          status: 'pending',
-          createdAt: new Date(Date.now() + pairs.length),
-          ...data,
-        };
-        pairs.push(row);
-        return row;
-      }),
-      updateMany: jest.fn(({ where, data }: any) => {
-        const matched = pairs.filter(
-          (p) =>
-            p.code === where.code &&
-            p.status === where.status &&
-            p.userId2 === where.userId2,
-        );
-        matched.forEach((p) => Object.assign(p, data));
-        return { count: matched.length };
-      }),
-      update: jest.fn(({ where, data }: any) => {
-        const row = pairs.find((p) => p.code === where.code);
-        Object.assign(row, data);
-        return row;
-      }),
-      delete: jest.fn(({ where }: any) => {
-        const idx = pairs.findIndex((p) => p.code === where.code);
-        const [row] = pairs.splice(idx, 1);
-        return row;
-      }),
-    },
-    _pairs: pairs,
-  };
-  return db;
-
-  function matchesWhere(p: any, where: any): boolean {
-    if (where.OR) return where.OR.some((cond: any) => matchesWhere(p, cond));
-    return Object.entries(where).every(([k, v]) => p[k] === v);
-  }
+  return { pair, _pairs: pairs } as any;
 }
 
 describe('PairsService — создание приглашения идемпотентно', () => {

@@ -79,7 +79,9 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
   it('пауза активна → ничего не планируется', async () => {
     const { svc, deps } = make();
     deps.cadence.expirePauseIfDue.mockResolvedValue('paused');
-    await svc.planDay(makeUser(), NOW);
+    const user = makeUser();
+    await svc.planDay(user, NOW);
+    expect(deps.cadence.expirePauseIfDue).toHaveBeenCalledWith(user, NOW);
     expect(deps.notifications.schedule).not.toHaveBeenCalled();
     expect(deps.cadence.evaluate).not.toHaveBeenCalled();
   });
@@ -101,7 +103,9 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
   it('remindToday=false и нет других причин → тишина', async () => {
     const { svc, deps } = make();
     deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
-    await svc.planDay(makeUser(), NOW);
+    const user = makeUser();
+    await svc.planDay(user, NOW);
+    expect(deps.cadence.evaluate).toHaveBeenCalledWith(user, NOW);
     expect(deps.notifications.schedule).not.toHaveBeenCalled();
   });
 
@@ -114,8 +118,9 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
   it('движок оценивается каждую ночь даже когда день занят lapsing-сообщением', async () => {
     const { svc, deps } = make();
     deps.analytics.getDaysSinceLastFill.mockResolvedValue(3);
-    await svc.planDay(makeUser(), NOW);
-    expect(deps.cadence.evaluate).toHaveBeenCalled();
+    const user = makeUser();
+    await svc.planDay(user, NOW);
+    expect(deps.cadence.evaluate).toHaveBeenCalledWith(user, NOW);
   });
 
   describe('перерывы', () => {
@@ -147,7 +152,9 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       const { svc, deps } = make();
       deps.analytics.getDaysSinceLastFill.mockResolvedValue(3);
       deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
-      await svc.planDay(makeUser({ notifyFrequency: 2 }), NOW);
+      const user = makeUser({ notifyFrequency: 2 });
+      await svc.planDay(user, NOW);
+      expect(deps.cadence.evaluate).toHaveBeenCalledWith(user, NOW);
       expect(deps.notifications.schedule).not.toHaveBeenCalled();
     });
 
@@ -182,6 +189,10 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       deps.analytics.getDaysSinceLastFill.mockResolvedValue(3);
       deps.notifications.hasPending.mockResolvedValue(true);
       await svc.planDay(makeUser(), NOW);
+      expect(deps.notifications.hasPending).toHaveBeenCalledWith(
+        BigInt(42),
+        'lapsing_3',
+      );
       expect(deps.notifications.schedule).not.toHaveBeenCalled();
     });
 
@@ -194,6 +205,9 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
         deps.analytics.getDaysSinceLastFill.mockResolvedValue(days);
         deps.cadence.evaluate.mockResolvedValue({ remindToday: true });
         await svc.planDay(makeUser(), NOW);
+        expect(deps.analytics.getDaysSinceLastFill).toHaveBeenCalledWith(
+          BigInt(42),
+        );
         expect(deps.notifications.schedule).not.toHaveBeenCalled();
         expect(deps.cadence.nextReminderSeq).not.toHaveBeenCalled();
       },
@@ -338,6 +352,7 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       deps.analytics.getDaysSinceLastFill.mockResolvedValue(14);
       deps.analytics.getProfileInsight.mockResolvedValue(null);
       await svc.planDay(makeUser(), NOW);
+      expect(deps.analytics.getProfileInsight).toHaveBeenCalledWith(BigInt(42));
       expect(deps.notifications.schedule).not.toHaveBeenCalled();
     });
   });

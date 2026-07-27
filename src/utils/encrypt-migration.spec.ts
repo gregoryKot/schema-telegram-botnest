@@ -98,6 +98,11 @@ function makeDb(tables: {
 describe('migrateClinicalLabels — плейнтекст → шифротекст', () => {
   it('без ENCRYPTION_KEY — миграция не трогает ничего (bail out)', async () => {
     const { migrateClinicalLabels } = load({});
+    // Logger внутри encrypt-migration.ts — своя изолированная копия
+    // '@nestjs/common' (jest.isolateModules), пишет через process.stdout.write.
+    const stdoutWrite = jest
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true);
     const db = makeDb({
       notes: [{ id: 1, tags: 'anxiety,anger' }],
       users: [{ id: 1, mySchemaIds: ['defect'], myModeIds: [] }],
@@ -105,6 +110,15 @@ describe('migrateClinicalLabels — плейнтекст → шифротекс�
     await migrateClinicalLabels(db);
     expect(db.note.update).not.toHaveBeenCalled();
     expect(db.user.update).not.toHaveBeenCalled();
+    // Bail out даже до findMany — не тихо, а с явным предупреждением.
+    expect(db.note.findMany).not.toHaveBeenCalled();
+    const logged = stdoutWrite.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(logged).toEqual(
+      expect.stringContaining(
+        'ENCRYPTION_KEY not set — skipping clinical-label migration',
+      ),
+    );
+    stdoutWrite.mockRestore();
   });
 
   it('легаси-плейнтекст Note.tags шифруется текущим ключом и читается обратно', async () => {
@@ -184,6 +198,9 @@ describe('migrateClinicalLabels — плейнтекст → шифротекс�
     const enc = crypto.encrypt('anxiety,anger')!;
     const db = makeDb({ notes: [{ id: 1, tags: enc }] }) as any;
     await migrateClinicalLabels(db);
+    // Строка реально осмотрена (findMany дошёл), просто признана
+    // уже-шифротекстом — это не bail out по отсутствию ключа.
+    expect(db.note.findMany).toHaveBeenCalledTimes(1);
     expect(db.note.update).not.toHaveBeenCalled();
   });
 });
@@ -203,6 +220,7 @@ describe('поведение при уже проведённой смене ENC
     // Поле — строка (не массив), поэтому эвристика считает его «уже
     // зашифрованным» и не трогает вообще — независимо от того, каким именно
     // ключом оно реально зашифровано. Строка остаётся нечитаемой без старого ключа.
+    expect(db.schemaDiaryEntry.findMany).toHaveBeenCalledTimes(1);
     expect(db.schemaDiaryEntry.update).not.toHaveBeenCalled();
   });
 

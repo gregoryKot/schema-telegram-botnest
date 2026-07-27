@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { BotClientOverviewService } from '../bot/bot.client-overview.service';
 import { MINIAPP_TGLINK } from '../telegram/telegram.constants';
 import { encrypt, decrypt, decryptJson } from '../utils/crypto';
 
@@ -24,7 +24,7 @@ function randomCode(): string {
 export class TherapyRelationsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly analyticsService: BotAnalyticsService,
+    private readonly clientOverviewService: BotClientOverviewService,
   ) {}
 
   // ─── Connection ─────────────────────────────────────────────────────────────
@@ -123,7 +123,7 @@ export class TherapyRelationsService {
 
     // Батч вместо ~6 SQL на клиента (аудит 2026-07, N+1): стрик, давность и
     // история всех клиентов достаются тремя запросами в getClientOverviews.
-    const overviews = await this.analyticsService.getClientOverviews(
+    const overviews = await this.clientOverviewService.getClientOverviews(
       relations
         .filter((rel) => rel.client !== null)
         .map((rel) => rel.client!.id),

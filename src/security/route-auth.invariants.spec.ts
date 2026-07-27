@@ -7,62 +7,21 @@
 //   (C) в PUBLIC_BY_DESIGN — осознанно анонимный (логин, health, вебхуки
 //       платёжек с проверкой подписи, публичный контент, capability-token
 //       потоки). Allowlist может только СОКРАЩАТЬСЯ.
-import { readdirSync, readFileSync, statSync } from 'fs';
+//
+// Классификация (стены PUBLIC_BY_DESIGN/ADMIN_KEY_GATED/GUARD_RE) живёт в
+// controller-classification.ts — общий источник с e2e-route-coverage.
+// invariants.spec.ts (правило №4 CLAUDE.md: денормализованные копии без
+// сверки запрещены).
+import { readFileSync } from 'fs';
 import { join } from 'path';
-
-const SRC = join(__dirname, '..');
-
-function walk(dir: string): string[] {
-  const out: string[] = [];
-  for (const e of readdirSync(dir)) {
-    const p = join(dir, e);
-    if (statSync(p).isDirectory()) out.push(...walk(p));
-    else if (p.endsWith('.controller.ts') && !/\.spec\.ts$/.test(p))
-      out.push(p);
-  }
-  return out;
-}
-
-const CONTROLLERS = walk(SRC).map((p) => p.replace(SRC + '/', ''));
-
-// (C) Осознанно публичные контроллеры — каждый с обоснованием. Сокращать
-// можно, добавлять — только с ревью безопасности.
-const PUBLIC_BY_DESIGN: Record<string, string> = {
-  'api/health.controller.ts': 'liveness-проба, без данных',
-  'api/client-errors.controller.ts':
-    'телеметрия крашей фронта — без auth (краш до логина), троттлинг по IP + AlertLogger',
-  'api/booking.controller.ts':
-    'лид-форма с лендинга (XSS-экран, cap), уведомляет админа',
-  'articles/articles.controller.ts': 'публичные статьи (GET)',
-  'site-content/site-content.controller.ts': 'публичный контент лендинга (GET)',
-  'booking/booking.controller.ts':
-    'публичная запись: options/slots/book + capability-token by-token/cancel',
-  'booking/payment.controller.ts':
-    'вебхук Robokassa — проверка подписи в сервисе, не @UseGuards',
-  'donation/donation.controller.ts': 'анонимные пожертвования + вебхук',
-  'subscription/subscription.controller.ts':
-    'подписка: honeypot + capability-token by-token/cancel',
-  'api/quiz.controller.ts':
-    'мини-тесты без регистрации: статический контент из quiz-registry (GET), ' +
-    'пользовательских данных нет, троттлинг по IP',
-  'api/public-events.controller.ts':
-    'анонимная аналитика мини-тестов и лендинга: только quiz_started/' +
-    'quiz_completed/practice_link_click, meta режется по реестрам ' +
-    '(тесты, места клика), userId = null, троттлинг по IP',
-};
-
-// (B) Admin-key-gated: защита через заголовок x-admin-key (assertAdminKey),
-// а не @UseGuards. Требуем assertAdminKey на каждом роут-методе.
-const ADMIN_KEY_GATED = new Set([
-  'site-content/site-content-admin.controller.ts',
-  'articles/articles-admin.controller.ts',
-  'booking/booking-admin.controller.ts',
-  'telegram/healthy-adult-admin.controller.ts',
-]);
-
-const GUARD_RE =
-  /@UseGuards\(\s*[^)]*(TelegramAuthGuard|JwtAuthGuard|OptionalJwtGuard)/;
-const ROUTE_RE = /@(Get|Post|Patch|Delete|Put)\(/g;
+import {
+  SRC,
+  CONTROLLERS,
+  PUBLIC_BY_DESIGN,
+  ADMIN_KEY_GATED,
+  GUARD_RE,
+  ROUTE_RE,
+} from './controller-classification';
 
 describe('трипваер: каждый контроллер защищён (guard / admin-key / публичный)', () => {
   it.each(CONTROLLERS)('%s классифицирован и защищён', (rel) => {

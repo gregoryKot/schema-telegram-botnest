@@ -6,6 +6,7 @@ import { PlansController } from './plans.controller';
 import { ExercisesController } from './exercises.controller';
 import { NotesController } from './notes.controller';
 import { TrackerController } from './tracker.controller';
+import { SettingsController } from './settings.controller';
 import { HealthController } from './health.controller';
 import { DiaryController } from './diary.controller';
 import { BookingController } from './booking.controller';
@@ -39,6 +40,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     ExercisesController,
     NotesController,
     TrackerController,
+    SettingsController,
     DiaryController,
     BookingController,
     AnalyticsController,

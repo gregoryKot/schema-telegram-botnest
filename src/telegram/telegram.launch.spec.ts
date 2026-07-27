@@ -51,13 +51,14 @@ describe('launchBotWithRetry', () => {
     const service = makeService(launch);
 
     (service as any).launchBotWithRetry();
-    expect(launch).toHaveBeenCalledTimes(1);
+    expect(launch).toHaveBeenCalledWith({ dropPendingUpdates: true });
 
     await flush();
     jest.advanceTimersByTime(5_000);
     await flush();
 
     expect(launch).toHaveBeenCalledTimes(2);
+    expect(launch).toHaveBeenNthCalledWith(2, { dropPendingUpdates: true });
   });
 
   it('409 (другой инстанс поллит) — не ретраим', async () => {
@@ -73,6 +74,8 @@ describe('launchBotWithRetry', () => {
     jest.advanceTimersByTime(60_000);
     await flush();
 
+    // Ровно одна попытка — 409 не ретраится, а не «упало и незаметно повисло».
+    expect(launch).toHaveBeenCalledWith({ dropPendingUpdates: true });
     expect(launch).toHaveBeenCalledTimes(1);
   });
 
@@ -86,6 +89,7 @@ describe('launchBotWithRetry', () => {
     jest.advanceTimersByTime(60_000);
     await flush();
 
+    expect(launch).toHaveBeenCalledWith({ dropPendingUpdates: true });
     expect(launch).toHaveBeenCalledTimes(1);
   });
 
@@ -103,6 +107,9 @@ describe('launchBotWithRetry', () => {
     await flush();
 
     expect(launch).toHaveBeenCalledTimes(5);
-    expect(errorSpy).toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('провалился после 5 попыток'),
+      expect.any(Error),
+    );
   });
 });

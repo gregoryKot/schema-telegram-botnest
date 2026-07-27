@@ -264,8 +264,10 @@ describe('TelegramService — cancel / back:welcome', () => {
     const { service, fakeBot } = makeDeps();
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'cancel');
-    expect(ctx.answerCbQuery).toHaveBeenCalled();
-    expect(ctx.deleteMessage).toHaveBeenCalled();
+    // Оба вызова без аргументов — toHaveBeenCalledWith() ловит и то, что
+    // хендлер не передал туда ничего лишнего.
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
+    expect(ctx.deleteMessage).toHaveBeenCalledWith();
   });
 
   it('back:welcome: правит на приветственный текст', async () => {

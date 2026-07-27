@@ -256,10 +256,10 @@ function makeFullService(
   overviews: Map<string, Overview> = new Map(),
 ) {
   const prisma: any = makeFullPrisma(rels, users, concepts);
-  const analyticsService: any = {
+  const clientOverviewService: any = {
     getClientOverviews: async () => overviews,
   };
-  const service = new TherapyRelationsService(prisma, analyticsService);
+  const service = new TherapyRelationsService(prisma, clientOverviewService);
   return { service, prisma, rels, users, concepts };
 }
 
