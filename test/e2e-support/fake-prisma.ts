@@ -189,6 +189,12 @@ export function makeFakePrisma() {
     rating: makeTable(),
     note: makeTable(),
     childhoodRating: makeTable(),
+    // recordActivity (POST /api/activity) upsert'ит сюда; achievements/streak
+    // читают через getActiveDates (app-ownership-sweep-3.e2e-spec.ts).
+    appActivity: makeTable(),
+    // Пары (app-ownership-sweep-2.e2e-spec.ts): @default(pending) в схеме —
+    // createPairInvite/PairsController не передают status явно.
+    pair: withDefaults(makeTable(), { status: 'pending', userId2: null }),
     schemaDiaryEntry: makeTable(),
     modeDiaryEntry: makeTable(),
     gratitudeDiaryEntry: makeTable(),
