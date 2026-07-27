@@ -7,7 +7,12 @@ import { haptic } from '../../haptic';
 import { DiaryStickyHeader } from './DiaryStickyHeader';
 import { ModeSelectStep } from './ModeSelectStep';
 import { ModeDiaryWizard } from './ModeDiaryWizard';
-import type { ModeDiaryFieldKey } from '../../../../shared/src/mode/modeDiarySteps';
+import { ModeEntryShare } from './ModeEntryShare';
+import { getModeById } from '../../schemaTherapyData';
+import {
+  MODE_DIARY_FIELD_KEYS,
+  type ModeDiaryFieldKey,
+} from '../../../../shared/src/mode/modeDiarySteps';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
 
 interface Props {
@@ -28,69 +33,35 @@ interface Props {
 const COLOR = 'var(--accent-blue)';
 
 export function ModeEntrySheet({ onClose, onSave }: Props) {
-  const existing = loadDraft<{
-    modeId: string;
-    situation: string;
-    thoughts: string;
-    feelings: string;
-    bodyFeelings: string;
-    actions: string;
-    actualNeed: string;
-    childhoodMemories: string;
-    healthyResponse: string;
-  }>('mode');
+  const existing =
+    loadDraft<Record<'modeId' | ModeDiaryFieldKey | 'healthyResponse', string>>(
+      'mode',
+    );
   const d = existing?.data;
 
   const [modeId, setModeId] = useState(d?.modeId ?? '');
-  const [situation, setSituation] = useState(d?.situation ?? '');
-  const [thoughts, setThoughts] = useState(d?.thoughts ?? '');
-  const [feelings, setFeelings] = useState(d?.feelings ?? '');
-  const [bodyFeelings, setBodyFeelings] = useState(d?.bodyFeelings ?? '');
-  const [actions, setActions] = useState(d?.actions ?? '');
-  const [actualNeed, setActualNeed] = useState(d?.actualNeed ?? '');
-  const [childhoodMemories, setChildhoodMemories] = useState(
-    d?.childhoodMemories ?? '',
+  // Все текстовые поля — одним объектом (порядок/имена из MODE_DIARY_FIELD_KEYS),
+  // без россыпи useState (правило №11, jscpd).
+  const [values, setValues] = useState<Record<ModeDiaryFieldKey, string>>(
+    () =>
+      Object.fromEntries(
+        MODE_DIARY_FIELD_KEYS.map((k) => [k, d?.[k] ?? '']),
+      ) as Record<ModeDiaryFieldKey, string>,
   );
   const [healthyResponse, setHealthyResponse] = useState(
     d?.healthyResponse ?? '',
   );
   const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
 
-  const values: Record<ModeDiaryFieldKey, string> = {
-    situation,
-    thoughts,
-    feelings,
-    bodyFeelings,
-    actions,
-    actualNeed,
-    childhoodMemories,
-  };
-  const setters: Record<ModeDiaryFieldKey, (v: string) => void> = {
-    situation: setSituation,
-    thoughts: setThoughts,
-    feelings: setFeelings,
-    bodyFeelings: setBodyFeelings,
-    actions: setActions,
-    actualNeed: setActualNeed,
-    childhoodMemories: setChildhoodMemories,
-  };
-  const setField = (k: ModeDiaryFieldKey, v: string) => setters[k](v);
+  const setField = (k: ModeDiaryFieldKey, v: string) =>
+    setValues((p) => ({ ...p, [k]: v }));
 
   useEffect(() => {
     saveDraft('mode', { modeId, ...values, healthyResponse });
-  }, [
-    modeId,
-    situation,
-    thoughts,
-    feelings,
-    bodyFeelings,
-    actions,
-    actualNeed,
-    childhoodMemories,
-    healthyResponse,
-  ]);
+  }, [modeId, values, healthyResponse]);
 
-  const canSave = modeId.length > 0 && situation.trim().length > 0;
+  const canSave = modeId.length > 0 && values.situation.trim().length > 0;
 
   const handleSave = async () => {
     if (!canSave || saving) return;
@@ -106,18 +77,73 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
       );
       await onSave({
         modeId,
-        situation,
+        situation: values.situation,
         ...optional,
         healthyResponse: healthyResponse || undefined,
       });
       clearDraft('mode');
+      setDone(true); // итог вместо молчаливого закрытия (не «всё исчезло»)
     } catch {
       haptic.error();
     } finally {
       setSaving(false);
-      onClose();
     }
   };
+
+  if (done) {
+    return (
+      <BottomSheet onClose={onClose}>
+        <div style={{ textAlign: 'center', padding: '12px 6px 16px' }}>
+          <div style={{ fontSize: 46, marginBottom: 8 }}>🌿</div>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: 'var(--text)',
+              marginBottom: 6,
+            }}
+          >
+            Запись сохранена
+          </div>
+          <div
+            style={{
+              fontSize: 13.5,
+              color: 'var(--text-sub)',
+              lineHeight: 1.6,
+              marginBottom: 16,
+            }}
+          >
+            Она в «Дневнике режимов» и в «Моём пути» — можно открыть и
+            перечитать в любой момент.
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <ModeEntryShare
+              mode={getModeById(modeId)}
+              healthyResponse={healthyResponse}
+            />
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              marginTop: 18,
+              width: '100%',
+              padding: '13px 0',
+              borderRadius: 14,
+              border: 'none',
+              fontFamily: 'inherit',
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: 'pointer',
+              background: 'rgba(var(--fg-rgb),0.08)',
+              color: 'var(--text)',
+            }}
+          >
+            Готово
+          </button>
+        </div>
+      </BottomSheet>
+    );
+  }
 
   return (
     <BottomSheet onClose={onClose}>
@@ -146,16 +172,9 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
           />
         )}
 
-        {detectCrisisAny(
-          situation,
-          thoughts,
-          feelings,
-          bodyFeelings,
-          actions,
-          actualNeed,
-          childhoodMemories,
-          healthyResponse,
-        ) && <CrisisCard surface="mode" />}
+        {detectCrisisAny(...Object.values(values), healthyResponse) && (
+          <CrisisCard surface="mode" />
+        )}
       </div>
     </BottomSheet>
   );

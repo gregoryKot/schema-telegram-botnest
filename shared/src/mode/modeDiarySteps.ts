@@ -13,14 +13,18 @@
 
 type Tr = (ty: string, vy: string) => string;
 
-export type ModeDiaryFieldKey =
-  | 'situation'
-  | 'thoughts'
-  | 'feelings'
-  | 'bodyFeelings'
-  | 'actions'
-  | 'actualNeed'
-  | 'childhoodMemories';
+/** Порядок = порядок шагов визарда; единый источник имён полей дневника. */
+export const MODE_DIARY_FIELD_KEYS = [
+  'situation',
+  'thoughts',
+  'feelings',
+  'bodyFeelings',
+  'actions',
+  'actualNeed',
+  'childhoodMemories',
+] as const;
+
+export type ModeDiaryFieldKey = (typeof MODE_DIARY_FIELD_KEYS)[number];
 
 export interface ModeDiaryStep {
   key: ModeDiaryFieldKey;
