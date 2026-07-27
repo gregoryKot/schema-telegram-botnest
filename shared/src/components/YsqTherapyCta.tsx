@@ -2,7 +2,7 @@ import type { ContactCta } from '../utils/therapistContact';
 
 interface Props {
   cta: ContactCta;
-  /** useTr() вызывающего фронтенда: (ты-вариант, вы-вариант) → строка. */
+  /** useTr() вызывающего фронтенда: выбирает вариант обращения по addressForm. */
   tr: (ty: string, vy: string) => string;
   /** Аналитика клика (practice_link_click, place 'ysq_result'). */
   onLinkClick: () => void;
