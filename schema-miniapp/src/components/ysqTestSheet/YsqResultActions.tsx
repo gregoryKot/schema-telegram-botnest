@@ -1,41 +1,20 @@
 interface Props {
   retakeConfirm: boolean;
   setRetakeConfirm: (v: boolean) => void;
-  onShare: () => void;
   onClose: () => void;
   onRetake: () => void;
 }
 
-// Кнопки под результатами теста: поделиться, сохранить/закрыть, пройти заново.
+// Кнопки под результатами теста: сохранить/закрыть, пройти заново.
+// «Поделиться» живёт сверху экрана (YsqResultTopBar), не здесь.
 export function YsqResultActions({
   retakeConfirm,
   setRetakeConfirm,
-  onShare,
   onClose,
   onRetake,
 }: Props) {
   return (
     <>
-      <button
-        onClick={onShare}
-        style={{
-          width: '100%',
-          padding: '14px 0',
-          border:
-            '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
-          borderRadius: 14,
-          background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-          color: 'var(--accent)',
-          fontSize: 15,
-          fontWeight: 600,
-          cursor: 'pointer',
-          marginTop: 4,
-          marginBottom: 10,
-        }}
-      >
-        📤 Поделиться результатами
-      </button>
-
       <button
         onClick={onClose}
         className="btn-primary"

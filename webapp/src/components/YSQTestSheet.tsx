@@ -9,6 +9,7 @@ import { ysqShareCard } from '../../../shared/src/share/cards/ysqCard';
 import { ScoreBarRow } from '../../../shared/src/components/ScoreBarRow';
 import { YsqDisclaimer } from '../../../shared/src/components/YsqDisclaimer';
 import { YsqTherapyCta } from '../../../shared/src/components/YsqTherapyCta';
+import { YsqResultTopBar } from '../../../shared/src/components/YsqResultTopBar';
 import { YsqTestHeader } from '../../../shared/src/components/YsqTestHeader';
 import { YsqAnswerList } from '../../../shared/src/components/YsqAnswerList';
 import { useHistorySheet } from '../hooks/useHistorySheet';
@@ -200,6 +201,9 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
         return (
           <div>
+            {/* «Как понимать» + «Поделиться» — с самого верха (правило онбординга) */}
+            <YsqResultTopBar tr={tr} onShare={() => setShowShare(true)} onHelpOpen={() => api.trackEvent('ysq_help_open')} />
+
             {/* Header */}
             <div style={{ marginBottom: 16 }}>
               <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', marginBottom: 4, lineHeight: 1.2 }}>
@@ -208,10 +212,6 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
               {dateLabel && (
                 <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Пройдено {dateLabel}</div>
               )}
-            </div>
-
-            <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55, marginBottom: 20, fontStyle: 'italic' }}>
-              Главный показатель – средний балл по схеме (1–6): насколько её утверждения в среднем про вас. От 4 из 6 схема считается выраженной. Рядом – сколько утверждений отмечено на «5» или «6» (сильное согласие). Это инструмент самоисследования, не диагноз.
             </div>
 
             {activeCount === 0 && (
@@ -375,13 +375,6 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
                 </div>
               </div>
             )}
-
-            <button
-              onClick={() => setShowShare(true)}
-              style={{ width: '100%', padding: '14px 0', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)', borderRadius: 14, background: 'color-mix(in srgb, var(--accent) 10%, transparent)', color: 'var(--accent)', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginTop: 4, marginBottom: 10 }}
-            >
-              📤 Поделиться результатами
-            </button>
 
             <button onClick={goBack} className="ex-btn ex-btn-primary" style={{ marginBottom: 10 }}>
               Сохранить и закрыть

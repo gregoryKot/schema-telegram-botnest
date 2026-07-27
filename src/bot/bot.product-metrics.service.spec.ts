@@ -58,7 +58,8 @@ describe('ProductMetricsService.getMetrics', () => {
       .mockResolvedValueOnce(40) // share_card total30
       .mockResolvedValueOnce(15) // today_focus_change
       .mockResolvedValueOnce(33) // breath_start
-      .mockResolvedValueOnce(18); // journey_open
+      .mockResolvedValueOnce(18) // journey_open
+      .mockResolvedValueOnce(44); // ysq_help_open
 
     const prisma: any = {
       user: {
@@ -104,7 +105,7 @@ describe('ProductMetricsService.getMetrics', () => {
       practices: 90,
       childhood: 60,
     });
-    expect(m.ysq).toEqual({ started: 260, completed: 210 });
+    expect(m.ysq).toEqual({ started: 260, completed: 210, helpOpens: 44 });
     expect(m.addressForm).toEqual({ ty: 900, vy: 250, notChosen: 90 });
     // распределение экранов отсортировано по убыванию
     expect(m.sections).toEqual([
@@ -184,7 +185,7 @@ const EMPTY_METRICS = {
     practices: 0,
     childhood: 0,
   },
-  ysq: { started: 0, completed: 0 },
+  ysq: { started: 0, completed: 0, helpOpens: 0 },
   addressForm: { ty: 0, vy: 0, notChosen: 0 },
   sections: [],
   themes: { light: 0, dark: 0, system: 0 },
