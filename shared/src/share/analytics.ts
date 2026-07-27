@@ -40,7 +40,12 @@ export const JOURNEY_OPEN_EVENT = 'journey_open';
 // (PRACTICE_LINK_PLACES) — src/analytics/analytics.constants.ts, при
 // добавлении места синхронь оба.
 export const PRACTICE_LINK_CLICK_EVENT = 'practice_link_click';
-export type PracticeLinkPlace = 'author' | 'footer' | 'faq' | 'quiz';
+export type PracticeLinkPlace =
+  | 'author'
+  | 'footer'
+  | 'faq'
+  | 'quiz'
+  | 'ysq_result';
 export type OnboardingStep =
   | 'welcome'
   | 'privacy'

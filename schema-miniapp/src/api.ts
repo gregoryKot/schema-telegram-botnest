@@ -86,6 +86,11 @@ export const api = {
   trackEvent: (name: string, meta?: Record<string, unknown>): void => {
     void post('/api/event', { name, meta }).catch(() => undefined);
   },
+  // Анонимные события (practice_link_click и т.п.) — без initData, userId=null
+  // на сервере. Парно webapp.api.trackPublicEvent (правило №3).
+  trackPublicEvent: (name: string, meta?: Record<string, unknown>): void => {
+    void post('/api/public-event', { name, meta }).catch(() => undefined);
+  },
 
   // Случайная фраза Здорового взрослого (пул канала; готовый контент).
   getHealthyPhrase: () => get<{ text: string | null }>('/api/healthy-phrase'),

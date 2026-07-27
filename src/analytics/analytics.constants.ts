@@ -75,6 +75,7 @@ export const PRACTICE_LINK_PLACES = [
   'footer',
   'faq',
   'quiz',
+  'ysq_result', // CTA в результатах теста схем (оба фронтенда)
 ] as const;
 export type PracticeLinkPlace = (typeof PRACTICE_LINK_PLACES)[number];
 

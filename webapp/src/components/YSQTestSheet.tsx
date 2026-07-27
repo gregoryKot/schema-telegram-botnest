@@ -8,6 +8,7 @@ import { pressable } from '../utils/a11y';
 import { ysqShareCard } from '../../../shared/src/share/cards/ysqCard';
 import { ScoreBarRow } from '../../../shared/src/components/ScoreBarRow';
 import { YsqDisclaimer } from '../../../shared/src/components/YsqDisclaimer';
+import { YsqTherapyCta } from '../../../shared/src/components/YsqTherapyCta';
 import { YsqTestHeader } from '../../../shared/src/components/YsqTestHeader';
 import { YsqAnswerList } from '../../../shared/src/components/YsqAnswerList';
 import { useHistorySheet } from '../hooks/useHistorySheet';
@@ -328,31 +329,15 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
               </div>
             )}
 
-            {/* CTA */}
-            {/* CTA прячем целиком, если сам пользователь терапевт (isSelf):
-                «Написать вам» бессмысленно. */}
+            {/* CTA — общий компонент (shared, правило №3), клик трекается
+                (правило №8, place 'ysq_result'). Прячем целиком, если сам
+                пользователь терапевт (isSelf): «Написать вам» бессмысленно. */}
             {activeCount > 0 && !cta.isSelf && (
-              <div style={{
-                marginTop: 8, marginBottom: 16,
-                background: 'color-mix(in srgb, var(--accent) 7%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-                borderRadius: 16, padding: '16px 18px',
-              }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', marginBottom: 8 }}>
-                  {tr('Хочешь разобраться глубже?', 'Хотите разобраться глубже?')}
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 12 }}>
-                  Схемы – паттерны, сложившиеся давно. Их можно менять, но это требует времени и поддержки. Схема-терапия – один из самых эффективных методов для этой работы.
-                </div>
-                <a
-                  href={cta.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ display: 'block', textAlign: 'center', padding: '11px 0', borderRadius: 12, background: 'color-mix(in srgb, var(--accent) 15%, transparent)', color: 'var(--accent)', fontSize: 14, fontWeight: 500, textDecoration: 'none' }}
-                >
-                  {cta.label}
-                </a>
-              </div>
+              <YsqTherapyCta
+                cta={cta}
+                tr={tr}
+                onLinkClick={() => api.trackPublicEvent('practice_link_click', { place: 'ysq_result' })}
+              />
             )}
 
             {/* History timeline */}

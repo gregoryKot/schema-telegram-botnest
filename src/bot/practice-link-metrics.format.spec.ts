@@ -6,11 +6,12 @@ import {
 } from './practice-link-metrics.format';
 
 const FULL: PracticeLinkMetrics = {
-  total30: 9,
+  total30: 12,
   author30: 5,
   footer30: 2,
   faq30: 1,
   quiz30: 1,
+  ysqResult30: 3,
 };
 
 const EMPTY: PracticeLinkMetrics = {
@@ -19,6 +20,7 @@ const EMPTY: PracticeLinkMetrics = {
   footer30: 0,
   faq30: 0,
   quiz30: 0,
+  ysqResult30: 0,
 };
 
 describe('formatPracticeLinkMetrics', () => {
@@ -26,13 +28,13 @@ describe('formatPracticeLinkMetrics', () => {
     const text = formatPracticeLinkMetrics(FULL);
     expect(text).toContain('Переходы к автору-терапевту');
     expect(text).toContain(
-      'Переходили на сайт практики: 9 ' +
+      'Переходили на сайт практики: 12 ' +
         '(из блока об авторе — 5, из подвала — 2, из вопросов — 1, ' +
-        'из тестов — 1)',
+        'из мини-тестов — 1, из результатов теста схем — 3)',
     );
     // Язык без терминов: никаких сырых ключей события и англицизмов.
     expect(text).not.toMatch(
-      /practice|link|click|place|author|footer|faq|quiz/i,
+      /practice|link|click|place|author|footer|faq|quiz|ysq/i,
     );
   });
 

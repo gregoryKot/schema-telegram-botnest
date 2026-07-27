@@ -10,6 +10,8 @@ export interface PracticeLinkMetrics {
   footer30: number;
   faq30: number;
   quiz30: number;
+  /** CTA в результатах теста схем (внутри приложения). */
+  ysqResult30: number;
 }
 
 /** Текстовый блок для /stats. Чистая функция. */
@@ -22,7 +24,8 @@ export function formatPracticeLinkMetrics(m: PracticeLinkMetrics): string {
   lines.push(
     `Переходили на сайт практики: ${m.total30} ` +
       `(из блока об авторе — ${m.author30}, из подвала — ${m.footer30}, ` +
-      `из вопросов — ${m.faq30}, из тестов — ${m.quiz30})`,
+      `из вопросов — ${m.faq30}, из мини-тестов — ${m.quiz30}, ` +
+      `из результатов теста схем — ${m.ysqResult30})`,
   );
   return lines.join('\n');
 }

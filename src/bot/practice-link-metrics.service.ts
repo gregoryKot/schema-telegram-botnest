@@ -29,6 +29,7 @@ export class PracticeLinkMetricsService {
       footer30: byPlace('footer'),
       faq30: byPlace('faq'),
       quiz30: byPlace('quiz'),
+      ysqResult30: byPlace('ysq_result'),
     };
   }
 }

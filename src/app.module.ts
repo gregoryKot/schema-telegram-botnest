@@ -23,11 +23,13 @@ import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { ArticlesModule } from './articles/articles.module';
 import { ArticleSeoMiddleware } from './articles/article-seo.middleware';
+import { practiceDomainMiddleware } from './practice-domain.middleware';
 import { SiteContentModule } from './site-content/site-content.module';
 
 // Domains that are aliases of schemehappens.ru and need their own og:url / canonical
 // so Telegram generates a separate link preview card for each domain.
-const ALIAS_DOMAINS = new Set(['kotlarewski.ru', 'kotlarewski.gr']);
+// kotlarewski.ru здесь не нужен: practiceDomainMiddleware 301-ит его на .gr.
+const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
 
 @Module({
   imports: [
@@ -68,6 +70,12 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     const indexPath = join(__dirname, '..', 'webapp', 'dist', 'index.html');
     const html = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : null;
+
+    // Первым: 301 kotlarewski.ru → .gr + домен-зависимые sitemap/robots
+    // практики (см. practice-domain.middleware.ts).
+    consumer
+      .apply(practiceDomainMiddleware)
+      .forRoutes({ path: '{*path}', method: RequestMethod.GET });
 
     consumer
       .apply((req: Request, res: Response, next: () => void) => {
