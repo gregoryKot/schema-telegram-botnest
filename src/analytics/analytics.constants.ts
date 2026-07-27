@@ -129,6 +129,7 @@ export const ONBOARDING_STEPS = [
   'needs_what',
   'needs_why',
   'needs_result',
+  'diaries_why',
   'today_screen',
   'author',
   'home_screen',

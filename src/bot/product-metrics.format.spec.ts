@@ -1,6 +1,7 @@
 // Тест форматтера продуктовых метрик /stats (правило №8): простые слова,
 // корректные проценты и — обязательно — пустая БД без NaN/мусора.
 import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
+import { ONBOARDING_STEPS } from '../analytics/analytics.constants';
 
 const FULL: ProductMetrics = {
   onboarding: { cohort30: 118, completed30: 70 },
@@ -8,6 +9,7 @@ const FULL: ProductMetrics = {
     { step: 'welcome', count: 100 },
     { step: 'not_therapy', count: 88 },
     { step: 'needs_what', count: 80 },
+    { step: 'diaries_why', count: 75 },
     { step: 'done', count: 70 },
   ],
   adoption: {
@@ -87,6 +89,7 @@ describe('formatProductMetrics', () => {
     expect(t).toContain('поздоровались — 100');
     expect(t).toContain('это не терапия — 88');
     expect(t).toContain('что за пять потребностей — 80');
+    expect(t).toContain('зачем дневники схем и режимов — 75');
     expect(t).toContain('дошли до конца — 70');
     expect(t.indexOf('поздоровались')).toBeLessThan(
       t.indexOf('что за пять потребностей'),
@@ -123,6 +126,18 @@ describe('formatProductMetrics', () => {
     expect(t).toContain('попросили не предлагать: 30');
     // никакого жаргона
     expect(t).not.toMatch(/YSQ|retention|adoption|event|toggle|focus/i);
+  });
+
+  // Сверка с реестром шагов: новый шаг без подписи показал бы в /stats сырой
+  // ключ (diaries_why вместо слов) — правило №8 требует простой язык.
+  it('каждый шаг из ONBOARDING_STEPS подписан словами, ключ не светится', () => {
+    const t = formatProductMetrics({
+      ...EMPTY,
+      onboardingSteps: ONBOARDING_STEPS.map((step) => ({ step, count: 1 })),
+    });
+    for (const step of ONBOARDING_STEPS) {
+      expect(t).not.toContain(step);
+    }
   });
 
   it('пустая БД: без NaN и без «висящих» процентов', () => {
