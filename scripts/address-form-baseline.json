@@ -18,5 +18,6 @@
   "schema-miniapp/src/components/settingsSheet/InfoOverlays.tsx": 5,
   "schema-miniapp/src/components/settingsSheet/MiscSections.tsx": 1,
   "schema-miniapp/src/utils/addressForm.tsx": 2,
-  "shared/src/hooks/ysqSchemas.ts": 1
+  "shared/src/hooks/ysqSchemas.ts": 1,
+  "shared/src/utils/tyFormsSweep.ts": 10
 }
