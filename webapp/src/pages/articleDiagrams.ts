@@ -127,6 +127,27 @@ const TRAUMA = `
   <figcaption><b>Травма травме рознь.</b> При одном остром событии первой линией идут EMDR и травмофокусированная КПТ; при хронической травме развития раскрывается схема-терапия.</figcaption>
 </figure>`;
 
+const SUPPORT_VS_STRUCTURE = `
+<figure class="dg">
+  <svg viewBox="0 0 640 250" role="img" aria-label="Поддерживающая беседа и схема-терапия">
+    <rect class="dg-node" x="14" y="14" width="300" height="222" rx="16"/>
+    <text class="dg-cap-acc" x="34" y="44">ПОДДЕРЖИВАЮЩАЯ БЕСЕДА</text>
+    <text class="dg-t" x="34" y="76">Свободная повестка</text>
+    <text class="dg-s" x="34" y="100">тема – то, что накопилось</text>
+    <text class="dg-cap" x="34" y="140">МИШЕНЬ</text>
+    <text class="dg-s" x="34" y="164">разгрузка, быть услышанным</text>
+    <text class="dg-s" x="34" y="188">эта неделя, конкретный случай</text>
+    <rect class="dg-accent" x="326" y="14" width="300" height="222" rx="16"/>
+    <text class="dg-cap-on" x="346" y="44">СХЕМА-ТЕРАПИЯ</text>
+    <text class="dg-t-on" x="346" y="76">Структура и модель</text>
+    <text class="dg-s-on" x="346" y="100">схемы, режимы, задания</text>
+    <text class="dg-cap-on" x="346" y="140">МИШЕНЬ</text>
+    <text class="dg-s-on" x="346" y="164">изменить сам паттерн</text>
+    <text class="dg-s-on" x="346" y="188">повторяющийся сценарий, годами</text>
+  </svg>
+  <figcaption><b>Разная задача, а не разный уровень.</b> Поддерживающая беседа снимает нагрузку с текущей ситуации; схема-терапия целится в паттерн, который эту ситуацию раз за разом производит.</figcaption>
+</figure>`;
+
 const STANDARDS = `
 <figure class="dg">
   <svg viewBox="0 0 640 250" role="img" aria-label="Здоровые стандарты и перфекционизм">
@@ -279,6 +300,7 @@ const DURATION = `
 </figure>`;
 
 export const DIAGRAMS: Record<string, string> = {
+  'support-vs-structure': SUPPORT_VS_STRUCTURE,
   standards: STANDARDS,
   duration: DURATION,
   cycle: CYCLE,
@@ -294,6 +316,7 @@ export const DIAGRAMS: Record<string, string> = {
 
 // For the admin editor's diagram picker.
 export const DIAGRAM_OPTIONS: { key: string; label: string }[] = [
+  { key: 'support-vs-structure', label: 'Поддерживающая беседа vs схема-терапия' },
   { key: 'standards', label: 'Здоровая планка vs перфекционизм' },
   { key: 'duration', label: 'Сколько длится (таймлайн этапов)' },
   { key: 'cycle', label: 'Порочный круг' },
