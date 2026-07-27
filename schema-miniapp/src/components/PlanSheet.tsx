@@ -3,6 +3,7 @@ import { api, UserPractice } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
 import { useTr } from '../utils/addressForm';
+import { PracticeOptionRow } from './planSheet/PracticeOptionRow';
 
 function ianaToUtcOffset(iana: string): number {
   try {
@@ -124,6 +125,21 @@ export function PlanSheet({
     setPhase('confirm');
   }
 
+  function handleDeletePractice(id: number) {
+    if (deletingIds.has(id)) return;
+    setDeletingIds((prev) => new Set([...prev, id]));
+    api
+      .deletePractice(id)
+      .then(() => setUserPractices((prev) => prev.filter((p) => p.id !== id)))
+      .catch(() =>
+        setDeletingIds((prev) => {
+          const s = new Set(prev);
+          s.delete(id);
+          return s;
+        }),
+      );
+  }
+
   function handleCustomSubmit() {
     const t = customText.trim();
     if (!t) return;
@@ -241,126 +257,18 @@ export function PlanSheet({
               <SectionLabel>Мои практики</SectionLabel>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {allOptions.map(({ text, isUser, id }) => (
-                  <div
+                  <PracticeOptionRow
                     key={text}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                  >
-                    <div
-                      onClick={() => selectText(text)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          selectText(text);
-                        }
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        flex: 1,
-                        background: 'rgba(var(--fg-rgb),0.05)',
-                        border: '1px solid rgba(var(--fg-rgb),0.08)',
-                        borderRadius: 12,
-                        padding: '11px 14px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: '50%',
-                          flexShrink: 0,
-                          background: isUser
-                            ? color
-                            : 'rgba(var(--fg-rgb),0.2)',
-                        }}
-                      />
-                      <div
-                        style={{
-                          fontSize: 14,
-                          color: 'rgba(var(--fg-rgb),0.85)',
-                          flex: 1,
-                          lineHeight: 1.45,
-                        }}
-                      >
-                        {text}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 18,
-                          color: 'var(--text-faint)',
-                          flexShrink: 0,
-                        }}
-                      >
-                        ›
-                      </div>
-                    </div>
-                    {isUser && id !== undefined && (
-                      <div
-                        onClick={() => {
-                          if (deletingIds.has(id)) return;
-                          setDeletingIds((prev) => new Set([...prev, id]));
-                          api
-                            .deletePractice(id)
-                            .then(() =>
-                              setUserPractices((prev) =>
-                                prev.filter((p) => p.id !== id),
-                              ),
-                            )
-                            .catch(() =>
-                              setDeletingIds((prev) => {
-                                const s = new Set(prev);
-                                s.delete(id);
-                                return s;
-                              }),
-                            );
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        aria-label="Удалить"
-                        onKeyDown={(e) => {
-                          if (e.key !== 'Enter' && e.key !== ' ') return;
-                          e.preventDefault();
-                          if (deletingIds.has(id)) return;
-                          setDeletingIds((prev) => new Set([...prev, id]));
-                          api
-                            .deletePractice(id)
-                            .then(() =>
-                              setUserPractices((prev) =>
-                                prev.filter((p) => p.id !== id),
-                              ),
-                            )
-                            .catch(() =>
-                              setDeletingIds((prev) => {
-                                const s = new Set(prev);
-                                s.delete(id);
-                                return s;
-                              }),
-                            );
-                        }}
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 8,
-                          flexShrink: 0,
-                          background: 'rgba(255,100,100,0.1)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: deletingIds.has(id) ? 'default' : 'pointer',
-                          fontSize: 16,
-                          color: deletingIds.has(id)
-                            ? 'rgba(255,100,100,0.2)'
-                            : 'rgba(255,100,100,0.5)',
-                        }}
-                      >
-                        ×
-                      </div>
-                    )}
-                  </div>
+                    text={text}
+                    isUser={isUser}
+                    id={id}
+                    color={color}
+                    onSelect={() => selectText(text)}
+                    deleting={id !== undefined && deletingIds.has(id)}
+                    onDelete={() =>
+                      id !== undefined && handleDeletePractice(id)
+                    }
+                  />
                 ))}
               </div>
             </div>
