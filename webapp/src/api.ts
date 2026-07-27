@@ -430,8 +430,8 @@ export const api = {
     void post('/api/event', { name, meta }).catch(() => undefined);
   },
 
-  // Публичные мини-тесты (лид-магнит, БЕЗ auth): контент из quiz-registry
-  // бэкенда и анонимная аналитика quiz_started/quiz_completed (userId = null).
+  // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и
+  // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
   getQuizzes: (form?: 'ty' | 'vy') =>
     get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
   trackPublicEvent: (name: string, meta?: Record<string, unknown>): void => {
@@ -544,7 +544,7 @@ export const api = {
   getClientSchemaNotes: (clientId: number) => get<UserSchemaNote[]>(`/api/therapy/client/${clientId}/schema-notes`),
   getClientModeNotes:   (clientId: number) => get<UserModeNote[]>(`/api/therapy/client/${clientId}/mode-notes`),
   getClientDiary:       (clientId: number) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),
-  submitBooking:        (body: { name: string; contact: string; message?: string }) => postJson<{ ok: true }>('/api/booking', body),
+  submitBooking:        (body: { name: string; contact: string; message?: string; source?: string }) => postJson<{ ok: true }>('/api/booking', body),
   // Slot-based booking
   getBookingOptions:    () => get<SessionOption[]>('/api/booking/options'),
   getSlots:             (from?: string, to?: string) => {
@@ -554,7 +554,7 @@ export const api = {
     const qs = q.toString();
     return get<BookingSlot[]>(`/api/booking/slots${qs ? `?${qs}` : ''}`);
   },
-  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; acceptedOffer?: boolean; website?: string }) =>
+  bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; acceptedOffer?: boolean; website?: string; source?: string }) =>
     postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null; meetingUrl?: string | null }>('/api/booking/book', body),
   getBookingByToken:    (token: string) => get<{ status: string; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number; meetingUrl: string | null }>(`/api/booking/by-token/${token}`),
   cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),

@@ -14,11 +14,14 @@ describe('PublicEventDto', () => {
     return errs.map((e) => e.property);
   };
 
-  it('quiz_started / quiz_completed проходят', async () => {
+  it('quiz_started / quiz_completed / practice_link_click проходят', async () => {
     await expect(
       errorsFor({ name: 'quiz_started', meta: { quiz: 'drives' } }),
     ).resolves.toEqual([]);
     await expect(errorsFor({ name: 'quiz_completed' })).resolves.toEqual([]);
+    await expect(
+      errorsFor({ name: 'practice_link_click', meta: { place: 'author' } }),
+    ).resolves.toEqual([]);
   });
 
   it("НЕ-публичные события allow-list'а отклоняются (только срез тестов)", async () => {
@@ -93,6 +96,40 @@ describe('PublicEventsController', () => {
     for (const meta of cases) {
       await expect(
         controller.track({ name: 'quiz_completed', meta }),
+      ).resolves.toEqual({ ok: true });
+    }
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('practice_link_click пишется анонимно с местом клика из allow-list', async () => {
+    for (const place of ['author', 'footer', 'faq', 'quiz']) {
+      await controller.track({ name: 'practice_link_click', meta: { place } });
+      expect(track).toHaveBeenLastCalledWith(null, 'practice_link_click', {
+        place,
+      });
+    }
+  });
+
+  it('practice_link_click: лишние поля отрезаются, остаётся только place', async () => {
+    await controller.track({
+      name: 'practice_link_click',
+      meta: { place: 'faq', userId: 7, note: 'PII' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'practice_link_click', {
+      place: 'faq',
+    });
+  });
+
+  it('practice_link_click с неизвестным place молча дропается (ответ ok)', async () => {
+    const cases: Array<Record<string, unknown> | undefined> = [
+      undefined,
+      {},
+      { place: 'hack' },
+      { place: 42 },
+    ];
+    for (const meta of cases) {
+      await expect(
+        controller.track({ name: 'practice_link_click', meta }),
       ).resolves.toEqual({ ok: true });
     }
     expect(track).not.toHaveBeenCalled();

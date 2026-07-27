@@ -2,17 +2,21 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { PublicAnalyticsEventName } from '../analytics/analytics.constants';
+import { PRACTICE_LINK_PLACES } from '../analytics/analytics.constants';
 import { PublicEventDto } from './dto/public-event.dto';
 import { isQuizId, quizResultIdSet } from '../quiz/quiz-registry';
 
-// Анонимная аналитика мини-тестов с публичного сайта (правило №8): гость без
-// регистрации проходит тест — событие пишется с userId = null. Идентичность
-// не верифицирована, поэтому троттлинг-бакет — по IP (правило №5: глобальный
-// UserThrottlerGuard для запросов без кредов возвращает именно IP), и лимит
-// заметно жёстче обычного: пара тестов в минуту, а не поток.
+// Анонимная аналитика публичного сайта (правило №8): гость без регистрации
+// проходит мини-тест или кликает ссылку на сайт практики с лендинга — событие
+// пишется с userId = null. Идентичность не верифицирована, поэтому
+// троттлинг-бакет — по IP (правило №5: глобальный UserThrottlerGuard для
+// запросов без кредов возвращает именно IP), и лимит заметно жёстче обычного.
 @Controller('api')
 export class PublicEventsController {
   private readonly validResults = quizResultIdSet();
+  private readonly validPlaces: ReadonlySet<string> = new Set(
+    PRACTICE_LINK_PLACES,
+  );
 
   constructor(private readonly analytics: AnalyticsService) {}
 
@@ -39,14 +43,20 @@ export class PublicEventsController {
   }
 
   /**
-   * Пропускает ТОЛЬКО известные поля по реестру тестов; src клиенту не
-   * доверяем — публичный эндпоинт всегда пишет 'web' (бот шлёт 'bot' сам,
-   * через AnalyticsService напрямую).
+   * Пропускает ТОЛЬКО известные поля по реестрам (тесты, места клика); src
+   * клиенту не доверяем — публичный эндпоинт всегда пишет 'web' (бот шлёт
+   * 'bot' сам, через AnalyticsService напрямую).
    */
   private sanitize(
     name: PublicAnalyticsEventName,
     meta: Record<string, unknown> | undefined,
   ): Record<string, unknown> | null {
+    if (name === 'practice_link_click') {
+      const place = meta?.place;
+      return typeof place === 'string' && this.validPlaces.has(place)
+        ? { place }
+        : null;
+    }
     const quiz = meta?.quiz;
     if (typeof quiz !== 'string' || !isQuizId(quiz)) return null;
     if (name === 'quiz_started') return { quiz, src: 'web' };

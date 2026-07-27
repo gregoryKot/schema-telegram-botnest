@@ -26,6 +26,9 @@
 //   quiz_completed      — дошёл до результата мини-теста (meta.quiz +
 //                         meta.result + meta.src). С сайта идут анонимно
 //                         (userId = null) через POST /api/public-event.
+//   practice_link_click — кликнул ссылку на сайт практики автора с
+//                         продуктового лендинга (meta.place). Всегда анонимно
+//                         (userId = null) через POST /api/public-event.
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -44,15 +47,17 @@ export const ANALYTICS_EVENTS = [
   'journey_open',
   'quiz_started',
   'quiz_completed',
+  'practice_link_click',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
-// События мини-тестов, которые разрешено слать БЕЗ авторизации (лид-магнит
-// «тесты без регистрации», POST /api/public-event). Только этот срез —
+// События, которые разрешено слать БЕЗ авторизации (POST /api/public-event):
+// мини-тесты «без регистрации» и клики лендинга. Только этот срез —
 // остальная аналитика по-прежнему требует верифицированной идентичности.
 export const PUBLIC_ANALYTICS_EVENTS = [
   'quiz_started',
   'quiz_completed',
+  'practice_link_click',
 ] as const;
 export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 
@@ -60,6 +65,18 @@ export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 // 'web' на сервере (клиенту не верим), бот — 'bot' сам.
 export const QUIZ_EVENT_SOURCES = ['bot', 'web'] as const;
 export type QuizEventSource = (typeof QUIZ_EVENT_SOURCES)[number];
+
+// Откуда кликнули по ссылке на сайт практики автора (meta.place для
+// practice_link_click): блок «Кто это делает», подвал лендинга, ответ FAQ,
+// экран результата мини-теста. Парная константа на фронте —
+// shared/src/share/analytics.ts (синхронно).
+export const PRACTICE_LINK_PLACES = [
+  'author',
+  'footer',
+  'faq',
+  'quiz',
+] as const;
+export type PracticeLinkPlace = (typeof PRACTICE_LINK_PLACES)[number];
 
 // Блоки главного экрана, которые можно скрыть (meta.block). Заменяет частное
 // событие today_streak_toggle: блоков стало больше одного, и заводить событие

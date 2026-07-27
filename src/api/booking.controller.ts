@@ -8,15 +8,15 @@ import {
 } from '@nestjs/common';
 import { TelegramService } from '../telegram/telegram.service';
 import { EmailService } from '../auth/email.service';
+import { escapeHtml } from '../utils/escape-html';
 
 interface BookingDto {
   name: string;
   contact: string;
   message?: string;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Откуда пришла заявка: страница + referrer, собирает фронт. Только для
+  // уведомления админу (атрибуция лидов), в БД не пишется.
+  source?: string;
 }
 
 @Controller('api')
@@ -31,7 +31,7 @@ export class BookingController {
   @Post('booking')
   @HttpCode(HttpStatus.OK)
   submitBooking(@Body() dto: BookingDto): { ok: true } {
-    const { name, contact, message } = dto;
+    const { name, contact, message, source } = dto;
 
     if (!name?.trim() || !contact?.trim()) {
       return { ok: true }; // silent — validation on frontend
@@ -40,6 +40,7 @@ export class BookingController {
     const n = escapeHtml(name.slice(0, 100).trim());
     const c = escapeHtml(contact.slice(0, 100).trim());
     const m = message?.trim() ? escapeHtml(message.slice(0, 500).trim()) : null;
+    const src = source?.trim() ? source.trim().slice(0, 200) : null;
 
     const tgText = [
       '📩 <b>Новая заявка с сайта</b>',
@@ -47,6 +48,7 @@ export class BookingController {
       `👤 <b>Имя:</b> ${n}`,
       `📬 <b>Контакт:</b> ${c}`,
       m ? `💬 <b>Запрос:</b>\n${m}` : null,
+      src ? `🔗 <b>Откуда:</b> ${escapeHtml(src)}` : null,
     ]
       .filter(Boolean)
       .join('\n');
@@ -57,6 +59,7 @@ export class BookingController {
       `Имя: ${name.trim()}`,
       `Контакт: ${contact.trim()}`,
       m ? `Запрос:\n${message!.trim()}` : null,
+      src ? `Откуда: ${src}` : null,
     ]
       .filter(Boolean)
       .join('\n');

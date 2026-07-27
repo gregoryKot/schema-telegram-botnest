@@ -46,8 +46,9 @@ const PUBLIC_BY_DESIGN: Record<string, string> = {
     'мини-тесты без регистрации: статический контент из quiz-registry (GET), ' +
     'пользовательских данных нет, троттлинг по IP',
   'api/public-events.controller.ts':
-    'анонимная аналитика мини-тестов: только quiz_started/quiz_completed, ' +
-    'meta режется по реестру тестов, userId = null, троттлинг по IP',
+    'анонимная аналитика мини-тестов и лендинга: только quiz_started/' +
+    'quiz_completed/practice_link_click, meta режется по реестрам ' +
+    '(тесты, места клика), userId = null, троттлинг по IP',
 };
 
 // (B) Admin-key-gated: защита через заголовок x-admin-key (assertAdminKey),
