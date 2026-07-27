@@ -111,24 +111,25 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               j={j}
               subtitle={jp.subtitle}
               onOpenItem={detail.open}
+              onShareTotals={sh.shareTotals}
               skeleton={
-            <>
-              {[96, 64, 56, 56, 56, 56].map((h, i) => (
-                <div
-                  key={i}
-                  style={{
-                    height: h,
-                    borderRadius: 16,
-                    marginBottom: 8,
-                    background:
-                      'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)',
-                    backgroundSize: '200% auto',
-                    animation: 'shimmer 1.5s linear infinite',
-                  }}
-                />
-              ))}
-            </>
-          }
+                <>
+                  {[96, 64, 56, 56, 56, 56].map((h, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        height: h,
+                        borderRadius: 16,
+                        marginBottom: 8,
+                        background:
+                          'linear-gradient(90deg,rgba(var(--fg-rgb),0.03) 25%,rgba(var(--fg-rgb),0.07) 50%,rgba(var(--fg-rgb),0.03) 75%)',
+                        backgroundSize: '200% auto',
+                        animation: 'shimmer 1.5s linear infinite',
+                      }}
+                    />
+                  ))}
+                </>
+              }
             />
           </>
         )}

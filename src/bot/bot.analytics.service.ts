@@ -2,38 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NeedId, NEED_IDS } from './bot.service';
 import { localDate } from '../utils/tz';
-
-export interface RetentionPoint {
-  cohort: number;
-  retained: number;
-}
-export interface RetentionStats {
-  d1: RetentionPoint;
-  d7: RetentionPoint;
-  d30: RetentionPoint;
-  funnel: { registered30: number; consented30: number; filledOnce30: number };
-}
-
-/** Блок для /stats — чистая функция, покрыта тестом. */
-export function formatRetentionBlock(s: RetentionStats): string {
-  const pct = (p: RetentionPoint) =>
-    p.cohort === 0
-      ? '—'
-      : `${Math.round((p.retained / p.cohort) * 100)}% (${p.retained}/${p.cohort})`;
-  const f = s.funnel;
-  const fp = (n: number) =>
-    f.registered30 === 0 ? '' : ` (${Math.round((n / f.registered30) * 100)}%)`;
-  return [
-    `📉 <b>Возвращаются ли новенькие</b>`,
-    `(заходят ли снова на 1-й, 7-й и 30-й день после первого раза)`,
-    `D1: ${pct(s.d1)} · D7: ${pct(s.d7)} · D30: ${pct(s.d30)}`,
-    '',
-    `🚪 <b>Первые шаги новичка</b> (кто дошёл до какого шага за месяц)`,
-    `Регистрация: ${f.registered30}`,
-    `→ Приняли согласие: ${f.consented30}${fp(f.consented30)}`,
-    `→ Заполнили трекер хоть раз: ${f.filledOnce30}${fp(f.filledOnce30)}`,
-  ].join('\n');
-}
+import { formatAdminStats } from './admin-stats.format';
+import {
+  formatRetentionBlock,
+  RetentionStats,
+  RetentionPoint,
+} from './retention.format';
 
 @Injectable()
 export class BotAnalyticsService {
@@ -774,16 +748,8 @@ export class BotAnalyticsService {
 
     // Most neglected need (lowest avg this week)
     const lowestNeed = needAvgs[0];
-    const needLabels: Record<string, string> = {
-      attachment: 'Привязанность',
-      autonomy: 'Автономия',
-      expression: 'Выражение чувств',
-      play: 'Спонтанность',
-      limits: 'Границы',
-    };
 
     // Best fill day of week (last 30 days) — count user-day pairs per DOW
-    const DOW = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
     const dowCounts: number[] = new Array<number>(7).fill(0);
     for (const r of fillsByDow) {
       dowCounts[new Date(r.date + 'T12:00:00Z').getUTCDay()]++;
@@ -792,33 +758,29 @@ export class BotAnalyticsService {
     const fillRate =
       month30Count > 0 ? Math.round((todayCount / month30Count) * 100) : 0;
 
-    const lines = [
-      `📊 <b>Что происходит в приложении</b> · ${today}`,
-      '',
-      `👥 <b>Люди</b>`,
-      `Всего людей: ${totalUsers} (новых за неделю: ${newUsers7}, за месяц: ${newUsers30})`,
-      `Выключили напоминания: ${notifyOff} · заблокировали бота: ${blockedUsers}`,
-      '',
-      `📔 <b>Дневник настроения</b>`,
-      `Заполнили сегодня: ${todayCount} (это ${fillRate}% от тех, кто заходил за месяц)`,
-      `Заходили за неделю: ${week7Ratings.length} · за месяц: ${month30Count}`,
-      `⚠️ Могут уйти (заходили раньше, а всю неделю — ни разу): ${churnRisk}`,
-      '',
-      `📈 <b>Сколько дней люди ведут дневник</b> (за всё время)`,
-      `Хотя бы 1 день: ${ret1}  ·  3 дня и больше: ${ret3}  ·  неделю и больше: ${ret7}  ·  месяц и больше: ${ret30}`,
-      '',
-      `🔍 <b>Что заметили за неделю</b>`,
-      lowestNeed
-        ? `Людям больше всего не хватает: ${needLabels[lowestNeed.needId] ?? lowestNeed.needId} (в среднем ${lowestNeed._avg.value?.toFixed(1)} из 10)`
-        : 'Пока мало данных о потребностях',
-      `Чаще всего заполняют: ${DOW[bestDow]}`,
-      '',
-      `💑 <b>Пары</b> (кто ведёт дневник вдвоём)`,
-      `Сейчас вместе: ${activePairs}`,
-    ];
+    const report = formatAdminStats({
+      today,
+      totalUsers,
+      newUsers7,
+      newUsers30,
+      notifyOff,
+      blockedUsers,
+      todayCount,
+      fillRate,
+      week7Count: week7Ratings.length,
+      month30Count,
+      churnRisk,
+      ret1,
+      ret3,
+      ret7,
+      ret30,
+      lowestNeed,
+      bestDow,
+      activePairs,
+    });
 
     const retention = await this.getRetentionStats();
-    return lines.join('\n') + '\n\n' + formatRetentionBlock(retention);
+    return report + '\n\n' + formatRetentionBlock(retention);
   }
 
   async getWorstDayOfWeek(userId: bigint): Promise<string | null> {

@@ -1,10 +1,7 @@
 // Тест когортного retention и воронки онбординга (аудит 2026-07, этап 4.6).
 // SQL мокается — проверяем сборку структуры и форматирование блока /stats.
-import {
-  BotAnalyticsService,
-  formatRetentionBlock,
-  RetentionStats,
-} from './bot.analytics.service';
+import { BotAnalyticsService } from './bot.analytics.service';
+import { formatRetentionBlock, RetentionStats } from './retention.format';
 
 describe('getRetentionStats', () => {
   it('собирает точки D1/D7/D30 и воронку из запросов', async () => {

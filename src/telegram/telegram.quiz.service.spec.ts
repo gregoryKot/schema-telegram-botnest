@@ -55,6 +55,12 @@ describe('TelegramQuizService', () => {
     );
   });
 
+  it('/test (единственное число) — алиас, открывает тот же список', async () => {
+    boot();
+    const ctx = await runCommand(fakeBot, 'test');
+    expect((ctx.reply as jest.Mock).mock.calls[0][0]).toContain('Мини-тесты');
+  });
+
   it('интро отвечает «что это и зачем» и ведёт на первый вопрос', async () => {
     boot();
     const ctx = await runAction(fakeBot, 'qz:i:drives');
@@ -71,6 +77,12 @@ describe('TelegramQuizService', () => {
     const dbOrder = botService.getUserSettings.mock.invocationCallOrder[0];
     expect(answerOrder).toBeLessThan(dbOrder);
     expect(flat(ctx)).toContain('вопрос 1 из 7');
+    // Полные тексты вариантов — в СООБЩЕНИИ (кнопки Telegram режут длинное),
+    // кнопки — короткие номера (прод-скрин 2026-07-26).
+    expect(flat(ctx)).toContain('Нормальные люди уже на пробежке');
+    const rows = (ctx.editMessageText as jest.Mock).mock.calls[0][1]
+      .reply_markup.inline_keyboard;
+    expect(rows[0].map((b: any) => b.text)).toEqual(['1️⃣', '2️⃣', '3️⃣', '4️⃣']);
     expect(analytics.track).toHaveBeenCalledWith(BigInt(1), 'quiz_started', {
       quiz: 'drives',
       src: 'bot',

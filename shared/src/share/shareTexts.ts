@@ -73,8 +73,18 @@ export function modeEntryShareText(link: string): string {
   return `🌿 Голос моего Здорового Взрослого.\n\n${link}`;
 }
 
-export function journeyShareText(total: number, link: string): string {
-  return `🧭 Мой путь: ${total} ${pluralEntries(total)} заботы о себе — дневники, практики, тесты.\n\n${link}`;
+export function journeyShareText(
+  count: number,
+  link: string,
+  period: 'all' | 'week' | 'month' = 'all',
+): string {
+  const head =
+    period === 'week'
+      ? '🧭 Моя неделя'
+      : period === 'month'
+        ? '🧭 Мой месяц'
+        : '🧭 Мой путь';
+  return `${head}: ${count} ${pluralEntries(count)} заботы о себе — дневники, практики, тесты.\n\n${link}`;
 }
 
 /** Один шаг из ленты «Мой путь» (выполненная практика, запись дневника…). */
