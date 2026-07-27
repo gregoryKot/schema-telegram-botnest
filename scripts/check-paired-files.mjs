@@ -29,11 +29,15 @@ const PAIRS = [
   'utils/AddressFormProvider.tsx',
   'components/CrisisCard.tsx',
   'hooks/useYsqTest.ts',
+  'hooks/useYsqTest.test.ts',
   'utils/format.ts',
+  'utils/format.test.ts',
   'utils/storageKeys.ts',
   'utils/a11y.ts',
   'utils/reducedMotion.ts',
   'hooks/useReducedMotionPref.ts',
+  'utils/telemetryUrl.ts',
+  'utils/telemetryUrl.test.ts',
 ];
 
 // Осознанно НЕ в списке (разошлись содержательно, или намеренное визуальное

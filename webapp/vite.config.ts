@@ -24,6 +24,8 @@ export default defineConfig({
   test: {
     coverage: {
       provider: 'v8',
+      // json-summary — обязателен: его читает scripts/check-frontend-coverage-ratchet.mjs.
+      reporter: ['text', 'json-summary'],
       include: ['src/**'],
       exclude: [
         'src/**/*.test.ts',
