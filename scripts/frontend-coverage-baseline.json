@@ -1,10 +1,10 @@
 {
   "webapp": {
-    "lines": 10.78,
-    "branches": 6.38
+    "lines": 10.83,
+    "branches": 6.39
   },
   "schema-miniapp": {
-    "lines": 17.57,
-    "branches": 14.11
+    "lines": 17.81,
+    "branches": 14.3
   }
 }
