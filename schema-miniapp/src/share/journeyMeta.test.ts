@@ -18,7 +18,12 @@ import {
   journeyTotal,
 } from '../../../shared/src/journey/journeyStats';
 import { totalsCardRows } from '../../../shared/src/share/cards/journeyTotalsCard';
-import { buildJourneyResultParts } from '../../../shared/src/journey/journeyContent';
+import {
+  buildJourneyResultParts,
+  fetchJourneyResult,
+  type JourneyContentApi,
+} from '../../../shared/src/journey/journeyContent';
+import { QUESTIONS } from '../../../shared/src/hooks/useYsqTest';
 import {
   journeyShareText,
   journeyItemShareText,
@@ -330,5 +335,29 @@ describe('totalsCardRows', () => {
     const { shown, restCount } = totalsCardRows(eleven);
     expect(shown).toHaveLength(8);
     expect(restCount).toBe(3);
+  });
+});
+
+describe('fetchJourneyResult — YSQ-фолбэк старого пользователя', () => {
+  const api = {
+    getYsqHistory: async () => [],
+    // Все ответы «совершенно верно» → каждая схема выраженная
+    getYsqResult: async () => ({ answers: Array(QUESTIONS.length).fill(6) }),
+  } as unknown as JourneyContentApi;
+
+  it('без id истории считает схемы из сохранённых ответов', async () => {
+    const parts = await fetchJourneyResult(api, {
+      type: 'ysq',
+      at: '2025-01-01',
+    });
+    expect(parts?.[0].text).toBe('Выраженных схем: 20 из 20');
+  });
+
+  it('без id и без результата → null (карточка шага)', async () => {
+    const empty = {
+      getYsqResult: async () => null,
+    } as unknown as JourneyContentApi;
+    const parts = await fetchJourneyResult(empty, { type: 'ysq', at: '' });
+    expect(parts).toBeNull();
   });
 });

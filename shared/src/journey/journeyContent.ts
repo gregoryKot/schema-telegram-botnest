@@ -6,6 +6,7 @@ import { type JourneyItem, JOURNEY_NEED_NAMES } from './journeyMeta';
 import {
   SCHEMAS,
   type YsqHistoryEntry,
+  computeScores,
   countActiveInHistory,
 } from '../hooks/useYsqTest';
 import { DETAIL_FIELDS } from './journeyDetailFields';
@@ -41,6 +42,7 @@ export interface JourneyContentApi {
   getSchemaNotes(): Promise<Array<{ schemaId: string }>>;
   getModeNotes(): Promise<Array<{ modeId: string }>>;
   getYsqHistory(): Promise<YsqHistoryEntry[]>;
+  getYsqResult(): Promise<{ answers: number[] } | null>;
 }
 
 const EXCERPT = 220;
@@ -214,11 +216,25 @@ async function fetchJourneyEntry(
     case 'mode_note':
       entry = (await api.getModeNotes()).find((n) => n.modeId === item.modeId);
       break;
-    case 'ysq':
-      entry = item.id
-        ? (await api.getYsqHistory()).find((h) => h.id === item.id)
+    case 'ysq': {
+      if (item.id) {
+        entry = (await api.getYsqHistory()).find((h) => h.id === item.id);
+        break;
+      }
+      // Старый пользователь: тест пройден до появления таблицы истории —
+      // считаем выраженные схемы прямо из сохранённых ответов.
+      const res = await api.getYsqResult();
+      entry = res
+        ? {
+            id: 0,
+            completedAt: item.at,
+            scores: Object.entries(computeScores(res.answers)).map(
+              ([id, sc]) => ({ id, pct5plus: sc.pct5plus, avg: sc.avg }),
+            ),
+          }
         : null;
       break;
+    }
     default:
       return null;
   }
