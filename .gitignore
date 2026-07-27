@@ -71,6 +71,10 @@ webapp/dist/
 # commit it whenever the mini-app source changes.
 schema-miniapp/node_modules/
 
+# vitest coverage artefacts (schema-miniapp не имеет своего .gitignore, в
+# отличие от webapp) — генерятся scripts/check-frontend-coverage-ratchet.mjs.
+schema-miniapp/coverage/
+
 
 # macOS junk
 .DS_Store

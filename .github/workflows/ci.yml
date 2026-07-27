@@ -142,7 +142,12 @@ jobs:
           cache-dependency-path: webapp/package-lock.json
       - run: npm ci --prefix webapp
       - run: npm run build --prefix webapp
-      - run: npm test --prefix webapp
+      # Фронтенд-coverage-храповик (TEST_IMPROVEMENT_PLAN.md, этап 2.1; по
+      # образцу scripts/check-coverage-ratchet.mjs бэкенда): сам гоняет
+      # `vitest run --coverage` и падает при просадке покрытия ниже
+      # scripts/frontend-coverage-baseline.json. Раньше coverage тут вообще
+      # не гейтился — джоба просто гоняла `npm test`.
+      - run: node scripts/check-frontend-coverage-ratchet.mjs --package webapp
       # ты/вы-храповик (правило CLAUDE.md): новые жёсткие «ты»-строки без tr()
       # не проходят; исторический долг зафиксирован в бейслайне.
       - run: node scripts/check-address-form.mjs
@@ -187,7 +192,9 @@ jobs:
       # доезжают до прода (webapp имеет гейт через `tsc -b`).
       - run: npm run typecheck --prefix schema-miniapp
       - run: npm run build --prefix schema-miniapp
-      - run: npm test --prefix schema-miniapp
+      # Фронтенд-coverage-храповик (TEST_IMPROVEMENT_PLAN.md, этап 2.1) —
+      # см. комментарий в джобе webapp; здесь гоняет только свой пакет.
+      - run: node scripts/check-frontend-coverage-ratchet.mjs --package schema-miniapp
       # dist коммитится в git (Docker его только копирует) — проверяем,
       # что закоммиченный dist не разошёлся с исходником.
       - name: dist актуален
