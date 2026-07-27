@@ -1,4 +1,5 @@
 import { useTr } from '../../utils/addressForm';
+import { DisclaimerTimeChip } from './DisclaimerTimeChip';
 
 // Второй содержательный шаг: зачем отмечать каждый день. Формулировка —
 // та же, что в aboutData («поведенческая техника, а не самонаблюдение»).
@@ -29,23 +30,9 @@ export function DisclaimerNeedsWhyStep() {
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '13px 16px',
-          borderRadius: 14,
-          background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
-        }}
-      >
-        <span style={{ fontSize: 20, flexShrink: 0 }}>⏱</span>
-        <div
-          style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
-        >
-          Пять оценок — это меньше минуты в день.
-        </div>
-      </div>
+      <DisclaimerTimeChip>
+        Пять оценок — это меньше минуты в день.
+      </DisclaimerTimeChip>
     </div>
   );
 }

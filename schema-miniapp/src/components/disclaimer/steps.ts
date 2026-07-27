@@ -14,6 +14,7 @@ export const ONBOARDING_ORDER: OnboardingStep[] = [
   'needs_what', // ← отсюда содержательная часть, сразу после согласий
   'needs_why',
   'needs_result',
+  'diaries_why', // что такое схемы/режимы и зачем их записывать
   'today_screen',
   'author',
   'home_screen', // только там, где нативный экран Telegram корректен

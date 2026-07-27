@@ -12,6 +12,7 @@ import { SchemaCard } from './diaryCards/SchemaCard';
 import { ModeCard } from './diaryCards/ModeCard';
 import { GratitudeCard } from './diaryCards/GratitudeCard';
 import { DraftCard } from './diaryCards/DraftCard';
+import { DiaryEmptyExplainer } from './DiaryEmptyExplainer';
 
 interface Props {
   type: DiaryType;
@@ -29,8 +30,6 @@ const DIARY_META: Record<
     title: string;
     emoji: string;
     color: string;
-    emptyLine1: string;
-    emptyLine2: string;
     fabLabel: string;
   }
 > = {
@@ -38,49 +37,21 @@ const DIARY_META: Record<
     title: 'Дневник схем',
     emoji: '📓',
     color: 'var(--accent-red)',
-    emptyLine1: 'Пока здесь тихо.',
-    emptyLine2: 'Когда что-то триггернёт — можно вернуться и записать.',
     fabLabel: '+ Записать момент',
   },
   mode: {
     title: 'Дневник режимов',
     emoji: '🔄',
     color: 'var(--accent-blue)',
-    emptyLine1: 'Пока здесь тихо.',
-    emptyLine2: 'Как только замечается знакомое состояние — можно записать.',
     fabLabel: '+ Записать режим',
   },
   gratitude: {
     title: 'Дневник благодарности',
     emoji: '🌱',
     color: 'var(--accent-green)',
-    emptyLine1: 'Пока здесь тихо.',
-    emptyLine2: 'Можно начать сегодня — достаточно трёх вещей.',
     fabLabel: '+ Записать',
   },
 };
-
-function Empty({ line1, line2 }: { line1: string; line2: string }) {
-  return (
-    <div
-      style={{
-        textAlign: 'center',
-        padding: '80px 32px 60px',
-        color: 'var(--text-sub)',
-        fontSize: 14,
-        lineHeight: 1.7,
-      }}
-    >
-      <div style={{ fontSize: 42, marginBottom: 16, opacity: 0.4 }}>📭</div>
-      <div
-        style={{ fontWeight: 500, color: 'var(--text-sub)', marginBottom: 6 }}
-      >
-        {line1}
-      </div>
-      <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>{line2}</div>
-    </div>
-  );
-}
 
 export function DiaryListView({
   type,
@@ -173,7 +144,7 @@ export function DiaryListView({
 
         {type === 'schema' &&
           (schemaEntries.length === 0 && !hasDraftEntry ? (
-            <Empty line1={meta.emptyLine1} line2={meta.emptyLine2} />
+            <DiaryEmptyExplainer type={type} color={meta.color} />
           ) : (
             schemaEntries.map((e) => (
               <SchemaCard
@@ -186,7 +157,7 @@ export function DiaryListView({
           ))}
         {type === 'mode' &&
           (modeEntries.length === 0 && !hasDraftEntry ? (
-            <Empty line1={meta.emptyLine1} line2={meta.emptyLine2} />
+            <DiaryEmptyExplainer type={type} color={meta.color} />
           ) : (
             modeEntries.map((e) => (
               <ModeCard
@@ -199,7 +170,7 @@ export function DiaryListView({
           ))}
         {type === 'gratitude' &&
           (gratitudeEntries.length === 0 && !hasDraftEntry ? (
-            <Empty line1={meta.emptyLine1} line2={meta.emptyLine2} />
+            <DiaryEmptyExplainer type={type} color={meta.color} />
           ) : (
             gratitudeEntries.map((e) => (
               <GratitudeCard
