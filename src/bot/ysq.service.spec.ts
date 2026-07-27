@@ -1,71 +1,17 @@
 import { YsqService } from './ysq.service';
+import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 
-// Stateful in-memory fake Prisma для YsqProgress/YsqResult/YsqResultHistory.
-// Приоритет: progress save/resume (read-after-write) и инвариант
-// saveYsqResult — каждое завершение теста дописывает историю, не
-// перезаписывая её, при этом «текущий» результат — всегда последний.
+// Stateful in-memory fake Prisma для YsqProgress/YsqResult/YsqResultHistory
+// (общий src/test-support/fake-prisma.spec-helper.ts, этап 2.4
+// TEST_IMPROVEMENT_PLAN.md). Приоритет: progress save/resume
+// (read-after-write) и инвариант saveYsqResult — каждое завершение теста
+// дописывает историю, не перезаписывая её, при этом «текущий» результат —
+// всегда последний.
 function makeDb() {
-  let progress: any = null;
-  let result: any = null;
-  const history: any[] = [];
-
   const db: any = {
-    ysqProgress: {
-      findUnique: jest.fn(({ where }: any) =>
-        progress && progress.userId === where.userId ? progress : null,
-      ),
-      upsert: jest.fn(({ where, update, create }: any) => {
-        if (progress && progress.userId === where.userId) {
-          Object.assign(progress, update);
-        } else {
-          progress = { ...create };
-        }
-        return progress;
-      }),
-      deleteMany: jest.fn(({ where }: any) => {
-        if (progress && progress.userId === where.userId) {
-          progress = null;
-          return { count: 1 };
-        }
-        return { count: 0 };
-      }),
-    },
-    ysqResult: {
-      findUnique: jest.fn(({ where }: any) =>
-        result && result.userId === where.userId ? result : null,
-      ),
-      upsert: jest.fn(({ where, update, create }: any) => {
-        if (result && result.userId === where.userId) {
-          Object.assign(result, update);
-        } else {
-          result = { ...create };
-        }
-        return result;
-      }),
-      deleteMany: jest.fn(({ where }: any) => {
-        if (result && result.userId === where.userId) {
-          result = null;
-          return { count: 1 };
-        }
-        return { count: 0 };
-      }),
-    },
-    ysqResultHistory: {
-      create: jest.fn(({ data }: any) => {
-        const row = { id: history.length + 1, ...data };
-        history.push(row);
-        return row;
-      }),
-      findMany: jest.fn(({ where, orderBy, take }: any) => {
-        let rows = history.filter((r) => r.userId === where.userId);
-        if (orderBy?.completedAt === 'desc') {
-          rows = [...rows].sort(
-            (a, b) => b.completedAt.getTime() - a.completedAt.getTime(),
-          );
-        }
-        return take ? rows.slice(0, take) : rows;
-      }),
-    },
+    ysqProgress: createFakeTable(),
+    ysqResult: createFakeTable(),
+    ysqResultHistory: createFakeTable(),
     // saveYsqResult вызывает $transaction с массивом промисов (batch-форма).
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };

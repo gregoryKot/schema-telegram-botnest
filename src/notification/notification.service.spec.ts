@@ -1,19 +1,14 @@
 import { NotificationService, PROACTIVE_TYPES } from './notification.service';
+import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 
 function makePrisma() {
   return {
-    scheduledNotification: {
-      create: jest.fn().mockResolvedValue({}),
-      updateMany: jest.fn().mockResolvedValue({}),
-      update: jest.fn().mockResolvedValue({}),
-      findMany: jest.fn().mockResolvedValue([]),
-      findFirst: jest.fn().mockResolvedValue(null),
-      count: jest.fn().mockResolvedValue(0),
-    },
+    scheduledNotification: createFakeTable(),
   } as any;
 }
 
-// ── Stateful in-memory fake (like src/bot/notes.service.spec.ts) ───────────
+// ── Stateful in-memory fake (общий src/test-support/fake-prisma.spec-helper.ts,
+// этап 2.4 TEST_IMPROVEMENT_PLAN.md) ────────────────────────────────────────
 // Instead of mirroring the service's where-clause via toHaveBeenCalledWith
 // (a change to the clause and its test happen in the same PR by the same
 // person and prove nothing), this fake actually applies the where-semantics
@@ -28,38 +23,9 @@ type Row = {
   payload: unknown;
 };
 
-function matchesWhere(row: Row, where: Record<string, any>): boolean {
-  return Object.entries(where).every(([key, cond]) => {
-    const value = (row as any)[key];
-    if (cond === null) return value === null;
-    if (cond && typeof cond === 'object') {
-      if ('lte' in cond) return value <= cond.lte;
-      if ('not' in cond) return value !== cond.not;
-      if ('in' in cond) return cond.in.includes(value);
-    }
-    return value === cond;
-  });
-}
-
 function makeStatefulPrisma(rows: Row[]) {
   return {
-    scheduledNotification: {
-      findMany: jest.fn(({ where, orderBy }: any) => {
-        let result = rows.filter((r) => matchesWhere(r, where));
-        if (orderBy?.sendAt) {
-          const dir = orderBy.sendAt === 'asc' ? 1 : -1;
-          result = [...result].sort(
-            (a, b) => dir * (a.sendAt.getTime() - b.sendAt.getTime()),
-          );
-        }
-        return Promise.resolve(result);
-      }),
-      updateMany: jest.fn(({ where, data }: any) => {
-        const matched = rows.filter((r) => matchesWhere(r, where));
-        for (const r of matched) Object.assign(r, data);
-        return Promise.resolve({ count: matched.length });
-      }),
-    },
+    scheduledNotification: createFakeTable(rows),
   } as any;
 }
 

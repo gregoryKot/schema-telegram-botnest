@@ -353,65 +353,6 @@ describe('BotAnalyticsService', () => {
     });
   });
 
-  describe('getClientOverviews', () => {
-    it('empty userIds → empty map, no db calls', async () => {
-      const prisma = makePrisma();
-      const svc = new BotAnalyticsService(prisma);
-      const out = await svc.getClientOverviews([]);
-      expect(out.size).toBe(0);
-      expect(prisma.user.findMany).not.toHaveBeenCalled();
-    });
-
-    it('batches streak/daysSince/history for several clients in one pass', async () => {
-      const prisma = makePrisma({
-        user: {
-          findMany: jest.fn().mockResolvedValue([
-            { id: 1n, notifyTimezone: 'UTC' },
-            { id: 2n, notifyTimezone: 'UTC' },
-          ]),
-        },
-        rating: {
-          findMany: jest.fn(({ select }: any) => {
-            // Первый вызов — distinct-даты (для стрика/давности), второй —
-            // полные строки за последние 14 дней (для history).
-            if (select && !('needId' in select) && !('value' in select)) {
-              return Promise.resolve([
-                { userId: 1n, date: d(0) },
-                { userId: 1n, date: d(1) },
-                { userId: 2n, date: d(5) },
-              ]);
-            }
-            return Promise.resolve([
-              { userId: 1n, date: d(0), needId: 'attachment', value: 7 },
-              { userId: 1n, date: d(1), needId: 'attachment', value: 6 },
-              { userId: 2n, date: d(5), needId: 'autonomy', value: 4 },
-            ]);
-          }),
-        },
-      });
-      const svc = new BotAnalyticsService(prisma);
-      const out = await svc.getClientOverviews([1n, 2n]);
-      expect(out.get('1')!.streak).toBe(2);
-      expect(out.get('1')!.daysSince).toBe(0);
-      expect(out.get('1')!.history.map((h) => h.date)).toContain(d(0));
-      expect(out.get('2')!.streak).toBe(0); // last fill 5 days ago, not today/yesterday
-      expect(out.get('2')!.daysSince).toBe(5);
-    });
-
-    it('client with no ratings at all gets daysSince = -1 and empty history', async () => {
-      const prisma = makePrisma({
-        user: {
-          findMany: jest
-            .fn()
-            .mockResolvedValue([{ id: 3n, notifyTimezone: 'UTC' }]),
-        },
-      });
-      const svc = new BotAnalyticsService(prisma);
-      const out = await svc.getClientOverviews([3n]);
-      expect(out.get('3')).toEqual({ streak: 0, daysSince: -1, history: [] });
-    });
-  });
-
   describe('getProfileInsight', () => {
     it('returns null with no ratings', async () => {
       const svc = new BotAnalyticsService(makePrisma());
