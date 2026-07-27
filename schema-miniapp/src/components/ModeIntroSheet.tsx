@@ -97,7 +97,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
       description={mode.short}
       showDescription={Boolean(mode.short)}
       explainer={buildModeIntroExplainer(tr)}
-      answerPromptText="Нажми чтобы ответить"
+      answerPromptText={tr('Нажми чтобы ответить', 'Нажмите чтобы ответить')}
       nextButtonLabel="Следующий →"
     />
   );

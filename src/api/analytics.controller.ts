@@ -146,6 +146,6 @@ function sanitizeMeta(
     }
     return undefined;
   }
-  // breath_start / journey_open — без meta; любые поля отбрасываются.
+  // breath_start / journey_open / ysq_help_open — без meta; поля отбрасываются.
   return undefined;
 }

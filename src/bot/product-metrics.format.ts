@@ -15,8 +15,9 @@ export interface ProductMetrics {
     practices: number;
     childhood: number;
   };
-  // Тест схем (YSQ): начали → дошли до конца.
-  ysq: { started: number; completed: number };
+  // Тест схем (YSQ): начали → дошли до конца; helpOpens — сколько раз за
+  // месяц раскрывали объяснение «как понимать результат».
+  ysq: { started: number; completed: number; helpOpens: number };
   // Как просят обращаться.
   addressForm: { ty: number; vy: number; notChosen: number };
   // С каким экраном заходят (defaultSection): today/help/schemas/profile.
@@ -100,6 +101,7 @@ const ONBOARDING_STEP_LABELS: Record<string, string> = {
   needs_what: 'что за пять потребностей',
   needs_why: 'зачем отмечать',
   needs_result: 'что увидят через 3–5 дней',
+  diaries_why: 'зачем дневники схем и режимов',
   today_screen: 'главный экран под себя',
   author: 'об авторе',
   home_screen: 'значок на телефон',
@@ -140,6 +142,7 @@ export function formatProductMetrics(m: ProductMetrics): string {
       m.ysq.completed,
       m.ysq.started,
     )}`,
+    `Читали «как понимать результат»: ${m.ysq.helpOpens} раз (за месяц)`,
     '',
     `📱 <b>С каким экраном заходят</b>`,
     sections,
