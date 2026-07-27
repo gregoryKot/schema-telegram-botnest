@@ -61,9 +61,7 @@ describe('practiceDomainMiddleware', () => {
     const { sent } = run('kotlarewski.gr', '/robots.txt');
     expect(sent.type).toBe('text/plain');
     expect(sent.body).toContain('Disallow: /articles');
-    expect(sent.body).toContain(
-      'Sitemap: https://kotlarewski.gr/sitemap.xml',
-    );
+    expect(sent.body).toContain('Sitemap: https://kotlarewski.gr/sitemap.xml');
   });
 
   it('kotlarewski.gr обычные пути проходят насквозь (SPA)', () => {
