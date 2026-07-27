@@ -2,7 +2,7 @@
 // 1) семантика полей идентична старым per-user методам (стрик, давность,
 //    история за 14 дней);
 // 2) число SQL-запросов не растёт с числом клиентов — ровно 3 на весь список.
-import { BotAnalyticsService } from './bot.analytics.service';
+import { BotClientOverviewService } from './bot.client-overview.service';
 
 const TZ = 'Europe/Moscow';
 // Fixed mid-day Moscow instant — the service derives "today"/"N days ago"
@@ -58,7 +58,7 @@ function makePrisma(
   return prisma;
 }
 
-describe('BotAnalyticsService.getClientOverviews', () => {
+describe('BotClientOverviewService.getClientOverviews', () => {
   // Freeze the clock before computing `ratings` below (module-collection time)
   // so the fixture dates and the service's internal Date.now()-based "today"
   // agree for the whole suite — no per-test reset needed since nothing here
@@ -84,7 +84,7 @@ describe('BotAnalyticsService.getClientOverviews', () => {
 
   it('стрик, давность и история совпадают с семантикой per-user методов', async () => {
     const prisma = makePrisma(ratings);
-    const svc = new BotAnalyticsService(prisma);
+    const svc = new BotClientOverviewService(prisma);
     const map = await svc.getClientOverviews([A, B, C]);
 
     expect(map.get('1')).toMatchObject({ streak: 2, daysSince: 0 });
@@ -109,14 +109,14 @@ describe('BotAnalyticsService.getClientOverviews', () => {
 
   it('ровно 3 запроса независимо от числа клиентов', async () => {
     const prisma = makePrisma(ratings);
-    const svc = new BotAnalyticsService(prisma);
+    const svc = new BotClientOverviewService(prisma);
     await svc.getClientOverviews([A, B, C]);
     expect(prisma.countQueries()).toBe(3);
   });
 
   it('пустой список клиентов — ноль запросов', async () => {
     const prisma = makePrisma([]);
-    const svc = new BotAnalyticsService(prisma);
+    const svc = new BotClientOverviewService(prisma);
     const map = await svc.getClientOverviews([]);
     expect(map.size).toBe(0);
     expect(prisma.countQueries()).toBe(0);
