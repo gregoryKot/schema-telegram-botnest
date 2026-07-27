@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BotService } from './bot.service';
 import { BotAnalyticsService } from './bot.analytics.service';
+import { BotClientOverviewService } from './bot.client-overview.service';
 import { ProductMetricsService } from './bot.product-metrics.service';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
@@ -19,6 +20,7 @@ import { JourneyService } from './journey.service';
   providers: [
     BotService,
     BotAnalyticsService,
+    BotClientOverviewService,
     ProductMetricsService,
     QuizMetricsService,
     PracticeLinkMetricsService,
@@ -36,6 +38,7 @@ import { JourneyService } from './journey.service';
   exports: [
     BotService,
     BotAnalyticsService,
+    BotClientOverviewService,
     ProductMetricsService,
     DiaryService,
     ProfileService,
