@@ -227,6 +227,16 @@ export function makeFakePrisma() {
     // TherapyTasksService.scheduleTaskNotification (POST /api/therapy/tasks
     // с clientId вызывает notificationService.schedule).
     scheduledNotification: makeTable(),
+    // Платёжный контур (test/payment-webhooks.e2e-spec.ts, TEST_IMPROVEMENT_PLAN.md
+    // этап 1.4): один общий Robokassa Result-вебхук (POST /api/payment/result)
+    // маршрутизирует по диапазону InvId между booking/donation/subscriptionCharge.
+    // BookingNotifyService.onConfirmed на успешном confirm() дополнительно трогает
+    // clientMeeting (MeetingService.createMeeting) — без неё confirm падает.
+    booking: makeTable(),
+    clientMeeting: makeTable(),
+    donation: makeTable(),
+    subscription: makeTable(),
+    subscriptionCharge: makeTable(),
   };
 
   const prisma: any = {

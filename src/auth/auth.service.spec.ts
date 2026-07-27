@@ -9,6 +9,11 @@ import {
 } from '@nestjs/common';
 import { createHmac, createHash } from 'crypto';
 import { AuthService } from './auth.service';
+import {
+  createFakeTable,
+  createFakeTransaction,
+  Row,
+} from '../test-support/fake-prisma.spec-helper';
 
 const JWT_SECRET = 'test-jwt-secret';
 const BOT_TOKEN = '12345:TEST_TOKEN';
@@ -44,115 +49,31 @@ function signInitData(opts: {
   return params.toString();
 }
 
-const matchesWhere = (row: any, where: Record<string, unknown>): boolean =>
-  Object.entries(where).every(([k, v]) =>
-    v && typeof v === 'object' && 'not' in (v as any)
-      ? row[k] !== (v as any).not
-      : row[k] === v,
-  );
-
-// Только таблицы, которые реально трогает AuthService в тестируемых путях.
+// Общий stateful-фейк (src/test-support/fake-prisma.spec-helper.ts, этап 2.4
+// TEST_IMPROVEMENT_PLAN.md) — where-матчинг (в т.ч. составной unique-ключ
+// `provider_providerId`/`id`, `select` на findMany) заменяет прежний
+// рукописный `matchesWhere` + 4 таблицы с индивидуальной логикой. Массивы
+// (`webSessions`/`authProviders`/…) — те же ссылки, что и `._rows` таблиц,
+// тесты по-прежнему мутируют их напрямую (`authProviders.push(...)`).
 function makeFakePrisma() {
-  const webSessions: any[] = [];
-  const authProviders: any[] = [];
-  const users: any[] = [];
-  const emailTokens: any[] = [];
-  const findProvider = (provider: string, providerId: string) =>
-    authProviders.find(
-      (p) => p.provider === provider && p.providerId === providerId,
-    );
+  const webSessions: Row[] = [];
+  const authProviders: Row[] = [];
+  const users: Row[] = [];
+  const emailTokens: Row[] = [];
 
-  const prisma: any = {
-    emailToken: {
-      create: jest.fn(({ data }: any) => {
-        const row = { usedAt: null, ...data };
-        emailTokens.push(row);
-        return row;
-      }),
-      findUnique: jest.fn(
-        ({ where: { tokenHash } }: any) =>
-          emailTokens.find((t) => t.tokenHash === tokenHash) ?? null,
-      ),
-      update: jest.fn(({ where: { id }, data }: any) =>
-        Object.assign(
-          emailTokens.find((t) => t.id === id),
-          data,
-        ),
-      ),
-    },
-    webSession: {
-      create: jest.fn(({ data }: any) => {
-        const row = { revokedAt: null, ...data };
-        webSessions.push(row);
-        return row;
-      }),
-      findUnique: jest.fn(
-        ({ where: { tokenHash } }: any) =>
-          webSessions.find((s) => s.tokenHash === tokenHash) ?? null,
-      ),
-      update: jest.fn(({ where: { tokenHash }, data }: any) =>
-        Object.assign(
-          webSessions.find((s) => s.tokenHash === tokenHash),
-          data,
-        ),
-      ),
-      updateMany: jest.fn(({ where, data }: any) => {
-        const hit = webSessions.filter((r) => matchesWhere(r, where));
-        hit.forEach((r) => Object.assign(r, data));
-        return { count: hit.length };
-      }),
-    },
-    authProvider: {
-      findUnique: jest.fn(({ where }: any) => {
-        const { provider, providerId } = where.provider_providerId;
-        return findProvider(provider, providerId) ?? null;
-      }),
-      upsert: jest.fn(({ where, create, update }: any) => {
-        const { provider, providerId } = where.provider_providerId;
-        const existing = findProvider(provider, providerId);
-        if (existing) return Object.assign(existing, update);
-        const row = { id: authProviders.length + 1, ...create };
-        authProviders.push(row);
-        return row;
-      }),
-      update: jest.fn(({ where: { id }, data }: any) =>
-        Object.assign(
-          authProviders.find((p) => p.id === id),
-          data,
-        ),
-      ),
-      create: jest.fn(({ data }: any) => {
-        const row = { id: authProviders.length + 1, ...data };
-        authProviders.push(row);
-        return row;
-      }),
-      findMany: jest.fn(({ where, select }: any) => {
-        const rows = authProviders.filter((p) => matchesWhere(p, where));
-        if (!select) return rows;
-        return rows.map((r) =>
-          Object.fromEntries(Object.keys(select).map((k) => [k, r[k] ?? null])),
-        );
-      }),
-      deleteMany: jest.fn(({ where }: any) => {
-        const before = authProviders.length;
-        for (let i = authProviders.length - 1; i >= 0; i--)
-          if (matchesWhere(authProviders[i], where)) authProviders.splice(i, 1);
-        return { count: before - authProviders.length };
-      }),
-    },
-    user: {
-      upsert: jest.fn(({ where: { id }, create, update }: any) => {
-        const row = users.find((u) => u.id === id);
-        if (row) return Object.assign(row, update);
-        const created = { ...create };
-        users.push(created);
-        return created;
-      }),
-    },
-    $transaction: jest.fn((arg: any) =>
-      Array.isArray(arg) ? Promise.all(arg) : arg(prisma),
-    ),
-  };
+  const emailToken = createFakeTable(emailTokens, {
+    defaults: { usedAt: null },
+  });
+  const webSession = createFakeTable(webSessions, {
+    defaults: { revokedAt: null },
+  });
+  const authProvider = createFakeTable(authProviders);
+  const user = createFakeTable(users);
+
+  // any — как и в остальном файле: сервис ждёт PrismaService, тесты дальше
+  // напрямую кастуют методы таблиц в jest.Mock (mockImplementationOnce и т.п.).
+  const prisma: any = { emailToken, webSession, authProvider, user };
+  prisma.$transaction = createFakeTransaction<Row>(prisma);
 
   return { prisma, webSessions, authProviders, users, emailTokens };
 }

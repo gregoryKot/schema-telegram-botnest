@@ -122,3 +122,77 @@ describe('BotClientOverviewService.getClientOverviews', () => {
     expect(prisma.countQueries()).toBe(0);
   });
 });
+
+// Перенесено из bot.analytics.service.spec.ts после выноса метода в
+// BotClientOverviewService (#177): лёгкий фейк с overrides + дни-хелпер.
+function d(daysAgo: number): string {
+  const t = new Date();
+  t.setUTCDate(t.getUTCDate() - daysAgo);
+  return t.toISOString().slice(0, 10);
+}
+function makePrismaLite(overrides: Record<string, unknown> = {}) {
+  return {
+    user: { findMany: jest.fn().mockResolvedValue([]) },
+    rating: { findMany: jest.fn().mockResolvedValue([]) },
+    ...overrides,
+  };
+}
+
+describe('getClientOverviews — перенос из analytics-спека (#177)', () => {
+  it('empty userIds → empty map, no db calls', async () => {
+    const prisma = makePrismaLite();
+    const svc = new BotClientOverviewService(prisma as never);
+    const out = await svc.getClientOverviews([]);
+    expect(out.size).toBe(0);
+    expect(prisma.user.findMany).not.toHaveBeenCalled();
+  });
+
+  it('batches streak/daysSince/history for several clients in one pass', async () => {
+    const prisma = makePrismaLite({
+      user: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: 1n, notifyTimezone: 'UTC' },
+          { id: 2n, notifyTimezone: 'UTC' },
+        ]),
+      },
+      rating: {
+        findMany: jest.fn(({ select }: any) => {
+          // Первый вызов — distinct-даты (для стрика/давности), второй —
+          // полные строки за последние 14 дней (для history).
+          if (select && !('needId' in select) && !('value' in select)) {
+            return Promise.resolve([
+              { userId: 1n, date: d(0) },
+              { userId: 1n, date: d(1) },
+              { userId: 2n, date: d(5) },
+            ]);
+          }
+          return Promise.resolve([
+            { userId: 1n, date: d(0), needId: 'attachment', value: 7 },
+            { userId: 1n, date: d(1), needId: 'attachment', value: 6 },
+            { userId: 2n, date: d(5), needId: 'autonomy', value: 4 },
+          ]);
+        }),
+      },
+    });
+    const svc = new BotClientOverviewService(prisma as never);
+    const out = await svc.getClientOverviews([1n, 2n]);
+    expect(out.get('1')!.streak).toBe(2);
+    expect(out.get('1')!.daysSince).toBe(0);
+    expect(out.get('1')!.history.map((h) => h.date)).toContain(d(0));
+    expect(out.get('2')!.streak).toBe(0); // last fill 5 days ago, not today/yesterday
+    expect(out.get('2')!.daysSince).toBe(5);
+  });
+
+  it('client with no ratings at all gets daysSince = -1 and empty history', async () => {
+    const prisma = makePrismaLite({
+      user: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ id: 3n, notifyTimezone: 'UTC' }]),
+      },
+    });
+    const svc = new BotClientOverviewService(prisma as never);
+    const out = await svc.getClientOverviews([3n]);
+    expect(out.get('3')).toEqual({ streak: 0, daysSince: -1, history: [] });
+  });
+});
