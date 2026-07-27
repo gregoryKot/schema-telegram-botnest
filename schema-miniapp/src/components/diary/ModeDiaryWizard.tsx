@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 import { DiaryTextArea } from './DiaryTextArea';
+import { WizardProgress } from '../WizardProgress';
+import { WizardNav } from '../WizardNav';
 import {
   buildModeDiarySteps,
   type ModeDiaryFieldKey,
@@ -23,6 +25,7 @@ export function ModeDiaryWizard({
   onSave,
   canSave,
   saving,
+  accentColor,
 }: {
   values: Record<ModeDiaryFieldKey, string>;
   onChange: (key: ModeDiaryFieldKey, value: string) => void;
@@ -32,6 +35,7 @@ export function ModeDiaryWizard({
   onSave: () => void;
   canSave: boolean;
   saving: boolean;
+  accentColor: string;
 }) {
   const tr = useTr();
   const STEPS = buildModeDiarySteps(tr);
@@ -44,56 +48,22 @@ export function ModeDiaryWizard({
   const isLast = step === TOTAL - 1;
   const canNext = isHa ? true : cur!.required ? val.trim().length > 0 : true;
   const optional = isHa || !cur!.required;
-
-  const btn = (
-    label: string,
-    onClick: () => void,
-    opts: { primary?: boolean; disabled?: boolean } = {},
-  ) => (
-    <button
-      onClick={onClick}
-      disabled={opts.disabled}
-      style={{
-        flex: opts.primary ? 1 : undefined,
-        padding: '13px 18px',
-        borderRadius: 12,
-        border: 'none',
-        fontFamily: 'inherit',
-        fontSize: 14,
-        fontWeight: 600,
-        cursor: opts.disabled ? 'default' : 'pointer',
-        opacity: opts.disabled ? 0.4 : 1,
-        background: opts.primary
-          ? 'var(--accent-blue)'
-          : 'rgba(var(--fg-rgb),0.08)',
-        color: opts.primary ? '#fff' : 'var(--text)',
-      }}
-    >
-      {label}
-    </button>
-  );
+  // Заполненность каждого шага (поля дневника + шаг Здорового Взрослого) —
+  // сегменты прогресса, кликабельны (сохранить можно с любого шага).
+  const progressSegments = [
+    ...STEPS.map((s) => ({ filled: values[s.key].trim().length > 0 })),
+    { filled: healthyResponse.trim().length > 0 },
+  ];
 
   return (
     <div style={{ marginTop: 18 }}>
-      {/* Прогресс */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-        {Array.from({ length: TOTAL }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              flex: 1,
-              height: 4,
-              borderRadius: 2,
-              background:
-                i < step
-                  ? 'var(--accent-blue)'
-                  : i === step
-                    ? 'rgba(96,165,250,0.45)'
-                    : 'rgba(var(--fg-rgb),0.1)',
-              transition: 'background 0.2s',
-            }}
-          />
-        ))}
+      <div style={{ marginBottom: 8 }}>
+        <WizardProgress
+          segments={progressSegments}
+          active={step}
+          accentColor={accentColor}
+          onSelect={(i) => setStep(i)}
+        />
       </div>
       <div
         style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 16 }}
@@ -171,26 +141,34 @@ export function ModeDiaryWizard({
         rows={isHa ? 3 : cur!.rows}
       />
 
-      {/* Навигация */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-        {step > 0 &&
-          btn('← Назад', () => {
+      <div style={{ marginTop: 16 }}>
+        <WizardNav
+          accentColor={accentColor}
+          onBack={() => {
             haptic.tap();
-            setStep((s) => s - 1);
-          })}
-        {isLast
-          ? btn(saving ? 'Сохраняю…' : 'Готово', onSave, {
-              primary: true,
-              disabled: !canSave || saving,
-            })
-          : btn(
-              val.trim() || !optional ? 'Далее →' : 'Пропустить',
-              () => {
-                haptic.tap();
-                setStep((s) => s + 1);
-              },
-              { primary: true, disabled: !canNext },
-            )}
+            setStep((s) => Math.max(0, s - 1));
+          }}
+          backDisabled={step === 0}
+          primaryKind={isLast ? 'save' : 'next'}
+          primaryLabel={
+            isLast
+              ? saving
+                ? 'Сохраняю…'
+                : 'Готово'
+              : val.trim() || !optional
+                ? 'Далее →'
+                : 'Пропустить'
+          }
+          onPrimary={
+            isLast
+              ? onSave
+              : () => {
+                  haptic.tap();
+                  setStep((s) => s + 1);
+                }
+          }
+          primaryDisabled={isLast ? !canSave || saving : !canNext}
+        />
       </div>
     </div>
   );

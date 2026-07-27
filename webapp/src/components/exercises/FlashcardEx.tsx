@@ -7,9 +7,10 @@ import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
+import { buildModeIntroExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 import { SCHEMA_QUESTIONS, MODE_QUESTIONS, type Q } from './flashcardQuestions';
 
-function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; accentColor: string; onSave: (data: Record<string,string>) => Promise<void> }) {
+function FlashcardFlow({ questions, accentColor, onSave, explainer }: { questions: Q[]; accentColor: string; onSave: (data: Record<string,string>) => Promise<void>; explainer?: string }) {
   const [data, setData] = useState<Record<string,string>>(() => Object.fromEntries(questions.map(q => [q.key, ''])));
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
@@ -38,6 +39,7 @@ function FlashcardFlow({ questions, accentColor, onSave }: { questions: Q[]; acc
   }
 
   return (<>
+    {explainer && <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5, marginBottom: 20 }}>{explainer}</p>}
     <div className="tick-strip">
       {questions.map((_, i) => <div key={i} className={'tick ' + (filled[i] ? 'is-filled ' : '') + (i === step ? 'is-active' : '')} style={{ '--accent': accentColor } as React.CSSProperties} {...pressable(() => setStep(i))} />)}
     </div>
@@ -169,7 +171,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
         <button className="ex-btn ex-btn-ghost" onClick={() => setPicked(null)} style={{ padding: '8px 12px' }}><GlyphArrowLeft /> Сменить режим</button>
       </>}
     >
-      <FlashcardFlow questions={MODE_QUESTIONS} accentColor={picked.color} onSave={async data => { await api.saveModeNote({ modeId: picked.id, ...data }); onComplete?.(); }} />
+      <FlashcardFlow questions={MODE_QUESTIONS} accentColor={picked.color} onSave={async data => { await api.saveModeNote({ modeId: picked.id, ...data }); onComplete?.(); }} explainer={buildModeIntroExplainer(tr)} />
     </ExScreen>
   );
 }

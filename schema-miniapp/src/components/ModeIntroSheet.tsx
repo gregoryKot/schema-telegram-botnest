@@ -1,7 +1,9 @@
 import { getModeById } from '../schemaTherapyData';
 import { api } from '../api';
+import { useTr } from '../utils/addressForm';
 import { IntroSheetShell } from './IntroSheetShell';
 import { IntroSheetQuestion } from './IntroSheetFlashcard';
+import { buildModeIntroExplainer } from '../../../shared/src/mode/modeFlowExplainers';
 
 const STORAGE_KEY = (modeId: string) => `mode_intro_${modeId}`;
 
@@ -62,6 +64,7 @@ interface Props {
 }
 
 export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
+  const tr = useTr();
   const mode = getModeById(modeId);
   if (!mode) return null;
 
@@ -93,6 +96,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
       subtitle={mode.groupName}
       description={mode.short}
       showDescription={Boolean(mode.short)}
+      explainer={buildModeIntroExplainer(tr)}
       answerPromptText="Нажми чтобы ответить"
       nextButtonLabel="Следующий →"
     />

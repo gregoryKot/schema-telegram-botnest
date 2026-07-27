@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { pressable } from '../utils/a11y';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { useIntroSheetData } from '../hooks/useIntroSheetData';
 import { IntroSheetFlashcard, IntroSheetQuestion } from './IntroSheetFlashcard';
+import { WizardProgress } from './WizardProgress';
+import { WizardNav } from './WizardNav';
 
 // Общий каркас интро-шита ModeIntroSheet/SchemaIntroSheet — заголовок,
 // прогресс-бар, флэшкарта вопроса, навигация (правило №11 CLAUDE.md).
@@ -22,6 +23,9 @@ export interface IntroSheetShellProps<T extends Record<string, string>> {
   subtitle: string;
   description?: string;
   showDescription: boolean;
+  /** Пояснение «откуда это и зачем» (правило онбординга) — мелким кеглем под
+   *  шапкой/описанием, до первого действия пользователя. */
+  explainer?: string;
   answerPromptText: string;
   nextButtonLabel: string;
   gradientSaveButton?: boolean;
@@ -41,6 +45,7 @@ export function IntroSheetShell<T extends Record<string, string>>({
   subtitle,
   description,
   showDescription,
+  explainer,
   answerPromptText,
   nextButtonLabel,
   gradientSaveButton,
@@ -131,32 +136,31 @@ export function IntroSheetShell<T extends Record<string, string>>({
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
-          {questions.map((question, i) => {
-            const filled = data[question.key].trim().length > 0;
-            const active = i === step;
-            return (
-              <div
-                key={i}
-                {...pressable(() => {
-                  setStep(i);
-                  setFlipped(false);
-                })}
-                style={{
-                  flex: 1,
-                  height: 4,
-                  borderRadius: 2,
-                  cursor: 'pointer',
-                  background: filled
-                    ? accentColor
-                    : active
-                      ? `${accentColor}55`
-                      : 'var(--surface-2)',
-                  transition: 'background 0.2s',
-                }}
-              />
-            );
-          })}
+        {explainer && (
+          <div
+            style={{
+              fontSize: 13,
+              color: 'var(--text-faint)',
+              lineHeight: 1.5,
+              marginBottom: 16,
+            }}
+          >
+            {explainer}
+          </div>
+        )}
+
+        <div style={{ marginBottom: 20 }}>
+          <WizardProgress
+            segments={questions.map((question) => ({
+              filled: data[question.key].trim().length > 0,
+            }))}
+            active={step}
+            accentColor={accentColor}
+            onSelect={(i) => {
+              setStep(i);
+              setFlipped(false);
+            }}
+          />
         </div>
 
         {q && (
@@ -174,81 +178,37 @@ export function IntroSheetShell<T extends Record<string, string>>({
           />
         )}
 
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          <button
-            onClick={() => {
+        <div style={{ marginBottom: 16 }}>
+          <WizardNav
+            accentColor={accentColor}
+            onBack={() => {
               setStep((s) => Math.max(0, s - 1));
               setFlipped(false);
             }}
-            disabled={step === 0}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              border: 'none',
-              fontFamily: 'inherit',
-              background: step === 0 ? 'var(--surface)' : 'var(--surface-2)',
-              color: step === 0 ? 'var(--text-faint)' : 'var(--text-sub)',
-              fontSize: 18,
-              cursor: step === 0 ? 'default' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            ←
-          </button>
-
-          {step < questions.length - 1 ? (
-            <button
-              onClick={() => {
-                setStep((s) => s + 1);
-                setFlipped(false);
-              }}
-              style={{
-                flex: 1,
-                padding: '13px',
-                borderRadius: 12,
-                border: 'none',
-                fontFamily: 'inherit',
-                background: `${accentColor}20`,
-                color: accentColor,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {nextButtonLabel}
-            </button>
-          ) : (
-            <button
-              onClick={handleSave}
-              disabled={!hasAny || saving}
-              style={{
-                flex: 1,
-                padding: '13px',
-                borderRadius: 12,
-                border: 'none',
-                fontFamily: 'inherit',
-                background: hasAny
-                  ? gradientSaveButton
-                    ? `linear-gradient(135deg, ${accentColor}cc, ${accentColor}88)`
-                    : accentColor
-                  : 'var(--surface-2)',
-                color: hasAny ? '#fff' : 'var(--text-faint)',
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: hasAny ? 'pointer' : 'default',
-                transition: 'all 0.2s',
-              }}
-            >
-              {saving
-                ? 'Сохраняем…'
-                : saved
-                  ? '✓ Сохранено'
-                  : 'Сохранить карточку'}
-            </button>
-          )}
+            backDisabled={step === 0}
+            primaryKind={step < questions.length - 1 ? 'next' : 'save'}
+            primaryLabel={
+              step < questions.length - 1
+                ? nextButtonLabel
+                : saving
+                  ? 'Сохраняем…'
+                  : saved
+                    ? '✓ Сохранено'
+                    : 'Сохранить карточку'
+            }
+            onPrimary={
+              step < questions.length - 1
+                ? () => {
+                    setStep((s) => s + 1);
+                    setFlipped(false);
+                  }
+                : handleSave
+            }
+            primaryDisabled={
+              step < questions.length - 1 ? false : !hasAny || saving
+            }
+            gradientSave={gradientSaveButton}
+          />
         </div>
 
         <TherapyNote compact />
