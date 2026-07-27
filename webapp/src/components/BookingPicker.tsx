@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '../api';
 import type { BookingSlot, SessionOption } from '../api';
+import { leadSource } from '../utils/leadSource';
 
 const MSK = 'Europe/Moscow';
 const dayKeyFmt = new Intl.DateTimeFormat('en-CA', { timeZone: MSK, year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -183,7 +184,7 @@ export function BookingPicker({ fallback }: { fallback?: React.ReactNode }) {
       const res = await api.bookSlot({
         startsAt: slot.startsAt, durationMin: slot.durationMin, type: sessionType,
         clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
-        returning, acceptedOffer: consent, website,
+        returning, acceptedOffer: consent, website, source: leadSource(),
       });
       setCancelToken(res.cancelToken);
       (window as Window & { ym?: (...a: unknown[]) => void }).ym?.(109568051, 'reachGoal', 'booking_submit');

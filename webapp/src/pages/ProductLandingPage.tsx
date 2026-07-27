@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { useRecentArticles } from '../components/landing-kit-hooks';
-import type { ArticleSummary } from '../api';
 import { botUrl, botHandle } from '../utils/botConfig';
 // Палитра, логотип и CTA — в общих модулях бренда (используются и в /tests).
 import { INK, SUB, FAINT, GLASS, GLASS_BORDER, VIOLET, PINK, CYAN, AMBER, EMERALD, ROSE, AURORA, glow } from './landing/aurora';
 import { Logo, Cta } from './landing/BrandKit';
+import { STEPS, FEATURES, TRUST, H2, EYEBROW } from './landing/productContent';
+import { GlassCard, ArticleCard, FaqList } from './landing/ProductKit';
+import { AuthorSection } from './landing/AuthorSection';
+import { AUTHOR_SITE, trackPracticeClick } from './landing/practiceLink';
 
 // Продуктовый лендинг «Всё по схеме» — главная app-домена (schemehappens.ru).
 // САМОСТОЯТЕЛЬНАЯ айдентика: тёмный «ночной» холст + аврора-градиенты, глассморфизм,
@@ -14,7 +17,6 @@ import { Logo, Cta } from './landing/BrandKit';
 // Палитра захардкожена (не зависит от app-темы) — это отдельный маркетинговый бренд.
 
 const BOT_URL = botUrl;
-const AUTHOR_SITE = 'https://kotlarewski.gr';
 
 
 // ─── Мокап приложения (тёмное стекло) ─────────────────────────────────────────
@@ -77,100 +79,9 @@ function AppPreview() {
   );
 }
 
-// ─── Данные ───────────────────────────────────────────────────────────────────
-const STEPS = [
-  { num: '01', color: ROSE,   emoji: '🌱', title: 'Схемы родом из детства', text: 'Когда важные потребности — в безопасности, принятии, тепле — недополучены, психика достраивает «правила»: «меня оставят», «я недостаточно хорош». Это ранние дезадаптивные схемы.' },
-  { num: '02', color: AMBER,  emoji: '🔁', title: 'Они включаются незаметно', text: 'Во взрослой жизни схемы срабатывают на автомате: одни и те же ссоры, тревога, самокритика, прокрастинация. Кажется, что «такой характер» — а это выученный паттерн.' },
-  { num: '03', color: CYAN,   emoji: '👁️', title: 'Их можно замечать — и менять', text: 'Регулярное наблюдение — дневник, тест, упражнения — делает схемы видимыми. А то, что видно, уже можно менять: самостоятельно или вместе с терапевтом.' },
-];
-
-const FEATURES = [
-  { emoji: '📓', color: CYAN,    title: 'Дневник состояний', text: 'Минутный чек-ин: восемь базовых потребностей по шкале. Через пару недель видно, из чего складываются «плохие дни».' },
-  { emoji: '🧩', color: VIOLET,  title: 'Диагностика схем', text: 'Тест по схемам: 20 ранних дезадаптивных схем в пяти доменах — с понятным разбором, а не просто цифрами.' },
-  { emoji: '🎭', color: AMBER,   title: 'Режимы', text: 'Внутренний Критик, Уязвимый ребёнок, Здоровый взрослый — отмечайте, кто «за рулём» прямо сейчас.' },
-  { emoji: '✍️', color: EMERALD, title: 'Практики', text: 'Упражнения из схема-терапии и КПТ: переоценка убеждений, терапевтические письма, безопасное место, флэшкарточки.' },
-  { emoji: '📈', color: PINK,    title: 'Динамика', text: 'История состояний за недели и месяцы: что меняется, а что стоит на месте. Удобно приносить на сессии.' },
-  { emoji: '🤝', color: ROSE,    title: 'Кабинет терапевта', text: 'Работаете с психологом? Поделитесь динамикой — и сессии будут опираться на реальные данные, а не только на память.' },
-];
-
-const TRUST = [
-  { icon: '💛', color: AMBER,   title: 'Бесплатно', node: <>Без подписок и рекламы. Проект живёт на донаты — если он помогает, можно <a href="/donate" style={{ color: VIOLET, textDecoration: 'none', fontWeight: 700 }}>поддержать</a>.</> },
-  { icon: '🔒', color: CYAN,    title: 'Записи зашифрованы', node: <>Дневники, письма и заметки хранятся в зашифрованном виде (AES-256). Прочитать их можете только вы.</> },
-  { icon: '🚪', color: EMERALD, title: 'Уйти легко', node: <>Аккаунт удаляется в один клик — целиком, со всеми данными. Никаких «мы сохраним копию».</> },
-];
-
-const FAQ = [
-  { q: 'Что такое схема-терапия?', a: 'Доказательный метод, разработанный Джеффри Янгом. Он объединяет КПТ, теорию привязанности и работу с эмоциями и помогает при повторяющихся трудностях: в отношениях, самооценке, тревоге. Схема-терапия работает с глубинными убеждениями — схемами, которые сформировались в детстве и незаметно управляют реакциями сейчас.' },
-  { q: 'Это замена психотерапии?', a: 'Нет. «Всё по схеме» — инструмент самонаблюдения и самопомощи: он помогает замечать паттерны и бережно с ними работать, но не ставит диагнозов и не лечит. Если состояние тяжёлое — пожалуйста, обратитесь к специалисту. А если вы уже в терапии, приложение станет хорошим спутником между сессиями.' },
-  { q: 'Сколько это стоит?', a: 'Нисколько. Все функции бесплатны — без пробных периодов и платных уровней. Проект существует на добровольные донаты.' },
-  { q: 'Что будет с моими данными?', a: 'Свободный текст — дневники, письма, заметки — шифруется (AES-256) и никому не передаётся. Терапевт видит вашу динамику только если вы сами дали доступ. Аккаунт можно удалить полностью в любой момент.' },
-  { q: 'Нужен ли Telegram?', a: 'Нет. Войти можно через Google, ВКонтакте или по ссылке на email. Telegram — приятное дополнение: бот напомнит про чек-ин, а мини-приложение работает прямо в чате, с теми же данными.' },
-];
-
-// ─── Стекло-карточка (иконка + заголовок + текст) ────────────────────────────
-function GlassCard({ emoji, color, title, children, big }: { emoji: string; color: string; title: string; children: React.ReactNode; big?: boolean }) {
-  return (
-    <div className="pl2-card" style={{
-      position: 'relative', background: GLASS, border: `1px solid ${GLASS_BORDER}`, borderRadius: 22,
-      padding: big ? '28px 24px' : '24px 22px', overflow: 'hidden',
-      transition: 'transform .25s, border-color .25s, box-shadow .25s',
-    }}>
-      <div aria-hidden style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: glow(color, .16), filter: 'blur(30px)', pointerEvents: 'none' }} />
-      <span style={{ position: 'relative', width: 48, height: 48, borderRadius: 14, fontSize: 23, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: glow(color, .14), border: `1px solid ${glow(color, .3)}`, boxShadow: `0 0 20px ${glow(color, .15)}` }}>{emoji}</span>
-      <p style={{ position: 'relative', fontSize: big ? 19 : 17, fontWeight: 800, letterSpacing: '-.02em', margin: '14px 0 8px', color: INK }}>{title}</p>
-      <p style={{ position: 'relative', fontSize: 14, lineHeight: 1.65, margin: 0, color: SUB }}>{children}</p>
-    </div>
-  );
-}
-
-// ─── Карточка статьи ──────────────────────────────────────────────────────────
-function ArticleCard({ a }: { a: ArticleSummary }) {
-  return (
-    <a className="pl2-card" href={`/articles/${a.slug}`} style={{
-      display: 'flex', flexDirection: 'column', textDecoration: 'none',
-      background: GLASS, border: `1px solid ${GLASS_BORDER}`, borderRadius: 20, overflow: 'hidden',
-      transition: 'transform .25s, border-color .25s, box-shadow .25s',
-    }}>
-      <div style={{ aspectRatio: '16 / 9', background: AURORA, overflow: 'hidden', opacity: a.heroImage ? 1 : 0.5 }}>
-        {a.heroImage && <img src={a.heroImage} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
-      </div>
-      <div style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-        <p style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.25, margin: 0, color: INK }}>{a.title}</p>
-        <p style={{ fontSize: 13.5, lineHeight: 1.6, margin: 0, color: SUB, flex: 1 }}>{a.description}</p>
-        <span style={{ fontSize: 12, color: FAINT, marginTop: 4 }}>{new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long' })} · {a.readMin} мин</span>
-      </div>
-    </a>
-  );
-}
-
-function FaqList() {
-  const [open, setOpen] = useState<number | null>(null);
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {FAQ.map((item, i) => {
-        const isOpen = open === i;
-        return (
-          <div key={i} style={{ background: GLASS, border: `1px solid ${isOpen ? glow(VIOLET, .4) : GLASS_BORDER}`, borderRadius: 16, overflow: 'hidden', transition: 'border-color .2s' }}>
-            <button onClick={() => setOpen(isOpen ? null : i)} aria-expanded={isOpen} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, padding: '18px 20px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: INK, lineHeight: 1.4, fontFamily: 'inherit' }}>{item.q}</span>
-              <span style={{ fontSize: 22, color: VIOLET, flexShrink: 0, lineHeight: 1, transform: isOpen ? 'rotate(45deg)' : 'none', transition: 'transform .25s' }}>+</span>
-            </button>
-            <div style={{ display: 'grid', gridTemplateRows: isOpen ? '1fr' : '0fr', transition: 'grid-template-rows .3s ease' }}>
-              <div style={{ overflow: 'hidden' }}>
-                <p style={{ fontSize: 14.5, lineHeight: 1.75, color: SUB, margin: '0 20px 20px' }}>{item.a}</p>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-const H2: React.CSSProperties = { fontFamily: 'inherit', fontSize: 'clamp(28px, 3.6vw, 44px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.08, margin: 0, color: INK };
-const EYEBROW: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', background: AURORA, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' };
-
 // ─── Страница ─────────────────────────────────────────────────────────────────
+// Данные (STEPS/FEATURES/TRUST/FAQ, H2/EYEBROW) — в landing/productContent.tsx,
+// карточки (GlassCard/ArticleCard/FaqList) — в landing/ProductKit.tsx.
 export function ProductLandingPage() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -293,6 +204,9 @@ export function ProductLandingPage() {
           </div>
         </section>
 
+        {/* ── Кто это делает ── */}
+        <AuthorSection />
+
         {/* ── Статьи ── */}
         {articles && articles.length > 0 && (
           <section id="articles" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>
@@ -340,8 +254,9 @@ export function ProductLandingPage() {
               <span style={{ fontSize: 12.5, color: FAINT }}>© {new Date().getFullYear()}</span>
             </div>
             <nav style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-              {[['Политика конфиденциальности', '/privacy'], ['Оферта', '/offer'], ['Поддержать 💛', '/donate'], ['Автор проекта ↗', AUTHOR_SITE]].map(([label, href]) => (
+              {[['Политика конфиденциальности', '/privacy'], ['Оферта', '/offer'], ['Поддержать 💛', '/donate'], ['Григорий Котляревский — автор, схема-терапевт ↗', AUTHOR_SITE]].map(([label, href]) => (
                 <a key={href} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  onClick={href === AUTHOR_SITE ? () => trackPracticeClick('footer') : undefined}
                   style={{ fontSize: 13, color: SUB, textDecoration: 'none', transition: 'color .15s' }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = INK; }} onMouseLeave={(e) => { e.currentTarget.style.color = SUB; }}>{label}</a>
               ))}
@@ -364,6 +279,7 @@ export function ProductLandingPage() {
           .pl2-hero { grid-template-columns: 1fr !important; gap: 48px !important; }
           .pl2-3 { grid-template-columns: 1fr !important; }
           .pl2-tg { grid-template-columns: 1fr !important; gap: 36px !important; padding: 36px 28px !important; }
+          .pl2-author { grid-template-columns: 1fr !important; gap: 32px !important; padding: 36px 28px !important; }
           .pl2-chip { display: none; }
         }
         @media (min-width: 601px) and (max-width: 900px) { .pl2-3 { grid-template-columns: 1fr 1fr !important; } }

@@ -58,4 +58,16 @@ describe('BookDto — рантайм-валидация платёжного э�
       errorsFor({ ...VALID, message: 'x'.repeat(3000) }),
     ).resolves.toContain('message');
   });
+
+  it('source: валидная строка проходит, сверхдлинная — отказ', async () => {
+    await expect(
+      errorsFor({
+        ...VALID,
+        source: 'kotlarewski.gr/#booking ← https://schemehappens.ru/',
+      }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor({ ...VALID, source: 'x'.repeat(201) }),
+    ).resolves.toContain('source');
+  });
 });

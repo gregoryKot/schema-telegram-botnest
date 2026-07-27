@@ -8,6 +8,7 @@ import { useQuizzes } from '../../hooks/useQuizzes';
 import { useQuizRunner } from '../../hooks/useQuizRunner';
 import { Skeleton, SkeletonCard } from '../../components/Skeleton';
 import { INK, SUB, FAINT, GLASS_BORDER, AURORA, glow, VIOLET, PINK, GLASS_CARD } from '../landing/aurora';
+import { AUTHOR_SITE, trackPracticeClick } from '../landing/practiceLink';
 import { TestsFrame, QuizProgress } from './testsKit';
 
 const OPTION_STYLE: React.CSSProperties = {
@@ -151,6 +152,18 @@ export function QuizPage() {
             приложении есть большой тест схем (116 вопросов) и трекер
             потребностей.
           </p>
+          {/* Мягкий мост к практике (событие practice_link_click, place: quiz) */}
+          <div style={{ ...GLASS_CARD, marginTop: 18, padding: '16px 18px', display: 'flex', gap: 12, alignItems: 'flex-start', maxWidth: 520, boxSizing: 'border-box' }}>
+            <span aria-hidden style={{ fontSize: 20 }}>👤</span>
+            <p style={{ fontSize: 13.5, lineHeight: 1.65, color: SUB, margin: 0 }}>
+              Хочется разобрать результат с живым специалистом? Автор проекта —
+              схема-терапевт, работает онлайн. Первая встреча — 15 минут,
+              бесплатно.{' '}
+              <a href={AUTHOR_SITE} target="_blank" rel="noopener noreferrer" onClick={() => trackPracticeClick('quiz')} style={{ color: VIOLET, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                Познакомиться ↗
+              </a>
+            </p>
+          </div>
         </div>
       )}
     </TestsFrame>

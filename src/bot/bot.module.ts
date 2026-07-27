@@ -3,6 +3,7 @@ import { BotService } from './bot.service';
 import { BotAnalyticsService } from './bot.analytics.service';
 import { ProductMetricsService } from './bot.product-metrics.service';
 import { QuizMetricsService } from './quiz-metrics.service';
+import { PracticeLinkMetricsService } from './practice-link-metrics.service';
 import { DiaryService } from './diary.service';
 import { ProfileService } from './profile.service';
 import { AccountService } from './account.service';
@@ -20,6 +21,7 @@ import { JourneyService } from './journey.service';
     BotAnalyticsService,
     ProductMetricsService,
     QuizMetricsService,
+    PracticeLinkMetricsService,
     DiaryService,
     ProfileService,
     AccountService,
