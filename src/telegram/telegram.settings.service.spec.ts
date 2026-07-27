@@ -159,7 +159,10 @@ describe('TelegramSettingsService — час напоминания', () => {
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:pick_hour');
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
-    expect(ctx.editMessageText).toHaveBeenCalled();
+    expect(ctx.editMessageText).toHaveBeenCalledWith(
+      expect.stringContaining('Выбери время уведомления'),
+      expect.anything(),
+    );
   });
 });
 
@@ -183,7 +186,7 @@ describe('TelegramSettingsService — часовой пояс', () => {
     const ctx = await runAction(fakeBot, 'settings:tz:Mars/Colony');
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
     expect(ctx.editMessageText).not.toHaveBeenCalled();
-    expect(ctx.answerCbQuery).toHaveBeenCalled();
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
   });
 });
 
@@ -194,7 +197,10 @@ describe('TelegramSettingsService — settings:back', () => {
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:back');
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
-    expect(ctx.editMessageText).toHaveBeenCalled();
+    expect(ctx.editMessageText).toHaveBeenCalledWith(
+      expect.stringContaining('Настройки уведомлений'),
+      expect.anything(),
+    );
   });
 });
 

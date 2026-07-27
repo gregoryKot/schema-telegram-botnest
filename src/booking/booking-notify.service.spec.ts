@@ -76,6 +76,7 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     const b = booking({ meetingUrl: 'https://existing' });
     await service.onConfirmed(b);
     expect(meeting.createMeeting).not.toHaveBeenCalled();
+    expect(b.meetingUrl).toBe('https://existing'); // не перезаписан
   });
 
   it('пушит событие в CalDAV с корректным UID/summary/description/location', async () => {
@@ -140,6 +141,9 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     calDav.pushEvent.mockResolvedValueOnce(null);
     await service.onConfirmed(booking({ meetingUrl: 'x' }));
     expect(telegram.notifyAdmin).toHaveBeenCalledTimes(1); // только "подтверждена"
+    expect(telegram.notifyAdmin.mock.calls[0][0]).toContain(
+      'Запись подтверждена',
+    );
   });
 });
 
@@ -195,8 +199,9 @@ describe('BookingNotifyService — фолбэк Telegram → e-mail, ошибк�
   });
 
   it('Telegram успешен — e-mail фолбэк не вызывается', async () => {
-    const { service, email } = makeService();
+    const { service, telegram, email } = makeService();
     await service.alertAdmin('ok');
+    expect(telegram.notifyAdmin).toHaveBeenCalledWith('ok');
     expect(email.sendAdminNotification).not.toHaveBeenCalled();
   });
 

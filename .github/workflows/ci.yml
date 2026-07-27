@@ -83,6 +83,11 @@ jobs:
       # Храповик размера файлов (правило №10): файл из бейслайна только
       # уменьшается, новый файл >300 строк не проходит. Долг тает, не растёт.
       - run: node scripts/check-file-size-ratchet.mjs
+      # Храповик слабых тестов (TEST_IMPROVEMENT_PLAN.md, этап 3.1): expect(),
+      # состоящий только из голых .toHaveBeenCalled()/.toHaveBeenCalledTimes(n)
+      # без проверки аргументов, зелёный даже если хендлер шлёт мусор — новых
+      # таких тестов быть не должно, исторический долг зафиксирован в бейслайне.
+      - run: node scripts/check-weak-assert-ratchet.mjs
 
   # Миграции гоняются на РЕАЛЬНОМ Postgres (инцидент 2026-07-16: битый сид
   # healthy_adult_phrases — updatedAt NOT NULL без значения — уронил прод

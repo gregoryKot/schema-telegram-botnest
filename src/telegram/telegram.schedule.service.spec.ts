@@ -64,6 +64,9 @@ describe('scheduleDailyReminders', () => {
       bot: null,
       users: [{ id: 1n }],
     });
+    // Осознанный weak: bot===null роняет функцию на самом первом `if
+    // (!this.bot) return`, до любого другого наблюдаемого эффекта — тут
+    // нечего проверять, кроме факта, что ничего не вызвано.
     await service.scheduleDailyReminders();
     expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
     expect(plannerService.planDay).not.toHaveBeenCalled();
@@ -119,6 +122,7 @@ describe('rescheduleForUser', () => {
       notifyTimezone: 'Europe/Moscow',
     });
     await service.rescheduleForUser(1n);
+    expect(botService.getUserSettings).toHaveBeenCalledWith(1n);
     expect(notificationService.cancel).not.toHaveBeenCalled();
     expect(plannerService.scheduleReminder).not.toHaveBeenCalled();
   });
@@ -156,7 +160,13 @@ describe('rescheduleForUser', () => {
     });
     notificationService.hasPending.mockResolvedValue(true);
     await service.rescheduleForUser(1n);
-    expect(plannerService.scheduleReminder).toHaveBeenCalled();
+    expect(plannerService.scheduleReminder).toHaveBeenCalledWith(
+      1n,
+      21,
+      'Europe/Moscow',
+      expect.any(Date),
+      false,
+    );
   });
 
   it('не due и нет висящего pending — тишина (не пере-планирует зря)', async () => {
@@ -172,6 +182,7 @@ describe('rescheduleForUser', () => {
     });
     notificationService.hasPending.mockResolvedValue(false);
     await service.rescheduleForUser(1n);
+    expect(notificationService.hasPending).toHaveBeenCalledWith(1n, 'reminder');
     expect(plannerService.scheduleReminder).not.toHaveBeenCalled();
   });
 });

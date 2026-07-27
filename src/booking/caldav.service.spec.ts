@@ -102,6 +102,10 @@ describe('CalDavService.pushEvent — запись события', () => {
       summary: 's',
     });
     expect(discoverCalendarUrl).toHaveBeenCalledTimes(1);
+    expect(discoverCalendarUrl).toHaveBeenCalledWith(
+      expect.stringContaining('Basic '),
+      '',
+    );
   });
 
   it('discovery не находит календарь (null) — pushEvent возвращает null, не бросает', async () => {
@@ -213,6 +217,9 @@ describe('CalDavService.getBusyTimes — fail-open и кэш', () => {
     await svc.getBusyTimes(from, to);
     await svc.getBusyTimes(from, to);
     expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe(
+      'https://p1.icloud.com/cal/',
+    );
   });
 
   it('другой диапазон — кэш не используется, новый REPORT уходит', async () => {
@@ -227,6 +234,9 @@ describe('CalDavService.getBusyTimes — fail-open и кэш', () => {
       new Date('2026-08-02T00:00:00Z'),
     );
     expect(global.fetch).toHaveBeenCalledTimes(2);
+    const mock = global.fetch as jest.Mock;
+    expect(mock.mock.calls[0][0]).toBe('https://p1.icloud.com/cal/');
+    expect(mock.mock.calls[1][0]).toBe('https://p1.icloud.com/cal/');
   });
 });
 
@@ -234,6 +244,9 @@ describe('CalDavService.removeEvent', () => {
   it('пустой uid — no-op, fetch не вызывается', async () => {
     const svc = makeService({ APPLE_CALDAV_URL: 'https://p1.icloud.com/cal/' });
     global.fetch = jest.fn() as any;
+    // Осознанный weak: removeEvent('') return-ит void — единственный
+    // наблюдаемый эффект early-return'а — отсутствие сетевого вызова,
+    // проверять тут больше нечего.
     await svc.removeEvent('');
     expect(global.fetch).not.toHaveBeenCalled();
   });

@@ -330,6 +330,9 @@ describe('SubscriptionService.cancel', () => {
     });
     await service.cancel('tok-2');
     expect(prisma.subscription.update).not.toHaveBeenCalled();
+    expect(prisma.subscription.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { cancelToken: 'tok-2' } }),
+    );
   });
 });
 
@@ -413,6 +416,8 @@ describe('SubscriptionService.findActiveByTelegram', () => {
 });
 
 describe('SubscriptionService.chargeDue — выключенные флаги', () => {
+  // Осознанный weak (оба теста): chargeDue() возвращает void сразу на гварде —
+  // единственный наблюдаемый эффект early-return'а — отсутствие DB-вызова.
   it('SUBSCRIPTION_ENABLED=false → выходит немедленно, БД не трогает', async () => {
     const { service, prisma } = makeService({ enabled: false });
     await service.chargeDue();

@@ -62,8 +62,9 @@ afterEach(() => {
 
 describe('processQueue / runProcessQueue', () => {
   it('нет due-уведомлений — ничего не отправляет', async () => {
-    const { service, bot } = makeService({ due: [] });
+    const { service, bot, notificationService } = makeService({ due: [] });
     await service.processQueue();
+    expect(notificationService.getDue).toHaveBeenCalledWith();
     expect(bot.telegram.sendMessage).not.toHaveBeenCalled();
   });
 
@@ -190,6 +191,13 @@ describe('processQueue / runProcessQueue', () => {
       bot,
     });
     await service.processQueue();
+    // Отправка реально была попытана (иначе «не помечает» было бы тривиально
+    // верно и в случае, когда до sendMessage дело вообще не дошло).
+    expect(bot.telegram.sendMessage).toHaveBeenCalledWith(
+      42,
+      'привет',
+      expect.anything(),
+    );
     expect(notificationService.markSent).not.toHaveBeenCalled();
     expect(accountService.markUserBlocked).not.toHaveBeenCalled();
   });
@@ -252,5 +260,10 @@ describe('processQueue / runProcessQueue', () => {
     resolveSend();
     await Promise.all([first, second]);
     expect(bot.telegram.sendMessage).toHaveBeenCalledTimes(1);
+    expect(bot.telegram.sendMessage).toHaveBeenCalledWith(
+      1,
+      'x',
+      expect.anything(),
+    );
   });
 });

@@ -65,7 +65,10 @@ describe('TelegramNotifySettingsService — частота (settings:freq:N)', (
     const ctx = await runAction(fakeBot, 'settings:pick_freq');
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
     expect(accountService.setAdaptiveLevel).not.toHaveBeenCalled();
-    expect(ctx.editMessageText).toHaveBeenCalled();
+    expect(ctx.editMessageText).toHaveBeenCalledWith(
+      expect.stringContaining('Как часто напоминать'),
+      expect.anything(),
+    );
   });
 });
 
@@ -95,6 +98,9 @@ describe('TelegramNotifySettingsService — тихие часы (settings:quiet:
     service.onModuleInit();
     // regex допускает 1-2 цифры, но нет такого пресета в QUIET_PRESETS
     const ctx = await runAction(fakeBot, 'settings:quiet:5:5');
+    // answerCbQuery всё равно вызван первым (инвариант CLAUDE.md), просто
+    // без записи в БД и без перерисовки экрана.
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
     expect(ctx.editMessageText).not.toHaveBeenCalled();
   });
@@ -104,6 +110,7 @@ describe('TelegramNotifySettingsService — тихие часы (settings:quiet:
     const { service, fakeBot } = makeService(botService);
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'settings:quiet:99:5');
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
     expect(botService.updateUserSettings).not.toHaveBeenCalled();
     expect(ctx.editMessageText).not.toHaveBeenCalled();
   });
