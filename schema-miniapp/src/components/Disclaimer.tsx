@@ -7,6 +7,7 @@ import { DisclaimerNotTherapyStep } from './disclaimer/DisclaimerNotTherapyStep'
 import { DisclaimerNeedsWhatStep } from './disclaimer/DisclaimerNeedsWhatStep';
 import { DisclaimerNeedsWhyStep } from './disclaimer/DisclaimerNeedsWhyStep';
 import { DisclaimerNeedsResultStep } from './disclaimer/DisclaimerNeedsResultStep';
+import { DisclaimerDiariesWhyStep } from './disclaimer/DisclaimerDiariesWhyStep';
 import { DisclaimerTodayScreenStep } from './disclaimer/DisclaimerTodayScreenStep';
 import { DisclaimerAuthorStep } from './disclaimer/DisclaimerAuthorStep';
 import { DisclaimerHomeScreenStep } from './disclaimer/DisclaimerHomeScreenStep';
@@ -56,6 +57,7 @@ export function Disclaimer({
     needs_what: <DisclaimerNeedsWhatStep />,
     needs_why: <DisclaimerNeedsWhyStep />,
     needs_result: <DisclaimerNeedsResultStep />,
+    diaries_why: <DisclaimerDiariesWhyStep />,
     today_screen: <DisclaimerTodayScreenStep />,
     author: <DisclaimerAuthorStep />,
     home_screen: <DisclaimerHomeScreenStep onBeforeAdd={onConsent} />,

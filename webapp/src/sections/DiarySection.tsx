@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry } from '../types';
 import { api } from '../api';
-import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
 import { SchemaEntrySheet } from '../components/diary/SchemaEntrySheet';
 import { ModeEntrySheet } from '../components/diary/ModeEntrySheet';
@@ -10,6 +9,7 @@ import { EMOTIONS, getModeById, getSchemaById } from '../schemaTherapyData';
 import type { EmotionEntry } from '../types';
 import { loadDraft, clearDraft, formatDraftAge } from '../utils/drafts';
 import { ModeEntryShare } from '../components/diary/ModeEntryShare';
+import { DiaryEmptyExplainer } from '../components/diary/DiaryEmptyExplainer';
 
 const TODAY = new Date().toISOString().split('T')[0];
 
@@ -251,7 +251,6 @@ type Filter = 'all' | DiaryType;
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {}) {
-  const tr = useTr();
   const [schemaEntries,    setSchemaEntries]    = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries,      setModeEntries]      = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
@@ -403,7 +402,7 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
             <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.5 }}>
               {totalCount > 0
                 ? `${totalCount} ${totalCount === 1 ? 'запись' : totalCount < 5 ? 'записи' : 'записей'} · ведётся непрерывно`
-                : 'Фиксируй паттерны, замечай прогресс'}
+                : 'Пара минут на запись — через 3–5 записей виден паттерн'}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', flexDirection: 'column', gap: 16 }}>
@@ -501,15 +500,8 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
           </div>
         )}
 
-        {/* ── Empty ── */}
-        {!loading && filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-faint)' }}>
-            <div style={{ fontFamily: 'var(--serif)', fontSize: 28, color: 'var(--text-sub)', fontStyle: 'italic', marginBottom: 8 }}>Пусто.</div>
-            <div style={{ fontSize: 14 }}>
-              {filter === 'all' ? tr('Нажми на карточку выше, чтобы начать.', 'Нажмите на карточку выше, чтобы начать.') : 'Нет записей этого типа.'}
-            </div>
-          </div>
-        )}
+        {/* ── Empty: для новичка отвечает «что это и зачем» ── */}
+        {!loading && filtered.length === 0 && <DiaryEmptyExplainer filter={filter} />}
 
         {/* ── Timeline ── */}
         {!loading && grouped.map(([dateKey, entries]) => {

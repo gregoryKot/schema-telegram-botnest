@@ -100,6 +100,7 @@ const ONBOARDING_STEP_LABELS: Record<string, string> = {
   needs_what: 'что за пять потребностей',
   needs_why: 'зачем отмечать',
   needs_result: 'что увидят через 3–5 дней',
+  diaries_why: 'зачем дневники схем и режимов',
   today_screen: 'главный экран под себя',
   author: 'об авторе',
   home_screen: 'значок на телефон',

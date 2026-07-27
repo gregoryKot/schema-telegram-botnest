@@ -19,8 +19,11 @@ describe('порядок шагов онбординга', () => {
     // три коротких шага знакомства идут подряд
     expect(i('needs_why')).toBe(i('needs_what') + 1);
     expect(i('needs_result')).toBe(i('needs_why') + 1);
+    // за потребностями — «что такое схемы/режимы и зачем их записывать»:
+    // без этого названия дневников для новичка остаются пустым звуком
+    expect(i('diaries_why')).toBe(i('needs_result') + 1);
     // и только потом — экран «Сегодня», автор и значок на телефон
-    expect(i('today_screen')).toBeGreaterThan(i('needs_result'));
+    expect(i('today_screen')).toBeGreaterThan(i('diaries_why'));
     expect(i('author')).toBeGreaterThan(i('today_screen'));
     expect(i('home_screen')).toBeGreaterThan(i('author'));
   });

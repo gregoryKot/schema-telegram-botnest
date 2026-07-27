@@ -3,7 +3,7 @@ import { useSafeTop } from '../../utils/safezone';
 import { fmtDateLong } from '../../utils/format';
 import { haptic } from '../../haptic';
 import { pressable } from '../../utils/a11y';
-import { useTr } from '../../utils/addressForm';
+import { DiaryHubIntro } from './DiaryHubIntro';
 
 interface DiaryMeta {
   type: DiaryType;
@@ -134,7 +134,6 @@ export function HomeView({
   onOpen,
   onClose,
 }: Props) {
-  const tr = useTr();
   const diaries: DiaryMeta[] = [
     {
       type: 'schema',
@@ -195,16 +194,9 @@ export function HomeView({
           Мои дневники
         </span>
       </div>
-      <div style={{ marginBottom: 24 }}>
-        <div
-          style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}
-        >
-          {tr(
-            'Замечай паттерны, фиксируй моменты. Веди один или все три — как тебе удобно.',
-            'Замечайте паттерны, фиксируйте моменты. Ведите один или все три — как вам удобно.',
-          )}
-        </div>
-      </div>
+      <DiaryHubIntro
+        empty={schemaDiaryCount + modeDiaryCount + gratitudeDiaryCount === 0}
+      />
       {diaries.map((meta) => (
         <DiaryCard
           key={meta.type}
