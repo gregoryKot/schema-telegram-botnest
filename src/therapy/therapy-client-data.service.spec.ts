@@ -128,7 +128,7 @@ function makeService(rels: Rel[]) {
     notificationService,
     relationsService,
   );
-  return { svc, ...t, rels };
+  return { svc, ...t, rels, analyticsService, notificationService };
 }
 
 const T1 = 100n; // терапевт-владелец связи с CLIENT_A
@@ -297,6 +297,169 @@ describe('TherapyClientDataService — ownership на write-путях', () => {
 
     await svc.removeClient(T1, CID_A);
     expect(rels).toHaveLength(0);
+  });
+
+  it('removeClient с виртуальным клиентом (clientId<0) удаляет связь по -clientId=id', async () => {
+    const { svc, rels } = makeService([relA]); // relA.id === 1
+    await svc.removeClient(T1, -1);
+    expect(rels).toHaveLength(0);
+  });
+});
+
+describe('TherapyClientDataService — виртуальный клиент (id<0) в getClientData', () => {
+  it('getClientData возвращает заглушку без чтения User/YSQ, но проверяет связь', async () => {
+    const { svc, db } = makeService([relA]); // relA.id === 1 → clientId=-1 проходит assertHasClient
+    const result = await svc.getClientData(T1, -1);
+    expect(result).toEqual({
+      name: null,
+      mySchemaIds: [],
+      myModeIds: [],
+      ysqCompletedAt: null,
+      ysqActiveSchemaIds: [],
+    });
+    expect(db.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('getClientData для виртуального клиента без активной связи → отказ', async () => {
+    const { svc } = makeService([relA]);
+    await expect(svc.getClientData(T1, -999)).rejects.toThrow(
+      'No active relation',
+    );
+  });
+});
+
+describe('TherapyClientDataService — getClientData: ветки без пользователя/с историей YSQ', () => {
+  it('юзер не найден в БД (User удалён) → пустой профиль без падения', async () => {
+    const { svc } = makeService([relA]); // users пуст
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.name).toBeNull();
+    expect(data.mySchemaIds).toEqual([]);
+    expect(data.myModeIds).toEqual([]);
+  });
+
+  it('с заполненным YSQ (answers) и историей — считает активные схемы и историю попыток', async () => {
+    const { svc, users, db } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', ['abandonment']));
+    const answers = new Array(116).fill(6); // все вопросы «6» → все схемы активны
+    db.ysqResult.findUnique = jest.fn(() =>
+      Promise.resolve({
+        userId: CLIENT_A,
+        answers,
+        completedAt: new Date('2026-07-01T00:00:00Z'),
+      }),
+    );
+    db.ysqResultHistory.findMany = jest.fn(() =>
+      Promise.resolve([
+        { id: 1, completedAt: new Date('2026-06-01T00:00:00Z'), answers },
+      ]),
+    );
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.ysqCompletedAt).toBe('2026-07-01T00:00:00.000Z');
+    expect(data.ysqActiveSchemaIds.length).toBeGreaterThan(0);
+    expect(data.ysqHistory).toHaveLength(1);
+    expect(data.ysqHistory[0].scores).toBeDefined();
+  });
+});
+
+describe('TherapyClientDataService — clientId<0 короткие пути', () => {
+  it('getClientHistory для виртуального клиента → [] без обращения к analyticsService', async () => {
+    const { svc, analyticsService } = makeService([relA]);
+    expect(await svc.getClientHistory(T1, -1)).toEqual([]);
+    expect(analyticsService.getHistoryRatings).not.toHaveBeenCalled();
+  });
+
+  it('getClientDiaryEntries для виртуального клиента → [] без обращения к БД', async () => {
+    const { svc, db } = makeService([relA]);
+    expect(await svc.getClientDiaryEntries(T1, -1)).toEqual([]);
+    expect(db.schemaDiaryEntry.findMany).not.toHaveBeenCalled();
+  });
+
+  it('requestYsq для виртуального клиента → связь проверяется, но уведомление не шлётся', async () => {
+    const { svc, notificationService } = makeService([relA]);
+    await svc.requestYsq(T1, -1);
+    expect(notificationService.schedule).not.toHaveBeenCalled();
+  });
+});
+
+describe('TherapyClientDataService — getClientHistory с данными', () => {
+  it('день с 5 оценками получает индекс (среднее *10/10), день с < 5 — index:null', async () => {
+    const { svc, analyticsService } = makeService([relA]);
+    analyticsService.getHistoryRatings.mockResolvedValue([
+      {
+        date: '2026-07-20',
+        ratings: {
+          attachment: 8,
+          autonomy: 6,
+          expression: 7,
+          play: 5,
+          limits: 9,
+        },
+      },
+      { date: '2026-07-19', ratings: { attachment: 4 } }, // неполный день
+    ]);
+    const history = await svc.getClientHistory(T1, CID_A);
+    expect(history).toHaveLength(2);
+    const full = history.find((h) => h.date === '2026-07-20')!;
+    expect(full.index).toBeCloseTo(7); // (8+6+7+5+9)/5 = 7
+    const partial = history.find((h) => h.date === '2026-07-19')!;
+    expect(partial.index).toBeNull();
+    expect(analyticsService.getHistoryRatings).toHaveBeenCalledWith(
+      CLIENT_A,
+      14,
+    );
+  });
+});
+
+describe('TherapyClientDataService — requestYsq для реального клиента', () => {
+  it('клиент с id>=0: подтягивает имя терапевта и планирует уведомление ysq_requested', async () => {
+    const { svc, users, notificationService } = makeService([relA]);
+    users.push(mkUser(T1, 'Доктор Иванова', []));
+    await svc.requestYsq(T1, CID_A);
+    expect(notificationService.schedule).toHaveBeenCalledWith(
+      CLIENT_A,
+      'ysq_requested',
+      expect.any(Date),
+      { therapistName: 'Доктор Иванова' },
+    );
+  });
+
+  it('терапевт без firstName в базе → therapistName: null, но уведомление всё равно планируется', async () => {
+    const { svc, notificationService } = makeService([relA]); // users пуст — findUnique(T1) → null
+    await svc.requestYsq(T1, CID_A);
+    expect(notificationService.schedule).toHaveBeenCalledWith(
+      CLIENT_A,
+      'ysq_requested',
+      expect.any(Date),
+      { therapistName: null },
+    );
+  });
+});
+
+describe('TherapyClientDataService — updateSessionInfo: поля и виртуальный клиент', () => {
+  it('обновляет только переданное поле therapyStartDate', async () => {
+    const { svc, rels } = makeService([relA]);
+    await svc.updateSessionInfo(T1, CID_A, {
+      therapyStartDate: '2026-01-15',
+    });
+    expect((rels[0] as any).therapyStartDate).toBe('2026-01-15');
+  });
+
+  it('обновляет meetingDays', async () => {
+    const { svc, rels } = makeService([relA]);
+    await svc.updateSessionInfo(T1, CID_A, { meetingDays: [1, 3, 5] });
+    expect((rels[0] as any).meetingDays).toEqual([1, 3, 5]);
+  });
+
+  it('пустое тело (все поля undefined) — не трогает БД', async () => {
+    const { svc, db } = makeService([relA]);
+    await svc.updateSessionInfo(T1, CID_A, {});
+    expect(db.therapyRelation.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('виртуальный клиент (clientId<0): обновляет связь по -clientId=id, не по clientId', async () => {
+    const { svc, rels } = makeService([relA]); // relA.id === 1
+    await svc.updateSessionInfo(T1, -1, { nextSession: '2026-09-01' });
+    expect((rels[0] as any).nextSession).toBe('2026-09-01');
   });
 });
 

@@ -68,13 +68,14 @@ describe('AlertLogger.error — триггерит алерт', () => {
 describe('AlertLogger — методы, отличные от error(), алерт не шлют', () => {
   it('warn/log/debug не вызывают notifyAdminWithFallback', async () => {
     const logger = new AlertLogger('Test');
-    jest.spyOn(console, 'warn').mockImplementation(() => undefined);
-    jest.spyOn(console, 'log').mockImplementation(() => undefined);
-    jest.spyOn(console, 'debug').mockImplementation(() => undefined);
-    logger.warn('careful');
-    logger.log('info');
-    logger.debug?.('debug details');
+    // Санити: методы реально существуют и не бросают (иначе «алерт не шлют»
+    // было бы тривиально верно и в случае, когда сами методы сломаны).
+    expect(() => logger.warn('careful')).not.toThrow();
+    expect(() => logger.log('info')).not.toThrow();
+    expect(() => logger.debug?.('debug details')).not.toThrow();
     await flush();
+    // Осознанный weak: негативный ассерт «не вызван» структурно не может
+    // нести проверку аргументов — вызова, которого не было, не существует.
     expect(mockedNotify).not.toHaveBeenCalled();
   });
 });
@@ -98,6 +99,7 @@ describe('AlertLogger — троттлинг одинаковых ошибок (
     logger.error('DB connection failed');
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(1);
+    expect(mockedNotify.mock.calls[0][0]).toContain('DB connection failed');
   });
 
   it('после 60с то же сообщение шлёт алерт повторно', async () => {
@@ -109,6 +111,8 @@ describe('AlertLogger — троттлинг одинаковых ошибок (
     logger.error('DB connection failed');
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(2);
+    expect(mockedNotify.mock.calls[0][0]).toContain('DB connection failed');
+    expect(mockedNotify.mock.calls[1][0]).toContain('DB connection failed');
   });
 
   it('разные сообщения не троттлятся друг другом', async () => {
@@ -119,6 +123,8 @@ describe('AlertLogger — троттлинг одинаковых ошибок (
     logger.error('Error B');
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(2);
+    expect(mockedNotify.mock.calls[0][0]).toContain('Error A');
+    expect(mockedNotify.mock.calls[1][0]).toContain('Error B');
   });
 
   it('нормализация ключа: числа схлопываются, "Failed id=1" и "Failed id=2" троттлятся как один (I-4)', async () => {
@@ -129,6 +135,8 @@ describe('AlertLogger — троттлинг одинаковых ошибок (
     logger.error('Failed to process id=2');
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(1);
+    // Второй error() подавлен троттлингом — алерт остался от первого вызова.
+    expect(mockedNotify.mock.calls[0][0]).toContain('Failed to process id=1');
   });
 
   it('нормализация ключа: uuid схлопывается в плейсхолдер, разные uuid троттлятся как один', async () => {
@@ -139,6 +147,9 @@ describe('AlertLogger — троттлинг одинаковых ошибок (
     logger.error('Booking ffffffff-1111-2222-3333-444444444444 confirm failed');
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(1);
+    expect(mockedNotify.mock.calls[0][0]).toContain(
+      'Booking a1b2c3d4-e5f6-7890-abcd-ef1234567890 confirm failed',
+    );
   });
 });
 
@@ -157,5 +168,10 @@ describe('AlertLogger — eviction старых записей троттлин�
     logger.error('Stale error'); // ключ должен был эвиктиться → шлёт снова
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(3);
+    expect(mockedNotify.mock.calls[0][0]).toContain('Stale error');
+    expect(mockedNotify.mock.calls[1][0]).toContain(
+      'Another error to trigger sweep',
+    );
+    expect(mockedNotify.mock.calls[2][0]).toContain('Stale error');
   });
 });

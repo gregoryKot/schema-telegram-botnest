@@ -99,6 +99,7 @@
   "webapp/src/pages/admin/BookingSection.tsx": 270,
   "webapp/src/components/therapist/ClientListView.tsx": 265,
   "shared/src/hooks/ysqSchemas.ts": 264,
+  "scripts/check-weak-assert-ratchet.mjs": 263,
   "shared/src/journey/journeyContent.ts": 262,
   "schema-miniapp/src/components/TodayCustomizeSheet.tsx": 261,
   "schema-miniapp/src/components/IntroSheetShell.tsx": 258,
