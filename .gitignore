@@ -75,6 +75,11 @@ schema-miniapp/node_modules/
 # отличие от webapp) — генерятся scripts/check-frontend-coverage-ratchet.mjs.
 schema-miniapp/coverage/
 
+# shared: не npm-workspace (README.md), поэтому /node_modules и /coverage
+# корневого .gitignore его не покрывают — свой пакет, свои артефакты.
+shared/node_modules/
+shared/coverage/
+
 
 # macOS junk
 .DS_Store
