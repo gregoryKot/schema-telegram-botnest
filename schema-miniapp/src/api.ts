@@ -401,6 +401,11 @@ export const api = {
         thoughts: string;
         needs: string;
         behavior: string;
+        // Паритет с 7-вопросной карточкой (buildModeIntroQuestions) —
+        // контракт бэкенда (ModeNoteDto/UserModeNote) на момент написания
+        // ещё не подключён, поля опциональны до интеграции.
+        origins?: string;
+        healthyView?: string;
       }>
     >('/api/mode-notes'),
   saveModeNote: (body: {
@@ -410,6 +415,8 @@ export const api = {
     thoughts?: string;
     needs?: string;
     behavior?: string;
+    origins?: string;
+    healthyView?: string;
   }) => post('/api/mode-notes', body),
 
   // ─── Exercises ───────────────────────────────────────────────────────────────

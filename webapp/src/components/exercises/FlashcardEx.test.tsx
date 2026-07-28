@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { SchemaEx } from './FlashcardEx';
+import { SchemaEx, ModeEx } from './FlashcardEx';
 
 vi.mock('../../api', () => ({
   api: {
@@ -14,6 +14,16 @@ vi.mock('../../api', () => ({
     trackEvent: vi.fn(),
   },
 }));
+// modeCards (портреты режимов) — контракт параллельной задачи, ещё не
+// подключён на момент написания теста. По умолчанию «нет карточки» →
+// ModeEx сразу открывает вопросы (как раньше); портрет — отдельный блок
+// ниже, подставляет карточку через mockReturnValue.
+vi.mock('../../../../shared/src/mode/modeCards', () => ({
+  getModeCard: vi.fn(),
+  MODE_CARDS: {},
+}));
+import { getModeCard } from '../../../../shared/src/mode/modeCards';
+const mockGetModeCard = getModeCard as unknown as ReturnType<typeof vi.fn>;
 
 function renderSheet() {
   return render(
@@ -25,6 +35,7 @@ function renderSheet() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockGetModeCard.mockReturnValue(undefined);
 });
 
 afterEach(() => {
@@ -45,5 +56,53 @@ describe('FlashcardEx (SchemaEx) — кризисная детекция', () =>
     const textarea = screen.getByRole('textbox');
     fireEvent.change(textarea, { target: { value: 'Обычно это молчание в переписке' } });
     expect(screen.queryByRole('status')).toBeNull();
+  });
+});
+
+// Правило онбординга CLAUDE.md: портрет режима не должен становиться
+// недостижимым после первого показа — паритет с миниаппом (кнопка «Про
+// режим» в форме возвращает к портрету).
+describe('FlashcardEx (ModeEx) — портрет режима: первый показ и ручной возврат', () => {
+  const CARD = {
+    about: 'Крохотный и настоящий: пугается, что его снова оставят одного.',
+    triggers: 'Когда никто не отвечает весь день',
+    body: 'Ком в горле',
+    voice: '«Меня опять бросят»',
+    behavior: 'Замирает и проверяет',
+    origin: 'Когда-то рядом правда никого не было',
+    cost: 'Пугает партнёра проверками',
+    need: 'Надёжного присутствия рядом',
+    healthyAdult: 'Я здесь и никуда не денусь',
+  };
+
+  function renderModeEx() {
+    return render(
+      <MemoryRouter>
+        <ModeEx onBack={vi.fn()} initialModeId="vulnerable_child" />
+      </MemoryRouter>,
+    );
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    mockGetModeCard.mockReturnValue(CARD);
+  });
+
+  it('первый раз показывает портрет, а не форму вопросов', () => {
+    renderModeEx();
+    expect(screen.getByText('Заполнить свою карточку →')).toBeTruthy();
+    expect(screen.getByText(CARD.about)).toBeTruthy();
+  });
+
+  it('«Заполнить карточку» открывает форму; «Про режим» возвращает к портрету и обратно', () => {
+    renderModeEx();
+    fireEvent.click(screen.getByText('Заполнить свою карточку →'));
+    expect(screen.getByRole('textbox')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('ⓘ Про режим'));
+    expect(screen.getByText('Назад к вопросам →')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Назад к вопросам →'));
+    expect(screen.getByRole('textbox')).toBeTruthy();
   });
 });

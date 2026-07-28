@@ -9,7 +9,7 @@ const SchemaEx = lazy(() => import('./exercises/FlashcardEx').then(m => ({ defau
 const ModeEx   = lazy(() => import('./exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 
 type SchemaNote = { schemaId: string; triggers: string; feelings: string; thoughts: string; origins: string; reality: string; healthyView: string; behavior: string };
-type ModeNote   = { modeId: string; triggers: string; feelings: string; thoughts: string; needs: string; behavior: string };
+type ModeNote   = { modeId: string; triggers: string; feelings: string; thoughts: string; needs: string; behavior: string; origins?: string; healthyView?: string };
 type DiaryEntry = { id: number; createdAt: string; type: 'schema' | 'mode' | 'gratitude'; label: string; preview: string };
 type Exercise   = { id: number; createdAt: string; type: 'belief' | 'letter' | 'flashcard'; label: string; preview: string };
 type SafeEntry  = { description: string; updatedAt: string } | null;

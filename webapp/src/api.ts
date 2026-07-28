@@ -386,6 +386,11 @@ export interface UserModeNote {
   thoughts: string;
   needs: string;
   behavior: string;
+  // Паритет с 7-вопросной карточкой (buildModeIntroQuestions) — контракт
+  // бэкенда (ModeNoteDto/UserModeNote.origins+healthyView) на момент
+  // написания ещё не подключён, поле опционально до интеграции.
+  origins?: string;
+  healthyView?: string;
   updatedAt: string;
 }
 export interface BeliefCheckEntry {
@@ -529,7 +534,7 @@ export const api = {
   getSchemaNotes:       () => get<UserSchemaNote[]>('/api/schema-notes'),
   saveSchemaNote:       (body: { schemaId: string; triggers?: string; feelings?: string; thoughts?: string; origins?: string; reality?: string; healthyView?: string; behavior?: string }) => post('/api/schema-notes', body),
   getModeNotes:         () => get<UserModeNote[]>('/api/mode-notes'),
-  saveModeNote:         (body: { modeId: string; triggers?: string; feelings?: string; thoughts?: string; needs?: string; behavior?: string }) => post('/api/mode-notes', body),
+  saveModeNote:         (body: { modeId: string; triggers?: string; feelings?: string; thoughts?: string; needs?: string; behavior?: string; origins?: string; healthyView?: string }) => post('/api/mode-notes', body),
   getBeliefChecks:      () => get<BeliefCheckEntry[]>('/api/belief-checks'),
   createBeliefCheck:    (body: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) => post('/api/belief-checks', body),
   deleteBeliefCheck:    (id: number) => del(`/api/belief-checks/${id}`),

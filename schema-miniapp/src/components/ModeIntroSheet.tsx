@@ -1,61 +1,38 @@
+import { useState } from 'react';
 import { getModeById } from '../schemaTherapyData';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { IntroSheetShell } from './IntroSheetShell';
-import { IntroSheetQuestion } from './IntroSheetFlashcard';
+import { HeaderInfoButton } from './IntroSheetHeader';
 import { buildModeIntroExplainer } from '../../../shared/src/mode/modeFlowExplainers';
+import { buildModeIntroQuestions } from '../../../shared/src/mode/modeIntroQuestions';
+import { getModeCard } from '../../../shared/src/mode/modeCards';
+import { MODE_CARD_SAVED_EVENT } from '../../../shared/src/share/analytics';
+import { ModePortrait } from './modeIntro/ModePortrait';
 
 const STORAGE_KEY = (modeId: string) => `mode_intro_${modeId}`;
+const SEEN_KEY = (modeId: string) => `mode_portrait_seen_${modeId}`;
 
 interface IntroData {
   [key: string]: string;
   triggers: string;
   feelings: string;
   thoughts: string;
-  needs: string;
   behavior: string;
+  needs: string;
+  origins: string;
+  healthyView: string;
 }
 
 const EMPTY: IntroData = {
   triggers: '',
   feelings: '',
   thoughts: '',
-  needs: '',
   behavior: '',
+  needs: '',
+  origins: '',
+  healthyView: '',
 };
-
-const QUESTIONS: IntroSheetQuestion<IntroData>[] = [
-  {
-    key: 'triggers',
-    label: 'Когда активируется',
-    hint: 'Ситуации, люди, слова — что запускает этот режим?',
-    placeholder: 'Когда меня критикуют, когда нужно выступить...',
-  },
-  {
-    key: 'feelings',
-    label: 'Что чувствую',
-    hint: 'Эмоции и ощущения в теле',
-    placeholder: 'Тревога, комок в горле, напряжение в плечах...',
-  },
-  {
-    key: 'thoughts',
-    label: 'Что говорит внутри',
-    hint: 'Убеждения, голос, монолог этого режима',
-    placeholder: '«Я недостаточно хорош», «Лучше не рисковать»...',
-  },
-  {
-    key: 'needs',
-    label: 'Чего на самом деле хочет',
-    hint: 'Глубинная потребность за этим режимом',
-    placeholder: 'Безопасности, признания, контакта...',
-  },
-  {
-    key: 'behavior',
-    label: 'Как проявляется в поведении',
-    hint: 'Что происходит в поведении в этом режиме',
-    placeholder: 'Замолкаю, избегаю, злюсь, переусердствую...',
-  },
-];
 
 interface Props {
   modeId: string;
@@ -66,27 +43,49 @@ interface Props {
 export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
   const tr = useTr();
   const mode = getModeById(modeId);
+  const card = getModeCard(modeId);
+  // seen — портрет уже показывали: не открывать его снова автоматически,
+  // но честно подписать кнопку при ручном возврате («Про режим» в шапке).
+  const seen = Boolean(localStorage.getItem(SEEN_KEY(modeId)));
+  const [showPortrait, setShowPortrait] = useState(() => Boolean(card) && !seen);
   if (!mode) return null;
+
+  if (showPortrait && card) {
+    return (
+      <ModePortrait
+        onClose={onClose}
+        emoji={mode.emoji}
+        name={mode.name}
+        groupName={mode.groupName}
+        accentColor={mode.groupColor ?? 'var(--accent)'}
+        card={card}
+        explainer={buildModeIntroExplainer(tr)}
+        ctaLabel={seen ? 'Назад к вопросам →' : undefined}
+        onStart={() => { localStorage.setItem(SEEN_KEY(modeId), '1'); setShowPortrait(false); }}
+      />
+    );
+  }
 
   return (
     <IntroSheetShell
       onClose={onClose}
-      onComplete={onComplete}
+      onComplete={() => {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY(modeId));
+          const data = raw ? (JSON.parse(raw) as Record<string, string>) : EMPTY;
+          api.trackEvent(MODE_CARD_SAVED_EVENT, { modeId, filledFields: Object.values(data).filter((v) => v.trim()).length });
+        } catch { /* аналитика не должна ронять сохранение, см. useIntroSheetData.ts */ }
+        onComplete?.();
+      }}
       storageKey={STORAGE_KEY(modeId)}
       emptyData={EMPTY}
-      questions={QUESTIONS}
+      questions={buildModeIntroQuestions(card)}
       loadExisting={() =>
         api.getModeNotes().then((notes) => {
-          const note = notes.find((n) => n.modeId === modeId);
-          return note
-            ? {
-                triggers: note.triggers,
-                feelings: note.feelings,
-                thoughts: note.thoughts,
-                needs: note.needs,
-                behavior: note.behavior,
-              }
-            : null;
+          const n = notes.find((x) => x.modeId === modeId);
+          if (!n) return null;
+          const { triggers, feelings, thoughts, behavior, needs } = n;
+          return { triggers, feelings, thoughts, behavior, needs, origins: n.origins ?? '', healthyView: n.healthyView ?? '' };
         })
       }
       saveNote={(data) => api.saveModeNote({ modeId, ...data })}
@@ -97,6 +96,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
       description={mode.short}
       showDescription={Boolean(mode.short)}
       explainer={buildModeIntroExplainer(tr)}
+      headerAction={card && <HeaderInfoButton onClick={() => setShowPortrait(true)} />}
       answerPromptText={tr('Нажми чтобы ответить', 'Нажмите чтобы ответить')}
       nextButtonLabel="Следующий →"
     />
