@@ -132,6 +132,6 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  // breath_start / journey_open / ysq_help_open — без meta; поля отбрасываются.
+  // breath_start / stop_start / journey_open / ysq_help_open — без meta; поля отбрасываются.
   return undefined;
 }

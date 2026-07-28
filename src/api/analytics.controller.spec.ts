@@ -57,4 +57,10 @@ describe('AnalyticsController — делегирует sanitizeMeta и track', (
       controller.track(req, { name: 'share_card', meta: { kind: 'streak' } }),
     ).resolves.toEqual({ ok: true });
   });
+
+  it('stop_start: meta игнорируется (событие без meta)', async () => {
+    const { track, fire } = setup();
+    await fire({ name: 'stop_start', meta: { junk: 'x' } });
+    expect(track).toHaveBeenCalledWith(7n, 'stop_start', undefined);
+  });
 });
