@@ -15,6 +15,7 @@
 //   today_focus_change  — сменил главную практику экрана «Сегодня» (meta.practice);
 //   today_streak_toggle — скрыл/показал счётчик серии (meta.hidden);
 //   breath_start        — запустил дыхание «Здесь и сейчас» (без meta);
+//   stop_start          — запустил технику «Стоп» в «Здесь и сейчас» (без meta);
 //   web_banner_open     — открыл сайт из баннера кабинета (meta.banner);
 //   web_banner_dismiss  — скрыл баннер кабинета (meta.banner);
 //   onboarding_step     — новичок дошёл до шага обучения (meta.step);
@@ -40,6 +41,7 @@ export const ANALYTICS_EVENTS = [
   'today_focus_change',
   'today_streak_toggle',
   'breath_start',
+  'stop_start',
   'web_banner_open',
   'web_banner_dismiss',
   'onboarding_step',
