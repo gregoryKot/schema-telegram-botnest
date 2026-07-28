@@ -247,7 +247,7 @@ export function TodaySection({
     <div
       style={{
         minHeight: '100vh',
-        paddingBottom: 120,
+        paddingBottom: 'calc(120px + var(--safe-bottom))',
         paddingTop: safeTop,
         animation: 'fade-in 0.25s ease',
       }}

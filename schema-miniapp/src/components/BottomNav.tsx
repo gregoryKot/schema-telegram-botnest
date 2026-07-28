@@ -136,7 +136,7 @@ export function BottomNav({ section, onSelect, userRole }: Props) {
         WebkitBackdropFilter: 'blur(24px)',
         borderTop: '1px solid var(--border-color)',
         zIndex: 50,
-        paddingBottom: 'env(safe-area-inset-bottom, 24px)',
+        paddingBottom: 'var(--safe-bottom)',
       }}
     >
       <div style={{ height: 60, display: 'flex' }}>

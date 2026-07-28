@@ -113,9 +113,7 @@ export function SchemasSection({
   ];
 
   return (
-    <div
-      style={{ minHeight: '100vh', paddingBottom: 140, paddingTop: safeTop }}
-    >
+    <div className="section-pad" style={{ paddingTop: safeTop }}>
       {/* ── Header ── */}
       <div
         style={{

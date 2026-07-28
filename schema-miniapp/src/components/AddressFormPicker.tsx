@@ -39,7 +39,7 @@ export function AddressFormPicker({ onDone }: Props) {
           maxWidth: 480,
           background: 'var(--bg)',
           borderRadius: '20px 20px 0 0',
-          padding: '24px 20px calc(24px + env(safe-area-inset-bottom))',
+          padding: '24px 20px calc(24px + var(--safe-bottom))',
         }}
       >
         <div
