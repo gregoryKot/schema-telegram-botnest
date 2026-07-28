@@ -1,0 +1,130 @@
+// @vitest-environment jsdom
+// Компонентные тесты SubscribePage: сабмит формы подписки, honeypot-поле,
+// обязательное согласие (consent), ошибка API. Мок '../api' — образец сетапа
+// webapp/src/utils/addressForm.test.tsx / schema-miniapp TrackerOverlay.test.tsx.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
+import { SubscribePage } from './SubscribePage';
+
+vi.mock('../api', () => ({
+  api: {
+    getSubscriptionOptions: vi.fn(),
+    getSubscriptionByToken: vi.fn(),
+    subscribe: vi.fn(),
+    cancelSubscription: vi.fn(),
+  },
+}));
+import { api } from '../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+const OPTIONS = {
+  enabled: true,
+  options: [
+    { period: 'month' as const, price: 299 },
+    { period: 'year' as const, price: 2990 },
+  ],
+};
+
+function resetLocation() {
+  window.history.pushState({}, '', '/subscribe');
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  resetLocation();
+  mockApi.getSubscriptionOptions.mockResolvedValue(OPTIONS);
+});
+
+afterEach(() => {
+  cleanup();
+  resetLocation();
+});
+
+async function renderLoaded() {
+  render(<SubscribePage />);
+  // Дожидаемся загрузки опций подписки (useEffect -> api.getSubscriptionOptions).
+  await screen.findByText('299 ₽');
+}
+
+function honeypotInput(container: HTMLElement): HTMLInputElement {
+  return container.querySelector('input[type="text"]') as HTMLInputElement;
+}
+
+describe('SubscribePage — загрузка опций', () => {
+  it('показывает цену выбранного периода после загрузки api.getSubscriptionOptions', async () => {
+    await renderLoaded();
+    expect(screen.getByText('299 ₽')).toBeTruthy();
+  });
+});
+
+describe('SubscribePage — согласие обязательно', () => {
+  it('кнопка «Оформить» задизейблена, пока не отмечено согласие', async () => {
+    await renderLoaded();
+    const btn = screen.getByRole('button', { name: /Оформить за/ });
+    expect((btn as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('после отметки согласия кнопка становится активной', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('checkbox'));
+    const btn = screen.getByRole('button', { name: /Оформить за/ });
+    expect((btn as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+describe('SubscribePage — сабмит подписки', () => {
+  it('вызывает api.subscribe с введённым email, периодом и acceptedOffer=true', async () => {
+    mockApi.subscribe.mockResolvedValue({ paymentUrl: null });
+    await renderLoaded();
+    fireEvent.change(screen.getByPlaceholderText('Email для чека (необязательно)'), {
+      target: { value: 'user@example.com' },
+    });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: /Оформить за/ }));
+
+    await act(async () => {});
+
+    expect(mockApi.subscribe).toHaveBeenCalledWith({
+      period: 'month',
+      email: 'user@example.com',
+      acceptedOffer: true,
+      website: '',
+    });
+  });
+
+  it('переключение на «Год» передаёт period: year и годовую цену в тексте кнопки', async () => {
+    mockApi.subscribe.mockResolvedValue({ paymentUrl: null });
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('button', { name: /Год/ }));
+    expect(screen.getByRole('button', { name: /Оформить за 2\s990/ })).toBeTruthy();
+  });
+});
+
+describe('SubscribePage — honeypot-поле', () => {
+  it('значение скрытого honeypot-поля передаётся в api.subscribe как есть', async () => {
+    mockApi.subscribe.mockResolvedValue({ paymentUrl: null });
+    const { container } = render(<SubscribePage />);
+    await screen.findByText('299 ₽');
+
+    fireEvent.change(honeypotInput(container), { target: { value: 'bot-filled' } });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: /Оформить за/ }));
+
+    await act(async () => {});
+
+    expect(mockApi.subscribe).toHaveBeenCalledWith(
+      expect.objectContaining({ website: 'bot-filled' }),
+    );
+  });
+});
+
+describe('SubscribePage — ошибка API', () => {
+  it('ошибка api.subscribe показывает сообщение об ошибке пользователю', async () => {
+    mockApi.subscribe.mockRejectedValue(new Error('payment gateway down'));
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: /Оформить за/ }));
+
+    await screen.findByText('Не получилось. Попробуйте ещё раз.');
+  });
+});
