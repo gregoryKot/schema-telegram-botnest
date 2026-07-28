@@ -44,6 +44,8 @@ export interface ProductMetrics {
     customizeLongpress: number;
   };
   breath: { started: number };
+  // Техника «Стоп» (за месяц): сколько раз открывали.
+  stop: { started: number };
   // Архив «Мой путь» (за месяц): сколько раз открывали свою историю.
   journey: { opens: number };
   // Значок на экране телефона (за месяц): предлагали / что ответили.
@@ -185,6 +187,11 @@ export function formatProductMetrics(m: ProductMetrics): string {
     '',
     `🌬 <b>Дыхание «Здесь и сейчас»</b> (за месяц)`,
     `Запускали: ${m.breath.started} раз`,
+    '',
+    `🛑 <b>Техника «Стоп»</b> (за месяц)`,
+    m.stop.started === 0
+      ? 'Пока никто не запускал'
+      : `Запускали: ${m.stop.started} раз`,
     '',
     `🧭 <b>Архив «Мой путь»</b> (за месяц)`,
     m.journey.opens === 0
