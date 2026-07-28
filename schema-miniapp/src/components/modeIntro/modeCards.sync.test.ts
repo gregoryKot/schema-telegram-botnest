@@ -21,7 +21,10 @@ describe('MODE_CARDS ↔ MODE_GROUPS (мини-апп, правило №4)', ()
   it('в MODE_CARDS нет карточек для несуществующих modeId', () => {
     const registrySet = new Set(REGISTRY_IDS);
     for (const id of Object.keys(MODE_CARDS)) {
-      expect(registrySet.has(id), `карточка "${id}" не ссылается на реальный режим`).toBe(true);
+      expect(
+        registrySet.has(id),
+        `карточка "${id}" не ссылается на реальный режим`,
+      ).toBe(true);
     }
   });
 });

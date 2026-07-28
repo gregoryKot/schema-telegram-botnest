@@ -29,7 +29,14 @@ export function IntroSheetHeader({
 }: IntroSheetHeaderProps) {
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
         <div
           style={{
             width: 48,
@@ -47,10 +54,24 @@ export function IntroSheetHeader({
           {emoji}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.3px' }}>
+          <div
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: 'var(--text)',
+              letterSpacing: '-0.3px',
+            }}
+          >
             {title}
           </div>
-          <div style={{ fontSize: 12, fontWeight: 500, color: accentColor, marginTop: 2 }}>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 500,
+              color: accentColor,
+              marginTop: 2,
+            }}
+          >
             {subtitle}
           </div>
         </div>
@@ -67,12 +88,23 @@ export function IntroSheetHeader({
             marginBottom: 16,
           }}
         >
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>{description}</div>
+          <div
+            style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}
+          >
+            {description}
+          </div>
         </div>
       )}
 
       {explainer && (
-        <div style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5, marginBottom: 16 }}>
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--text-faint)',
+            lineHeight: 1.5,
+            marginBottom: 16,
+          }}
+        >
           {explainer}
         </div>
       )}
@@ -81,7 +113,13 @@ export function IntroSheetHeader({
 }
 
 /** Круглая кнопка-иконка в шапке (44×44 — минимальная зона нажатия). */
-export function HeaderInfoButton({ onClick, label = 'Про режим' }: { onClick: () => void; label?: string }) {
+export function HeaderInfoButton({
+  onClick,
+  label = 'Про режим',
+}: {
+  onClick: () => void;
+  label?: string;
+}) {
   return (
     <button
       onClick={onClick}

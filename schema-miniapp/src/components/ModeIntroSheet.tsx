@@ -47,7 +47,9 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
   // seen — портрет уже показывали: не открывать его снова автоматически,
   // но честно подписать кнопку при ручном возврате («Про режим» в шапке).
   const seen = Boolean(localStorage.getItem(SEEN_KEY(modeId)));
-  const [showPortrait, setShowPortrait] = useState(() => Boolean(card) && !seen);
+  const [showPortrait, setShowPortrait] = useState(
+    () => Boolean(card) && !seen,
+  );
   if (!mode) return null;
 
   if (showPortrait && card) {
@@ -61,7 +63,10 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
         card={card}
         explainer={buildModeIntroExplainer(tr)}
         ctaLabel={seen ? 'Назад к вопросам →' : undefined}
-        onStart={() => { localStorage.setItem(SEEN_KEY(modeId), '1'); setShowPortrait(false); }}
+        onStart={() => {
+          localStorage.setItem(SEEN_KEY(modeId), '1');
+          setShowPortrait(false);
+        }}
       />
     );
   }
@@ -72,9 +77,16 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
       onComplete={() => {
         try {
           const raw = localStorage.getItem(STORAGE_KEY(modeId));
-          const data = raw ? (JSON.parse(raw) as Record<string, string>) : EMPTY;
-          api.trackEvent(MODE_CARD_SAVED_EVENT, { modeId, filledFields: Object.values(data).filter((v) => v.trim()).length });
-        } catch { /* аналитика не должна ронять сохранение, см. useIntroSheetData.ts */ }
+          const data = raw
+            ? (JSON.parse(raw) as Record<string, string>)
+            : EMPTY;
+          api.trackEvent(MODE_CARD_SAVED_EVENT, {
+            modeId,
+            filledFields: Object.values(data).filter((v) => v.trim()).length,
+          });
+        } catch {
+          /* аналитика не должна ронять сохранение, см. useIntroSheetData.ts */
+        }
         onComplete?.();
       }}
       storageKey={STORAGE_KEY(modeId)}
@@ -85,7 +97,15 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
           const n = notes.find((x) => x.modeId === modeId);
           if (!n) return null;
           const { triggers, feelings, thoughts, behavior, needs } = n;
-          return { triggers, feelings, thoughts, behavior, needs, origins: n.origins ?? '', healthyView: n.healthyView ?? '' };
+          return {
+            triggers,
+            feelings,
+            thoughts,
+            behavior,
+            needs,
+            origins: n.origins ?? '',
+            healthyView: n.healthyView ?? '',
+          };
         })
       }
       saveNote={(data) => api.saveModeNote({ modeId, ...data })}
@@ -96,7 +116,9 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
       description={mode.short}
       showDescription={Boolean(mode.short)}
       explainer={buildModeIntroExplainer(tr)}
-      headerAction={card && <HeaderInfoButton onClick={() => setShowPortrait(true)} />}
+      headerAction={
+        card && <HeaderInfoButton onClick={() => setShowPortrait(true)} />
+      }
       answerPromptText={tr('Нажми чтобы ответить', 'Нажмите чтобы ответить')}
       nextButtonLabel="Следующий →"
     />

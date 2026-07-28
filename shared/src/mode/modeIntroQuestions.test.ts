@@ -67,7 +67,10 @@ describe('buildModeIntroQuestions', () => {
   it('формулировки form-agnostic — нет жёстких «ты»-форм (правило ты/вы)', () => {
     const TY_RE =
       /(?<![А-Яа-яЁёA-Za-z])([Тт]ы|[Тт]ебя|[Тт]ебе|[Тт]обой|[Тт]во(?:й|я|ё|е|и|их|им|ей|ю))(?![А-Яа-яЁё])/;
-    for (const q of [...buildModeIntroQuestions(CARD), ...buildModeIntroQuestions()]) {
+    for (const q of [
+      ...buildModeIntroQuestions(CARD),
+      ...buildModeIntroQuestions(),
+    ]) {
       expect(q.label).not.toMatch(TY_RE);
       expect(q.hint).not.toMatch(TY_RE);
     }

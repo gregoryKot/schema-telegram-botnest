@@ -1,0 +1,17 @@
+import { StatsReportService } from './stats-report.service';
+
+describe('StatsReportService.render', () => {
+  it('склеивает продуктовые метрики и блок карточек режимов', async () => {
+    const product = {
+      render: jest.fn().mockResolvedValue('продуктовые метрики'),
+    };
+    const modeCard = {
+      render: jest.fn().mockResolvedValue('карточки режимов: 9'),
+    };
+    const service = new StatsReportService(product as never, modeCard as never);
+
+    await expect(service.render()).resolves.toBe(
+      'продуктовые метрики\n\nкарточки режимов: 9',
+    );
+  });
+});

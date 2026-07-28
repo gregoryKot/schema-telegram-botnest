@@ -4,29 +4,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapyRelationsService } from './therapy-relations.service';
-import {
-  decrypt,
-  decryptJson,
-  decryptRecord,
-  EncryptSchema,
-} from '../utils/crypto';
+import { decrypt, decryptJson, decryptRecord } from '../utils/crypto';
 import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
 import { decodeYsqAnswers } from '../bot/ysq.service';
-
-const SCHEMA_NOTE_SCHEMA: EncryptSchema = {
-  strings: [
-    'triggers',
-    'feelings',
-    'thoughts',
-    'origins',
-    'reality',
-    'healthyView',
-    'behavior',
-  ],
-};
-const MODE_NOTE_SCHEMA: EncryptSchema = {
-  strings: ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'],
-};
+// Схемы шифрования — общий источник правды с NotesService (правило №4
+// CLAUDE.md: не копипастить список полей, иначе рассинхрон при новом поле).
+import { SCHEMA_NOTE_SCHEMA, MODE_NOTE_SCHEMA } from '../bot/notes.service';
 
 // Данные клиента для терапевта: профиль/YSQ, история, дневники, заметки,
 // запрос YSQ, инфо о сессии и удаление клиента. Кроме удаления — везде

@@ -18,8 +18,8 @@ export type ModeNote = {
   thoughts: string;
   needs: string;
   behavior: string;
-  origins?: string;
-  healthyView?: string;
+  origins: string;
+  healthyView: string;
 };
 export type DiaryEntry = {
   id: number;

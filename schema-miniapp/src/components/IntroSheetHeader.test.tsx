@@ -53,7 +53,13 @@ describe('IntroSheetHeader', () => {
 
   it('explainer показывается только если передан', () => {
     const { rerender } = render(
-      <IntroSheetHeader emoji="🥺" title="Т" subtitle="П" accentColor="#60a5fa" showDescription={false} />,
+      <IntroSheetHeader
+        emoji="🥺"
+        title="Т"
+        subtitle="П"
+        accentColor="#60a5fa"
+        showDescription={false}
+      />,
     );
     expect(screen.queryByText('Зачем это')).toBeNull();
 

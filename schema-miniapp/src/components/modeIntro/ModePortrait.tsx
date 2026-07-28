@@ -39,7 +39,14 @@ export function ModePortrait({
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 16,
+          }}
+        >
           <div
             style={{
               width: 48,
@@ -57,8 +64,26 @@ export function ModePortrait({
             {emoji}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.3px' }}>{name}</div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: accentColor, marginTop: 2 }}>{groupName}</div>
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: 'var(--text)',
+                letterSpacing: '-0.3px',
+              }}
+            >
+              {name}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 500,
+                color: accentColor,
+                marginTop: 2,
+              }}
+            >
+              {groupName}
+            </div>
           </div>
         </div>
 
@@ -77,7 +102,14 @@ export function ModePortrait({
           {card.about}
         </div>
 
-        <div style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5, marginBottom: 16 }}>
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--text-faint)',
+            lineHeight: 1.5,
+            marginBottom: 16,
+          }}
+        >
           {explainer}
         </div>
 
@@ -87,7 +119,10 @@ export function ModePortrait({
               key={s.key}
               style={{
                 padding: '14px 0',
-                borderBottom: i < sections.length - 1 ? '1px solid var(--border-color)' : 'none',
+                borderBottom:
+                  i < sections.length - 1
+                    ? '1px solid var(--border-color)'
+                    : 'none',
               }}
             >
               <div
@@ -102,7 +137,11 @@ export function ModePortrait({
               >
                 {s.label}
               </div>
-              <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.55 }}>{s.text}</div>
+              <div
+                style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.55 }}
+              >
+                {s.text}
+              </div>
             </div>
           ))}
         </div>
