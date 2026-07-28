@@ -3,8 +3,8 @@ import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
-import { pressable } from '../utils/a11y';
 import { CrisisGate } from './CrisisGate';
+import { EvidenceList } from './beliefCheck/EvidenceList';
 import {
   STORAGE_KEY,
   BeliefEntry,
@@ -301,80 +301,15 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 «{belief}» — что подтверждает эту мысль? Будь честен.
               </div>
             </div>
-            {forList.length > 0 && (
-              <div style={{ marginBottom: 10 }}>
-                {forList.map((f, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '7px 0',
-                      borderBottom: '1px solid rgba(var(--fg-rgb),0.05)',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 12,
-                        color: 'var(--text-sub)',
-                        flex: 1,
-                      }}
-                    >
-                      • {f}
-                    </span>
-                    <span
-                      {...pressable(() =>
-                        setForList((l) => l.filter((_, j) => j !== i)),
-                      )}
-                      style={{
-                        fontSize: 16,
-                        color: 'var(--text-faint)',
-                        cursor: 'pointer',
-                        padding: '0 4px',
-                      }}
-                    >
-                      ×
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-              <input
-                value={forInput}
-                onChange={(e) => setForInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addFor()}
-                placeholder="Добавить..."
-                style={{
-                  flex: 1,
-                  background: 'rgba(var(--fg-rgb),0.04)',
-                  border: '1px solid rgba(var(--fg-rgb),0.1)',
-                  borderRadius: 10,
-                  padding: '10px 12px',
-                  color: 'var(--text)',
-                  fontSize: 14,
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                }}
-              />
-              <button
-                onClick={addFor}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 10,
-                  border: 'none',
-                  background:
-                    'color-mix(in srgb, var(--accent-red) 15%, transparent)',
-                  color: 'var(--accent-red)',
-                  fontSize: 16,
-                  cursor: 'pointer',
-                }}
-              >
-                +
-              </button>
-            </div>
-            <CrisisGate texts={[forInput, ...forList]} surface="belief_check" />
+            <EvidenceList
+              items={forList}
+              setItems={setForList}
+              input={forInput}
+              setInput={setForInput}
+              onAdd={addFor}
+              accentColor="var(--accent-red)"
+              surface="belief_check"
+            />
             <button
               onClick={() => setStep('against')}
               style={{
@@ -432,81 +367,13 @@ export function BeliefCheck({ onClose, onComplete }: Props) {
                 )}
               </div>
             </div>
-            {againstList.length > 0 && (
-              <div style={{ marginBottom: 10 }}>
-                {againstList.map((a, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '7px 0',
-                      borderBottom: '1px solid rgba(var(--fg-rgb),0.05)',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 12,
-                        color: 'var(--text-sub)',
-                        flex: 1,
-                      }}
-                    >
-                      • {a}
-                    </span>
-                    <span
-                      {...pressable(() =>
-                        setAgainstList((l) => l.filter((_, j) => j !== i)),
-                      )}
-                      style={{
-                        fontSize: 16,
-                        color: 'var(--text-faint)',
-                        cursor: 'pointer',
-                        padding: '0 4px',
-                      }}
-                    >
-                      ×
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-              <input
-                value={againstInput}
-                onChange={(e) => setAgainstInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addAgainst()}
-                placeholder="Добавить..."
-                style={{
-                  flex: 1,
-                  background: 'rgba(var(--fg-rgb),0.04)',
-                  border: '1px solid rgba(var(--fg-rgb),0.1)',
-                  borderRadius: 10,
-                  padding: '10px 12px',
-                  color: 'var(--text)',
-                  fontSize: 14,
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                }}
-              />
-              <button
-                onClick={addAgainst}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 10,
-                  border: 'none',
-                  background:
-                    'color-mix(in srgb, var(--accent-green) 15%, transparent)',
-                  color: 'var(--accent-green)',
-                  fontSize: 16,
-                  cursor: 'pointer',
-                }}
-              >
-                +
-              </button>
-            </div>
-            <CrisisGate
-              texts={[againstInput, ...againstList]}
+            <EvidenceList
+              items={againstList}
+              setItems={setAgainstList}
+              input={againstInput}
+              setInput={setAgainstInput}
+              onAdd={addAgainst}
+              accentColor="var(--accent-green)"
               surface="belief_check"
             />
             <button
