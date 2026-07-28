@@ -229,7 +229,7 @@ export function ArticlePage() {
         <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 20 }}>
           <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 10px' }}>Разобраться на практике</p>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 20px' }}>
-            Первая встреча – 15 минут, бесплатно. Обсудим ваш запрос и я расскажу, как работает схема-терапия в индивидуальном случае.
+            Первая встреча – 15 минут, бесплатно. Обсудим ваш запрос и я расскажу, как схема-терапия работает в вашем случае.
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <a href={PRACTICE_BOOKING_URL} style={{ display: 'inline-block', padding: '12px 24px', background: 'var(--accent)', color: 'white', borderRadius: 100, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
