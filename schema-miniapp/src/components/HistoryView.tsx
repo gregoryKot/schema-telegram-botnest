@@ -8,7 +8,7 @@ import { NoteSheet } from './NoteSheet';
 import { WeeklyCardSheet } from './WeeklyCardSheet';
 import { api } from '../api';
 import { TODAY_STR, HISTORY_HINT_KEY } from './historyView/constants';
-import { NeedsWheel } from './historyView/NeedsWheel';
+import { WheelCard } from './historyView/WheelCard';
 import { NeedRow } from './historyView/NeedRow';
 import { InsightCard } from './historyView/InsightCard';
 import { HistoryDatePicker } from './historyView/HistoryDatePicker';
@@ -200,111 +200,17 @@ export function HistoryView({
             }}
           >
             {/* Wheel card */}
-            <div
-              className="card"
-              style={{ borderRadius: 20, paddingTop: 4, paddingBottom: 8 }}
-            >
-              <div key={selected.date}>
-                <NeedsWheel
-                  needs={needs}
-                  ratings={selectedRatings}
-                  prevRatings={prevRatings}
-                  childhoodRatings={childhoodRatings}
-                  onClickNeed={handleTapNeed}
-                  onClickCenter={() => setShowIndexInfo(true)}
-                />
-              </div>
-
-              {/* Links row */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 20,
-                  paddingBottom: 8,
-                }}
-              >
-                {Object.keys(childhoodRatings).length > 0 ? (
-                  <div
-                    onClick={onOpenChildhoodWheel}
-                    role={onOpenChildhoodWheel ? 'button' : undefined}
-                    tabIndex={onOpenChildhoodWheel ? 0 : undefined}
-                    onKeyDown={
-                      onOpenChildhoodWheel
-                        ? (e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              onOpenChildhoodWheel();
-                            }
-                          }
-                        : undefined
-                    }
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 5,
-                      cursor: onOpenChildhoodWheel ? 'pointer' : 'default',
-                    }}
-                  >
-                    <svg width={16} height={6}>
-                      <line
-                        x1={0}
-                        y1={3}
-                        x2={16}
-                        y2={3}
-                        stroke="rgba(var(--fg-rgb),0.3)"
-                        strokeWidth={1.5}
-                        strokeDasharray="3 3"
-                      />
-                    </svg>
-                    <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-                      детство
-                    </span>
-                    {onOpenChildhoodWheel && (
-                      <span style={{ fontSize: 12, color: 'var(--accent)' }}>
-                        →
-                      </span>
-                    )}
-                  </div>
-                ) : onOpenChildhoodWheel ? (
-                  <div
-                    onClick={onOpenChildhoodWheel}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onOpenChildhoodWheel();
-                      }
-                    }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <span style={{ fontSize: 12, color: 'var(--accent)' }}>
-                      🌱 Оценить детство →
-                    </span>
-                  </div>
-                ) : null}
-                {onOpenSchemas && (
-                  <div
-                    onClick={onOpenSchemas}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onOpenSchemas();
-                      }
-                    }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <span style={{ fontSize: 12, color: 'var(--accent)' }}>
-                      Что за этим стоит →
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+            <WheelCard
+              needs={needs}
+              ratings={selectedRatings}
+              prevRatings={prevRatings}
+              childhoodRatings={childhoodRatings}
+              onClickNeed={handleTapNeed}
+              onClickCenter={() => setShowIndexInfo(true)}
+              selectedDate={selected.date}
+              onOpenChildhoodWheel={onOpenChildhoodWheel}
+              onOpenSchemas={onOpenSchemas}
+            />
 
             {/* Hint */}
             {showHint && (
