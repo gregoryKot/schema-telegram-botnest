@@ -6,6 +6,7 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { buildModeDiarySteps } from '../../../../shared/src/mode/modeDiarySteps';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
+import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 
 // Шаг 2 дневника режимов: визард-разбор режима — один вопрос на экран
 // (правило онбординга «одно главное действие на экран», низкий порог для СДВГ).
@@ -86,6 +87,8 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         </>
       }
     >
+      <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5, marginBottom: 20 }}>{buildModeDiaryExplainer(tr)}</p>
+
       {/* Прогресс: сегменты по числу шагов + «шаг N из M» */}
       <div className="tick-strip">
         {tickFilled.map((filled, i) => (

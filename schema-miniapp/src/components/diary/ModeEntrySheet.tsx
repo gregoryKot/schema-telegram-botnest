@@ -4,6 +4,7 @@ import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { haptic } from '../../haptic';
+import { useTr } from '../../utils/addressForm';
 import { DiaryStickyHeader } from './DiaryStickyHeader';
 import { ModeSelectStep } from './ModeSelectStep';
 import { ModeDiaryWizard } from './ModeDiaryWizard';
@@ -14,6 +15,7 @@ import {
   type ModeDiaryFieldKey,
 } from '../../../../shared/src/mode/modeDiarySteps';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
+import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 
 interface Props {
   onClose: () => void;
@@ -30,9 +32,10 @@ interface Props {
   }) => Promise<void>;
 }
 
-const COLOR = 'var(--accent-blue)';
+const FALLBACK_COLOR = 'var(--accent-blue)'; // до выбора режима — нейтральный акцент
 
 export function ModeEntrySheet({ onClose, onSave }: Props) {
+  const tr = useTr();
   const existing =
     loadDraft<Record<'modeId' | ModeDiaryFieldKey | 'healthyResponse', string>>(
       'mode',
@@ -62,6 +65,9 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   }, [modeId, values, healthyResponse]);
 
   const canSave = modeId.length > 0 && values.situation.trim().length > 0;
+  // Акцент — цвет группы выбранного режима (согласовано с «Знакомством
+  // с режимом»); до выбора режима — нейтральный синий.
+  const accent = getModeById(modeId)?.groupColor ?? FALLBACK_COLOR;
 
   const handleSave = async () => {
     if (!canSave || saving) return;
@@ -151,11 +157,22 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         <DiaryStickyHeader
           title="Дневник режимов"
           subtitle={existing ? 'Продолжаем с того места' : 'Кто сейчас внутри?'}
-          color={COLOR}
+          color={accent}
           canSave={canSave}
           saving={saving}
           onSave={handleSave}
         />
+
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--text-faint)',
+            lineHeight: 1.5,
+            marginBottom: 16,
+          }}
+        >
+          {buildModeDiaryExplainer(tr)}
+        </div>
 
         <ModeSelectStep modeId={modeId} onChange={setModeId} />
 
@@ -169,6 +186,7 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
             onSave={handleSave}
             canSave={canSave}
             saving={saving}
+            accentColor={accent}
           />
         )}
 
