@@ -11,6 +11,10 @@ import {
   useTr,
   pickForm,
 } from './addressForm';
+import {
+  cacheForm,
+  readCachedForm,
+} from '../../../shared/src/utils/addressFormCache';
 import { AddressFormProvider } from './AddressFormProvider';
 
 // ── Mock api: провайдер грузит настройки через api.getSettings() ─────────────
@@ -27,6 +31,9 @@ function wrapper({ children }: { children: ReactNode }) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Провайдер теперь стартует из кэша localStorage — чистим, чтобы тесты не
+  // протекали друг в друга (setForm пишет кэш).
+  localStorage.clear();
   // По умолчанию — настройки ещё не пришли (провайдер сам решает не менять форму).
   mockApi.getSettings.mockResolvedValue({});
 });
@@ -157,14 +164,24 @@ describe('useSetAddressForm — живое обновление тона', () =>
     expect(result.current.tr('привет', 'здравствуйте')).toBe('привет');
   });
 
-  it('setForm — только in-memory: провайдер не пишет в localStorage сам по себе', async () => {
+  it('setForm кэширует форму в localStorage (для синхронного старта без «ты»-вспышки)', async () => {
     const { result } = renderHook(() => useCombined(), { wrapper });
     await waitFor(() => expect(mockApi.getSettings).toHaveBeenCalled());
 
     act(() => { result.current.setForm('vy'); });
 
-    // Персист формы — забота вызывающего кода (сохранение в settings через api),
-    // сам AddressFormProvider localStorage не трогает.
-    expect(localStorage.getItem('addressForm')).toBeNull();
+    expect(readCachedForm()).toBe('vy');
+  });
+});
+
+// ── Провайдер стартует из кэша: убирает «ты»-вспышку до ответа getSettings ────
+// (Чистая логика кэша — в shared/src/utils/addressFormCache.test.ts.)
+describe('AddressFormProvider — старт из кэша (регрессия «ты»-вспышки)', () => {
+  it('провайдер стартует СРАЗУ в «вы» из кэша — без вспышки «ты» до ответа api', () => {
+    cacheForm('vy');
+    // getSettings ещё висит — если бы старт был из дефолта 'ty', тут было бы 'ty'.
+    mockApi.getSettings.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useAddressForm(), { wrapper });
+    expect(result.current).toBe('vy');
   });
 });
