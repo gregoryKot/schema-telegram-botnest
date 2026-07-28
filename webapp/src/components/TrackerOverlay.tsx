@@ -1,7 +1,7 @@
 // TrackerOverlay.tsx – Variant C · PickerRail (editorial triptych)
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { COLORS, YESTERDAY } from '../types';
+import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
@@ -66,7 +66,10 @@ export function TrackerOverlay({
   const color = COLORS[need.id] ?? 'var(--accent)';
   const value = effectiveRatings[need.id] ?? 0;
   const allRated = needs.every((n) => (effectiveRatings[n.id] ?? 0) > 0);
-  const yval = yesterdayRatings[need.id] ?? YESTERDAY[need.id];
+  // Только реальные вчерашние оценки: нет данных — нет дельты (правило
+  // CLAUDE.md «Никаких хардкод-заглушек»; фолбэк на константу YESTERDAY —
+  // ровно инцидент из правила, miniapp-двойник всегда был чист).
+  const yval = yesterdayRatings[need.id];
   const delta =
     !isBackfill && value > 0 && yval !== undefined ? value - yval : null;
   const NEED_DATA = useNeedData();
@@ -428,9 +431,7 @@ export function TrackerOverlay({
     <NeedTodaySheet
       need={detailNeed}
       value={effectiveRatings[detailNeed.id] ?? 0}
-      yesterdayValue={
-        yesterdayRatings[detailNeed.id] ?? YESTERDAY[detailNeed.id]
-      }
+      yesterdayValue={yesterdayRatings[detailNeed.id]}
       onChange={(v) => handleChange(detailNeed.id, v)}
       onClose={() => setDetailNeed(null)}
     />
