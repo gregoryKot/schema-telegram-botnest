@@ -624,7 +624,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     </a>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.5, marginTop: 14 }}>
-                    Разработано для образовательных целей. Не является медицинским или психологическим сервисом.
+                    Разработано для образовательных целей. Не медицинский и не психологический сервис.
                   </div>
                 </div>
 
