@@ -155,6 +155,22 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           </>
         )}
 
+        {/* ── Мой путь (архив всей активности) — первым, парно с миниаппом ── */}
+        {ready && (
+          <div {...pressable(() => setJourneyOpen(true))} className="section" style={{ cursor: 'pointer' }}>
+            <div className="section-head">
+              <h3>🧭 Мой путь</h3>
+              <span className="hint">→</span>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+              {tr(
+                'Вся твоя история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
+                'Вся ваша история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── Прогресс ── */}
         {ready && (
           <div className="section">
@@ -462,22 +478,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
                 )}
               </div>
             )}
-          </div>
-        )}
-
-        {/* ── Мой путь (архив всей активности) ── */}
-        {ready && (
-          <div {...pressable(() => setJourneyOpen(true))} className="section" style={{ cursor: 'pointer' }}>
-            <div className="section-head">
-              <h3>🧭 Мой путь</h3>
-              <span className="hint">→</span>
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-              {tr(
-                'Вся твоя история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
-                'Вся ваша история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
-              )}
-            </div>
           </div>
         )}
 

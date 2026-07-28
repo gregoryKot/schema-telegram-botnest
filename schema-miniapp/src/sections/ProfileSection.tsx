@@ -4,7 +4,6 @@ import { useSafeTop } from '../utils/safezone';
 import { AchievementDetail } from '../components/AchievementDetail';
 import { TherapyNote } from '../components/TherapyNote';
 import { MyNotesSheet } from '../components/MyNotesSheet';
-import { ComfortCard } from '../components/ComfortCard';
 import { NEED_NAMES, ACHIEVEMENT_META } from './profile/constants';
 import { StreakData, InsightsData } from './profile/types';
 import { ProfileHeader } from './profile/ProfileHeader';
@@ -138,7 +137,7 @@ export function ProfileSection({
         {/* ── Скелетон ── */}
         {!ready && (
           <>
-            {[110, 80, 72].map((h, i) => (
+            {[88, 110, 80].map((h, i) => (
               <div
                 key={i}
                 style={{
@@ -154,8 +153,8 @@ export function ProfileSection({
           </>
         )}
 
-        {/* ── Комфорт (дизайн-макет): тема/движение/напоминания в один тап ── */}
-        {ready && <ComfortCard onOpenNotifications={onOpenSettings} />}
+        {/* ── Мой путь (архив всей активности) — первым, по просьбе владельца ── */}
+        {ready && <JourneyEntryCard onOpen={() => setJourneyOpen(true)} />}
 
         {/* ── Стрик ── */}
         {ready && streak !== null && (
@@ -199,9 +198,6 @@ export function ProfileSection({
             onOpen={() => setNotesOpen(true)}
           />
         )}
-
-        {/* ── Мой путь (архив всей активности) ── */}
-        {ready && <JourneyEntryCard onOpen={() => setJourneyOpen(true)} />}
 
         <div style={{ padding: '4px 0' }}>
           <TherapyNote compact />
