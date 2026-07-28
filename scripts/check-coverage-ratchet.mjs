@@ -25,11 +25,18 @@ const EPSILON = 0.1;
 // новую зону — прописать ключ туда и прогнать --update.
 const DEFAULT_FLOOR_DIRS = ['src/auth', 'src/utils'];
 
-const res = spawnSync(
-  'npx',
-  ['jest', '--coverage', '--silent', '--coverageReporters=json-summary'],
-  { cwd: ROOT, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024 },
-);
+// CI-гигиена 4.2: если джоба задала JEST_CACHE_DIR (кэш ts-jest между
+// прогонами через actions/cache), прокидываем его в спавненный jest —
+// jest сам env для этого не читает, нужен CLI-флаг.
+const jestArgs = ['jest', '--coverage', '--silent', '--coverageReporters=json-summary'];
+if (process.env.JEST_CACHE_DIR) {
+  jestArgs.push(`--cacheDirectory=${process.env.JEST_CACHE_DIR}`);
+}
+const res = spawnSync('npx', jestArgs, {
+  cwd: ROOT,
+  encoding: 'utf8',
+  maxBuffer: 512 * 1024 * 1024,
+});
 if (res.stdout) process.stdout.write(res.stdout);
 if (res.stderr) process.stderr.write(res.stderr);
 
