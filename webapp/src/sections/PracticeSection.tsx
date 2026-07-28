@@ -329,7 +329,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         </div>
         {myGoals.length === 0 ? (
           <div className="text-sm muted" style={{ lineHeight: 1.55 }}>
-            Поставь цель и иди к ней маленькими шагами. Большие изменения начинаются с малого.
+            Поставь цель и иди к ней маленькими шагами.
           </div>
         ) : (
           myGoals.slice(0, 4).map(task => (

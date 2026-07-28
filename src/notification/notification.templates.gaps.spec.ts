@@ -101,10 +101,10 @@ describe('renderTemplate — anniversary_*', () => {
 
   it('anniversary_60 в обеих формах', () => {
     expect(renderTemplate('anniversary_60', undefined, 'ty')!.text).toContain(
-      'ты видишь себя в динамике',
+      'открываешь историю',
     );
     expect(renderTemplate('anniversary_60', undefined, 'vy')!.text).toContain(
-      'вы видите себя в динамике',
+      'открываете историю',
     );
   });
 
