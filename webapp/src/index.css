@@ -45,6 +45,10 @@
    Тёплая бумага · сдержанный индиго · много воздуха
    ───────────────────────────────────────────────────────────────────────── */
 
+/* Нижняя безопасная зона (парно с schema-miniapp/src/index.css — там ещё
+   страховка переменными Telegram; сайту в браузере достаточно env()). */
+:root { --safe-bottom: env(safe-area-inset-bottom, 0px); }
+
 :root, html[data-theme="light"] {
   --serif: 'Instrument Serif', ui-serif, Georgia, serif;
   /* ── Backgrounds ─────────────────────────────────────────────────────── */
@@ -960,7 +964,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   border-top: 1px solid var(--line);
   z-index: 49;
   display: flex;
-  padding: 6px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+  padding: 6px 0 calc(6px + var(--safe-bottom));
 }
 .mobile-nav-item {
   flex: 1; display: flex; flex-direction: column;
@@ -991,7 +995,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
   .topbar { display: none; }
   .canvas {
     overflow: visible; display: block;
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(64px + var(--safe-bottom));
   }
   .page { overflow: visible; height: auto; }
   /* Fixed fullscreen overlays (.ex-screen) need their own scroll — the global
@@ -1051,7 +1055,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .settings-modal-box {
   background: var(--bg);
   border-radius: 16px 16px 0 0;
-  padding: 24px 24px calc(32px + env(safe-area-inset-bottom, 0px));
+  padding: 24px 24px calc(32px + var(--safe-bottom));
   width: 100%; max-width: 560px; margin: 0 auto;
 }
 .settings-modal-handle {

@@ -16,7 +16,7 @@ export function TherapistBottomNav({
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
         borderTop: '1px solid rgba(var(--fg-rgb),0.08)',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingBottom: 'var(--safe-bottom)',
       }}
     >
       <div

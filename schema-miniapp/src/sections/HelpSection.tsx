@@ -161,9 +161,8 @@ export function HelpSection({
 
   return (
     <div
+      className="section-pad"
       style={{
-        minHeight: '100vh',
-        paddingBottom: 140,
         paddingTop: safeTop,
         animation: 'fade-in 0.25s ease',
         overflowX: 'hidden',

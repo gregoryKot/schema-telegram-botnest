@@ -60,7 +60,7 @@ export function DonateNudge() {
           maxWidth: 440,
           background: 'var(--bg)',
           borderRadius: '18px 18px 0 0',
-          padding: '28px 22px calc(28px + env(safe-area-inset-bottom))',
+          padding: '28px 22px calc(28px + var(--safe-bottom))',
           textAlign: 'center',
           boxShadow: '0 -8px 40px rgba(0,0,0,0.25)',
         }}

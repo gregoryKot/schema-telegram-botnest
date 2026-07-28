@@ -8,6 +8,18 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overscroll-behavior: none; }
 
+/* ── Нижняя безопасная зона ──────────────────────────────────────────────────
+   env() отдаёт реальный инсет только при viewport-fit=cover (index.html), но
+   в WebView Телеграма на iOS может оставаться 0 — тогда таб-бар и нижние
+   кнопки накрывает системная полоса home-индикатора. Страхуемся переменными
+   самого Telegram (--tg-*, ставит telegram-web-app.js): берём максимум. */
+:root {
+  --safe-bottom: max(
+    env(safe-area-inset-bottom, 0px),
+    calc(var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px))
+  );
+}
+
 /* ── Dark theme (default) ──────────────────────────────────────────────────────
    Палитра дизайн-макета «Сегодня» (тёплая «бумага» в светлой,
    мягкий графит в тёмной). Имена токенов сохранены — все экраны и компоненты
@@ -198,6 +210,10 @@ html[data-theme="light"] .card {
 
 /* ── Chip / selection ───────────────────────────────────────────────────────── */
 .sel-btn { transition: background 150ms, border-color 150ms, color 150ms; -webkit-tap-highlight-color: transparent; }
+
+/* ── Layout: отступы под таб-бар и системную полосу (--safe-bottom) ─────────── */
+.section-pad { min-height: 100vh; padding-bottom: calc(140px + var(--safe-bottom)); }
+.sheet-scroll { overflow-y: auto; flex: 1; padding: 0 24px calc(48px + var(--safe-bottom)); }
 
 /* ── Reduced motion (нейроинклюзивность) ───────────────────────────────────────
    Системный prefers-reduced-motion ИЛИ ручной выбор в настройках

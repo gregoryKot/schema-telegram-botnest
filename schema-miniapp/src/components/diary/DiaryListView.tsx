@@ -187,7 +187,7 @@ export function DiaryListView({
         onClick={onNewEntry}
         style={{
           position: 'fixed',
-          bottom: 80,
+          bottom: 'calc(80px + var(--safe-bottom))',
           right: 20,
           background: meta.color,
           border: 'none',

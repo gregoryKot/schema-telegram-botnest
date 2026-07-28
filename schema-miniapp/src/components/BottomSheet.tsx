@@ -130,10 +130,7 @@ export function BottomSheet({
         )}
 
         {/* Scrollable content */}
-        <div
-          ref={scrollRef}
-          style={{ overflowY: 'auto', flex: 1, padding: '0 24px 48px' }}
-        >
+        <div ref={scrollRef} className="sheet-scroll">
           {children}
         </div>
       </div>

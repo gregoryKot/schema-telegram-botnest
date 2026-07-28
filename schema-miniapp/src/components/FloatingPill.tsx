@@ -23,7 +23,7 @@ export function FloatingPill({
       <div
         style={{
           position: 'fixed',
-          bottom: 84,
+          bottom: 'calc(84px + var(--safe-bottom))',
           right: 16,
           zIndex: 49,
         }}

@@ -546,7 +546,7 @@ export function TrackerOverlay({
       <div
         style={{
           padding: '0 20px',
-          paddingBottom: 'max(20px, env(safe-area-inset-bottom, 20px))',
+          paddingBottom: 'max(20px, var(--safe-bottom))',
           display: 'flex',
           flexDirection: 'column',
           gap: 8,
