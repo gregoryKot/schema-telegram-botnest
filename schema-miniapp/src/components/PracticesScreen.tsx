@@ -157,7 +157,10 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           {onOpenTracker && (
             <>
               {' '}
-              Видишь что что-то просело?{' '}
+              {tr(
+                'Видишь, что что-то просело?',
+                'Видите, что что-то просело?',
+              )}{' '}
               <span
                 {...pressable(onOpenTracker)}
                 style={{ color: 'var(--accent)', cursor: 'pointer' }}

@@ -624,7 +624,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                     </a>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.5, marginTop: 14 }}>
-                    Разработано для образовательных целей. Не медицинский и не психологический сервис.
+                    Это образовательный инструмент — не медицинский и не психологический сервис.
                   </div>
                 </div>
 
@@ -672,7 +672,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
               Удалить результаты теста
             </button>
           )}
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>Разработано для образовательных целей.</div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.6, textAlign: 'center' }}>Это образовательный инструмент.</div>
         </InfoModal>
       )}
 
