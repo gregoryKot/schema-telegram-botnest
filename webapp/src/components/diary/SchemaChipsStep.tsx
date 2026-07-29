@@ -1,27 +1,24 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
-// Шаг «Схемы» дневника схем (webapp): чипы по доменам + «Только мои/Показать
-// все» + текст «откуда это знакомо» на том же экране. Вынесено из
-// SchemaEntrySheet — файл-источник пробивал потолок 300 строк (правило №10
-// CLAUDE.md). Разметка — существующие классы webapp, перенесены как есть.
+// Шаг «Схемы» дневника схем (webapp): только чипы по доменам + «Только
+// мои/Показать все». Вынесено из SchemaEntrySheet — файл-источник пробивал
+// потолок 300 строк (правило №10 CLAUDE.md). Разметка — существующие классы
+// webapp, перенесены как есть.
+// Свободный текст («откуда это знакомо») рендерит РОДИТЕЛЬ: правило №7 —
+// поле свободного текста живёт в файле, который прогоняет detectCrisisAny
+// (инвариант src/security/crisis-path.invariants.spec.ts).
 export function SchemaChipsStep({
   schemaIds,
   onToggle,
   activeSchemaIds,
   showAllSchemas,
   onToggleShowAll,
-  origin,
-  onOriginChange,
-  originPlaceholder,
 }: {
   schemaIds: string[];
   onToggle: (id: string) => void;
   activeSchemaIds?: string[];
   showAllSchemas: boolean;
   onToggleShowAll: () => void;
-  origin: string;
-  onOriginChange: (v: string) => void;
-  originPlaceholder: string;
 }) {
   const hasPersonalSchemas = activeSchemaIds && activeSchemaIds.length > 0;
   const useFiltered = hasPersonalSchemas && !showAllSchemas;
@@ -86,14 +83,6 @@ export function SchemaChipsStep({
           {showAllSchemas ? '↑ Только мои' : '↓ Показать все'}
         </button>
       )}
-      <textarea
-        className={'paper-area ' + (origin.trim() ? 'is-filled' : '')}
-        rows={2}
-        value={origin}
-        onChange={(e) => onOriginChange(e.target.value)}
-        placeholder={originPlaceholder}
-        style={{ marginTop: 12 }}
-      />
     </>
   );
 }

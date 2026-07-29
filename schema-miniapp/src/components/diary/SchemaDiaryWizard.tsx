@@ -137,16 +137,21 @@ export function SchemaDiaryWizard({
         />
       )}
       {kind === 'schemas' && (
-        <SchemaChipsStep
-          schemaIds={schemaIds}
-          onToggle={onToggleSchema}
-          activeSchemaIds={activeSchemaIds}
-          showAllSchemas={showAllSchemas}
-          onToggleShowAll={onToggleShowAll}
-          origin={values.schemaOrigin}
-          onOriginChange={(v) => onChange('schemaOrigin', v)}
-          originPlaceholder={stepByKey.schemaOrigin.example}
-        />
+        <>
+          <SchemaChipsStep
+            schemaIds={schemaIds}
+            onToggle={onToggleSchema}
+            activeSchemaIds={activeSchemaIds}
+            showAllSchemas={showAllSchemas}
+            onToggleShowAll={onToggleShowAll}
+          />
+          <DiaryTextArea
+            value={values.schemaOrigin}
+            onChange={(v) => onChange('schemaOrigin', v)}
+            placeholder={stepByKey.schemaOrigin.example}
+            rows={2}
+          />
+        </>
       )}
       {textStep && (
         <DiaryTextArea

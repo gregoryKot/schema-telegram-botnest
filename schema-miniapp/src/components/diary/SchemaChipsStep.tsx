@@ -1,29 +1,23 @@
 import { haptic } from '../../haptic';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
-import { DiaryTextArea } from './DiaryTextArea';
 import { SelectableChip } from './SelectableChip';
 
-// Шаг «Схемы» дневника схем: чипы по доменам + «Только мои/Показать все» +
-// текст «откуда это знакомо» на том же экране. Вынесено из SchemaEntrySheet
-// в подкомпонент визарда (правило №10 CLAUDE.md).
+// Шаг «Схемы» дневника схем: только чипы по доменам + «Только мои/Показать
+// все». Вынесено из SchemaEntrySheet в подкомпонент визарда (правило №10
+// CLAUDE.md). Свободный текст («откуда это знакомо») рендерит родительский
+// визард — парно с webapp-версией (правило №3).
 export function SchemaChipsStep({
   schemaIds,
   onToggle,
   activeSchemaIds,
   showAllSchemas,
   onToggleShowAll,
-  origin,
-  onOriginChange,
-  originPlaceholder,
 }: {
   schemaIds: string[];
   onToggle: (id: string) => void;
   activeSchemaIds?: string[];
   showAllSchemas: boolean;
   onToggleShowAll: () => void;
-  origin: string;
-  onOriginChange: (v: string) => void;
-  originPlaceholder: string;
 }) {
   const hasPersonalSchemas = activeSchemaIds && activeSchemaIds.length > 0;
   const useFiltered = hasPersonalSchemas && !showAllSchemas;
@@ -87,12 +81,6 @@ export function SchemaChipsStep({
           {showAllSchemas ? '↑ Только мои' : '↓ Показать все'}
         </button>
       )}
-      <DiaryTextArea
-        value={origin}
-        onChange={onOriginChange}
-        placeholder={originPlaceholder}
-        rows={2}
-      />
     </div>
   );
 }

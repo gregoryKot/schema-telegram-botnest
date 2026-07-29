@@ -183,9 +183,16 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
               activeSchemaIds={activeSchemaIds}
               showAllSchemas={showAllSchemas}
               onToggleShowAll={() => { haptic.tap(); setShowAllSchemas((v) => !v); }}
-              origin={values.schemaOrigin}
-              onOriginChange={(v) => setField('schemaOrigin', v)}
-              originPlaceholder={stepByKey.schemaOrigin.example}
+            />
+            {/* Свободный текст — здесь, а не в чип-компоненте: detectCrisisAny
+                ниже прогоняет его вместе с остальными полями (правило №7). */}
+            <textarea
+              className={'paper-area ' + (values.schemaOrigin.trim() ? 'is-filled' : '')}
+              rows={2}
+              value={values.schemaOrigin}
+              onChange={(e) => setField('schemaOrigin', e.target.value)}
+              placeholder={stepByKey.schemaOrigin.example}
+              style={{ marginTop: 12 }}
             />
           </>
         )}
