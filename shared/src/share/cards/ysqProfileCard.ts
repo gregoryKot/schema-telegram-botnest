@@ -129,13 +129,10 @@ export function drawYsqProfileCard(
 ) {
   const titleLines = Math.min(
     2,
-    measureWrap(canvas, opts.headline, CARD_W - CARD_PAD * 2, 23, 'bold').length,
+    measureWrap(canvas, opts.headline, CARD_W - CARD_PAD * 2, 23, 'bold')
+      .length,
   );
-  const H = ysqProfileCardHeight(
-    domains,
-    Boolean(opts.dateLabel),
-    titleLines,
-  );
+  const H = ysqProfileCardHeight(domains, Boolean(opts.dateLabel), titleLines);
   const c = beginCard(canvas, H, {
     accent: 'var(--accent)',
     accent2: 'var(--accent-blue)',
