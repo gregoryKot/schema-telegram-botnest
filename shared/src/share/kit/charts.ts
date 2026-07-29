@@ -2,7 +2,7 @@
 // полоски прогресса и мини-столбики. Геометрия вынесена в чистые функции —
 // их проверяют тесты без canvas.
 import { CARD_PAD, cardFont, withAlpha } from './theme';
-import { panel, tracking, type Card } from './frame';
+import { drawEmoji, panel, tracking, type Card } from './frame';
 
 export interface RadarPoint {
   emoji: string;
@@ -85,7 +85,9 @@ export function drawRadar(c: Card, points: RadarPoint[], o: RadarOpts) {
   fill.addColorStop(0, withAlpha(c.accent, th.isLight ? 0.3 : 0.36));
   fill.addColorStop(1, withAlpha(c.accent2, th.isLight ? 0.14 : 0.16));
   ctx.beginPath();
-  verts.forEach((v, i) => (i === 0 ? ctx.moveTo(v.x, v.y) : ctx.lineTo(v.x, v.y)));
+  verts.forEach((v, i) =>
+    i === 0 ? ctx.moveTo(v.x, v.y) : ctx.lineTo(v.x, v.y),
+  );
   ctx.closePath();
   ctx.fillStyle = fill;
   ctx.fill();
@@ -120,9 +122,7 @@ export function drawRadar(c: Card, points: RadarPoint[], o: RadarOpts) {
     }
 
     const at = axisPoint(i, n, r + 24, cx, cy);
-    ctx.font = '17px serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(p.emoji, at.x, at.y + 6);
+    drawEmoji(c, p.emoji, at.x, at.y + 6, 17, { align: 'center' });
   });
   ctx.textAlign = 'left';
 

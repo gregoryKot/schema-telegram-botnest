@@ -6,6 +6,7 @@ import {
   CARD_W,
   DPR,
   cardFont,
+  luminance,
   resolveCardTheme,
   withAlpha,
   type CardTheme,
@@ -31,6 +32,16 @@ export interface CardOpts {
   accent?: string;
   /** Второй цвет для градиентов фона и брендовой метки. */
   accent2?: string;
+}
+
+/**
+ * Прозрачность свечения под цвет карточки. Светлые акценты (жёлтый,
+ * оранжевый) при той же альфе заливают карточку горчичным — им свечение
+ * приглушается, тёмно-синий и фиолетовый остаются в полную силу.
+ */
+export function glowAlpha(base: number, color: string): number {
+  const lum = luminance(color);
+  return lum > 0.5 ? base * Math.max(0.5, 1 - (lum - 0.5) * 1.1) : base;
 }
 
 /** Межбуквенный интервал (в браузерах без поддержки — молча игнорируется). */
@@ -67,14 +78,34 @@ export function beginCard(
   ctx.fillRect(0, 0, W, H);
 
   // Два мягких свечения цветами карточки: сверху — «рассвет», снизу — отблеск.
-  const glowTop = ctx.createRadialGradient(W * 0.72, -40, 0, W * 0.72, -40, W);
-  glowTop.addColorStop(0, withAlpha(accent, th.isLight ? 0.3 : 0.42));
+  const glowTop = ctx.createRadialGradient(
+    W * 0.82,
+    -30,
+    0,
+    W * 0.82,
+    -30,
+    W * 0.72,
+  );
+  glowTop.addColorStop(
+    0,
+    withAlpha(accent, glowAlpha(th.isLight ? 0.3 : 0.4, accent)),
+  );
   glowTop.addColorStop(1, withAlpha(accent, 0));
   ctx.fillStyle = glowTop;
   ctx.fillRect(0, 0, W, Math.min(H, 320));
 
-  const glowBottom = ctx.createRadialGradient(0, H, 0, 0, H, W * 0.9);
-  glowBottom.addColorStop(0, withAlpha(accent2, th.isLight ? 0.16 : 0.2));
+  const glowBottom = ctx.createRadialGradient(
+    -10,
+    H + 20,
+    0,
+    -10,
+    H + 20,
+    W * 0.66,
+  );
+  glowBottom.addColorStop(
+    0,
+    withAlpha(accent2, glowAlpha(th.isLight ? 0.15 : 0.19, accent2)),
+  );
   glowBottom.addColorStop(1, withAlpha(accent2, 0));
   ctx.fillStyle = glowBottom;
   ctx.fillRect(0, Math.max(0, H - 320), W, Math.min(H, 320));
@@ -107,6 +138,31 @@ export function panel(
   ctx.strokeStyle = th.fg(th.isLight ? 0.07 : 0.07);
   ctx.lineWidth = 1;
   ctx.stroke();
+}
+
+/**
+ * Эмодзи на канвасе. Рисуется отдельным примитивом не для красоты: цветной
+ * глиф наследует альфу текущей заливки, и если перед ним рисовали плашку или
+ * градиент (панель, медальон), эмодзи выцветает до призрака. Здесь состояние
+ * канваса изолировано, а цвет нужен только монохромным глифам (⚖️ и подобные).
+ */
+export function drawEmoji(
+  c: Card,
+  emoji: string,
+  x: number,
+  y: number,
+  size: number,
+  o: { align?: CanvasTextAlign; alpha?: number } = {},
+) {
+  const { ctx } = c;
+  const align = o.align ?? 'left';
+  ctx.save();
+  ctx.globalAlpha = o.alpha ?? 1;
+  ctx.fillStyle = c.th.fg(0.95);
+  ctx.font = `${size}px serif`;
+  ctx.textAlign = align;
+  ctx.fillText(emoji, x, y);
+  ctx.restore();
 }
 
 export function divider(c: Card, y: number, alpha = 0.08) {
@@ -151,7 +207,6 @@ export function headerHeight(titleLines: number, subtitle?: boolean): number {
 export function header(c: Card, o: HeaderOpts): number {
   const { ctx, th } = c;
   const maxW = c.W - CARD_PAD * 2;
-  let y = 0;
 
   if (o.eyebrow) {
     ctx.fillStyle = c.accent;
@@ -170,7 +225,7 @@ export function header(c: Card, o: HeaderOpts): number {
     wrapLines((s) => ctx.measureText(s).width, o.title, maxW),
     2,
   );
-  y = o.eyebrow ? 80 : 58;
+  let y = o.eyebrow ? 80 : 58;
   for (const line of lines) {
     ctx.fillStyle = th.fg(0.96);
     ctx.font = cardFont(23, 'bold');

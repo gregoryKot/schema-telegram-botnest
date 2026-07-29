@@ -4,6 +4,7 @@
 // Пропущенные потребности не превращаются в нули: вершина остаётся пустой,
 // а в списке стоит «—» (правило «никаких заглушек вместо данных»).
 import {
+  drawEmoji,
   CARD_PAD,
   FOOTER_H,
   beginCard,
@@ -102,9 +103,7 @@ export function drawNeedsRadarCard(
     ctx.arc(CARD_PAD + 4, mid, 4, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.font = '13px serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(row.emoji, CARD_PAD + 16, mid + 5);
+    drawEmoji(c, row.emoji, CARD_PAD + 16, mid + 5, 13);
 
     ctx.font = cardFont(13);
     ctx.fillStyle = th.fg(row.value === null ? 0.42 : 0.78);

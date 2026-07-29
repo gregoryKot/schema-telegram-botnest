@@ -5,11 +5,12 @@ import {
   CARD_PAD,
   FOOTER_H,
   beginCard,
-  accentBar,
   footer,
   drawWrapped,
   measureWrap,
+  clampLines,
   cardFont,
+  tracking,
 } from '../cardKit';
 
 export interface InviteCardData {
@@ -21,40 +22,78 @@ export interface InviteCardData {
   hint: string;
 }
 
+const EYEBROW_Y = 44;
+const TITLE_Y = 78;
+const CODE_TOP = 100;
+const CODE_H = 76;
+const HINT_LINE_H = 20;
+const HINT_GAP = 30;
+const HINT_MAX_LINES = 3;
+
 export function drawInviteCard(canvas: HTMLCanvasElement, d: InviteCardData) {
   const maxW = CARD_W - CARD_PAD * 2;
-  const hintLines = Math.min(measureWrap(canvas, d.hint, maxW, 13).length, 3);
-  const H = 96 + 74 + 30 + hintLines * 20 + 18 + FOOTER_H;
-  const c = beginCard(canvas, H);
-  const { ctx, W, th } = c;
+  const hintLines = clampLines(
+    measureWrap(canvas, d.hint, maxW, 13),
+    HINT_MAX_LINES,
+  );
+  const H =
+    CODE_TOP +
+    CODE_H +
+    HINT_GAP +
+    hintLines.length * HINT_LINE_H +
+    20 +
+    FOOTER_H;
+
+  const c = beginCard(canvas, H, {
+    accent: 'var(--accent)',
+    accent2: 'var(--accent-blue)',
+  });
+  const { ctx, th, W } = c;
   const cx = W / 2;
 
-  accentBar(c);
-
-  ctx.font = cardFont(15, 'bold');
-  ctx.fillStyle = th.fg(0.9);
+  ctx.font = cardFont(10, 'bold');
+  ctx.fillStyle = c.accent;
   ctx.textAlign = 'center';
-  ctx.fillText(d.title, cx, 62);
+  tracking(ctx, 1);
+  ctx.fillText('ПРИГЛАШЕНИЕ', cx, EYEBROW_Y);
+  tracking(ctx, 0);
 
-  // Код — крупно, в рамке-плашке
-  const codeY = 96;
+  ctx.font = cardFont(20, 'bold');
+  ctx.fillStyle = th.fg(0.95);
+  ctx.fillText(d.title, cx, TITLE_Y);
+
+  // Код — крупно, в плашке с пунктирной рамкой.
   ctx.font = cardFont(34, 'bold');
   const codeW = ctx.measureText(d.code).width;
-  const boxW = Math.min(maxW, codeW + 48);
-  ctx.fillStyle = th.fg(0.06);
-  ctx.beginPath();
-  ctx.roundRect(cx - boxW / 2, codeY, boxW, 58, 14);
-  ctx.fill();
-  ctx.fillStyle = c.th.accent;
-  ctx.fillText(d.code, cx, codeY + 40);
+  const boxW = Math.min(maxW, codeW + 56);
+  const boxX = cx - boxW / 2;
 
-  drawWrapped(c, d.hint, cx, codeY + 88, maxW, {
+  ctx.fillStyle = th.fg(0.05);
+  ctx.beginPath();
+  ctx.roundRect(boxX, CODE_TOP, boxW, CODE_H, 16);
+  ctx.fill();
+
+  ctx.strokeStyle = c.accent;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 5]);
+  ctx.beginPath();
+  ctx.roundRect(boxX, CODE_TOP, boxW, CODE_H, 16);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = c.accent;
+  tracking(ctx, 2);
+  ctx.fillText(d.code, cx, CODE_TOP + CODE_H / 2 + 12);
+  tracking(ctx, 0);
+
+  drawWrapped(c, d.hint, cx, CODE_TOP + CODE_H + HINT_GAP, maxW, {
     size: 13,
     color: th.fg(0.55),
-    lineH: 20,
-    maxLines: 3,
+    lineH: HINT_LINE_H,
+    maxLines: HINT_MAX_LINES,
     align: 'center',
   });
 
+  ctx.textAlign = 'left';
   footer(c, 'Приглашение');
 }

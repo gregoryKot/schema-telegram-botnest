@@ -1,6 +1,7 @@
 // Generic-шит шаринга карточки (webapp): превью канваса + «Поделиться» +
 // «Скопировать текст». Парный по смыслу с schema-miniapp/src/share/ShareCardSheet
 // (вёрстка своя — правило №3: логика в shared/useShareCard, вёрстка per-frontend).
+import { useRef } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
 import { useShareCard } from '../../../shared/src/share/useShareCard';
@@ -30,7 +31,8 @@ export function ShareCardSheet({
   zIndex = 300,
 }: Props) {
   const goBack = useHistorySheet(onClose);
-  const s = useShareCard({
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const s = useShareCard(canvasRef, {
     draw,
     shareText,
     fallbackText,
@@ -101,7 +103,7 @@ export function ShareCardSheet({
           }}
         >
           <canvas
-            ref={s.canvasRef}
+            ref={canvasRef}
             style={{ display: 'block', width: '100%', height: 'auto' }}
           />
         </div>

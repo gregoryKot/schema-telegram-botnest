@@ -2,9 +2,13 @@
 // отрисовка карточки на канвасе, системный шэр с аналитикой, копирование
 // текста и текстовый фолбэк, когда системный шэр недоступен или упал.
 // Вёрстка остаётся в каждом фронтенде своя (BottomSheet у них разный).
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { shareCanvasImage } from './shareImage';
-import { SHARE_CARD_EVENT, SHARE_RESULT_EVENT, type ShareCardKind } from './analytics';
+import {
+  SHARE_CARD_EVENT,
+  SHARE_RESULT_EVENT,
+  type ShareCardKind,
+} from './analytics';
 
 export interface ShareCardOpts {
   draw: (canvas: HTMLCanvasElement) => void;
@@ -16,7 +20,6 @@ export interface ShareCardOpts {
 }
 
 export interface ShareCardState {
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
   /** Идёт подготовка картинки — кнопка заблокирована. */
   sharing: boolean;
   /** Текст уехал в буфер — на кнопке галочка. */
@@ -29,8 +32,15 @@ export interface ShareCardState {
   copy: () => Promise<void>;
 }
 
-export function useShareCard(o: ShareCardOpts): ShareCardState {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+/**
+ * Канвас карточки создаёт сам компонент и передаёт сюда: ref, уехавший в
+ * возвращаемый объект, react-hooks справедливо считает обращением к ref
+ * во время рендера.
+ */
+export function useShareCard(
+  canvasRef: React.RefObject<HTMLCanvasElement | null>,
+  o: ShareCardOpts,
+): ShareCardState {
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showText, setShowText] = useState(false);
@@ -44,7 +54,7 @@ export function useShareCard(o: ShareCardOpts): ShareCardState {
     } catch {
       // Отрисовка карточки не должна ронять весь экран
     }
-  }, [draw]);
+  }, [draw, canvasRef]);
 
   const copy = useCallback(async () => {
     try {
@@ -73,10 +83,9 @@ export function useShareCard(o: ShareCardOpts): ShareCardState {
     } finally {
       setSharing(false);
     }
-  }, [o, copy]);
+  }, [o, copy, canvasRef]);
 
   return {
-    canvasRef,
     sharing,
     copied,
     showText,

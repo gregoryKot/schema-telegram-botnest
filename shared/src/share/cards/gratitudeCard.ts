@@ -2,54 +2,76 @@
 // картинку только по явному действию на конкретной записи, с превью перед
 // отправкой (ShareCardSheet). Тот же принцип — у journeyResultCard.
 import {
+  drawEmoji,
   CARD_W,
   CARD_PAD,
   FOOTER_H,
   beginCard,
-  accentBar,
   header,
+  headerHeight,
   footer,
+  panel,
   measureWrap,
   clampLines,
   cardFont,
 } from '../cardKit';
+
+const ITEM_PAD = 14;
+const ITEM_GAP = 10;
+const LINE_H = 21;
+const MAX_ITEMS = 3;
+const MAX_LINES = 3;
+const EMOJI_W = 26;
 
 export function drawGratitudeCard(
   canvas: HTMLCanvasElement,
   items: string[],
   dateLabel: string,
 ) {
-  const maxW = CARD_W - CARD_PAD * 2 - 26;
-  const shown = items.slice(0, 3);
+  const maxW = CARD_W - CARD_PAD * 2;
+  const textMaxW = maxW - ITEM_PAD * 2 - EMOJI_W;
+  const shown = items.slice(0, MAX_ITEMS);
   const wrapped = shown.map((t) =>
-    clampLines(measureWrap(canvas, t, maxW, 14), 3),
+    clampLines(measureWrap(canvas, t, textMaxW, 14), MAX_LINES),
   );
-  const LINE_H = 22;
-  const ITEM_GAP = 14;
-  const bodyH = wrapped.reduce(
-    (s, lines) => s + lines.length * LINE_H + ITEM_GAP,
-    0,
+  const panelHeights = wrapped.map(
+    (lines) => lines.length * LINE_H + ITEM_PAD * 2,
   );
-  const H = 120 + bodyH + 12 + FOOTER_H;
-  const c = beginCard(canvas, H);
+  const bodyH =
+    panelHeights.reduce((s, h) => s + h, 0) +
+    ITEM_GAP * Math.max(0, wrapped.length - 1);
+
+  const H = headerHeight(1, true) + bodyH + 20 + FOOTER_H;
+
+  const c = beginCard(canvas, H, {
+    accent: 'var(--accent-green)',
+    accent2: 'var(--accent-blue)',
+  });
   const { ctx, th } = c;
 
-  accentBar(c, '#06d6a0', '#4ade80');
-  header(c, '🌱 Благодарность', dateLabel);
+  const contentY = header(c, {
+    eyebrow: 'Дневник благодарности',
+    title: '🌱 Благодарность',
+    subtitle: dateLabel,
+  });
 
-  let y = 124;
-  for (const lines of wrapped) {
-    ctx.font = '14px serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('🌱', CARD_PAD, y);
+  let y = contentY;
+  wrapped.forEach((lines, i) => {
+    const h = panelHeights[i];
+    panel(c, CARD_PAD, y, maxW, h, 16);
+
+    drawEmoji(c, '🌱', CARD_PAD + ITEM_PAD, y + ITEM_PAD + 11, 14);
+
+    let ty = y + ITEM_PAD + 11;
     for (const line of lines) {
       ctx.font = cardFont(14);
       ctx.fillStyle = th.fg(0.85);
-      ctx.fillText(line, CARD_PAD + 26, y);
-      y += LINE_H;
+      ctx.fillText(line, CARD_PAD + ITEM_PAD + EMOJI_W, ty);
+      ty += LINE_H;
     }
-    y += ITEM_GAP;
-  }
+
+    y += h + ITEM_GAP;
+  });
 
   footer(c, 'Дневник благодарности');
 }

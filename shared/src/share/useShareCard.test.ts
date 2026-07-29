@@ -3,6 +3,7 @@
 // упавший — помечает ok:false, копирует текст в буфер и показывает его
 // пользователю (иначе поделиться нечем).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createRef } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { useShareCard } from './useShareCard';
 
@@ -25,8 +26,9 @@ function setup(over: Partial<Parameters<typeof useShareCard>[0]> = {}) {
     track,
     ...over,
   };
-  const hook = renderHook(() => useShareCard(opts));
-  hook.result.current.canvasRef.current = document.createElement('canvas');
+  const canvasRef = createRef<HTMLCanvasElement>();
+  canvasRef.current = document.createElement('canvas');
+  const hook = renderHook(() => useShareCard(canvasRef, opts));
   return { hook, track };
 }
 

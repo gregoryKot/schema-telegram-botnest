@@ -3,10 +3,13 @@
 // (шаринг из детального вида записи).
 // Возвращает готовые пропсы для per-frontend ShareCardSheet.
 import { useMemo, useState } from 'react';
+import { COLORS } from '../types';
 import {
   type JourneyItem,
   type JourneyPeriod,
   JOURNEY_GROUP_COLORS,
+  JOURNEY_NEED_EMOJI,
+  JOURNEY_NEED_NAMES,
   JOURNEY_PERIOD_TITLE,
   buildJourneyCardRows,
   formatJourneyDay,
@@ -21,7 +24,11 @@ import { drawJourneyItemCard } from '../share/cards/journeyItemCard';
 import { drawJourneyTotalsCard } from '../share/cards/journeyTotalsCard';
 import type { JourneyStatRow } from './journeyStats';
 import { drawJourneyResultCard } from '../share/cards/journeyResultCard';
-import type { JourneyResultPart } from './journeyContent';
+import {
+  drawNeedsRadarCard,
+  type NeedsRadarRow,
+} from '../share/cards/needsRadarCard';
+import type { JourneyResult } from './journeyContent';
 import {
   journeyItemShareText,
   journeyShareText,
@@ -32,7 +39,37 @@ import type { ShareCardKind } from '../share/analytics';
 export type JourneyShareState =
   | { kind: 'feed' }
   | { kind: 'totals' }
-  | { kind: 'item'; item: JourneyItem; parts: JourneyResultPart[] | null };
+  | { kind: 'item'; item: JourneyItem; result: JourneyResult | null };
+
+/** Строки радара из оценок дня трекера — порядок как в COLORS/JOURNEY_NEED_NAMES.
+ * Пропущенная потребность не превращается в ноль (правило «никаких заглушек»).
+ * Чистая (тест: пустые/частичные оценки). */
+export function journeyRadarRows(
+  ratings: Record<string, number> | undefined,
+): NeedsRadarRow[] {
+  return Object.keys(JOURNEY_NEED_NAMES).map((id) => {
+    const value = ratings?.[id];
+    return {
+      emoji: JOURNEY_NEED_EMOJI[id],
+      label: JOURNEY_NEED_NAMES[id],
+      color: COLORS[id] ?? '#888',
+      value: value ?? null,
+      valueText: value !== undefined ? String(value) : '—',
+    };
+  });
+}
+
+/** Индекс дня для центра радара — среднее по отмеченным, «—» без оценок. Чистая. */
+export function journeyRadarIndex(
+  ratings: Record<string, number> | undefined,
+): string {
+  const vals = Object.keys(JOURNEY_NEED_NAMES)
+    .map((id) => ratings?.[id])
+    .filter((v): v is number => typeof v === 'number');
+  return vals.length
+    ? (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(1)
+    : '—';
+}
 
 export interface JourneySharePayload {
   title: string;
@@ -85,14 +122,36 @@ export function buildJourneySharePayload(
   const hex = JOURNEY_GROUP_COLORS[meta.group].hex;
   const day = formatJourneyDay(share.item.at);
   const shareText = journeyItemShareText(meta.emoji, meta.label, link);
+  // День трекера — не текстовая строка «Привязанность — 7 · …», а радар
+  // потребностей (та же карточка, что у дня/недели трекера).
+  if (share.item.type === 'tracker_day' && share.result?.ratings) {
+    const ratings = share.result.ratings;
+    const data = {
+      eyebrow: 'Трекер потребностей',
+      title: 'Мой день',
+      subtitle: day,
+      rows: journeyRadarRows(ratings),
+      center: { value: journeyRadarIndex(ratings), caption: 'индекс' },
+      footerLabel: 'Мой путь',
+      accent: 'var(--accent-blue)',
+      accent2: 'var(--accent)',
+    };
+    return {
+      title: 'Результат',
+      draw: (canvas) => drawNeedsRadarCard(canvas, data),
+      shareText,
+      filename: 'journey-result.png',
+      eventKind: 'journey_item',
+    };
+  }
   // Есть содержимое → карточка-результат с текстом; нет — карточка шага.
-  if (share.parts?.length) {
+  if (share.result?.parts.length) {
     const data = {
       emoji: meta.emoji,
       label: meta.label,
       day,
       hex,
-      parts: share.parts,
+      parts: share.result.parts,
     };
     return {
       title: 'Результат',
@@ -131,7 +190,7 @@ export function useJourneyShare(
   },
   subtitle: (item: JourneyItem) => string | null,
   link: string,
-  fetchResult: (item: JourneyItem) => Promise<JourneyResultPart[] | null>,
+  fetchResult: (item: JourneyItem) => Promise<JourneyResult | null>,
 ) {
   const [share, setShare] = useState<JourneyShareState | null>(null);
   const payload = useMemo(
@@ -158,7 +217,7 @@ export function useJourneyShare(
     shareItem: (item: JourneyItem) => {
       void fetchResult(item)
         .catch(() => null)
-        .then((parts) => setShare({ kind: 'item', item, parts }));
+        .then((result) => setShare({ kind: 'item', item, result }));
     },
     close: () => setShare(null),
   };

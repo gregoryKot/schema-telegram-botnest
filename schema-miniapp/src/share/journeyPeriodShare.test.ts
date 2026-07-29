@@ -12,6 +12,63 @@ const noSub = () => null;
 // stats нужен карточке итогов (kind 'totals'), для ленты пустой ок.
 const noStats: [] = [];
 
+describe('buildJourneySharePayload — карточка шага', () => {
+  const trackerItem: JourneyItem = {
+    type: 'tracker_day',
+    at: '2026-07-20T10:00:00Z',
+  };
+
+  it('день трекера с оценками → радар, а не текстовая строка «Привязанность — 7»', () => {
+    const p = buildJourneySharePayload(
+      {
+        kind: 'item',
+        item: trackerItem,
+        result: {
+          parts: [{ text: 'Привязанность — 7' }],
+          ratings: { attachment: 7 },
+        },
+      },
+      items,
+      99,
+      noStats,
+      noSub,
+      'link',
+    );
+    expect(p.filename).toBe('journey-result.png');
+    expect(p.eventKind).toBe('journey_item');
+  });
+
+  it('шаг без содержимого → карточка шага, а не результата', () => {
+    const p = buildJourneySharePayload(
+      { kind: 'item', item: items[1], result: null },
+      items,
+      99,
+      noStats,
+      noSub,
+      'link',
+    );
+    expect(p.title).toBe('Шаг пути');
+    expect(p.filename).toBe('journey-step.png');
+  });
+
+  it('шаг с текстовым содержимым (не трекер) → карточка-результат', () => {
+    const p = buildJourneySharePayload(
+      {
+        kind: 'item',
+        item: items[0],
+        result: { parts: [{ title: 'Ситуация', text: 'x' }] },
+      },
+      items,
+      99,
+      noStats,
+      noSub,
+      'link',
+    );
+    expect(p.title).toBe('Результат');
+    expect(p.filename).toBe('journey-result.png');
+  });
+});
+
 describe('buildJourneySharePayload — лента по периоду', () => {
   it('всё время: заголовок «Мой путь», счётчик = total', () => {
     const p = buildJourneySharePayload(

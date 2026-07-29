@@ -7,7 +7,12 @@ import { dayIndex, dayRadarRows } from './dayCard';
 import type { Need } from '../../types';
 
 const NEEDS: Need[] = [
-  { id: 'attachment', emoji: '🤝', title: 'Привязанность', chartLabel: 'Привязанность' },
+  {
+    id: 'attachment',
+    emoji: '🤝',
+    title: 'Привязанность',
+    chartLabel: 'Привязанность',
+  },
   { id: 'autonomy', emoji: '🧭', title: 'Автономия', chartLabel: 'Автономия' },
   { id: 'limits', emoji: '⚖️', title: 'Границы', chartLabel: 'Границы' },
 ];
@@ -30,7 +35,9 @@ describe('needsRadarCardHeight', () => {
   });
 
   it('карточка выше радара с шапкой и футером', () => {
-    expect(needsRadarCardHeight({ rows: [1, 2, 3, 4, 5] })).toBeGreaterThan(400);
+    expect(needsRadarCardHeight({ rows: [1, 2, 3, 4, 5] })).toBeGreaterThan(
+      400,
+    );
   });
 });
 

@@ -20,6 +20,7 @@ export {
   headerHeight,
   footer,
   divider,
+  drawEmoji,
   panel,
   sectionLabel,
   tracking,

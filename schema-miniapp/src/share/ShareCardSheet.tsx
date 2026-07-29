@@ -2,6 +2,7 @@
 // текст». Все share-карточки приложения (трекер, достижения, схема, дневник)
 // ходят через него. Логика — общая (shared/useShareCard, правило №3),
 // вёрстка своя: BottomSheet мини-аппа.
+import { useRef } from 'react';
 import { BottomSheet } from '../components/BottomSheet';
 import { TherapyNote } from '../components/TherapyNote';
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
@@ -37,7 +38,8 @@ export function ShareCardSheet({
   zIndex = 200,
   therapyNote,
 }: Props) {
-  const s = useShareCard({
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const s = useShareCard(canvasRef, {
     draw,
     shareText,
     fallbackText,
@@ -80,7 +82,7 @@ export function ShareCardSheet({
             }}
           >
             <canvas
-              ref={s.canvasRef}
+              ref={canvasRef}
               style={{ display: 'block', width: '100%', height: 'auto' }}
             />
           </div>

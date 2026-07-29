@@ -11,10 +11,13 @@ import {
   CARD_W,
   FOOTER_H,
   beginCard,
-  accentBar,
   header,
+  headerHeight,
   footer,
   cardFont,
+  tracking,
+  progressBar,
+  measureWrap,
 } from '../cardKit';
 import { COLORS } from '../../types';
 import { SCHEMAS, DOMAIN_ORDER, NEED_LABELS } from '../../hooks/ysqSchemas';
@@ -46,7 +49,7 @@ const SHORT_LABELS: Record<string, string> = {
   'Пунитивность (на других)': 'Пунитивность к другим',
 };
 
-/** Короткая подпись схемы для строки профиля (≤ 21 символа). */
+/** Короткая подпись схемы для строки профиля (≤ 21 символ). */
 export function shortSchemaLabel(name: string): string {
   const short = SHORT_LABELS[name] ?? name.split('/')[0].trim();
   return short
@@ -85,20 +88,30 @@ export function buildYsqProfile(
 const NAME_W = 150;
 const BAR_X = CARD_PAD + NAME_W + 8;
 const BAR_W = CARD_W - CARD_PAD - 34 - BAR_X;
-const ROW_H = 24;
+const ROW_H = 26;
 const GROUP_HEAD_H = 26;
-const GROUP_GAP = 6;
-// Заголовок карточки (112) + счёт выраженных с пояснением метрики (46).
-const CHART_TOP = 158;
+const GROUP_GAP = 8;
+// Пояснительная строка под шапкой («средний балл от 1 до 6 · …»).
+const HINT_H = 30;
 
-/** Высота карточки — чистая формула от числа доменов и строк (для тестов). */
-export function ysqProfileCardHeight(domains: YsqProfileDomain[]): number {
+/**
+ * Высота карточки — чистая формула от числа доменов и строк (для тестов).
+ * titleLines обязателен: заголовок «Выраженных схем не обнаружено» переносится
+ * на две строки, и с расчётом «как будто строка одна» последняя группа схем
+ * уезжает под футер.
+ */
+export function ysqProfileCardHeight(
+  domains: YsqProfileDomain[],
+  hasDate = true,
+  titleLines = 1,
+): number {
   const rows = domains.reduce((n, d) => n + d.rows.length, 0);
   return (
-    CHART_TOP +
+    headerHeight(titleLines, hasDate) +
+    HINT_H +
     domains.length * (GROUP_HEAD_H + GROUP_GAP) +
     rows * ROW_H +
-    8 +
+    12 +
     FOOTER_H
   );
 }
@@ -114,26 +127,37 @@ export function drawYsqProfileCard(
   domains: YsqProfileDomain[],
   opts: YsqProfileCardOpts,
 ) {
-  const H = ysqProfileCardHeight(domains);
-  const c = beginCard(canvas, H);
+  const titleLines = Math.min(
+    2,
+    measureWrap(canvas, opts.headline, CARD_W - CARD_PAD * 2, 23, 'bold').length,
+  );
+  const H = ysqProfileCardHeight(
+    domains,
+    Boolean(opts.dateLabel),
+    titleLines,
+  );
+  const c = beginCard(canvas, H, {
+    accent: 'var(--accent)',
+    accent2: 'var(--accent-blue)',
+  });
   const { ctx, th } = c;
 
-  accentBar(c);
-  const yHead = header(c, 'Тест на схемы', opts.dateLabel ?? undefined);
+  const contentY = header(c, {
+    eyebrow: 'Тест на схемы',
+    title: opts.headline,
+    subtitle: opts.dateLabel ?? undefined,
+  });
 
-  ctx.font = cardFont(15, 'bold');
-  ctx.fillStyle = th.fg(0.92);
-  ctx.textAlign = 'left';
-  ctx.fillText(opts.headline, CARD_PAD, yHead + 8);
   ctx.font = cardFont(10.5);
   ctx.fillStyle = th.fg(0.4);
+  ctx.textAlign = 'left';
   ctx.fillText(
     'Средний балл от 1 до 6 · ярче — выраженные схемы',
     CARD_PAD,
-    yHead + 26,
+    contentY,
   );
 
-  let y = CHART_TOP;
+  const chartTop = contentY + HINT_H;
   const chartBottom = H - FOOTER_H - 8;
 
   // Пунктир порога «4 из 6» с меткой; закрашенная часть бара ложится поверх,
@@ -142,52 +166,44 @@ export function drawYsqProfileCard(
   ctx.font = cardFont(9);
   ctx.fillStyle = th.fg(0.35);
   ctx.textAlign = 'center';
-  ctx.fillText('4', thresholdX, y + 6);
+  ctx.fillText('4', thresholdX, chartTop - 4);
   ctx.textAlign = 'left';
   ctx.strokeStyle = th.fg(0.16);
   ctx.lineWidth = 1;
   ctx.setLineDash([3, 4]);
   ctx.beginPath();
-  ctx.moveTo(thresholdX, y + 10);
+  ctx.moveTo(thresholdX, chartTop);
   ctx.lineTo(thresholdX, chartBottom);
   ctx.stroke();
   ctx.setLineDash([]);
 
+  let y = chartTop;
   for (const d of domains) {
     ctx.beginPath();
     ctx.arc(CARD_PAD + 3, y + 13, 3, 0, Math.PI * 2);
     ctx.fillStyle = d.color;
     ctx.fill();
     ctx.font = cardFont(10, 'bold');
+    ctx.fillStyle = th.fg(0.6);
+    tracking(ctx, 0.6);
     ctx.fillText(d.label.toUpperCase(), CARD_PAD + 12, y + 16);
+    tracking(ctx, 0);
     y += GROUP_HEAD_H;
 
     for (const r of d.rows) {
       ctx.font = cardFont(11.5, r.active ? 'bold' : undefined);
-      ctx.fillStyle = th.fg(r.active ? 0.92 : 0.55);
+      ctx.fillStyle = th.fg(r.active ? 0.92 : 0.5);
+      ctx.textAlign = 'left';
       ctx.fillText(r.label, CARD_PAD, y + 15);
 
-      ctx.fillStyle = th.fg(0.07);
-      ctx.beginPath();
-      ctx.roundRect(BAR_X, y + 8, BAR_W, 7, 3.5);
-      ctx.fill();
-      if (r.avg >= 1) {
-        const fillW = Math.max(3, (avgBarPct(r.avg) / 100) * BAR_W);
-        if (r.active) {
-          const grad = ctx.createLinearGradient(BAR_X, 0, BAR_X + fillW, 0);
-          grad.addColorStop(0, d.color + '99');
-          grad.addColorStop(1, d.color);
-          ctx.fillStyle = grad;
-        } else {
-          ctx.fillStyle = d.color + '55';
-        }
-        ctx.beginPath();
-        ctx.roundRect(BAR_X, y + 8, fillW, 7, 3.5);
-        ctx.fill();
-      }
+      const pct = r.avg >= 1 ? avgBarPct(r.avg) / 100 : 0;
+      ctx.save();
+      ctx.globalAlpha = r.active ? 1 : 0.4;
+      progressBar(c, BAR_X, y + 8, BAR_W, pct, d.color);
+      ctx.restore();
 
       ctx.font = cardFont(11, r.active ? 'bold' : undefined);
-      ctx.fillStyle = r.active ? d.color : th.fg(0.45);
+      ctx.fillStyle = r.active ? d.color : th.fg(0.4);
       ctx.textAlign = 'right';
       ctx.fillText(
         r.avg >= 1 ? r.avg.toFixed(1) : '—',
