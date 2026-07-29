@@ -49,9 +49,7 @@ describe('ProductMetricsService.getMetrics', () => {
         { action: 'shown', c: 200n },
         { action: 'add', c: 60n },
         { action: 'added', c: 45n },
-      ])
-      // быстрые практики «Здесь и сейчас»: разных людей, хоть раз попробовавших
-      .mockResolvedValueOnce([{ c: 37n }]);
+      ]);
     const eventCount = jest
       .fn()
       .mockResolvedValueOnce(12) // crisis_card_shown
@@ -59,8 +57,6 @@ describe('ProductMetricsService.getMetrics', () => {
       .mockResolvedValueOnce(12) // share_card total7
       .mockResolvedValueOnce(40) // share_card total30
       .mockResolvedValueOnce(15) // today_focus_change
-      .mockResolvedValueOnce(33) // breath_start
-      .mockResolvedValueOnce(21) // stop_start
       .mockResolvedValueOnce(18) // journey_open
       .mockResolvedValueOnce(44); // ysq_help_open
 
@@ -75,22 +71,18 @@ describe('ProductMetricsService.getMetrics', () => {
       ysqResult: { count: jest.fn(async () => 210) },
       ysqProgress: { count: jest.fn(async () => 260) },
       analyticsEvent: { count: eventCount },
-      practiceSession: {
-        groupBy: jest.fn(async () => [
-          { tool: 'breathing', _count: { _all: 40 } },
-          { tool: 'stop', _count: { _all: 10 } },
-        ]),
-      },
       $queryRaw: queryRaw,
     };
 
-    // quizMetrics/practiceLink в getMetrics не участвуют — нужны для render().
+    // quizMetrics/practiceLink/practiceMetrics в getMetrics не участвуют — нужны для render().
     const quizMetrics = { getMetrics: jest.fn() } as never;
     const practiceLink = { getMetrics: jest.fn() } as never;
+    const practiceMetrics = { getMetrics: jest.fn() } as never;
     const m = await new ProductMetricsService(
       prisma,
       quizMetrics,
       practiceLink,
+      practiceMetrics,
     ).getMetrics();
 
     expect(m.onboarding).toEqual({ cohort30: 118, completed30: 70 });
@@ -134,18 +126,7 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(m.shareResult).toEqual({ ok: 35, fallback: 5 });
     expect(m.outbox).toEqual({ flushes: 8, recovered: 21 });
     expect(m.today.focusChanged).toBe(15);
-    expect(m.breath).toEqual({ started: 33 });
-    expect(m.stop).toEqual({ started: 21 });
     expect(m.journey).toEqual({ opens: 18 });
-    // grounding отсутствует в выборке groupBy → честный 0, не undefined
-    expect(m.practiceSessions).toEqual({
-      byTool: [
-        { tool: 'breathing', count: 40 },
-        { tool: 'grounding', count: 0 },
-        { tool: 'stop', count: 10 },
-      ],
-      distinctUsers: 37,
-    });
     // отсутствующие в выборке действия — нули, а не undefined/NaN
     expect(m.homeScreen).toEqual({
       shown: 200,
@@ -175,10 +156,19 @@ describe('ProductMetricsService.getMetrics', () => {
         quiz30: 0,
       })),
     } as never;
+    const practiceMetrics = {
+      getMetrics: jest.fn(async () => ({
+        breathing: { started: 0, completed: 0 },
+        grounding: { completed: 0 },
+        stop: { started: 0, completed: 0 },
+        distinctUsers: 0,
+      })),
+    } as never;
     const service = new ProductMetricsService(
       {} as never,
       quizMetrics,
       practiceLink,
+      practiceMetrics,
     );
     // Сами запросы к БД покрыты тестом выше — здесь проверяем склейку.
     jest.spyOn(service, 'getMetrics').mockResolvedValue(EMPTY_METRICS);
@@ -190,6 +180,8 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(text).toContain('Переходили на сайт практики: 3');
     // Продуктовый блок тоже на месте (склейка ничего не потеряла).
     expect(text).toContain('Новички проходят обучение');
+    // Блок быстрых практик тоже подклеен.
+    expect(text).toContain('Быстрые практики «Здесь и сейчас»');
   });
 });
 
@@ -218,16 +210,6 @@ const EMPTY_METRICS = {
     customizeGear: 0,
     customizeLongpress: 0,
   },
-  breath: { started: 0 },
-  stop: { started: 0 },
   journey: { opens: 0 },
-  practiceSessions: {
-    byTool: [
-      { tool: 'breathing', count: 0 },
-      { tool: 'grounding', count: 0 },
-      { tool: 'stop', count: 0 },
-    ],
-    distinctUsers: 0,
-  },
   homeScreen: { shown: 0, add: 0, later: 0, never: 0, added: 0 },
 };

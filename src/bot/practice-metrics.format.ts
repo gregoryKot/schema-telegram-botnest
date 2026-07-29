@@ -14,8 +14,10 @@ export interface PracticeMetrics {
   distinctUsers: number;
 }
 
-const startedAndCompleted = (label: string, m: { started: number; completed: number }) =>
-  `${label}: запускали ${m.started} · прошли до конца ${m.completed}`;
+const startedAndCompleted = (
+  label: string,
+  m: { started: number; completed: number },
+) => `${label}: запускали ${m.started} · прошли до конца ${m.completed}`;
 
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatPracticeMetrics(m: PracticeMetrics): string {

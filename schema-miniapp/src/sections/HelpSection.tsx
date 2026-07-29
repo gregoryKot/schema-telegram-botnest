@@ -17,13 +17,14 @@ import { ToolRow } from '../components/ToolRow';
 import { SelfHelpSheet } from '../components/SelfHelpDisclaimer';
 import { pressable } from '../utils/a11y';
 import { BreathingCard } from '../components/BreathingCard';
-import { GroundingSheet } from '../components/GroundingSheet';
-import { StopSheet } from '../components/StopSheet';
+import { QuickPracticeSheet } from '../components/QuickPracticeSheet';
 import { CrisisCard } from '../components/CrisisCard';
 import { useTr } from '../utils/addressForm';
-import { plural } from './today/helpers';
+import { practiceCountLabel } from '../components/PracticeDoneFooter';
+import type { PracticeSessionCounts } from '../apiTypes';
 import { AllTasksSheet } from './helpSection/AllTasksSheet';
 import { NextSessionBanner } from './helpSection/NextSessionBanner';
+import { ToolsList } from './helpSection/ToolsList';
 
 interface Props {
   onOpenChildhoodWheel: () => void;
@@ -74,10 +75,26 @@ export function HelpSection({
   const [relation, setRelation] = useState<
     TherapyRelationInfo | null | undefined
   >(initialTasks !== undefined ? null : undefined);
+  const [practiceCounts, setPracticeCounts] =
+    useState<PracticeSessionCounts | null>(null);
 
   useEffect(() => {
     if (initialTasks !== undefined) setTasks(initialTasks ?? []);
   }, [initialTasks]);
+
+  // Один общий запрос счётчиков на секцию — не по хуку на каждую строку.
+  useEffect(() => {
+    let ignore = false;
+    api
+      .getPracticeSessions()
+      .then((c) => {
+        if (!ignore) setPracticeCounts(c);
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -248,7 +265,10 @@ export function HelpSection({
         <ToolRow
           emoji="🌍"
           label="Заземление 5-4-3-2-1"
-          sub="вернуться в тело и в комнату"
+          sub={
+            practiceCountLabel(practiceCounts?.grounding ?? null) ??
+            'вернуться в тело и в комнату'
+          }
           tint="var(--accent-blue)"
           index={0}
           onClick={() => setShowGrounding(true)}
@@ -256,7 +276,10 @@ export function HelpSection({
         <ToolRow
           emoji="🛑"
           label="Техника «Стоп»"
-          sub="пауза между импульсом и действием"
+          sub={
+            practiceCountLabel(practiceCounts?.stop ?? null) ??
+            'пауза между импульсом и действием'
+          }
           tint="var(--accent-orange)"
           index={1}
           onClick={() => setShowStop(true)}
@@ -307,88 +330,19 @@ export function HelpSection({
         )}
 
         {/* Инструменты — iOS-строки по макету, каскадное появление */}
-        <div className="section-label" style={{ margin: '8px 4px -4px' }}>
-          Инструменты
-        </div>
-        <ToolRow
-          emoji="🎯"
-          label="Мои цели"
-          sub={
-            tasks.length === 0
-              ? 'Нет активных'
-              : `${tasks.length} ${plural(tasks.length, 'цель', 'цели', 'целей')}`
-          }
-          tint="var(--accent-orange)"
-          index={0}
-          onClick={() => setShowAllTasks(true)}
-        />
-        <ToolRow
-          emoji="🗂"
-          label="Практики"
-          sub={
-            practiceCount == null
-              ? undefined
-              : practiceCount === 0
-                ? 'Нет практик'
-                : `${practiceCount} ${plural(practiceCount, 'практика', 'практики', 'практик')}`
-          }
-          tint="var(--accent)"
-          index={1}
-          onClick={onOpenPractices}
-        />
-        <ToolRow
-          emoji="🗓"
-          label="Планы"
-          sub={
-            planCount == null
-              ? undefined
-              : planCount === 0
-                ? 'История пуста'
-                : `${planCount} ${plural(planCount, 'план', 'плана', 'планов')}`
-          }
-          tint="var(--accent-blue)"
-          index={2}
-          onClick={onOpenPlans}
-        />
-        <ToolRow
-          emoji="🔍"
-          label="Проверка убеждений"
-          sub="Правда ли это?"
-          tint="var(--accent-yellow)"
-          index={3}
-          onClick={() => setShowBeliefCheck(true)}
-        />
-        <ToolRow
-          emoji="🏡"
-          label="Безопасное место"
-          sub="Ресурс в тревожный момент"
-          tint="var(--accent-green)"
-          index={4}
-          onClick={() => setShowSafePlace(true)}
-        />
-        <ToolRow
-          emoji="✉️"
-          label="Письмо себе"
-          sub="Уязвимому Ребёнку"
-          tint="var(--accent-pink)"
-          index={5}
-          onClick={() => setShowLetterToSelf(true)}
-        />
-        <ToolRow
-          emoji="🆘"
-          label="Схема включилась"
-          sub="5 шагов чтобы разобраться"
-          tint="var(--accent-indigo)"
-          index={6}
-          onClick={() => setShowFlashcard(true)}
-        />
-        <ToolRow
-          emoji="🌱"
-          label="Колесо детства"
-          sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'}
-          tint="var(--accent-green)"
-          index={7}
-          onClick={onOpenChildhoodWheel}
+        <ToolsList
+          tasksCount={tasks.length}
+          practiceCount={practiceCount}
+          planCount={planCount}
+          childhoodDone={childhoodDone}
+          onOpenTasks={() => setShowAllTasks(true)}
+          onOpenPractices={onOpenPractices}
+          onOpenPlans={onOpenPlans}
+          onOpenBeliefCheck={() => setShowBeliefCheck(true)}
+          onOpenSafePlace={() => setShowSafePlace(true)}
+          onOpenLetterToSelf={() => setShowLetterToSelf(true)}
+          onOpenFlashcard={() => setShowFlashcard(true)}
+          onOpenChildhoodWheel={onOpenChildhoodWheel}
         />
 
         <div style={{ paddingBottom: 4 }}>
@@ -451,9 +405,14 @@ export function HelpSection({
         />
       )}
       {showGrounding && (
-        <GroundingSheet onClose={() => setShowGrounding(false)} />
+        <QuickPracticeSheet
+          id="grounding"
+          onClose={() => setShowGrounding(false)}
+        />
       )}
-      {showStop && <StopSheet onClose={() => setShowStop(false)} />}
+      {showStop && (
+        <QuickPracticeSheet id="stop" onClose={() => setShowStop(false)} />
+      )}
       {showCrisis && (
         <BottomSheet onClose={() => setShowCrisis(false)} zIndex={200}>
           <div style={{ paddingTop: 4 }}>

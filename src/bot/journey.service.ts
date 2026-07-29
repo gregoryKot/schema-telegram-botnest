@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { mapPracticeSessions } from './journey-practice-sessions.util';
+import { loadPracticeJourney } from './journey-practice-sessions.util';
+type PracticeJourney = Awaited<ReturnType<typeof loadPracticeJourney>>;
 
 // «Мой путь» — сводный архив всей активности пользователя: сколько раз и когда
 // он заполнял трекер, дневники, практики, тесты и упражнения. Лента отдаёт
@@ -22,13 +23,10 @@ export type JourneyItemType =
   | 'flashcard'
   | 'safe_place'
   | 'schema_note'
-  | 'mode_note'
-  | 'breathing'
-  | 'grounding'
-  | 'stop';
+  | 'mode_note';
 
 export interface JourneyItem {
-  type: JourneyItemType;
+  type: JourneyItemType | PracticeJourney['items'][number]['type'];
   /** ISO-датавремя или YYYY-MM-DD (у дневных записей время не хранится) */
   at: string;
   /** id строки-источника — по нему фронт подтягивает содержимое записи
@@ -55,13 +53,10 @@ export interface JourneyCounts {
   safePlace: boolean;
   schemaNotes: number;
   modeNotes: number;
-  breathingSessions: number;
-  groundingSessions: number;
-  stopSessions: number;
 }
 
 export interface JourneyData {
-  counts: JourneyCounts;
+  counts: JourneyCounts & PracticeJourney['counts'];
   items: JourneyItem[];
 }
 
@@ -96,7 +91,7 @@ export class JourneyService {
       safePlace,
       schemaNotes,
       modeNotes,
-      practiceSessions,
+      { items: practiceItems, counts: practiceCounts },
     ] = await Promise.all([
       p.rating.groupBy({ by: ['date'], where: by }),
       p.note.findMany({ where: by, select: { date: true } }),
@@ -158,14 +153,8 @@ export class JourneyService {
         where: by,
         select: { updatedAt: true, modeId: true },
       }),
-      p.practiceSession.findMany({
-        where: by,
-        select: { id: true, tool: true, createdAt: true },
-      }),
+      loadPracticeJourney(p, userId),
     ]);
-
-    const { items: practiceItems, counts: practiceCounts } =
-      mapPracticeSessions(practiceSessions);
 
     // Старые пользователи прошли тест до появления таблицы истории —
     // сам результат тогда единственный след прохождения.

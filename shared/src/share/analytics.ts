@@ -17,7 +17,8 @@ export type ShareCardKind =
   | 'phrase'
   | 'gratitude'
   | 'journey'
-  | 'journey_item';
+  | 'journey_item'
+  | 'practice';
 
 export const SHARE_CARD_EVENT = 'share_card';
 // Исход системного шэра: meta { kind, ok }. Позволяет мерить «получилось ли

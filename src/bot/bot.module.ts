@@ -5,6 +5,7 @@ import { BotClientOverviewService } from './bot.client-overview.service';
 import { ProductMetricsService } from './bot.product-metrics.service';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
+import { PracticeMetricsService } from './practice-metrics.service';
 import { DiaryService } from './diary.service';
 import { ProfileService } from './profile.service';
 import { AccountService } from './account.service';
@@ -25,6 +26,7 @@ import { PracticeSessionsService } from './practice-sessions.service';
     ProductMetricsService,
     QuizMetricsService,
     PracticeLinkMetricsService,
+    PracticeMetricsService,
     DiaryService,
     ProfileService,
     AccountService,

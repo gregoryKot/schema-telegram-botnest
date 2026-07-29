@@ -47,17 +47,7 @@ const FULL: ProductMetrics = {
     customizeGear: 30,
     customizeLongpress: 12,
   },
-  breath: { started: 33 },
-  stop: { started: 21 },
   journey: { opens: 18 },
-  practiceSessions: {
-    byTool: [
-      { tool: 'breathing', count: 40 },
-      { tool: 'grounding', count: 25 },
-      { tool: 'stop', count: 10 },
-    ],
-    distinctUsers: 37,
-  },
   homeScreen: { shown: 200, add: 60, later: 90, never: 30, added: 45 },
 };
 
@@ -85,17 +75,7 @@ const EMPTY: ProductMetrics = {
     customizeGear: 0,
     customizeLongpress: 0,
   },
-  breath: { started: 0 },
-  stop: { started: 0 },
   journey: { opens: 0 },
-  practiceSessions: {
-    byTool: [
-      { tool: 'breathing', count: 0 },
-      { tool: 'grounding', count: 0 },
-      { tool: 'stop', count: 0 },
-    ],
-    distinctUsers: 0,
-  },
   homeScreen: { shown: 0, add: 0, later: 0, never: 0, added: 0 },
 };
 
@@ -136,17 +116,7 @@ describe('formatProductMetrics', () => {
     expect(t).toContain('🔥 счётчик дней подряд — 7');
     expect(t).toContain('💬 цитата — 4');
     expect(t).not.toContain('therapist_banner');
-    expect(t).toContain('Запускали: 33 раз');
-    expect(t).toContain('Техника «Стоп»');
-    expect(t).toContain('Запускали: 21 раз');
     expect(t).toContain('Открывали свою историю: 18 раз');
-    // быстрые практики «Здесь и сейчас»: подписи словами, не ключи tool
-    expect(t).toContain('дыхание — 40');
-    expect(t).toContain('заземление — 25');
-    expect(t).toContain('«Стоп» — 10');
-    expect(t).toContain('Попробовали хотя бы раз: 37 человек');
-    expect(t).not.toContain('breathing');
-    expect(t).not.toContain('grounding');
     // значок на экране: доля согласившихся и реально появившиеся значки
     expect(t).toContain('Предложили: 200 · нажали «добавить»: 60 (30%)');
     expect(t).toContain('Значок реально появился: 45');
@@ -176,9 +146,7 @@ describe('formatProductMetrics', () => {
     expect(t).toContain('Пока никто не делился'); // пустой share_card
     expect(t).toContain('Пока обучение никто не открывал');
     expect(t).toContain('Блоки с главного пока не прятали');
-    expect(t).toContain('Пока никто не запускал'); // пустая техника «Стоп»
     expect(t).toContain('Пока никому не предлагали');
     expect(t).toContain('Свою историю пока никто не открывал');
-    expect(t).toContain('Пока никто не проходил'); // быстрые практики
   });
 });

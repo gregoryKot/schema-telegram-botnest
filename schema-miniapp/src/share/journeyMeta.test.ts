@@ -45,6 +45,9 @@ const EMPTY: JourneyCounts = {
   safePlace: false,
   schemaNotes: 0,
   modeNotes: 0,
+  breathingSessions: 0,
+  groundingSessions: 0,
+  stopSessions: 0,
 };
 
 describe('journeyStatRows / journeyTotal', () => {
@@ -122,6 +125,24 @@ describe('journeyTypeMeta', () => {
   it('незнакомый тип с бэка → нейтральный фолбэк, не падение', () => {
     const meta = journeyTypeMeta('something_new');
     expect(meta.label).toBe('Запись');
+  });
+
+  it('быстрые практики «Здесь и сейчас» — свои эмодзи/подписи, группа exercise', () => {
+    expect(journeyTypeMeta('breathing')).toEqual({
+      emoji: '🌬',
+      label: 'Дыхание',
+      group: 'exercise',
+    });
+    expect(journeyTypeMeta('grounding')).toEqual({
+      emoji: '🌍',
+      label: 'Заземление 5-4-3-2-1',
+      group: 'exercise',
+    });
+    expect(journeyTypeMeta('stop')).toEqual({
+      emoji: '🛑',
+      label: 'Техника «Стоп»',
+      group: 'exercise',
+    });
   });
 });
 

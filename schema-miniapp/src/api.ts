@@ -2,6 +2,7 @@ import { todayStr } from './utils/format';
 import { OutboxItem, enqueueRating, flushRatingOutbox } from './utils/outbox';
 import { telemetryUrl } from './utils/telemetryUrl';
 import type { TherapyClientSummary } from '../../shared/src/types';
+import type { QuickPracticeId } from '../../shared/src/practices/quickPractices';
 import {
   BASE,
   authHeaders,
@@ -29,6 +30,7 @@ import type {
   ClientConceptualization,
   YsqHistoryEntry,
   ClientData,
+  PracticeSessionCounts,
 } from './apiTypes';
 
 // Отправка пойманной ErrorBoundary ошибки на бэкенд (best-practice «видимость
@@ -486,6 +488,12 @@ export const api = {
         behavior: string;
       }>
     >(`/api/therapy/client/${clientId}/mode-notes`),
+
+  // ─── Быстрые практики «Здесь и сейчас» (дыхание/заземление/«Стоп») ─────────────
+  recordPracticeSession: (tool: QuickPracticeId) =>
+    postJson<{ ok: true; count: number }>('/api/practice-session', { tool }),
+  getPracticeSessions: () =>
+    get<PracticeSessionCounts>('/api/practice-sessions'),
 
   // ─── Outbox ──────────────────────────────────────────────────────────────────
   // Отправляет отложенные оценки (см. utils/outbox.ts). Вызывается при старте
