@@ -44,3 +44,57 @@ describe('SchemaEntrySheet — кризисная детекция', () => {
     expect(screen.queryByRole('status')).toBeNull();
   });
 });
+
+// Тик-страйп прогресса — 10 div[role=button] без текста (pressable), порядок
+// SCHEMA_DIARY_STEP_ORDER: 0 trigger, 1 emotions, 5 schemas, 8 excessiveReactions.
+function ticks() {
+  return screen.getAllByRole('button', { name: '' });
+}
+
+describe('SchemaEntrySheet — визард (шаги, обязательность, чипы)', () => {
+  it('обязательна только ситуация — «Дальше» задизейблено, пока триггер пуст', () => {
+    renderSheet();
+    // Первый шаг обязателен — кнопка сразу подписана «Дальше», но задизейблена.
+    const nextBtn = screen.getByText('Дальше').closest('button') as HTMLButtonElement;
+    expect(nextBtn.disabled).toBe(true);
+    const trigger = screen.getByPlaceholderText('Например: на созвоне А. сказал что мой ппт «слабо проработан»…');
+    fireEvent.change(trigger, { target: { value: 'Созвон с командой' } });
+    expect(nextBtn.disabled).toBe(false);
+  });
+
+  it('клик по тику переключает на шаг «Чувства» — чипы эмоций видны', () => {
+    renderSheet();
+    fireEvent.click(ticks()[1]);
+    expect(screen.getByText('Страх')).toBeTruthy();
+  });
+
+  it('клик по тику переключает на шаг «Схемы» — чипы схем и поле «откуда это знакомо» видны', () => {
+    renderSheet();
+    fireEvent.click(ticks()[5]);
+    expect(screen.getByText('Схемы')).toBeTruthy();
+    expect(screen.getByPlaceholderText(/так папа в детстве оценивал/)).toBeTruthy();
+  });
+
+  // Регрессия: excessiveReactions («Где я раздул/а») был в черновике, но
+  // потерял UI (useState без сеттера) — расхождение с миниаппом (правило
+  // №3). Визард обязан вернуть шаг в обоих фронтендах.
+  it('шаг «Где я раздул/а» (excessiveReactions) снова доступен и сохраняется', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <MemoryRouter>
+        <SchemaEntrySheet onClose={vi.fn()} onSave={onSave} />
+      </MemoryRouter>,
+    );
+    const trigger = screen.getByPlaceholderText('Например: на созвоне А. сказал что мой ппт «слабо проработан»…');
+    fireEvent.change(trigger, { target: { value: 'Созвон с командой' } });
+    fireEvent.click(ticks()[8]); // индекс 8 в SCHEMA_DIARY_STEP_ORDER — excessiveReactions
+    expect(screen.getByText('Где я раздул/а')).toBeTruthy();
+    const area = screen.getByPlaceholderText(/реакция оказалась больше/);
+    fireEvent.change(area, { target: { value: 'Слишком остро отреагировал на пустяк' } });
+    fireEvent.click(screen.getByText('Сохранить'));
+    await Promise.resolve();
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ excessiveReactions: 'Слишком остро отреагировал на пустяк' }),
+    );
+  });
+});

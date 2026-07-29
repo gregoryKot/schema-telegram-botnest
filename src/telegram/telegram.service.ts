@@ -12,7 +12,7 @@ import { BOT_COMMANDS } from './telegram.constants';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
-import { ProductMetricsService } from '../bot/bot.product-metrics.service';
+import { StatsReportService } from '../bot/stats-report.service';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
 import { formatPoolStatus } from '../bot/healthy-adult.pool-alert';
 import { AccountService } from '../bot/account.service';
@@ -44,7 +44,7 @@ const CONSENT_TEXT = `🔐 Соглашение об обработке данн
 • Записи и ответы на опросники могут касаться твоего психоэмоционального состояния — принимая соглашение, ты даёшь отдельное согласие на обработку таких сведений
 • Данные не передаются третьим лицам — кроме терапевта, если ты сам решишь подключить его по коду, и технической инфраструктуры (подробнее: schemehappens.ru/privacy)
 • Ты можешь удалить всё в любой момент через Настройки → Удалить данные
-• Приложение не является медицинским инструментом и не заменяет психотерапию
+• Приложение не медицинский инструмент и не заменяет психотерапию
 • Сервис предназначен для пользователей старше 18 лет
 
 Кнопка ниже — это согласие с условиями, подтверждение 18+ и выбор формы обращения (поменять можно в любой момент в /settings).`;
@@ -90,7 +90,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
     private readonly analyticsService: BotAnalyticsService,
-    private readonly productMetricsService: ProductMetricsService,
+    private readonly statsReport: StatsReportService,
     private readonly healthyAdult: HealthyAdultService,
     private readonly accountService: AccountService,
     private readonly pairsService: PairsService,
@@ -296,7 +296,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         // Двумя сообщениями — суммарно отчёт длиннее лимита Telegram (4096).
         const [core, product, pool] = await Promise.all([
           this.analyticsService.getAdminStats(),
-          this.productMetricsService.render(),
+          this.statsReport.render(),
           this.healthyAdult.poolStatus(),
         ]);
         await ctx.reply(core, { parse_mode: 'HTML' });

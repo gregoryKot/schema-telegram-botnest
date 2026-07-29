@@ -84,7 +84,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             <h1 className="hub-title" style={{ marginBottom: 8 }}>Мои<br /><span className="it">практики</span></h1>
             <div className="text-md muted" style={{ maxWidth: 560, lineHeight: 1.6 }}>
               Конкретные действия, которые наполняют потребность.
-              {onOpenTracker && <> {tr('Видишь что что-то просело?', 'Видите что что-то просело?')} <span {...pressable(onOpenTracker)} className="link" style={{ cursor: 'pointer' }}>{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
+              {onOpenTracker && <> Что-то просело? <span {...pressable(onOpenTracker)} className="link" style={{ cursor: 'pointer' }}>{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>

@@ -15,6 +15,7 @@
 //   today_focus_change  — сменил главную практику экрана «Сегодня» (meta.practice);
 //   today_streak_toggle — скрыл/показал счётчик серии (meta.hidden);
 //   breath_start        — запустил дыхание «Здесь и сейчас» (без meta);
+//   stop_start          — запустил технику «Стоп» в «Здесь и сейчас» (без meta);
 //   web_banner_open     — открыл сайт из баннера кабинета (meta.banner);
 //   web_banner_dismiss  — скрыл баннер кабинета (meta.banner);
 //   onboarding_step     — новичок дошёл до шага обучения (meta.step);
@@ -31,6 +32,8 @@
 //   practice_link_click — кликнул ссылку на сайт практики автора с
 //                         продуктового лендинга (meta.place). Всегда анонимно
 //                         (userId = null) через POST /api/public-event.
+//   mode_card_saved     — сохранил заполненную карточку режима
+//                         (meta.modeId + meta.filledFields, 0..7).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -40,6 +43,7 @@ export const ANALYTICS_EVENTS = [
   'today_focus_change',
   'today_streak_toggle',
   'breath_start',
+  'stop_start',
   'web_banner_open',
   'web_banner_dismiss',
   'onboarding_step',
@@ -51,6 +55,7 @@ export const ANALYTICS_EVENTS = [
   'quiz_started',
   'quiz_completed',
   'practice_link_click',
+  'mode_card_saved',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -158,31 +163,12 @@ export const SHARE_CARD_KINDS = [
 ] as const;
 export type ShareCardKind = (typeof SHARE_CARD_KINDS)[number];
 
-// Экран, на котором показалась кризисная карточка (meta.surface для
-// crisis_*). Без свободного текста — только перечислимый источник (правило №7).
-//   schema       — заметка к схеме;
-//   mode         — заметка к режиму;
-//   gratitude    — практика благодарности;
-//   note         — дневниковая заметка;
-//   practice     — упражнение-практика;
-//   letter       — письмо себе (упражнение-письмо);
-//   safe_place   — безопасное место;
-//   weekly       — вопрос недели;
-//   belief_check — проверка убеждения;
-//   flashcard    — карточки-упражнения (schema flashcard).
-export const CRISIS_SURFACES = [
-  'schema',
-  'mode',
-  'gratitude',
-  'note',
-  'practice',
-  'letter',
-  'safe_place',
-  'weekly',
-  'belief_check',
-  'flashcard',
-] as const;
-export type CrisisSurface = (typeof CRISIS_SURFACES)[number];
+// CRISIS_SURFACES/CrisisSurface — вынесены в crisis-surfaces.constants.ts
+// (правило №10: файл держим ≤201 строки).
+export {
+  CRISIS_SURFACES,
+  type CrisisSurface,
+} from './crisis-surfaces.constants';
 
 // Главная практика экрана «Сегодня» (meta.practice для today_focus_change) —
 // парно с FocusPractice на фронте (schema-miniapp/src/utils/todayFocus.ts).

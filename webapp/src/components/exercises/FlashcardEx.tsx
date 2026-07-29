@@ -8,7 +8,15 @@ import { pressable } from '../../utils/a11y';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { buildModeIntroExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
-import { SCHEMA_QUESTIONS, MODE_QUESTIONS, type Q } from './flashcardQuestions';
+import { buildSchemaIntroExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
+import { buildModeIntroQuestions } from '../../../../shared/src/mode/modeIntroQuestions';
+import { getModeCard } from '../../../../shared/src/mode/modeCards';
+import { MODE_CARD_SAVED_EVENT } from '../../../../shared/src/share/analytics';
+import { SCHEMA_QUESTIONS, type Q } from './flashcardQuestions';
+import { ModePortrait } from './ModePortrait';
+
+// Портрет режима показывается один раз на устройство — ключ в localStorage.
+const portraitSeenKey = (modeId: string) => `mode_portrait_seen_${modeId}`;
 
 function FlashcardFlow({ questions, accentColor, onSave, explainer }: { questions: Q[]; accentColor: string; onSave: (data: Record<string,string>) => Promise<void>; explainer?: string }) {
   const [data, setData] = useState<Record<string,string>>(() => Object.fromEntries(questions.map(q => [q.key, ''])));
@@ -111,12 +119,12 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
         <div className="aside-card" style={{ borderColor: picked.color + '40', background: picked.color + '08' }}>
           <div className="aside-card-eyebrow" style={{ color: picked.color }}>Совет</div>
           <h3>Без правильных ответов</h3>
-          <p className="body">Пиши коротко, своими словами – даже одно предложение полезнее, чем идеальный абзац.</p>
+          <p className="body">{tr('Пиши коротко, своими словами – даже одно предложение полезнее, чем идеальный абзац.', 'Пишите коротко, своими словами – даже одно предложение полезнее, чем идеальный абзац.')}</p>
         </div>
         <button className="ex-btn ex-btn-ghost" onClick={() => setPicked(null)} style={{ padding: '8px 12px' }}><GlyphArrowLeft /> Сменить схему</button>
       </>}
     >
-      <FlashcardFlow questions={SCHEMA_QUESTIONS} accentColor={picked.color} onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} />
+      <FlashcardFlow questions={SCHEMA_QUESTIONS} accentColor={picked.color} onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} explainer={buildSchemaIntroExplainer(tr)} />
     </ExScreen>
   );
 }
@@ -132,6 +140,8 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
     }
     return null;
   });
+  // Портрет режима — один раз на устройство, дальше сразу вопросы карточки.
+  const [showPortrait, setShowPortrait] = useState(() => !initialModeId || !localStorage.getItem(portraitSeenKey(initialModeId)));
 
   if (!picked) {
     return (
@@ -144,7 +154,7 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
           <div key={g.id}>
             <div className="eyebrow" style={{ color: g.color, marginBottom: 10, marginTop: 24 }}>{g.group}</div>
             {g.items.map(m => (
-              <div key={m.id} {...pressable(() => setPicked({ id: m.id, name: m.name, short: m.short, color: g.color, group: g.group }))}
+              <div key={m.id} {...pressable(() => { setShowPortrait(!localStorage.getItem(portraitSeenKey(m.id))); setPicked({ id: m.id, name: m.name, short: m.short, color: g.color, group: g.group }); })}
                 style={{ display: 'grid', gridTemplateColumns: '8px 1fr auto', gap: 18, alignItems: 'start', padding: '14px 0', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}>
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: g.color, marginTop: 8 }} />
                 <div>
@@ -160,18 +170,18 @@ export function ModeEx({ onBack, initialModeId, onComplete }: { onBack: () => vo
     );
   }
 
+  const card = getModeCard(picked.id);
+  // seen — честная подпись кнопки при ручном возврате («Про режим»).
+  const seen = Boolean(card) && Boolean(localStorage.getItem(portraitSeenKey(picked.id)));
   return (
-    <ExScreen onBack={goBack} eyebrow={picked.group} eyebrowColor={picked.color} title={picked.name} lede={picked.short}
+    <ExScreen onBack={goBack} eyebrow={picked.group} eyebrowColor={picked.color} title={picked.name} lede={showPortrait && card ? card.about : picked.short}
       aside={<>
-        <div className="aside-card" style={{ borderColor: picked.color + '40', background: picked.color + '08' }}>
-          <div className="aside-card-eyebrow" style={{ color: picked.color }}>Подсказка</div>
-          <h3>Говори в настоящем</h3>
-          <p className="body">«Когда я в этом режиме – я чувствую…» работает лучше, чем абстрактные описания.</p>
-        </div>
+        {!showPortrait && card && <button className="ex-btn ex-btn-ghost" onClick={() => setShowPortrait(true)} style={{ padding: '8px 12px' }}>ⓘ Про режим</button>}
+        {!showPortrait && <div className="aside-card" style={{ borderColor: picked.color + '40', background: picked.color + '08' }}><div className="aside-card-eyebrow" style={{ color: picked.color }}>Подсказка</div><h3>{tr('Говори в настоящем', 'Говорите в настоящем')}</h3><p className="body">«Когда я в этом режиме – я чувствую…» работает лучше, чем абстрактные описания.</p></div>}
         <button className="ex-btn ex-btn-ghost" onClick={() => setPicked(null)} style={{ padding: '8px 12px' }}><GlyphArrowLeft /> Сменить режим</button>
       </>}
     >
-      <FlashcardFlow questions={MODE_QUESTIONS} accentColor={picked.color} onSave={async data => { await api.saveModeNote({ modeId: picked.id, ...data }); onComplete?.(); }} explainer={buildModeIntroExplainer(tr)} />
+      {showPortrait && card ? <ModePortrait card={card} accentColor={picked.color} ctaLabel={seen ? 'Назад к вопросам →' : undefined} onStart={() => { localStorage.setItem(portraitSeenKey(picked.id), '1'); setShowPortrait(false); }} /> : <FlashcardFlow questions={buildModeIntroQuestions(card)} accentColor={picked.color} onSave={async data => { await api.saveModeNote({ modeId: picked.id, ...data }); api.trackEvent(MODE_CARD_SAVED_EVENT, { modeId: picked.id, filledFields: Object.values(data).filter(v => v.trim()).length }); onComplete?.(); }} explainer={buildModeIntroExplainer(tr)} />}
     </ExScreen>
   );
 }

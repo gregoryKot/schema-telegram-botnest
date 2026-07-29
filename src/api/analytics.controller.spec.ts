@@ -1,6 +1,7 @@
-// Тест санитизации meta НОВЫХ событий в контроллере /api/event (правило №7: в
-// аналитику не должен утечь произвольный/PII-объект). share_card уже покрыт в
-// dto/analytics.dto.spec.ts — здесь только share_result / crisis / outbox.
+// Плагин-тест контроллера /api/event: реально вызывает sanitizeMeta и
+// прокидывает результат в AnalyticsService.track (правило №7). Ветвление по
+// каждому событию покрыто напрямую в analytics-meta.sanitize.spec.ts —
+// здесь только связка контроллер → sanitizeMeta → track.
 import { AnalyticsController } from './analytics.controller';
 import type { AnalyticsService } from '../analytics/analytics.service';
 import type { TrackEventDto } from './dto/analytics.dto';
@@ -13,91 +14,53 @@ function setup() {
   const req = { webUser: { userId: 7n } } as never;
   const fire = (body: Record<string, unknown>) =>
     controller.track(req, body as unknown as TrackEventDto);
-  return { track, fire };
+  return { controller, req, track, fire };
 }
 
-describe('AnalyticsController — sanitizeMeta (новые события)', () => {
-  it('share_result: kind + boolean ok', async () => {
+describe('AnalyticsController — делегирует sanitizeMeta и track', () => {
+  it('известное meta.kind проходит в track как есть', async () => {
     const { track, fire } = setup();
-    await fire({ name: 'share_result', meta: { kind: 'streak', ok: false } });
-    expect(track).toHaveBeenCalledWith(7n, 'share_result', {
-      kind: 'streak',
-      ok: false,
+    await fire({ name: 'share_card', meta: { kind: 'diary' } });
+    expect(track).toHaveBeenCalledWith(7n, 'share_card', { kind: 'diary' });
+  });
+
+  it('произвольные поля meta не долетают до track (защита от PII)', async () => {
+    const { track, fire } = setup();
+    await fire({
+      name: 'share_card',
+      meta: { kind: 'weekly', secretDiaryText: 'мой личный текст' },
     });
+    expect(track).toHaveBeenCalledWith(7n, 'share_card', { kind: 'weekly' });
   });
 
-  it('share_result: ok не boolean → отброшено', async () => {
-    const { track, fire } = setup();
-    await fire({ name: 'share_result', meta: { kind: 'streak', ok: 'yes' } });
-    expect(track).toHaveBeenCalledWith(7n, 'share_result', undefined);
-  });
-
-  it('crisis_card_shown: surface из allow-list', async () => {
-    const { track, fire } = setup();
-    await fire({ name: 'crisis_card_shown', meta: { surface: 'mode' } });
-    expect(track).toHaveBeenCalledWith(7n, 'crisis_card_shown', {
-      surface: 'mode',
-    });
-  });
-
-  it('crisis_hotline_tapped: неизвестный surface → отброшено', async () => {
-    const { track, fire } = setup();
-    await fire({ name: 'crisis_hotline_tapped', meta: { surface: 'evil' } });
-    expect(track).toHaveBeenCalledWith(7n, 'crisis_hotline_tapped', undefined);
-  });
-
-  it.each(['letter', 'safe_place', 'weekly', 'belief_check', 'flashcard'])(
-    'crisis_card_shown: новый surface %s из allow-list проходит',
-    async (surface) => {
-      const { track, fire } = setup();
-      await fire({ name: 'crisis_card_shown', meta: { surface } });
-      expect(track).toHaveBeenCalledWith(7n, 'crisis_card_shown', { surface });
-    },
-  );
-
-  it('crisis_card_shown: неизвестный surface (junk) → meta отброшена целиком', async () => {
+  it('неизвестное значение → meta в track приходит undefined', async () => {
     const { track, fire } = setup();
     await fire({ name: 'crisis_card_shown', meta: { surface: 'junk' } });
     expect(track).toHaveBeenCalledWith(7n, 'crisis_card_shown', undefined);
   });
 
-  it('outbox_flush: положительный count с потолком 1000', async () => {
+  it('mode_card_saved: modeId + filledFields долетают до track', async () => {
     const { track, fire } = setup();
-    await fire({ name: 'outbox_flush', meta: { count: 5000 } });
-    expect(track).toHaveBeenCalledWith(7n, 'outbox_flush', { count: 1000 });
-  });
-
-  it('outbox_flush: count ≤ 0 или не число → отброшено', async () => {
-    const { track, fire } = setup();
-    await fire({ name: 'outbox_flush', meta: { count: 0 } });
-    expect(track).toHaveBeenCalledWith(7n, 'outbox_flush', undefined);
-  });
-
-  it('today_focus_change: practice из allow-list', async () => {
-    const { track, fire } = setup();
-    await fire({ name: 'today_focus_change', meta: { practice: 'gratitude' } });
-    expect(track).toHaveBeenCalledWith(7n, 'today_focus_change', {
-      practice: 'gratitude',
+    await fire({
+      name: 'mode_card_saved',
+      meta: { modeId: 'vulnerable_child', filledFields: 5 },
+    });
+    expect(track).toHaveBeenCalledWith(7n, 'mode_card_saved', {
+      modeId: 'vulnerable_child',
+      filledFields: 5,
     });
   });
 
-  it('today_focus_change: неизвестная practice → отброшено', async () => {
-    const { track, fire } = setup();
-    await fire({ name: 'today_focus_change', meta: { practice: 'evil' } });
-    expect(track).toHaveBeenCalledWith(7n, 'today_focus_change', undefined);
+  it('возвращает { ok: true }', async () => {
+    const { controller, req } = setup();
+    await expect(
+      controller.track(req, { name: 'share_card', meta: { kind: 'streak' } }),
+    ).resolves.toEqual({ ok: true });
   });
 
-  it('today_streak_toggle: boolean hidden', async () => {
+  it('stop_start: meta игнорируется (событие без meta)', async () => {
     const { track, fire } = setup();
-    await fire({ name: 'today_streak_toggle', meta: { hidden: true } });
-    expect(track).toHaveBeenCalledWith(7n, 'today_streak_toggle', {
-      hidden: true,
-    });
-  });
-
-  it('breath_start: meta игнорируется (событие без meta)', async () => {
-    const { track, fire } = setup();
-    await fire({ name: 'breath_start', meta: { junk: 'x' } });
-    expect(track).toHaveBeenCalledWith(7n, 'breath_start', undefined);
+    await fire({ name: 'stop_start', meta: { junk: 'x' } });
+    expect(track).toHaveBeenCalledWith(7n, 'stop_start', undefined);
   });
 });

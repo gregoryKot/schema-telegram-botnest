@@ -58,6 +58,7 @@ describe('ProductMetricsService.getMetrics', () => {
       .mockResolvedValueOnce(40) // share_card total30
       .mockResolvedValueOnce(15) // today_focus_change
       .mockResolvedValueOnce(33) // breath_start
+      .mockResolvedValueOnce(21) // stop_start
       .mockResolvedValueOnce(18) // journey_open
       .mockResolvedValueOnce(44); // ysq_help_open
 
@@ -126,6 +127,7 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(m.outbox).toEqual({ flushes: 8, recovered: 21 });
     expect(m.today.focusChanged).toBe(15);
     expect(m.breath).toEqual({ started: 33 });
+    expect(m.stop).toEqual({ started: 21 });
     expect(m.journey).toEqual({ opens: 18 });
     // отсутствующие в выборке действия — нули, а не undefined/NaN
     expect(m.homeScreen).toEqual({
@@ -200,6 +202,7 @@ const EMPTY_METRICS = {
     customizeLongpress: 0,
   },
   breath: { started: 0 },
+  stop: { started: 0 },
   journey: { opens: 0 },
   homeScreen: { shown: 0, add: 0, later: 0, never: 0, added: 0 },
 };

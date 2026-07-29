@@ -43,7 +43,8 @@ export function OnboardingDoneCard({ onHide }: { onHide: () => void }) {
           marginBottom: 16,
         }}
       >
-        Все инструменты изучены — теперь начинается настоящая работа.
+        Все инструменты изучены. Дальше — возвращаться к ним каждый день, а не
+        пройти один раз и забыть.
       </div>
       <button
         onClick={onHide}

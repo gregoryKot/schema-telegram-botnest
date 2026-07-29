@@ -37,6 +37,9 @@ import { AppErrorScreen } from './components/AppErrorScreen';
 import { AmbientBackground } from './components/AmbientBackground';
 import { OfflineBanner } from './components/OfflineBanner';
 import { useOnboardingGate } from './hooks/useOnboardingGate';
+import { useSectionSwipe } from './hooks/useSectionSwipe';
+import { useSessionExpired } from './hooks/useSessionExpired';
+import { ensureSession, SESSION_EXPIRED_ERROR } from './session';
 
 type TrackerTab = 'today' | 'history';
 
@@ -57,7 +60,10 @@ const SECTIONS: Section[] = ['today', 'help', 'schemas', 'profile'];
 export default function App() {
   const { flags: serverFlags, loaded: flagsLoaded } = useUserFlags();
   const [section, setSection] = useState<Section>(getInitialSection);
-  const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
+  // Сессия умерла посреди работы (initData протухла, перевыпуск не удался) —
+  // экран обязан сказать об этом, а не молча проглатывать 401 (правило
+  // «никаких молча неработающих экранов», инцидент 2026-07-29).
+  const sessionExpired = useSessionExpired();
   // Первый вход (онбординг + согласие) целиком в хуке — см. useOnboardingGate.
   const onboarding = useOnboardingGate(
     serverFlags.onboardingV2Done,
@@ -221,6 +227,9 @@ export default function App() {
     window.Telegram?.WebApp?.ready();
     window.Telegram?.WebApp?.expand();
     window.Telegram?.WebApp?.disableVerticalSwipes?.();
+    // Меняем свежую initData на сессию — фоном, запросы её не ждут. Через час
+    // Telegram ту же initData не обновит, и без этой куки приложение умирало.
+    void ensureSession();
     if (!sessionStorage.getItem('init_done')) {
       const tzOffset = Math.round(-new Date().getTimezoneOffset() / 60);
       api
@@ -461,31 +470,11 @@ export default function App() {
     sheets.todayNote
   );
 
-  const handleSwipeStart = useCallback((e: React.TouchEvent) => {
-    const t = e.touches[0];
-    swipeTouchRef.current = { x: t.clientX, y: t.clientY };
-  }, []);
-
-  const handleSwipeEnd = useCallback(
-    (e: React.TouchEvent) => {
-      if (!swipeTouchRef.current || anyOverlayOpen) {
-        swipeTouchRef.current = null;
-        return;
-      }
-      const t = e.changedTouches[0];
-      const dx = t.clientX - swipeTouchRef.current.x;
-      const dy = t.clientY - swipeTouchRef.current.y;
-      swipeTouchRef.current = null;
-      if (Math.abs(dx) < 72 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
-      setSection((cur) => {
-        const idx = SECTIONS.indexOf(cur);
-        if (dx < 0 && idx < SECTIONS.length - 1) return SECTIONS[idx + 1];
-        if (dx > 0 && idx > 0) return SECTIONS[idx - 1];
-        return cur;
-      });
-    },
-    [anyOverlayOpen],
-  );
+  const swipe = useSectionSwipe({
+    sections: SECTIONS,
+    setSection,
+    disabled: anyOverlayOpen,
+  });
 
   const handleChange = useCallback((needId: string, value: number) => {
     setRatings((prev) => ({ ...prev, [needId]: value }));
@@ -517,15 +506,17 @@ export default function App() {
     );
   }
 
-  if (error) {
-    return <AppErrorScreen error={error} />;
+  if (error || sessionExpired) {
+    return (
+      <AppErrorScreen error={sessionExpired ? SESSION_EXPIRED_ERROR : error!} />
+    );
   }
 
   return (
     <div
       style={{ minHeight: '100vh', position: 'relative' }}
-      onTouchStart={handleSwipeStart}
-      onTouchEnd={handleSwipeEnd}
+      onTouchStart={swipe.onTouchStart}
+      onTouchEnd={swipe.onTouchEnd}
     >
       {/* Ambient gradient blobs — colors adapt per theme via CSS vars */}
       <AmbientBackground />

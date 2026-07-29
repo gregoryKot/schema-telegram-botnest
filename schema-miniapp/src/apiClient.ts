@@ -1,17 +1,10 @@
-// HTTP-инфраструктура мини-аппа: базовый URL, заголовки initData, обёртки
-// get/post/postJson/del с таймаутом и ретраями. Вынесено из api.ts
-// (правило №10). Чистый транспорт — доменные методы живут в api.ts.
+// HTTP-инфраструктура мини-аппа: базовый URL, заголовки, обёртки
+// get/post/postJson/del с таймаутом, ретраями и перевыпуском сессии. Чистый
+// транспорт — доменные методы живут в api.ts, состояние сессии — в session.ts.
+import { BASE } from './utils/apiBase';
+import { authHeaders, markSessionExpired, renewSession } from './session';
 
-const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
-export const BASE =
-  rawBase && !rawBase.startsWith('http') ? `https://${rawBase}` : rawBase;
-
-export function authHeaders(): Record<string, string> {
-  return {
-    'x-telegram-init-data': window.Telegram?.WebApp?.initData ?? '',
-    'Content-Type': 'application/json',
-  };
-}
+export { BASE, authHeaders };
 
 export async function fetchWithTimeout(
   input: string,
@@ -47,6 +40,27 @@ export class HttpStatusError extends Error {
   }
 }
 
+// Единственная точка отправки. На 401 один раз перевыпускает сессию и повторяет
+// запрос: initData протухает через час после открытия мини-аппа, и без этого
+// свернутое приложение переставало работать целиком (инцидент 2026-07-29).
+// Перевыпустить не вышло — говорим об этом экрану, а не молчим.
+export async function authedFetch(
+  path: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const send = () =>
+    fetchWithTimeout(`${BASE}${path}`, { ...init, headers: authHeaders() });
+  const res = await send();
+  if (res.status !== 401) return res;
+  if (!(await renewSession())) {
+    markSessionExpired();
+    return res;
+  }
+  const retried = await send();
+  if (retried.status === 401) markSessionExpired();
+  return retried;
+}
+
 // GET-ретраи: до 2 повторов с бэкоффом ~800мс/~2.5с ТОЛЬКО на сетевые
 // ошибки и статусы 502/503/504 (временная недоступность инфры). 4xx и
 // прочие 5xx не ретраятся — это осмысленный ответ сервера, повтор его не
@@ -58,9 +72,7 @@ const RETRYABLE_STATUSES = new Set([502, 503, 504]);
 export async function get<T>(path: string): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
-      const res = await fetchWithTimeout(`${BASE}${path}`, {
-        headers: authHeaders(),
-      });
+      const res = await authedFetch(path);
       if (!res.ok) {
         if (
           RETRYABLE_STATUSES.has(res.status) &&
@@ -82,51 +94,39 @@ export async function get<T>(path: string): Promise<T> {
   }
 }
 
-export async function post(path: string, body: unknown): Promise<void> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
+// Тело ошибки сервера (message от ValidationPipe/контроллера) полезнее статуса:
+// его показывают пользователю — вытаскиваем один раз для всех не-GET методов.
+async function sendWithBody(
+  path: string,
+  method: 'POST' | 'DELETE',
+  body?: unknown,
+): Promise<Response> {
+  const res = await authedFetch(path, {
+    method,
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try {
-      const j = (await res.json()) as { message?: unknown };
-      if (j?.message)
-        msg =
-          typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-    } catch {
-      /* тело ответа не распарсилось — оставляем дефолтный msg */
-    }
-    throw new Error(msg);
+  if (res.ok) return res;
+  let msg = `API error: ${res.status}`;
+  try {
+    const j = (await res.json()) as { message?: unknown };
+    if (j?.message)
+      msg =
+        typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
+  } catch {
+    /* тело ответа не распарсилось — оставляем дефолтный msg */
   }
+  throw new Error(msg);
+}
+
+export async function post(path: string, body: unknown): Promise<void> {
+  await sendWithBody(path, 'POST', body);
 }
 
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    let msg = `API error: ${res.status}`;
-    try {
-      const j = (await res.json()) as { message?: unknown };
-      if (j?.message)
-        msg =
-          typeof j.message === 'string' ? j.message : JSON.stringify(j.message);
-    } catch {
-      /* тело ответа не распарсилось — оставляем дефолтный msg */
-    }
-    throw new Error(msg);
-  }
+  const res = await sendWithBody(path, 'POST', body);
   return res.json() as Promise<T>;
 }
 
-export async function del(path: string): Promise<void> {
-  const res = await fetchWithTimeout(`${BASE}${path}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+export async function del(path: string, body?: unknown): Promise<void> {
+  await sendWithBody(path, 'DELETE', body);
 }

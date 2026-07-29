@@ -20,12 +20,12 @@ export class SaveNoteDto {
   tags?: string[];
 }
 
-const NOTE_MAX = 3000;
+export const NOTE_MAX = 3000;
 
-export class SchemaNoteDto {
-  @IsString()
-  schemaId!: string;
-
+// Поля, общие для карточки схемы и карточки режима (правило №11 — одна
+// механика ввода не копипастится). Схема-специфичные (`reality`) и
+// режим-специфичные (`needs`) поля — в дочерних классах.
+export class NoteFieldsDto {
   @IsOptional()
   @IsString()
   @MaxLength(NOTE_MAX)
@@ -49,11 +49,6 @@ export class SchemaNoteDto {
   @IsOptional()
   @IsString()
   @MaxLength(NOTE_MAX)
-  reality?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(NOTE_MAX)
   healthyView?: string;
 
   @IsOptional()
@@ -62,32 +57,22 @@ export class SchemaNoteDto {
   behavior?: string;
 }
 
-export class ModeNoteDto {
+export class SchemaNoteDto extends NoteFieldsDto {
+  @IsString()
+  schemaId!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_MAX)
+  reality?: string;
+}
+
+export class ModeNoteDto extends NoteFieldsDto {
   @IsString()
   modeId!: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(NOTE_MAX)
-  triggers?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(NOTE_MAX)
-  feelings?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(NOTE_MAX)
-  thoughts?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(NOTE_MAX)
   needs?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(NOTE_MAX)
-  behavior?: string;
 }
