@@ -2,6 +2,16 @@ import { todayStr } from './utils/format';
 import { OutboxItem, enqueueRating, flushRatingOutbox } from './utils/outbox';
 import { telemetryUrl } from './utils/telemetryUrl';
 import type { TherapyClientSummary } from '../../shared/src/types';
+import type {
+  UserSchemaNote,
+  UserModeNote,
+  SaveSchemaNoteBody,
+  SaveModeNoteBody,
+} from '../../shared/src/notes/types';
+export type {
+  UserSchemaNote,
+  UserModeNote,
+} from '../../shared/src/notes/types';
 import {
   BASE,
   authedFetch,
@@ -329,48 +339,10 @@ export const api = {
     get<ClientData>(`/api/therapy/client-data/${clientId}`),
 
   // ─── Schema & Mode Notes ─────────────────────────────────────────────────────
-  getSchemaNotes: () =>
-    get<
-      Array<{
-        schemaId: string;
-        triggers: string;
-        feelings: string;
-        thoughts: string;
-        origins: string;
-        reality: string;
-        healthyView: string;
-        behavior: string;
-      }>
-    >('/api/schema-notes'),
-  saveSchemaNote: (body: {
-    schemaId: string;
-    triggers?: string;
-    feelings?: string;
-    thoughts?: string;
-    origins?: string;
-    reality?: string;
-    healthyView?: string;
-    behavior?: string;
-  }) => post('/api/schema-notes', body),
-  getModeNotes: () =>
-    get<
-      Array<{
-        modeId: string;
-        triggers: string;
-        feelings: string;
-        thoughts: string;
-        needs: string;
-        behavior: string;
-      }>
-    >('/api/mode-notes'),
-  saveModeNote: (body: {
-    modeId: string;
-    triggers?: string;
-    feelings?: string;
-    thoughts?: string;
-    needs?: string;
-    behavior?: string;
-  }) => post('/api/mode-notes', body),
+  getSchemaNotes: () => get<UserSchemaNote[]>('/api/schema-notes'),
+  saveSchemaNote: (body: SaveSchemaNoteBody) => post('/api/schema-notes', body),
+  getModeNotes: () => get<UserModeNote[]>('/api/mode-notes'),
+  saveModeNote: (body: SaveModeNoteBody) => post('/api/mode-notes', body),
 
   // ─── Exercises ───────────────────────────────────────────────────────────────
   getBeliefChecks: () =>

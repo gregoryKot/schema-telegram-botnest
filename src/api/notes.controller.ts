@@ -11,10 +11,26 @@ import { Request } from 'express';
 import { uid } from './request-utils';
 import { NotesService } from '../bot/notes.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
-import { SchemaNoteDto, ModeNoteDto } from './dto/notes.dto';
+import { SchemaNoteDto, ModeNoteDto, NoteFieldsDto } from './dto/notes.dto';
 
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
+}
+
+// [a-z_]{1,64} — тот же формат, что и у остальных id-каллбэков (см. CLAUDE.md
+// «Telegram»: `callback_data` формата действие:параметр).
+const ID_RE = /^[a-z_]{1,64}$/;
+
+// Общие поля уже провалидированы DTO (@IsString/@MaxLength) — здесь только trim.
+function trimFields(body: NoteFieldsDto) {
+  return {
+    triggers: body.triggers?.trim(),
+    feelings: body.feelings?.trim(),
+    thoughts: body.thoughts?.trim(),
+    origins: body.origins?.trim(),
+    healthyView: body.healthyView?.trim(),
+    behavior: body.behavior?.trim(),
+  };
 }
 
 // Карточки схем/режимов + доступ терапевта к карточкам клиента.
@@ -30,35 +46,11 @@ export class NotesController {
 
   @Post('schema-notes')
   async upsertSchemaNote(@Req() req: AuthRequest, @Body() body: SchemaNoteDto) {
-    if (!body.schemaId || typeof body.schemaId !== 'string')
-      throw new BadRequestException('schemaId required');
-    if (!/^[a-z_]{1,64}$/.test(body.schemaId))
+    if (!ID_RE.test(body.schemaId))
       throw new BadRequestException('invalid schemaId');
-    const MAX = 3000;
-    const fields = [
-      'triggers',
-      'feelings',
-      'thoughts',
-      'origins',
-      'reality',
-      'healthyView',
-      'behavior',
-    ] as const;
-    for (const f of fields) {
-      if (
-        body[f] !== undefined &&
-        (typeof body[f] !== 'string' || body[f].length > MAX)
-      )
-        throw new BadRequestException(`${f} too long or invalid`);
-    }
     return this.notesService.upsertSchemaNote(uid(req), body.schemaId, {
-      triggers: body.triggers?.trim(),
-      feelings: body.feelings?.trim(),
-      thoughts: body.thoughts?.trim(),
-      origins: body.origins?.trim(),
+      ...trimFields(body),
       reality: body.reality?.trim(),
-      healthyView: body.healthyView?.trim(),
-      behavior: body.behavior?.trim(),
     });
   }
 
@@ -69,31 +61,11 @@ export class NotesController {
 
   @Post('mode-notes')
   async upsertModeNote(@Req() req: AuthRequest, @Body() body: ModeNoteDto) {
-    if (!body.modeId || typeof body.modeId !== 'string')
-      throw new BadRequestException('modeId required');
-    if (!/^[a-z_]{1,64}$/.test(body.modeId))
+    if (!ID_RE.test(body.modeId))
       throw new BadRequestException('invalid modeId');
-    const MAX = 3000;
-    const fields = [
-      'triggers',
-      'feelings',
-      'thoughts',
-      'needs',
-      'behavior',
-    ] as const;
-    for (const f of fields) {
-      if (
-        body[f] !== undefined &&
-        (typeof body[f] !== 'string' || body[f].length > MAX)
-      )
-        throw new BadRequestException(`${f} too long or invalid`);
-    }
     return this.notesService.upsertModeNote(uid(req), body.modeId, {
-      triggers: body.triggers?.trim(),
-      feelings: body.feelings?.trim(),
-      thoughts: body.thoughts?.trim(),
+      ...trimFields(body),
       needs: body.needs?.trim(),
-      behavior: body.behavior?.trim(),
     });
   }
 }

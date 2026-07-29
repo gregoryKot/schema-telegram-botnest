@@ -4,9 +4,26 @@
 // приложение поднялось — front проксирует на него. Гоняем реальным процессом,
 // подсовывая фейковые команды через env (RECOVER_CMD/MIGRATE_CMD/APP_CMD).
 import { spawn, ChildProcess } from 'child_process';
+import { createServer } from 'net';
 import { join } from 'path';
 
 const ENTRY = join(process.cwd(), 'deploy', 'entrypoint.mjs');
+
+// APP_PORT раньше был захардкожен (58124 и соседи). На общем CI-раннере такой
+// порт может быть занят чужой джобой: фейковое «приложение» тогда не слушает,
+// front проксировать некуда, и тест падает по таймауту — при полностью
+// исправном коде. Просим ядро выдать свободный порт и сразу отпускаем его.
+async function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = createServer();
+    srv.on('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const addr = srv.address();
+      const port = typeof addr === 'object' && addr ? addr.port : 0;
+      srv.close(() => (port ? resolve(port) : reject(new Error('нет порта'))));
+    });
+  });
+}
 
 // Запускает entrypoint с фейковыми командами. front всегда поднимается на PORT=0
 // (эфемерный) — возвращаем промис его порта (из лога) и промис exit-кода.
@@ -62,7 +79,7 @@ describe('entrypoint (супервизор старта)', () => {
     const { proc, frontPort } = launch({
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'exit 1',
-      APP_PORT: '59998', // апстрима нет
+      APP_PORT: String(await freePort()), // апстрима нет
     });
     alive.push(proc);
     const port = await frontPort;
@@ -76,7 +93,7 @@ describe('entrypoint (супервизор старта)', () => {
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'exit 1',
-      APP_PORT: '59997', // апстрим так и не поднимется
+      APP_PORT: String(await freePort()), // апстрим так и не поднимется
       STARTUP_MAX_FAILS: '2',
       STARTUP_BACKOFF_MS: '10',
     });
@@ -87,7 +104,7 @@ describe('entrypoint (супервизор старта)', () => {
   }, 10000);
 
   it('приложение подняло APP_PORT → front проксирует на него (не техработы)', async () => {
-    const APP_PORT = '58124';
+    const APP_PORT = String(await freePort());
     const { proc, frontPort } = launch({
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
@@ -107,7 +124,7 @@ describe('entrypoint (супервизор старта)', () => {
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'exit 0',
-      APP_PORT: '59996',
+      APP_PORT: String(await freePort()),
     });
     alive.push(proc);
     expect(await exit).toBe(0);

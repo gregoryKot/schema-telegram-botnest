@@ -65,4 +65,34 @@ describe('ModeNoteDto', () => {
       }),
     ).resolves.toEqual([]);
   });
+
+  // origins/healthyView зеркалят одноимённые поля SchemaNoteDto (карточка
+  // режима донабрала недостающие 2 из 7 полей карточки схемы).
+  it('origins/healthyView — валидное тело проходит', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        origins: 'так реагировали в детстве',
+        healthyView: 'сейчас я в безопасности',
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('origins длиннее 3000 символов — отказ', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        origins: 'x'.repeat(3001),
+      }),
+    ).resolves.toContain('origins');
+  });
+
+  it('healthyView длиннее 3000 символов — отказ', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        healthyView: 'x'.repeat(3001),
+      }),
+    ).resolves.toContain('healthyView');
+  });
 });

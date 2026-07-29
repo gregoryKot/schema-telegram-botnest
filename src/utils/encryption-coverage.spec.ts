@@ -191,6 +191,8 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     feelings: e(`${BOT}/notes.service.ts`),
     thoughts: e(`${BOT}/notes.service.ts`),
     needs: e(`${BOT}/notes.service.ts`),
+    origins: e(`${BOT}/notes.service.ts`),
+    healthyView: e(`${BOT}/notes.service.ts`),
     behavior: e(`${BOT}/notes.service.ts`),
   },
   UserBeliefCheck: {

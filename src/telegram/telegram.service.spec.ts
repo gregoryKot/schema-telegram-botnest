@@ -25,10 +25,13 @@ function makeDeps(overrides: Record<string, any> = {}) {
     cancelAllPreReminders: jest.fn().mockResolvedValue(0),
     ...overrides.botService,
   };
-  const analyticsService = { ...overrides.analyticsService };
-  const productMetricsService = {
+  const analyticsService = {
+    getAdminStats: jest.fn().mockResolvedValue('core stats'),
+    ...overrides.analyticsService,
+  };
+  const statsReport = {
     render: jest.fn().mockResolvedValue(''),
-    ...overrides.productMetricsService,
+    ...overrides.statsReport,
   };
   const accountService = {
     registerUser: jest.fn().mockResolvedValue(undefined),
@@ -65,7 +68,7 @@ function makeDeps(overrides: Record<string, any> = {}) {
     fakeBot.bot,
     botService,
     analyticsService,
-    productMetricsService,
+    statsReport,
     healthyAdultService,
     accountService,
     pairsService,
@@ -83,6 +86,9 @@ function makeDeps(overrides: Record<string, any> = {}) {
     practicesService,
     notificationService,
     therapistRequestService,
+    analyticsService,
+    statsReport,
+    healthyAdultService,
   };
 }
 
@@ -211,6 +217,44 @@ describe('TelegramService — treq:approve|reject (только админ)', ()
     expect(therapistRequestService.approve).not.toHaveBeenCalled();
     expect(ctx.answerCbQuery).toHaveBeenCalledWith(
       expect.stringContaining('админ'),
+    );
+  });
+});
+
+describe('TelegramService — /stats (только админ)', () => {
+  it('не-админ получает отказ, метрики не запрашиваются', async () => {
+    process.env.ADMIN_ID = '999';
+    const { service, fakeBot, statsReport } = makeDeps();
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 1 } });
+    expect(ctx.reply).toHaveBeenCalledWith(expect.stringContaining('доступа'));
+    expect(statsReport.render).not.toHaveBeenCalled();
+  });
+
+  it('админ: второе сообщение содержит склеенный отчёт (StatsReportService)', async () => {
+    process.env.ADMIN_ID = '999';
+    const { service, fakeBot, statsReport } = makeDeps({
+      statsReport: {
+        render: jest
+          .fn()
+          .mockResolvedValue('продуктовые метрики\n\nкарточки режимов: 9'),
+      },
+    });
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    expect(statsReport.render).toHaveBeenCalled();
+    expect(ctx.reply).toHaveBeenNthCalledWith(1, 'core stats', {
+      parse_mode: 'HTML',
+    });
+    expect(ctx.reply).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('продуктовые метрики'),
+      { parse_mode: 'HTML' },
+    );
+    expect(ctx.reply).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('карточки режимов: 9'),
+      { parse_mode: 'HTML' },
     );
   });
 });
