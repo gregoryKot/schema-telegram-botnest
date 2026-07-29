@@ -13,16 +13,11 @@ import {
 } from '@testing-library/react';
 import { BreathingCard } from './BreathingCard';
 import { BREATH_CYCLE_S } from '../utils/breathing';
+import { mockPracticeApi, asMockApi } from '../test-support/mockApi';
 
-vi.mock('../api', () => ({
-  api: {
-    trackEvent: vi.fn(),
-    getPracticeSessions: vi.fn(),
-    recordPracticeSession: vi.fn(),
-  },
-}));
+vi.mock('../api', () => ({ api: mockPracticeApi() }));
 import { api } from '../api';
-const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockApi = asMockApi(api);
 
 beforeEach(() => {
   vi.clearAllMocks();
