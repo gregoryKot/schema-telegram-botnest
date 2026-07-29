@@ -5,8 +5,8 @@
 import { useEffect } from 'react';
 import { plural } from '../sections/today/helpers';
 
-/** Нейтральная подпись для canvas-карточки и текста шаринга — без ты/вы и
- * рода (правило shareTexts.ts: формулировки от 1-го лица или безличные). */
+/** Нейтральная подпись для canvas-карточки и текста шаринга — без формы
+ * обращения и рода (как в shareTexts.ts: 1-е лицо или безличное). */
 export function practiceCountLabel(count: number | null): string | null {
   if (count == null || count <= 0) return null;
   return `прошли ${count} ${plural(count, 'раз', 'раза', 'раз')}`;
@@ -37,8 +37,8 @@ export function PracticeDoneFooter({ count, onShare, onShown }: Props) {
       }}
     >
       {count != null && count > 0 && (
-        // Безличная формулировка (правило CLAUDE.md «ты/вы»): вилки по роду
-        // в проекте нет («проходил»/«проходила» пришлось бы разводить),
+        // Безличная формулировка (правило CLAUDE.md об обращении): вилки по
+        // роду в проекте нет («проходил»/«проходила» пришлось бы разводить),
         // поэтому фраза не зависит ни от формы обращения, ни от рода.
         <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
           Пройдено уже {count} {plural(count, 'раз', 'раза', 'раз')}

@@ -6,28 +6,7 @@
 // правило CLAUDE.md №8: агрегат не должен показывать мусор на чистой БД.
 import { describe, it, expect } from 'vitest';
 import { journeyStatRows, journeyTotal } from './journeyStats';
-import type { JourneyCounts } from './journeyMeta';
-
-const EMPTY: JourneyCounts = {
-  trackerDays: 0,
-  notes: 0,
-  schemaDiary: 0,
-  modeDiary: 0,
-  gratitudeDays: 0,
-  practices: 0,
-  plansDone: 0,
-  ysqTests: 0,
-  childhoodDone: false,
-  beliefChecks: 0,
-  letters: 0,
-  flashcards: 0,
-  safePlace: false,
-  schemaNotes: 0,
-  modeNotes: 0,
-  breathingSessions: 0,
-  groundingSessions: 0,
-  stopSessions: 0,
-};
+import { EMPTY_JOURNEY_COUNTS as EMPTY } from './journeyCounts.fixture';
 
 describe('journeyStatRows — быстрые практики', () => {
   it('пустой аккаунт: без новых счётчиков строк нет (не 0/NaN, а пусто)', () => {

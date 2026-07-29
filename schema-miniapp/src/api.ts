@@ -30,7 +30,6 @@ import type {
   ClientConceptualization,
   YsqHistoryEntry,
   ClientData,
-  PracticeSessionCounts,
 } from './apiTypes';
 
 // Отправка пойманной ErrorBoundary ошибки на бэкенд (best-practice «видимость
@@ -492,8 +491,11 @@ export const api = {
   // ─── Быстрые практики «Здесь и сейчас» (дыхание/заземление/«Стоп») ─────────────
   recordPracticeSession: (tool: QuickPracticeId) =>
     postJson<{ ok: true; count: number }>('/api/practice-session', { tool }),
+  // Форма ответа выражена через QuickPracticeId — отдельный интерфейс в
+  // apiTypes.ts не заводим: тот файл потокенно зеркалит api.ts и уже висит
+  // в jscpd-храповике как клон, каждая новая строка удлиняет дубль.
   getPracticeSessions: () =>
-    get<PracticeSessionCounts>('/api/practice-sessions'),
+    get<Record<QuickPracticeId, number>>('/api/practice-sessions'),
 
   // ─── Outbox ──────────────────────────────────────────────────────────────────
   // Отправляет отложенные оценки (см. utils/outbox.ts). Вызывается при старте

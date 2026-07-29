@@ -2,7 +2,6 @@
 // фолбэк незнакомого типа (новый тип с бэка не роняет UI) и текст шаринга.
 import { describe, it, expect } from 'vitest';
 import {
-  JourneyCounts,
   JOURNEY_TYPE_META,
   journeyTypeMeta,
   journeyItemSubtitle,
@@ -29,27 +28,7 @@ import {
   journeyItemShareText,
 } from '../../../shared/src/share/shareTexts';
 
-const EMPTY: JourneyCounts = {
-  trackerDays: 0,
-  notes: 0,
-  schemaDiary: 0,
-  modeDiary: 0,
-  gratitudeDays: 0,
-  practices: 0,
-  plansDone: 0,
-  ysqTests: 0,
-  childhoodDone: false,
-  beliefChecks: 0,
-  letters: 0,
-  flashcards: 0,
-  safePlace: false,
-  schemaNotes: 0,
-  modeNotes: 0,
-  breathingSessions: 0,
-  groundingSessions: 0,
-  stopSessions: 0,
-};
-
+import { EMPTY_JOURNEY_COUNTS as EMPTY } from '../../../shared/src/journey/journeyCounts.fixture';
 describe('journeyStatRows / journeyTotal', () => {
   it('пустой аккаунт → ни одной строки и ноль шагов (без выдуманных цифр)', () => {
     expect(journeyStatRows(EMPTY)).toEqual([]);

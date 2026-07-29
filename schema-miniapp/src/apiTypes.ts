@@ -1,13 +1,6 @@
 // DTO/типы ответов API мини-аппа. Вынесено из api.ts (правило №10).
 // Ре-экспортируются из api.ts — импорты потребителей не меняются.
 
-// Счётчики прохождений быстрых практик «Здесь и сейчас» (GET /api/practice-sessions).
-export interface PracticeSessionCounts {
-  breathing: number;
-  grounding: number;
-  stop: number;
-}
-
 export interface UserSettings {
   notifyEnabled: boolean;
   notifyLocalHour: number;

@@ -13,9 +13,12 @@ import {
 } from '@testing-library/react';
 import { BreathingCard } from './BreathingCard';
 import { BREATH_CYCLE_S } from '../utils/breathing';
-import { mockPracticeApi, asMockApi } from '../test-support/mockApi';
+import { asMockApi } from '../test-support/mockApi';
 
-vi.mock('../api', () => ({ api: mockPracticeApi() }));
+vi.mock('../api', async () => {
+  const { mockPracticeApi } = await import('../test-support/mockApi');
+  return { api: mockPracticeApi() };
+});
 import { api } from '../api';
 const mockApi = asMockApi(api);
 

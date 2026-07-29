@@ -21,7 +21,7 @@ import { QuickPracticeSheet } from '../components/QuickPracticeSheet';
 import { CrisisCard } from '../components/CrisisCard';
 import { useTr } from '../utils/addressForm';
 import { practiceCountLabel } from '../components/PracticeDoneFooter';
-import type { PracticeSessionCounts } from '../apiTypes';
+import type { QuickPracticeId } from '../../../shared/src/practices/quickPractices';
 import { AllTasksSheet } from './helpSection/AllTasksSheet';
 import { NextSessionBanner } from './helpSection/NextSessionBanner';
 import { ToolsList } from './helpSection/ToolsList';
@@ -75,8 +75,10 @@ export function HelpSection({
   const [relation, setRelation] = useState<
     TherapyRelationInfo | null | undefined
   >(initialTasks !== undefined ? null : undefined);
-  const [practiceCounts, setPracticeCounts] =
-    useState<PracticeSessionCounts | null>(null);
+  const [practiceCounts, setPracticeCounts] = useState<Record<
+    QuickPracticeId,
+    number
+  > | null>(null);
 
   useEffect(() => {
     if (initialTasks !== undefined) setTasks(initialTasks ?? []);
