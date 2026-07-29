@@ -19,6 +19,7 @@ import { journeyStatRows, journeyTotal } from './journeyStats';
 import { JOURNEY_OPEN_EVENT } from '../share/analytics';
 import {
   type JourneyContentApi,
+  type JourneyResult,
   type JourneyResultPart,
   fetchJourneyResult,
   fetchJourneyDetail,
@@ -45,7 +46,7 @@ export function makeJourneyProps(
 ): {
   deps: JourneyDeps;
   subtitle: (item: JourneyItem) => string | null;
-  fetchResult: (item: JourneyItem) => Promise<JourneyResultPart[] | null>;
+  fetchResult: (item: JourneyItem) => Promise<JourneyResult | null>;
   fetchDetail: (item: JourneyItem) => Promise<JourneyResultPart[]>;
 } {
   return {

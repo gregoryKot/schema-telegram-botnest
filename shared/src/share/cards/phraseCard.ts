@@ -1,39 +1,60 @@
-// Карточка фразы Здорового взрослого: крупная цитата, минимум остального.
+// Карточка фразы Здорового Взрослого: крупная цитата — герой карточки,
+// декоративная кавычка сверху задаёт настроение, минимум остального.
 import {
   CARD_W,
   CARD_PAD,
   FOOTER_H,
   beginCard,
-  accentBar,
   footer,
+  sectionLabel,
   measureWrap,
+  drawWrapped,
   clampLines,
-  cardFont,
+  withAlpha,
 } from '../cardKit';
+
+const QUOTE_SIZE = 20;
+const QUOTE_LINE_H = 30;
+const QUOTE_MAX_LINES = 7;
+const EYEBROW_Y = 44;
+const GLYPH_SIZE = 76;
+const GLYPH_GAP = 76; // место под декоративную кавычку до первой строки цитаты
+// Воздух под последней строкой цитаты. Считается от базовой линии последней
+// строки (а не от «следующей»), иначе внизу карточки повисает пустая строка.
+const BOTTOM_GAP = 36;
 
 export function drawPhraseCard(canvas: HTMLCanvasElement, phrase: string) {
   const maxW = CARD_W - CARD_PAD * 2;
   const text = `«${phrase}»`;
-  const lines = clampLines(measureWrap(canvas, text, maxW, 19, 'bold'), 7);
-  const LINE_H = 30;
-  const H = 92 + lines.length * LINE_H + 34 + FOOTER_H;
-  const c = beginCard(canvas, H);
+  const lines = clampLines(
+    measureWrap(canvas, text, maxW, QUOTE_SIZE, 'bold'),
+    QUOTE_MAX_LINES,
+  );
+  const quoteStartY = EYEBROW_Y + GLYPH_GAP;
+  const H =
+    quoteStartY + (lines.length - 1) * QUOTE_LINE_H + BOTTOM_GAP + FOOTER_H;
+
+  const c = beginCard(canvas, H, {
+    accent: 'var(--accent-green)',
+    accent2: 'var(--accent-blue)',
+  });
   const { ctx, th } = c;
 
-  accentBar(c, '#06d6a0', '#4fa3f7');
+  sectionLabel(c, 'Фраза Здорового Взрослого', EYEBROW_Y, c.accent);
 
-  ctx.font = cardFont(11, 'bold');
-  ctx.fillStyle = th.fg(0.4);
+  // Декоративная кавычка над цитатой — задаёт тон, не мешает чтению.
+  ctx.font = `italic bold ${GLYPH_SIZE}px Georgia, serif`;
+  ctx.fillStyle = withAlpha(c.accent, 0.22);
   ctx.textAlign = 'left';
-  ctx.fillText('ФРАЗА ЗДОРОВОГО ВЗРОСЛОГО', CARD_PAD, 58);
+  ctx.fillText('“', CARD_PAD - 6, EYEBROW_Y + 66);
 
-  let y = 96;
-  for (const line of lines) {
-    ctx.font = cardFont(19, 'bold');
-    ctx.fillStyle = th.fg(0.95);
-    ctx.fillText(line, CARD_PAD, y);
-    y += LINE_H;
-  }
+  drawWrapped(c, text, CARD_PAD, quoteStartY, maxW, {
+    size: QUOTE_SIZE,
+    weight: 'bold',
+    color: th.fg(0.95),
+    lineH: QUOTE_LINE_H,
+    maxLines: QUOTE_MAX_LINES,
+  });
 
   footer(c, 'Поддержка себе');
 }

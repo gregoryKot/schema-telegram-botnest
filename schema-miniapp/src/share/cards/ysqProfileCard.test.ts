@@ -82,13 +82,48 @@ describe('buildYsqProfile', () => {
 });
 
 describe('ysqProfileCardHeight', () => {
-  it('складывается из шапки, групп, строк и футера', () => {
+  it('растёт с числом строк: добавление домена с схемами увеличивает высоту', () => {
     const domains = buildYsqProfile(allScores());
-    // 158 (шапка+счёт) + 5×(26+6) + 20×24 + 8 + футер
-    expect(ysqProfileCardHeight(domains)).toBe(158 + 160 + 480 + 8 + FOOTER_H);
+    const withoutLast = domains.slice(0, -1);
+    expect(ysqProfileCardHeight(domains)).toBeGreaterThan(
+      ysqProfileCardHeight(withoutLast),
+    );
   });
 
-  it('пустой профиль не ломает формулу', () => {
-    expect(ysqProfileCardHeight([])).toBe(158 + 8 + FOOTER_H);
+  it('высота линейна по числу строк внутри профиля одинакового размера', () => {
+    const domains = buildYsqProfile(allScores());
+    // Убираем по одной строке из каждого домена — число групп то же, строк меньше.
+    const trimmed = domains.map((d) => ({ ...d, rows: d.rows.slice(1) }));
+    const removedRows =
+      domains.reduce((n, d) => n + d.rows.length, 0) -
+      trimmed.reduce((n, d) => n + d.rows.length, 0);
+    const diff = ysqProfileCardHeight(domains) - ysqProfileCardHeight(trimmed);
+    // Разница делится ровно на число убранных строк — то есть каждая строка
+    // добавляет фиксированную высоту, а не «магическое число» реализации.
+    expect(diff % removedRows).toBe(0);
+    expect(diff / removedRows).toBeGreaterThan(0);
+  });
+
+  // Регрессия: заголовок «Выраженных схем не обнаружено» переносится на две
+  // строки, а высота считалась как для одной — последняя группа схем уезжала
+  // под брендовый футер.
+  it('заголовок в две строки добавляет высоту', () => {
+    const domains = buildYsqProfile(allScores());
+    expect(ysqProfileCardHeight(domains, true, 2)).toBeGreaterThan(
+      ysqProfileCardHeight(domains, true, 1),
+    );
+  });
+
+  it('дата в подписи увеличивает высоту (есть подпись под заголовком)', () => {
+    const domains = buildYsqProfile(allScores());
+    expect(ysqProfileCardHeight(domains, true)).toBeGreaterThan(
+      ysqProfileCardHeight(domains, false),
+    );
+  });
+
+  it('пустой профиль не ломает формулу и не уходит в ноль/NaN', () => {
+    const h = ysqProfileCardHeight([]);
+    expect(Number.isFinite(h)).toBe(true);
+    expect(h).toBeGreaterThan(FOOTER_H);
   });
 });

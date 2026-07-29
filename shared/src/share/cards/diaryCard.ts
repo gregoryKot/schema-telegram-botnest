@@ -1,14 +1,13 @@
 // Сводная карточка дневника: тип, число записей, дата первой записи.
 // Приватный текст записей в картинку НЕ попадает — только счётчики.
 import {
-  CARD_PAD,
   FOOTER_H,
   beginCard,
-  accentBar,
   header,
+  headerHeight,
   footer,
-  cardFont,
-  resolveCardTheme,
+  drawStatTiles,
+  type StatTile,
 } from '../cardKit';
 import { pluralEntries } from '../shareTexts';
 
@@ -37,39 +36,21 @@ export function earliestDateLabel(
 }
 
 export function drawDiaryCard(canvas: HTMLCanvasElement, d: DiaryCardData) {
-  const H = 120 + 96 + FOOTER_H;
-  const c = beginCard(canvas, H);
-  const { ctx, th } = c;
-  const color = resolveCardTheme().color(d.color);
+  const subtitle = d.since ? `веду с ${d.since}` : undefined;
+  const H = headerHeight(1, Boolean(subtitle)) + 12 + 66 + 16 + FOOTER_H;
+  const c = beginCard(canvas, H, { accent: d.color, accent2: 'var(--accent)' });
 
-  accentBar(c, color, color);
-  header(c, `${d.emoji} ${d.title}`);
+  const contentY = header(c, {
+    eyebrow: 'Дневник',
+    title: `${d.emoji} ${d.title}`,
+    subtitle,
+  });
 
-  const y = 148;
-  ctx.font = cardFont(11);
-  ctx.fillStyle = th.fg(0.35);
-  ctx.textAlign = 'left';
-  ctx.fillText('Записей', CARD_PAD, y);
-
-  ctx.font = cardFont(30, 'bold');
-  ctx.fillStyle = th.fg(0.95);
-  ctx.fillText(String(d.count), CARD_PAD, y + 36);
-  const countW = ctx.measureText(String(d.count)).width;
-
-  ctx.font = cardFont(13);
-  ctx.fillStyle = color;
-  ctx.fillText(pluralEntries(d.count), CARD_PAD + countW + 8, y + 36);
-
-  if (d.since) {
-    ctx.textAlign = 'right';
-    ctx.font = cardFont(11);
-    ctx.fillStyle = th.fg(0.35);
-    ctx.fillText('Веду с', c.W - CARD_PAD, y);
-    ctx.font = cardFont(17, 'bold');
-    ctx.fillStyle = th.fg(0.85);
-    ctx.fillText(d.since, c.W - CARD_PAD, y + 33);
-    ctx.textAlign = 'left';
-  }
+  const tiles: StatTile[] = [
+    { label: 'Записей', value: String(d.count), hint: pluralEntries(d.count) },
+  ];
+  if (d.since) tiles.push({ label: 'Первая запись', value: d.since });
+  drawStatTiles(c, tiles, contentY + 12);
 
   footer(c, d.title);
 }

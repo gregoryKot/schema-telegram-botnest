@@ -1,14 +1,11 @@
 // Generic-шит шаринга карточки (webapp): превью канваса + «Поделиться» +
-// текстовый фолбэк. Парный по смыслу с schema-miniapp/src/share/ShareCardSheet
-// (вёрстка своя — правило №3: логика в shared, вёрстка per-frontend).
-import { useEffect, useRef, useState } from 'react';
+// «Скопировать текст». Парный по смыслу с schema-miniapp/src/share/ShareCardSheet
+// (вёрстка своя — правило №3: логика в shared/useShareCard, вёрстка per-frontend).
+import { useRef } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { shareCanvasImage } from '../../../shared/src/share/shareImage';
-import {
-  SHARE_CARD_EVENT,
-  SHARE_RESULT_EVENT,
-  type ShareCardKind,
-} from '../../../shared/src/share/analytics';
+import { ShareIcon } from '../../../shared/src/share/ShareIcon';
+import { useShareCard } from '../../../shared/src/share/useShareCard';
+import type { ShareCardKind } from '../../../shared/src/share/analytics';
 import { api } from '../api';
 
 interface Props {
@@ -35,45 +32,14 @@ export function ShareCardSheet({
 }: Props) {
   const goBack = useHistorySheet(onClose);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [sharing, setSharing] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [showText, setShowText] = useState(false);
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    try {
-      draw(canvasRef.current);
-    } catch {
-      // Отрисовка карточки не должна ронять весь экран
-    }
-  }, [draw]);
-
-  const textForFallback = fallbackText ?? shareText;
-
-  async function handleShare() {
-    if (!canvasRef.current) return;
-    setSharing(true);
-    try {
-      await shareCanvasImage(canvasRef.current, shareText, filename, {
-        downloadFallback: true,
-      });
-      api.trackEvent(SHARE_CARD_EVENT, { kind: eventKind });
-      api.trackEvent(SHARE_RESULT_EVENT, { kind: eventKind, ok: true });
-    } catch {
-      // Шэр не удался — текстовый фолбэк + клипборд
-      api.trackEvent(SHARE_RESULT_EVENT, { kind: eventKind, ok: false });
-      try {
-        await navigator.clipboard.writeText(textForFallback);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-      } catch {
-        /* best-effort: ошибку намеренно игнорируем */
-      }
-      setShowText(true);
-    } finally {
-      setSharing(false);
-    }
-  }
+  const s = useShareCard(canvasRef, {
+    draw,
+    shareText,
+    fallbackText,
+    filename,
+    eventKind,
+    track: api.trackEvent,
+  });
 
   return (
     <div
@@ -113,21 +79,27 @@ export function ShareCardSheet({
         />
         <div
           style={{
-            fontSize: 16,
+            fontSize: 17,
             fontWeight: 600,
             color: 'var(--text)',
-            marginBottom: 16,
+            marginBottom: 4,
           }}
         >
           {title}
         </div>
+        <div
+          style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 18 }}
+        >
+          Картинка уйдёт вместе со ссылкой
+        </div>
 
         <div
           style={{
-            borderRadius: 16,
+            borderRadius: 20,
             overflow: 'hidden',
             border: '1px solid var(--line)',
-            marginBottom: 20,
+            boxShadow: '0 14px 34px rgba(0,0,0,0.22)',
+            marginBottom: 18,
           }}
         >
           <canvas
@@ -136,7 +108,7 @@ export function ShareCardSheet({
           />
         </div>
 
-        {showText && (
+        {s.showText && (
           <pre
             style={{
               fontSize: 12,
@@ -153,23 +125,44 @@ export function ShareCardSheet({
               fontFamily: 'inherit',
             }}
           >
-            {textForFallback}
+            {s.text}
           </pre>
         )}
 
         <button
-          onClick={handleShare}
-          disabled={sharing}
+          onClick={() => void s.share()}
+          disabled={s.sharing}
           className="ex-btn ex-btn-primary"
           style={{
             width: '100%',
-            background: copied
-              ? 'color-mix(in srgb, var(--c-moss) 20%, transparent)'
-              : 'var(--accent)',
-            color: copied ? 'var(--c-moss)' : 'var(--on-accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            background: 'var(--accent)',
+            color: 'var(--on-accent)',
+            opacity: s.sharing ? 0.6 : 1,
           }}
         >
-          {copied ? '✓ Скопировано' : sharing ? 'Подготовка...' : 'Поделиться'}
+          <ShareIcon size={17} />
+          {s.sharing ? 'Готовлю картинку…' : 'Поделиться'}
+        </button>
+        <button
+          onClick={() => void s.copy()}
+          style={{
+            width: '100%',
+            marginTop: 10,
+            padding: '12px 0',
+            border: 'none',
+            borderRadius: 12,
+            background: 'var(--surface-2)',
+            color: s.copied ? 'var(--c-moss)' : 'var(--text-sub)',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          {s.copied ? '✓ Текст скопирован' : 'Скопировать текст'}
         </button>
       </div>
     </div>
