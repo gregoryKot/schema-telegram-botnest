@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
 import { useIntroSheetData } from '../hooks/useIntroSheetData';
 import { IntroSheetFlashcard, IntroSheetQuestion } from './IntroSheetFlashcard';
+import { IntroSheetHeader } from './IntroSheetHeader';
 import { WizardProgress } from './WizardProgress';
 import { WizardNav } from './WizardNav';
 
@@ -26,6 +28,8 @@ export interface IntroSheetShellProps<T extends Record<string, string>> {
   /** Пояснение «откуда это и зачем» (правило онбординга) — мелким кеглем под
    *  шапкой/описанием, до первого действия пользователя. */
   explainer?: string;
+  /** Доп. действие в шапке справа от названия (например «Про режим»). */
+  headerAction?: ReactNode;
   answerPromptText: string;
   nextButtonLabel: string;
   gradientSaveButton?: boolean;
@@ -46,6 +50,7 @@ export function IntroSheetShell<T extends Record<string, string>>({
   description,
   showDescription,
   explainer,
+  headerAction,
   answerPromptText,
   nextButtonLabel,
   gradientSaveButton,
@@ -66,88 +71,16 @@ export function IntroSheetShell<T extends Record<string, string>>({
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            marginBottom: 16,
-          }}
-        >
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              flexShrink: 0,
-              background: `${accentColor}18`,
-              border: `1px solid ${accentColor}28`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 24,
-            }}
-          >
-            {emoji}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: 'var(--text)',
-                letterSpacing: '-0.3px',
-              }}
-            >
-              {title}
-            </div>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 500,
-                color: accentColor,
-                marginTop: 2,
-              }}
-            >
-              {subtitle}
-            </div>
-          </div>
-        </div>
-
-        {showDescription && (
-          <div
-            style={{
-              background: `${accentColor}0e`,
-              border: `1px solid ${accentColor}22`,
-              borderRadius: 16,
-              padding: '12px 14px',
-              marginBottom: 16,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 13,
-                color: 'var(--text-sub)',
-                lineHeight: 1.6,
-              }}
-            >
-              {description}
-            </div>
-          </div>
-        )}
-
-        {explainer && (
-          <div
-            style={{
-              fontSize: 13,
-              color: 'var(--text-faint)',
-              lineHeight: 1.5,
-              marginBottom: 16,
-            }}
-          >
-            {explainer}
-          </div>
-        )}
+        <IntroSheetHeader
+          emoji={emoji}
+          title={title}
+          subtitle={subtitle}
+          accentColor={accentColor}
+          description={description}
+          showDescription={showDescription}
+          explainer={explainer}
+          headerAction={headerAction}
+        />
 
         <div style={{ marginBottom: 20 }}>
           <WizardProgress
