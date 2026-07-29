@@ -69,8 +69,8 @@ export function buildModeIntroQuestions(card?: ModeCard): ModeIntroQuestion[] {
     },
     {
       key: 'behavior',
-      label: 'Что происходит в поведении?',
-      hint: 'Действия и реакции, когда режим включён',
+      label: 'Как это проявляется в поведении?',
+      hint: 'Действия, слова, привычные реакции — что происходит в этот момент',
       placeholder: card?.behavior ?? FALLBACK_PLACEHOLDER.behavior,
     },
     {

@@ -40,7 +40,7 @@ const STEPS: StepDef[] = [
     isDone: p => !!(p?.lastActivity.schemaDiary || p?.lastActivity.modeDiary || p?.lastActivity.gratitudeDiary) },
   { id: 'notify', emoji: '🔔', color: 'var(--c-clay)',
     title: 'Ежедневное напоминание',
-    description: 'Без регулярности ничего не выйдет. Одно уведомление в нужное время – всё что нужно.',
+    description: 'Одно уведомление в выбранное время – чтобы практика не держалась на памяти.',
     detail: 'Время · часовой пояс · серии дней',
     actionLabel: 'Настроить',
     isDone: p => !!(p?.notifications.enabled) },

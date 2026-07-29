@@ -216,7 +216,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
 
             {activeCount === 0 && (
               <div style={{ textAlign: 'center', padding: '28px 0', fontSize: 14, color: 'var(--text-sub)' }}>
-                Выраженных схем не обнаружено – отличный результат.
+                Выраженных схем нет – отличный результат.
               </div>
             )}
 
