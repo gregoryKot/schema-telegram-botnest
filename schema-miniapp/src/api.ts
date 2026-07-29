@@ -14,8 +14,7 @@ export type {
 } from '../../shared/src/notes/types';
 import {
   BASE,
-  authHeaders,
-  fetchWithTimeout,
+  authedFetch,
   HttpStatusError,
   get,
   post,
@@ -79,9 +78,8 @@ export function reportClientError(payload: {
 type SaveRatingResult = { ok: boolean; allDone: boolean; streak?: StreakData };
 
 async function rawSaveRating(item: OutboxItem): Promise<SaveRatingResult> {
-  const res = await fetchWithTimeout(`${BASE}/api/rating`, {
+  const res = await authedFetch('/api/rating', {
     method: 'POST',
-    headers: authHeaders(),
     body: JSON.stringify(item),
   });
   if (!res.ok) throw new HttpStatusError(res.status);
@@ -110,13 +108,7 @@ export const api = {
     get<{ answers: number[]; page: number } | null>('/api/ysq-progress'),
   saveYsqProgress: (answers: number[], page: number) =>
     post('/api/ysq-progress', { answers, page }),
-  deleteYsqProgress: async () => {
-    const res = await fetch(`${BASE}/api/ysq-progress`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-  },
+  deleteYsqProgress: () => del('/api/ysq-progress'),
   needs: () => get<import('./types').Need[]>('/api/needs'),
   ratings: (date?: string) =>
     get<Record<string, number>>(
@@ -178,20 +170,8 @@ export const api = {
     get<UserPractice[]>(`/api/practices?needId=${needId}`),
   addPractice: (needId: string, text: string) =>
     post('/api/practices', { needId, text }),
-  deletePractice: (id: number) =>
-    fetch(`${BASE}/api/practices/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    }).then((r) => {
-      if (!r.ok) throw new Error(`API error: ${r.status}`);
-    }),
-  deleteAllUserData: () =>
-    fetch(`${BASE}/api/user`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    }).then((r) => {
-      if (!r.ok) throw new Error('Failed');
-    }),
+  deletePractice: (id: number) => del(`/api/practices/${id}`),
+  deleteAllUserData: () => del('/api/user'),
   getPendingPlans: () => get<PracticePlan[]>('/api/plan/pending'),
   getPlanHistory: (days = 30) =>
     get<PracticePlan[]>(`/api/plans/history?days=${days}`),
@@ -203,24 +183,10 @@ export const api = {
   checkinPlan: (id: number, done: boolean) =>
     post(`/api/plan/${id}/checkin`, { done }),
   getPair: () => get<PairsData>('/api/pair'),
-  createPairInvite: async () => {
-    const res = await fetch(`${BASE}/api/pair/invite`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: '{}',
-    });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return res.json() as Promise<{ code: string; url: string }>;
-  },
+  createPairInvite: () =>
+    postJson<{ code: string; url: string }>('/api/pair/invite', {}),
   joinPair: (code: string) => post('/api/pair/join', { code }),
-  leavePair: async (code: string) => {
-    const res = await fetch(`${BASE}/api/pair`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-      body: JSON.stringify({ code }),
-    });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-  },
+  leavePair: (code: string) => del('/api/pair', { code }),
   getChildhoodRatings: () =>
     get<Record<string, number>>('/api/childhood-ratings'),
   saveChildhoodRatings: (ratings: Record<string, number>) =>
@@ -228,13 +194,7 @@ export const api = {
   getYsqResult: () =>
     get<{ answers: number[]; completedAt: string } | null>('/api/ysq-result'),
   saveYsqResult: (answers: number[]) => post('/api/ysq-result', { answers }),
-  deleteYsqResult: async () => {
-    const res = await fetch(`${BASE}/api/ysq-result`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-  },
+  deleteYsqResult: () => del('/api/ysq-result'),
   getYsqHistory: () => get<YsqHistoryEntry[]>('/api/ysq-history'),
 
   // ─── Profile ────────────────────────────────────────────────────────────────

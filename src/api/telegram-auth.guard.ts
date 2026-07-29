@@ -9,6 +9,8 @@ import { ConfigService } from '@nestjs/config';
 import { validate } from '@tma.js/init-data-node';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
+import { SecurityLogService } from '../auth/security-log.service';
+import { rejectInitData } from './initdata-alert';
 import type { Request } from 'express';
 
 // Unified guard: accepts Telegram initData (mini-app / bot) OR JWT Bearer (web app).
@@ -21,6 +23,7 @@ export class TelegramAuthGuard implements CanActivate {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
+    private readonly securityLog: SecurityLogService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -62,24 +65,7 @@ export class TelegramAuthGuard implements CanActivate {
       try {
         validate(initData, botToken, { expiresIn: 3600 });
       } catch (err) {
-        const reason = (err as Error).message;
-        this.logger.warn(`initData invalid: ${reason}`);
-        // Loud alert: signature failure on initData is either a real attack
-        // (someone trying to forge a Telegram identity) or a bot-token rotation
-        // we forgot to roll out. Either way, admin should see it.
-        fetch(
-          `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: process.env.ADMIN_ID,
-              text: `🚨 suspicious_initdata: ${reason} (ip: ${req.ip ?? '?'})`,
-            }),
-            signal: AbortSignal.timeout(5_000),
-          },
-        ).catch(() => null);
-        throw new UnauthorizedException('Invalid initData');
+        rejectInitData(err, req.ip, this.logger, this.securityLog);
       }
     }
 

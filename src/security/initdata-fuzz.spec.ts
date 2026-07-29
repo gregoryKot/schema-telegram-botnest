@@ -32,7 +32,13 @@ function makeGuard() {
     verifyAccessToken: jest.fn(),
     findOrCreateUserByProvider: jest.fn().mockResolvedValue(999n),
   };
-  return new TelegramAuthGuard(config, prisma, authService as any);
+  const securityLog = { log: jest.fn() };
+  return new TelegramAuthGuard(
+    config,
+    prisma,
+    authService as any,
+    securityLog as any,
+  );
 }
 
 function ctx(initData: string): ExecutionContext {
