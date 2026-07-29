@@ -61,8 +61,14 @@ function makeGuard(env: Record<string, string | undefined> = {}) {
     verifyAccessToken: jest.fn(),
     findOrCreateUserByProvider: jest.fn().mockResolvedValue(999n),
   };
-  const guard = new TelegramAuthGuard(config, prisma, authService as any);
-  return { guard, prisma, authService };
+  const securityLog = { log: jest.fn() };
+  const guard = new TelegramAuthGuard(
+    config,
+    prisma,
+    authService as any,
+    securityLog as any,
+  );
+  return { guard, prisma, authService, securityLog };
 }
 
 const ORIGINAL_ENV = { ...process.env };
@@ -138,7 +144,7 @@ describe('путь 2: Telegram initData (мини-апп)', () => {
   });
 
   it('подделанный hash → Unauthorized + громкий алерт админу (suspicious_initdata)', async () => {
-    const { guard, authService } = makeGuard();
+    const { guard, authService, securityLog } = makeGuard();
     const req: FakeRequest = {
       headers: {
         'x-telegram-init-data': signInitData({ user: USER, forgeHash: true }),
@@ -150,13 +156,10 @@ describe('путь 2: Telegram initData (мини-апп)', () => {
       'Invalid initData',
     );
     expect(authService.findOrCreateUserByProvider).not.toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenCalledWith(
-      `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
-      expect.objectContaining({ method: 'POST' }),
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'suspicious_initdata',
+      expect.objectContaining({ ip: '9.9.9.9' }),
     );
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body.text).toContain('suspicious_initdata');
-    expect(body.text).toContain('9.9.9.9');
   });
 
   it('подпись чужим bot-токеном → Unauthorized', async () => {
@@ -169,8 +172,12 @@ describe('путь 2: Telegram initData (мини-апп)', () => {
     ).rejects.toThrow('Invalid initData');
   });
 
-  it('просроченный auth_date (старше часа) → Unauthorized', async () => {
-    const { guard } = makeGuard();
+  // Инцидент 2026-07-29: истёкшая initData — жизненный цикл мини-аппа (Telegram
+  // не обновляет её у свернутого приложения), а не атака. Она обязана давать
+  // машиночитаемый код (мини-апп по нему перевыпускает сессию) и НЕ будить
+  // админа: один вход через час = десяток запросов = десяток DM.
+  it('просроченный auth_date (старше часа) → 401 initdata_expired, без алерта', async () => {
+    const { guard, securityLog } = makeGuard();
     const initData = signInitData({
       user: USER,
       authDate: Math.floor(Date.now() / 1000) - 7200,
@@ -179,7 +186,11 @@ describe('путь 2: Telegram initData (мини-апп)', () => {
       guard.canActivate(
         makeCtx({ headers: { 'x-telegram-init-data': initData } }),
       ),
-    ).rejects.toThrow('Invalid initData');
+    ).rejects.toMatchObject({
+      response: { code: 'initdata_expired' },
+      status: 401,
+    });
+    expect(securityLog.log).not.toHaveBeenCalled();
   });
 
   it('валидная подпись, но нет user → Missing user', async () => {

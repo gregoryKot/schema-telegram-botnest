@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 // Тесты api.ts (TEST_COVERAGE_PLAN.md, этап 2 п.9, остаток): API-клиент
-// мини-аппа разошёлся с webapp/src/api.ts на ~113 строк (window.Telegram
-// initData вместо Authorization: Bearer, нет credentials: 'include', и
-// несколько ручек — deleteYsqProgress/deletePractice/deleteAllUserData/
-// deleteYsqResult — переписаны через сырой fetch() вместо общих
-// get/post/del хелперов, из-за чего у них нет fetchWithTimeout/AbortController
-// и (у deleteAllUserData) захардкожен текст ошибки 'Failed' вместо статуса).
-// Эта развилка нигде не тестировалась — фиксируем реальное поведение.
+// мини-аппа расходился с webapp/src/api.ts — часть ручек (deleteYsqProgress/
+// deletePractice/deleteAllUserData/deleteYsqResult/createPairInvite/leavePair)
+// была переписана сырым fetch() в обход общих get/post/del, из-за чего у них
+// не было ни таймаута, ни повтора на истёкшей сессии. Развилка убрана
+// 2026-07-29 (все ручки идут через apiClient) — тесты фиксируют это.
+// Заголовки у мини-аппа свои: initData, пока сессия не выпущена (см.
+// session.test.ts), Bearer — после.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { api } from './api';
 
@@ -156,11 +156,11 @@ describe('api — таймаут: fetchWithTimeout передаёт AbortSignal'
 
 // ─── (d) миниапп-специфичная развилка: ручки на сыром fetch без таймаута ────
 describe('api — ручки на сыром fetch (deleteYsqProgress/deletePractice/deleteAllUserData/deleteYsqResult)', () => {
-  it('deleteYsqProgress НЕ передаёт signal (в обход fetchWithTimeout, в отличие от webapp del())', async () => {
+  it('deleteYsqProgress идёт через общий del() — с таймаутом, как в webapp', async () => {
     mockFetchOnce(200, {});
     await api.deleteYsqProgress();
     const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(init.signal).toBeUndefined();
+    expect(init.signal).toBeInstanceOf(AbortSignal);
   });
 
   it('deleteYsqProgress на не-ok бросает "API error: <status>"', async () => {
@@ -168,14 +168,16 @@ describe('api — ручки на сыром fetch (deleteYsqProgress/deletePrac
     await expect(api.deleteYsqProgress()).rejects.toThrow('API error: 404');
   });
 
-  it('deletePractice на не-ok бросает "API error: <status>", тело ответа не читается', async () => {
-    mockFetchOnce(403, { message: 'игнорируется' });
-    await expect(api.deletePractice(5)).rejects.toThrow('API error: 403');
+  it('deletePractice показывает message сервера, а не голый статус', async () => {
+    mockFetchOnce(403, { message: 'нельзя удалить чужую практику' });
+    await expect(api.deletePractice(5)).rejects.toThrow(
+      'нельзя удалить чужую практику',
+    );
   });
 
-  it('deleteAllUserData на не-ok бросает захардкоженный "Failed" (НЕ статус-специфичный текст)', async () => {
+  it('deleteAllUserData тоже отдаёт message сервера (раньше — захардкоженное «Failed»)', async () => {
     mockFetchOnce(500, { message: 'что угодно' });
-    await expect(api.deleteAllUserData()).rejects.toThrow('Failed');
+    await expect(api.deleteAllUserData()).rejects.toThrow('что угодно');
   });
 
   it('deleteYsqResult на не-ok бросает "API error: <status>"', async () => {
