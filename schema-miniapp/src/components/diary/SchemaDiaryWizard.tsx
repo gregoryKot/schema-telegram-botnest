@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 import { DiaryTextArea } from './DiaryTextArea';
-import { EmotionsStep } from './EmotionsStep';
-import { SchemaChipsStep } from './SchemaChipsStep';
+import { EmotionPicker } from './EmotionPicker';
+import { SchemaPicker } from './SchemaPicker';
 import { WizardProgress } from '../WizardProgress';
 import { WizardNav } from '../WizardNav';
 import type { EmotionEntry } from '../../types';
@@ -71,6 +71,7 @@ export function SchemaDiaryWizard({
     return values[k].trim().length > 0;
   };
 
+  const hasPersonalSchemas = Boolean(activeSchemaIds && activeSchemaIds.length);
   const kind = SCHEMA_DIARY_STEP_ORDER[step];
   const isLast = step === TOTAL - 1;
   const textStep =
@@ -129,19 +130,21 @@ export function SchemaDiaryWizard({
       </div>
 
       {kind === 'emotions' && (
-        <EmotionsStep
+        <EmotionPicker
           emotions={emotions}
           onToggle={onToggleEmotion}
           onSetIntensity={onSetIntensity}
-          accentColor={accentColor}
+          color={accentColor}
         />
       )}
       {kind === 'schemas' && (
         <>
-          <SchemaChipsStep
+          <SchemaPicker
             schemaIds={schemaIds}
             onToggle={onToggleSchema}
+            useFiltered={hasPersonalSchemas && !showAllSchemas}
             activeSchemaIds={activeSchemaIds}
+            hasPersonalSchemas={hasPersonalSchemas}
             showAllSchemas={showAllSchemas}
             onToggleShowAll={onToggleShowAll}
           />

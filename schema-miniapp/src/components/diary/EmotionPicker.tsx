@@ -1,37 +1,51 @@
 import { EMOTIONS, INTENSITY_LABELS } from '../../schemaTherapyData';
-import type { EmotionEntry } from '../../types';
-import { SelectableChip } from './SelectableChip';
+import { EmotionEntry } from '../../types';
 
-// Шаг «Чувства» дневника схем: чипы эмоций + шкала интенсивности выбранных.
-// Вынесено из SchemaEntrySheet в подкомпонент визарда (правило №10 CLAUDE.md,
-// файл-источник пробивал потолок 300 строк).
-export function EmotionsStep({
+// Выбор чувств в дневнике схем: сетка эмоций + интенсивность выбранных.
+// Вынесено из SchemaEntrySheet.tsx (правило №10).
+export function EmotionPicker({
   emotions,
   onToggle,
   onSetIntensity,
-  accentColor,
+  color,
 }: {
   emotions: EmotionEntry[];
   onToggle: (id: string) => void;
   onSetIntensity: (id: string, intensity: number) => void;
-  accentColor: string;
+  color: string;
 }) {
   return (
-    <div>
+    <>
       <div
-        style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 10 }}
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 7,
+          marginBottom: 10,
+        }}
       >
-        {EMOTIONS.map((em) => (
-          <SelectableChip
-            key={em.id}
-            label={`${em.emoji} ${em.label}`}
-            selected={!!emotions.find((e) => e.id === em.id)}
-            color="#f87171"
-            onClick={() => onToggle(em.id)}
-          />
-        ))}
+        {EMOTIONS.map((em) => {
+          const sel = emotions.find((e) => e.id === em.id);
+          return (
+            <button
+              key={em.id}
+              onClick={() => onToggle(em.id)}
+              className="sel-btn"
+              style={{
+                background: sel ? '#f8717133' : 'rgba(var(--fg-rgb),0.06)',
+                border: sel ? '1px solid #f87171' : '1px solid transparent',
+                borderRadius: 20,
+                padding: '6px 12px',
+                color: sel ? 'var(--chip-sel-text)' : 'rgba(var(--fg-rgb),0.6)',
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
+            >
+              {em.emoji} {em.label}
+            </button>
+          );
+        })}
       </div>
-
       {emotions.map((em) => {
         const meta = EMOTIONS.find((e) => e.id === em.id)!;
         return (
@@ -63,7 +77,7 @@ export function EmotionsStep({
                     flex: 1,
                     background:
                       em.intensity === i + 1
-                        ? accentColor
+                        ? color
                         : 'rgba(var(--fg-rgb),0.08)',
                     border: 'none',
                     borderRadius: 8,
@@ -83,6 +97,6 @@ export function EmotionsStep({
           </div>
         );
       })}
-    </div>
+    </>
   );
 }

@@ -1,29 +1,26 @@
-import { haptic } from '../../haptic';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
-import { SelectableChip } from './SelectableChip';
 
-// Шаг «Схемы» дневника схем: только чипы по доменам + «Только мои/Показать
-// все». Вынесено из SchemaEntrySheet в подкомпонент визарда (правило №10
-// CLAUDE.md). Свободный текст («откуда это знакомо») рендерит родительский
-// визард — парно с webapp-версией (правило №3).
-export function SchemaChipsStep({
+// Выбор схем в дневнике (по доменам) + переключатель «только мои/все».
+// Вынесено из SchemaEntrySheet.tsx (правило №10).
+export function SchemaPicker({
   schemaIds,
   onToggle,
+  useFiltered,
   activeSchemaIds,
+  hasPersonalSchemas,
   showAllSchemas,
   onToggleShowAll,
 }: {
   schemaIds: string[];
   onToggle: (id: string) => void;
+  useFiltered?: boolean;
   activeSchemaIds?: string[];
+  hasPersonalSchemas?: boolean;
   showAllSchemas: boolean;
   onToggleShowAll: () => void;
 }) {
-  const hasPersonalSchemas = activeSchemaIds && activeSchemaIds.length > 0;
-  const useFiltered = hasPersonalSchemas && !showAllSchemas;
-
   return (
-    <div>
+    <>
       {SCHEMA_DOMAINS.map((domain) => {
         const schemas = useFiltered
           ? domain.schemas.filter(
@@ -46,28 +43,40 @@ export function SchemaChipsStep({
               {domain.domain}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {schemas.map((s) => (
-                <SelectableChip
-                  key={s.id}
-                  label={s.name}
-                  selected={schemaIds.includes(s.id)}
-                  color={domain.color}
-                  onClick={() => onToggle(s.id)}
-                  radius={16}
-                  padding="5px 10px"
-                  fontSize={12}
-                />
-              ))}
+              {schemas.map((s) => {
+                const sel = schemaIds.includes(s.id);
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => onToggle(s.id)}
+                    className="sel-btn"
+                    style={{
+                      background: sel
+                        ? `${domain.color}33`
+                        : 'rgba(var(--fg-rgb),0.06)',
+                      border: sel
+                        ? `1px solid ${domain.color}`
+                        : '1px solid transparent',
+                      borderRadius: 16,
+                      padding: '5px 10px',
+                      color: sel
+                        ? 'var(--chip-sel-text)'
+                        : 'rgba(var(--fg-rgb),0.6)',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {s.name}
+                  </button>
+                );
+              })}
             </div>
           </div>
         );
       })}
       {hasPersonalSchemas && (
         <button
-          onClick={() => {
-            haptic.tap();
-            onToggleShowAll();
-          }}
+          onClick={onToggleShowAll}
           style={{
             background: 'none',
             border: 'none',
@@ -81,6 +90,6 @@ export function SchemaChipsStep({
           {showAllSchemas ? '↑ Только мои' : '↓ Показать все'}
         </button>
       )}
-    </div>
+    </>
   );
 }

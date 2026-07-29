@@ -68,6 +68,7 @@ export class ProductMetricsService {
       todayFocusChanged,
       blocksHiddenRows,
       breathStarted,
+      stopStarted,
       onboardingStepRows,
       customizeRows,
       homeScreenRows,
@@ -156,6 +157,7 @@ export class ProductMetricsService {
              AND "createdAt" >= ${since30}
         ) t GROUP BY block`,
       ev('breath_start'),
+      ev('stop_start'),
       // Воронка обучения: люди (не события) на каждом шаге — один человек мог
       // вернуться к шагу точками навигации, это не должно раздувать счёт.
       this.prisma.$queryRaw<Array<{ step: string | null; c: bigint }>>`
@@ -244,6 +246,7 @@ export class ProductMetricsService {
         customizeLongpress: viaCount('longpress'),
       },
       breath: { started: breathStarted },
+      stop: { started: stopStarted },
       journey: { opens: journeyOpens },
       homeScreen: {
         shown: hsCount('shown'),

@@ -88,6 +88,11 @@ jobs:
       # без проверки аргументов, зелёный даже если хендлер шлёт мусор — новых
       # таких тестов быть не должно, исторический долг зафиксирован в бейслайне.
       - run: node scripts/check-weak-assert-ratchet.mjs
+      # Храповик роботных конструкций (свип 2026-07, docs/VOICE.md): правила
+      # голоса касались только статей, а «это не X, это Y», канцелярит и
+      # слова-филлеры расползлись по всему user-facing тексту. Счётчик
+      # пофайловый и может только падать.
+      - run: node scripts/check-robot-phrases.mjs
 
   # Миграции гоняются на РЕАЛЬНОМ Postgres (инцидент 2026-07-16: битый сид
   # healthy_adult_phrases — updatedAt NOT NULL без значения — уронил прод
@@ -156,9 +161,31 @@ jobs:
       # ты/вы-храповик (правило CLAUDE.md): новые жёсткие «ты»-строки без tr()
       # не проходят; исторический долг зафиксирован в бейслайне.
       - run: node scripts/check-address-form.mjs
+      # Согласование «вы» (свип голоса 2026-07): храповик выше ищет остаточные
+      # «ты»-местоимения и слеп к паре «вы» + единственное число — «вы дал»,
+      # «вы благодарен», «вы вырос». Сплошная вычитка нашла 11 таких мест;
+      # проверка жёсткая, без бейслайна — новых быть не должно.
+      - run: node scripts/check-address-agreement.mjs
       # Драйв-гард парных файлов (правило №3): канонические пары
       # webapp ↔ miniapp обязаны быть побайтово идентичны.
       - run: node scripts/check-paired-files.mjs
+
+  # shared/ — общий пакет двух фронтендов (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
+  # до этой джобы 3431 строка shared-кода тестировалась только транзитивно
+  # через тесты webapp/miniapp — свои тесты и свой coverage-храповик не
+  # существовали. Джоба гоняет vitest пакета через тот же
+  # check-frontend-coverage-ratchet.mjs (--package shared).
+  shared:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: shared/package-lock.json
+      - run: npm ci --prefix shared
+      - run: node scripts/check-frontend-coverage-ratchet.mjs --package shared
 
   # eslint-храповик (этап 2е, правило №9). Нужны node_modules всех трёх
   # пакетов + prisma generate: typed-линт без типов зависимостей видит

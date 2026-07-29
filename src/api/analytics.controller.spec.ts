@@ -100,4 +100,10 @@ describe('AnalyticsController — sanitizeMeta (новые события)', () 
     await fire({ name: 'breath_start', meta: { junk: 'x' } });
     expect(track).toHaveBeenCalledWith(7n, 'breath_start', undefined);
   });
+
+  it('stop_start: meta игнорируется (событие без meta)', async () => {
+    const { track, fire } = setup();
+    await fire({ name: 'stop_start', meta: { junk: 'x' } });
+    expect(track).toHaveBeenCalledWith(7n, 'stop_start', undefined);
+  });
 });

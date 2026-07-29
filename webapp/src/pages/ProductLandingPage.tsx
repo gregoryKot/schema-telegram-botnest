@@ -142,7 +142,7 @@ export function ProductLandingPage() {
         <section id="how" style={{ padding: '72px 24px', scrollMarginTop: 70 }}>
           <div style={{ maxWidth: 1160, margin: '0 auto' }}>
             <span style={EYEBROW}>Как это работает</span>
-            <h2 style={{ ...H2, margin: '14px 0 48px', maxWidth: 700 }}>Не «что со мной не так», а «какая схема включилась»</h2>
+            <h2 style={{ ...H2, margin: '14px 0 48px', maxWidth: 700 }}>От «что со мной не так» к «какая схема включилась»</h2>
             <div className="pl2-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
               {STEPS.map((s) => (
                 <div key={s.num} className="pl2-card" style={{ position: 'relative', background: GLASS, border: `1px solid ${GLASS_BORDER}`, borderRadius: 22, padding: '28px 24px', overflow: 'hidden', transition: 'transform .25s, border-color .25s, box-shadow .25s' }}>

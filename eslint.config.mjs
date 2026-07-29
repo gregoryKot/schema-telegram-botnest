@@ -81,6 +81,12 @@ export default tseslint.config(
     languageOptions: { sourceType: 'module' },
   },
   {
+    // shared/vitest.config.ts — конфиг тестов shared-пакета (этап 2.2): не
+    // входит ни в один tsconfig проекта, typed-линт давал (parse)-ошибку.
+    files: ['shared/vitest.config.ts'],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
+  {
     // Тесты: паттерн проекта — сервис инстанцируется с поддельной Prisma
     // на any (см. CLAUDE.md «Тесты»), плюс jest-глобалы без типов в typed-линте.
     // unsafe-* здесь — заведомый шум, который наказывал храповиком каждый

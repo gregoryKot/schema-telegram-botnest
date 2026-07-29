@@ -18,7 +18,7 @@ import { join } from 'path';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'frontend-coverage-baseline.json');
-const PACKAGES = ['webapp', 'schema-miniapp'];
+const PACKAGES = ['webapp', 'schema-miniapp', 'shared'];
 
 const UPDATE = process.argv.includes('--update');
 const packageFlagIndex = process.argv.indexOf('--package');

@@ -18,10 +18,12 @@ import { SelfHelpSheet } from '../components/SelfHelpDisclaimer';
 import { pressable } from '../utils/a11y';
 import { BreathingCard } from '../components/BreathingCard';
 import { GroundingSheet } from '../components/GroundingSheet';
+import { StopSheet } from '../components/StopSheet';
 import { CrisisCard } from '../components/CrisisCard';
 import { useTr } from '../utils/addressForm';
 import { plural } from './today/helpers';
 import { AllTasksSheet } from './helpSection/AllTasksSheet';
+import { NextSessionBanner } from './helpSection/NextSessionBanner';
 
 interface Props {
   onOpenChildhoodWheel: () => void;
@@ -56,6 +58,7 @@ export function HelpSection({
   const tr = useTr();
   const [showFlashcard, setShowFlashcard] = useState(false);
   const [showGrounding, setShowGrounding] = useState(false);
+  const [showStop, setShowStop] = useState(false);
   const [showCrisis, setShowCrisis] = useState(false);
   const [showSelfHelp, setShowSelfHelp] = useState(false);
   const [showBeliefCheck, setShowBeliefCheck] = useState(false);
@@ -225,66 +228,7 @@ export function HelpSection({
           )}
         </div>
         {/* Next session banner for clients */}
-        {relation?.role === 'client' &&
-          relation.nextSession &&
-          (() => {
-            const [datePart, timePart] = relation.nextSession.includes('T')
-              ? relation.nextSession.split('T')
-              : [relation.nextSession, null];
-            const [y, m, d] = datePart.split('-').map(Number);
-            const MONTHS = [
-              'янв',
-              'фев',
-              'мар',
-              'апр',
-              'май',
-              'июн',
-              'июл',
-              'авг',
-              'сен',
-              'окт',
-              'ноя',
-              'дек',
-            ];
-            const DAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-            const date = new Date(y, m - 1, d);
-            const label = `${DAYS[date.getDay()]}, ${d} ${MONTHS[m - 1]}${timePart ? ` · ${timePart}` : ''}`;
-            const isToday = datePart === new Date().toISOString().slice(0, 10);
-            return (
-              <div
-                style={{
-                  marginTop: 10,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  background: isToday
-                    ? 'color-mix(in srgb, var(--accent-green) 10%, transparent)'
-                    : 'rgba(var(--fg-rgb),0.05)',
-                  border: `1px solid ${isToday ? 'color-mix(in srgb, var(--accent-green) 25%, transparent)' : 'rgba(var(--fg-rgb),0.1)'}`,
-                  borderRadius: 20,
-                  padding: '5px 12px',
-                }}
-              >
-                <span style={{ fontSize: 13 }}>📅</span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: isToday
-                      ? 'var(--accent-green)'
-                      : 'rgba(var(--fg-rgb),0.6)',
-                  }}
-                >
-                  {isToday ? 'Сегодня встреча' : `Встреча: ${label}`}
-                </span>
-                {relation.partnerName && (
-                  <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>
-                    с {relation.partnerName}
-                  </span>
-                )}
-              </div>
-            );
-          })()}
+        <NextSessionBanner relation={relation} />
       </div>
 
       <div
@@ -310,12 +254,20 @@ export function HelpSection({
           onClick={() => setShowGrounding(true)}
         />
         <ToolRow
+          emoji="🛑"
+          label="Техника «Стоп»"
+          sub="пауза между импульсом и действием"
+          tint="var(--accent-orange)"
+          index={1}
+          onClick={() => setShowStop(true)}
+        />
+        <ToolRow
           emoji="📞"
           label="Мне очень плохо"
           sub="контакты помощи прямо сейчас"
           tint="var(--accent-red)"
           danger
-          index={1}
+          index={2}
           onClick={() => setShowCrisis(true)}
         />
 
@@ -501,6 +453,7 @@ export function HelpSection({
       {showGrounding && (
         <GroundingSheet onClose={() => setShowGrounding(false)} />
       )}
+      {showStop && <StopSheet onClose={() => setShowStop(false)} />}
       {showCrisis && (
         <BottomSheet onClose={() => setShowCrisis(false)} zIndex={200}>
           <div style={{ paddingTop: 4 }}>
