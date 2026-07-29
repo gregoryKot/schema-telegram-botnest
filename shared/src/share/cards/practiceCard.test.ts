@@ -47,7 +47,7 @@ const PRACTICE: PracticeCardData = {
 describe('drawPracticeCard', () => {
   it('со счётчиком: не падает, высота канваса > 0', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      mockCtx() as unknown as CanvasRenderingContext2D,
+      mockCtx(),
     );
     const canvas = document.createElement('canvas');
     expect(() =>
@@ -59,7 +59,7 @@ describe('drawPracticeCard', () => {
 
   it('без счётчика (null): не падает, высота канваса > 0', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      mockCtx() as unknown as CanvasRenderingContext2D,
+      mockCtx(),
     );
     const canvas = document.createElement('canvas');
     expect(() => drawPracticeCard(canvas, PRACTICE, null)).not.toThrow();
@@ -68,7 +68,7 @@ describe('drawPracticeCard', () => {
 
   it('счётчик увеличивает высоту карточки', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      mockCtx() as unknown as CanvasRenderingContext2D,
+      mockCtx(),
     );
     const withCount = document.createElement('canvas');
     drawPracticeCard(withCount, PRACTICE, 'прошли 7 раз');
