@@ -96,7 +96,7 @@ describe('TelegramChannelService', () => {
     const { bot, sendMessage } = makeBot();
     const { svc } = makePhrases();
     sendMessage.mockRejectedValueOnce(new Error('chat not found'));
-    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     const res = await new TelegramChannelService(bot, svc).post();
     expect(res.ok).toBe(false);
     expect(res.message).toContain('chat not found');
@@ -143,6 +143,57 @@ describe('TelegramChannelService', () => {
       await expect(
         new TelegramChannelService(bot, svc).maybePost(msk(10, 55)),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  // Инцидент 2026-07-29: отправка падала, пост не записывался — и тик крона
+  // (раз в 5 минут, окно два часа) пробовал снова 24 раза за утро, каждый раз
+  // логируя error, то есть отправляя админу отдельный DM.
+  describe('maybePost — повторы при сбое отправки', () => {
+    const failingTick = () => {
+      process.env.HEALTHY_ADULT_CHANNEL = '@test_channel';
+      const { bot, sendMessage } = makeBot();
+      const { svc } = makePhrases();
+      sendMessage.mockRejectedValue(
+        Object.assign(new Error('connect failed'), { code: 'ETIMEDOUT' }),
+      );
+      const errors = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+      return { svc: new TelegramChannelService(bot, svc), sendMessage, errors };
+    };
+
+    it('пробует не больше трёх раз за слот, а не весь два часа', async () => {
+      const { svc, sendMessage } = failingTick();
+      for (const minute of [55, 56, 57, 58, 59]) {
+        await svc.maybePost(msk(10, minute));
+      }
+      expect(sendMessage).toHaveBeenCalledTimes(3);
+      expect(sendMessage).toHaveBeenCalledWith(
+        '@test_channel',
+        'фраза из пула',
+      );
+    });
+
+    it('админа будит ровно один раз — на исчерпании попыток', async () => {
+      const { svc, errors } = failingTick();
+      for (const minute of [55, 56, 57, 58, 59]) {
+        await svc.maybePost(msk(10, minute));
+      }
+      expect(errors).toHaveBeenCalledTimes(1);
+      expect(String(errors.mock.calls[0][0])).toContain('ETIMEDOUT');
+    });
+
+    it('вечерний слот не наказан за утренние неудачи', async () => {
+      const { svc, sendMessage } = failingTick();
+      for (const minute of [55, 56, 57]) await svc.maybePost(msk(10, minute));
+      sendMessage.mockClear();
+      await svc.maybePost(msk(19, 55));
+      expect(sendMessage).toHaveBeenCalledWith(
+        '@test_channel',
+        'фраза из пула',
+      );
     });
   });
 });
