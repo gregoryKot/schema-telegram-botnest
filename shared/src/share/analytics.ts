@@ -43,6 +43,12 @@ export const JOURNEY_OPEN_EVENT = 'journey_open';
 export const PRACTICE_LINK_CLICK_EVENT = 'practice_link_click';
 export type PracticeLinkPlace =
   'author' | 'footer' | 'faq' | 'quiz' | 'ysq_result';
+// Сохранение карточки-портрета режима («Знакомство с режимом»): meta
+// { modeId, filledFields } — сколько из 7 полей заполнено. Парный allow-list
+// (ANALYTICS_EVENTS) — src/analytics/analytics.constants.ts (бэкенд, агент Б
+// контракта mode-intro-card на момент написания ещё не подключил его сюда).
+export const MODE_CARD_SAVED_EVENT = 'mode_card_saved';
+
 export type OnboardingStep =
   | 'welcome'
   | 'privacy'

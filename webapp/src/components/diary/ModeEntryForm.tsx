@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { ExScreen, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from '../exercises/ExScreen';
+import { ExScreen, GlyphArrowLeft } from '../exercises/ExScreen';
 import { useTr } from '../../utils/addressForm';
 import { pressable } from '../../utils/a11y';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
+import { DiaryWizardFoot } from './DiaryWizardFoot';
 import { buildModeDiarySteps } from '../../../../shared/src/mode/modeDiarySteps';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
 import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
@@ -146,27 +147,17 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
 
       {detectCrisisAny(v.situation, v.thoughts, v.feelings, v.bodyFeelings, v.actions, v.actualNeed, v.childhoodMemories, healthyResponse) && <CrisisCard surface="mode" />}
 
-      <div className="ex-foot">
-        <button className="ex-btn ex-btn-ghost" onClick={goPrev} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <GlyphArrowLeft /> {isFirst ? 'К режимам' : 'Назад'}
-        </button>
-        <span className="spacer" />
-        {/* Ранний выход: сохранить, не проходя все шаги (низкий порог) */}
-        {canSave && !isLast && (
-          <button className="ex-btn ex-btn-ghost" disabled={saving} onClick={onSave} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {saving ? 'Сохраняю…' : 'Сохранить'} {!saving && <GlyphCheck />}
-          </button>
-        )}
-        {isLast ? (
-          <button className="ex-btn ex-btn-primary" disabled={!canSave || saving} onClick={onSave} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {saving ? 'Сохраняю…' : 'Сохранить запись'} {!saving && <GlyphCheck />}
-          </button>
-        ) : (
-          <button className="ex-btn ex-btn-primary" disabled={curRequired && !curFilled} onClick={goNext} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {curFilled || curRequired ? 'Дальше' : 'Пропустить'} <GlyphArrowRight />
-          </button>
-        )}
-      </div>
+      <DiaryWizardFoot
+        onBack={goPrev}
+        backLabel={isFirst ? 'К режимам' : 'Назад'}
+        canSave={canSave}
+        isLast={isLast}
+        saving={saving}
+        onSave={onSave}
+        curFilled={curFilled}
+        curRequired={curRequired}
+        onNext={goNext}
+      />
     </ExScreen>
   );
 }

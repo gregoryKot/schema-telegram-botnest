@@ -1,217 +1,73 @@
 import { useState, useEffect } from 'react';
 import { BottomSheet } from '../BottomSheet';
-import { SchemaPicker } from './SchemaPicker';
-import { EmotionEntry } from '../../types';
-import { EmotionPicker } from './EmotionPicker';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
-import { DiaryTextArea } from './DiaryTextArea';
 import { DiaryStickyHeader } from './DiaryStickyHeader';
+import { SchemaDiaryWizard } from './SchemaDiaryWizard';
+import {
+  SCHEMA_DIARY_FIELD_KEYS,
+  type SchemaDiaryEntryInput,
+} from '../../../../shared/src/schema/schemaDiarySteps';
+import {
+  useSchemaDiaryDraftState,
+  type SchemaDiaryDraftData,
+} from '../../../../shared/src/schema/useSchemaDiaryDraftState';
+import { buildSchemaDiaryExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
+import { collectFilledFields } from '../../../../shared/src/utils/diaryFields';
 
 interface Props {
   activeSchemaIds?: string[];
   onClose: () => void;
-  onSave: (data: {
-    trigger: string;
-    emotions: EmotionEntry[];
-    thoughts?: string;
-    bodyFeelings?: string;
-    actualBehavior?: string;
-    schemaIds: string[];
-    schemaOrigin?: string;
-    healthyView?: string;
-    realProblems?: string;
-    excessiveReactions?: string;
-    healthyBehavior?: string;
-  }) => Promise<void>;
+  onSave: (data: SchemaDiaryEntryInput) => Promise<void>;
 }
 
 const COLOR = 'var(--accent-red)';
 
-function StepLabel({
-  step,
-  title,
-  hint,
-  required,
-}: {
-  step: number;
-  title: string;
-  hint?: string;
-  required?: boolean;
-}) {
-  return (
-    <div
-      style={{
-        marginTop: 22,
-        marginBottom: 9,
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 10,
-      }}
-    >
-      <div
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: '50%',
-          flexShrink: 0,
-          background: 'color-mix(in srgb, var(--accent-red) 15%, transparent)',
-          border:
-            '1px solid color-mix(in srgb, var(--accent-red) 30%, transparent)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 11,
-          fontWeight: 700,
-          color: 'var(--accent-red)',
-          marginTop: 1,
-        }}
-      >
-        {step}
-      </div>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-          {title}
-          {required && (
-            <span
-              style={{
-                color: 'var(--accent-red)',
-                marginLeft: 4,
-                fontSize: 12,
-              }}
-            >
-              *
-            </span>
-          )}
-        </div>
-        {hint && (
-          <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}>
-            {hint}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-interface DraftData {
-  trigger: string;
-  emotions: EmotionEntry[];
-  thoughts: string;
-  bodyFeelings: string;
-  actualBehavior: string;
-  schemaIds: string[];
-  schemaOrigin: string;
-  healthyView: string;
-  realProblems: string;
-  excessiveReactions: string;
-  healthyBehavior: string;
-}
-
 export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
   const tr = useTr();
-  const existing = loadDraft<DraftData>('schema');
-  const draft = existing?.data ?? null;
-
-  const [trigger, setTrigger] = useState(draft?.trigger ?? '');
-  const [emotions, setEmotions] = useState<EmotionEntry[]>(
-    draft?.emotions ?? [],
-  );
-  const [thoughts, setThoughts] = useState(draft?.thoughts ?? '');
-  const [bodyFeelings, setBodyFeelings] = useState(draft?.bodyFeelings ?? '');
-  const [actualBehavior, setActualBehavior] = useState(
-    draft?.actualBehavior ?? '',
-  );
-  const [schemaIds, setSchemaIds] = useState<string[]>(draft?.schemaIds ?? []);
-  const [schemaOrigin, setSchemaOrigin] = useState(draft?.schemaOrigin ?? '');
-  const [healthyView, setHealthyView] = useState(draft?.healthyView ?? '');
-  const [realProblems, setRealProblems] = useState(draft?.realProblems ?? '');
-  const [excessiveReactions, setExcessiveReactions] = useState(
-    draft?.excessiveReactions ?? '',
-  );
-  const [healthyBehavior, setHealthyBehavior] = useState(
-    draft?.healthyBehavior ?? '',
-  );
+  // Черновик хранит и текстовые поля, и chip-состояние (эмоции/схемы) —
+  // ключ и форма ('schema', DraftData) не меняются, старые черновики
+  // подхватываются. Состояние и переключатели — общий хук для обоих
+  // фронтов (правило №3/№11 CLAUDE.md).
+  const existing = loadDraft<SchemaDiaryDraftData>('schema');
+  const d = existing?.data;
+  const {
+    values,
+    setField,
+    emotions,
+    toggleEmotion,
+    setIntensity,
+    schemaIds,
+    toggleSchema,
+  } = useSchemaDiaryDraftState(d, haptic);
   const [saving, setSaving] = useState(false);
   const [showAllSchemas, setShowAllSchemas] = useState(false);
 
-  const hasPersonalSchemas = activeSchemaIds && activeSchemaIds.length > 0;
-  const useFiltered = hasPersonalSchemas && !showAllSchemas;
-
   useEffect(() => {
-    const data: DraftData = {
-      trigger,
-      emotions,
-      thoughts,
-      bodyFeelings,
-      actualBehavior,
-      schemaIds,
-      schemaOrigin,
-      healthyView,
-      realProblems,
-      excessiveReactions,
-      healthyBehavior,
-    };
-    saveDraft('schema', data);
-  }, [
-    trigger,
-    emotions,
-    thoughts,
-    bodyFeelings,
-    actualBehavior,
-    schemaIds,
-    schemaOrigin,
-    healthyView,
-    realProblems,
-    excessiveReactions,
-    healthyBehavior,
-  ]);
+    saveDraft('schema', { ...values, emotions, schemaIds });
+  }, [values, emotions, schemaIds]);
 
-  const toggleEmotion = (id: string) => {
-    haptic.select();
-    setEmotions((prev) =>
-      prev.find((e) => e.id === id)
-        ? prev.filter((e) => e.id !== id)
-        : [...prev, { id, intensity: 3 }],
-    );
-  };
-
-  const setIntensity = (id: string, intensity: number) => {
-    haptic.select();
-    setEmotions((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, intensity } : e)),
-    );
-  };
-
-  const toggleSchema = (id: string) => {
-    haptic.select();
-    setSchemaIds((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
-    );
-  };
-
-  const canSave = trigger.trim().length > 0;
+  const canSave = values.trigger.trim().length > 0;
 
   const handleSave = async () => {
     if (!canSave || saving) return;
     haptic.success();
     setSaving(true);
     try {
+      // Опциональные поля собираем программно — пустые не отправляем.
+      const optional = collectFilledFields(
+        values,
+        SCHEMA_DIARY_FIELD_KEYS,
+        'trigger',
+      );
       await onSave({
-        trigger,
+        trigger: values.trigger,
         emotions,
-        thoughts: thoughts || undefined,
-        bodyFeelings: bodyFeelings || undefined,
-        actualBehavior: actualBehavior || undefined,
         schemaIds,
-        schemaOrigin: schemaOrigin || undefined,
-        healthyView: healthyView || undefined,
-        realProblems: realProblems || undefined,
-        excessiveReactions: excessiveReactions || undefined,
-        healthyBehavior: healthyBehavior || undefined,
+        ...optional,
       });
       clearDraft('schema');
     } catch {
@@ -222,13 +78,14 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
     }
   };
 
+  // Заполненность смотрим по СНАПШОТУ загруженного черновика (не по живому
+  // стейту) — так же, как было раньше: пока не наберёшь первый символ,
+  // подзаголовок «С чего начнём?», не «Продолжаем».
   const hasDraft = !!(
-    draft &&
-    Object.values(draft).some((v) =>
-      Array.isArray(v)
-        ? v.length > 0
-        : typeof v === 'string' && v.trim().length > 0,
-    )
+    d &&
+    (SCHEMA_DIARY_FIELD_KEYS.some((k) => (d[k] ?? '').trim().length > 0) ||
+      (d.emotions ?? []).length > 0 ||
+      (d.schemaIds ?? []).length > 0)
   );
 
   return (
@@ -243,162 +100,36 @@ export function SchemaEntrySheet({ activeSchemaIds, onClose, onSave }: Props) {
           onSave={handleSave}
         />
 
-        <StepLabel
-          step={1}
-          title="Что случилось?"
-          hint="опиши ситуацию — где, с кем, когда"
-          required
-        />
-        <DiaryTextArea
-          value={trigger}
-          onChange={setTrigger}
-          placeholder={tr(
-            'Что произошло? Где ты был/а, с кем, в какой момент?',
-            'Что произошло? Где вы были, с кем, в какой момент?',
-          )}
-          rows={3}
-        />
-
-        <StepLabel step={2} title="Чувства" hint="что поднялось внутри" />
-        <EmotionPicker
-          emotions={emotions}
-          onToggle={toggleEmotion}
-          onSetIntensity={setIntensity}
-          color={COLOR}
-        />
-
-        <StepLabel step={3} title="Мысли" hint="о чём думаешь" />
-        <DiaryTextArea
-          value={thoughts}
-          onChange={setThoughts}
-          placeholder={tr(
-            'Какие мысли появились? Что ты говоришь себе?',
-            'Какие мысли появились? Что вы говорите себе?',
-          )}
-        />
-
-        <StepLabel step={4} title="Тело" hint="что ощущаешь физически" />
-        <DiaryTextArea
-          value={bodyFeelings}
-          onChange={setBodyFeelings}
-          placeholder="Где в теле это чувствуется? Сжатие, тяжесть, пульс, дыхание..."
-          rows={2}
-        />
-
-        <StepLabel
-          step={5}
-          title="Моя реакция"
-          hint={tr(
-            'что ты делаешь или хочешь сделать',
-            'что вы делаете или хотите сделать',
-          )}
-        />
-        <DiaryTextArea
-          value={actualBehavior}
-          onChange={setActualBehavior}
-          placeholder={tr(
-            'Что ты сделал/а или хотел/а сделать? Убежать, замолчать, накричать...',
-            'Что вы сделали или хотели сделать? Убежать, замолчать, накричать...',
-          )}
-          rows={2}
-        />
-
-        <StepLabel step={6} title="Схемы" hint="что сработало" />
-        <SchemaPicker
-          schemaIds={schemaIds}
-          onToggle={toggleSchema}
-          useFiltered={useFiltered}
-          activeSchemaIds={activeSchemaIds}
-          hasPersonalSchemas={hasPersonalSchemas}
-          showAllSchemas={showAllSchemas}
-          onToggleShowAll={() => {
-            haptic.tap();
-            setShowAllSchemas((v) => !v);
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--text-faint)',
+            lineHeight: 1.5,
+            marginBottom: 16,
           }}
-        />
-        <DiaryTextArea
-          value={schemaOrigin}
-          onChange={setSchemaOrigin}
-          placeholder="Это напоминает что-то из прошлого? Из детства?"
-          rows={2}
+        >
+          {buildSchemaDiaryExplainer(tr)}
+        </div>
+
+        <SchemaDiaryWizard
+          values={values}
+          onChange={setField}
+          emotions={emotions}
+          onToggleEmotion={toggleEmotion}
+          onSetIntensity={setIntensity}
+          schemaIds={schemaIds}
+          onToggleSchema={toggleSchema}
+          activeSchemaIds={activeSchemaIds}
+          showAllSchemas={showAllSchemas}
+          onToggleShowAll={() => setShowAllSchemas((v) => !v)}
+          onSave={handleSave}
+          canSave={canSave}
+          saving={saving}
+          accentColor={COLOR}
         />
 
-        <StepLabel
-          step={7}
-          title="Здоровый взгляд"
-          hint="если смотреть трезво"
-        />
-        <DiaryTextArea
-          value={healthyView}
-          onChange={setHealthyView}
-          placeholder="Если убрать схему в сторону — что на самом деле здесь происходит?"
-        />
-
-        <StepLabel
-          step={8}
-          title="Что реально трудно"
-          hint="без преувеличения"
-        />
-        <DiaryTextArea
-          value={realProblems}
-          onChange={setRealProblems}
-          placeholder="Что в этом моменте по-настоящему трудно — если не раздувать?"
-          rows={2}
-        />
-
-        <StepLabel
-          step={9}
-          title="Где я раздул/а"
-          hint="что оказалось крупнее, чем есть"
-        />
-        <DiaryTextArea
-          value={excessiveReactions}
-          onChange={setExcessiveReactions}
-          placeholder="Где реакция оказалась больше, чем требовала ситуация?"
-          rows={2}
-        />
-
-        <StepLabel
-          step={10}
-          title="Здоровое поведение"
-          hint="как поступил бы Здоровый Взрослый"
-        />
-        <DiaryTextArea
-          value={healthyBehavior}
-          onChange={setHealthyBehavior}
-          placeholder={tr(
-            'Что сделал бы Здоровый Взрослый внутри тебя?',
-            'Что сделал бы Здоровый Взрослый внутри вас?',
-          )}
-        />
-
-        {detectCrisisAny(
-          trigger,
-          thoughts,
-          bodyFeelings,
-          actualBehavior,
-          schemaOrigin,
-          healthyView,
-          realProblems,
-          excessiveReactions,
-          healthyBehavior,
-        ) && <CrisisCard surface="schema" />}
-
-        {!canSave && (
-          <div
-            style={{
-              textAlign: 'center',
-              fontSize: 12,
-              color: 'var(--text-sub)',
-              marginTop: 16,
-              paddingBottom: 8,
-            }}
-          >
-            {tr(
-              'Опиши ситуацию — и можно будет сохранить',
-              'Опишите ситуацию — и можно будет сохранить',
-            )}
-          </div>
+        {detectCrisisAny(...Object.values(values)) && (
+          <CrisisCard surface="schema" />
         )}
       </div>
     </BottomSheet>

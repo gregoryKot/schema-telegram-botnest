@@ -3,9 +3,11 @@ import { BotService } from './bot.service';
 import { BotAnalyticsService } from './bot.analytics.service';
 import { BotClientOverviewService } from './bot.client-overview.service';
 import { ProductMetricsService } from './bot.product-metrics.service';
+import { StatsReportService } from './stats-report.service';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
 import { PracticeMetricsService } from './practice-metrics.service';
+import { ModeCardMetricsService } from './mode-card-metrics.service';
 import { DiaryService } from './diary.service';
 import { ProfileService } from './profile.service';
 import { AccountService } from './account.service';
@@ -18,43 +20,39 @@ import { HealthyAdultService } from './healthy-adult.service';
 import { JourneyService } from './journey.service';
 import { PracticeSessionsService } from './practice-sessions.service';
 
+// Сервисы, нужные другим модулям (TelegramModule и т.п.) — один список,
+// который идёт и в providers, и в exports (правило №10: новый экспортируемый
+// сервис стоит 1 строку, а не 2).
+const EXPORTED_PROVIDERS = [
+  BotService,
+  BotAnalyticsService,
+  BotClientOverviewService,
+  ProductMetricsService,
+  StatsReportService,
+  DiaryService,
+  ProfileService,
+  AccountService,
+  YsqService,
+  PairsService,
+  PracticesService,
+  ExercisesService,
+  NotesService,
+  HealthyAdultService,
+  JourneyService,
+  PracticeSessionsService,
+];
+
+// Используются только внутри BotModule (квиз/переходы/карточки режимов —
+// суб-агрегаты ProductMetricsService/StatsReportService), наружу не торчат.
+const INTERNAL_PROVIDERS = [
+  QuizMetricsService,
+  PracticeLinkMetricsService,
+  ModeCardMetricsService,
+  PracticeMetricsService,
+];
+
 @Module({
-  providers: [
-    BotService,
-    BotAnalyticsService,
-    BotClientOverviewService,
-    ProductMetricsService,
-    QuizMetricsService,
-    PracticeLinkMetricsService,
-    PracticeMetricsService,
-    DiaryService,
-    ProfileService,
-    AccountService,
-    YsqService,
-    PairsService,
-    PracticesService,
-    ExercisesService,
-    NotesService,
-    HealthyAdultService,
-    JourneyService,
-    PracticeSessionsService,
-  ],
-  exports: [
-    BotService,
-    BotAnalyticsService,
-    BotClientOverviewService,
-    ProductMetricsService,
-    DiaryService,
-    ProfileService,
-    AccountService,
-    YsqService,
-    PairsService,
-    PracticesService,
-    ExercisesService,
-    NotesService,
-    HealthyAdultService,
-    JourneyService,
-    PracticeSessionsService,
-  ],
+  providers: [...EXPORTED_PROVIDERS, ...INTERNAL_PROVIDERS],
+  exports: EXPORTED_PROVIDERS,
 })
 export class BotModule {}

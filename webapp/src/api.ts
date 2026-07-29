@@ -14,6 +14,13 @@ import type {
 export type { TherapyClientSummary } from '../../shared/src/types';
 import type { QuizDto } from '../../shared/src/quiz/quizEngine';
 export type { QuizDto } from '../../shared/src/quiz/quizEngine';
+import type {
+  UserSchemaNote,
+  UserModeNote,
+  SaveSchemaNoteBody,
+  SaveModeNoteBody,
+} from '../../shared/src/notes/types';
+export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types';
 import { telemetryUrl } from './utils/telemetryUrl';
 
 const rawBase = (import.meta.env.VITE_API_URL as string) ?? '';
@@ -368,26 +375,6 @@ export interface ClientData {
   ysqActiveSchemaIds: string[];
   ysqHistory: YsqHistoryEntry[];
 }
-export interface UserSchemaNote {
-  schemaId: string;
-  triggers: string;
-  feelings: string;
-  thoughts: string;
-  origins: string;
-  reality: string;
-  healthyView: string;
-  behavior: string;
-  updatedAt: string;
-}
-export interface UserModeNote {
-  modeId: string;
-  triggers: string;
-  feelings: string;
-  thoughts: string;
-  needs: string;
-  behavior: string;
-  updatedAt: string;
-}
 export interface BeliefCheckEntry {
   id: number;
   belief: string;
@@ -527,9 +514,9 @@ export const api = {
   getTherapyClientData: (clientId: number) => get<ClientData>(`/api/therapy/client-data/${clientId}`),
   getTherapyClientHistory: (clientId: number) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
   getSchemaNotes:       () => get<UserSchemaNote[]>('/api/schema-notes'),
-  saveSchemaNote:       (body: { schemaId: string; triggers?: string; feelings?: string; thoughts?: string; origins?: string; reality?: string; healthyView?: string; behavior?: string }) => post('/api/schema-notes', body),
+  saveSchemaNote:       (body: SaveSchemaNoteBody) => post('/api/schema-notes', body),
   getModeNotes:         () => get<UserModeNote[]>('/api/mode-notes'),
-  saveModeNote:         (body: { modeId: string; triggers?: string; feelings?: string; thoughts?: string; needs?: string; behavior?: string }) => post('/api/mode-notes', body),
+  saveModeNote:         (body: SaveModeNoteBody) => post('/api/mode-notes', body),
   getBeliefChecks:      () => get<BeliefCheckEntry[]>('/api/belief-checks'),
   createBeliefCheck:    (body: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) => post('/api/belief-checks', body),
   deleteBeliefCheck:    (id: number) => del(`/api/belief-checks/${id}`),
