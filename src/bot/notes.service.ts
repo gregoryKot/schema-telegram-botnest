@@ -2,6 +2,35 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 
+// Поля, общие для карточки схемы и карточки режима — не копипастим список
+// дважды (правило №4/№10 CLAUDE.md). Различаются только doc-специфичные
+// поля: `reality` у схемы, `needs` у режима.
+const COMMON_NOTE_FIELDS = [
+  'triggers',
+  'feelings',
+  'thoughts',
+  'origins',
+  'healthyView',
+  'behavior',
+] as const;
+type CommonNoteFields = {
+  triggers?: string;
+  feelings?: string;
+  thoughts?: string;
+  origins?: string;
+  healthyView?: string;
+  behavior?: string;
+};
+
+// Схемы шифрования — общий источник правды для NotesService (юзер) и
+// TherapyClientDataService (терапевт читает те же таблицы, импортирует отсюда).
+export const SCHEMA_NOTE_SCHEMA: EncryptSchema = {
+  strings: [...COMMON_NOTE_FIELDS, 'reality'],
+};
+export const MODE_NOTE_SCHEMA: EncryptSchema = {
+  strings: [...COMMON_NOTE_FIELDS, 'needs'],
+};
+
 // Карточки схем/режимов (UserSchemaNote / UserModeNote) + доступ терапевта
 // к карточкам клиента. Заполнение карточки обязано добавить её id в
 // денормализованную коллекцию профиля (mySchemaIds/myModeIds) — иначе архив
@@ -10,49 +39,26 @@ import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 export class NotesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private static readonly SCHEMA_NOTE_SCHEMA: EncryptSchema = {
-    strings: [
-      'triggers',
-      'feelings',
-      'thoughts',
-      'origins',
-      'reality',
-      'healthyView',
-      'behavior',
-    ],
-  };
-  private static readonly MODE_NOTE_SCHEMA: EncryptSchema = {
-    strings: ['triggers', 'feelings', 'thoughts', 'needs', 'behavior'],
-  };
-
   async getSchemaNote(userId: bigint, schemaId: string) {
     const row = await this.prisma.userSchemaNote.findUnique({
       where: { userId_schemaId: { userId, schemaId } },
     });
-    return row ? decryptRecord(row, NotesService.SCHEMA_NOTE_SCHEMA) : null;
+    return row ? decryptRecord(row, SCHEMA_NOTE_SCHEMA) : null;
   }
 
   async getSchemaNotes(userId: bigint) {
     const rows = await this.prisma.userSchemaNote.findMany({
       where: { userId },
     });
-    return rows.map((r) => decryptRecord(r, NotesService.SCHEMA_NOTE_SCHEMA));
+    return rows.map((r) => decryptRecord(r, SCHEMA_NOTE_SCHEMA));
   }
 
   async upsertSchemaNote(
     userId: bigint,
     schemaId: string,
-    data: {
-      triggers?: string;
-      feelings?: string;
-      thoughts?: string;
-      origins?: string;
-      reality?: string;
-      healthyView?: string;
-      behavior?: string;
-    },
+    data: CommonNoteFields & { reality?: string },
   ) {
-    const enc = encryptRecord(data, NotesService.SCHEMA_NOTE_SCHEMA);
+    const enc = encryptRecord(data, SCHEMA_NOTE_SCHEMA);
     const res = await this.prisma.userSchemaNote.upsert({
       where: { userId_schemaId: { userId, schemaId } },
       update: enc,
@@ -95,26 +101,20 @@ export class NotesService {
     const row = await this.prisma.userModeNote.findUnique({
       where: { userId_modeId: { userId, modeId } },
     });
-    return row ? decryptRecord(row, NotesService.MODE_NOTE_SCHEMA) : null;
+    return row ? decryptRecord(row, MODE_NOTE_SCHEMA) : null;
   }
 
   async getModeNotes(userId: bigint) {
     const rows = await this.prisma.userModeNote.findMany({ where: { userId } });
-    return rows.map((r) => decryptRecord(r, NotesService.MODE_NOTE_SCHEMA));
+    return rows.map((r) => decryptRecord(r, MODE_NOTE_SCHEMA));
   }
 
   async upsertModeNote(
     userId: bigint,
     modeId: string,
-    data: {
-      triggers?: string;
-      feelings?: string;
-      thoughts?: string;
-      needs?: string;
-      behavior?: string;
-    },
+    data: CommonNoteFields & { needs?: string },
   ) {
-    const enc = encryptRecord(data, NotesService.MODE_NOTE_SCHEMA);
+    const enc = encryptRecord(data, MODE_NOTE_SCHEMA);
     const res = await this.prisma.userModeNote.upsert({
       where: { userId_modeId: { userId, modeId } },
       update: enc,

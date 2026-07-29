@@ -14,7 +14,7 @@ import { encrypt, encryptJson } from '../utils/crypto';
 
 const blank = { triggers: '', feelings: '', thoughts: '', behavior: '' };
 const blankSchemaNote = { ...blank, origins: '', reality: '', healthyView: '' };
-const blankModeNote = { ...blank, needs: '' };
+const blankModeNote = { ...blank, needs: '', origins: '', healthyView: '' };
 const mkUser = (id: bigint, name: string, schemas: string[], share = true) => ({
   id,
   firstName: name,
@@ -264,6 +264,8 @@ describe('TherapyClientDataService — расшифровка на пути чт
       mkModeNote(1, CLIENT_A, 'vulnerable_child', {
         triggers: encrypt('одиночество') ?? 'одиночество',
         needs: encrypt('поддержка') ?? 'поддержка',
+        origins: encrypt('так было в детстве') ?? 'так было в детстве',
+        healthyView: encrypt('это пройдёт') ?? 'это пройдёт',
       }),
     );
     const [sNote] = await svc.getClientSchemaNotes(T1, CID_A);
@@ -272,6 +274,8 @@ describe('TherapyClientDataService — расшифровка на пути чт
     expect(sNote.feelings).toBe('тревога');
     expect(mNote.triggers).toBe('одиночество');
     expect(mNote.needs).toBe('поддержка');
+    expect(mNote.origins).toBe('так было в детстве');
+    expect(mNote.healthyView).toBe('это пройдёт');
   });
 });
 

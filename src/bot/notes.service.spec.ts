@@ -99,4 +99,26 @@ describe('NotesService — карточка схемы/режима попада
     });
     expect(settings.myModeIds).toContain('vulnerable_child');
   });
+
+  // Карточка режима донабрала origins/healthyView (зеркало полей карточки
+  // схемы) — read-after-write: сохранил → прочитал теми же значениями, и
+  // инвариант «карточка в myModeIds» не сломался этим изменением.
+  it('origins/healthyView карточки режима: сохранил → читается теми же значениями', async () => {
+    const db = makeDb({ mySchemaIds: [], myModeIds: [] });
+    const svc = new NotesService(db);
+
+    await svc.upsertModeNote(1n, 'vulnerable_child', {
+      origins: 'так реагировали в детстве',
+      healthyView: 'сейчас я в безопасности',
+    });
+
+    const [note] = await svc.getModeNotes(1n);
+    expect(note.origins).toBe('так реагировали в детстве');
+    expect(note.healthyView).toBe('сейчас я в безопасности');
+
+    const settings = decryptRecord(db._user, {
+      jsonArrays: ['mySchemaIds', 'myModeIds'],
+    });
+    expect(settings.myModeIds).toContain('vulnerable_child');
+  });
 });
