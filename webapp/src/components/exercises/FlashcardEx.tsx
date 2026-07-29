@@ -8,6 +8,7 @@ import { pressable } from '../../utils/a11y';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { buildModeIntroExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
+import { buildSchemaIntroExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
 import { buildModeIntroQuestions } from '../../../../shared/src/mode/modeIntroQuestions';
 import { getModeCard } from '../../../../shared/src/mode/modeCards';
 import { MODE_CARD_SAVED_EVENT } from '../../../../shared/src/share/analytics';
@@ -123,7 +124,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete }: { onBack: () =
         <button className="ex-btn ex-btn-ghost" onClick={() => setPicked(null)} style={{ padding: '8px 12px' }}><GlyphArrowLeft /> Сменить схему</button>
       </>}
     >
-      <FlashcardFlow questions={SCHEMA_QUESTIONS} accentColor={picked.color} onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} />
+      <FlashcardFlow questions={SCHEMA_QUESTIONS} accentColor={picked.color} onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} explainer={buildSchemaIntroExplainer(tr)} />
     </ExScreen>
   );
 }

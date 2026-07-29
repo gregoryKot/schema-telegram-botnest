@@ -3,6 +3,7 @@ import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { IntroSheetShell } from './IntroSheetShell';
 import { IntroSheetQuestion } from './IntroSheetFlashcard';
+import { buildSchemaIntroExplainer } from '../../../shared/src/schema/schemaFlowExplainers';
 
 const LS_KEY = (id: string) => `schema_intro_${id}`;
 
@@ -140,6 +141,7 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
       subtitle={schema.domainName}
       description={schema.desc}
       showDescription
+      explainer={buildSchemaIntroExplainer(tr)}
       answerPromptText={tr('Нажми чтобы ответить', 'Нажмите чтобы ответить')}
       nextButtonLabel="Следующий вопрос →"
       gradientSaveButton
