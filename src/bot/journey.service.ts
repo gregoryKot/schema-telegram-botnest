@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { mapPracticeSessions } from './journey-practice-sessions.util';
 
 // «Мой путь» — сводный архив всей активности пользователя: сколько раз и когда
 // он заполнял трекер, дневники, практики, тесты и упражнения. Лента отдаёт
@@ -21,7 +22,10 @@ export type JourneyItemType =
   | 'flashcard'
   | 'safe_place'
   | 'schema_note'
-  | 'mode_note';
+  | 'mode_note'
+  | 'breathing'
+  | 'grounding'
+  | 'stop';
 
 export interface JourneyItem {
   type: JourneyItemType;
@@ -51,6 +55,9 @@ export interface JourneyCounts {
   safePlace: boolean;
   schemaNotes: number;
   modeNotes: number;
+  breathingSessions: number;
+  groundingSessions: number;
+  stopSessions: number;
 }
 
 export interface JourneyData {
@@ -89,6 +96,7 @@ export class JourneyService {
       safePlace,
       schemaNotes,
       modeNotes,
+      practiceSessions,
     ] = await Promise.all([
       p.rating.groupBy({ by: ['date'], where: by }),
       p.note.findMany({ where: by, select: { date: true } }),
@@ -150,7 +158,14 @@ export class JourneyService {
         where: by,
         select: { updatedAt: true, modeId: true },
       }),
+      p.practiceSession.findMany({
+        where: by,
+        select: { id: true, tool: true, createdAt: true },
+      }),
     ]);
+
+    const { items: practiceItems, counts: practiceCounts } =
+      mapPracticeSessions(practiceSessions);
 
     // Старые пользователи прошли тест до появления таблицы истории —
     // сам результат тогда единственный след прохождения.
@@ -226,6 +241,7 @@ export class JourneyService {
         at: iso(e.updatedAt),
         modeId: e.modeId,
       })),
+      ...practiceItems,
     ]
       .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
       .slice(0, FEED_LIMIT);
@@ -247,6 +263,7 @@ export class JourneyService {
         safePlace: safePlace !== null,
         schemaNotes: schemaNotes.length,
         modeNotes: modeNotes.length,
+        ...practiceCounts,
       },
       items,
     };

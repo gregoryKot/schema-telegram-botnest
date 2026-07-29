@@ -158,6 +158,24 @@ describe('e2e smoke: ownership isolation sweep (tracker/diary/plans/exercises/ys
     expect(asOther.body).toEqual({});
   });
 
+  it('practice-sessions: user B counts stay at 0 while user A racks up a practice', async () => {
+    const a = agentAs(USER_A);
+    const b = agentAs(USER_B);
+
+    const recorded = await a.post('/api/practice-session', {
+      tool: 'breathing',
+    });
+    expect(recorded.status).toBeLessThan(300);
+    // read-after-write: ответ записи сразу несёт актуальный счётчик
+    expect(recorded.body).toEqual({ ok: true, count: 1 });
+
+    const asOwner = await a.get('/api/practice-sessions');
+    expect(asOwner.body).toEqual({ breathing: 1, grounding: 0, stop: 0 });
+
+    const asOther = await b.get('/api/practice-sessions');
+    expect(asOther.body).toEqual({ breathing: 0, grounding: 0, stop: 0 });
+  });
+
   // Nest serialises a `null` controller return as an EMPTY body (not JSON
   // "null"), so supertest parses it as `{}` — assert on `.text` instead of
   // `.body` for the "nothing here" case.

@@ -9,6 +9,7 @@ import {
   ONBOARDING_STEPS,
   TODAY_BLOCKS,
 } from '../analytics/analytics.constants';
+import { QUICK_PRACTICE_IDS } from './practice-sessions.service';
 
 // Продуктовые метрики для /stats (правило №8). Всё выводится из БД: часть — из
 // таблиц-фич (онбординг/adoption/распределения), часть — из событий
@@ -74,6 +75,8 @@ export class ProductMetricsService {
       homeScreenRows,
       journeyOpens,
       ysqHelpOpens,
+      practiceSessionRows,
+      practiceSessionUsersRaw,
     ] = await Promise.all([
       this.prisma.user.count({
         where: { ...activeUser, createdAt: { gte: since30 } },
@@ -177,6 +180,16 @@ export class ProductMetricsService {
         GROUP BY "meta"->>'action'`,
       ev('journey_open'),
       ev('ysq_help_open'),
+      // Быстрые практики «Здесь и сейчас» (PracticeSession, а не событие —
+      // это факт прохождения, не клик по кнопке).
+      this.prisma.practiceSession.groupBy({
+        by: ['tool'],
+        where: { createdAt: { gte: since30 } },
+        _count: { _all: true },
+      }),
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(DISTINCT "userId")::bigint AS c FROM "PracticeSession"
+        WHERE "createdAt" >= ${since30}`,
     ]);
 
     const sections = sectionsRaw
@@ -207,6 +220,18 @@ export class ProductMetricsService {
     const onboardingSteps = ONBOARDING_STEPS.filter((s) =>
       stepCounts.has(s),
     ).map((step) => ({ step, count: stepCounts.get(step) ?? 0 }));
+
+    // Честные три инструмента всегда, отсутствующие в выборке — 0.
+    const practiceToolCounts = new Map(
+      practiceSessionRows.map((r) => [r.tool, r._count._all]),
+    );
+    const practiceSessions = {
+      byTool: QUICK_PRACTICE_IDS.map((tool) => ({
+        tool,
+        count: practiceToolCounts.get(tool) ?? 0,
+      })),
+      distinctUsers: num(practiceSessionUsersRaw),
+    };
 
     return {
       onboarding: { cohort30, completed30 },
@@ -248,6 +273,7 @@ export class ProductMetricsService {
       breath: { started: breathStarted },
       stop: { started: stopStarted },
       journey: { opens: journeyOpens },
+      practiceSessions,
       homeScreen: {
         shown: hsCount('shown'),
         add: hsCount('add'),

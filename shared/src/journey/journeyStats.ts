@@ -29,6 +29,9 @@ export function journeyStatRows(counts: JourneyCounts): JourneyStatRow[] {
     ['🎪', 'Карточки режимов', counts.modeNotes],
     ['🏝', 'Безопасное место', counts.safePlace ? 1 : 0],
     ['🎡', 'Колесо детства', counts.childhoodDone ? 1 : 0],
+    ['🌬', 'Дыхательные практики', counts.breathingSessions],
+    ['🌍', 'Заземление', counts.groundingSessions],
+    ['🛑', 'Техника «Стоп»', counts.stopSessions],
   ];
   return rows
     .filter(([, , count]) => count > 0)

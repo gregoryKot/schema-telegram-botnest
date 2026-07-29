@@ -15,6 +15,7 @@ import { AnalyticsController } from './analytics.controller';
 import { PublicEventsController } from './public-events.controller';
 import { QuizController } from './quiz.controller';
 import { JourneyController } from './journey.controller';
+import { PracticeSessionsController } from './practice-sessions.controller';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -47,6 +48,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     PublicEventsController,
     QuizController,
     JourneyController,
+    PracticeSessionsController,
     HealthController,
     ClientErrorsController,
   ],

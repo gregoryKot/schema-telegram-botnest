@@ -31,6 +31,13 @@ export const JOURNEY_TYPE_META = {
   safe_place: { emoji: '🏝', label: 'Безопасное место', group: 'exercise' },
   schema_note: { emoji: '🧩', label: 'Карточка схемы', group: 'cards' },
   mode_note: { emoji: '🎪', label: 'Карточка режима', group: 'cards' },
+  breathing: { emoji: '🌬', label: 'Дыхание', group: 'exercise' },
+  grounding: {
+    emoji: '🌍',
+    label: 'Заземление 5-4-3-2-1',
+    group: 'exercise',
+  },
+  stop: { emoji: '🛑', label: 'Техника «Стоп»', group: 'exercise' },
 } satisfies Record<string, JourneyTypeMeta>;
 
 export type JourneyItemType = keyof typeof JOURNEY_TYPE_META;
@@ -52,6 +59,9 @@ export interface JourneyCounts {
   safePlace: boolean;
   schemaNotes: number;
   modeNotes: number;
+  breathingSessions: number;
+  groundingSessions: number;
+  stopSessions: number;
 }
 
 export interface JourneyItem {

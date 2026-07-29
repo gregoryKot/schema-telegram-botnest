@@ -48,6 +48,12 @@ export interface ProductMetrics {
   stop: { started: number };
   // Архив «Мой путь» (за месяц): сколько раз открывали свою историю.
   journey: { opens: number };
+  // Быстрые практики «Здесь и сейчас» (за месяц): сколько раз прошли каждую
+  // и сколько разных людей хоть раз попробовали.
+  practiceSessions: {
+    byTool: Array<{ tool: string; count: number }>;
+    distinctUsers: number;
+  };
   // Значок на экране телефона (за месяц): предлагали / что ответили.
   homeScreen: {
     shown: number;
@@ -93,6 +99,13 @@ const TODAY_BLOCK_LABELS: Record<string, string> = {
   phrase: '💬 цитата',
   secondary: '🗂 «что ещё можно сегодня»',
   therapist_banner: '🧑‍⚕️ баннер кабинета',
+};
+
+// Подписи быстрых практик «Здесь и сейчас» (PracticeSession.tool) — словами.
+const PRACTICE_TOOL_LABELS: Record<string, string> = {
+  breathing: 'дыхание',
+  grounding: 'заземление',
+  stop: '«Стоп»',
 };
 
 // Подписи шагов обучения — тем же простым языком, каким шаг звучит для юзера.
@@ -197,6 +210,17 @@ export function formatProductMetrics(m: ProductMetrics): string {
     m.journey.opens === 0
       ? 'Свою историю пока никто не открывал'
       : `Открывали свою историю: ${m.journey.opens} раз`,
+    '',
+    `🧘 <b>Быстрые практики «Здесь и сейчас»</b> (за месяц)`,
+    m.practiceSessions.distinctUsers === 0
+      ? 'Пока никто не проходил'
+      : 'Проходили: ' +
+        m.practiceSessions.byTool
+          .map((t) => `${PRACTICE_TOOL_LABELS[t.tool] ?? t.tool} — ${t.count}`)
+          .join(' · '),
+    m.practiceSessions.distinctUsers === 0
+      ? ''
+      : `Попробовали хотя бы раз: ${m.practiceSessions.distinctUsers} человек`,
     '',
     `📲 <b>Значок приложения на экране телефона</b> (за месяц)`,
     m.homeScreen.shown === 0

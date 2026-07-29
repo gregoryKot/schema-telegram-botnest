@@ -95,3 +95,14 @@ export function journeyItemShareText(
 ): string {
   return `${emoji} ${label} — ещё один шаг заботы о себе.\n\n${link}`;
 }
+
+/** Быстрая практика «Здесь и сейчас» (дыхание, заземление, «Стоп»). link — необязателен: карточка может уйти без подписи-ссылки. */
+export function practiceShareText(
+  title: string,
+  countLabel: string | null,
+  link?: string,
+): string {
+  const countStr = countLabel ? ` ${countLabel}.` : '';
+  const linkStr = link ? `\n\n${link}` : '';
+  return `🧘 ${title}.${countStr}${linkStr}`;
+}

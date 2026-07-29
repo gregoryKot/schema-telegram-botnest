@@ -49,7 +49,9 @@ describe('ProductMetricsService.getMetrics', () => {
         { action: 'shown', c: 200n },
         { action: 'add', c: 60n },
         { action: 'added', c: 45n },
-      ]);
+      ])
+      // быстрые практики «Здесь и сейчас»: разных людей, хоть раз попробовавших
+      .mockResolvedValueOnce([{ c: 37n }]);
     const eventCount = jest
       .fn()
       .mockResolvedValueOnce(12) // crisis_card_shown
@@ -73,6 +75,12 @@ describe('ProductMetricsService.getMetrics', () => {
       ysqResult: { count: jest.fn(async () => 210) },
       ysqProgress: { count: jest.fn(async () => 260) },
       analyticsEvent: { count: eventCount },
+      practiceSession: {
+        groupBy: jest.fn(async () => [
+          { tool: 'breathing', _count: { _all: 40 } },
+          { tool: 'stop', _count: { _all: 10 } },
+        ]),
+      },
       $queryRaw: queryRaw,
     };
 
@@ -129,6 +137,15 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(m.breath).toEqual({ started: 33 });
     expect(m.stop).toEqual({ started: 21 });
     expect(m.journey).toEqual({ opens: 18 });
+    // grounding отсутствует в выборке groupBy → честный 0, не undefined
+    expect(m.practiceSessions).toEqual({
+      byTool: [
+        { tool: 'breathing', count: 40 },
+        { tool: 'grounding', count: 0 },
+        { tool: 'stop', count: 10 },
+      ],
+      distinctUsers: 37,
+    });
     // отсутствующие в выборке действия — нули, а не undefined/NaN
     expect(m.homeScreen).toEqual({
       shown: 200,
@@ -204,5 +221,13 @@ const EMPTY_METRICS = {
   breath: { started: 0 },
   stop: { started: 0 },
   journey: { opens: 0 },
+  practiceSessions: {
+    byTool: [
+      { tool: 'breathing', count: 0 },
+      { tool: 'grounding', count: 0 },
+      { tool: 'stop', count: 0 },
+    ],
+    distinctUsers: 0,
+  },
   homeScreen: { shown: 0, add: 0, later: 0, never: 0, added: 0 },
 };
