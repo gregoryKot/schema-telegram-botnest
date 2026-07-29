@@ -117,3 +117,9 @@ prisma.config.js.map
 # Воркспейс .claire — не код проекта (затреканный файл из чужого worktree
 # давал environment-зависимый eslint в CI)
 .claire/
+
+# Stryker (mutation testing, этап 4.1): песочница и отчёты — артефакты
+# прогона, в репозиторий не кладутся. В git едут только stryker.config.json
+# и scripts/mutation-baseline.json (счёт по золотым зонам).
+.stryker-tmp/
+reports/

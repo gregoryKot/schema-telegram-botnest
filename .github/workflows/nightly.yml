@@ -79,3 +79,34 @@ jobs:
       # флаков, три повтора тут только шумели бы время рана).
       - name: shared vitest
         run: npm test --prefix shared
+
+  # Mutation-тестирование золотых зон (TEST_IMPROVEMENT_PLAN.md, этап 4.1).
+  # Здесь, а не в PR-CI: прогон правит код сотнями мутантов и перегоняет тесты
+  # на каждом — это минуты, неприемлемые на каждый пуш. Ночью же вопрос
+  # «а поймают ли тесты, если сломать шифрование/подпись платежа?» проверяется
+  # честно, и просадка счёта роняет ночной ран.
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Stryker по золотым зонам (crypto/auth/robokassa/tz)
+        run: npm run mutation
+      # Храповик: счёт не может просесть ниже scripts/mutation-baseline.json
+      # (с допуском на недетерминизм таймаутов — см. комментарий в скрипте).
+      - name: mutation-храповик
+        run: node scripts/check-mutation-ratchet.mjs
+      # HTML-отчёт с вкладкой Survived — что именно тесты проспали.
+      - name: отчёт артефактом
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 14
