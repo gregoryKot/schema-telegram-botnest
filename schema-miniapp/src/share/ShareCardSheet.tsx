@@ -1,15 +1,12 @@
-// Generic-шит шаринга карточки: превью канваса + кнопка «Поделиться» +
-// текстовый фолбэк, если системный шэр недоступен/упал. Все share-карточки
-// приложения (трекер, достижения, схема, дневник) ходят через него.
-import { useEffect, useRef, useState } from 'react';
+// Generic-шит шаринга карточки: превью канваса + «Поделиться» + «Скопировать
+// текст». Все share-карточки приложения (трекер, достижения, схема, дневник)
+// ходят через него. Логика — общая (shared/useShareCard, правило №3),
+// вёрстка своя: BottomSheet мини-аппа.
 import { BottomSheet } from '../components/BottomSheet';
 import { TherapyNote } from '../components/TherapyNote';
-import { shareCanvasImage } from '../../../shared/src/share/shareImage';
-import {
-  SHARE_CARD_EVENT,
-  SHARE_RESULT_EVENT,
-  type ShareCardKind,
-} from '../../../shared/src/share/analytics';
+import { ShareIcon } from '../../../shared/src/share/ShareIcon';
+import { useShareCard } from '../../../shared/src/share/useShareCard';
+import type { ShareCardKind } from '../../../shared/src/share/analytics';
 import { api } from '../api';
 
 interface Props {
@@ -40,48 +37,14 @@ export function ShareCardSheet({
   zIndex = 200,
   therapyNote,
 }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [sharing, setSharing] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [showFallback, setShowFallback] = useState(false);
-  const [fallbackCopied, setFallbackCopied] = useState(false);
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    try {
-      draw(canvasRef.current);
-    } catch {
-      // Отрисовка карточки не должна ронять весь экран
-    }
-  }, [draw]);
-
-  async function handleShare() {
-    if (!canvasRef.current) return;
-    setSharing(true);
-    try {
-      await shareCanvasImage(canvasRef.current, shareText, filename, {
-        downloadFallback: true,
-      });
-      api.trackEvent(SHARE_CARD_EVENT, { kind: eventKind });
-      api.trackEvent(SHARE_RESULT_EVENT, { kind: eventKind, ok: true });
-    } catch {
-      // Шэр не удался — показываем текстовый фолбэк
-      api.trackEvent(SHARE_RESULT_EVENT, { kind: eventKind, ok: false });
-      const text = fallbackText ?? shareText;
-      try {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-      } catch {
-        /* best-effort: ошибку намеренно игнорируем */
-      }
-      setShowFallback(true);
-    } finally {
-      setSharing(false);
-    }
-  }
-
-  const textForFallback = fallbackText ?? shareText;
+  const s = useShareCard({
+    draw,
+    shareText,
+    fallbackText,
+    filename,
+    eventKind,
+    track: api.trackEvent,
+  });
 
   return (
     <>
@@ -92,50 +55,78 @@ export function ShareCardSheet({
               fontSize: 18,
               fontWeight: 600,
               color: 'var(--text)',
-              marginBottom: 20,
+              marginBottom: 4,
             }}
           >
             {title}
           </div>
+          <div
+            style={{
+              fontSize: 13,
+              color: 'rgba(var(--fg-rgb),0.5)',
+              marginBottom: 18,
+            }}
+          >
+            Картинка уйдёт вместе со ссылкой
+          </div>
 
           <div
             style={{
-              borderRadius: 16,
+              borderRadius: 20,
               overflow: 'hidden',
-              border: '1px solid rgba(var(--fg-rgb),0.06)',
-              marginBottom: 20,
+              border: '1px solid rgba(var(--fg-rgb),0.07)',
+              boxShadow: '0 14px 34px rgba(0,0,0,0.25)',
+              marginBottom: 18,
             }}
           >
             <canvas
-              ref={canvasRef}
+              ref={s.canvasRef}
               style={{ display: 'block', width: '100%', height: 'auto' }}
             />
           </div>
 
           <button
-            onClick={handleShare}
-            disabled={sharing}
+            onClick={() => void s.share()}
+            disabled={s.sharing}
             style={{
               width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
               padding: '15px 0',
               borderRadius: 14,
               border: 'none',
-              background: copied
-                ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)'
-                : 'linear-gradient(135deg, #a78bfa, #4fa3f7)',
-              color: copied ? '#06d6a0' : '#fff',
+              background: 'linear-gradient(135deg, #8f86ff, #5aa8f7)',
+              color: '#fff',
               fontSize: 16,
               fontWeight: 600,
               cursor: 'pointer',
-              opacity: sharing ? 0.6 : 1,
-              transition: 'all 0.2s ease',
+              opacity: s.sharing ? 0.6 : 1,
+              transition: 'opacity 0.2s ease',
             }}
           >
-            {copied
-              ? '✓ Скопировано'
-              : sharing
-                ? 'Подготовка...'
-                : 'Поделиться'}
+            <ShareIcon size={17} />
+            {s.sharing ? 'Готовлю картинку…' : 'Поделиться'}
+          </button>
+          <button
+            onClick={() => void s.copy()}
+            style={{
+              width: '100%',
+              marginTop: 10,
+              padding: '13px 0',
+              border: 'none',
+              borderRadius: 12,
+              background: s.copied
+                ? 'color-mix(in srgb, var(--accent-green) 18%, transparent)'
+                : 'rgba(var(--fg-rgb),0.06)',
+              color: s.copied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.65)',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {s.copied ? '✓ Текст скопирован' : 'Скопировать текст'}
           </button>
           {therapyNote && (
             <div style={{ marginTop: 12 }}>
@@ -145,14 +136,8 @@ export function ShareCardSheet({
         </div>
       </BottomSheet>
 
-      {showFallback && (
-        <BottomSheet
-          onClose={() => {
-            setShowFallback(false);
-            setFallbackCopied(false);
-          }}
-          zIndex={zIndex + 100}
-        >
+      {s.showText && (
+        <BottomSheet onClose={s.closeText} zIndex={zIndex + 100}>
           <div style={{ paddingTop: 4 }}>
             <div
               style={{
@@ -180,33 +165,25 @@ export function ShareCardSheet({
                 fontFamily: 'inherit',
               }}
             >
-              {textForFallback}
+              {s.text}
             </pre>
             <button
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(textForFallback);
-                  setFallbackCopied(true);
-                  setTimeout(() => setFallbackCopied(false), 2000);
-                } catch {
-                  /* best-effort: ошибку намеренно игнорируем */
-                }
-              }}
+              onClick={() => void s.copy()}
               style={{
                 width: '100%',
                 padding: '13px 0',
                 border: 'none',
                 borderRadius: 12,
-                background: fallbackCopied
+                background: s.copied
                   ? 'color-mix(in srgb, var(--accent-green) 20%, transparent)'
                   : 'rgba(var(--fg-rgb),0.08)',
-                color: fallbackCopied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.7)',
+                color: s.copied ? '#06d6a0' : 'rgba(var(--fg-rgb),0.7)',
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
-              {fallbackCopied ? '✓ Скопировано' : 'Скопировать'}
+              {s.copied ? '✓ Скопировано' : 'Скопировать'}
             </button>
           </div>
         </BottomSheet>
