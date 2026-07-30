@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
-import { TelegramChannelService } from './telegram.channel.service';
+import { CHANNEL_PROVIDERS } from '../channel/channel.providers';
 import { HealthyAdultAdminController } from './healthy-adult-admin.controller';
 import { TelegramSettingsService } from './telegram.settings.service';
 import { TelegramNotifyActionsService } from './telegram.notify-actions.service';
@@ -19,12 +19,12 @@ import { AnalyticsModule } from '../analytics/analytics.module';
   providers: [
     TelegramService,
     TelegramScheduleService,
-    TelegramChannelService,
     TelegramSettingsService,
     TelegramNotifyActionsService,
     TelegramNotifySettingsService,
     TelegramQuizService,
     ...TELEGRAM_PROVIDERS,
+    ...CHANNEL_PROVIDERS, // канал «ЗВ»: площадки, рассылка, расписание
   ],
   exports: [TelegramService, TelegramScheduleService],
 })

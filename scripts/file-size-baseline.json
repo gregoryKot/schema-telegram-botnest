@@ -288,7 +288,6 @@
   "schema-miniapp/src/components/StepFlowSheet.tsx": 140,
   "src/bot/exercises.service.ts": 140,
   "src/main.ts": 140,
-  "src/telegram/telegram.channel.service.ts": 140,
   "webapp/src/components/trackerOverlay/CompletionScreen.tsx": 140,
   "schema-miniapp/src/components/myNotes/MyNotesExercisesTab.tsx": 139,
   "schema-miniapp/src/components/schemaFlashcard/ResponseStep.tsx": 139,

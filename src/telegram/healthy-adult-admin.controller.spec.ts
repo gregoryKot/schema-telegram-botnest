@@ -4,7 +4,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { HealthyAdultAdminController } from './healthy-adult-admin.controller';
 import type { HealthyAdultService } from '../bot/healthy-adult.service';
-import type { TelegramChannelService } from './telegram.channel.service';
+import type { ChannelPublisherService } from '../channel/channel-publisher.service';
 
 const ADMIN_KEY = 'test-admin-key-1234';
 
@@ -29,8 +29,8 @@ function makePhrases() {
 
 function makeChannel() {
   return {
-    post: jest.fn().mockResolvedValue({ ok: true, message: 'posted' }),
-  } as unknown as TelegramChannelService;
+    publish: jest.fn().mockResolvedValue({ ok: true, message: 'posted' }),
+  } as unknown as ChannelPublisherService;
 }
 
 function makeController(
@@ -92,7 +92,7 @@ describe('HealthyAdultAdminController — гейтинг по x-admin-key', () =
     expect(phrases.create).not.toHaveBeenCalled();
     expect(phrases.update).not.toHaveBeenCalled();
     expect(phrases.remove).not.toHaveBeenCalled();
-    expect(channel.post).not.toHaveBeenCalled();
+    expect(channel.publish).not.toHaveBeenCalled();
   });
 });
 
@@ -117,10 +117,10 @@ describe('HealthyAdultAdminController — действия делегируют 
     expect(res).toEqual({ ok: true });
   });
 
-  it('testPost с валидным ключом публикует в канал (channel.post)', async () => {
+  it('testPost с валидным ключом публикует по площадкам (publisher.publish)', async () => {
     const { controller, channel } = makeController();
     const res = await controller.testPost(ADMIN_KEY);
-    expect(channel.post).toHaveBeenCalledTimes(1);
+    expect(channel.publish).toHaveBeenCalledTimes(1);
     expect(res).toEqual(expect.objectContaining({ ok: true }));
   });
 });
