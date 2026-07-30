@@ -1,17 +1,18 @@
 // Точка входа: приложение спрашивает `getHost()` и работает с любым хостом
 // одинаково. Определение делаем один раз за жизнь вкладки — хост не меняется.
 import { createTelegramHost, telegramWebApp } from './telegram';
+import { createMaxHost, maxWebApp } from './max';
 import { createWebHost } from './web';
 import type { HostBridge, HostId } from './types';
 
 export * from './types';
 export { createTelegramHost } from './telegram';
+export { createMaxHost } from './max';
 export { createWebHost } from './web';
 
 export function detectHostId(): HostId {
   if (telegramWebApp()) return 'telegram';
-  // Сюда же придёт MAX, когда появится его адаптер: у мессенджера свой
-  // глобальный объект от MAX Bridge.
+  if (maxWebApp()) return 'max';
   return 'web';
 }
 
@@ -31,6 +32,8 @@ export function createHost(id: HostId): HostBridge {
   switch (id) {
     case 'telegram':
       return createTelegramHost();
+    case 'max':
+      return createMaxHost();
     default:
       return createWebHost();
   }

@@ -64,8 +64,9 @@ describe('трипваер: каждый контроллер защищён (gu
   it('allowlist публичных не разросся сверх известного (может только сокращаться)', () => {
     // 9 → 11 (2026-07-23): +quiz.controller +public-events.controller —
     // публичные по дизайну фичи «мини-тесты без регистрации» (лид-магнит);
+    // 11 → 12 (2026-07-30): +auth-max.controller — вход из мини-аппа MAX,
     // обоснование в PUBLIC_BY_DESIGN выше, ревью безопасности — в PR фичи.
-    expect(Object.keys(PUBLIC_BY_DESIGN).length).toBeLessThanOrEqual(11);
+    expect(Object.keys(PUBLIC_BY_DESIGN).length).toBeLessThanOrEqual(12);
     expect(ADMIN_KEY_GATED.size).toBeLessThanOrEqual(4);
   });
 });

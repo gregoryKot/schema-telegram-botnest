@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Всё по схеме</title>
     <script src="/telegram-web-app.js"></script>
+    <!--
+      Мост MAX подключаем только внутри MAX. Их скрипт создаёт window.WebApp —
+      имя настолько общее, что грузить его всегда нельзя: в обычном браузере
+      объект появился бы на пустом месте, и приложение решило бы, что открыто
+      в мессенджере.
+
+      Признак MAX виден до загрузки моста: площадка передаёт стартовые
+      параметры фрагментом URL (#WebAppData=…), оттуда же их читает и сам мост.
+      document.write — чтобы скрипт успел выполниться до main.tsx: хост
+      спрашивают на первом же экране.
+    -->
+    <script>
+      if (window.location.hash.indexOf('WebAppData=') !== -1) {
+        document.write(
+          '<script src="https://st.max.ru/js/max-web-app.js"><\/script>',
+        );
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
