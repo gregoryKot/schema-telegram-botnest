@@ -23,6 +23,12 @@ jobs:
     # in_progress — убитый шаг отдаёт лог с последней строкой вывода,
     # вечная джоба не отдаёт ничего и жрёт слот раннера 6 часов.
     timeout-minutes: 15
+    env:
+      # ts-jest транспилирует src в JS на каждый прогон jest; кэш переживает
+      # джобу через actions/cache ниже — прокидывается явным --cacheDirectory
+      # в каждый npx jest, потому что jest не читает env-переменную для этого
+      # (в конфиге кэш-путь не задан, а package.json трогать нельзя — CI-4.2).
+      JEST_CACHE_DIR: .jest-cache
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -31,31 +37,37 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
+      # Кэш ts-jest между прогонами CI (CI-гигиена 4.2): ключ по
+      # package-lock.json — если зависимости (в т.ч. ts-jest/typescript)
+      # не менялись, кэш переиспользуется; иначе restore-keys подхватывают
+      # ближайший старый кэш вместо холодного старта.
+      - name: Кэш ts-jest
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.JEST_CACHE_DIR }}
+          key: jest-ts-cache-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            jest-ts-cache-${{ runner.os }}-
       - run: npx tsc --noEmit -p tsconfig.build.json
-      # Диагностический прогон БЕЗ coverage и БЕЗ --silent (зависания
-      # 2026-07-20): если висит и он — дело в jest/тестах на раннере,
-      # если проходит, а ratchet ниже висит — дело в istanbul/spawnSync.
-      # verbose-вывод показывает последний стартовавший сьют перед смертью.
-      - name: jest диагностический (без coverage, с выводом)
-        run: npx jest --verbose
-        timeout-minutes: 6
       # coverage-храповик (TEST_COVERAGE_PLAN.md, этап 4, п.14): сам гоняет
       # jest --coverage, отдельный `npx jest` не нужен. Падает при просадке
       # покрытия ниже scripts/coverage-baseline.json (общей или по полу
-      # src/auth и src/utils).
+      # src/auth и src/utils). Читает JEST_CACHE_DIR из env и прокидывает
+      # его spawn'нутому jest как --cacheDirectory.
       - run: node scripts/check-coverage-ratchet.mjs
         timeout-minutes: 6
-      # Тот же пакет тестов под НЕ-UTC зоной (инцидент 2026-07-20).
-      # Раннер всегда UTC, поэтому баги «время считается от зоны сервера»
-      # в CI невидимы: парсер TZID в caldav-busy.ts был сломан для любой
-      # не-UTC машины, но CI был зелёный, а разработчик в Asia/Jerusalem
-      # ловил два красных теста и искал причину в своём окружении.
+      # Тот же пакет тестов под НЕ-UTC зоной (инцидент 2026-07-20), второй
+      # полный прогон после coverage-храповика выше. Раннер всегда UTC,
+      # поэтому баги «время считается от зоны сервера» в CI невидимы:
+      # парсер TZID в caldav-busy.ts был сломан для любой не-UTC машины, но
+      # CI был зелёный, а разработчик в Asia/Jerusalem ловил два красных
+      # теста и искал причину в своём окружении.
       # Sydney выбран намеренно: ненулевое смещение + DST в противофазе к
       # северному полушарию. Мутировать process.env.TZ внутри jest нельзя —
       # песочница не пробрасывает смену зоны в V8, только env процесса.
       # Прогон стоит ~20 секунд.
       - name: jest под не-UTC таймзоной — ловит зависимость от зоны сервера
-        run: npx jest
+        run: npx jest --cacheDirectory="$JEST_CACHE_DIR"
         env:
           TZ: Australia/Sydney
       # e2e-смоук (TEST_COVERAGE_PLAN.md, этап 1 п.7): реальный AppModule
@@ -66,20 +78,16 @@ jobs:
       # read-after-write.e2e-spec гоняется отдельно в джобе migrations (нужен
       # реальный Postgres) — здесь исключён, наши специи на фейк-Prisma.
       - run: >-
-          npx jest --config ./test/jest-e2e.json
+          npx jest --config ./test/jest-e2e.json --cacheDirectory="$JEST_CACHE_DIR"
           test/app-auth test/app-ownership test/app-ownership-sweep
           test/auth-flows test/public-quizzes
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим — шум.
       - run: npm audit --omit=dev --audit-level=high
-      # Один маршрут — один контроллер (аудит: найдены живые дубли маршрутов
-      # с разъехавшейся privacy-логикой).
-      - run: node scripts/check-route-collisions.mjs
       # Храповик копипасты: новая дублированная логика ≥70 токенов не проходит.
+      # Требует npx jscpd из node_modules — не fs-only, остаётся здесь
+      # (в отличие от route-collisions/legacy-name, см. джобу checks).
       - run: node scripts/check-jscpd-ratchet.mjs
-      # Старое имя продукта «СхемаЛаб»/«Схема-лаб» не возвращается (переехали на
-      # «Всё по схеме»); первый проход искал только латиницей и кириллицу упустил.
-      - run: node scripts/check-legacy-name.mjs
       # Храповик размера файлов (правило №10): файл из бейслайна только
       # уменьшается, новый файл >300 строк не проходит. Долг тает, не растёт.
       - run: node scripts/check-file-size-ratchet.mjs
@@ -93,6 +101,27 @@ jobs:
       # слова-филлеры расползлись по всему user-facing тексту. Счётчик
       # пофайловый и может только падать.
       - run: node scripts/check-robot-phrases.mjs
+
+  # Лёгкие fs-only проверки (CI-гигиена 4.2): читают исходники через
+  # node:fs/node:path, без единой npm-зависимости — не нуждаются в npm ci
+  # и node_modules. Вынесены из backend-джобы, чтобы не ждать полную
+  # установку зависимостей ради двух быстрых проверок по grep-принципу.
+  # check-address-form.mjs и check-paired-files.mjs НЕ трогаем — они уже
+  # живут в джобе webapp.
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # Один маршрут — один контроллер (аудит: найдены живые дубли маршрутов
+      # с разъехавшейся privacy-логикой).
+      - run: node scripts/check-route-collisions.mjs
+      # Старое имя продукта «СхемаЛаб»/«Схема-лаб» не возвращается (переехали
+      # на «Всё по схеме»); первый проход искал только латиницей и кириллицу
+      # упустил.
+      - run: node scripts/check-legacy-name.mjs
 
   # Миграции гоняются на РЕАЛЬНОМ Postgres (инцидент 2026-07-16: битый сид
   # healthy_adult_phrases — updatedAt NOT NULL без значения — уронил прод

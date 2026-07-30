@@ -26,6 +26,15 @@ function walk(dir: string): string[] {
 
 const ALL_SRC = walk(SRC);
 
+// Преамбула инструментации Stryker (этап 4.1): при mutation-прогоне исходники
+// копируются в .stryker-tmp/sandbox-*/ и каждому файлу дописывается шапка
+// `var g = ... || new Function("return this")()` для доступа к globalThis.
+// Это код инструмента, а не наш — иначе трипваер валит dry-run Стрykera на
+// собственной служебной строке. Проверка НЕ ослабляется: игнорируем только
+// точную сигнатуру этой шапки, любой другой `new Function` по-прежнему красный.
+const STRYKER_PREAMBLE =
+  /globalThis\.Math === Math && globalThis \|\| new Function/;
+
 describe('трипваер: нет RCE-поверхностей и небезопасного raw-SQL', () => {
   // Жёсткий бан — RCE-поверхности, недопустимы в любом виде.
   const HARD_BANNED = [
@@ -46,6 +55,7 @@ describe('трипваер: нет RCE-поверхностей и небезо�
       const src = readFileSync(file, 'utf8');
       src.split('\n').forEach((line, i) => {
         if (line.trimStart().startsWith('//')) return;
+        if (STRYKER_PREAMBLE.test(line)) return;
         for (const re of HARD_BANNED) {
           if (re.test(line))
             hits.push(`${file.replace(SRC, 'src')}:${i + 1}: ${line.trim()}`);

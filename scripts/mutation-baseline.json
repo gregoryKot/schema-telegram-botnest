@@ -1,0 +1,9 @@
+{
+  "total": 71.23,
+  "files": {
+    "src/auth/auth.service.ts": 70.75,
+    "src/booking/robokassa.service.ts": 68.22,
+    "src/utils/crypto.ts": 72.89,
+    "src/utils/tz.ts": 80.77
+  }
+}

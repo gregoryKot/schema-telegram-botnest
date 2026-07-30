@@ -1,0 +1,112 @@
+# Ночная flaky-детекция (CI-гигиена 4.3 TEST_IMPROVEMENT_PLAN.md).
+#
+# Зачем: обычный PR-CI гоняет каждый тестовый пакет ОДИН раз — тест,
+# который падает раз в 5-10 прогонов (гонка, незачищенный таймер/мок,
+# порядко-зависимость между тестами), почти всегда попадает зелёным и
+# уезжает в main незамеченным. Единственный способ поймать такую флакуй-
+# ность — прогнать один и тот же набор тестов несколько раз подряд на
+# отдельном расписании, не блокируя мерж PR ожиданием повторов.
+#
+# Красный nightly НЕ блокирует ничьи PR — это отдельный сигнал владельцу
+# (виден во вкладке Actions), а не гейт мержа. Никакой автоматики поверх
+# (issue/уведомления) сознательно не заводим — история флаков читается
+# прямо в логе рана.
+name: Nightly flaky-детекция
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  backend-flaky:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      # Три подряд прогона одного и того же набора: флаки, воспроизводимый
+      # раз в 2-3 запуска, красит хотя бы один из трёх.
+      - name: jest run1
+        run: npx jest --silent
+      - name: jest run2
+        run: npx jest --silent
+      - name: jest run3
+        run: npx jest --silent
+      # Открытые хендлы (незакрытый таймер/соединение) — частая причина
+      # зависаний в CI, которые не видны при обычном прогоне с --forceExit
+      # по умолчанию. tail -50 — интересен именно хвост со списком хендлов,
+      # не весь вывод сьютов.
+      - name: jest detectOpenHandles (хвост лога — список открытых хендлов)
+        run: npx jest --detectOpenHandles --forceExit=false 2>&1 | tail -50
+
+  frontend-flaky:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            webapp/package-lock.json
+            schema-miniapp/package-lock.json
+            shared/package-lock.json
+      - run: npm ci --prefix webapp
+      - run: npm ci --prefix schema-miniapp
+      - run: npm ci --prefix shared
+      # webapp: три прогона подряд.
+      - name: webapp vitest run1
+        run: npm test --prefix webapp
+      - name: webapp vitest run2
+        run: npm test --prefix webapp
+      - name: webapp vitest run3
+        run: npm test --prefix webapp
+      # miniapp: три прогона подряд.
+      - name: miniapp vitest run1
+        run: npm test --prefix schema-miniapp
+      - name: miniapp vitest run2
+        run: npm test --prefix schema-miniapp
+      - name: miniapp vitest run3
+        run: npm test --prefix schema-miniapp
+      # shared — маленький пакет, гоняем один раз (не источник исторических
+      # флаков, три повтора тут только шумели бы время рана).
+      - name: shared vitest
+        run: npm test --prefix shared
+
+  # Mutation-тестирование золотых зон (TEST_IMPROVEMENT_PLAN.md, этап 4.1).
+  # Здесь, а не в PR-CI: прогон правит код сотнями мутантов и перегоняет тесты
+  # на каждом — это минуты, неприемлемые на каждый пуш. Ночью же вопрос
+  # «а поймают ли тесты, если сломать шифрование/подпись платежа?» проверяется
+  # честно, и просадка счёта роняет ночной ран.
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Stryker по золотым зонам (crypto/auth/robokassa/tz)
+        run: npm run mutation
+      # Храповик: счёт не может просесть ниже scripts/mutation-baseline.json
+      # (с допуском на недетерминизм таймаутов — см. комментарий в скрипте).
+      - name: mutation-храповик
+        run: node scripts/check-mutation-ratchet.mjs
+      # HTML-отчёт с вкладкой Survived — что именно тесты проспали.
+      - name: отчёт артефактом
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 14

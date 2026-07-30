@@ -23,6 +23,12 @@ export default tseslint.config(
       '**/*.mjs',
       '**/*.cjs',
       'prisma.config.js',
+      // Артефакты mutation-прогона (этап 4.1): в песочнице Stryker лежат
+      // инструментированные копии src с @ts-nocheck и служебными вставками —
+      // это код инструмента, линтер его судить не должен (иначе eslint-
+      // храповик краснеет от самого факта запуска `npm run mutation`).
+      '.stryker-tmp/**',
+      'reports/**',
     ],
   },
   eslint.configs.recommended,
