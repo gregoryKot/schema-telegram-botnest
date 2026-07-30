@@ -5,6 +5,7 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
+import { api } from '../../api';
 import { DiaryStickyHeader } from './DiaryStickyHeader';
 import { ModeSelectStep } from './ModeSelectStep';
 import { ModeDiaryWizard } from './ModeDiaryWizard';
@@ -13,23 +14,18 @@ import { getModeById } from '../../schemaTherapyData';
 import {
   MODE_DIARY_FIELD_KEYS,
   type ModeDiaryFieldKey,
+  type ModeEntrySaveData,
 } from '../../../../shared/src/mode/modeDiarySteps';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
 import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
+import {
+  MODE_ENTRY_SAVED_EVENT,
+  modeEntrySavedMeta,
+} from '../../../../shared/src/share/analytics';
 
 interface Props {
   onClose: () => void;
-  onSave: (data: {
-    modeId: string;
-    situation: string;
-    thoughts?: string;
-    feelings?: string;
-    bodyFeelings?: string;
-    actions?: string;
-    actualNeed?: string;
-    childhoodMemories?: string;
-    healthyResponse?: string;
-  }) => Promise<void>;
+  onSave: (data: ModeEntrySaveData) => Promise<void>;
 }
 
 const FALLBACK_COLOR = 'var(--accent-blue)'; // до выбора режима — нейтральный акцент
@@ -88,6 +84,10 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         healthyResponse: healthyResponse || undefined,
       });
       clearDraft('mode');
+      api.trackEvent(
+        MODE_ENTRY_SAVED_EVENT,
+        modeEntrySavedMeta(Object.values(values), healthyResponse),
+      );
       setDone(true); // итог вместо молчаливого закрытия (не «всё исчезло»)
     } catch {
       haptic.error();

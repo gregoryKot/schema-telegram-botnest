@@ -51,6 +51,23 @@ export type PracticeLinkPlace =
 // контракта mode-intro-card на момент написания ещё не подключил его сюда).
 export const MODE_CARD_SAVED_EVENT = 'mode_card_saved';
 
+// Сохранение записи дневника режимов: meta { filledFields 0..7, filledHealthy }.
+// Парный allow-list (ANALYTICS_EVENTS) — src/analytics/analytics.constants.ts.
+export const MODE_ENTRY_SAVED_EVENT = 'mode_entry_saved';
+// Тест «по функции» определил режим: meta { modeId }. Парный allow-list там же.
+export const MODE_TEST_COMPLETED_EVENT = 'mode_test_completed';
+
+/** meta для mode_entry_saved из значений формы дневника (общий, оба фронта). */
+export function modeEntrySavedMeta(
+  fieldValues: string[], // 7 текстовых полей дневника (любой порядок)
+  healthyResponse: string,
+): { filledFields: number; filledHealthy: boolean } {
+  return {
+    filledFields: fieldValues.filter((v) => v.trim().length > 0).length,
+    filledHealthy: healthyResponse.trim().length > 0,
+  };
+}
+
 export type OnboardingStep =
   | 'welcome'
   | 'privacy'

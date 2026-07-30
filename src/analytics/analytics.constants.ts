@@ -34,6 +34,9 @@
 //                         (userId = null) через POST /api/public-event.
 //   mode_card_saved     — сохранил заполненную карточку режима
 //                         (meta.modeId + meta.filledFields, 0..7).
+//   mode_entry_saved    — сохранил запись в дневнике режимов
+//                         (meta.filledFields 0..7 + meta.filledHealthy).
+//   mode_test_completed — определил режим тестом «по функции» (meta.modeId).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -56,6 +59,8 @@ export const ANALYTICS_EVENTS = [
   'quiz_completed',
   'practice_link_click',
   'mode_card_saved',
+  'mode_entry_saved',
+  'mode_test_completed',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 

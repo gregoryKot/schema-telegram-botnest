@@ -26,6 +26,23 @@ export const MODE_DIARY_FIELD_KEYS = [
 
 export type ModeDiaryFieldKey = (typeof MODE_DIARY_FIELD_KEYS)[number];
 
+/**
+ * Что сохраняет дневник режимов — общий тип для `onSave` в обоих фронтах
+ * (правило №3: одинаковая форма данных, не копипастить интерфейс). Обязательны
+ * только modeId + situation, остальное — опционально (можно пропустить шаг).
+ */
+export interface ModeEntrySaveData {
+  modeId: string;
+  situation: string;
+  thoughts?: string;
+  feelings?: string;
+  bodyFeelings?: string;
+  actions?: string;
+  actualNeed?: string;
+  childhoodMemories?: string;
+  healthyResponse?: string;
+}
+
 export interface ModeDiaryStep {
   key: ModeDiaryFieldKey;
   /** тёплый вопрос-заголовок шага */
