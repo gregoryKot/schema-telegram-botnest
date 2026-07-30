@@ -5,6 +5,7 @@
 // или инсеты), и что в браузере ни один вызов не падает без window.Telegram.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createTelegramHost } from './telegram';
+import { createMaxHost } from './max';
 import { createWebHost } from './web';
 import { detectHostId, getHost, setHost } from './index';
 
@@ -53,6 +54,35 @@ function fakeTelegram(overrides: Record<string, unknown> = {}) {
   return { webApp, emit };
 }
 
+function fakeMax(overrides: Record<string, unknown> = {}) {
+  const clickHandlers = new Set<Listener>();
+  const webApp = {
+    initData: 'query_id=abc&hash=def',
+    initDataUnsafe: {
+      start_param: 'invite_42',
+      user: { id: 777, first_name: 'Гриша', username: null },
+    },
+    platform: 'android',
+    BackButton: {
+      show: vi.fn(),
+      hide: vi.fn(),
+      onClick: vi.fn((cb: Listener) => clickHandlers.add(cb)),
+      offClick: vi.fn((cb: Listener) => clickHandlers.delete(cb)),
+    },
+    HapticFeedback: {
+      impactOccurred: vi.fn(),
+      notificationOccurred: vi.fn(),
+      selectionChanged: vi.fn(),
+    },
+    openLink: vi.fn(),
+    openMaxLink: vi.fn(),
+    downloadFile: vi.fn(),
+    ...overrides,
+  };
+  (globalThis as { WebApp?: unknown }).WebApp = webApp;
+  return { webApp };
+}
+
 function mockVibrate() {
   const vibrate = vi.fn();
   Object.defineProperty(navigator, 'vibrate', {
@@ -75,6 +105,7 @@ function mockStandalone(on: boolean) {
 beforeEach(() => {
   setHost(null);
   delete (globalThis as { Telegram?: unknown }).Telegram;
+  delete (globalThis as { WebApp?: unknown }).WebApp;
   Reflect.deleteProperty(navigator, 'vibrate');
   mockStandalone(false);
 });
@@ -94,6 +125,25 @@ describe('определение хоста', () => {
     fakeTelegram();
     expect(detectHostId()).toBe('telegram');
     expect(getHost().id).toBe('telegram');
+  });
+
+  it('есть window.WebApp с признаками MAX Bridge — MAX', () => {
+    fakeMax();
+    expect(detectHostId()).toBe('max');
+    expect(getHost().id).toBe('max');
+  });
+
+  it('оба объекта сразу — приоритет у Telegram', () => {
+    fakeTelegram();
+    fakeMax();
+    expect(detectHostId()).toBe('telegram');
+  });
+
+  it('посторонний window.WebApp без признаков MAX Bridge — не хост MAX', () => {
+    (globalThis as { WebApp?: unknown }).WebApp = { foo: 1 };
+    expect(detectHostId()).toBe('web');
+    (globalThis as { WebApp?: unknown }).WebApp = {};
+    expect(detectHostId()).toBe('web');
   });
 });
 
@@ -258,6 +308,184 @@ describe('адаптер Telegram', () => {
       host.homeScreen.add();
       host.backButton.onClick(vi.fn())();
     }).not.toThrow();
+  });
+});
+
+describe('адаптер MAX', () => {
+  it('пользователь и глубокая ссылка приходят из initDataUnsafe', () => {
+    fakeMax();
+    const host = createMaxHost();
+    expect(host.user()).toEqual({
+      id: '777',
+      firstName: 'Гриша',
+      username: undefined,
+    });
+    expect(host.startParam()).toBe('invite_42');
+  });
+
+  it('username: null не превращается в строку "null"', () => {
+    fakeMax();
+    const user = createMaxHost().user();
+    expect(user?.username).toBeUndefined();
+  });
+
+  it('первичный вход уходит заголовком initData', () => {
+    fakeMax();
+    expect(createMaxHost().authHeaders()).toEqual({
+      'x-max-init-data': 'query_id=abc&hash=def',
+    });
+  });
+
+  it('свежая подпись меняется на сессию MAX-эндпоинтом', () => {
+    fakeMax();
+    expect(createMaxHost().sessionExchange()).toEqual({
+      path: '/api/auth/max/webapp',
+      body: { initData: 'query_id=abc&hash=def' },
+    });
+  });
+
+  it('пустая initData не роняет заголовок и sessionExchange', () => {
+    fakeMax({ initData: undefined, initDataUnsafe: {} });
+    const host = createMaxHost();
+    expect(host.authHeaders()).toEqual({ 'x-max-init-data': '' });
+    expect(host.user()).toBeNull();
+    expect(host.startParam()).toBeNull();
+    expect(host.sessionExchange()).toBeNull();
+  });
+
+  it('хаптики доступны только на мобильных платформах', () => {
+    fakeMax({ platform: 'android' });
+    expect(createMaxHost().capabilities.haptics).toBe(true);
+
+    fakeMax({ platform: 'desktop' });
+    expect(createMaxHost().capabilities.haptics).toBe(false);
+
+    fakeMax({ platform: 'web' });
+    expect(createMaxHost().capabilities.haptics).toBe(false);
+  });
+
+  it('close и homeScreen у площадки нет, backButton есть', () => {
+    fakeMax();
+    const host = createMaxHost();
+    expect(host.capabilities.close).toBe(false);
+    expect(host.capabilities.homeScreen).toBe(false);
+    expect(host.capabilities.backButton).toBe(true);
+  });
+
+  it('тактильный отклик разложен по типам клиента', () => {
+    const { webApp } = fakeMax();
+    const { haptic } = createMaxHost();
+    haptic.tap();
+    haptic.press();
+    haptic.select();
+    haptic.success();
+    expect(webApp.HapticFeedback.impactOccurred).toHaveBeenNthCalledWith(
+      1,
+      'light',
+    );
+    expect(webApp.HapticFeedback.impactOccurred).toHaveBeenNthCalledWith(
+      2,
+      'medium',
+    );
+    expect(webApp.HapticFeedback.selectionChanged).toHaveBeenCalled();
+    expect(webApp.HapticFeedback.notificationOccurred).toHaveBeenCalledWith(
+      'success',
+    );
+  });
+
+  it('кнопка «назад»: показ, скрытие и отписка от клика', () => {
+    const { webApp } = fakeMax();
+    const host = createMaxHost();
+    host.backButton.setVisible(true);
+    expect(webApp.BackButton.show).toHaveBeenCalled();
+    host.backButton.setVisible(false);
+    expect(webApp.BackButton.hide).toHaveBeenCalled();
+
+    const cb = vi.fn();
+    const off = host.backButton.onClick(cb);
+    expect(webApp.BackButton.onClick).toHaveBeenCalledWith(cb);
+    off();
+    expect(webApp.BackButton.offClick).toHaveBeenCalledWith(cb);
+  });
+
+  it('диплинк max.ru открывается внутри мессенджера, остальные — во внешнем браузере', () => {
+    const { webApp } = fakeMax();
+    const host = createMaxHost();
+    host.openLink('https://max.ru/invite/abc');
+    expect(webApp.openMaxLink).toHaveBeenCalledWith(
+      'https://max.ru/invite/abc',
+    );
+    host.openLink('https://schemehappens.ru/articles/1');
+    expect(webApp.openLink).toHaveBeenCalledWith(
+      'https://schemehappens.ru/articles/1',
+    );
+  });
+
+  it('https-ссылка уходит в downloadFile, data:-URL — ссылкой на скачивание', () => {
+    const { webApp } = fakeMax();
+    createMaxHost().saveFile('https://schemehappens.ru/practice.ics', 'p.ics');
+    expect(webApp.downloadFile).toHaveBeenCalledWith(
+      'https://schemehappens.ru/practice.ics',
+      'p.ics',
+    );
+
+    const anchor = document.createElement('a');
+    const click = vi.spyOn(anchor, 'click').mockImplementation(() => {});
+    vi.spyOn(document, 'createElement').mockReturnValue(anchor);
+    createMaxHost().saveFile('data:text/calendar,BEGIN', 'practice.ics');
+    expect(webApp.downloadFile).not.toHaveBeenCalledWith(
+      'data:text/calendar,BEGIN',
+      'practice.ics',
+    );
+    expect(anchor.getAttribute('href')).toBe('data:text/calendar,BEGIN');
+    expect(click).toHaveBeenCalled();
+  });
+
+  it('инсеты MAX не присылает — отступ дальше считает CSS', () => {
+    fakeMax();
+    const host = createMaxHost();
+    expect(host.insets()).toEqual({
+      contentTop: 0,
+      deviceTop: 0,
+      isFullscreen: false,
+      contentReported: true,
+    });
+    expect(host.onInsetsChange(vi.fn())).toBeInstanceOf(Function);
+  });
+
+  it('без window.WebApp ни один вызов не падает', () => {
+    const host = createMaxHost();
+    expect(() => {
+      host.ready();
+      host.expand();
+      host.close();
+      host.user();
+      host.startParam();
+      host.authHeaders();
+      host.sessionExchange();
+      host.colorScheme();
+      host.insets();
+      host.onInsetsChange(vi.fn())();
+      host.openLink('https://max.ru/x');
+      host.saveFile('data:text/calendar,BEGIN', 'p.ics');
+      host.haptic.tap();
+      host.haptic.press();
+      host.haptic.select();
+      host.haptic.success();
+      host.haptic.warning();
+      host.haptic.error();
+      host.backButton.setVisible(true);
+      host.backButton.onClick(vi.fn())();
+      host.homeScreen.add();
+      host.homeScreen.checkStatus(vi.fn());
+      host.homeScreen.onAdded(vi.fn())();
+    }).not.toThrow();
+    expect(host.capabilities).toEqual({
+      haptics: false,
+      backButton: false,
+      homeScreen: false,
+      close: false,
+    });
   });
 });
 

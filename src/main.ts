@@ -53,7 +53,15 @@ async function bootstrap() {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", 'https://telegram.org', 'https://mc.yandex.ru'],
+          // st.max.ru — мост мини-приложения MAX (их документация требует
+          // грузить его с этого CDN). Без него мост молча не загрузится, а
+          // приложение внутри MAX решит, что открыто в обычном браузере.
+          scriptSrc: [
+            "'self'",
+            'https://telegram.org',
+            'https://mc.yandex.ru',
+            'https://st.max.ru',
+          ],
           connectSrc: [
             "'self'",
             'https://mc.yandex.ru',

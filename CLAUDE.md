@@ -400,6 +400,14 @@ privacy-проверка `therapistShareCards`) и ~20 мёртвых файло
   4. Удалить старый ключ
 - `GOOGLE_CLIENT_SECRET` — клиентский секрет для OAuth. Ротация в Google Cloud Console + обновление env.
 - `ADMIN_ID` — Telegram ID единственного администратора. Все админские callback'и проверяют по нему.
+- `MAX_BOT_TOKEN` — токен бота MAX, которым подписан initData мини-аппа в
+  мессенджере MAX (`src/auth/max-init-data.ts`). С Telegram `BOT_TOKEN` никак
+  не связан. Пока переменная не задана, вход из MAX отвечает 401 — остальные
+  площадки работают как работали. При компрометации: перевыпустить токен в
+  их админке, обновить env; все выданные MAX-подписи станут недействительны,
+  пользователи мини-аппа переоткроют его и войдут заново.
+  Не путать с `HEALTHY_ADULT_MAX_TOKEN` — тот принадлежит боту канала
+  «Здоровый Взрослый» и к входу пользователей отношения не имеет.
 
 ### Аудит-события
 `SecurityLogService` пишет в логи + DM админу при: merge_confirmed, role_changed, therapist_request_submitted, csrf_blocked, suspicious_initdata (попытка подделать подпись). Если приходит много suspicious_initdata — атака или ротация BOT_TOKEN не докатилась.

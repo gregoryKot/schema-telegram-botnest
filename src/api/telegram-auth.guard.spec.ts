@@ -1,14 +1,16 @@
 // Этап 1 плана покрытия (TEST_COVERAGE_PLAN.md): единые ворота всего API.
-// Гард принимает initData (мини-апп) ИЛИ JWT Bearer (сайт) — регрессия здесь
-// означает обход авторизации всех эндпоинтов разом. До этого спека не
-// тестировался вовсе.
+// Гард принимает initData Telegram, initData MAX ИЛИ JWT Bearer (сайт) —
+// регрессия здесь означает обход авторизации всех эндпоинтов разом. До
+// этого спека не тестировался вовсе.
 //
 // Подпись initData пересчитывается в тесте НЕЗАВИСИМО по алгоритму Telegram
 // (secret = HMAC-SHA256(key="WebAppData", botToken)), а не через ту же
-// библиотеку, которой валидирует гард.
+// библиотеку, которой валидирует гард. Путь MAX (path 3) мокает MaxProvider
+// напрямую — сам алгоритм MAX проверяется отдельно в max-init-data.spec.ts.
 import { UnauthorizedException, ExecutionContext } from '@nestjs/common';
 import { createHmac } from 'crypto';
 import { TelegramAuthGuard } from './telegram-auth.guard';
+import { MaxProvider } from '../auth/providers/max.provider';
 
 const BOT_TOKEN = '12345:TEST_TOKEN';
 
@@ -52,7 +54,10 @@ function makeCtx(req: FakeRequest): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
-function makeGuard(env: Record<string, string | undefined> = {}) {
+function makeGuard(
+  env: Record<string, string | undefined> = {},
+  opts: { maxProvider?: Partial<MaxProvider> } = {},
+) {
   const config = {
     get: (k: string) => ({ BOT_TOKEN, ...env })[k],
   } as any;
@@ -62,13 +67,17 @@ function makeGuard(env: Record<string, string | undefined> = {}) {
     findOrCreateUserByProvider: jest.fn().mockResolvedValue(999n),
   };
   const securityLog = { log: jest.fn() };
+  const maxProvider = (opts.maxProvider ?? {
+    verifyInitData: jest.fn(),
+  }) as MaxProvider;
   const guard = new TelegramAuthGuard(
     config,
     prisma,
     authService as any,
     securityLog as any,
+    maxProvider,
   );
-  return { guard, prisma, authService, securityLog };
+  return { guard, prisma, authService, securityLog, maxProvider };
 }
 
 const ORIGINAL_ENV = { ...process.env };
@@ -246,5 +255,75 @@ describe('SKIP_AUTH — dev-лазейка (жёстко выключена в p
         makeCtx({ headers: { 'x-telegram-init-data': initData } }),
       ),
     ).rejects.toThrow('Invalid initData');
+  });
+});
+
+describe('путь 3: MAX initData (MAX мини-апп)', () => {
+  it('валидная подпись → канонический userId через AuthProvider (провайдер max)', async () => {
+    const verifyInitData = jest
+      .fn()
+      .mockReturnValue({ providerId: '77', displayName: 'Оля' });
+    const { guard, authService } = makeGuard(
+      {},
+      { maxProvider: { verifyInitData } },
+    );
+    const req: FakeRequest = {
+      headers: { 'x-max-init-data': 'raw-max-init-data' },
+    };
+
+    await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
+    expect(verifyInitData).toHaveBeenCalledWith('raw-max-init-data');
+    expect(authService.findOrCreateUserByProvider).toHaveBeenCalledWith(
+      'max',
+      '77',
+      'Оля',
+    );
+    // канонический id (999) из реестра провайдеров, НЕ сырой providerId (77)
+    expect(req.telegramUserId).toBe(999);
+    expect(req.webUser).toEqual({ userId: 999n });
+    expect(req.telegramFirstName).toBe('Оля');
+  });
+
+  it('поддельная подпись → Unauthorized + алерт админу (suspicious_initdata)', async () => {
+    const verifyInitData = jest.fn().mockImplementation(() => {
+      throw new Error('Invalid MAX initData signature');
+    });
+    const { guard, authService, securityLog } = makeGuard(
+      {},
+      { maxProvider: { verifyInitData } },
+    );
+    const req: FakeRequest = {
+      headers: { 'x-max-init-data': 'forged' },
+      // IP отличный от остальных кейсов в этом файле — иначе AlertThrottle
+      // (модульный синглтон в initdata-alert.ts) глушит алерт как повтор
+      // с того же IP в пределах окна.
+      ip: '7.7.7.7',
+    };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
+      'Invalid initData',
+    );
+    expect(authService.findOrCreateUserByProvider).not.toHaveBeenCalled();
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'suspicious_initdata',
+      expect.objectContaining({ ip: '7.7.7.7' }),
+    );
+  });
+
+  it('просроченная подпись MAX → 401 initdata_expired, без алерта', async () => {
+    const verifyInitData = jest.fn().mockImplementation(() => {
+      throw new Error('init data expired');
+    });
+    const { guard, securityLog } = makeGuard(
+      {},
+      { maxProvider: { verifyInitData } },
+    );
+    const req: FakeRequest = { headers: { 'x-max-init-data': 'stale' } };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toMatchObject({
+      response: { code: 'initdata_expired' },
+      status: 401,
+    });
+    expect(securityLog.log).not.toHaveBeenCalled();
   });
 });

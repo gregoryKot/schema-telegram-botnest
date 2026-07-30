@@ -6,15 +6,17 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { validate } from '@tma.js/init-data-node';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
+import { MaxProvider } from '../auth/providers/max.provider';
 import { SecurityLogService } from '../auth/security-log.service';
-import { rejectInitData } from './initdata-alert';
+import { applyTelegramInitData, applyMaxInitData } from './init-data-paths';
 import type { Request } from 'express';
 
-// Unified guard: accepts Telegram initData (mini-app / bot) OR JWT Bearer (web app).
-// Sets req.telegramUserId (number) which all existing controllers rely on.
+// Unified guard: accepts Telegram initData (mini-app / bot), MAX initData
+// (MAX mini-app), OR JWT Bearer (web app). Sets req.telegramUserId (number)
+// which all existing controllers rely on. Telegram/MAX path bodies live in
+// ./init-data-paths.ts to keep this file under the file-size ratchet.
 @Injectable()
 export class TelegramAuthGuard implements CanActivate {
   private readonly logger = new Logger(TelegramAuthGuard.name);
@@ -24,6 +26,7 @@ export class TelegramAuthGuard implements CanActivate {
     private readonly prisma: PrismaService,
     private readonly authService: AuthService,
     private readonly securityLog: SecurityLogService,
+    private readonly maxProvider: MaxProvider,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -47,59 +50,29 @@ export class TelegramAuthGuard implements CanActivate {
     }
 
     // ── Path 2: Telegram initData (mini-app) ─────────────────────────────────
-    const initData = req.headers['x-telegram-init-data'] as string;
-    if (!initData) throw new UnauthorizedException('Missing authentication');
-
-    const botToken = this.config.get<string>('BOT_TOKEN')?.trim();
-    if (!botToken) throw new UnauthorizedException('BOT_TOKEN not configured');
-
-    // SKIP_AUTH was a dev-only escape hatch. Hard-disable in production
-    // regardless of env value — otherwise a misconfig/leaked secret = full
-    // takeover of every Telegram user by passing crafted x-telegram-init-data.
-    const skipAuth =
-      process.env.NODE_ENV !== 'production' &&
-      this.config.get<string>('SKIP_AUTH') === 'true';
-    if (skipAuth) {
-      this.logger.warn('SKIP_AUTH=true (DEV ONLY) — validation skipped');
-    } else {
-      try {
-        validate(initData, botToken, { expiresIn: 3600 });
-      } catch (err) {
-        rejectInitData(err, req.ip, this.logger, this.securityLog);
-      }
+    if (req.headers['x-telegram-init-data']) {
+      await applyTelegramInitData(
+        req,
+        this.config,
+        this.authService,
+        this.securityLog,
+        this.logger,
+      );
+      return true;
     }
 
-    const params = new URLSearchParams(initData);
-    const userStr = params.get('user');
-    if (!userStr) throw new UnauthorizedException('Missing user');
-    let rawTelegramId: number;
-    let firstName: string | undefined;
-    try {
-      const user = JSON.parse(userStr) as {
-        id?: unknown;
-        first_name?: unknown;
-      };
-      if (typeof user.id !== 'number') throw new Error('Invalid user.id');
-      rawTelegramId = user.id;
-      firstName =
-        typeof user.first_name === 'string' ? user.first_name : undefined;
-    } catch {
-      throw new UnauthorizedException('Invalid user data');
+    // ── Path 3: MAX initData (MAX mini-app) ──────────────────────────────────
+    if (req.headers['x-max-init-data']) {
+      await applyMaxInitData(
+        req,
+        this.maxProvider,
+        this.authService,
+        this.securityLog,
+        this.logger,
+      );
+      return true;
     }
 
-    // Resolve canonical userId via AuthProvider so that merged accounts
-    // (Telegram merged → Google) still land on the correct userId instead
-    // of creating a new empty User with the raw Telegram ID.
-    const canonicalId = await this.authService.findOrCreateUserByProvider(
-      'telegram',
-      String(rawTelegramId),
-      firstName,
-    );
-    req.telegramUserId = Number(canonicalId);
-    req.telegramFirstName = firstName;
-    // Also expose BigInt-safe ref for controllers that need it
-    req.webUser = { userId: canonicalId };
-
-    return true;
+    throw new UnauthorizedException('Missing authentication');
   }
 }

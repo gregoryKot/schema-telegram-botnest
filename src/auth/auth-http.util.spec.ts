@@ -6,11 +6,14 @@
 import { UnauthorizedException } from '@nestjs/common';
 import type { Request } from 'express';
 import {
+  CROSS_SITE_COOKIE,
   REFRESH_COOKIE,
   hasCsrfHeader,
   cookieOptions,
   getCookie,
+  isCrossSiteSession,
   requireCsrf,
+  setRefreshCookie,
 } from './auth-http.util';
 import { SecurityLogService } from './security-log.service';
 
@@ -91,6 +94,81 @@ describe('cookieOptions', () => {
 
   it('maxAge=0 → корректный ноль, не falsy-баг', () => {
     expect(cookieOptions(0).maxAge).toBe(0);
+  });
+});
+
+// Мессенджер MAX открывает мини-апп в чужом iframe, откуда браузер не шлёт
+// strict-куку. Сессия там держится на SameSite=None, и главное — это свойство
+// обязано пережить ротацию токена: без метки /api/auth/refresh выдал бы куку
+// обратно как strict, и вход в MAX умирал бы через 15 минут после логина.
+describe('кросс-сайтовая сессия (iframe MAX)', () => {
+  function makeRes() {
+    const cookie = jest.fn();
+    const clearCookie = jest.fn();
+    return { cookie, clearCookie, res: { cookie, clearCookie } };
+  }
+
+  it('crossSite → SameSite=none и метка рядом с refresh-кукой', () => {
+    const { cookie, res } = makeRes();
+    setRefreshCookie(res, 'tok', 100, true);
+
+    expect(cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      'tok',
+      expect.objectContaining({ sameSite: 'none', secure: true }),
+    );
+    expect(cookie).toHaveBeenCalledWith(
+      CROSS_SITE_COOKIE,
+      '1',
+      expect.objectContaining({ sameSite: 'none' }),
+    );
+  });
+
+  it('обычная сессия → strict, метка гасится, а не наследуется', () => {
+    const { cookie, clearCookie, res } = makeRes();
+    setRefreshCookie(res, 'tok', 100, false);
+
+    expect(cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      'tok',
+      expect.objectContaining({ sameSite: 'strict' }),
+    );
+    expect(cookie).not.toHaveBeenCalledWith(
+      CROSS_SITE_COOKIE,
+      expect.anything(),
+      expect.anything(),
+    );
+    // Иначе прежняя метка пережила бы вход с сайта и ослабила его куку.
+    expect(clearCookie).toHaveBeenCalledWith(CROSS_SITE_COOKIE, {
+      path: '/api/auth',
+    });
+  });
+
+  it('метка читается из запроса — по ней refresh не понижает сессию до strict', () => {
+    expect(
+      isCrossSiteSession(
+        makeRequest({ cookies: { [CROSS_SITE_COOKIE]: '1' } }),
+      ),
+    ).toBe(true);
+    expect(isCrossSiteSession(makeRequest({ cookies: {} }))).toBe(false);
+    // Чужое значение меткой не считается.
+    expect(
+      isCrossSiteSession(
+        makeRequest({ cookies: { [CROSS_SITE_COOKIE]: 'yes' } }),
+      ),
+    ).toBe(false);
+  });
+
+  it('ротация сохраняет кросс-сайтовость: что пришло, то и выдаётся', () => {
+    const req = makeRequest({ cookies: { [CROSS_SITE_COOKIE]: '1' } });
+    const { cookie, res } = makeRes();
+    setRefreshCookie(res, 'rotated', 100, isCrossSiteSession(req));
+
+    expect(cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      'rotated',
+      expect.objectContaining({ sameSite: 'none' }),
+    );
   });
 });
 
