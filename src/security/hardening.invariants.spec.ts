@@ -45,6 +45,19 @@ describe('трипваер: hardening-middleware в main.ts', () => {
     expect(m![1]).not.toMatch(/unsafe-eval/);
   });
 
+  // Мини-приложение в MAX грузит их мост с st.max.ru. Убрать домен из списка
+  // = мост молча не загрузится, а приложение внутри мессенджера решит, что
+  // открыто в браузере (зонд уже наступал на этот же CSP инлайн-скриптом).
+  // И наоборот: 'unsafe-inline' сюда добавлять нельзя — загрузчик вынесен в
+  // отдельный файл /max-bridge.js именно поэтому.
+  it('CSP scriptSrc: мост MAX разрешён поимённо, инлайн — по-прежнему нет', () => {
+    const m = MAIN.match(/scriptSrc:\s*\[([^\]]*)\]/);
+    expect(m).not.toBeNull();
+    const value = m![1].replace(/\s/g, '');
+    expect(value).toContain('https://st.max.ru');
+    expect(value).not.toMatch(/unsafe-inline/);
+  });
+
   it('ValidationPipe с whitelist (mass-assignment защита)', () => {
     expect(MAIN).toMatch(/new ValidationPipe\(\s*\{[^}]*whitelist:\s*true/);
   });
