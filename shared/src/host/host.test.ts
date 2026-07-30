@@ -314,14 +314,17 @@ describe('адаптер браузера', () => {
   });
 
   it('файл отдаётся ссылкой на скачивание: data: в новой вкладке блокируется', () => {
-    const click = vi.fn();
-    const create = vi
-      .spyOn(document, 'createElement')
-      .mockReturnValue({ click, remove: vi.fn() } as unknown as HTMLElement);
-    vi.spyOn(document.body, 'appendChild').mockImplementation((n) => n);
+    const anchor = document.createElement('a');
+    const click = vi.spyOn(anchor, 'click').mockImplementation(() => {});
+    vi.spyOn(document, 'createElement').mockReturnValue(anchor);
+
     createWebHost().saveFile('data:text/calendar,BEGIN', 'practice.ics');
+
+    expect(anchor.getAttribute('href')).toBe('data:text/calendar,BEGIN');
+    expect(anchor.getAttribute('download')).toBe('practice.ics');
     expect(click).toHaveBeenCalled();
-    create.mockRestore();
+    // Ссылка временная: после клика её в документе быть не должно.
+    expect(document.body.contains(anchor)).toBe(false);
   });
 
   it('без вибрации вызовы тихие, статус значка — «не поддерживается»', () => {
