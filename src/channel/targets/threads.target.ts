@@ -43,6 +43,16 @@ export class ThreadsChannelTarget implements ChannelTarget {
   }
 
   explain(err: unknown): string {
-    return `${describeHttpError(err)}\nПроверь токен Threads (живёт 60 дней) и id пользователя.`;
+    // Сетевой отказ (ENOTFOUND/ETIMEDOUT/fetch failed) — это не про токен:
+    // Threads принадлежит Meta и с российского хостинга просто недоступен.
+    // Инцидент 2026-07-30: подсказка про токен увела диагностику не туда.
+    const reason = describeHttpError(err);
+    const network =
+      /ENOTFOUND|ETIMEDOUT|ECONNREFUSED|ECONNRESET|EAI_AGAIN|fetch failed|не ответила/i.test(
+        reason,
+      );
+    return network
+      ? `${reason}\nСоединение не установилось: домен Threads недоступен с сервера. Токен тут ни при чём.`
+      : `${reason}\nПроверь токен Threads (живёт 60 дней) и id пользователя.`;
   }
 }

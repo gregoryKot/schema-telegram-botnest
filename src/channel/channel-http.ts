@@ -86,10 +86,22 @@ export function getJson(url: string): Promise<Record<string, unknown>> {
  */
 export function describeHttpError(err: unknown): string {
   if (err instanceof ChannelHttpError) return err.message;
-  const e = err as { name?: string; code?: string; message?: string } | null;
+  const e = err as {
+    name?: string;
+    code?: string;
+    message?: string;
+    cause?: { code?: string; message?: string };
+  } | null;
   if (e?.name === 'TimeoutError') return 'площадка не ответила за 15 секунд';
-  const code = e?.code ?? (e?.name === 'AbortError' ? 'ABORTED' : null);
+  // fetch прячет настоящую причину в cause: сам он говорит только «fetch
+  // failed», и по такому сообщению не отличить недоступный домен от битого
+  // токена. Инцидент 2026-07-30: Threads не отвечал с прода, а отчёт советовал
+  // проверить токен — искали не там.
+  const code =
+    e?.code ?? e?.cause?.code ?? (e?.name === 'AbortError' ? 'ABORTED' : null);
   const message = e?.message ?? '';
-  if (code) return message ? `${code} (${message})` : code;
-  return message || 'неизвестная ошибка';
+  const detail = e?.cause?.message;
+  const full = detail && detail !== message ? `${message}: ${detail}` : message;
+  if (code) return full ? `${code} (${full})` : code;
+  return full || 'неизвестная ошибка';
 }

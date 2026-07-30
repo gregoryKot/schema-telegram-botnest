@@ -98,6 +98,22 @@ describe('channel-http', () => {
       expect(describeHttpError(err)).toBe('ECONNREFUSED (connect failed)');
     });
 
+    it('fetch failed показывает настоящую причину из cause', () => {
+      // Так undici заворачивает недоступный домен: снаружи «fetch failed»,
+      // код и детали — внутри cause.
+      const err = Object.assign(new TypeError('fetch failed'), {
+        cause: Object.assign(
+          new Error('getaddrinfo ENOTFOUND graph.threads.net'),
+          {
+            code: 'ENOTFOUND',
+          },
+        ),
+      });
+      const described = describeHttpError(err);
+      expect(described).toContain('ENOTFOUND');
+      expect(described).toContain('graph.threads.net');
+    });
+
     it('пустая ошибка не превращается в пустую строку', () => {
       expect(describeHttpError(null)).toBe('неизвестная ошибка');
     });
