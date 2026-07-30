@@ -38,6 +38,53 @@ describe('buildJourneySharePayload — карточка шага', () => {
     expect(p.eventKind).toBe('journey_item');
   });
 
+  it('тест на схемы со счётом → карточка-профиль, а не строка «Выраженных схем»', () => {
+    const p = buildJourneySharePayload(
+      {
+        kind: 'item',
+        item: { type: 'ysq', at: '2026-07-20T10:00:00Z', id: 3 },
+        result: {
+          parts: [{ title: 'Результат', text: 'Выраженных схем: 2 из 20' }],
+          ysq: {
+            scores: {
+              Покорность: { pct5plus: 60, avg: 4.5 },
+              Неуспешность: { pct5plus: 10, avg: 2 },
+            },
+            activeCount: 2,
+          },
+        },
+      },
+      items,
+      99,
+      noStats,
+      noSub,
+      'link',
+    );
+    expect(p.title).toBe('Результат теста');
+    expect(p.filename).toBe('journey-schema-test.png');
+    // Счёт выраженных схем уходит в текст сообщения
+    expect(p.shareText).toContain('2');
+  });
+
+  it('тест без счёта (старая запись) → текстовая карточка-результат', () => {
+    const p = buildJourneySharePayload(
+      {
+        kind: 'item',
+        item: { type: 'ysq', at: '2026-07-20T10:00:00Z', id: 3 },
+        result: {
+          parts: [{ title: 'Результат', text: 'Выраженных схем: 4 из 20' }],
+        },
+      },
+      items,
+      99,
+      noStats,
+      noSub,
+      'link',
+    );
+    expect(p.title).toBe('Результат');
+    expect(p.filename).toBe('journey-result.png');
+  });
+
   it('шаг без содержимого → карточка шага, а не результата', () => {
     const p = buildJourneySharePayload(
       { kind: 'item', item: items[1], result: null },

@@ -1,4 +1,5 @@
 import { useTr } from '../../utils/addressForm';
+import { TherapistInviteShare } from '../../share/TherapistInviteShare';
 import type { useAddClient } from './useAddClient';
 
 interface Props {
@@ -38,6 +39,7 @@ export function AddClientForm({ addClient }: Props) {
                 >
                   {addCopied ? '✓ Скопировано' : 'Скопировать'}
                 </button>
+                <TherapistInviteShare inviteUrl={addCreated.inviteUrl} />
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 8 }}>
                 Клиент перейдёт по ссылке и автоматически подключится через бот

@@ -3,6 +3,7 @@ import { SkeletonList } from '../Skeleton';
 import { pressable } from '../../utils/a11y';
 import { TherapyClientSummary } from '../../api';
 import { AddMode } from '../therapist/useAddClient';
+import { TherapistInviteShare } from '../../share/TherapistInviteShare';
 import { ClientDetail, AddClient } from './types';
 import { WebBanner } from '../WebBanner';
 import { WEB_CABINET_URL } from '../../utils/webBanner';
@@ -55,7 +56,6 @@ export function ClientListView({
     openAddMode,
     createInvite,
     copyInvite,
-    shareInvite,
     addByTelegramId,
     addVirtualClient,
     addLoading,
@@ -299,23 +299,7 @@ export function ClientListView({
                       >
                         {inviteCopied ? '✓ Скопировано' : 'Скопировать'}
                       </button>
-                      <button
-                        onClick={shareInvite}
-                        style={{
-                          flex: 1,
-                          padding: '10px 0',
-                          borderRadius: 10,
-                          border: 'none',
-                          background:
-                            'color-mix(in srgb, var(--accent) 15%, transparent)',
-                          color: 'var(--accent)',
-                          fontSize: 13,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Поделиться
-                      </button>
+                      <TherapistInviteShare inviteUrl={inviteUrl} />
                     </div>
                     <button
                       onClick={() => {

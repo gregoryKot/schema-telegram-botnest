@@ -28,6 +28,11 @@ import {
   drawNeedsRadarCard,
   type NeedsRadarRow,
 } from '../share/cards/needsRadarCard';
+import {
+  buildYsqProfile,
+  drawYsqProfileCard,
+} from '../share/cards/ysqProfileCard';
+import { buildYsqShareText, ysqCardHeadline } from '../share/cards/ysqCard';
 import type { JourneyResult } from './journeyContent';
 import {
   journeyItemShareText,
@@ -141,6 +146,20 @@ export function buildJourneySharePayload(
       draw: (canvas) => drawNeedsRadarCard(canvas, data),
       shareText,
       filename: 'journey-result.png',
+      eventKind: 'journey_item',
+    };
+  }
+  // Тест на схемы — не строка «Выраженных схем: 6 из 20», а профиль всех
+  // 20 схем барами (та же карточка, что на экране результата теста).
+  if (share.item.type === 'ysq' && share.result?.ysq) {
+    const { scores, activeCount } = share.result.ysq;
+    const domains = buildYsqProfile(scores);
+    const opts = { headline: ysqCardHeadline(activeCount), dateLabel: day };
+    return {
+      title: 'Результат теста',
+      draw: (canvas) => drawYsqProfileCard(canvas, domains, opts),
+      shareText: buildYsqShareText(activeCount, link),
+      filename: 'journey-schema-test.png',
       eventKind: 'journey_item',
     };
   }

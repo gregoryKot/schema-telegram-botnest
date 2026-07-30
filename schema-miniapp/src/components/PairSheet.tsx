@@ -6,8 +6,7 @@ import { PartnerCard } from './pairSheet/PartnerCard';
 import { BottomSheet } from './BottomSheet';
 import { miniappDeepLink } from '../utils/botConfig';
 import { ShareCardSheet } from '../share/ShareCardSheet';
-import { drawInviteCard } from '../../../shared/src/share/cards/inviteCard';
-import { pairInviteShareText } from '../../../shared/src/share/shareTexts';
+import { pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
 
 interface Props {
   onClose: () => void;
@@ -406,17 +405,7 @@ export function PairSheet({ onClose }: Props) {
 
       {showInviteShare && inviteCode && (
         <ShareCardSheet
-          title="Пригласить в пару"
-          draw={(canvas) =>
-            drawInviteCard(canvas, {
-              title: 'Приглашение в пару',
-              code: inviteCode,
-              hint: 'Ввести этот код в мини-аппе — и отслеживать потребности вместе',
-            })
-          }
-          shareText={pairInviteShareText(inviteCode, inviteUrl)}
-          filename="pair-invite.png"
-          eventKind="pair_invite"
+          {...pairInviteShare(inviteCode, inviteUrl)}
           onClose={() => setShowInviteShare(false)}
           zIndex={300}
         />

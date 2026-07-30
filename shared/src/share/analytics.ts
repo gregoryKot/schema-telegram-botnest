@@ -12,6 +12,8 @@ export type ShareCardKind =
   | 'mode'
   | 'mode_entry'
   | 'pair_invite'
+  | 'app_invite'
+  | 'therapist_invite'
   | 'month'
   | 'achievements'
   | 'phrase'
