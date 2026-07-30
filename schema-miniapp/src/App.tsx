@@ -23,7 +23,7 @@ import { PracticePlan, PairsData, StreakData, UserTask } from './api';
 import { useSafeTop } from './utils/safezone';
 import { cacheTherapistContact } from './utils/therapistContact';
 import { useSheets } from './hooks/useSheets';
-import { useTelegramBackButton } from './hooks/useTelegramBackButton';
+import { useHostBackButton } from './hooks/useHostBackButton';
 import { TherapistBottomNav } from './components/TherapistBottomNav';
 import { TrackerHistoryOverlay } from './components/TrackerHistoryOverlay';
 import {
@@ -35,11 +35,13 @@ import {
 import { AppSections } from './components/AppSections';
 import { AppOverlays } from './components/AppOverlays';
 import { AppErrorScreen } from './components/AppErrorScreen';
+import { LoginScreen } from './components/LoginScreen';
 import { AmbientBackground } from './components/AmbientBackground';
 import { OfflineBanner } from './components/OfflineBanner';
 import { useOnboardingGate } from './hooks/useOnboardingGate';
 import { useSectionSwipe } from './hooks/useSectionSwipe';
 import { useSessionExpired } from './hooks/useSessionExpired';
+import { shouldShowLoginScreen } from './utils/loginScreenGate';
 import { ensureSession, SESSION_EXPIRED_ERROR } from './session';
 
 type TrackerTab = 'today' | 'history';
@@ -444,8 +446,8 @@ export default function App() {
     }
   }, [sheets.trackerTab, historyDays]);
 
-  // Telegram back button
-  useTelegramBackButton({
+  // Кнопка «назад» хоста (Telegram/MAX) или истории браузера (web)
+  useHostBackButton({
     sheets,
     newDiaryEntry,
     setNewDiaryEntry,
@@ -507,6 +509,10 @@ export default function App() {
   }
 
   if (error || sessionExpired) {
+    // В браузере отсутствие сессии значит «не входил», а не «истекла» —
+    // рисуем экран входа. В Telegram/MAX поведение прежнее (см.
+    // utils/loginScreenGate.ts).
+    if (sessionExpired && shouldShowLoginScreen()) return <LoginScreen />;
     return (
       <AppErrorScreen error={sessionExpired ? SESSION_EXPIRED_ERROR : error!} />
     );

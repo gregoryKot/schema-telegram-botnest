@@ -1,7 +1,11 @@
 // AuthMaxController — вход из мини-аппа MAX (тот же паттерн, что
 // telegramWebApp в auth-account.controller.spec.ts). Инстанцируем напрямую
 // с двойниками MaxProvider/AuthService/SecurityLogService.
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthMaxController } from './auth-max.controller';
 import { AuthService, TokenPair } from './auth.service';
@@ -9,6 +13,7 @@ import { MaxProvider } from './providers/max.provider';
 import { SecurityLogService } from './security-log.service';
 import { CROSS_SITE_COOKIE, REFRESH_COOKIE } from './auth-http.util';
 import { INITDATA_EXPIRED_CODE } from '../api/initdata-alert';
+import { MaxNotConfiguredError } from './max-init-data';
 
 const FAKE_TOKENS: TokenPair = {
   accessToken: 'access-max-1',
@@ -154,5 +159,21 @@ describe('AuthMaxController.maxWebApp', () => {
       'suspicious_initdata',
       expect.objectContaining({ ip: '6.6.6.6' }),
     );
+  });
+
+  // Пока MAX_BOT_TOKEN не проставлен, КАЖДАЯ попытка входа из мессенджера
+  // приходила бы админу как «подделка подписи». Это наша несобранная
+  // конфигурация: отвечаем 503 и молчим в аудит-лог.
+  it('нет MAX_BOT_TOKEN → 503, и админ НЕ получает алерт о подделке', async () => {
+    const { controller, maxProvider, securityLog, auth } = makeController();
+    maxProvider.verifyInitData.mockImplementation(() => {
+      throw new MaxNotConfiguredError();
+    });
+
+    await expect(
+      controller.maxWebApp({ initData: 'что угодно' }, makeReq(), makeRes()),
+    ).rejects.toThrow(ServiceUnavailableException);
+    expect(securityLog.log).not.toHaveBeenCalled();
+    expect(auth.issueTokens).not.toHaveBeenCalled();
   });
 });

@@ -15,6 +15,20 @@ export interface MaxInitData {
   username?: string;
 }
 
+/**
+ * Токен бота MAX не задан — это НАША несобранная конфигурация, а не плохая
+ * подпись от клиента. Отдельный класс нужен, чтобы вызывающий не отправил
+ * такую ошибку в rejectInitData: тот классифицировал бы её как подделку и
+ * будил админа алертом «suspicious_initdata» на каждой попытке входа, пока
+ * переменную не проставят. Ровно этот случай и ждёт нас до появления токена.
+ */
+export class MaxNotConfiguredError extends Error {
+  constructor() {
+    super('MAX_BOT_TOKEN not configured');
+    this.name = 'MaxNotConfiguredError';
+  }
+}
+
 const HASH_RE = /^[0-9a-f]{64}$/i;
 const DEFAULT_EXPIRES_IN_S = 3600; // MAX: «рекомендуемый интервал — 1 час»
 
