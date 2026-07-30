@@ -150,6 +150,22 @@ describe('адаптеры площадок', () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
+    it('сетевой отказ не списывается на токен', () => {
+      const err = Object.assign(new TypeError('fetch failed'), {
+        cause: Object.assign(
+          new Error('getaddrinfo ENOTFOUND graph.threads.net'),
+          {
+            code: 'ENOTFOUND',
+          },
+        ),
+      });
+      const explained = new ThreadsChannelTarget({
+        current: async () => 't',
+      } as unknown as ThreadsTokenService).explain(err);
+      expect(explained).toContain('недоступен с сервера');
+      expect(explained).not.toContain('Проверь токен');
+    });
+
     it('без токена в сеть не ходим', async () => {
       const fetchMock = mockFetch('{}');
       await expect(

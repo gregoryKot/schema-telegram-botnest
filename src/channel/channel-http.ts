@@ -28,14 +28,54 @@ export interface RequestTransport {
   dispatcher?: unknown;
 }
 
+/**
+ * Сколько раз повторяем запрос, до которого площадка НЕ ответила, и пауза
+ * между попытками.
+ *
+ * Инцидент 2026-07-30: Threads с российского хостинга доступен через раз —
+ * пост то уходил, то падал с «fetch failed». Повторить такой запрос безопасно:
+ * сервер его не получил, дубля не будет. Ответ площадки (любой статус) не
+ * повторяется никогда — там уже могло что-то создаться.
+ *
+ * Почему не общий слотовый ретрай: он срабатывает, только если не дошло НИ ОДНА
+ * площадка. Пока Telegram и VK принимают пост, слот закрывается, и капризная
+ * площадка теряла бы публикацию без единой повторной попытки.
+ */
+const NETWORK_RETRIES = 2;
+const RETRY_PAUSE_MS = 1500;
+
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Ответ не получен: DNS, обрыв, таймаут. Только такие попытки повторяем. */
+function isNetworkFailure(err: unknown): boolean {
+  return !(err instanceof ChannelHttpError);
+}
+
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit & RequestTransport,
+): Promise<Response> {
+  let last: unknown;
+  for (let attempt = 0; attempt <= NETWORK_RETRIES; attempt++) {
+    try {
+      return await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+    } catch (err) {
+      last = err;
+      if (!isNetworkFailure(err) || attempt === NETWORK_RETRIES) break;
+      await pause(RETRY_PAUSE_MS);
+    }
+  }
+  throw last;
+}
+
 async function request(
   url: string,
   init: RequestInit & RequestTransport,
 ): Promise<Record<string, unknown>> {
-  const res = await fetch(url, {
-    ...init,
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
+  const res = await fetchWithRetry(url, init);
   const raw = await res.text();
   if (!res.ok) throw new ChannelHttpError(res.status, raw);
   try {
@@ -86,10 +126,22 @@ export function getJson(url: string): Promise<Record<string, unknown>> {
  */
 export function describeHttpError(err: unknown): string {
   if (err instanceof ChannelHttpError) return err.message;
-  const e = err as { name?: string; code?: string; message?: string } | null;
+  const e = err as {
+    name?: string;
+    code?: string;
+    message?: string;
+    cause?: { code?: string; message?: string };
+  } | null;
   if (e?.name === 'TimeoutError') return 'площадка не ответила за 15 секунд';
-  const code = e?.code ?? (e?.name === 'AbortError' ? 'ABORTED' : null);
+  // fetch прячет настоящую причину в cause: сам он говорит только «fetch
+  // failed», и по такому сообщению не отличить недоступный домен от битого
+  // токена. Инцидент 2026-07-30: Threads не отвечал с прода, а отчёт советовал
+  // проверить токен — искали не там.
+  const code =
+    e?.code ?? e?.cause?.code ?? (e?.name === 'AbortError' ? 'ABORTED' : null);
   const message = e?.message ?? '';
-  if (code) return message ? `${code} (${message})` : code;
-  return message || 'неизвестная ошибка';
+  const detail = e?.cause?.message;
+  const full = detail && detail !== message ? `${message}: ${detail}` : message;
+  if (code) return full ? `${code} (${full})` : code;
+  return full || 'неизвестная ошибка';
 }
