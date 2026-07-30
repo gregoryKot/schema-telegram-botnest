@@ -1,31 +1,17 @@
-// Тесты сводки «Моего пути» по записям ленты: она включается, когда выбран
-// фильтр периода, и обязана называть занятия так же, как сводка за всё время
-// (иначе «за месяц» и «за всё время» говорят про одно разными словами).
+// Тесты сводки «Моего пути»: счётчики за всё время (включая три быстрые
+// практики) и сводка по записям ленты, которая включается при фильтре периода.
+// Обе обязаны называть занятия одинаково, иначе «за месяц» и «за всё время»
+// говорят про одно разными словами. Пустой аккаунт проверяется отдельно —
+// агрегат не должен показывать мусор на чистой БД.
 import { describe, it, expect } from 'vitest';
 import {
   STAT_LABELS,
   journeyStatRows,
+  journeyTotal,
   statRowsFromItems,
 } from './journeyStats';
-import { JOURNEY_TYPE_META, type JourneyCounts } from './journeyMeta';
-
-const EMPTY: JourneyCounts = {
-  trackerDays: 0,
-  notes: 0,
-  schemaDiary: 0,
-  modeDiary: 0,
-  gratitudeDays: 0,
-  practices: 0,
-  plansDone: 0,
-  ysqTests: 0,
-  childhoodDone: false,
-  beliefChecks: 0,
-  letters: 0,
-  flashcards: 0,
-  safePlace: false,
-  schemaNotes: 0,
-  modeNotes: 0,
-};
+import { JOURNEY_TYPE_META } from './journeyMeta';
+import { EMPTY_JOURNEY_COUNTS as EMPTY } from './journeyCounts.fixture';
 
 const items = (pairs: Array<[string, number]>) =>
   pairs.flatMap(([type, n]) =>
@@ -84,5 +70,37 @@ describe('statRowsFromItems', () => {
   it('незнакомый с фронта тип не роняет сводку', () => {
     const rows = statRowsFromItems([{ type: 'новый_тип_с_бэка' }]);
     expect(rows).toEqual([{ emoji: '•', label: 'новый_тип_с_бэка', count: 1 }]);
+  });
+});
+
+describe('journeyStatRows — быстрые практики', () => {
+  it('пустой аккаунт: без новых счётчиков строк нет (не 0/NaN, а пусто)', () => {
+    expect(journeyStatRows(EMPTY)).toEqual([]);
+    expect(journeyTotal(EMPTY)).toBe(0);
+  });
+
+  it('ненулевые счётчики практик — попадают в строки с верным эмодзи/подписью', () => {
+    const rows = journeyStatRows({
+      ...EMPTY,
+      breathingSessions: 4,
+      groundingSessions: 2,
+      stopSessions: 1,
+    });
+    expect(rows).toEqual([
+      { emoji: '🌬', label: 'Дыхательные практики', count: 4 },
+      { emoji: '🌍', label: 'Заземление', count: 2 },
+      { emoji: '🛑', label: 'Техника «Стоп»', count: 1 },
+    ]);
+  });
+
+  it('счётчики практик суммируются в общий итог наравне с остальными', () => {
+    const counts = {
+      ...EMPTY,
+      trackerDays: 3,
+      breathingSessions: 2,
+      groundingSessions: 1,
+      stopSessions: 1,
+    };
+    expect(journeyTotal(counts)).toBe(7);
   });
 });

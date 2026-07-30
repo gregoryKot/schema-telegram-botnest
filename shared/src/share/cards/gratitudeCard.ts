@@ -11,6 +11,7 @@ import {
   headerHeight,
   footer,
   panel,
+  panelStack,
   measureWrap,
   clampLines,
   cardFont,
@@ -34,12 +35,10 @@ export function drawGratitudeCard(
   const wrapped = shown.map((t) =>
     clampLines(measureWrap(canvas, t, textMaxW, 14), MAX_LINES),
   );
-  const panelHeights = wrapped.map(
-    (lines) => lines.length * LINE_H + ITEM_PAD * 2,
+  const { heights: panelHeights, total: bodyH } = panelStack(
+    wrapped.map((lines) => lines.length),
+    { lineH: LINE_H, pad: ITEM_PAD, gap: ITEM_GAP },
   );
-  const bodyH =
-    panelHeights.reduce((s, h) => s + h, 0) +
-    ITEM_GAP * Math.max(0, wrapped.length - 1);
 
   const H = headerHeight(1, true) + bodyH + 20 + FOOTER_H;
 

@@ -28,6 +28,7 @@ function makePrisma(overrides: Partial<Record<string, unknown>> = {}) {
     userSafePlace: { findUnique: none },
     userSchemaNote: { findMany: empty },
     userModeNote: { findMany: empty },
+    practiceSession: { findMany: empty },
   };
   for (const [model, methods] of Object.entries(overrides)) {
     base[model] = { ...base[model], ...(methods as object) };
@@ -42,22 +43,17 @@ describe('JourneyService', () => {
     const service = new JourneyService(makePrisma());
     const data = await service.getJourney(uid);
     expect(data.items).toEqual([]);
-    expect(data.counts).toEqual({
-      trackerDays: 0,
-      notes: 0,
-      schemaDiary: 0,
-      modeDiary: 0,
-      gratitudeDays: 0,
-      practices: 0,
-      plansDone: 0,
-      ysqTests: 0,
-      childhoodDone: false,
-      beliefChecks: 0,
-      letters: 0,
-      flashcards: 0,
-      safePlace: false,
-      schemaNotes: 0,
-      modeNotes: 0,
+    // Ни один счётчик не отличается от нуля/false — проверяем без полного
+    // перечисления полей: тот же литерал жил ещё в двух фронтовых тестах и
+    // рос с каждым новым счётчиком (jscpd считал его дублем).
+    expect(
+      Object.entries(data.counts).filter(([, v]) => v !== 0 && v !== false),
+    ).toEqual([]);
+    // Новые счётчики быстрых практик присутствуют, а не отсутствуют молча.
+    expect(data.counts).toMatchObject({
+      breathingSessions: 0,
+      groundingSessions: 0,
+      stopSessions: 0,
     });
   });
 
@@ -171,6 +167,32 @@ describe('JourneyService', () => {
     expect(prisma.practicePlan.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { userId: uid, done: true } }),
     );
+  });
+
+  it('быстрые практики: попадают в ленту своим типом и в честные счётчики по инструменту', async () => {
+    const prisma = makePrisma({
+      practiceSession: {
+        findMany: jest.fn(async () => [
+          { id: 1, tool: 'breathing', createdAt: D('2026-07-01T09:00:00Z') },
+          { id: 2, tool: 'breathing', createdAt: D('2026-07-02T09:00:00Z') },
+          { id: 3, tool: 'grounding', createdAt: D('2026-07-03T09:00:00Z') },
+          { id: 4, tool: 'stop', createdAt: D('2026-07-04T09:00:00Z') },
+        ]),
+      },
+    });
+    const { counts, items } = await new JourneyService(prisma).getJourney(uid);
+    expect(counts.breathingSessions).toBe(2);
+    expect(counts.groundingSessions).toBe(1);
+    expect(counts.stopSessions).toBe(1);
+    const types = items.map((i) => i.type);
+    expect(types).toContain('breathing');
+    expect(types).toContain('grounding');
+    expect(types).toContain('stop');
+    expect(items[0]).toEqual({
+      type: 'stop',
+      id: 4,
+      at: '2026-07-04T09:00:00.000Z',
+    });
   });
 
   it('лента обрезается потолком, счётчики остаются полными', async () => {

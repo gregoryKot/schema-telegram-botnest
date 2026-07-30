@@ -276,3 +276,20 @@ export function footer(c: Card, label: string) {
   ctx.fillText(label, c.W - CARD_PAD, y + 1);
   ctx.textAlign = 'left';
 }
+
+/**
+ * Высоты панелей-строк и суммарная высота столбика: каждая панель — обёрнутый
+ * текст плюс вертикальные отступы, между панелями зазор. Один расчёт для всех
+ * карточек-списков (благодарность, шаги практики) — раньше он копировался
+ * в каждую и попадал в jscpd-храповик.
+ */
+export function panelStack(
+  lineCounts: number[],
+  opts: { lineH: number; pad: number; gap: number },
+): { heights: number[]; total: number } {
+  const heights = lineCounts.map((n) => n * opts.lineH + opts.pad * 2);
+  const total =
+    heights.reduce((s, h) => s + h, 0) +
+    opts.gap * Math.max(0, heights.length - 1);
+  return { heights, total };
+}

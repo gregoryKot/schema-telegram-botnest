@@ -55,7 +55,7 @@ function makeDeps(overrides: Record<string, any> = {}) {
     reject: jest.fn().mockResolvedValue(undefined),
     ...overrides.therapistRequestService,
   };
-  const channelService = { ...overrides.channelService };
+  const publisher = { ...overrides.publisher };
   // Пул канала: /stats показывает остаток, поэтому сервис нужен и здесь.
   const healthyAdultService = {
     poolStatus: jest
@@ -75,7 +75,7 @@ function makeDeps(overrides: Record<string, any> = {}) {
     practicesService,
     notificationService,
     therapistRequestService,
-    channelService,
+    publisher,
   );
   return {
     service,

@@ -3,6 +3,10 @@
 // кругом (CSS-анимация breathe глушится глобальным reduced-motion блоком
 // index.css); активная сессия — фазы из utils/breathing с крупным отсчётом.
 // При сниженной анимации круг не масштабируется — только текст фаз.
+// Прохождение засчитывается через useQuickPractice, только если пройден хотя
+// бы один полный цикл (BREATH_CYCLE_S) — досрочная остановка не считается.
+// Под карточкой — счётчик + «Поделиться» через общий PracticeDoneFooter
+// (правило «одна механика — один компонент», как у QuickPracticeSheet).
 import { useEffect, useRef, useState } from 'react';
 import {
   breathStateAt,
@@ -10,10 +14,18 @@ import {
   BREATH_IN_S,
   BREATH_HOLD_S,
   BREATH_OUT_S,
+  BREATH_CYCLE_S,
 } from '../utils/breathing';
 import { isReducedMotion } from '../utils/reducedMotion';
 import { useTr } from '../utils/addressForm';
 import { api } from '../api';
+import { useQuickPractice } from '../hooks/useQuickPractice';
+import { PracticeDoneFooter, practiceCountLabel } from './PracticeDoneFooter';
+import { ShareCardSheet } from '../share/ShareCardSheet';
+import { drawPracticeCard } from '../../../shared/src/share/cards/practiceCard';
+import { practiceShareText } from '../../../shared/src/share/shareTexts';
+import { buildQuickPractice } from '../../../shared/src/practices/quickPractices';
+import { botShortUrl } from '../utils/botConfig';
 
 const PHASE_SCALE = { in: 1.25, hold: 1.25, out: 1 } as const;
 
@@ -21,7 +33,10 @@ export function BreathingCard() {
   const tr = useTr();
   const [active, setActive] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [showShare, setShowShare] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { count, complete } = useQuickPractice('breathing');
+  const practice = buildQuickPractice('breathing', tr);
 
   useEffect(() => {
     if (!active) return;
@@ -39,6 +54,8 @@ export function BreathingCard() {
 
   function stop() {
     setActive(false);
+    // Засчитываем только полный круг — досрочный обрыв не практика.
+    if (elapsed >= BREATH_CYCLE_S) complete();
     setElapsed(0);
   }
 
@@ -51,90 +68,107 @@ export function BreathingCard() {
       : st.phase === 'hold'
         ? BREATH_HOLD_S
         : BREATH_OUT_S;
+  const countLabel = practiceCountLabel(count);
 
   return (
-    <div
-      style={{
-        borderRadius: 24,
-        background: 'color-mix(in srgb, var(--accent-green) 12%, transparent)',
-        padding: '26px 20px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        textAlign: 'center',
-      }}
-    >
+    <>
       <div
         style={{
-          width: 92,
-          height: 92,
-          borderRadius: '50%',
-          background: 'var(--surface)',
+          borderRadius: 24,
+          background:
+            'color-mix(in srgb, var(--accent-green) 12%, transparent)',
+          padding: '26px 20px',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: active ? 26 : 40,
-          fontWeight: 800,
-          color: 'var(--accent-green)',
-          fontVariantNumeric: 'tabular-nums',
-          animation: active ? 'none' : 'breathe-idle 5s ease-in-out infinite',
-          transform: `scale(${scale})`,
-          transition: `transform ${phaseDur}s ease-in-out`,
+          textAlign: 'center',
         }}
       >
-        <style>{`@keyframes breathe-idle { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }`}</style>
-        {active ? st.secondsLeft : '🫧'}
+        <div
+          style={{
+            width: 92,
+            height: 92,
+            borderRadius: '50%',
+            background: 'var(--surface)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: active ? 26 : 40,
+            fontWeight: 800,
+            color: 'var(--accent-green)',
+            fontVariantNumeric: 'tabular-nums',
+            animation: active ? 'none' : 'breathe-idle 5s ease-in-out infinite',
+            transform: `scale(${scale})`,
+            transition: `transform ${phaseDur}s ease-in-out`,
+          }}
+        >
+          <style>{`@keyframes breathe-idle { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }`}</style>
+          {active ? st.secondsLeft : '🫧'}
+        </div>
+        <div
+          style={{
+            fontSize: 18,
+            fontWeight: 800,
+            color: 'var(--accent-green)',
+            marginTop: 18,
+          }}
+        >
+          {active
+            ? BREATH_PHASE_LABEL[st.phase]
+            : tr('Дыши со мной', 'Дышите со мной')}
+        </div>
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--text-sub)',
+            marginTop: 4,
+            lineHeight: 1.5,
+          }}
+        >
+          {active ? (
+            <>круг {st.cycle} · вдох 4 · задержка 4 · выдох 6</>
+          ) : (
+            <>
+              Вдох на 4 · задержка на 4 · выдох на 6.
+              <br />
+              Одна минута — и станет легче.
+            </>
+          )}
+        </div>
+        <button
+          onClick={active ? stop : start}
+          style={{
+            marginTop: 16,
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            background: active
+              ? 'rgba(var(--fg-rgb),0.08)'
+              : 'var(--accent-green)',
+            color: active ? 'var(--text-sub)' : 'var(--bg)',
+            fontSize: 14,
+            fontWeight: 800,
+            padding: '12px 28px',
+            borderRadius: 99,
+            minHeight: 44,
+          }}
+        >
+          {active ? 'Достаточно' : 'Начать дыхание'}
+        </button>
       </div>
-      <div
-        style={{
-          fontSize: 18,
-          fontWeight: 800,
-          color: 'var(--accent-green)',
-          marginTop: 18,
-        }}
-      >
-        {active
-          ? BREATH_PHASE_LABEL[st.phase]
-          : tr('Дыши со мной', 'Дышите со мной')}
-      </div>
-      <div
-        style={{
-          fontSize: 13,
-          color: 'var(--text-sub)',
-          marginTop: 4,
-          lineHeight: 1.5,
-        }}
-      >
-        {active ? (
-          <>круг {st.cycle} · вдох 4 · задержка 4 · выдох 6</>
-        ) : (
-          <>
-            Вдох на 4 · задержка на 4 · выдох на 6.
-            <br />
-            Одна минута — и станет легче.
-          </>
-        )}
-      </div>
-      <button
-        onClick={active ? stop : start}
-        style={{
-          marginTop: 16,
-          border: 'none',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          background: active
-            ? 'rgba(var(--fg-rgb),0.08)'
-            : 'var(--accent-green)',
-          color: active ? 'var(--text-sub)' : 'var(--bg)',
-          fontSize: 14,
-          fontWeight: 800,
-          padding: '12px 28px',
-          borderRadius: 99,
-          minHeight: 44,
-        }}
-      >
-        {active ? 'Достаточно' : 'Начать дыхание'}
-      </button>
-    </div>
+
+      <PracticeDoneFooter count={count} onShare={() => setShowShare(true)} />
+
+      {showShare && (
+        <ShareCardSheet
+          title={practice.title}
+          draw={(canvas) => drawPracticeCard(canvas, practice, countLabel)}
+          shareText={practiceShareText(practice.title, countLabel, botShortUrl)}
+          filename="practice-breathing.png"
+          eventKind="practice"
+          onClose={() => setShowShare(false)}
+        />
+      )}
+    </>
   );
 }

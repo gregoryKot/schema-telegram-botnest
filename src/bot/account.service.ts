@@ -23,6 +23,7 @@ export const USER_DATA_TABLES = [
   'userFlashcard',
   'userPractice',
   'practicePlan',
+  'practiceSession',
   'childhoodRating',
   'ysqResult',
   'ysqProgress',

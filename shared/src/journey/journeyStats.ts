@@ -36,6 +36,9 @@ export const STAT_LABELS: Record<JourneyItemType, string> = {
   safe_place: 'Безопасное место',
   schema_note: 'Карточки схем',
   mode_note: 'Карточки режимов',
+  breathing: 'Дыхательные практики',
+  grounding: 'Заземление',
+  stop: 'Техника «Стоп»',
 };
 
 const row = (type: JourneyItemType, count: number): JourneyStatRow => ({
@@ -70,6 +73,9 @@ export function journeyStatRows(counts: JourneyCounts): JourneyStatRow[] {
       label: 'Колесо детства',
       count: counts.childhoodDone ? 1 : 0,
     },
+    row('breathing', counts.breathingSessions),
+    row('grounding', counts.groundingSessions),
+    row('stop', counts.stopSessions),
   ];
   return rows.filter((r) => r.count > 0).sort((a, b) => b.count - a.count);
 }
