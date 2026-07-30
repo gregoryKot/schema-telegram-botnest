@@ -14,6 +14,9 @@ Disallow: /cabinet
 Disallow: /account
 Disallow: /auth/
 
+# Диагностическая страница для подключения мини-аппа к мессенджеру
+Disallow: /max-probe.html
+
 # AI crawlers — разрешаем явно
 User-agent: GPTBot
 Allow: /
