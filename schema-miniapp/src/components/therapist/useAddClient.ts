@@ -51,21 +51,6 @@ export function useAddClient({ setClients }: Params) {
     }
   }
 
-  function shareInvite() {
-    if (!inviteUrl) return;
-    if (navigator.share) {
-      navigator
-        .share({
-          text: 'Подключись ко мне в приложении «Всё по схеме»:',
-          url: inviteUrl,
-        })
-        .catch(() => {});
-    } else {
-      const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent('Подключись ко мне в приложении «Всё по схеме»')}`;
-      window.Telegram?.WebApp?.openLink(tgUrl);
-    }
-  }
-
   async function addByTelegramId() {
     const id = parseInt(addInput.trim(), 10);
     if (!id || isNaN(id)) {
@@ -132,7 +117,6 @@ export function useAddClient({ setClients }: Params) {
     openAddMode,
     createInvite,
     copyInvite,
-    shareInvite,
     addByTelegramId,
     addVirtualClient,
   };
