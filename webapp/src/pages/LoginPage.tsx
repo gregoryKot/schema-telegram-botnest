@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
+import { getHost } from '../../../shared/src/host';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -14,7 +15,7 @@ export function LoginPage() {
   const [emailValue, setEmailValue] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
-  const isTelegramContext = !!window.Telegram?.WebApp?.initData;
+  const isTelegramContext = !!getHost().sessionExchange();
   const emailInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -31,13 +32,13 @@ export function LoginPage() {
     setMiniAppLoading(true);
     setError(null);
     try {
-      const initData = window.Telegram?.WebApp?.initData;
-      if (!initData) { setError('initData недоступен'); return; }
-      const res = await fetch('/api/auth/telegram/webapp', {
+      const exchange = getHost().sessionExchange();
+      if (!exchange) { setError('initData недоступен'); return; }
+      const res = await fetch(exchange.path, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData }),
+        body: JSON.stringify(exchange.body),
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');

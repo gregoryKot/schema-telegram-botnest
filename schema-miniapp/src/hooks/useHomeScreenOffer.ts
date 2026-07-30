@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { getHost } from '../../../shared/src/host';
 import { api } from '../api';
 import {
   getOfferMemory,
@@ -16,29 +17,27 @@ export type OfferSurface = 'onboarding' | 'today' | 'settings';
 // (шаг онбординга, карточка-напоминание, настройки), чтобы память об отказе
 // и снузе была общей. Логика «показывать ли» — чистая, в utils/homeScreen.
 export function useHomeScreenOffer(surface: OfferSurface) {
-  const tg = window.Telegram?.WebApp;
-  const platform = homeScreenPlatform(tg?.platform);
+  const host = getHost();
+  const platform = homeScreenPlatform(host.platform);
   const [status, setStatus] = useState<TgHomeScreenStatus | undefined>();
   const [dismissed, setDismissed] = useState(false);
 
-  // Статус значка спрашиваем у Telegram, а не у человека: он мог добавить
+  // Статус значка спрашиваем у хоста, а не у человека: он мог добавить
   // приложение с другого устройства или снести значок с экрана.
   useEffect(() => {
-    tg?.checkHomeScreenStatus?.((s) => setStatus(s));
-    const onAdded = () => {
+    host.homeScreen.checkStatus((s) => setStatus(s));
+    return host.homeScreen.onAdded(() => {
       markHomeScreenAdded();
       setStatus('added');
       api.trackEvent('home_screen_offer', { action: 'added', surface });
-    };
-    tg?.onEvent?.('homeScreenAdded', onAdded);
-    return () => tg?.offEvent?.('homeScreenAdded', onAdded);
-  }, [tg, surface]);
+    });
+  }, [host, surface]);
 
   const visible =
     !dismissed &&
     shouldOfferHomeScreen({
-      platform: tg?.platform,
-      hasApi: !!tg?.addToHomeScreen,
+      platform: host.platform,
+      hasApi: host.capabilities.homeScreen,
       tgStatus: status,
       memory: getOfferMemory(),
       now: Date.now(),

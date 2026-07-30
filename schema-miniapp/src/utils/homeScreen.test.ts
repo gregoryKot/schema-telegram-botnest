@@ -138,8 +138,8 @@ describe('triggerAddToHomeScreen', () => {
   it('Android — нативный вызов; iOS — openLink прыжковой страницей', () => {
     const addToHomeScreen = vi.fn();
     const openLink = vi.fn();
-    (globalThis as never as { window: unknown }).window = {
-      Telegram: { WebApp: { addToHomeScreen, openLink } },
+    (globalThis as never as { Telegram: unknown }).Telegram = {
+      WebApp: { addToHomeScreen, openLink },
     };
 
     triggerAddToHomeScreen('android');
@@ -150,6 +150,6 @@ describe('triggerAddToHomeScreen', () => {
     expect(openLink).toHaveBeenCalledWith(ADD_ICON_HOP_URL);
     expect(addToHomeScreen).toHaveBeenCalledTimes(1); // не вызвался второй раз
 
-    delete (globalThis as never as { window?: unknown }).window;
+    delete (globalThis as never as { Telegram?: unknown }).Telegram;
   });
 });

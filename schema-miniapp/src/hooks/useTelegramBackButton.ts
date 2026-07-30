@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { getHost } from '../../../shared/src/host';
 import { api, PairsData } from '../api';
 import { UseSheetsReturn } from './useSheets';
 
@@ -56,8 +57,7 @@ export function useTelegramBackButton({
                             : therapistMode && cabinetView === 'client'
                               ? () => therapistBackHandlerRef.current()
                               : () => {};
-    const bb = window.Telegram?.WebApp?.BackButton;
-    if (!bb) return;
+    const bb = getHost().backButton;
     const anyOpen =
       newDiaryEntry ||
       sheets.trackerOverlay ||
@@ -72,8 +72,7 @@ export function useTelegramBackButton({
       sheets.childhoodWheel ||
       sheets.todayNote ||
       (therapistMode && cabinetView === 'client');
-    if (anyOpen) bb.show();
-    else bb.hide();
+    bb.setVisible(!!anyOpen);
   }, [
     newDiaryEntry,
     sheets.trackerOverlay,
@@ -91,11 +90,8 @@ export function useTelegramBackButton({
     cabinetView,
   ]);
 
-  useEffect(() => {
-    const bb = window.Telegram?.WebApp?.BackButton;
-    if (!bb) return;
-    const handler = () => backHandlerRef.current();
-    bb.onClick(handler);
-    return () => bb.offClick(handler);
-  }, []);
+  useEffect(
+    () => getHost().backButton.onClick(() => backHandlerRef.current()),
+    [],
+  );
 }

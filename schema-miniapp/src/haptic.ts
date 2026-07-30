@@ -1,9 +1,2 @@
-const hf = () => window.Telegram?.WebApp?.HapticFeedback;
-
-export const haptic = {
-  tap: () => hf()?.impactOccurred('light'),
-  select: () => hf()?.selectionChanged(),
-  success: () => hf()?.notificationOccurred('success'),
-  warning: () => hf()?.notificationOccurred('warning'),
-  error: () => hf()?.notificationOccurred('error'),
-};
+// Реэкспорт из shared (правило №3) — единственная копия там.
+export { haptic } from '../../shared/src/host/haptic';

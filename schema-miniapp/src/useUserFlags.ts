@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getHost } from '../../shared/src/host';
 
 export type UserFlags = {
   themePref: string | null;
@@ -46,9 +47,8 @@ const subscribers = new Set<(f: UserFlags) => void>();
 let fetchPromise: Promise<void> | null = null;
 
 function getHeaders(): Record<string, string> {
-  const initData = window.Telegram?.WebApp?.initData ?? '';
   return {
-    'x-telegram-init-data': initData,
+    ...getHost().authHeaders(),
     'Content-Type': 'application/json',
   };
 }

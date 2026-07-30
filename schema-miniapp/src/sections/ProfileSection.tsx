@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getHost } from '../../../shared/src/host';
 import { api, Achievement } from '../api';
 import { useSafeTop } from '../utils/safezone';
 import { AchievementDetail } from '../components/AchievementDetail';
@@ -31,8 +32,7 @@ export function ProfileSection({
   displayName,
 }: Props) {
   const safeTop = useSafeTop();
-  const tgName =
-    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
+  const tgName = getHost().user()?.firstName ?? '';
   const firstName = displayName || tgName;
 
   const [streak, setStreak] = useState<StreakData | null>(null);

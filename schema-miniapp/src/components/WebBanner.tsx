@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getHost } from '../../../shared/src/host';
 import { api } from '../api';
 import {
   WebBannerId,
@@ -27,9 +28,7 @@ export function WebBanner({
 
   const open = () => {
     api.trackEvent('web_banner_open', { banner: id });
-    const tg = window.Telegram?.WebApp;
-    if (tg?.openLink) tg.openLink(url);
-    else window.open(url, '_blank');
+    getHost().openLink(url);
   };
   const dismiss = () => {
     api.trackEvent('web_banner_dismiss', { banner: id });

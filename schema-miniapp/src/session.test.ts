@@ -58,9 +58,9 @@ describe('authHeaders', () => {
     });
   });
 
-  it('нет window.Telegram → пустая строка вместо падения', () => {
+  it('вне мессенджера подписи нет — остаётся только Content-Type', () => {
     delete (window as unknown as { Telegram?: unknown }).Telegram;
-    expect(authHeaders()['x-telegram-init-data']).toBe('');
+    expect(authHeaders()).toEqual({ 'Content-Type': 'application/json' });
   });
 
   it('после выпуска сессии шлёт Bearer вместо протухающей initData', async () => {
