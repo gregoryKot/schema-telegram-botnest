@@ -4,23 +4,19 @@ import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { MODE_GROUPS, getModeById } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { haptic } from '../../haptic';
+import { api } from '../../api';
 import { ModeSelectScreen } from './ModeSelectScreen';
 import { ModeEntryForm, type ModeFormFields } from './ModeEntryForm';
 import { ModeEntryShare } from './ModeEntryShare';
+import {
+  MODE_ENTRY_SAVED_EVENT,
+  modeEntrySavedMeta,
+} from '../../../../shared/src/share/analytics';
+import { type ModeEntrySaveData } from '../../../../shared/src/mode/modeDiarySteps';
 
 interface Props {
   onClose: () => void;
-  onSave: (data: {
-    modeId: string;
-    situation: string;
-    thoughts?: string;
-    feelings?: string;
-    bodyFeelings?: string;
-    actions?: string;
-    actualNeed?: string;
-    childhoodMemories?: string;
-    healthyResponse?: string;
-  }) => Promise<void>;
+  onSave: (data: ModeEntrySaveData) => Promise<void>;
 }
 
 type DraftData = Record<
@@ -125,6 +121,21 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
         healthyResponse: healthyResponse || undefined,
       });
       clearDraft('mode');
+      api.trackEvent(
+        MODE_ENTRY_SAVED_EVENT,
+        modeEntrySavedMeta(
+          [
+            situation,
+            thoughts,
+            feelings,
+            bodyFeelings,
+            actions,
+            actualNeed,
+            childhoodMemories,
+          ],
+          healthyResponse,
+        ),
+      );
       setDone(true); // итог вместо молчаливого закрытия (не «всё исчезло»)
     } catch {
       haptic.error();

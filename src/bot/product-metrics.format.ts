@@ -75,6 +75,7 @@ const SHARE_KIND_LABELS: Record<string, string> = {
   diary: '📔 дневник',
   ysq: '📋 тест схем',
   mode: '🎭 режим',
+  mode_entry: '🌿 запись режима',
   pair_invite: '🤝 приглашение в пару',
   app_invite: '🌱 позвать друга в приложение',
   therapist_invite: '🩺 приглашение клиенту от терапевта',

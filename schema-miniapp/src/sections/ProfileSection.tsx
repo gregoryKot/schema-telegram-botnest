@@ -4,7 +4,6 @@ import { api, Achievement } from '../api';
 import { useSafeTop } from '../utils/safezone';
 import { AchievementDetail } from '../components/AchievementDetail';
 import { TherapyNote } from '../components/TherapyNote';
-import { MyNotesSheet } from '../components/MyNotesSheet';
 import { NEED_NAMES, ACHIEVEMENT_META } from './profile/constants';
 import { StreakData, InsightsData } from './profile/types';
 import { ProfileHeader } from './profile/ProfileHeader';
@@ -12,7 +11,6 @@ import { StreakCard } from './profile/StreakCard';
 import { ActivityHeatmap } from './profile/ActivityHeatmap';
 import { AchievementsCard } from './profile/AchievementsCard';
 import { InsightsCard } from './profile/InsightsCard';
-import { MyNotesCard } from './profile/MyNotesCard';
 import { JourneyEntryCard } from './profile/JourneyEntryCard';
 import { JourneySheet } from '../components/JourneySheet';
 import { AchievementsSheet } from './profile/AchievementsSheet';
@@ -43,13 +41,6 @@ export function ProfileSection({
   const [ready, setReady] = useState(false);
   const [activeDates, setActiveDates] = useState<Set<string>>(new Set());
 
-  const [notesCount, setNotesCount] = useState<{
-    schema: number;
-    mode: number;
-  } | null>(null);
-  const [schemaNoteIds, setSchemaNotesIds] = useState<string[]>([]);
-  const [modeNoteIds, setModeNoteIds] = useState<string[]>([]);
-  const [notesOpen, setNotesOpen] = useState(false);
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(
@@ -76,13 +67,6 @@ export function ProfileSection({
       api
         .getInsights()
         .then(setInsights)
-        .catch(() => {}),
-      Promise.all([api.getSchemaNotes(), api.getModeNotes()])
-        .then(([sn, mn]) => {
-          setNotesCount({ schema: sn.length, mode: mn.length });
-          setSchemaNotesIds(sn.map((n) => n.schemaId));
-          setModeNoteIds(mn.map((n) => n.modeId));
-        })
         .catch(() => {}),
       api
         .history(112)
@@ -189,16 +173,6 @@ export function ProfileSection({
           />
         )}
 
-        {/* ── Мои записи ── */}
-        {ready && notesCount !== null && (
-          <MyNotesCard
-            notesCount={notesCount}
-            schemaNoteIds={schemaNoteIds}
-            modeNoteIds={modeNoteIds}
-            onOpen={() => setNotesOpen(true)}
-          />
-        )}
-
         <div style={{ padding: '4px 0' }}>
           <TherapyNote compact />
         </div>
@@ -230,8 +204,6 @@ export function ProfileSection({
       {showBestDayInfo && (
         <BestDayInfoSheet onClose={() => setShowBestDayInfo(false)} />
       )}
-
-      {notesOpen && <MyNotesSheet onClose={() => setNotesOpen(false)} />}
 
       {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
     </div>

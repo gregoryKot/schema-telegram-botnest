@@ -17,8 +17,9 @@
 // residual-слабость — новое поле с именем, уже покрытым для другой модели,
 // проскользнёт; но реальные пропуски (отдельные имена) ловятся. Стиль —
 // как у table-registry.spec.ts (чтение исходников как текста, без импорта).
-import { readFileSync, readdirSync, statSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
+import { collectSourceFiles } from '../security/collect-source-files';
 
 const ROOT = join(__dirname, '..', '..');
 const rotationScript = readFileSync(
@@ -26,25 +27,7 @@ const rotationScript = readFileSync(
   'utf8',
 );
 
-// ── Рекурсивный обход src/ (без спеков/тестов) ──────────────────────────────
-function collectTs(dir: string, out: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) {
-      collectTs(p, out);
-    } else if (
-      p.endsWith('.ts') &&
-      !p.endsWith('.spec.ts') &&
-      !p.endsWith('.test.ts') &&
-      !p.endsWith('.d.ts')
-    ) {
-      out.push(p);
-    }
-  }
-  return out;
-}
-
-const srcFiles = collectTs(join(ROOT, 'src'));
+const srcFiles = collectSourceFiles(join(ROOT, 'src'));
 
 // ── Обнаружение зашифрованных полей ─────────────────────────────────────────
 // (1) EncryptSchema = { strings:[...], jsonArrays:[...] } → все строки в блоке.

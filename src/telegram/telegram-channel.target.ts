@@ -2,7 +2,7 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { describeTelegramError } from './telegram-error';
-import type { ChannelTarget } from '../channel/channel-target';
+import type { ChannelPost, ChannelTarget } from '../channel/channel-target';
 
 /** Env с каналом: @username или -100…id. Без него площадка выключена. */
 const ENV_KEY = 'HEALTHY_ADULT_CHANNEL';
@@ -32,9 +32,9 @@ export class TelegramChannelTarget implements ChannelTarget {
     return raw ? raw : null;
   }
 
-  async send(text: string, destination: string): Promise<void> {
+  async send(post: ChannelPost, destination: string): Promise<void> {
     if (!this.bot) throw new Error('бот не инициализирован (нет BOT_TOKEN?)');
-    await this.bot.telegram.sendMessage(destination, text);
+    await this.bot.telegram.sendMessage(destination, post.text);
   }
 
   /**

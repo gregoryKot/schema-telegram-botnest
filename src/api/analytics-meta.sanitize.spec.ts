@@ -111,6 +111,67 @@ describe('sanitizeMeta', () => {
     ).toEqual({ modeId: 'vulnerable_child', filledFields: 5 });
   });
 
+  it('mode_entry_saved: filledFields (0..7) + filledHealthy проходят', () => {
+    expect(
+      sanitizeMeta('mode_entry_saved', {
+        filledFields: 5,
+        filledHealthy: true,
+      }),
+    ).toEqual({ filledFields: 5, filledHealthy: true });
+  });
+
+  it('mode_entry_saved: filledFields вне 0..7 → отброшено', () => {
+    expect(
+      sanitizeMeta('mode_entry_saved', {
+        filledFields: 9,
+        filledHealthy: true,
+      }),
+    ).toBeUndefined();
+  });
+
+  it('mode_entry_saved: filledHealthy не boolean → отброшено', () => {
+    expect(
+      sanitizeMeta('mode_entry_saved', {
+        filledFields: 3,
+        filledHealthy: 'yes',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('mode_entry_saved: свободный текст в meta не пропускается (защита от PII)', () => {
+    expect(
+      sanitizeMeta('mode_entry_saved', {
+        filledFields: 5,
+        filledHealthy: true,
+        text: 'секретный текст пользователя',
+      }),
+    ).toEqual({ filledFields: 5, filledHealthy: true });
+  });
+
+  it('mode_test_completed: валидный modeId → {modeId}', () => {
+    expect(
+      sanitizeMeta('mode_test_completed', { modeId: 'detached_protector' }),
+    ).toEqual({ modeId: 'detached_protector' });
+  });
+
+  it('mode_test_completed: невалидный modeId (цифры/пробелы/длина) → undefined', () => {
+    expect(
+      sanitizeMeta('mode_test_completed', { modeId: 'evil id 123' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('mode_test_completed', { modeId: 'a'.repeat(65) }),
+    ).toBeUndefined();
+  });
+
+  it('mode_test_completed: лишнее поле отброшено', () => {
+    expect(
+      sanitizeMeta('mode_test_completed', {
+        modeId: 'vulnerable_child',
+        note: 'посторонний текст',
+      }),
+    ).toEqual({ modeId: 'vulnerable_child' });
+  });
+
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
   });

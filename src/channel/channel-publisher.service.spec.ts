@@ -45,8 +45,16 @@ describe('ChannelPublisherService', () => {
       svc,
     ).publish();
 
-    expect(a.send).toHaveBeenCalledWith('одна фраза', '@ch');
-    expect(b.send).toHaveBeenCalledWith('одна фраза', 'club1');
+    expect(a.send).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'одна фраза' }),
+      '@ch',
+    );
+    expect(b.send).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'одна фраза' }),
+      'club1',
+    );
+    // Картинка одна на публикацию: обе площадки получили один и тот же пост.
+    expect(a.send.mock.calls[0][0]).toBe(b.send.mock.calls[0][0]);
     expect(svc.pickFromPool).toHaveBeenCalledTimes(1);
     expect(res.ok).toBe(true);
     expect(res.delivered.map((d) => d.platform)).toEqual(['telegram', 'vk']);
@@ -133,6 +141,7 @@ describe('ChannelPublisherService', () => {
     it('пост записан один раз — упавшая площадка не отменяет вышедший', async () => {
       const { recordPost } = await partial();
       expect(recordPost).toHaveBeenCalledTimes(1);
+      expect(recordPost).toHaveBeenCalledWith('фраза из пула', 'pool');
     });
   });
 

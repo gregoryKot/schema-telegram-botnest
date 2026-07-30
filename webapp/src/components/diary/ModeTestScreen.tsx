@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { ExScreen } from '../exercises/ExScreen';
 import { useTr } from '../../utils/addressForm';
 import { MODE_TEST_GROUPS } from '../../../../shared/src/mode/modeTest';
+import { MODE_TEST_COMPLETED_EVENT } from '../../../../shared/src/share/analytics';
 import { haptic } from '../../haptic';
+import { api } from '../../api';
 
 interface Props {
   /** выбран лист теста → id режима для формы */
@@ -77,7 +79,11 @@ export function ModeTestScreen({ onPick, onBack }: Props) {
           key={l.modeId}
           type="button"
           className="mode-test-row"
-          onClick={() => { haptic.select(); onPick(l.modeId); }}
+          onClick={() => {
+            haptic.select();
+            api.trackEvent(MODE_TEST_COMPLETED_EVENT, { modeId: l.modeId });
+            onPick(l.modeId);
+          }}
         >
           <span className="mode-test-row-emoji">{l.emoji}</span>
           <span className="mode-test-row-text">

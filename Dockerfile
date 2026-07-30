@@ -65,6 +65,9 @@ COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/prisma.config.js ./
 COPY --from=build --chown=node:node /app/webapp/dist ./webapp/dist
+# Шрифт для картинки пина Pinterest: node:22-slim идёт без шрифтов вообще,
+# без него кириллица в пине превратилась бы в пустые прямоугольники.
+COPY --from=build --chown=node:node /app/assets ./assets
 # Front + страница техработ (dependency-free) — держат порт 3000 всю жизнь
 # контейнера. См. deploy/front-server.mjs, deploy/entrypoint.mjs и CMD ниже.
 COPY --from=build --chown=node:node /app/deploy ./deploy

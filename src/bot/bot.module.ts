@@ -8,6 +8,7 @@ import { QuizMetricsService } from './quiz-metrics.service';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
 import { PracticeMetricsService } from './practice-metrics.service';
 import { ModeCardMetricsService } from './mode-card-metrics.service';
+import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
 import { DiaryService } from './diary.service';
 import { ProfileService } from './profile.service';
 import { AccountService } from './account.service';
@@ -48,6 +49,7 @@ const INTERNAL_PROVIDERS = [
   QuizMetricsService,
   PracticeLinkMetricsService,
   ModeCardMetricsService,
+  ModeDiaryMetricsService,
   PracticeMetricsService,
 ];
 

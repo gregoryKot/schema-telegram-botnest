@@ -4,20 +4,16 @@
 // правило №4 CLAUDE.md запрещает денормализованные копии без сверки — если
 // бы у каждого спека была своя копия PUBLIC_BY_DESIGN/ADMIN_KEY_GATED, они
 // могли бы разойтись (один спек «забыл» новый публичный контроллер).
-import { readdirSync, readFileSync, statSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
+import { collectSourceFiles } from './collect-source-files';
 
 export const SRC = join(__dirname, '..');
 
 export function walkControllers(dir: string = SRC): string[] {
-  const out: string[] = [];
-  for (const e of readdirSync(dir)) {
-    const p = join(dir, e);
-    if (statSync(p).isDirectory()) out.push(...walkControllers(p));
-    else if (p.endsWith('.controller.ts') && !/\.spec\.ts$/.test(p))
-      out.push(p);
-  }
-  return out;
+  return collectSourceFiles(dir, {
+    filter: (p) => p.endsWith('.controller.ts'),
+  });
 }
 
 export const CONTROLLERS = walkControllers().map((p) =>

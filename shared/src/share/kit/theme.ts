@@ -54,12 +54,20 @@ export function luminance(color: string): number {
   );
 }
 
-export function resolveCardTheme(): CardTheme {
-  const cs = getComputedStyle(document.documentElement);
+/** Источник CSS-переменной: DOM во фронтендах, пусто — на сервере. */
+type VarSource = (name: string) => string;
+
+/**
+ * Тема из источника переменных. Вынесена из resolveCardTheme, потому что
+ * карточку теперь рисует и бэкенд (пин фразы для Pinterest): там нет DOM, но
+ * визуал обязан остаться тем же — значения по умолчанию здесь и есть тёмная
+ * тема мини-аппа, на которой карточки и рисовались.
+ */
+function buildTheme(read: VarSource): CardTheme {
   // Рекурсивная подстановка: '--sheet-bg: var(--bg-elev)' → '#hex'
   const get = (name: string, fallback: string, depth = 0): string => {
     if (depth > 4) return fallback;
-    const raw = cs.getPropertyValue(name).trim();
+    const raw = read(name).trim();
     if (!raw) return fallback;
     const m = /^var\((--[\w-]+)\)$/.exec(raw);
     return m ? get(m[1], fallback, depth + 1) : raw;
@@ -78,4 +86,11 @@ export function resolveCardTheme(): CardTheme {
     fg: (alpha) => `rgba(${fgRgb},${alpha})`,
     color,
   };
+}
+
+export function resolveCardTheme(): CardTheme {
+  // Без DOM (бэкенд рисует карточку для пина) берём дефолты buildTheme.
+  if (typeof document === 'undefined') return buildTheme(() => '');
+  const cs = getComputedStyle(document.documentElement);
+  return buildTheme((name) => cs.getPropertyValue(name));
 }
