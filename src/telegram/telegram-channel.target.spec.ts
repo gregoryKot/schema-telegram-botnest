@@ -3,6 +3,12 @@
 // про Telegram уже ничего не знают.
 import { TelegramChannelTarget } from './telegram-channel.target';
 
+/** Пост канала: текст плюс ленивая картинка (нужна только Pinterest). */
+const post = (text: string) => ({
+  text,
+  image: () => Promise.resolve(Buffer.alloc(0)),
+});
+
 function makeBot() {
   const sendMessage = jest.fn().mockResolvedValue(undefined);
   return { bot: { telegram: { sendMessage } } as any, sendMessage };
@@ -34,14 +40,14 @@ describe('TelegramChannelTarget', () => {
 
   it('шлёт текст в канал с уведомлением (без disable_notification)', async () => {
     const { bot, sendMessage } = makeBot();
-    await new TelegramChannelTarget(bot).send('фраза', '@test_channel');
+    await new TelegramChannelTarget(bot).send(post('фраза'), '@test_channel');
     expect(sendMessage).toHaveBeenCalledWith('@test_channel', 'фраза');
     expect(sendMessage.mock.calls[0][2]?.disable_notification).toBeFalsy();
   });
 
   it('без бота падает с внятной причиной, а не с undefined', async () => {
     await expect(
-      new TelegramChannelTarget(null).send('фраза', '@test_channel'),
+      new TelegramChannelTarget(null).send(post('фраза'), '@test_channel'),
     ).rejects.toThrow('BOT_TOKEN');
   });
 

@@ -11,6 +11,16 @@
 /** DI-токен: массив адаптеров, по которым идёт рассылка одного текста. */
 export const CHANNEL_TARGETS = 'CHANNEL_TARGETS';
 
+/**
+ * Публикуемое сообщение. Картинка ленивая и считается один раз на публикацию:
+ * текстовым площадкам (Telegram, VK, MAX, Threads) она не нужна, а Pinterest
+ * без неё пин не создаст — рендер не должен платиться за всех.
+ */
+export interface ChannelPost {
+  text: string;
+  image(): Promise<Buffer>;
+}
+
 export interface ChannelTarget {
   /** Ключ для логов и отчётов: 'telegram', 'vk', 'max'. */
   readonly platform: string;
@@ -20,8 +30,8 @@ export interface ChannelTarget {
   readonly envKey: string;
   /** Куда постим (@канал, club123) или null — площадка выключена. */
   destination(): string | null;
-  /** Отправить текст. Бросает — доставка на этой площадке не удалась. */
-  send(text: string, destination: string): Promise<void>;
+  /** Отправить пост. Бросает — доставка на этой площадке не удалась. */
+  send(post: ChannelPost, destination: string): Promise<void>;
   /** Ошибка отправки → причина словами и подсказка, что чинить. */
   explain(err: unknown): string;
 }

@@ -1,0 +1,40 @@
+import { Injectable } from '@nestjs/common';
+import type { ChannelPost, ChannelTarget } from '../channel-target';
+import { describeHttpError, postJson } from '../channel-http';
+
+/** id чата/канала MAX. Без него площадка выключена. */
+const CHAT_ENV = 'HEALTHY_ADULT_MAX_CHAT';
+/** Токен бота из @MasterBot. */
+const TOKEN_ENV = 'HEALTHY_ADULT_MAX_TOKEN';
+const API = 'https://platform-api.max.ru/messages';
+
+/**
+ * MAX: сообщение в канал через Bot API — тот же контур, что у Telegram, но
+ * REST-ный (chat_id в query, текст в теле). Публикация ботов там открыта
+ * верифицированным юрлицам РФ, поэтому без токена площадка просто молчит.
+ */
+@Injectable()
+export class MaxChannelTarget implements ChannelTarget {
+  readonly platform = 'max';
+  readonly title = 'MAX';
+  readonly envKey = CHAT_ENV;
+
+  destination(): string | null {
+    const raw = process.env[CHAT_ENV]?.trim();
+    return raw ? raw : null;
+  }
+
+  async send(post: ChannelPost, destination: string): Promise<void> {
+    const token = process.env[TOKEN_ENV]?.trim();
+    if (!token) throw new Error(`нет ${TOKEN_ENV} — токена бота MAX`);
+    await postJson(
+      `${API}?chat_id=${encodeURIComponent(destination)}`,
+      { text: post.text },
+      { authorization: token },
+    );
+  }
+
+  explain(err: unknown): string {
+    return `${describeHttpError(err)}\nПроверь токен бота MAX и что бот админ канала.`;
+  }
+}
