@@ -81,3 +81,50 @@ function report(
       : `⚠️ Опубликовано: ${namedList(delivered)}\nНе дошло:\n${failedSummary(failed)}`;
   return `${head}\n\n${text}`;
 }
+
+/**
+ * Проверка одной площадки (`/zv max`). Отдельная формулировка, чтобы владелец
+ * не принял её за настоящую публикацию: текст не новый и в историю не попал.
+ */
+export function checkResult(
+  target: Pick<ChannelTarget, 'platform' | 'title'>,
+  destination: string,
+  text: string,
+  reason?: string,
+): PublishResult {
+  const where = {
+    platform: target.platform,
+    title: target.title,
+    destination,
+  };
+  if (reason)
+    return {
+      ok: false,
+      posted: false,
+      message: `❌ Проверка ${target.title} (${destination}) — не дошло:\n${reason}`,
+      delivered: [],
+      failed: [{ ...where, reason }],
+    };
+  return {
+    ok: true,
+    posted: false,
+    message: `✅ Проверка ${target.title} (${destination}): дошло.\nПул не тронут, в историю не записано.\n\n${text}`,
+    delivered: [where],
+    failed: [],
+  };
+}
+
+/**
+ * Имя площадки не узнали или она не настроена: подсказываем, что писать —
+ * иначе владелец гадает между `/zv max`, `/zv MAX` и `/zv макс`.
+ */
+export function unknownPlatform(
+  asked: string,
+  known: string[],
+  disabled?: { title: string; envKey: string },
+): PublishResult {
+  const message = disabled
+    ? `⚠️ ${disabled.title} не настроен — задай ${disabled.envKey}.`
+    : `⚠️ Площадка «${asked}» неизвестна. Доступные: ${known.join(', ')}.`;
+  return { ok: false, posted: false, message, delivered: [], failed: [] };
+}
