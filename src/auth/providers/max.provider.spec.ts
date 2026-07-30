@@ -5,6 +5,8 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac } from 'crypto';
 import { MaxProvider } from './max.provider';
+import { MaxNotConfiguredError } from '../max-init-data';
+import { classifyInitDataFailure } from '../../api/initdata-alert';
 
 const BOT_TOKEN = '111222:MAX_PROVIDER_TEST_TOKEN';
 
@@ -33,14 +35,27 @@ function signInitData(user: unknown, botToken: string): string {
 }
 
 describe('MaxProvider.verifyInitData', () => {
-  it('MAX_BOT_TOKEN не задан → UnauthorizedException', () => {
+  // Отдельный класс, а НЕ UnauthorizedException: незаданный токен — наша
+  // несобранная конфигурация. Уйди она в rejectInitData как обычная ошибка
+  // подписи — админ получал бы «suspicious_initdata» на каждой попытке входа,
+  // пока переменную не проставят, и настоящая подделка утонула бы в этом шуме.
+  it('MAX_BOT_TOKEN не задан → MaxNotConfiguredError, а не ошибка подписи', () => {
     const provider = new MaxProvider(makeConfig(undefined));
     expect(() => provider.verifyInitData('anything')).toThrow(
-      UnauthorizedException,
+      MaxNotConfiguredError,
     );
     expect(() => provider.verifyInitData('anything')).toThrow(
       'MAX_BOT_TOKEN not configured',
     );
+    // Классификатор алертов не должен принять это за подделку.
+    expect(classifyInitDataFailure(new MaxNotConfiguredError())).not.toBe(
+      'expired',
+    );
+    try {
+      provider.verifyInitData('anything');
+    } catch (err) {
+      expect(err).not.toBeInstanceOf(UnauthorizedException);
+    }
   });
 
   it('MAX_BOT_TOKEN задан и подпись валидна → ProviderIdentity', () => {

@@ -11,6 +11,7 @@ import { UnauthorizedException, ExecutionContext } from '@nestjs/common';
 import { createHmac } from 'crypto';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { MaxProvider } from '../auth/providers/max.provider';
+import { MaxNotConfiguredError } from '../auth/max-init-data';
 
 const BOT_TOKEN = '12345:TEST_TOKEN';
 
@@ -325,5 +326,27 @@ describe('путь 3: MAX initData (MAX мини-апп)', () => {
       status: 401,
     });
     expect(securityLog.log).not.toHaveBeenCalled();
+  });
+
+  // Пока MAX_BOT_TOKEN не проставлен, каждый запрос из мессенджера выглядел бы
+  // для аудита подделкой подписи. Это наша конфигурация: 503 и тишина в лог.
+  it('нет MAX_BOT_TOKEN → 503, и админ НЕ получает алерт о подделке', async () => {
+    const verifyInitData = jest.fn().mockImplementation(() => {
+      throw new MaxNotConfiguredError();
+    });
+    const { guard, authService, securityLog } = makeGuard(
+      {},
+      { maxProvider: { verifyInitData } },
+    );
+    const req: FakeRequest = {
+      headers: { 'x-max-init-data': 'что угодно' },
+      ip: '8.8.8.8',
+    };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toMatchObject({
+      status: 503,
+    });
+    expect(securityLog.log).not.toHaveBeenCalled();
+    expect(authService.findOrCreateUserByProvider).not.toHaveBeenCalled();
   });
 });

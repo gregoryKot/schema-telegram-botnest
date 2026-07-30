@@ -2,11 +2,16 @@
 // чтобы сам guard остался под потолком файл-храповика (scripts/
 // file-size-baseline.json, было 105 строк). Поведение телеграмного пути —
 // байт-в-байт то же, что и до выноса (покрыто telegram-auth.guard.spec.ts).
-import { Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  Logger,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { validate } from '@tma.js/init-data-node';
 import type { Request } from 'express';
 import { AuthService } from '../auth/auth.service';
+import { MaxNotConfiguredError } from '../auth/max-init-data';
 import { MaxProvider } from '../auth/providers/max.provider';
 import { SecurityLogService } from '../auth/security-log.service';
 import { rejectInitData } from './initdata-alert';
@@ -85,6 +90,12 @@ export async function applyMaxInitData(
   try {
     identity = maxProvider.verifyInitData(initData);
   } catch (err) {
+    // Нет токена — наша конфигурация, а не подделка подписи: в rejectInitData
+    // отдавать нельзя, иначе админ получит ложный алерт (см. MaxNotConfiguredError).
+    if (err instanceof MaxNotConfiguredError) {
+      logger.error('вход из MAX недоступен: не задан MAX_BOT_TOKEN');
+      throw new ServiceUnavailableException('MAX login is not configured');
+    }
     rejectInitData(err, req.ip, logger, securityLog);
   }
 

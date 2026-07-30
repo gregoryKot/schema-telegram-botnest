@@ -7,6 +7,7 @@ import {
   Logger,
   HttpCode,
   BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
@@ -16,6 +17,7 @@ import { ProviderIdentity } from './providers/types';
 import { SecurityLogService } from './security-log.service';
 import { rejectInitData } from '../api/initdata-alert';
 import { setRefreshCookie } from './auth-http.util';
+import { MaxNotConfiguredError } from './max-init-data';
 import { MaxWebAppDto } from './dto/max-webapp.dto';
 
 // MAX mini-app auto-auth — тот же паттерн, что telegram/webapp
@@ -48,6 +50,12 @@ export class AuthMaxController {
     try {
       identity = this.maxProvider.verifyInitData(body.initData);
     } catch (err) {
+      // Нет токена — это мы не дособрали конфигурацию, а не клиент подделал
+      // подпись: в rejectInitData такую ошибку отдавать нельзя.
+      if (err instanceof MaxNotConfiguredError) {
+        this.logger.error('вход из MAX недоступен: не задан MAX_BOT_TOKEN');
+        throw new ServiceUnavailableException('MAX login is not configured');
+      }
       rejectInitData(err, req.ip, this.logger, this.securityLog);
     }
 
