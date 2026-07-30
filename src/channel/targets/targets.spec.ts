@@ -6,7 +6,8 @@ import { MaxChannelTarget } from './max.target';
 import { ThreadsChannelTarget } from './threads.target';
 import { PinterestChannelTarget } from './pinterest.target';
 import type { ThreadsTokenService } from './threads-token.service';
-import { resetMaxDispatcher } from './max-ca';
+import { buildCaBundle, resetMaxDispatcher } from './max-ca';
+import { rootCertificates } from 'node:tls';
 
 // Запрос со своим диспетчером уходит клиентом из пакета undici (иначе Node
 // роняет его на несовпадении версий — инцидент 2026-07-30), поэтому в тестах
@@ -117,6 +118,41 @@ describe('адаптеры площадок', () => {
       expect(url).toBe('https://platform-api2.max.ru/messages?chat_id=-100500');
       expect(init.body).toBe('{"text":"текст ЗВ"}');
       expect(init.headers.authorization).toBe('max-token');
+    });
+
+    it('свой корень добавляется к штатным, а не заменяет их', () => {
+      // Инцидент 2026-07-30: замена списка корней одним российским уронила
+      // проверку цепочки (UNABLE_TO_GET_ISSUER_CERT_LOCALLY) там, где до этого
+      // хватало штатных.
+      const bundle = buildCaBundle('-----BEGIN CERTIFICATE-----\nRU\n');
+      expect(bundle).toContain('-----BEGIN CERTIFICATE-----\nRU\n');
+      expect(bundle).toHaveLength(rootCertificates.length + 1);
+      expect(bundle).toContain(rootCertificates[0]);
+    });
+
+    it('сбой сертификата без env — просят задать корень, а не искать токен', () => {
+      const err = Object.assign(new TypeError('fetch failed'), {
+        cause: Object.assign(
+          new Error('unable to get local issuer certificate'),
+          {
+            code: 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
+          },
+        ),
+      });
+      const explained = new MaxChannelTarget().explain(err);
+      expect(explained).toContain('Не задан HEALTHY_ADULT_MAX_CA');
+      expect(explained).not.toContain('токен');
+    });
+
+    it('сбой сертификата при заданном env — значит корень не тот', () => {
+      process.env.HEALTHY_ADULT_MAX_CA =
+        '-----BEGIN CERTIFICATE-----\\nRU\\n-----END CERTIFICATE-----';
+      const err = Object.assign(new Error('self signed certificate in chain'), {
+        code: 'SELF_SIGNED_CERT_IN_CHAIN',
+      });
+      const explained = new MaxChannelTarget().explain(err);
+      expect(explained).toContain('всю цепочку');
+      expect(explained).not.toContain('Не задан');
     });
 
     it('без токена не ходит в сеть', async () => {
