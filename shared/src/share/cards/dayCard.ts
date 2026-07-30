@@ -4,16 +4,7 @@
 // экспортируется для тестов.
 import { COLORS } from '../../types';
 import type { Need } from '../../types';
-import {
-  ROW_H,
-  beginCard,
-  accentBar,
-  header,
-  divider,
-  footer,
-  drawNeedRows,
-  drawIndexStat,
-} from '../cardKit';
+import { drawNeedsRadarCard, type NeedsRadarRow } from './needsRadarCard';
 
 export function dayIndex(
   needs: Need[],
@@ -63,35 +54,41 @@ export function makeDayShare(
   };
 }
 
+/** Строки радара из потребностей и оценок — общая часть дня и «Моего пути». */
+export function dayRadarRows(
+  needs: Need[],
+  ratings: Record<string, number>,
+): NeedsRadarRow[] {
+  return needs.map((n) => {
+    const val = ratings[n.id];
+    return {
+      emoji: n.emoji,
+      label: n.chartLabel,
+      color: COLORS[n.id] ?? '#888',
+      value: val ?? null,
+      valueText: val !== undefined ? String(val) : '—',
+    };
+  });
+}
+
 export function drawDayCard(
   canvas: HTMLCanvasElement,
   needs: Need[],
   ratings: Record<string, number>,
   dateLabel: string,
 ) {
-  const H = 120 + needs.length * ROW_H + 8 + 96 + 56;
-  const c = beginCard(canvas, H);
-
-  accentBar(c);
-  header(c, 'Потребности сегодня', dateLabel);
-
-  drawNeedRows(
-    c,
-    needs.map((n) => {
-      const val = ratings[n.id];
-      return {
-        emoji: n.emoji,
-        chartLabel: n.chartLabel,
-        color: COLORS[n.id] ?? '#888',
-        value: val ?? null,
-        valueText: val !== undefined ? String(val) : '—',
-      };
-    }),
-  );
-
-  const statsDivY = 112 + needs.length * ROW_H + 8;
-  divider(c, statsDivY);
-  drawIndexStat(c, 'Индекс дня', dayIndex(needs, ratings) ?? 0, statsDivY + 20);
-
-  footer(c, 'Трекер потребностей');
+  const idx = dayIndex(needs, ratings);
+  drawNeedsRadarCard(canvas, {
+    eyebrow: 'Трекер потребностей',
+    title: 'Мой день',
+    subtitle: dateLabel,
+    rows: dayRadarRows(needs, ratings),
+    center: {
+      value: idx !== null ? idx.toFixed(1) : '—',
+      caption: 'индекс',
+    },
+    footerLabel: 'Трекер потребностей',
+    accent: 'var(--accent-blue)',
+    accent2: 'var(--accent)',
+  });
 }

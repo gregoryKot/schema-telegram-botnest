@@ -1,14 +1,19 @@
 // Карточка быстрой практики «Здесь и сейчас» (дыхание, заземление, «Стоп»):
 // шаги — статичный контент из practices/quickPractices.ts, без пользователь-
 // ского текста, поэтому карточку можно рисовать без превью-подтверждения.
+// Каждый шаг — панель с номером, эмодзи и названием; внизу, если счётчик
+// известен, строка «прошли N раз».
 import {
   CARD_W,
   CARD_PAD,
   FOOTER_H,
   beginCard,
-  accentBar,
   header,
+  headerHeight,
   footer,
+  panel,
+  panelStack,
+  drawEmoji,
   measureWrap,
   clampLines,
   cardFont,
@@ -26,10 +31,12 @@ export interface PracticeCardData {
   steps: PracticeCardStep[];
 }
 
-const BADGE = 24;
-const STEP_X = CARD_PAD + BADGE + 10;
+const ITEM_PAD = 13;
+const ITEM_GAP = 10;
 const LINE_H = 20;
-const STEP_GAP = 14;
+const MAX_LINES = 2;
+const BADGE_W = 22;
+const EMOJI_W = 26;
 const COUNT_H = 34;
 
 export function drawPracticeCard(
@@ -37,57 +44,68 @@ export function drawPracticeCard(
   practice: PracticeCardData,
   countLabel: string | null,
 ): void {
-  const maxW = CARD_W - CARD_PAD - STEP_X;
+  const maxW = CARD_W - CARD_PAD * 2;
+  const textMaxW = maxW - ITEM_PAD * 2 - BADGE_W - EMOJI_W;
   const wrapped = practice.steps.map((s) =>
-    clampLines(measureWrap(canvas, s.title, maxW, 14), 2),
+    clampLines(measureWrap(canvas, s.title, textMaxW, 14), MAX_LINES),
   );
-  const bodyH = wrapped.reduce(
-    (s, lines) => s + Math.max(lines.length, 1) * LINE_H + STEP_GAP,
-    0,
+  const { heights: panelHeights, total: bodyH } = panelStack(
+    wrapped.map((lines) => lines.length),
+    { lineH: LINE_H, pad: ITEM_PAD, gap: ITEM_GAP },
   );
   const countH = countLabel ? COUNT_H : 0;
-  const H = 120 + bodyH + countH + FOOTER_H;
-  const c = beginCard(canvas, H);
-  const { ctx, W, th } = c;
 
-  accentBar(c, '#4fa3f7', '#06d6a0');
-  header(c, `${practice.emoji} ${practice.title}`, practice.subtitle);
+  const H = headerHeight(1, true) + bodyH + countH + 20 + FOOTER_H;
 
-  let y = 128;
-  practice.steps.forEach((step, i) => {
-    const lines = wrapped[i];
-    const rowH = Math.max(lines.length, 1) * LINE_H;
+  const c = beginCard(canvas, H, {
+    accent: 'var(--accent-blue)',
+    accent2: 'var(--accent-green)',
+  });
+  const { ctx, th } = c;
 
-    // Плашка с номером шага
-    ctx.fillStyle = th.fg(0.07);
-    ctx.beginPath();
-    ctx.roundRect(CARD_PAD, y - 15, BADGE, BADGE, 8);
-    ctx.fill();
+  const contentY = header(c, {
+    eyebrow: 'Здесь и сейчас',
+    title: `${practice.emoji} ${practice.title}`,
+    subtitle: practice.subtitle,
+  });
+
+  let y = contentY;
+  wrapped.forEach((lines, i) => {
+    const h = panelHeights[i];
+    panel(c, CARD_PAD, y, maxW, h, 16);
+
+    const baseline = y + ITEM_PAD + 11;
+
+    // Номер шага — порядок в практике важен, шаги идут строго друг за другом.
     ctx.font = cardFont(11, 'bold');
-    ctx.fillStyle = th.fg(0.5);
-    ctx.textAlign = 'center';
-    ctx.fillText(String(i + 1), CARD_PAD + BADGE / 2, y - 15 + BADGE / 2 + 4);
+    ctx.fillStyle = c.accent;
     ctx.textAlign = 'left';
+    ctx.fillText(`${i + 1}`, CARD_PAD + ITEM_PAD, baseline);
 
-    // Эмодзи шага + название (обёрнутое)
-    ctx.font = '14px serif';
-    ctx.fillText(step.emoji, STEP_X, y);
-    let ly = y;
+    drawEmoji(
+      c,
+      practice.steps[i].emoji,
+      CARD_PAD + ITEM_PAD + BADGE_W,
+      baseline,
+      14,
+    );
+
+    let ty = baseline;
     for (const line of lines) {
       ctx.font = cardFont(14);
       ctx.fillStyle = th.fg(0.88);
-      ctx.fillText(line, STEP_X + 22, ly);
-      ly += LINE_H;
+      ctx.fillText(line, CARD_PAD + ITEM_PAD + BADGE_W + EMOJI_W, ty);
+      ty += LINE_H;
     }
 
-    y += rowH + STEP_GAP;
+    y += h + ITEM_GAP;
   });
 
   if (countLabel) {
     ctx.font = cardFont(13, 'bold');
-    ctx.fillStyle = '#06d6a0';
+    ctx.fillStyle = c.accent;
     ctx.textAlign = 'center';
-    ctx.fillText(countLabel, W / 2, y + 6);
+    ctx.fillText(countLabel, CARD_W / 2, y + 16);
     ctx.textAlign = 'left';
   }
 

@@ -3,6 +3,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   JOURNEY_TYPE_META,
+  JOURNEY_NEED_NAMES,
+  JOURNEY_NEED_EMOJI,
   journeyTypeMeta,
   journeyItemSubtitle,
   sortJourneyItems,
@@ -23,6 +25,7 @@ import {
   type JourneyContentApi,
 } from '../../../shared/src/journey/journeyContent';
 import { QUESTIONS } from '../../../shared/src/hooks/useYsqTest';
+import { COLORS } from '../../../shared/src/types';
 import {
   journeyShareText,
   journeyItemShareText,
@@ -330,11 +333,23 @@ describe('totalsCardRows', () => {
   const stat = (label: string, count: number) => ({ emoji: '·', label, count });
   it('до 8 строк без хвоста; сверх — хвост «и ещё N»', () => {
     const eight = Array.from({ length: 8 }, (_, i) => stat(`t${i}`, 8 - i));
-    expect(totalsCardRows(eight)).toEqual({ shown: eight, restCount: 0 });
+    expect(totalsCardRows(eight)).toEqual({
+      shown: eight,
+      restCount: 0,
+      max: 8,
+    });
     const eleven = Array.from({ length: 11 }, (_, i) => stat(`t${i}`, 11 - i));
     const { shown, restCount } = totalsCardRows(eleven);
     expect(shown).toHaveLength(8);
     expect(restCount).toBe(3);
+  });
+});
+
+describe('JOURNEY_NEED_EMOJI — реестр совпадает с JOURNEY_NEED_NAMES и COLORS', () => {
+  it('одинаковый набор ключей (правило №4 — дублированные реестры под тестом)', () => {
+    const names = Object.keys(JOURNEY_NEED_NAMES).sort();
+    expect(Object.keys(JOURNEY_NEED_EMOJI).sort()).toEqual(names);
+    expect(Object.keys(COLORS).sort()).toEqual(names);
   });
 });
 
@@ -346,18 +361,43 @@ describe('fetchJourneyResult — YSQ-фолбэк старого пользов�
   } as unknown as JourneyContentApi;
 
   it('без id истории считает схемы из сохранённых ответов', async () => {
-    const parts = await fetchJourneyResult(api, {
+    const result = await fetchJourneyResult(api, {
       type: 'ysq',
       at: '2025-01-01',
     });
-    expect(parts?.[0].text).toBe('Выраженных схем: 20 из 20');
+    expect(result?.parts[0].text).toBe('Выраженных схем: 20 из 20');
   });
 
   it('без id и без результата → null (карточка шага)', async () => {
     const empty = {
       getYsqResult: async () => null,
     } as unknown as JourneyContentApi;
-    const parts = await fetchJourneyResult(empty, { type: 'ysq', at: '' });
-    expect(parts).toBeNull();
+    const result = await fetchJourneyResult(empty, { type: 'ysq', at: '' });
+    expect(result).toBeNull();
+  });
+});
+
+describe('fetchJourneyResult — tracker_day несёт оценки для радара', () => {
+  it('есть хотя бы одна оценка → parts + ratings', async () => {
+    const api = {
+      ratings: async () => ({ attachment: 7, autonomy: 8 }),
+    } as unknown as JourneyContentApi;
+    const result = await fetchJourneyResult(api, {
+      type: 'tracker_day',
+      at: '2026-07-20',
+    });
+    expect(result?.ratings).toEqual({ attachment: 7, autonomy: 8 });
+    expect(result?.parts[0].text).toContain('Привязанность — 7');
+  });
+
+  it('день без единой оценки → null (нет выдуманных данных)', async () => {
+    const api = {
+      ratings: async () => ({}),
+    } as unknown as JourneyContentApi;
+    const result = await fetchJourneyResult(api, {
+      type: 'tracker_day',
+      at: '2026-07-20',
+    });
+    expect(result).toBeNull();
   });
 });

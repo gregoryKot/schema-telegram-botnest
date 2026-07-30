@@ -16,6 +16,14 @@ export interface JourneyResultPart {
   text: string;
 }
 
+/** Результат записи для карточки шаринга: текстовые части + (только для
+ * tracker_day) сырые оценки дня — карточка рисует по ним радар потребностей,
+ * а не текстовую строку. */
+export interface JourneyResult {
+  parts: JourneyResultPart[];
+  ratings?: Record<string, number>;
+}
+
 // Минимальные структурные типы записей — оба api-клиента им соответствуют.
 export interface JourneyContentApi {
   getSchemaDiary(): Promise<
@@ -241,16 +249,24 @@ async function fetchJourneyEntry(
   return entry;
 }
 
-/** Части карточки (короткие, обрезанные) — по тапу для шаринга. */
+/** Части карточки (короткие, обрезанные) — по тапу для шаринга. Для
+ * tracker_day дополнительно отдаёт сырые оценки — карточка рисует радар. */
 export async function fetchJourneyResult(
   api: JourneyContentApi,
   item: JourneyItem,
-): Promise<JourneyResultPart[] | null> {
-  const parts = buildJourneyResultParts(
-    item.type,
-    await fetchJourneyEntry(api, item),
-  );
-  return parts.length ? parts : null;
+): Promise<JourneyResult | null> {
+  const entry = await fetchJourneyEntry(api, item);
+  const parts = buildJourneyResultParts(item.type, entry);
+  if (item.type === 'tracker_day') {
+    const ratings = entry as Record<string, number> | undefined;
+    const hasRatings =
+      ratings &&
+      Object.keys(JOURNEY_NEED_NAMES).some(
+        (id) => typeof ratings[id] === 'number',
+      );
+    return hasRatings ? { parts, ratings } : null;
+  }
+  return parts.length ? { parts } : null;
 }
 
 /** Части детального просмотра (все поля, без обрезки). */

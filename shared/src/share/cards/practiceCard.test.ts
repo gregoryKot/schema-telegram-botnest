@@ -19,12 +19,19 @@ function mockCtx() {
     fillRect: vi.fn(),
     fillText: vi.fn(),
     roundRect: vi.fn(),
+    arc: vi.fn(),
+    clip: vi.fn(),
+    // Появились с редизайном карточек (share/kit/frame.ts): рамка ставит
+    // трансформацию под devicePixelRatio и рисует радиальные подсветки.
+    setTransform: vi.fn(),
     createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+    createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     measureText: vi.fn((s: string) => ({ width: s.length * 7 })),
     fillStyle: '',
     strokeStyle: '',
     font: '',
     lineWidth: 1,
+    globalAlpha: 1,
     textAlign: 'left' as CanvasTextAlign,
   };
 }

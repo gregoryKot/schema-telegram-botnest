@@ -1,14 +1,16 @@
-// Карточка достижения: крупное эмодзи, титул, описание — по центру.
+// Карточка достижения: медальон с эмодзи, титул, описание — по центру.
 import {
+  drawEmoji,
   CARD_W,
   CARD_PAD,
   FOOTER_H,
   beginCard,
-  accentBar,
   footer,
   drawWrapped,
   measureWrap,
   cardFont,
+  withAlpha,
+  tracking,
 } from '../cardKit';
 
 export interface AchievementMeta {
@@ -17,29 +19,59 @@ export interface AchievementMeta {
   desc: string;
 }
 
+const MED_R = 48;
+// Отступы сверху вниз: эйбрау → медальон → титул → описание
+const EYEBROW_Y = 30;
+const GAP_TO_MEDALLION = 24;
+const GAP_TO_TITLE = 30;
+const GAP_TO_DESC = 16;
+const GAP_TO_FOOTER = 16;
+
 export function drawAchievementCard(
   canvas: HTMLCanvasElement,
   m: AchievementMeta,
 ) {
   const maxW = CARD_W - CARD_PAD * 2;
   const descLines = Math.min(measureWrap(canvas, m.desc, maxW, 13).length, 3);
-  // 24 бар + 76 эмодзи + 44 титул + строки описания + воздух + футер
-  const H = 150 + 40 + descLines * 20 + 16 + FOOTER_H;
-  const c = beginCard(canvas, H);
-  const { ctx, W, th } = c;
-  const cx = W / 2;
 
-  accentBar(c, '#facc15', '#ff9a3c');
+  const medallionBottom = EYEBROW_Y + GAP_TO_MEDALLION + MED_R * 2;
+  const titleY = medallionBottom + GAP_TO_TITLE;
+  const descStartY = titleY + GAP_TO_DESC;
+  const H = descStartY + descLines * 20 + GAP_TO_FOOTER + FOOTER_H;
 
-  ctx.font = '56px serif';
+  const c = beginCard(canvas, H, {
+    accent: 'var(--accent-yellow)',
+    accent2: 'var(--accent-orange)',
+  });
+  const { ctx, th } = c;
+  const cx = c.W / 2;
+  const cy = EYEBROW_Y + GAP_TO_MEDALLION + MED_R;
+
+  ctx.font = cardFont(10, 'bold');
+  ctx.fillStyle = c.accent;
   ctx.textAlign = 'center';
-  ctx.fillText(m.emoji, cx, 108);
+  tracking(ctx, 1);
+  ctx.fillText('ДОСТИЖЕНИЕ', cx, EYEBROW_Y);
+  tracking(ctx, 0);
 
-  ctx.font = cardFont(22, 'bold');
-  ctx.fillStyle = th.fg(0.95);
-  ctx.fillText(m.title, cx, 152);
+  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, MED_R);
+  glow.addColorStop(0, withAlpha(c.accent, 0.3));
+  glow.addColorStop(1, withAlpha(c.accent, 0.04));
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, MED_R, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = withAlpha(c.accent, 0.4);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 
-  drawWrapped(c, m.desc, cx, 180, maxW, {
+  drawEmoji(c, m.emoji, cx, cy + 18, 50, { align: 'center' });
+
+  ctx.font = cardFont(24, 'bold');
+  ctx.fillStyle = th.fg(0.96);
+  ctx.fillText(m.title, cx, titleY);
+
+  drawWrapped(c, m.desc, cx, descStartY, maxW, {
     size: 13,
     color: th.fg(0.55),
     lineH: 20,

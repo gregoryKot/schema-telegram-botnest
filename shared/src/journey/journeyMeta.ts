@@ -182,6 +182,17 @@ export const JOURNEY_NEED_NAMES: Record<string, string> = {
   limits: 'Границы',
 };
 
+// Эмодзи потребностей для радара трекера в «Моём пути» — та же пятёрка,
+// что и JOURNEY_NEED_NAMES/COLORS (shared/src/types.ts). Реестр-сверка
+// (правило №4) — schema-miniapp/src/share/journeyMeta.test.ts.
+export const JOURNEY_NEED_EMOJI: Record<string, string> = {
+  attachment: '🤝',
+  autonomy: '🧭',
+  expression: '💬',
+  play: '🎉',
+  limits: '⚖️',
+};
+
 export interface JourneySubtitleSources {
   getModeById(id: string): { name: string } | undefined;
   getSchemaById(id: string): { name: string } | undefined;
