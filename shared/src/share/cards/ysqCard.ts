@@ -34,6 +34,8 @@ export function ysqShareCard(
   view: { activeCount: number; dateLabel: string | null },
   link: string,
 ) {
+  // На карточку идут только выраженные схемы: строки с «—» и низкие баллы
+  // ничего не сообщают тому, кому её отправили.
   const domains = buildYsqProfile(scores);
   const opts = {
     headline: ysqCardHeadline(view.activeCount),
