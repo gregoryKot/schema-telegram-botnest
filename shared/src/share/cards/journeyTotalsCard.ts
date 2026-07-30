@@ -41,20 +41,30 @@ export function journeyTotalsCardHeight(
   shownCount: number,
   hasRest: boolean,
 ): number {
+  // Пустая сводка — одна поясняющая строка вместо списка занятий.
+  const bodyH = shownCount === 0 ? 34 : shownCount * ROW_H;
   return (
     headerHeight(1, true) +
     HERO_H +
-    shownCount * ROW_H +
+    bodyH +
     (hasRest ? REST_H : 0) +
     10 +
     FOOTER_H
   );
 }
 
+export interface JourneyTotalsOpts {
+  /** «Мой месяц» — если сводка за период, а не за всё время. */
+  title?: string;
+  /** «за последние 30 дней · сколько чего накопилось» — если сводка за период. */
+  subtitle?: string;
+}
+
 export function drawJourneyTotalsCard(
   canvas: HTMLCanvasElement,
   stats: JourneyStatRow[],
   total: number,
+  opts: JourneyTotalsOpts = {},
 ) {
   const { shown, restCount, max } = totalsCardRows(stats);
   const H = journeyTotalsCardHeight(shown.length, restCount > 0);
@@ -66,8 +76,8 @@ export function drawJourneyTotalsCard(
 
   const contentY = header(c, {
     eyebrow: 'Мой путь',
-    title: 'Итоги пути',
-    subtitle: 'сколько чего накопилось',
+    title: opts.title ?? 'Итоги пути',
+    subtitle: opts.subtitle ?? 'сколько чего накопилось',
   });
 
   // Общий итог крупно
@@ -82,6 +92,14 @@ export function drawJourneyTotalsCard(
 
   const listTop = contentY + HERO_H - 12;
   divider(c, listTop);
+
+  if (shown.length === 0) {
+    ctx.font = cardFont(13);
+    ctx.fillStyle = th.fg(0.45);
+    ctx.fillText('Пока ни одного шага — самое начало', CARD_PAD, listTop + 26);
+    footer(c, 'Мой путь');
+    return;
+  }
 
   let y = listTop + 22;
   shown.forEach((row) => {

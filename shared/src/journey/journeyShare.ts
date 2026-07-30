@@ -10,6 +10,7 @@ import {
   JOURNEY_GROUP_COLORS,
   JOURNEY_NEED_EMOJI,
   JOURNEY_NEED_NAMES,
+  JOURNEY_PERIOD_SUBTITLE,
   JOURNEY_PERIOD_TITLE,
   buildJourneyCardRows,
   formatJourneyDay,
@@ -22,7 +23,7 @@ import {
 } from '../share/cards/journeyCard';
 import { drawJourneyItemCard } from '../share/cards/journeyItemCard';
 import { drawJourneyTotalsCard } from '../share/cards/journeyTotalsCard';
-import type { JourneyStatRow } from './journeyStats';
+import { type JourneyStatRow, statRowsFromItems } from './journeyStats';
 import { drawJourneyResultCard } from '../share/cards/journeyResultCard';
 import {
   drawNeedsRadarCard,
@@ -42,8 +43,8 @@ import {
 import type { ShareCardKind } from '../share/analytics';
 
 export type JourneyShareState =
+  | { kind: 'summary' }
   | { kind: 'feed' }
-  | { kind: 'totals' }
   | { kind: 'item'; item: JourneyItem; result: JourneyResult | null };
 
 /** Строки радара из оценок дня трекера — порядок как в COLORS/JOURNEY_NEED_NAMES.
@@ -93,13 +94,26 @@ export function buildJourneySharePayload(
   link: string,
   period: JourneyPeriod = 'all',
 ): JourneySharePayload {
-  if (share.kind === 'totals') {
-    // «Дневник 5 раз, трекер 7 раз…» — счётчики за всё время.
+  if (share.kind === 'summary') {
+    // Главная карточка «Моего пути»: «дневник режимов 18 раз, практик 8…».
+    // При включённом фильтре периода счётчики считаются по видимым записям —
+    // серверные counts всегда за всё время и показали бы чужие числа.
+    const byPeriod = period !== 'all';
+    const rows = byPeriod ? statRowsFromItems(items) : stats;
+    const count = byPeriod ? items.length : total;
     return {
-      title: 'Итоги пути',
-      draw: (canvas) => drawJourneyTotalsCard(canvas, stats, total),
-      shareText: journeyShareText(total, link),
-      filename: 'journey-totals.png',
+      title: byPeriod ? JOURNEY_PERIOD_TITLE[period] : 'Итоги пути',
+      draw: (canvas) =>
+        drawJourneyTotalsCard(canvas, rows, count, {
+          title: byPeriod ? JOURNEY_PERIOD_TITLE[period] : undefined,
+          subtitle: byPeriod
+            ? `${JOURNEY_PERIOD_SUBTITLE[period]} · сколько чего накопилось`
+            : undefined,
+        }),
+      shareText: journeyShareText(count, link, period),
+      filename: byPeriod
+        ? `journey-totals-${period}.png`
+        : 'journey-totals.png',
       eventKind: 'journey',
     };
   }
@@ -229,8 +243,8 @@ export function useJourneyShare(
   );
   return {
     payload,
+    shareSummary: () => setShare({ kind: 'summary' }),
     shareFeed: () => setShare({ kind: 'feed' }),
-    shareTotals: () => setShare({ kind: 'totals' }),
     // Сначала тянем содержимое записи (расшифровывающий эндпоинт) — если
     // не вышло/нечего, показываем обычную карточку шага.
     shareItem: (item: JourneyItem) => {

@@ -116,6 +116,45 @@ describe('buildJourneySharePayload — карточка шага', () => {
   });
 });
 
+describe('buildJourneySharePayload — сводка (главная кнопка)', () => {
+  const STATS = [
+    { emoji: '📊', label: 'Дни с трекером', count: 42 },
+    { emoji: '🎭', label: 'Дневник режимов', count: 18 },
+  ];
+
+  it('за всё время: счётчики с сервера и общий итог', () => {
+    const p = buildJourneySharePayload(
+      { kind: 'summary' },
+      items,
+      92,
+      STATS,
+      noSub,
+      'link',
+      'all',
+    );
+    expect(p.title).toBe('Итоги пути');
+    expect(p.filename).toBe('journey-totals.png');
+    expect(p.shareText).toContain('92');
+  });
+
+  it('за период: считает по видимым записям, а не по счётчикам за всё время', () => {
+    const p = buildJourneySharePayload(
+      { kind: 'summary' },
+      items,
+      92,
+      STATS,
+      noSub,
+      'link',
+      'month',
+    );
+    expect(p.title).toBe('Мой месяц');
+    expect(p.filename).toBe('journey-totals-month.png');
+    // items = 3 записи, а не 92 за всё время
+    expect(p.shareText).toContain('3');
+    expect(p.shareText).not.toContain('92');
+  });
+});
+
 describe('buildJourneySharePayload — лента по периоду', () => {
   it('всё время: заголовок «Мой путь», счётчик = total', () => {
     const p = buildJourneySharePayload(
