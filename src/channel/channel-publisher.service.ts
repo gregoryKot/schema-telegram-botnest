@@ -4,12 +4,14 @@ import { poolAlertText } from '../bot/healthy-adult.pool-alert';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import {
   CHANNEL_TARGETS,
+  type ChannelPost,
   type ChannelTarget,
   type Delivery,
   type DeliveryFailure,
   type PublishResult,
 } from './channel-target';
 import { allDisabled, emptyPool, fanoutResult } from './publish-report';
+import { makeChannelPost } from './pin-image';
 
 /** Сколько последних постов показываем пулу, чтобы не повториться подряд. */
 const RECENT_POSTS = 10;
@@ -52,12 +54,13 @@ export class ChannelPublisherService {
     const text = await this.phrases.pickFromPool(recent);
     if (!text) return emptyPool();
 
+    const post = makeChannelPost(text);
     const delivered: Delivery[] = [];
     const failed: DeliveryFailure[] = [];
     // Площадки независимы: медленная или упавшая не задерживает остальные.
     await Promise.all(
       enabled.map(async ({ target, destination }) => {
-        const outcome = await this.deliver(target, destination, text);
+        const outcome = await this.deliver(target, destination, post);
         if ('reason' in outcome) failed.push(outcome);
         else delivered.push(outcome);
       }),
@@ -70,7 +73,7 @@ export class ChannelPublisherService {
   private async deliver(
     target: ChannelTarget,
     destination: string,
-    text: string,
+    post: ChannelPost,
   ): Promise<Delivery | DeliveryFailure> {
     const where = {
       platform: target.platform,
@@ -78,7 +81,7 @@ export class ChannelPublisherService {
       destination,
     };
     try {
-      await target.send(text, destination);
+      await target.send(post, destination);
       this.logger.log(`healthy_adult_post ${target.platform}=${destination}`);
       return where;
     } catch (err) {

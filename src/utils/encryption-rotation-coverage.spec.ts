@@ -27,8 +27,12 @@ const rotationScript = readFileSync(
 );
 
 // ── Рекурсивный обход src/ (без спеков/тестов) ──────────────────────────────
+// Скрытые каталоги пропускаем: внутри src/ живёт кэш jest (.jest-cache), его
+// файлы исчезают между readdirSync и statSync, пока параллельные воркеры его
+// чистят — обход падал на ENOENT и ронял джобу мимо своей темы.
 function collectTs(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
+    if (name.startsWith('.')) continue;
     const p = join(dir, name);
     if (statSync(p).isDirectory()) {
       collectTs(p, out);
