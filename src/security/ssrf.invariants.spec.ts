@@ -5,20 +5,11 @@
 // пользовательского ввода (req/body/params/query) — атакующий заставит
 // сервер ходить во внутреннюю сеть/метадату облака. Инвариант: ни один
 // fetch не строит URL из запроса.
-import { readdirSync, readFileSync, statSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
+import { collectSourceFiles } from './collect-source-files';
 
 const SRC = join(__dirname, '..');
-
-function walk(dir: string): string[] {
-  const out: string[] = [];
-  for (const e of readdirSync(dir)) {
-    const p = join(dir, e);
-    if (statSync(p).isDirectory()) out.push(...walk(p));
-    else if (p.endsWith('.ts') && !/\.spec\.ts$/.test(p)) out.push(p);
-  }
-  return out;
-}
 
 // Первый аргумент fetch(...) — до первой запятой верхнего уровня (грубо).
 const FETCH_CALL = /\bfetch\(\s*([^,)]*)/g;
@@ -27,7 +18,7 @@ const USER_SOURCED =
   /\breq\b|\brequest\b|\bbody\b|\bparams\b|\.query\b|\bdto\b/;
 
 describe('трипваер: server-side fetch не строит URL из запроса (SSRF)', () => {
-  const files = walk(SRC);
+  const files = collectSourceFiles(SRC);
 
   it('нашлись fetch-вызовы (санити)', () => {
     const total = files.reduce(

@@ -9,22 +9,13 @@
 //      injection, поэтому фиксируем: каждый Prisma.raw обёрнут в ident().
 //   4. Prototype pollution: шифрование/дешифрование записей и JSON.parse-пути
 //      не загрязняют Object.prototype ключами __proto__/constructor.
-import { readdirSync, readFileSync, statSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
+import { collectSourceFiles } from './collect-source-files';
 
 const SRC = join(__dirname, '..');
 
-function walk(dir: string): string[] {
-  const out: string[] = [];
-  for (const e of readdirSync(dir)) {
-    const p = join(dir, e);
-    if (statSync(p).isDirectory()) out.push(...walk(p));
-    else if (p.endsWith('.ts') && !/\.spec\.ts$/.test(p)) out.push(p);
-  }
-  return out;
-}
-
-const ALL_SRC = walk(SRC);
+const ALL_SRC = collectSourceFiles(SRC);
 
 // Преамбула инструментации Stryker (этап 4.1): при mutation-прогоне исходники
 // копируются в .stryker-tmp/sandbox-*/ и каждому файлу дописывается шапка

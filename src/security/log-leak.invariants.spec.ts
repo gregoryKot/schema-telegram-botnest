@@ -4,20 +4,11 @@
 // свободный текст — секрет/чужая терапевтическая запись утекут в лог-стрим.
 // Инвариант: ни один logger-вызов не интерполирует опасное ЗНАЧЕНИЕ.
 // (Имя переменной в текстовом сообщении — 'BOT_TOKEN not set' — безопасно.)
-import { readdirSync, readFileSync, statSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
+import { collectSourceFiles } from './collect-source-files';
 
 const SRC = join(__dirname, '..');
-
-function walk(dir: string): string[] {
-  const out: string[] = [];
-  for (const e of readdirSync(dir)) {
-    const p = join(dir, e);
-    if (statSync(p).isDirectory()) out.push(...walk(p));
-    else if (p.endsWith('.ts') && !/\.spec\.ts$/.test(p)) out.push(p);
-  }
-  return out;
-}
 
 // Опасные ЗНАЧЕНИЯ внутри ${...} интерполяции logger-аргумента.
 const DANGER_IN_INTERP =
@@ -28,7 +19,7 @@ const LOGGER_CALL =
   /logger\.(?:log|warn|error|debug|verbose)\(([\s\S]*?)\)\s*[;,]/g;
 
 describe('трипваер: логи не содержат секретов/расшифрованного текста', () => {
-  const files = walk(SRC);
+  const files = collectSourceFiles(SRC);
 
   it('нашлись logger-вызовы (санити)', () => {
     const total = files.reduce(

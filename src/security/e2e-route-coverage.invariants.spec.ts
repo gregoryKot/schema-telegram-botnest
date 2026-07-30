@@ -16,8 +16,9 @@
 // — пиши литерал (или шаблонную строку с `${}`) прямо у вызова, как это
 // сделано в app-ownership-sweep*.e2e-spec.ts (см. комментарий у `del` в
 // app-ownership-sweep-2.e2e-spec.ts).
-import { readFileSync, readdirSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
+import { collectSourceFiles } from './collect-source-files';
 import { SRC, guardedControllers } from './controller-classification';
 
 const TEST_DIR = join(__dirname, '../../test');
@@ -84,9 +85,11 @@ function literalToKey(method: string, raw: string): string | null {
 
 function calledRouteKeys(): Set<string> {
   const keys = new Set<string>();
-  const files = readdirSync(TEST_DIR).filter((f) => f.endsWith('.e2e-spec.ts'));
+  const files = collectSourceFiles(TEST_DIR, {
+    filter: (p) => p.endsWith('.e2e-spec.ts'),
+  });
   for (const f of files) {
-    const src = readFileSync(join(TEST_DIR, f), 'utf8');
+    const src = readFileSync(f, 'utf8');
     let m: RegExpExecArray | null;
     CALL_RE.lastIndex = 0;
     while ((m = CALL_RE.exec(src))) {

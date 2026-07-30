@@ -6,21 +6,12 @@
 // нигде, метрика просто тихо никогда не появляется в /stats. Инвариант:
 // каждое имя события, которое фронт шлёт строковым литералом через
 // trackEvent('...')/api.trackEvent('...'), обязано быть в ANALYTICS_EVENTS.
-import { readdirSync, readFileSync, statSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
+import { collectSourceFiles } from './collect-source-files';
 import { ANALYTICS_EVENTS } from '../analytics/analytics.constants';
 
 const ROOT = join(__dirname, '..', '..');
-
-function walk(dir: string): string[] {
-  const out: string[] = [];
-  for (const e of readdirSync(dir)) {
-    const p = join(dir, e);
-    if (statSync(p).isDirectory()) out.push(...walk(p));
-    else if (/\.tsx?$/.test(p) && !/\.(test|spec)\.tsx?$/.test(p)) out.push(p);
-  }
-  return out;
-}
 
 // Директории фронтендов, где вообще есть трекинг (правило №3: пайплайн
 // событий общий, но реализация вызова живёт в каждом фронте + shared).
@@ -36,7 +27,9 @@ function findTrackedEvents(): Set<string> {
   const names = new Set<string>();
   for (const rel of FRONTEND_DIRS) {
     const dir = join(ROOT, rel);
-    for (const file of walk(dir)) {
+    for (const file of collectSourceFiles(dir, {
+      extensions: ['.ts', '.tsx'],
+    })) {
       const src = readFileSync(file, 'utf8');
       let m: RegExpExecArray | null;
       TRACK_EVENT_RE.lastIndex = 0;
