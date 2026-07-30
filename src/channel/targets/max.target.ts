@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { ChannelPost, ChannelTarget } from '../channel-target';
 import { describeHttpError, postJson } from '../channel-http';
+import { maxDispatcher } from './max-ca';
 
 /** id чата/канала MAX. Без него площадка выключена. */
 const CHAT_ENV = 'HEALTHY_ADULT_MAX_CHAT';
@@ -33,10 +34,13 @@ export class MaxChannelTarget implements ChannelTarget {
       `${API}?chat_id=${encodeURIComponent(destination)}`,
       { text: post.text },
       { authorization: token },
+      { dispatcher: maxDispatcher() },
     );
   }
 
   explain(err: unknown): string {
-    return `${describeHttpError(err)}\nПроверь токен бота MAX и что бот админ канала.`;
+    // Сертификат площадки — российского УЦ: без HEALTHY_ADULT_MAX_CA запрос
+    // не доходит вовсе, и по одному «токен проверь» причину не угадать.
+    return `${describeHttpError(err)}\nПроверь токен бота MAX, что бот админ канала и что задан HEALTHY_ADULT_MAX_CA.`;
   }
 }

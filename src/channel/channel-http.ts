@@ -18,9 +18,19 @@ export class ChannelHttpError extends Error {
 /** Сколько ждём площадку. Тик расписания не должен висеть на зависшем API. */
 const TIMEOUT_MS = 15_000;
 
+/**
+ * Транспорт запроса. Нужен там, где площадке требуется свой корень доверия
+ * (MAX после переезда на platform-api2): диспетчер подключается точечно, а не
+ * расширяет доверие всему приложению. Тип свободный — fetch принимает его как
+ * нестандартное поле, и тянуть ради него типы undici в общий модуль незачем.
+ */
+export interface RequestTransport {
+  dispatcher?: unknown;
+}
+
 async function request(
   url: string,
-  init: RequestInit,
+  init: RequestInit & RequestTransport,
 ): Promise<Record<string, unknown>> {
   const res = await fetch(url, {
     ...init,
@@ -40,8 +50,10 @@ export function postJson(
   url: string,
   body: unknown,
   headers: Record<string, string> = {},
+  transport: RequestTransport = {},
 ): Promise<Record<string, unknown>> {
   return request(url, {
+    ...transport,
     method: 'POST',
     headers: { 'content-type': 'application/json', ...headers },
     body: JSON.stringify(body),

@@ -6,6 +6,7 @@ import { MaxChannelTarget } from './max.target';
 import { ThreadsChannelTarget } from './threads.target';
 import { PinterestChannelTarget } from './pinterest.target';
 import type { ThreadsTokenService } from './threads-token.service';
+import { resetMaxDispatcher } from './max-ca';
 
 const post = (text = 'фраза') => ({
   text,
@@ -26,6 +27,7 @@ const ENV_KEYS = [
   'HEALTHY_ADULT_VK_TOKEN',
   'HEALTHY_ADULT_MAX_CHAT',
   'HEALTHY_ADULT_MAX_TOKEN',
+  'HEALTHY_ADULT_MAX_CA',
   'HEALTHY_ADULT_THREADS_USER',
   'HEALTHY_ADULT_PINTEREST_BOARD',
   'HEALTHY_ADULT_PINTEREST_TOKEN',
@@ -36,6 +38,7 @@ describe('адаптеры площадок', () => {
   const realFetch = global.fetch;
 
   beforeEach(() => {
+    resetMaxDispatcher();
     for (const key of ENV_KEYS) {
       saved[key] = process.env[key];
       delete process.env[key];
@@ -110,6 +113,7 @@ describe('адаптеры площадок', () => {
       const fetchMock = mockFetch('{}');
       await expect(new MaxChannelTarget().send(post(), 'c1')).rejects.toThrow(
         'HEALTHY_ADULT_MAX_TOKEN',
+        'HEALTHY_ADULT_MAX_CA',
       );
       expect(fetchMock).not.toHaveBeenCalled();
     });
