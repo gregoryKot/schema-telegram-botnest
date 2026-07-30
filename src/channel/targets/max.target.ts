@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { ChannelPost, ChannelTarget } from '../channel-target';
 import { describeHttpError, postJson } from '../channel-http';
-import { maxDispatcher } from './max-ca';
+import { maxCaConfigured, maxDispatcher } from './max-ca';
 
 /** id чата/канала MAX. Без него площадка выключена. */
 const CHAT_ENV = 'HEALTHY_ADULT_MAX_CHAT';
@@ -39,8 +39,15 @@ export class MaxChannelTarget implements ChannelTarget {
   }
 
   explain(err: unknown): string {
-    // Сертификат площадки — российского УЦ: без HEALTHY_ADULT_MAX_CA запрос
-    // не доходит вовсе, и по одному «токен проверь» причину не угадать.
-    return `${describeHttpError(err)}\nПроверь токен бота MAX, что бот админ канала и что задан HEALTHY_ADULT_MAX_CA.`;
+    // Сертификат площадки — российского УЦ, и сбой проверки цепочки лечится не
+    // токеном. Совет разный: корня нет вовсе или он есть, но не тот. Инцидент
+    // 2026-07-30: общая подсказка «проверь токен и CA» отправляла искать
+    // одновременно везде.
+    const reason = describeHttpError(err);
+    if (!/CERT|certificate/i.test(reason))
+      return `${reason}\nПроверь токен бота MAX и что бот админ канала.`;
+    return maxCaConfigured()
+      ? `${reason}\nСертификат MAX не проверился, хотя HEALTHY_ADULT_MAX_CA задан: похоже, там не тот корень или не хватает промежуточного. Положи в переменную всю цепочку — корневой и промежуточный подряд.`
+      : `${reason}\nНе задан HEALTHY_ADULT_MAX_CA: сертификат MAX выдан российским УЦ, которого нет в штатных доверенных.`;
   }
 }

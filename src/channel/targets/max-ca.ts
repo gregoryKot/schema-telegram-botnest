@@ -1,4 +1,5 @@
 import { Agent } from 'undici';
+import { rootCertificates } from 'node:tls';
 
 /**
  * Доверие сертификату MAX — точечно, только для запросов к площадке.
@@ -26,7 +27,27 @@ export function looksLikePem(value: string): boolean {
   return /-----BEGIN CERTIFICATE-----/.test(value);
 }
 
+/**
+ * Свой корень ДОБАВЛЯЕТСЯ к штатным, а не заменяет их.
+ *
+ * Инцидент 2026-07-30: `connect: { ca: pem }` в undici — это полная замена
+ * списка доверенных корней, а не дополнение. До подключения своего CA MAX
+ * отвечал обычным fetch (штатных корней контейнеру хватало), а с одним только
+ * российским корнем цепочка перестала сходиться —
+ * UNABLE_TO_GET_ISSUER_CERT_LOCALLY. Поэтому доверяем и системным корням, и
+ * тому, что задан в env: какой из них подпишет цепочку, столько и надо.
+ */
+export function buildCaBundle(pem: string): string[] {
+  return [...rootCertificates, pem];
+}
+
 let cached: Agent | null | undefined;
+
+/** Задан ли свой корень: от этого зависит, что советовать при сбое TLS. */
+export function maxCaConfigured(): boolean {
+  const raw = process.env[CA_ENV]?.trim();
+  return Boolean(raw && looksLikePem(normalizePem(raw)));
+}
 
 /**
  * Диспетчер для запросов в MAX: с доверенным сертификатом, если он задан, и
@@ -38,7 +59,9 @@ export function maxDispatcher(): Agent | undefined {
   const raw = process.env[CA_ENV]?.trim();
   const pem = raw ? normalizePem(raw) : '';
   cached =
-    pem && looksLikePem(pem) ? new Agent({ connect: { ca: pem } }) : null;
+    pem && looksLikePem(pem)
+      ? new Agent({ connect: { ca: buildCaBundle(pem) } })
+      : null;
   return cached ?? undefined;
 }
 
