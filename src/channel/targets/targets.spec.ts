@@ -101,7 +101,7 @@ describe('адаптеры площадок', () => {
       const fetchMock = mockFetch('{"message":{"mid":"1"}}');
       await new MaxChannelTarget().send(post('текст ЗВ'), '-100500');
       const [url, init] = fetchMock.mock.calls[0];
-      expect(url).toBe('https://platform-api.max.ru/messages?chat_id=-100500');
+      expect(url).toBe('https://platform-api2.max.ru/messages?chat_id=-100500');
       expect(init.body).toBe('{"text":"текст ЗВ"}');
       expect(init.headers.authorization).toBe('max-token');
     });

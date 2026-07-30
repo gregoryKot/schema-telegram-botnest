@@ -19,7 +19,7 @@
 |---|---|---|
 | Telegram | `HEALTHY_ADULT_CHANNEL` | @username канала; бот — админ с правом публикации |
 | ВКонтакте | `HEALTHY_ADULT_VK_GROUP`, `HEALTHY_ADULT_VK_TOKEN` | id сообщества и ключ доступа в настройках группы (права на стену) |
-| MAX | `HEALTHY_ADULT_MAX_CHAT`, `HEALTHY_ADULT_MAX_TOKEN` | канал в @channel_bot, токен бота в @MasterBot (публикация ботов — верифицированным юрлицам РФ) |
+| MAX | `HEALTHY_ADULT_MAX_CHAT`, `HEALTHY_ADULT_MAX_TOKEN` | числовой id канала (см. ниже), токен бота в @MasterBot (публикация ботов — верифицированным юрлицам РФ) |
 | Threads | `HEALTHY_ADULT_THREADS_USER`, `HEALTHY_ADULT_THREADS_TOKEN` | id пользователя и долгоживущий токен в Meta for Developers |
 | Pinterest | `HEALTHY_ADULT_PINTEREST_BOARD`, `HEALTHY_ADULT_PINTEREST_TOKEN` | id доски и токен приложения с правом `pins:write` |
 
@@ -36,6 +36,17 @@
   строка из пустых прямоугольников.
 - **VK отвечает 200 и на отказ** — ошибка приезжает внутри тела, адаптер её
   распознаёт и не считает пост опубликованным.
+- **id канала MAX берётся из событий бота, а не из справочника.** Метод
+  `GET /chats` площадка убрала летом 2026, поэтому: добавь бота админом в
+  канал и посмотри `curl -H "Authorization: ТОКЕН" https://platform-api2.max.ru/updates`
+  — в событии `bot_added` лежит нужный `chat_id`. Он числовой, `@username`
+  сюда не годится.
+- **MAX сменил домен** 19.07.2026: старый `platform-api.max.ru` отключён,
+  адаптер ходит в `platform-api2.max.ru`. Там же просят добавлять в доверенные
+  сертификат Минцифры — если публикация начнёт падать с ошибкой проверки
+  сертификата (`UNABLE_TO_VERIFY_LEAF_SIGNATURE` и подобные в отчёте `/zv`),
+  дело в нём: корневой сертификат надо положить в образ и указать
+  `NODE_EXTRA_CA_CERTS`.
 
 ### Как это устроено в коде
 

@@ -6,7 +6,9 @@ import { describeHttpError, postJson } from '../channel-http';
 const CHAT_ENV = 'HEALTHY_ADULT_MAX_CHAT';
 /** Токен бота из @MasterBot. */
 const TOKEN_ENV = 'HEALTHY_ADULT_MAX_TOKEN';
-const API = 'https://platform-api.max.ru/messages';
+// Домен platform-api.max.ru MAX отключил 19.07.2026 (отзыв SSL-сертификатов
+// российских компаний зарубежным УЦ) — весь Bot API переехал на platform-api2.
+const API = 'https://platform-api2.max.ru/messages';
 
 /**
  * MAX: сообщение в канал через Bot API — тот же контур, что у Telegram, но
