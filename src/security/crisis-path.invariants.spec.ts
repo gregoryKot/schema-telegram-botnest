@@ -8,20 +8,11 @@
 //   (B) в NON_THERAPEUTIC_ALLOWLIST — осознанно НЕ терапевтический свободный
 //       текст (админка, запись на приём, заметки терапевта и т.п.), с
 //       обоснованием строкой. Allowlist может только СОКРАЩАТЬСЯ.
-import { readdirSync, readFileSync, statSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
+import { collectSourceFiles } from './collect-source-files';
 
 const ROOT = join(__dirname, '..', '..');
-
-function walkTsx(dir: string): string[] {
-  const out: string[] = [];
-  for (const e of readdirSync(dir)) {
-    const p = join(dir, e);
-    if (statSync(p).isDirectory()) out.push(...walkTsx(p));
-    else if (p.endsWith('.tsx') && !/\.(test|spec)\.tsx$/.test(p)) out.push(p);
-  }
-  return out;
-}
 
 // Директории фронтендов, где вообще может жить пользовательский ввод.
 const FRONTEND_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
@@ -37,7 +28,7 @@ const DETECT_CRISIS_RE = /detectCrisis|CrisisGate/;
 // относительно корня репозитория.
 const TEXTAREA_FILES = FRONTEND_DIRS.flatMap((rel) => {
   const dir = join(ROOT, rel);
-  return walkTsx(dir)
+  return collectSourceFiles(dir, { extensions: ['.tsx'] })
     .filter((p) => TEXTAREA_RE.test(readFileSync(p, 'utf8')))
     .map((p) => p.replace(ROOT + '/', ''));
 });

@@ -8,22 +8,13 @@
 // dto-файле (путь/имя содержит `dto`) И (б) в этом файле есть хотя бы один
 // class-validator декоратор — иначе это нарушение, допустимое только через
 // VIOLATIONS_LEGACY (список может только СОКРАЩАТЬСЯ).
-import { readdirSync, readFileSync, statSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
+import { collectSourceFiles } from './collect-source-files';
 
 const SRC = join(__dirname, '..');
 
-function walk(dir: string): string[] {
-  const out: string[] = [];
-  for (const e of readdirSync(dir)) {
-    const p = join(dir, e);
-    if (statSync(p).isDirectory()) out.push(...walk(p));
-    else if (p.endsWith('.ts') && !/\.spec\.ts$/.test(p)) out.push(p);
-  }
-  return out;
-}
-
-const ALL_TS = walk(SRC);
+const ALL_TS = collectSourceFiles(SRC);
 const CONTROLLERS = ALL_TS.filter((p) => p.endsWith('.controller.ts'));
 
 // Ловит `@Body() body: TypeName` / `@Body() body: Record<string, unknown>` /
