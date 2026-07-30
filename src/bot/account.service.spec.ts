@@ -25,6 +25,7 @@ function makePrisma() {
     'userFlashcard',
     'userPractice',
     'practicePlan',
+    'practiceSession',
     'childhoodRating',
     'ysqResult',
     'ysqProgress',

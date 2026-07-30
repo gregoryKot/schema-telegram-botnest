@@ -19,6 +19,7 @@ export const USER_OWNED_TABLES = [
   'UserFlashcard',
   'UserPractice',
   'PracticePlan',
+  'PracticeSession',
   'ChildhoodRating',
   'ScheduledNotification',
   'SchemaDiaryEntry',

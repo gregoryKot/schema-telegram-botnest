@@ -2,7 +2,6 @@
 // фолбэк незнакомого типа (новый тип с бэка не роняет UI) и текст шаринга.
 import { describe, it, expect } from 'vitest';
 import {
-  JourneyCounts,
   JOURNEY_TYPE_META,
   JOURNEY_NEED_NAMES,
   JOURNEY_NEED_EMOJI,
@@ -32,24 +31,7 @@ import {
   journeyItemShareText,
 } from '../../../shared/src/share/shareTexts';
 
-const EMPTY: JourneyCounts = {
-  trackerDays: 0,
-  notes: 0,
-  schemaDiary: 0,
-  modeDiary: 0,
-  gratitudeDays: 0,
-  practices: 0,
-  plansDone: 0,
-  ysqTests: 0,
-  childhoodDone: false,
-  beliefChecks: 0,
-  letters: 0,
-  flashcards: 0,
-  safePlace: false,
-  schemaNotes: 0,
-  modeNotes: 0,
-};
-
+import { EMPTY_JOURNEY_COUNTS as EMPTY } from '../../../shared/src/journey/journeyCounts.fixture';
 describe('journeyStatRows / journeyTotal', () => {
   it('пустой аккаунт → ни одной строки и ноль шагов (без выдуманных цифр)', () => {
     expect(journeyStatRows(EMPTY)).toEqual([]);
@@ -125,6 +107,24 @@ describe('journeyTypeMeta', () => {
   it('незнакомый тип с бэка → нейтральный фолбэк, не падение', () => {
     const meta = journeyTypeMeta('something_new');
     expect(meta.label).toBe('Запись');
+  });
+
+  it('быстрые практики «Здесь и сейчас» — свои эмодзи/подписи, группа exercise', () => {
+    expect(journeyTypeMeta('breathing')).toEqual({
+      emoji: '🌬',
+      label: 'Дыхание',
+      group: 'exercise',
+    });
+    expect(journeyTypeMeta('grounding')).toEqual({
+      emoji: '🌍',
+      label: 'Заземление 5-4-3-2-1',
+      group: 'exercise',
+    });
+    expect(journeyTypeMeta('stop')).toEqual({
+      emoji: '🛑',
+      label: 'Техника «Стоп»',
+      group: 'exercise',
+    });
   });
 });
 

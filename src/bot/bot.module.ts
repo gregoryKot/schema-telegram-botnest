@@ -6,6 +6,7 @@ import { ProductMetricsService } from './bot.product-metrics.service';
 import { StatsReportService } from './stats-report.service';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
+import { PracticeMetricsService } from './practice-metrics.service';
 import { ModeCardMetricsService } from './mode-card-metrics.service';
 import { DiaryService } from './diary.service';
 import { ProfileService } from './profile.service';
@@ -17,6 +18,7 @@ import { ExercisesService } from './exercises.service';
 import { NotesService } from './notes.service';
 import { HealthyAdultService } from './healthy-adult.service';
 import { JourneyService } from './journey.service';
+import { PracticeSessionsService } from './practice-sessions.service';
 
 // Сервисы, нужные другим модулям (TelegramModule и т.п.) — один список,
 // который идёт и в providers, и в exports (правило №10: новый экспортируемый
@@ -37,6 +39,7 @@ const EXPORTED_PROVIDERS = [
   NotesService,
   HealthyAdultService,
   JourneyService,
+  PracticeSessionsService,
 ];
 
 // Используются только внутри BotModule (квиз/переходы/карточки режимов —
@@ -45,6 +48,7 @@ const INTERNAL_PROVIDERS = [
   QuizMetricsService,
   PracticeLinkMetricsService,
   ModeCardMetricsService,
+  PracticeMetricsService,
 ];
 
 @Module({

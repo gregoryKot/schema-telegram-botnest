@@ -145,6 +145,7 @@ model User {
   childhoodRatings       ChildhoodRating[]
   practices              UserPractice[]
   practicePlans          PracticePlan[]
+  practiceSessions       PracticeSession[]
   schemaDiaries          SchemaDiaryEntry[]
   modeDiaries            ModeDiaryEntry[]
   gratitudeDiaries       GratitudeDiaryEntry[]
@@ -290,6 +291,20 @@ model PracticePlan {
   createdAt       DateTime  @default(now())
 
   @@index([userId, scheduledDate])
+}
+
+// Быстрые практики «Здесь и сейчас» (дыхание/заземление 5-4-3-2-1/«Стоп») —
+// след каждого прохождения, чтобы «Мой путь» и /stats видели, что и сколько
+// раз человек прошёл, а не только то, что практика вообще существует.
+model PracticeSession {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tool      String   // QUICK_PRACTICE_IDS: 'breathing' | 'grounding' | 'stop'
+  createdAt DateTime @default(now())
+
+  @@index([userId, tool])
+  @@index([userId, createdAt])
 }
 
 model YsqResult {

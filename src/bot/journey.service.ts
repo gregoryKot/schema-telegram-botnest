@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { loadPracticeJourney } from './journey-practice-sessions.util';
+type PracticeJourney = Awaited<ReturnType<typeof loadPracticeJourney>>;
 
 // «Мой путь» — сводный архив всей активности пользователя: сколько раз и когда
 // он заполнял трекер, дневники, практики, тесты и упражнения. Лента отдаёт
@@ -24,7 +26,7 @@ export type JourneyItemType =
   | 'mode_note';
 
 export interface JourneyItem {
-  type: JourneyItemType;
+  type: JourneyItemType | PracticeJourney['items'][number]['type'];
   /** ISO-датавремя или YYYY-MM-DD (у дневных записей время не хранится) */
   at: string;
   /** id строки-источника — по нему фронт подтягивает содержимое записи
@@ -54,7 +56,7 @@ export interface JourneyCounts {
 }
 
 export interface JourneyData {
-  counts: JourneyCounts;
+  counts: JourneyCounts & PracticeJourney['counts'];
   items: JourneyItem[];
 }
 
@@ -89,6 +91,7 @@ export class JourneyService {
       safePlace,
       schemaNotes,
       modeNotes,
+      { items: practiceItems, counts: practiceCounts },
     ] = await Promise.all([
       p.rating.groupBy({ by: ['date'], where: by }),
       p.note.findMany({ where: by, select: { date: true } }),
@@ -150,6 +153,7 @@ export class JourneyService {
         where: by,
         select: { updatedAt: true, modeId: true },
       }),
+      loadPracticeJourney(p, userId),
     ]);
 
     // Старые пользователи прошли тест до появления таблицы истории —
@@ -226,6 +230,7 @@ export class JourneyService {
         at: iso(e.updatedAt),
         modeId: e.modeId,
       })),
+      ...practiceItems,
     ]
       .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
       .slice(0, FEED_LIMIT);
@@ -247,6 +252,7 @@ export class JourneyService {
         safePlace: safePlace !== null,
         schemaNotes: schemaNotes.length,
         modeNotes: modeNotes.length,
+        ...practiceCounts,
       },
       items,
     };

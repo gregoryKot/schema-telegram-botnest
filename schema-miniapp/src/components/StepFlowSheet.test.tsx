@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // Общий пошаговый лист (правило «одна механика — один компонент»),
-// используется GroundingSheet и StopSheet. BottomSheet рендерит через портал
-// в document.body — screen ищет по всему документу, портал прозрачен для теста.
+// используется QuickPracticeSheet (заземление и техника «Стоп»). BottomSheet
+// рендерит через портал в document.body — screen ищет по всему документу,
+// портал прозрачен для теста.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { StepFlowSheet, FlowStep } from './StepFlowSheet';

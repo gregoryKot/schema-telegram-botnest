@@ -1,8 +1,8 @@
 // Общий пошаговый лист (правило «одна механика — один компонент»): показывает
-// шаги по одному, с точками прогресса и done-экраном в конце. Вынесено из
-// GroundingSheet — вторым потребителем стал StopSheet (техника «Стоп»).
-// Поведение и стили — как было в GroundingSheet, без изменений.
-import { useState } from 'react';
+// шаги по одному, с точками прогресса и done-экраном в конце. Единственный
+// потребитель — QuickPracticeSheet (заземление и техника «Стоп» делят один
+// компонент, разница только в id практики). Поведение и стили не менялись.
+import { ReactNode, useState } from 'react';
 import { BottomSheet } from './BottomSheet';
 
 export interface FlowStep {
@@ -17,6 +17,8 @@ interface Props {
   steps: FlowStep[];
   done: FlowStep;
   repeatLabel?: string;
+  /** Рендерится под hint на done-экране (счётчик прохождений, «Поделиться» и т.п.) */
+  doneExtra?: ReactNode;
   onClose: () => void;
 }
 
@@ -26,6 +28,7 @@ export function StepFlowSheet({
   steps,
   done,
   repeatLabel = 'Ещё круг',
+  doneExtra,
   onClose,
 }: Props) {
   const [step, setStep] = useState(0);
@@ -72,6 +75,7 @@ export function StepFlowSheet({
           >
             {cur.hint}
           </div>
+          {isDone && doneExtra}
         </div>
 
         {/* Точки прогресса */}

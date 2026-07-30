@@ -43,9 +43,6 @@ export interface ProductMetrics {
     customizeGear: number;
     customizeLongpress: number;
   };
-  breath: { started: number };
-  // Техника «Стоп» (за месяц): сколько раз открывали.
-  stop: { started: number };
   // Архив «Мой путь» (за месяц): сколько раз открывали свою историю.
   journey: { opens: number };
   // Значок на экране телефона (за месяц): предлагали / что ответили.
@@ -85,6 +82,7 @@ const SHARE_KIND_LABELS: Record<string, string> = {
   gratitude: '🌱 благодарность',
   journey: '🧭 мой путь (вся история)',
   journey_item: '🧭 один шаг пути',
+  practice: '🧘 быстрая практика',
 };
 
 // Подписи блоков главного экрана — словами пользователя, не ключами.
@@ -184,14 +182,6 @@ export function formatProductMetrics(m: ProductMetrics): string {
         m.today.blocksHidden
           .map((b) => `${TODAY_BLOCK_LABELS[b.block] ?? b.block} — ${b.count}`)
           .join(' · '),
-    '',
-    `🌬 <b>Дыхание «Здесь и сейчас»</b> (за месяц)`,
-    `Запускали: ${m.breath.started} раз`,
-    '',
-    `🛑 <b>Техника «Стоп»</b> (за месяц)`,
-    m.stop.started === 0
-      ? 'Пока никто не запускал'
-      : `Запускали: ${m.stop.started} раз`,
     '',
     `🧭 <b>Архив «Мой путь»</b> (за месяц)`,
     m.journey.opens === 0

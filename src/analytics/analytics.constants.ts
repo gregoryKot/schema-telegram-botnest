@@ -160,6 +160,7 @@ export const SHARE_CARD_KINDS = [
   'gratitude',
   'journey',
   'journey_item',
+  'practice',
 ] as const;
 export type ShareCardKind = (typeof SHARE_CARD_KINDS)[number];
 
