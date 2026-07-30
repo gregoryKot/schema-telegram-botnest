@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
-import { TelegramChannelService } from './telegram.channel.service';
+import { ChannelPublisherService } from '../channel/channel-publisher.service';
 import { assertAdminKey } from '../booking/admin-key.util';
 import {
   CreatePhraseDto,
@@ -25,7 +25,7 @@ import { formatImportReport } from '../bot/healthy-adult.import';
 /**
  * Админ-эндпоинты управления фразами «Здорового Взрослого», защищены тем же
  * ADMIN_BOOKING_KEY, что и вся админка (x-admin-key header). Живёт в
- * TelegramModule, т.к. тестовая публикация ходит через TelegramChannelService.
+ * TelegramModule, т.к. тестовая публикация ходит через ChannelPublisherService.
  */
 @Controller('api/healthy-adult/admin')
 export class HealthyAdultAdminController {
@@ -33,7 +33,7 @@ export class HealthyAdultAdminController {
 
   constructor(
     private readonly phrases: HealthyAdultService,
-    private readonly channel: TelegramChannelService,
+    private readonly publisher: ChannelPublisherService,
     config: ConfigService,
   ) {
     this.adminKey = config.get<string>('ADMIN_BOOKING_KEY') ?? '';
@@ -96,11 +96,11 @@ export class HealthyAdultAdminController {
     return this.phrases.poolStatus();
   }
 
-  /** Опубликовать сообщение в канал прямо сейчас — проверка связки из админки. */
+  /** Опубликовать сообщение по всем площадкам сейчас — проверка связки из админки. */
   @Post('test-post')
   @HttpCode(HttpStatus.OK)
   async testPost(@Headers('x-admin-key') key: string) {
     assertAdminKey(key, this.adminKey);
-    return this.channel.post();
+    return this.publisher.publish();
   }
 }
