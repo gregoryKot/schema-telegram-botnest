@@ -47,6 +47,16 @@ export function pairInviteShareText(code: string, deepLink: string): string {
   return `🤝 Присоединяйся — отслеживаем эмоциональные потребности вместе.\n\nКод пары: ${code}\n${deepLink}`;
 }
 
+/** Приглашение в приложение («поделиться ссылкой на бота»). */
+export function appInviteShareText(link: string): string {
+  return `🌱 Отмечаю здесь пять базовых эмоциональных потребностей — видно, что питает, а что истощает.\n\n${link}`;
+}
+
+/** Ссылка-приглашение клиенту от терапевта (создаёт терапевт в кабинете). */
+export function therapistInviteShareText(inviteUrl: string): string {
+  return `Приглашение в дневник «Всё по схеме» — по ссылке подключится трекер потребностей, который мы сможем смотреть на сессиях.\n\n${inviteUrl}`;
+}
+
 export function monthShareText(activeDays: number, link: string): string {
   return `🗓 Мой месяц в трекере потребностей: ${activeDays} ${pluralDays(activeDays)} с записями.\n\n${link}`;
 }
@@ -94,4 +104,15 @@ export function journeyItemShareText(
   link: string,
 ): string {
   return `${emoji} ${label} — ещё один шаг заботы о себе.\n\n${link}`;
+}
+
+/** Быстрая практика «Здесь и сейчас» (дыхание, заземление, «Стоп»). link — необязателен: карточка может уйти без подписи-ссылки. */
+export function practiceShareText(
+  title: string,
+  countLabel: string | null,
+  link?: string,
+): string {
+  const countStr = countLabel ? ` ${countLabel}.` : '';
+  const linkStr = link ? `\n\n${link}` : '';
+  return `🧘 ${title}.${countStr}${linkStr}`;
 }

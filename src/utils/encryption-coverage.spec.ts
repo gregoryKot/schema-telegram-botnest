@@ -94,6 +94,12 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   },
   Pair: { code: TOKEN },
   UserPractice: { needId: ID, text: e(`${BOT}/practices.service.ts`) },
+  PracticeSession: {
+    tool: p(
+      'перечислимый идентификатор быстрой практики (breathing|grounding|stop), ' +
+        'не PII/не свободный текст',
+    ),
+  },
   PracticePlan: {
     needId: ID,
     practiceText: e(`${BOT}/practices.service.ts`),

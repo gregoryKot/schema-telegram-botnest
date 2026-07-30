@@ -12,12 +12,15 @@ export type ShareCardKind =
   | 'mode'
   | 'mode_entry'
   | 'pair_invite'
+  | 'app_invite'
+  | 'therapist_invite'
   | 'month'
   | 'achievements'
   | 'phrase'
   | 'gratitude'
   | 'journey'
-  | 'journey_item';
+  | 'journey_item'
+  | 'practice';
 
 export const SHARE_CARD_EVENT = 'share_card';
 // Исход системного шэра: meta { kind, ok }. Позволяет мерить «получилось ли

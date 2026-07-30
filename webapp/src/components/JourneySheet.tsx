@@ -81,7 +81,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               <span style={{ marginRight: 'auto' }} />
               {j.total > 0 && (
                 <button
-                  onClick={sh.shareFeed}
+                  onClick={sh.shareSummary}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -111,7 +111,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               j={j}
               subtitle={jp.subtitle}
               onOpenItem={detail.open}
-              onShareTotals={sh.shareTotals}
+              onShareFeed={sh.shareFeed}
               skeleton={
                 <>
                   {[96, 64, 56, 56, 56, 56].map((h, i) => (

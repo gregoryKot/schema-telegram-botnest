@@ -9,6 +9,8 @@ import type { Theme } from '../utils/theme';
 import { useSetAddressForm } from '../utils/addressForm';
 import { useReducedMotionPref } from '../hooks/useReducedMotionPref';
 import { botHandle, botShortUrl } from '../utils/botConfig';
+import { ShareCardSheet } from '../share/ShareCardSheet';
+import { appInviteShare, pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
 
 const TIMEZONES = [
   { label: 'Лос-Анджелес (UTC−8)', iana: 'America/Los_Angeles' },
@@ -70,6 +72,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [joinView, setJoinView]     = useState<'main' | 'join'>('main');
   const [joinError, setJoinError]   = useState(false);
   const [exportText, setExportText] = useState<string | null>(null);
+  const [appInvite, setAppInvite] = useState(false);
+  const [pairShare, setPairShare] = useState<{ code: string; url: string } | null>(null);
   const [exportCopied, setExportCopied] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
@@ -127,10 +131,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   async function handleCreateInvite() {
     setPairLoading(true);
     try {
-      const { url } = await api.createPairInvite();
+      const { code, url } = await api.createPairInvite();
       await api.getPair().then(setPairData);
       setPairInviteUrl(url);
-      try { if (navigator.share) await navigator.share({ text: `Давай отслеживать потребности вместе! ${url}` }); } catch { /* best-effort: ошибку намеренно игнорируем */ }
+      // Карточка с кодом — та же, что в мини-аппе (правило №3), вместо
+      // голого текста: пользователь видит превью и делится картинкой.
+      setPairShare({ code, url });
     } finally { setPairLoading(false); }
   }
 
@@ -594,10 +600,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
                 {/* Поделиться */}
                 <SHead id="s-share" label="Поделиться" />
-                <SRow title="Пригласить друга" sub="Поделиться ссылкой на бота" onClick={async () => {
-                  const text = `Трекер потребностей – отслеживай своё состояние каждый день. ${botShortUrl}`;
-                  try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); } catch { try { await navigator.clipboard.writeText(text); } catch { /* best-effort: ошибку намеренно игнорируем */ } }
-                }} />
+                <SRow title="Пригласить друга" sub="Карточка со ссылкой на бота" onClick={() => setAppInvite(true)} />
                 <SRow title="Сводка для терапевта" sub="Данные за 30 дней" onClick={async () => {
                   const { text } = await api.getExport();
                   let shared = false;
@@ -638,6 +641,24 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
           </div>
         </div>
       </div>
+
+      {/* ── Карточка-приглашение в пару ── */}
+      {pairShare && (
+        <ShareCardSheet
+          {...pairInviteShare(pairShare.code, pairShare.url)}
+          onClose={() => setPairShare(null)}
+          zIndex={400}
+        />
+      )}
+
+      {/* ── Карточка-приглашение в приложение ── */}
+      {appInvite && (
+        <ShareCardSheet
+          {...appInviteShare(botShortUrl)}
+          onClose={() => setAppInvite(false)}
+          zIndex={400}
+        />
+      )}
 
       {/* ── Export modal ── */}
       {exportText && (

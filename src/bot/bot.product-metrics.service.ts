@@ -5,6 +5,8 @@ import { formatQuizMetrics } from './quiz-metrics.format';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { formatPracticeLinkMetrics } from './practice-link-metrics.format';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
+import { formatPracticeMetrics } from './practice-metrics.format';
+import { PracticeMetricsService } from './practice-metrics.service';
 import {
   ONBOARDING_STEPS,
   TODAY_BLOCKS,
@@ -20,16 +22,18 @@ export class ProductMetricsService {
     private readonly prisma: PrismaService,
     private readonly quizMetrics: QuizMetricsService,
     private readonly practiceLink: PracticeLinkMetricsService,
+    private readonly practiceMetrics: PracticeMetricsService,
   ) {}
 
-  /** Готовый текстовый блок для /stats (+ мини-тесты и переходы к автору). */
+  /** Готовый текстовый блок для /stats (+ мини-тесты, переходы к автору, практики). */
   async render(): Promise<string> {
-    const [metrics, quiz, practice] = await Promise.all([
+    const [metrics, quiz, practice, practiceSessions] = await Promise.all([
       this.getMetrics(),
       this.quizMetrics.getMetrics(),
       this.practiceLink.getMetrics(),
+      this.practiceMetrics.getMetrics(),
     ]);
-    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}`;
+    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatPracticeMetrics(practiceSessions)}`;
   }
 
   async getMetrics(): Promise<ProductMetrics> {
@@ -67,8 +71,6 @@ export class ProductMetricsService {
       shareKindRows,
       todayFocusChanged,
       blocksHiddenRows,
-      breathStarted,
-      stopStarted,
       onboardingStepRows,
       customizeRows,
       homeScreenRows,
@@ -156,8 +158,6 @@ export class ProductMetricsService {
            WHERE "name" = 'today_streak_toggle' AND "meta"->>'hidden' = 'true'
              AND "createdAt" >= ${since30}
         ) t GROUP BY block`,
-      ev('breath_start'),
-      ev('stop_start'),
       // Воронка обучения: люди (не события) на каждом шаге — один человек мог
       // вернуться к шагу точками навигации, это не должно раздувать счёт.
       this.prisma.$queryRaw<Array<{ step: string | null; c: bigint }>>`
@@ -245,8 +245,6 @@ export class ProductMetricsService {
         customizeGear: viaCount('gear'),
         customizeLongpress: viaCount('longpress'),
       },
-      breath: { started: breathStarted },
-      stop: { started: stopStarted },
       journey: { opens: journeyOpens },
       homeScreen: {
         shown: hsCount('shown'),

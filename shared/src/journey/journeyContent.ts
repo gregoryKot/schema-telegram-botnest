@@ -3,25 +3,31 @@
 // расшифровывающие эндпоинты, ТОЛЬКО по явному тапу пользователя на записи
 // (и перед отправкой виден в превью, как у карточки благодарности).
 import { type JourneyItem, JOURNEY_NEED_NAMES } from './journeyMeta';
+import { computeScores, type YsqHistoryEntry } from '../hooks/useYsqTest';
+// Разбор записи в части карточек — рядом, в journeyParts (реэкспорт ниже:
+// у обоих фронтендов исторически один вход — этот модуль).
 import {
-  SCHEMAS,
-  type YsqHistoryEntry,
-  computeScores,
-  countActiveInHistory,
-} from '../hooks/useYsqTest';
-import { DETAIL_FIELDS } from './journeyDetailFields';
+  buildJourneyDetailParts,
+  buildJourneyResultParts,
+  ysqResultFromEntry,
+  type JourneyResultPart,
+  type YsqScore,
+} from './journeyParts';
 
-export interface JourneyResultPart {
-  title?: string;
-  text: string;
-}
+export {
+  buildJourneyDetailParts,
+  buildJourneyResultParts,
+  ysqResultFromEntry,
+} from './journeyParts';
+export type { JourneyResultPart, YsqScore } from './journeyParts';
 
-/** Результат записи для карточки шаринга: текстовые части + (только для
- * tracker_day) сырые оценки дня — карточка рисует по ним радар потребностей,
- * а не текстовую строку. */
+/** Результат записи для карточки шаринга: текстовые части + сырые данные для
+ * тех шагов, у которых есть своя карточка вместо текста — оценки дня трекера
+ * (радар потребностей) и счёт теста на схемы (профиль всех 20 схем). */
 export interface JourneyResult {
   parts: JourneyResultPart[];
   ratings?: Record<string, number>;
+  ysq?: { scores: Record<string, YsqScore>; activeCount: number };
 }
 
 // Минимальные структурные типы записей — оба api-клиента им соответствуют.
@@ -53,125 +59,9 @@ export interface JourneyContentApi {
   getYsqResult(): Promise<{ answers: number[] } | null>;
 }
 
-const EXCERPT = 220;
-const cut = (s: string): string =>
-  s.length > EXCERPT ? `${s.slice(0, EXCERPT).trimEnd()}…` : s;
-
-const part = (text: string | null | undefined, title?: string) =>
-  text?.trim() ? [{ title, text: cut(text.trim()) }] : [];
-
-/** Части карточки-результата из уже найденной записи. Чистая (тестируется). */
-export function buildJourneyResultParts(
-  type: string,
-  entry: unknown,
-): JourneyResultPart[] {
-  if (!entry || typeof entry !== 'object') return [];
-  const e = entry as Record<string, unknown>;
-  const str = (k: string) => {
-    const v = e[k];
-    return typeof v === 'string' ? v : '';
-  };
-  switch (type) {
-    case 'schema_diary':
-      return [
-        ...part(str('trigger'), 'Ситуация'),
-        ...part(str('healthyView'), 'Здоровый взгляд'),
-      ];
-    case 'mode_diary':
-      return [
-        ...part(str('situation'), 'Ситуация'),
-        ...part(str('actualNeed'), 'Что было нужно'),
-      ];
-    case 'gratitude': {
-      const items = Array.isArray(e.items)
-        ? e.items.filter((i): i is string => typeof i === 'string')
-        : [];
-      return items.slice(0, 3).map((text) => ({ text: cut(text) }));
-    }
-    case 'belief_check':
-      return [
-        ...part(str('belief'), 'Убеждение'),
-        ...part(str('reframe'), 'Здоровый взгляд'),
-      ];
-    case 'letter':
-      return part(str('text'));
-    case 'flashcard':
-      return [
-        ...part(str('reflection'), 'Напоминание себе'),
-        ...part(str('action'), 'Что делать'),
-      ];
-    case 'safe_place':
-      return part(str('description'));
-    case 'note':
-      return part(str('text'));
-    case 'practice':
-      return part(str('text'), 'Моя практика');
-    case 'plan_done':
-      return part(str('practiceText'), 'Практика');
-    case 'tracker_day': {
-      // entry = Record<needId, value> — оценки дня из /api/ratings?date=…
-      const line = Object.entries(JOURNEY_NEED_NAMES)
-        .filter(([needId]) => typeof e[needId] === 'number')
-        .map(([needId, name]) => `${name} — ${e[needId] as number}`)
-        .join(' · ');
-      return line ? [{ title: 'Оценки дня (из 10)', text: line }] : [];
-    }
-    case 'schema_note':
-      return [
-        ...part(str('triggers'), 'Триггеры'),
-        ...part(str('healthyView'), 'Здоровый взгляд'),
-        ...part(str('behavior'), 'Что помогает'),
-      ];
-    case 'mode_note':
-      return [
-        ...part(str('triggers'), 'Триггеры'),
-        ...part(str('needs'), 'Что мне нужно'),
-        ...part(str('behavior'), 'Что помогает'),
-      ];
-    case 'ysq': {
-      // entry = YsqHistoryEntry (id, scores)
-      if (!Array.isArray(e.scores)) return [];
-      const n = countActiveInHistory(e as unknown as YsqHistoryEntry);
-      return [
-        {
-          title: 'Результат',
-          text: `Выраженных схем: ${n} из ${SCHEMAS.length}`,
-        },
-      ];
-    }
-    default:
-      return [];
-  }
-}
-
-/** Части ДЕТАЛЬНОГО просмотра — все поля, без обрезки. Чистая (тестируется). */
-export function buildJourneyDetailParts(
-  type: string,
-  entry: unknown,
-): JourneyResultPart[] {
-  if (!entry || typeof entry !== 'object') return [];
-  const e = entry as Record<string, unknown>;
-  const str = (k: string) => (typeof e[k] === 'string' ? e[k] : '');
-  const fields = DETAIL_FIELDS[type];
-  if (fields) {
-    return fields.flatMap(([k, title]) =>
-      str(k).trim() ? [{ title: title || undefined, text: str(k).trim() }] : [],
-    );
-  }
-  if (type === 'gratitude') {
-    const items = Array.isArray(e.items)
-      ? e.items.filter((i): i is string => typeof i === 'string')
-      : [];
-    return items.map((text) => ({ text }));
-  }
-  // tracker_day / ysq — те же строки, что и в карточке (обрезка им не грозит).
-  return buildJourneyResultParts(type, entry);
-}
-
 /**
- * Тянет запись по item.id (или дате) и собирает части карточки.
- * null — содержимого нет (трекер, тест) или запись не нашлась: тогда
- * показывается обычная карточка шага.
+ * Тянет запись по item.id (или дате): у каждого типа шага свой источник.
+ * null — тип неизвестен; дальше сборщики частей решают, что показать.
  */
 async function fetchJourneyEntry(
   api: JourneyContentApi,
@@ -257,6 +147,10 @@ export async function fetchJourneyResult(
 ): Promise<JourneyResult | null> {
   const entry = await fetchJourneyEntry(api, item);
   const parts = buildJourneyResultParts(item.type, entry);
+  if (item.type === 'ysq') {
+    const ysq = ysqResultFromEntry(entry);
+    return ysq ? { parts, ysq } : null;
+  }
   if (item.type === 'tracker_day') {
     const ratings = entry as Record<string, number> | undefined;
     const hasRatings =

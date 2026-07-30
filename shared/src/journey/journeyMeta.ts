@@ -31,6 +31,13 @@ export const JOURNEY_TYPE_META = {
   safe_place: { emoji: '🏝', label: 'Безопасное место', group: 'exercise' },
   schema_note: { emoji: '🧩', label: 'Карточка схемы', group: 'cards' },
   mode_note: { emoji: '🎪', label: 'Карточка режима', group: 'cards' },
+  breathing: { emoji: '🌬', label: 'Дыхание', group: 'exercise' },
+  grounding: {
+    emoji: '🌍',
+    label: 'Заземление 5-4-3-2-1',
+    group: 'exercise',
+  },
+  stop: { emoji: '🛑', label: 'Техника «Стоп»', group: 'exercise' },
 } satisfies Record<string, JourneyTypeMeta>;
 
 export type JourneyItemType = keyof typeof JOURNEY_TYPE_META;
@@ -52,6 +59,9 @@ export interface JourneyCounts {
   safePlace: boolean;
   schemaNotes: number;
   modeNotes: number;
+  breathingSessions: number;
+  groundingSessions: number;
+  stopSessions: number;
 }
 
 export interface JourneyItem {
@@ -110,36 +120,15 @@ export const JOURNEY_GROUP_COLORS: Record<
   cards: { css: 'var(--accent-indigo)', hex: '#818cf8' },
 };
 
-// Период ленты: за всё время / последние 7 / последние 30 дней.
-export type JourneyPeriod = 'all' | 'week' | 'month';
-
-export const JOURNEY_PERIODS: Array<{ id: JourneyPeriod; label: string }> = [
-  { id: 'all', label: 'Всё время' },
-  { id: 'week', label: 'Неделя' },
-  { id: 'month', label: 'Месяц' },
-];
-
-/** Заголовок карточки/шеринга по выбранному периоду. */
-export const JOURNEY_PERIOD_TITLE: Record<JourneyPeriod, string> = {
-  all: 'Мой путь',
-  week: 'Моя неделя',
-  month: 'Мой месяц',
-};
-
-/** Фильтр по периоду (скользящие 7/30 дней). Чистая, не мутирует вход. */
-export function filterJourneyByPeriod(
-  items: readonly JourneyItem[],
-  period: JourneyPeriod,
-  now = new Date(),
-): JourneyItem[] {
-  if (period === 'all') return [...items];
-  const days = period === 'week' ? 7 : 30;
-  const from = now.getTime() - days * 86_400_000;
-  return items.filter((i) => {
-    const t = Date.parse(i.at.length === 10 ? `${i.at}T00:00:00` : i.at);
-    return !Number.isNaN(t) && t >= from;
-  });
-}
+// Период ленты живёт в journeyPeriod (правило №10) — реэкспорт сохраняет
+// единственный вход для фронтендов.
+export {
+  JOURNEY_PERIODS,
+  JOURNEY_PERIOD_TITLE,
+  JOURNEY_PERIOD_SUBTITLE,
+  filterJourneyByPeriod,
+} from './journeyPeriod';
+export type { JourneyPeriod } from './journeyPeriod';
 
 export type SortDir = 'desc' | 'asc';
 

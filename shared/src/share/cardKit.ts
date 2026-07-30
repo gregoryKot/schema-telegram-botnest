@@ -22,6 +22,7 @@ export {
   divider,
   drawEmoji,
   panel,
+  panelStack,
   sectionLabel,
   tracking,
   type Card,

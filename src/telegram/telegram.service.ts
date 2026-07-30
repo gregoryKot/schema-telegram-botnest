@@ -20,7 +20,7 @@ import { PairsService } from '../bot/pairs.service';
 import { PracticesService } from '../bot/practices.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
-import { TelegramChannelService } from './telegram.channel.service';
+import { ChannelPublisherService } from '../channel/channel-publisher.service';
 import {
   isQuietHours,
   nextQuietEnd,
@@ -97,7 +97,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly practicesService: PracticesService,
     private readonly notificationService: NotificationService,
     private readonly therapistRequestService: TherapistRequestService,
-    private readonly channelService: TelegramChannelService,
+    private readonly publisher: ChannelPublisherService,
   ) {}
 
   private stopping = false;
@@ -309,16 +309,16 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    // Ручная публикация фразы «Здорового Взрослого» в канал — для проверки
-    // связки (env + права бота), т.к. по расписанию пост выходит утром/вечером
-    // в случайную минуту, а «сразу после настройки» ничего не публикуется.
+    // Ручная публикация фразы «Здорового Взрослого» по всем настроенным
+    // площадкам — проверка связки (env + права бота), т.к. по расписанию пост
+    // выходит утром/вечером в случайную минуту, а сразу после настройки — нет.
     this.bot.command('zv', async (ctx) => {
       try {
         if (!isAdminSender(ctx.from)) {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
-        const result = await this.channelService.post();
+        const result = await this.publisher.publish();
         await ctx.reply(result.message);
       } catch (err) {
         this.logger.error('zv command failed', err);

@@ -48,7 +48,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
                 🧭 Мой путь
               </span>
               <span style={{ marginRight: 'auto' }} />
-              {j.total > 0 && <SharePill compact onClick={sh.shareFeed} />}
+              {j.total > 0 && <SharePill compact onClick={sh.shareSummary} />}
             </div>
 
             <JourneyView
@@ -56,7 +56,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               j={j}
               subtitle={jp.subtitle}
               onOpenItem={detail.open}
-              onShareTotals={sh.shareTotals}
+              onShareFeed={sh.shareFeed}
               skeleton={
                 <>
                   <SkeletonCard h={96} />
