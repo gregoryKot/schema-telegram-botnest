@@ -239,8 +239,9 @@ describe('GCM-аутентификация и алерт о порче (ауди
     expect(warn).toHaveBeenCalledTimes(1);
 
     now.mockReturnValue(t0 + 61_000);
-    decrypt(bad);
+    expect(decrypt(bad)).toBe(bad);
     expect(warn).toHaveBeenCalledTimes(2);
+    expect(String(warn.mock.calls[1][0])).toMatch(/decrypt/i);
   });
 
   it('троттлинг: ровно 60000мс с прошлого warn — это уже НЕ "слишком рано", warn обязан сработать снова (граница < vs <=)', () => {
@@ -250,11 +251,14 @@ describe('GCM-аутентификация и алерт о порче (ауди
     const now = jest.spyOn(Date, 'now').mockReturnValue(t0);
     const bad = tamper(encrypt('секрет')!);
 
-    decrypt(bad);
+    // Порченый блоб возвращается как есть (расшифровать нечем) — проверяем
+    // и это, чтобы тест не сводился к одному счётчику вызовов спая.
+    expect(decrypt(bad)).toBe(bad);
     expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][0])).toMatch(/decrypt/i);
 
     now.mockReturnValue(t0 + 60_000); // ровно минута, а не "меньше минуты"
-    decrypt(bad);
+    expect(decrypt(bad)).toBe(bad);
     expect(warn).toHaveBeenCalledTimes(2);
   });
 });
