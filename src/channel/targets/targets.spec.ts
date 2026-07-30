@@ -8,6 +8,15 @@ import { PinterestChannelTarget } from './pinterest.target';
 import type { ThreadsTokenService } from './threads-token.service';
 import { resetMaxDispatcher } from './max-ca';
 
+// Запрос со своим диспетчером уходит клиентом из пакета undici (иначе Node
+// роняет его на несовпадении версий — инцидент 2026-07-30), поэтому в тестах
+// подменяем именно его, а не глобальный fetch.
+const undiciFetch = jest.fn();
+jest.mock('undici', () => ({
+  ...jest.requireActual('undici'),
+  fetch: (...args: unknown[]) => undiciFetch(...args),
+}));
+
 const post = (text = 'фраза') => ({
   text,
   image: () => Promise.resolve(Buffer.from('PNGDATA')),
@@ -38,6 +47,7 @@ describe('адаптеры площадок', () => {
   const realFetch = global.fetch;
 
   beforeEach(() => {
+    undiciFetch.mockReset();
     resetMaxDispatcher();
     for (const key of ENV_KEYS) {
       saved[key] = process.env[key];

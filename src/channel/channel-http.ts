@@ -18,6 +18,14 @@ export class ChannelHttpError extends Error {
 /** Сколько ждём площадку. Тик расписания не должен висеть на зависшем API. */
 const TIMEOUT_MS = 15_000;
 
+// Клиент из того же пакета, что и диспетчер. Инцидент 2026-07-30: Agent из
+// пакета undici, переданный ВСТРОЕННОМУ в Node fetch, роняет запрос с
+// «UND_ERR_INVALID_ARG: invalid onRequestStart method» — у встроенной и
+// пакетной версий разный протокол хендлеров. Поэтому запрос со своим
+// диспетчером идёт пакетным fetch, а обычный — глобальным (его подменяют
+// тесты, и лишняя зависимость там не нужна).
+import { fetch as undiciFetch } from 'undici';
+
 /**
  * Транспорт запроса. Нужен там, где площадке требуется свой корень доверия
  * (MAX после переезда на platform-api2): диспетчер подключается точечно, а не
@@ -58,7 +66,10 @@ async function fetchWithRetry(
   let last: unknown;
   for (let attempt = 0; attempt <= NETWORK_RETRIES; attempt++) {
     try {
-      return await fetch(url, {
+      const send = init.dispatcher
+        ? (undiciFetch as unknown as typeof fetch)
+        : fetch;
+      return await send(url, {
         ...init,
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
