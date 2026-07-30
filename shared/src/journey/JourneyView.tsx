@@ -23,7 +23,7 @@ export interface JourneyViewProps {
   /** Тап по записи ленты → открыть запись целиком (детальный вид) */
   onOpenItem: (item: JourneyItem) => void;
   /** Кнопка в hero → карточка итогов («дневник 5 раз, трекер 7 раз…») */
-  onShareTotals: () => void;
+  onShareFeed: () => void;
   /** Скелетон по форме контента — из примитивов конкретного фронтенда */
   skeleton: ReactNode;
 }
@@ -51,7 +51,7 @@ export function JourneyView({
   j,
   subtitle,
   onOpenItem,
-  onShareTotals,
+  onShareFeed,
   skeleton,
 }: JourneyViewProps) {
   const {
@@ -103,7 +103,7 @@ export function JourneyView({
           <JourneyHero
             total={total}
             explainer={explainer}
-            onShareTotals={onShareTotals}
+            onShareFeed={onShareFeed}
           />
 
           {/* Счётчики «сколько чего» — лента мини-карточек */}

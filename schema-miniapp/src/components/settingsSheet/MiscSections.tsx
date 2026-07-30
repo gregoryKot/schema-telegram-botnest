@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { api } from '../../api';
 import { botShortUrl } from '../../utils/botConfig';
+import { ShareCardSheet } from '../../share/ShareCardSheet';
+import { appInviteShare } from '../../../../shared/src/share/cards/inviteShare';
 import { Row, SettingsLabel } from './ui';
 
 interface NameProps {
@@ -105,27 +108,16 @@ interface ShareProps {
 }
 
 export function ShareSection({ setExportText }: ShareProps) {
+  const [invite, setInvite] = useState(false);
   return (
     <div style={{ marginBottom: 8 }}>
       <SettingsLabel>ПОДЕЛИТЬСЯ</SettingsLabel>
       <div className="card" style={{ borderRadius: 16, overflow: 'hidden' }}>
         <Row
           label="Пригласить друга"
-          sub="Поделиться ссылкой на бота"
+          sub="Карточка со ссылкой на бота"
           emoji="🔗"
-          onClick={async () => {
-            const text = `Трекер потребностей — отслеживай своё состояние каждый день. ${botShortUrl}`;
-            try {
-              if (navigator.share) await navigator.share({ text });
-              else await navigator.clipboard.writeText(text);
-            } catch {
-              try {
-                await navigator.clipboard.writeText(text);
-              } catch {
-                /* best-effort: ошибку намеренно игнорируем */
-              }
-            }
-          }}
+          onClick={() => setInvite(true)}
         />
         <Row
           label="Для терапевта"
@@ -154,6 +146,13 @@ export function ShareSection({ setExportText }: ShareProps) {
           }}
         />
       </div>
+      {invite && (
+        <ShareCardSheet
+          {...appInviteShare(botShortUrl)}
+          onClose={() => setInvite(false)}
+          zIndex={300}
+        />
+      )}
     </div>
   );
 }

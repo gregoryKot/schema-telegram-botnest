@@ -47,11 +47,11 @@ export function JourneyEmptyHero({
 export function JourneyHero({
   total,
   explainer,
-  onShareTotals,
+  onShareFeed,
 }: {
   total: number;
   explainer: string;
-  onShareTotals: () => void;
+  onShareFeed: () => void;
 }) {
   return (
     <div
@@ -91,7 +91,7 @@ export function JourneyHero({
         {explainer}
       </div>
       <button
-        onClick={onShareTotals}
+        onClick={onShareFeed}
         style={{
           marginTop: 12,
           minHeight: 36,
@@ -107,7 +107,7 @@ export function JourneyHero({
           cursor: 'pointer',
         }}
       >
-        Поделиться итогами
+        Поделиться лентой шагов
       </button>
     </div>
   );

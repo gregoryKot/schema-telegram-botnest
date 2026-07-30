@@ -1,8 +1,10 @@
-// Карточка-профиль результата теста на схемы: все 20 схем горизонтальными
+// Карточка-профиль результата теста на схемы: выраженные схемы горизонтальными
 // барами по среднему баллу (1–6), сгруппированы по пяти потребностям (цвет
-// группы — цвет потребности), выраженные схемы подсвечены ярче, пунктир — порог
-// «4 из 6». Персональные данные — только агрегаты (средние баллы по схемам),
-// без ответов на отдельные вопросы.
+// группы — цвет потребности), пунктир — порог «4 из 6». Невыраженные схемы на
+// карточку не идут: строка с «—» или баллом 1.5 ничего не говорит тому, кому её
+// отправили.
+// Персональные данные — только агрегаты (средние баллы по схемам), без ответов
+// на отдельные вопросы.
 //
 // Чистая логика (подписи, группировка, высота) отделена от canvas-отрисовки и
 // покрыта тестами schema-miniapp/src/share/cards/ysqProfileCard.test.ts.
@@ -27,7 +29,6 @@ export interface YsqProfileRow {
   label: string;
   /** Средний балл 1–6; 0 = нет ответов (бар не рисуется, значение «—»). */
   avg: number;
-  active: boolean;
 }
 
 export interface YsqProfileDomain {
@@ -59,9 +60,10 @@ export function shortSchemaLabel(name: string): string {
 }
 
 /**
- * Полный профиль для карточки: домены в порядке DOMAIN_ORDER, внутри домена
- * схемы по убыванию среднего балла. Активность — оба критерия скоринга
- * (isSchemaScoreActive). Отсутствующий счёт схемы — защитный ноль, не активна.
+ * Профиль для карточки: только выраженные схемы (оба критерия скоринга —
+ * isSchemaScoreActive), домены в порядке DOMAIN_ORDER, внутри домена схемы по
+ * убыванию среднего балла. Домен без выраженных схем в профиль не попадает.
+ * Отсутствующий счёт схемы — защитный ноль, значит не выражена.
  */
 export function buildYsqProfile(
   scores: Record<string, { pct5plus: number; avg: number }>,
@@ -79,6 +81,8 @@ export function buildYsqProfile(
           active: isSchemaScoreActive(sc),
         };
       })
+      .filter((r) => r.active)
+      .map(({ label, avg }) => ({ label, avg }))
       .sort((a, b) => b.avg - a.avg),
   })).filter((d) => d.rows.length > 0);
 }
@@ -93,6 +97,8 @@ const GROUP_HEAD_H = 26;
 const GROUP_GAP = 8;
 // Пояснительная строка под шапкой («средний балл от 1 до 6 · …»).
 const HINT_H = 30;
+// Тело карточки, когда ни одна схема не выражена.
+const EMPTY_BODY_H = 34;
 
 /**
  * Высота карточки — чистая формула от числа доменов и строк (для тестов).
@@ -106,14 +112,11 @@ export function ysqProfileCardHeight(
   titleLines = 1,
 ): number {
   const rows = domains.reduce((n, d) => n + d.rows.length, 0);
-  return (
-    headerHeight(titleLines, hasDate) +
-    HINT_H +
-    domains.length * (GROUP_HEAD_H + GROUP_GAP) +
-    rows * ROW_H +
-    12 +
-    FOOTER_H
-  );
+  // Выраженных схем нет — вместо групп идёт одна поясняющая строка.
+  const bodyH = domains.length
+    ? domains.length * (GROUP_HEAD_H + GROUP_GAP) + rows * ROW_H
+    : EMPTY_BODY_H;
+  return headerHeight(titleLines, hasDate) + HINT_H + bodyH + 12 + FOOTER_H;
 }
 
 export interface YsqProfileCardOpts {
@@ -149,10 +152,24 @@ export function drawYsqProfileCard(
   ctx.fillStyle = th.fg(0.4);
   ctx.textAlign = 'left';
   ctx.fillText(
-    'Средний балл от 1 до 6 · ярче — выраженные схемы',
+    domains.length
+      ? 'Показаны выраженные схемы · средний балл от 1 до 6'
+      : 'Средний балл считается от 1 до 6',
     CARD_PAD,
     contentY,
   );
+
+  if (domains.length === 0) {
+    ctx.font = cardFont(13);
+    ctx.fillStyle = th.fg(0.55);
+    ctx.fillText(
+      'По ответам ни одна схема не выделилась',
+      CARD_PAD,
+      contentY + 28,
+    );
+    footer(c, 'Тест на схемы');
+    return;
+  }
 
   const chartTop = contentY + HINT_H;
   const chartBottom = H - FOOTER_H - 8;
@@ -188,19 +205,22 @@ export function drawYsqProfileCard(
     y += GROUP_HEAD_H;
 
     for (const r of d.rows) {
-      ctx.font = cardFont(11.5, r.active ? 'bold' : undefined);
-      ctx.fillStyle = th.fg(r.active ? 0.92 : 0.5);
+      ctx.font = cardFont(11.5, 'bold');
+      ctx.fillStyle = th.fg(0.92);
       ctx.textAlign = 'left';
       ctx.fillText(r.label, CARD_PAD, y + 15);
 
-      const pct = r.avg >= 1 ? avgBarPct(r.avg) / 100 : 0;
-      ctx.save();
-      ctx.globalAlpha = r.active ? 1 : 0.4;
-      progressBar(c, BAR_X, y + 8, BAR_W, pct, d.color);
-      ctx.restore();
+      progressBar(
+        c,
+        BAR_X,
+        y + 8,
+        BAR_W,
+        r.avg >= 1 ? avgBarPct(r.avg) / 100 : 0,
+        d.color,
+      );
 
-      ctx.font = cardFont(11, r.active ? 'bold' : undefined);
-      ctx.fillStyle = r.active ? d.color : th.fg(0.4);
+      ctx.font = cardFont(11, 'bold');
+      ctx.fillStyle = d.color;
       ctx.textAlign = 'right';
       ctx.fillText(
         r.avg >= 1 ? r.avg.toFixed(1) : '—',

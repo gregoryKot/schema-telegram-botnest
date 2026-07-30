@@ -120,36 +120,15 @@ export const JOURNEY_GROUP_COLORS: Record<
   cards: { css: 'var(--accent-indigo)', hex: '#818cf8' },
 };
 
-// Период ленты: за всё время / последние 7 / последние 30 дней.
-export type JourneyPeriod = 'all' | 'week' | 'month';
-
-export const JOURNEY_PERIODS: Array<{ id: JourneyPeriod; label: string }> = [
-  { id: 'all', label: 'Всё время' },
-  { id: 'week', label: 'Неделя' },
-  { id: 'month', label: 'Месяц' },
-];
-
-/** Заголовок карточки/шеринга по выбранному периоду. */
-export const JOURNEY_PERIOD_TITLE: Record<JourneyPeriod, string> = {
-  all: 'Мой путь',
-  week: 'Моя неделя',
-  month: 'Мой месяц',
-};
-
-/** Фильтр по периоду (скользящие 7/30 дней). Чистая, не мутирует вход. */
-export function filterJourneyByPeriod(
-  items: readonly JourneyItem[],
-  period: JourneyPeriod,
-  now = new Date(),
-): JourneyItem[] {
-  if (period === 'all') return [...items];
-  const days = period === 'week' ? 7 : 30;
-  const from = now.getTime() - days * 86_400_000;
-  return items.filter((i) => {
-    const t = Date.parse(i.at.length === 10 ? `${i.at}T00:00:00` : i.at);
-    return !Number.isNaN(t) && t >= from;
-  });
-}
+// Период ленты живёт в journeyPeriod (правило №10) — реэкспорт сохраняет
+// единственный вход для фронтендов.
+export {
+  JOURNEY_PERIODS,
+  JOURNEY_PERIOD_TITLE,
+  JOURNEY_PERIOD_SUBTITLE,
+  filterJourneyByPeriod,
+} from './journeyPeriod';
+export type { JourneyPeriod } from './journeyPeriod';
 
 export type SortDir = 'desc' | 'asc';
 

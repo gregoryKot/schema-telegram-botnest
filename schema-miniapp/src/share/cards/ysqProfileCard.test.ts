@@ -1,5 +1,7 @@
 // Тест чистой логики карточки-профиля теста на схемы: короткие подписи,
-// группировка по потребностям, критерии выраженности, формула высоты.
+// группировка по потребностям, отбор выраженных схем, формула высоты.
+// На карточку идут ТОЛЬКО выраженные схемы — невыраженная строка («—» или
+// балл 1.5) ничего не сообщает тому, кому карточку отправили.
 import { describe, it, expect } from 'vitest';
 import {
   buildYsqProfile,
@@ -37,15 +39,35 @@ describe('shortSchemaLabel', () => {
 });
 
 describe('buildYsqProfile', () => {
-  it('покрывает все 20 схем, домены — в порядке DOMAIN_ORDER', () => {
-    const domains = buildYsqProfile(allScores());
+  it('все схемы выражены → все 20 строк, домены в порядке DOMAIN_ORDER', () => {
+    const domains = buildYsqProfile(allScores(5, 80));
     expect(domains.map((d) => d.needId)).toEqual(DOMAIN_ORDER);
     const rows = domains.reduce((n, d) => n + d.rows.length, 0);
     expect(rows).toBe(SCHEMAS.length);
   });
 
+  it('невыраженные схемы в профиль не попадают', () => {
+    const scores = allScores(2, 0);
+    scores['Уязвимость'] = { avg: 4.3, pct5plus: 0 };
+    const rows = buildYsqProfile(scores).flatMap((d) => d.rows);
+    expect(rows.map((r) => r.label)).toEqual(['Уязвимость']);
+  });
+
+  it('домен без выраженных схем не показывается вовсе', () => {
+    const scores = allScores(2, 0);
+    scores['Уязвимость'] = { avg: 4.3, pct5plus: 0 };
+    const domains = buildYsqProfile(scores);
+    expect(domains).toHaveLength(1);
+    expect(domains[0].needId).toBe('autonomy');
+  });
+
+  it('ни одной выраженной → пустой профиль (карточка покажет пустое состояние)', () => {
+    expect(buildYsqProfile(allScores(2, 0))).toEqual([]);
+  });
+
   it('внутри домена схемы отсортированы по убыванию среднего балла', () => {
-    const scores = allScores();
+    // База 4.0 — уже выраженная, но ниже двух named-схем ниже.
+    const scores = allScores(4, 80);
     scores['Покинутость/Нестабильность'] = { avg: 5.5, pct5plus: 80 };
     scores['Дефективность/Стыд'] = { avg: 4.2, pct5plus: 60 };
     const attachment = buildYsqProfile(scores)[0];
@@ -60,30 +82,29 @@ describe('buildYsqProfile', () => {
     expect(avgs).toEqual([...avgs].sort((a, b) => b - a));
   });
 
-  it('активность — по любому из двух критериев (средний ≥ 4 ИЛИ >50% ответов 5–6)', () => {
+  it('выраженность — по любому из двух критериев (средний ≥ 4 ИЛИ >50% ответов 5–6)', () => {
     const scores = allScores(2, 0);
     scores['Уязвимость'] = { avg: 4.3, pct5plus: 0 }; // только по среднему
     scores['Покорность'] = { avg: 3.5, pct5plus: 60 }; // только по классике
     const rows = buildYsqProfile(scores).flatMap((d) => d.rows);
-    const byLabel = Object.fromEntries(rows.map((r) => [r.label, r]));
-    expect(byLabel['Уязвимость'].active).toBe(true);
-    expect(byLabel['Покорность'].active).toBe(true);
-    expect(rows.filter((r) => r.active)).toHaveLength(2);
+    expect(rows.map((r) => r.label).sort()).toEqual([
+      'Покорность',
+      'Уязвимость',
+    ]);
   });
 
-  it('отсутствующий счёт схемы — защитный ноль, не активна', () => {
-    const scores = allScores();
+  it('отсутствующий счёт схемы — защитный ноль, в профиль не идёт', () => {
+    const scores = allScores(5, 80);
     delete scores['Неуспешность'];
     const rows = buildYsqProfile(scores).flatMap((d) => d.rows);
-    const row = rows.find((r) => r.label === 'Неуспешность')!;
-    expect(row.avg).toBe(0);
-    expect(row.active).toBe(false);
+    expect(rows.find((r) => r.label === 'Неуспешность')).toBeUndefined();
+    expect(rows).toHaveLength(SCHEMAS.length - 1);
   });
 });
 
 describe('ysqProfileCardHeight', () => {
   it('растёт с числом строк: добавление домена с схемами увеличивает высоту', () => {
-    const domains = buildYsqProfile(allScores());
+    const domains = buildYsqProfile(allScores(5, 80));
     const withoutLast = domains.slice(0, -1);
     expect(ysqProfileCardHeight(domains)).toBeGreaterThan(
       ysqProfileCardHeight(withoutLast),
@@ -91,7 +112,7 @@ describe('ysqProfileCardHeight', () => {
   });
 
   it('высота линейна по числу строк внутри профиля одинакового размера', () => {
-    const domains = buildYsqProfile(allScores());
+    const domains = buildYsqProfile(allScores(5, 80));
     // Убираем по одной строке из каждого домена — число групп то же, строк меньше.
     const trimmed = domains.map((d) => ({ ...d, rows: d.rows.slice(1) }));
     const removedRows =
@@ -108,14 +129,14 @@ describe('ysqProfileCardHeight', () => {
   // строки, а высота считалась как для одной — последняя группа схем уезжала
   // под брендовый футер.
   it('заголовок в две строки добавляет высоту', () => {
-    const domains = buildYsqProfile(allScores());
+    const domains = buildYsqProfile(allScores(5, 80));
     expect(ysqProfileCardHeight(domains, true, 2)).toBeGreaterThan(
       ysqProfileCardHeight(domains, true, 1),
     );
   });
 
   it('дата в подписи увеличивает высоту (есть подпись под заголовком)', () => {
-    const domains = buildYsqProfile(allScores());
+    const domains = buildYsqProfile(allScores(5, 80));
     expect(ysqProfileCardHeight(domains, true)).toBeGreaterThan(
       ysqProfileCardHeight(domains, false),
     );
@@ -125,5 +146,12 @@ describe('ysqProfileCardHeight', () => {
     const h = ysqProfileCardHeight([]);
     expect(Number.isFinite(h)).toBe(true);
     expect(h).toBeGreaterThan(FOOTER_H);
+  });
+
+  it('пустой профиль ниже профиля с выраженными схемами', () => {
+    const domains = buildYsqProfile(allScores(5, 80));
+    expect(ysqProfileCardHeight([])).toBeLessThan(
+      ysqProfileCardHeight(domains),
+    );
   });
 });
