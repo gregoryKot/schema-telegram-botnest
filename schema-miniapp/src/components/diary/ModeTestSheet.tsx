@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { pressable } from '../../utils/a11y';
 import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
+import { api } from '../../api';
+import { MODE_TEST_COMPLETED_EVENT } from '../../../../shared/src/share/analytics';
 import { MODE_TEST_GROUPS } from '../../../../shared/src/mode/modeTest';
 
 /**
@@ -168,6 +170,9 @@ export function ModeTestSheet({
                   key={l.modeId}
                   {...pressable(() => {
                     haptic.success();
+                    api.trackEvent(MODE_TEST_COMPLETED_EVENT, {
+                      modeId: l.modeId,
+                    });
                     onResolve(l.modeId);
                   })}
                   style={{

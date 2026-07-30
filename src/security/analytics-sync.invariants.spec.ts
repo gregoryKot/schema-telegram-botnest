@@ -76,6 +76,12 @@ const BACKEND_ONLY: Record<string, string> = {
   mode_card_saved:
     'константа MODE_CARD_SAVED_EVENT (shared/src/share/analytics.ts), ' +
     'та же группа, что и share_card/onboarding_step — грепом по литералу не ловится',
+  mode_entry_saved:
+    'константа MODE_ENTRY_SAVED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeEntrySheet.tsx (оба фронта) через api.trackEvent',
+  mode_test_completed:
+    'константа MODE_TEST_COMPLETED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeTestSheet.tsx (мини-апп) и ModeTestScreen.tsx (сайт)',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -100,9 +106,10 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
   });
 
   it('BACKEND_ONLY не разросся сверх известного (может только сокращаться)', () => {
-    // Потолок поднят с 10 до 11 осознанно (mode_card_saved, 2026-07): новое
-    // кросс-фронтовое событие через именованную константу — тот же легитимный
-    // паттерн, что и share_card/onboarding_step, не обход правила.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(11);
+    // Потолок поднят с 11 до 13 осознанно (mode_entry_saved/mode_test_completed,
+    // 2026-07): те же кросс-фронтовые события через именованные константы —
+    // тот же легитимный паттерн, что и share_card/onboarding_step/mode_card_saved,
+    // не обход правила.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(13);
   });
 });
