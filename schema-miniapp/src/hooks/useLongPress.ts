@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import type { PointerEvent as ReactPointerEvent, MouseEvent } from 'react';
+import { haptic } from '../haptic';
 
 // Долгое нажатие на блок главного экрана → «Настроить экран». Быстрый путь
 // для тех, кто уже освоился; шестерёнка в шапке остаётся основным, видимым
@@ -46,7 +47,7 @@ export function useLongPress(onLongPress: () => void): LongPressProps {
       origin.current = { x: e.clientX, y: e.clientY };
       timer.current = setTimeout(() => {
         fired.current = true;
-        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
+        haptic.press();
         onLongPress();
         cancel();
       }, HOLD_MS);

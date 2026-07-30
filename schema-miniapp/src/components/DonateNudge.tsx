@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getHost } from '../../../shared/src/host';
 import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
 
@@ -30,9 +31,7 @@ export function DonateNudge() {
   };
   const donate = () => {
     const url = 'https://schemehappens.ru/donate';
-    const tg = window.Telegram?.WebApp;
-    if (tg?.openLink) tg.openLink(url);
-    else window.open(url, '_blank');
+    getHost().openLink(url);
     close();
   };
 

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { getHost } from '../../../../shared/src/host';
 import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
 import type {
@@ -334,8 +335,7 @@ export function useClientDetail({ switchView, setClients }: Params) {
   // ── Export ─────────────────────────────────────────────────────────────────────
   function buildExportText(): string {
     if (!selectedClient || !concept) return '';
-    const therapistName =
-      window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? 'Терапевт';
+    const therapistName = getHost().user()?.firstName ?? 'Терапевт';
     const clientName =
       selectedClient.clientAlias ??
       selectedClient.name ??

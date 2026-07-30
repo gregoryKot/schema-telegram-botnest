@@ -12,6 +12,7 @@
 // поэтому свёрнутое на час (и на неделю) приложение продолжает работать.
 // Access-токен держим только в памяти: переживать перезапуск webview — работа
 // refresh-куки, а не localStorage (правило «ключи не лежат где попало»).
+import { getHost } from '../../shared/src/host';
 import { BASE } from './utils/apiBase';
 
 const EXPIRY_SKEW_MS = 60_000; // обновляемся заранее, с запасом на расхождение часов
@@ -53,7 +54,7 @@ export function authHeaders(): Record<string, string> {
   return {
     ...(tokenIsFresh()
       ? { Authorization: `Bearer ${accessToken}` }
-      : { 'x-telegram-init-data': window.Telegram?.WebApp?.initData ?? '' }),
+      : getHost().authHeaders()),
     'Content-Type': 'application/json',
   };
 }
@@ -94,9 +95,8 @@ export function renewSession(): Promise<boolean> {
   if (inFlight) return inFlight;
   inFlight = (async () => {
     if (await postAuth('/api/auth/refresh')) return true;
-    const initData = window.Telegram?.WebApp?.initData;
-    if (initData && (await postAuth('/api/auth/telegram/webapp', { initData })))
-      return true;
+    const exchange = getHost().sessionExchange();
+    if (exchange && (await postAuth(exchange.path, exchange.body))) return true;
     // Ни куки, ни свежей initData: чинить нечем — пользователю надо переоткрыть
     // мини-апп, чтобы Telegram выдал новую подпись.
     deadUntil = Date.now() + DEAD_SESSION_COOLDOWN_MS;

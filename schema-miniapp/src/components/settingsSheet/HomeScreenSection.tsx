@@ -1,3 +1,4 @@
+import { getHost } from '../../../../shared/src/host';
 import { SettingsLabel } from './ui';
 import { useTr } from '../../utils/addressForm';
 import {
@@ -13,7 +14,7 @@ export function HomeScreenSection() {
   const tr = useTr();
   if (!canOfferHomeScreenNow()) return null;
 
-  const platform = homeScreenPlatform(window.Telegram?.WebApp?.platform);
+  const platform = homeScreenPlatform(getHost().platform);
 
   return (
     <div style={{ marginBottom: 8 }}>

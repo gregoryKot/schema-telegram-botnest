@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getHost } from '../../../shared/src/host';
 import { api, UserSettings, PairsData, TherapyRelationInfo } from '../api';
 import { SkeletonList } from './Skeleton';
 import { useSafeTop } from '../utils/safezone';
@@ -82,8 +83,7 @@ export function SettingsSheet({
   const [reqError, setReqError] = useState('');
   const [resignConfirm, setResignConfirm] = useState(false);
   const [resignBusy, setResignBusy] = useState(false);
-  const tgName =
-    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
+  const tgName = getHost().user()?.firstName ?? '';
   const [editName, setEditName] = useState(displayName ?? tgName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
   const [theme, setTheme] = useState<Theme>(getTheme);

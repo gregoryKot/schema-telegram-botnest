@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { getHost } from '../../../shared/src/host';
 import { ADD_ICON_HOP_URL, homeScreenPlatform } from '../utils/homeScreen';
 
 // Единая кнопка «добавить значок на экран» (одна механика — один компонент).
@@ -21,16 +22,17 @@ export function AddHomeScreenButton({
   onActivated?: () => void;
   style?: CSSProperties;
 }) {
-  const platform = homeScreenPlatform(window.Telegram?.WebApp?.platform);
+  const host = getHost();
+  const platform = homeScreenPlatform(host.platform);
 
-  if (platform === 'android') {
+  if (platform === 'android' && host.capabilities.homeScreen) {
     return (
       <button
         className="btn-primary"
         style={style}
         onClick={() => {
           // Нативный вызов ПЕРВЫМ, в жесте; побочные действия после.
-          window.Telegram?.WebApp?.addToHomeScreen?.();
+          host.homeScreen.add();
           onActivated?.();
         }}
       >

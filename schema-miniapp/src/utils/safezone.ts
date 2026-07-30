@@ -1,14 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-
-// Минимальная форма Telegram.WebApp, которую реально читаем (инсеты, признак
-// полноэкранного режима и подписка на события). Точечный тип вместо `any`.
-type TgSafeArea = {
-  contentSafeAreaInset?: { top?: number };
-  safeAreaInset?: { top?: number };
-  isFullscreen?: boolean;
-  onEvent?: (event: string, cb: () => void) => void;
-  offEvent?: (event: string, cb: () => void) => void;
-};
+import { useState, useEffect } from 'react';
+import { getHost } from '../../../shared/src/host';
 
 // Высота полосы плавающих кнопок Telegram (закрыть/меню) НИЖЕ статус-бара в
 // полноэкранном режиме, когда клиент не прислал contentSafeAreaInset. На iOS
@@ -63,62 +54,28 @@ export function computeSafeTop(p: {
   return p.ios ? IOS_LEGACY_TOP : 0;
 }
 
-function read(tg: TgSafeArea | undefined, contentReported: boolean): number {
-  if (!tg) return 0;
+function read(): number {
+  const insets = getHost().insets();
   return computeSafeTop({
-    contentTop: tg.contentSafeAreaInset?.top,
-    deviceTop: tg.safeAreaInset?.top,
-    isFullscreen: !!tg.isFullscreen,
+    contentTop: insets.contentTop,
+    deviceTop: insets.deviceTop,
+    isFullscreen: insets.isFullscreen,
     ios: isIOS(),
-    contentReported,
+    contentReported: insets.contentReported,
   });
 }
 
 /**
- * Reactive hook — updates when Telegram reports safe area / fullscreen changes.
- * In fullscreen it uses the exact inset once the client reports it, and a
- * generous fallback until/unless it does, so header text and buttons never end
- * up under Telegram's floating controls.
+ * Отступ сверху, пересчитанный по сигналам хоста. В полноэкранном режиме
+ * используется точный инсет, как только хост его прислал, и щедрый фолбэк,
+ * пока не прислал: текст и кнопки шапки не должны уезжать под плавающие
+ * кнопки мессенджера. Подписки и повторное чтение запоздавших значений —
+ * забота адаптера хоста, тут только пересчёт.
  */
 export function useSafeTop(): number {
-  // Прислал ли клиент contentSafeAreaInset хоть раз. Значение может быть 0 —
-  // сам факт события важнее числа, поэтому отдельный флаг, а не проверка > 0.
-  const contentReportedRef = useRef(false);
-  const [safeTop, setSafeTop] = useState<number>(() =>
-    read(window.Telegram?.WebApp, false),
-  );
+  const [safeTop, setSafeTop] = useState<number>(read);
 
-  useEffect(() => {
-    const tg = window.Telegram?.WebApp as TgSafeArea | undefined;
-    if (!tg) return;
-
-    const update = () => setSafeTop(read(tg, contentReportedRef.current));
-    const onContent = () => {
-      contentReportedRef.current = true;
-      update();
-    };
-
-    tg.onEvent?.('safeAreaChanged', update);
-    tg.onEvent?.('contentSafeAreaChanged', onContent);
-    tg.onEvent?.('fullscreenChanged', update);
-    // Telegram нередко присылает инсеты/признак fullscreen с задержкой —
-    // перечитываем несколько раз после монтирования.
-    const t1 = setTimeout(update, 150);
-    const t2 = setTimeout(update, 500);
-
-    return () => {
-      tg.offEvent?.('safeAreaChanged', update);
-      tg.offEvent?.('contentSafeAreaChanged', onContent);
-      tg.offEvent?.('fullscreenChanged', update);
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, []);
+  useEffect(() => getHost().onInsetsChange(() => setSafeTop(read())), []);
 
   return safeTop;
-}
-
-/** @deprecated Use useSafeTop() hook instead */
-export function getTelegramSafeTop(): number {
-  return read(window.Telegram?.WebApp, true);
 }

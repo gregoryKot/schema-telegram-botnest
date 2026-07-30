@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getHost } from '../../../shared/src/host';
 import { api, UserPractice } from '../api';
 import { BottomSheet } from './BottomSheet';
 import { SectionLabel } from './SectionLabel';
@@ -194,17 +195,7 @@ export function PlanSheet({
     ].join('\r\n');
     const dataUrl =
       'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-    // Telegram WebApp: use openLink to let the OS handle .ics
-    if (window.Telegram?.WebApp?.openLink) {
-      window.Telegram.WebApp.openLink(dataUrl);
-    } else {
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = 'practice.ics';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
+    getHost().saveFile(dataUrl, 'practice.ics');
   }
 
   return (

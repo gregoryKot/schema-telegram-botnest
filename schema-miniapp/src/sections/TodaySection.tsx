@@ -10,6 +10,7 @@
 //  – All colors via CSS tokens (light/dark theme ready)
 
 import { useEffect, useState } from 'react';
+import { getHost } from '../../../shared/src/host';
 import { UserProfile } from '../types';
 import { api, UserTask } from '../api';
 import { useSafeTop } from '../utils/safezone';
@@ -99,8 +100,7 @@ export function TodaySection({
     });
   }
 
-  const firstName =
-    window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name ?? '';
+  const firstName = getHost().user()?.firstName ?? '';
 
   useEffect(() => {
     let ignore = false;
