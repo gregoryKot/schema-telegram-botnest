@@ -80,13 +80,18 @@ describe('ThreadsTokenService', () => {
   });
 
   it('свежий токен не трогаем — лишний обмен только злит площадку', async () => {
-    const { prisma, upsert } = makePrisma({
+    const { prisma, upsert, findUnique } = makePrisma({
       value: 'enc(fresh-token)',
       updatedAt: daysAgo(3),
     });
     const fetchMock = jest.fn();
     global.fetch = fetchMock;
     await new ThreadsTokenService(prisma).refreshIfStale();
+    // Возраст токена берётся из той самой строки, а не гадается по env.
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { key: KEY },
+      select: { value: true, updatedAt: true },
+    });
     expect(fetchMock).not.toHaveBeenCalled();
     expect(upsert).not.toHaveBeenCalled();
   });
@@ -143,7 +148,12 @@ describe('ThreadsTokenService', () => {
     const { prisma, upsert } = makePrisma(null);
     const fetchMock = jest.fn();
     global.fetch = fetchMock;
-    await new ThreadsTokenService(prisma).refreshIfStale();
+    const service = new ThreadsTokenService(prisma);
+
+    await service.refreshIfStale();
+
+    // Нечего обновлять и нечем отправлять — площадка просто выключена.
+    await expect(service.current()).resolves.toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
     expect(upsert).not.toHaveBeenCalled();
   });

@@ -141,6 +141,7 @@ describe('ChannelPublisherService', () => {
     it('пост записан один раз — упавшая площадка не отменяет вышедший', async () => {
       const { recordPost } = await partial();
       expect(recordPost).toHaveBeenCalledTimes(1);
+      expect(recordPost).toHaveBeenCalledWith('фраза из пула', 'pool');
     });
   });
 
