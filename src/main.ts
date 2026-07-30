@@ -68,12 +68,22 @@ async function bootstrap() {
           ],
           // oauth.telegram.org needed for Telegram Login Widget iframe (button rendering)
           frameSrc: ['https://oauth.telegram.org'],
+          // Кто имеет право встроить нас в свой iframe. MAX открывает
+          // мини-приложение именно так, поэтому одного 'self' мало: без его
+          // домена вебвью показывает «refused to connect». Telegram сюда не
+          // нужен — там нативный вебвью, а не встраивание.
+          frameAncestors: ["'self'", 'https://max.ru', 'https://*.max.ru'],
           objectSrc: ["'none'"],
           // Upgrade any accidental HTTP sub-resource requests to HTTPS
           upgradeInsecureRequests: [],
         },
       },
       crossOriginEmbedderPolicy: false,
+      // X-Frame-Options умеет только «никому» или «своему домену» — вписать
+      // туда мессенджер нельзя, а SAMEORIGIN перебивал бы список выше в тех
+      // браузерах, где живут оба заголовка. Защита от клик-джекинга целиком
+      // переезжает в CSP frame-ancestors, который умеет перечислять источники.
+      frameguard: false,
     }),
   );
   // Order matters: more-specific filter LAST (Nest applies them in reverse).

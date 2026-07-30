@@ -25,6 +25,20 @@ describe('трипваер: hardening-middleware в main.ts', () => {
     expect(MAIN).toMatch(/scriptSrc:/);
   });
 
+  // Клик-джекинг: X-Frame-Options выключен осознанно (он не умеет несколько
+  // источников, а мини-приложение живёт в iframe мессенджера). Значит защита
+  // держится на frame-ancestors — и он обязан быть списком, а не «кому угодно».
+  it('CSP frame-ancestors: явный список источников, без «всем можно»', () => {
+    const m = MAIN.match(/frameAncestors:\s*\[([^\]]*)\]/);
+    expect(m).not.toBeNull();
+    const value = m![1].replace(/\s/g, '');
+    expect(value).toContain("'self'");
+    expect(value).not.toContain("'*'");
+    expect(value).not.toContain('"*"');
+    // Голая схема https: пустила бы любой сайт — источники только поимённо.
+    expect(value).not.toMatch(/['"]https:['"]/);
+  });
+
   it("CSP scriptSrc не содержит 'unsafe-eval'", () => {
     const m = MAIN.match(/scriptSrc:\s*\[([^\]]*)\]/);
     expect(m).not.toBeNull();
