@@ -6,8 +6,11 @@ import { MaxChannelTarget } from './max.target';
 import { ThreadsChannelTarget } from './threads.target';
 import { PinterestChannelTarget } from './pinterest.target';
 import type { ThreadsTokenService } from './threads-token.service';
-import { buildCaBundle, resetMaxDispatcher } from './max-ca';
+import { buildCaBundle, maxCa, resetMaxDispatcher } from './max-ca';
+import { resetThreadsTransport } from './threads-transport';
 import { rootCertificates } from 'node:tls';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 // Запрос со своим диспетчером уходит клиентом из пакета undici (иначе Node
 // роняет его на несовпадении версий — инцидент 2026-07-30), поэтому в тестах
@@ -50,6 +53,7 @@ describe('адаптеры площадок', () => {
   beforeEach(() => {
     undiciFetch.mockReset();
     resetMaxDispatcher();
+    resetThreadsTransport();
     for (const key of ENV_KEYS) {
       saved[key] = process.env[key];
       delete process.env[key];
@@ -112,9 +116,17 @@ describe('адаптеры площадок', () => {
 
     it('шлёт текст в чат: id в query, текст в теле, токен в заголовке', async () => {
       process.env.HEALTHY_ADULT_MAX_TOKEN = 'max-token';
-      const fetchMock = mockFetch('{"message":{"mid":"1"}}');
+      // Запрос уходит клиентом undici: у MAX свой корень доверия, а значит и
+      // свой диспетчер (глобальный fetch его протокол не понимает).
+      const globalFetch = mockFetch();
+      undiciFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => '{"message":{"mid":"1"}}',
+      });
       await new MaxChannelTarget().send(post('текст ЗВ'), '-100500');
-      const [url, init] = fetchMock.mock.calls[0];
+      expect(globalFetch).not.toHaveBeenCalled();
+      const [url, init] = undiciFetch.mock.calls[0];
       expect(url).toBe('https://platform-api2.max.ru/messages?chat_id=-100500');
       expect(init.body).toBe('{"text":"текст ЗВ"}');
       expect(init.headers.authorization).toBe('max-token');
@@ -130,7 +142,34 @@ describe('адаптеры площадок', () => {
       expect(bundle).toContain(rootCertificates[0]);
     });
 
-    it('сбой сертификата без env — просят задать корень, а не искать токен', () => {
+    it('корень берётся из репозитория — без единой переменной окружения', () => {
+      // Через env корень ехал двое суток и не доехал: панель хостинга
+      // по-своему обходится с многострочным значением (инцидент 2026-07-31).
+      const ca = maxCa();
+      expect(ca.source).toBe('файл');
+      expect(ca.subject).toContain('Russian Trusted Root CA');
+      expect(ca.pem).toContain('-----BEGIN CERTIFICATE-----');
+    });
+
+    it('env перекрывает файл — корень можно сменить без деплоя', () => {
+      process.env.HEALTHY_ADULT_MAX_CA = readFileSync(
+        join(process.cwd(), 'assets/ca/russian-trusted-root.pem'),
+        'utf8',
+      ).replace(/\n/g, '\\n');
+      const ca = maxCa();
+      expect(ca.source).toBe('env');
+      expect(ca.subject).toContain('Russian Trusted Root CA');
+    });
+
+    it('битое значение в env не выдаётся за корень', () => {
+      process.env.HEALTHY_ADULT_MAX_CA =
+        '-----BEGIN CERTIFICATE-----\nне сертификат\n-----END CERTIFICATE-----';
+      const ca = maxCa();
+      expect(ca.pem).toBeNull();
+      expect(ca.subject).toContain('не разбирается');
+    });
+
+    it('сбой сертификата называет корень, которым проверяли', () => {
       const err = Object.assign(new TypeError('fetch failed'), {
         cause: Object.assign(
           new Error('unable to get local issuer certificate'),
@@ -140,19 +179,9 @@ describe('адаптеры площадок', () => {
         ),
       });
       const explained = new MaxChannelTarget().explain(err);
-      expect(explained).toContain('Не задан HEALTHY_ADULT_MAX_CA');
+      expect(explained).toContain('Корень доверия: файл');
+      expect(explained).toContain('Russian Trusted Root CA');
       expect(explained).not.toContain('токен');
-    });
-
-    it('сбой сертификата при заданном env — значит корень не тот', () => {
-      process.env.HEALTHY_ADULT_MAX_CA =
-        '-----BEGIN CERTIFICATE-----\\nRU\\n-----END CERTIFICATE-----';
-      const err = Object.assign(new Error('self signed certificate in chain'), {
-        code: 'SELF_SIGNED_CERT_IN_CHAIN',
-      });
-      const explained = new MaxChannelTarget().explain(err);
-      expect(explained).toContain('всю цепочку');
-      expect(explained).not.toContain('Не задан');
     });
 
     it('без токена не ходит в сеть', async () => {
@@ -169,12 +198,24 @@ describe('адаптеры площадок', () => {
     const tokens = (token: string | null) =>
       ({ current: async () => token }) as unknown as ThreadsTokenService;
 
+    // У Threads свой транспорт (30 секунд на соединение вместо штатных 10 —
+    // инцидент 2026-07-31), поэтому запрос уходит клиентом undici.
+    const mockThreads = (...bodies: string[]) => {
+      for (const text of bodies)
+        undiciFetch.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: async () => text,
+        });
+      return undiciFetch;
+    };
+
     it('без env пользователя площадка выключена', () => {
       expect(new ThreadsChannelTarget(tokens('t')).destination()).toBeNull();
     });
 
     it('публикует в два шага: контейнер, затем сам пост', async () => {
-      const fetchMock = mockFetch('{"id":"container-1"}', '{"id":"post-1"}');
+      const fetchMock = mockThreads('{"id":"container-1"}', '{"id":"post-1"}');
       await new ThreadsChannelTarget(tokens('th-token')).send(
         post('текст ЗВ'),
         'me',
@@ -189,7 +230,7 @@ describe('адаптеры площадок', () => {
     });
 
     it('контейнер без id не публикуется вторым шагом', async () => {
-      const fetchMock = mockFetch('{"error":"nope"}');
+      const fetchMock = mockThreads('{"error":"nope"}');
       await expect(
         new ThreadsChannelTarget(tokens('th-token')).send(post(), 'me'),
       ).rejects.toThrow('id контейнера');
@@ -208,7 +249,7 @@ describe('адаптеры площадок', () => {
       const explained = new ThreadsChannelTarget({
         current: async () => 't',
       } as unknown as ThreadsTokenService).explain(err);
-      expect(explained).toContain('недоступен с сервера');
+      expect(explained).toContain('недоступны');
       expect(explained).not.toContain('Проверь токен');
     });
 

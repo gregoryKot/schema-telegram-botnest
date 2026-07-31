@@ -34,6 +34,8 @@ import { fetch as undiciFetch } from 'undici';
  */
 export interface RequestTransport {
   dispatcher?: unknown;
+  /** Своё окно ожидания: у Threads связь дольше устанавливается. */
+  timeoutMs?: number;
 }
 
 /**
@@ -71,7 +73,7 @@ async function fetchWithRetry(
         : fetch;
       return await send(url, {
         ...init,
-        signal: AbortSignal.timeout(TIMEOUT_MS),
+        signal: AbortSignal.timeout(init.timeoutMs ?? TIMEOUT_MS),
       });
     } catch (err) {
       last = err;
@@ -123,8 +125,11 @@ export function postForm(
   });
 }
 
-export function postEmpty(url: string): Promise<Record<string, unknown>> {
-  return request(url, { method: 'POST' });
+export function postEmpty(
+  url: string,
+  transport: RequestTransport = {},
+): Promise<Record<string, unknown>> {
+  return request(url, { ...transport, method: 'POST' });
 }
 
 export function getJson(url: string): Promise<Record<string, unknown>> {
@@ -143,7 +148,7 @@ export function describeHttpError(err: unknown): string {
     message?: string;
     cause?: { code?: string; message?: string };
   } | null;
-  if (e?.name === 'TimeoutError') return 'площадка не ответила за 15 секунд';
+  if (e?.name === 'TimeoutError') return 'площадка не ответила вовремя';
   // fetch прячет настоящую причину в cause: сам он говорит только «fetch
   // failed», и по такому сообщению не отличить недоступный домен от битого
   // токена. Инцидент 2026-07-30: Threads не отвечал с прода, а отчёт советовал

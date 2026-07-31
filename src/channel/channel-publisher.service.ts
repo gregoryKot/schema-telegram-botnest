@@ -9,7 +9,9 @@ import {
   type Delivery,
   type DeliveryFailure,
   type PublishResult,
+  type SilentTarget,
 } from './channel-target';
+import { DeliveryLogService } from './delivery-log.service';
 import { allDisabled, emptyPool, fanoutResult } from './publish-report';
 import { makeChannelPost } from './pin-image';
 
@@ -35,6 +37,7 @@ export class ChannelPublisherService {
   constructor(
     @Inject(CHANNEL_TARGETS) private readonly targets: ChannelTarget[],
     private readonly phrases: HealthyAdultService,
+    private readonly deliveries: DeliveryLogService,
   ) {}
 
   /** Площадки, у которых задан env. Ненастроенные молчат, а не падают. */
@@ -45,8 +48,19 @@ export class ChannelPublisherService {
     });
   }
 
-  /** Опубликовать одну фразу сейчас: /zv, кнопка в админке, тик расписания. */
-  async publish(): Promise<PublishResult> {
+  /** Площадки без env — их называем в отчёте, иначе молчание сойдёт за успех. */
+  private silent(): SilentTarget[] {
+    return this.targets
+      .filter((t) => !t.destination())
+      .map((t) => ({ title: t.title, envKey: t.envKey }));
+  }
+
+  /**
+   * Опубликовать одну фразу сейчас: /zv, кнопка в админке, тик расписания.
+   * `source` попадает в журнал отправок — по нему потом видно, чья это была
+   * публикация: утренняя, вечерняя или ручная.
+   */
+  async publish(source = 'вручную'): Promise<PublishResult> {
     const enabled = this.enabled();
     if (enabled.length === 0) return allDisabled(this.targets);
 
@@ -66,8 +80,11 @@ export class ChannelPublisherService {
       }),
     );
 
+    // Журнал пишем всегда — и когда дошло, и когда нет: он и есть ответ на
+    // «почему утром пришло не везде».
+    await this.deliveries.record(source, delivered, failed);
     if (delivered.length > 0) await this.afterPost(text);
-    return fanoutResult(text, delivered, failed);
+    return fanoutResult(text, delivered, failed, this.silent());
   }
 
   private async deliver(

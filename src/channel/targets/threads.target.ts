@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { ChannelPost, ChannelTarget } from '../channel-target';
 import { describeHttpError, postEmpty } from '../channel-http';
 import { ThreadsTokenService } from './threads-token.service';
+import { threadsTransport } from './threads-transport';
 
 /** id пользователя Threads (me тоже подходит). Без него площадка выключена. */
 const USER_ENV = 'HEALTHY_ADULT_THREADS_USER';
@@ -32,6 +33,7 @@ export class ThreadsChannelTarget implements ChannelTarget {
     const created = await postEmpty(
       `${API}/${destination}/threads?media_type=TEXT` +
         `&text=${encodeURIComponent(post.text)}&access_token=${token}`,
+      threadsTransport(),
     );
     const creationId = created.id;
     if (typeof creationId !== 'string' || !creationId)
@@ -39,6 +41,7 @@ export class ThreadsChannelTarget implements ChannelTarget {
     await postEmpty(
       `${API}/${destination}/threads_publish` +
         `?creation_id=${creationId}&access_token=${token}`,
+      threadsTransport(),
     );
   }
 
@@ -48,11 +51,11 @@ export class ThreadsChannelTarget implements ChannelTarget {
     // Инцидент 2026-07-30: подсказка про токен увела диагностику не туда.
     const reason = describeHttpError(err);
     const network =
-      /ENOTFOUND|ETIMEDOUT|ECONNREFUSED|ECONNRESET|EAI_AGAIN|fetch failed|не ответила/i.test(
+      /ENOTFOUND|ETIMEDOUT|ECONNREFUSED|ECONNRESET|EAI_AGAIN|CONNECT_TIMEOUT|fetch failed|не ответила/i.test(
         reason,
       );
     return network
-      ? `${reason}\nСоединение не установилось: домен Threads недоступен с сервера. Токен тут ни при чём.`
+      ? `${reason}\nСоединение не установилось за 30 секунд: серверы Threads с этого хостинга недоступны. Токен тут ни при чём — помочь может только исходящий прокси.`
       : `${reason}\nПроверь токен Threads (живёт 60 дней) и id пользователя.`;
   }
 }

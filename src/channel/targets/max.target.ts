@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { ChannelPost, ChannelTarget } from '../channel-target';
 import { describeHttpError, postJson } from '../channel-http';
-import { maxCaConfigured, maxDispatcher } from './max-ca';
+import { maxCa, maxDispatcher } from './max-ca';
 
 /** id чата/канала MAX. Без него площадка выключена. */
 const CHAT_ENV = 'HEALTHY_ADULT_MAX_CHAT';
@@ -46,8 +46,9 @@ export class MaxChannelTarget implements ChannelTarget {
     const reason = describeHttpError(err);
     if (!/CERT|certificate/i.test(reason))
       return `${reason}\nПроверь токен бота MAX и что бот админ канала.`;
-    return maxCaConfigured()
-      ? `${reason}\nСертификат MAX не проверился, хотя HEALTHY_ADULT_MAX_CA задан: похоже, там не тот корень или не хватает промежуточного. Положи в переменную всю цепочку — корневой и промежуточный подряд.`
-      : `${reason}\nНе задан HEALTHY_ADULT_MAX_CA: сертификат MAX выдан российским УЦ, которого нет в штатных доверенных.`;
+    // При сбое TLS первым делом надо знать, каким корнем мы вообще проверяли:
+    // до 2026-07-31 это было невидимо, и чинили не то.
+    const ca = maxCa();
+    return `${reason}\nКорень доверия: ${ca.source} — ${ca.subject}.\nНужен «Russian Trusted Root CA»: им подписана «Russian Trusted Sub CA», а ею — сертификат MAX.`;
   }
 }

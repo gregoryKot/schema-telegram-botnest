@@ -1,10 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
-import { dueSlot, mskParts } from '../bot/healthy-adult.schedule';
+import {
+  dueSlot,
+  mskParts,
+  type HealthyAdultSlot,
+} from '../bot/healthy-adult.schedule';
+import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { SlotAttempts } from '../bot/healthy-adult.attempts';
 import { ChannelPublisherService } from './channel-publisher.service';
-import { failedSummary } from './publish-report';
+import { failedSummary, silentSummary } from './publish-report';
 
 /** Часовой пояс расписания канала (единый для broadcast, не per-user). */
 const POST_TZ = 'Europe/Moscow';
@@ -14,6 +19,11 @@ const POST_TZ = 'Europe/Moscow';
 // рестарт — setTimeout-задержка потерялась бы при деплое.
 const MORNING_CRON = '*/5 9,10 * * *';
 const EVENING_CRON = '*/5 18,19 * * *';
+/** Имя слота для владельца и для журнала отправок. */
+const SLOT_NAME: Record<HealthyAdultSlot, string> = {
+  morning: 'утро',
+  evening: 'вечер',
+};
 
 /**
  * Когда каналу «Здоровый Взрослый» пора говорить: дважды в день, утром
@@ -56,27 +66,46 @@ export class ChannelScheduleService {
       const key = `${mskParts(now).dateKey}:${slot}`;
       if (!this.attempts.allow(key)) return;
 
-      const res = await this.publisher.publish();
+      const res = await this.publisher.publish(SLOT_NAME[slot]);
       if (res.posted) {
         this.attempts.reset(key);
         // Частичный успех: слот закрыт (повтор дал бы дубль там, где пост уже
         // вышел), но про упавшую площадку владелец должен узнать — один раз.
-        if (res.failed.length > 0)
-          this.logger.error(
-            `healthy-adult ${slot}: дошло не везде\n${failedSummary(res.failed)}`,
+        if (res.failed.length > 0 || res.silent.length > 0)
+          await this.alert(
+            `Канал ЗВ (${SLOT_NAME[slot]}): дошло не везде\n` +
+              `${failedSummary(res.failed)}${silentSummary(res.silent)}`,
           );
         return;
       }
 
       const { attempt, exhausted } = this.attempts.fail(key);
-      const line = `healthy-adult ${slot}: попытка ${attempt} не удалась — ${res.message}`;
       // Владельца будим один раз — когда стало ясно, что само не починится.
-      if (exhausted) this.logger.error(line);
-      else this.logger.warn(line);
+      if (exhausted)
+        await this.alert(
+          `Канал ЗВ (${SLOT_NAME[slot]}): не вышло ничего\n${res.message}`,
+        );
+      else
+        this.logger.warn(
+          `healthy-adult ${slot}: попытка ${attempt} не удалась — ${res.message}`,
+        );
     } catch (err) {
       this.logger.error(
         `healthy-adult tick failed: ${(err as Error)?.message}`,
       );
     }
+  }
+
+  /**
+   * Сообщение владельцу — напрямую, а не через `logger.error` → AlertLogger.
+   * Инцидент 2026-07-31: пост вышел не на все площадки, а DM не пришёл. На
+   * пути этого сообщения стояло лишнее звено с собственным троттлингом по
+   * нормализованному тексту, обрезкой до 300 символов и молчаливым
+   * проглатыванием ошибок. Алерт о канале слишком редкий, чтобы его троттлить.
+   */
+  private async alert(text: string): Promise<void> {
+    // warn, а не error: DM уходит явной строкой ниже, дублировать не нужно.
+    this.logger.warn(text);
+    await notifyAdminWithFallback(text, 'Канал «Здоровый Взрослый»');
   }
 }

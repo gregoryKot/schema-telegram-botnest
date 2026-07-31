@@ -1,10 +1,13 @@
 // Доверие сертификату MAX. Инцидент при подключении площадки 2026-07-30:
 // после переезда на platform-api2 сертификат площадки выдан российским УЦ, и
 // запрос падал на проверке ещё до отправки («unable to get local issuer
-// certificate»). Здесь проверяется, что доверие включается только явным
-// сертификатом из env и не расширяется на остальное приложение.
+// certificate»). Инцидент 2026-07-31: корень, который ехал через env, до
+// приложения так и не доехал — теперь он лежит файлом в репозитории, а env
+// остался перекрытием. Здесь проверяется, что доверие включается корнем и не
+// расширяется на остальное приложение.
 import {
   looksLikePem,
+  maxCa,
   maxDispatcher,
   normalizePem,
   resetMaxDispatcher,
@@ -50,27 +53,26 @@ describe('max-ca', () => {
   });
 
   describe('maxDispatcher', () => {
-    it('без env диспетчера нет — fetch идёт обычным путём', () => {
+    it('без env корень берётся из репозитория — доверие работает само', () => {
       delete process.env.HEALTHY_ADULT_MAX_CA;
-      expect(maxDispatcher()).toBeUndefined();
+      expect(maxDispatcher()).toBeDefined();
     });
 
-    it('мусор вместо сертификата не включает доверие', () => {
+    it('мусор в env не отменяет рабочий корень из файла', () => {
       process.env.HEALTHY_ADULT_MAX_CA = 'сертификат обязательно добавлю потом';
-      expect(maxDispatcher()).toBeUndefined();
+      expect(maxDispatcher()).toBeDefined();
+      expect(maxCa().source).toBe('файл');
     });
 
-    it('с сертификатом отдаёт диспетчер и переиспользует его', () => {
-      process.env.HEALTHY_ADULT_MAX_CA = PEM;
+    it('один агент на процесс — новое соединение на каждый пост лишнее', () => {
       const first = maxDispatcher();
-      expect(first).toBeDefined();
-      // Один агент на процесс: новое соединение на каждый пост — лишняя трата.
       expect(maxDispatcher()).toBe(first);
     });
 
-    it('принимает PEM с экранированными переводами строк', () => {
+    it('битый PEM в env доверия не включает — источника корня нет', () => {
       process.env.HEALTHY_ADULT_MAX_CA = PEM.replace(/\n/g, '\\n');
-      expect(maxDispatcher()).toBeDefined();
+      expect(maxCa().pem).toBeNull();
+      expect(maxDispatcher()).toBeUndefined();
     });
   });
 });
