@@ -5,7 +5,7 @@
 // человеком — включая пустую базу, где не должно быть ни «0», ни «undefined».
 import { Logger } from '@nestjs/common';
 import { DeliveryLogService } from './delivery-log.service';
-import { formatDeliveryLog } from './delivery-log.format';
+import { formatBuildLine, formatDeliveryLog } from './delivery-log.format';
 import type { PrismaService } from '../prisma/prisma.service';
 
 function makePrisma() {
@@ -102,6 +102,18 @@ describe('DeliveryLogService', () => {
     const { prisma, findMany } = makePrisma();
     await new DeliveryLogService(prisma).recent(5);
     expect(findMany).toHaveBeenCalledWith({ orderBy: { id: 'desc' }, take: 5 });
+  });
+});
+
+describe('formatBuildLine', () => {
+  it('называет дату сборки по-московски', () => {
+    expect(formatBuildLine(at)).toBe('Сервер собран 31.07 10:07.');
+  });
+
+  it('без метки говорит об этом словами, а не молчит', () => {
+    // Молчание тут читалось бы как «всё свежее» — ровно та ошибка, из-за
+    // которой полдня искали, доехал ли фикс.
+    expect(formatBuildLine(null)).toContain('неизвестно когда');
   });
 });
 

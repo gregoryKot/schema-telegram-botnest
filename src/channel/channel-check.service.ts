@@ -8,7 +8,8 @@ import {
 import { makeChannelPost } from './pin-image';
 import { checkResult, unknownPlatform } from './publish-report';
 import { DeliveryLogService } from './delivery-log.service';
-import { formatDeliveryLog } from './delivery-log.format';
+import { formatBuildLine, formatDeliveryLog } from './delivery-log.format';
+import { builtAt } from '../utils/build-info';
 
 /**
  * Проверка одной площадки — `/zv max` вместо `/zv`.
@@ -38,9 +39,13 @@ export class ChannelCheckService {
     return this.targets.map((t) => t.platform);
   }
 
-  /** `/zv log` — последние отправки по всем площадкам, из журнала в БД. */
+  /**
+   * `/zv log` — последние отправки по всем площадкам, из журнала в БД. Сверху
+   * дата сборки: «фикс уже на сервере?» — это первый вопрос при разборе сбоя.
+   */
   async log(): Promise<string> {
-    return formatDeliveryLog(await this.deliveries.recent());
+    const rows = await this.deliveries.recent();
+    return `${formatBuildLine(builtAt())}\n\n${formatDeliveryLog(rows)}`;
   }
 
   async checkOne(platform: string): Promise<PublishResult> {
