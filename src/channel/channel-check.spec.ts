@@ -160,6 +160,8 @@ describe('ChannelCheckService', () => {
     ]);
 
     const text = await new ChannelCheckService([max.target], svc, log).log();
+    // Первая строка — про сборку сервера: с неё начинается разбор любого сбоя.
+    expect(text.split('\n')[0]).toContain('Сервер собран');
     expect(text).toContain('31.07 10:07');
     expect(text).toContain('не дошло — сертификат');
   });

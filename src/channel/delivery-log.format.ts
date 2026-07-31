@@ -28,6 +28,18 @@ const clip = (reason: string | null): string => {
   return first.length > 90 ? `${first.slice(0, 90)}…` : first;
 };
 
+/**
+ * Первая строка отчёта — когда собран работающий сейчас образ. Без неё вопрос
+ * «доехал ли фикс до сервера» решался сравнением текстов ошибок (31.07.2026:
+ * хостинг не смог подтянуть коммит, пересборка собрала старое, и полдня ушло
+ * на выяснение этого).
+ */
+export function formatBuildLine(at: Date | null): string {
+  return at
+    ? `Сервер собран ${when(at)}.`
+    : 'Сервер собран неизвестно когда — в образе нет метки сборки.';
+}
+
 export function formatDeliveryLog(rows: DeliveryRow[]): string {
   if (rows.length === 0)
     return 'Журнал пуст: с момента запуска канал ещё ничего не отправлял.';
