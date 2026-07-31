@@ -7,7 +7,7 @@ import { ThreadsChannelTarget } from './threads.target';
 import { PinterestChannelTarget } from './pinterest.target';
 import type { ThreadsTokenService } from './threads-token.service';
 import { buildCaBundle, maxCa, resetMaxDispatcher } from './max-ca';
-import { resetThreadsTransport } from './threads-transport';
+import { resetThreadsApi } from './threads-api';
 import { rootCertificates } from 'node:tls';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -42,6 +42,8 @@ const ENV_KEYS = [
   'HEALTHY_ADULT_MAX_TOKEN',
   'HEALTHY_ADULT_MAX_CA',
   'HEALTHY_ADULT_THREADS_USER',
+  'HEALTHY_ADULT_THREADS_RELAY',
+  'HEALTHY_ADULT_THREADS_RELAY_SECRET',
   'HEALTHY_ADULT_PINTEREST_BOARD',
   'HEALTHY_ADULT_PINTEREST_TOKEN',
 ];
@@ -53,7 +55,7 @@ describe('адаптеры площадок', () => {
   beforeEach(() => {
     undiciFetch.mockReset();
     resetMaxDispatcher();
-    resetThreadsTransport();
+    resetThreadsApi();
     for (const key of ENV_KEYS) {
       saved[key] = process.env[key];
       delete process.env[key];
@@ -198,8 +200,8 @@ describe('адаптеры площадок', () => {
     const tokens = (token: string | null) =>
       ({ current: async () => token }) as unknown as ThreadsTokenService;
 
-    // У Threads свой транспорт (30 секунд на соединение вместо штатных 10 —
-    // инцидент 2026-07-31), поэтому запрос уходит клиентом undici.
+    // Напрямую у Threads свой транспорт (30 секунд на соединение вместо
+    // штатных 10 — инцидент 2026-07-31), поэтому запрос уходит клиентом undici.
     const mockThreads = (...bodies: string[]) => {
       for (const text of bodies)
         undiciFetch.mockResolvedValueOnce({
@@ -250,7 +252,22 @@ describe('адаптеры площадок', () => {
         current: async () => 't',
       } as unknown as ThreadsTokenService).explain(err);
       expect(explained).toContain('недоступны');
+      expect(explained).toContain('HEALTHY_ADULT_THREADS_RELAY');
       expect(explained).not.toContain('Проверь токен');
+    });
+
+    it('через ретранслятор сбой не сваливают на Threads', async () => {
+      // Иначе владелец пошёл бы чинить токен, когда лежит воркер.
+      process.env.HEALTHY_ADULT_THREADS_RELAY = 'https://zv.workers.dev';
+      process.env.HEALTHY_ADULT_THREADS_RELAY_SECRET = 'ключ';
+      const err = Object.assign(new TypeError('fetch failed'), {
+        cause: Object.assign(new Error('connect timeout'), {
+          code: 'UND_ERR_CONNECT_TIMEOUT',
+        }),
+      });
+      const explained = new ThreadsChannelTarget(tokens('t')).explain(err);
+      expect(explained).toContain('ретранслятор');
+      expect(explained).not.toContain('серверы Threads с этого хостинга');
     });
 
     it('без токена в сеть не ходим', async () => {
