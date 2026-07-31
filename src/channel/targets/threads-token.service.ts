@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { encrypt, decrypt } from '../../utils/crypto';
 import { getJson } from '../channel-http';
+import { threadsApi } from './threads-api';
 
 /**
  * Долгоживущий токен Threads живёт 60 дней и обновляется только запросом с
@@ -16,8 +17,7 @@ import { getJson } from '../channel-http';
  */
 const KEY = 'channel:threads_token';
 const TOKEN_ENV = 'HEALTHY_ADULT_THREADS_TOKEN';
-const REFRESH_URL =
-  'https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token';
+const REFRESH_PATH = '/refresh_access_token?grant_type=th_refresh_token';
 /** Обновляем сильно заранее: 60 дней — потолок, после него токен не воскресить. */
 const REFRESH_AFTER_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -70,7 +70,10 @@ export class ThreadsTokenService {
       if (now.getTime() - stored.at.getTime() < REFRESH_AFTER_DAYS * DAY_MS)
         return;
 
-      const res = await getJson(`${REFRESH_URL}&access_token=${token}`);
+      // Тем же путём, что и публикация: с российского хостинга Meta недоступна
+      // напрямую, а токен, который не обновился, через 60 дней умрёт молча.
+      const refresh = threadsApi(`${REFRESH_PATH}&access_token=${token}`);
+      const res = await getJson(refresh.url, refresh.transport);
       const fresh =
         typeof res.access_token === 'string' ? res.access_token : '';
       if (!fresh) throw new Error('в ответе нет access_token');

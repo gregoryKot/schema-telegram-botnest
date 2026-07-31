@@ -36,6 +36,8 @@ export interface RequestTransport {
   dispatcher?: unknown;
   /** Своё окно ожидания: у Threads связь дольше устанавливается. */
   timeoutMs?: number;
+  /** Заголовки запроса — например ключ ретранслятора Threads. */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -132,8 +134,11 @@ export function postEmpty(
   return request(url, { ...transport, method: 'POST' });
 }
 
-export function getJson(url: string): Promise<Record<string, unknown>> {
-  return request(url, { method: 'GET' });
+export function getJson(
+  url: string,
+  transport: RequestTransport = {},
+): Promise<Record<string, unknown>> {
+  return request(url, { ...transport, method: 'GET' });
 }
 
 /**

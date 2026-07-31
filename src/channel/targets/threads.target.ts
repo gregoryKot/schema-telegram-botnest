@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import type { ChannelPost, ChannelTarget } from '../channel-target';
 import { describeHttpError, postEmpty } from '../channel-http';
 import { ThreadsTokenService } from './threads-token.service';
-import { threadsTransport } from './threads-transport';
+import { threadsApi, threadsViaRelay } from './threads-api';
 
 /** id пользователя Threads (me тоже подходит). Без него площадка выключена. */
 const USER_ENV = 'HEALTHY_ADULT_THREADS_USER';
-const API = 'https://graph.threads.net/v1.0';
+const API = '/v1.0';
 
 /**
  * Threads: публикация в два шага — сначала контейнер с текстом, потом сам
@@ -30,19 +30,19 @@ export class ThreadsChannelTarget implements ChannelTarget {
   async send(post: ChannelPost, destination: string): Promise<void> {
     const token = await this.tokens.current();
     if (!token) throw new Error('нет токена Threads');
-    const created = await postEmpty(
+    const container = threadsApi(
       `${API}/${destination}/threads?media_type=TEXT` +
         `&text=${encodeURIComponent(post.text)}&access_token=${token}`,
-      threadsTransport(),
     );
+    const created = await postEmpty(container.url, container.transport);
     const creationId = created.id;
     if (typeof creationId !== 'string' || !creationId)
       throw new Error('Threads не вернул id контейнера');
-    await postEmpty(
+    const publish = threadsApi(
       `${API}/${destination}/threads_publish` +
         `?creation_id=${creationId}&access_token=${token}`,
-      threadsTransport(),
     );
+    await postEmpty(publish.url, publish.transport);
   }
 
   explain(err: unknown): string {
@@ -55,7 +55,11 @@ export class ThreadsChannelTarget implements ChannelTarget {
         reason,
       );
     return network
-      ? `${reason}\nСоединение не установилось за 30 секунд: серверы Threads с этого хостинга недоступны. Токен тут ни при чём — помочь может только исходящий прокси.`
+      ? `${reason}\n${
+          threadsViaRelay()
+            ? 'Не отвечает ретранслятор (Cloudflare), а не Threads. Проверь, что воркер жив и HEALTHY_ADULT_THREADS_RELAY указывает на него.'
+            : 'Соединение не установилось: серверы Threads с этого хостинга недоступны. Токен тут ни при чём — нужен ретранслятор (HEALTHY_ADULT_THREADS_RELAY), см. deploy/threads-relay.'
+        }`
       : `${reason}\nПроверь токен Threads (живёт 60 дней) и id пользователя.`;
   }
 }
