@@ -263,6 +263,14 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     text: p('контент проекта, не данные юзера'),
     source: p('контент проекта, не данные юзера'),
   },
+  ChannelDelivery: {
+    source: p('слот публикации: утро/вечер/вручную/проверка'),
+    platform: p('ключ площадки: telegram/vk/max'),
+    destination: p('id канала проекта, не пользовательские данные'),
+    reason: p(
+      'текст ошибки площадки — техническая диагностика, не данные юзера',
+    ),
+  },
 };
 
 // ── Парсер schema.prisma: все String/Json-поля всех моделей ────────────────

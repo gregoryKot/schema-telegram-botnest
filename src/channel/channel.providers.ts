@@ -7,6 +7,7 @@ import { ThreadsTokenService } from './targets/threads-token.service';
 import { PinterestChannelTarget } from './targets/pinterest.target';
 import { CHANNEL_TARGETS, type ChannelTarget } from './channel-target';
 import { ChannelPublisherService } from './channel-publisher.service';
+import { DeliveryLogService } from './delivery-log.service';
 import { ChannelCheckService } from './channel-check.service';
 import { ChannelScheduleService } from './channel-schedule.service';
 
@@ -36,6 +37,7 @@ export const CHANNEL_PROVIDERS: Provider[] = [
     useFactory: (...targets: ChannelTarget[]) => targets,
     inject: TARGETS,
   },
+  DeliveryLogService,
   ChannelPublisherService,
   ChannelCheckService,
   ChannelScheduleService,

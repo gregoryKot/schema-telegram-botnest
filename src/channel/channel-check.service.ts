@@ -7,6 +7,8 @@ import {
 } from './channel-target';
 import { makeChannelPost } from './pin-image';
 import { checkResult, unknownPlatform } from './publish-report';
+import { DeliveryLogService } from './delivery-log.service';
+import { formatDeliveryLog } from './delivery-log.format';
 
 /**
  * Проверка одной площадки — `/zv max` вместо `/zv`.
@@ -28,11 +30,17 @@ export class ChannelCheckService {
   constructor(
     @Inject(CHANNEL_TARGETS) private readonly targets: ChannelTarget[],
     private readonly phrases: HealthyAdultService,
+    private readonly deliveries: DeliveryLogService,
   ) {}
 
   /** Ключи площадок для подсказки, если имя не угадали. */
   private names(): string[] {
     return this.targets.map((t) => t.platform);
+  }
+
+  /** `/zv log` — последние отправки по всем площадкам, из журнала в БД. */
+  async log(): Promise<string> {
+    return formatDeliveryLog(await this.deliveries.recent());
   }
 
   async checkOne(platform: string): Promise<PublishResult> {
@@ -52,6 +60,18 @@ export class ChannelCheckService {
     const text = recent ?? (await this.phrases.pickFromPool([]));
     if (!text) return checkResult(target, destination, '', 'нечего отправить');
 
+    const result = await this.trySend(target, destination, text);
+    // Проверка тоже попадает в журнал: «я же проверял, доходило» — это вопрос
+    // к данным, а не к памяти.
+    await this.deliveries.record('проверка', result.delivered, result.failed);
+    return result;
+  }
+
+  private async trySend(
+    target: ChannelTarget,
+    destination: string,
+    text: string,
+  ): Promise<PublishResult> {
     try {
       await target.send(makeChannelPost(text), destination);
       this.logger.log(`healthy_adult_check ${target.platform}=${destination}`);

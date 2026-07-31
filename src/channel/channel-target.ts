@@ -48,6 +48,16 @@ export interface DeliveryFailure extends Delivery {
   reason: string;
 }
 
+/**
+ * Площадка без env: её пропустили ещё до отправки. Молчание такой площадки
+ * неотличимо от успеха — владелец узнаёт «не пришло» уже по факту (инцидент
+ * 2026-07-31), поэтому она называется в отчёте вместе с недостающим env.
+ */
+export interface SilentTarget {
+  title: string;
+  envKey: string;
+}
+
 export interface PublishResult {
   /** Все включённые площадки доставили. Зелёная галка для /zv и админки. */
   ok: boolean;
@@ -61,4 +71,6 @@ export interface PublishResult {
   message: string;
   delivered: Delivery[];
   failed: DeliveryFailure[];
+  /** Площадки, которые пропустили из-за незаданного env. */
+  silent: SilentTarget[];
 }

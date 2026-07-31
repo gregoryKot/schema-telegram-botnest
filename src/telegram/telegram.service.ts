@@ -324,6 +324,13 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         // пост всем подписчикам сразу, а свежеподключённую площадку надо
         // проверять молча для остальных.
         const only = ctx.message.text.split(/\s+/)[1];
+        // `/zv log` — журнал последних отправок: кто, куда и с каким исходом.
+        // Раньше ответ на «почему утром пришло не всё» жил только в логах
+        // хостинга (инцидент 2026-07-31).
+        if (only === 'log') {
+          await ctx.reply(await this.channelCheck.log());
+          return;
+        }
         const result = only
           ? await this.channelCheck.checkOne(only)
           : await this.publisher.publish();

@@ -400,6 +400,11 @@ privacy-проверка `therapistShareCards`) и ~20 мёртвых файло
   4. Удалить старый ключ
 - `GOOGLE_CLIENT_SECRET` — клиентский секрет для OAuth. Ротация в Google Cloud Console + обновление env.
 - `ADMIN_ID` — Telegram ID единственного администратора. Все админские callback'и проверяют по нему.
+- `HEALTHY_ADULT_MAX_CA` — необязательное перекрытие корневого сертификата для
+  запросов в MAX. По умолчанию корень берётся из репозитория
+  (`assets/ca/russian-trusted-root.pem`, публичный сертификат госуслуг) и
+  доверяется **только** запросам к площадке — глобальный `NODE_EXTRA_CA_CERTS`
+  здесь запрещён: он расширил бы доверие на Telegram, Google и БД.
 - `MAX_BOT_TOKEN` — токен бота MAX, которым подписан initData мини-аппа в
   мессенджере MAX (`src/auth/max-init-data.ts`). С Telegram `BOT_TOKEN` никак
   не связан. Пока переменная не задана, вход из MAX отвечает 401 — остальные
