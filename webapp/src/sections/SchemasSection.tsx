@@ -11,6 +11,7 @@ import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { GlyphArrowLeft } from '../components/exercises/ExScreen';
 import { pressable } from '../utils/a11y';
+import { useAutosavedSelection } from '../../../shared/src/hooks/useAutosavedSelection';
 
 const ModeEx = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.ModeEx })));
 const ModeMapViewer = lazy(() => import('../components/ModeMapViewer').then(m => ({ default: m.ModeMapViewer })));
@@ -563,8 +564,7 @@ const MODE_DESC: Record<string, string> = {
 function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; onSave: (ids: string[]) => void; onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
-  const [ids, setIds] = useState<string[]>(selected);
-  const toggle = (id: string) => setIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const { ids, toggle, flush } = useAutosavedSelection(selected, onSave); // сохраняется само
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'var(--bg)', overflowY: 'auto' }}>
@@ -572,8 +572,8 @@ function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; on
         <button className="ex-btn ex-btn-ghost" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px' }}>
           <GlyphArrowLeft /> Назад
         </button>
-        <button onClick={() => { onSave(ids); goBack(); }} className="ex-btn ex-btn-primary" style={{ padding: '7px 20px' }}>
-          Сохранить{ids.length > 0 ? ` · ${ids.length}` : ''}
+        <button onClick={() => { flush(); goBack(); }} className="ex-btn ex-btn-primary" style={{ padding: '7px 20px' }}>
+          Готово{ids.length > 0 ? ` · ${ids.length}` : ''}
         </button>
       </div>
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '36px 24px 80px' }}>

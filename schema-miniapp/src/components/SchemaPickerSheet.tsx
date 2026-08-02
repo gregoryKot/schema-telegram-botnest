@@ -1,7 +1,8 @@
-import { useState } from 'react';
 import { BottomSheet } from './BottomSheet';
+import { PickerStickyBar } from './PickerStickyBar';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
+import { useAutosavedSelection } from '../../../shared/src/hooks/useAutosavedSelection';
 
 interface Props {
   selected: string[];
@@ -39,26 +40,20 @@ const SCHEMA_DESC: Record<string, string> = {
 
 export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
   const tr = useTr();
-  const [ids, setIds] = useState<string[]>(selected);
-
-  const toggle = (id: string) =>
-    setIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+  // Отметил схему — уже сохранено (см. useAutosavedSelection, инцидент 2026-08).
+  const { ids, toggle, flush } = useAutosavedSelection(selected, onSave);
 
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: 'var(--text)',
-            marginBottom: 4,
+        <PickerStickyBar
+          title="Мои схемы"
+          count={ids.length}
+          onDone={() => {
+            flush();
+            onClose();
           }}
-        >
-          Мои схемы
-        </div>
+        />
         <div
           style={{
             fontSize: 13,
@@ -68,8 +63,8 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
           }}
         >
           {tr(
-            'Выбери схемы, которые тебе близки. Можно без теста — если ты уже знаешь свои.',
-            'Выберите схемы, которые вам близки. Можно без теста — если вы уже знаете свои.',
+            'Выбери схемы, которые тебе близки. Можно без теста — если ты уже знаешь свои. Выбор сохраняется сразу.',
+            'Выберите схемы, которые вам близки. Можно без теста — если вы уже знаете свои. Выбор сохраняется сразу.',
           )}
         </div>
 
@@ -171,27 +166,6 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
             </div>
           </div>
         ))}
-
-        <button
-          onClick={() => {
-            onSave(ids);
-            onClose();
-          }}
-          style={{
-            marginTop: 8,
-            width: '100%',
-            padding: '14px',
-            borderRadius: 14,
-            border: 'none',
-            background: 'linear-gradient(135deg, #a78bfa, #60a5fa)',
-            color: 'var(--text)',
-            fontSize: 16,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          Сохранить{ids.length > 0 ? ` (${ids.length})` : ''}
-        </button>
       </div>
     </BottomSheet>
   );

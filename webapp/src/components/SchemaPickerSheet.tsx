@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
+import { useAutosavedSelection } from '../../../shared/src/hooks/useAutosavedSelection';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
@@ -36,10 +36,9 @@ const SCHEMA_DESC: Record<string, string> = {
 export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
-  const [ids, setIds] = useState<string[]>(selected);
-
-  const toggle = (id: string) =>
-    setIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  // Отметил схему — уже сохранено (инцидент 2026-08: кнопка внизу длинного
+  // списка, ушёл со страницы не долистав — выбор пропадал).
+  const { ids, toggle, flush } = useAutosavedSelection(selected, onSave);
 
   return (
     <ExScreen
@@ -87,9 +86,9 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
         <span className="spacer" />
         <button
           className="ex-btn ex-btn-primary"
-          onClick={() => { onSave(ids); goBack(); }}
+          onClick={() => { flush(); goBack(); }}
         >
-          {ids.length > 0 ? `Сохранить (${ids.length})` : 'Сохранить'}
+          {ids.length > 0 ? `Готово (${ids.length})` : 'Готово'}
         </button>
       </div>
     </ExScreen>
