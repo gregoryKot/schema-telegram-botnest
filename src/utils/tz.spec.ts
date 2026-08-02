@@ -3,7 +3,38 @@
 // (round-trip через Intl.DateTimeFormat), а не переформулированы вручную —
 // см. localMidnightUTC: конвертирует «полночь по местному времени» в UTC,
 // вычисляя оффсет через двойное форматирование.
-import { localDate, localMidnightUTC } from './tz';
+import { localDate, localMidnightUTC, zonedWallClockToUtc } from './tz';
+
+/**
+ * Перехватывает строковые аргументы `new Date(строка)`, вызванные внутри fn.
+ *
+ * Зачем: часть мутантов Stryker на tz.ts (удаление суффикса 'Z', подмена
+ * литерала 'T') в этой песочнице не меняют ИТОГОВОЕ значение даты — процесс
+ * всегда в TZ=UTC (см. комментарий в caldav-busy.spec.ts: process.env.TZ
+ * внутри jest не пробрасывается в V8), поэтому «локальный» разбор строки без
+ * 'Z' здесь случайно совпадает с UTC-разбором. Ловим такие мутанты не по
+ * итоговому Date, а по точной строке, которую код реально строит перед
+ * парсингом — так регрессия видна независимо от зоны процесса.
+ */
+function captureDateStrings(fn: () => void): string[] {
+  const RealDate = Date;
+  const seen: string[] = [];
+  const ProxyDate = new Proxy(RealDate, {
+    construct(target, args: [string?]) {
+      if (args.length === 1 && typeof args[0] === 'string') seen.push(args[0]);
+      return Reflect.construct(target, args);
+    },
+  });
+  // eslint-disable-next-line no-global-assign
+  Date = ProxyDate;
+  try {
+    fn();
+  } finally {
+    // eslint-disable-next-line no-global-assign
+    Date = RealDate;
+  }
+  return seen;
+}
 
 describe('localDate', () => {
   it('UTC: дата совпадает с UTC-датой инстанта', () => {
@@ -90,5 +121,59 @@ describe('localMidnightUTC', () => {
     expect(() => localMidnightUTC('2026-01-15', 'Not/AZone')).toThrow(
       RangeError,
     );
+  });
+
+  // Второй проход в zonedWallClockToUtc существует специально ради момента,
+  // близкого к DST-переходу: первая (грубая) оценка смещения может «упасть»
+  // не в ту сторону от границы перехода, и второй проход её поправляет.
+  // Мутация `-` → `+` в первом проходе (стр.34) не всегда видна на самих
+  // датах перехода (00:00 не пересекает границу даже с удвоенным по знаку
+  // смещением) — берём момент СРАЗУ ПОСЛЕ перевода стрелок, где удвоенная
+  // ошибка знака уводит грубую оценку через границу 02:00→03:00 EDT.
+  it('DST-переход America/New_York: время сразу после перевода стрелок (03:01 EDT) переводится в UTC верно', () => {
+    expect(
+      zonedWallClockToUtc(
+        '2026-03-08T03:01:00',
+        'America/New_York',
+      ).toISOString(),
+    ).toBe('2026-03-08T07:01:00.000Z');
+  });
+
+  // Мутанты StringLiteral на стр.28 ('T' → '', 'Z' → '') и стр.45 ('Z' → '')
+  // не меняют итоговое значение Date в этой песочнице (TZ=UTC — см.
+  // captureDateStrings выше), поэтому проверяем не итог, а фактически
+  // построенную строку перед разбором `new Date(...)`.
+  it('внутренняя "наивная" дата собирается как <ISO>T00:00:00Z для date-only входа (не теряет ни "T", ни завершающий "Z")', () => {
+    const seen = captureDateStrings(() => {
+      zonedWallClockToUtc('2026-01-15', 'UTC');
+    });
+    expect(seen[0]).toBe('2026-01-15T00:00:00Z');
+  });
+
+  it('внутренняя строка стенного времени зоны в zoneOffsetMs оканчивается на "Z" (без него строка ушла бы в зону процесса, а не осталась UTC)', () => {
+    const seen = captureDateStrings(() => {
+      zonedWallClockToUtc('2026-01-15', 'Europe/Moscow');
+    });
+    // seen[1] — первый вызов zoneOffsetMs(fmt, naive): стенное время в
+    // Москве (+3) для полуночи 15-го — 03:00 того же дня.
+    expect(seen[1]).toBe('2026-01-15T03:00:00Z');
+  });
+});
+
+describe('zoneFormatter — кэш форматтера по зоне', () => {
+  it('второй вызов с той же зоной переиспользует форматтер, а не создаёт новый Intl.DateTimeFormat', () => {
+    // Мутация `if (cached) return cached;` → `if (false) ...` (стр.54)
+    // отключает кэш — форматтер создавался бы заново на каждый вызов.
+    // Зона выбрана не пересекающейся с другими тестами файла, чтобы не
+    // словить чужой прогрев кэша (formatterCache общий на модуль).
+    const constructorSpy = jest.spyOn(Intl, 'DateTimeFormat');
+    try {
+      localMidnightUTC('2026-05-01', 'Asia/Tokyo');
+      localMidnightUTC('2026-05-02', 'Asia/Tokyo');
+      localMidnightUTC('2026-05-03', 'Asia/Tokyo');
+      expect(constructorSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      constructorSpy.mockRestore();
+    }
   });
 });

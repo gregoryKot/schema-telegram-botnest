@@ -8,12 +8,37 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { createHmac, createHash } from 'crypto';
+import * as cryptoModule from 'crypto';
+// randomBytes обёрнут в jest.fn (по умолчанию — реальная реализация через
+// requireActual) только затем, чтобы в одном тесте (ArithmeticOperator на
+// generateWebUserId) подменить её возврат детерминированным буфером — сам
+// built-in модуль 'crypto' нередактируем через jest.spyOn напрямую
+// (Cannot redefine property), поэтому подменяем на уровне module registry.
+jest.mock('crypto', () => {
+  const actual = jest.requireActual('crypto');
+  return { ...actual, randomBytes: jest.fn(actual.randomBytes) };
+});
 import { AuthService } from './auth.service';
 import {
   createFakeTable,
   createFakeTransaction,
   Row,
 } from '../test-support/fake-prisma.spec-helper';
+// encrypt/decrypt обёрнуты в jest.fn (реальная реализация по умолчанию через
+// requireActual) — нужно точечно замокать возврат null в паре тестов на
+// LogicalOperator-мутанты (`?? lower` vs `&& lower`): реальный encrypt()
+// никогда не возвращает null для непустой строки, поэтому иначе эту ветку
+// не отличить от `&&`.
+import { encrypt, decrypt } from '../utils/crypto';
+
+jest.mock('../utils/crypto', () => {
+  const actual = jest.requireActual('../utils/crypto');
+  return {
+    ...actual,
+    encrypt: jest.fn(actual.encrypt),
+    decrypt: jest.fn(actual.decrypt),
+  };
+});
 
 const JWT_SECRET = 'test-jwt-secret';
 const BOT_TOKEN = '12345:TEST_TOKEN';
@@ -78,12 +103,26 @@ function makeFakePrisma() {
   return { prisma, webSessions, authProviders, users, emailTokens };
 }
 
-function makeService() {
+function makeService(
+  configOverrides: Partial<{
+    JWT_SECRET: string;
+    BOT_TOKEN: string;
+    WEBAPP_URL: string;
+  }> = {},
+) {
   const { prisma, webSessions, authProviders, users, emailTokens } =
     makeFakePrisma();
+  const defaults = {
+    JWT_SECRET,
+    BOT_TOKEN,
+    WEBAPP_URL: 'https://schemehappens.ru',
+  };
   const config = {
+    // Ключ намеренно валидируется (не игнорируется) — так тест ловит
+    // StringLiteral-мутацию имени env-ключа ('JWT_SECRET' → ''): запрос
+    // несуществующего ключа возвращает undefined, а не тот же секрет.
     getOrThrow: (k: string) =>
-      ({ JWT_SECRET, BOT_TOKEN, WEBAPP_URL: 'https://schemehappens.ru' })[k],
+      ({ ...defaults, ...configOverrides })[k as keyof typeof defaults],
   } as any;
   const securityLog = { log: jest.fn() } as any;
   const emailSvc = {
@@ -114,6 +153,11 @@ describe('AuthService — refresh-token rotation', () => {
     expect(webSessions[0].tokenHash).not.toBe(issued.refreshToken); // сырой токен нигде не хранится
     expect(webSessions[0].tokenHash).toHaveLength(64); // sha256 hex
     expect(issued.expiresIn).toBe(15 * 60);
+    // REFRESH_TOKEN_TTL_S = 30*24*3600 — ровно 30 дней вперёд, не 0.2с и не
+    // 1.25с, как дала бы поломанная арифметика (30*24/3600 или 30/24).
+    expect((webSessions[0].expiresAt as Date).getTime()).toBe(
+      FIXED_DATE.getTime() + 30 * 24 * 3600 * 1000,
+    );
 
     const rotated = await svc.rotateRefreshToken(issued.refreshToken);
     expect(rotated.refreshToken).not.toBe(issued.refreshToken);
@@ -121,6 +165,59 @@ describe('AuthService — refresh-token rotation', () => {
     expect(webSessions[0].revokedAt).toEqual(FIXED_DATE); // старая отозвана
     expect(webSessions[1].revokedAt).toBeNull(); // новая жива
     expect(webSessions[1].family).toBe(webSessions[0].family);
+    // Новый expiresAt тоже ровно +30 дней ВПЕРЁД (а не назад, как дала бы
+    // мутация "+" → "-", и не сломанная арифметика TTL/1000).
+    expect((webSessions[1].expiresAt as Date).getTime()).toBe(
+      FIXED_DATE.getTime() + 30 * 24 * 3600 * 1000,
+    );
+  });
+
+  it('rotateRefreshToken ищет сессию именно по своему tokenHash, а не берёт первую строку таблицы (иначе можно получить чужой accessToken)', async () => {
+    const { svc } = makeService();
+    await svc.issueTokens(2n); // окажется первой строкой в таблице
+    const mine = await svc.issueTokens(1n);
+    const rotated = await svc.rotateRefreshToken(mine.refreshToken);
+    // Идентичность нового accessToken — от МОЕГО userId, не от первой строки.
+    expect(svc.verifyAccessToken(rotated.accessToken)).toEqual({ userId: 1n });
+  });
+
+  it('theft-detection отзывает только family украденного токена, не сессии посторонних пользователей (updateMany обязан фильтровать по family)', async () => {
+    const { svc, webSessions } = makeService();
+    await svc.issueTokens(99n); // посторонний пользователь, своя family
+    const issued = await svc.issueTokens(1n);
+    await svc.rotateRefreshToken(issued.refreshToken); // легитимный refresh
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).rejects.toThrow(
+      UnauthorizedException,
+    ); // reuse → theft-detection всей family
+    const bystanderSession = webSessions.find((s) => s.userId === 99n);
+    expect(bystanderSession?.revokedAt).toBeNull();
+  });
+
+  it('family отсутствует (falsy) у истёкшей/отозванной сессии → theft-detection блок не запускается (не палит securityLog на пустом family)', async () => {
+    const { svc, webSessions, securityLog } = makeService();
+    webSessions.push({
+      id: 'no-family-session',
+      userId: 1n,
+      tokenHash: createHash('sha256').update('no-family-raw').digest('hex'),
+      family: null, // без family — раньше выданные до фичи family, например
+      expiresAt: new Date(FIXED_DATE.getTime() - 1000), // уже истёкла
+      revokedAt: null,
+      ipAddress: null,
+      userAgent: null,
+    });
+    await expect(svc.rotateRefreshToken('no-family-raw')).rejects.toThrow(
+      'Refresh token already used or expired',
+    );
+    expect(securityLog.log).not.toHaveBeenCalled();
+  });
+
+  it('expiresAt ровно равен текущему моменту (граница) → ещё НЕ истёк, ротация проходит успешно', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    webSessions[0].expiresAt = new Date(FIXED_DATE.getTime());
+    await expect(svc.rotateRefreshToken(issued.refreshToken)).resolves.toEqual(
+      expect.objectContaining({ refreshToken: expect.any(String) }),
+    );
   });
 
   it('повторное использование уже провёрнутого токена палит всю family (theft detection)', async () => {
@@ -177,9 +274,36 @@ describe('AuthService — verifyTelegramWebAppData', () => {
     });
   });
 
+  it('нет hash → именно "Missing hash in initData" (не проваливается в другую ветку)', () => {
+    const { svc } = makeService();
+    const initData = signInitData({ user: { id: 1 }, hash: 'omit' });
+    expect(() => svc.verifyTelegramWebAppData(initData)).toThrow(
+      'Missing hash in initData',
+    );
+  });
+
+  it('user отсутствует в initData целиком (не просто user.id) → UnauthorizedException, не TypeError', () => {
+    // Без `user=` вообще (не путать с "user есть, но без id" — см. отдельный
+    // тест ниже). JSON.parse(null) не бросает (парсит как "null"), поэтому
+    // отличить это от штатного отказа можно только явной проверкой !userJson.
+    const { svc } = makeService();
+    const params = new URLSearchParams();
+    params.set('auth_date', String(Math.floor(Date.now() / 1000)));
+    const checkString = [...params.entries()]
+      .map(([k, v]) => `${k}=${v}`)
+      .sort()
+      .join('\n');
+    const secret = createHmac('sha256', 'WebAppData')
+      .update(BOT_TOKEN)
+      .digest();
+    const hash = createHmac('sha256', secret).update(checkString).digest('hex');
+    params.set('hash', hash);
+    expect(() => svc.verifyTelegramWebAppData(params.toString())).toThrow(
+      UnauthorizedException,
+    );
+  });
+
   it.each<[string, () => string]>([
-    ['нет hash', () => signInitData({ user: { id: 1 }, hash: 'omit' })],
-    // регрессия: раньше вело к RangeError (500), не к 401
     [
       'hash не 64-hex (мусор)',
       () => signInitData({ user: { id: 1 }, hash: 'not-hex-and-wrong-length' }),
@@ -202,6 +326,55 @@ describe('AuthService — verifyTelegramWebAppData', () => {
       UnauthorizedException,
     );
   });
+
+  it('auth_date ровно на границе окна (now - 3600s) → принимается (не просрочен)', () => {
+    const { svc } = makeService();
+    const initData = signInitData({
+      user: { id: 42 },
+      authDate: Math.floor(Date.now() / 1000) - 3600,
+    });
+    expect(svc.verifyTelegramWebAppData(initData)).toEqual({
+      id: 42,
+      firstName: '',
+    });
+  });
+
+  it('hash с посторонним префиксом перед 64 hex-символами → "Malformed hash" (regex обязан быть заякорён с начала, не просто искать 64-hex где-то внутри)', () => {
+    const { svc } = makeService();
+    const initData = signInitData({
+      user: { id: 1 },
+      hash: 'zz' + 'a'.repeat(64),
+    });
+    expect(() => svc.verifyTelegramWebAppData(initData)).toThrow(
+      'Malformed hash in initData',
+    );
+  });
+
+  it('hash с посторонним суффиксом после 64 hex-символов → "Malformed hash" (regex обязан требовать конец строки, не просто префикс)', () => {
+    const { svc } = makeService();
+    const initData = signInitData({
+      user: { id: 1 },
+      hash: 'a'.repeat(64) + 'zz',
+    });
+    expect(() => svc.verifyTelegramWebAppData(initData)).toThrow(
+      'Malformed hash in initData',
+    );
+  });
+
+  it('BOT_TOKEN с пробелами/переносом строки по краям (случайность env) — verify обязан использовать .trim()', () => {
+    const rawToken = ' 12345:TEST_TOKEN\n';
+    const { svc } = makeService({ BOT_TOKEN: rawToken });
+    // initData подписан так, как реально подписал бы Telegram — с
+    // очищенным токеном (это и есть контракт .trim() внутри verify).
+    const initData = signInitData({
+      user: { id: 7 },
+      botToken: rawToken.trim(),
+    });
+    expect(svc.verifyTelegramWebAppData(initData)).toEqual({
+      id: 7,
+      firstName: '',
+    });
+  });
 });
 
 describe('AuthService — findOrCreateUserByProvider', () => {
@@ -222,6 +395,103 @@ describe('AuthService — findOrCreateUserByProvider', () => {
     expect(userId).toBe(777n);
     expect(authProviders[0].displayName).toBe('New Name');
     expect(users).toHaveLength(0);
+  });
+
+  it('существующий провайдер, displayName не передан → update НЕ вызывается, старое имя не затирается', async () => {
+    const { svc, authProviders, prisma } = makeService();
+    authProviders.push({
+      id: 1,
+      userId: 777n,
+      provider: 'google',
+      providerId: 'g-1',
+      displayName: 'Old Name',
+    });
+    const userId = await svc.findOrCreateUserByProvider('google', 'g-1');
+    expect(userId).toBe(777n);
+    expect(authProviders[0].displayName).toBe('Old Name'); // не undefined
+    expect(prisma.authProvider.update).not.toHaveBeenCalled();
+  });
+
+  it('несвязанная существующая пара (provider,providerId) не мешает найти НОВУЮ комбинацию — findUnique обязан фильтровать по where, а не брать первую строку таблицы', async () => {
+    const { svc, authProviders, users } = makeService();
+    authProviders.push({
+      id: 1,
+      userId: 42n,
+      provider: 'google',
+      providerId: 'g-unrelated',
+      displayName: 'Другой человек',
+    });
+    const userId = await svc.findOrCreateUserByProvider('google', 'g-7', 'Имя');
+    expect(userId).not.toBe(42n); // не спутали с чужой записью
+    expect(users.some((u) => u.id === userId)).toBe(true);
+    expect(authProviders).toHaveLength(2);
+  });
+
+  it('displayName-update при существующем провайдере обновляет ИМЕННО его запись, а не первую в таблице (update-where обязан матчить по id)', async () => {
+    const { svc, authProviders } = makeService();
+    authProviders.push(
+      { id: 1, userId: 1n, provider: 'google', providerId: 'g-first' },
+      { id: 2, userId: 2n, provider: 'google', providerId: 'g-second' },
+    );
+    await svc.findOrCreateUserByProvider('google', 'g-second', 'НовоеИмя');
+    expect(authProviders[0].displayName).toBeUndefined(); // соседняя не тронута
+    expect(authProviders[1].displayName).toBe('НовоеИмя');
+  });
+
+  it('User.upsert(where:{id:userId}) для НОВОГО провайдера не должен матчить существующего ПОСТОРОННЕГО User — создаёт отдельную запись', async () => {
+    const { svc, users } = makeService();
+    users.push({ id: 999n, firstName: 'Посторонний' });
+    const userId = await svc.findOrCreateUserByProvider(
+      'google',
+      'g-newuser',
+      'Имя',
+    );
+    expect(userId).not.toBe(999n);
+    expect(users).toHaveLength(2);
+    expect(users.find((u) => u.id === 999n)?.firstName).toBe('Посторонний'); // не тронут
+  });
+
+  it('User уже существует (напр. telegram-юзер бота) с тем же id, что и generateWebUserId не совпадает, но telegram-провайдер повторно логинится → firstName обновляется через upsert.update, не молчаливо игнорируется', async () => {
+    const { svc, users } = makeService();
+    users.push({ id: 555n, firstName: 'СтароеИмяИзБота' });
+    await svc.findOrCreateUserByProvider('telegram', '555', 'НовоеИмяТг');
+    expect(users).toHaveLength(1); // не задублировал User
+    expect(users[0].firstName).toBe('НовоеИмяТг'); // update.firstName реально применился
+  });
+
+  it('атомарный upsert AuthProvider (гонка) находит уже вставленную конкурентом строку именно по (provider,providerId), а не по первой строке таблицы', async () => {
+    const { svc, prisma, authProviders } = makeService();
+    authProviders.push(
+      {
+        id: 1,
+        userId: 999n,
+        provider: 'google',
+        providerId: 'g-unrelated-race',
+        displayName: 'Посторонний',
+      },
+      {
+        id: 2,
+        userId: 50n,
+        provider: 'google',
+        providerId: 'g-raced',
+        displayName: 'Old',
+      },
+    );
+    // Имитируем гонку: начальный findUnique "не увидел" конкурентную вставку
+    // (case происходит между первым findUnique и atomic-upsert ниже), а сам
+    // upsert (реальный Postgres INSERT … ON CONFLICT) её уже видит.
+    (prisma.authProvider.findUnique as jest.Mock).mockImplementationOnce(
+      () => null,
+    );
+    const userId = await svc.findOrCreateUserByProvider(
+      'google',
+      'g-raced',
+      'NewDisplayName',
+    );
+    expect(userId).toBe(50n); // userId существующей (обновлённой) строки, не постороннего 999n
+    expect(authProviders).toHaveLength(2); // не задублировал
+    expect(authProviders[0].displayName).toBe('Посторонний'); // соседняя не тронута
+    expect(authProviders[1].displayName).toBe('NewDisplayName');
   });
 
   it.each<['telegram' | 'google', string, (id: bigint) => void]>([
@@ -250,6 +520,32 @@ describe('AuthService — findOrCreateUserByProvider', () => {
       );
     },
   );
+
+  it('generateWebUserId: id = MIN + rand % (MAX - MIN) — диапазон именно разность, а не сумма границ', async () => {
+    const { svc } = makeService();
+    // Фиксируем "случайные" 8 байт — весь диапазон unsigned 64 бит, чтобы
+    // разность и сумма границ (мутант ArithmeticOperator) давали заведомо
+    // разный результат по модулю. auth.service.ts делает `import * as crypto
+    // from 'crypto'` — тот же закешированный модуль, что и require('crypto')
+    // здесь, поэтому spyOn ловит и его вызов randomBytes(8).
+    const fixedBytes = Buffer.from('ffffffffffffffff', 'hex');
+    const mockedRandomBytes = cryptoModule.randomBytes as unknown as jest.Mock;
+    // …Once — самовосстанавливающийся оверрайд ровно на 1 следующий вызов
+    // (generateWebUserId дёргает randomBytes(8) ровно один раз), дефолтная
+    // (реальная) реализация для остальных тестов файла не трогается.
+    mockedRandomBytes.mockReturnValueOnce(fixedBytes);
+    const userId = await svc.findOrCreateUserByProvider(
+      'google',
+      'g-arith-boundary',
+      'Имя',
+    );
+    const rand = BigInt('0x' + fixedBytes.toString('hex'));
+    const range = WEB_USER_ID_MAX - WEB_USER_ID_MIN; // корректная формула
+    const expected = WEB_USER_ID_MIN + (rand % range);
+    expect(userId).toBe(expected);
+    expect(userId).toBeGreaterThanOrEqual(WEB_USER_ID_MIN);
+    expect(userId).toBeLessThan(WEB_USER_ID_MAX);
+  });
 });
 
 describe('AuthService — merge-токены', () => {
@@ -309,6 +605,12 @@ describe('AuthService — requestEmailLogin', () => {
     ['без @', 'not-an-email'],
     ['без домена', 'a@b'],
     ['слишком длинный (>254)', 'a'.repeat(250) + '@b.co'],
+    // regex обязан быть заякорён с начала ('^') — иначе "мусор перед
+    // валидным адресом" проходит, т.к. .test() ищет совпадение где угодно.
+    ['мусор перед адресом (нет ^ — пропустил бы)', ' xx@yy.com'],
+    // regex обязан требовать конец строки ('$') — иначе "валидный адрес +
+    // хвост" проходит как валидный префикс.
+    ['мусор после адреса (нет $ — пропустил бы)', 'xx@yy.com trailing'],
   ])('невалидный email (%s) → BadRequestException', async (_name, email) => {
     const { svc } = makeService();
     await expect(svc.requestEmailLogin(email)).rejects.toThrow(
@@ -316,16 +618,44 @@ describe('AuthService — requestEmailLogin', () => {
     );
   });
 
+  it('email ровно 254 символа (граница <= 254) → валиден, не бросает', async () => {
+    const { svc } = makeService();
+    const email = 'a'.repeat(248) + '@bb.co'; // 248 + 6 = 254
+    expect(email).toHaveLength(254);
+    await expect(svc.requestEmailLogin(email)).resolves.toEqual({ ok: true });
+  });
+
   it('валидный email → создаёт пользователя, emailToken и шлёт письмо со ссылкой', async () => {
-    const { svc, users, emailTokens, emailSvc } = makeService();
+    const { svc, users, emailTokens, emailSvc, authProviders } = makeService();
     const result = await svc.requestEmailLogin('User@Example.com');
     expect(result).toEqual({ ok: true });
     expect(users).toHaveLength(1);
     expect(emailTokens).toHaveLength(1);
     expect(emailTokens[0].purpose).toBe('login');
+    // Провайдер обязан называться именно 'email' (не пустой строкой) —
+    // от этого зависит и findOrCreateUserByProvider, и последующие лукапы.
+    expect(authProviders[0].provider).toBe('email');
+    // displayName = локальная часть до '@', не первый символ строки.
+    expect(authProviders[0].displayName).toBe('user');
     expect(emailSvc.sendLoginLink).toHaveBeenCalledWith(
       'user@example.com',
       expect.stringContaining('/api/auth/email/callback?token='),
+    );
+    // TTL магической ссылки — ровно 30 минут (EMAIL_TOKEN_TTL_MS), не 0.5мс
+    // и не 1.8мс, как дала бы поломанная арифметика.
+    expect(emailTokens[0].expiresAt.getTime()).toBe(
+      FIXED_DATE.getTime() + 30 * 60 * 1000,
+    );
+  });
+
+  it('WEBAPP_URL с trailing slash → ссылка без двойного слэша и без мусора вместо него', async () => {
+    const { svc, emailSvc } = makeService({
+      WEBAPP_URL: 'https://schemehappens.ru/',
+    });
+    await svc.requestEmailLogin('slash@example.com');
+    const link = emailSvc.sendLoginLink.mock.calls[0][1] as string;
+    expect(link).toMatch(
+      /^https:\/\/schemehappens\.ru\/api\/auth\/email\/callback\?token=/,
     );
   });
 
@@ -343,14 +673,31 @@ describe('AuthService — requestEmailLogin', () => {
       ok: true,
     });
   });
+
+  it('падение отправки письма логируется через logger.error (.catch реально исполняется, не заглушен)', async () => {
+    const { svc, emailSvc } = makeService();
+    emailSvc.sendLoginLink.mockRejectedValueOnce(new Error('smtp down'));
+    const errorSpy = jest.spyOn((svc as any).logger, 'error');
+    await svc.requestEmailLogin('logfail@example.com');
+    await Promise.resolve(); // дать микротаске .catch() отработать
+    await Promise.resolve();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('sendLoginLink failed: smtp down'),
+    );
+  });
+
+  it('encField вернул null (напр. сбой шифрования) → в БД сохраняется читаемый email как fallback, не null (?? а не &&)', async () => {
+    const { svc, emailTokens } = makeService();
+    (encrypt as jest.Mock).mockReturnValueOnce(null);
+    await svc.requestEmailLogin('fallback@example.com');
+    expect(emailTokens[0].email).toBe('fallback@example.com');
+  });
 });
 
 describe('AuthService — consumeEmailToken', () => {
-  it('пустой токен → UnauthorizedException', async () => {
+  it('пустой токен → именно "Missing token" (не проваливается в "Token not found")', async () => {
     const { svc } = makeService();
-    await expect(svc.consumeEmailToken('')).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(svc.consumeEmailToken('')).rejects.toThrow('Missing token');
   });
 
   it('неизвестный токен → UnauthorizedException', async () => {
@@ -358,6 +705,37 @@ describe('AuthService — consumeEmailToken', () => {
     await expect(svc.consumeEmailToken('garbage')).rejects.toThrow(
       UnauthorizedException,
     );
+  });
+
+  it('чужой (гарбаж) токен не находит СУЩЕСТВУЮЩИЙ в таблице чужой токен — findUnique обязан фильтровать по tokenHash, а не отдавать первую строку', async () => {
+    const { svc, emailTokens } = makeService();
+    await svc.requestEmailLogin('victim@example.com'); // легитимная запись уже есть
+    expect(emailTokens).toHaveLength(1);
+    await expect(
+      svc.consumeEmailToken('completely-unrelated-garbage-token'),
+    ).rejects.toThrow('Token not found');
+  });
+
+  it('expiresAt ровно равен текущему моменту (граница) → ещё НЕ истёк, потребляется успешно', async () => {
+    const { svc, emailTokens } = makeService();
+    await svc.requestEmailLogin('boundary@example.com');
+    emailTokens[0].expiresAt = new Date(FIXED_DATE.getTime());
+    const raw = extractTokenFromLink(svc);
+    await expect(svc.consumeEmailToken(raw)).resolves.toEqual(
+      expect.objectContaining({ purpose: 'login' }),
+    );
+  });
+
+  it('второй потреблённый токен не помечает usedAt у первого (соседнего) — update обязан фильтровать по id, а не брать первую строку', async () => {
+    const { svc, emailTokens } = makeService();
+    await svc.requestEmailLogin('first@example.com');
+    await svc.requestEmailLogin('second@example.com');
+    expect(emailTokens).toHaveLength(2);
+    // Достаём токен именно ВТОРОГО письма (последний вызов sendLoginLink).
+    const raw = extractTokenFromLink(svc);
+    await svc.consumeEmailToken(raw);
+    expect(emailTokens[0].usedAt).toBeNull(); // первый (соседний) не тронут
+    expect(emailTokens[1].usedAt).not.toBeNull(); // второй — потреблён
   });
 
   it('уже использованный токен → UnauthorizedException', async () => {
@@ -400,14 +778,23 @@ describe('AuthService — consumeEmailToken', () => {
     );
   });
 
-  it('purpose=login → возвращает токены, помечает использованным', async () => {
-    const { svc, emailTokens } = makeService();
+  it('purpose=login → возвращает токены, помечает использованным, НЕ заходит в ветку link_email_auth (linkProviderToUser не вызывается)', async () => {
+    const { svc, prisma, emailTokens } = makeService();
     await svc.requestEmailLogin('login@example.com');
+    // requestEmailLogin уже дёрнул authProvider.findUnique один раз внутри
+    // findOrCreateUserByProvider — фиксируем счётчик ДО consumeEmailToken.
+    const callsBefore = (prisma.authProvider.findUnique as jest.Mock).mock.calls
+      .length;
     const raw = extractTokenFromLink(svc);
     const result = await svc.consumeEmailToken(raw);
     expect(result.purpose).toBe('login');
     expect(result.tokens.accessToken).toBeDefined();
     expect(emailTokens[0].usedAt).not.toBeNull();
+    // purpose='login' не должен заходить в ветку link_email_auth —
+    // linkProviderToUser (и его findUnique) не вызывается лишний раз.
+    expect(
+      (prisma.authProvider.findUnique as jest.Mock).mock.calls.length,
+    ).toBe(callsBefore);
   });
 
   it('purpose=link_email_auth → привязывает email к целевому userId', async () => {
@@ -419,6 +806,22 @@ describe('AuthService — consumeEmailToken', () => {
     expect(
       authProviders.some(
         (p) => p.provider === 'email' && String(p.userId) === '42',
+      ),
+    ).toBe(true);
+  });
+
+  it('decField(row.email) вернул null (напр. чужой ключ шифрования) → привязывается сырое row.email, не null (?? а не &&)', async () => {
+    const { svc, authProviders } = makeService();
+    await svc.linkEmailToAccount(77n, 'decrypt-fallback@example.com');
+    const raw = extractTokenFromLink(svc);
+    (decrypt as jest.Mock).mockReturnValueOnce(null);
+    const result = await svc.consumeEmailToken(raw);
+    expect(result.purpose).toBe('link_email_auth');
+    expect(
+      authProviders.some(
+        (p) =>
+          p.provider === 'email' &&
+          p.providerId === 'decrypt-fallback@example.com',
       ),
     ).toBe(true);
   });
@@ -494,6 +897,52 @@ describe('AuthService — linkEmailToAccount', () => {
     ).resolves.toEqual({ ok: true });
     expect(emailSvc.sendLoginLink).toHaveBeenCalled();
   });
+
+  it('несвязанная существующая запись не даёт ложный конфликт — where обязан фильтровать по email, а не брать первую строку', async () => {
+    const { svc, authProviders, emailSvc } = makeService();
+    authProviders.push({
+      id: 1,
+      userId: 999n,
+      provider: 'email',
+      providerId: 'someone-else@example.com',
+    });
+    await expect(
+      svc.linkEmailToAccount(555n, 'brandnew@example.com'),
+    ).resolves.toEqual({ ok: true });
+    expect(emailSvc.sendLoginLink).toHaveBeenCalled();
+  });
+
+  it('WEBAPP_URL с trailing slash → ссылка без двойного слэша и без мусора вместо него', async () => {
+    const { svc, emailSvc } = makeService({
+      WEBAPP_URL: 'https://schemehappens.ru/',
+    });
+    await svc.linkEmailToAccount(1n, 'link-slash@example.com');
+    const link = emailSvc.sendLoginLink.mock.calls[0][1] as string;
+    expect(link).toMatch(
+      /^https:\/\/schemehappens\.ru\/api\/auth\/email\/callback\?token=/,
+    );
+  });
+
+  it('encField вернул null → в БД сохраняется читаемый email как fallback, не null (?? а не &&)', async () => {
+    const { svc, emailTokens } = makeService();
+    (encrypt as jest.Mock).mockReturnValueOnce(null);
+    await svc.linkEmailToAccount(1n, 'link-fallback@example.com');
+    expect(emailTokens[0].email).toBe('link-fallback@example.com');
+  });
+
+  it('падение отправки письма логируется через logger.error (.catch реально исполняется)', async () => {
+    const { svc, emailSvc } = makeService();
+    emailSvc.sendLoginLink.mockRejectedValueOnce(new Error('smtp down'));
+    const errorSpy = jest.spyOn((svc as any).logger, 'error');
+    await svc.linkEmailToAccount(1n, 'link-logfail@example.com');
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'linkEmailToAccount sendLoginLink failed: smtp down',
+      ),
+    );
+  });
 });
 
 // Достаёт сырой токен из последней вызванной ссылки sendLoginLink — линк вида
@@ -542,6 +991,19 @@ describe('AuthService — linkProviderToUser', () => {
     );
   });
 
+  it('несвязанная существующая запись не должна считаться совпадением — findUnique обязан фильтровать по (provider, providerId), а не брать первую строку', async () => {
+    const { svc, authProviders } = makeService();
+    authProviders.push({
+      id: 1,
+      userId: 42n,
+      provider: 'google',
+      providerId: 'g-unrelated',
+    });
+    const result = await svc.linkProviderToUser(20n, 'google', 'g-new');
+    expect(result).toEqual({ ok: true }); // не ok:false с чужим conflictUserId
+    expect(authProviders).toHaveLength(2);
+  });
+
   it('гонка (P2002) при create: конкурент вставил ту же пару → повторный findUnique возвращает тот же userId → ok:true', async () => {
     const { svc, prisma, authProviders } = makeService();
     const conflictErr = Object.assign(new Error('unique violation'), {
@@ -588,6 +1050,45 @@ describe('AuthService — linkProviderToUser', () => {
       svc.linkProviderToUser(10n, 'google', 'g-boom'),
     ).rejects.toThrow('db exploded');
   });
+
+  it('P2002 при create: несвязанная существующая запись не должна маскировать реального конкурента — повторный findUnique обязан искать именно по (provider,providerId)', async () => {
+    const { svc, prisma, authProviders } = makeService();
+    authProviders.push({
+      id: 1,
+      userId: 777n,
+      provider: 'google',
+      providerId: 'g-unrelated3',
+    });
+    const conflictErr = Object.assign(new Error('unique violation'), {
+      code: 'P2002',
+    });
+    (prisma.authProvider.create as jest.Mock).mockImplementationOnce(() => {
+      authProviders.push({
+        id: 99,
+        userId: 8n,
+        provider: 'google',
+        providerId: 'g-race3',
+      });
+      throw conflictErr;
+    });
+    const result = await svc.linkProviderToUser(8n, 'google', 'g-race3');
+    expect(result).toEqual({ ok: true }); // не спутали с посторонним userId 777n
+  });
+
+  it('P2002 при create, но повторный findUnique НИЧЕГО не находит (фантомная гонка) → пробрасывается исходная P2002-ошибка, а не падение на null.userId', async () => {
+    const { svc, prisma } = makeService();
+    const conflictErr = Object.assign(new Error('unique violation'), {
+      code: 'P2002',
+    });
+    (prisma.authProvider.create as jest.Mock).mockImplementationOnce(() => {
+      // Никого не вставляем — P2002 без реально существующей строки
+      // (напр. стёрли конкурентом между create и повторным findUnique).
+      throw conflictErr;
+    });
+    await expect(
+      svc.linkProviderToUser(11n, 'google', 'g-phantom'),
+    ).rejects.toThrow('unique violation');
+  });
 });
 
 describe('AuthService — unlinkProvider / getUserProviders', () => {
@@ -603,6 +1104,20 @@ describe('AuthService — unlinkProvider / getUserProviders', () => {
       ConflictException,
     );
     expect(authProviders).toHaveLength(1);
+  });
+
+  it('unlinkProvider: подсчёт "единственный ли метод входа" обязан фильтровать по userId — чужие провайдеры в таблице не должны разрешить отвязку последнего своего', async () => {
+    const { svc, authProviders } = makeService();
+    // У ДРУГОГО пользователя — много провайдеров, у ЭТОГО — только один.
+    authProviders.push(
+      { id: 1, userId: 1n, provider: 'telegram', providerId: '1' },
+      { id: 2, userId: 2n, provider: 'google', providerId: 'g-2' },
+      { id: 3, userId: 2n, provider: 'email', providerId: 'x@y.z' },
+    );
+    await expect(svc.unlinkProvider(1n, 'telegram')).rejects.toThrow(
+      ConflictException,
+    );
+    expect(authProviders).toHaveLength(3); // ничего не удалено
   });
 
   it('unlinkProvider: есть второй метод входа → отвязывает указанный провайдер', async () => {
@@ -660,6 +1175,15 @@ describe('AuthService — 2FA challenge токены', () => {
     expect(decoded.ip).toBeNull();
     expect(decoded.ua).toBe('');
   });
+
+  it('userAgent длиннее 120 символов обрезается до 120 (.slice(0, 120), не хранится целиком)', () => {
+    const { svc } = makeService();
+    const longUa = 'Mozilla/5.0 ' + 'x'.repeat(200); // 212 символов
+    const token = svc.buildTotpChallengeToken(1n, '1.2.3.4', longUa);
+    const decoded = svc.verifyTotpChallengeToken(token);
+    expect(decoded.ua).toHaveLength(120);
+    expect(decoded.ua).toBe(longUa.slice(0, 120));
+  });
 });
 
 describe('AuthService — verifyLinkToken: невалидные токены', () => {
@@ -668,6 +1192,44 @@ describe('AuthService — verifyLinkToken: невалидные токены', (
     expect(() => svc.verifyLinkToken('garbage')).toThrow(
       'Invalid or expired link token',
     );
+  });
+
+  it('buildLinkToken → verifyLinkToken: roundtrip возвращает исходный userId (ловит порчу type:"link" в payload и ключа JWT_SECRET)', () => {
+    const { svc } = makeService();
+    const token = svc.buildLinkToken(123n);
+    expect(svc.verifyLinkToken(token)).toEqual({ userId: 123n });
+  });
+});
+
+describe('AuthService — issueTokens/rotateRefreshToken: accessToken реально проходит verifyAccessToken', () => {
+  it('issueTokens: выданный accessToken проходит verifyAccessToken с тем же userId (ловит порчу type:"access" и ключа JWT_SECRET)', async () => {
+    const { svc } = makeService();
+    const tokens = await svc.issueTokens(42n);
+    expect(svc.verifyAccessToken(tokens.accessToken)).toEqual({
+      userId: 42n,
+    });
+  });
+
+  it('rotateRefreshToken: новый accessToken тоже проходит verifyAccessToken', async () => {
+    const { svc } = makeService();
+    const issued = await svc.issueTokens(42n);
+    const rotated = await svc.rotateRefreshToken(issued.refreshToken);
+    expect(svc.verifyAccessToken(rotated.accessToken)).toEqual({
+      userId: 42n,
+    });
+  });
+});
+
+describe('AuthService — revokeSession: изоляция по конкретной сессии', () => {
+  it('отзывает ровно свою сессию — чужая (другого userId) сессия не задета (updateMany обязан фильтровать по tokenHash, а не отзывать всё подряд)', async () => {
+    const { svc, webSessions } = makeService();
+    const userA = await svc.issueTokens(1n);
+    await svc.issueTokens(2n);
+    await svc.revokeSession(userA.refreshToken);
+    const sessionA = webSessions.find((s) => s.userId === 1n);
+    const sessionB = webSessions.find((s) => s.userId === 2n);
+    expect(sessionA?.revokedAt).not.toBeNull();
+    expect(sessionB?.revokedAt).toBeNull();
   });
 });
 

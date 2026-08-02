@@ -585,6 +585,7 @@
   "schema-miniapp/src/components/tasks/TaskProgressBar.tsx": 61,
   "schema-miniapp/src/components/todayCustomize/ToggleRow.tsx": 61,
   "schema-miniapp/src/share/DayShareButton.tsx": 61,
+  "scripts/list-survived-mutants.mjs": 61,
   "src/channel/delivery-log.service.ts": 61,
   "webapp/src/pages/landing/productContent.tsx": 61,
   "webapp/src/pages/tests/testsKit.tsx": 61,
