@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Правило №7 CLAUDE.md: ответ на флэшкарте (используется в
+// Правило №7 CLAUDE.md: ответ на шаге карточки (используется в
 // Schema/ModeIntroSheet) — свободный текст, обязан проходить через
 // кризисную детекцию. Компонент тестируется напрямую (не через шиты),
 // контролируемое состояние ответа держит тестовая обёртка.
@@ -20,7 +20,6 @@ function Wrapper() {
   const [answer, setAnswer] = useState('');
   return (
     <IntroSheetFlashcard
-      accentColor="#a78bfa"
       step={0}
       totalSteps={1}
       question={{
@@ -30,11 +29,7 @@ function Wrapper() {
         placeholder: 'Когда не отвечают на сообщения...',
       }}
       answer={answer}
-      flipped
-      onFlip={() => {}}
-      onUnflip={() => {}}
       onChange={setAnswer}
-      answerPromptText="Нажми чтобы ответить"
     />
   );
 }
@@ -55,5 +50,28 @@ describe('IntroSheetFlashcard — кризисная детекция (прав�
     const textarea = renderCard();
     fireEvent.change(textarea, { target: { value: 'сегодня гулял в парке' } });
     expect(screen.queryByText('8-800-2000-122')).toBeNull();
+  });
+});
+
+describe('IntroSheetFlashcard — шаг виден сразу (правило онбординга)', () => {
+  it('вопрос и поле ответа на экране без дополнительных нажатий', () => {
+    render(<Wrapper />);
+    expect(screen.getByText('Что запускает эту схему?')).toBeTruthy();
+    expect(
+      screen.getByPlaceholderText('Когда не отвечают на сообщения...'),
+    ).toBeTruthy();
+  });
+
+  // Регрессия инцидента 2026-08: поле лежало внутри pressable-карточки,
+  // и пробел из textarea уходил обёртке в preventDefault().
+  it('пробел в поле ответа не перехватывается обёрткой', () => {
+    const textarea = renderCard();
+    const notPrevented = fireEvent.keyDown(textarea, {
+      key: ' ',
+      code: 'Space',
+    });
+    expect(notPrevented).toBe(true);
+    fireEvent.change(textarea, { target: { value: 'два слова' } });
+    expect((textarea as HTMLTextAreaElement).value).toBe('два слова');
   });
 });

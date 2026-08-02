@@ -27,15 +27,18 @@ import { getModeCard } from '../../../shared/src/mode/modeCards';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const mockGetModeCard = getModeCard as unknown as ReturnType<typeof vi.fn>;
 
-async function openFirstQuestion() {
-  render(<ModeIntroSheet modeId="vulnerable_child" onClose={() => {}} />);
+async function openFirstQuestion(onClose: () => void = () => {}) {
+  render(<ModeIntroSheet modeId="vulnerable_child" onClose={onClose} />);
   await act(async () => {}); // flush getModeNotes()
-  fireEvent.click(screen.getByText('Когда этот режим включается?'));
+  // Поле ответа видно сразу — без тапа по карточке (переворота больше нет).
   return screen.getByPlaceholderText(/Когда меня критикуют/);
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Черновик карточки живёт в localStorage — без очистки предыдущий тест
+  // подсовывает следующему свои ответы (карточка приезжает уже заполненной).
+  localStorage.clear();
   vi.useFakeTimers();
   mockApi.getModeNotes.mockResolvedValue([]);
   mockApi.saveModeNote.mockResolvedValue(undefined);
@@ -83,6 +86,49 @@ describe('ModeIntroSheet — автосейв карточки (setTimeout(1500)
     });
     expect(mockApi.saveModeNote).toHaveBeenCalledTimes(2);
     expect(mockApi.saveModeNote.mock.calls[1][0].triggers).toBe('AB');
+  });
+});
+
+// Инцидент 2026-08: «Сохранить карточку» на вид не делала ничего — подпись
+// кнопки менялась на 1.8 секунды, шит оставался открытым. Тест держит связку
+// «нажал сохранить → запрос ушёл → виден итог → «Готово» закрывает».
+describe('ModeIntroSheet — сохранение карточки видно пользователю', () => {
+  async function fillAndSave(onClose: () => void = () => {}) {
+    const textarea = await openFirstQuestion(onClose);
+    fireEvent.change(textarea, { target: { value: 'Когда меня оставляют' } });
+    for (let i = 0; i < 6; i++)
+      fireEvent.click(screen.getByText('Следующий →'));
+    fireEvent.click(screen.getByText('Сохранить карточку'));
+    await act(async () => {});
+  }
+
+  it('после сохранения показывает итог с ответом, а не молча остаётся на вопросе', async () => {
+    await fillAndSave();
+    expect(mockApi.saveModeNote).toHaveBeenCalled();
+    expect(mockApi.saveModeNote.mock.calls[0][0]).toMatchObject({
+      modeId: 'vulnerable_child',
+      triggers: 'Когда меня оставляют',
+    });
+    expect(screen.getByText('Карточка сохранена')).toBeTruthy();
+    expect(screen.getByText('Когда меня оставляют')).toBeTruthy();
+  });
+
+  it('«Готово» на экране итога закрывает карточку', async () => {
+    const onClose = vi.fn();
+    await fillAndSave(onClose);
+    fireEvent.click(screen.getByText('Готово'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('пустая карточка: кнопка выключена и сказано, чего не хватает', async () => {
+    await openFirstQuestion();
+    for (let i = 0; i < 6; i++)
+      fireEvent.click(screen.getByText('Следующий →'));
+    const save = screen.getByText('Сохранить карточку') as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+    expect(screen.getByText(/нужен хотя бы один ответ/i)).toBeTruthy();
+    fireEvent.click(save);
+    expect(mockApi.saveModeNote).not.toHaveBeenCalled();
   });
 });
 
