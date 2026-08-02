@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 // Бутстрап тестов miniapp (TEST_COVERAGE_PLAN.md, этап 2 п.9): аналог
 // webapp-хука useHistorySheet — задокументированный в CLAUDE.md класс багов
-// «кнопка Назад уводит из приложения». Здесь Назад — Telegram BackButton,
-// а не браузерная история, но инвариант тот же: одно нажатие обязано
-// закрыть ровно верхний по приоритету открытый оверлей, а не два разом
-// и не браузерный выход из мини-аппа.
+// «кнопка Назад уводит из приложения». В хосте с своей кнопкой (Telegram/
+// MAX) это BackButton, в браузере (MULTI_HOST_PLAN.md, шаг 2) — история
+// браузера: инвариант тот же — одно нажатие обязано закрыть ровно верхний по
+// приоритету открытый оверлей, а не два разом и не увести из приложения.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useTelegramBackButton } from './useTelegramBackButton';
+import { useHostBackButton } from './useHostBackButton';
 import type { UseSheetsReturn } from './useSheets';
 
 vi.mock('../api', () => ({
@@ -54,7 +54,7 @@ function makeSheets(overrides: Partial<UseSheetsReturn> = {}): UseSheetsReturn {
 }
 
 function makeArgs(
-  overrides: Partial<Parameters<typeof useTelegramBackButton>[0]> = {},
+  overrides: Partial<Parameters<typeof useHostBackButton>[0]> = {},
 ) {
   return {
     sheets: makeSheets(),
@@ -91,18 +91,14 @@ beforeEach(() => {
   mockApi.getPair.mockResolvedValue({});
 });
 
-describe('useTelegramBackButton — без window.Telegram (не в мини-аппе)', () => {
-  it('не падает, если window.Telegram отсутствует', () => {
+describe('useHostBackButton — хост с собственной кнопкой (Telegram)', () => {
+  it('не падает, если window.Telegram отсутствует (браузер без своей кнопки)', () => {
     window.Telegram = undefined;
-    expect(() =>
-      renderHook(() => useTelegramBackButton(makeArgs())),
-    ).not.toThrow();
+    expect(() => renderHook(() => useHostBackButton(makeArgs()))).not.toThrow();
   });
-});
 
-describe('useTelegramBackButton — видимость кнопки', () => {
   it('ни один оверлей не открыт -> BackButton скрыт', () => {
-    renderHook(() => useTelegramBackButton(makeArgs()));
+    renderHook(() => useHostBackButton(makeArgs()));
     const bb = getBB();
     expect(bb.hide).toHaveBeenCalled();
     expect(bb.show).not.toHaveBeenCalled();
@@ -110,9 +106,7 @@ describe('useTelegramBackButton — видимость кнопки', () => {
 
   it('открыт settings -> BackButton показан', () => {
     renderHook(() =>
-      useTelegramBackButton(
-        makeArgs({ sheets: makeSheets({ settings: true }) }),
-      ),
+      useHostBackButton(makeArgs({ sheets: makeSheets({ settings: true }) })),
     );
     const bb = getBB();
     expect(bb.show).toHaveBeenCalled();
@@ -120,7 +114,7 @@ describe('useTelegramBackButton — видимость кнопки', () => {
 
   it('открыт newDiaryEntry -> BackButton показан', () => {
     renderHook(() =>
-      useTelegramBackButton(makeArgs({ newDiaryEntry: 'gratitude' })),
+      useHostBackButton(makeArgs({ newDiaryEntry: 'gratitude' })),
     );
     const bb = getBB();
     expect(bb.show).toHaveBeenCalled();
@@ -128,7 +122,7 @@ describe('useTelegramBackButton — видимость кнопки', () => {
 
   it('therapistMode + cabinetView=client без открытых оверлеев -> BackButton показан', () => {
     renderHook(() =>
-      useTelegramBackButton(
+      useHostBackButton(
         makeArgs({ therapistMode: true, cabinetView: 'client' }),
       ),
     );
@@ -138,20 +132,16 @@ describe('useTelegramBackButton — видимость кнопки', () => {
 
   it('therapistMode=true, но cabinetView=list -> BackButton скрыт (условие составное)', () => {
     renderHook(() =>
-      useTelegramBackButton(
-        makeArgs({ therapistMode: true, cabinetView: 'list' }),
-      ),
+      useHostBackButton(makeArgs({ therapistMode: true, cabinetView: 'list' })),
     );
     const bb = getBB();
     expect(bb.hide).toHaveBeenCalled();
     expect(bb.show).not.toHaveBeenCalled();
   });
-});
 
-describe('useTelegramBackButton — нажатие Назад закрывает верхний оверлей', () => {
   it('ничего не открыто -> нажатие Назад не вызывает никаких колбэков', () => {
     const args = makeArgs();
-    renderHook(() => useTelegramBackButton(args));
+    renderHook(() => useHostBackButton(args));
     const bb = getBB();
     registeredHandler(bb)();
     expect(args.sheets.close).not.toHaveBeenCalled();
@@ -160,7 +150,7 @@ describe('useTelegramBackButton — нажатие Назад закрывает
 
   it('открыт settings -> Назад закрывает settings через sheets.close', () => {
     const args = makeArgs({ sheets: makeSheets({ settings: true }) });
-    renderHook(() => useTelegramBackButton(args));
+    renderHook(() => useHostBackButton(args));
     const bb = getBB();
     registeredHandler(bb)();
     expect(args.sheets.close).toHaveBeenCalledWith('settings');
@@ -170,7 +160,7 @@ describe('useTelegramBackButton — нажатие Назад закрывает
     const args = makeArgs({
       sheets: makeSheets({ tracker: true, trackerTab: 'history' }),
     });
-    renderHook(() => useTelegramBackButton(args));
+    renderHook(() => useHostBackButton(args));
     const bb = getBB();
     registeredHandler(bb)();
     expect(args.sheets.close).toHaveBeenCalledWith('tracker', {
@@ -180,7 +170,7 @@ describe('useTelegramBackButton — нажатие Назад закрывает
 
   it('открыт pairSheet -> Назад закрывает его и перезапрашивает пару через api.getPair', async () => {
     const args = makeArgs({ sheets: makeSheets({ pairSheet: true }) });
-    renderHook(() => useTelegramBackButton(args));
+    renderHook(() => useHostBackButton(args));
     const bb = getBB();
     registeredHandler(bb)();
     expect(args.sheets.close).toHaveBeenCalledWith('pairSheet');
@@ -193,7 +183,7 @@ describe('useTelegramBackButton — нажатие Назад закрывает
       newDiaryEntry: 'schema',
       sheets: makeSheets({ settings: true }), // одновременно открыт другой оверлей
     });
-    renderHook(() => useTelegramBackButton(args));
+    renderHook(() => useHostBackButton(args));
     const bb = getBB();
     registeredHandler(bb)();
     expect(args.setNewDiaryEntry).toHaveBeenCalledWith(null);
@@ -208,7 +198,7 @@ describe('useTelegramBackButton — нажатие Назад закрывает
         trackerNeedId: 'safety',
       }),
     });
-    renderHook(() => useTelegramBackButton(args));
+    renderHook(() => useHostBackButton(args));
     const bb = getBB();
     registeredHandler(bb)();
     expect(args.sheets.close).toHaveBeenCalledWith('trackerOverlay', {
@@ -219,18 +209,16 @@ describe('useTelegramBackButton — нажатие Назад закрывает
 
   it('therapistMode/cabinetView=client как крайний приоритет -> вызывает therapistBackHandlerRef.current()', () => {
     const args = makeArgs({ therapistMode: true, cabinetView: 'client' });
-    renderHook(() => useTelegramBackButton(args));
+    renderHook(() => useHostBackButton(args));
     const bb = getBB();
     registeredHandler(bb)();
     expect(args.therapistBackHandlerRef.current).toHaveBeenCalled();
     expect(args.sheets.close).not.toHaveBeenCalled();
   });
-});
 
-describe('useTelegramBackButton — регистрация обработчика Назад', () => {
   it('onClick регистрируется один раз на монтировании и не перерегистрируется при смене sheets', () => {
     const args = makeArgs();
-    const { rerender } = renderHook((props) => useTelegramBackButton(props), {
+    const { rerender } = renderHook((props) => useHostBackButton(props), {
       initialProps: args,
     });
     const bb = getBB();
@@ -243,7 +231,7 @@ describe('useTelegramBackButton — регистрация обработчик�
 
   it('приоритет пересчитывается на лету без перерегистрации: тот же handler теперь закрывает settings', () => {
     const args = makeArgs();
-    const { rerender } = renderHook((props) => useTelegramBackButton(props), {
+    const { rerender } = renderHook((props) => useHostBackButton(props), {
       initialProps: args,
     });
     const bb = getBB();
@@ -255,14 +243,13 @@ describe('useTelegramBackButton — регистрация обработчик�
     };
     rerender(argsWithSettings);
 
-    // Тот же зарегистрированный колбэк — просто ref внутри хука обновился.
     expect(registeredHandler(bb)).toBe(handlerBefore);
     handlerBefore();
     expect(argsWithSettings.sheets.close).toHaveBeenCalledWith('settings');
   });
 
   it('unmount отписывает обработчик через offClick с той же функцией, что была передана в onClick', () => {
-    const { unmount } = renderHook(() => useTelegramBackButton(makeArgs()));
+    const { unmount } = renderHook(() => useHostBackButton(makeArgs()));
     const bb = getBB();
     const handler = registeredHandler(bb);
 
@@ -270,5 +257,122 @@ describe('useTelegramBackButton — регистрация обработчик�
 
     expect(bb.offClick).toHaveBeenCalledTimes(1);
     expect(bb.offClick).toHaveBeenCalledWith(handler);
+  });
+});
+
+describe('useHostBackButton — хост без своей кнопки (браузер): история', () => {
+  beforeEach(() => {
+    window.Telegram = undefined;
+  });
+
+  it('открытие оверлея заводит запись истории (pushState)', () => {
+    const pushSpy = vi.spyOn(window.history, 'pushState');
+    const { rerender } = renderHook((props) => useHostBackButton(props), {
+      initialProps: makeArgs(),
+    });
+    expect(pushSpy).not.toHaveBeenCalled();
+
+    rerender(makeArgs({ sheets: makeSheets({ settings: true }) }));
+    expect(pushSpy).toHaveBeenCalledTimes(1);
+    pushSpy.mockRestore();
+  });
+
+  it('popstate (нажатие «Назад» браузера) закрывает открытый лист', () => {
+    const args = makeArgs({ sheets: makeSheets({ settings: true }) });
+    renderHook((props) => useHostBackButton(props), { initialProps: args });
+
+    window.dispatchEvent(new PopStateEvent('popstate'));
+
+    expect(args.sheets.close).toHaveBeenCalledWith('settings');
+  });
+
+  it('закрытие не через «Назад» (крестиком) подчищает историю через history.back()', () => {
+    const backSpy = vi
+      .spyOn(window.history, 'back')
+      .mockImplementation(() => {});
+    const { rerender } = renderHook((props) => useHostBackButton(props), {
+      initialProps: makeArgs({ sheets: makeSheets({ settings: true }) }),
+    });
+
+    rerender(makeArgs({ sheets: makeSheets({ settings: false }) }));
+
+    expect(backSpy).toHaveBeenCalledTimes(1);
+    backSpy.mockRestore();
+  });
+
+  it('закрытие ЧЕРЕЗ popstate не вызывает повторный history.back() (нет лишней записи)', () => {
+    const backSpy = vi
+      .spyOn(window.history, 'back')
+      .mockImplementation(() => {});
+    const args = makeArgs({ sheets: makeSheets({ settings: true }) });
+    const { rerender } = renderHook((props) => useHostBackButton(props), {
+      initialProps: args,
+    });
+
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(args.sheets.close).toHaveBeenCalledWith('settings');
+    // Родитель убирает лист из дерева (как sheets.close реально делает) — имитируем.
+    rerender(makeArgs({ sheets: makeSheets({ settings: false }) }));
+
+    expect(backSpy).not.toHaveBeenCalled();
+    backSpy.mockRestore();
+  });
+
+  // Регрессия: наш собственный history.back() в НАСТОЯЩЕМ браузере тоже
+  // стреляет popstate — раньше тесты мокали back() пустышкой, и это скрывало
+  // рассинхрон флага. Симптом у пользователя: открыл-закрыл крестиком дважды,
+  // и одно нажатие «Назад» уходит впустую (лишняя запись в истории).
+  it('крестик → открыть снова → «Назад» закрывает лист, а не тратится впустую', () => {
+    // back() как в жизни: снимает запись и синхронно шлёт popstate.
+    const backSpy = vi.spyOn(window.history, 'back').mockImplementation(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    const pushSpy = vi.spyOn(window.history, 'pushState');
+    const { rerender } = renderHook((props) => useHostBackButton(props), {
+      initialProps: makeArgs(),
+    });
+
+    // Цикл 1: открыли и закрыли крестиком — свою запись убрали.
+    rerender(makeArgs({ sheets: makeSheets({ settings: true }) }));
+    rerender(makeArgs({ sheets: makeSheets({ settings: false }) }));
+    expect(pushSpy).toHaveBeenCalledTimes(1);
+    expect(backSpy).toHaveBeenCalledTimes(1);
+
+    // Цикл 2: то же самое ещё раз. Каждому pushState обязан отвечать свой
+    // back() — иначе запись остаётся висеть. Именно здесь ломалась старая
+    // версия: popstate от НАШЕГО же back() выставлял флаг «ушли через Назад»,
+    // и второй крестик уборку пропускал.
+    rerender(makeArgs({ sheets: makeSheets({ settings: true }) }));
+    rerender(makeArgs({ sheets: makeSheets({ settings: false }) }));
+    expect(pushSpy).toHaveBeenCalledTimes(2);
+    expect(backSpy).toHaveBeenCalledTimes(2);
+
+    // Лишних записей не осталось → «Назад» не тратится вхолостую.
+    const args = makeArgs({ sheets: makeSheets({ settings: true }) });
+    rerender(args);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(args.sheets.close).toHaveBeenCalledWith('settings');
+    // Через «Назад» запись снял браузер — второй раз её снимать не надо.
+    rerender(makeArgs({ sheets: makeSheets({ settings: false }) }));
+    expect(backSpy).toHaveBeenCalledTimes(2);
+
+    backSpy.mockRestore();
+    pushSpy.mockRestore();
+  });
+
+  it('в MAX (нет window.Telegram, но есть window.WebApp) история не трогается — своя кнопка есть', () => {
+    (globalThis as { WebApp?: unknown }).WebApp = {
+      initData: 'a=b',
+      BackButton: makeBackButton(),
+    };
+    const pushSpy = vi.spyOn(window.history, 'pushState');
+    const { rerender } = renderHook((props) => useHostBackButton(props), {
+      initialProps: makeArgs(),
+    });
+    rerender(makeArgs({ sheets: makeSheets({ settings: true }) }));
+
+    expect(pushSpy).not.toHaveBeenCalled();
+    pushSpy.mockRestore();
+    delete (globalThis as { WebApp?: unknown }).WebApp;
   });
 });

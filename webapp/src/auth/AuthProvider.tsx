@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { getHost } from '../../../shared/src/host';
 import { AuthContext } from './authContext';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
@@ -47,15 +48,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Try Telegram WebApp auto-auth using initData
   const doTelegramWebAppAuth = useCallback(async (): Promise<boolean> => {
     try {
-      const tg = window.Telegram?.WebApp;
-      const initData = tg?.initData;
-      if (!initData) return false;
+      // Сайт открыт во встроенном браузере мессенджера — меняем его подпись
+      // на сессию тем эндпоинтом, который назвал сам хост.
+      const exchange = getHost().sessionExchange();
+      if (!exchange) return false;
 
-      const res = await fetch(`${API_BASE}/api/auth/telegram/webapp`, {
+      const res = await fetch(`${API_BASE}${exchange.path}`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData }),
+        body: JSON.stringify(exchange.body),
       });
       if (!res.ok) return false;
       const { accessToken: token, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };

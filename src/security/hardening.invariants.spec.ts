@@ -25,10 +25,37 @@ describe('трипваер: hardening-middleware в main.ts', () => {
     expect(MAIN).toMatch(/scriptSrc:/);
   });
 
+  // Клик-джекинг: X-Frame-Options выключен осознанно (он не умеет несколько
+  // источников, а мини-приложение живёт в iframe мессенджера). Значит защита
+  // держится на frame-ancestors — и он обязан быть списком, а не «кому угодно».
+  it('CSP frame-ancestors: явный список источников, без «всем можно»', () => {
+    const m = MAIN.match(/frameAncestors:\s*\[([^\]]*)\]/);
+    expect(m).not.toBeNull();
+    const value = m![1].replace(/\s/g, '');
+    expect(value).toContain("'self'");
+    expect(value).not.toContain("'*'");
+    expect(value).not.toContain('"*"');
+    // Голая схема https: пустила бы любой сайт — источники только поимённо.
+    expect(value).not.toMatch(/['"]https:['"]/);
+  });
+
   it("CSP scriptSrc не содержит 'unsafe-eval'", () => {
     const m = MAIN.match(/scriptSrc:\s*\[([^\]]*)\]/);
     expect(m).not.toBeNull();
     expect(m![1]).not.toMatch(/unsafe-eval/);
+  });
+
+  // Мини-приложение в MAX грузит их мост с st.max.ru. Убрать домен из списка
+  // = мост молча не загрузится, а приложение внутри мессенджера решит, что
+  // открыто в браузере (зонд уже наступал на этот же CSP инлайн-скриптом).
+  // И наоборот: 'unsafe-inline' сюда добавлять нельзя — загрузчик вынесен в
+  // отдельный файл /max-bridge.js именно поэтому.
+  it('CSP scriptSrc: мост MAX разрешён поимённо, инлайн — по-прежнему нет', () => {
+    const m = MAIN.match(/scriptSrc:\s*\[([^\]]*)\]/);
+    expect(m).not.toBeNull();
+    const value = m![1].replace(/\s/g, '');
+    expect(value).toContain('https://st.max.ru');
+    expect(value).not.toMatch(/unsafe-inline/);
   });
 
   it('ValidationPipe с whitelist (mass-assignment защита)', () => {

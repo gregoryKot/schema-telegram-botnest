@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Всё по схеме</title>
     <script src="/telegram-web-app.js"></script>
+    <!-- Мост MAX: подключается только внутри MAX, решает это сам загрузчик.
+         Отдельным файлом, а не инлайном — у нас script-src 'self' без
+         unsafe-inline, инлайн CSP заблокировал бы. -->
+    <script src="/max-bridge.js"></script>
   </head>
   <body>
     <div id="root"></div>

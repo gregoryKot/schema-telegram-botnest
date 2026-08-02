@@ -16,10 +16,12 @@ import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
 import type { Request, Response } from 'express';
 import {
+  CROSS_SITE_COOKIE,
   REFRESH_COOKIE,
-  cookieOptions,
   getCookie,
+  isCrossSiteSession,
   requireCsrf,
+  setRefreshCookie,
 } from './auth-http.util';
 
 @Controller('api/auth')
@@ -48,10 +50,13 @@ export class AuthController {
       req.ip,
       req.headers['user-agent'],
     );
-    res.cookie(
-      REFRESH_COOKIE,
+    // Кросс-сайтовость переживает ротацию: иначе сессия в iframe MAX умерла бы
+    // на первом продлении (метка — auth-http.util.ts).
+    setRefreshCookie(
+      res,
       tokens.refreshToken,
-      cookieOptions(30 * 24 * 3600),
+      30 * 24 * 3600,
+      isCrossSiteSession(req),
     );
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
@@ -87,6 +92,7 @@ export class AuthController {
       }
     }
     res.clearCookie(REFRESH_COOKIE, { path: '/api/auth' });
+    res.clearCookie(CROSS_SITE_COOKIE, { path: '/api/auth' });
     return { ok: true };
   }
 

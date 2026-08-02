@@ -168,6 +168,7 @@ describe('AuthProviderRegistry', () => {
       telegram as never,
       fakeProvider('telegram-oidc') as never,
       fakeProvider('vk') as never,
+      fakeProvider('max') as never,
     );
     expect(registry.get('telegram')).toBe(telegram);
     expect(registry.get('google')).toBe(google);
@@ -179,6 +180,7 @@ describe('AuthProviderRegistry', () => {
       fakeProvider('telegram') as never,
       fakeProvider('telegram-oidc') as never,
       fakeProvider('vk') as never,
+      fakeProvider('max') as never,
     );
     expect(() => registry.get('apple')).toThrow(NotFoundException);
   });
@@ -189,12 +191,13 @@ describe('AuthProviderRegistry', () => {
       fakeProvider('telegram') as never,
       fakeProvider('telegram-oidc') as never,
       fakeProvider('vk') as never,
+      fakeProvider('max') as never,
     );
     expect(
       registry
         .list()
         .map((p) => p.id)
         .sort(),
-    ).toEqual(['google', 'telegram', 'telegram-oidc', 'vk']);
+    ).toEqual(['google', 'max', 'telegram', 'telegram-oidc', 'vk']);
   });
 });

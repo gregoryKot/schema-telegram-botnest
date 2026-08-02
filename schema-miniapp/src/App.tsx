@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { getHost } from '../../shared/src/host';
 import { useUserFlags, setFlag as setServerFlag } from './useUserFlags';
 import { applyTheme, getTheme } from './utils/theme';
 import { syncMotionAttr } from './utils/reducedMotion';
@@ -22,7 +23,7 @@ import { PracticePlan, PairsData, StreakData, UserTask } from './api';
 import { useSafeTop } from './utils/safezone';
 import { cacheTherapistContact } from './utils/therapistContact';
 import { useSheets } from './hooks/useSheets';
-import { useTelegramBackButton } from './hooks/useTelegramBackButton';
+import { useHostBackButton } from './hooks/useHostBackButton';
 import { TherapistBottomNav } from './components/TherapistBottomNav';
 import { TrackerHistoryOverlay } from './components/TrackerHistoryOverlay';
 import {
@@ -34,11 +35,13 @@ import {
 import { AppSections } from './components/AppSections';
 import { AppOverlays } from './components/AppOverlays';
 import { AppErrorScreen } from './components/AppErrorScreen';
+import { LoginScreen } from './components/LoginScreen';
 import { AmbientBackground } from './components/AmbientBackground';
 import { OfflineBanner } from './components/OfflineBanner';
 import { useOnboardingGate } from './hooks/useOnboardingGate';
 import { useSectionSwipe } from './hooks/useSectionSwipe';
 import { useSessionExpired } from './hooks/useSessionExpired';
+import { shouldShowLoginScreen } from './utils/loginScreenGate';
 import { ensureSession, SESSION_EXPIRED_ERROR } from './session';
 
 type TrackerTab = 'today' | 'history';
@@ -208,11 +211,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Clear YSQ data from localStorage if it belongs to a different Telegram user.
+    // Clear YSQ data from localStorage if it belongs to a different user.
     // Prevents a shared-device scenario where person B reads person A's clinical data.
-    const currentUserId = String(
-      window.Telegram?.WebApp?.initDataUnsafe?.user?.id ?? '',
-    );
+    const currentUserId = getHost().user()?.id ?? '';
     if (currentUserId) {
       const storedUserId = localStorage.getItem('ysq_owner_id');
       if (storedUserId && storedUserId !== currentUserId) {
@@ -224,11 +225,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    window.Telegram?.WebApp?.ready();
-    window.Telegram?.WebApp?.expand();
-    window.Telegram?.WebApp?.disableVerticalSwipes?.();
-    // Меняем свежую initData на сессию — фоном, запросы её не ждут. Через час
-    // Telegram ту же initData не обновит, и без этой куки приложение умирало.
+    getHost().ready();
+    getHost().expand();
+    // Меняем свежую подпись хоста на сессию — фоном, запросы её не ждут. Через
+    // час Telegram ту же initData не обновит, и без этой куки приложение умирало.
     void ensureSession();
     if (!sessionStorage.getItem('init_done')) {
       const tzOffset = Math.round(-new Date().getTimezoneOffset() / 60);
@@ -331,14 +331,16 @@ export default function App() {
           switchTherapistMode(false, false);
         }
         if (p.name) setDisplayName(p.name);
-        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        const hostUser = getHost().user();
         if (p.role === 'THERAPIST') {
           cacheTherapistContact({
             role: 'THERAPIST',
             partnerId: null,
             partnerName: null,
-            myId: tgUser?.id ?? null,
-            myName: tgUser?.first_name ?? null,
+            // Ссылка на терапевта — tg://user?id=…, отсюда только числовой
+            // идентификатор: у другой площадки будет своя ссылка на профиль.
+            myId: hostUser ? Number(hostUser.id) || null : null,
+            myName: hostUser?.firstName ?? null,
           });
         } else {
           api
@@ -360,7 +362,7 @@ export default function App() {
       .getTasks()
       .then(setHelpTasks)
       .catch(() => setHelpTasks([]));
-    const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+    const startParam = getHost().startParam();
     if (startParam?.startsWith('pair_')) {
       const code = startParam.replace('pair_', '');
       api
@@ -444,8 +446,8 @@ export default function App() {
     }
   }, [sheets.trackerTab, historyDays]);
 
-  // Telegram back button
-  useTelegramBackButton({
+  // Кнопка «назад» хоста (Telegram/MAX) или истории браузера (web)
+  useHostBackButton({
     sheets,
     newDiaryEntry,
     setNewDiaryEntry,
@@ -507,6 +509,10 @@ export default function App() {
   }
 
   if (error || sessionExpired) {
+    // В браузере отсутствие сессии значит «не входил», а не «истекла» —
+    // рисуем экран входа. В Telegram/MAX поведение прежнее (см.
+    // utils/loginScreenGate.ts).
+    if (sessionExpired && shouldShowLoginScreen()) return <LoginScreen />;
     return (
       <AppErrorScreen error={sessionExpired ? SESSION_EXPIRED_ERROR : error!} />
     );

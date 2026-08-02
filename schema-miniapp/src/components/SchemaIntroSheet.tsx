@@ -142,7 +142,7 @@ export function SchemaIntroSheet({ schemaId, onClose, onComplete }: Props) {
       description={schema.desc}
       showDescription
       explainer={buildSchemaIntroExplainer(tr)}
-      answerPromptText={tr('Нажми чтобы ответить', 'Нажмите чтобы ответить')}
+      savedHint="Карточка схемы — в разделе «Паттерны». Её можно открыть и дополнить в любой момент."
       nextButtonLabel="Следующий вопрос →"
       gradientSaveButton
     />

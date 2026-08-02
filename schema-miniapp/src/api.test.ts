@@ -50,13 +50,16 @@ describe('api — заголовки авторизации', () => {
     expect(headers.Authorization).toBeUndefined();
   });
 
-  it('нет window.Telegram.WebApp → initData подставляется пустой строкой, запрос не падает', async () => {
+  it('приложение открыто не в мессенджере → заголовка initData нет, запрос не падает', async () => {
     delete (window as unknown as { Telegram?: unknown }).Telegram;
     mockFetchOnce(200, { accepted: true });
     await api.getDisclaimer();
     const [, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     const headers = init.headers as Record<string, string>;
-    expect(headers['x-telegram-init-data']).toBe('');
+    // Пустая подпись Telegram из браузера бессмысленна: там вход по JWT, а
+    // бэкенд на отсутствующий заголовок отвечает так же, как на пустой.
+    expect(headers['x-telegram-init-data']).toBeUndefined();
+    expect(headers['Content-Type']).toBe('application/json');
   });
 
   it('POST-запрос тоже несёт initData и Content-Type, тело — JSON', async () => {

@@ -24,7 +24,7 @@ const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 async function openFirstQuestion() {
   render(<SchemaIntroSheet schemaId="abandonment" onClose={() => {}} />);
   await act(async () => {}); // flush getSchemaNotes()
-  fireEvent.click(screen.getByText('Что запускает эту схему?'));
+  // Поле ответа видно сразу — без тапа по карточке (переворота больше нет).
   return screen.getByPlaceholderText(/Когда не отвечают на сообщения/);
 }
 

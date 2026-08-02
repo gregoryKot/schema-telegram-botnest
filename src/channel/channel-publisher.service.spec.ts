@@ -6,6 +6,14 @@ import { Logger } from '@nestjs/common';
 import { ChannelPublisherService } from './channel-publisher.service';
 import type { ChannelTarget } from './channel-target';
 import type { HealthyAdultService } from '../bot/healthy-adult.service';
+import type { DeliveryLogService } from './delivery-log.service';
+
+/** Журнал отправок в тестах: пишем в память, наружу не ходим. */
+const journal = () =>
+  ({
+    record: jest.fn().mockResolvedValue(undefined),
+    recent: jest.fn().mockResolvedValue([]),
+  }) as unknown as DeliveryLogService;
 
 function makeTarget(platform: string, destination: string | null) {
   const send = jest.fn().mockResolvedValue(undefined);
@@ -43,10 +51,19 @@ describe('ChannelPublisherService', () => {
     const res = await new ChannelPublisherService(
       [a.target, b.target],
       svc,
+      journal(),
     ).publish();
 
-    expect(a.send).toHaveBeenCalledWith('одна фраза', '@ch');
-    expect(b.send).toHaveBeenCalledWith('одна фраза', 'club1');
+    expect(a.send).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'одна фраза' }),
+      '@ch',
+    );
+    expect(b.send).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'одна фраза' }),
+      'club1',
+    );
+    // Картинка одна на публикацию: обе площадки получили один и тот же пост.
+    expect(a.send.mock.calls[0][0]).toBe(b.send.mock.calls[0][0]);
     expect(svc.pickFromPool).toHaveBeenCalledTimes(1);
     expect(res.ok).toBe(true);
     expect(res.delivered.map((d) => d.platform)).toEqual(['telegram', 'vk']);
@@ -56,30 +73,85 @@ describe('ChannelPublisherService', () => {
     const a = makeTarget('telegram', '@ch');
     const b = makeTarget('vk', 'club1');
     const { svc, recordPost } = makePhrases('одна фраза');
-    await new ChannelPublisherService([a.target, b.target], svc).publish();
+    await new ChannelPublisherService(
+      [a.target, b.target],
+      svc,
+      journal(),
+    ).publish();
     expect(recordPost).toHaveBeenCalledTimes(1);
     expect(recordPost).toHaveBeenCalledWith('одна фраза', 'pool');
   });
 
-  it('площадка без env пропускается молча', async () => {
+  it('площадка без env не получает пост, но названа в отчёте', async () => {
+    // Инцидент 2026-07-31: выключенная площадка выпадала из отчёта совсем, и
+    // её молчание читалось как успех — «утром пришло не всё» заметили постфактум.
     const on = makeTarget('telegram', '@ch');
     const off = makeTarget('vk', null);
     const { svc } = makePhrases();
     const res = await new ChannelPublisherService(
       [on.target, off.target],
       svc,
+      journal(),
     ).publish();
 
     expect(on.send).toHaveBeenCalled();
     expect(off.send).not.toHaveBeenCalled();
     expect(res.ok).toBe(true);
     expect(res.failed).toEqual([]);
+    expect(res.silent).toEqual([{ title: 'vk', envKey: 'ENV_VK' }]);
+    expect(res.message).toContain('Молчали');
+    expect(res.message).toContain('ENV_VK');
+  });
+
+  it('исход каждой площадки уходит в журнал под именем публикации', async () => {
+    const ok = makeTarget('telegram', '@ch');
+    const bad = makeTarget('vk', 'club1');
+    bad.send.mockRejectedValue(new Error('нет доступа'));
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { svc } = makePhrases();
+    const log = journal();
+
+    await new ChannelPublisherService(
+      [ok.target, bad.target],
+      svc,
+      log,
+    ).publish('утро');
+
+    const [source, delivered, failed] = (log.record as jest.Mock).mock.calls[0];
+    expect(source).toBe('утро');
+    expect(delivered).toEqual([
+      expect.objectContaining({ platform: 'telegram' }),
+    ]);
+    expect(failed).toEqual([
+      expect.objectContaining({
+        platform: 'vk',
+        reason: 'причина: нет доступа',
+      }),
+    ]);
+  });
+
+  it('полный провал тоже попадает в журнал — иначе о нём нечего спросить', async () => {
+    const bad = makeTarget('telegram', '@ch');
+    bad.send.mockRejectedValue(new Error('таймаут'));
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { svc } = makePhrases();
+    const log = journal();
+
+    await new ChannelPublisherService([bad.target], svc, log).publish('вечер');
+
+    const [, delivered, failed] = (log.record as jest.Mock).mock.calls[0];
+    expect(delivered).toEqual([]);
+    expect(failed).toHaveLength(1);
   });
 
   it('без единой настроенной площадки не трогает пул и подсказывает env', async () => {
     const off = makeTarget('telegram', null);
     const { svc } = makePhrases();
-    const res = await new ChannelPublisherService([off.target], svc).publish();
+    const res = await new ChannelPublisherService(
+      [off.target],
+      svc,
+      journal(),
+    ).publish();
 
     expect(svc.pickFromPool).not.toHaveBeenCalled();
     expect(res.posted).toBe(false);
@@ -89,7 +161,11 @@ describe('ChannelPublisherService', () => {
   it('пустой пул — ничего не отправляется', async () => {
     const a = makeTarget('telegram', '@ch');
     const { svc, recordPost } = makePhrases(null);
-    const res = await new ChannelPublisherService([a.target], svc).publish();
+    const res = await new ChannelPublisherService(
+      [a.target],
+      svc,
+      journal(),
+    ).publish();
 
     expect(a.send).not.toHaveBeenCalled();
     expect(recordPost).not.toHaveBeenCalled();
@@ -100,7 +176,7 @@ describe('ChannelPublisherService', () => {
     const a = makeTarget('telegram', '@ch');
     const { svc } = makePhrases();
     (svc.recentPostTexts as jest.Mock).mockResolvedValue(['вчерашнее']);
-    await new ChannelPublisherService([a.target], svc).publish();
+    await new ChannelPublisherService([a.target], svc, journal()).publish();
     expect(svc.pickFromPool).toHaveBeenCalledWith(['вчерашнее']);
   });
 
@@ -114,6 +190,7 @@ describe('ChannelPublisherService', () => {
       const res = await new ChannelPublisherService(
         [ok.target, bad.target],
         svc,
+        journal(),
       ).publish();
       return { res, recordPost };
     };
@@ -133,6 +210,7 @@ describe('ChannelPublisherService', () => {
     it('пост записан один раз — упавшая площадка не отменяет вышедший', async () => {
       const { recordPost } = await partial();
       expect(recordPost).toHaveBeenCalledTimes(1);
+      expect(recordPost).toHaveBeenCalledWith('фраза из пула', 'pool');
     });
   });
 
@@ -143,7 +221,11 @@ describe('ChannelPublisherService', () => {
     );
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     const { svc, recordPost } = makePhrases();
-    const res = await new ChannelPublisherService([a.target], svc).publish();
+    const res = await new ChannelPublisherService(
+      [a.target],
+      svc,
+      journal(),
+    ).publish();
 
     expect(recordPost).not.toHaveBeenCalled();
     expect(res.posted).toBe(false);
@@ -157,7 +239,11 @@ describe('ChannelPublisherService', () => {
     (svc.poolStatus as jest.Mock).mockRejectedValue(new Error('db down'));
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
-    const res = await new ChannelPublisherService([a.target], svc).publish();
+    const res = await new ChannelPublisherService(
+      [a.target],
+      svc,
+      journal(),
+    ).publish();
     expect(a.send).toHaveBeenCalled();
     expect(res.ok).toBe(true);
   });

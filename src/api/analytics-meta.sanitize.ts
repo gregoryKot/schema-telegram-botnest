@@ -132,6 +132,27 @@ export function sanitizeMeta(
     }
     return undefined;
   }
+  if (name === 'mode_entry_saved') {
+    const filledFields = meta.filledFields;
+    const filledHealthy = meta.filledHealthy;
+    if (
+      typeof filledFields === 'number' &&
+      Number.isInteger(filledFields) &&
+      filledFields >= 0 &&
+      filledFields <= 7 &&
+      typeof filledHealthy === 'boolean'
+    ) {
+      return { filledFields, filledHealthy };
+    }
+    return undefined;
+  }
+  if (name === 'mode_test_completed') {
+    const modeId = meta.modeId;
+    if (typeof modeId === 'string' && /^[a-z_]{1,64}$/.test(modeId)) {
+      return { modeId };
+    }
+    return undefined;
+  }
   // breath_start / stop_start / journey_open / ysq_help_open — без meta; поля отбрасываются.
   return undefined;
 }

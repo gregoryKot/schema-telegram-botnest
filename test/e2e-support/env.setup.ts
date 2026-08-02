@@ -7,6 +7,9 @@
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'e2e-smoke-test-secret';
 process.env.BOT_TOKEN = '12345:E2E_SMOKE_TEST_TOKEN';
+// Токен бота MAX — свой, не телеграмный: подпись мини-аппа MAX считается по
+// нему (src/auth/max-init-data.ts). Значение условное, бота не существует.
+process.env.MAX_BOT_TOKEN = 'e2e-smoke-max-bot-token';
 process.env.WEBAPP_URL = process.env.WEBAPP_URL ?? 'https://schemehappens.ru';
 // ENCRYPTION_KEY намеренно НЕ задан здесь: вне production src/utils/crypto.ts
 // работает в режиме passthrough (шифрование не участвует в проверяемых

@@ -4,12 +4,16 @@ import { poolAlertText } from '../bot/healthy-adult.pool-alert';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import {
   CHANNEL_TARGETS,
+  type ChannelPost,
   type ChannelTarget,
   type Delivery,
   type DeliveryFailure,
   type PublishResult,
+  type SilentTarget,
 } from './channel-target';
+import { DeliveryLogService } from './delivery-log.service';
 import { allDisabled, emptyPool, fanoutResult } from './publish-report';
+import { makeChannelPost } from './pin-image';
 
 /** Сколько последних постов показываем пулу, чтобы не повториться подряд. */
 const RECENT_POSTS = 10;
@@ -33,6 +37,7 @@ export class ChannelPublisherService {
   constructor(
     @Inject(CHANNEL_TARGETS) private readonly targets: ChannelTarget[],
     private readonly phrases: HealthyAdultService,
+    private readonly deliveries: DeliveryLogService,
   ) {}
 
   /** Площадки, у которых задан env. Ненастроенные молчат, а не падают. */
@@ -43,8 +48,19 @@ export class ChannelPublisherService {
     });
   }
 
-  /** Опубликовать одну фразу сейчас: /zv, кнопка в админке, тик расписания. */
-  async publish(): Promise<PublishResult> {
+  /** Площадки без env — их называем в отчёте, иначе молчание сойдёт за успех. */
+  private silent(): SilentTarget[] {
+    return this.targets
+      .filter((t) => !t.destination())
+      .map((t) => ({ title: t.title, envKey: t.envKey }));
+  }
+
+  /**
+   * Опубликовать одну фразу сейчас: /zv, кнопка в админке, тик расписания.
+   * `source` попадает в журнал отправок — по нему потом видно, чья это была
+   * публикация: утренняя, вечерняя или ручная.
+   */
+  async publish(source = 'вручную'): Promise<PublishResult> {
     const enabled = this.enabled();
     if (enabled.length === 0) return allDisabled(this.targets);
 
@@ -52,25 +68,29 @@ export class ChannelPublisherService {
     const text = await this.phrases.pickFromPool(recent);
     if (!text) return emptyPool();
 
+    const post = makeChannelPost(text);
     const delivered: Delivery[] = [];
     const failed: DeliveryFailure[] = [];
     // Площадки независимы: медленная или упавшая не задерживает остальные.
     await Promise.all(
       enabled.map(async ({ target, destination }) => {
-        const outcome = await this.deliver(target, destination, text);
+        const outcome = await this.deliver(target, destination, post);
         if ('reason' in outcome) failed.push(outcome);
         else delivered.push(outcome);
       }),
     );
 
+    // Журнал пишем всегда — и когда дошло, и когда нет: он и есть ответ на
+    // «почему утром пришло не везде».
+    await this.deliveries.record(source, delivered, failed);
     if (delivered.length > 0) await this.afterPost(text);
-    return fanoutResult(text, delivered, failed);
+    return fanoutResult(text, delivered, failed, this.silent());
   }
 
   private async deliver(
     target: ChannelTarget,
     destination: string,
-    text: string,
+    post: ChannelPost,
   ): Promise<Delivery | DeliveryFailure> {
     const where = {
       platform: target.platform,
@@ -78,7 +98,7 @@ export class ChannelPublisherService {
       destination,
     };
     try {
-      await target.send(text, destination);
+      await target.send(post, destination);
       this.logger.log(`healthy_adult_post ${target.platform}=${destination}`);
       return where;
     } catch (err) {

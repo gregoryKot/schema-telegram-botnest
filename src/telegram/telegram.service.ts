@@ -21,6 +21,7 @@ import { PracticesService } from '../bot/practices.service';
 import { NotificationService } from '../notification/notification.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
 import { ChannelPublisherService } from '../channel/channel-publisher.service';
+import { ChannelCheckService } from '../channel/channel-check.service';
 import {
   isQuietHours,
   nextQuietEnd,
@@ -98,6 +99,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly notificationService: NotificationService,
     private readonly therapistRequestService: TherapistRequestService,
     private readonly publisher: ChannelPublisherService,
+    private readonly channelCheck: ChannelCheckService,
   ) {}
 
   private stopping = false;
@@ -318,7 +320,20 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
           await ctx.reply('⛔ Нет доступа');
           return;
         }
-        const result = await this.publisher.publish();
+        // `/zv max` — проверка одной площадки: обычный /zv разошлёт настоящий
+        // пост всем подписчикам сразу, а свежеподключённую площадку надо
+        // проверять молча для остальных.
+        const only = ctx.message.text.split(/\s+/)[1];
+        // `/zv log` — журнал последних отправок: кто, куда и с каким исходом.
+        // Раньше ответ на «почему утром пришло не всё» жил только в логах
+        // хостинга (инцидент 2026-07-31).
+        if (only === 'log') {
+          await ctx.reply(await this.channelCheck.log());
+          return;
+        }
+        const result = only
+          ? await this.channelCheck.checkOne(only)
+          : await this.publisher.publish();
         await ctx.reply(result.message);
       } catch (err) {
         this.logger.error('zv command failed', err);

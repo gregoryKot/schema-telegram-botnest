@@ -1,3 +1,4 @@
+import { getHost } from '../../../shared/src/host';
 import { miniappDeepLink } from './botConfig';
 
 // Предложение «добавить мини-апп на домашний экран».
@@ -37,8 +38,8 @@ export function canOfferHomeScreen(
 }
 
 export function canOfferHomeScreenNow(): boolean {
-  const tg = window.Telegram?.WebApp;
-  return canOfferHomeScreen(tg?.platform, !!tg?.addToHomeScreen);
+  const host = getHost();
+  return canOfferHomeScreen(host.platform, host.capabilities.homeScreen);
 }
 
 // ── Память предложения ──────────────────────────────────────────────────────
@@ -170,25 +171,20 @@ export const ADD_ICON_HOP_URL = 'https://schemehappens.ru/add-icon.html';
  * умирает (universal link обратно в Telegram).
  */
 export function triggerAddToHomeScreen(
-  platform: HomeScreenPlatform = homeScreenPlatform(
-    window.Telegram?.WebApp?.platform,
-  ),
+  platform: HomeScreenPlatform = homeScreenPlatform(getHost().platform),
 ): void {
-  const tg = window.Telegram?.WebApp;
-  if (platform === 'android') {
-    tg?.addToHomeScreen?.();
+  const host = getHost();
+  if (platform === 'android' && host.capabilities.homeScreen) {
+    host.homeScreen.add();
     return;
   }
-  if (tg?.openLink) tg.openLink(ADD_ICON_HOP_URL);
-  else window.open(ADD_ICON_HOP_URL, '_blank');
+  host.openLink(ADD_ICON_HOP_URL);
 }
 
 // Кнопка есть на обеих мобильных платформах: Android — нативный вызов, iOS —
 // открытие страницы-инструкции браузером (см. triggerAddToHomeScreen).
 export function homeScreenButtonWorks(
-  platform: HomeScreenPlatform = homeScreenPlatform(
-    window.Telegram?.WebApp?.platform,
-  ),
+  platform: HomeScreenPlatform = homeScreenPlatform(getHost().platform),
 ): boolean {
   return platform === 'android' || platform === 'ios';
 }

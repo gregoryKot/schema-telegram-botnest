@@ -18,14 +18,68 @@ export function hasCsrfHeader(req: Request): boolean {
   return ct.startsWith('application/json');
 }
 
-export function cookieOptions(maxAgeS: number) {
+/**
+ * Куки сессии. По умолчанию `SameSite=strict` — это часть защиты сайта от
+ * CSRF, и трогать её глобально нельзя.
+ *
+ * `crossSite` — для мессенджера, который открывает мини-приложение в iframe
+ * (так делает MAX, в отличие от нативного вебвью Telegram). В чужом iframe
+ * браузер strict-куку не отправляет вовсе: пользователь вошёл бы по подписи,
+ * а через 15 минут сессия молча перестала бы продлеваться. Ослабление точечное
+ * — только для сессий, выпущенных обменом подписи мессенджера; от CSRF их
+ * держит заголовок (`requireCsrf`), а не SameSite.
+ */
+export function cookieOptions(
+  maxAgeS: number,
+  opts: { crossSite?: boolean } = {},
+) {
   return {
     httpOnly: true,
     secure: true,
-    sameSite: 'strict' as const,
+    sameSite: opts.crossSite ? ('none' as const) : ('strict' as const),
     path: '/api/auth',
     maxAge: maxAgeS * 1000,
   };
+}
+
+/**
+ * Метка «сессия живёт в чужом iframe», едет рядом с refresh-кукой и тем же
+ * SameSite. Нужна из-за ротации: `/api/auth/refresh` перевыпускает куку, и без
+ * метки он выдал бы её обратно как `strict` — сессия в MAX сломалась бы на
+ * первом же продлении, через 15 минут после входа.
+ *
+ * Метка держится на сервере, а не на заголовке от клиента: инвариант «эта
+ * сессия кросс-сайтовая» не должен зависеть от того, вспомнил ли о нём
+ * очередной вызывающий.
+ */
+export const CROSS_SITE_COOKIE = 'refresh_cross';
+
+export function isCrossSiteSession(req: Request): boolean {
+  return getCookie(req, CROSS_SITE_COOKIE) === '1';
+}
+
+/** Ставит refresh-куку и, для кросс-сайтовых сессий, метку рядом с ней. */
+export function setRefreshCookie(
+  res: {
+    cookie(
+      name: string,
+      value: string,
+      opts: ReturnType<typeof cookieOptions>,
+    ): void;
+    clearCookie(name: string, opts: { path: string }): void;
+  },
+  token: string,
+  maxAgeS: number,
+  crossSite: boolean,
+): void {
+  res.cookie(REFRESH_COOKIE, token, cookieOptions(maxAgeS, { crossSite }));
+  if (crossSite) {
+    res.cookie(CROSS_SITE_COOKIE, '1', cookieOptions(maxAgeS, { crossSite }));
+  } else {
+    // Обычный вход в том же браузере вытесняет прежнюю кросс-сайтовую сессию —
+    // метка не должна пережить её и ослабить следующую куку.
+    res.clearCookie(CROSS_SITE_COOKIE, { path: '/api/auth' });
+  }
 }
 
 // express типизирует Request.cookies как any — читаем куки через одну

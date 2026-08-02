@@ -11,6 +11,7 @@
 // определений примитивов и ВСЕ auth*.controller.ts для блоков-хендлеров.
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { cookieOptions } from '../auth/auth-http.util';
 
 const AUTH_DIR = join(__dirname, '../auth');
 const UTIL = join(AUTH_DIR, 'auth-http.util.ts');
@@ -79,16 +80,46 @@ describe('CSRF-трипваер auth-контроллеры', () => {
     expect(m![0]).not.toMatch(/^\s*return true;\s*$/m); // не безусловный true
   });
 
-  it('ни одна кука не выставлена sameSite:none (кросс-сайт отправка)', () => {
-    expect(util).not.toMatch(/sameSite:\s*['"]none['"]/i);
+  // sameSite:none снимает главную защиту от CSRF, поэтому появляться он имеет
+  // право ровно в одном месте — в cookieOptions, под явным флагом crossSite, и
+  // только ради мессенджера, который открывает мини-апп в чужом iframe (MAX:
+  // оттуда браузер strict-куку не шлёт вовсе). Контроллерам ставить none
+  // напрямую по-прежнему нельзя: тогда ослабление расползётся молча.
+  it('sameSite:none живёт только в cookieOptions под флагом crossSite', () => {
     expect(ctrlSrc).not.toMatch(/sameSite:\s*['"]none['"]/i);
+
+    const noneHits = util.match(/sameSite:[^\n]*['"]none['"]/gi) ?? [];
+    expect(noneHits).toHaveLength(1);
+    // Не безусловный none: строка обязана быть ветвлением по crossSite.
+    expect(noneHits[0]).toMatch(/opts\.crossSite\s*\?/);
   });
 
-  it('REFRESH_COOKIE выставляется httpOnly и sameSite strict', () => {
+  it('REFRESH_COOKIE выставляется httpOnly, а strict — поведение по умолчанию', () => {
     // cookieOptions — источник флагов рефреш-куки.
-    const co = util.match(/function cookieOptions[\s\S]*?\n}/);
+    const co = util.match(/export function cookieOptions[\s\S]*?\n}/);
     expect(co).not.toBeNull();
     expect(co![0]).toMatch(/httpOnly:\s*true/);
-    expect(co![0]).toMatch(/sameSite:\s*['"]strict['"]/);
+    expect(co![0]).toMatch(/secure:\s*true/);
+    // Без crossSite всегда strict — новый флаг не должен уметь переворачивать
+    // дефолт (иначе весь сайт тихо переехал бы на none).
+    expect(cookieOptions(100)).toMatchObject({
+      sameSite: 'strict',
+      httpOnly: true,
+      secure: true,
+    });
+    expect(cookieOptions(100, { crossSite: true })).toMatchObject({
+      sameSite: 'none',
+    });
+  });
+
+  // Кросс-сайтовую сессию заводит ровно одна точка входа — обмен подписи MAX.
+  // Если crossSite: true появится где-то ещё, это надо увидеть на ревью.
+  it('crossSite включает только обмен подписи MAX', () => {
+    const optedIn = ctrlFiles.filter((f) =>
+      /crossSite|setRefreshCookie\([^)]*true/s.test(
+        readFileSync(join(AUTH_DIR, f), 'utf8'),
+      ),
+    );
+    expect(optedIn).toEqual(['auth-max.controller.ts']);
   });
 });

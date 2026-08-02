@@ -8,6 +8,7 @@ import type {
   Delivery,
   DeliveryFailure,
   PublishResult,
+  SilentTarget,
 } from './channel-target';
 
 /** «Telegram (@channel)» — площадка и точка, куда именно ушло. */
@@ -18,6 +19,17 @@ const namedList = (items: Delivery[]): string => items.map(named).join(', ');
 /** Строки «Telegram (@ch) — 400: chat not found», по одной на площадку. */
 export function failedSummary(failed: DeliveryFailure[]): string {
   return failed.map((f) => `${named(f)} — ${f.reason}`).join('\n');
+}
+
+/**
+ * «Молчали: Threads — нет HEALTHY_ADULT_THREADS_USER». Выключенная площадка
+ * раньше просто отсутствовала в отчёте, и отличить её от успешной было
+ * невозможно — ровно так утро 2026-07-31 и выглядело «всё хорошо».
+ */
+export function silentSummary(silent: SilentTarget[]): string {
+  if (silent.length === 0) return '';
+  const list = silent.map((s) => `${s.title} — нет ${s.envKey}`).join('\n');
+  return `\nМолчали:\n${list}`;
 }
 
 /**
@@ -35,6 +47,7 @@ export function allDisabled(
     message: `⚠️ Постинг выключен: ни одна площадка не настроена.${tail}`,
     delivered: [],
     failed: [],
+    silent: targets.map((t) => ({ title: t.title, envKey: t.envKey })),
   };
 }
 
@@ -46,6 +59,7 @@ export function emptyPool(): PublishResult {
     message: '⚠️ Нет активных фраз — добавь их в админке (вкладка «Канал ЗВ»).',
     delivered: [],
     failed: [],
+    silent: [],
   };
 }
 
@@ -57,15 +71,17 @@ export function fanoutResult(
   text: string,
   delivered: Delivery[],
   failed: DeliveryFailure[],
+  silent: SilentTarget[] = [],
 ): PublishResult {
   const posted = delivered.length > 0;
   const ok = posted && failed.length === 0;
   return {
     ok,
     posted,
-    message: report(text, delivered, failed),
+    message: report(text, delivered, failed, silent),
     delivered,
     failed,
+    silent,
   };
 }
 
@@ -73,11 +89,70 @@ function report(
   text: string,
   delivered: Delivery[],
   failed: DeliveryFailure[],
+  silent: SilentTarget[],
 ): string {
-  if (delivered.length === 0) return `❌ Не дошло:\n${failedSummary(failed)}`;
+  const quiet = silentSummary(silent);
+  if (delivered.length === 0)
+    return `❌ Не дошло:\n${failedSummary(failed)}${quiet}`;
   const head =
     failed.length === 0
       ? `✅ Опубликовано: ${namedList(delivered)}`
       : `⚠️ Опубликовано: ${namedList(delivered)}\nНе дошло:\n${failedSummary(failed)}`;
-  return `${head}\n\n${text}`;
+  return `${head}${quiet}\n\n${text}`;
+}
+
+/**
+ * Проверка одной площадки (`/zv max`). Отдельная формулировка, чтобы владелец
+ * не принял её за настоящую публикацию: текст не новый и в историю не попал.
+ */
+export function checkResult(
+  target: Pick<ChannelTarget, 'platform' | 'title'>,
+  destination: string,
+  text: string,
+  reason?: string,
+): PublishResult {
+  const where = {
+    platform: target.platform,
+    title: target.title,
+    destination,
+  };
+  if (reason)
+    return {
+      ok: false,
+      posted: false,
+      message: `❌ Проверка ${target.title} (${destination}) — не дошло:\n${reason}`,
+      delivered: [],
+      failed: [{ ...where, reason }],
+      silent: [],
+    };
+  return {
+    ok: true,
+    posted: false,
+    message: `✅ Проверка ${target.title} (${destination}): дошло.\nПул не тронут, в историю не записано.\n\n${text}`,
+    delivered: [where],
+    failed: [],
+    silent: [],
+  };
+}
+
+/**
+ * Имя площадки не узнали или она не настроена: подсказываем, что писать —
+ * иначе владелец гадает между `/zv max`, `/zv MAX` и `/zv макс`.
+ */
+export function unknownPlatform(
+  asked: string,
+  known: string[],
+  disabled?: { title: string; envKey: string },
+): PublishResult {
+  const message = disabled
+    ? `⚠️ ${disabled.title} не настроен — задай ${disabled.envKey}.`
+    : `⚠️ Площадка «${asked}» неизвестна. Доступные: ${known.join(', ')}.`;
+  return {
+    ok: false,
+    posted: false,
+    message,
+    delivered: [],
+    failed: [],
+    silent: disabled ? [disabled] : [],
+  };
 }

@@ -11,6 +11,16 @@
 /** DI-токен: массив адаптеров, по которым идёт рассылка одного текста. */
 export const CHANNEL_TARGETS = 'CHANNEL_TARGETS';
 
+/**
+ * Публикуемое сообщение. Картинка ленивая и считается один раз на публикацию:
+ * текстовым площадкам (Telegram, VK, MAX, Threads) она не нужна, а Pinterest
+ * без неё пин не создаст — рендер не должен платиться за всех.
+ */
+export interface ChannelPost {
+  text: string;
+  image(): Promise<Buffer>;
+}
+
 export interface ChannelTarget {
   /** Ключ для логов и отчётов: 'telegram', 'vk', 'max'. */
   readonly platform: string;
@@ -20,8 +30,8 @@ export interface ChannelTarget {
   readonly envKey: string;
   /** Куда постим (@канал, club123) или null — площадка выключена. */
   destination(): string | null;
-  /** Отправить текст. Бросает — доставка на этой площадке не удалась. */
-  send(text: string, destination: string): Promise<void>;
+  /** Отправить пост. Бросает — доставка на этой площадке не удалась. */
+  send(post: ChannelPost, destination: string): Promise<void>;
   /** Ошибка отправки → причина словами и подсказка, что чинить. */
   explain(err: unknown): string;
 }
@@ -38,6 +48,16 @@ export interface DeliveryFailure extends Delivery {
   reason: string;
 }
 
+/**
+ * Площадка без env: её пропустили ещё до отправки. Молчание такой площадки
+ * неотличимо от успеха — владелец узнаёт «не пришло» уже по факту (инцидент
+ * 2026-07-31), поэтому она называется в отчёте вместе с недостающим env.
+ */
+export interface SilentTarget {
+  title: string;
+  envKey: string;
+}
+
 export interface PublishResult {
   /** Все включённые площадки доставили. Зелёная галка для /zv и админки. */
   ok: boolean;
@@ -51,4 +71,6 @@ export interface PublishResult {
   message: string;
   delivered: Delivery[];
   failed: DeliveryFailure[];
+  /** Площадки, которые пропустили из-за незаданного env. */
+  silent: SilentTarget[];
 }

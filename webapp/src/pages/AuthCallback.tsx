@@ -40,6 +40,15 @@ export function AuthCallback() {
       // navigate() — otherwise RequireAuth renders with isAuthenticated=false
       // and immediately redirects to /login.
       flushSync(() => setAccessToken(token, expiresIn));
+      // returnTo можно вести за пределы SPA сайта — на мини-апп (/app/…),
+      // куда LoginScreen положил этот же ключ ПЕРЕД уходом на OAuth. У сайта
+      // нет роута /app — react-router-навигация там покажет пустую страницу.
+      // Полный переход отдаёт /app/ мини-аппу; сессия уже есть — refresh-кука
+      // выдана бэкендом на path=/api/auth, мини-апп поднимет её POST /api/auth/refresh.
+      if (returnTo.startsWith('/app')) {
+        window.location.replace(returnTo);
+        return;
+      }
       navigate(returnTo, { replace: true });
     } else {
       navigate('/login?error=no_token', { replace: true });

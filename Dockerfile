@@ -31,6 +31,11 @@ RUN npm ci --prefix game
 
 # Copy source and build
 COPY . .
+# Метка сборки: пишется после копирования исходников, поэтому меняется вместе
+# с ними. По ней `/zv log` показывает, свежий образ работает или позавчерашний
+# (инцидент 31.07.2026: хостинг не смог подтянуть коммит, а пересборка молча
+# собрала старое).
+RUN date -u +%Y-%m-%dT%H:%M:%SZ > BUILD_INFO
 RUN npx prisma generate
 RUN npm run build
 
@@ -65,6 +70,10 @@ COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/prisma.config.js ./
 COPY --from=build --chown=node:node /app/webapp/dist ./webapp/dist
+# Шрифт для картинки пина Pinterest: node:22-slim идёт без шрифтов вообще,
+# без него кириллица в пине превратилась бы в пустые прямоугольники.
+COPY --from=build --chown=node:node /app/assets ./assets
+COPY --from=build --chown=node:node /app/BUILD_INFO ./
 # Front + страница техработ (dependency-free) — держат порт 3000 всю жизнь
 # контейнера. См. deploy/front-server.mjs, deploy/entrypoint.mjs и CMD ниже.
 COPY --from=build --chown=node:node /app/deploy ./deploy

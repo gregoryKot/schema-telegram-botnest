@@ -119,7 +119,7 @@ export function ModeIntroSheet({ modeId, onClose, onComplete }: Props) {
       headerAction={
         card && <HeaderInfoButton onClick={() => setShowPortrait(true)} />
       }
-      answerPromptText={tr('Нажми чтобы ответить', 'Нажмите чтобы ответить')}
+      savedHint="Карточка режима — в разделе «Паттерны». Её можно открыть и дополнить в любой момент."
       nextButtonLabel="Следующий →"
     />
   );

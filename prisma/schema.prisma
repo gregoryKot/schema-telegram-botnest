@@ -784,3 +784,19 @@ model HealthyAdultPost {
   source    String // 'ai' | 'pool'
   createdAt DateTime @default(now())
 }
+
+/// Журнал отправок канала «ЗВ»: строка на каждую площадку каждой публикации.
+/// Без него «утром пришло не всё» восстанавливается только по логам хостинга и
+/// по памяти — а вопрос «дошло ли и почему нет» задаётся каждый раз (инцидент
+/// 2026-07-31). Пользовательских данных тут нет: id канала и текст ошибки API.
+model ChannelDelivery {
+  id          Int      @id @default(autoincrement())
+  source      String // 'утро' | 'вечер' | 'вручную' | 'проверка'
+  platform    String
+  destination String
+  ok          Boolean
+  reason      String? // причина отказа площадки, если не дошло
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}

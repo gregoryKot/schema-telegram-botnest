@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import type { Achievement, TherapyRelationInfo } from '../api';
 import { TherapyNote } from '../components/TherapyNote';
-import { MyNotesSheet } from '../components/MyNotesSheet';
 import { JourneySheet } from '../components/JourneySheet';
-import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapyData';
 import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
@@ -60,10 +58,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [ready, setReady]               = useState(false);
   const [activeDates, setActiveDates]   = useState<Set<string>>(new Set());
 
-  const [notesCount, setNotesCount] = useState<{ schema: number; mode: number } | null>(null);
-  const [schemaNoteIds, setSchemaNotesIds] = useState<string[]>([]);
-  const [modeNoteIds, setModeNoteIds] = useState<string[]>([]);
-  const [notesOpen, setNotesOpen] = useState(false);
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
@@ -99,13 +93,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       api.getStreak().then(setStreak).catch(() => {}),
       api.getAchievements().then(setAchievements).catch(() => {}),
       api.getInsights().then(setInsights).catch(() => {}),
-      Promise.all([api.getSchemaNotes(), api.getModeNotes()])
-        .then(([sn, mn]) => {
-          setNotesCount({ schema: sn.length, mode: mn.length });
-          setSchemaNotesIds(sn.map(n => n.schemaId));
-          setModeNoteIds(mn.map(n => n.modeId));
-        })
-        .catch(() => {}),
       api.history(112).then(h => setActiveDates(new Set(h.map(d => d.date)))).catch(() => {}),
       api.getTherapyRelation().then(r => setRelation(r)).catch(() => {}),
       Promise.all([
@@ -434,53 +421,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           </div>
         )}
 
-        {/* ── Мои записи ── */}
-        {ready && notesCount !== null && (
-          <div {...pressable(() => setNotesOpen(true))} className="section" style={{ cursor: 'pointer' }}>
-            <div className="section-head">
-              <h3>Мои записи</h3>
-              <span className="hint">→</span>
-            </div>
-
-            {notesCount.schema + notesCount.mode === 0 ? (
-              <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>Личные карточки схем и режимов</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {schemaNoteIds.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 6 }}>🧩 Схемы</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {schemaNoteIds.map(id => {
-                        const schema = ALL_SCHEMAS.find(s => s.id === id);
-                        return (
-                          <span key={id} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 8, background: 'color-mix(in srgb, var(--accent) 10%, transparent)', color: 'var(--accent)', fontWeight: 500 }}>
-                            {schema?.name ?? id}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                {modeNoteIds.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 6 }}>🔄 Режимы</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {modeNoteIds.map(id => {
-                        const mode = ALL_MODES.find(m => m.id === id);
-                        return (
-                          <span key={id} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 8, background: 'color-mix(in srgb, var(--accent-blue) 10%, transparent)', color: 'var(--accent-blue)', fontWeight: 500 }}>
-                            {mode?.name ?? id}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* ── Терапевт ── */}
         {relation?.role === 'client' && relation.partnerName && (
           <div className="section">
@@ -623,8 +563,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           </div>
         </div>
       )}
-
-      {notesOpen && <MyNotesSheet onClose={() => setNotesOpen(false)} />}
 
       {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
 

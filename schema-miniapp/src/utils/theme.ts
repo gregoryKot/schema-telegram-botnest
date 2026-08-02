@@ -1,12 +1,14 @@
+import { getHost } from '../../../shared/src/host';
+
 export type Theme = 'dark' | 'light';
 
 const KEY = 'app_theme';
 
 function detectTheme(): Theme {
-  // 1. Telegram colorScheme
-  const tg = window.Telegram?.WebApp;
-  if (tg?.colorScheme === 'light') return 'light';
-  if (tg?.colorScheme === 'dark') return 'dark';
+  // 1. Тема хоста (в браузере её нет — там сразу системная)
+  const scheme = getHost().colorScheme();
+  if (scheme === 'light') return 'light';
+  if (scheme === 'dark') return 'dark';
   // 2. System preference
   if (window.matchMedia?.('(prefers-color-scheme: light)').matches)
     return 'light';
