@@ -81,10 +81,42 @@ export class ChannelPublisherService {
     );
 
     // Журнал пишем всегда — и когда дошло, и когда нет: он и есть ответ на
-    // «почему утром пришло не везде».
-    await this.deliveries.record(source, delivered, failed);
+    // «почему утром пришло не везде» и основа адресного повтора.
+    await this.deliveries.record(source, delivered, failed, text);
     if (delivered.length > 0) await this.afterPost(text);
     return fanoutResult(text, delivered, failed, this.silent());
+  }
+
+  /**
+   * Досылка той же фразы тем площадкам, которые её не приняли.
+   *
+   * Пул не трогаем и пост в историю не пишем: публикация уже состоялась, это
+   * добор долга внутри того же слота. Повтор всего фан-аута дал бы дубль там,
+   * где пост уже вышел, поэтому список площадок приходит снаружи — из журнала.
+   */
+  async retry(
+    source: string,
+    text: string,
+    platforms: string[],
+  ): Promise<PublishResult> {
+    const wanted = new Set(platforms);
+    const targets = this.enabled().filter(({ target }) =>
+      wanted.has(target.platform),
+    );
+    if (targets.length === 0) return fanoutResult(text, [], []);
+
+    const post = makeChannelPost(text);
+    const delivered: Delivery[] = [];
+    const failed: DeliveryFailure[] = [];
+    await Promise.all(
+      targets.map(async ({ target, destination }) => {
+        const outcome = await this.deliver(target, destination, post);
+        if ('reason' in outcome) failed.push(outcome);
+        else delivered.push(outcome);
+      }),
+    );
+    await this.deliveries.record(`${source} — повтор`, delivered, failed, text);
+    return fanoutResult(text, delivered, failed);
   }
 
   private async deliver(

@@ -15,6 +15,7 @@ import type { ChannelPublisherService } from './channel-publisher.service';
 import type { PublishResult } from './channel-target';
 import type { HealthyAdultService } from '../bot/healthy-adult.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
+import type { DeliveryLogService } from './delivery-log.service';
 
 jest.mock('../utils/admin-alert', () => ({
   notifyAdminWithFallback: jest.fn().mockResolvedValue(undefined),
@@ -61,20 +62,44 @@ const silentResult: PublishResult = {
   silent: [{ title: 'Threads', envKey: 'HEALTHY_ADULT_THREADS_USER' }],
 };
 
+/** Журнал отправок: по нему считается, кому досылать долг слота. */
+function makeJournal(rows: unknown[] = []) {
+  const slotRows = jest.fn().mockResolvedValue(rows);
+  return {
+    journal: { slotRows } as unknown as DeliveryLogService,
+    slotRows,
+  };
+}
+
 function makeService(
   result: PublishResult = okResult,
   lastPostAt: Date | null = null,
+  rows: unknown[] = [],
 ) {
   const publish = jest.fn().mockResolvedValue(result);
+  const retry = jest.fn().mockResolvedValue(okResult);
   const phrases = {
     lastPostAt: jest.fn().mockResolvedValue(lastPostAt),
   } as unknown as HealthyAdultService;
+  const { journal, slotRows } = makeJournal(rows);
   const service = new ChannelScheduleService(
-    { publish } as unknown as ChannelPublisherService,
+    { publish, retry } as unknown as ChannelPublisherService,
     phrases,
+    journal,
   );
-  return { service, publish, phrases };
+  return { service, publish, retry, phrases, slotRows };
 }
+
+/** Строка журнала: недошедшая площадка с текстом опубликованной фразы. */
+const row = (platform: string, ok: boolean) => ({
+  source: 'утро',
+  platform,
+  destination: platform === 'max' ? '-77' : '@ch',
+  ok,
+  reason: ok ? null : 'таймаут',
+  text: 'фраза этого слота',
+  createdAt: new Date(),
+});
 
 /** Логи расписания: тихий тик не пишет ничего. */
 function spyLogger() {
@@ -213,6 +238,89 @@ describe('ChannelScheduleService', () => {
       await service.maybePost(msk(10, 55));
       expect(alertTexts()).toEqual([expect.stringContaining('дошло не везде')]);
       expect(errors).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('досылка тем, кто не принял пост', () => {
+    // До 2026-08 частичный успех означал пропуск: слот закрывался, и упавшая
+    // площадка теряла публикацию до следующего слота с другой фразой.
+    const closedSlot = (rows: unknown[]) =>
+      makeService(okResult, msk(10, 0), rows);
+
+    it('досылает ту же фразу только должникам', async () => {
+      spyLogger();
+      const { service, retry, publish } = closedSlot([
+        row('max', false),
+        row('telegram', true),
+      ]);
+
+      await service.maybePost(msk(10, 30));
+
+      expect(retry).toHaveBeenCalledWith('утро', 'фраза этого слота', ['max']);
+      // Обычная публикация не повторяется — иначе дубль там, где пост вышел.
+      expect(publish).not.toHaveBeenCalled();
+    });
+
+    it('успешная досылка закрывает историю сообщением владельцу', async () => {
+      spyLogger();
+      const { service } = closedSlot([row('max', false)]);
+      await service.maybePost(msk(10, 30));
+      expect(alertTexts()).toEqual([expect.stringContaining('досталось')]);
+    });
+
+    it('успешный повтор в журнале снимает долг площадки', async () => {
+      spyLogger();
+      // Новые записи сверху: повтор прошёл — досылать больше нечего.
+      const { service, retry, slotRows } = closedSlot([
+        { ...row('max', true), source: 'утро — повтор' },
+        row('max', false),
+      ]);
+      await service.maybePost(msk(10, 30));
+      expect(retry).not.toHaveBeenCalled();
+      // Журнал всё же прочитан — решение принято по данным, а не по памяти.
+      expect(slotRows).toHaveBeenCalledWith('утро', expect.any(Date));
+    });
+
+    it('не долбится бесконечно — три попытки на слот', async () => {
+      spyLogger();
+      const { service, retry } = makeService(okResult, msk(10, 0), [
+        row('max', false),
+      ]);
+      (retry as jest.Mock).mockResolvedValue({
+        ...okResult,
+        ok: false,
+        message: 'не дошло',
+      });
+
+      for (const minute of [10, 15, 20, 25, 30])
+        await service.maybePost(msk(10, minute));
+
+      expect(retry).toHaveBeenCalledTimes(3);
+      // Каждая попытка — та же фраза тем же должникам.
+      expect((retry as jest.Mock).mock.calls).toEqual(
+        Array(3).fill(['утро', 'фраза этого слота', ['max']]),
+      );
+    });
+
+    it('вне окна слота не досылает — публикация давно прошла', async () => {
+      spyLogger();
+      const { service, retry, slotRows } = closedSlot([row('max', false)]);
+      await service.maybePost(msk(14, 0));
+      expect(retry).not.toHaveBeenCalled();
+      expect(slotRows).not.toHaveBeenCalled();
+      // И владельца не дёргаем: вне окна досылать уже поздно.
+      expect(alertTexts()).toEqual([]);
+    });
+
+    it('дошло везде — досылать нечего и в сеть не ходим', async () => {
+      spyLogger();
+      const { service, retry } = closedSlot([
+        row('telegram', true),
+        row('max', true),
+      ]);
+      await service.maybePost(msk(10, 30));
+      expect(retry).not.toHaveBeenCalled();
+      expect(alertTexts()).toEqual([]);
     });
   });
 

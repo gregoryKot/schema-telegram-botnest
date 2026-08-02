@@ -180,6 +180,62 @@ describe('ChannelPublisherService', () => {
     expect(svc.pickFromPool).toHaveBeenCalledWith(['вчерашнее']);
   });
 
+  describe('досылка упавшим площадкам', () => {
+    it('шлёт ту же фразу только названным площадкам', async () => {
+      const tg = makeTarget('telegram', '@ch');
+      const max = makeTarget('max', 'c1');
+      const { svc, recordPost } = makePhrases();
+      const log = journal();
+
+      const res = await new ChannelPublisherService(
+        [tg.target, max.target],
+        svc,
+        log,
+      ).retry('утро', 'та самая фраза', ['max']);
+
+      expect(max.send).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'та самая фраза' }),
+        'c1',
+      );
+      // Telegram пост уже принял — второй раз ему нельзя, это дубль.
+      expect(tg.send).not.toHaveBeenCalled();
+      expect(res.ok).toBe(true);
+      // Пул и история публикации не трогаются: публикация уже состоялась.
+      expect(svc.pickFromPool).not.toHaveBeenCalled();
+      expect(recordPost).not.toHaveBeenCalled();
+    });
+
+    it('повтор виден в журнале отдельным источником', async () => {
+      const max = makeTarget('max', 'c1');
+      const { svc } = makePhrases();
+      const log = journal();
+
+      await new ChannelPublisherService([max.target], svc, log).retry(
+        'вечер',
+        'фраза',
+        ['max'],
+      );
+
+      const [source, delivered] = (log.record as jest.Mock).mock.calls[0];
+      expect(source).toBe('вечер — повтор');
+      expect(delivered).toEqual([expect.objectContaining({ platform: 'max' })]);
+    });
+
+    it('площадка выключилась между попытками — в сеть не идём', async () => {
+      const off = makeTarget('max', null);
+      const { svc } = makePhrases();
+
+      const res = await new ChannelPublisherService(
+        [off.target],
+        svc,
+        journal(),
+      ).retry('утро', 'фраза', ['max']);
+
+      expect(off.send).not.toHaveBeenCalled();
+      expect(res.posted).toBe(false);
+    });
+  });
+
   describe('частичный успех', () => {
     const partial = async () => {
       const ok = makeTarget('telegram', '@ch');
