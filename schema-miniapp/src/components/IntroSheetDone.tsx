@@ -72,9 +72,7 @@ export function IntroSheetDone<T extends Record<string, string>>({
           >
             {q.label}
           </div>
-          <div
-            style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.55 }}
-          >
+          <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.55 }}>
             {data[q.key]}
           </div>
         </div>
@@ -82,7 +80,12 @@ export function IntroSheetDone<T extends Record<string, string>>({
 
       <button
         onClick={onClose}
-        style={{ ...BUTTON, marginTop: 8, background: accentColor, color: '#fff' }}
+        style={{
+          ...BUTTON,
+          marginTop: 8,
+          background: accentColor,
+          color: '#fff',
+        }}
       >
         Готово
       </button>

@@ -28,12 +28,10 @@ export interface PressableProps {
 const NESTED_CONTROL = /^(input|textarea|select|button|a)$/;
 
 function typedInNestedControl(e: KeyboardEvent): boolean {
-  const target = e.target as (HTMLElement & { isContentEditable?: boolean }) | null;
+  const target = e.target as HTMLElement | null;
   if (!target || target === e.currentTarget) return false;
-  return (
-    NESTED_CONTROL.test(target.tagName?.toLowerCase() ?? '') ||
-    target.isContentEditable === true
-  );
+  const tag = target.tagName?.toLowerCase() ?? '';
+  return NESTED_CONTROL.test(tag) || Boolean(target.isContentEditable);
 }
 
 export function pressable(handler: () => unknown): PressableProps {

@@ -124,8 +124,8 @@ describe('ModeIntroSheet — сохранение карточки видно п
     await openFirstQuestion();
     for (let i = 0; i < 6; i++)
       fireEvent.click(screen.getByText('Следующий →'));
-    const save = screen.getByText('Сохранить карточку') as HTMLButtonElement;
-    expect(save.disabled).toBe(true);
+    const save = screen.getByText('Сохранить карточку');
+    expect(save.hasAttribute('disabled')).toBe(true);
     expect(screen.getByText(/нужен хотя бы один ответ/i)).toBeTruthy();
     fireEvent.click(save);
     expect(mockApi.saveModeNote).not.toHaveBeenCalled();
