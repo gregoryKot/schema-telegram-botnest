@@ -12,6 +12,8 @@
  * ближайший тик крона наверстает (catch-up).
  */
 
+import { fnv1a } from '../utils/hash';
+
 export type HealthyAdultSlot = 'morning' | 'evening';
 
 /** Час начала окна (МСК) для каждого слота. Окно длится WINDOW_MINUTES. */
@@ -63,13 +65,7 @@ function slotForHour(hour: number): HealthyAdultSlot | null {
  * не нужна криптостойкость, нужна лишь равномерная «размазанность».
  */
 export function plannedOffset(dateKey: string, slot: HealthyAdultSlot): number {
-  const seed = `${dateKey}:${slot}`;
-  let h = 2166136261; // FNV-1a
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0) % WINDOW_MINUTES;
+  return fnv1a(`${dateKey}:${slot}`) % WINDOW_MINUTES;
 }
 
 /** Момент относительно начала окна: попадает ли `at` (МСК) в слот-окно `slot` того же дня. */

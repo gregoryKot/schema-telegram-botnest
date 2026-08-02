@@ -1,31 +1,28 @@
 import { createCanvas, GlobalFonts, type SKRSContext2D } from '@napi-rs/canvas';
 import { join } from 'path';
 import type { ChannelPost } from './channel-target';
+import { pinStyle, type PinStyle } from './pin-style';
+import { drawBackdrop, drawDecor, drawFrame } from './pin-draw';
 
 /**
  * Картинка фразы для Pinterest: пин нельзя создать текстом, площадка требует
  * изображение. Формат вертикальный 2:3 — лента Pinterest режет всё остальное,
  * поэтому это не share-карточка продукта (она квадратная и живёт во
- * фронтендах, shared/src/share/cards), а самостоятельный носитель. Общее у них
- * только палитра — константы ниже совпадают с тёмной темой карточек.
+ * фронтендах, shared/src/share/cards), а самостоятельный носитель.
+ *
+ * Как пин выглядит — решает `pin-style` по тексту фразы: палитра, композиция,
+ * фон и декор. Тут только рисование по готовому решению.
  *
  * Шрифт лежит в репозитории (assets/fonts): прод-образ node:22-slim идёт без
  * шрифтов вообще, а без кириллицы пин вышел бы из пустых прямоугольников.
  */
-const W = 1000;
-const H = 1500;
-const PAD = 90;
+export const W = 1000;
+export const H = 1500;
+export const PAD = 90;
+/** Высота подписи внизу — под неё текст не заезжает ни в одной раскладке. */
+const SIGN_H = 150;
 
-const BG = '#191b25';
-const BG_GLOW = '#23252f';
-const FG = '255, 255, 255';
-const ACCENT = '#8f86ff';
-
-const FONT = 'ChannelSans';
-const QUOTE_SIZE = 58;
-const QUOTE_LINE_H = 86;
-/** Больше не влезает по высоте — длинные фразы обрезаются многоточием. */
-const MAX_LINES = 11;
+export const FONT = 'ChannelSans';
 
 let fontsReady = false;
 
@@ -75,11 +72,14 @@ export function wrapPinText(
   return lines;
 }
 
-/** Обрезка до MAX_LINES: последняя строка получает многоточие. */
-export function clampPinLines(lines: string[]): string[] {
-  if (lines.length <= MAX_LINES) return lines;
-  const kept = lines.slice(0, MAX_LINES);
-  kept[MAX_LINES - 1] = `${kept[MAX_LINES - 1].replace(/[\s.,;:—-]+$/, '')}…`;
+/**
+ * Обрезка до `max` строк: последняя получает многоточие. Предел зависит от
+ * кегля (он свой у каждой фразы), поэтому передаётся снаружи, а не зашит.
+ */
+export function clampPinLines(lines: string[], max: number): string[] {
+  if (lines.length <= max) return lines;
+  const kept = lines.slice(0, max);
+  kept[max - 1] = `${kept[max - 1].replace(/[\s.,;:—-]+$/, '')}…`;
   return kept;
 }
 
@@ -96,45 +96,68 @@ export function makeChannelPost(text: string): ChannelPost {
   };
 }
 
+/** Где начинается блок цитаты при выбранной раскладке. */
+function blockTop(style: PinStyle, blockH: number): number {
+  const top = PAD + (style.decor === 'none' ? 60 : 200);
+  const bottom = H - PAD - SIGN_H;
+  if (style.layout === 'bottom') return Math.max(top, bottom - blockH);
+  // center, lead и frame ставят блок по центру свободного поля.
+  return Math.max(top, (top + bottom - blockH) / 2);
+}
+
 /** PNG-пин с фразой. Возвращает готовые байты — их шлём в Pinterest base64. */
 export function renderPhrasePin(text: string): Buffer {
   ensureFonts();
+  const style = pinStyle(text);
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = BG;
-  ctx.fillRect(0, 0, W, H);
-  // Мягкое свечение сверху — карточка не выглядит плоским прямоугольником.
-  const glow = ctx.createLinearGradient(0, 0, 0, H);
-  glow.addColorStop(0, BG_GLOW);
-  glow.addColorStop(1, BG);
-  ctx.globalAlpha = 0.9;
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H);
-  ctx.globalAlpha = 1;
+  drawBackdrop(ctx, style);
+  if (style.layout === 'frame') drawFrame(ctx, style);
 
-  // Декоративная кавычка задаёт настроение и отделяет цитату от подписи.
-  ctx.fillStyle = `rgba(${FG},0.14)`;
-  ctx.font = `bold 220px ${FONT}`;
+  // Рамка сжимает поле, поэтому и текст в ней уже — иначе он упрётся в линию.
+  const pad = style.layout === 'frame' ? PAD + 46 : PAD;
+  const leadSize = Math.round(style.fontSize * 1.35);
+
+  ctx.font = `${style.fontSize}px ${FONT}`;
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText('«', PAD - 10, PAD + 190);
+  const room = H - PAD - SIGN_H - (PAD + 200);
+  const lines = clampPinLines(
+    wrapPinText(ctx, text, W - pad * 2),
+    Math.max(3, Math.floor(room / style.lineHeight)),
+  );
 
-  ctx.font = `${QUOTE_SIZE}px ${FONT}`;
-  const lines = clampPinLines(wrapPinText(ctx, text, W - PAD * 2));
-  const blockH = lines.length * QUOTE_LINE_H;
-  let y = Math.max(PAD + 300, (H - blockH) / 2);
-  ctx.fillStyle = `rgba(${FG},0.94)`;
-  for (const line of lines) {
-    ctx.fillText(line, PAD, y);
-    y += QUOTE_LINE_H;
-  }
+  // У раскладки lead первая строка крупнее: у пина появляется точка входа,
+  // с которой глаз начинает читать в ленте.
+  const lead = style.layout === 'lead' && lines.length > 1;
+  const blockH =
+    lines.length * style.lineHeight + (lead ? leadSize - style.fontSize : 0);
+  let y = blockTop(style, blockH);
 
-  ctx.fillStyle = ACCENT;
+  // Декор при раскладке `bottom` живёт наверху, где иначе была бы пустота, а
+  // не над самим текстом — иначе крупная кавычка легла бы прямо на строки.
+  drawDecor(ctx, style, pad, style.layout === 'bottom' ? PAD + 300 : y);
+  // Декор рисует свой крупный шрифт — возвращаем шрифт цитаты, иначе строки
+  // уходят за край и наезжают друг на друга.
+  ctx.font = `${style.fontSize}px ${FONT}`;
+  ctx.fillStyle = `rgba(${style.palette.fg},${style.palette.dark ? 0.94 : 0.9})`;
+  lines.forEach((line, i) => {
+    if (lead && i === 0) {
+      ctx.font = `bold ${leadSize}px ${FONT}`;
+      y += leadSize - style.fontSize;
+    } else if (lead && i === 1) {
+      ctx.font = `${style.fontSize}px ${FONT}`;
+    }
+    ctx.fillText(line, pad, y);
+    y += style.lineHeight;
+  });
+
+  ctx.fillStyle = style.palette.accent;
   ctx.font = `bold 34px ${FONT}`;
-  ctx.fillText('Здоровый Взрослый', PAD, H - PAD - 46);
-  ctx.fillStyle = `rgba(${FG},0.45)`;
+  ctx.fillText('Здоровый Взрослый', pad, H - PAD - 46);
+  ctx.fillStyle = `rgba(${style.palette.fg},0.45)`;
   ctx.font = `30px ${FONT}`;
-  ctx.fillText('schemehappens.ru', PAD, H - PAD);
+  ctx.fillText('schemehappens.ru', pad, H - PAD);
 
   return canvas.toBuffer('image/png');
 }
