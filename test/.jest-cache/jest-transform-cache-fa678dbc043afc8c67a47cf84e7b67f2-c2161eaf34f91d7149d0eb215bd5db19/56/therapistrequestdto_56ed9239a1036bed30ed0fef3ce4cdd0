@@ -1,0 +1,47 @@
+42dc6c31710cb524e4f973e08269af3d
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SubmitTherapistRequestDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * Заявка на роль терапевта (аудит 2026-07, 2г): свободный текст от юзера,
+ * уходит в DM админу — рантайм-валидация обязательна (правило №6 CLAUDE.md).
+ */
+class SubmitTherapistRequestDto {
+    fullName;
+    qualification;
+    contacts;
+    message;
+}
+exports.SubmitTherapistRequestDto = SubmitTherapistRequestDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Length)(2, 200),
+    __metadata("design:type", String)
+], SubmitTherapistRequestDto.prototype, "fullName", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Length)(2, 1000),
+    __metadata("design:type", String)
+], SubmitTherapistRequestDto.prototype, "qualification", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Length)(2, 300),
+    __metadata("design:type", String)
+], SubmitTherapistRequestDto.prototype, "contacts", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(2000),
+    __metadata("design:type", String)
+], SubmitTherapistRequestDto.prototype, "message", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGhlcmFweS90aGVyYXBpc3QtcmVxdWVzdC5kdG8udHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7O0FBQUEscURBQTBFO0FBRTFFOzs7R0FHRztBQUNILE1BQWEseUJBQXlCO0lBR3BDLFFBQVEsQ0FBVTtJQUlsQixhQUFhLENBQVU7SUFJdkIsUUFBUSxDQUFVO0lBS2xCLE9BQU8sQ0FBVTtDQUNsQjtBQWpCRCw4REFpQkM7QUFkQztJQUZDLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsd0JBQU0sRUFBQyxDQUFDLEVBQUUsR0FBRyxDQUFDOzsyREFDRztBQUlsQjtJQUZDLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsd0JBQU0sRUFBQyxDQUFDLEVBQUUsSUFBSSxDQUFDOztnRUFDTztBQUl2QjtJQUZDLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsd0JBQU0sRUFBQyxDQUFDLEVBQUUsR0FBRyxDQUFDOzsyREFDRztBQUtsQjtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxJQUFJLENBQUM7OzBEQUNDIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL3RoZXJhcHkvdGhlcmFwaXN0LXJlcXVlc3QuZHRvLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IElzT3B0aW9uYWwsIElzU3RyaW5nLCBMZW5ndGgsIE1heExlbmd0aCB9IGZyb20gJ2NsYXNzLXZhbGlkYXRvcic7XG5cbi8qKlxuICog0JfQsNGP0LLQutCwINC90LAg0YDQvtC70Ywg0YLQtdGA0LDQv9C10LLRgtCwICjQsNGD0LTQuNGCIDIwMjYtMDcsIDLQsyk6INGB0LLQvtCx0L7QtNC90YvQuSDRgtC10LrRgdGCINC+0YIg0Y7Qt9C10YDQsCxcbiAqINGD0YXQvtC00LjRgiDQsiBETSDQsNC00LzQuNC90YMg4oCUINGA0LDQvdGC0LDQudC8LdCy0LDQu9C40LTQsNGG0LjRjyDQvtCx0Y/Qt9Cw0YLQtdC70YzQvdCwICjQv9GA0LDQstC40LvQviDihJY2IENMQVVERS5tZCkuXG4gKi9cbmV4cG9ydCBjbGFzcyBTdWJtaXRUaGVyYXBpc3RSZXF1ZXN0RHRvIHtcbiAgQElzU3RyaW5nKClcbiAgQExlbmd0aCgyLCAyMDApXG4gIGZ1bGxOYW1lITogc3RyaW5nO1xuXG4gIEBJc1N0cmluZygpXG4gIEBMZW5ndGgoMiwgMTAwMClcbiAgcXVhbGlmaWNhdGlvbiE6IHN0cmluZztcblxuICBASXNTdHJpbmcoKVxuICBATGVuZ3RoKDIsIDMwMClcbiAgY29udGFjdHMhOiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKDIwMDApXG4gIG1lc3NhZ2U/OiBzdHJpbmc7XG59XG4iXSwidmVyc2lvbiI6M30=

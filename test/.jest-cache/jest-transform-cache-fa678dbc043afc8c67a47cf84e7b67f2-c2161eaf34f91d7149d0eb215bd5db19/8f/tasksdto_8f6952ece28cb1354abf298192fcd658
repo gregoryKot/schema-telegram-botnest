@@ -1,0 +1,70 @@
+664a05412109929b806f21c45f93dfb0
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CompleteTaskDto = exports.CreateTaskDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * DTO для задач терапевта клиенту (аудит 2026-07, 2г / правило №6
+ * CLAUDE.md). `targetDays` уже проверялся вручную (1–365) — правило
+ * продублировано, ручная проверка в контроллере не удалена.
+ */
+class CreateTaskDto {
+    type;
+    text;
+    targetDays;
+    needId;
+    dueDate;
+    clientId;
+}
+exports.CreateTaskDto = CreateTaskDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreateTaskDto.prototype, "type", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(10000),
+    __metadata("design:type", String)
+], CreateTaskDto.prototype, "text", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.Max)(365),
+    __metadata("design:type", Number)
+], CreateTaskDto.prototype, "targetDays", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateTaskDto.prototype, "needId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateTaskDto.prototype, "dueDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    __metadata("design:type", Number)
+], CreateTaskDto.prototype, "clientId", void 0);
+class CompleteTaskDto {
+    done;
+}
+exports.CompleteTaskDto = CompleteTaskDto;
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CompleteTaskDto.prototype, "done", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGhlcmFweS9kdG8vdGFza3MuZHRvLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7OztBQUFBLHFEQVN5QjtBQUV6Qjs7OztHQUlHO0FBQ0gsTUFBYSxhQUFhO0lBR3hCLElBQUksQ0FBVTtJQUtkLElBQUksQ0FBVTtJQU1kLFVBQVUsQ0FBVTtJQUlwQixNQUFNLENBQVU7SUFJaEIsT0FBTyxDQUFVO0lBSWpCLFFBQVEsQ0FBVTtDQUNuQjtBQTNCRCxzQ0EyQkM7QUF4QkM7SUFGQyxJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDRCQUFVLEdBQUU7OzJDQUNDO0FBS2Q7SUFIQyxJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDJCQUFTLEVBQUMsS0FBSyxDQUFDOzsyQ0FDSDtBQU1kO0lBSkMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSx1QkFBSyxHQUFFO0lBQ1AsSUFBQSxxQkFBRyxFQUFDLENBQUMsQ0FBQztJQUNOLElBQUEscUJBQUcsRUFBQyxHQUFHLENBQUM7O2lEQUNXO0FBSXBCO0lBRkMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFOzs2Q0FDSztBQUloQjtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTs7OENBQ007QUFJakI7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLHVCQUFLLEdBQUU7OytDQUNVO0FBR3BCLE1BQWEsZUFBZTtJQUUxQixJQUFJLENBQVc7Q0FDaEI7QUFIRCwwQ0FHQztBQURDO0lBREMsSUFBQSwyQkFBUyxHQUFFOzs2Q0FDRyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy90aGVyYXB5L2R0by90YXNrcy5kdG8udHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHtcbiAgSXNCb29sZWFuLFxuICBJc0ludCxcbiAgSXNOb3RFbXB0eSxcbiAgSXNPcHRpb25hbCxcbiAgSXNTdHJpbmcsXG4gIE1heCxcbiAgTWF4TGVuZ3RoLFxuICBNaW4sXG59IGZyb20gJ2NsYXNzLXZhbGlkYXRvcic7XG5cbi8qKlxuICogRFRPINC00LvRjyDQt9Cw0LTQsNGHINGC0LXRgNCw0L/QtdCy0YLQsCDQutC70LjQtdC90YLRgyAo0LDRg9C00LjRgiAyMDI2LTA3LCAy0LMgLyDQv9GA0LDQstC40LvQviDihJY2XG4gKiBDTEFVREUubWQpLiBgdGFyZ2V0RGF5c2Ag0YPQttC1INC/0YDQvtCy0LXRgNGP0LvRgdGPINCy0YDRg9GH0L3Rg9GOICgx4oCTMzY1KSDigJQg0L/RgNCw0LLQuNC70L5cbiAqINC/0YDQvtC00YPQsdC70LjRgNC+0LLQsNC90L4sINGA0YPRh9C90LDRjyDQv9GA0L7QstC10YDQutCwINCyINC60L7QvdGC0YDQvtC70LvQtdGA0LUg0L3QtSDRg9C00LDQu9C10L3QsC5cbiAqL1xuZXhwb3J0IGNsYXNzIENyZWF0ZVRhc2tEdG8ge1xuICBASXNTdHJpbmcoKVxuICBASXNOb3RFbXB0eSgpXG4gIHR5cGUhOiBzdHJpbmc7XG5cbiAgQElzU3RyaW5nKClcbiAgQElzTm90RW1wdHkoKVxuICBATWF4TGVuZ3RoKDEwMDAwKVxuICB0ZXh0ITogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzSW50KClcbiAgQE1pbigxKVxuICBATWF4KDM2NSlcbiAgdGFyZ2V0RGF5cz86IG51bWJlcjtcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIG5lZWRJZD86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIGR1ZURhdGU/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNJbnQoKVxuICBjbGllbnRJZD86IG51bWJlcjtcbn1cblxuZXhwb3J0IGNsYXNzIENvbXBsZXRlVGFza0R0byB7XG4gIEBJc0Jvb2xlYW4oKVxuICBkb25lITogYm9vbGVhbjtcbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

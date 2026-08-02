@@ -1,0 +1,190 @@
+76e1fa852cf331546be69ee2e998ee02
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var DiaryController_1;
+var _a, _b, _c, _d, _e;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DiaryController = void 0;
+const common_1 = require("@nestjs/common");
+const request_utils_1 = require("./request-utils");
+const telegram_auth_guard_1 = require("./telegram-auth.guard");
+const diary_service_1 = require("../bot/diary.service");
+const therapy_tasks_service_1 = require("../therapy/therapy-tasks.service");
+const diary_entries_dto_1 = require("./dto/diary-entries.dto");
+// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
+// Заодно ужесточение: parseInt принимал «5abc» как 5, теперь это 400.
+let DiaryController = DiaryController_1 = class DiaryController {
+    diaryService;
+    tasksService;
+    logger = new common_1.Logger(DiaryController_1.name);
+    constructor(diaryService, tasksService) {
+        this.diaryService = diaryService;
+        this.tasksService = tasksService;
+    }
+    // ─── Schema Diary ─────────────────────────────────────────────────────────
+    getSchemaDiary(req) {
+        return this.diaryService.getSchemaDiaryEntries((0, request_utils_1.uid)(req));
+    }
+    async createSchemaDiary(req, body) {
+        if (!body.trigger?.trim())
+            throw new common_1.BadRequestException('trigger required');
+        const LIMIT = 2000;
+        const trimmed = {
+            ...body,
+            trigger: body.trigger.slice(0, LIMIT),
+            thoughts: body.thoughts?.slice(0, LIMIT),
+            bodyFeelings: body.bodyFeelings?.slice(0, LIMIT),
+            actualBehavior: body.actualBehavior?.slice(0, LIMIT),
+            schemaOrigin: body.schemaOrigin?.slice(0, LIMIT),
+            healthyView: body.healthyView?.slice(0, LIMIT),
+            realProblems: body.realProblems?.slice(0, LIMIT),
+            excessiveReactions: body.excessiveReactions?.slice(0, LIMIT),
+            healthyBehavior: body.healthyBehavior?.slice(0, LIMIT),
+        };
+        const entry = await this.diaryService.createSchemaDiaryEntry((0, request_utils_1.uid)(req), trimmed);
+        this.tasksService
+            .checkStreakTasks((0, request_utils_1.uid)(req))
+            .catch((err) => this.logger.error('checkStreakTasks failed', err));
+        return entry;
+    }
+    async deleteSchemaDiary(req, id) {
+        await this.diaryService.deleteSchemaDiaryEntry((0, request_utils_1.uid)(req), (0, request_utils_1.parseId)(id));
+        return { ok: true };
+    }
+    // ─── Mode Diary ───────────────────────────────────────────────────────────
+    getModeDiary(req) {
+        return this.diaryService.getModeDiaryEntries((0, request_utils_1.uid)(req));
+    }
+    async createModeDiary(req, body) {
+        if (!body.modeId?.trim())
+            throw new common_1.BadRequestException('modeId required');
+        if (!body.situation?.trim())
+            throw new common_1.BadRequestException('situation required');
+        const LIMIT = 2000;
+        const trimmedMode = {
+            ...body,
+            situation: body.situation.slice(0, LIMIT),
+            thoughts: body.thoughts?.slice(0, LIMIT),
+            feelings: body.feelings?.slice(0, LIMIT),
+            bodyFeelings: body.bodyFeelings?.slice(0, LIMIT),
+            actions: body.actions?.slice(0, LIMIT),
+            actualNeed: body.actualNeed?.slice(0, LIMIT),
+            childhoodMemories: body.childhoodMemories?.slice(0, LIMIT),
+            healthyResponse: body.healthyResponse?.slice(0, LIMIT),
+        };
+        const entry = await this.diaryService.createModeDiaryEntry((0, request_utils_1.uid)(req), trimmedMode);
+        this.tasksService
+            .checkStreakTasks((0, request_utils_1.uid)(req))
+            .catch((err) => this.logger.error('checkStreakTasks failed', err));
+        return entry;
+    }
+    async deleteModeDiary(req, id) {
+        await this.diaryService.deleteModeDiaryEntry((0, request_utils_1.uid)(req), (0, request_utils_1.parseId)(id));
+        return { ok: true };
+    }
+    // ─── Gratitude Diary ──────────────────────────────────────────────────────
+    getGratitudeDiary(req) {
+        return this.diaryService.getGratitudeDiaryEntries((0, request_utils_1.uid)(req));
+    }
+    async createGratitudeDiary(req, body) {
+        if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date))
+            throw new common_1.BadRequestException('Invalid date');
+        const items = body.items.map((s) => String(s).slice(0, 500));
+        const entry = await this.diaryService.upsertGratitudeDiaryEntry((0, request_utils_1.uid)(req), body.date, items);
+        this.tasksService
+            .checkStreakTasks((0, request_utils_1.uid)(req))
+            .catch((err) => this.logger.error('checkStreakTasks failed', err));
+        return entry;
+    }
+    async deleteGratitudeDiary(req, id) {
+        await this.diaryService.deleteGratitudeDiaryEntry((0, request_utils_1.uid)(req), (0, request_utils_1.parseId)(id));
+        return { ok: true };
+    }
+};
+exports.DiaryController = DiaryController;
+__decorate([
+    (0, common_1.Get)('schema'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], DiaryController.prototype, "getSchemaDiary", null);
+__decorate([
+    (0, common_1.Post)('schema'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_c = typeof diary_entries_dto_1.SchemaDiaryDto !== "undefined" && diary_entries_dto_1.SchemaDiaryDto) === "function" ? _c : Object]),
+    __metadata("design:returntype", Promise)
+], DiaryController.prototype, "createSchemaDiary", null);
+__decorate([
+    (0, common_1.Delete)('schema/:id'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], DiaryController.prototype, "deleteSchemaDiary", null);
+__decorate([
+    (0, common_1.Get)('mode'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], DiaryController.prototype, "getModeDiary", null);
+__decorate([
+    (0, common_1.Post)('mode'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_d = typeof diary_entries_dto_1.ModeDiaryDto !== "undefined" && diary_entries_dto_1.ModeDiaryDto) === "function" ? _d : Object]),
+    __metadata("design:returntype", Promise)
+], DiaryController.prototype, "createModeDiary", null);
+__decorate([
+    (0, common_1.Delete)('mode/:id'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], DiaryController.prototype, "deleteModeDiary", null);
+__decorate([
+    (0, common_1.Get)('gratitude'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], DiaryController.prototype, "getGratitudeDiary", null);
+__decorate([
+    (0, common_1.Post)('gratitude'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_e = typeof diary_entries_dto_1.GratitudeDiaryDto !== "undefined" && diary_entries_dto_1.GratitudeDiaryDto) === "function" ? _e : Object]),
+    __metadata("design:returntype", Promise)
+], DiaryController.prototype, "createGratitudeDiary", null);
+__decorate([
+    (0, common_1.Delete)('gratitude/:id'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], DiaryController.prototype, "deleteGratitudeDiary", null);
+exports.DiaryController = DiaryController = DiaryController_1 = __decorate([
+    (0, common_1.Controller)('api/diary'),
+    (0, common_1.UseGuards)(telegram_auth_guard_1.TelegramAuthGuard),
+    __metadata("design:paramtypes", [typeof (_a = typeof diary_service_1.DiaryService !== "undefined" && diary_service_1.DiaryService) === "function" ? _a : Object, typeof (_b = typeof therapy_tasks_service_1.TherapyTasksService !== "undefined" && therapy_tasks_service_1.TherapyTasksService) === "function" ? _b : Object])
+], DiaryController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2RpYXJ5LmNvbnRyb2xsZXIudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FXd0I7QUFFeEIsbURBQStDO0FBQy9DLCtEQUEwRDtBQUMxRCx3REFBb0Q7QUFDcEQsNEVBQXVFO0FBQ3ZFLCtEQUlpQztBQU9qQyx5RUFBeUU7QUFDekUsc0VBQXNFO0FBSS9ELElBQU0sZUFBZSx1QkFBckIsTUFBTSxlQUFlO0lBSVA7SUFDQTtJQUpGLE1BQU0sR0FBRyxJQUFJLGVBQU0sQ0FBQyxpQkFBZSxDQUFDLElBQUksQ0FBQyxDQUFDO0lBRTNELFlBQ21CLFlBQTBCLEVBQzFCLFlBQWlDO1FBRGpDLGlCQUFZLEdBQVosWUFBWSxDQUFjO1FBQzFCLGlCQUFZLEdBQVosWUFBWSxDQUFxQjtJQUNqRCxDQUFDO0lBRUosNkVBQTZFO0lBRzdFLGNBQWMsQ0FBUSxHQUFnQjtRQUNwQyxPQUFPLElBQUksQ0FBQyxZQUFZLENBQUMscUJBQXFCLENBQUMsSUFBQSxtQkFBRyxFQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUM7SUFDM0QsQ0FBQztJQUdLLEFBQU4sS0FBSyxDQUFDLGlCQUFpQixDQUNkLEdBQWdCLEVBQ2YsSUFBb0I7UUFFNUIsSUFBSSxDQUFDLElBQUksQ0FBQyxPQUFPLEVBQUUsSUFBSSxFQUFFO1lBQ3ZCLE1BQU0sSUFBSSw0QkFBbUIsQ0FBQyxrQkFBa0IsQ0FBQyxDQUFDO1FBQ3BELE1BQU0sS0FBSyxHQUFHLElBQUksQ0FBQztRQUNuQixNQUFNLE9BQU8sR0FBRztZQUNkLEdBQUcsSUFBSTtZQUNQLE9BQU8sRUFBRSxJQUFJLENBQUMsT0FBTyxDQUFDLEtBQUssQ0FBQyxDQUFDLEVBQUUsS0FBSyxDQUFDO1lBQ3JDLFFBQVEsRUFBRSxJQUFJLENBQUMsUUFBUSxFQUFFLEtBQUssQ0FBQyxDQUFDLEVBQUUsS0FBSyxDQUFDO1lBQ3hDLFlBQVksRUFBRSxJQUFJLENBQUMsWUFBWSxFQUFFLEtB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REFDWiwyQ0FBbUIsb0JBQW5CLDJDQUFtQjtHQUx6QyxlQUFlLENBMEgzQiIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hcGkvZGlhcnkuY29udHJvbGxlci50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQge1xuICBCYWRSZXF1ZXN0RXhjZXB0aW9uLFxuICBCb2R5LFxuICBDb250cm9sbGVyLFxuICBEZWxldGUsXG4gIEdldCxcbiAgTG9nZ2VyLFxuICBQYXJhbSxcbiAgUG9zdCxcbiAgUmVxLFxuICBVc2VHdWFyZHMsXG59IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFJlcXVlc3QgfSBmcm9tICdleHByZXNzJztcbmltcG9ydCB7IHVpZCwgcGFyc2VJZCB9IGZyb20gJy4vcmVxdWVzdC11dGlscyc7XG5pbXBvcnQgeyBUZWxlZ3JhbUF1dGhHdWFyZCB9IGZyb20gJy4vdGVsZWdyYW0tYXV0aC5ndWFyZCc7XG5pbXBvcnQgeyBEaWFyeVNlcnZpY2UgfSBmcm9tICcuLi9ib3QvZGlhcnkuc2VydmljZSc7XG5pbXBvcnQgeyBUaGVyYXB5VGFza3NTZXJ2aWNlIH0gZnJvbSAnLi4vdGhlcmFweS90aGVyYXB5LXRhc2tzLnNlcnZpY2UnO1xuaW1wb3J0IHtcbiAgU2NoZW1hRGlhcnlEdG8sXG4gIE1vZGVEaWFyeUR0byxcbiAgR3JhdGl0dWRlRGlhcnlEdG8sXG59IGZyb20gJy4vZHRvL2RpYXJ5LWVudHJpZXMuZHRvJztcblxuaW50ZXJmYWNlIEF1dGhSZXF1ZXN0IGV4dGVuZHMgUmVxdWVzdCB7XG4gIHRlbGVncmFtVXNlcklkOiBudW1iZXI7XG4gIHdlYlVzZXI6IHsgdXNlcklkOiBiaWdpbnQgfTtcbn1cblxuLy8gdWlkKCkvcGFyc2VJZCgpIOKAlCDQtdC00LjQvdGL0Lkg0LjRgdGC0L7Rh9C90LjQuiDQsiByZXF1ZXN0LXV0aWxzICjQsNGD0LTQuNGCIDIwMjYtMDcsIDLQsikuXG4vLyDQl9Cw0L7QtNC90L4g0YPQttC10YHRgtC+0YfQtdC90LjQtTogcGFyc2VJbnQg0L/RgNC40L3QuNC80LDQuyDCqzVhYmPCuyDQutCw0LogNSwg0YLQtdC/0LXRgNGMINGN0YLQviA0MDAuXG5cbkBDb250cm9sbGVyKCdhcGkvZGlhcnknKVxuQFVzZUd1YXJkcyhUZWxlZ3JhbUF1dGhHdWFyZClcbmV4cG9ydCBjbGFzcyBEaWFyeUNvbnRyb2xsZXIge1xuICBwcml2YXRlIHJlYWRvbmx5IGxvZ2dlciA9IG5ldyBMb2dnZXIoRGlhcnlDb250cm9sbGVyLm5hbWUpO1xuXG4gIGNvbnN0cnVjdG9yKFxuICAgIHByaXZhdGUgcmVhZG9ubHkgZGlhcnlTZXJ2aWNlOiBEaWFyeVNlcnZpY2UsXG4gICAgcHJpdmF0ZSByZWFkb25seSB0YXNrc1NlcnZpY2U6IFRoZXJhcHlUYXNrc1NlcnZpY2UsXG4gICkge31cblxuICAvLyDilIDilIDilIAgU2NoZW1hIERpYXJ5IOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuXG4gIEBHZXQoJ3NjaGVtYScpXG4gIGdldFNjaGVtYURpYXJ5KEBSZXEoKSByZXE6IEF1dGhSZXF1ZXN0KSB7XG4gICAgcmV0dXJuIHRoaXMuZGlhcnlTZXJ2aWNlLmdldFNjaGVtYURpYXJ5RW50cmllcyh1aWQocmVxKSk7XG4gIH1cblxuICBAUG9zdCgnc2NoZW1hJylcbiAgYXN5bmMgY3JlYXRlU2NoZW1hRGlhcnkoXG4gICAgQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QsXG4gICAgQEJvZHkoKSBib2R5OiBTY2hlbWFEaWFyeUR0byxcbiAgKSB7XG4gICAgaWYgKCFib2R5LnRyaWdnZXI/LnRyaW0oKSlcbiAgICAgIHRocm93IG5ldyBCYWRSZXF1ZXN0RXhjZXB0aW9uKCd0cmlnZ2VyIHJlcXVpcmVkJyk7XG4gICAgY29uc3QgTElNSVQgPSAyMDAwO1xuICAgIGNvbnN0IHRyaW1tZWQgPSB7XG4gICAgICAuLi5ib2R5LFxuICAgICAgdHJpZ2dlcjogYm9keS50cmlnZ2VyLnNsaWNlKDAsIExJTUlUKSxcbiAgICAgIHRob3VnaHRzOiBib2R5LnRob3VnaHRzPy5zbGljZSgwLCBMSU1JVCksXG4gICAgICBib2R5RmVlbGluZ3M6IGJvZHkuYm9keUZlZWxpbmdzPy5zbGljZSgwLCBMSU1JVCksXG4gICAgICBhY3R1YWxCZWhhdmlvcjogYm9keS5hY3R1YWxCZWhhdmlvcj8uc2xpY2UoMCwgTElNSVQpLFxuICAgICAgc2NoZW1hT3JpZ2luOiBib2R5LnNjaGVtYU9yaWdpbj8uc2xpY2UoMCwgTElNSVQpLFxuICAgICAgaGVhbHRoeVZpZXc6IGJvZHkuaGVhbHRoeVZpZXc/LnNsaWNlKDAsIExJTUlUKSxcbiAgICAgIHJlYWxQcm9ibGVtczogYm9keS5yZWFsUHJvYmxlbXM/LnNsaWNlKDAsIExJTUlUKSxcbiAgICAgIGV4Y2Vzc2l2ZVJlYWN0aW9uczogYm9keS5leGNlc3NpdmVSZWFjdGlvbnM/LnNsaWNlKDAsIExJTUlUKSxcbiAgICAgIGhlYWx0aHlCZWhhdmlvcjogYm9keS5oZWFsdGh5QmVoYXZpb3I/LnNsaWNlKDAsIExJTUlUKSxcbiAgICB9O1xuICAgIGNvbnN0IGVudHJ5ID0gYXdhaXQgdGhpcy5kaWFyeVNlcnZpY2UuY3JlYXRlU2NoZW1hRGlhcnlFbnRyeShcbiAgICAgIHVpZChyZXEpLFxuICAgICAgdHJpbW1lZCxcbiAgICApO1xuICAgIHRoaXMudGFza3NTZXJ2aWNlXG4gICAgICAuY2hlY2tTdHJlYWtUYXNrcyh1aWQocmVxKSlcbiAgICAgIC5jYXRjaCgoZXJyKSA9PiB0aGlzLmxvZ2dlci5lcnJvcignY2hlY2tTdHJlYWtUYXNrcyBmYWlsZWQnLCBlcnIpKTtcbiAgICByZXR1cm4gZW50cnk7XG4gIH1cblxuICBARGVsZXRlKCdzY2hlbWEvOmlkJylcbiAgYXN5bmMgZGVsZXRlU2NoZW1hRGlhcnkoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QsIEBQYXJhbSgnaWQnKSBpZDogc3RyaW5nKSB7XG4gICAgYXdhaXQgdGhpcy5kaWFyeVNlcnZpY2UuZGVsZXRlU2NoZW1hRGlhcnlFbnRyeSh1aWQocmVxKSwgcGFyc2VJZChpZCkpO1xuICAgIHJldHVybiB7IG9rOiB0cnVlIH07XG4gIH1cblxuICAvLyDilIDilIDilIAgTW9kZSBEaWFyeSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcblxuICBAR2V0KCdtb2RlJylcbiAgZ2V0TW9kZURpYXJ5KEBSZXEoKSByZXE6IEF1dGhSZXF1ZXN0KSB7XG4gICAgcmV0dXJuIHRoaXMuZGlhcnlTZXJ2aWNlLmdldE1vZGVEaWFyeUVudHJpZXModWlkKHJlcSkpO1xuICB9XG5cbiAgQFBvc3QoJ21vZGUnKVxuICBhc3luYyBjcmVhdGVNb2RlRGlhcnkoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QsIEBCb2R5KCkgYm9keTogTW9kZURpYXJ5RHRvKSB7XG4gICAgaWYgKCFib2R5Lm1vZGVJZD8udHJpbSgpKSB0aHJvdyBuZXcgQmFkUmVxdWVzdEV4Y2VwdGlvbignbW9kZUlkIHJlcXVpcmVkJyk7XG4gICAgaWYgKCFib2R5LnNpdHVhdGlvbj8udHJpbSgpKVxuICAgICAgdGhyb3cgbmV3IEJhZFJlcXVlc3RFeGNlcHRpb24oJ3NpdHVhdGlvbiByZXF1aXJlZCcpO1xuICAgIGNvbnN0IExJTUlUID0gMjAwMDtcbiAgICBjb25zdCB0cmltbWVkTW9kZSA9IHtcbiAgICAgIC4uLmJvZHksXG4gICAgICBzaXR1YXRpb246IGJvZHkuc2l0dWF0aW9uLnNsaWNlKDAsIExJTUlUKSxcbiAgICAgIHRob3VnaHRzOiBib2R5LnRob3VnaHRzPy5zbGljZSgwLCBMSU1JVCksXG4gICAgICBmZWVsaW5nczogYm9keS5mZWVsaW5ncz8uc2xpY2UoMCwgTElNSVQpLFxuICAgICAgYm9keUZlZWxpbmdzOiBib2R5LmJvZHlGZWVsaW5ncz8uc2xpY2UoMCwgTElNSVQpLFxuICAgICAgYWN0aW9uczogYm9keS5hY3Rpb25zPy5zbGljZSgwLCBMSU1JVCksXG4gICAgICBhY3R1YWxOZWVkOiBib2R5LmFjdHVhbE5lZWQ/LnNsaWNlKDAsIExJTUlUKSxcbiAgICAgIGNoaWxkaG9vZE1lbW9yaWVzOiBib2R5LmNoaWxkaG9vZE1lbW9yaWVzPy5zbGljZSgwLCBMSU1JVCksXG4gICAgICBoZWFsdGh5UmVzcG9uc2U6IGJvZHkuaGVhbHRoeVJlc3BvbnNlPy5zbGljZSgwLCBMSU1JVCksXG4gICAgfTtcbiAgICBjb25zdCBlbnRyeSA9IGF3YWl0IHRoaXMuZGlhcnlTZXJ2aWNlLmNyZWF0ZU1vZGVEaWFyeUVudHJ5KFxuICAgICAgdWlkKHJlcSksXG4gICAgICB0cmltbWVkTW9kZSxcbiAgICApO1xuICAgIHRoaXMudGFza3NTZXJ2aWNlXG4gICAgICAuY2hlY2tTdHJlYWtUYXNrcyh1aWQocmVxKSlcbiAgICAgIC5jYXRjaCgoZXJyKSA9PiB0aGlzLmxvZ2dlci5lcnJvcignY2hlY2tTdHJlYWtUYXNrcyBmYWlsZWQnLCBlcnIpKTtcbiAgICByZXR1cm4gZW50cnk7XG4gIH1cblxuICBARGVsZXRlKCdtb2RlLzppZCcpXG4gIGFzeW5jIGRlbGV0ZU1vZGVEaWFyeShAUmVxKCkgcmVxOiBBdXRoUmVxdWVzdCwgQFBhcmFtKCdpZCcpIGlkOiBzdHJpbmcpIHtcbiAgICBhd2FpdCB0aGlzLmRpYXJ5U2VydmljZS5kZWxldGVNb2RlRGlhcnlFbnRyeSh1aWQocmVxKSwgcGFyc2VJZChpZCkpO1xuICAgIHJldHVybiB7IG9rOiB0cnVlIH07XG4gIH1cblxuICAvLyDilIDilIDilIAgR3JhdGl0dWRlIERpYXJ5IOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuXG4gIEBHZXQoJ2dyYXRpdHVkZScpXG4gIGdldEdyYXRpdHVkZURpYXJ5KEBSZXEoKSByZXE6IEF1dGhSZXF1ZXN0KSB7XG4gICAgcmV0dXJuIHRoaXMuZGlhcnlTZXJ2aWNlLmdldEdyYXRpdHVkZURpYXJ5RW50cmllcyh1aWQocmVxKSk7XG4gIH1cblxuICBAUG9zdCgnZ3JhdGl0dWRlJylcbiAgYXN5bmMgY3JlYXRlR3JhdGl0dWRlRGlhcnkoXG4gICAgQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QsXG4gICAgQEJvZHkoKSBib2R5OiBHcmF0aXR1ZGVEaWFyeUR0byxcbiAgKSB7XG4gICAgaWYgKCFib2R5LmRhdGUgfHwgIS9eXFxkezR9LVxcZHsyfS1cXGR7Mn0kLy50ZXN0KGJvZHkuZGF0ZSkpXG4gICAgICB0aHJvdyBuZXcgQmFkUmVxdWVzdEV4Y2VwdGlvbignSW52YWxpZCBkYXRlJyk7XG4gICAgY29uc3QgaXRlbXMgPSBib2R5Lml0ZW1zLm1hcCgoczogc3RyaW5nKSA9PiBTdHJpbmcocykuc2xpY2UoMCwgNTAwKSk7XG4gICAgY29uc3QgZW50cnkgPSBhd2FpdCB0aGlzLmRpYXJ5U2VydmljZS51cHNlcnRHcmF0aXR1ZGVEaWFyeUVudHJ5KFxuICAgICAgdWlkKHJlcSksXG4gICAgICBib2R5LmRhdGUsXG4gICAgICBpdGVtcyxcbiAgICApO1xuICAgIHRoaXMudGFza3NTZXJ2aWNlXG4gICAgICAuY2hlY2tTdHJlYWtUYXNrcyh1aWQocmVxKSlcbiAgICAgIC5jYXRjaCgoZXJyKSA9PiB0aGlzLmxvZ2dlci5lcnJvcignY2hlY2tTdHJlYWtUYXNrcyBmYWlsZWQnLCBlcnIpKTtcbiAgICByZXR1cm4gZW50cnk7XG4gIH1cblxuICBARGVsZXRlKCdncmF0aXR1ZGUvOmlkJylcbiAgYXN5bmMgZGVsZXRlR3JhdGl0dWRlRGlhcnkoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QsIEBQYXJhbSgnaWQnKSBpZDogc3RyaW5nKSB7XG4gICAgYXdhaXQgdGhpcy5kaWFyeVNlcnZpY2UuZGVsZXRlR3JhdGl0dWRlRGlhcnlFbnRyeSh1aWQocmVxKSwgcGFyc2VJZChpZCkpO1xuICAgIHJldHVybiB7IG9rOiB0cnVlIH07XG4gIH1cbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

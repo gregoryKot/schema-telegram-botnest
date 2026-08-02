@@ -1,0 +1,69 @@
+8a814f91cefe36eb1f05025ec4866670
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ClientErrorsController = void 0;
+const common_1 = require("@nestjs/common");
+const client_error_dto_1 = require("./dto/client-error.dto");
+const telemetry_url_util_1 = require("./telemetry-url.util");
+// Приём ошибок фронтендов (best-practice «видимость прода», 2026-07).
+// БЕЗ auth-гарда: краш возможен и до/во время авторизации, тогда токена нет.
+// Идентичность не нужна — это телеметрия, не пользовательские данные.
+//
+// Защита от спама (правило №5 + существующая инфраструктура):
+//   • глобальный UserThrottlerGuard бакетит неверифицированные запросы по IP
+//     (10/сек, 200/мин) — ротацией фейкового sub лимит не обойти;
+//   • AlertLogger дополнительно троттлит DM: одинаковый (нормализованный по
+//     цифрам) текст уходит админу не чаще раза в 60с.
+//
+// ─── Инвариант после аудита 2026-07-20 (H0/H6) ─────────────────────────────
+// AlertLogger шлёт админу в Telegram ТОЛЬКО первый аргумент `.error()`
+// (optionalParams идут лишь в stdout). Поэтому:
+//   1. первый аргумент постоянен и не содержит НИЧЕГО клиентского — иначе
+//      (H0) живой креденшел из фрагмента URL (initData с подписью, JWT) уезжал
+//      в логи и в личку админа, а (H6) аноним доставлял туда произвольный текст
+//      и, варьируя буквы, обходил троттл 60с (тот нормализует только цифры);
+//   2. детали и стек — вторым аргументом, URL — через `stripUrlSecrets`.
+// Размен: в DM больше нет текста ошибки, админ идёт за деталями в логи.
+// Подробности и PoC — docs/SECOND_AUDIT.md, регрессии — в .spec рядом.
+let ClientErrorsController = class ClientErrorsController {
+    logger = new common_1.Logger('ClientError');
+    report(body) {
+        const safeUrl = (0, telemetry_url_util_1.stripUrlSecrets)(body.url);
+        const detail = [
+            `${body.section}: ${body.message}`,
+            safeUrl ? `url=${safeUrl}` : null,
+            body.stack ?? body.componentStack ?? null,
+        ]
+            .filter(Boolean)
+            .join('\n');
+        // body.source валидируется DTO как enum ('webapp' | 'miniapp') —
+        // единственное влияние клиента на первый аргумент, и оно из белого списка.
+        this.logger.error(`[client:${body.source}] ошибка фронтенда (детали в логах)`, detail);
+    }
+};
+exports.ClientErrorsController = ClientErrorsController;
+__decorate([
+    (0, common_1.Post)('client-errors'),
+    (0, common_1.HttpCode)(204),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [typeof (_a = typeof client_error_dto_1.ClientErrorDto !== "undefined" && client_error_dto_1.ClientErrorDto) === "function" ? _a : Object]),
+    __metadata("design:returntype", void 0)
+], ClientErrorsController.prototype, "report", null);
+exports.ClientErrorsController = ClientErrorsController = __decorate([
+    (0, common_1.Controller)('api')
+], ClientErrorsController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2NsaWVudC1lcnJvcnMuY29udHJvbGxlci50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsMkNBQTBFO0FBQzFFLDZEQUF3RDtBQUN4RCw2REFBdUQ7QUFFdkQsc0VBQXNFO0FBQ3RFLDZFQUE2RTtBQUM3RSxzRUFBc0U7QUFDdEUsRUFBRTtBQUNGLDhEQUE4RDtBQUM5RCw2RUFBNkU7QUFDN0Usa0VBQWtFO0FBQ2xFLDRFQUE0RTtBQUM1RSxzREFBc0Q7QUFDdEQsRUFBRTtBQUNGLDhFQUE4RTtBQUM5RSx1RUFBdUU7QUFDdkUsZ0RBQWdEO0FBQ2hELDBFQUEwRTtBQUMxRSwrRUFBK0U7QUFDL0UsZ0ZBQWdGO0FBQ2hGLDZFQUE2RTtBQUM3RSx5RUFBeUU7QUFDekUsd0VBQXdFO0FBQ3hFLHVFQUF1RTtBQUVoRSxJQUFNLHNCQUFzQixHQUE1QixNQUFNLHNCQUFzQjtJQUNoQixNQUFNLEdBQUcsSUFBSSxlQUFNLENBQUMsYUFBYSxDQUFDLENBQUM7SUFJcEQsTUFBTSxDQUFTLElBQW9CO1FBQ2pDLE1BQU0sT0FBTyxHQUFHLElBQUEsb0NBQWUsRUFBQyxJQUFJLENBQUMsR0FBRyxDQUFDLENBQUM7UUFDMUMsTUFBTSxNQUFNLEdBQUc7WUFDYixHQUFHLElBQUksQ0FBQyxPQUFPLEtBQUssSUFBSSxDQUFDLE9BQU8sRUFBRTtZQUNsQyxPQUFPLENBQUMsQ0FBQyxDQUFDLE9BQU8sT0FBTyxFQUFFLENBQUMsQ0FBQyxDQUFDLElBQUk7WUFDakMsSUFBSSxDQUFDLEtBQUssSUFBSSxJQUFJLENBQUMsY0FBYyxJQUFJLElBQUk7U0FDMUM7YUFDRSxNQUFNLENBQUMsT0FBTyxDQUFDO2FBQ2YsSUFBSSxDQUFDLElBQUksQ0FBQyxDQUFDO1FBRWQsaUVBQWlFO1FBQ2pFLDJFQUEyRTtRQUMzRSxJQUFJLENBQUMsTUFBTSxDQUFDLEtBQUssQ0FDZixXQUFXLElBQUksQ0FBQyxNQUFNLHFDQUFxQyxFQUMzRCxNQUFNLENBQ1AsQ0FBQztJQUNKLENBQUM7Q0FDRixDQUFBO0FBdEJZLHdEQUFzQjtBQUtqQztJQUZDLElBQUEsYUFBSSxFQUFDLGVBQWUsQ0FBQztJQUNyQixJQUFBLGlCQUFRLEVBQUMsR0FBRyxDQUFDO0lBQ04sV0FBQSxJQUFBLGFBQUksR0FBRSxDQUFBOzt5REFBTyxpQ0FBYyxvQkFBZCxpQ0FBYzs7b0RBZ0JsQztpQ0FyQlUsc0JBQXNCO0lBRGxDLElBQUEsbUJBQVUsRUFBQyxLQUFLLENBQUM7R0FDTCxzQkFBc0IsQ0FzQmxDIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2FwaS9jbGllbnQtZXJyb3JzLmNvbnRyb2xsZXIudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgQm9keSwgQ29udHJvbGxlciwgSHR0cENvZGUsIExvZ2dlciwgUG9zdCB9IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IENsaWVudEVycm9yRHRvIH0gZnJvbSAnLi9kdG8vY2xpZW50LWVycm9yLmR0byc7XG5pbXBvcnQgeyBzdHJpcFVybFNlY3JldHMgfSBmcm9tICcuL3RlbGVtZXRyeS11cmwudXRpbCc7XG5cbi8vINCf0YDQuNGR0Lwg0L7RiNC40LHQvtC6INGE0YDQvtC90YLQtdC90LTQvtCyIChiZXN0LXByYWN0aWNlIMKr0LLQuNC00LjQvNC+0YHRgtGMINC/0YDQvtC00LDCuywgMjAyNi0wNykuXG4vLyDQkdCV0JcgYXV0aC3Qs9Cw0YDQtNCwOiDQutGA0LDRiCDQstC+0LfQvNC+0LbQtdC9INC4INC00L4v0LLQviDQstGA0LXQvNGPINCw0LLRgtC+0YDQuNC30LDRhtC40LgsINGC0L7Qs9C00LAg0YLQvtC60LXQvdCwINC90LXRgi5cbi8vINCY0LTQtdC90YLQuNGH0L3QvtGB0YLRjCDQvdC1INC90YPQttC90LAg4oCUINGN0YLQviDRgtC10LvQtdC80LXRgtGA0LjRjywg0L3QtSDQv9C+0LvRjNC30L7QstCw0YLQtdC70YzRgdC60LjQtSDQtNCw0L3QvdGL0LUuXG4vL1xuLy8g0JfQsNGJ0LjRgtCwINC+0YIg0YHQv9Cw0LzQsCAo0L/RgNCw0LLQuNC70L4g4oSWNSArINGB0YPRidC10YHRgtCy0YPRjtGJ0LDRjyDQuNC90YTRgNCw0YHRgtGA0YPQutGC0YPRgNCwKTpcbi8vICAg4oCiINCz0LvQvtCx0LDQu9GM0L3Ri9C5IFVzZXJUaHJvdHRsZXJHdWFyZCDQsdCw0LrQtdGC0LjRgiDQvdC10LLQtdGA0LjRhNC40YbQuNGA0L7QstCw0L3QvdGL0LUg0LfQsNC/0YDQvtGB0Ysg0L/QviBJUFxuLy8gICAgICgxMC/RgdC10LosIDIwMC/QvNC40L0pIOKAlCDRgNC+0YLQsNGG0LjQtdC5INGE0LXQudC60L7QstC+0LPQviBzdWIg0LvQuNC80LjRgiDQvdC1INC+0LHQvtC50YLQuDtcbi8vICAg4oCiIEFsZXJ0TG9nZ2VyINC00L7Qv9C+0LvQvdC40YLQtdC70YzQvdC+INGC0YDQvtGC0YLQu9C40YIgRE06INC+0LTQuNC90LDQutC+0LLRi9C5ICjQvdC+0YDQvNCw0LvQuNC30L7QstCw0L3QvdGL0Lkg0L/QvlxuLy8gICAgINGG0LjRhNGA0LDQvCkg0YLQtdC60YHRgiDRg9GF0L7QtNC40YIg0LDQtNC80LjQvdGDINC90LUg0YfQsNGJ0LUg0YDQsNC30LAg0LIgNjDRgS5cbi8vXG4vLyDilIDilIDilIAg0JjQvdCy0LDRgNC40LDQvdGCINC/0L7RgdC70LUg0LDRg9C00LjRgtCwIDIwMjYtMDctMjAgKEgwL0g2KSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbi8vIEFsZXJ0TG9nZ2VyINGI0LvRkdGCINCw0LTQvNC40L3RgyDQsiBUZWxlZ3JhbSDQotCe0JvQrNCa0J4g0L/QtdGA0LLRi9C5INCw0YDQs9GD0LzQtdC90YIgYC5lcnJvcigpYFxuLy8gKG9wdGlvbmFsUGFyYW1zINC40LTRg9GCINC70LjRiNGMINCyIHN0ZG91dCkuINCf0L7RjdGC0L7QvNGDOlxuLy8gICAxLiDQv9C10YDQstGL0Lkg0LDRgNCz0YPQvNC10L3RgiDQv9C+0YHRgtC+0Y/QvdC10L0g0Lgg0L3QtSDRgdC+0LTQtdGA0LbQuNGCINCd0JjQp9CV0JPQniDQutC70LjQtdC90YLRgdC60L7Qs9C+IOKAlCDQuNC90LDRh9C1XG4vLyAgICAgIChIMCkg0LbQuNCy0L7QuSDQutGA0LXQtNC10L3RiNC10Lsg0LjQtyDRhNGA0LDQs9C80LXQvdGC0LAgVVJMIChpbml0RGF0YSDRgSDQv9C+0LTQv9C40YHRjNGOLCBKV1QpINGD0LXQt9C20LDQu1xuLy8gICAgICDQsiDQu9C+0LPQuCDQuCDQsiDQu9C40YfQutGDINCw0LTQvNC40L3QsCwg0LAgKEg2KSDQsNC90L7QvdC40Lwg0LTQvtGB0YLQsNCy0LvRj9C7INGC0YPQtNCwINC/0YDQvtC40LfQstC+0LvRjNC90YvQuSDRgtC10LrRgdGCXG4vLyAgICAgINC4LCDQstCw0YDRjNC40YDRg9GPINCx0YPQutCy0YssINC+0LHRhdC+0LTQuNC7INGC0YDQvtGC0YLQuyA2MNGBICjRgtC+0YIg0L3QvtGA0LzQsNC70LjQt9GD0LXRgiDRgtC+0LvRjNC60L4g0YbQuNGE0YDRiyk7XG4vLyAgIDIuINC00LXRgtCw0LvQuCDQuCDRgdGC0LXQuiDigJQg0LLRgtC+0YDRi9C8INCw0YDQs9GD0LzQtdC90YLQvtC8LCBVUkwg4oCUINGH0LXRgNC10LcgYHN0cmlwVXJsU2VjcmV0c2AuXG4vLyDQoNCw0LfQvNC10L06INCyIERNINCx0L7Qu9GM0YjQtSDQvdC10YIg0YLQtdC60YHRgtCwINC+0YjQuNCx0LrQuCwg0LDQtNC80LjQvSDQuNC00ZHRgiDQt9CwINC00LXRgtCw0LvRj9C80Lgg0LIg0LvQvtCz0LguXG4vLyDQn9C+0LTRgNC+0LHQvdC+0YHRgtC4INC4IFBvQyDigJQgZG9jcy9TRUNPTkRfQVVESVQubWQsINGA0LXQs9GA0LXRgdGB0LjQuCDigJQg0LIgLnNwZWMg0YDRj9C00L7QvC5cbkBDb250cm9sbGVyKCdhcGknKVxuZXhwb3J0IGNsYXNzIENsaWVudEVycm9yc0NvbnRyb2xsZXIge1xuICBwcml2YXRlIHJlYWRvbmx5IGxvZ2dlciA9IG5ldyBMb2dnZXIoJ0NsaWVudEVycm9yJyk7XG5cbiAgQFBvc3QoJ2NsaWVudC1lcnJvcnMnKVxuICBASHR0cENvZGUoMjA0KVxuICByZXBvcnQoQEJvZHkoKSBib2R5OiBDbGllbnRFcnJvckR0byk6IHZvaWQge1xuICAgIGNvbnN0IHNhZmVVcmwgPSBzdHJpcFVybFNlY3JldHMoYm9keS51cmwpO1xuICAgIGNvbnN0IGRldGFpbCA9IFtcbiAgICAgIGAke2JvZHkuc2VjdGlvbn06ICR7Ym9keS5tZXNzYWdlfWAsXG4gICAgICBzYWZlVXJsID8gYHVybD0ke3NhZmVVcmx9YCA6IG51bGwsXG4gICAgICBib2R5LnN0YWNrID8/IGJvZHkuY29tcG9uZW50U3RhY2sgPz8gbnVsbCxcbiAgICBdXG4gICAgICAuZmlsdGVyKEJvb2xlYW4pXG4gICAgICAuam9pbignXFxuJyk7XG5cbiAgICAvLyBib2R5LnNvdXJjZSDQstCw0LvQuNC00LjRgNGD0LXRgtGB0Y8gRFRPINC60LDQuiBlbnVtICgnd2ViYXBwJyB8ICdtaW5pYXBwJykg4oCUXG4gICAgLy8g0LXQtNC40L3RgdGC0LLQtdC90L3QvtC1INCy0LvQuNGP0L3QuNC1INC60LvQuNC10L3RgtCwINC90LAg0L/QtdGA0LLRi9C5INCw0YDQs9GD0LzQtdC90YIsINC4INC+0L3QviDQuNC3INCx0LXQu9C+0LPQviDRgdC/0LjRgdC60LAuXG4gICAgdGhpcy5sb2dnZXIuZXJyb3IoXG4gICAgICBgW2NsaWVudDoke2JvZHkuc291cmNlfV0g0L7RiNC40LHQutCwINGE0YDQvtC90YLQtdC90LTQsCAo0LTQtdGC0LDQu9C4INCyINC70L7Qs9Cw0YUpYCxcbiAgICAgIGRldGFpbCxcbiAgICApO1xuICB9XG59XG4iXSwidmVyc2lvbiI6M30=

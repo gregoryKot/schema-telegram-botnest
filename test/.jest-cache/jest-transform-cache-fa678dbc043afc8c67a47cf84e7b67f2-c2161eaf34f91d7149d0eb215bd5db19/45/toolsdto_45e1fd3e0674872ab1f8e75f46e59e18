@@ -1,0 +1,105 @@
+441d9fe0c527b9ae90764d2d52195000
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.FlashcardDto = exports.SafePlaceDto = exports.LetterDto = exports.BeliefCheckDto = void 0;
+const class_validator_1 = require("class-validator");
+const bot_service_1 = require("../../bot/bot.service");
+const TEXT_MAX = 3000;
+/**
+ * DTO для инструментов дневника (belief-checks, letters, safe-place,
+ * flashcards) — аудит 2026-07, 2г / правило №6 CLAUDE.md. Лимиты
+ * дублируют уже существующие ручные проверки в контроллере.
+ */
+class BeliefCheckDto {
+    belief;
+    evidenceFor;
+    evidenceAgainst;
+    reframe;
+}
+exports.BeliefCheckDto = BeliefCheckDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(TEXT_MAX),
+    __metadata("design:type", String)
+], BeliefCheckDto.prototype, "belief", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    (0, class_validator_1.MaxLength)(TEXT_MAX, { each: true }),
+    __metadata("design:type", Array)
+], BeliefCheckDto.prototype, "evidenceFor", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    (0, class_validator_1.MaxLength)(TEXT_MAX, { each: true }),
+    __metadata("design:type", Array)
+], BeliefCheckDto.prototype, "evidenceAgainst", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(TEXT_MAX),
+    __metadata("design:type", String)
+], BeliefCheckDto.prototype, "reframe", void 0);
+class LetterDto {
+    text;
+}
+exports.LetterDto = LetterDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(10000),
+    __metadata("design:type", String)
+], LetterDto.prototype, "text", void 0);
+class SafePlaceDto {
+    description;
+}
+exports.SafePlaceDto = SafePlaceDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(10000),
+    __metadata("design:type", String)
+], SafePlaceDto.prototype, "description", void 0);
+// Флэшкарта привязана к needId, либо к спец-режимам detached/critic (не
+// входят в основной список потребностей).
+const FLASHCARD_NEED_IDS = [...bot_service_1.NEED_IDS, 'detached', 'critic'];
+class FlashcardDto {
+    modeId;
+    needId;
+    reflection;
+    action;
+}
+exports.FlashcardDto = FlashcardDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], FlashcardDto.prototype, "modeId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(FLASHCARD_NEED_IDS),
+    __metadata("design:type", String)
+], FlashcardDto.prototype, "needId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(TEXT_MAX),
+    __metadata("design:type", String)
+], FlashcardDto.prototype, "reflection", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(TEXT_MAX),
+    __metadata("design:type", String)
+], FlashcardDto.prototype, "action", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by90b29scy5kdG8udHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7O0FBQUEscURBT3lCO0FBQ3pCLHVEQUFpRDtBQUVqRCxNQUFNLFFBQVEsR0FBRyxJQUFJLENBQUM7QUFFdEI7Ozs7R0FJRztBQUNILE1BQWEsY0FBYztJQUl6QixNQUFNLENBQVU7SUFLaEIsV0FBVyxDQUFZO0lBS3ZCLGVBQWUsQ0FBWTtJQUszQixPQUFPLENBQVU7Q0FDbEI7QUFwQkQsd0NBb0JDO0FBaEJDO0lBSEMsSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwyQkFBUyxFQUFDLFFBQVEsQ0FBQzs7OENBQ0o7QUFLaEI7SUFIQyxJQUFBLHlCQUFPLEdBQUU7SUFDVCxJQUFBLDBCQUFRLEVBQUMsRUFBRSxJQUFJLEVBQUUsSUFBSSxFQUFFLENBQUM7SUFDeEIsSUFBQSwyQkFBUyxFQUFDLFFBQVEsRUFBRSxFQUFFLElBQUksRUFBRSxJQUFJLEVBQUUsQ0FBQzs7bURBQ2I7QUFLdkI7SUFIQyxJQUFBLHlCQUFPLEdBQUU7SUFDVCxJQUFBLDBCQUFRLEVBQUMsRUFBRSxJQUFJLEVBQUUsSUFBSSxFQUFFLENBQUM7SUFDeEIsSUFBQSwyQkFBUyxFQUFDLFFBQVEsRUFBRSxFQUFFLElBQUksRUFBRSxJQUFJLEVBQUUsQ0FBQzs7dURBQ1Q7QUFLM0I7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsUUFBUSxDQUFDOzsrQ0FDSDtBQUduQixNQUFhLFNBQVM7SUFJcEIsSUFBSSxDQUFVO0NBQ2Y7QUFMRCw4QkFLQztBQURDO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLEtBQUssQ0FBQzs7dUNBQ0g7QUFHaEIsTUFBYSxZQUFZO0lBSXZCLFdBQVcsQ0FBVTtDQUN0QjtBQUxELG9DQUtDO0FBREM7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsS0FBSyxDQUFDOztpREFDSTtBQUd2Qix3RUFBd0U7QUFDeEUsMENBQTBDO0FBQzFDLE1BQU0sa0JBQWtCLEdBQUcsQ0FBQyxHQUFHLHNCQUFRLEVBQUUsVUFBVSxFQUFFLFFBQVEsQ0FBQyxDQUFDO0FBRS9ELE1BQWEsWUFBWTtJQUd2QixNQUFNLENBQVU7SUFJaEIsTUFBTSxDQUFVO0lBS2hCLFVBQVUsQ0FBVTtJQUtwQixNQUFNLENBQVU7Q0FDakI7QUFsQkQsb0NBa0JDO0FBZkM7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7OzRDQUNLO0FBSWhCO0lBRkMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSxzQkFBSSxFQUFDLGtCQUFrQixDQUFDOzs0Q0FDVDtBQUtoQjtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxRQUFRLENBQUM7O2dEQUNBO0FBS3BCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLFFBQVEsQ0FBQzs7NENBQ0oiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by90b29scy5kdG8udHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHtcbiAgSXNBcnJheSxcbiAgSXNJbixcbiAgSXNOb3RFbXB0eSxcbiAgSXNPcHRpb25hbCxcbiAgSXNTdHJpbmcsXG4gIE1heExlbmd0aCxcbn0gZnJvbSAnY2xhc3MtdmFsaWRhdG9yJztcbmltcG9ydCB7IE5FRURfSURTIH0gZnJvbSAnLi4vLi4vYm90L2JvdC5zZXJ2aWNlJztcblxuY29uc3QgVEVYVF9NQVggPSAzMDAwO1xuXG4vKipcbiAqIERUTyDQtNC70Y8g0LjQvdGB0YLRgNGD0LzQtdC90YLQvtCyINC00L3QtdCy0L3QuNC60LAgKGJlbGllZi1jaGVja3MsIGxldHRlcnMsIHNhZmUtcGxhY2UsXG4gKiBmbGFzaGNhcmRzKSDigJQg0LDRg9C00LjRgiAyMDI2LTA3LCAy0LMgLyDQv9GA0LDQstC40LvQviDihJY2IENMQVVERS5tZC4g0JvQuNC80LjRgtGLXG4gKiDQtNGD0LHQu9C40YDRg9GO0YIg0YPQttC1INGB0YPRidC10YHRgtCy0YPRjtGJ0LjQtSDRgNGD0YfQvdGL0LUg0L/RgNC+0LLQtdGA0LrQuCDQsiDQutC+0L3RgtGA0L7Qu9C70LXRgNC1LlxuICovXG5leHBvcnQgY2xhc3MgQmVsaWVmQ2hlY2tEdG8ge1xuICBASXNTdHJpbmcoKVxuICBASXNOb3RFbXB0eSgpXG4gIEBNYXhMZW5ndGgoVEVYVF9NQVgpXG4gIGJlbGllZiE6IHN0cmluZztcblxuICBASXNBcnJheSgpXG4gIEBJc1N0cmluZyh7IGVhY2g6IHRydWUgfSlcbiAgQE1heExlbmd0aChURVhUX01BWCwgeyBlYWNoOiB0cnVlIH0pXG4gIGV2aWRlbmNlRm9yITogc3RyaW5nW107XG5cbiAgQElzQXJyYXkoKVxuICBASXNTdHJpbmcoeyBlYWNoOiB0cnVlIH0pXG4gIEBNYXhMZW5ndGgoVEVYVF9NQVgsIHsgZWFjaDogdHJ1ZSB9KVxuICBldmlkZW5jZUFnYWluc3QhOiBzdHJpbmdbXTtcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoVEVYVF9NQVgpXG4gIHJlZnJhbWU/OiBzdHJpbmc7XG59XG5cbmV4cG9ydCBjbGFzcyBMZXR0ZXJEdG8ge1xuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoMTAwMDApXG4gIHRleHQ/OiBzdHJpbmc7XG59XG5cbmV4cG9ydCBjbGFzcyBTYWZlUGxhY2VEdG8ge1xuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoMTAwMDApXG4gIGRlc2NyaXB0aW9uPzogc3RyaW5nO1xufVxuXG4vLyDQpNC70Y3RiNC60LDRgNGC0LAg0L/RgNC40LLRj9C30LDQvdCwINC6IG5lZWRJZCwg0LvQuNCx0L4g0Log0YHQv9C10YYt0YDQtdC20LjQvNCw0LwgZGV0YWNoZWQvY3JpdGljICjQvdC1XG4vLyDQstGF0L7QtNGP0YIg0LIg0L7RgdC90L7QstC90L7QuSDRgdC/0LjRgdC+0Log0L/QvtGC0YDQtdCx0L3QvtGB0YLQtdC5KS5cbmNvbnN0IEZMQVNIQ0FSRF9ORUVEX0lEUyA9IFsuLi5ORUVEX0lEUywgJ2RldGFjaGVkJywgJ2NyaXRpYyddO1xuXG5leHBvcnQgY2xhc3MgRmxhc2hjYXJkRHRvIHtcbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBtb2RlSWQ/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNJbihGTEFTSENBUkRfTkVFRF9JRFMpXG4gIG5lZWRJZD86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoVEVYVF9NQVgpXG4gIHJlZmxlY3Rpb24/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKFRFWFRfTUFYKVxuICBhY3Rpb24/OiBzdHJpbmc7XG59XG4iXSwidmVyc2lvbiI6M30=

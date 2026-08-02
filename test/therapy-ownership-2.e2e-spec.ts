@@ -20,24 +20,32 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
+import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: therapy ownership — after disconnect (PR #66 regression)', () => {
   let app: INestApplication;
   let prisma: TestApp['prisma'];
-
-  beforeAll(async () => {
-    ({ app, prisma } = await buildTestApp());
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
 
   const secret = () => process.env.JWT_SECRET as string;
 
   const T3 = 4_000_000_000_000_004n;
   const C2 = 4_000_000_000_000_005n;
   const C2_ID = Number(C2);
+  const ALL_USER_IDS = [T3, C2];
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    // Изоляция между прогонами (TEST_TRUST_PLAN.md, п.1) — см. комментарий
+    // в app-ownership.e2e-spec.ts. На реальном Postgres обязательна и перед
+    // прямой вставкой User-строк ниже (role: THERAPIST/CLIENT) — иначе
+    // повторный локальный прогон падает на PK-конфликте id.
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
 
   function agentAs(userId: bigint) {
     const token = signAccessToken(userId, secret());
@@ -109,7 +117,8 @@ describe('e2e smoke: therapy ownership — after disconnect (PR #66 regression)'
     const t3 = agentAs(T3);
     // Карта физически всё ещё в БД с therapistId=T3 — проверяем, что одной
     // сверки therapistId на строке недостаточно, нужна ЖИВАЯ связь.
-    expect(prisma.modeMap._rows.some((r) => r.id === mapId)).toBe(true);
+    const mapRow = await prisma.modeMap.findUnique({ where: { id: mapId } });
+    expect(mapRow).not.toBeNull();
     const res = await t3.get(`/api/therapy/mode-maps/map/${mapId}`);
     expect(res.status).toBe(403);
   });

@@ -1,0 +1,58 @@
+651eed0b9b6eeebb505225bf2a03b444
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ImportPhrasesDto = exports.UpdatePhraseDto = exports.CreatePhraseDto = void 0;
+const class_validator_1 = require("class-validator");
+/** Создание фразы (правило №6: рантайм-валидация через class-validator). */
+class CreatePhraseDto {
+    text;
+}
+exports.CreatePhraseDto = CreatePhraseDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(1),
+    (0, class_validator_1.MaxLength)(500),
+    __metadata("design:type", String)
+], CreatePhraseDto.prototype, "text", void 0);
+/** Частичное обновление: текст и/или флаг включённости. */
+class UpdatePhraseDto {
+    text;
+    enabled;
+}
+exports.UpdatePhraseDto = UpdatePhraseDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(1),
+    (0, class_validator_1.MaxLength)(500),
+    __metadata("design:type", String)
+], UpdatePhraseDto.prototype, "text", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdatePhraseDto.prototype, "enabled", void 0);
+/**
+ * Массовое добавление: весь блок текста, по фразе на строку. Валидируем
+ * размер блока целиком — фразы разбираются и отсеиваются в prepareImport.
+ */
+class ImportPhrasesDto {
+    text;
+}
+exports.ImportPhrasesDto = ImportPhrasesDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(1),
+    (0, class_validator_1.MaxLength)(20000),
+    __metadata("design:type", String)
+], ImportPhrasesDto.prototype, "text", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm90L2hlYWx0aHktYWR1bHQuZHRvLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7OztBQUFBLHFEQU15QjtBQUV6Qiw0RUFBNEU7QUFDNUUsTUFBYSxlQUFlO0lBSTFCLElBQUksQ0FBVTtDQUNmO0FBTEQsMENBS0M7QUFEQztJQUhDLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxDQUFDLENBQUM7SUFDWixJQUFBLDJCQUFTLEVBQUMsR0FBRyxDQUFDOzs2Q0FDRDtBQUdoQiwyREFBMkQ7QUFDM0QsTUFBYSxlQUFlO0lBSzFCLElBQUksQ0FBVTtJQUlkLE9BQU8sQ0FBVztDQUNuQjtBQVZELDBDQVVDO0FBTEM7SUFKQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsQ0FBQyxDQUFDO0lBQ1osSUFBQSwyQkFBUyxFQUFDLEdBQUcsQ0FBQzs7NkNBQ0Q7QUFJZDtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMkJBQVMsR0FBRTs7Z0RBQ007QUFHcEI7OztHQUdHO0FBQ0gsTUFBYSxnQkFBZ0I7SUFJM0IsSUFBSSxDQUFVO0NBQ2Y7QUFMRCw0Q0FLQztBQURDO0lBSEMsSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLENBQUMsQ0FBQztJQUNaLElBQUEsMkJBQVMsRUFBQyxLQUFLLENBQUM7OzhDQUNIIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2JvdC9oZWFsdGh5LWFkdWx0LmR0by50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQge1xuICBJc0Jvb2xlYW4sXG4gIElzT3B0aW9uYWwsXG4gIElzU3RyaW5nLFxuICBNYXhMZW5ndGgsXG4gIE1pbkxlbmd0aCxcbn0gZnJvbSAnY2xhc3MtdmFsaWRhdG9yJztcblxuLyoqINCh0L7Qt9C00LDQvdC40LUg0YTRgNCw0LfRiyAo0L/RgNCw0LLQuNC70L4g4oSWNjog0YDQsNC90YLQsNC50Lwt0LLQsNC70LjQtNCw0YbQuNGPINGH0LXRgNC10LcgY2xhc3MtdmFsaWRhdG9yKS4gKi9cbmV4cG9ydCBjbGFzcyBDcmVhdGVQaHJhc2VEdG8ge1xuICBASXNTdHJpbmcoKVxuICBATWluTGVuZ3RoKDEpXG4gIEBNYXhMZW5ndGgoNTAwKVxuICB0ZXh0ITogc3RyaW5nO1xufVxuXG4vKiog0KfQsNGB0YLQuNGH0L3QvtC1INC+0LHQvdC+0LLQu9C10L3QuNC1OiDRgtC10LrRgdGCINC4L9C40LvQuCDRhNC70LDQsyDQstC60LvRjtGH0ZHQvdC90L7RgdGC0LguICovXG5leHBvcnQgY2xhc3MgVXBkYXRlUGhyYXNlRHRvIHtcbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWluTGVuZ3RoKDEpXG4gIEBNYXhMZW5ndGgoNTAwKVxuICB0ZXh0Pzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzQm9vbGVhbigpXG4gIGVuYWJsZWQ/OiBib29sZWFuO1xufVxuXG4vKipcbiAqINCc0LDRgdGB0L7QstC+0LUg0LTQvtCx0LDQstC70LXQvdC40LU6INCy0LXRgdGMINCx0LvQvtC6INGC0LXQutGB0YLQsCwg0L/QviDRhNGA0LDQt9C1INC90LAg0YHRgtGA0L7QutGDLiDQktCw0LvQuNC00LjRgNGD0LXQvFxuICog0YDQsNC30LzQtdGAINCx0LvQvtC60LAg0YbQtdC70LjQutC+0Lwg4oCUINGE0YDQsNC30Ysg0YDQsNC30LHQuNGA0LDRjtGC0YHRjyDQuCDQvtGC0YHQtdC40LLQsNGO0YLRgdGPINCyIHByZXBhcmVJbXBvcnQuXG4gKi9cbmV4cG9ydCBjbGFzcyBJbXBvcnRQaHJhc2VzRHRvIHtcbiAgQElzU3RyaW5nKClcbiAgQE1pbkxlbmd0aCgxKVxuICBATWF4TGVuZ3RoKDIwMDAwKVxuICB0ZXh0ITogc3RyaW5nO1xufVxuIl0sInZlcnNpb24iOjN9

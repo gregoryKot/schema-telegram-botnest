@@ -1,0 +1,57 @@
+e2c6ac8ccaab720fb8e110aa310320ea
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MaxProvider = void 0;
+const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
+const max_init_data_1 = require("../max-init-data");
+// MAX mini-app initData verification. Spec: dev.max.ru/docs/webapps/validation.
+// Токен бота MAX — не связан с Telegram BOT_TOKEN.
+//
+// Почему два имени. Подпись initData считается по токену того бота, под
+// которым зарегистрировано мини-приложение. У нас это тот же бот, что
+// публикует канал «Здоровый Взрослый», и его токен уже лежит в
+// HEALTHY_ADULT_MAX_TOKEN — заводить рядом вторую переменную с тем же
+// секретом значит обязать себя ротировать их синхронно: забудешь одну и
+// либо канал молча перестанет постить, либо все входы начнут падать.
+//
+// Поэтому MAX_BOT_TOKEN необязателен и просто перекрывает канальный, если
+// когда-нибудь мини-апп переедет под отдельного бота. Порядок именно такой:
+// явная переменная сильнее унаследованной.
+const TOKEN_ENVS = ['MAX_BOT_TOKEN', 'HEALTHY_ADULT_MAX_TOKEN'];
+let MaxProvider = class MaxProvider {
+    config;
+    id = 'max';
+    displayName = 'MAX';
+    constructor(config) {
+        this.config = config;
+    }
+    verifyInitData(initData) {
+        const botToken = TOKEN_ENVS.map((k) => this.config.get(k)?.trim()).find((v) => !!v);
+        // Не UnauthorizedException: незаданный токен — наша конфигурация, а не
+        // плохая подпись. Иначе она уедет админу как «подделка» (см. класс).
+        if (!botToken)
+            throw new max_init_data_1.MaxNotConfiguredError();
+        // Ошибки verifyMaxInitData (включая 'init data expired ...') намеренно
+        // не перехватываются здесь — их классифицирует rejectInitData на
+        // вызывающей стороне (src/api/initdata-alert.ts).
+        const { id, firstName } = (0, max_init_data_1.verifyMaxInitData)(initData, botToken);
+        return { providerId: id, displayName: firstName };
+    }
+};
+exports.MaxProvider = MaxProvider;
+exports.MaxProvider = MaxProvider = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _a : Object])
+], MaxProvider);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXV0aC9wcm92aWRlcnMvbWF4LnByb3ZpZGVyLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FBNEM7QUFDNUMsMkNBQStDO0FBRS9DLG9EQUE0RTtBQUU1RSxnRkFBZ0Y7QUFDaEYsbURBQW1EO0FBQ25ELEVBQUU7QUFDRix3RUFBd0U7QUFDeEUsc0VBQXNFO0FBQ3RFLCtEQUErRDtBQUMvRCxzRUFBc0U7QUFDdEUsd0VBQXdFO0FBQ3hFLHFFQUFxRTtBQUNyRSxFQUFFO0FBQ0YsMEVBQTBFO0FBQzFFLDRFQUE0RTtBQUM1RSwyQ0FBMkM7QUFDM0MsTUFBTSxVQUFVLEdBQUcsQ0FBQyxlQUFlLEVBQUUseUJBQXlCLENBQVUsQ0FBQztBQUdsRSxJQUFNLFdBQVcsR0FBakIsTUFBTSxXQUFXO0lBSU87SUFIcEIsRUFBRSxHQUFHLEtBQUssQ0FBQztJQUNYLFdBQVcsR0FBRyxLQUFLLENBQUM7SUFFN0IsWUFBNkIsTUFBcUI7UUFBckIsV0FBTSxHQUFOLE1BQU0sQ0FBZTtJQUFHLENBQUM7SUFFdEQsY0FBYyxDQUFDLFFBQWdCO1FBQzdCLE1BQU0sUUFBUSxHQUFHLFVBQVUsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLEVBQUUsRUFBRSxDQUNwQyxJQUFJLENBQUMsTUFBTSxDQUFDLEdBQUcsQ0FBUyxDQUFDLENBQUMsRUFBRSxJQUFJLEVBQUUsQ0FDbkMsQ0FBQyxJQUFJLENBQUMsQ0FBQyxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQztRQUNuQix1RUFBdUU7UUFDdkUscUVBQXFFO1FBQ3JFLElBQUksQ0FBQyxRQUFRO1lBQUUsTUFBTSxJQUFJLHFDQUFxQixFQUFFLENBQUM7UUFDakQsdUVBQXVFO1FBQ3ZFLGlFQUFpRTtRQUNqRSxrREFBa0Q7UUFDbEQsTUFBTSxFQUFFLEVBQUUsRUFBRSxTQUFTLEVBQUUsR0FBRyxJQUFBLGlDQUFpQixFQUFDLFFBQVEsRUFBRSxRQUFRLENBQUMsQ0FBQztRQUNoRSxPQUFPLEVBQUUsVUFBVSxFQUFFLEVBQUUsRUFBRSxXQUFXLEVBQUUsU0FBUyxFQUFFLENBQUM7SUFDcEQsQ0FBQztDQUNGLENBQUE7QUFuQlksa0NBQVc7c0JBQVgsV0FBVztJQUR2QixJQUFBLG1CQUFVLEdBQUU7eURBSzBCLHNCQUFhLG9CQUFiLHNCQUFhO0dBSnZDLFdBQVcsQ0FtQnZCIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2F1dGgvcHJvdmlkZXJzL21heC5wcm92aWRlci50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJbmplY3RhYmxlIH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgQ29uZmlnU2VydmljZSB9IGZyb20gJ0BuZXN0anMvY29uZmlnJztcbmltcG9ydCB7IEF1dGhQcm92aWRlckhhbmRsZXIsIFByb3ZpZGVySWRlbnRpdHkgfSBmcm9tICcuL3R5cGVzJztcbmltcG9ydCB7IE1heE5vdENvbmZpZ3VyZWRFcnJvciwgdmVyaWZ5TWF4SW5pdERhdGEgfSBmcm9tICcuLi9tYXgtaW5pdC1kYXRhJztcblxuLy8gTUFYIG1pbmktYXBwIGluaXREYXRhIHZlcmlmaWNhdGlvbi4gU3BlYzogZGV2Lm1heC5ydS9kb2NzL3dlYmFwcHMvdmFsaWRhdGlvbi5cbi8vINCi0L7QutC10L0g0LHQvtGC0LAgTUFYIOKAlCDQvdC1INGB0LLRj9C30LDQvSDRgSBUZWxlZ3JhbSBCT1RfVE9LRU4uXG4vL1xuLy8g0J/QvtGH0LXQvNGDINC00LLQsCDQuNC80LXQvdC4LiDQn9C+0LTQv9C40YHRjCBpbml0RGF0YSDRgdGH0LjRgtCw0LXRgtGB0Y8g0L/QviDRgtC+0LrQtdC90YMg0YLQvtCz0L4g0LHQvtGC0LAsINC/0L7QtFxuLy8g0LrQvtGC0L7RgNGL0Lwg0LfQsNGA0LXQs9C40YHRgtGA0LjRgNC+0LLQsNC90L4g0LzQuNC90Lgt0L/RgNC40LvQvtC20LXQvdC40LUuINCjINC90LDRgSDRjdGC0L4g0YLQvtGCINC20LUg0LHQvtGCLCDRh9GC0L5cbi8vINC/0YPQsdC70LjQutGD0LXRgiDQutCw0L3QsNC7IMKr0JfQtNC+0YDQvtCy0YvQuSDQktC30YDQvtGB0LvRi9C5wrssINC4INC10LPQviDRgtC+0LrQtdC9INGD0LbQtSDQu9C10LbQuNGCINCyXG4vLyBIRUFMVEhZX0FEVUxUX01BWF9UT0tFTiDigJQg0LfQsNCy0L7QtNC40YLRjCDRgNGP0LTQvtC8INCy0YLQvtGA0YPRjiDQv9C10YDQtdC80LXQvdC90YPRjiDRgSDRgtC10Lwg0LbQtVxuLy8g0YHQtdC60YDQtdGC0L7QvCDQt9C90LDRh9C40YIg0L7QsdGP0LfQsNGC0Ywg0YHQtdCx0Y8g0YDQvtGC0LjRgNC+0LLQsNGC0Ywg0LjRhSDRgdC40L3RhdGA0L7QvdC90L46INC30LDQsdGD0LTQtdGI0Ywg0L7QtNC90YMg0Lhcbi8vINC70LjQsdC+INC60LDQvdCw0Lsg0LzQvtC70YfQsCDQv9C10YDQtdGB0YLQsNC90LXRgiDQv9C+0YHRgtC40YLRjCwg0LvQuNCx0L4g0LLRgdC1INCy0YXQvtC00Ysg0L3QsNGH0L3Rg9GCINC/0LDQtNCw0YLRjC5cbi8vXG4vLyDQn9C+0Y3RgtC+0LzRgyBNQVhfQk9UX1RPS0VOINC90LXQvtCx0Y/Qt9Cw0YLQtdC70LXQvSDQuCDQv9GA0L7RgdGC0L4g0L/QtdGA0LXQutGA0YvQstCw0LXRgiDQutCw0L3QsNC70YzQvdGL0LksINC10YHQu9C4XG4vLyDQutC+0LPQtNCwLdC90LjQsdGD0LTRjCDQvNC40L3QuC3QsNC/0L8g0L/QtdGA0LXQtdC00LXRgiDQv9C+0LQg0L7RgtC00LXQu9GM0L3QvtCz0L4g0LHQvtGC0LAuINCf0L7RgNGP0LTQvtC6INC40LzQtdC90L3QviDRgtCw0LrQvtC5OlxuLy8g0Y/QstC90LDRjyDQv9C10YDQtdC80LXQvdC90LDRjyDRgdC40LvRjNC90LXQtSDRg9C90LDRgdC70LXQtNC+0LLQsNC90L3QvtC5LlxuY29uc3QgVE9LRU5fRU5WUyA9IFsnTUFYX0JPVF9UT0tFTicsICdIRUFMVEhZX0FEVUxUX01BWF9UT0tFTiddIGFzIGNvbnN0O1xuXG5ASW5qZWN0YWJsZSgpXG5leHBvcnQgY2xhc3MgTWF4UHJvdmlkZXIgaW1wbGVtZW50cyBBdXRoUHJvdmlkZXJIYW5kbGVyIHtcbiAgcmVhZG9ubHkgaWQgPSAnbWF4JztcbiAgcmVhZG9ubHkgZGlzcGxheU5hbWUgPSAnTUFYJztcblxuICBjb25zdHJ1Y3Rvcihwcml2YXRlIHJlYWRvbmx5IGNvbmZpZzogQ29uZmlnU2VydmljZSkge31cblxuICB2ZXJpZnlJbml0RGF0YShpbml0RGF0YTogc3RyaW5nKTogUHJvdmlkZXJJZGVudGl0eSB7XG4gICAgY29uc3QgYm90VG9rZW4gPSBUT0tFTl9FTlZTLm1hcCgoaykgPT5cbiAgICAgIHRoaXMuY29uZmlnLmdldDxzdHJpbmc+KGspPy50cmltKCksXG4gICAgKS5maW5kKCh2KSA9PiAhIXYpO1xuICAgIC8vINCd0LUgVW5hdXRob3JpemVkRXhjZXB0aW9uOiDQvdC10LfQsNC00LDQvdC90YvQuSDRgtC+0LrQtdC9IOKAlCDQvdCw0YjQsCDQutC+0L3RhNC40LPRg9GA0LDRhtC40Y8sINCwINC90LVcbiAgICAvLyDQv9C70L7RhdCw0Y8g0L/QvtC00L/QuNGB0YwuINCY0L3QsNGH0LUg0L7QvdCwINGD0LXQtNC10YIg0LDQtNC80LjQvdGDINC60LDQuiDCq9C/0L7QtNC00LXQu9C60LDCuyAo0YHQvC4g0LrQu9Cw0YHRgSkuXG4gICAgaWYgKCFib3RUb2tlbikgdGhyb3cgbmV3IE1heE5vdENvbmZpZ3VyZWRFcnJvcigpO1xuICAgIC8vINCe0YjQuNCx0LrQuCB2ZXJpZnlNYXhJbml0RGF0YSAo0LLQutC70Y7Rh9Cw0Y8gJ2luaXQgZGF0YSBleHBpcmVkIC4uLicpINC90LDQvNC10YDQtdC90L3QvlxuICAgIC8vINC90LUg0L/QtdGA0LXRhdCy0LDRgtGL0LLQsNGO0YLRgdGPINC30LTQtdGB0Ywg4oCUINC40YUg0LrQu9Cw0YHRgdC40YTQuNGG0LjRgNGD0LXRgiByZWplY3RJbml0RGF0YSDQvdCwXG4gICAgLy8g0LLRi9C30YvQstCw0Y7RidC10Lkg0YHRgtC+0YDQvtC90LUgKHNyYy9hcGkvaW5pdGRhdGEtYWxlcnQudHMpLlxuICAgIGNvbnN0IHsgaWQsIGZpcnN0TmFtZSB9ID0gdmVyaWZ5TWF4SW5pdERhdGEoaW5pdERhdGEsIGJvdFRva2VuKTtcbiAgICByZXR1cm4geyBwcm92aWRlcklkOiBpZCwgZGlzcGxheU5hbWU6IGZpcnN0TmFtZSB9O1xuICB9XG59XG4iXSwidmVyc2lvbiI6M30=

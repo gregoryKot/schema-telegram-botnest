@@ -1,0 +1,62 @@
+593b0ac66eb9620816960197f96d0b89
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MarqueeDto = exports.MarqueeTopicDto = exports.HeroPhotoDto = void 0;
+// @Type() (ниже) читает design-time метаданные через Reflect — полифилл
+// нужен явно: в юнит-тесте DTO грузится без бутстрапа Nest (который тянет
+// reflect-metadata как побочный эффект сам).
+require("reflect-metadata");
+const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
+/**
+ * DTO для админ-эндпоинтов сайта (аудит 2026-07, 2г / правило №6
+ * CLAUDE.md). Формат/размер `dataUri` уже проверяется вручную в
+ * контроллере — не дублируем. Topics — вложенные объекты, нужен
+ * @ValidateNested + @Type, иначе whitelist их не тронет.
+ */
+class HeroPhotoDto {
+    dataUri;
+}
+exports.HeroPhotoDto = HeroPhotoDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], HeroPhotoDto.prototype, "dataUri", void 0);
+class MarqueeTopicDto {
+    label;
+    href;
+}
+exports.MarqueeTopicDto = MarqueeTopicDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], MarqueeTopicDto.prototype, "label", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], MarqueeTopicDto.prototype, "href", void 0);
+class MarqueeDto {
+    group;
+    topics;
+}
+exports.MarqueeDto = MarqueeDto;
+__decorate([
+    (0, class_validator_1.IsIn)(['A', 'B']),
+    __metadata("design:type", String)
+], MarqueeDto.prototype, "group", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => MarqueeTopicDto),
+    __metadata("design:type", Array)
+], MarqueeDto.prototype, "topics", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvc2l0ZS1jb250ZW50L3NpdGUtY29udGVudC1hZG1pbi5kdG8udHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7O0FBQUEsd0VBQXdFO0FBQ3hFLDBFQUEwRTtBQUMxRSw2Q0FBNkM7QUFDN0MsNEJBQTBCO0FBQzFCLHFEQUEwRTtBQUMxRSx5REFBeUM7QUFFekM7Ozs7O0dBS0c7QUFDSCxNQUFhLFlBQVk7SUFFdkIsT0FBTyxDQUFVO0NBQ2xCO0FBSEQsb0NBR0M7QUFEQztJQURDLElBQUEsMEJBQVEsR0FBRTs7NkNBQ007QUFHbkIsTUFBYSxlQUFlO0lBRTFCLEtBQUssQ0FBVTtJQUdmLElBQUksQ0FBVTtDQUNmO0FBTkQsMENBTUM7QUFKQztJQURDLElBQUEsMEJBQVEsR0FBRTs7OENBQ0k7QUFHZjtJQURDLElBQUEsMEJBQVEsR0FBRTs7NkNBQ0c7QUFHaEIsTUFBYSxVQUFVO0lBRXJCLEtBQUssQ0FBYTtJQUtsQixNQUFNLENBQXFCO0NBQzVCO0FBUkQsZ0NBUUM7QUFOQztJQURDLElBQUEsc0JBQUksRUFBQyxDQUFDLEdBQUcsRUFBRSxHQUFHLENBQUMsQ0FBQzs7eUNBQ0M7QUFLbEI7SUFIQyxJQUFBLHlCQUFPLEdBQUU7SUFDVCxJQUFBLGdDQUFjLEVBQUMsRUFBRSxJQUFJLEVBQUUsSUFBSSxFQUFFLENBQUM7SUFDOUIsSUFBQSx3QkFBSSxFQUFDLEdBQUcsRUFBRSxDQUFDLGVBQWUsQ0FBQzs7MENBQ0QiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvc2l0ZS1jb250ZW50L3NpdGUtY29udGVudC1hZG1pbi5kdG8udHMiXSwic291cmNlc0NvbnRlbnQiOlsiLy8gQFR5cGUoKSAo0L3QuNC20LUpINGH0LjRgtCw0LXRgiBkZXNpZ24tdGltZSDQvNC10YLQsNC00LDQvdC90YvQtSDRh9C10YDQtdC3IFJlZmxlY3Qg4oCUINC/0L7Qu9C40YTQuNC70Ltcbi8vINC90YPQttC10L0g0Y/QstC90L46INCyINGO0L3QuNGCLdGC0LXRgdGC0LUgRFRPINCz0YDRg9C30LjRgtGB0Y8g0LHQtdC3INCx0YPRgtGB0YLRgNCw0L/QsCBOZXN0ICjQutC+0YLQvtGA0YvQuSDRgtGP0L3QtdGCXG4vLyByZWZsZWN0LW1ldGFkYXRhINC60LDQuiDQv9C+0LHQvtGH0L3Ri9C5INGN0YTRhNC10LrRgiDRgdCw0LwpLlxuaW1wb3J0ICdyZWZsZWN0LW1ldGFkYXRhJztcbmltcG9ydCB7IElzQXJyYXksIElzSW4sIElzU3RyaW5nLCBWYWxpZGF0ZU5lc3RlZCB9IGZyb20gJ2NsYXNzLXZhbGlkYXRvcic7XG5pbXBvcnQgeyBUeXBlIH0gZnJvbSAnY2xhc3MtdHJhbnNmb3JtZXInO1xuXG4vKipcbiAqIERUTyDQtNC70Y8g0LDQtNC80LjQvS3RjdC90LTQv9C+0LjQvdGC0L7QsiDRgdCw0LnRgtCwICjQsNGD0LTQuNGCIDIwMjYtMDcsIDLQsyAvINC/0YDQsNCy0LjQu9C+IOKEljZcbiAqIENMQVVERS5tZCkuINCk0L7RgNC80LDRgi/RgNCw0LfQvNC10YAgYGRhdGFVcmlgINGD0LbQtSDQv9GA0L7QstC10YDRj9C10YLRgdGPINCy0YDRg9GH0L3Rg9GOINCyXG4gKiDQutC+0L3RgtGA0L7Qu9C70LXRgNC1IOKAlCDQvdC1INC00YPQsdC70LjRgNGD0LXQvC4gVG9waWNzIOKAlCDQstC70L7QttC10L3QvdGL0LUg0L7QsdGK0LXQutGC0YssINC90YPQttC10L1cbiAqIEBWYWxpZGF0ZU5lc3RlZCArIEBUeXBlLCDQuNC90LDRh9C1IHdoaXRlbGlzdCDQuNGFINC90LUg0YLRgNC+0L3QtdGCLlxuICovXG5leHBvcnQgY2xhc3MgSGVyb1Bob3RvRHRvIHtcbiAgQElzU3RyaW5nKClcbiAgZGF0YVVyaSE6IHN0cmluZztcbn1cblxuZXhwb3J0IGNsYXNzIE1hcnF1ZWVUb3BpY0R0byB7XG4gIEBJc1N0cmluZygpXG4gIGxhYmVsITogc3RyaW5nO1xuXG4gIEBJc1N0cmluZygpXG4gIGhyZWYhOiBzdHJpbmc7XG59XG5cbmV4cG9ydCBjbGFzcyBNYXJxdWVlRHRvIHtcbiAgQElzSW4oWydBJywgJ0InXSlcbiAgZ3JvdXAhOiAnQScgfCAnQic7XG5cbiAgQElzQXJyYXkoKVxuICBAVmFsaWRhdGVOZXN0ZWQoeyBlYWNoOiB0cnVlIH0pXG4gIEBUeXBlKCgpID0+IE1hcnF1ZWVUb3BpY0R0bylcbiAgdG9waWNzITogTWFycXVlZVRvcGljRHRvW107XG59XG4iXSwidmVyc2lvbiI6M30=

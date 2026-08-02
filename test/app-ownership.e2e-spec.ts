@@ -11,22 +11,31 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
+import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: ownership isolation + BigInt serialization (app-ownership)', () => {
   let app: INestApplication;
   let prisma: TestApp['prisma'];
 
-  beforeAll(async () => {
-    ({ app, prisma } = await buildTestApp());
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
   const secret = () => process.env.JWT_SECRET as string;
   const USER_A = 1_000_000_000_000_001n;
   const USER_B = 1_000_000_000_000_002n;
+  const USER_BIGINT_SANITY = 2_000_000_000_000_003n;
+  const ALL_USER_IDS = [USER_A, USER_B, USER_BIGINT_SANITY];
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    // Изоляция между прогонами (TEST_TRUST_PLAN.md, п.1) — обязательна на
+    // реальном Postgres (E2E_REAL_DB=1): без неё повторный локальный прогон
+    // падает на @@unique([userId, schemaId]) при втором upsert-е с тем же
+    // schemaId. На фейке — no-op (свежий in-memory прогон на файл).
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
 
   it('User B не видит schema-notes пользователя A (изоляция по userId в HTTP-ответе)', async () => {
     const tokenA = signAccessToken(USER_A, secret());
@@ -54,11 +63,16 @@ describe('e2e smoke: ownership isolation + BigInt serialization (app-ownership)'
     // не только до аргумента вызова fake-prisma в юнит-тесте сервиса.
     expect(asOther.body).toHaveLength(0);
 
-    // Sanity: fake-prisma действительно хранит обе строки под разными
-    // userId — изоляция проверена на уровне ответа API, а не потому что
-    // данных попросту не было.
-    expect(prisma.userSchemaNote._rows).toHaveLength(1);
-    expect(prisma.userSchemaNote._rows[0].userId).toBe(USER_A);
+    // Sanity: БД действительно хранит обе строки под разными userId —
+    // изоляция проверена на уровне ответа API, а не потому что данных
+    // попросту не было. Фильтруем по userId (не read-all таблицы) — на
+    // реальном Postgres в той же таблице могут лежать строки других
+    // ownership-спеков этого же CI-прогона.
+    const aRows = await prisma.userSchemaNote.findMany({
+      where: { userId: USER_A },
+    });
+    expect(aRows).toHaveLength(1);
+    expect(aRows[0].userId).toBe(USER_A);
   });
 
   it('User B не может достучаться до mode-notes пользователя A тем же путём', async () => {
@@ -78,7 +92,7 @@ describe('e2e smoke: ownership isolation + BigInt serialization (app-ownership)'
   });
 
   it('BigInt userId сериализуется в JSON-ответе как number, привязанный к владельцу', async () => {
-    const owner = 2_000_000_000_000_003n;
+    const owner = USER_BIGINT_SANITY;
     const token = signAccessToken(owner, secret());
 
     await request(app.getHttpServer())

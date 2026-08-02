@@ -1,0 +1,131 @@
+1ea33d01c1cf73a9f200213173aeebea
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.YsqController = void 0;
+const common_1 = require("@nestjs/common");
+const request_utils_1 = require("./request-utils");
+const ysq_service_1 = require("../bot/ysq.service");
+const telegram_auth_guard_1 = require("./telegram-auth.guard");
+const ysq_1 = require("../utils/ysq");
+const ratings_dto_1 = require("./dto/ratings.dto");
+// Тест на схемы — прогресс прохождения, итоговый
+// результат и история попыток.
+let YsqController = class YsqController {
+    ysqService;
+    constructor(ysqService) {
+        this.ysqService = ysqService;
+    }
+    // ─── Progress ───────────────────────────────────────────────────────────────
+    async getYsqProgress(req) {
+        return this.ysqService.getYsqProgress((0, request_utils_1.uid)(req));
+    }
+    async saveYsqProgress(req, body) {
+        if (!Array.isArray(body.answers) || body.answers.length !== 116)
+            throw new common_1.BadRequestException('Invalid answers');
+        if (!body.answers.every((a) => Number.isInteger(a) && a >= 0 && a <= 6))
+            throw new common_1.BadRequestException('Invalid answer values');
+        if (!Number.isInteger(body.page) || body.page < 0)
+            throw new common_1.BadRequestException('Invalid page');
+        await this.ysqService.saveYsqProgress((0, request_utils_1.uid)(req), body.answers, body.page);
+        return { ok: true };
+    }
+    async deleteYsqProgress(req) {
+        await this.ysqService.deleteYsqProgress((0, request_utils_1.uid)(req));
+        return { ok: true };
+    }
+    // ─── Result ─────────────────────────────────────────────────────────────────
+    async getYsqResult(req) {
+        return this.ysqService.getYsqResult((0, request_utils_1.uid)(req));
+    }
+    async saveYsqResult(req, body) {
+        if (!Array.isArray(body.answers) || body.answers.length !== 116)
+            throw new common_1.BadRequestException('Invalid answers');
+        if (!body.answers.every((a) => Number.isInteger(a) && a >= 0 && a <= 6))
+            throw new common_1.BadRequestException('Invalid answer values');
+        await this.ysqService.saveYsqResult((0, request_utils_1.uid)(req), body.answers);
+        return { ok: true };
+    }
+    async deleteYsqResult(req) {
+        await this.ysqService.deleteYsqResult((0, request_utils_1.uid)(req));
+        return { ok: true };
+    }
+    async getYsqHistory(req) {
+        const raw = await this.ysqService.getYsqHistory((0, request_utils_1.uid)(req));
+        return raw.map((r) => ({
+            id: r.id,
+            completedAt: r.completedAt.toISOString(),
+            scores: (0, ysq_1.computeYsqScores)(r.answers),
+        }));
+    }
+};
+exports.YsqController = YsqController;
+__decorate([
+    (0, common_1.Get)('ysq-progress'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], YsqController.prototype, "getYsqProgress", null);
+__decorate([
+    (0, common_1.Post)('ysq-progress'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_b = typeof ratings_dto_1.YsqProgressDto !== "undefined" && ratings_dto_1.YsqProgressDto) === "function" ? _b : Object]),
+    __metadata("design:returntype", Promise)
+], YsqController.prototype, "saveYsqProgress", null);
+__decorate([
+    (0, common_1.Delete)('ysq-progress'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], YsqController.prototype, "deleteYsqProgress", null);
+__decorate([
+    (0, common_1.Get)('ysq-result'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], YsqController.prototype, "getYsqResult", null);
+__decorate([
+    (0, common_1.Post)('ysq-result'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_c = typeof ratings_dto_1.YsqResultDto !== "undefined" && ratings_dto_1.YsqResultDto) === "function" ? _c : Object]),
+    __metadata("design:returntype", Promise)
+], YsqController.prototype, "saveYsqResult", null);
+__decorate([
+    (0, common_1.Delete)('ysq-result'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], YsqController.prototype, "deleteYsqResult", null);
+__decorate([
+    (0, common_1.Get)('ysq-history'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], YsqController.prototype, "getYsqHistory", null);
+exports.YsqController = YsqController = __decorate([
+    (0, common_1.Controller)('api'),
+    (0, common_1.UseGuards)(telegram_auth_guard_1.TelegramAuthGuard),
+    __metadata("design:paramtypes", [typeof (_a = typeof ysq_service_1.YsqService !== "undefined" && ysq_service_1.YsqService) === "function" ? _a : Object])
+], YsqController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL3lzcS5jb250cm9sbGVyLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FTd0I7QUFFeEIsbURBQXNDO0FBQ3RDLG9EQUFnRDtBQUNoRCwrREFBMEQ7QUFDMUQsc0NBQWdEO0FBQ2hELG1EQUFpRTtBQU1qRSxpREFBaUQ7QUFDakQsK0JBQStCO0FBR3hCLElBQU0sYUFBYSxHQUFuQixNQUFNLGFBQWE7SUFDSztJQUE3QixZQUE2QixVQUFzQjtRQUF0QixlQUFVLEdBQVYsVUFBVSxDQUFZO0lBQUcsQ0FBQztJQUV2RCwrRUFBK0U7SUFHekUsQUFBTixLQUFLLENBQUMsY0FBYyxDQUFRLEdBQWdCO1FBQzFDLE9BQU8sSUFBSSxDQUFDLFVBQVUsQ0FBQyxjQUFjLENBQUMsSUFBQSxtQkFBRyxFQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUM7SUFDbEQsQ0FBQztJQUdLLEFBQU4sS0FBSyxDQUFDLGVBQWUsQ0FBUSxHQUFnQixFQUFVLElBQW9CO1FBQ3pFLElBQUksQ0FBQyxLQUFLLENBQUMsT0FBTyxDQUFDLElBQUksQ0FBQyxPQUFPLENBQUMsSUFBSSxJQUFJLENBQUMsT0FBTyxDQUFDLE1BQU0sS0FBSyxHQUFHO1lBQzdELE1BQU0sSUFBSSw0QkFBbUIsQ0FBQyxpQkFBaUIsQ0FBQyxDQUFDO1FBQ25ELElBQUksQ0FBQyxJQUFJLENBQUMsT0FBTyxDQUFDLEtBQUssQ0FBQyxDQUFDLENBQUMsRUFBRSxFQUFFLENBQUMsTUFBTSxDQUFDLFNBQVMsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLENBQUM7WUFDckUsTUFBTSxJQUFJLDRCQUFtQixDQUFDLHVCQUF1QixDQUFDLENBQUM7UUFDekQsSUFBSSxDQUFDLE1BQU0sQ0FBQyxTQUFTLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxJQUFJLElBQUksQ0FBQyxJQUFJLEdBQUcsQ0FBQztZQUMv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QU0sRUFBQyxjQUFjLENBQUM7SUFDRSxXQUFBLElBQUEsWUFBRyxHQUFFLENBQUE7Ozs7c0RBRzdCO0FBS0s7SUFETCxJQUFBLFlBQUcsRUFBQyxZQUFZLENBQUM7SUFDRSxXQUFBLElBQUEsWUFBRyxHQUFFLENBQUE7Ozs7aURBRXhCO0FBR0s7SUFETCxJQUFBLGFBQUksRUFBQyxZQUFZLENBQUM7SUFDRSxXQUFBLElBQUEsWUFBRyxHQUFFLENBQUE7SUFBb0IsV0FBQSxJQUFBLGFBQUksR0FBRSxDQUFBOztpRUFBTywwQkFBWSxvQkFBWiwwQkFBWTs7a0RBT3RFO0FBR0s7SUFETCxJQUFBLGVBQU0sRUFBQyxZQUFZLENBQUM7SUFDRSxXQUFBLElBQUEsWUFBRyxHQUFFLENBQUE7Ozs7b0RBRzNCO0FBR0s7SUFETCxJQUFBLFlBQUcsRUFBQyxhQUFhLENBQUM7SUFDRSxXQUFBLElBQUEsWUFBRyxHQUFFLENBQUE7Ozs7a0RBT3pCO3dCQTNEVSxhQUFhO0lBRnpCLElBQUEsbUJBQVUsRUFBQyxLQUFLLENBQUM7SUFDakIsSUFBQSxrQkFBUyxFQUFDLHVDQUFpQixDQUFDO3lEQUVjLHdCQUFVLG9CQUFWLHdCQUFVO0dBRHhDLGFBQWEsQ0E0RHpCIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2FwaS95c3EuY29udHJvbGxlci50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQge1xuICBCYWRSZXF1ZXN0RXhjZXB0aW9uLFxuICBCb2R5LFxuICBDb250cm9sbGVyLFxuICBEZWxldGUsXG4gIEdldCxcbiAgUG9zdCxcbiAgUmVxLFxuICBVc2VHdWFyZHMsXG59IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFJlcXVlc3QgfSBmcm9tICdleHByZXNzJztcbmltcG9ydCB7IHVpZCB9IGZyb20gJy4vcmVxdWVzdC11dGlscyc7XG5pbXBvcnQgeyBZc3FTZXJ2aWNlIH0gZnJvbSAnLi4vYm90L3lzcS5zZXJ2aWNlJztcbmltcG9ydCB7IFRlbGVncmFtQXV0aEd1YXJkIH0gZnJvbSAnLi90ZWxlZ3JhbS1hdXRoLmd1YXJkJztcbmltcG9ydCB7IGNvbXB1dGVZc3FTY29yZXMgfSBmcm9tICcuLi91dGlscy95c3EnO1xuaW1wb3J0IHsgWXNxUHJvZ3Jlc3NEdG8sIFlzcVJlc3VsdER0byB9IGZyb20gJy4vZHRvL3JhdGluZ3MuZHRvJztcblxuaW50ZXJmYWNlIEF1dGhSZXF1ZXN0IGV4dGVuZHMgUmVxdWVzdCB7XG4gIHdlYlVzZXI6IHsgdXNlcklkOiBiaWdpbnQgfTtcbn1cblxuLy8g0KLQtdGB0YIg0L3QsCDRgdGF0LXQvNGLIOKAlCDQv9GA0L7Qs9GA0LXRgdGBINC/0YDQvtGF0L7QttC00LXQvdC40Y8sINC40YLQvtCz0L7QstGL0Llcbi8vINGA0LXQt9GD0LvRjNGC0LDRgiDQuCDQuNGB0YLQvtGA0LjRjyDQv9C+0L/Ri9GC0L7Qui5cbkBDb250cm9sbGVyKCdhcGknKVxuQFVzZUd1YXJkcyhUZWxlZ3JhbUF1dGhHdWFyZClcbmV4cG9ydCBjbGFzcyBZc3FDb250cm9sbGVyIHtcbiAgY29uc3RydWN0b3IocHJpdmF0ZSByZWFkb25seSB5c3FTZXJ2aWNlOiBZc3FTZXJ2aWNlKSB7fVxuXG4gIC8vIOKUgOKUgOKUgCBQcm9ncmVzcyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcblxuICBAR2V0KCd5c3EtcHJvZ3Jlc3MnKVxuICBhc3luYyBnZXRZc3FQcm9ncmVzcyhAUmVxKCkgcmVxOiBBdXRoUmVxdWVzdCkge1xuICAgIHJldHVybiB0aGlzLnlzcVNlcnZpY2UuZ2V0WXNxUHJvZ3Jlc3ModWlkKHJlcSkpO1xuICB9XG5cbiAgQFBvc3QoJ3lzcS1wcm9ncmVzcycpXG4gIGFzeW5jIHNhdmVZc3FQcm9ncmVzcyhAUmVxKCkgcmVxOiBBdXRoUmVxdWVzdCwgQEJvZHkoKSBib2R5OiBZc3FQcm9ncmVzc0R0bykge1xuICAgIGlmICghQXJyYXkuaXNBcnJheShib2R5LmFuc3dlcnMpIHx8IGJvZHkuYW5zd2Vycy5sZW5ndGggIT09IDExNilcbiAgICAgIHRocm93IG5ldyBCYWRSZXF1ZXN0RXhjZXB0aW9uKCdJbnZhbGlkIGFuc3dlcnMnKTtcbiAgICBpZiAoIWJvZHkuYW5zd2Vycy5ldmVyeSgoYSkgPT4gTnVtYmVyLmlzSW50ZWdlcihhKSAmJiBhID49IDAgJiYgYSA8PSA2KSlcbiAgICAgIHRocm93IG5ldyBCYWRSZXF1ZXN0RXhjZXB0aW9uKCdJbnZhbGlkIGFuc3dlciB2YWx1ZXMnKTtcbiAgICBpZiAoIU51bWJlci5pc0ludGVnZXIoYm9keS5wYWdlKSB8fCBib2R5LnBhZ2UgPCAwKVxuICAgICAgdGhyb3cgbmV3IEJhZFJlcXVlc3RFeGNlcHRpb24oJ0ludmFsaWQgcGFnZScpO1xuICAgIGF3YWl0IHRoaXMueXNxU2VydmljZS5zYXZlWXNxUHJvZ3Jlc3ModWlkKHJlcSksIGJvZHkuYW5zd2VycywgYm9keS5wYWdlKTtcbiAgICByZXR1cm4geyBvazogdHJ1ZSB9O1xuICB9XG5cbiAgQERlbGV0ZSgneXNxLXByb2dyZXNzJylcbiAgYXN5bmMgZGVsZXRlWXNxUHJvZ3Jlc3MoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QpIHtcbiAgICBhd2FpdCB0aGlzLnlzcVNlcnZpY2UuZGVsZXRlWXNxUHJvZ3Jlc3ModWlkKHJlcSkpO1xuICAgIHJldHVybiB7IG9rOiB0cnVlIH07XG4gIH1cblxuICAvLyDilIDilIDilIAgUmVzdWx0IOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuXG4gIEBHZXQoJ3lzcS1yZXN1bHQnKVxuICBhc3luYyBnZXRZc3FSZXN1bHQoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QpIHtcbiAgICByZXR1cm4gdGhpcy55c3FTZXJ2aWNlLmdldFlzcVJlc3VsdCh1aWQocmVxKSk7XG4gIH1cblxuICBAUG9zdCgneXNxLXJlc3VsdCcpXG4gIGFzeW5jIHNhdmVZc3FSZXN1bHQoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QsIEBCb2R5KCkgYm9keTogWXNxUmVzdWx0RHRvKSB7XG4gICAgaWYgKCFBcnJheS5pc0FycmF5KGJvZHkuYW5zd2VycykgfHwgYm9keS5hbnN3ZXJzLmxlbmd0aCAhPT0gMTE2KVxuICAgICAgdGhyb3cgbmV3IEJhZFJlcXVlc3RFeGNlcHRpb24oJ0ludmFsaWQgYW5zd2VycycpO1xuICAgIGlmICghYm9keS5hbnN3ZXJzLmV2ZXJ5KChhKSA9PiBOdW1iZXIuaXNJbnRlZ2VyKGEpICYmIGEgPj0gMCAmJiBhIDw9IDYpKVxuICAgICAgdGhyb3cgbmV3IEJhZFJlcXVlc3RFeGNlcHRpb24oJ0ludmFsaWQgYW5zd2VyIHZhbHVlcycpO1xuICAgIGF3YWl0IHRoaXMueXNxU2VydmljZS5zYXZlWXNxUmVzdWx0KHVpZChyZXEpLCBib2R5LmFuc3dlcnMpO1xuICAgIHJldHVybiB7IG9rOiB0cnVlIH07XG4gIH1cblxuICBARGVsZXRlKCd5c3EtcmVzdWx0JylcbiAgYXN5bmMgZGVsZXRlWXNxUmVzdWx0KEBSZXEoKSByZXE6IEF1dGhSZXF1ZXN0KSB7XG4gICAgYXdhaXQgdGhpcy55c3FTZXJ2aWNlLmRlbGV0ZVlzcVJlc3VsdCh1aWQocmVxKSk7XG4gICAgcmV0dXJuIHsgb2s6IHRydWUgfTtcbiAgfVxuXG4gIEBHZXQoJ3lzcS1oaXN0b3J5JylcbiAgYXN5bmMgZ2V0WXNxSGlzdG9yeShAUmVxKCkgcmVxOiBBdXRoUmVxdWVzdCkge1xuICAgIGNvbnN0IHJhdyA9IGF3YWl0IHRoaXMueXNxU2VydmljZS5nZXRZc3FIaXN0b3J5KHVpZChyZXEpKTtcbiAgICByZXR1cm4gcmF3Lm1hcCgocikgPT4gKHtcbiAgICAgIGlkOiByLmlkLFxuICAgICAgY29tcGxldGVkQXQ6IHIuY29tcGxldGVkQXQudG9JU09TdHJpbmcoKSxcbiAgICAgIHNjb3JlczogY29tcHV0ZVlzcVNjb3JlcyhyLmFuc3dlcnMpLFxuICAgIH0pKTtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

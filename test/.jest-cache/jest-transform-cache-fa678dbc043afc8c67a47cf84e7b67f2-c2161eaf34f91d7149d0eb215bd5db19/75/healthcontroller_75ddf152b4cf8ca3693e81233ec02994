@@ -1,0 +1,46 @@
+e9c833f04a23e2d93316b1cf9fb60b9d
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HealthController = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma/prisma.service");
+// Health-эндпоинт (аудит 2026-07, I-3): до него зависший процесс или потерянное
+// соединение с БД были невидимы снаружи. Без auth-гарда — не раскрывает ничего,
+// кроме факта живости; используется Docker HEALTHCHECK и внешним uptime-мониторингом.
+let HealthController = class HealthController {
+    prisma;
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    async check() {
+        try {
+            await this.prisma.$queryRaw `SELECT 1`;
+        }
+        catch {
+            throw new common_1.ServiceUnavailableException({ status: 'error', db: 'down' });
+        }
+        return { status: 'ok', db: 'up' };
+    }
+};
+exports.HealthController = HealthController;
+__decorate([
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", typeof (_b = typeof Promise !== "undefined" && Promise) === "function" ? _b : Object)
+], HealthController.prototype, "check", null);
+exports.HealthController = HealthController = __decorate([
+    (0, common_1.Controller)('health'),
+    __metadata("design:paramtypes", [typeof (_a = typeof prisma_service_1.PrismaService !== "undefined" && prisma_service_1.PrismaService) === "function" ? _a : Object])
+], HealthController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2hlYWx0aC5jb250cm9sbGVyLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FBOEU7QUFDOUUsNkRBQXlEO0FBRXpELGdGQUFnRjtBQUNoRixnRkFBZ0Y7QUFDaEYsc0ZBQXNGO0FBRS9FLElBQU0sZ0JBQWdCLEdBQXRCLE1BQU0sZ0JBQWdCO0lBQ0U7SUFBN0IsWUFBNkIsTUFBcUI7UUFBckIsV0FBTSxHQUFOLE1BQU0sQ0FBZTtJQUFHLENBQUM7SUFHaEQsQUFBTixLQUFLLENBQUMsS0FBSztRQUNULElBQUksQ0FBQztZQUNILE1BQU0sSUFBSSxDQUFDLE1BQU0sQ0FBQyxTQUFTLENBQUEsVUFBVSxDQUFDO1FBQ3hDLENBQUM7UUFBQyxNQUFNLENBQUM7WUFDUCxNQUFNLElBQUksb0NBQTJCLENBQUMsRUFBRSxNQUFNLEVBQUUsT0FBTyxFQUFFLEVBQUUsRUFBRSxNQUFNLEVBQUUsQ0FBQyxDQUFDO1FBQ3pFLENBQUM7UUFDRCxPQUFPLEVBQUUsTUFBTSxFQUFFLElBQUksRUFBRSxFQUFFLEVBQUUsSUFBSSxFQUFFLENBQUM7SUFDcEMsQ0FBQztDQUNGLENBQUE7QUFaWSw0Q0FBZ0I7QUFJckI7SUFETCxJQUFBLFlBQUcsR0FBRTs7O3dEQUNTLE9BQU8sb0JBQVAsT0FBTzs2Q0FPckI7MkJBWFUsZ0JBQWdCO0lBRDVCLElBQUEsbUJBQVUsRUFBQyxRQUFRLENBQUM7eURBRWtCLDhCQUFhLG9CQUFiLDhCQUFhO0dBRHZDLGdCQUFnQixDQVk1QiIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hcGkvaGVhbHRoLmNvbnRyb2xsZXIudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgQ29udHJvbGxlciwgR2V0LCBTZXJ2aWNlVW5hdmFpbGFibGVFeGNlcHRpb24gfSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBQcmlzbWFTZXJ2aWNlIH0gZnJvbSAnLi4vcHJpc21hL3ByaXNtYS5zZXJ2aWNlJztcblxuLy8gSGVhbHRoLdGN0L3QtNC/0L7QuNC90YIgKNCw0YPQtNC40YIgMjAyNi0wNywgSS0zKTog0LTQviDQvdC10LPQviDQt9Cw0LLQuNGB0YjQuNC5INC/0YDQvtGG0LXRgdGBINC40LvQuCDQv9C+0YLQtdGA0Y/QvdC90L7QtVxuLy8g0YHQvtC10LTQuNC90LXQvdC40LUg0YEg0JHQlCDQsdGL0LvQuCDQvdC10LLQuNC00LjQvNGLINGB0L3QsNGA0YPQttC4LiDQkdC10LcgYXV0aC3Qs9Cw0YDQtNCwIOKAlCDQvdC1INGA0LDRgdC60YDRi9Cy0LDQtdGCINC90LjRh9C10LPQvixcbi8vINC60YDQvtC80LUg0YTQsNC60YLQsCDQttC40LLQvtGB0YLQuDsg0LjRgdC/0L7Qu9GM0LfRg9C10YLRgdGPIERvY2tlciBIRUFMVEhDSEVDSyDQuCDQstC90LXRiNC90LjQvCB1cHRpbWUt0LzQvtC90LjRgtC+0YDQuNC90LPQvtC8LlxuQENvbnRyb2xsZXIoJ2hlYWx0aCcpXG5leHBvcnQgY2xhc3MgSGVhbHRoQ29udHJvbGxlciB7XG4gIGNvbnN0cnVjdG9yKHByaXZhdGUgcmVhZG9ubHkgcHJpc21hOiBQcmlzbWFTZXJ2aWNlKSB7fVxuXG4gIEBHZXQoKVxuICBhc3luYyBjaGVjaygpOiBQcm9taXNlPHsgc3RhdHVzOiAnb2snOyBkYjogJ3VwJyB9PiB7XG4gICAgdHJ5IHtcbiAgICAgIGF3YWl0IHRoaXMucHJpc21hLiRxdWVyeVJhd2BTRUxFQ1QgMWA7XG4gICAgfSBjYXRjaCB7XG4gICAgICB0aHJvdyBuZXcgU2VydmljZVVuYXZhaWxhYmxlRXhjZXB0aW9uKHsgc3RhdHVzOiAnZXJyb3InLCBkYjogJ2Rvd24nIH0pO1xuICAgIH1cbiAgICByZXR1cm4geyBzdGF0dXM6ICdvaycsIGRiOiAndXAnIH07XG4gIH1cbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

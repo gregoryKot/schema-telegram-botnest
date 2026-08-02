@@ -7,23 +7,31 @@
 // not just the fake-prisma call args.
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { buildTestApp } from './e2e-support/build-test-app';
+import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
+import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: ownership isolation sweep (tracker/diary/plans/exercises/ysq)', () => {
   let app: INestApplication;
-
-  beforeAll(async () => {
-    ({ app } = await buildTestApp());
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
+  let prisma: TestApp['prisma'];
 
   const secret = () => process.env.JWT_SECRET as string;
   const USER_A = 3_000_000_000_000_001n;
   const USER_B = 3_000_000_000_000_002n;
+  const ALL_USER_IDS = [USER_A, USER_B];
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    // Изоляция между прогонами (TEST_TRUST_PLAN.md, п.1) — см. комментарий
+    // в app-ownership.e2e-spec.ts. Обязательна на реальном Postgres, no-op
+    // на фейке.
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
 
   function agentAs(userId: bigint) {
     const token = signAccessToken(userId, secret());

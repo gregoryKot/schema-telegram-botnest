@@ -1,0 +1,64 @@
+a2b19180000f8815278b02bc9325ce51
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var PrismaService_1;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PrismaService = void 0;
+const common_1 = require("@nestjs/common");
+const client_1 = require("@prisma/client");
+const adapter_pg_1 = require("@prisma/adapter-pg");
+function buildAdapter() {
+    return new adapter_pg_1.PrismaPg({
+        connectionString: process.env.DATABASE_URL ?? '',
+        max: 15,
+        connectionTimeoutMillis: 30_000,
+        // Keep connections alive so NAT/firewall doesn't drop idle sockets.
+        // Without this, cloud firewalls close idle TCP connections after ~4-5 min,
+        // and the next query gets "Server has closed the connection" (P1017).
+        keepAlive: true,
+        keepAliveInitialDelayMillis: 30_000,
+        // Evict connections idle longer than 5 min from the pool so they're
+        // never handed out stale.
+        idleTimeoutMillis: 300_000,
+    });
+}
+let PrismaService = PrismaService_1 = class PrismaService extends client_1.PrismaClient {
+    logger = new common_1.Logger(PrismaService_1.name);
+    constructor() {
+        super({ adapter: buildAdapter() });
+    }
+    async onModuleInit() {
+        // Retry connect with backoff so a transient DB blip during deploy doesn't
+        // crash the container and trigger an infinite Amvera restart loop.
+        for (let attempt = 1; attempt <= 5; attempt++) {
+            try {
+                await this.$connect();
+                return;
+            }
+            catch (err) {
+                if (attempt === 5)
+                    throw err;
+                const delay = attempt * 2_000;
+                this.logger.warn(`DB connect attempt ${attempt} failed, retrying in ${delay}ms: ${err.message}`);
+                await new Promise((r) => setTimeout(r, delay));
+            }
+        }
+    }
+    async onModuleDestroy() {
+        await this.$disconnect();
+    }
+};
+exports.PrismaService = PrismaService;
+exports.PrismaService = PrismaService = PrismaService_1 = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [])
+], PrismaService);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvcHJpc21hL3ByaXNtYS5zZXJ2aWNlLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FLd0I7QUFDeEIsMkNBQThDO0FBQzlDLG1EQUE4QztBQUU5QyxTQUFTLFlBQVk7SUFDbkIsT0FBTyxJQUFJLHFCQUFRLENBQUM7UUFDbEIsZ0JBQWdCLEVBQUUsT0FBTyxDQUFDLEdBQUcsQ0FBQyxZQUFZLElBQUksRUFBRTtRQUNoRCxHQUFHLEVBQUUsRUFBRTtRQUNQLHVCQUF1QixFQUFFLE1BQU07UUFDL0Isb0VBQW9FO1FBQ3BFLDJFQUEyRTtRQUMzRSxzRUFBc0U7UUFDdEUsU0FBUyxFQUFFLElBQUk7UUFDZiwyQkFBMkIsRUFBRSxNQUFNO1FBQ25DLG9FQUFvRTtRQUNwRSwwQkFBMEI7UUFDMUIsaUJBQWlCLEVBQUUsT0FBTztLQUMzQixDQUFDLENBQUM7QUFDTCxDQUFDO0FBR00sSUFBTSxhQUFhLHFCQUFuQixNQUFNLGFBQ1gsU0FBUSxxQkFBWTtJQUdILE1BQU0sR0FBRyxJQUFJLGVBQU0sQ0FBQyxlQUFhLENBQUMsSUFBSSxDQUFDLENBQUM7SUFFekQ7UUFDRSxLQUFLLENBQUMsRUFBRSxPQUFPLEVBQUUsWUFBWSxFQUFFLEVBQUUsQ0FBQyxDQUFDO0lBQ3JDLENBQUM7SUFFRCxLQUFLLENBQUMsWUFBWTtRQUNoQiwwRUFBMEU7UUFDMUUsbUVBQW1FO1FBQ25FLEtBQUssSUFBSSxPQUFPLEdBQUcsQ0FBQyxFQUFFLE9BQU8sSUFBSSxDQUFDLEVBQUUsT0FBTyxFQUFFLEVBQUUsQ0FBQztZQUM5QyxJQUFJLENBQUM7Z0JBQ0gsTUFBTSxJQUFJLENBQUMsUUFBUSxFQUFFLENBQUM7Z0JBQ3RCLE9BQU87WUFDVCxDQUFDO1lBQUMsT0FBTyxHQUFHLEVBQUUsQ0FBQztnQkFDYixJQUFJLE9BQU8sS0FBSyxDQUFDO29CQUFFLE1BQU0sR0FBRyxDQUFDO2dCQUM3QixNQUFNLEtBQUssR0FBRyxPQUFPLEdBQUcsS0FBSyxDQUFDO2dCQUM5QixJQUFJLENBQUMsTUFBTSxDQUFDLElBQUksQ0FDZCxzQkFBc0IsT0FBTyx3QkFBd0IsS0FBSyxPQUFRLEdBQWEsQ0FBQyxPQUFPLEVBQUUsQ0FDMUYsQ0FBQztnQkFDRixNQUFNLElBQUksT0FBTyxDQUFDLENBQUMsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxVQUFVLENBQUMsQ0FBQyxFQUFFLEtBQUssQ0FBQyxDQUFDLENBQUM7WUFDakQsQ0FBQztRQUNILENBQUM7SUFDSCxDQUFDO0lBRUQsS0FBSyxDQUFDLGVBQWU7UUFDbkIsTUFBTSxJQUFJLENBQUMsV0FBVyxFQUFFLENBQUM7SUFDM0IsQ0FBQztDQUNGLENBQUE7QUEvQlksc0NBQWE7d0JBQWIsYUFBYTtJQUR6QixJQUFBLG1CQUFVLEdBQUU7O0dBQ0EsYUFBYSxDQStCekIiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvcHJpc21hL3ByaXNtYS5zZXJ2aWNlLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7XG4gIEluamVjdGFibGUsXG4gIExvZ2dlcixcbiAgT25Nb2R1bGVJbml0LFxuICBPbk1vZHVsZURlc3Ryb3ksXG59IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFByaXNtYUNsaWVudCB9IGZyb20gJ0BwcmlzbWEvY2xpZW50JztcbmltcG9ydCB7IFByaXNtYVBnIH0gZnJvbSAnQHByaXNtYS9hZGFwdGVyLXBnJztcblxuZnVuY3Rpb24gYnVpbGRBZGFwdGVyKCk6IFByaXNtYVBnIHtcbiAgcmV0dXJuIG5ldyBQcmlzbWFQZyh7XG4gICAgY29ubmVjdGlvblN0cmluZzogcHJvY2Vzcy5lbnYuREFUQUJBU0VfVVJMID8/ICcnLFxuICAgIG1heDogMTUsXG4gICAgY29ubmVjdGlvblRpbWVvdXRNaWxsaXM6IDMwXzAwMCxcbiAgICAvLyBLZWVwIGNvbm5lY3Rpb25zIGFsaXZlIHNvIE5BVC9maXJld2FsbCBkb2Vzbid0IGRyb3AgaWRsZSBzb2NrZXRzLlxuICAgIC8vIFdpdGhvdXQgdGhpcywgY2xvdWQgZmlyZXdhbGxzIGNsb3NlIGlkbGUgVENQIGNvbm5lY3Rpb25zIGFmdGVyIH40LTUgbWluLFxuICAgIC8vIGFuZCB0aGUgbmV4dCBxdWVyeSBnZXRzIFwiU2VydmVyIGhhcyBjbG9zZWQgdGhlIGNvbm5lY3Rpb25cIiAoUDEwMTcpLlxuICAgIGtlZXBBbGl2ZTogdHJ1ZSxcbiAgICBrZWVwQWxpdmVJbml0aWFsRGVsYXlNaWxsaXM6IDMwXzAwMCxcbiAgICAvLyBFdmljdCBjb25uZWN0aW9ucyBpZGxlIGxvbmdlciB0aGFuIDUgbWluIGZyb20gdGhlIHBvb2wgc28gdGhleSdyZVxuICAgIC8vIG5ldmVyIGhhbmRlZCBvdXQgc3RhbGUuXG4gICAgaWRsZVRpbWVvdXRNaWxsaXM6IDMwMF8wMDAsXG4gIH0pO1xufVxuXG5ASW5qZWN0YWJsZSgpXG5leHBvcnQgY2xhc3MgUHJpc21hU2VydmljZVxuICBleHRlbmRzIFByaXNtYUNsaWVudFxuICBpbXBsZW1lbnRzIE9uTW9kdWxlSW5pdCwgT25Nb2R1bGVEZXN0cm95XG57XG4gIHByaXZhdGUgcmVhZG9ubHkgbG9nZ2VyID0gbmV3IExvZ2dlcihQcmlzbWFTZXJ2aWNlLm5hbWUpO1xuXG4gIGNvbnN0cnVjdG9yKCkge1xuICAgIHN1cGVyKHsgYWRhcHRlcjogYnVpbGRBZGFwdGVyKCkgfSk7XG4gIH1cblxuICBhc3luYyBvbk1vZHVsZUluaXQoKSB7XG4gICAgLy8gUmV0cnkgY29ubmVjdCB3aXRoIGJhY2tvZmYgc28gYSB0cmFuc2llbnQgREIgYmxpcCBkdXJpbmcgZGVwbG95IGRvZXNuJ3RcbiAgICAvLyBjcmFzaCB0aGUgY29udGFpbmVyIGFuZCB0cmlnZ2VyIGFuIGluZmluaXRlIEFtdmVyYSByZXN0YXJ0IGxvb3AuXG4gICAgZm9yIChsZXQgYXR0ZW1wdCA9IDE7IGF0dGVtcHQgPD0gNTsgYXR0ZW1wdCsrKSB7XG4gICAgICB0cnkge1xuICAgICAgICBhd2FpdCB0aGlzLiRjb25uZWN0KCk7XG4gICAgICAgIHJldHVybjtcbiAgICAgIH0gY2F0Y2ggKGVycikge1xuICAgICAgICBpZiAoYXR0ZW1wdCA9PT0gNSkgdGhyb3cgZXJyO1xuICAgICAgICBjb25zdCBkZWxheSA9IGF0dGVtcHQgKiAyXzAwMDtcbiAgICAgICAgdGhpcy5sb2dnZXIud2FybihcbiAgICAgICAgICBgREIgY29ubmVjdCBhdHRlbXB0ICR7YXR0ZW1wdH0gZmFpbGVkLCByZXRyeWluZyBpbiAke2RlbGF5fW1zOiAkeyhlcnIgYXMgRXJyb3IpLm1lc3NhZ2V9YCxcbiAgICAgICAgKTtcbiAgICAgICAgYXdhaXQgbmV3IFByb21pc2UoKHIpID0+IHNldFRpbWVvdXQociwgZGVsYXkpKTtcbiAgICAgIH1cbiAgICB9XG4gIH1cblxuICBhc3luYyBvbk1vZHVsZURlc3Ryb3koKSB7XG4gICAgYXdhaXQgdGhpcy4kZGlzY29ubmVjdCgpO1xuICB9XG59XG4iXSwidmVyc2lvbiI6M30=

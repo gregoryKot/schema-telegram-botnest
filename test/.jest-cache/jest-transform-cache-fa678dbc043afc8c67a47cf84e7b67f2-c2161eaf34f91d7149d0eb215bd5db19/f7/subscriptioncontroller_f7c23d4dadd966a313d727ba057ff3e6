@@ -1,0 +1,90 @@
+9594ef546c9929fdcbc91bd19a6ab28b
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SubscriptionController = void 0;
+const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
+const subscription_service_1 = require("./subscription.service");
+/** Public subscription endpoints: options, subscribe, view, cancel. */
+let SubscriptionController = class SubscriptionController {
+    subs;
+    constructor(subs) {
+        this.subs = subs;
+    }
+    /** GET /api/subscription/options — whether enabled + periods and current prices. */
+    async options() {
+        return {
+            enabled: this.subs.isEnabled(),
+            options: await this.subs.getOptions(),
+        };
+    }
+    /** POST /api/subscription — start a subscription, returns a payment URL. */
+    async subscribe(dto) {
+        if (dto.website)
+            throw new common_1.BadRequestException('rejected'); // honeypot
+        return this.subs.subscribe({
+            period: dto.period === 'year' ? 'year' : 'month',
+            email: dto.email?.trim() || undefined,
+            acceptedOffer: dto.acceptedOffer,
+        });
+    }
+    /** GET /api/subscription/by-token/:token — public status (no PII). */
+    getByToken(token) {
+        return this.subs.getPublicByToken(token);
+    }
+    /** POST /api/subscription/cancel/:token — client self-cancel. */
+    cancel(token) {
+        return this.subs.cancel(token);
+    }
+};
+exports.SubscriptionController = SubscriptionController;
+__decorate([
+    (0, common_1.Get)('options'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], SubscriptionController.prototype, "options", null);
+__decorate([
+    (0, common_1.Post)(),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, throttler_1.Throttle)({ long: { limit: 6, ttl: 3_600_000 } }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], SubscriptionController.prototype, "subscribe", null);
+__decorate([
+    (0, common_1.Get)('by-token/:token'),
+    (0, throttler_1.Throttle)({ long: { limit: 60, ttl: 3_600_000 } }),
+    __param(0, (0, common_1.Param)('token')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], SubscriptionController.prototype, "getByToken", null);
+__decorate([
+    (0, common_1.Post)('cancel/:token'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, throttler_1.Throttle)({ long: { limit: 30, ttl: 3_600_000 } }),
+    __param(0, (0, common_1.Param)('token')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], SubscriptionController.prototype, "cancel", null);
+exports.SubscriptionController = SubscriptionController = __decorate([
+    (0, common_1.Controller)('api/subscription'),
+    __metadata("design:paramtypes", [typeof (_a = typeof subscription_service_1.SubscriptionService !== "undefined" && subscription_service_1.SubscriptionService) === "function" ? _a : Object])
+], SubscriptionController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvc3Vic2NyaXB0aW9uL3N1YnNjcmlwdGlvbi5jb250cm9sbGVyLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FTd0I7QUFDeEIsaURBQTZDO0FBQzdDLGlFQUE2RDtBQVU3RCx1RUFBdUU7QUFFaEUsSUFBTSxzQkFBc0IsR0FBNUIsTUFBTSxzQkFBc0I7SUFDSjtJQUE3QixZQUE2QixJQUF5QjtRQUF6QixTQUFJLEdBQUosSUFBSSxDQUFxQjtJQUFHLENBQUM7SUFFMUQsb0ZBQW9GO0lBRTlFLEFBQU4sS0FBSyxDQUFDLE9BQU87UUFDWCxPQUFPO1lBQ0wsT0FBTyxFQUFFLElBQUksQ0FBQyxJQUFJLENBQUMsU0FBUyxFQUFFO1lBQzlCLE9BQU8sRUFBRSxNQUFNLElBQUksQ0FBQyxJQUFJLENBQUMsVUFBVSxFQUFFO1NBQ3RDLENBQUM7SUFDSixDQUFDO0lBRUQsNEVBQTRFO0lBSXRFLEFBQU4sS0FBSyxDQUFDLFNBQVMsQ0FBUyxHQUFpQjtRQUN2QyxJQUFJLEdBQUcsQ0FBQyxPQUFPO1lBQUUsTUFBTSxJQUFJLDRCQUFtQixDQUFDLFVBQVUsQ0FBQyxDQUFDLENBQUMsV0FBVztRQUN2RSxPQUFPLElBQUksQ0FBQyxJQUFJLENBQUMsU0FBUyxDQUFDO1lBQ3pCLE1BQU0sRUFBRSxHQUFHLENBQUMsTUFBTSxLQUFLLE1BQU0sQ0FBQyxDQUFDLENBQUMsTUFBTSxDQUFDLENBQUMsQ0FBQyxPQUFPO1lBQ2hELEtBQUssRUFBRSxHQUFHLENBQUMsS0FBSyxFQUFFLElBQUksRUFBRSxJQUFJLFNBQVM7WUFDckMsYUFBYSxFQUFFLEdBQUcsQ0FBQyxhQUFhO1NBQ2pDLENBQUMsQ0FBQztJQUNMLENBQUM7SUFFRCxzRUFBc0U7SUFHdEUsVUFBVSxDQUFpQixLQUFhO1FBQ3RDLE9BQU8sSUFBSSxDQUFDLElBQUksQ0FBQyxnQkFBZ0IsQ0FBQyxLQUFLLENBQUMsQ0FBQztJQUMzQyxDQUFDO0lBRUQsaUVBQWlFO0lBSWpFLE1BQU0sQ0FBaUIsS0FBYTtRQUNsQyxPQUFPLElBQUksQ0FBQyxJQUFJLENBQUMsTUFBTSxDQUFDLEtBQUssQ0FBQyxDQUFDO0lBQ2pDLENBQUM7Q0FDRixDQUFBO0FBdkNZLHdEQUFzQjtBQUszQjtJQURMLElBQUEsWUFBRyxFQUFDLFNBQVMsQ0FBQzs7OztxREFNZDtBQU1LO0lBSEwsSUFBQSxhQUFJLEdBQUU7SUFDTixJQUFBLGlCQUFRLEVBQUMsbUJBQVUsQ0FBQyxFQUFFLENBQUM7SUFDdkIsSUFBQSxvQkFBUSxFQUFDLEVBQUUsSUFBSSxFQUFFLEVBQUUsS0FBSyxFQUFFLENBQUMsRUFBRSxHQUFHLEVBQUUsU0FBUyxFQUFFLEVBQUUsQ0FBQztJQUNoQyxXQUFBLElBQUEsYUFBSSxHQUFFLENBQUE7Ozs7dURBT3RCO0FBS0Q7SUFGQyxJQUFBLFlBQUcsRUFBQyxpQkFBaUIsQ0FBQztJQUN0QixJQUFBLG9CQUFRLEVBQUMsRUFBRSxJQUFJLEVBQUUsRUFBRSxLQUFLLEVBQUUsRUFBRSxFQUFFLEdBQUcsRUFBRSxTQUFTLEVBQUUsRUFBRSxDQUFDO0lBQ3RDLFdBQUEsSUFBQSxjQUFLLEVBQUMsT0FBTyxDQUFDLENBQUE7Ozs7d0RBRXpCO0FBTUQ7SUFIQyxJQUFBLGFBQUksRUFBQyxlQUFlLENBQUM7SUFDckIsSUFBQSxpQkFBUSxFQUFDLG1CQUFVLENBQUMsRUFBRSxDQUFDO0lBQ3ZCLElBQUEsb0JBQVEsRUFBQyxFQUFFLElBQUksRUFBRSxFQUFFLEtBQUssRUFBRSxFQUFFLEVBQUUsR0FBRyxFQUFFLFNBQVMsRUFBRSxFQUFFLENBQUM7SUFDMUMsV0FBQSxJQUFBLGNBQUssRUFBQyxPQUFPLENBQUMsQ0FBQTs7OztvREFFckI7aUNBdENVLHNCQUFzQjtJQURsQyxJQUFBLG1CQUFVLEVBQUMsa0JBQWtCLENBQUM7eURBRU0sMENBQW1CLG9CQUFuQiwwQ0FBbUI7R0FEM0Msc0JBQXNCLENBdUNsQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9zdWJzY3JpcHRpb24vc3Vic2NyaXB0aW9uLmNvbnRyb2xsZXIudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHtcbiAgQ29udHJvbGxlcixcbiAgR2V0LFxuICBQb3N0LFxuICBCb2R5LFxuICBQYXJhbSxcbiAgSHR0cENvZGUsXG4gIEh0dHBTdGF0dXMsXG4gIEJhZFJlcXVlc3RFeGNlcHRpb24sXG59IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFRocm90dGxlIH0gZnJvbSAnQG5lc3Rqcy90aHJvdHRsZXInO1xuaW1wb3J0IHsgU3Vic2NyaXB0aW9uU2VydmljZSB9IGZyb20gJy4vc3Vic2NyaXB0aW9uLnNlcnZpY2UnO1xuXG5pbnRlcmZhY2UgU3Vic2NyaWJlRHRvIHtcbiAgcGVyaW9kPzogJ21vbnRoJyB8ICd5ZWFyJztcbiAgZW1haWw/OiBzdHJpbmc7XG4gIGFjY2VwdGVkT2ZmZXI/OiBib29sZWFuO1xuICAvKiogSG9uZXlwb3Qg4oCUIG11c3Qgc3RheSBlbXB0eS4gKi9cbiAgd2Vic2l0ZT86IHN0cmluZztcbn1cblxuLyoqIFB1YmxpYyBzdWJzY3JpcHRpb24gZW5kcG9pbnRzOiBvcHRpb25zLCBzdWJzY3JpYmUsIHZpZXcsIGNhbmNlbC4gKi9cbkBDb250cm9sbGVyKCdhcGkvc3Vic2NyaXB0aW9uJylcbmV4cG9ydCBjbGFzcyBTdWJzY3JpcHRpb25Db250cm9sbGVyIHtcbiAgY29uc3RydWN0b3IocHJpdmF0ZSByZWFkb25seSBzdWJzOiBTdWJzY3JpcHRpb25TZXJ2aWNlKSB7fVxuXG4gIC8qKiBHRVQgL2FwaS9zdWJzY3JpcHRpb24vb3B0aW9ucyDigJQgd2hldGhlciBlbmFibGVkICsgcGVyaW9kcyBhbmQgY3VycmVudCBwcmljZXMuICovXG4gIEBHZXQoJ29wdGlvbnMnKVxuICBhc3luYyBvcHRpb25zKCkge1xuICAgIHJldHVybiB7XG4gICAgICBlbmFibGVkOiB0aGlzLnN1YnMuaXNFbmFibGVkKCksXG4gICAgICBvcHRpb25zOiBhd2FpdCB0aGlzLnN1YnMuZ2V0T3B0aW9ucygpLFxuICAgIH07XG4gIH1cblxuICAvKiogUE9TVCAvYXBpL3N1YnNjcmlwdGlvbiDigJQgc3RhcnQgYSBzdWJzY3JpcHRpb24sIHJldHVybnMgYSBwYXltZW50IFVSTC4gKi9cbiAgQFBvc3QoKVxuICBASHR0cENvZGUoSHR0cFN0YXR1cy5PSylcbiAgQFRocm90dGxlKHsgbG9uZzogeyBsaW1pdDogNiwgdHRsOiAzXzYwMF8wMDAgfSB9KVxuICBhc3luYyBzdWJzY3JpYmUoQEJvZHkoKSBkdG86IFN1YnNjcmliZUR0bykge1xuICAgIGlmIChkdG8ud2Vic2l0ZSkgdGhyb3cgbmV3IEJhZFJlcXVlc3RFeGNlcHRpb24oJ3JlamVjdGVkJyk7IC8vIGhvbmV5cG90XG4gICAgcmV0dXJuIHRoaXMuc3Vicy5zdWJzY3JpYmUoe1xuICAgICAgcGVyaW9kOiBkdG8ucGVyaW9kID09PSAneWVhcicgPyAneWVhcicgOiAnbW9udGgnLFxuICAgICAgZW1haWw6IGR0by5lbWFpbD8udHJpbSgpIHx8IHVuZGVmaW5lZCxcbiAgICAgIGFjY2VwdGVkT2ZmZXI6IGR0by5hY2NlcHRlZE9mZmVyLFxuICAgIH0pO1xuICB9XG5cbiAgLyoqIEdFVCAvYXBpL3N1YnNjcmlwdGlvbi9ieS10b2tlbi86dG9rZW4g4oCUIHB1YmxpYyBzdGF0dXMgKG5vIFBJSSkuICovXG4gIEBHZXQoJ2J5LXRva2VuLzp0b2tlbicpXG4gIEBUaHJvdHRsZSh7IGxvbmc6IHsgbGltaXQ6IDYwLCB0dGw6IDNfNjAwXzAwMCB9IH0pXG4gIGdldEJ5VG9rZW4oQFBhcmFtKCd0b2tlbicpIHRva2VuOiBzdHJpbmcpIHtcbiAgICByZXR1cm4gdGhpcy5zdWJzLmdldFB1YmxpY0J5VG9rZW4odG9rZW4pO1xuICB9XG5cbiAgLyoqIFBPU1QgL2FwaS9zdWJzY3JpcHRpb24vY2FuY2VsLzp0b2tlbiDigJQgY2xpZW50IHNlbGYtY2FuY2VsLiAqL1xuICBAUG9zdCgnY2FuY2VsLzp0b2tlbicpXG4gIEBIdHRwQ29kZShIdHRwU3RhdHVzLk9LKVxuICBAVGhyb3R0bGUoeyBsb25nOiB7IGxpbWl0OiAzMCwgdHRsOiAzXzYwMF8wMDAgfSB9KVxuICBjYW5jZWwoQFBhcmFtKCd0b2tlbicpIHRva2VuOiBzdHJpbmcpIHtcbiAgICByZXR1cm4gdGhpcy5zdWJzLmNhbmNlbCh0b2tlbik7XG4gIH1cbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

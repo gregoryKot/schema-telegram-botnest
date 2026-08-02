@@ -1,0 +1,125 @@
+cccc89e39f5e21a420fc53779b728928
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UpdateArticleDto = exports.ArticleDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * DTO для CRUD статей блога (аудит 2026-07, 2г / правило №6 CLAUDE.md).
+ * Раньше `ArticleDto` импортировался как `type` из articles.service —
+ * интерфейс, рантайм не валидировался. `@nestjs/mapped-types` в проекте
+ * нет — `UpdateArticleDto` написан вручную (все поля опциональны).
+ */
+class ArticleDto {
+    slug;
+    title;
+    description;
+    content;
+    date;
+    readMin;
+    // string | null (null сбрасывает картинку/диаграмму) — ValidateIf
+    // пропускает проверку типа при null, IsOptional — при undefined.
+    heroImage;
+    diagramKey;
+}
+exports.ArticleDto = ArticleDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ArticleDto.prototype, "slug", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ArticleDto.prototype, "title", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ArticleDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ArticleDto.prototype, "content", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ArticleDto.prototype, "date", void 0);
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], ArticleDto.prototype, "readMin", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateIf)((_, v) => v !== null),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", Object)
+], ArticleDto.prototype, "heroImage", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateIf)((_, v) => v !== null),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", Object)
+], ArticleDto.prototype, "diagramKey", void 0);
+class UpdateArticleDto {
+    slug;
+    title;
+    description;
+    content;
+    date;
+    readMin;
+    heroImage;
+    diagramKey;
+}
+exports.UpdateArticleDto = UpdateArticleDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateArticleDto.prototype, "slug", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateArticleDto.prototype, "title", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateArticleDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateArticleDto.prototype, "content", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateArticleDto.prototype, "date", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], UpdateArticleDto.prototype, "readMin", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateIf)((_, v) => v !== null),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", Object)
+], UpdateArticleDto.prototype, "heroImage", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateIf)((_, v) => v !== null),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", Object)
+], UpdateArticleDto.prototype, "diagramKey", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXJ0aWNsZXMvYXJ0aWNsZS5kdG8udHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7O0FBQUEscURBQStFO0FBRS9FOzs7OztHQUtHO0FBQ0gsTUFBYSxVQUFVO0lBRXJCLElBQUksQ0FBVTtJQUdkLEtBQUssQ0FBVTtJQUdmLFdBQVcsQ0FBVTtJQUdyQixPQUFPLENBQVU7SUFHakIsSUFBSSxDQUFVO0lBSWQsT0FBTyxDQUFVO0lBRWpCLGtFQUFrRTtJQUNsRSxpRUFBaUU7SUFJakUsU0FBUyxDQUFpQjtJQUsxQixVQUFVLENBQWlCO0NBQzVCO0FBL0JELGdDQStCQztBQTdCQztJQURDLElBQUEsMEJBQVEsR0FBRTs7d0NBQ0c7QUFHZDtJQURDLElBQUEsMEJBQVEsR0FBRTs7eUNBQ0k7QUFHZjtJQURDLElBQUEsMEJBQVEsR0FBRTs7K0NBQ1U7QUFHckI7SUFEQyxJQUFBLDBCQUFRLEdBQUU7OzJDQUNNO0FBR2pCO0lBREMsSUFBQSwwQkFBUSxHQUFFOzt3Q0FDRztBQUlkO0lBRkMsSUFBQSx1QkFBSyxHQUFFO0lBQ1AsSUFBQSxxQkFBRyxFQUFDLENBQUMsQ0FBQzs7MkNBQ1U7QUFPakI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDRCQUFVLEVBQUMsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxDQUFDLEtBQUssSUFBSSxDQUFDO0lBQ2hDLElBQUEsMEJBQVEsR0FBRTs7NkNBQ2U7QUFLMUI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDRCQUFVLEVBQUMsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxDQUFDLEtBQUssSUFBSSxDQUFDO0lBQ2hDLElBQUEsMEJBQVEsR0FBRTs7OENBQ2dCO0FBRzdCLE1BQWEsZ0JBQWdCO0lBRzNCLElBQUksQ0FBVTtJQUlkLEtBQUssQ0FBVTtJQUlmLFdBQVcsQ0FBVTtJQUlyQixPQUFPLENBQVU7SUFJakIsSUFBSSxDQUFVO0lBS2QsT0FBTyxDQUFVO0lBS2pCLFNBQVMsQ0FBaUI7SUFLMUIsVUFBVSxDQUFpQjtDQUM1QjtBQW5DRCw0Q0FtQ0M7QUFoQ0M7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7OzhDQUNHO0FBSWQ7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7OytDQUNJO0FBSWY7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7O3FEQUNVO0FBSXJCO0lBRkMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFOztpREFDTTtBQUlqQjtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTs7OENBQ0c7QUFLZDtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsdUJBQUssR0FBRTtJQUNQLElBQUEscUJBQUcsRUFBQyxDQUFDLENBQUM7O2lEQUNVO0FBS2pCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSw0QkFBVSxFQUFDLENBQUMsQ0FBQyxFQUFFLENBQUMsRUFBRSxFQUFFLENBQUMsQ0FBQyxLQUFLLElBQUksQ0FBQztJQUNoQyxJQUFBLDBCQUFRLEdBQUU7O21EQUNlO0FBSzFCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSw0QkFBVSxFQUFDLENBQUMsQ0FBQyxFQUFFLENBQUMsRUFBRSxFQUFFLENBQUMsQ0FBQyxLQUFLLElBQUksQ0FBQztJQUNoQyxJQUFBLDBCQUFRLEdBQUU7O29EQUNnQiIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hcnRpY2xlcy9hcnRpY2xlLmR0by50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJc0ludCwgSXNPcHRpb25hbCwgSXNTdHJpbmcsIE1pbiwgVmFsaWRhdGVJZiB9IGZyb20gJ2NsYXNzLXZhbGlkYXRvcic7XG5cbi8qKlxuICogRFRPINC00LvRjyBDUlVEINGB0YLQsNGC0LXQuSDQsdC70L7Qs9CwICjQsNGD0LTQuNGCIDIwMjYtMDcsIDLQsyAvINC/0YDQsNCy0LjQu9C+IOKEljYgQ0xBVURFLm1kKS5cbiAqINCg0LDQvdGM0YjQtSBgQXJ0aWNsZUR0b2Ag0LjQvNC/0L7RgNGC0LjRgNC+0LLQsNC70YHRjyDQutCw0LogYHR5cGVgINC40LcgYXJ0aWNsZXMuc2VydmljZSDigJRcbiAqINC40L3RgtC10YDRhNC10LnRgSwg0YDQsNC90YLQsNC50Lwg0L3QtSDQstCw0LvQuNC00LjRgNC+0LLQsNC70YHRjy4gYEBuZXN0anMvbWFwcGVkLXR5cGVzYCDQsiDQv9GA0L7QtdC60YLQtVxuICog0L3QtdGCIOKAlCBgVXBkYXRlQXJ0aWNsZUR0b2Ag0L3QsNC/0LjRgdCw0L0g0LLRgNGD0YfQvdGD0Y4gKNCy0YHQtSDQv9C+0LvRjyDQvtC/0YbQuNC+0L3QsNC70YzQvdGLKS5cbiAqL1xuZXhwb3J0IGNsYXNzIEFydGljbGVEdG8ge1xuICBASXNTdHJpbmcoKVxuICBzbHVnITogc3RyaW5nO1xuXG4gIEBJc1N0cmluZygpXG4gIHRpdGxlITogc3RyaW5nO1xuXG4gIEBJc1N0cmluZygpXG4gIGRlc2NyaXB0aW9uITogc3RyaW5nO1xuXG4gIEBJc1N0cmluZygpXG4gIGNvbnRlbnQhOiBzdHJpbmc7XG5cbiAgQElzU3RyaW5nKClcbiAgZGF0ZSE6IHN0cmluZztcblxuICBASXNJbnQoKVxuICBATWluKDApXG4gIHJlYWRNaW4hOiBudW1iZXI7XG5cbiAgLy8gc3RyaW5nIHwgbnVsbCAobnVsbCDRgdCx0YDQsNGB0YvQstCw0LXRgiDQutCw0YDRgtC40L3QutGDL9C00LjQsNCz0YDQsNC80LzRgykg4oCUIFZhbGlkYXRlSWZcbiAgLy8g0L/RgNC+0L/Rg9GB0LrQsNC10YIg0L/RgNC+0LLQtdGA0LrRgyDRgtC40L/QsCDQv9GA0LggbnVsbCwgSXNPcHRpb25hbCDigJQg0L/RgNC4IHVuZGVmaW5lZC5cbiAgQElzT3B0aW9uYWwoKVxuICBAVmFsaWRhdGVJZigoXywgdikgPT4gdiAhPT0gbnVsbClcbiAgQElzU3RyaW5nKClcbiAgaGVyb0ltYWdlPzogc3RyaW5nIHwgbnVsbDtcblxuICBASXNPcHRpb25hbCgpXG4gIEBWYWxpZGF0ZUlmKChfLCB2KSA9PiB2ICE9PSBudWxsKVxuICBASXNTdHJpbmcoKVxuICBkaWFncmFtS2V5Pzogc3RyaW5nIHwgbnVsbDtcbn1cblxuZXhwb3J0IGNsYXNzIFVwZGF0ZUFydGljbGVEdG8ge1xuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIHNsdWc/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICB0aXRsZT86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIGRlc2NyaXB0aW9uPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgY29udGVudD86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIGRhdGU/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNJbnQoKVxuICBATWluKDApXG4gIHJlYWRNaW4/OiBudW1iZXI7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBAVmFsaWRhdGVJZigoXywgdikgPT4gdiAhPT0gbnVsbClcbiAgQElzU3RyaW5nKClcbiAgaGVyb0ltYWdlPzogc3RyaW5nIHwgbnVsbDtcblxuICBASXNPcHRpb25hbCgpXG4gIEBWYWxpZGF0ZUlmKChfLCB2KSA9PiB2ICE9PSBudWxsKVxuICBASXNTdHJpbmcoKVxuICBkaWFncmFtS2V5Pzogc3RyaW5nIHwgbnVsbDtcbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

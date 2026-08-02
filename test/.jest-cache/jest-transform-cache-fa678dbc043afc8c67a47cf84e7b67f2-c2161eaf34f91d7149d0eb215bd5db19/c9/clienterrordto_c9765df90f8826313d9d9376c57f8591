@@ -1,0 +1,64 @@
+2ad8024ffbf621ba51a31bc163367184
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ClientErrorDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * DTO для POST /api/client-errors (best-practice «видимость прода», 2026-07).
+ * Раньше падение любого раздела фронтенда ловил ErrorBoundary, но наружу
+ * ничего не уходило — краши UI были невидимы (белый экран у юзера, тишина у
+ * нас). Теперь ErrorBoundary шлёт сюда, а бэкенд логирует через AlertLogger →
+ * DM админу. Эндпоинт публичный (краш возможен и до авторизации), поэтому
+ * тело строго валидируется (правило №6) и обрезается по длине.
+ */
+class ClientErrorDto {
+    message;
+    section;
+    source;
+    stack;
+    componentStack;
+    url;
+}
+exports.ClientErrorDto = ClientErrorDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(500),
+    __metadata("design:type", String)
+], ClientErrorDto.prototype, "message", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(120),
+    __metadata("design:type", String)
+], ClientErrorDto.prototype, "section", void 0);
+__decorate([
+    (0, class_validator_1.IsIn)(['webapp', 'miniapp']),
+    __metadata("design:type", String)
+], ClientErrorDto.prototype, "source", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(4000),
+    __metadata("design:type", String)
+], ClientErrorDto.prototype, "stack", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(4000),
+    __metadata("design:type", String)
+], ClientErrorDto.prototype, "componentStack", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(500),
+    __metadata("design:type", String)
+], ClientErrorDto.prototype, "url", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9jbGllbnQtZXJyb3IuZHRvLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7OztBQUFBLHFEQUF3RTtBQUV4RTs7Ozs7OztHQU9HO0FBQ0gsTUFBYSxjQUFjO0lBR3pCLE9BQU8sQ0FBVTtJQUlqQixPQUFPLENBQVU7SUFHakIsTUFBTSxDQUF3QjtJQUs5QixLQUFLLENBQVU7SUFLZixjQUFjLENBQVU7SUFLeEIsR0FBRyxDQUFVO0NBQ2Q7QUExQkQsd0NBMEJDO0FBdkJDO0lBRkMsSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLEdBQUcsQ0FBQzs7K0NBQ0U7QUFJakI7SUFGQyxJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsR0FBRyxDQUFDOzsrQ0FDRTtBQUdqQjtJQURDLElBQUEsc0JBQUksRUFBQyxDQUFDLFFBQVEsRUFBRSxTQUFTLENBQUMsQ0FBQzs7OENBQ0U7QUFLOUI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsSUFBSSxDQUFDOzs2Q0FDRDtBQUtmO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLElBQUksQ0FBQzs7c0RBQ1E7QUFLeEI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsR0FBRyxDQUFDOzsyQ0FDRiIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hcGkvZHRvL2NsaWVudC1lcnJvci5kdG8udHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgSXNJbiwgSXNPcHRpb25hbCwgSXNTdHJpbmcsIE1heExlbmd0aCB9IGZyb20gJ2NsYXNzLXZhbGlkYXRvcic7XG5cbi8qKlxuICogRFRPINC00LvRjyBQT1NUIC9hcGkvY2xpZW50LWVycm9ycyAoYmVzdC1wcmFjdGljZSDCq9Cy0LjQtNC40LzQvtGB0YLRjCDQv9GA0L7QtNCwwrssIDIwMjYtMDcpLlxuICog0KDQsNC90YzRiNC1INC/0LDQtNC10L3QuNC1INC70Y7QsdC+0LPQviDRgNCw0LfQtNC10LvQsCDRhNGA0L7QvdGC0LXQvdC00LAg0LvQvtCy0LjQuyBFcnJvckJvdW5kYXJ5LCDQvdC+INC90LDRgNGD0LbRg1xuICog0L3QuNGH0LXQs9C+INC90LUg0YPRhdC+0LTQuNC70L4g4oCUINC60YDQsNGI0LggVUkg0LHRi9C70Lgg0L3QtdCy0LjQtNC40LzRiyAo0LHQtdC70YvQuSDRjdC60YDQsNC9INGDINGO0LfQtdGA0LAsINGC0LjRiNC40L3QsCDRg1xuICog0L3QsNGBKS4g0KLQtdC/0LXRgNGMIEVycm9yQm91bmRhcnkg0YjQu9GR0YIg0YHRjtC00LAsINCwINCx0Y3QutC10L3QtCDQu9C+0LPQuNGA0YPQtdGCINGH0LXRgNC10LcgQWxlcnRMb2dnZXIg4oaSXG4gKiBETSDQsNC00LzQuNC90YMuINCt0L3QtNC/0L7QuNC90YIg0L/Rg9Cx0LvQuNGH0L3Ri9C5ICjQutGA0LDRiCDQstC+0LfQvNC+0LbQtdC9INC4INC00L4g0LDQstGC0L7RgNC40LfQsNGG0LjQuCksINC/0L7RjdGC0L7QvNGDXG4gKiDRgtC10LvQviDRgdGC0YDQvtCz0L4g0LLQsNC70LjQtNC40YDRg9C10YLRgdGPICjQv9GA0LDQstC40LvQviDihJY2KSDQuCDQvtCx0YDQtdC30LDQtdGC0YHRjyDQv9C+INC00LvQuNC90LUuXG4gKi9cbmV4cG9ydCBjbGFzcyBDbGllbnRFcnJvckR0byB7XG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoNTAwKVxuICBtZXNzYWdlITogc3RyaW5nO1xuXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoMTIwKVxuICBzZWN0aW9uITogc3RyaW5nO1xuXG4gIEBJc0luKFsnd2ViYXBwJywgJ21pbmlhcHAnXSlcbiAgc291cmNlITogJ3dlYmFwcCcgfCAnbWluaWFwcCc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKDQwMDApXG4gIHN0YWNrPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aCg0MDAwKVxuICBjb21wb25lbnRTdGFjaz86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoNTAwKVxuICB1cmw/OiBzdHJpbmc7XG59XG4iXSwidmVyc2lvbiI6M30=

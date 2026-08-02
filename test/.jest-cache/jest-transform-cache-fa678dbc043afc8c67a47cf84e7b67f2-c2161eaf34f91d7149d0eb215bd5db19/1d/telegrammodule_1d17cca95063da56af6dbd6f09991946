@@ -1,0 +1,45 @@
+656b9e8f10a24695f414494e7bb9a758
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TelegramModule = void 0;
+const common_1 = require("@nestjs/common");
+const telegram_service_1 = require("./telegram.service");
+const telegram_schedule_service_1 = require("./telegram.schedule.service");
+const channel_providers_1 = require("../channel/channel.providers");
+const healthy_adult_admin_controller_1 = require("./healthy-adult-admin.controller");
+const telegram_settings_service_1 = require("./telegram.settings.service");
+const telegram_notify_actions_service_1 = require("./telegram.notify-actions.service");
+const telegram_notify_settings_service_1 = require("./telegram.notify-settings.service");
+const telegram_quiz_service_1 = require("./telegram.quiz.service");
+const telegram_providers_1 = require("./telegram.providers");
+const bot_module_1 = require("../bot/bot.module");
+const notification_module_1 = require("../notification/notification.module");
+const therapy_module_1 = require("../therapy/therapy.module");
+const analytics_module_1 = require("../analytics/analytics.module");
+let TelegramModule = class TelegramModule {
+};
+exports.TelegramModule = TelegramModule;
+exports.TelegramModule = TelegramModule = __decorate([
+    (0, common_1.Module)({
+        imports: [bot_module_1.BotModule, notification_module_1.NotificationModule, therapy_module_1.TherapyModule, analytics_module_1.AnalyticsModule],
+        controllers: [healthy_adult_admin_controller_1.HealthyAdultAdminController],
+        providers: [
+            telegram_service_1.TelegramService,
+            telegram_schedule_service_1.TelegramScheduleService,
+            telegram_settings_service_1.TelegramSettingsService,
+            telegram_notify_actions_service_1.TelegramNotifyActionsService,
+            telegram_notify_settings_service_1.TelegramNotifySettingsService,
+            telegram_quiz_service_1.TelegramQuizService,
+            ...telegram_providers_1.TELEGRAM_PROVIDERS,
+            ...channel_providers_1.CHANNEL_PROVIDERS, // канал «ЗВ»: площадки, рассылка, расписание
+        ],
+        exports: [telegram_service_1.TelegramService, telegram_schedule_service_1.TelegramScheduleService],
+    })
+], TelegramModule);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGVsZWdyYW0vdGVsZWdyYW0ubW9kdWxlLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7OztBQUFBLDJDQUF3QztBQUN4Qyx5REFBcUQ7QUFDckQsMkVBQXNFO0FBQ3RFLG9FQUFpRTtBQUNqRSxxRkFBK0U7QUFDL0UsMkVBQXNFO0FBQ3RFLHVGQUFpRjtBQUNqRix5RkFBbUY7QUFDbkYsbUVBQThEO0FBQzlELDZEQUEwRDtBQUMxRCxrREFBOEM7QUFDOUMsNkVBQXlFO0FBQ3pFLDhEQUEwRDtBQUMxRCxvRUFBZ0U7QUFpQnpELElBQU0sY0FBYyxHQUFwQixNQUFNLGNBQWM7Q0FBRyxDQUFBO0FBQWpCLHdDQUFjO3lCQUFkLGNBQWM7SUFmMUIsSUFBQSxlQUFNLEVBQUM7UUFDTixPQUFPLEVBQUUsQ0FBQyxzQkFBUyxFQUFFLHdDQUFrQixFQUFFLDhCQUFhLEVBQUUsa0NBQWUsQ0FBQztRQUN4RSxXQUFXLEVBQUUsQ0FBQyw0REFBMkIsQ0FBQztRQUMxQyxTQUFTLEVBQUU7WUFDVCxrQ0FBZTtZQUNmLG1EQUF1QjtZQUN2QixtREFBdUI7WUFDdkIsOERBQTRCO1lBQzVCLGdFQUE2QjtZQUM3QiwyQ0FBbUI7WUFDbkIsR0FBRyx1Q0FBa0I7WUFDckIsR0FBRyxxQ0FBaUIsRUFBRSw2Q0FBNkM7U0FDcEU7UUFDRCxPQUFPLEVBQUUsQ0FBQyxrQ0FBZSxFQUFFLG1EQUF1QixDQUFDO0tBQ3BELENBQUM7R0FDVyxjQUFjLENBQUciLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGVsZWdyYW0vdGVsZWdyYW0ubW9kdWxlLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IE1vZHVsZSB9IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFRlbGVncmFtU2VydmljZSB9IGZyb20gJy4vdGVsZWdyYW0uc2VydmljZSc7XG5pbXBvcnQgeyBUZWxlZ3JhbVNjaGVkdWxlU2VydmljZSB9IGZyb20gJy4vdGVsZWdyYW0uc2NoZWR1bGUuc2VydmljZSc7XG5pbXBvcnQgeyBDSEFOTkVMX1BST1ZJREVSUyB9IGZyb20gJy4uL2NoYW5uZWwvY2hhbm5lbC5wcm92aWRlcnMnO1xuaW1wb3J0IHsgSGVhbHRoeUFkdWx0QWRtaW5Db250cm9sbGVyIH0gZnJvbSAnLi9oZWFsdGh5LWFkdWx0LWFkbWluLmNvbnRyb2xsZXInO1xuaW1wb3J0IHsgVGVsZWdyYW1TZXR0aW5nc1NlcnZpY2UgfSBmcm9tICcuL3RlbGVncmFtLnNldHRpbmdzLnNlcnZpY2UnO1xuaW1wb3J0IHsgVGVsZWdyYW1Ob3RpZnlBY3Rpb25zU2VydmljZSB9IGZyb20gJy4vdGVsZWdyYW0ubm90aWZ5LWFjdGlvbnMuc2VydmljZSc7XG5pbXBvcnQgeyBUZWxlZ3JhbU5vdGlmeVNldHRpbmdzU2VydmljZSB9IGZyb20gJy4vdGVsZWdyYW0ubm90aWZ5LXNldHRpbmdzLnNlcnZpY2UnO1xuaW1wb3J0IHsgVGVsZWdyYW1RdWl6U2VydmljZSB9IGZyb20gJy4vdGVsZWdyYW0ucXVpei5zZXJ2aWNlJztcbmltcG9ydCB7IFRFTEVHUkFNX1BST1ZJREVSUyB9IGZyb20gJy4vdGVsZWdyYW0ucHJvdmlkZXJzJztcbmltcG9ydCB7IEJvdE1vZHVsZSB9IGZyb20gJy4uL2JvdC9ib3QubW9kdWxlJztcbmltcG9ydCB7IE5vdGlmaWNhdGlvbk1vZHVsZSB9IGZyb20gJy4uL25vdGlmaWNhdGlvbi9ub3RpZmljYXRpb24ubW9kdWxlJztcbmltcG9ydCB7IFRoZXJhcHlNb2R1bGUgfSBmcm9tICcuLi90aGVyYXB5L3RoZXJhcHkubW9kdWxlJztcbmltcG9ydCB7IEFuYWx5dGljc01vZHVsZSB9IGZyb20gJy4uL2FuYWx5dGljcy9hbmFseXRpY3MubW9kdWxlJztcblxuQE1vZHVsZSh7XG4gIGltcG9ydHM6IFtCb3RNb2R1bGUsIE5vdGlmaWNhdGlvbk1vZHVsZSwgVGhlcmFweU1vZHVsZSwgQW5hbHl0aWNzTW9kdWxlXSxcbiAgY29udHJvbGxlcnM6IFtIZWFsdGh5QWR1bHRBZG1pbkNvbnRyb2xsZXJdLFxuICBwcm92aWRlcnM6IFtcbiAgICBUZWxlZ3JhbVNlcnZpY2UsXG4gICAgVGVsZWdyYW1TY2hlZHVsZVNlcnZpY2UsXG4gICAgVGVsZWdyYW1TZXR0aW5nc1NlcnZpY2UsXG4gICAgVGVsZWdyYW1Ob3RpZnlBY3Rpb25zU2VydmljZSxcbiAgICBUZWxlZ3JhbU5vdGlmeVNldHRpbmdzU2VydmljZSxcbiAgICBUZWxlZ3JhbVF1aXpTZXJ2aWNlLFxuICAgIC4uLlRFTEVHUkFNX1BST1ZJREVSUyxcbiAgICAuLi5DSEFOTkVMX1BST1ZJREVSUywgLy8g0LrQsNC90LDQuyDCq9CX0JLCuzog0L/Qu9C+0YnQsNC00LrQuCwg0YDQsNGB0YHRi9C70LrQsCwg0YDQsNGB0L/QuNGB0LDQvdC40LVcbiAgXSxcbiAgZXhwb3J0czogW1RlbGVncmFtU2VydmljZSwgVGVsZWdyYW1TY2hlZHVsZVNlcnZpY2VdLFxufSlcbmV4cG9ydCBjbGFzcyBUZWxlZ3JhbU1vZHVsZSB7fVxuIl0sInZlcnNpb24iOjN9

@@ -1,0 +1,99 @@
+8d57282b1ee97b9d077758291595b7e3
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var PrismaExceptionFilter_1, GenericExceptionFilter_1;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GenericExceptionFilter = exports.PrismaExceptionFilter = void 0;
+const common_1 = require("@nestjs/common");
+const client_1 = require("@prisma/client");
+// Global filter that maps Prisma errors to friendly 4xx responses.
+//
+// Without this, NestJS's default exception filter returns a 500 with
+// `error.message` straight from Prisma — which can include table/column
+// names, query fragments, and other DB internals we'd rather not leak.
+//
+// We translate the most common error codes; everything else falls through
+// to the default filter (Nest will return a generic 500 and the message
+// goes only to our logs).
+let PrismaExceptionFilter = PrismaExceptionFilter_1 = class PrismaExceptionFilter {
+    logger = new common_1.Logger(PrismaExceptionFilter_1.name);
+    catch(exception, host) {
+        const res = host.switchToHttp().getResponse();
+        const req = host.switchToHttp().getRequest();
+        const path = req.url ?? '?';
+        // Always log the full internal message — admin gets the alert via
+        // AlertLogger and we keep the trail in case we need to debug.
+        this.logger.error(`Prisma error on ${path}: ${exception.message}`);
+        if (exception instanceof client_1.Prisma.PrismaClientKnownRequestError) {
+            switch (exception.code) {
+                case 'P2002': // Unique constraint violation
+                    return res.status(common_1.HttpStatus.CONFLICT).json({
+                        statusCode: 409,
+                        error: 'Conflict',
+                        message: 'Запись уже существует',
+                    });
+                case 'P2025': // Record not found
+                    return res.status(common_1.HttpStatus.NOT_FOUND).json({
+                        statusCode: 404,
+                        error: 'Not Found',
+                        message: 'Запись не найдена',
+                    });
+                case 'P2003': // Foreign key violation
+                    return res.status(common_1.HttpStatus.BAD_REQUEST).json({
+                        statusCode: 400,
+                        error: 'Bad Request',
+                        message: 'Связанная запись отсутствует',
+                    });
+            }
+        }
+        if (exception instanceof client_1.Prisma.PrismaClientValidationError) {
+            return res.status(common_1.HttpStatus.BAD_REQUEST).json({
+                statusCode: 400,
+                error: 'Bad Request',
+                message: 'Неверный формат данных',
+            });
+        }
+        // Unknown Prisma error — generic 500.
+        res.status(common_1.HttpStatus.INTERNAL_SERVER_ERROR).json({
+            statusCode: 500,
+            error: 'Internal Server Error',
+            message: 'Внутренняя ошибка сервера',
+        });
+    }
+};
+exports.PrismaExceptionFilter = PrismaExceptionFilter;
+exports.PrismaExceptionFilter = PrismaExceptionFilter = PrismaExceptionFilter_1 = __decorate([
+    (0, common_1.Catch)(client_1.Prisma.PrismaClientKnownRequestError, client_1.Prisma.PrismaClientValidationError)
+], PrismaExceptionFilter);
+// Re-throws HttpException as-is, hides any other unhandled exception's message.
+// Acts as a safety net so that a stray TypeError or raw fetch error doesn't
+// leak its stack to the API client.
+let GenericExceptionFilter = GenericExceptionFilter_1 = class GenericExceptionFilter {
+    logger = new common_1.Logger(GenericExceptionFilter_1.name);
+    catch(exception, host) {
+        if (exception instanceof common_1.HttpException) {
+            // Nest's normal exception flow — pass through.
+            const res = host.switchToHttp().getResponse();
+            const body = exception.getResponse();
+            return res.status(exception.getStatus()).json(body);
+        }
+        const req = host.switchToHttp().getRequest();
+        const err = exception instanceof Error ? exception : undefined;
+        this.logger.error(`Unhandled error on ${req.url ?? '?'}: ${err?.message ?? String(exception)}`, err?.stack);
+        host.switchToHttp().getResponse().status(500).json({
+            statusCode: 500,
+            error: 'Internal Server Error',
+            message: 'Внутренняя ошибка сервера',
+        });
+    }
+};
+exports.GenericExceptionFilter = GenericExceptionFilter;
+exports.GenericExceptionFilter = GenericExceptionFilter = GenericExceptionFilter_1 = __decorate([
+    (0, common_1.Catch)()
+], GenericExceptionFilter);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvcHJpc21hL3ByaXNtYS1leGNlcHRpb24uZmlsdGVyLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7QUFBQSwyQ0FPd0I7QUFDeEIsMkNBQXdDO0FBR3hDLG1FQUFtRTtBQUNuRSxFQUFFO0FBQ0YscUVBQXFFO0FBQ3JFLHdFQUF3RTtBQUN4RSx1RUFBdUU7QUFDdkUsRUFBRTtBQUNGLDBFQUEwRTtBQUMxRSx3RUFBd0U7QUFDeEUsMEJBQTBCO0FBRW5CLElBQU0scUJBQXFCLDZCQUEzQixNQUFNLHFCQUFxQjtJQUNmLE1BQU0sR0FBRyxJQUFJLGVBQU0sQ0FBQyx1QkFBcUIsQ0FBQyxJQUFJLENBQUMsQ0FBQztJQUVqRSxLQUFLLENBQUMsU0FBZ0IsRUFBRSxJQUFtQjtRQUN6QyxNQUFNLEdBQUcsR0FBRyxJQUFJLENBQUMsWUFBWSxFQUFFLENBQUMsV0FBVyxFQUFZLENBQUM7UUFDeEQsTUFBTSxHQUFHLEdBQUcsSUFBSSxDQUFDLFlBQVksRUFBRSxDQUFDLFVBQVUsRUFBVyxDQUFDO1FBQ3RELE1BQU0sSUFBSSxHQUFHLEdBQUcsQ0FBQyxHQUFHLElBQUksR0FBRyxDQUFDO1FBRTVCLGtFQUFrRTtRQUNsRSw4REFBOEQ7UUFDOUQsSUFBSSxDQUFDLE1BQU0sQ0FBQyxLQUFLLENBQUMsbUJBQW1CLElBQUksS0FBSyxTQUFTLENBQUMsT0FBTyxFQUFFLENBQUMsQ0FBQztRQUVuRSxJQUFJLFNBQVMsWUFBWSxlQUFNLENBQUMsNkJBQTZCLEVBQUUsQ0FBQztZQUM5RCxRQUFRLFNBQVMsQ0FBQyxJQUFJLEVBQUUsQ0FBQztnQkFDdkIsS0FBSyxPQUFPLEVBQUUsOEJBQThCO29CQUMxQyxPQUFPLEdBQUcsQ0FBQyxNQUFNLENBQUMsbUJBQVUsQ0FBQyxRQUFRLENBQUMsQ0FBQyxJQUFJLENBQUM7d0JBQzFDLFVBQVUsRUFBRSxHQUFHO3dCQUNmLEtBQUssRUFBRSxVQUFVO3dCQUNqQixPQUFPLEVBQUUsdUJBQXVCO3FC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QXRCLHNCQUFzQjtJQURsQyxJQUFBLGNBQUssR0FBRTtHQUNLLHNCQUFzQixDQXNCbEMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvcHJpc21hL3ByaXNtYS1leGNlcHRpb24uZmlsdGVyLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7XG4gIEFyZ3VtZW50c0hvc3QsXG4gIENhdGNoLFxuICBFeGNlcHRpb25GaWx0ZXIsXG4gIEh0dHBFeGNlcHRpb24sXG4gIEh0dHBTdGF0dXMsXG4gIExvZ2dlcixcbn0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgUHJpc21hIH0gZnJvbSAnQHByaXNtYS9jbGllbnQnO1xuaW1wb3J0IHR5cGUgeyBSZXF1ZXN0LCBSZXNwb25zZSB9IGZyb20gJ2V4cHJlc3MnO1xuXG4vLyBHbG9iYWwgZmlsdGVyIHRoYXQgbWFwcyBQcmlzbWEgZXJyb3JzIHRvIGZyaWVuZGx5IDR4eCByZXNwb25zZXMuXG4vL1xuLy8gV2l0aG91dCB0aGlzLCBOZXN0SlMncyBkZWZhdWx0IGV4Y2VwdGlvbiBmaWx0ZXIgcmV0dXJucyBhIDUwMCB3aXRoXG4vLyBgZXJyb3IubWVzc2FnZWAgc3RyYWlnaHQgZnJvbSBQcmlzbWEg4oCUIHdoaWNoIGNhbiBpbmNsdWRlIHRhYmxlL2NvbHVtblxuLy8gbmFtZXMsIHF1ZXJ5IGZyYWdtZW50cywgYW5kIG90aGVyIERCIGludGVybmFscyB3ZSdkIHJhdGhlciBub3QgbGVhay5cbi8vXG4vLyBXZSB0cmFuc2xhdGUgdGhlIG1vc3QgY29tbW9uIGVycm9yIGNvZGVzOyBldmVyeXRoaW5nIGVsc2UgZmFsbHMgdGhyb3VnaFxuLy8gdG8gdGhlIGRlZmF1bHQgZmlsdGVyIChOZXN0IHdpbGwgcmV0dXJuIGEgZ2VuZXJpYyA1MDAgYW5kIHRoZSBtZXNzYWdlXG4vLyBnb2VzIG9ubHkgdG8gb3VyIGxvZ3MpLlxuQENhdGNoKFByaXNtYS5QcmlzbWFDbGllbnRLbm93blJlcXVlc3RFcnJvciwgUHJpc21hLlByaXNtYUNsaWVudFZhbGlkYXRpb25FcnJvcilcbmV4cG9ydCBjbGFzcyBQcmlzbWFFeGNlcHRpb25GaWx0ZXIgaW1wbGVtZW50cyBFeGNlcHRpb25GaWx0ZXIge1xuICBwcml2YXRlIHJlYWRvbmx5IGxvZ2dlciA9IG5ldyBMb2dnZXIoUHJpc21hRXhjZXB0aW9uRmlsdGVyLm5hbWUpO1xuXG4gIGNhdGNoKGV4Y2VwdGlvbjogRXJyb3IsIGhvc3Q6IEFyZ3VtZW50c0hvc3QpIHtcbiAgICBjb25zdCByZXMgPSBob3N0LnN3aXRjaFRvSHR0cCgpLmdldFJlc3BvbnNlPFJlc3BvbnNlPigpO1xuICAgIGNvbnN0IHJlcSA9IGhvc3Quc3dpdGNoVG9IdHRwKCkuZ2V0UmVxdWVzdDxSZXF1ZXN0PigpO1xuICAgIGNvbnN0IHBhdGggPSByZXEudXJsID8/ICc/JztcblxuICAgIC8vIEFsd2F5cyBsb2cgdGhlIGZ1bGwgaW50ZXJuYWwgbWVzc2FnZSDigJQgYWRtaW4gZ2V0cyB0aGUgYWxlcnQgdmlhXG4gICAgLy8gQWxlcnRMb2dnZXIgYW5kIHdlIGtlZXAgdGhlIHRyYWlsIGluIGNhc2Ugd2UgbmVlZCB0byBkZWJ1Zy5cbiAgICB0aGlzLmxvZ2dlci5lcnJvcihgUHJpc21hIGVycm9yIG9uICR7cGF0aH06ICR7ZXhjZXB0aW9uLm1lc3NhZ2V9YCk7XG5cbiAgICBpZiAoZXhjZXB0aW9uIGluc3RhbmNlb2YgUHJpc21hLlByaXNtYUNsaWVudEtub3duUmVxdWVzdEVycm9yKSB7XG4gICAgICBzd2l0Y2ggKGV4Y2VwdGlvbi5jb2RlKSB7XG4gICAgICAgIGNhc2UgJ1AyMDAyJzogLy8gVW5pcXVlIGNvbnN0cmFpbnQgdmlvbGF0aW9uXG4gICAgICAgICAgcmV0dXJuIHJlcy5zdGF0dXMoSHR0cFN0YXR1cy5DT05GTElDVCkuanNvbih7XG4gICAgICAgICAgICBzdGF0dXNDb2RlOiA0MDksXG4gICAgICAgICAgICBlcnJvcjogJ0NvbmZsaWN0JyxcbiAgICAgICAgICAgIG1lc3NhZ2U6ICfQl9Cw0L/QuNGB0Ywg0YPQttC1INGB0YPRidC10YHRgtCy0YPQtdGCJyxcbiAgICAgICAgICB9KTtcbiAgICAgICAgY2FzZSAnUDIwMjUnOiAvLyBSZWNvcmQgbm90IGZvdW5kXG4gICAgICAgICAgcmV0dXJuIHJlcy5zdGF0dXMoSHR0cFN0YXR1cy5OT1RfRk9VTkQpLmpzb24oe1xuICAgICAgICAgICAgc3RhdHVzQ29kZTogNDA0LFxuICAgICAgICAgICAgZXJyb3I6ICdOb3QgRm91bmQnLFxuICAgICAgICAgICAgbWVzc2FnZTogJ9CX0LDQv9C40YHRjCDQvdC1INC90LDQudC00LXQvdCwJyxcbiAgICAgICAgICB9KTtcbiAgICAgICAgY2FzZSAnUDIwMDMnOiAvLyBGb3JlaWduIGtleSB2aW9sYXRpb25cbiAgICAgICAgICByZXR1cm4gcmVzLnN0YXR1cyhIdHRwU3RhdHVzLkJBRF9SRVFVRVNUKS5qc29uKHtcbiAgICAgICAgICAgIHN0YXR1c0NvZGU6IDQwMCxcbiAgICAgICAgICAgIGVycm9yOiAnQmFkIFJlcXVlc3QnLFxuICAgICAgICAgICAgbWVzc2FnZTogJ9Ch0LLRj9C30LDQvdC90LDRjyDQt9Cw0L/QuNGB0Ywg0L7RgtGB0YPRgtGB0YLQstGD0LXRgicsXG4gICAgICAgICAgfSk7XG4gICAgICB9XG4gICAgfVxuICAgIGlmIChleGNlcHRpb24gaW5zdGFuY2VvZiBQcmlzbWEuUHJpc21hQ2xpZW50VmFsaWRhdGlvbkVycm9yKSB7XG4gICAgICByZXR1cm4gcmVzLnN0YXR1cyhIdHRwU3RhdHVzLkJBRF9SRVFVRVNUKS5qc29uKHtcbiAgICAgICAgc3RhdHVzQ29kZTogNDAwLFxuICAgICAgICBlcnJvcjogJ0JhZCBSZXF1ZXN0JyxcbiAgICAgICAgbWVzc2FnZTogJ9Cd0LXQstC10YDQvdGL0Lkg0YTQvtGA0LzQsNGCINC00LDQvdC90YvRhScsXG4gICAgICB9KTtcbiAgICB9XG5cbiAgICAvLyBVbmtub3duIFByaXNtYSBlcnJvciDigJQgZ2VuZXJpYyA1MDAuXG4gICAgcmVzLnN0YXR1cyhIdHRwU3RhdHVzLklOVEVSTkFMX1NFUlZFUl9FUlJPUikuanNvbih7XG4gICAgICBzdGF0dXNDb2RlOiA1MDAsXG4gICAgICBlcnJvcjogJ0ludGVybmFsIFNlcnZlciBFcnJvcicsXG4gICAgICBtZXNzYWdlOiAn0JLQvdGD0YLRgNC10L3QvdGP0Y8g0L7RiNC40LHQutCwINGB0LXRgNCy0LXRgNCwJyxcbiAgICB9KTtcbiAgfVxufVxuXG4vLyBSZS10aHJvd3MgSHR0cEV4Y2VwdGlvbiBhcy1pcywgaGlkZXMgYW55IG90aGVyIHVuaGFuZGxlZCBleGNlcHRpb24ncyBtZXNzYWdlLlxuLy8gQWN0cyBhcyBhIHNhZmV0eSBuZXQgc28gdGhhdCBhIHN0cmF5IFR5cGVFcnJvciBvciByYXcgZmV0Y2ggZXJyb3IgZG9lc24ndFxuLy8gbGVhayBpdHMgc3RhY2sgdG8gdGhlIEFQSSBjbGllbnQuXG5AQ2F0Y2goKVxuZXhwb3J0IGNsYXNzIEdlbmVyaWNFeGNlcHRpb25GaWx0ZXIgaW1wbGVtZW50cyBFeGNlcHRpb25GaWx0ZXIge1xuICBwcml2YXRlIHJlYWRvbmx5IGxvZ2dlciA9IG5ldyBMb2dnZXIoR2VuZXJpY0V4Y2VwdGlvbkZpbHRlci5uYW1lKTtcblxuICBjYXRjaChleGNlcHRpb246IHVua25vd24sIGhvc3Q6IEFyZ3VtZW50c0hvc3QpIHtcbiAgICBpZiAoZXhjZXB0aW9uIGluc3RhbmNlb2YgSHR0cEV4Y2VwdGlvbikge1xuICAgICAgLy8gTmVzdCdzIG5vcm1hbCBleGNlcHRpb24gZmxvdyDigJQgcGFzcyB0aHJvdWdoLlxuICAgICAgY29uc3QgcmVzID0gaG9zdC5zd2l0Y2hUb0h0dHAoKS5nZXRSZXNwb25zZTxSZXNwb25zZT4oKTtcbiAgICAgIGNvbnN0IGJvZHkgPSBleGNlcHRpb24uZ2V0UmVzcG9uc2UoKTtcbiAgICAgIHJldHVybiByZXMuc3RhdHVzKGV4Y2VwdGlvbi5nZXRTdGF0dXMoKSkuanNvbihib2R5KTtcbiAgICB9XG4gICAgY29uc3QgcmVxID0gaG9zdC5zd2l0Y2hUb0h0dHAoKS5nZXRSZXF1ZXN0PFJlcXVlc3Q+KCk7XG4gICAgY29uc3QgZXJyID0gZXhjZXB0aW9uIGluc3RhbmNlb2YgRXJyb3IgPyBleGNlcHRpb24gOiB1bmRlZmluZWQ7XG4gICAgdGhpcy5sb2dnZXIuZXJyb3IoXG4gICAgICBgVW5oYW5kbGVkIGVycm9yIG9uICR7cmVxLnVybCA/PyAnPyd9OiAke2Vycj8ubWVzc2FnZSA/PyBTdHJpbmcoZXhjZXB0aW9uKX1gLFxuICAgICAgZXJyPy5zdGFjayxcbiAgICApO1xuICAgIGhvc3Quc3dpdGNoVG9IdHRwKCkuZ2V0UmVzcG9uc2U8UmVzcG9uc2U+KCkuc3RhdHVzKDUwMCkuanNvbih7XG4gICAgICBzdGF0dXNDb2RlOiA1MDAsXG4gICAgICBlcnJvcjogJ0ludGVybmFsIFNlcnZlciBFcnJvcicsXG4gICAgICBtZXNzYWdlOiAn0JLQvdGD0YLRgNC10L3QvdGP0Y8g0L7RiNC40LHQutCwINGB0LXRgNCy0LXRgNCwJyxcbiAgICB9KTtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

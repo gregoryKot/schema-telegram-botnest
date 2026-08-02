@@ -8,24 +8,32 @@
 // проверяет, что строка реально осталась у владельца, а не только код ответа).
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { buildTestApp } from './e2e-support/build-test-app';
+import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
+import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pairs)', () => {
   let app: INestApplication;
-
-  beforeAll(async () => {
-    ({ app } = await buildTestApp());
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
+  let prisma: TestApp['prisma'];
 
   const secret = () => process.env.JWT_SECRET as string;
   const USER_A = 5_000_000_000_000_001n;
   const USER_B = 5_000_000_000_000_002n;
   const USER_C = 5_000_000_000_000_003n;
+  const ALL_USER_IDS = [USER_A, USER_B, USER_C];
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    // Изоляция между прогонами (TEST_TRUST_PLAN.md, п.1) — см. комментарий
+    // в app-ownership.e2e-spec.ts. Обязательна на реальном Postgres, no-op
+    // на фейке.
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
 
   function agentAs(userId: bigint) {
     const token = signAccessToken(userId, secret());

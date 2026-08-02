@@ -1,0 +1,77 @@
+4dd2ff361dcb9f29685de6f15939b14d
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.YsqResultDto = exports.YsqProgressDto = exports.SaveRatingDto = void 0;
+const class_validator_1 = require("class-validator");
+const bot_service_1 = require("../../bot/bot.service");
+/**
+ * DTO для POST /api/rating (аудит 2026-07, 2г / правило №6 CLAUDE.md).
+ * needId/value уже проверялись вручную в контроллере — правила продублированы
+ * здесь как рантайм-валидация; ручная проверка date (формат YYYY-MM-DD)
+ * остаётся в контроллере — regex дублировать не стали.
+ */
+class SaveRatingDto {
+    needId;
+    value;
+    date;
+}
+exports.SaveRatingDto = SaveRatingDto;
+__decorate([
+    (0, class_validator_1.IsIn)(bot_service_1.NEED_IDS),
+    __metadata("design:type", String)
+], SaveRatingDto.prototype, "needId", void 0);
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.Max)(10),
+    __metadata("design:type", Number)
+], SaveRatingDto.prototype, "value", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], SaveRatingDto.prototype, "date", void 0);
+/**
+ * DTO для POST/PUT YSQ-прогресса и результата. 116 вопросов, ответы по
+ * 6-балльной шкале Лайкерта (0–6) — оба лимита уже проверялись вручную.
+ */
+class YsqProgressDto {
+    answers;
+    page;
+}
+exports.YsqProgressDto = YsqProgressDto;
+__decorate([
+    (0, class_validator_1.IsInt)({ each: true }),
+    (0, class_validator_1.Min)(0, { each: true }),
+    (0, class_validator_1.Max)(6, { each: true }),
+    (0, class_validator_1.ArrayMinSize)(116),
+    (0, class_validator_1.ArrayMaxSize)(116),
+    __metadata("design:type", Array)
+], YsqProgressDto.prototype, "answers", void 0);
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], YsqProgressDto.prototype, "page", void 0);
+class YsqResultDto {
+    answers;
+}
+exports.YsqResultDto = YsqResultDto;
+__decorate([
+    (0, class_validator_1.IsInt)({ each: true }),
+    (0, class_validator_1.Min)(0, { each: true }),
+    (0, class_validator_1.Max)(6, { each: true }),
+    (0, class_validator_1.ArrayMinSize)(116),
+    (0, class_validator_1.ArrayMaxSize)(116),
+    __metadata("design:type", Array)
+], YsqResultDto.prototype, "answers", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9yYXRpbmdzLmR0by50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7QUFBQSxxREFTeUI7QUFDekIsdURBQWlEO0FBRWpEOzs7OztHQUtHO0FBQ0gsTUFBYSxhQUFhO0lBRXhCLE1BQU0sQ0FBVTtJQUtoQixLQUFLLENBQVU7SUFJZixJQUFJLENBQVU7Q0FDZjtBQVpELHNDQVlDO0FBVkM7SUFEQyxJQUFBLHNCQUFJLEVBQUMsc0JBQVEsQ0FBQzs7NkNBQ0M7QUFLaEI7SUFIQyxJQUFBLHVCQUFLLEdBQUU7SUFDUCxJQUFBLHFCQUFHLEVBQUMsQ0FBQyxDQUFDO0lBQ04sSUFBQSxxQkFBRyxFQUFDLEVBQUUsQ0FBQzs7NENBQ087QUFJZjtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTs7MkNBQ0c7QUFHaEI7OztHQUdHO0FBQ0gsTUFBYSxjQUFjO0lBTXpCLE9BQU8sQ0FBWTtJQUluQixJQUFJLENBQVU7Q0FDZjtBQVhELHdDQVdDO0FBTEM7SUFMQyxJQUFBLHVCQUFLLEVBQUMsRUFBRSxJQUFJLEVBQUUsSUFBSSxFQUFFLENBQUM7SUFDckIsSUFBQSxxQkFBRyxFQUFDLENBQUMsRUFBRSxFQUFFLElBQUksRUFBRSxJQUFJLEVBQUUsQ0FBQztJQUN0QixJQUFBLHFCQUFHLEVBQUMsQ0FBQyxFQUFFLEVBQUUsSUFBSSxFQUFFLElBQUksRUFBRSxDQUFDO0lBQ3RCLElBQUEsOEJBQVksRUFBQyxHQUFHLENBQUM7SUFDakIsSUFBQSw4QkFBWSxFQUFDLEdBQUcsQ0FBQzs7K0NBQ0M7QUFJbkI7SUFGQyxJQUFBLHVCQUFLLEdBQUU7SUFDUCxJQUFBLHFCQUFHLEVBQUMsQ0FBQyxDQUFDOzs0Q0FDTztBQUdoQixNQUFhLFlBQVk7SUFNdkIsT0FBTyxDQUFZO0NBQ3BCO0FBUEQsb0NBT0M7QUFEQztJQUxDLElBQUEsdUJBQUssRUFBQyxFQUFFLElBQUksRUFBRSxJQUFJLEVBQUUsQ0FBQztJQUNyQixJQUFBLHFCQUFHLEVBQUMsQ0FBQyxFQUFFLEVBQUUsSUFBSSxFQUFFLElBQUksRUFBRSxDQUFDO0lBQ3RCLElBQUEscUJBQUcsRUFBQyxDQUFDLEVBQUUsRUFBRSxJQUFJLEVBQUUsSUFBSSxFQUFFLENBQUM7SUFDdEIsSUFBQSw4QkFBWSxFQUFDLEdBQUcsQ0FBQztJQUNqQixJQUFBLDhCQUFZLEVBQUMsR0FBRyxDQUFDOzs2Q0FDQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hcGkvZHRvL3JhdGluZ3MuZHRvLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7XG4gIEFycmF5TWF4U2l6ZSxcbiAgQXJyYXlNaW5TaXplLFxuICBJc0luLFxuICBJc0ludCxcbiAgSXNPcHRpb25hbCxcbiAgSXNTdHJpbmcsXG4gIE1heCxcbiAgTWluLFxufSBmcm9tICdjbGFzcy12YWxpZGF0b3InO1xuaW1wb3J0IHsgTkVFRF9JRFMgfSBmcm9tICcuLi8uLi9ib3QvYm90LnNlcnZpY2UnO1xuXG4vKipcbiAqIERUTyDQtNC70Y8gUE9TVCAvYXBpL3JhdGluZyAo0LDRg9C00LjRgiAyMDI2LTA3LCAy0LMgLyDQv9GA0LDQstC40LvQviDihJY2IENMQVVERS5tZCkuXG4gKiBuZWVkSWQvdmFsdWUg0YPQttC1INC/0YDQvtCy0LXRgNGP0LvQuNGB0Ywg0LLRgNGD0YfQvdGD0Y4g0LIg0LrQvtC90YLRgNC+0LvQu9C10YDQtSDigJQg0L/RgNCw0LLQuNC70LAg0L/RgNC+0LTRg9Cx0LvQuNGA0L7QstCw0L3Ri1xuICog0LfQtNC10YHRjCDQutCw0Log0YDQsNC90YLQsNC50Lwt0LLQsNC70LjQtNCw0YbQuNGPOyDRgNGD0YfQvdCw0Y8g0L/RgNC+0LLQtdGA0LrQsCBkYXRlICjRhNC+0YDQvNCw0YIgWVlZWS1NTS1ERClcbiAqINC+0YHRgtCw0ZHRgtGB0Y8g0LIg0LrQvtC90YLRgNC+0LvQu9C10YDQtSDigJQgcmVnZXgg0LTRg9Cx0LvQuNGA0L7QstCw0YLRjCDQvdC1INGB0YLQsNC70LguXG4gKi9cbmV4cG9ydCBjbGFzcyBTYXZlUmF0aW5nRHRvIHtcbiAgQElzSW4oTkVFRF9JRFMpXG4gIG5lZWRJZCE6IHN0cmluZztcblxuICBASXNJbnQoKVxuICBATWluKDApXG4gIEBNYXgoMTApXG4gIHZhbHVlITogbnVtYmVyO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgZGF0ZT86IHN0cmluZztcbn1cblxuLyoqXG4gKiBEVE8g0LTQu9GPIFBPU1QvUFVUIFlTUS3Qv9GA0L7Qs9GA0LXRgdGB0LAg0Lgg0YDQtdC30YPQu9GM0YLQsNGC0LAuIDExNiDQstC+0L/RgNC+0YHQvtCyLCDQvtGC0LLQtdGC0Ysg0L/QvlxuICogNi3QsdCw0LvQu9GM0L3QvtC5INGI0LrQsNC70LUg0JvQsNC50LrQtdGA0YLQsCAoMOKAkzYpIOKAlCDQvtCx0LAg0LvQuNC80LjRgtCwINGD0LbQtSDQv9GA0L7QstC10YDRj9C70LjRgdGMINCy0YDRg9GH0L3Rg9GOLlxuICovXG5leHBvcnQgY2xhc3MgWXNxUHJvZ3Jlc3NEdG8ge1xuICBASXNJbnQoeyBlYWNoOiB0cnVlIH0pXG4gIEBNaW4oMCwgeyBlYWNoOiB0cnVlIH0pXG4gIEBNYXgoNiwgeyBlYWNoOiB0cnVlIH0pXG4gIEBBcnJheU1pblNpemUoMTE2KVxuICBAQXJyYXlNYXhTaXplKDExNilcbiAgYW5zd2VycyE6IG51bWJlcltdO1xuXG4gIEBJc0ludCgpXG4gIEBNaW4oMClcbiAgcGFnZSE6IG51bWJlcjtcbn1cblxuZXhwb3J0IGNsYXNzIFlzcVJlc3VsdER0byB7XG4gIEBJc0ludCh7IGVhY2g6IHRydWUgfSlcbiAgQE1pbigwLCB7IGVhY2g6IHRydWUgfSlcbiAgQE1heCg2LCB7IGVhY2g6IHRydWUgfSlcbiAgQEFycmF5TWluU2l6ZSgxMTYpXG4gIEBBcnJheU1heFNpemUoMTE2KVxuICBhbnN3ZXJzITogbnVtYmVyW107XG59XG4iXSwidmVyc2lvbiI6M30=
