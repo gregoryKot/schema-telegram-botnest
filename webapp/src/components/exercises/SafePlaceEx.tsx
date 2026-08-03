@@ -3,6 +3,8 @@ import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
+import { detectCrisisAny } from '../../utils/crisisMarkers';
+import { CrisisCard } from '../CrisisCard';
 
 const SENSES = [
   {
@@ -242,6 +244,9 @@ export function SafePlaceEx({
           </div>
         ))}
       </div>
+      {detectCrisisAny(overview, senses.see, senses.hear, senses.feel, senses.smell) && (
+        <CrisisCard surface="safe_place" />
+      )}
       <div className="ex-foot">
         <span className="spacer" />
         <button

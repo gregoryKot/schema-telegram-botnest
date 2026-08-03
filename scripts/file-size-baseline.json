@@ -106,7 +106,7 @@
   "schema-miniapp/src/sections/today/SecondaryCards.tsx": 257,
   "shared/src/journey/journeyShare.ts": 257,
   "webapp/src/components/NeedTodaySheet.tsx": 257,
-  "webapp/src/components/exercises/SafePlaceEx.tsx": 257,
+  "webapp/src/components/exercises/SafePlaceEx.tsx": 262,
   "webapp/src/api.types.ts": 256,
   "schema-miniapp/src/components/tasks/TaskRow.tsx": 254,
   "src/bot/bot.service.ts": 252,

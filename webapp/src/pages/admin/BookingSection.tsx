@@ -84,13 +84,25 @@ function IntegrationStatus({ adminKey }: { adminKey: string }) {
   );
 }
 
-// ── Prices ───────────────────────────────────────────────────────────────────
+// Сохранить + показать успех/ошибку (было без try/catch — провал молча тонул).
+function useSaveFeedback() {
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const guard = async (fn: () => Promise<void>) => {
+    setError(null);
+    try { await fn(); setSaved(true); setTimeout(() => setSaved(false), 1500); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Не удалось сохранить цену'); }
+  };
+  const feedback = error
+    ? <p style={{ fontSize: 13, color: 'var(--accent-red)', margin: '8px 0 0' }}>{error}</p>
+    : saved ? <p style={{ fontSize: 13, color: '#4a6335', margin: '8px 0 0' }}>Цена сохранена ✓</p> : null;
+  return { guard, feedback };
+}
 
 function PricesManager({ adminKey }: { adminKey: string }) {
   const [opts, setOpts] = useState<SessionOption[]>([]);
   const [draft, setDraft] = useState<Record<string, number>>({});
-  const [saved, setSaved] = useState(false);
-
+  const { guard, feedback } = useSaveFeedback();
   const load = useCallback(() => {
     api.adminGetPrices(adminKey).then((o) => {
       setOpts(o);
@@ -98,15 +110,9 @@ function PricesManager({ adminKey }: { adminKey: string }) {
     }).catch(() => setOpts([]));
   }, [adminKey]);
   useEffect(() => { load(); }, [load]);
-
-  // Only paid sessions are editable (intro is always free).
-  const paid = opts.filter((o) => o.type !== 'INTRO_15');
-
-  const save = async (type: string) => {
-    await api.adminSetPrice(adminKey, type as 'SESSION_50', draft[type] ?? 0);
-    setSaved(true); setTimeout(() => setSaved(false), 1500); load();
-  };
-
+  const paid = opts.filter((o) => o.type !== 'INTRO_15'); // знакомство бесплатно, не редактируется
+  const save = (type: string) =>
+    guard(() => api.adminSetPrice(adminKey, type as 'SESSION_50', draft[type] ?? 0).then(() => load()));
   return (
     <section style={card}>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Цены</h2>
@@ -120,19 +126,16 @@ function PricesManager({ adminKey }: { adminKey: string }) {
           <button style={btn} onClick={() => save(o.type)}>Сохранить</button>
         </div>
       ))}
-      {saved && <p style={{ fontSize: 13, color: '#4a6335', margin: '8px 0 0' }}>Цена сохранена ✓</p>}
+      {feedback}
       <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 10 }}>Знакомство всегда бесплатное. Цена применяется к новым записям сразу.</p>
     </section>
   );
 }
 
-// ── Subscription prices ──────────────────────────────────────────────────────
-
 function SubPricesManager({ adminKey }: { adminKey: string }) {
   const [opts, setOpts] = useState<{ period: 'month' | 'year'; price: number }[]>([]);
   const [draft, setDraft] = useState<Record<string, number>>({});
-  const [saved, setSaved] = useState(false);
-
+  const { guard, feedback } = useSaveFeedback();
   const load = useCallback(() => {
     api.adminGetSubPrices(adminKey).then((o) => {
       setOpts(o);
@@ -140,12 +143,8 @@ function SubPricesManager({ adminKey }: { adminKey: string }) {
     }).catch(() => setOpts([]));
   }, [adminKey]);
   useEffect(() => { load(); }, [load]);
-
-  const save = async (period: 'month' | 'year') => {
-    await api.adminSetSubPrice(adminKey, period, draft[period] ?? 0);
-    setSaved(true); setTimeout(() => setSaved(false), 1500); load();
-  };
-
+  const save = (period: 'month' | 'year') =>
+    guard(() => api.adminSetSubPrice(adminKey, period, draft[period] ?? 0).then(() => load()));
   return (
     <section style={card}>
       <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Подписка</h2>
@@ -159,7 +158,7 @@ function SubPricesManager({ adminKey }: { adminKey: string }) {
           <button style={btn} onClick={() => save(o.period)}>Сохранить</button>
         </div>
       ))}
-      {saved && <p style={{ fontSize: 13, color: '#4a6335', margin: '8px 0 0' }}>Цена сохранена ✓</p>}
+      {feedback}
       <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 10 }}>Авто-списание раз в период. Требует подключения услуги рекуррентных платежей у Robokassa.</p>
     </section>
   );
