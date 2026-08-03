@@ -52,6 +52,62 @@ export function maxWebApp(): MaxWebApp | undefined {
   return looksLikeMax ? w : undefined;
 }
 
+// ── Стартовые параметры из адреса ────────────────────────────────────────────
+//
+// MAX кладёт их во фрагмент: `#WebAppData=…&WebAppPlatform=ios&WebAppVersion=…`
+// (плюс WebAppDeviceName — его в примере документации нет, но на живом
+// устройстве он приезжает). Мост читает подпись оттуда же, поэтому вход не
+// обязан ждать их CDN: скрипт не доехал или заблокирован — подпись всё равно
+// у нас в руках, а мост нужен лишь для необязательного (кнопка «назад»,
+// хаптики), и его отсутствие честно отражается в capabilities.
+//
+// Читаем ОДИН раз и запоминаем: приложение потом работает с историей
+// (useHostBackButton), и полагаться на неизменность адреса нельзя. Лениво, а
+// не при загрузке модуля, — иначе значение зависело бы от порядка импортов и
+// его нельзя было бы проверить тестом.
+let cached: Record<string, string> | null = null;
+
+function launchParams(): Record<string, string> {
+  cached ??= readLaunchParams();
+  return cached;
+}
+
+/** Только для тестов: перечитать адрес заново. */
+export function resetMaxLaunchParams(): void {
+  cached = null;
+}
+
+function readLaunchParams(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const raw = window.location.hash.replace(/^#/, '');
+  if (!raw) return {};
+  const out: Record<string, string> = {};
+  // Вручную, а НЕ URLSearchParams: тот превращает буквальный `+` в пробел, и
+  // подпись перестала бы сходиться. Их собственный пример валидации снимает
+  // ровно один слой decodeURIComponent — делаем так же.
+  for (const pair of raw.split('&')) {
+    const eq = pair.indexOf('=');
+    if (eq <= 0) continue;
+    const key = pair.slice(0, eq);
+    try {
+      out[key] = decodeURIComponent(pair.slice(eq + 1));
+    } catch {
+      /* битое кодирование — параметр просто пропускаем */
+    }
+  }
+  return out;
+}
+
+/** Подпись запуска: сначала мост, если он доехал, иначе — адрес страницы. */
+function launchInitData(): string {
+  return maxWebApp()?.initData || launchParams()['WebAppData'] || '';
+}
+
+/** Признак «нас открыл MAX» — виден до загрузки моста и без него. */
+export function hasMaxLaunchParams(): boolean {
+  return !!launchParams()['WebAppData'];
+}
+
 /** Диплинк max.ru открываем внутри мессенджера, остальные ссылки — во внешнем браузере. */
 function isMaxDeepLink(url: string): boolean {
   try {
@@ -69,13 +125,21 @@ export function createMaxHost(): HostBridge {
     id: 'max',
     // Читаем каждый раз, а не запоминаем при создании: клиент может
     // дозаполнить объект уже после загрузки скрипта.
+    // Мост знает платформу точнее, но её же присылают в адресе — значит
+    // ответ есть и до его загрузки.
     get platform(): string | undefined {
-      return wa()?.platform;
+      return wa()?.platform ?? launchParams()['WebAppPlatform'];
     },
     get capabilities(): HostCapabilities {
       const w = wa();
       return {
-        haptics: !!w?.HapticFeedback && HAPTIC_PLATFORMS.has(w.platform ?? ''),
+        // Без моста хаптик нет физически — звать нечего, сколько бы
+        // подходящей ни была платформа.
+        haptics:
+          !!w?.HapticFeedback &&
+          HAPTIC_PLATFORMS.has(
+            w.platform ?? launchParams()['WebAppPlatform'] ?? '',
+          ),
         backButton: !!w?.BackButton,
         // Своего значка на домашний экран у площадки нет.
         homeScreen: false,
@@ -104,9 +168,9 @@ export function createMaxHost(): HostBridge {
       };
     },
     startParam: () => wa()?.initDataUnsafe?.start_param ?? null,
-    authHeaders: () => ({ 'x-max-init-data': wa()?.initData ?? '' }),
+    authHeaders: () => ({ 'x-max-init-data': launchInitData() }),
     sessionExchange() {
-      const initData = wa()?.initData;
+      const initData = launchInitData();
       return initData
         ? { path: '/api/auth/max/webapp', body: { initData } }
         : null;
