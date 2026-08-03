@@ -16,7 +16,12 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const REPORT = join(ROOT, 'reports', 'mutation', 'mutation.json');
+// --report=<path> — чтобы разбирать отчёт отдельной волны замера, не затирая
+// основной (волна гоняется по своему подмножеству файлов и пишет свой json).
+const reportArg = process.argv.find((a) => a.startsWith('--report='));
+const REPORT = reportArg
+  ? join(ROOT, reportArg.slice('--report='.length))
+  : join(ROOT, 'reports', 'mutation', 'mutation.json');
 
 if (!existsSync(REPORT)) {
   console.error(`❌ нет отчёта ${REPORT} — сначала: npm run mutation`);

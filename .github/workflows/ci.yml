@@ -122,6 +122,10 @@ jobs:
       # на «Всё по схеме»); первый проход искал только латиницей и кириллицу
       # упустил.
       - run: node scripts/check-legacy-name.mjs
+      # Мёртвые файлы: у каждого исходника должен быть потребитель в прод-коде.
+      # Найдено этим гейтом: вторая копия prisma-exception.filter (правки в неё
+      # не доезжали до прода) и два неподключённых компонента мини-аппа.
+      - run: node scripts/check-dead-files.mjs
 
   # Миграции гоняются на РЕАЛЬНОМ Postgres (инцидент 2026-07-16: битый сид
   # healthy_adult_phrases — updatedAt NOT NULL без значения — уронил прод
@@ -185,6 +189,21 @@ jobs:
           test/app-ownership.e2e-spec.ts test/app-ownership-sweep.e2e-spec.ts
           test/app-ownership-sweep-2.e2e-spec.ts test/app-ownership-sweep-3.e2e-spec.ts
           test/therapy-ownership.e2e-spec.ts test/therapy-ownership-2.e2e-spec.ts
+        env:
+          E2E_REAL_DB: '1'
+      # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —
+      # повторное уведомление НЕ должно задвоить строку/списание — это вопрос
+      # уникальных констрейнтов и транзакционных апдейтов, которые
+      # fake-prisma.ts (generic in-memory `where`-матчер) не эмулирует —
+      # фейк физически не может уронить тест на гонке/дублирующем INSERT.
+      # cleanupPaymentFixtures (test/e2e-support/cleanup-fixtures.ts) чистит
+      # фикстуры спека по фиксированным cancelToken/marker перед прогоном,
+      # поэтому сам спек идемпотентен и локально гоняется на одной БД подряд
+      # без ручной чистки между прогонами.
+      - name: e2e payment webhook smoke на реальном Postgres (идемпотентность)
+        run: >-
+          npx jest --config ./test/jest-e2e.json --runInBand
+          test/payment-webhooks.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
 
