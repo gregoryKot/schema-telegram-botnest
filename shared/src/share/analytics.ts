@@ -20,7 +20,8 @@ export type ShareCardKind =
   | 'gratitude'
   | 'journey'
   | 'journey_item'
-  | 'practice';
+  | 'practice'
+  | 'mode_entry_full';
 
 export const SHARE_CARD_EVENT = 'share_card';
 // Исход системного шэра: meta { kind, ok }. Позволяет мерить «получилось ли
@@ -56,6 +57,14 @@ export const MODE_CARD_SAVED_EVENT = 'mode_card_saved';
 export const MODE_ENTRY_SAVED_EVENT = 'mode_entry_saved';
 // Тест «по функции» определил режим: meta { modeId }. Парный allow-list там же.
 export const MODE_TEST_COMPLETED_EVENT = 'mode_test_completed';
+
+// Открытие раздела «Тёплые слова»: meta { count } — сколько записей в
+// коллекции (0..1000). Парный allow-list — src/analytics/analytics.constants.ts.
+export const WARM_WORDS_OPEN_EVENT = 'warm_words_open';
+// Согласился разобрать связанный режим после записи дневника режимов:
+// meta { from, to } — modeId исходного и выбранного режима. Парный allow-list
+// там же.
+export const MODE_CHAIN_FOLLOWUP_EVENT = 'mode_chain_followup';
 
 /** meta для mode_entry_saved из значений формы дневника (общий, оба фронта). */
 export function modeEntrySavedMeta(

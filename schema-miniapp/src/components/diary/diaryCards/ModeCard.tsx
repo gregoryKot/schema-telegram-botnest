@@ -76,7 +76,12 @@ export function ModeCard({
               <Field key={label} label={label} text={text!} />
             ))}
           <DeleteBtn color={color} onClick={onDelete} />
-          <ModeEntryShare mode={mode} healthyResponse={entry.healthyResponse} />
+          <ModeEntryShare
+            mode={mode}
+            healthyResponse={entry.healthyResponse}
+            entry={entry}
+            dateLabel={formatDt(entry.createdAt)}
+          />
         </div>
       )}
     </div>

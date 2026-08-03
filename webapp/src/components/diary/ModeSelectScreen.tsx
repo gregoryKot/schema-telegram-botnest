@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { ExScreen, GlyphCheck } from '../exercises/ExScreen';
+import { ExScreen } from '../exercises/ExScreen';
 import { useTr } from '../../utils/addressForm';
-import { pressable } from '../../utils/a11y';
-import { MODE_GROUPS } from '../../schemaTherapyData';
 import { haptic } from '../../haptic';
 import { ModeTestScreen } from './ModeTestScreen';
+import { ModeFeelingBrowse } from './ModeFeelingBrowse';
+import { ModeGroupList } from './ModeGroupList';
 
 /**
  * Шаг 1 дневника режимов (webapp): выбор режима.
- * Тест-первым («не знаю какой → определим по чувству») + свёрнутый список.
- * Вынесено из ModeEntrySheet (правило №10). Парный по смыслу с miniapp
- * ModeSelectStep. testOpen/listOpen — локальны.
+ * Тест-первым («не знаю какой → определим по чувству») + навигация «по
+ * ощущению» (те же 8 семей теста, сразу списком — ModeFeelingBrowse) +
+ * свёрнутый полный список групп для тех, кто знает точное название
+ * (ModeGroupList). Вынесено из ModeEntrySheet (правило №10). Парный по
+ * смыслу с miniapp ModeSelectStep. testOpen/listOpen — локальны.
  */
 export function ModeSelectScreen({
   modeId,
@@ -88,7 +90,16 @@ export function ModeSelectScreen({
         </span>
       </button>
 
-      {/* Вторичное: полный список для тех, кто знает режим */}
+      {/* Ощущение: та же навигация, что и в тесте выше, без вопросов */}
+      <div style={{ fontSize: 12.5, color: 'var(--text-faint)', margin: '2px 0 10px' }}>
+        {tr(
+          'Или найди по ощущению — те же состояния, что и в тесте выше:',
+          'Или найдите по ощущению — те же состояния, что и в тесте выше:',
+        )}
+      </div>
+      <ModeFeelingBrowse onPick={onPick} />
+
+      {/* Третичное: полный список для тех, кто знает режим */}
       <button
         type="button"
         className="ex-btn ex-btn-ghost mode-list-toggle"
@@ -100,34 +111,7 @@ export function ModeSelectScreen({
         {listOpen ? 'Скрыть список' : 'Знаю режим – выбрать из списка'}
       </button>
 
-      {listOpen &&
-        MODE_GROUPS.map((g) => (
-          <div key={g.id} style={{ marginBottom: 28 }}>
-            <div className="chip-section-eyebrow" style={{ color: g.color }}>
-              <span className="dot" style={{ background: g.color }} />
-              {g.group}
-            </div>
-            {g.items.map((m) => (
-              <div
-                key={m.id}
-                className={
-                  'mode-card ' + (modeId === m.id ? 'is-selected' : '')
-                }
-                style={{ '--mode-color': g.color } as React.CSSProperties}
-                {...pressable(() => onPick(m.id))}
-              >
-                <span className="mode-card-stripe" />
-                <div>
-                  <div className="mode-card-name">{m.name}</div>
-                  <div className="mode-card-short">{m.short}</div>
-                </div>
-                <span className="mode-check">
-                  <GlyphCheck />
-                </span>
-              </div>
-            ))}
-          </div>
-        ))}
+      {listOpen && <ModeGroupList modeId={modeId} onPick={onPick} />}
     </ExScreen>
   );
 }

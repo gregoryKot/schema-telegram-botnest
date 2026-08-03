@@ -4,6 +4,7 @@ import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { LetterToSelf } from '../components/LetterToSelf';
 import { BeliefCheck } from '../components/BeliefCheck';
 import { SafePlace } from '../components/SafePlace';
+import { WarmWords } from '../components/WarmWords';
 import { TherapyNote } from '../components/TherapyNote';
 import { CHILDHOOD_DONE_KEY } from '../components/ChildhoodWheelSheet';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
@@ -65,6 +66,7 @@ export function HelpSection({
   const [showBeliefCheck, setShowBeliefCheck] = useState(false);
   const [showLetterToSelf, setShowLetterToSelf] = useState(false);
   const [showSafePlace, setShowSafePlace] = useState(false);
+  const [showWarmWords, setShowWarmWords] = useState(false);
   const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
   const [introModeId, setIntroModeId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
@@ -345,6 +347,7 @@ export function HelpSection({
           onOpenLetterToSelf={() => setShowLetterToSelf(true)}
           onOpenFlashcard={() => setShowFlashcard(true)}
           onOpenChildhoodWheel={onOpenChildhoodWheel}
+          onOpenWarmWords={() => setShowWarmWords(true)}
         />
 
         <div style={{ paddingBottom: 4 }}>
@@ -377,6 +380,7 @@ export function HelpSection({
           onComplete={handleTaskComplete}
         />
       )}
+      {showWarmWords && <WarmWords onClose={() => setShowWarmWords(false)} />}
       {introSchemaId && (
         <SchemaIntroSheet
           schemaId={introSchemaId}

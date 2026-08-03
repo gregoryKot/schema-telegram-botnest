@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { ExScreen, GlyphCheck } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
-import { MODE_GROUPS, getModeById } from '../../schemaTherapyData';
+import { MODE_GROUPS } from '../../schemaTherapyData';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { haptic } from '../../haptic';
 import { api } from '../../api';
 import { ModeSelectScreen } from './ModeSelectScreen';
 import { ModeEntryForm, type ModeFormFields } from './ModeEntryForm';
-import { ModeEntryShare } from './ModeEntryShare';
+import { ModeEntryDone } from './ModeEntryDone';
 import {
   MODE_ENTRY_SAVED_EVENT,
+  MODE_CHAIN_FOLLOWUP_EVENT,
   modeEntrySavedMeta,
 } from '../../../../shared/src/share/analytics';
 import { type ModeEntrySaveData } from '../../../../shared/src/mode/modeDiarySteps';
@@ -144,41 +144,37 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     }
   };
 
+  // Подсказка «разобрать связанный режим» (ModeChainSuggestion) на экране
+  // «Запись сохранена»: ситуация — та же, поэтому ситуацию СОХРАНЯЕМ, а
+  // остальные поля и ответ Здорового Взрослого очищаем и открываем форму
+  // заново уже на новом режиме (modeId='' — обратно на ModeSelectScreen).
+  // Событие шлём только при выборе конкретного кандидата — «Другой режим»
+  // (to === null) не считается принятой подсказкой.
+  const handleChainPick = (to: string | null) => {
+    if (to != null) {
+      api.trackEvent(MODE_CHAIN_FOLLOWUP_EVENT, { from: modeId, to });
+    }
+    setThoughts('');
+    setFeelings('');
+    setBodyFeelings('');
+    setActions('');
+    setActualNeed('');
+    setChildhoodMemories('');
+    setHealthyResponse('');
+    setModeId(to ?? '');
+    setDone(false);
+  };
+
   // ── Итог: запись сохранена + карточка/шеринг ──
   if (done) {
     return (
-      <ExScreen
-        onBack={goBack}
-        backLabel="Закрыть"
-        eyebrow="Дневник режимов"
-        eyebrowColor="var(--c-moss)"
-        title={
-          <>
-            Запись
-            <br />
-            <span className="it">сохранена</span>
-          </>
-        }
-        lede="Она в «Дневнике режимов» и в «Моём пути» — можно открыть и перечитать в любой момент."
-      >
-        <ModeEntryShare
-          mode={getModeById(modeId)}
-          healthyResponse={healthyResponse}
-          color="var(--c-moss)"
-        />
-        <button
-          className="ex-btn ex-btn-primary"
-          onClick={goBack}
-          style={{
-            marginTop: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          Готово <GlyphCheck />
-        </button>
-      </ExScreen>
+      <ModeEntryDone
+        modeId={modeId}
+        healthyResponse={healthyResponse}
+        entry={{ ...values, healthyResponse }}
+        goBack={goBack}
+        onPickChain={handleChainPick}
+      />
     );
   }
 

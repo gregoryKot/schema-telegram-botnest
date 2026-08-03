@@ -3,7 +3,7 @@
 // schema-miniapp/src/share/shareTexts.test.ts, зеркалящий эти же чистые
 // функции — см. cardKit.test.ts про тот же принцип раздельных прямых тестов).
 import { describe, it, expect } from 'vitest';
-import { practiceShareText } from './shareTexts';
+import { practiceShareText, modeEntryFullShareText } from './shareTexts';
 
 describe('practiceShareText', () => {
   it('со счётчиком: заголовок и счётчик в тексте', () => {
@@ -30,5 +30,13 @@ describe('practiceShareText', () => {
   it('без ссылки: текст короткий, без пустого хвоста', () => {
     const text = practiceShareText('Дыхание 4-4-6', null);
     expect(text.trim().endsWith('.')).toBe(true);
+  });
+});
+
+describe('modeEntryFullShareText', () => {
+  it('без текста записи в сообщении (текст на картинке), ссылка на месте', () => {
+    const text = modeEntryFullShareText('t.me/TestBot');
+    expect(text).toContain('🌿');
+    expect(text).toContain('t.me/TestBot');
   });
 });

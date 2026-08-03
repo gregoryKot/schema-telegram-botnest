@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { pressable } from '../utils/a11y';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
+import { SheetIconHeader } from './SheetIconHeader';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
@@ -126,44 +127,13 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
-        {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            marginBottom: 20,
-          }}
-        >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 14,
-              background: 'rgba(251,191,36,0.12)',
-              border: '1px solid rgba(251,191,36,0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 22,
-              flexShrink: 0,
-            }}
-          >
-            ✉️
-          </div>
-          <div>
-            <div
-              style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}
-            >
-              Письмо Уязвимому Ребёнку
-            </div>
-            <div
-              style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}
-            >
-              Написать себе из прошлого
-            </div>
-          </div>
-        </div>
+        <SheetIconHeader
+          emoji="✉️"
+          bg="rgba(251,191,36,0.12)"
+          border="rgba(251,191,36,0.2)"
+          title="Письмо Уязвимому Ребёнку"
+          subtitle="Написать себе из прошлого"
+        />
 
         {/* Prompts */}
         <div

@@ -101,3 +101,65 @@ describe('ModeEntrySheet — итог после сохранения (Journey D
     expect(onClose).not.toHaveBeenCalled(); // итог, а не закрытие
   });
 });
+
+// Часть B (monitoring-modes-ux): подсказка «разобрать связанный режим» на
+// экране «Запись сохранена» перезапускает визард про ту же ситуацию.
+describe('ModeEntrySheet — рестарт цепочки после ModeChainSuggestion', () => {
+  function seedCoping() {
+    localStorage.setItem(
+      'diary_draft_mode',
+      JSON.stringify({
+        startedAt: new Date().toISOString(),
+        data: {
+          modeId: 'detached_protector', // копинг → предложит Ребёнка
+          situation: 'коллега накричал на созвоне',
+          thoughts: '',
+          feelings: '',
+          bodyFeelings: '',
+          actions: '',
+          actualNeed: '',
+          childhoodMemories: '',
+          healthyResponse: '',
+        },
+      }),
+    );
+  }
+
+  it('тап по кандидату открывает визард заново: ситуация на месте, режим сменился', async () => {
+    seedCoping();
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<ModeEntrySheet onClose={vi.fn()} onSave={onSave} />);
+    fireEvent.click(screen.getByText('Сохранить'));
+    await waitFor(() =>
+      expect(screen.getByText('Запись сохранена')).toBeTruthy(),
+    );
+
+    fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
+
+    // визард снова открыт на шаге «ситуация» — прежнее значение сохранено
+    await waitFor(() =>
+      expect(
+        screen.getByDisplayValue('коллега накричал на созвоне'),
+      ).toBeTruthy(),
+    );
+    expect(screen.queryByText('Запись сохранена')).toBeNull();
+  });
+
+  it('«Другой режим» возвращает на выбор режима с той же ситуацией', async () => {
+    seedCoping();
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<ModeEntrySheet onClose={vi.fn()} onSave={onSave} />);
+    fireEvent.click(screen.getByText('Сохранить'));
+    await waitFor(() =>
+      expect(screen.getByText('Запись сохранена')).toBeTruthy(),
+    );
+
+    fireEvent.click(screen.getByText('Другой режим'));
+
+    // назад на шаг выбора режима (CTA теста снова виден)
+    await waitFor(() =>
+      expect(screen.getByText('Не знаю, какой режим')).toBeTruthy(),
+    );
+    expect(screen.queryByText('Запись сохранена')).toBeNull();
+  });
+});

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BottomSheet } from './BottomSheet';
 import { TherapyNote } from './TherapyNote';
+import { SheetIconHeader } from './SheetIconHeader';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { CrisisGate } from './CrisisGate';
@@ -97,46 +98,13 @@ export function SafePlace({ onClose, onComplete }: Props) {
     return (
       <BottomSheet onClose={onClose}>
         <div style={{ paddingTop: 4 }}>
-          {/* Header */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              marginBottom: 20,
-            }}
-          >
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 14,
-                background:
-                  'color-mix(in srgb, var(--accent-green) 12%, transparent)',
-                border:
-                  '1px solid color-mix(in srgb, var(--accent-green) 20%, transparent)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 22,
-                flexShrink: 0,
-              }}
-            >
-              🏡
-            </div>
-            <div>
-              <div
-                style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}
-              >
-                Моё безопасное место
-              </div>
-              <div
-                style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}
-              >
-                Прочти — и почувствуй
-              </div>
-            </div>
-          </div>
+          <SheetIconHeader
+            emoji="🏡"
+            bg="color-mix(in srgb, var(--accent-green) 12%, transparent)"
+            border="color-mix(in srgb, var(--accent-green) 20%, transparent)"
+            title="Моё безопасное место"
+            subtitle="Прочти — и почувствуй"
+          />
 
           <div
             style={{
@@ -220,49 +188,16 @@ export function SafePlace({ onClose, onComplete }: Props) {
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
-        {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            marginBottom: 20,
-          }}
-        >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 14,
-              background:
-                'color-mix(in srgb, var(--accent-green) 12%, transparent)',
-              border:
-                '1px solid color-mix(in srgb, var(--accent-green) 20%, transparent)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 22,
-              flexShrink: 0,
-            }}
-          >
-            🏡
-          </div>
-          <div>
-            <div
-              style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}
-            >
-              Безопасное место
-            </div>
-            <div
-              style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}
-            >
-              {tr(
-                'Напиши — чтобы возвращаться в трудный момент',
-                'Напишите — чтобы возвращаться в трудный момент',
-              )}
-            </div>
-          </div>
-        </div>
+        <SheetIconHeader
+          emoji="🏡"
+          bg="color-mix(in srgb, var(--accent-green) 12%, transparent)"
+          border="color-mix(in srgb, var(--accent-green) 20%, transparent)"
+          title="Безопасное место"
+          subtitle={tr(
+            'Напиши — чтобы возвращаться в трудный момент',
+            'Напишите — чтобы возвращаться в трудный момент',
+          )}
+        />
 
         {/* Prompts */}
         <div
