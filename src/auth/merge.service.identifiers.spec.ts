@@ -76,10 +76,9 @@ describe('MergeService: реестры обязаны совпадать меж�
   });
 
   it('каждая переносимая и каждая удаляемая таблица разрешена в ident()', () => {
-    const missing = [
-      ...USER_OWNED_TABLES,
-      ...SECURITY_SENSITIVE_TABLES,
-    ].filter((t) => !KNOWN_TABLES.has(t));
+    const missing = [...USER_OWNED_TABLES, ...SECURITY_SENSITIVE_TABLES].filter(
+      (t) => !KNOWN_TABLES.has(t),
+    );
     expect(missing).toEqual([]);
   });
 
