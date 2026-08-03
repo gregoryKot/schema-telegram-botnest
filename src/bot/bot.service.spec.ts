@@ -168,13 +168,20 @@ describe('BotService — дата по умолчанию берётся из т
     expect(db._ratings[0].date).toBe('2026-07-16');
   });
 
-  it('явно переданная дата не требует похода за таймзоной юзера', async () => {
+  it('явно переданная дата не требует похода за таймзоной юзера и используется как есть', async () => {
     const db = makeDb();
     const svc = new BotService(db);
 
     await svc.saveRating(1n, 'attachment', 4, '2026-01-01');
 
+    // Голое not.toHaveBeenCalled() не поймало бы мутанта, который зовёт
+    // userTimezone(), но игнорирует её результат (условие `date ?? …`
+    // выродилось бы в «всегда взять таймзону», а итоговая дата всё равно
+    // осталась бы переданной) — проверяем и факт похода, и что записалась
+    // именно переданная дата, а не результат localDateString().
     expect(db.user.findUnique).not.toHaveBeenCalled();
+    expect(db._ratings).toHaveLength(1);
+    expect(db._ratings[0].date).toBe('2026-01-01');
   });
 
   it('нет notifyTimezone у юзера → дефолт Europe/Moscow', async () => {

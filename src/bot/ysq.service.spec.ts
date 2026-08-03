@@ -93,13 +93,22 @@ describe('YsqService.saveYsqResult — история накапливается
     expect(history[1].answers).toEqual([1, 1, 1]);
   });
 
-  it('запись результата и истории идёт одной транзакцией', async () => {
+  it('запись результата и истории идёт одной транзакцией с обеими операциями', async () => {
     const db = makeDb();
     const svc = new YsqService(db);
 
     await svc.saveYsqResult(1n, [1]);
 
+    // Голое toHaveBeenCalledTimes(1) прошло бы и если из транзакции
+    // «выпала» одна из двух операций (result или history) — счётчик
+    // вызовов $transaction не изменился бы. Проверяем форму аргумента:
+    // ровно 2 промиса (upsert результата + create истории).
     expect(db.$transaction).toHaveBeenCalledTimes(1);
+    const opsArg = db.$transaction.mock.calls[0][0];
+    expect(Array.isArray(opsArg)).toBe(true);
+    expect(opsArg).toHaveLength(2);
+    expect(db.ysqResult.upsert).toHaveBeenCalledTimes(1);
+    expect(db.ysqResultHistory.create).toHaveBeenCalledTimes(1);
   });
 
   it('deleteYsqResult убирает текущий результат, но не трогает историю прохождений', async () => {

@@ -226,6 +226,31 @@ describe('BotAnalyticsService', () => {
       const stats = await svc.getWeeklyStats(1);
       expect(stats.find((s) => s.needId === 'attachment')!.trend).toBe('→');
     });
+
+    // Порог trend — строгое неравенство (`> 0.5` / `< -0.5`). Тест выше
+    // проверял diff=0, что не отличает `>` от `>=`. Здесь diff ровно на
+    // границе — если Stryker подменит `>` на `>=`, эти два теста покраснеют.
+    it('diff ровно +0.5 — граница включена в «без изменений», не в рост', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([
+        { needId: 'attachment', date: d(0), value: 5.5 },
+        { needId: 'attachment', date: d(8), value: 5 },
+      ]);
+      const svc = new BotAnalyticsService(prisma);
+      const stats = await svc.getWeeklyStats(1);
+      expect(stats.find((s) => s.needId === 'attachment')!.trend).toBe('→');
+    });
+
+    it('diff ровно -0.5 — граница включена в «без изменений», не в падение', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([
+        { needId: 'attachment', date: d(0), value: 5 },
+        { needId: 'attachment', date: d(8), value: 5.5 },
+      ]);
+      const svc = new BotAnalyticsService(prisma);
+      const stats = await svc.getWeeklyStats(1);
+      expect(stats.find((s) => s.needId === 'attachment')!.trend).toBe('→');
+    });
   });
 
   describe('getBestDayOfWeek', () => {
@@ -350,6 +375,20 @@ describe('BotAnalyticsService', () => {
     it('returns empty array with no data', async () => {
       const svc = new BotAnalyticsService(makePrisma());
       expect(await svc.getLowStreakNeeds(1, 5, 3)).toEqual([]);
+    });
+
+    // Условие — строгое `value < threshold`. Значение РОВНО на границе
+    // обязано остаться исключённым; если Stryker подменит `<` на `<=`,
+    // это единственный тест, который заметит разницу (остальные выше
+    // используют значения далеко от порога).
+    it('value ровно на пороге не считается «низкой» (строгое <, не <=)', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([
+        { needId: 'attachment', date: d(0), value: 5 },
+        { needId: 'attachment', date: d(1), value: 5 },
+      ]);
+      const svc = new BotAnalyticsService(prisma);
+      expect(await svc.getLowStreakNeeds(1, 5, 2)).toEqual([]);
     });
   });
 

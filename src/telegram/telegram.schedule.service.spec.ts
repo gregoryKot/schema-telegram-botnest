@@ -64,10 +64,11 @@ describe('scheduleDailyReminders', () => {
       bot: null,
       users: [{ id: 1n }],
     });
-    // Осознанный weak: bot===null роняет функцию на самом первом `if
-    // (!this.bot) return`, до любого другого наблюдаемого эффекта — тут
-    // нечего проверять, кроме факта, что ничего не вызвано.
-    await service.scheduleDailyReminders();
+    // bot===null роняет функцию на самом первом `if (!this.bot) return` —
+    // единственный дополнительный наблюдаемый эффект здесь: она обязана
+    // тихо вернуть undefined, не бросить. Ловит мутанта, убирающего guard
+    // целиком (тогда упало бы на getAllUsersWithSettings/цикле ниже).
+    await expect(service.scheduleDailyReminders()).resolves.toBeUndefined();
     expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
     expect(plannerService.planDay).not.toHaveBeenCalled();
   });
