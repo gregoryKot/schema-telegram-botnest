@@ -14,11 +14,23 @@ describe('e2e smoke: публичные мини-тесты', () => {
   let app: INestApplication;
   let prisma: TestApp['prisma'];
 
+  // Анонимное событие пишется с userId = null, поэтому опознаём его по
+  // сочетанию имени и meta, а не по владельцу. Чистка нужна для реального
+  // Postgres (E2E_REAL_DB=1): без неё второй прогон найдёт две строки вместо
+  // одной и упадёт на ровном месте.
+  const EVENT_NAME = 'quiz_completed';
+  const clearEvents = () =>
+    prisma.analyticsEvent.deleteMany({
+      where: { userId: null, name: EVENT_NAME },
+    });
+
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
+    await clearEvents();
   });
 
   afterAll(async () => {
+    await clearEvents();
     await app.close();
   });
 
@@ -49,7 +61,11 @@ describe('e2e smoke: публичные мини-тесты', () => {
       });
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ ok: true });
-    const rows = prisma.analyticsEvent._rows;
+    // Читаем настоящим запросом, а не из внутреннего массива фейка — то же
+    // утверждение обязано работать и на живом Postgres.
+    const rows = await prisma.analyticsEvent.findMany({
+      where: { userId: null, name: EVENT_NAME },
+    });
     expect(rows).toHaveLength(1);
     expect(rows[0].userId).toBeNull();
     expect(rows[0].name).toBe('quiz_completed');

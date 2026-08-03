@@ -21,16 +21,25 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
+import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 
 describe('e2e smoke: guard mounted + ValidationPipe (app-auth)', () => {
   let app: INestApplication;
   let prisma: TestApp['prisma'];
 
+  // Идентификаторы теста вынесены в константы: по ним же идёт чистка, чтобы
+  // спек был идемпотентен на реальном Postgres (E2E_REAL_DB=1) — иначе второй
+  // прогон видит строки первого и считает их «протёкшими».
+  const USER_GUARDED = 555n;
+  const USER_PIPE = 777n;
+
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
+    await cleanupOwnershipFixtures(prisma, [USER_GUARDED, USER_PIPE]);
   });
 
   afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, [USER_GUARDED, USER_PIPE]);
     await app.close();
   });
 
@@ -47,7 +56,13 @@ describe('e2e smoke: guard mounted + ValidationPipe (app-auth)', () => {
         .post('/api/schema-notes')
         .send({ schemaId: 'abandonment', triggers: 'x' });
       expect(res.status).toBe(401);
-      expect(prisma.userSchemaNote._rows).toHaveLength(0);
+      // Спрашиваем БД настоящим запросом, а не смотрим во внутренний массив
+      // фейка: то же утверждение обязано проверяться и на живом Postgres
+      // (джоба migrations), где никакого `_rows` не существует.
+      const rows = await prisma.userSchemaNote.findMany({
+        where: { userId: USER_GUARDED },
+      });
+      expect(rows).toHaveLength(0);
     });
 
     it('с валидным Bearer JWT → проходит (не 401)', async () => {
@@ -60,7 +75,7 @@ describe('e2e smoke: guard mounted + ValidationPipe (app-auth)', () => {
   });
 
   describe('ValidationPipe({ whitelist: true, transform: true }) реально глобален', () => {
-    const token = () => signAccessToken(777n, secret());
+    const token = () => signAccessToken(USER_PIPE, secret());
 
     it('лишнее недекорированное поле — срезается whitelist, не 400 (нет forbidNonWhitelisted)', async () => {
       const res = await request(app.getHttpServer())
@@ -73,18 +88,20 @@ describe('e2e smoke: guard mounted + ValidationPipe (app-auth)', () => {
         });
 
       expect(res.status).toBeLessThan(300);
-      const stored = prisma.userSchemaNote._rows.find(
-        (r: any) => r.userId === 777n,
-      );
-      expect(stored).toBeDefined();
+      const stored = await prisma.userSchemaNote.findFirst({
+        where: { userId: USER_PIPE },
+      });
+      expect(stored).not.toBeNull();
       // Ключевая проверка: поле, которого нет в SchemaNoteDto, не долетело
       // ни до сервиса, ни до "БД" — whitelist реально работает на живом
       // HTTP-запросе, а не только в юнит-тесте самого DTO.
-      expect(stored.junkField).toBeUndefined();
+      expect((stored as Record<string, unknown>).junkField).toBeUndefined();
     });
 
     it('невалидный тип поля (schemaId: number вместо string) → 400 ДО контроллера', async () => {
-      const before = prisma.userSchemaNote._rows.length;
+      const before = await prisma.userSchemaNote.count({
+        where: { userId: USER_PIPE },
+      });
       const res = await request(app.getHttpServer())
         .post('/api/schema-notes')
         .set('Authorization', `Bearer ${token()}`)
@@ -92,7 +109,10 @@ describe('e2e smoke: guard mounted + ValidationPipe (app-auth)', () => {
 
       expect(res.status).toBe(400);
       // Не создало запись — упало на пайпе, не долетело до NotesService.
-      expect(prisma.userSchemaNote._rows.length).toBe(before);
+      const after = await prisma.userSchemaNote.count({
+        where: { userId: USER_PIPE },
+      });
+      expect(after).toBe(before);
     });
 
     it('отсутствующее обязательное поле (text DTO) → 400', async () => {
