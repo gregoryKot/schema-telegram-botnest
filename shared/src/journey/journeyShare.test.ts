@@ -16,7 +16,9 @@ import { journeyStatRows } from './journeyStats';
 describe('journeyRadarRows', () => {
   it('пропущенная потребность → value null и «—», а не 0 (нет выдуманных данных)', () => {
     const rows = journeyRadarRows({ attachment: 7 });
-    const attachment = rows.find((r) => r.label === JOURNEY_NEED_NAMES.attachment);
+    const attachment = rows.find(
+      (r) => r.label === JOURNEY_NEED_NAMES.attachment,
+    );
     const autonomy = rows.find((r) => r.label === JOURNEY_NEED_NAMES.autonomy);
     expect(attachment).toMatchObject({ value: 7, valueText: '7' });
     expect(autonomy).toMatchObject({ value: null, valueText: '—' });
@@ -137,10 +139,20 @@ describe('buildJourneySharePayload — item', () => {
       item: { type: 'ysq', at: '2026-07-20' },
       result: {
         parts: [],
-        ysq: { scores: { Покорность: { pct5plus: 60, avg: 4.5 } }, activeCount: 1 },
+        ysq: {
+          scores: { Покорность: { pct5plus: 60, avg: 4.5 } },
+          activeCount: 1,
+        },
       },
     };
-    const payload = buildJourneySharePayload(share, [], 0, [], () => null, link);
+    const payload = buildJourneySharePayload(
+      share,
+      [],
+      0,
+      [],
+      () => null,
+      link,
+    );
     expect(payload.filename).toBe('journey-schema-test.png');
     expect(payload.shareText).toContain(link);
   });
@@ -151,7 +163,14 @@ describe('buildJourneySharePayload — item', () => {
       item: { type: 'letter', at: '2026-07-20' },
       result: { parts: [{ text: 'Письмо себе' }] },
     };
-    const payload = buildJourneySharePayload(share, [], 0, [], () => null, link);
+    const payload = buildJourneySharePayload(
+      share,
+      [],
+      0,
+      [],
+      () => null,
+      link,
+    );
     expect(payload.title).toBe('Результат');
     expect(payload.filename).toBe('journey-result.png');
   });

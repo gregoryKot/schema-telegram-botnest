@@ -4,7 +4,9 @@
 import { describe, it, expect } from 'vitest';
 import { todayInsightPhrase } from './todayInsight';
 
-const full = (v: Partial<Record<string, number>> = {}): Record<string, number> => ({
+const full = (
+  v: Partial<Record<string, number>> = {},
+): Record<string, number> => ({
   attachment: 5,
   autonomy: 5,
   expression: 5,
@@ -41,12 +43,20 @@ describe('todayInsightPhrase — контраст между слабой и с�
 
 describe('todayInsightPhrase — ровный профиль (разница ≤1)', () => {
   it('ровный высокий (avg >= 7) — формулировка про хорошую зону', () => {
-    const ratings = { attachment: 8, autonomy: 8, expression: 8, play: 8, limits: 8 };
+    const ratings = {
+      attachment: 8,
+      autonomy: 8,
+      expression: 8,
+      play: 8,
+      limits: 8,
+    };
     expect(todayInsightPhrase(ratings)).toContain('хорошей зоне');
   });
 
   it('ровный низкий (avg <= 4) — бережная формулировка без чисел-приговора', () => {
-    const phrase = todayInsightPhrase(full({ attachment: 4, autonomy: 4, expression: 4, play: 4, limits: 4 }));
+    const phrase = todayInsightPhrase(
+      full({ attachment: 4, autonomy: 4, expression: 4, play: 4, limits: 4 }),
+    );
     expect(phrase).toContain('бережнее');
   });
 

@@ -2,7 +2,12 @@
 // ysqProfileCard.test аналоге, не здесь). Проверяем склонение «схема/схемы/
 // схем» и нулевое состояние (тест пройден, но ни одна схема не выражена).
 import { describe, it, expect } from 'vitest';
-import { pluralActiveSchemas, buildYsqShareText, ysqCardHeadline, ysqShareCard } from './ysqCard';
+import {
+  pluralActiveSchemas,
+  buildYsqShareText,
+  ysqCardHeadline,
+  ysqShareCard,
+} from './ysqCard';
 
 describe('pluralActiveSchemas', () => {
   it('1 — единственное число', () => {

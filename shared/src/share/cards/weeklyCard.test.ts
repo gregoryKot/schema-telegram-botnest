@@ -1,11 +1,21 @@
 // Карточка недели трекера — чистые расчёты (среднее по потребности за
 // неделю, диапазон дат, индекс недели, текст шаринга кратким/детальным).
 import { describe, it, expect } from 'vitest';
-import { calcWeekAvg, weekRange, weekIndex, buildWeeklyShareText } from './weeklyCard';
+import {
+  calcWeekAvg,
+  weekRange,
+  weekIndex,
+  buildWeeklyShareText,
+} from './weeklyCard';
 import type { Need, DayHistory } from '../../types';
 
 const NEEDS: Need[] = [
-  { id: 'attachment', emoji: '🤝', title: 'Привязанность', chartLabel: 'Привяз.' },
+  {
+    id: 'attachment',
+    emoji: '🤝',
+    title: 'Привязанность',
+    chartLabel: 'Привяз.',
+  },
   { id: 'autonomy', emoji: '🧭', title: 'Автономия', chartLabel: 'Автоном.' },
 ];
 
@@ -70,7 +80,10 @@ describe('buildWeeklyShareText', () => {
 
   it('детальный вариант: незаполненная потребность — «—», не 0.0', () => {
     const text = buildWeeklyShareText(
-      [...NEEDS, { id: 'play', emoji: '🎉', title: 'Игра', chartLabel: 'Игра' }],
+      [
+        ...NEEDS,
+        { id: 'play', emoji: '🎉', title: 'Игра', chartLabel: 'Игра' },
+      ],
       history,
       0,
       true,

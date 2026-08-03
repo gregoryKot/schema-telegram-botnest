@@ -19,9 +19,9 @@ describe('filterJourneyByPeriod', () => {
 
   it('неделя: запись ровно 7×24ч назад ещё входит (граница включительно)', () => {
     const at = new Date(now.getTime() - 7 * DAY).toISOString();
-    expect(filterJourneyByPeriod([{ type: 'note', at }], 'week', now)).toHaveLength(
-      1,
-    );
+    expect(
+      filterJourneyByPeriod([{ type: 'note', at }], 'week', now),
+    ).toHaveLength(1);
   });
 
   it('неделя: запись на миллисекунду старше границы уже не входит', () => {

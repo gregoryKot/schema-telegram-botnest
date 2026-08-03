@@ -2,11 +2,21 @@
 // радара). drawDayCard/makeDayShare.draw не вызываем — canvas не рисуем,
 // но makeDayShare проверяем как объект пропсов (title/shareText/filename).
 import { describe, it, expect } from 'vitest';
-import { dayIndex, buildDayShareText, dayRadarRows, makeDayShare } from './dayCard';
+import {
+  dayIndex,
+  buildDayShareText,
+  dayRadarRows,
+  makeDayShare,
+} from './dayCard';
 import type { Need } from '../../types';
 
 const NEEDS: Need[] = [
-  { id: 'attachment', emoji: '🤝', title: 'Привязанность', chartLabel: 'Привяз.' },
+  {
+    id: 'attachment',
+    emoji: '🤝',
+    title: 'Привязанность',
+    chartLabel: 'Привяз.',
+  },
   { id: 'autonomy', emoji: '🧭', title: 'Автономия', chartLabel: 'Автоном.' },
 ];
 
@@ -26,7 +36,12 @@ describe('dayIndex', () => {
 
 describe('buildDayShareText', () => {
   it('индекс с одним знаком после запятой и дата в тексте', () => {
-    const text = buildDayShareText(NEEDS, { attachment: 7, autonomy: 4 }, '17 июл', 'https://t.me/bot');
+    const text = buildDayShareText(
+      NEEDS,
+      { attachment: 7, autonomy: 4 },
+      '17 июл',
+      'https://t.me/bot',
+    );
     expect(text).toContain('17 июл');
     expect(text).toContain('5.5/10');
     expect(text).toContain('https://t.me/bot');
@@ -47,7 +62,12 @@ describe('dayRadarRows', () => {
 
 describe('makeDayShare', () => {
   it('собирает готовые пропсы карточки дня', () => {
-    const share = makeDayShare(NEEDS, { attachment: 5 }, '17 июл', 'https://t.me/bot');
+    const share = makeDayShare(
+      NEEDS,
+      { attachment: 5 },
+      '17 июл',
+      'https://t.me/bot',
+    );
     expect(share.title).toBe('Карточка дня');
     expect(share.filename).toBe('needs-day.png');
     expect(share.eventKind).toBe('day');

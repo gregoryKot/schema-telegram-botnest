@@ -11,7 +11,9 @@ const haptic = () => ({ select: vi.fn() });
 
 describe('useSchemaDiaryDraftState — инициализация', () => {
   it('без черновика — все поля пустые строки, emotions/schemaIds пустые', () => {
-    const { result } = renderHook(() => useSchemaDiaryDraftState(null, haptic()));
+    const { result } = renderHook(() =>
+      useSchemaDiaryDraftState(null, haptic()),
+    );
     expect(result.current.values.trigger).toBe('');
     expect(result.current.values.healthyView).toBe('');
     expect(result.current.emotions).toEqual([]);
@@ -44,7 +46,9 @@ describe('useSchemaDiaryDraftState — инициализация', () => {
 
 describe('useSchemaDiaryDraftState — setField', () => {
   it('меняет только указанное поле, остальные не трогает', () => {
-    const { result } = renderHook(() => useSchemaDiaryDraftState(null, haptic()));
+    const { result } = renderHook(() =>
+      useSchemaDiaryDraftState(null, haptic()),
+    );
     act(() => result.current.setField('trigger', 'Новая ситуация'));
     expect(result.current.values.trigger).toBe('Новая ситуация');
     expect(result.current.values.thoughts).toBe('');
@@ -64,7 +68,9 @@ describe('useSchemaDiaryDraftState — toggleEmotion / setIntensity', () => {
   });
 
   it('setIntensity меняет интенсивность конкретной эмоции, не создавая дублей', () => {
-    const { result } = renderHook(() => useSchemaDiaryDraftState(null, haptic()));
+    const { result } = renderHook(() =>
+      useSchemaDiaryDraftState(null, haptic()),
+    );
     act(() => result.current.toggleEmotion('anger'));
     act(() => result.current.setIntensity('anger', 5));
     expect(result.current.emotions).toEqual([{ id: 'anger', intensity: 5 }]);
@@ -73,10 +79,15 @@ describe('useSchemaDiaryDraftState — toggleEmotion / setIntensity', () => {
 
 describe('useSchemaDiaryDraftState — toggleSchema', () => {
   it('toggle добавляет id схемы, повторный — убирает (мультивыбор без дублей)', () => {
-    const { result } = renderHook(() => useSchemaDiaryDraftState(null, haptic()));
+    const { result } = renderHook(() =>
+      useSchemaDiaryDraftState(null, haptic()),
+    );
     act(() => result.current.toggleSchema('abandonment'));
     act(() => result.current.toggleSchema('mistrust'));
-    expect(result.current.schemaIds.sort()).toEqual(['abandonment', 'mistrust']);
+    expect(result.current.schemaIds.sort()).toEqual([
+      'abandonment',
+      'mistrust',
+    ]);
 
     act(() => result.current.toggleSchema('abandonment'));
     expect(result.current.schemaIds).toEqual(['mistrust']);

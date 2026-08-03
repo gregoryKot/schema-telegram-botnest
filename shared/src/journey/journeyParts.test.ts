@@ -122,9 +122,9 @@ describe('buildJourneyResultParts', () => {
   });
 
   it('letter/note/safe_place: одна часть без заголовка', () => {
-    expect(buildJourneyResultParts('letter', { text: 'Привет себе' })).toEqual(
-      [{ title: undefined, text: 'Привет себе' }],
-    );
+    expect(buildJourneyResultParts('letter', { text: 'Привет себе' })).toEqual([
+      { title: undefined, text: 'Привет себе' },
+    ]);
     expect(buildJourneyResultParts('note', { text: 'заметка' })).toEqual([
       { title: undefined, text: 'заметка' },
     ]);
@@ -146,9 +146,9 @@ describe('buildJourneyResultParts', () => {
   });
 
   it('practice/plan_done: одна часть со своим заголовком', () => {
-    expect(
-      buildJourneyResultParts('practice', { text: 'Прогулка' }),
-    ).toEqual([{ title: 'Моя практика', text: 'Прогулка' }]);
+    expect(buildJourneyResultParts('practice', { text: 'Прогулка' })).toEqual([
+      { title: 'Моя практика', text: 'Прогулка' },
+    ]);
     expect(
       buildJourneyResultParts('plan_done', { practiceText: 'Дыхание 4-7-8' }),
     ).toEqual([{ title: 'Практика', text: 'Дыхание 4-7-8' }]);
@@ -161,7 +161,9 @@ describe('buildJourneyResultParts', () => {
       play: 4,
     });
     expect(part.title).toBe('Оценки дня (из 10)');
-    expect(part.text).toBe('Привязанность — 7 · Спонтанность — 4 · Границы — 6');
+    expect(part.text).toBe(
+      'Привязанность — 7 · Спонтанность — 4 · Границы — 6',
+    );
   });
 
   it('tracker_day без единой оценки — пусто, а не выдуманные нули', () => {

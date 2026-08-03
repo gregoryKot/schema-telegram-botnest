@@ -101,7 +101,9 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
       api,
       item({ type: 'practice', id: 5, needId: 'play' }),
     );
-    expect(result?.parts).toEqual([{ title: 'Моя практика', text: 'Порисовать' }]);
+    expect(result?.parts).toEqual([
+      { title: 'Моя практика', text: 'Порисовать' },
+    ]);
   });
 
   it('schema_note: без schemaIds в записи ленты — не ходит в api', async () => {
@@ -115,7 +117,12 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
   it('mode_note: ищет по modeId записи', async () => {
     const api = stubApi({
       getModeNotes: async () => [
-        { modeId: 'vulnerable_child', triggers: 'Критика', healthyView: '', behavior: '' },
+        {
+          modeId: 'vulnerable_child',
+          triggers: 'Критика',
+          healthyView: '',
+          behavior: '',
+        },
       ],
     });
     const result = await fetchJourneyResult(
@@ -126,7 +133,10 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
   });
 
   it('незнакомый тип записи → null без похода в api (default-ветка)', async () => {
-    const result = await fetchJourneyResult(stubApi({}), item({ type: 'exotic' }));
+    const result = await fetchJourneyResult(
+      stubApi({}),
+      item({ type: 'exotic' }),
+    );
     expect(result).toBeNull();
   });
 });
@@ -135,7 +145,11 @@ describe('fetchJourneyResult — ysq (id из истории и фолбэк с�
   it('с id: тянет из истории и отдаёт scores/activeCount', async () => {
     const api = stubApi({
       getYsqHistory: async () => [
-        { id: 1, completedAt: '2026-01-01', scores: [{ id: 'Покорность', pct5plus: 60, avg: 4.5 }] },
+        {
+          id: 1,
+          completedAt: '2026-01-01',
+          scores: [{ id: 'Покорность', pct5plus: 60, avg: 4.5 }],
+        },
       ],
     });
     const result = await fetchJourneyResult(api, item({ type: 'ysq', id: 1 }));
@@ -167,7 +181,11 @@ describe('fetchJourneyResult — tracker_day несёт сырые оценки 
       api,
       item({ type: 'tracker_day', at: '2026-07-20' }),
     );
-    expect(result?.ratings).toEqual({ attachment: 7, autonomy: 8, unrelated: 1 });
+    expect(result?.ratings).toEqual({
+      attachment: 7,
+      autonomy: 8,
+      unrelated: 1,
+    });
   });
 
   it('день без единой оценки из нужных пяти — null, не «0 из 5»', async () => {
@@ -191,7 +209,10 @@ describe('fetchJourneyDetail', () => {
 
   it('запись не найдена → пустой массив, не падение', async () => {
     const api = stubApi({ getLetters: async () => [] });
-    const parts = await fetchJourneyDetail(api, item({ type: 'letter', id: 1 }));
+    const parts = await fetchJourneyDetail(
+      api,
+      item({ type: 'letter', id: 1 }),
+    );
     expect(parts).toEqual([]);
   });
 });

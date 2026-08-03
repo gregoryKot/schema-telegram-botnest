@@ -19,7 +19,9 @@ beforeEach(() => {
 describe('saveDraft → loadDraft (read-after-write)', () => {
   it('сохранённые данные читаются обратно теми же значениями', () => {
     saveDraft('schema', { trigger: 'Ситуация', schemaIds: ['abandonment'] });
-    const loaded = loadDraft<{ trigger: string; schemaIds: string[] }>('schema');
+    const loaded = loadDraft<{ trigger: string; schemaIds: string[] }>(
+      'schema',
+    );
     expect(loaded?.data).toEqual({
       trigger: 'Ситуация',
       schemaIds: ['abandonment'],
