@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 // AppOverlays — продолжение AppOverlays.test.tsx (лимит ~300 строк/файл):
 // там — правило видимости и самые частые цепочки, здесь — оставшиеся
-// инлайн-колбэки (TrackerOverlay.onClose/onOpenNote/onOpenGoal, все колбэки
-// SettingsSheet, Practices/Plans/About/ChildhoodWheel/PairSheet). Непроверенный
-// колбэк = мёртвый код до первого клика в проде (см. соседний файл).
+// инлайн-колбэки (TrackerOverlay.onClose/onOpenNote/onOpenGoal, SettingsSheet,
+// Practices/Plans/About/ChildhoodWheel/PairSheet/SchemaInfoSheet).
+// Непроверенный колбэк = мёртвый код до первого клика в проде.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   render,
@@ -21,7 +21,6 @@ type Cb = () => void;
 vi.mock('./TrackerOverlay', () => ({
   TrackerOverlay: (p: { onClose: Cb; onOpenNote: Cb; onOpenGoal: Cb }) => (
     <div>
-      <span>TrackerOverlay</span>
       <button onClick={p.onClose}>tracker-close</button>
       <button onClick={p.onOpenNote}>tracker-open-note</button>
       <button onClick={p.onOpenGoal}>tracker-open-goal</button>
@@ -34,58 +33,42 @@ vi.mock('./SettingsSheet', () => ({
     onNameChanged: (n: string) => void;
     onOpenTherapistCabinet: Cb;
     onToggleTherapistMode: Cb;
-    onResignTherapist: Cb;
   }) => (
     <div>
-      <span>SettingsSheet</span>
       <button onClick={p.onClose}>settings-close</button>
-      <button onClick={() => p.onNameChanged('Аня')}>
-        settings-name-changed
-      </button>
-      <button onClick={p.onOpenTherapistCabinet}>settings-open-cabinet</button>
-      <button onClick={p.onToggleTherapistMode}>
-        settings-toggle-therapist
-      </button>
-      <button onClick={p.onResignTherapist}>settings-resign</button>
+      <button onClick={() => p.onNameChanged('Аня')}>settings-name</button>
+      <button onClick={p.onOpenTherapistCabinet}>settings-cabinet</button>
+      <button onClick={p.onToggleTherapistMode}>settings-toggle</button>
     </div>
   ),
 }));
 vi.mock('./PracticesScreen', () => ({
   PracticesScreen: (p: { onClose: Cb; onOpenTracker: Cb }) => (
     <div>
-      <span>PracticesScreen</span>
       <button onClick={p.onClose}>practices-close</button>
-      <button onClick={p.onOpenTracker}>practices-open-tracker</button>
+      <button onClick={p.onOpenTracker}>practices-tracker</button>
     </div>
   ),
 }));
 vi.mock('./PlansScreen', () => ({
   PlansScreen: (p: { onClose: Cb; onOpenTracker: Cb }) => (
     <div>
-      <span>PlansScreen</span>
       <button onClick={p.onClose}>plans-close</button>
-      <button onClick={p.onOpenTracker}>plans-open-tracker</button>
+      <button onClick={p.onOpenTracker}>plans-tracker</button>
     </div>
   ),
 }));
 vi.mock('./AboutSheet', () => ({
   AboutSheet: (p: { onClose: Cb; onOpenSchemaInfo: Cb }) => (
-    <div>
-      <span>AboutSheet</span>
-      <button onClick={p.onClose}>about-close</button>
-      <button onClick={p.onOpenSchemaInfo}>about-open-schema</button>
-    </div>
+    <button onClick={p.onOpenSchemaInfo}>about-open-schema</button>
   ),
 }));
 vi.mock('./ChildhoodWheelSheet', () => ({
   ChildhoodWheelSheet: (p: {
-    onClose: Cb;
     onOpenSchemas: Cb;
     onSaved: (r: Record<string, number>) => void;
   }) => (
     <div>
-      <span>ChildhoodWheelSheet</span>
-      <button onClick={p.onClose}>wheel-close</button>
       <button onClick={p.onOpenSchemas}>wheel-open-schemas</button>
       <button onClick={() => p.onSaved({ attachment: 7 })}>wheel-saved</button>
     </div>
@@ -93,18 +76,12 @@ vi.mock('./ChildhoodWheelSheet', () => ({
 }));
 vi.mock('./PairSheet', () => ({
   PairSheet: (p: { onClose: Cb }) => (
-    <div>
-      <span>PairSheet</span>
-      <button onClick={p.onClose}>pair-close</button>
-    </div>
+    <button onClick={p.onClose}>pair-close</button>
   ),
 }));
 vi.mock('./SchemaInfoSheet', () => ({
   SchemaInfoSheet: (p: { onClose: Cb }) => (
-    <div>
-      <span>SchemaInfoSheet</span>
-      <button onClick={p.onClose}>schema-info-close</button>
-    </div>
+    <button onClick={p.onClose}>schema-info-close</button>
   ),
 }));
 vi.mock('../sections/DiarySection', () => ({ DiarySection: () => <div /> }));
@@ -185,27 +162,23 @@ function baseProps(overrides: Partial<Parameters<typeof AppOverlays>[0]> = {}) {
   };
 }
 
+function renderOverlays(
+  overrides: Partial<Parameters<typeof AppOverlays>[0]> = {},
+) {
+  return render(<AppOverlays {...baseProps(overrides)} />);
+}
+
 describe('AppOverlays — TrackerOverlay: остальные колбэки', () => {
-  it('onClose закрывает trackerOverlay c trackerNeedId=null', () => {
+  it('onClose/onOpenNote/onOpenGoal', () => {
     const close = vi.fn();
-    render(
-      <AppOverlays
-        {...baseProps({ sheets: makeSheets({ trackerOverlay: true, close }) })}
-      />,
-    );
+    const open = vi.fn();
+    renderOverlays({
+      sheets: makeSheets({ trackerOverlay: true, close, open }),
+    });
     fireEvent.click(screen.getByText('tracker-close'));
     expect(close).toHaveBeenCalledWith('trackerOverlay', {
       trackerNeedId: null,
     });
-  });
-
-  it('onOpenNote/onOpenGoal открывают соответствующие шиты', () => {
-    const open = vi.fn();
-    render(
-      <AppOverlays
-        {...baseProps({ sheets: makeSheets({ trackerOverlay: true, open }) })}
-      />,
-    );
     fireEvent.click(screen.getByText('tracker-open-note'));
     expect(open).toHaveBeenCalledWith('todayNote');
     fireEvent.click(screen.getByText('tracker-open-goal'));
@@ -214,89 +187,64 @@ describe('AppOverlays — TrackerOverlay: остальные колбэки', ()
 });
 
 describe('AppOverlays — SettingsSheet', () => {
-  it('onClose/onNameChanged/onOpenTherapistCabinet/onToggleTherapistMode', () => {
+  it('close/onNameChanged/openTherapistCabinet/toggleTherapistMode', () => {
     const close = vi.fn();
     const setDisplayName = vi.fn();
     const switchTherapistMode = vi.fn();
-    render(
-      <AppOverlays
-        {...baseProps({
-          sheets: makeSheets({ settings: true, close }),
-          setDisplayName,
-          switchTherapistMode,
-          therapistMode: false,
-        })}
-      />,
-    );
+    renderOverlays({
+      sheets: makeSheets({ settings: true, close }),
+      setDisplayName,
+      switchTherapistMode,
+    });
     fireEvent.click(screen.getByText('settings-close'));
     expect(close).toHaveBeenCalledWith('settings');
-    fireEvent.click(screen.getByText('settings-name-changed'));
+    fireEvent.click(screen.getByText('settings-name'));
     expect(setDisplayName).toHaveBeenCalledWith('Аня');
-    fireEvent.click(screen.getByText('settings-open-cabinet'));
+    fireEvent.click(screen.getByText('settings-cabinet'));
     expect(switchTherapistMode).toHaveBeenCalledWith(true);
-    fireEvent.click(screen.getByText('settings-toggle-therapist'));
+    fireEvent.click(screen.getByText('settings-toggle'));
     expect(switchTherapistMode).toHaveBeenCalledWith(true); // !false
   });
 });
 
-describe('AppOverlays — Practices/Plans/About/ChildhoodWheel/Pair/SchemaInfo', () => {
-  it('PracticesScreen: close/openTracker', () => {
-    const close = vi.fn();
-    const open = vi.fn();
-    render(
-      <AppOverlays
-        {...baseProps({ sheets: makeSheets({ practices: true, close, open }) })}
-      />,
-    );
-    fireEvent.click(screen.getByText('practices-close'));
-    expect(close).toHaveBeenCalledWith('practices');
-    fireEvent.click(screen.getByText('practices-open-tracker'));
-    expect(close).toHaveBeenCalledWith('practices');
-    expect(open).toHaveBeenCalledWith('trackerOverlay', {
-      trackerNeedId: null,
-    });
-  });
+describe('AppOverlays — Practices/Plans: close + openTracker', () => {
+  it.each([
+    ['practices', 'practices-close', 'practices-tracker'],
+    ['plans', 'plans-close', 'plans-tracker'],
+  ] as const)(
+    '%s: закрывает себя и открывает трекер',
+    (flag, closeBtn, trackerBtn) => {
+      const close = vi.fn();
+      const open = vi.fn();
+      renderOverlays({ sheets: makeSheets({ [flag]: true, close, open }) });
+      fireEvent.click(screen.getByText(closeBtn));
+      expect(close).toHaveBeenCalledWith(flag);
+      fireEvent.click(screen.getByText(trackerBtn));
+      expect(open).toHaveBeenCalledWith('trackerOverlay', {
+        trackerNeedId: null,
+      });
+    },
+  );
+});
 
-  it('PlansScreen: close/openTracker', () => {
+describe('AppOverlays — About/ChildhoodWheel/Pair/SchemaInfo', () => {
+  it('AboutSheet: openSchemaInfo закрывает about и открывает schemaInfo', () => {
     const close = vi.fn();
     const open = vi.fn();
-    render(
-      <AppOverlays
-        {...baseProps({ sheets: makeSheets({ plans: true, close, open }) })}
-      />,
-    );
-    fireEvent.click(screen.getByText('plans-open-tracker'));
-    expect(close).toHaveBeenCalledWith('plans');
-    expect(open).toHaveBeenCalledWith('trackerOverlay', {
-      trackerNeedId: null,
-    });
-  });
-
-  it('AboutSheet: close/openSchemaInfo', () => {
-    const close = vi.fn();
-    const open = vi.fn();
-    render(
-      <AppOverlays
-        {...baseProps({ sheets: makeSheets({ about: true, close, open }) })}
-      />,
-    );
+    renderOverlays({ sheets: makeSheets({ about: true, close, open }) });
     fireEvent.click(screen.getByText('about-open-schema'));
     expect(close).toHaveBeenCalledWith('about');
     expect(open).toHaveBeenCalledWith('schemaInfo');
   });
 
-  it('ChildhoodWheelSheet: close/openSchemas/onSaved пробрасывает оценки', () => {
+  it('ChildhoodWheelSheet: openSchemas переключает шиты, onSaved пробрасывает оценки', () => {
     const close = vi.fn();
     const open = vi.fn();
     const setChildhoodRatings = vi.fn();
-    render(
-      <AppOverlays
-        {...baseProps({
-          sheets: makeSheets({ childhoodWheel: true, close, open }),
-          setChildhoodRatings,
-        })}
-      />,
-    );
+    renderOverlays({
+      sheets: makeSheets({ childhoodWheel: true, close, open }),
+      setChildhoodRatings,
+    });
     fireEvent.click(screen.getByText('wheel-open-schemas'));
     expect(close).toHaveBeenCalledWith('childhoodWheel');
     expect(open).toHaveBeenCalledWith('schemaInfo');
@@ -307,27 +255,19 @@ describe('AppOverlays — Practices/Plans/About/ChildhoodWheel/Pair/SchemaInfo',
   it('PairSheet: close перезагружает пару через api.getPair', async () => {
     const close = vi.fn();
     const setPairData = vi.fn();
-    render(
-      <AppOverlays
-        {...baseProps({
-          sheets: makeSheets({ pairSheet: true, close }),
-          setPairData,
-        })}
-      />,
-    );
+    renderOverlays({
+      sheets: makeSheets({ pairSheet: true, close }),
+      setPairData,
+    });
     fireEvent.click(screen.getByText('pair-close'));
     expect(close).toHaveBeenCalledWith('pairSheet');
-    await waitFor(() => expect(api.getPair).toHaveBeenCalled());
     await waitFor(() => expect(setPairData).toHaveBeenCalledWith({ id: 1 }));
+    expect(api.getPair).toHaveBeenCalled();
   });
 
   it('SchemaInfoSheet: close сбрасывает autoStartTest/highlight', () => {
     const close = vi.fn();
-    render(
-      <AppOverlays
-        {...baseProps({ sheets: makeSheets({ schemaInfo: true, close }) })}
-      />,
-    );
+    renderOverlays({ sheets: makeSheets({ schemaInfo: true, close }) });
     fireEvent.click(screen.getByText('schema-info-close'));
     expect(close).toHaveBeenCalledWith('schemaInfo', {
       schemaAutoStartTest: false,
