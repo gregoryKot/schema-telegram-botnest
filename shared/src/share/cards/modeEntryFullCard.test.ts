@@ -1,13 +1,48 @@
+// @vitest-environment jsdom
 // Тест раскладки полей полной карточки: фильтрация пустых, порядок (шаги
-// дневника, ЗВ последним), подписи. Отрисовку канваса не тестируем (см.
-// комментарий practiceCard.test.ts — canvas в jsdom не реализован).
-import { describe, it, expect } from 'vitest';
+// дневника, ЗВ последним), подписи. drawModeEntryFullCard проверяется
+// отдельно ниже с подменённым 2d-контекстом (jsdom его не реализует, см.
+// комментарий practiceCard.test.ts).
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   modeEntryFullFields,
   hasModeEntryFullContent,
   modeEntryShareOptions,
+  drawModeEntryFullCard,
 } from './modeEntryFullCard';
 import type { ModeEntryMode } from './modeEntryCard';
+
+function mockCtx() {
+  return {
+    scale: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    fill: vi.fn(),
+    fillRect: vi.fn(),
+    fillText: vi.fn(),
+    roundRect: vi.fn(),
+    arc: vi.fn(),
+    clip: vi.fn(),
+    setTransform: vi.fn(),
+    createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+    createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+    measureText: vi.fn((s: string) => ({ width: s.length * 7 })),
+    fillStyle: '',
+    strokeStyle: '',
+    font: '',
+    lineWidth: 1,
+    globalAlpha: 1,
+    textAlign: 'left' as CanvasTextAlign,
+  };
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 const MODE: ModeEntryMode = {
   name: 'Уязвимый ребёнок',
@@ -173,5 +208,42 @@ describe('modeEntryShareOptions', () => {
     );
     expect(o.hasHealthy).toBe(false);
     expect(o.hasFull).toBe(false);
+  });
+});
+
+describe('drawModeEntryFullCard', () => {
+  it('несколько полей с датой — не падает', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      mockCtx(),
+    );
+    const canvas = document.createElement('canvas');
+    expect(() =>
+      drawModeEntryFullCard(canvas, {
+        color: '#5aa8f7',
+        name: 'Уязвимый ребёнок',
+        emoji: '🥹',
+        dateLabel: '3 мая',
+        fields: modeEntryFullFields({
+          situation: 'Позвонил папа',
+          feelings: 'пустота',
+          healthyResponse: 'я имею право на отдых',
+        }),
+      }),
+    ).not.toThrow();
+  });
+
+  it('без даты и с одним полем — компактнее, не падает', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      mockCtx(),
+    );
+    const canvas = document.createElement('canvas');
+    expect(() =>
+      drawModeEntryFullCard(canvas, {
+        color: '#5aa8f7',
+        name: 'Уязвимый ребёнок',
+        emoji: '🥹',
+        fields: modeEntryFullFields({ situation: 'Позвонил папа' }),
+      }),
+    ).not.toThrow();
   });
 });
