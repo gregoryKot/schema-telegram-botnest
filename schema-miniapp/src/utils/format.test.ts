@@ -2,7 +2,7 @@
 // webapp/format.ts и schema-miniapp/format.ts были почти-парой, различались
 // только форматированием кода; единственная копия теперь в shared/src/utils).
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { fmtDate, fmtDateLong, todayStr } from './format';
+import { fmtDate, fmtDateLong, todayStr, fmtAgo } from './format';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -54,5 +54,34 @@ describe('todayStr', () => {
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const d = String(now.getDate()).padStart(2, '0');
     expect(todayStr()).toBe(`${y}-${m}-${d}`);
+  });
+});
+
+// fmtAgo — не переехала в shared (комментарий в format.ts): продублирована
+// в webapp/exercises (LetterEx/BeliefCheckEx), но в самом схема-миниаппе
+// логика своя и без теста была невидима для покрытия.
+describe('fmtAgo', () => {
+  it('сегодня — "сегодня"', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-03T12:00:00Z'));
+    expect(fmtAgo('2026-08-03T08:00:00Z')).toBe('сегодня');
+  });
+
+  it('1 день назад — "вчера"', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-04T12:00:00Z'));
+    expect(fmtAgo('2026-08-03T12:00:00Z')).toBe('вчера');
+  });
+
+  it('2-6 дней назад — "N дн. назад"', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-08T12:00:00Z'));
+    expect(fmtAgo('2026-08-03T12:00:00Z')).toBe('5 дн. назад');
+  });
+
+  it('неделя и больше — полная дата (короткий месяц)', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-20T12:00:00Z'));
+    expect(fmtAgo('2026-08-03T12:00:00Z')).toBe('3 авг.');
   });
 });

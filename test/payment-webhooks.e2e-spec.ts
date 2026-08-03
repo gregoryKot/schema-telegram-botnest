@@ -15,12 +15,22 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createHash } from 'crypto';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
+import { cleanupPaymentFixtures } from './e2e-support/cleanup-fixtures';
 import { DONATION_INVID_BASE } from '../src/donation/donation.service';
 import { SUBSCRIPTION_INVID_BASE } from '../src/subscription/subscription.service';
 
 function md5(s: string): string {
   return createHash('md5').update(s, 'utf8').digest('hex');
 }
+
+// Идентификаторы фикстур этого спека (TEST_TRUST_PLAN.md, п.1) — на реальном
+// Postgres спек гоняется трижды подряд на одной БД (проверка идемпотентности
+// вебхука), поэтому чистка в beforeAll обязана знать точные токены/маркер,
+// иначе второй прогон падает на unique-констрейнте cancelToken.
+const BOOKING_CANCEL_TOKENS = ['bk-ct-1', 'bk-ct-2', 'bk-ct-3', 'bk-ct-4'];
+const SUBSCRIPTION_CANCEL_TOKENS = ['sub-ct-1', 'sub-ct-2', 'sub-ct-3'];
+const DONATION_MARKER = 'e2e-payment-webhook-test';
+const TEST_CLIENT_CONTACT = 't@e.co';
 
 describe('e2e smoke: платёжный контур Robokassa по HTTP', () => {
   let app: INestApplication;
@@ -30,11 +40,40 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
 
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
+    // Чистый старт — на фейке no-op (свежий in-memory прогон), на реальном
+    // Postgres вычищает фикстуры прошлого прогона этого же спека (см. комментарий
+    // выше и cleanupPaymentFixtures в e2e-support/cleanup-fixtures.ts).
+    await cleanupPaymentFixtures(prisma, {
+      bookingCancelTokens: BOOKING_CANCEL_TOKENS,
+      subscriptionCancelTokens: SUBSCRIPTION_CANCEL_TOKENS,
+      donationMarker: DONATION_MARKER,
+      clientContacts: [TEST_CLIENT_CONTACT],
+    });
   });
 
   afterAll(async () => {
     await app.close();
   });
+
+  // ._rows — фейк-Prisma-специфичный доступ к in-memory массиву
+  // (fake-prisma.ts), недоступный на реальном PrismaService. findUnique/count
+  // работают одинаково в обоих режимах — читаем состояние только через них.
+  async function bookingStatus(id: number): Promise<string | undefined> {
+    const row = await prisma.booking.findUnique({ where: { id } });
+    return row?.status;
+  }
+  async function donationStatus(id: number): Promise<string | undefined> {
+    const row = await prisma.donation.findUnique({ where: { id } });
+    return row?.status;
+  }
+  async function subscriptionStatus(id: number): Promise<string | undefined> {
+    const row = await prisma.subscription.findUnique({ where: { id } });
+    return row?.status;
+  }
+  async function chargeStatus(id: number): Promise<string | undefined> {
+    const row = await prisma.subscriptionCharge.findUnique({ where: { id } });
+    return row?.status;
+  }
 
   // MD5(OutSum:InvId:Password2) — та же формула, что RobokassaService.validateWebhook.
   function resultSig(outSum: string, invId: string): string {
@@ -56,7 +95,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
         status: 'HELD',
         heldUntil: new Date(Date.now() + 15 * 60_000),
         clientName: 'Клиент',
-        clientContact: 't@e.co',
+        clientContact: TEST_CLIENT_CONTACT,
         cancelToken,
       },
     });
@@ -74,9 +113,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
 
       expect(res.status).toBe(200);
       expect(res.text).toBe(`OK${invId}`);
-      expect(
-        prisma.booking._rows.find((r) => r.id === booking.id)?.status,
-      ).toBe('CONFIRMED');
+      expect(await bookingStatus(booking.id)).toBe('CONFIRMED');
     });
 
     it('невалидная подпись → FAIL, бронь остаётся HELD (состояние не изменилось)', async () => {
@@ -86,9 +123,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       const res = await postResult('4000.00', invId, 'deadbeef');
 
       expect(res.text).toBe(`FAIL${invId}`);
-      expect(
-        prisma.booking._rows.find((r) => r.id === booking.id)?.status,
-      ).toBe('HELD');
+      expect(await bookingStatus(booking.id)).toBe('HELD');
     });
 
     it('идемпотентный повтор того же уведомления → OK, без дублей', async () => {
@@ -99,15 +134,14 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
 
       const first = await postResult(outSum, invId, sig);
       expect(first.text).toBe(`OK${invId}`);
-      const rowsAfterFirst = prisma.booking._rows.length;
+      expect(await bookingStatus(booking.id)).toBe('CONFIRMED');
 
       const second = await postResult(outSum, invId, sig);
       expect(second.status).toBe(200);
       expect(second.text).toBe(`OK${invId}`);
-      expect(prisma.booking._rows.length).toBe(rowsAfterFirst); // без дублей
-      expect(
-        prisma.booking._rows.find((r) => r.id === booking.id)?.status,
-      ).toBe('CONFIRMED');
+      // без дублей: ровно одна строка с этим id, а не новая запись поверх старой.
+      expect(await prisma.booking.count({ where: { id: booking.id } })).toBe(1);
+      expect(await bookingStatus(booking.id)).toBe('CONFIRMED');
     });
 
     it('расхождение суммы → FAIL, бронь НЕ подтверждается (регресс бага №5, PR #66)', async () => {
@@ -118,9 +152,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       const res = await postResult(outSum, invId, resultSig(outSum, invId));
 
       expect(res.text).toBe(`FAIL${invId}`);
-      expect(
-        prisma.booking._rows.find((r) => r.id === booking.id)?.status,
-      ).toBe('HELD');
+      expect(await bookingStatus(booking.id)).toBe('HELD');
     });
   });
 
@@ -129,7 +161,12 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
   describe('donation webhook', () => {
     it('валидная подпись → OK + донат paid (read-after-write)', async () => {
       const donation = await prisma.donation.create({
-        data: { amount: 500, status: 'pending', source: 'app' },
+        data: {
+          amount: 500,
+          status: 'pending',
+          source: 'app',
+          comment: DONATION_MARKER,
+        },
       });
       const invId = String(DONATION_INVID_BASE + donation.id);
       const outSum = '500.00';
@@ -137,23 +174,24 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       const res = await postResult(outSum, invId, resultSig(outSum, invId));
 
       expect(res.text).toBe(`OK${invId}`);
-      expect(
-        prisma.donation._rows.find((r) => r.id === donation.id)?.status,
-      ).toBe('paid');
+      expect(await donationStatus(donation.id)).toBe('paid');
     });
 
     it('невалидная подпись → FAIL, донат остаётся pending', async () => {
       const donation = await prisma.donation.create({
-        data: { amount: 500, status: 'pending', source: 'app' },
+        data: {
+          amount: 500,
+          status: 'pending',
+          source: 'app',
+          comment: DONATION_MARKER,
+        },
       });
       const invId = String(DONATION_INVID_BASE + donation.id);
 
       const res = await postResult('500.00', invId, 'deadbeef');
 
       expect(res.text).toBe(`FAIL${invId}`);
-      expect(
-        prisma.donation._rows.find((r) => r.id === donation.id)?.status,
-      ).toBe('pending');
+      expect(await donationStatus(donation.id)).toBe('pending');
     });
   });
 
@@ -183,12 +221,8 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       const res = await postResult(outSum, invId, resultSig(outSum, invId));
 
       expect(res.text).toBe(`OK${invId}`);
-      expect(
-        prisma.subscription._rows.find((r) => r.id === sub.id)?.status,
-      ).toBe('active');
-      expect(
-        prisma.subscriptionCharge._rows.find((r) => r.id === charge.id)?.status,
-      ).toBe('paid');
+      expect(await subscriptionStatus(sub.id)).toBe('active');
+      expect(await chargeStatus(charge.id)).toBe('paid');
     });
 
     it('by-token отдаёт только allowlist-поля (без email/telegramId)', async () => {
@@ -231,9 +265,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ ok: true });
-      expect(
-        prisma.subscription._rows.find((r) => r.id === sub.id)?.status,
-      ).toBe('cancelled');
+      expect(await subscriptionStatus(sub.id)).toBe('cancelled');
     });
 
     it('чужой/битый токен → отказ на by-token и cancel', async () => {

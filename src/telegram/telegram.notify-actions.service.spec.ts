@@ -75,13 +75,24 @@ describe('TelegramNotifyActionsService — addr:ty|vy (первый вход)', 
 });
 
 describe('TelegramNotifyActionsService — пауза', () => {
-  it('notify:pause показывает выбор срока, не пишет в БД', async () => {
+  it('notify:pause показывает выбор срока (неделя/месяц/отмена), не пишет в БД', async () => {
     const botService = makeBotService();
     const { service, fakeBot, cadenceService } = makeService(botService);
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:pause');
     expect(cadenceService.pause).not.toHaveBeenCalled();
-    expect(ctx.editMessageReplyMarkup).toHaveBeenCalled();
+    // Голое toHaveBeenCalled() пропустило бы мутанта, отправляющего пустую
+    // или неверную клавиатуру — проверяем реальные callback_data кнопок,
+    // на которые ссылаются notify:pause:7/30/cancel-хендлеры ниже.
+    const [markup] = ctx.editMessageReplyMarkup.mock.calls[0];
+    const buttons = markup.inline_keyboard
+      .flat()
+      .map((b: any) => b.callback_data);
+    expect(buttons).toEqual([
+      'notify:pause:7',
+      'notify:pause:30',
+      'notify:pause:cancel',
+    ]);
   });
 
   it('notify:pause:7 вызывает cadenceService.pause(userId, 7) и подтверждает', async () => {

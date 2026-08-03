@@ -1,0 +1,8 @@
+{
+  "schema-miniapp/src/main.tsx": "точка входа мини-аппа — подключается из index.html, а не импортом",
+  "schema-miniapp/src/sw.ts": "service worker — отдельный бандл, регистрируется браузером по URL",
+  "shared/src/utils/tyFormsSweep.ts": "hasTyForms — утилита для тестов ты/вы в обоих фронтендах, в прод-коде не нужна",
+  "src/main.ts": "точка входа бэкенда — её никто не импортирует по смыслу",
+  "src/security/controller-classification.ts": "реестр «какой контроллер чем защищён» — читается спеком-сверкой, в рантайме не нужен",
+  "webapp/src/main.tsx": "точка входа сайта — подключается из index.html, а не импортом"
+}

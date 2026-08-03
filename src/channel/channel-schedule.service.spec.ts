@@ -324,6 +324,21 @@ describe('ChannelScheduleService', () => {
     });
   });
 
+  it('tickMorning/tickEvening — обёртки крона, обе зовут maybePost без аргументов', async () => {
+    // @Cron-декорированные методы — единственный вход в реальном рантайме
+    // (сам maybePost тестируется напрямую выше с явным `now`). Если обёртка
+    // забудет вызвать maybePost — крон тикает, а публикаций не будет никогда.
+    spyLogger();
+    const { service } = makeService();
+    const spy = jest.spyOn(service, 'maybePost');
+
+    await service.tickMorning();
+    await service.tickEvening();
+
+    // now не передан из крона — обёртка не подсовывает свой момент времени.
+    expect(spy.mock.calls).toEqual([[], []]);
+  });
+
   it('выключенная площадка названа в отчёте, а не пропущена молча', async () => {
     // Молчание площадки без env раньше было неотличимо от успеха.
     spyLogger();

@@ -24,6 +24,13 @@ function makePhrases() {
       .fn()
       .mockResolvedValue({ id: 1, text: 'upd', enabled: false, sortOrder: 0 }),
     remove: jest.fn().mockResolvedValue({ ok: true }),
+    importMany: jest.fn().mockResolvedValue({
+      created: 2,
+      report: { accepted: ['фраза1', 'фраза2'], rejected: [] },
+    }),
+    poolStatus: jest
+      .fn()
+      .mockResolvedValue({ enabled: 5, unused: 3, daysLeft: 1 }),
   } as unknown as HealthyAdultService;
 }
 
@@ -122,5 +129,39 @@ describe('HealthyAdultAdminController — действия делегируют 
     const res = await controller.testPost(ADMIN_KEY);
     expect(channel.publish).toHaveBeenCalledTimes(1);
     expect(res).toEqual(expect.objectContaining({ ok: true }));
+  });
+
+  it('import передаёт текст в importMany и форматирует отчёт', async () => {
+    const { controller, phrases } = makeController();
+    const res = await controller.import({ text: 'фраза1\nфраза2' }, ADMIN_KEY);
+    expect(phrases.importMany).toHaveBeenCalledWith('фраза1\nфраза2');
+    expect(res).toEqual(
+      expect.objectContaining({
+        created: 2,
+        message: expect.any(String),
+      }),
+    );
+  });
+
+  it('import с неверным ключом — ForbiddenException, importMany не вызывается', async () => {
+    const { controller, phrases } = makeController();
+    await expect(controller.import({ text: 'x' }, 'wrong')).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(phrases.importMany).not.toHaveBeenCalled();
+  });
+
+  it('poolStatus с валидным ключом возвращает остаток пула из сервиса', async () => {
+    const { controller } = makeController();
+    const res = await controller.poolStatus(ADMIN_KEY);
+    expect(res).toEqual({ enabled: 5, unused: 3, daysLeft: 1 });
+  });
+
+  it('poolStatus с неверным ключом — ForbiddenException, сервис не вызывается', async () => {
+    const { controller, phrases } = makeController();
+    await expect(controller.poolStatus('wrong')).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(phrases.poolStatus).not.toHaveBeenCalled();
   });
 });

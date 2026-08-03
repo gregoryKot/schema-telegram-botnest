@@ -283,7 +283,11 @@ export function DiarySection({ onClose: _onClose }: { onClose?: () => void } = {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // .catch(() => {}) на вызове, а не try/catch внутри load(): сеть
+  // недоступна — остаёмся с уже загруженным (или пустым) списком, не роняем
+  // экран необработанным отказом промиса (регрессия: getSchemaDiary/
+  // getModeDiary/getGratitudeDiary не были обёрнуты, в отличие от getProfile).
+  useEffect(() => { load().catch(() => {}); }, [load]);
 
   const todayGratitude = gratitudeEntries.find(e => e.date === TODAY);
   const totalCount = schemaEntries.length + modeEntries.length + gratitudeEntries.length;

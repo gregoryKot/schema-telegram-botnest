@@ -24,7 +24,11 @@ const BASELINE_PATH = join(ROOT, 'scripts', 'weak-assert-baseline.json');
 const UPDATE = process.argv.includes('--update');
 
 function listSpecFiles() {
-  const res = spawnSync('git', ['ls-files', 'src'], {
+  // -c (закоммиченные) + -o (новые, ещё не добавленные) --exclude-standard.
+  // Только -c значило бы, что новый спек невидим для гейта, пока автор его не
+  // закоммитит: локально «✓ без роста», а в CI счётчик прыгает — гейт врал
+  // ровно тому, кто его читает (поймано на этом же PR).
+  const res = spawnSync('git', ['ls-files', '-co', '--exclude-standard', 'src'], {
     cwd: ROOT,
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,

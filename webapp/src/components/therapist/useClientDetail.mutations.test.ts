@@ -102,12 +102,32 @@ describe('patchConcept / autoSave', () => {
     act(() => { result.current.toggleModeId('vulnerable_child'); });
     expect(result.current.activeModeIds).toEqual([]);
   });
-  it('autoSave при ошибке api откатывает saveStatus в idle, не бросая исключение', async () => {
+  // РЕГРЕССИЯ (был БАГ, найден при написании компонентных тестов
+  // ClientConceptTab/TherapistClientSheet): catch у autoSave откатывал
+  // saveStatus в 'idle' и БОЛЬШЕ НИЧЕГО не делал — conceptError оставался
+  // пустым. Терапевт видел, что индикатор автосохранения погас, и решал,
+  // что правка сохранилась, хотя api.saveConceptualization упал и правка
+  // тихо потерялась. Теперь catch обязан заполнить conceptError.
+  it('autoSave при ошибке api откатывает saveStatus в idle И показывает conceptError (не тишина)', async () => {
     mockApi.saveConceptualization.mockRejectedValue(new Error('network'));
     const { result } = await openedHook();
     act(() => { result.current.toggleSchemaId('a'); });
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
     expect(result.current.saveStatus).toBe('idle');
+    expect(result.current.conceptError).not.toBe('');
+  });
+
+  it('conceptError из прошлой ошибки сбрасывается следующим успешным autoSave', async () => {
+    mockApi.saveConceptualization.mockRejectedValueOnce(new Error('network'));
+    const { result } = await openedHook();
+    act(() => { result.current.toggleSchemaId('a'); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(700); });
+    expect(result.current.conceptError).not.toBe('');
+
+    mockApi.saveConceptualization.mockResolvedValue({ id: 1 });
+    act(() => { result.current.toggleSchemaId('b'); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(700); });
+    expect(result.current.conceptError).toBe('');
   });
   it('autoSave отправляет собранный payload со всеми полями конкретуализации', async () => {
     mockApi.saveConceptualization.mockResolvedValue({ id: 1 });

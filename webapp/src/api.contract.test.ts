@@ -40,6 +40,19 @@ const MOCKED_API_METHODS = [
   'donate',
   // pages/SubscribePage.test.tsx
   'getSubscriptionOptions', 'getSubscriptionByToken', 'subscribe', 'cancelSubscription',
+  // TaskCreateSheet.test.tsx, sections/PracticeSection.test.tsx, sections/TodaySection.test.tsx
+  'createTask', 'getTasks', 'getTaskHistory', 'completeTask',
+  // sections/PracticeSection.test.tsx — getBeliefChecks уже выше
+  'getSchemaNotes', 'getModeNotes', 'getSafePlace', 'getChildhoodRatings', 'listMyModeMaps',
+  // sections/TherapistTodaySection.test.tsx
+  'getTherapyClients',
+  // sections/SchemasSection.test.tsx
+  'getProfile', 'getYsqHistory', 'getYsqProgress', 'updateSettings',
+  // sections/TodaySection.test.tsx
+  'getSchemaDiary', 'getModeDiary', 'getGratitudeDiary', 'history',
+  // sections/DiarySection.test.tsx
+  'deleteSchemaDiary', 'deleteModeDiary', 'deleteGratitudeDiary',
+  'createSchemaDiary', 'createModeDiary', 'createGratitudeDiary',
 ] as const;
 
 describe('api.contract — мокаемые методы существуют в реальном api.ts', () => {

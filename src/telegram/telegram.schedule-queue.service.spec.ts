@@ -5,6 +5,7 @@
 // (scheduleDailyReminders/rescheduleForUser) — в telegram.schedule.service.spec.ts.
 import { Logger } from '@nestjs/common';
 import { TelegramScheduleService } from './telegram.schedule.service';
+import * as templates from '../notification/notification.templates';
 
 function makeService(opts: {
   bot?: any;
@@ -121,6 +122,25 @@ describe('processQueue / runProcessQueue', () => {
     await service.processQueue();
     expect(bot.telegram.sendMessage).not.toHaveBeenCalled();
     expect(notificationService.markSent).toHaveBeenCalledWith(3);
+  });
+
+  it('renderTemplate бросает (баг шаблона) — уведомление помечено отправленным, цикл не падает', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const renderSpy = jest
+      .spyOn(templates, 'renderTemplate')
+      .mockImplementation(() => {
+        throw new Error('template crashed');
+      });
+    const due = [
+      { id: 99, userId: 1, type: 'summary', payload: null, sendAt: new Date() },
+    ];
+    const { service, bot, notificationService } = makeService({ due });
+    await expect(service.processQueue()).resolves.toBeUndefined();
+    expect(bot.telegram.sendMessage).not.toHaveBeenCalled();
+    // Помечаем отправленным — иначе битый шаблон зацикливает очередь навечно
+    // (повторная попытка на каждом тике до бесконечности).
+    expect(notificationService.markSent).toHaveBeenCalledWith(99);
+    renderSpy.mockRestore();
   });
 
   it('успешная отправка — markSent вызван с id', async () => {
