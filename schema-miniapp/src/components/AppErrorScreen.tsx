@@ -1,4 +1,8 @@
 import { getHost } from '../../../shared/src/host';
+import {
+  describeInitDataShape,
+  formatInitDataShape,
+} from '../utils/initDataShape';
 
 const BTN_STYLE = {
   padding: '13px 28px',
@@ -23,6 +27,14 @@ export function AppErrorScreen({ error }: { error: string }) {
   // теперь описывает то, что мы действительно знаем, а мессенджер берётся
   // у хоста.
   const hostName = getHost().id === 'max' ? 'MAX' : 'Telegram';
+  // Форма подписи — только при неудаче входа в мессенджере. Значений в ней
+  // нет (initDataShape.ts), а различает она две причины, неотличимые по
+  // самому сообщению: подпись не в том виде или токен от другого бота.
+  const shape = isAuthError
+    ? describeInitDataShape(
+        (getHost().sessionExchange()?.body.initData as string) ?? '',
+      )
+    : null;
   return (
     <div
       style={{
@@ -45,6 +57,21 @@ export function AppErrorScreen({ error }: { error: string }) {
           ? 'Проверь подключение и попробуй ещё раз'
           : `Попробуй закрыть приложение полностью и открыть заново — ${hostName} выдаст свежий пропуск. Если не поможет, напиши нам: дело на нашей стороне.`}
       </div>
+      {shape ? (
+        <div
+          style={{
+            fontSize: 11,
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            color: 'var(--text-sub)',
+            opacity: 0.8,
+            wordBreak: 'break-word',
+            maxWidth: 320,
+            lineHeight: 1.5,
+          }}
+        >
+          {formatInitDataShape(shape)}
+        </div>
+      ) : null}
       {isAuthError && canClose ? (
         <button onClick={() => getHost().close()} style={BTN_STYLE}>
           Закрыть приложение
