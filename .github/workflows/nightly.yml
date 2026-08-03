@@ -110,3 +110,39 @@ jobs:
           name: mutation-report
           path: reports/mutation/
           retention-days: 14
+
+  # Браузерный smoke (TEST_TRUST_PLAN.md, п.4): у проекта 2300 юнитов и 79
+  # HTTP-e2e, но ни один из них не открывает приложение целиком. Между «все
+  # части работают» и «продукт работает» есть зазор — битый бандл, сломанный
+  # SPA-fallback, ошибка рантайма до первого рендера. Такое собирается зелёным
+  # и не работает у пользователя. Смок открывает ПРОД-СБОРКУ в Chromium и
+  # проверяет главное: страница рендерится, вложенный путь не даёт 404,
+  # в консоли нет ошибок рантайма. /api/* замокан — смок про фронт, контракт
+  # с бэком держат HTTP-e2e и контрактный тест api-мока.
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix webapp
+      - run: npm run build --prefix webapp
+      # На раннере GitHub предустановленного браузера нет (в отличие от
+      # dev-окружения) — ставим только Chromium, без системных зависимостей
+      # прочих движков.
+      - run: npx playwright install --with-deps chromium
+      # Путь к браузеру конфиг выбирает сам по факту наличия файла: на
+      # раннере предустановленного нет, поэтому берётся скачанный выше.
+      - name: браузерный smoke прод-сборки
+        run: npx playwright test
+      - name: трейс упавшего смока артефактом
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-trace
+          path: test-results/
+          retention-days: 14
