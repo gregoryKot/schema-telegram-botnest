@@ -52,6 +52,8 @@ const MOCKED_API_METHODS = [
   // SafePlace.test.tsx
   'getSafePlace',
   'saveSafePlace',
+  // TaskCreateSheet.test.tsx
+  'createTask',
 ] as const;
 
 describe('api.contract — мокаемые методы существуют в реальном api.ts', () => {

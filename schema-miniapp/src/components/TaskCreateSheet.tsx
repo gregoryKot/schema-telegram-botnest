@@ -4,6 +4,8 @@ import { SectionLabel } from './SectionLabel';
 import { api } from '../api';
 import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
 import { pressable } from '../utils/a11y';
+import { detectCrisisAny } from '../utils/crisisMarkers';
+import { CrisisCard } from './CrisisCard';
 
 type TaskType =
   | 'diary_streak'
@@ -414,6 +416,8 @@ export function TaskCreateSheet({
               boxSizing: 'border-box',
             }}
           />
+          {/* правило №7: свободный текст обязан проходить кризисную детекцию */}
+          {detectCrisisAny(text) && <CrisisCard surface="task" />}
         </div>
       )}
 

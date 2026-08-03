@@ -55,6 +55,13 @@ describe('PricingService.getPrice', () => {
     );
   });
 
+  it('override "0" на SESSION_50 (дефолт 4000≠0) — возвращает именно 0, не откатывается на дефолт (EqualityOperator >=0 vs >0)', async () => {
+    // INTRO_15 не подходит для этой проверки: его дефолт тоже 0, поэтому
+    // n>=0 и n>0 дают одинаковый видимый результат — мутант там неотличим.
+    const { service } = makeService({ 'price:SESSION_50': '0' });
+    expect(await service.getPrice(SessionType.SESSION_50)).toBe(0);
+  });
+
   it('ключ различает типы сессий — INTRO_15 и SESSION_50 не пересекаются', async () => {
     const { service, prisma } = makeService({ 'price:INTRO_15': '999' });
     await service.getPrice(SessionType.SESSION_50);
@@ -81,6 +88,16 @@ describe('PricingService.setPrice', () => {
     const { service, store } = makeService({ 'price:SESSION_50': '4000' });
     await service.setPrice(SessionType.SESSION_50, 5000);
     expect(store.get('price:SESSION_50')).toBe('5000');
+  });
+
+  it('upsert вызывается с точным create:{key,value} — не пустым объектом (ObjectLiteral)', async () => {
+    const { service, prisma } = makeService();
+    await service.setPrice(SessionType.SESSION_50, 5000);
+    expect(prisma.bookingSetting.upsert).toHaveBeenCalledWith({
+      where: { key: 'price:SESSION_50' },
+      create: { key: 'price:SESSION_50', value: '5000' },
+      update: { value: '5000' },
+    });
   });
 });
 

@@ -147,6 +147,20 @@ describe('NotificationPlannerService — weeklyStats с null avg не счита
   });
 });
 
+describe('NotificationPlannerService — payload===undefined для НЕ-nudge lapsing-типов', () => {
+  // ConditionalExpression на "lapsingType === 'nudge' ? {daysSince} : undefined" →
+  // мутант "всегда true" отправил бы {daysSince} и для reengagement_30/lapsing_3/
+  // dormant_7 — раньше проверялся только nudge-кейс (payload={daysSince}), но не
+  // то, что остальные типы летят БЕЗ payload вовсе.
+  it('reengagement_30 (day=30) шлётся с payload===undefined, не {daysSince}', async () => {
+    const { svc, deps } = make();
+    deps.analytics.getDaysSinceLastFill.mockResolvedValue(30);
+    await svc.planDay(makeUser(), NOW);
+    expect(scheduledTypes(deps)).toEqual(['reengagement_30']);
+    expect(deps.notifications.schedule.mock.calls[0][3]).toBeUndefined();
+  });
+});
+
 describe('NotificationPlannerService — approachingStreak: gamified, но серия НЕ близка к вехе', () => {
   it('gamified=true, streak=2 (2+1=3, не веха) → approachingStreak остаётся undefined', async () => {
     const { svc, deps } = make();

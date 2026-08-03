@@ -12,6 +12,7 @@ import { fmtDate } from '../utils/format';
 import type { UserTask, TherapyRelationInfo } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { pressable } from '../utils/a11y';
+import { useTr } from '../utils/addressForm';
 
 const BeliefCheckEx    = lazy(() => import('../components/exercises/BeliefCheckEx').then(m => ({ default: m.BeliefCheckEx })));
 const SchemaEx         = lazy(() => import('../components/exercises/FlashcardEx').then(m => ({ default: m.SchemaEx })));
@@ -120,6 +121,7 @@ interface Props {
 }
 
 export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, onOpenSchema, refreshKey, onTasksChanged }: Props) {
+  const tr = useTr();
   const location = useLocation();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
@@ -242,7 +244,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         Упражнения<br /><span className="it">и задания</span>
       </h1>
       <p className="hub-sub" style={{ marginBottom: sessionBanner ? 12 : 40 }}>
-        Шесть практик схема-терапии плюс ваши персональные цели.
+        {tr('Шесть практик схема-терапии плюс твои личные цели.', 'Шесть практик схема-терапии плюс ваши личные цели.')}
       </p>
       {sessionBanner && (
         <div className="text-sm" style={{ marginBottom: 40, color: sessionBanner.isToday ? 'var(--c-moss)' : 'var(--text-sub)' }}>
@@ -329,7 +331,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         </div>
         {myGoals.length === 0 ? (
           <div className="text-sm muted" style={{ lineHeight: 1.55 }}>
-            Поставь цель и иди к ней маленькими шагами.
+            {tr('Поставь цель и иди к ней маленькими шагами.', 'Поставьте цель и идите к ней маленькими шагами.')}
           </div>
         ) : (
           myGoals.slice(0, 4).map(task => (

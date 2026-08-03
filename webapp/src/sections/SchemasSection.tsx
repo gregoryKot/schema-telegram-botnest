@@ -226,7 +226,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
             </div>
           ) : allSchemaIds.length === 0 ? (
             <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>
-              Пройди тест на схемы или добавь вручную
+              {tr('Пройди тест на схемы или добавь вручную', 'Пройдите тест на схемы или добавьте вручную')}
             </div>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -310,7 +310,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
               ))}
             </div>
           ) : myModes.length === 0 ? (
-            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>Добавь режимы которые узнаёшь у себя</div>
+            <div style={{ fontSize: 13, color: 'var(--text-sub)' }}>{tr('Добавь режимы которые узнаёшь у себя', 'Добавьте режимы которые узнаёте у себя')}</div>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {myModes.map(m => {

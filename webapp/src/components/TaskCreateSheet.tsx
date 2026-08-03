@@ -5,6 +5,8 @@ import { SCHEMA_DOMAINS, ALL_MODES } from '../schemaTherapyData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { haptic } from '../haptic';
 import { pressable } from '../utils/a11y';
+import { detectCrisisAny } from '../utils/crisisMarkers';
+import { CrisisCard } from './CrisisCard';
 
 type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
 
@@ -282,6 +284,8 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, onCreated, 
                   rows={3}
                   style={{ width: '100%' }}
                 />
+                {/* правило №7: свободный текст обязан проходить кризисную детекцию */}
+                {detectCrisisAny(text) && <CrisisCard surface="task" />}
               </div>
             )}
 
