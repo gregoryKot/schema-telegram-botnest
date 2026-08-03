@@ -71,6 +71,25 @@ function parsePairs(initData: string): {
   return { entries, hash, hashCount };
 }
 
+/**
+ * Форма строки для диагностики: имена полей и признак «значения остались
+ * процент-кодированными». ТОЛЬКО структура — ни одного значения наружу, это
+ * уходит в аудит-лог и в DM админу (правило про PII в meta).
+ *
+ * Зачем: «подпись неверна» одинаково выглядит и когда токен от другого бота,
+ * и когда площадка прислала строку в другом виде (например с лишним слоем
+ * кодирования). Имена полей и наличие `%` в значениях различают эти случаи
+ * с первого раза, без переписки и повторных попыток.
+ */
+function describeShape(entries: [string, string][]): string {
+  const keys = entries
+    .map(([k]) => k)
+    .sort()
+    .join(',');
+  const stillEncoded = entries.some(([, v]) => /%[0-9a-f]{2}/i.test(v));
+  return `поля: ${keys || '—'}; значения ещё кодированы: ${stillEncoded ? 'да' : 'нет'}`;
+}
+
 export function verifyMaxInitData(
   initData: string,
   botToken: string,
@@ -102,7 +121,13 @@ export function verifyMaxInitData(
   if (
     !timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(expectedHash, 'hex'))
   ) {
-    throw new Error('Invalid MAX initData signature');
+    // К сообщению — форма строки, без единого значения. Причин разойтись у
+    // подписи ровно две: токен не от того бота или строка пришла не в том
+    // виде, что мы разбираем. Отличить их по «подпись неверна» нельзя, а
+    // алерт админу и так уходит — пусть несёт то, что решает вопрос.
+    throw new Error(
+      `Invalid MAX initData signature (${describeShape(entries)})`,
+    );
   }
 
   // Просрочка проверяется ПОСЛЕ проверки подписи (порядок из спеки MAX).
