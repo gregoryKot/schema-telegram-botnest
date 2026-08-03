@@ -6,7 +6,7 @@
 // при повторном монтировании хука (пользователь закрыл и снова открыл тест),
 // а не теряться молча.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act, waitFor, cleanup } from '@testing-library/react';
 import {
   useYsqTest,
   buildShareText,
@@ -39,6 +39,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Сначала размонтируем хук, потом возвращаем таймеры. Иначе отложенное
+  // сохранение прогресса, запланированное предыдущим тестом, срабатывает уже
+  // ВНУТРИ следующего — после его localStorage.clear() — и тест падает на
+  // чужих данных. Так и вышло: локально порядок выполнения был другой, и
+  // течь проявилась только в CI.
+  cleanup();
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
