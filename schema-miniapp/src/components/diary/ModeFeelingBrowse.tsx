@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { getModeById } from '../../schemaTherapyData';
 import { haptic } from '../../haptic';
-import { MODE_TEST_GROUPS } from '../../../../shared/src/mode/modeTest';
+import { MODE_PICKER_GROUPS } from '../../../../shared/src/mode/modeBodyCues';
 
 /**
  * Навигация по режиму «по ощущению»: те же 8 семей, что и в тесте «не знаю
- * режим» (shared/mode/modeTest), сразу списком — без вопросов, для тех, кто
- * уже примерно понимает состояние и не хочет искать в таксономических
- * группах MODE_GROUPS. Переиспользует данные теста (правило №11: один
- * источник семей на оба пути выбора, а не второй список).
+ * режим» (shared/mode/modeTest), плюс вход «не знаю, что чувствую, или
+ * пусто» последним (shared/mode/modeBodyCues) — сразу списком, без вопросов,
+ * для тех, кто уже примерно понимает состояние и не хочет искать в
+ * таксономических группах MODE_GROUPS. Переиспользует данные теста (правило
+ * №11: один источник семей на оба пути выбора, а не второй список).
  */
 export function ModeFeelingBrowse({
   onChange,
@@ -17,13 +18,13 @@ export function ModeFeelingBrowse({
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const group = openId
-    ? (MODE_TEST_GROUPS.find((g) => g.id === openId) ?? null)
+    ? (MODE_PICKER_GROUPS.find((g) => g.id === openId) ?? null)
     : null;
 
   return (
     <div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-        {MODE_TEST_GROUPS.map((g) => {
+        {MODE_PICKER_GROUPS.map((g) => {
           const active = openId === g.id;
           return (
             <button

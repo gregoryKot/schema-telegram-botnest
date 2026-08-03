@@ -4,7 +4,7 @@ import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
 import { MODE_TEST_COMPLETED_EVENT } from '../../../../shared/src/share/analytics';
-import { MODE_TEST_GROUPS } from '../../../../shared/src/mode/modeTest';
+import { MODE_PICKER_GROUPS } from '../../../../shared/src/mode/modeBodyCues';
 
 /**
  * Тест «какой режим включился» — определение по функции (2 уровня).
@@ -20,7 +20,7 @@ export function ModeTestSheet({
 }) {
   const tr = useTr();
   const [groupId, setGroupId] = useState<string | null>(null);
-  const group = MODE_TEST_GROUPS.find((g) => g.id === groupId) ?? null;
+  const group = MODE_PICKER_GROUPS.find((g) => g.id === groupId) ?? null;
 
   return (
     <div
@@ -85,7 +85,7 @@ export function ModeTestSheet({
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {MODE_TEST_GROUPS.map((g) => (
+              {MODE_PICKER_GROUPS.map((g) => (
                 <div
                   key={g.id}
                   {...pressable(() => {

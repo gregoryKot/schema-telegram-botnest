@@ -38,4 +38,13 @@ describe('ModeFeelingBrowse', () => {
     fireEvent.click(chip);
     expect(screen.queryByText('Одиноко, страшно, грустно')).toBeNull();
   });
+
+  it('клик по чипу «Не знаю, что чувствую, или пусто» показывает лист «Пусто и ровно, как в вате», клик по нему выбирает detached_protector', () => {
+    const onChange = vi.fn();
+    render(<ModeFeelingBrowse onChange={onChange} />);
+    fireEvent.click(screen.getByText(/Не знаю, что чувствую, или пусто/));
+    expect(screen.getByText('Пусто и ровно, как в вате')).toBeTruthy();
+    fireEvent.click(screen.getByText('Пусто и ровно, как в вате'));
+    expect(onChange).toHaveBeenCalledWith('detached_protector');
+  });
 });

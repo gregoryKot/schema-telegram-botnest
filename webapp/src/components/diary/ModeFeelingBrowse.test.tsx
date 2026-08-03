@@ -29,4 +29,13 @@ describe('ModeFeelingBrowse (webapp)', () => {
     fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
     expect(onPick).toHaveBeenCalledWith('vulnerable_child');
   });
+
+  it('клик по чипу «Не знаю, что чувствую, или пусто» показывает лист «Пусто и ровно, как в вате», клик по нему вызывает onPick(detached_protector)', () => {
+    const onPick = vi.fn();
+    render(<ModeFeelingBrowse onPick={onPick} />);
+    fireEvent.click(screen.getByText(/Не знаю, что чувствую, или пусто/));
+    expect(screen.getByText('Пусто и ровно, как в вате')).toBeTruthy();
+    fireEvent.click(screen.getByText('Пусто и ровно, как в вате'));
+    expect(onPick).toHaveBeenCalledWith('detached_protector');
+  });
 });
