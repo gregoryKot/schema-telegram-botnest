@@ -1,9 +1,12 @@
 {
-  "total": 91.29,
+  "total": 92.42,
   "files": {
     "src/auth/auth.service.ts": 91.75,
+    "src/auth/merge.service.ts": 88.39,
     "src/booking/robokassa.service.ts": 92.52,
-    "src/utils/crypto.ts": 87.95,
+    "src/therapy/therapy-relations.service.ts": 97.96,
+    "src/utils/crypto.ts": 88.55,
+    "src/api/telegram-auth.guard.ts": 92,
     "src/utils/tz.ts": 100
   }
 }
