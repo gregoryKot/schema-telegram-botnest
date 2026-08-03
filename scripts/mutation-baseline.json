@@ -1,12 +1,17 @@
 {
-  "total": 92.42,
+  "total": 90.95,
   "files": {
-    "src/auth/auth.service.ts": 91.75,
-    "src/auth/merge.service.ts": 88.39,
+    "src/auth/auth.service.ts": 91.61,
+    "src/auth/merge.service.ts": 92,
     "src/booking/robokassa.service.ts": 92.52,
-    "src/therapy/therapy-relations.service.ts": 97.96,
-    "src/utils/crypto.ts": 88.55,
+    "src/therapy/therapy-relations.service.ts": 97.95,
+    "src/utils/crypto.ts": 89.86,
     "src/api/telegram-auth.guard.ts": 92,
-    "src/utils/tz.ts": 100
+    "src/utils/tz.ts": 100,
+    "src/booking/booking.service.ts": 87.91,
+    "src/notification/notification.planner.service.ts": 91.52,
+    "src/subscription/subscription.service.ts": 84.44,
+    "src/booking/pricing.service.ts": 89.47,
+    "src/booking/slot.service.ts": 93.69
   }
 }
