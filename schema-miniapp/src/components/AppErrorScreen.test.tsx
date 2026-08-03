@@ -48,6 +48,29 @@ describe('AppErrorScreen', () => {
     delete (globalThis as { WebApp?: unknown }).WebApp;
   });
 
+  // Причину «не удалось войти» иначе видно только в аудит-логе. Форма подписи
+  // на самом экране превращает отладку в один скриншот — но значений в ней
+  // быть не должно: там id и имя человека.
+  it('при неудаче входа показывает форму подписи и ни одного значения', () => {
+    (globalThis as { WebApp?: unknown }).WebApp = {
+      initData:
+        'user=%7B%22id%22%3A42%2C%22first_name%22%3A%22%D0%98%D1%80%D0%B0%22%7D' +
+        '&auth_date=1700000000&hash=abc',
+    };
+    render(<AppErrorScreen error="401" />);
+
+    expect(screen.getByText(/поля: auth_date,hash,user/)).toBeTruthy();
+    expect(screen.getByText(/кодировка внутри: снята/)).toBeTruthy();
+    expect(screen.queryByText(/Ира/)).toBeNull();
+    delete (globalThis as { WebApp?: unknown }).WebApp;
+  });
+
+  it('при сетевом сбое форму подписи не показывает — она там ни при чём', () => {
+    inTelegram();
+    render(<AppErrorScreen error="Failed to fetch" />);
+    expect(screen.queryByText(/поля:/)).toBeNull();
+  });
+
   it('заголовок не утверждает, что сессия истекла — мы этого не знаем', () => {
     inTelegram();
     render(<AppErrorScreen error="401" />);

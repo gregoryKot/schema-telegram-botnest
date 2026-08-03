@@ -48,6 +48,27 @@ export function telegramWebApp(): TgWebApp | undefined {
   return (globalThis as { Telegram?: { WebApp?: TgWebApp } }).Telegram?.WebApp;
 }
 
+/**
+ * Наличия объекта МАЛО, чтобы считать себя открытым в Telegram.
+ *
+ * Их SDK (`/telegram-web-app.js`) мы подключаем в index.html безусловно, а он
+ * создаёт `window.Telegram.WebApp` в любом окружении — хоть в MAX, хоть в
+ * обычной вкладке. Пока детект смотрел только на объект, мини-апп внутри MAX
+ * считал себя телеграмным: слал пустую телеграмную подпись, никогда не звал
+ * обмен MAX и показывал «Telegram выдаст свежий пропуск» с кнопкой «закрыть»,
+ * которой у MAX нет. В браузере по той же причине не мог показаться экран
+ * входа.
+ *
+ * Признак настоящего Telegram берём из их же SDK: вне мессенджера он
+ * оставляет `platform` равным `'unknown'`. Подпись годится как второй
+ * признак — в мини-аппе она непустая.
+ */
+export function isTelegramContext(): boolean {
+  const w = telegramWebApp();
+  if (!w) return false;
+  return (!!w.platform && w.platform !== 'unknown') || !!w.initData;
+}
+
 export function createTelegramHost(): HostBridge {
   const tg = () => telegramWebApp();
   // Факт события важнее числа: contentTop может прийти нулём.
