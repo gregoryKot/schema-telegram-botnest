@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import { AddressFormProvider } from './utils/AddressFormProvider';
+import { UpdateToast } from './components/UpdateToast';
+import { registerServiceWorker } from './registerServiceWorker';
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -68,7 +70,14 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <AddressFormProvider>
         <App />
+        {/* Внутри AddressFormProvider ради useTr (форма обращения) — сам
+            тост не fullscreen, useHistorySheet не нужен (см. её комментарий). */}
+        <UpdateToast />
       </AddressFormProvider>
     </ErrorBoundary>
   </StrictMode>,
 );
+
+// Только в web-хосте (registerServiceWorker сама проверяет), фаза 1
+// docs/PWA_PLAN.md.
+registerServiceWorker();

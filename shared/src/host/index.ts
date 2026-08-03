@@ -1,7 +1,7 @@
 // Точка входа: приложение спрашивает `getHost()` и работает с любым хостом
 // одинаково. Определение делаем один раз за жизнь вкладки — хост не меняется.
 import { createTelegramHost, telegramWebApp } from './telegram';
-import { createMaxHost, maxWebApp } from './max';
+import { createMaxHost, hasMaxLaunchParams, maxWebApp } from './max';
 import { createWebHost } from './web';
 import type { HostBridge, HostId } from './types';
 
@@ -12,7 +12,11 @@ export { createWebHost } from './web';
 
 export function detectHostId(): HostId {
   if (telegramWebApp()) return 'telegram';
-  if (maxWebApp()) return 'max';
+  // Мост ИЛИ стартовые параметры в адресе. Второе важнее, чем кажется: их
+  // скрипт грузится со стороннего CDN, и если он не доедет, приложение
+  // посчитало бы себя открытым в браузере и показало экран входа вместо
+  // автоматического — при том что подпись лежит прямо в адресе.
+  if (maxWebApp() || hasMaxLaunchParams()) return 'max';
   return 'web';
 }
 
