@@ -13,7 +13,7 @@
   "webapp/src/sections/ProfileSection.tsx": 608,
   "webapp/src/components/exercises/BeliefCheckEx.tsx": 554,
   "schema-miniapp/src/sections/TodaySection.tsx": 549,
-  "webapp/src/sections/DiarySection.tsx": 534,
+  "webapp/src/sections/DiarySection.tsx": 538,
   "schema-miniapp/src/components/BeliefCheck.tsx": 532,
   "webapp/src/components/HistoryView.tsx": 525,
   "src/notification/notification.templates.ts": 521,
@@ -884,5 +884,7 @@
   "webapp/src/utils/storageKeys.ts": 2,
   "webapp/src/utils/telemetryUrl.ts": 2,
   "webapp/src/utils/therapistContact.ts": 2,
-  "webapp/src/utils/todayInsight.ts": 2
+  "webapp/src/utils/todayInsight.ts": 2,
+  "webapp/src/utils/crisisMarkers.redos.test.ts": 93,
+  "schema-miniapp/src/utils/crisisMarkers.redos.test.ts": 93
 }
