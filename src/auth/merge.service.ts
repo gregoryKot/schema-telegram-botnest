@@ -47,7 +47,7 @@ export const SECURITY_SENSITIVE_TABLES = ['WebSession', 'EmailToken'] as const;
 // userId. When source and target both have a row with the same (userId, …key)
 // the source row is dropped first so the bulk UPDATE that follows can succeed
 // without violating the constraint.
-const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
+export const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
   { table: 'Rating', cols: ['date', 'needId'] },
   { table: 'Note', cols: ['date'] },
   { table: 'GratitudeDiaryEntry', cols: ['date'] },
@@ -65,7 +65,7 @@ const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
 // Whitelist of identifiers we'll embed directly in SQL. Anything outside this
 // set is rejected — defence in depth even though sources are all constants in
 // this file.
-const KNOWN_TABLES = new Set<string>([
+export const KNOWN_TABLES = new Set<string>([
   ...USER_OWNED_TABLES,
   ...SECURITY_SENSITIVE_TABLES,
   'Pair',
@@ -76,7 +76,7 @@ const KNOWN_TABLES = new Set<string>([
   'TherapistCustomMode',
   'User',
 ]);
-const KNOWN_COLS = new Set<string>([
+export const KNOWN_COLS = new Set<string>([
   'userId',
   'userId1',
   'userId2',
@@ -89,7 +89,7 @@ const KNOWN_COLS = new Set<string>([
   'modeId',
   'type',
 ]);
-function ident(name: string, kind: 'table' | 'col'): string {
+export function ident(name: string, kind: 'table' | 'col'): string {
   const ok = (kind === 'table' ? KNOWN_TABLES : KNOWN_COLS).has(name);
   if (!ok)
     throw new Error(`Refusing to interpolate unknown SQL identifier: ${name}`);

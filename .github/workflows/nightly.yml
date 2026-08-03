@@ -87,7 +87,9 @@ jobs:
   # честно, и просадка счёта роняет ночной ран.
   mutation:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # 12 файлов, ~1900 мутантов: каждый — отдельный прогон покрывающих его
+    # тестов. 45 минут хватало на 7 файлов волны А, на волну Б уже нет.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -96,7 +98,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
-      - name: Stryker по золотым зонам (crypto/auth/robokassa/tz)
+      # ignoreStatic в stryker.config.json — не «послабление», а условие
+      # выполнимости: статические мутанты (код уровня модуля) заставляют
+      # перегонять ВЕСЬ набор тестов на каждого, и 9% таких мутантов съедали
+      # 86% времени прогона — счёт при этом не уточняли.
+      - name: Stryker по золотым зонам (шифрование/вход/платежи/напоминания)
         run: npm run mutation
       # Храповик: счёт не может просесть ниже scripts/mutation-baseline.json
       # (с допуском на недетерминизм таймаутов — см. комментарий в скрипте).
