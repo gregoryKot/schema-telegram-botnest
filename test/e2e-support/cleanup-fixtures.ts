@@ -12,8 +12,10 @@
 // (де-факто no-op, каждый e2e-файл получает свежий in-memory прогон), поэтому
 // спеки зовут его одинаково в обоих режимах без if/else на E2E_REAL_DB.
 //
-// НЕ трогает таблицы вне фикстур этих спеков (booking/donation/subscription,
-// article, bookingSetting и т.п. — другой контур со своим e2e).
+// cleanupOwnershipFixtures НЕ трогает таблицы вне фикстур ownership-спеков
+// (booking/donation/subscription, article, bookingSetting и т.п.) — для
+// платёжного контура своя чистка, cleanupPaymentFixtures ниже.
+import { createHash } from 'crypto';
 
 // Таблицы с прямой колонкой userId (в реальной схеме — FK на User с
 // ON DELETE CASCADE), которую можно почистить общим `in`-списком.
@@ -98,4 +100,69 @@ export async function cleanupOwnershipFixtures(
     where: { therapistId: { in: userIds } },
   });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+}
+
+// ─── Платёжный контур (test/payment-webhooks.e2e-spec.ts) ─────────────────
+//
+// Booking/Donation/Subscription/SubscriptionCharge не имеют userId — вне
+// области cleanupOwnershipFixtures выше. На фейке (fake-prisma.ts) каждый
+// e2e-файл получает свежий in-memory прогон, чистка де-факто no-op. На
+// реальном Postgres (TEST_TRUST_PLAN.md, п.1) спек гоняется трижды подряд на
+// одной БД (проверка идемпотентности вебхука) — без чистки второй прогон
+// падает на unique-констрейнтах Booking.cancelToken / Subscription.cancelToken
+// (фикстуры используют фиксированные тестовые токены).
+
+/** Фикстуры одного прогона payment-webhooks.e2e-spec — идентифицируются по
+ * фиксированным тестовым токенам/маркерам, а не по всей таблице (та же БД
+ * может содержать реальные записи, если когда-то будет шариться со staging). */
+export interface PaymentFixtureIds {
+  bookingCancelTokens: string[];
+  subscriptionCancelTokens: string[];
+  donationMarker: string;
+  /** clientContact-и, для которых confirm() booking создаёт ClientMeeting
+   * (клиентский ключ — sha256 нормализованного контакта, см. meeting.service.ts). */
+  clientContacts?: string[];
+}
+
+export async function cleanupPaymentFixtures(
+  prisma: any,
+  fixture: PaymentFixtureIds,
+): Promise<void> {
+  // SubscriptionCharge.subscriptionId — FK on Subscription (onDelete: Cascade
+  // в схеме, но фейк каскад не эмулирует) — чистим явно до subscription.
+  const subs = await prisma.subscription.findMany({
+    where: { cancelToken: { in: fixture.subscriptionCancelTokens } },
+  });
+  const subIds = subs.map((s: { id: number }) => s.id);
+  if (subIds.length) {
+    await prisma.subscriptionCharge.deleteMany({
+      where: { subscriptionId: { in: subIds } },
+    });
+  }
+  await prisma.subscription.deleteMany({
+    where: { cancelToken: { in: fixture.subscriptionCancelTokens } },
+  });
+  await prisma.booking.deleteMany({
+    where: { cancelToken: { in: fixture.bookingCancelTokens } },
+  });
+  await prisma.donation.deleteMany({
+    where: { comment: fixture.donationMarker },
+  });
+  if (fixture.clientContacts?.length) {
+    await prisma.clientMeeting.deleteMany({
+      where: { clientKey: { in: fixture.clientContacts.map(clientKey) } },
+    });
+  }
+}
+
+// Дублирует нормализацию контакта из src/booking/meeting.service.ts
+// (приватная функция сервиса, не экспортируется) — фикстуре нужен тот же
+// хэш, чтобы найти и вычистить ClientMeeting, созданный подтверждением брони.
+function clientKey(contact: string): string {
+  const norm = contact
+    .trim()
+    .toLowerCase()
+    .replace(/^@/, '')
+    .replace(/[\s()+-]/g, '');
+  return createHash('sha256').update(norm).digest('hex');
 }
