@@ -1,7 +1,14 @@
 // Картинка пина: Pinterest не примет пин без изображения, поэтому проверяем
 // не «нарисовалось что-то», а что это валидный PNG нужного формата (2:3 —
 // лента Pinterest режет всё остальное) и что длинная фраза не ломает вёрстку.
-import { renderPhrasePin, clampPinLines, makeChannelPost } from './pin-image';
+import { createCanvas } from '@napi-rs/canvas';
+import {
+  renderPhrasePin,
+  clampPinLines,
+  makeChannelPost,
+  wrapPinText,
+  FONT,
+} from './pin-image';
 import { pinStyle } from './pin-style';
 
 /** Ширина и высота PNG лежат в IHDR — байты 16..23 после сигнатуры. */
@@ -57,6 +64,41 @@ describe('pin-image', () => {
       'Отдых не надо заслуживать. Он входит в стоимость жизни, как сон и еда.',
     );
     expect(short.equals(long)).toBe(false);
+  });
+
+  describe('wrapPinText', () => {
+    // Тот же шрифт, что и у настоящего рендера (регистрируется побочным
+    // эффектом renderPhrasePin) — иначе метрики нерегистрированного шрифта
+    // непредсказуемы и переносы ломаются посередине обычных слов.
+    renderPhrasePin('прогрев шрифта');
+    const ctx = createCanvas(10, 10).getContext('2d');
+    ctx.font = `40px ${FONT}`;
+
+    it('переносит по словам, не разбивая обычные слова', () => {
+      const lines = wrapPinText(ctx, 'раз два три четыре пять', 400);
+      expect(lines.length).toBeGreaterThan(1);
+      // Ни одна строка не содержит символов сверх исходных слов (без разрывов).
+      expect(lines.join(' ').replace(/\s+/g, ' ')).toBe(
+        'раз два три четыре пять',
+      );
+    });
+
+    it('слово шире строки (длинная ссылка) рвётся по символам, а не теряется', () => {
+      // Инцидент-класс: ссылка без пробелов шире maxW целиком не влезает ни в
+      // одну строку — без посимвольного разрыва строка ушла бы за край пина.
+      const longWord = 'а'.repeat(80);
+      const lines = wrapPinText(ctx, longWord, 50);
+      expect(lines.length).toBeGreaterThan(1);
+      // Все символы сохранены — просто разложены по нескольким строкам.
+      expect(lines.join('')).toBe(longWord);
+      for (const line of lines) {
+        expect(ctx.measureText(line).width).toBeLessThanOrEqual(50);
+      }
+    });
+
+    it('пустой текст — пустой список строк, а не строка с мусором', () => {
+      expect(wrapPinText(ctx, '   ', 100)).toEqual([]);
+    });
   });
 
   describe('clampPinLines', () => {
