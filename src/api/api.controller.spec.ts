@@ -121,7 +121,8 @@ describe('ApiController user-flags', () => {
     const { controller, userTable } = makeController({
       userRows: [{ id: 1n }],
     });
-    await controller.setUserFlags(makeReq(), { unknownField: 1 });
+    const res = await controller.setUserFlags(makeReq(), { unknownField: 1 });
+    expect(res).toEqual({ ok: true });
     expect(userTable.update).not.toHaveBeenCalled();
   });
 
@@ -129,10 +130,12 @@ describe('ApiController user-flags', () => {
     const { controller, userTable } = makeController({
       userRows: [{ id: 1n }],
     });
-    await controller.setUserFlags(makeReq(), {
+    const res = await controller.setUserFlags(makeReq(), {
       therapistMode: true,
     });
-    // therapistMode не в FLAG_FIELDS → data пуст → update не вызывается вовсе
+    // Ручка отвечает успехом (клиент не должен ретраить), но привилегия не
+    // выдана: therapistMode не в FLAG_FIELDS → data пуст → update не зовётся.
+    expect(res).toEqual({ ok: true });
     expect(userTable.update).not.toHaveBeenCalled();
   });
 

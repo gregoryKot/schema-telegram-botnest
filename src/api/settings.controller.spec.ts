@@ -155,8 +155,13 @@ describe('SettingsController.updateSettings — побочные эффекты'
   });
 
   it('без notifyFrequency — адаптация не трогается', async () => {
-    const { controller, accountService } = makeController();
-    await controller.updateSettings(makeReq(), {
+    const { controller, accountService, botService } = makeController();
+    await controller.updateSettings(makeReq(7n), {
+      pairCardDismissed: true,
+    });
+    // Настройка сохранена — но уровень адаптации остался прежним: побочный
+    // эффект привязан к своему полю, а не к любому сохранению.
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(7n, {
       pairCardDismissed: true,
     });
     expect(accountService.setAdaptiveLevel).not.toHaveBeenCalled();
@@ -171,8 +176,14 @@ describe('SettingsController.updateSettings — побочные эффекты'
   });
 
   it('изменение поля вне списка триггеров (pairCardDismissed) не перепланирует', async () => {
-    const { controller, scheduleService } = makeController();
-    await controller.updateSettings(makeReq(), {
+    const { controller, scheduleService, botService } = makeController();
+    await controller.updateSettings(makeReq(9n), {
+      pairCardDismissed: true,
+    });
+    // Сохранение произошло, а пересчёт расписания — нет: лишний reschedule
+    // сдвигает уже назначенное напоминание, поэтому важно, что он привязан
+    // именно к полям времени/включения.
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(9n, {
       pairCardDismissed: true,
     });
     expect(scheduleService.rescheduleForUser).not.toHaveBeenCalled();
