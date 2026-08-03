@@ -9,7 +9,7 @@ import { api } from '../../api';
 import { DiaryStickyHeader } from './DiaryStickyHeader';
 import { ModeSelectStep } from './ModeSelectStep';
 import { ModeDiaryWizard } from './ModeDiaryWizard';
-import { ModeEntryShare } from './ModeEntryShare';
+import { ModeEntryDone } from './ModeEntryDone';
 import { getModeById } from '../../schemaTherapyData';
 import {
   MODE_DIARY_FIELD_KEYS,
@@ -20,6 +20,7 @@ import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints'
 import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 import {
   MODE_ENTRY_SAVED_EVENT,
+  MODE_CHAIN_FOLLOWUP_EVENT,
   modeEntrySavedMeta,
 } from '../../../../shared/src/share/analytics';
 
@@ -96,58 +97,38 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     }
   };
 
+  // Подсказка «разобрать связанный режим» (ModeChainSuggestion) на экране
+  // «Запись сохранена»: ситуация — та же, поэтому ситуацию СОХРАНЯЕМ, а
+  // остальные поля и ответ Здорового Взрослого очищаем и открываем визард
+  // заново уже на новом режиме. Событие шлём только при выборе конкретного
+  // кандидата — «Другой режим» (to === null) не считается принятой подсказкой.
+  const handleChainPick = (to: string | null) => {
+    if (to != null) {
+      api.trackEvent(MODE_CHAIN_FOLLOWUP_EVENT, { from: modeId, to });
+    }
+    const situation = values.situation;
+    setValues(
+      Object.fromEntries(
+        MODE_DIARY_FIELD_KEYS.map((k) => [
+          k,
+          k === 'situation' ? situation : '',
+        ]),
+      ) as Record<ModeDiaryFieldKey, string>,
+    );
+    setHealthyResponse('');
+    setModeId(to ?? '');
+    setDone(false);
+  };
+
   if (done) {
     return (
-      <BottomSheet onClose={onClose}>
-        <div style={{ textAlign: 'center', padding: '12px 6px 16px' }}>
-          <div style={{ fontSize: 46, marginBottom: 8 }}>🌿</div>
-          <div
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: 'var(--text)',
-              marginBottom: 6,
-            }}
-          >
-            Запись сохранена
-          </div>
-          <div
-            style={{
-              fontSize: 13.5,
-              color: 'var(--text-sub)',
-              lineHeight: 1.6,
-              marginBottom: 16,
-            }}
-          >
-            Она в «Дневнике режимов» и в «Моём пути» — можно открыть и
-            перечитать в любой момент.
-          </div>
-          <div style={{ textAlign: 'left' }}>
-            <ModeEntryShare
-              mode={getModeById(modeId)}
-              healthyResponse={healthyResponse}
-            />
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              marginTop: 18,
-              width: '100%',
-              padding: '13px 0',
-              borderRadius: 14,
-              border: 'none',
-              fontFamily: 'inherit',
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: 'pointer',
-              background: 'rgba(var(--fg-rgb),0.08)',
-              color: 'var(--text)',
-            }}
-          >
-            Готово
-          </button>
-        </div>
-      </BottomSheet>
+      <ModeEntryDone
+        modeId={modeId}
+        healthyResponse={healthyResponse}
+        entry={{ ...values, healthyResponse }}
+        onClose={onClose}
+        onPickChain={handleChainPick}
+      />
     );
   }
 

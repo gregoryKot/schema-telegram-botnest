@@ -37,6 +37,11 @@
 //   mode_entry_saved    — сохранил запись в дневнике режимов
 //                         (meta.filledFields 0..7 + meta.filledHealthy).
 //   mode_test_completed — определил режим тестом «по функции» (meta.modeId).
+//   warm_words_open     — открыл раздел «Тёплые слова» (meta.count — сколько
+//                         записей в коллекции, 0..1000).
+//   mode_chain_followup — после сохранения записи дневника режимов согласился
+//                         разобрать связанный режим (meta.from + meta.to —
+//                         modeId исходного и выбранного режима).
 export const ANALYTICS_EVENTS = [
   'share_card',
   'share_result',
@@ -61,6 +66,8 @@ export const ANALYTICS_EVENTS = [
   'mode_card_saved',
   'mode_entry_saved',
   'mode_test_completed',
+  'warm_words_open',
+  'mode_chain_followup',
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -168,6 +175,7 @@ export const SHARE_CARD_KINDS = [
   'journey',
   'journey_item',
   'practice',
+  'mode_entry_full',
 ] as const;
 export type ShareCardKind = (typeof SHARE_CARD_KINDS)[number];
 

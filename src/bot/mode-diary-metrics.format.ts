@@ -12,6 +12,8 @@ export interface ModeDiaryMetrics {
   testCompleted7: number;
   /** За месяц. */
   testCompleted30: number;
+  /** За месяц: сколько раз после записи согласились разобрать связанный режим. */
+  chainAccepted30: number;
 }
 
 /** Текстовый блок для /stats. Чистая функция. */
@@ -32,5 +34,10 @@ export function formatModeDiaryMetrics(m: ModeDiaryMetrics): string {
       `Определяли режим тестом за неделю: ${m.testCompleted7} · за месяц: ${m.testCompleted30}`,
     );
   }
+  lines.push(
+    m.chainAccepted30 > 0
+      ? `Разбирали связанный режим после записи: ${m.chainAccepted30}`
+      : 'Связанный режим после записи пока не разбирали.',
+  );
   return lines.join('\n');
 }

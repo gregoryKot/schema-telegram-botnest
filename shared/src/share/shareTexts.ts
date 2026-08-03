@@ -83,6 +83,11 @@ export function modeEntryShareText(link: string): string {
   return `🌿 Голос моего Здорового Взрослого.\n\n${link}`;
 }
 
+/** Карточка полной записи режима: сама запись — на картинке, не в тексте. */
+export function modeEntryFullShareText(link: string): string {
+  return `🌿 Моя запись из дневника режимов.\n\n${link}`;
+}
+
 export function journeyShareText(
   count: number,
   link: string,

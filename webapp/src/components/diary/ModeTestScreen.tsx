@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ExScreen } from '../exercises/ExScreen';
 import { useTr } from '../../utils/addressForm';
-import { MODE_TEST_GROUPS } from '../../../../shared/src/mode/modeTest';
+import { MODE_PICKER_GROUPS } from '../../../../shared/src/mode/modeBodyCues';
 import { MODE_TEST_COMPLETED_EVENT } from '../../../../shared/src/share/analytics';
 import { haptic } from '../../haptic';
 import { api } from '../../api';
@@ -14,13 +14,13 @@ interface Props {
 }
 
 // Тест «какой режим включился» — определение по ФУНКЦИИ, а не по названию.
-// Шаг 1: 8 крупных состояний (MODE_TEST_GROUPS). Шаг 2: листы внутри семьи.
-// Метки form-agnostic (1-е лицо / нейтральные) — не разводятся по ты/вы;
-// разводятся только обращённые к пользователю ledes (см. правило «ты/вы»).
+// Шаг 1: 8 крупных состояний + вход «не знаю, что чувствую» последним. Шаг 2:
+// листы внутри семьи. Метки form-agnostic (1-е лицо / нейтральные) — не
+// разводятся по ты/вы; разводятся только обращённые к пользователю ledes.
 export function ModeTestScreen({ onPick, onBack }: Props) {
   const tr = useTr();
   const [groupId, setGroupId] = useState<string | null>(null);
-  const group = groupId ? MODE_TEST_GROUPS.find(g => g.id === groupId) ?? null : null;
+  const group = groupId ? MODE_PICKER_GROUPS.find(g => g.id === groupId) ?? null : null;
 
   // ── Уровень 1: крупные состояния ──
   if (!group) {
@@ -43,7 +43,7 @@ export function ModeTestScreen({ onPick, onBack }: Props) {
           </div>
         }
       >
-        {MODE_TEST_GROUPS.map(g => (
+        {MODE_PICKER_GROUPS.map(g => (
           <button
             key={g.id}
             type="button"

@@ -133,10 +133,15 @@ describe('определение хоста', () => {
     expect(getHost().id).toBe('max');
   });
 
-  it('оба объекта сразу — приоритет у Telegram', () => {
+  // Приоритет намеренно у MAX, а не у Telegram (было наоборот до 2026-08-03).
+  // Телеграмный SDK подключён в index.html безусловно и создаёт свой объект
+  // где угодно, поэтому «Telegram первым» означало «Telegram всегда»: внутри
+  // MAX приложение считало себя телеграмным и обмен подписи MAX не звался.
+  // Признаки MAX подделать телеграмным SDK нельзя — значит они и решают.
+  it('оба объекта сразу — приоритет у MAX', () => {
     fakeTelegram();
     fakeMax();
-    expect(detectHostId()).toBe('telegram');
+    expect(detectHostId()).toBe('max');
   });
 
   it('посторонний window.WebApp без признаков MAX Bridge — не хост MAX', () => {
@@ -639,5 +644,52 @@ describe('MAX: стартовые параметры из адреса', () => {
   it('чужой фрагмент хостом MAX не считается', () => {
     setHash('#section=today');
     expect(detectHostId()).toBe('web');
+  });
+});
+
+// ── Кто мы, когда телеграмный SDK загружен всегда ───────────────────────────
+// Инцидент 2026-08-03: index.html мини-аппа подключает /telegram-web-app.js
+// безусловно, а тот создаёт window.Telegram.WebApp в любом окружении. Внутри
+// MAX приложение из-за этого считало себя телеграмным: слало пустую
+// телеграмную подпись, обмен MAX не звался вовсе, а экран писал «Telegram
+// выдаст свежий пропуск» и предлагал закрыть приложение — кнопкой, которой у
+// MAX нет. В браузере по той же причине не мог показаться экран входа.
+describe('детект хоста при всегда загруженном SDK Telegram', () => {
+  /** Так выглядит их SDK вне мессенджера: объект есть, платформа unknown. */
+  function telegramSdkOutsideTelegram() {
+    window.Telegram = {
+      WebApp: { platform: 'unknown', initData: '' },
+    };
+  }
+
+  afterEach(() => {
+    window.location.hash = '';
+    resetMaxLaunchParams();
+  });
+
+  it('пустой SDK вне мессенджера — это браузер, а не Telegram', () => {
+    telegramSdkOutsideTelegram();
+    expect(detectHostId()).toBe('web');
+  });
+
+  it('внутри MAX побеждает MAX, а не пустой телеграмный SDK', () => {
+    telegramSdkOutsideTelegram();
+    window.location.hash = '#WebAppData=auth_date%3D1%26hash%3Dabc';
+    resetMaxLaunchParams();
+    expect(detectHostId()).toBe('max');
+  });
+
+  it('настоящий Telegram (платформа заполнена) определяется по-прежнему', () => {
+    window.Telegram = {
+      WebApp: { platform: 'ios', initData: 'user=%7B%22id%22%3A1%7D' },
+    };
+    expect(detectHostId()).toBe('telegram');
+  });
+
+  it('платформы нет, но подпись есть — тоже Telegram', () => {
+    window.Telegram = {
+      WebApp: { initData: 'user=%7B%22id%22%3A1%7D' },
+    };
+    expect(detectHostId()).toBe('telegram');
   });
 });

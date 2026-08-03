@@ -153,6 +153,32 @@ export function sanitizeMeta(
     }
     return undefined;
   }
+  if (name === 'warm_words_open') {
+    const count = meta.count;
+    if (
+      typeof count === 'number' &&
+      Number.isInteger(count) &&
+      count >= 0 &&
+      count <= 1000
+    ) {
+      return { count };
+    }
+    // Событие валидно и без meta — count не обязателен для самого факта открытия.
+    return {};
+  }
+  if (name === 'mode_chain_followup') {
+    const from = meta.from;
+    const to = meta.to;
+    if (
+      typeof from === 'string' &&
+      /^[a-z_]{1,64}$/.test(from) &&
+      typeof to === 'string' &&
+      /^[a-z_]{1,64}$/.test(to)
+    ) {
+      return { from, to };
+    }
+    return undefined;
+  }
   // breath_start / stop_start / journey_open / ysq_help_open — без meta; поля отбрасываются.
   return undefined;
 }

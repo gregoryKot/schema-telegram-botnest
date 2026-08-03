@@ -18,6 +18,7 @@ interface Props {
   onOpenLetterToSelf: () => void;
   onOpenFlashcard: () => void;
   onOpenChildhoodWheel: () => void;
+  onOpenWarmWords: () => void;
 }
 
 export function ToolsList({
@@ -33,6 +34,7 @@ export function ToolsList({
   onOpenLetterToSelf,
   onOpenFlashcard,
   onOpenChildhoodWheel,
+  onOpenWarmWords,
 }: Props) {
   return (
     <>
@@ -118,6 +120,14 @@ export function ToolsList({
         tint="var(--accent-green)"
         index={7}
         onClick={onOpenChildhoodWheel}
+      />
+      <ToolRow
+        emoji="💛"
+        label="Тёплые слова"
+        sub="Слова поддержки себе"
+        tint="var(--accent-yellow)"
+        index={8}
+        onClick={onOpenWarmWords}
       />
     </>
   );

@@ -145,7 +145,13 @@ function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () =>
             {entry.childhoodMemories && <ExpandField label="Откуда знакомо" text={entry.childhoodMemories} />}
             {entry.healthyResponse && <ExpandField label="Здоровый Взрослый" text={entry.healthyResponse} color="var(--c-moss)" />}
             <DeleteBtn color="var(--c-slate)" onClick={onDelete} />
-            <ModeEntryShare mode={mode} healthyResponse={entry.healthyResponse} color={color} />
+            <ModeEntryShare
+              mode={mode}
+              healthyResponse={entry.healthyResponse}
+              entry={entry}
+              dateLabel={fmtDayMonth(fmtDateKey(entry.createdAt))}
+              color={color}
+            />
           </div>
         )}
       </div>

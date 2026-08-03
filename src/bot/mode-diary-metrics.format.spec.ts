@@ -8,6 +8,7 @@ describe('formatModeDiaryMetrics', () => {
       withHealthy30: 0,
       testCompleted7: 0,
       testCompleted30: 0,
+      chainAccepted30: 0,
     });
     expect(text).toContain('Дневник режимов');
     expect(text).toContain(
@@ -16,20 +17,24 @@ describe('formatModeDiaryMetrics', () => {
     expect(text).not.toMatch(/NaN|undefined/);
   });
 
-  it('заполненная БД — записи, ответ Здорового Взрослого и тест', () => {
+  it('заполненная БД — записи, ответ Здорового Взрослого, тест и связанный режим', () => {
     const text = formatModeDiaryMetrics({
       saves7: 5,
       saves30: 20,
       withHealthy30: 12,
       testCompleted7: 3,
       testCompleted30: 9,
+      chainAccepted30: 7,
     });
     expect(text).toContain('Записей за неделю: 5 · за месяц: 20');
     expect(text).toContain('дописывали ответ Здорового Взрослого: 12');
     expect(text).toContain(
       'Определяли режим тестом за неделю: 3 · за месяц: 9',
     );
-    expect(text).not.toMatch(/NaN|undefined|events|mode_entry_saved/);
+    expect(text).toContain('Разбирали связанный режим после записи: 7');
+    expect(text).not.toMatch(
+      /NaN|undefined|events|mode_entry_saved|mode_chain_followup/,
+    );
   });
 
   it('записи есть, тест не проходили — блок про тест не показывается', () => {
@@ -39,6 +44,7 @@ describe('formatModeDiaryMetrics', () => {
       withHealthy30: 1,
       testCompleted7: 0,
       testCompleted30: 0,
+      chainAccepted30: 0,
     });
     expect(text).toContain('Записей за неделю: 2 · за месяц: 6');
     expect(text).not.toContain('Определяли режим тестом');
@@ -51,10 +57,23 @@ describe('formatModeDiaryMetrics', () => {
       withHealthy30: 0,
       testCompleted7: 1,
       testCompleted30: 4,
+      chainAccepted30: 0,
     });
     expect(text).toContain(
       'Определяли режим тестом за неделю: 1 · за месяц: 4',
     );
     expect(text).not.toContain('Пока никто');
+  });
+
+  it('связанный режим ни разу не разбирали — человеческая строка, не пропуск', () => {
+    const text = formatModeDiaryMetrics({
+      saves7: 2,
+      saves30: 6,
+      withHealthy30: 1,
+      testCompleted7: 0,
+      testCompleted30: 0,
+      chainAccepted30: 0,
+    });
+    expect(text).toContain('Связанный режим после записи пока не разбирали.');
   });
 });

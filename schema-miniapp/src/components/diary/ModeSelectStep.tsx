@@ -1,14 +1,19 @@
 import { useState } from 'react';
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { haptic } from '../../haptic';
-import { pressable } from '../../utils/a11y';
+import { useTr } from '../../utils/addressForm';
 import { ModeTestSheet } from './ModeTestSheet';
+import { ModeFeelingBrowse } from './ModeFeelingBrowse';
+import { ModeGroupList } from './ModeGroupList';
 
 /**
  * Шаг 1 дневника режимов: выбор режима.
- * Тест-первым («не знаю какой → определим по чувству») + свёрнутый список для
- * тех, кто знает. Заменяет свалку из 35 режимов (правило онбординга: одно
- * очевидное действие на экран). Механика теста — ModeTestSheet.
+ * Тест-первым («не знаю какой → определим по чувству») + навигация «по
+ * ощущению» (те же 8 семей теста, сразу списком — ModeFeelingBrowse) +
+ * свёрнутый полный список групп для тех, кто знает точное название
+ * (ModeGroupList). Заменяет свалку из 35 режимов и таксономию, где первой
+ * попадается только «Детские режимы» (правило онбординга: одно очевидное
+ * действие на экран). Механика теста — ModeTestSheet.
  */
 export function ModeSelectStep({
   modeId,
@@ -17,6 +22,7 @@ export function ModeSelectStep({
   modeId: string;
   onChange: (id: string) => void;
 }) {
+  const tr = useTr();
   const [showTest, setShowTest] = useState(false);
   const [showList, setShowList] = useState(false);
 
@@ -107,6 +113,18 @@ export function ModeSelectStep({
         <span style={{ color: 'var(--accent-blue)', fontSize: 18 }}>→</span>
       </button>
 
+      <div style={{ margin: '16px 0 8px' }}>
+        <div
+          style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 8 }}
+        >
+          {tr(
+            'Или найди по ощущению — те же состояния, что и в тесте:',
+            'Или найдите по ощущению — те же состояния, что и в тесте:',
+          )}
+        </div>
+        <ModeFeelingBrowse onChange={onChange} />
+      </div>
+
       <button
         onClick={() => {
           haptic.tap();
@@ -122,50 +140,17 @@ export function ModeSelectStep({
           padding: '10px 2px 4px',
         }}
       >
-        Знаю режим — выбрать из списка {showList ? '▲' : '▼'}
+        Все режимы по группам {showList ? '▲' : '▼'}
       </button>
 
-      {showList &&
-        MODE_GROUPS.map((group) => (
-          <div key={group.id} style={{ marginBottom: 12 }}>
-            <div
-              style={{
-                fontSize: 10,
-                color: group.color,
-                fontWeight: 600,
-                marginBottom: 6,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}
-            >
-              {group.group}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {group.items.map((m) => (
-                <button
-                  key={m.id}
-                  {...pressable(() => {
-                    haptic.select();
-                    onChange(m.id);
-                    setShowList(false);
-                  })}
-                  className="sel-btn"
-                  style={{
-                    background: 'rgba(var(--fg-rgb),0.06)',
-                    border: '1px solid transparent',
-                    borderRadius: 16,
-                    padding: '6px 11px',
-                    color: 'rgba(var(--fg-rgb),0.6)',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {m.emoji} {m.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+      {showList && (
+        <ModeGroupList
+          onChange={(id) => {
+            onChange(id);
+            setShowList(false);
+          }}
+        />
+      )}
 
       {showTest && (
         <ModeTestSheet
