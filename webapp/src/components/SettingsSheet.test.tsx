@@ -182,3 +182,22 @@ describe('SettingsSheet — экспорт данных для терапевт�
     expect(screen.getByText('Скопировать')).toBeTruthy();
   });
 });
+
+// Регрессия (аудит доверия к тестам, п.3): «Сводка для терапевта» звала
+// api.getExport() без try/catch — при отказе сети обработчик падал
+// необработанным промисом. Ни сообщения, ни завершения ожидания: для
+// пользователя это выглядело как «нажал и ничего не произошло».
+describe('сводка для терапевта: отказ API виден пользователю', () => {
+  it('ошибка getExport показывает сообщение, а не тишину', async () => {
+    mockApi.getExport.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+
+    fireEvent.click(screen.getByText('Сводка для терапевта'));
+
+    await waitFor(() =>
+      expect(screen.queryByText(/Не удалось собрать сводку/i)).toBeTruthy(),
+    );
+    // Модалка со сводкой не открывается — показывать нечего.
+    expect(screen.queryByText(/Скопировать/i)).toBeNull();
+  });
+});
