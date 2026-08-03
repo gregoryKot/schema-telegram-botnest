@@ -26,6 +26,14 @@ const ALL_SRC = collectSourceFiles(SRC);
 const STRYKER_PREAMBLE =
   /globalThis\.Math === Math && globalThis \|\| new Function/;
 
+// src/test-support/ — тестовая инфраструктура (исключена из прод-сборки,
+// tsconfig.build.json), а не код, который когда-либо доедет до рантайма.
+// gate-sandbox.ts (тесты CI-гейтов, src/test-support/gates/) легитимно
+// спавнит `node scripts/*.mjs` через child_process — ровно то же самое, чем
+// сами scripts/*.mjs гоняют eslint/jscpd/jest (spawnSync). RCE-поверхностью
+// в задеплоенном приложении это не становится: файл туда не попадает.
+const TEST_INFRA_PATH = /\/test-support\//;
+
 describe('трипваер: нет RCE-поверхностей и небезопасного raw-SQL', () => {
   // Жёсткий бан — RCE-поверхности, недопустимы в любом виде.
   const HARD_BANNED = [
@@ -43,6 +51,7 @@ describe('трипваер: нет RCE-поверхностей и небезо�
   it('ни один src-файл не использует eval/Function/child_process', () => {
     const hits: string[] = [];
     for (const file of ALL_SRC) {
+      if (TEST_INFRA_PATH.test(file)) continue;
       const src = readFileSync(file, 'utf8');
       src.split('\n').forEach((line, i) => {
         if (line.trimStart().startsWith('//')) return;
