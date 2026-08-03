@@ -82,6 +82,14 @@ const BACKEND_ONLY: Record<string, string> = {
   mode_test_completed:
     'константа MODE_TEST_COMPLETED_EVENT (shared/src/share/analytics.ts), ' +
     'шлётся из ModeTestSheet.tsx (мини-апп) и ModeTestScreen.tsx (сайт)',
+  warm_words_open:
+    'константа WARM_WORDS_OPEN_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из WarmWords.tsx (мини-апп) и WarmWordsEx.tsx (сайт) — ' +
+    'грепом по литералу не ловится',
+  mode_chain_followup:
+    'константа MODE_CHAIN_FOLLOWUP_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeEntrySheet.tsx (оба фронта) при принятой подсказке ' +
+    '«разобрать связанный режим»',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -106,10 +114,11 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
   });
 
   it('BACKEND_ONLY не разросся сверх известного (может только сокращаться)', () => {
-    // Потолок поднят с 11 до 13 осознанно (mode_entry_saved/mode_test_completed,
-    // 2026-07): те же кросс-фронтовые события через именованные константы —
-    // тот же легитимный паттерн, что и share_card/onboarding_step/mode_card_saved,
+    // Потолок поднят с 11 до 13 (mode_entry_saved/mode_test_completed, 2026-07),
+    // затем до 15 (warm_words_open/mode_chain_followup, 2026-08) осознанно:
+    // те же кросс-фронтовые события через именованные константы — тот же
+    // легитимный паттерн, что и share_card/onboarding_step/mode_card_saved,
     // не обход правила.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(13);
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(15);
   });
 });

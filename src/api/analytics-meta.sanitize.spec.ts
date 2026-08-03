@@ -172,6 +172,63 @@ describe('sanitizeMeta', () => {
     ).toEqual({ modeId: 'vulnerable_child' });
   });
 
+  it('warm_words_open: валидный count (0..1000) проходит', () => {
+    expect(sanitizeMeta('warm_words_open', { count: 12 })).toEqual({
+      count: 12,
+    });
+    expect(sanitizeMeta('warm_words_open', { count: 0 })).toEqual({
+      count: 0,
+    });
+    expect(sanitizeMeta('warm_words_open', { count: 1000 })).toEqual({
+      count: 1000,
+    });
+  });
+
+  it('warm_words_open: невалидный/отсутствующий count — событие остаётся, meta пустое', () => {
+    expect(sanitizeMeta('warm_words_open', { count: 1001 })).toEqual({});
+    expect(sanitizeMeta('warm_words_open', { count: -1 })).toEqual({});
+    expect(sanitizeMeta('warm_words_open', { count: 'many' })).toEqual({});
+    expect(sanitizeMeta('warm_words_open', {})).toEqual({});
+  });
+
+  it('warm_words_open: лишние поля срезаются', () => {
+    expect(
+      sanitizeMeta('warm_words_open', { count: 3, note: 'секретный текст' }),
+    ).toEqual({ count: 3 });
+  });
+
+  it('mode_chain_followup: from + to из allow-list формата проходят', () => {
+    expect(
+      sanitizeMeta('mode_chain_followup', {
+        from: 'vulnerable_child',
+        to: 'punitive_parent',
+      }),
+    ).toEqual({ from: 'vulnerable_child', to: 'punitive_parent' });
+  });
+
+  it('mode_chain_followup: невалидный/отсутствующий from или to → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('mode_chain_followup', {
+        from: 'evil id!',
+        to: 'punitive_parent',
+      }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('mode_chain_followup', { from: 'vulnerable_child' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('mode_chain_followup', {})).toBeUndefined();
+  });
+
+  it('mode_chain_followup: лишние поля срезаются', () => {
+    expect(
+      sanitizeMeta('mode_chain_followup', {
+        from: 'vulnerable_child',
+        to: 'punitive_parent',
+        note: 'секретный текст',
+      }),
+    ).toEqual({ from: 'vulnerable_child', to: 'punitive_parent' });
+  });
+
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
   });

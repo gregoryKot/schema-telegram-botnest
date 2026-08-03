@@ -6,8 +6,9 @@ import {
 } from './mode-diary-metrics.format';
 
 // Счётчики дневника режимов для /stats: события mode_entry_saved (записи +
-// ответ Здорового Взрослого) и mode_test_completed (тест «по функции»).
-// Свой домен — свой файл (правило №10), образец — mode-card-metrics.service.ts.
+// ответ Здорового Взрослого), mode_test_completed (тест «по функции») и
+// mode_chain_followup (разобрал связанный режим после записи). Свой домен —
+// свой файл (правило №10), образец — mode-card-metrics.service.ts.
 @Injectable()
 export class ModeDiaryMetricsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -42,12 +43,20 @@ export class ModeDiaryMetricsService {
       FROM "AnalyticsEvent"
       WHERE "name" = 'mode_test_completed' AND "createdAt" >= ${since30}`;
 
+    const [chainRow] = await this.prisma.$queryRaw<
+      Array<{ chainAccepted30: bigint }>
+    >`
+      SELECT count(*)::bigint AS "chainAccepted30"
+      FROM "AnalyticsEvent"
+      WHERE "name" = 'mode_chain_followup' AND "createdAt" >= ${since30}`;
+
     return {
       saves7: Number(entryRow?.saves7 ?? 0n),
       saves30: Number(entryRow?.saves30 ?? 0n),
       withHealthy30: Number(entryRow?.withHealthy30 ?? 0n),
       testCompleted7: Number(testRow?.testCompleted7 ?? 0n),
       testCompleted30: Number(testRow?.testCompleted30 ?? 0n),
+      chainAccepted30: Number(chainRow?.chainAccepted30 ?? 0n),
     };
   }
 }

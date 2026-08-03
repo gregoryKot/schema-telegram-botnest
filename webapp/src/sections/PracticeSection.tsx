@@ -19,8 +19,9 @@ const ModeEx           = lazy(() => import('../components/exercises/FlashcardEx'
 const LetterEx         = lazy(() => import('../components/exercises/LetterEx').then(m => ({ default: m.LetterEx })));
 const SafePlaceEx      = lazy(() => import('../components/exercises/SafePlaceEx').then(m => ({ default: m.SafePlaceEx })));
 const ChildhoodWheelEx = lazy(() => import('../components/exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
+const WarmWordsEx      = lazy(() => import('../components/exercises/WarmWordsEx').then(m => ({ default: m.WarmWordsEx })));
 
-type ExId = 'belief' | 'schema' | 'mode' | 'letter' | 'safe' | 'wheel';
+type ExId = 'belief' | 'schema' | 'mode' | 'letter' | 'safe' | 'wheel' | 'warm';
 interface ExStats { count: number; lastDone: string | null; }
 
 const EXERCISES = [
@@ -30,6 +31,7 @@ const EXERCISES = [
   { id: 'letter' as ExId, num: '04', eyebrow: 'Эмоциональная работа', title: 'Письмо уязвимому ребёнку', desc: 'Сказать себе-маленькому то, что он должен был услышать.',               time: '15–25 мин', color: 'var(--c-amber)' },
   { id: 'safe'   as ExId, num: '05', eyebrow: 'Ресурс',                title: 'Безопасное место',          desc: 'Описать место, в которое можно мысленно возвращаться в тревогу.',      time: '5–10 мин', color: 'var(--c-moss)' },
   { id: 'wheel'  as ExId, num: '06', eyebrow: 'Истоки',                title: 'Колесо детства',            desc: 'Оценить базовые потребности в детстве. Найти связь с паттернами сегодня.', time: '8–12 мин', color: 'var(--accent-indigo)' },
+  { id: 'warm'   as ExId, num: '07', eyebrow: 'Ресурс',                title: 'Тёплые слова',               desc: 'Слова поддержки — перечитать, когда трудно.',                            time: '2–5 мин',  color: 'var(--accent-yellow)' },
 ];
 
 function fmtAgo(d: string | null): string {
@@ -67,6 +69,7 @@ function ExGlyph({ id }: { id: ExId }) {
   if (id === 'mode')   return <svg viewBox="0 0 28 28" {...s}><circle cx="14" cy="14" r="9"/><circle cx="14" cy="14" r="4"/><path d="M14 5v3M14 20v3M5 14h3M20 14h3"/></svg>;
   if (id === 'letter') return <svg viewBox="0 0 28 28" {...s}><path d="M6 8h16v12a2 2 0 01-2 2H8a2 2 0 01-2-2V8z"/><path d="M6 8l8 7 8-7"/></svg>;
   if (id === 'safe')   return <svg viewBox="0 0 28 28" {...s}><path d="M5 13l9-7 9 7v9a1 1 0 01-1 1h-5v-7h-6v7H6a1 1 0 01-1-1v-9z"/></svg>;
+  if (id === 'warm')   return <svg viewBox="0 0 28 28" {...s}><path d="M14 23s-9-5.5-9-12a5.5 5.5 0 019-4.2A5.5 5.5 0 0123 11c0 6.5-9 12-9 12z"/></svg>;
   return <svg viewBox="0 0 28 28" {...s}><circle cx="14" cy="14" r="9"/><path d="M14 5v18M5 14h18M7.5 7.5l13 13M20.5 7.5l-13 13"/></svg>;
 }
 
@@ -219,6 +222,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         {openEx === 'letter' && <LetterEx onBack={onBack} onComplete={handleTaskComplete} />}
         {openEx === 'safe'   && <SafePlaceEx onBack={onBack} onComplete={handleTaskComplete} />}
         {openEx === 'wheel'  && <ChildhoodWheelEx onBack={onBack} />}
+        {openEx === 'warm'   && <WarmWordsEx onBack={onBack} />}
       </Suspense>
     );
   }
@@ -242,7 +246,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         Упражнения<br /><span className="it">и задания</span>
       </h1>
       <p className="hub-sub" style={{ marginBottom: sessionBanner ? 12 : 40 }}>
-        Шесть практик схема-терапии плюс ваши персональные цели.
+        Семь практик схема-терапии плюс ваши персональные цели.
       </p>
       {sessionBanner && (
         <div className="text-sm" style={{ marginBottom: 40, color: sessionBanner.isToday ? 'var(--c-moss)' : 'var(--text-sub)' }}>
@@ -273,7 +277,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
       {/* Exercise library */}
       <div className="section">
-        <div className="eyebrow" style={{ marginBottom: 20 }}>Библиотека · 6 упражнений</div>
+        <div className="eyebrow" style={{ marginBottom: 20 }}>Библиотека · 7 упражнений</div>
         <div className="ex-grid">
           {EXERCISES.map(ex => {
             const s = stats[ex.id];
