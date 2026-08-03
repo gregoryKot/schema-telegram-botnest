@@ -2,7 +2,7 @@
 // Баннер согласия на куки: показ на чистом localStorage, выбор «только
 // необходимые»/«принять все» персистится, повторный маунт баннер не рисует.
 // Загрузка Яндекс.Метрики — только с явного согласия (accept), не по декланту.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { CookieBanner } from './CookieBanner';
 
