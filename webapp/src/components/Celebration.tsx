@@ -10,6 +10,7 @@ import {
   SHARE_RESULT_EVENT,
 } from '../../../shared/src/share/analytics';
 import { api } from '../api';
+import { useTr } from '../utils/addressForm';
 
 interface Props {
   streak: number;
@@ -21,6 +22,7 @@ interface Props {
 export function Celebration({ streak, onDone, insight }: Props) {
   const canvasRef = useConfetti(onDone);
   const [copied, setCopied] = useState(false);
+  const tr = useTr();
 
   const isMilestone = [3, 7, 14, 21, 30, 60, 100].includes(streak);
 
@@ -82,7 +84,10 @@ export function Celebration({ streak, onDone, insight }: Props) {
           {copied ? 'Скопировано!' : 'Поделиться'}
         </button>
         <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 12 }}>
-          нажми в другом месте, чтобы закрыть
+          {tr(
+            'нажми в другом месте, чтобы закрыть',
+            'нажмите в другом месте, чтобы закрыть',
+          )}
         </div>
       </div>
     </div>
