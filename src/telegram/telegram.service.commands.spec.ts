@@ -1,10 +1,10 @@
 // Поведенческие тесты простых команд TelegramService, непокрытых основным
-// telegram.service.spec.ts: ping/subscribe/donate/testdonate/about/therapist/
-// zayavki/broadcast/zv, плюс notifyAdmin(). Общий makeDeps здесь передаёт ВСЕ
-// 12 конструкторных зависимостей, включая channelCheck — в соседнем файле его
-// не было вовсе (дефект, описан в отчёте), из-за чего /zv никогда не
-// тестировался и падал бы в проде на `this.channelCheck.log()` при
-// незамеченной регрессии конструктора.
+// telegram.service.spec.ts: ping/subscribe/donate/testdonate/about/therapist.
+// /zayavki и /broadcast — telegram.service.broadcast.spec.ts, /zv и
+// notifyAdmin() — telegram.service.admin.spec.ts (лимит ~300 строк на файл,
+// CLAUDE.md). Общий makeDeps передаёт ВСЕ 12 конструкторных зависимостей,
+// включая channelCheck — в соседнем telegram.service.spec.ts его не было
+// вовсе (дефект, описан в отчёте), из-за чего /zv никогда не тестировался.
 import { Logger } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { makeFakeBot, runCommand } from './telegram.test-helpers.spec';
@@ -224,104 +224,5 @@ describe('TelegramService — /therapist (deprecated redirect)', () => {
   });
 });
 
-describe('TelegramService — /zayavki (только админ, фолбэк-доступ к заявкам)', () => {
-  it('не-админ получает отказ, listPending не вызывается', async () => {
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot, therapistRequestService } = makeDeps();
-    service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'zayavki', { from: { id: 1 } });
-    expect(ctx.reply).toHaveBeenCalledWith('Только админ');
-    expect(therapistRequestService.listPending).not.toHaveBeenCalled();
-  });
-
-  it('нет заявок — сообщение "Заявок нет", без карточек', async () => {
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot } = makeDeps();
-    service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'zayavki', { from: { id: 999 } });
-    expect(ctx.reply).toHaveBeenCalledWith(
-      expect.stringContaining('Заявок на роль терапевта нет'),
-    );
-  });
-
-  it('есть заявки — каждая карточка содержит id, экранированные поля и Approve/Reject callback_data', async () => {
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot } = makeDeps({
-      therapistRequestService: {
-        listPending: jest.fn().mockResolvedValue([
-          {
-            id: 5,
-            userId: 42n,
-            fullName: 'Иван <script>',
-            qualification: 'КПТ',
-            contacts: '@ivan',
-            message: null,
-          },
-        ]),
-      },
-    });
-    service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'zayavki', { from: { id: 999 } });
-    const [text, opts] = ctx.reply.mock.calls[0];
-    expect(text).toContain('Заявка #5');
-    expect(text).toContain('&lt;script&gt;'); // XSS-экранирование имени
-    const buttons = opts.reply_markup.inline_keyboard[0];
-    expect(buttons).toEqual([
-      { text: '✅ Approve', callback_data: 'treq:approve:5' },
-      { text: '❌ Reject', callback_data: 'treq:reject:5' },
-    ]);
-  });
-});
-
-describe('TelegramService — /broadcast (только админ)', () => {
-  it('не-админ получает отказ, рассылка не запускается', async () => {
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot, accountService } = makeDeps();
-    service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'broadcast', {
-      from: { id: 1 },
-      message: { text: '/broadcast привет' },
-    });
-    expect(ctx.reply).toHaveBeenCalledWith('⛔ Нет доступа');
-    expect(accountService.getBroadcastUserIds).not.toHaveBeenCalled();
-  });
-
-  it('админ без текста — подсказка формата, рассылка не запускается', async () => {
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot, accountService } = makeDeps();
-    service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'broadcast', {
-      from: { id: 999 },
-      message: { text: '/broadcast' },
-    });
-    expect(ctx.reply).toHaveBeenCalledWith(
-      expect.stringContaining('/broadcast <сообщение>'),
-    );
-    expect(accountService.getBroadcastUserIds).not.toHaveBeenCalled();
-  });
-
-  it('успех + перманентная ошибка (403) — считает sent/failed раздельно, блокирует юзера', async () => {
-    process.env.ADMIN_ID = '999';
-    const { service, fakeBot, accountService } = makeDeps({
-      accountService: {
-        getBroadcastUserIds: jest.fn().mockResolvedValue([1, 2]),
-      },
-    });
-    service.onModuleInit();
-    const sendMessage = fakeBot.telegram.sendMessage;
-    sendMessage
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce({ response: { error_code: 403 } });
-    const ctx = await runCommand(fakeBot, 'broadcast', {
-      from: { id: 999 },
-      message: { text: '/broadcast всем привет' },
-    });
-    expect(sendMessage).toHaveBeenCalledWith(1, 'всем привет', {
-      parse_mode: undefined,
-    });
-    expect(accountService.markUserBlocked).toHaveBeenCalledWith(2n);
-    const summary = ctx.reply.mock.calls.at(-1)![0];
-    expect(summary).toContain('1 доставлено');
-    expect(summary).toContain('1 ошибок');
-  }, 10_000);
-});
+// /zayavki и /broadcast — в telegram.service.broadcast.spec.ts (лимит ~300
+// строк на файл, CLAUDE.md).
