@@ -20,7 +20,10 @@ const DEAD_SESSION_COOLDOWN_MS = 30_000; // не долбим сервер, ес
 
 export const SESSION_EXPIRED_EVENT = 'session-expired';
 /** Строка для AppErrorScreen: «401» переключает его на ветку истёкшей сессии. */
-export const SESSION_EXPIRED_ERROR = 'Сессия Telegram истекла (401)';
+// Строка уходит в AppErrorScreen, который различает ветки по «401». Слово
+// «Telegram» отсюда убрано: та же строка показывается и в MAX, а название
+// мессенджера экран берёт у хоста.
+export const SESSION_EXPIRED_ERROR = 'Не удалось получить доступ (401)';
 
 let accessToken: string | null = null;
 let accessExpiresAt = 0;

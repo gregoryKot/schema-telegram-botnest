@@ -5,7 +5,7 @@
 // или инсеты), и что в браузере ни один вызов не падает без window.Telegram.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createTelegramHost } from './telegram';
-import { createMaxHost } from './max';
+import { createMaxHost, resetMaxLaunchParams } from './max';
 import { createWebHost } from './web';
 import { detectHostId, getHost, setHost } from './index';
 
@@ -570,5 +570,74 @@ describe('адаптер браузера', () => {
     const status = vi.fn();
     host.homeScreen.checkStatus(status);
     expect(status).toHaveBeenCalledWith('unsupported');
+  });
+});
+
+// ── Подпись из адреса ───────────────────────────────────────────────────────
+// Живой iPhone в MAX показал, что стартовые параметры всегда лежат во
+// фрагменте (#WebAppData=…). Значит вход не обязан зависеть от их CDN: не
+// доедет скрипт моста — приложение иначе посчитало бы себя открытым в
+// браузере и показало экран входа вместо автоматического.
+describe('MAX: стартовые параметры из адреса', () => {
+  function setHash(hash: string) {
+    window.location.hash = hash;
+    resetMaxLaunchParams();
+  }
+
+  afterEach(() => {
+    setHash('');
+  });
+
+  it('без моста хост всё равно опознаётся как MAX', () => {
+    setHash('#WebAppData=auth_date%3D1%26hash%3Dabc&WebAppPlatform=ios');
+    expect(detectHostId()).toBe('max');
+  });
+
+  it('подпись для обмена берётся из адреса, когда моста нет', () => {
+    setHash('#WebAppData=auth_date%3D1%26hash%3Dabc&WebAppPlatform=ios');
+    const host = createMaxHost();
+    expect(host.sessionExchange()).toEqual({
+      path: '/api/auth/max/webapp',
+      body: { initData: 'auth_date=1&hash=abc' },
+    });
+    expect(host.authHeaders()).toEqual({
+      'x-max-init-data': 'auth_date=1&hash=abc',
+    });
+  });
+
+  it('снимается ровно один слой кодирования — внутренние значения не тронуты', () => {
+    // Во фрагменте значение закодировано ещё раз поверх внутреннего: бэкенд
+    // ждёт строку, где значения остались процент-кодированными.
+    setHash('#WebAppData=user%3D%257B%2522id%2522%253A7%257D%26hash%3Dabc');
+    expect(createMaxHost().sessionExchange()?.body).toEqual({
+      initData: 'user=%7B%22id%22%3A7%7D&hash=abc',
+    });
+  });
+
+  it('буквальный + переживает разбор (URLSearchParams сделал бы из него пробел)', () => {
+    setHash('#WebAppData=ip%3D1%2B2%26hash%3Dabc');
+    expect(createMaxHost().sessionExchange()?.body).toEqual({
+      initData: 'ip=1+2&hash=abc',
+    });
+  });
+
+  it('мост, если доехал, важнее адреса', () => {
+    setHash('#WebAppData=from%3Durl%26hash%3Dabc');
+    fakeMax({ initData: 'from=bridge&hash=abc' });
+    expect(createMaxHost().sessionExchange()?.body).toEqual({
+      initData: 'from=bridge&hash=abc',
+    });
+  });
+
+  it('платформа известна из адреса до загрузки моста', () => {
+    setHash('#WebAppData=a%3Db&WebAppPlatform=ios');
+    expect(createMaxHost().platform).toBe('ios');
+    // Но хаптики без моста не обещаем: звать нечего.
+    expect(createMaxHost().capabilities.haptics).toBe(false);
+  });
+
+  it('чужой фрагмент хостом MAX не считается', () => {
+    setHash('#section=today');
+    expect(detectHostId()).toBe('web');
   });
 });
