@@ -97,7 +97,7 @@
   "webapp/src/pages/admin/BookingSection.tsx": 270,
   "webapp/src/components/therapist/ClientListView.tsx": 265,
   "shared/src/hooks/ysqSchemas.ts": 264,
-  "scripts/check-weak-assert-ratchet.mjs": 263,
+  "scripts/check-weak-assert-ratchet.mjs": 267,
   "schema-miniapp/src/components/TodayCustomizeSheet.tsx": 261,
   "src/test-support/fake-prisma.spec-helper.ts": 261,
   "src/bot/journey.service.ts": 260,

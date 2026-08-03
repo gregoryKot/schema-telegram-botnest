@@ -7,7 +7,7 @@
 // внутренний маршрут — как раньше, через navigate().
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, waitFor, cleanup } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useSearchParams } from 'react-router-dom';
 import { AuthProvider } from '../auth/AuthProvider';
 import { AuthCallback } from './AuthCallback';
 
@@ -89,6 +89,36 @@ describe('AuthCallback — returnTo ведёт на обычный маршру�
     const { findByText } = renderAt('#access_token=tok123&expires_in=900');
 
     await findByText('today-page');
+    expect(replaceSpy).not.toHaveBeenCalled();
+  });
+});
+
+// Ошибка провайдера (пользователь отменил OAuth, бэкенд не выдал токен) —
+// хэш без access_token обязан увести на /login с явной причиной, а не
+// оставить пользователя висеть на спиннере.
+function LoginProbe() {
+  const [params] = useSearchParams();
+  return <div>login-page error={params.get('error') ?? 'none'}</div>;
+}
+
+describe('AuthCallback — бэкенд не вернул access_token (ошибка провайдера)', () => {
+  it('уходит на /login?error=no_token через navigate(), не через window.location.replace', async () => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, hash: '', replace: replaceSpy },
+    });
+    const { findByText } = render(
+      <MemoryRouter initialEntries={['/auth/callback']}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/login" element={<LoginProbe />} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+
+    await findByText('login-page error=no_token');
     expect(replaceSpy).not.toHaveBeenCalled();
   });
 });
