@@ -1,0 +1,72 @@
+057ffadfcf812e135dc5057cafdfb212
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BotModule = void 0;
+const common_1 = require("@nestjs/common");
+const bot_service_1 = require("./bot.service");
+const bot_analytics_service_1 = require("./bot.analytics.service");
+const bot_client_overview_service_1 = require("./bot.client-overview.service");
+const bot_product_metrics_service_1 = require("./bot.product-metrics.service");
+const stats_report_service_1 = require("./stats-report.service");
+const quiz_metrics_service_1 = require("./quiz-metrics.service");
+const practice_link_metrics_service_1 = require("./practice-link-metrics.service");
+const practice_metrics_service_1 = require("./practice-metrics.service");
+const mode_card_metrics_service_1 = require("./mode-card-metrics.service");
+const mode_diary_metrics_service_1 = require("./mode-diary-metrics.service");
+const diary_service_1 = require("./diary.service");
+const profile_service_1 = require("./profile.service");
+const account_service_1 = require("./account.service");
+const ysq_service_1 = require("./ysq.service");
+const pairs_service_1 = require("./pairs.service");
+const practices_service_1 = require("./practices.service");
+const exercises_service_1 = require("./exercises.service");
+const notes_service_1 = require("./notes.service");
+const healthy_adult_service_1 = require("./healthy-adult.service");
+const journey_service_1 = require("./journey.service");
+const practice_sessions_service_1 = require("./practice-sessions.service");
+// Сервисы, нужные другим модулям (TelegramModule и т.п.) — один список,
+// который идёт и в providers, и в exports (правило №10: новый экспортируемый
+// сервис стоит 1 строку, а не 2).
+const EXPORTED_PROVIDERS = [
+    bot_service_1.BotService,
+    bot_analytics_service_1.BotAnalyticsService,
+    bot_client_overview_service_1.BotClientOverviewService,
+    bot_product_metrics_service_1.ProductMetricsService,
+    stats_report_service_1.StatsReportService,
+    diary_service_1.DiaryService,
+    profile_service_1.ProfileService,
+    account_service_1.AccountService,
+    ysq_service_1.YsqService,
+    pairs_service_1.PairsService,
+    practices_service_1.PracticesService,
+    exercises_service_1.ExercisesService,
+    notes_service_1.NotesService,
+    healthy_adult_service_1.HealthyAdultService,
+    journey_service_1.JourneyService,
+    practice_sessions_service_1.PracticeSessionsService,
+];
+// Используются только внутри BotModule (квиз/переходы/карточки режимов —
+// суб-агрегаты ProductMetricsService/StatsReportService), наружу не торчат.
+const INTERNAL_PROVIDERS = [
+    quiz_metrics_service_1.QuizMetricsService,
+    practice_link_metrics_service_1.PracticeLinkMetricsService,
+    mode_card_metrics_service_1.ModeCardMetricsService,
+    mode_diary_metrics_service_1.ModeDiaryMetricsService,
+    practice_metrics_service_1.PracticeMetricsService,
+];
+let BotModule = class BotModule {
+};
+exports.BotModule = BotModule;
+exports.BotModule = BotModule = __decorate([
+    (0, common_1.Module)({
+        providers: [...EXPORTED_PROVIDERS, ...INTERNAL_PROVIDERS],
+        exports: EXPORTED_PROVIDERS,
+    })
+], BotModule);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm90L2JvdC5tb2R1bGUudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7O0FBQUEsMkNBQXdDO0FBQ3hDLCtDQUEyQztBQUMzQyxtRUFBOEQ7QUFDOUQsK0VBQXlFO0FBQ3pFLCtFQUFzRTtBQUN0RSxpRUFBNEQ7QUFDNUQsaUVBQTREO0FBQzVELG1GQUE2RTtBQUM3RSx5RUFBb0U7QUFDcEUsMkVBQXFFO0FBQ3JFLDZFQUF1RTtBQUN2RSxtREFBK0M7QUFDL0MsdURBQW1EO0FBQ25ELHVEQUFtRDtBQUNuRCwrQ0FBMkM7QUFDM0MsbURBQStDO0FBQy9DLDJEQUF1RDtBQUN2RCwyREFBdUQ7QUFDdkQsbURBQStDO0FBQy9DLG1FQUE4RDtBQUM5RCx1REFBbUQ7QUFDbkQsMkVBQXNFO0FBRXRFLHdFQUF3RTtBQUN4RSw2RUFBNkU7QUFDN0Usa0NBQWtDO0FBQ2xDLE1BQU0sa0JBQWtCLEdBQUc7SUFDekIsd0JBQVU7SUFDViwyQ0FBbUI7SUFDbkIsc0RBQXdCO0lBQ3hCLG1EQUFxQjtJQUNyQix5Q0FBa0I7SUFDbEIsNEJBQVk7SUFDWixnQ0FBYztJQUNkLGdDQUFjO0lBQ2Qsd0JBQVU7SUFDViw0QkFBWTtJQUNaLG9DQUFnQjtJQUNoQixvQ0FBZ0I7SUFDaEIsNEJBQVk7SUFDWiwyQ0FBbUI7SUFDbkIsZ0NBQWM7SUFDZCxtREFBdUI7Q0FDeEIsQ0FBQztBQUVGLHlFQUF5RTtBQUN6RSw0RUFBNEU7QUFDNUUsTUFBTSxrQkFBa0IsR0FBRztJQUN6Qix5Q0FBa0I7SUFDbEIsMERBQTBCO0lBQzFCLGtEQUFzQjtJQUN0QixvREFBdUI7SUFDdkIsaURBQXNCO0NBQ3ZCLENBQUM7QUFNSyxJQUFNLFNBQVMsR0FBZixNQUFNLFNBQVM7Q0FBRyxDQUFBO0FBQVosOEJBQVM7b0JBQVQsU0FBUztJQUpyQixJQUFBLGVBQU0sRUFBQztRQUNOLFNBQVMsRUFBRSxDQUFDLEdBQUcsa0JBQWtCLEVBQUUsR0FBRyxrQkFBa0IsQ0FBQztRQUN6RCxPQUFPLEVBQUUsa0JBQWtCO0tBQzVCLENBQUM7R0FDVyxTQUFTLENBQUciLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm90L2JvdC5tb2R1bGUudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgTW9kdWxlIH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgQm90U2VydmljZSB9IGZyb20gJy4vYm90LnNlcnZpY2UnO1xuaW1wb3J0IHsgQm90QW5hbHl0aWNzU2VydmljZSB9IGZyb20gJy4vYm90LmFuYWx5dGljcy5zZXJ2aWNlJztcbmltcG9ydCB7IEJvdENsaWVudE92ZXJ2aWV3U2VydmljZSB9IGZyb20gJy4vYm90LmNsaWVudC1vdmVydmlldy5zZXJ2aWNlJztcbmltcG9ydCB7IFByb2R1Y3RNZXRyaWNzU2VydmljZSB9IGZyb20gJy4vYm90LnByb2R1Y3QtbWV0cmljcy5zZXJ2aWNlJztcbmltcG9ydCB7IFN0YXRzUmVwb3J0U2VydmljZSB9IGZyb20gJy4vc3RhdHMtcmVwb3J0LnNlcnZpY2UnO1xuaW1wb3J0IHsgUXVpek1ldHJpY3NTZXJ2aWNlIH0gZnJvbSAnLi9xdWl6LW1ldHJpY3Muc2VydmljZSc7XG5pbXBvcnQgeyBQcmFjdGljZUxpbmtNZXRyaWNzU2VydmljZSB9IGZyb20gJy4vcHJhY3RpY2UtbGluay1tZXRyaWNzLnNlcnZpY2UnO1xuaW1wb3J0IHsgUHJhY3RpY2VNZXRyaWNzU2VydmljZSB9IGZyb20gJy4vcHJhY3RpY2UtbWV0cmljcy5zZXJ2aWNlJztcbmltcG9ydCB7IE1vZGVDYXJkTWV0cmljc1NlcnZpY2UgfSBmcm9tICcuL21vZGUtY2FyZC1tZXRyaWNzLnNlcnZpY2UnO1xuaW1wb3J0IHsgTW9kZURpYXJ5TWV0cmljc1NlcnZpY2UgfSBmcm9tICcuL21vZGUtZGlhcnktbWV0cmljcy5zZXJ2aWNlJztcbmltcG9ydCB7IERpYXJ5U2VydmljZSB9IGZyb20gJy4vZGlhcnkuc2VydmljZSc7XG5pbXBvcnQgeyBQcm9maWxlU2VydmljZSB9IGZyb20gJy4vcHJvZmlsZS5zZXJ2aWNlJztcbmltcG9ydCB7IEFjY291bnRTZXJ2aWNlIH0gZnJvbSAnLi9hY2NvdW50LnNlcnZpY2UnO1xuaW1wb3J0IHsgWXNxU2VydmljZSB9IGZyb20gJy4veXNxLnNlcnZpY2UnO1xuaW1wb3J0IHsgUGFpcnNTZXJ2aWNlIH0gZnJvbSAnLi9wYWlycy5zZXJ2aWNlJztcbmltcG9ydCB7IFByYWN0aWNlc1NlcnZpY2UgfSBmcm9tICcuL3ByYWN0aWNlcy5zZXJ2aWNlJztcbmltcG9ydCB7IEV4ZXJjaXNlc1NlcnZpY2UgfSBmcm9tICcuL2V4ZXJjaXNlcy5zZXJ2aWNlJztcbmltcG9ydCB7IE5vdGVzU2VydmljZSB9IGZyb20gJy4vbm90ZXMuc2VydmljZSc7XG5pbXBvcnQgeyBIZWFsdGh5QWR1bHRTZXJ2aWNlIH0gZnJvbSAnLi9oZWFsdGh5LWFkdWx0LnNlcnZpY2UnO1xuaW1wb3J0IHsgSm91cm5leVNlcnZpY2UgfSBmcm9tICcuL2pvdXJuZXkuc2VydmljZSc7XG5pbXBvcnQgeyBQcmFjdGljZVNlc3Npb25zU2VydmljZSB9IGZyb20gJy4vcHJhY3RpY2Utc2Vzc2lvbnMuc2VydmljZSc7XG5cbi8vINCh0LXRgNCy0LjRgdGLLCDQvdGD0LbQvdGL0LUg0LTRgNGD0LPQuNC8INC80L7QtNGD0LvRj9C8IChUZWxlZ3JhbU1vZHVsZSDQuCDRgi7Qvy4pIOKAlCDQvtC00LjQvSDRgdC/0LjRgdC+0LosXG4vLyDQutC+0YLQvtGA0YvQuSDQuNC00ZHRgiDQuCDQsiBwcm92aWRlcnMsINC4INCyIGV4cG9ydHMgKNC/0YDQsNCy0LjQu9C+IOKEljEwOiDQvdC+0LLRi9C5INGN0LrRgdC/0L7RgNGC0LjRgNGD0LXQvNGL0Llcbi8vINGB0LXRgNCy0LjRgSDRgdGC0L7QuNGCIDEg0YHRgtGA0L7QutGDLCDQsCDQvdC1IDIpLlxuY29uc3QgRVhQT1JURURfUFJPVklERVJTID0gW1xuICBCb3RTZXJ2aWNlLFxuICBCb3RBbmFseXRpY3NTZXJ2aWNlLFxuICBCb3RDbGllbnRPdmVydmlld1NlcnZpY2UsXG4gIFByb2R1Y3RNZXRyaWNzU2VydmljZSxcbiAgU3RhdHNSZXBvcnRTZXJ2aWNlLFxuICBEaWFyeVNlcnZpY2UsXG4gIFByb2ZpbGVTZXJ2aWNlLFxuICBBY2NvdW50U2VydmljZSxcbiAgWXNxU2VydmljZSxcbiAgUGFpcnNTZXJ2aWNlLFxuICBQcmFjdGljZXNTZXJ2aWNlLFxuICBFeGVyY2lzZXNTZXJ2aWNlLFxuICBOb3Rlc1NlcnZpY2UsXG4gIEhlYWx0aHlBZHVsdFNlcnZpY2UsXG4gIEpvdXJuZXlTZXJ2aWNlLFxuICBQcmFjdGljZVNlc3Npb25zU2VydmljZSxcbl07XG5cbi8vINCY0YHQv9C+0LvRjNC30YPRjtGC0YHRjyDRgtC+0LvRjNC60L4g0LLQvdGD0YLRgNC4IEJvdE1vZHVsZSAo0LrQstC40Lcv0L/QtdGA0LXRhdC+0LTRiy/QutCw0YDRgtC+0YfQutC4INGA0LXQttC40LzQvtCyIOKAlFxuLy8g0YHRg9CxLdCw0LPRgNC10LPQsNGC0YsgUHJvZHVjdE1ldHJpY3NTZXJ2aWNlL1N0YXRzUmVwb3J0U2VydmljZSksINC90LDRgNGD0LbRgyDQvdC1INGC0L7RgNGH0LDRgi5cbmNvbnN0IElOVEVSTkFMX1BST1ZJREVSUyA9IFtcbiAgUXVpek1ldHJpY3NTZXJ2aWNlLFxuICBQcmFjdGljZUxpbmtNZXRyaWNzU2VydmljZSxcbiAgTW9kZUNhcmRNZXRyaWNzU2VydmljZSxcbiAgTW9kZURpYXJ5TWV0cmljc1NlcnZpY2UsXG4gIFByYWN0aWNlTWV0cmljc1NlcnZpY2UsXG5dO1xuXG5ATW9kdWxlKHtcbiAgcHJvdmlkZXJzOiBbLi4uRVhQT1JURURfUFJPVklERVJTLCAuLi5JTlRFUk5BTF9QUk9WSURFUlNdLFxuICBleHBvcnRzOiBFWFBPUlRFRF9QUk9WSURFUlMsXG59KVxuZXhwb3J0IGNsYXNzIEJvdE1vZHVsZSB7fVxuIl0sInZlcnNpb24iOjN9

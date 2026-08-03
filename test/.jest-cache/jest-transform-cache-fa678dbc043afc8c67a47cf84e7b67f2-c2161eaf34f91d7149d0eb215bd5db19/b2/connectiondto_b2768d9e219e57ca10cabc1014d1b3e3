@@ -1,0 +1,58 @@
+71d493614efe673a5898376f70ac3aee
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TherapistViewDto = exports.AddClientDto = exports.VirtualClientDto = exports.JoinTherapyDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * DTO подключения клиент↔терапевт (аудит 2026-07, 2г / правило №6
+ * CLAUDE.md). Формат кода приглашения не проверяется отдельно —
+ * сервис сам отвергает неизвестный/просроченный код.
+ */
+class JoinTherapyDto {
+    code;
+}
+exports.JoinTherapyDto = JoinTherapyDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], JoinTherapyDto.prototype, "code", void 0);
+class VirtualClientDto {
+    name;
+}
+exports.VirtualClientDto = VirtualClientDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], VirtualClientDto.prototype, "name", void 0);
+// Эндпоинт всегда возвращает 403 (см. therapy-connection.controller.ts) — DTO нужен
+// только для рантайм-типизации тела запроса, ручной ветки добавления
+// реальных клиентов больше нет.
+class AddClientDto {
+    clientTelegramId;
+}
+exports.AddClientDto = AddClientDto;
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    __metadata("design:type", Number)
+], AddClientDto.prototype, "clientTelegramId", void 0);
+// Запоминаемое предпочтение терапевта: стартовать в кабинете (on=true) или в
+// клиентском режиме (on=false). Правило №6 CLAUDE.md — рантайм-валидация тела.
+class TherapistViewDto {
+    on;
+}
+exports.TherapistViewDto = TherapistViewDto;
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], TherapistViewDto.prototype, "on", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGhlcmFweS9kdG8vY29ubmVjdGlvbi5kdG8udHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7O0FBQUEscURBQXlFO0FBRXpFOzs7O0dBSUc7QUFDSCxNQUFhLGNBQWM7SUFHekIsSUFBSSxDQUFVO0NBQ2Y7QUFKRCx3Q0FJQztBQURDO0lBRkMsSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSw0QkFBVSxHQUFFOzs0Q0FDQztBQUdoQixNQUFhLGdCQUFnQjtJQUUzQixJQUFJLENBQVU7Q0FDZjtBQUhELDRDQUdDO0FBREM7SUFEQyxJQUFBLDBCQUFRLEdBQUU7OzhDQUNHO0FBR2hCLG9GQUFvRjtBQUNwRixxRUFBcUU7QUFDckUsZ0NBQWdDO0FBQ2hDLE1BQWEsWUFBWTtJQUV2QixnQkFBZ0IsQ0FBVTtDQUMzQjtBQUhELG9DQUdDO0FBREM7SUFEQyxJQUFBLHVCQUFLLEdBQUU7O3NEQUNrQjtBQUc1Qiw2RUFBNkU7QUFDN0UsK0VBQStFO0FBQy9FLE1BQWEsZ0JBQWdCO0lBRTNCLEVBQUUsQ0FBVztDQUNkO0FBSEQsNENBR0M7QUFEQztJQURDLElBQUEsMkJBQVMsR0FBRTs7NENBQ0MiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGhlcmFweS9kdG8vY29ubmVjdGlvbi5kdG8udHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgSXNCb29sZWFuLCBJc0ludCwgSXNOb3RFbXB0eSwgSXNTdHJpbmcgfSBmcm9tICdjbGFzcy12YWxpZGF0b3InO1xuXG4vKipcbiAqIERUTyDQv9C+0LTQutC70Y7Rh9C10L3QuNGPINC60LvQuNC10L3RguKGlNGC0LXRgNCw0L/QtdCy0YIgKNCw0YPQtNC40YIgMjAyNi0wNywgMtCzIC8g0L/RgNCw0LLQuNC70L4g4oSWNlxuICogQ0xBVURFLm1kKS4g0KTQvtGA0LzQsNGCINC60L7QtNCwINC/0YDQuNCz0LvQsNGI0LXQvdC40Y8g0L3QtSDQv9GA0L7QstC10YDRj9C10YLRgdGPINC+0YLQtNC10LvRjNC90L4g4oCUXG4gKiDRgdC10YDQstC40YEg0YHQsNC8INC+0YLQstC10YDQs9Cw0LXRgiDQvdC10LjQt9Cy0LXRgdGC0L3Ri9C5L9C/0YDQvtGB0YDQvtGH0LXQvdC90YvQuSDQutC+0LQuXG4gKi9cbmV4cG9ydCBjbGFzcyBKb2luVGhlcmFweUR0byB7XG4gIEBJc1N0cmluZygpXG4gIEBJc05vdEVtcHR5KClcbiAgY29kZSE6IHN0cmluZztcbn1cblxuZXhwb3J0IGNsYXNzIFZpcnR1YWxDbGllbnREdG8ge1xuICBASXNTdHJpbmcoKVxuICBuYW1lITogc3RyaW5nO1xufVxuXG4vLyDQrdC90LTQv9C+0LjQvdGCINCy0YHQtdCz0LTQsCDQstC+0LfQstGA0LDRidCw0LXRgiA0MDMgKNGB0LwuIHRoZXJhcHktY29ubmVjdGlvbi5jb250cm9sbGVyLnRzKSDigJQgRFRPINC90YPQttC10L1cbi8vINGC0L7Qu9GM0LrQviDQtNC70Y8g0YDQsNC90YLQsNC50Lwt0YLQuNC/0LjQt9Cw0YbQuNC4INGC0LXQu9CwINC30LDQv9GA0L7RgdCwLCDRgNGD0YfQvdC+0Lkg0LLQtdGC0LrQuCDQtNC+0LHQsNCy0LvQtdC90LjRj1xuLy8g0YDQtdCw0LvRjNC90YvRhSDQutC70LjQtdC90YLQvtCyINCx0L7Qu9GM0YjQtSDQvdC10YIuXG5leHBvcnQgY2xhc3MgQWRkQ2xpZW50RHRvIHtcbiAgQElzSW50KClcbiAgY2xpZW50VGVsZWdyYW1JZCE6IG51bWJlcjtcbn1cblxuLy8g0JfQsNC/0L7QvNC40L3QsNC10LzQvtC1INC/0YDQtdC00L/QvtGH0YLQtdC90LjQtSDRgtC10YDQsNC/0LXQstGC0LA6INGB0YLQsNGA0YLQvtCy0LDRgtGMINCyINC60LDQsdC40L3QtdGC0LUgKG9uPXRydWUpINC40LvQuCDQslxuLy8g0LrQu9C40LXQvdGC0YHQutC+0Lwg0YDQtdC20LjQvNC1IChvbj1mYWxzZSkuINCf0YDQsNCy0LjQu9C+IOKEljYgQ0xBVURFLm1kIOKAlCDRgNCw0L3RgtCw0LnQvC3QstCw0LvQuNC00LDRhtC40Y8g0YLQtdC70LAuXG5leHBvcnQgY2xhc3MgVGhlcmFwaXN0Vmlld0R0byB7XG4gIEBJc0Jvb2xlYW4oKVxuICBvbiE6IGJvb2xlYW47XG59XG4iXSwidmVyc2lvbiI6M30=

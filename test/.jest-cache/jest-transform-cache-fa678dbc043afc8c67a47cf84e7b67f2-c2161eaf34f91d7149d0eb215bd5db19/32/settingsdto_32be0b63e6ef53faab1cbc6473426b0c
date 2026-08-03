@@ -1,0 +1,130 @@
+fa0cb5073013f681de831bf57a3125a2
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UpdateSettingsDto = void 0;
+const class_validator_1 = require("class-validator");
+const telegram_constants_1 = require("../../telegram/telegram.constants");
+/**
+ * DTO для POST /api/settings (аудит 2026-07, 2г / правило №6 CLAUDE.md).
+ * Границы (0–23 для часов, 0–3 для частоты, список таймзон и т.п.) уже
+ * проверялись вручную в контроллере построением `clean` — здесь та же логика
+ * как рантайм-валидация. Ручная сборка `clean` в контроллере не убрана.
+ */
+class UpdateSettingsDto {
+    notifyEnabled;
+    notifyLocalHour;
+    notifyTimezone;
+    notifyReminderEnabled;
+    notifyFrequency;
+    notifyQuietStart;
+    notifyQuietEnd;
+    notifyGamified;
+    // Единственное допустимое значение при возобновлении паузы из UI — null.
+    notifyPausedUntil;
+    addressForm;
+    pairCardDismissed;
+    mySchemaIds;
+    myModeIds;
+    therapistShareCards;
+    therapistShareProfile;
+}
+exports.UpdateSettingsDto = UpdateSettingsDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateSettingsDto.prototype, "notifyEnabled", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.Max)(23),
+    __metadata("design:type", Number)
+], UpdateSettingsDto.prototype, "notifyLocalHour", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(telegram_constants_1.VALID_TIMEZONES),
+    __metadata("design:type", String)
+], UpdateSettingsDto.prototype, "notifyTimezone", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateSettingsDto.prototype, "notifyReminderEnabled", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.Max)(3),
+    __metadata("design:type", Number)
+], UpdateSettingsDto.prototype, "notifyFrequency", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.Max)(23),
+    __metadata("design:type", Number)
+], UpdateSettingsDto.prototype, "notifyQuietStart", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.Max)(23),
+    __metadata("design:type", Number)
+], UpdateSettingsDto.prototype, "notifyQuietEnd", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateSettingsDto.prototype, "notifyGamified", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)([null]),
+    __metadata("design:type", void 0)
+], UpdateSettingsDto.prototype, "notifyPausedUntil", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(['ty', 'vy']),
+    __metadata("design:type", String)
+], UpdateSettingsDto.prototype, "addressForm", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateSettingsDto.prototype, "pairCardDismissed", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMaxSize)(200),
+    (0, class_validator_1.IsString)({ each: true }),
+    (0, class_validator_1.MaxLength)(99, { each: true }),
+    __metadata("design:type", Array)
+], UpdateSettingsDto.prototype, "mySchemaIds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMaxSize)(200),
+    (0, class_validator_1.IsString)({ each: true }),
+    (0, class_validator_1.MaxLength)(99, { each: true }),
+    __metadata("design:type", Array)
+], UpdateSettingsDto.prototype, "myModeIds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateSettingsDto.prototype, "therapistShareCards", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateSettingsDto.prototype, "therapistShareProfile", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9zZXR0aW5ncy5kdG8udHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7O0FBQUEscURBV3lCO0FBQ3pCLDBFQUFvRTtBQUVwRTs7Ozs7R0FLRztBQUNILE1BQWEsaUJBQWlCO0lBRzVCLGFBQWEsQ0FBVztJQU14QixlQUFlLENBQVU7SUFJekIsY0FBYyxDQUFVO0lBSXhCLHFCQUFxQixDQUFXO0lBTWhDLGVBQWUsQ0FBVTtJQU16QixnQkFBZ0IsQ0FBVTtJQU0xQixjQUFjLENBQVU7SUFJeEIsY0FBYyxDQUFXO0lBRXpCLHlFQUF5RTtJQUd6RSxpQkFBaUIsQ0FBUTtJQUl6QixXQUFXLENBQVU7SUFJckIsaUJBQWlCLENBQVc7SUFPNUIsV0FBVyxDQUFZO0lBT3ZCLFNBQVMsQ0FBWTtJQUlyQixtQkFBbUIsQ0FBVztJQUk5QixxQkFBcUIsQ0FBVztDQUNqQztBQTNFRCw4Q0EyRUM7QUF4RUM7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDJCQUFTLEdBQUU7O3dEQUNZO0FBTXhCO0lBSkMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSx1QkFBSyxHQUFFO0lBQ1AsSUFBQSxxQkFBRyxFQUFDLENBQUMsQ0FBQztJQUNOLElBQUEscUJBQUcsRUFBQyxFQUFFLENBQUM7OzBEQUNpQjtBQUl6QjtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsc0JBQUksRUFBQyxvQ0FBZSxDQUFDOzt5REFDRTtBQUl4QjtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMkJBQVMsR0FBRTs7Z0VBQ29CO0FBTWhDO0lBSkMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSx1QkFBSyxHQUFFO0lBQ1AsSUFBQSxxQkFBRyxFQUFDLENBQUMsQ0FBQztJQUNOLElBQUEscUJBQUcsRUFBQyxDQUFDLENBQUM7OzBEQUNrQjtBQU16QjtJQUpDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsdUJBQUssR0FBRTtJQUNQLElBQUEscUJBQUcsRUFBQyxDQUFDLENBQUM7SUFDTixJQUFBLHFCQUFHLEVBQUMsRUFBRSxDQUFDOzsyREFDa0I7QUFNMUI7SUFKQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLHVCQUFLLEdBQUU7SUFDUCxJQUFBLHFCQUFHLEVBQUMsQ0FBQyxDQUFDO0lBQ04sSUFBQSxxQkFBRyxFQUFDLEVBQUUsQ0FBQzs7eURBQ2dCO0FBSXhCO0lBRkMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwyQkFBUyxHQUFFOzt5REFDYTtBQUt6QjtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsc0JBQUksRUFBQyxDQUFDLElBQUksQ0FBQyxDQUFDOzs0REFDWTtBQUl6QjtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsc0JBQUksRUFBQyxDQUFDLElBQUksRUFBRSxJQUFJLENBQUMsQ0FBQzs7c0RBQ0U7QUFJckI7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDJCQUFTLEdBQUU7OzREQUNnQjtBQU81QjtJQUxDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEseUJBQU8sR0FBRTtJQUNULElBQUEsOEJBQVksRUFBQyxHQUFHLENBQUM7SUFDakIsSUFBQSwwQkFBUSxFQUFDLEVBQUUsSUFBSSxFQUFFLElBQUksRUFBRSxDQUFDO0lBQ3hCLElBQUEsMkJBQVMsRUFBQyxFQUFFLEVBQUUsRUFBRSxJQUFJLEVBQUUsSUFBSSxFQUFFLENBQUM7O3NEQUNQO0FBT3ZCO0lBTEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSx5QkFBTyxHQUFFO0lBQ1QsSUFBQSw4QkFBWSxFQUFDLEdBQUcsQ0FBQztJQUNqQixJQUFBLDBCQUFRLEVBQUMsRUFBRSxJQUFJLEVBQUUsSUFBSSxFQUFFLENBQUM7SUFDeEIsSUFBQSwyQkFBUyxFQUFDLEVBQUUsRUFBRSxFQUFFLElBQUksRUFBRSxJQUFJLEVBQUUsQ0FBQzs7b0RBQ1Q7QUFJckI7SUFGQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDJCQUFTLEdBQUU7OzhEQUNrQjtBQUk5QjtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMkJBQVMsR0FBRTs7Z0VBQ29CIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2FwaS9kdG8vc2V0dGluZ3MuZHRvLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7XG4gIEFycmF5TWF4U2l6ZSxcbiAgSXNBcnJheSxcbiAgSXNCb29sZWFuLFxuICBJc0luLFxuICBJc0ludCxcbiAgSXNPcHRpb25hbCxcbiAgSXNTdHJpbmcsXG4gIE1heCxcbiAgTWF4TGVuZ3RoLFxuICBNaW4sXG59IGZyb20gJ2NsYXNzLXZhbGlkYXRvcic7XG5pbXBvcnQgeyBWQUxJRF9USU1FWk9ORVMgfSBmcm9tICcuLi8uLi90ZWxlZ3JhbS90ZWxlZ3JhbS5jb25zdGFudHMnO1xuXG4vKipcbiAqIERUTyDQtNC70Y8gUE9TVCAvYXBpL3NldHRpbmdzICjQsNGD0LTQuNGCIDIwMjYtMDcsIDLQsyAvINC/0YDQsNCy0LjQu9C+IOKEljYgQ0xBVURFLm1kKS5cbiAqINCT0YDQsNC90LjRhtGLICgw4oCTMjMg0LTQu9GPINGH0LDRgdC+0LIsIDDigJMzINC00LvRjyDRh9Cw0YHRgtC+0YLRiywg0YHQv9C40YHQvtC6INGC0LDQudC80LfQvtC9INC4INGCLtC/Likg0YPQttC1XG4gKiDQv9GA0L7QstC10YDRj9C70LjRgdGMINCy0YDRg9GH0L3Rg9GOINCyINC60L7QvdGC0YDQvtC70LvQtdGA0LUg0L/QvtGB0YLRgNC+0LXQvdC40LXQvCBgY2xlYW5gIOKAlCDQt9C00LXRgdGMINGC0LAg0LbQtSDQu9C+0LPQuNC60LBcbiAqINC60LDQuiDRgNCw0L3RgtCw0LnQvC3QstCw0LvQuNC00LDRhtC40Y8uINCg0YPRh9C90LDRjyDRgdCx0L7RgNC60LAgYGNsZWFuYCDQsiDQutC+0L3RgtGA0L7Qu9C70LXRgNC1INC90LUg0YPQsdGA0LDQvdCwLlxuICovXG5leHBvcnQgY2xhc3MgVXBkYXRlU2V0dGluZ3NEdG8ge1xuICBASXNPcHRpb25hbCgpXG4gIEBJc0Jvb2xlYW4oKVxuICBub3RpZnlFbmFibGVkPzogYm9vbGVhbjtcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0ludCgpXG4gIEBNaW4oMClcbiAgQE1heCgyMylcbiAgbm90aWZ5TG9jYWxIb3VyPzogbnVtYmVyO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzSW4oVkFMSURfVElNRVpPTkVTKVxuICBub3RpZnlUaW1lem9uZT86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0Jvb2xlYW4oKVxuICBub3RpZnlSZW1pbmRlckVuYWJsZWQ/OiBib29sZWFuO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzSW50KClcbiAgQE1pbigwKVxuICBATWF4KDMpXG4gIG5vdGlmeUZyZXF1ZW5jeT86IG51bWJlcjtcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0ludCgpXG4gIEBNaW4oMClcbiAgQE1heCgyMylcbiAgbm90aWZ5UXVpZXRTdGFydD86IG51bWJlcjtcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0ludCgpXG4gIEBNaW4oMClcbiAgQE1heCgyMylcbiAgbm90aWZ5UXVpZXRFbmQ/OiBudW1iZXI7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNCb29sZWFuKClcbiAgbm90aWZ5R2FtaWZpZWQ/OiBib29sZWFuO1xuXG4gIC8vINCV0LTQuNC90YHRgtCy0LXQvdC90L7QtSDQtNC+0L/Rg9GB0YLQuNC80L7QtSDQt9C90LDRh9C10L3QuNC1INC/0YDQuCDQstC+0LfQvtCx0L3QvtCy0LvQtdC90LjQuCDQv9Cw0YPQt9GLINC40LcgVUkg4oCUIG51bGwuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzSW4oW251bGxdKVxuICBub3RpZnlQYXVzZWRVbnRpbD86IG51bGw7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNJbihbJ3R5JywgJ3Z5J10pXG4gIGFkZHJlc3NGb3JtPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzQm9vbGVhbigpXG4gIHBhaXJDYXJkRGlzbWlzc2VkPzogYm9vbGVhbjtcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0FycmF5KClcbiAgQEFycmF5TWF4U2l6ZSgyMDApXG4gIEBJc1N0cmluZyh7IGVhY2g6IHRydWUgfSlcbiAgQE1heExlbmd0aCg5OSwgeyBlYWNoOiB0cnVlIH0pXG4gIG15U2NoZW1hSWRzPzogc3RyaW5nW107XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNBcnJheSgpXG4gIEBBcnJheU1heFNpemUoMjAwKVxuICBASXNTdHJpbmcoeyBlYWNoOiB0cnVlIH0pXG4gIEBNYXhMZW5ndGgoOTksIHsgZWFjaDogdHJ1ZSB9KVxuICBteU1vZGVJZHM/OiBzdHJpbmdbXTtcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0Jvb2xlYW4oKVxuICB0aGVyYXBpc3RTaGFyZUNhcmRzPzogYm9vbGVhbjtcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0Jvb2xlYW4oKVxuICB0aGVyYXBpc3RTaGFyZVByb2ZpbGU/OiBib29sZWFuO1xufVxuIl0sInZlcnNpb24iOjN9

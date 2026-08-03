@@ -10,7 +10,10 @@
     "src/utils/crypto.ts",
     "src/auth/auth.service.ts",
     "src/booking/robokassa.service.ts",
-    "src/utils/tz.ts"
+    "src/utils/tz.ts",
+    "src/auth/merge.service.ts",
+    "src/therapy/therapy-relations.service.ts",
+    "src/api/telegram-auth.guard.ts"
   ],
   "reporters": [
     "clear-text",
@@ -21,7 +24,7 @@
   "htmlReporter": {
     "fileName": "reports/mutation/mutation.html"
   },
-  "concurrency": 4,
+  "concurrency": 2,
   "coverageAnalysis": "perTest",
   "thresholds": {
     "high": 80,

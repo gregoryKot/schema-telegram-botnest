@@ -18,7 +18,8 @@ import { MODE_TEST_GROUPS } from './modeTest';
  * modeTest ↔ MODE_GROUPS не меняется, см. modeTest.test.ts). Синхронность
  * закреплена modeBodyCues.test.ts в обоих фронтендах (правило №4).
  *
- * Данные form-agnostic (1-е лицо / безличные) — развод ты/вы не нужен.
+ * Данные form-agnostic (1-е лицо / безличные) — развод по форме обращения
+ * не нужен.
  */
 export const MODE_UNKNOWN_GROUP: ModeTestGroup = {
   id: 'unknown',

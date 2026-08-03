@@ -1,0 +1,47 @@
+975f2b05e1816277d22a4b00b50b7d95
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a, _b, _c;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StatsReportService = void 0;
+const common_1 = require("@nestjs/common");
+const bot_product_metrics_service_1 = require("./bot.product-metrics.service");
+const mode_card_metrics_service_1 = require("./mode-card-metrics.service");
+const mode_diary_metrics_service_1 = require("./mode-diary-metrics.service");
+// Единая склейка второго сообщения /stats (продуктовые метрики + карточки
+// режимов + дневник режимов). Отдельный модуль — правило №10: не раздувать
+// ни ProductMetricsService (зафиксирован на 257 строках), ни
+// telegram.service.ts (худший файл репозитория, храповик держит его без роста).
+let StatsReportService = class StatsReportService {
+    product;
+    modeCard;
+    modeDiary;
+    constructor(product, modeCard, modeDiary) {
+        this.product = product;
+        this.modeCard = modeCard;
+        this.modeDiary = modeDiary;
+    }
+    /** Готовый текстовый блок для второго сообщения /stats. */
+    async render() {
+        const [product, modeCard, modeDiary] = await Promise.all([
+            this.product.render(),
+            this.modeCard.render(),
+            this.modeDiary.render(),
+        ]);
+        return `${product}\n\n${modeCard}\n\n${modeDiary}`;
+    }
+};
+exports.StatsReportService = StatsReportService;
+exports.StatsReportService = StatsReportService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof bot_product_metrics_service_1.ProductMetricsService !== "undefined" && bot_product_metrics_service_1.ProductMetricsService) === "function" ? _a : Object, typeof (_b = typeof mode_card_metrics_service_1.ModeCardMetricsService !== "undefined" && mode_card_metrics_service_1.ModeCardMetricsService) === "function" ? _b : Object, typeof (_c = typeof mode_diary_metrics_service_1.ModeDiaryMetricsService !== "undefined" && mode_diary_metrics_service_1.ModeDiaryMetricsService) === "function" ? _c : Object])
+], StatsReportService);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm90L3N0YXRzLXJlcG9ydC5zZXJ2aWNlLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FBNEM7QUFDNUMsK0VBQXNFO0FBQ3RFLDJFQUFxRTtBQUNyRSw2RUFBdUU7QUFFdkUsMEVBQTBFO0FBQzFFLDJFQUEyRTtBQUMzRSw2REFBNkQ7QUFDN0QsZ0ZBQWdGO0FBRXpFLElBQU0sa0JBQWtCLEdBQXhCLE1BQU0sa0JBQWtCO0lBRVY7SUFDQTtJQUNBO0lBSG5CLFlBQ21CLE9BQThCLEVBQzlCLFFBQWdDLEVBQ2hDLFNBQWtDO1FBRmxDLFlBQU8sR0FBUCxPQUFPLENBQXVCO1FBQzlCLGFBQVEsR0FBUixRQUFRLENBQXdCO1FBQ2hDLGNBQVMsR0FBVCxTQUFTLENBQXlCO0lBQ2xELENBQUM7SUFFSiwyREFBMkQ7SUFDM0QsS0FBSyxDQUFDLE1BQU07UUFDVixNQUFNLENBQUMsT0FBTyxFQUFFLFFBQVEsRUFBRSxTQUFTLENBQUMsR0FBRyxNQUFNLE9BQU8sQ0FBQyxHQUFHLENBQUM7WUFDdkQsSUFBSSxDQUFDLE9BQU8sQ0FBQyxNQUFNLEVBQUU7WUFDckIsSUFBSSxDQUFDLFFBQVEsQ0FBQyxNQUFNLEVBQUU7WUFDdEIsSUFBSSxDQUFDLFNBQVMsQ0FBQyxNQUFNLEVBQUU7U0FDeEIsQ0FBQyxDQUFDO1FBQ0gsT0FBTyxHQUFHLE9BQU8sT0FBTyxRQUFRLE9BQU8sU0FBUyxFQUFFLENBQUM7SUFDckQsQ0FBQztDQUNGLENBQUE7QUFoQlksZ0RBQWtCOzZCQUFsQixrQkFBa0I7SUFEOUIsSUFBQSxtQkFBVSxHQUFFO3lEQUdpQixtREFBcUIsb0JBQXJCLG1EQUFxQixvREFDcEIsa0RBQXNCLG9CQUF0QixrREFBc0Isb0RBQ3JCLG9EQUF1QixvQkFBdkIsb0RBQXVCO0dBSjFDLGtCQUFrQixDQWdCOUIiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm90L3N0YXRzLXJlcG9ydC5zZXJ2aWNlLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IEluamVjdGFibGUgfSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBQcm9kdWN0TWV0cmljc1NlcnZpY2UgfSBmcm9tICcuL2JvdC5wcm9kdWN0LW1ldHJpY3Muc2VydmljZSc7XG5pbXBvcnQgeyBNb2RlQ2FyZE1ldHJpY3NTZXJ2aWNlIH0gZnJvbSAnLi9tb2RlLWNhcmQtbWV0cmljcy5zZXJ2aWNlJztcbmltcG9ydCB7IE1vZGVEaWFyeU1ldHJpY3NTZXJ2aWNlIH0gZnJvbSAnLi9tb2RlLWRpYXJ5LW1ldHJpY3Muc2VydmljZSc7XG5cbi8vINCV0LTQuNC90LDRjyDRgdC60LvQtdC50LrQsCDQstGC0L7RgNC+0LPQviDRgdC+0L7QsdGJ0LXQvdC40Y8gL3N0YXRzICjQv9GA0L7QtNGD0LrRgtC+0LLRi9C1INC80LXRgtGA0LjQutC4ICsg0LrQsNGA0YLQvtGH0LrQuFxuLy8g0YDQtdC20LjQvNC+0LIgKyDQtNC90LXQstC90LjQuiDRgNC10LbQuNC80L7QsikuINCe0YLQtNC10LvRjNC90YvQuSDQvNC+0LTRg9C70Ywg4oCUINC/0YDQsNCy0LjQu9C+IOKEljEwOiDQvdC1INGA0LDQt9C00YPQstCw0YLRjFxuLy8g0L3QuCBQcm9kdWN0TWV0cmljc1NlcnZpY2UgKNC30LDRhNC40LrRgdC40YDQvtCy0LDQvSDQvdCwIDI1NyDRgdGC0YDQvtC60LDRhSksINC90Lhcbi8vIHRlbGVncmFtLnNlcnZpY2UudHMgKNGF0YPQtNGI0LjQuSDRhNCw0LnQuyDRgNC10L/QvtC30LjRgtC+0YDQuNGPLCDRhdGA0LDQv9C+0LLQuNC6INC00LXRgNC20LjRgiDQtdCz0L4g0LHQtdC3INGA0L7RgdGC0LApLlxuQEluamVjdGFibGUoKVxuZXhwb3J0IGNsYXNzIFN0YXRzUmVwb3J0U2VydmljZSB7XG4gIGNvbnN0cnVjdG9yKFxuICAgIHByaXZhdGUgcmVhZG9ubHkgcHJvZHVjdDogUHJvZHVjdE1ldHJpY3NTZXJ2aWNlLFxuICAgIHByaXZhdGUgcmVhZG9ubHkgbW9kZUNhcmQ6IE1vZGVDYXJkTWV0cmljc1NlcnZpY2UsXG4gICAgcHJpdmF0ZSByZWFkb25seSBtb2RlRGlhcnk6IE1vZGVEaWFyeU1ldHJpY3NTZXJ2aWNlLFxuICApIHt9XG5cbiAgLyoqINCT0L7RgtC+0LLRi9C5INGC0LXQutGB0YLQvtCy0YvQuSDQsdC70L7QuiDQtNC70Y8g0LLRgtC+0YDQvtCz0L4g0YHQvtC+0LHRidC10L3QuNGPIC9zdGF0cy4gKi9cbiAgYXN5bmMgcmVuZGVyKCk6IFByb21pc2U8c3RyaW5nPiB7XG4gICAgY29uc3QgW3Byb2R1Y3QsIG1vZGVDYXJkLCBtb2RlRGlhcnldID0gYXdhaXQgUHJvbWlzZS5hbGwoW1xuICAgICAgdGhpcy5wcm9kdWN0LnJlbmRlcigpLFxuICAgICAgdGhpcy5tb2RlQ2FyZC5yZW5kZXIoKSxcbiAgICAgIHRoaXMubW9kZURpYXJ5LnJlbmRlcigpLFxuICAgIF0pO1xuICAgIHJldHVybiBgJHtwcm9kdWN0fVxcblxcbiR7bW9kZUNhcmR9XFxuXFxuJHttb2RlRGlhcnl9YDtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

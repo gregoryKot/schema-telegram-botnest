@@ -26,6 +26,11 @@ export function GratitudeEntrySheet({
 
   const [items, setItems] = useState<string[]>(initItems);
   const [saving, setSaving] = useState(false);
+  // Отказ сохранения раньше сообщался ТОЛЬКО вибрацией haptic.error(), а лист
+  // всё равно закрывался: на десктопе вибрации нет вовсе, и человек считал,
+  // что запись сохранена. Текст уцелел бы черновиком, но об этом тоже никто
+  // не сообщал.
+  const [saveError, setSaveError] = useState(false);
 
   const update = (i: number, v: string) =>
     setItems((prev) => prev.map((it, idx) => (idx === i ? v : it)));
@@ -38,6 +43,7 @@ export function GratitudeEntrySheet({
 
   const handleSave = async () => {
     if (!canSave || saving) return;
+    setSaveError(false);
     haptic.success();
     setSaving(true);
     try {
@@ -46,11 +52,12 @@ export function GratitudeEntrySheet({
         items.filter((it) => it.trim().length > 0),
       );
       clearDraft('gratitude');
+      onClose();
     } catch {
       haptic.error();
+      setSaveError(true); // лист НЕ закрываем — иначе отказ неотличим от успеха
     } finally {
       setSaving(false);
-      onClose();
     }
   };
 
@@ -192,6 +199,19 @@ export function GratitudeEntrySheet({
         >
           {saving ? 'Сохраняю...' : 'Сохранить'}
         </button>
+        {saveError && (
+          <div
+            role="status"
+            style={{
+              marginTop: 10,
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: 'var(--accent-red)',
+            }}
+          >
+            Не удалось сохранить. Текст остался черновиком — можно повторить
+          </div>
+        )}
       </div>
     </BottomSheet>
   );

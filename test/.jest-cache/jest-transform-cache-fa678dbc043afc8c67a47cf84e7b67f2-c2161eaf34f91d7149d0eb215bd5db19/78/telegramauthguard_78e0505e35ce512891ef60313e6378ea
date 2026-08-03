@@ -1,0 +1,77 @@
+f5c38a4b175237ffe9fc9c5e43183e88
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var TelegramAuthGuard_1;
+var _a, _b, _c, _d, _e;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TelegramAuthGuard = void 0;
+const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
+const prisma_service_1 = require("../prisma/prisma.service");
+const auth_service_1 = require("../auth/auth.service");
+const max_provider_1 = require("../auth/providers/max.provider");
+const security_log_service_1 = require("../auth/security-log.service");
+const init_data_paths_1 = require("./init-data-paths");
+// Unified guard: accepts Telegram initData (mini-app / bot), MAX initData
+// (MAX mini-app), OR JWT Bearer (web app). Sets req.telegramUserId (number)
+// which all existing controllers rely on. Telegram/MAX path bodies live in
+// ./init-data-paths.ts to keep this file under the file-size ratchet.
+let TelegramAuthGuard = TelegramAuthGuard_1 = class TelegramAuthGuard {
+    config;
+    prisma;
+    authService;
+    securityLog;
+    maxProvider;
+    logger = new common_1.Logger(TelegramAuthGuard_1.name);
+    constructor(config, prisma, authService, securityLog, maxProvider) {
+        this.config = config;
+        this.prisma = prisma;
+        this.authService = authService;
+        this.securityLog = securityLog;
+        this.maxProvider = maxProvider;
+    }
+    async canActivate(context) {
+        const req = context.switchToHttp().getRequest();
+        // ── Path 1: JWT Bearer (web app) ─────────────────────────────────────────
+        const authHeader = req.headers['authorization'];
+        if (authHeader?.startsWith('Bearer ')) {
+            const token = authHeader.slice(7);
+            const { userId } = this.authService.verifyAccessToken(token);
+            // userId is a BigInt — convert to number for backward compat with controllers
+            req.telegramUserId = Number(userId);
+            req.webUser = { userId };
+            // Ensure user row exists (web-only users may have never touched the bot)
+            await this.prisma.user.upsert({
+                where: { id: userId },
+                update: {},
+                create: { id: userId },
+            });
+            return true;
+        }
+        // ── Path 2: Telegram initData (mini-app) ─────────────────────────────────
+        if (req.headers['x-telegram-init-data']) {
+            await (0, init_data_paths_1.applyTelegramInitData)(req, this.config, this.authService, this.securityLog, this.logger);
+            return true;
+        }
+        // ── Path 3: MAX initData (MAX mini-app) ──────────────────────────────────
+        if (req.headers['x-max-init-data']) {
+            await (0, init_data_paths_1.applyMaxInitData)(req, this.maxProvider, this.authService, this.securityLog, this.logger);
+            return true;
+        }
+        throw new common_1.UnauthorizedException('Missing authentication');
+    }
+};
+exports.TelegramAuthGuard = TelegramAuthGuard;
+exports.TelegramAuthGuard = TelegramAuthGuard = TelegramAuthGuard_1 = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _a : Object, typeof (_b = typeof prisma_service_1.PrismaService !== "undefined" && prisma_service_1.PrismaService) === "function" ? _b : Object, typeof (_c = typeof auth_service_1.AuthService !== "undefined" && auth_service_1.AuthService) === "function" ? _c : Object, typeof (_d = typeof security_log_service_1.SecurityLogService !== "undefined" && security_log_service_1.SecurityLogService) === "function" ? _d : Object, typeof (_e = typeof max_provider_1.MaxProvider !== "undefined" && max_provider_1.MaxProvider) === "function" ? _e : Object])
+], TelegramAuthGuard);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL3RlbGVncmFtLWF1dGguZ3VhcmQudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FNd0I7QUFDeEIsMkNBQStDO0FBQy9DLDZEQUF5RDtBQUN6RCx1REFBbUQ7QUFDbkQsaUVBQTZEO0FBQzdELHVFQUFrRTtBQUNsRSx1REFBNEU7QUFHNUUsMEVBQTBFO0FBQzFFLDRFQUE0RTtBQUM1RSwyRUFBMkU7QUFDM0Usc0VBQXNFO0FBRS9ELElBQU0saUJBQWlCLHlCQUF2QixNQUFNLGlCQUFpQjtJQUlUO0lBQ0E7SUFDQTtJQUNBO0lBQ0E7SUFQRixNQUFNLEdBQUcsSUFBSSxlQUFNLENBQUMsbUJBQWlCLENBQUMsSUFBSSxDQUFDLENBQUM7SUFFN0QsWUFDbUIsTUFBcUIsRUFDckIsTUFBcUIsRUFDckIsV0FBd0IsRUFDeEIsV0FBK0IsRUFDL0IsV0FBd0I7UUFKeEIsV0FBTSxHQUFOLE1BQU0sQ0FBZTtRQUNyQixXQUFNLEdBQU4sTUFBTSxDQUFlO1FBQ3JCLGdCQUFXLEdBQVgsV0FBVyxDQUFhO1FBQ3hCLGdCQUFXLEdBQVgsV0FBVyxDQUFvQjtRQUMvQixnQkFBVyxHQUFYLFdBQVcsQ0FBYTtJQUN4QyxDQUFDO0lBRUosS0FBSyxDQUFDLFdBQVcsQ0FBQyxPQUF5QjtRQUN6QyxNQUFNLEdBQUcsR0FBRyxPQUFPLENBQUMsWUFBWSxFQUFFLENBQUMsVUFBVSxFQUFXLENBQUM7UUFFekQsNEVBQTRFO1FBQzVFLE1BQU0sVUFBVSxHQUFHLEdBQUcsQ0FBQyxPQUFPLENBQUMsZUFBZSxDQUFDLENBQUM7UUFDaEQsSUFBSSxVQUFVLEVBQUUsVUFBVSxDQUFDLFNBQVMsQ0FBQyxFQUFFLENBQUM7WUFDdEMsTUFBTSxLQUFLLEdBQUcsVUFBVSxDQUFDLEtBQUssQ0FBQyxDQUFDLENBQUMsQ0FBQztZQUNsQyxNQUFNLEVBQUUsTUFBTSxFQUFFLEdBQUcsSUFBSSxDQUFDLFdBQVcsQ0FBQyxpQkFBaUIsQ0FBQyxLQUFLLENBQUMsQ0FBQztZQUM3RCw4RUFBOEU7WUFDOUUsR0FBRyxDQUFDLGNBQWMsR0FBRyxNQUFNLENBQUMsTUFBTSxDQUFDLENBQUM7WUFDcEMsR0FBRyxDQUFDLE9BQU8sR0FBRyxFQUFFLE1BQU0sRUFBRSxDQUFDO1lBQ3pCLHlFQUF5RTtZQUN6RSxNQUFNLElBQUksQ0FBQyxNQUFNLENBQUMsSUFBSSxDQUFDLE1BQU0sQ0FBQztnQkFDNUIsS0FBSyxFQUFFLEVBQUUsRUFBRSxFQUFFLE1BQU0sRUFBRTtnQkFDckIsTUFBTSxFQUFFLEVBQUU7Z0JBQ1YsTUFBTSxFQUFFLEVBQUUsRUFBRSxFQUFFLE1BQU0sRUFBRTthQUN2QixDQUFDLENBQUM7WUFDSCxPQUFPLElBQUksQ0FBQztRQUNkLENBQUM7UUFFRCw0RUFBNEU7UUFDNUUsSUFBSSxHQUFHLENBQUMsT0FBTyxDQUFDLHNCQUFzQixDQUFDLEVBQUUsQ0FBQztZQUN4QyxNQUFNLElBQUEsdUNBQXFCLEVBQ3pCLEdBQUcsRUFDSCxJQUFJLENBQUMsTUFBTSxFQUNYLElBQUksQ0FBQyxXQUFXLEVBQ2hCLElBQUksQ0FBQyxXQUFXLEVBQ2hCLElBQUksQ0FBQyxNQUFNLENBQ1osQ0FBQztZQUNGLE9BQU8sSUFBSSxDQUFDO1FBQ2QsQ0FBQztRQUVELDRFQUE0RTtRQUM1RSxJQUFJLEdBQUcsQ0FBQyxPQUFPLENBQUMsaUJBQWlCLENBQUMsRUFBRSxDQUFDO1lBQ25DLE1BQU0sSUFBQSxrQ0FBZ0IsRUFDcEIsR0FBRyxFQUNILElBQUksQ0FBQyxXQUFXLEVBQ2hCLElBQUksQ0FBQyxXQUFXLEVBQ2hCLElBQUksQ0FBQyxXQUFXLEVBQ2hCLElBQUksQ0FBQyxNQUFNLENBQ1osQ0FBQztZQUNGLE9BQU8sSUFBSSxDQUFDO1FBQ2QsQ0FBQztRQUVELE1BQU0sSUFBSSw4QkFBcUIsQ0FBQyx3QkFBd0IsQ0FBQyxDQUFDO0lBQzVELENBQUM7Q0FDRixDQUFBO0FBekRZLDhDQUFpQjs0QkFBakIsaUJBQWlCO0lBRDdCLElBQUEsbUJBQVUsR0FBRTt5REFLZ0Isc0JBQWEsb0JBQWIsc0JBQWEsb0RBQ2IsOEJBQWEsb0JBQWIsOEJBQWEsb0RBQ1IsMEJBQVcsb0JBQVgsMEJBQVcsb0RBQ1gseUNBQWtCLG9CQUFsQix5Q0FBa0Isb0RBQ2xCLDBCQUFXLG9CQUFYLDBCQUFXO0dBUmhDLGlCQUFpQixDQXlEN0IiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL3RlbGVncmFtLWF1dGguZ3VhcmQudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHtcbiAgQ2FuQWN0aXZhdGUsXG4gIEV4ZWN1dGlvbkNvbnRleHQsXG4gIEluamVjdGFibGUsXG4gIExvZ2dlcixcbiAgVW5hdXRob3JpemVkRXhjZXB0aW9uLFxufSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBDb25maWdTZXJ2aWNlIH0gZnJvbSAnQG5lc3Rqcy9jb25maWcnO1xuaW1wb3J0IHsgUHJpc21hU2VydmljZSB9IGZyb20gJy4uL3ByaXNtYS9wcmlzbWEuc2VydmljZSc7XG5pbXBvcnQgeyBBdXRoU2VydmljZSB9IGZyb20gJy4uL2F1dGgvYXV0aC5zZXJ2aWNlJztcbmltcG9ydCB7IE1heFByb3ZpZGVyIH0gZnJvbSAnLi4vYXV0aC9wcm92aWRlcnMvbWF4LnByb3ZpZGVyJztcbmltcG9ydCB7IFNlY3VyaXR5TG9nU2VydmljZSB9IGZyb20gJy4uL2F1dGgvc2VjdXJpdHktbG9nLnNlcnZpY2UnO1xuaW1wb3J0IHsgYXBwbHlUZWxlZ3JhbUluaXREYXRhLCBhcHBseU1heEluaXREYXRhIH0gZnJvbSAnLi9pbml0LWRhdGEtcGF0aHMnO1xuaW1wb3J0IHR5cGUgeyBSZXF1ZXN0IH0gZnJvbSAnZXhwcmVzcyc7XG5cbi8vIFVuaWZpZWQgZ3VhcmQ6IGFjY2VwdHMgVGVsZWdyYW0gaW5pdERhdGEgKG1pbmktYXBwIC8gYm90KSwgTUFYIGluaXREYXRhXG4vLyAoTUFYIG1pbmktYXBwKSwgT1IgSldUIEJlYXJlciAod2ViIGFwcCkuIFNldHMgcmVxLnRlbGVncmFtVXNlcklkIChudW1iZXIpXG4vLyB3aGljaCBhbGwgZXhpc3RpbmcgY29udHJvbGxlcnMgcmVseSBvbi4gVGVsZWdyYW0vTUFYIHBhdGggYm9kaWVzIGxpdmUgaW5cbi8vIC4vaW5pdC1kYXRhLXBhdGhzLnRzIHRvIGtlZXAgdGhpcyBmaWxlIHVuZGVyIHRoZSBmaWxlLXNpemUgcmF0Y2hldC5cbkBJbmplY3RhYmxlKClcbmV4cG9ydCBjbGFzcyBUZWxlZ3JhbUF1dGhHdWFyZCBpbXBsZW1lbnRzIENhbkFjdGl2YXRlIHtcbiAgcHJpdmF0ZSByZWFkb25seSBsb2dnZXIgPSBuZXcgTG9nZ2VyKFRlbGVncmFtQXV0aEd1YXJkLm5hbWUpO1xuXG4gIGNvbnN0cnVjdG9yKFxuICAgIHByaXZhdGUgcmVhZG9ubHkgY29uZmlnOiBDb25maWdTZXJ2aWNlLFxuICAgIHByaXZhdGUgcmVhZG9ubHkgcHJpc21hOiBQcmlzbWFTZXJ2aWNlLFxuICAgIHByaXZhdGUgcmVhZG9ubHkgYXV0aFNlcnZpY2U6IEF1dGhTZXJ2aWNlLFxuICAgIHByaXZhdGUgcmVhZG9ubHkgc2VjdXJpdHlMb2c6IFNlY3VyaXR5TG9nU2VydmljZSxcbiAgICBwcml2YXRlIHJlYWRvbmx5IG1heFByb3ZpZGVyOiBNYXhQcm92aWRlcixcbiAgKSB7fVxuXG4gIGFzeW5jIGNhbkFjdGl2YXRlKGNvbnRleHQ6IEV4ZWN1dGlvbkNvbnRleHQpOiBQcm9taXNlPGJvb2xlYW4+IHtcbiAgICBjb25zdCByZXEgPSBjb250ZXh0LnN3aXRjaFRvSHR0cCgpLmdldFJlcXVlc3Q8UmVxdWVzdD4oKTtcblxuICAgIC8vIOKUgOKUgCBQYXRoIDE6IEpXVCBCZWFyZXIgKHdlYiBhcHApIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuICAgIGNvbnN0IGF1dGhIZWFkZXIgPSByZXEuaGVhZGVyc1snYXV0aG9yaXphdGlvbiddO1xuICAgIGlmIChhdXRoSGVhZGVyPy5zdGFydHNXaXRoKCdCZWFyZXIgJykpIHtcbiAgICAgIGNvbnN0IHRva2VuID0gYXV0aEhlYWRlci5zbGljZSg3KTtcbiAgICAgIGNvbnN0IHsgdXNlcklkIH0gPSB0aGlzLmF1dGhTZXJ2aWNlLnZlcmlmeUFjY2Vzc1Rva2VuKHRva2VuKTtcbiAgICAgIC8vIHVzZXJJZCBpcyBhIEJpZ0ludCDigJQgY29udmVydCB0byBudW1iZXIgZm9yIGJhY2t3YXJkIGNvbXBhdCB3aXRoIGNvbnRyb2xsZXJzXG4gICAgICByZXEudGVsZWdyYW1Vc2VySWQgPSBOdW1iZXIodXNlcklkKTtcbiAgICAgIHJlcS53ZWJVc2VyID0geyB1c2VySWQgfTtcbiAgICAgIC8vIEVuc3VyZSB1c2VyIHJvdyBleGlzdHMgKHdlYi1vbmx5IHVzZXJzIG1heSBoYXZlIG5ldmVyIHRvdWNoZWQgdGhlIGJvdClcbiAgICAgIGF3YWl0IHRoaXMucHJpc21hLnVzZXIudXBzZXJ0KHtcbiAgICAgICAgd2hlcmU6IHsgaWQ6IHVzZXJJZCB9LFxuICAgICAgICB1cGRhdGU6IHt9LFxuICAgICAgICBjcmVhdGU6IHsgaWQ6IHVzZXJJZCB9LFxuICAgICAgfSk7XG4gICAgICByZXR1cm4gdHJ1ZTtcbiAgICB9XG5cbiAgICAvLyDilIDilIAgUGF0aCAyOiBUZWxlZ3JhbSBpbml0RGF0YSAobWluaS1hcHApIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuICAgIGlmIChyZXEuaGVhZGVyc1sneC10ZWxlZ3JhbS1pbml0LWRhdGEnXSkge1xuICAgICAgYXdhaXQgYXBwbHlUZWxlZ3JhbUluaXREYXRhKFxuICAgICAgICByZXEsXG4gICAgICAgIHRoaXMuY29uZmlnLFxuICAgICAgICB0aGlzLmF1dGhTZXJ2aWNlLFxuICAgICAgICB0aGlzLnNlY3VyaXR5TG9nLFxuICAgICAgICB0aGlzLmxvZ2dlcixcbiAgICAgICk7XG4gICAgICByZXR1cm4gdHJ1ZTtcbiAgICB9XG5cbiAgICAvLyDilIDilIAgUGF0aCAzOiBNQVggaW5pdERhdGEgKE1BWCBtaW5pLWFwcCkg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG4gICAgaWYgKHJlcS5oZWFkZXJzWyd4LW1heC1pbml0LWRhdGEnXSkge1xuICAgICAgYXdhaXQgYXBwbHlNYXhJbml0RGF0YShcbiAgICAgICAgcmVxLFxuICAgICAgICB0aGlzLm1heFByb3ZpZGVyLFxuICAgICAgICB0aGlzLmF1dGhTZXJ2aWNlLFxuICAgICAgICB0aGlzLnNlY3VyaXR5TG9nLFxuICAgICAgICB0aGlzLmxvZ2dlcixcbiAgICAgICk7XG4gICAgICByZXR1cm4gdHJ1ZTtcbiAgICB9XG5cbiAgICB0aHJvdyBuZXcgVW5hdXRob3JpemVkRXhjZXB0aW9uKCdNaXNzaW5nIGF1dGhlbnRpY2F0aW9uJyk7XG4gIH1cbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

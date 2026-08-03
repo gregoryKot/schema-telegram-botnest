@@ -1,0 +1,106 @@
+7521f1962ee2e5436489788549cb9854
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NotesController = void 0;
+const common_1 = require("@nestjs/common");
+const request_utils_1 = require("./request-utils");
+const notes_service_1 = require("../bot/notes.service");
+const telegram_auth_guard_1 = require("./telegram-auth.guard");
+const notes_dto_1 = require("./dto/notes.dto");
+// [a-z_]{1,64} — тот же формат, что и у остальных id-каллбэков (см. CLAUDE.md
+// «Telegram»: `callback_data` формата действие:параметр).
+const ID_RE = /^[a-z_]{1,64}$/;
+// Общие поля уже провалидированы DTO (@IsString/@MaxLength) — здесь только trim.
+function trimFields(body) {
+    return {
+        triggers: body.triggers?.trim(),
+        feelings: body.feelings?.trim(),
+        thoughts: body.thoughts?.trim(),
+        origins: body.origins?.trim(),
+        healthyView: body.healthyView?.trim(),
+        behavior: body.behavior?.trim(),
+    };
+}
+// Карточки схем/режимов + доступ терапевта к карточкам клиента.
+let NotesController = class NotesController {
+    notesService;
+    constructor(notesService) {
+        this.notesService = notesService;
+    }
+    async getSchemaNotes(req) {
+        return this.notesService.getSchemaNotes((0, request_utils_1.uid)(req));
+    }
+    async upsertSchemaNote(req, body) {
+        if (!ID_RE.test(body.schemaId))
+            throw new common_1.BadRequestException('invalid schemaId');
+        return this.notesService.upsertSchemaNote((0, request_utils_1.uid)(req), body.schemaId, {
+            ...trimFields(body),
+            reality: body.reality?.trim(),
+        });
+    }
+    async getModeNotes(req) {
+        return this.notesService.getModeNotes((0, request_utils_1.uid)(req));
+    }
+    async upsertModeNote(req, body) {
+        if (!ID_RE.test(body.modeId))
+            throw new common_1.BadRequestException('invalid modeId');
+        return this.notesService.upsertModeNote((0, request_utils_1.uid)(req), body.modeId, {
+            ...trimFields(body),
+            needs: body.needs?.trim(),
+        });
+    }
+};
+exports.NotesController = NotesController;
+__decorate([
+    (0, common_1.Get)('schema-notes'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], NotesController.prototype, "getSchemaNotes", null);
+__decorate([
+    (0, common_1.Post)('schema-notes'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_b = typeof notes_dto_1.SchemaNoteDto !== "undefined" && notes_dto_1.SchemaNoteDto) === "function" ? _b : Object]),
+    __metadata("design:returntype", Promise)
+], NotesController.prototype, "upsertSchemaNote", null);
+__decorate([
+    (0, common_1.Get)('mode-notes'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], NotesController.prototype, "getModeNotes", null);
+__decorate([
+    (0, common_1.Post)('mode-notes'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_c = typeof notes_dto_1.ModeNoteDto !== "undefined" && notes_dto_1.ModeNoteDto) === "function" ? _c : Object]),
+    __metadata("design:returntype", Promise)
+], NotesController.prototype, "upsertModeNote", null);
+exports.NotesController = NotesController = __decorate([
+    (0, common_1.Controller)('api'),
+    (0, common_1.UseGuards)(telegram_auth_guard_1.TelegramAuthGuard),
+    __metadata("design:paramtypes", [typeof (_a = typeof notes_service_1.NotesService !== "undefined" && notes_service_1.NotesService) === "function" ? _a : Object])
+], NotesController);
+// Маршруты therapy/client/:clientId/{schema,mode}-notes здесь были дублем
+// therapy.controller (аудит 2026-07: жили обе реализации, отвечала therapy-
+// версия, а therapistShareCards уважала только эта, мёртвая). Оставлена одна
+// реализация в therapy.controller + privacy-проверка в client-data.service.
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL25vdGVzLmNvbnRyb2xsZXIudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLDJDQVF3QjtBQUV4QixtREFBc0M7QUFDdEMsd0RBQW9EO0FBQ3BELCtEQUEwRDtBQUMxRCwrQ0FBNEU7QUFNNUUsOEVBQThFO0FBQzlFLDBEQUEwRDtBQUMxRCxNQUFNLEtBQUssR0FBRyxnQkFBZ0IsQ0FBQztBQUUvQixpRkFBaUY7QUFDakYsU0FBUyxVQUFVLENBQUMsSUFBbUI7SUFDckMsT0FBTztRQUNMLFFBQVEsRUFBRSxJQUFJLENBQUMsUUFBUSxFQUFFLElBQUksRUFBRTtRQUMvQixRQUFRLEVBQUUsSUFBSSxDQUFDLFFBQVEsRUFBRSxJQUFJLEVBQUU7UUFDL0IsUUFBUSxFQUFFLElBQUksQ0FBQyxRQUFRLEVBQUUsSUFBSSxFQUFFO1FBQy9CLE9BQU8sRUFBRSxJQUFJLENBQUMsT0FBTyxFQUFFLElBQUksRUFBRTtRQUM3QixXQUFXLEVBQUUsSUFBSSxDQUFDLFdBQVcsRUFBRSxJQUFJLEVBQUU7UUFDckMsUUFBUSxFQUFFLElBQUksQ0FBQyxRQUFRLEVBQUUsSUFBSSxFQUFFO0tBQ2hDLENBQUM7QUFDSixDQUFDO0FBRUQsZ0VBQWdFO0FBR3pELElBQU0sZUFBZSxHQUFyQixNQUFNLGVBQWU7SUFDRztJQUE3QixZQUE2QixZQUEwQjtRQUExQixpQkFBWSxHQUFaLFlBQVksQ0FBYztJQUFHLENBQUM7SUFHckQsQUFBTixLQUFLLENBQUMsY0FBYyxDQUFRLEdBQWdCO1FBQzFDLE9BQU8sSUFBSSxDQUFDLFlBQVksQ0FBQyxjQUFjLENBQUMsSUFBQSxtQkFBRyxFQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUM7SUFDcEQsQ0FBQztJQUdLLEFBQU4sS0FBSyxDQUFDLGdCQUFnQixDQUFRLEdBQWdCLEVBQVUsSUFBbUI7UUFDekUsSUFBSSxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLFFBQVEsQ0FBQztZQUM1QixNQUFNLElBQUksNEJBQW1CLENBQUMsa0JBQWtCLENBQUMsQ0FBQztRQUNwRCxPQUFPLElBQUksQ0FBQyxZQUFZLENBQUMsZ0JBQWdCLENBQUMsSUFBQSxtQkFBRyxFQUFDLEdBQUcsQ0FBQyxFQUFFLElBQUksQ0FBQyxRQUFRLEVBQUU7WUFDakUsR0FBRyxVQUFVLENBQUMsSUFBSSxDQUFDO1lBQ25CLE9BQU8sRUFBRSxJQUFJLENBQUMsT0FBTyxFQUFFLElBQUksRUFBRTtTQUM5QixDQUFDLENBQUM7SUFDTCxDQUFDO0lBR0ssQUFBTixLQUFLLENBQUMsWUFBWSxDQUFRLEdBQWdCO1FBQ3hDLE9BQU8sSUFBSSxDQUFDLFlBQVksQ0FBQyxZQUFZLENBQUMsSUFBQSxtQkFBRyxFQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUM7SUFDbEQsQ0FBQztJQUdLLEFBQU4sS0FBSyxDQUFDLGNBQWMsQ0FBUSxHQUFnQixFQUFVLElBQWlCO1FBQ3JFLElBQUksQ0FBQyxLQUFLLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxNQUFNLENBQUM7WUFDMUIsTUFBTSxJQUFJLDRCQUFtQixDQUFDLGdCQUFnQixDQUFDLENBQUM7UUFDbEQsT0FBTyxJQUFJLENBQUMsWUFBWSxDQUFDLGNBQWMsQ0FBQyxJQUFBLG1CQUFHLEVBQUMsR0FBRyxDQUFDLEVBQUUsSUFBSSxDQUFDLE1BQU0sRUFBRTtZQUM3RCxHQUFHLFVBQVUsQ0FBQyxJQUFJLENBQUM7WUFDbkIsS0FBSyxFQUFFLElBQUksQ0FBQyxLQUFLLEVBQUUsSUFBSSxFQUFFO1NBQzFCLENBQUMsQ0FBQztJQUNMLENBQUM7Q0FDRixDQUFBO0FBaENZLDBDQUFlO0FBSXBCO0lBREwsSUFBQSxZQUFHLEVBQUMsY0FBYyxDQUFDO0lBQ0UsV0FBQSxJQUFBLFlBQUcsR0FBRSxDQUFBOzs7O3FEQUUxQjtBQUdLO0lBREwsSUFBQSxhQUFJLEVBQUMsY0FBYyxDQUFDO0lBQ0csV0FBQSxJQUFBLFlBQUcsR0FBRSxDQUFBO0lBQW9CLFdBQUEsSUFBQSxhQUFJLEdBQUUsQ0FBQTs7aUVBQU8seUJBQWEsb0JBQWIseUJBQWE7O3VEQU8xRTtBQUdLO0lBREwsSUFBQSxZQUFHLEVBQUMsWUFBWSxDQUFDO0lBQ0UsV0FBQSxJQUFBLFlBQUcsR0FBRSxDQUFBOzs7O21EQUV4QjtBQUdLO0lBREwsSUFBQSxhQUFJLEVBQUMsWUFBWSxDQUFDO0lBQ0csV0FBQSxJQUFBLFlBQUcsR0FBRSxDQUFBO0lBQW9CLFdBQUEsSUFBQSxhQUFJLEdBQUUsQ0FBQTs7aUVBQU8sdUJBQVcsb0JBQVgsdUJBQVc7O3FEQU90RTswQkEvQlUsZUFBZTtJQUYzQixJQUFBLG1CQUFVLEVBQUMsS0FBSyxDQUFDO0lBQ2pCLElBQUEsa0JBQVMsRUFBQyx1Q0FBaUIsQ0FBQzt5REFFZ0IsNEJBQVksb0JBQVosNEJBQVk7R0FENUMsZUFBZSxDQWdDM0I7QUFDRCwwRUFBMEU7QUFDMUUsNEVBQTRFO0FBQzVFLDZFQUE2RTtBQUM3RSw0RUFBNEUiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL25vdGVzLmNvbnRyb2xsZXIudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHtcbiAgQmFkUmVxdWVzdEV4Y2VwdGlvbixcbiAgQm9keSxcbiAgQ29udHJvbGxlcixcbiAgR2V0LFxuICBQb3N0LFxuICBSZXEsXG4gIFVzZUd1YXJkcyxcbn0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgUmVxdWVzdCB9IGZyb20gJ2V4cHJlc3MnO1xuaW1wb3J0IHsgdWlkIH0gZnJvbSAnLi9yZXF1ZXN0LXV0aWxzJztcbmltcG9ydCB7IE5vdGVzU2VydmljZSB9IGZyb20gJy4uL2JvdC9ub3Rlcy5zZXJ2aWNlJztcbmltcG9ydCB7IFRlbGVncmFtQXV0aEd1YXJkIH0gZnJvbSAnLi90ZWxlZ3JhbS1hdXRoLmd1YXJkJztcbmltcG9ydCB7IFNjaGVtYU5vdGVEdG8sIE1vZGVOb3RlRHRvLCBOb3RlRmllbGRzRHRvIH0gZnJvbSAnLi9kdG8vbm90ZXMuZHRvJztcblxuaW50ZXJmYWNlIEF1dGhSZXF1ZXN0IGV4dGVuZHMgUmVxdWVzdCB7XG4gIHdlYlVzZXI6IHsgdXNlcklkOiBiaWdpbnQgfTtcbn1cblxuLy8gW2Etel9dezEsNjR9IOKAlCDRgtC+0YIg0LbQtSDRhNC+0YDQvNCw0YIsINGH0YLQviDQuCDRgyDQvtGB0YLQsNC70YzQvdGL0YUgaWQt0LrQsNC70LvQsdGN0LrQvtCyICjRgdC8LiBDTEFVREUubWRcbi8vIMKrVGVsZWdyYW3CuzogYGNhbGxiYWNrX2RhdGFgINGE0L7RgNC80LDRgtCwINC00LXQudGB0YLQstC40LU60L/QsNGA0LDQvNC10YLRgCkuXG5jb25zdCBJRF9SRSA9IC9eW2Etel9dezEsNjR9JC87XG5cbi8vINCe0LHRidC40LUg0L/QvtC70Y8g0YPQttC1INC/0YDQvtCy0LDQu9C40LTQuNGA0L7QstCw0L3RiyBEVE8gKEBJc1N0cmluZy9ATWF4TGVuZ3RoKSDigJQg0LfQtNC10YHRjCDRgtC+0LvRjNC60L4gdHJpbS5cbmZ1bmN0aW9uIHRyaW1GaWVsZHMoYm9keTogTm90ZUZpZWxkc0R0bykge1xuICByZXR1cm4ge1xuICAgIHRyaWdnZXJzOiBib2R5LnRyaWdnZXJzPy50cmltKCksXG4gICAgZmVlbGluZ3M6IGJvZHkuZmVlbGluZ3M/LnRyaW0oKSxcbiAgICB0aG91Z2h0czogYm9keS50aG91Z2h0cz8udHJpbSgpLFxuICAgIG9yaWdpbnM6IGJvZHkub3JpZ2lucz8udHJpbSgpLFxuICAgIGhlYWx0aHlWaWV3OiBib2R5LmhlYWx0aHlWaWV3Py50cmltKCksXG4gICAgYmVoYXZpb3I6IGJvZHkuYmVoYXZpb3I/LnRyaW0oKSxcbiAgfTtcbn1cblxuLy8g0JrQsNGA0YLQvtGH0LrQuCDRgdGF0LXQvC/RgNC10LbQuNC80L7QsiArINC00L7RgdGC0YPQvyDRgtC10YDQsNC/0LXQstGC0LAg0Log0LrQsNGA0YLQvtGH0LrQsNC8INC60LvQuNC10L3RgtCwLlxuQENvbnRyb2xsZXIoJ2FwaScpXG5AVXNlR3VhcmRzKFRlbGVncmFtQXV0aEd1YXJkKVxuZXhwb3J0IGNsYXNzIE5vdGVzQ29udHJvbGxlciB7XG4gIGNvbnN0cnVjdG9yKHByaXZhdGUgcmVhZG9ubHkgbm90ZXNTZXJ2aWNlOiBOb3Rlc1NlcnZpY2UpIHt9XG5cbiAgQEdldCgnc2NoZW1hLW5vdGVzJylcbiAgYXN5bmMgZ2V0U2NoZW1hTm90ZXMoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QpIHtcbiAgICByZXR1cm4gdGhpcy5ub3Rlc1NlcnZpY2UuZ2V0U2NoZW1hTm90ZXModWlkKHJlcSkpO1xuICB9XG5cbiAgQFBvc3QoJ3NjaGVtYS1ub3RlcycpXG4gIGFzeW5jIHVwc2VydFNjaGVtYU5vdGUoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QsIEBCb2R5KCkgYm9keTogU2NoZW1hTm90ZUR0bykge1xuICAgIGlmICghSURfUkUudGVzdChib2R5LnNjaGVtYUlkKSlcbiAgICAgIHRocm93IG5ldyBCYWRSZXF1ZXN0RXhjZXB0aW9uKCdpbnZhbGlkIHNjaGVtYUlkJyk7XG4gICAgcmV0dXJuIHRoaXMubm90ZXNTZXJ2aWNlLnVwc2VydFNjaGVtYU5vdGUodWlkKHJlcSksIGJvZHkuc2NoZW1hSWQsIHtcbiAgICAgIC4uLnRyaW1GaWVsZHMoYm9keSksXG4gICAgICByZWFsaXR5OiBib2R5LnJlYWxpdHk/LnRyaW0oKSxcbiAgICB9KTtcbiAgfVxuXG4gIEBHZXQoJ21vZGUtbm90ZXMnKVxuICBhc3luYyBnZXRNb2RlTm90ZXMoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QpIHtcbiAgICByZXR1cm4gdGhpcy5ub3Rlc1NlcnZpY2UuZ2V0TW9kZU5vdGVzKHVpZChyZXEpKTtcbiAgfVxuXG4gIEBQb3N0KCdtb2RlLW5vdGVzJylcbiAgYXN5bmMgdXBzZXJ0TW9kZU5vdGUoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QsIEBCb2R5KCkgYm9keTogTW9kZU5vdGVEdG8pIHtcbiAgICBpZiAoIUlEX1JFLnRlc3QoYm9keS5tb2RlSWQpKVxuICAgICAgdGhyb3cgbmV3IEJhZFJlcXVlc3RFeGNlcHRpb24oJ2ludmFsaWQgbW9kZUlkJyk7XG4gICAgcmV0dXJuIHRoaXMubm90ZXNTZXJ2aWNlLnVwc2VydE1vZGVOb3RlKHVpZChyZXEpLCBib2R5Lm1vZGVJZCwge1xuICAgICAgLi4udHJpbUZpZWxkcyhib2R5KSxcbiAgICAgIG5lZWRzOiBib2R5Lm5lZWRzPy50cmltKCksXG4gICAgfSk7XG4gIH1cbn1cbi8vINCc0LDRgNGI0YDRg9GC0YsgdGhlcmFweS9jbGllbnQvOmNsaWVudElkL3tzY2hlbWEsbW9kZX0tbm90ZXMg0LfQtNC10YHRjCDQsdGL0LvQuCDQtNGD0LHQu9C10Lxcbi8vIHRoZXJhcHkuY29udHJvbGxlciAo0LDRg9C00LjRgiAyMDI2LTA3OiDQttC40LvQuCDQvtCx0LUg0YDQtdCw0LvQuNC30LDRhtC40LgsINC+0YLQstC10YfQsNC70LAgdGhlcmFweS1cbi8vINCy0LXRgNGB0LjRjywg0LAgdGhlcmFwaXN0U2hhcmVDYXJkcyDRg9Cy0LDQttCw0LvQsCDRgtC+0LvRjNC60L4g0Y3RgtCwLCDQvNGR0YDRgtCy0LDRjykuINCe0YHRgtCw0LLQu9C10L3QsCDQvtC00L3QsFxuLy8g0YDQtdCw0LvQuNC30LDRhtC40Y8g0LIgdGhlcmFweS5jb250cm9sbGVyICsgcHJpdmFjeS3Qv9GA0L7QstC10YDQutCwINCyIGNsaWVudC1kYXRhLnNlcnZpY2UuXG4iXSwidmVyc2lvbiI6M30=

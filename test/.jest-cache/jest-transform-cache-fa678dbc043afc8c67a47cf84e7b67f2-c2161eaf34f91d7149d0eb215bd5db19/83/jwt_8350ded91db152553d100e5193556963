@@ -1,0 +1,52 @@
+0a4ed7a556be2825fe586e15c9263465
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.signAccessToken = signAccessToken;
+// Подпись access-JWT для e2e-запросов — тот же алгоритм/issuer/audience,
+// что и AuthService.verifyAccessToken (src/auth/auth.service.ts), пересчитан
+// руками независимо от прод-кода (как в src/auth/jwt.guard.spec.ts).
+const jwt = __importStar(require("jsonwebtoken"));
+const ISSUER = 'schemehappens.ru';
+const AUDIENCE = 'schemehappens.ru';
+function signAccessToken(userId, secret) {
+    return jwt.sign({ sub: userId.toString(), type: 'access' }, secret, {
+        algorithm: 'HS256',
+        expiresIn: 900,
+        issuer: ISSUER,
+        audience: AUDIENCE,
+    });
+}
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC90ZXN0L2UyZS1zdXBwb3J0L2p3dC50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQVFBLDBDQU9DO0FBZkQseUVBQXlFO0FBQ3pFLDZFQUE2RTtBQUM3RSxxRUFBcUU7QUFDckUsa0RBQW9DO0FBRXBDLE1BQU0sTUFBTSxHQUFHLGtCQUFrQixDQUFDO0FBQ2xDLE1BQU0sUUFBUSxHQUFHLGtCQUFrQixDQUFDO0FBRXBDLFNBQWdCLGVBQWUsQ0FBQyxNQUFjLEVBQUUsTUFBYztJQUM1RCxPQUFPLEdBQUcsQ0FBQyxJQUFJLENBQUMsRUFBRSxHQUFHLEVBQUUsTUFBTSxDQUFDLFFBQVEsRUFBRSxFQUFFLElBQUksRUFBRSxRQUFRLEVBQUUsRUFBRSxNQUFNLEVBQUU7UUFDbEUsU0FBUyxFQUFFLE9BQU87UUFDbEIsU0FBUyxFQUFFLEdBQUc7UUFDZCxNQUFNLEVBQUUsTUFBTTtRQUNkLFFBQVEsRUFBRSxRQUFRO0tBQ25CLENBQUMsQ0FBQztBQUNMLENBQUMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC90ZXN0L2UyZS1zdXBwb3J0L2p3dC50cyJdLCJzb3VyY2VzQ29udGVudCI6WyIvLyDQn9C+0LTQv9C40YHRjCBhY2Nlc3MtSldUINC00LvRjyBlMmUt0LfQsNC/0YDQvtGB0L7QsiDigJQg0YLQvtGCINC20LUg0LDQu9Cz0L7RgNC40YLQvC9pc3N1ZXIvYXVkaWVuY2UsXG4vLyDRh9GC0L4g0LggQXV0aFNlcnZpY2UudmVyaWZ5QWNjZXNzVG9rZW4gKHNyYy9hdXRoL2F1dGguc2VydmljZS50cyksINC/0LXRgNC10YHRh9C40YLQsNC9XG4vLyDRgNGD0LrQsNC80Lgg0L3QtdC30LDQstC40YHQuNC80L4g0L7RgiDQv9GA0L7QtC3QutC+0LTQsCAo0LrQsNC6INCyIHNyYy9hdXRoL2p3dC5ndWFyZC5zcGVjLnRzKS5cbmltcG9ydCAqIGFzIGp3dCBmcm9tICdqc29ud2VidG9rZW4nO1xuXG5jb25zdCBJU1NVRVIgPSAnc2NoZW1laGFwcGVucy5ydSc7XG5jb25zdCBBVURJRU5DRSA9ICdzY2hlbWVoYXBwZW5zLnJ1JztcblxuZXhwb3J0IGZ1bmN0aW9uIHNpZ25BY2Nlc3NUb2tlbih1c2VySWQ6IGJpZ2ludCwgc2VjcmV0OiBzdHJpbmcpOiBzdHJpbmcge1xuICByZXR1cm4gand0LnNpZ24oeyBzdWI6IHVzZXJJZC50b1N0cmluZygpLCB0eXBlOiAnYWNjZXNzJyB9LCBzZWNyZXQsIHtcbiAgICBhbGdvcml0aG06ICdIUzI1NicsXG4gICAgZXhwaXJlc0luOiA5MDAsXG4gICAgaXNzdWVyOiBJU1NVRVIsXG4gICAgYXVkaWVuY2U6IEFVRElFTkNFLFxuICB9KTtcbn1cbiJdLCJ2ZXJzaW9uIjozfQ==
