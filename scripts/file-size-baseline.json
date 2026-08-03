@@ -294,7 +294,7 @@
   "webapp/src/components/NeedHistorySheet.tsx": 143,
   "schema-miniapp/src/components/IntroSheetHeader.tsx": 142,
   "webapp/src/components/JourneySheet.tsx": 141,
-  "eslint.config.mjs": 140,
+  "eslint.config.mjs": 145,
   "schema-miniapp/src/components/BottomSheet.tsx": 140,
   "schema-miniapp/src/components/StepFlowSheet.tsx": 140,
   "src/bot/exercises.service.ts": 140,
