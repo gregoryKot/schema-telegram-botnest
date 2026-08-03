@@ -16,8 +16,15 @@ const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'jscpd-baseline.json');
 const UPDATE = process.argv.includes('--update');
 
-const out = mkdtempSync(join(tmpdir(), 'jscpd-'));
-const res = spawnSync(
+// Шов для теста гейта (src/test-support/gates/): сам jscpd в песочницу не
+// поднять — он обходит всё дерево. Молча сломаться может вторая половина:
+// чтение отчёта и сверка с бейслайном. RATCHET_REPORT_FILE подставляет
+// готовый отчёт вместо запуска; сравнение дальше — то же, что в CI.
+const reportFile = process.env.RATCHET_REPORT_FILE;
+const out = reportFile ? null : mkdtempSync(join(tmpdir(), 'jscpd-'));
+const res = reportFile
+  ? { stdout: '', stderr: '' }
+  : spawnSync(
   'npx',
   [
     'jscpd', 'src', 'webapp/src', 'schema-miniapp/src', 'shared/src',
@@ -31,12 +38,14 @@ const res = spawnSync(
 
 let report;
 try {
-  report = JSON.parse(readFileSync(join(out, 'jscpd-report.json'), 'utf8'));
+  report = JSON.parse(
+    readFileSync(reportFile ?? join(out, 'jscpd-report.json'), 'utf8'),
+  );
 } catch {
   console.error('❌ jscpd не отработал:\n' + (res.stderr || res.stdout).slice(0, 2000));
   process.exit(1);
 } finally {
-  rmSync(out, { recursive: true, force: true });
+  if (out) rmSync(out, { recursive: true, force: true });
 }
 
 const lines = report.statistics.total.duplicatedLines;
