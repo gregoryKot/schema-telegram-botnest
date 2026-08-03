@@ -78,13 +78,13 @@ afterEach(() => {
 describe('PracticeSection — ты/вы вилка', () => {
   it('подзаголовок звучит на «ты» по умолчанию', () => {
     renderSection({}, 'ty');
-    expect(screen.getByText(/Шесть практик схема-терапии плюс твои личные цели/)).toBeTruthy();
+    expect(screen.getByText(/Семь практик схема-терапии плюс твои личные цели/)).toBeTruthy();
     expect(screen.queryByText(/ваши личные цели/)).toBeNull();
   });
 
   it('подзаголовок звучит на «вы», когда выбрана форма vy — «ваши», а не «твои»', () => {
     renderSection({}, 'vy');
-    expect(screen.getByText(/Шесть практик схема-терапии плюс ваши личные цели/)).toBeTruthy();
+    expect(screen.getByText(/Семь практик схема-терапии плюс ваши личные цели/)).toBeTruthy();
     expect(screen.queryByText(/твои личные цели/)).toBeNull();
   });
 });
@@ -93,7 +93,7 @@ describe('PracticeSection — пустой аккаунт (без хардкод
   it('на пустом аккаунте все упражнения показывают "не начато", а не выдуманную статистику', async () => {
     renderSection();
     await waitFor(() => expect(mockApi.getBeliefChecks).toHaveBeenCalled());
-    expect(screen.getAllByText('не начато').length).toBe(6);
+    expect(screen.getAllByText('не начато').length).toBe(7);
   });
 
   it('без активных целей показывает пустое состояние, а не "0 активных" молча', async () => {
