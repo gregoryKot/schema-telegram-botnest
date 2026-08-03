@@ -49,6 +49,11 @@ export function mskParts(now: Date): MskParts {
   };
 }
 
+/** Слот, которому принадлежит момент (null — вне обоих окон). */
+export function slotForMoment(now: Date): HealthyAdultSlot | null {
+  return slotForHour(mskParts(now).hour);
+}
+
 /** Слот, которому принадлежит час МСК (null — вне обоих окон). */
 function slotForHour(hour: number): HealthyAdultSlot | null {
   if (hour === SLOT_START_HOUR.morning || hour === SLOT_START_HOUR.morning + 1)

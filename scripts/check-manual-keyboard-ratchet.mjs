@@ -34,6 +34,12 @@ const EXCLUDED = new Set(['shared/src/utils/a11y.ts']);
 // каждое найденное вхождение и есть копия, которую надо перевести на хук.
 const MANUAL_ROLE = /role=(?:"button"|'button'|\{\s*['"]button['"]\s*\})/g;
 
+// Исключение из a11y.ts: оверлей-подложка «тап мимо, чтобы закрыть». Это не
+// карточка с содержимым — внутрь неё ничего не кладут, вложенному полю ввода
+// там взяться неоткуда, и pressable для неё сам файл a11y.ts не рекомендует.
+// Узнаём по подписи для скринридера.
+const BACKDROP = /aria-label=(?:"Закрыть"|'Закрыть')/;
+
 function walk(dir, acc = []) {
   let entries;
   try {
@@ -72,6 +78,7 @@ for (const dir of SCAN_DIRS) {
     }
     let n = 0;
     src.split('\n').forEach((line, i) => {
+      if (BACKDROP.test(line)) return;
       MANUAL_ROLE.lastIndex = 0;
       while (MANUAL_ROLE.exec(line)) {
         n++;

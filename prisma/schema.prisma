@@ -791,11 +791,14 @@ model HealthyAdultPost {
 /// 2026-07-31). Пользовательских данных тут нет: id канала и текст ошибки API.
 model ChannelDelivery {
   id          Int      @id @default(autoincrement())
-  source      String // 'утро' | 'вечер' | 'вручную' | 'проверка'
+  source      String // 'утро' | 'вечер' | 'вручную' | 'проверка' (+ ' — повтор')
   platform    String
   destination String
   ok          Boolean
   reason      String? // причина отказа площадки, если не дошло
+  /// Фраза публикации: по ней повтор досылает упавшей площадке то же самое,
+  /// а не новый текст из пула.
+  text        String?
   createdAt   DateTime @default(now())
 
   @@index([createdAt])

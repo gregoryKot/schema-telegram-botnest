@@ -4,8 +4,11 @@ import { HealthyAdultService } from '../bot/healthy-adult.service';
 import {
   dueSlot,
   mskParts,
+  slotForMoment,
   type HealthyAdultSlot,
 } from '../bot/healthy-adult.schedule';
+import { DeliveryLogService } from './delivery-log.service';
+import { planRetry } from './retry-plan';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { SlotAttempts } from '../bot/healthy-adult.attempts';
 import { ChannelPublisherService } from './channel-publisher.service';
@@ -36,9 +39,13 @@ export class ChannelScheduleService {
   private readonly logger = new Logger(ChannelScheduleService.name);
   private readonly attempts = new SlotAttempts();
 
+  /** Счётчик попыток досылки — свой, чтобы не жечь попытки самой публикации. */
+  private readonly retries = new SlotAttempts();
+
   constructor(
     private readonly publisher: ChannelPublisherService,
     private readonly phrases: HealthyAdultService,
+    private readonly deliveries: DeliveryLogService,
   ) {}
 
   @Cron(MORNING_CRON, { name: 'healthyAdultMorning', timeZone: POST_TZ })
@@ -62,7 +69,8 @@ export class ChannelScheduleService {
   async maybePost(now = new Date()): Promise<void> {
     try {
       const slot = dueSlot(now, await this.phrases.lastPostAt());
-      if (!slot) return;
+      // Слот закрыт — но пост мог выйти не везде: досылаем долг адресно.
+      if (!slot) return void (await this.catchUp(now));
       const key = `${mskParts(now).dateKey}:${slot}`;
       if (!this.attempts.allow(key)) return;
 
@@ -74,7 +82,10 @@ export class ChannelScheduleService {
         if (res.failed.length > 0 || res.silent.length > 0)
           await this.alert(
             `Канал ЗВ (${SLOT_NAME[slot]}): дошло не везде\n` +
-              `${failedSummary(res.failed)}${silentSummary(res.silent)}`,
+              `${failedSummary(res.failed)}${silentSummary(res.silent)}` +
+              (res.failed.length > 0
+                ? '\nПробую дослать в ближайшие минуты.'
+                : ''),
           );
         return;
       }
@@ -94,6 +105,42 @@ export class ChannelScheduleService {
         `healthy-adult tick failed: ${(err as Error)?.message}`,
       );
     }
+  }
+
+  /**
+   * Досылка тем площадкам, которые пост этого слота не приняли.
+   *
+   * До 2026-08 частичный успех означал пропуск: слот закрывался, и упавшая
+   * площадка теряла публикацию до следующего слота с другой фразой. Повторять
+   * весь фан-аут нельзя — это дубль там, где пост уже вышел, — поэтому долг
+   * считается по журналу и досылается только должникам.
+   */
+  private async catchUp(now: Date): Promise<void> {
+    const slot = slotForMoment(now);
+    if (!slot) return;
+    const key = `${mskParts(now).dateKey}:${slot}:повтор`;
+    if (!this.retries.allow(key)) return;
+
+    const name = SLOT_NAME[slot];
+    // Окно слота длится два часа, поэтому трёх часов назад заведомо хватает.
+    const since = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+    const plan = planRetry(await this.deliveries.slotRows(name, since));
+    if (!plan) return;
+
+    const res = await this.publisher.retry(name, plan.text, plan.platforms);
+    if (res.ok) {
+      this.retries.reset(key);
+      // Хорошая новость закрывает историю: владелец уже получил «дошло не
+      // везде» и иначе остался бы с ней наедине.
+      await this.alert(
+        `Канал ЗВ (${name}): досталось со второй попытки — ${plan.platforms.join(', ')}.`,
+      );
+      return;
+    }
+    this.retries.fail(key);
+    this.logger.warn(
+      `healthy-adult ${slot}: повтор не удался — ${res.message}`,
+    );
   }
 
   /**

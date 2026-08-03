@@ -208,6 +208,34 @@ describe('AuthService — устойчивость к подделке JWT', () 
     });
   });
 
+  describe('8а. kind-дискриминатор проверяется по значению, а не пропускается вслепую', () => {
+    it('verifyMergeToken отклоняет токен с "чужим" kind, даже если target/source/provider/providerId присутствуют и валидны (иначе BigInt() их не завалит, и проверка kind — единственная защита)', () => {
+      const svc = makeService();
+      const forged = sign({
+        kind: 'not-merge',
+        target: '1',
+        source: '2',
+        provider: 'google',
+        providerId: 'g-1',
+      });
+      expect(() => svc.verifyMergeToken(forged)).toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('8б. err instanceof UnauthorizedException не глушится общим catch — конкретное сообщение "Wrong token type" не подменяется на общее', () => {
+    it('verifyAccessToken(валидный токен с type="link") → именно "Wrong token type", не общее "Invalid or expired access token"', () => {
+      const svc = makeService();
+      const forged = sign({ sub: '1', type: 'link' });
+      expect(() => svc.verifyAccessToken(forged)).toThrow('Wrong token type');
+    });
+
+    it('verifyLinkToken(валидный токен с type="access") → именно "Wrong token type", не общее "Invalid or expired link token"', () => {
+      const svc = makeService();
+      const forged = sign({ sub: '1', type: 'access' });
+      expect(() => svc.verifyLinkToken(forged)).toThrow('Wrong token type');
+    });
+  });
+
   describe('8. Подозрительный sub — BigInt(sub) не должен падать "сырой" ошибкой', () => {
     const svc = makeService();
 

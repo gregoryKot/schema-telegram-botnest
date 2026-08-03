@@ -4,14 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Всё по схеме</title>
+    <!-- Цвет статус-бара/адресной строки standalone-PWA. manifest.webmanifest
+         несёт только один theme_color (светлая тема) — тёмную отрабатывают
+         эти статические meta с media (тот же приём, что в webapp/index.html);
+         значения — html[data-theme] в src/index.css. -->
+    <meta name="theme-color" content="#f4f0e9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#191b25" media="(prefers-color-scheme: dark)" />
+    <!-- iOS «На экран „Домой“» не читает manifest.icons надёжно — нужен
+         явный link. Тот же файл, что у сайта (webapp/public/), одна копия. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <script src="/telegram-web-app.js"></script>
     <!-- Мост MAX: подключается только внутри MAX, решает это сам загрузчик.
          Отдельным файлом, а не инлайном — у нас script-src 'self' без
          unsafe-inline, инлайн CSP заблокировал бы. -->
     <script src="/max-bridge.js"></script>
-    <script type="module" crossorigin src="/app/assets/index-BODrp4as.js"></script>
+    <script type="module" crossorigin src="/app/assets/index-B_H16OaK.js"></script>
     <link rel="stylesheet" crossorigin href="/app/assets/index-BNPYjMxG.css">
-  </head>
+  <link rel="manifest" href="/app/manifest.webmanifest"></head>
   <body>
     <div id="root"></div>
   </body>
