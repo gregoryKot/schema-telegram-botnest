@@ -15,6 +15,7 @@ function mockCtx() {
     save: vi.fn(),
     restore: vi.fn(),
     beginPath: vi.fn(),
+    closePath: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     stroke: vi.fn(),
