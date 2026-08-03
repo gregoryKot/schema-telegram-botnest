@@ -1,0 +1,29 @@
+a65876124e60d35a0d590545a43b0ffe
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PairCodeDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * Код парного приглашения — используется и для join, и для leave.
+ * Формат (`[A-Z0-9]{5,12}`) уже проверяется вручную в join-хендлере,
+ * здесь только рантайм-гарантия «это строка» (правило №6 CLAUDE.md).
+ */
+class PairCodeDto {
+    code;
+}
+exports.PairCodeDto = PairCodeDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], PairCodeDto.prototype, "code", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9wYWlycy5kdG8udHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7O0FBQUEscURBQXVEO0FBRXZEOzs7O0dBSUc7QUFDSCxNQUFhLFdBQVc7SUFHdEIsSUFBSSxDQUFVO0NBQ2Y7QUFKRCxrQ0FJQztBQURDO0lBRkMsSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSw0QkFBVSxHQUFFOzt5Q0FDQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hcGkvZHRvL3BhaXJzLmR0by50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJc05vdEVtcHR5LCBJc1N0cmluZyB9IGZyb20gJ2NsYXNzLXZhbGlkYXRvcic7XG5cbi8qKlxuICog0JrQvtC0INC/0LDRgNC90L7Qs9C+INC/0YDQuNCz0LvQsNGI0LXQvdC40Y8g4oCUINC40YHQv9C+0LvRjNC30YPQtdGC0YHRjyDQuCDQtNC70Y8gam9pbiwg0Lgg0LTQu9GPIGxlYXZlLlxuICog0KTQvtGA0LzQsNGCIChgW0EtWjAtOV17NSwxMn1gKSDRg9C20LUg0L/RgNC+0LLQtdGA0Y/QtdGC0YHRjyDQstGA0YPRh9C90YPRjiDQsiBqb2luLdGF0LXQvdC00LvQtdGA0LUsXG4gKiDQt9C00LXRgdGMINGC0L7Qu9GM0LrQviDRgNCw0L3RgtCw0LnQvC3Qs9Cw0YDQsNC90YLQuNGPIMKr0Y3RgtC+INGB0YLRgNC+0LrQsMK7ICjQv9GA0LDQstC40LvQviDihJY2IENMQVVERS5tZCkuXG4gKi9cbmV4cG9ydCBjbGFzcyBQYWlyQ29kZUR0byB7XG4gIEBJc1N0cmluZygpXG4gIEBJc05vdEVtcHR5KClcbiAgY29kZSE6IHN0cmluZztcbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

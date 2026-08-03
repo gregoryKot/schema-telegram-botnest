@@ -1,0 +1,34 @@
+af867877dd5bcb61789c90efd47b61b3
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TELEGRAM_PROVIDERS = void 0;
+const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
+const telegraf_1 = require("telegraf");
+const telegram_constants_1 = require("./telegram.constants");
+const logger = new common_1.Logger('TelegramProviders');
+exports.TELEGRAM_PROVIDERS = [
+    {
+        provide: telegram_constants_1.TELEGRAF_BOT,
+        useFactory: async (config) => {
+            const token = config.get('BOT_TOKEN');
+            if (!token) {
+                logger.error('BOT_TOKEN is missing');
+                throw new Error('Invalid BOT_TOKEN');
+            }
+            const bot = new telegraf_1.Telegraf(token);
+            try {
+                const me = await bot.telegram.getMe();
+                logger.log(`Bot authorized: @${me.username ?? me.id}`);
+            }
+            catch (err) {
+                // Network unreachable at startup (e.g. Amvera → Telegram timeout).
+                // Return the bot anyway — it will retry on the first update or launch().
+                logger.warn(`getMe failed at startup (bot may recover): ${err.message}`);
+            }
+            return bot;
+        },
+        inject: [config_1.ConfigService],
+    },
+];
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGVsZWdyYW0vdGVsZWdyYW0ucHJvdmlkZXJzLnRzIiwibWFwcGluZ3MiOiI7OztBQUFBLDJDQUFrRDtBQUNsRCwyQ0FBK0M7QUFDL0MsdUNBQW9DO0FBQ3BDLDZEQUFvRDtBQUVwRCxNQUFNLE1BQU0sR0FBRyxJQUFJLGVBQU0sQ0FBQyxtQkFBbUIsQ0FBQyxDQUFDO0FBRWxDLFFBQUEsa0JBQWtCLEdBQWU7SUFDNUM7UUFDRSxPQUFPLEVBQUUsaUNBQVk7UUFDckIsVUFBVSxFQUFFLEtBQUssRUFBRSxNQUFxQixFQUFFLEVBQUU7WUFDMUMsTUFBTSxLQUFLLEdBQUcsTUFBTSxDQUFDLEdBQUcsQ0FBUyxXQUFXLENBQUMsQ0FBQztZQUM5QyxJQUFJLENBQUMsS0FBSyxFQUFFLENBQUM7Z0JBQ1gsTUFBTSxDQUFDLEtBQUssQ0FBQyxzQkFBc0IsQ0FBQyxDQUFDO2dCQUNyQyxNQUFNLElBQUksS0FBSyxDQUFDLG1CQUFtQixDQUFDLENBQUM7WUFDdkMsQ0FBQztZQUVELE1BQU0sR0FBRyxHQUFHLElBQUksbUJBQVEsQ0FBQyxLQUFLLENBQUMsQ0FBQztZQUNoQyxJQUFJLENBQUM7Z0JBQ0gsTUFBTSxFQUFFLEdBQUcsTUFBTSxHQUFHLENBQUMsUUFBUSxDQUFDLEtBQUssRUFBRSxDQUFDO2dCQUN0QyxNQUFNLENBQUMsR0FBRyxDQUFDLG9CQUFvQixFQUFFLENBQUMsUUFBUSxJQUFJLEVBQUUsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxDQUFDO1lBQ3pELENBQUM7WUFBQyxPQUFPLEdBQUcsRUFBRSxDQUFDO2dCQUNiLG1FQUFtRTtnQkFDbkUseUVBQXlFO2dCQUN6RSxNQUFNLENBQUMsSUFBSSxDQUNULDhDQUErQyxHQUFhLENBQUMsT0FBTyxFQUFFLENBQ3ZFLENBQUM7WUFDSixDQUFDO1lBQ0QsT0FBTyxHQUFHLENBQUM7UUFDYixDQUFDO1FBQ0QsTUFBTSxFQUFFLENBQUMsc0JBQWEsQ0FBQztLQUN4QjtDQUNGLENBQUMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGVsZWdyYW0vdGVsZWdyYW0ucHJvdmlkZXJzLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IExvZ2dlciwgUHJvdmlkZXIgfSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBDb25maWdTZXJ2aWNlIH0gZnJvbSAnQG5lc3Rqcy9jb25maWcnO1xuaW1wb3J0IHsgVGVsZWdyYWYgfSBmcm9tICd0ZWxlZ3JhZic7XG5pbXBvcnQgeyBURUxFR1JBRl9CT1QgfSBmcm9tICcuL3RlbGVncmFtLmNvbnN0YW50cyc7XG5cbmNvbnN0IGxvZ2dlciA9IG5ldyBMb2dnZXIoJ1RlbGVncmFtUHJvdmlkZXJzJyk7XG5cbmV4cG9ydCBjb25zdCBURUxFR1JBTV9QUk9WSURFUlM6IFByb3ZpZGVyW10gPSBbXG4gIHtcbiAgICBwcm92aWRlOiBURUxFR1JBRl9CT1QsXG4gICAgdXNlRmFjdG9yeTogYXN5bmMgKGNvbmZpZzogQ29uZmlnU2VydmljZSkgPT4ge1xuICAgICAgY29uc3QgdG9rZW4gPSBjb25maWcuZ2V0PHN0cmluZz4oJ0JPVF9UT0tFTicpO1xuICAgICAgaWYgKCF0b2tlbikge1xuICAgICAgICBsb2dnZXIuZXJyb3IoJ0JPVF9UT0tFTiBpcyBtaXNzaW5nJyk7XG4gICAgICAgIHRocm93IG5ldyBFcnJvcignSW52YWxpZCBCT1RfVE9LRU4nKTtcbiAgICAgIH1cblxuICAgICAgY29uc3QgYm90ID0gbmV3IFRlbGVncmFmKHRva2VuKTtcbiAgICAgIHRyeSB7XG4gICAgICAgIGNvbnN0IG1lID0gYXdhaXQgYm90LnRlbGVncmFtLmdldE1lKCk7XG4gICAgICAgIGxvZ2dlci5sb2coYEJvdCBhdXRob3JpemVkOiBAJHttZS51c2VybmFtZSA/PyBtZS5pZH1gKTtcbiAgICAgIH0gY2F0Y2ggKGVycikge1xuICAgICAgICAvLyBOZXR3b3JrIHVucmVhY2hhYmxlIGF0IHN0YXJ0dXAgKGUuZy4gQW12ZXJhIOKGkiBUZWxlZ3JhbSB0aW1lb3V0KS5cbiAgICAgICAgLy8gUmV0dXJuIHRoZSBib3QgYW55d2F5IOKAlCBpdCB3aWxsIHJldHJ5IG9uIHRoZSBmaXJzdCB1cGRhdGUgb3IgbGF1bmNoKCkuXG4gICAgICAgIGxvZ2dlci53YXJuKFxuICAgICAgICAgIGBnZXRNZSBmYWlsZWQgYXQgc3RhcnR1cCAoYm90IG1heSByZWNvdmVyKTogJHsoZXJyIGFzIEVycm9yKS5tZXNzYWdlfWAsXG4gICAgICAgICk7XG4gICAgICB9XG4gICAgICByZXR1cm4gYm90O1xuICAgIH0sXG4gICAgaW5qZWN0OiBbQ29uZmlnU2VydmljZV0sXG4gIH0sXG5dO1xuIl0sInZlcnNpb24iOjN9

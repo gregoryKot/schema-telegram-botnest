@@ -72,6 +72,10 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const [joinView, setJoinView]     = useState<'main' | 'join'>('main');
   const [joinError, setJoinError]   = useState(false);
   const [exportText, setExportText] = useState<string | null>(null);
+  // Сводка собирается на сервере: сеть может отвалиться. Без этого состояния
+  // отказ выглядел как «ничего не произошло» — обработчик падал
+  // необработанным промисом, и пользователь не знал, ждать ему или нет.
+  const [exportError, setExportError] = useState(false);
   const [appInvite, setAppInvite] = useState(false);
   const [pairShare, setPairShare] = useState<{ code: string; url: string } | null>(null);
   const [exportCopied, setExportCopied] = useState(false);
@@ -602,11 +606,23 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 <SHead id="s-share" label="Поделиться" />
                 <SRow title="Пригласить друга" sub="Карточка со ссылкой на бота" onClick={() => setAppInvite(true)} />
                 <SRow title="Сводка для терапевта" sub="Данные за 30 дней" onClick={async () => {
-                  const { text } = await api.getExport();
+                  setExportError(false);
+                  let text: string;
+                  try {
+                    ({ text } = await api.getExport());
+                  } catch {
+                    setExportError(true);
+                    return;
+                  }
                   let shared = false;
                   try { if (navigator.share) { await navigator.share({ text }); shared = true; } } catch { /* best-effort: ошибку намеренно игнорируем */ }
                   if (!shared) { try { await navigator.clipboard.writeText(text); } catch { /* best-effort: ошибку намеренно игнорируем */ } setExportText(text); }
                 }} />
+                {exportError && (
+                  <div style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 6 }}>
+                    Не удалось собрать сводку. Проверьте связь и попробуйте ещё раз
+                  </div>
+                )}
 
                 {/* О приложении */}
                 <SHead id="s-about" label="О приложении" />

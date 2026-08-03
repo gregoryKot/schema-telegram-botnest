@@ -1,0 +1,38 @@
+52f90d108cd7a861be6658aa8e5168ac
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SiteContentController = void 0;
+const common_1 = require("@nestjs/common");
+const site_content_service_1 = require("./site-content.service");
+/** Public read-only endpoint for hero photo + marquee topics. */
+let SiteContentController = class SiteContentController {
+    content;
+    constructor(content) {
+        this.content = content;
+    }
+    async get() {
+        return this.content.getPublicContent();
+    }
+};
+exports.SiteContentController = SiteContentController;
+__decorate([
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], SiteContentController.prototype, "get", null);
+exports.SiteContentController = SiteContentController = __decorate([
+    (0, common_1.Controller)('api/site-content'),
+    __metadata("design:paramtypes", [typeof (_a = typeof site_content_service_1.SiteContentService !== "undefined" && site_content_service_1.SiteContentService) === "function" ? _a : Object])
+], SiteContentController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvc2l0ZS1jb250ZW50L3NpdGUtY29udGVudC5jb250cm9sbGVyLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7QUFBQSwyQ0FBaUQ7QUFDakQsaUVBQTREO0FBRTVELGlFQUFpRTtBQUUxRCxJQUFNLHFCQUFxQixHQUEzQixNQUFNLHFCQUFxQjtJQUNIO0lBQTdCLFlBQTZCLE9BQTJCO1FBQTNCLFlBQU8sR0FBUCxPQUFPLENBQW9CO0lBQUcsQ0FBQztJQUd0RCxBQUFOLEtBQUssQ0FBQyxHQUFHO1FBQ1AsT0FBTyxJQUFJLENBQUMsT0FBTyxDQUFDLGdCQUFnQixFQUFFLENBQUM7SUFDekMsQ0FBQztDQUNGLENBQUE7QUFQWSxzREFBcUI7QUFJMUI7SUFETCxJQUFBLFlBQUcsR0FBRTs7OztnREFHTDtnQ0FOVSxxQkFBcUI7SUFEakMsSUFBQSxtQkFBVSxFQUFDLGtCQUFrQixDQUFDO3lEQUVTLHlDQUFrQixvQkFBbEIseUNBQWtCO0dBRDdDLHFCQUFxQixDQU9qQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9zaXRlLWNvbnRlbnQvc2l0ZS1jb250ZW50LmNvbnRyb2xsZXIudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgQ29udHJvbGxlciwgR2V0IH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgU2l0ZUNvbnRlbnRTZXJ2aWNlIH0gZnJvbSAnLi9zaXRlLWNvbnRlbnQuc2VydmljZSc7XG5cbi8qKiBQdWJsaWMgcmVhZC1vbmx5IGVuZHBvaW50IGZvciBoZXJvIHBob3RvICsgbWFycXVlZSB0b3BpY3MuICovXG5AQ29udHJvbGxlcignYXBpL3NpdGUtY29udGVudCcpXG5leHBvcnQgY2xhc3MgU2l0ZUNvbnRlbnRDb250cm9sbGVyIHtcbiAgY29uc3RydWN0b3IocHJpdmF0ZSByZWFkb25seSBjb250ZW50OiBTaXRlQ29udGVudFNlcnZpY2UpIHt9XG5cbiAgQEdldCgpXG4gIGFzeW5jIGdldCgpIHtcbiAgICByZXR1cm4gdGhpcy5jb250ZW50LmdldFB1YmxpY0NvbnRlbnQoKTtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

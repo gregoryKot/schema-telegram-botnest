@@ -1,0 +1,29 @@
+61f9249d7910799a529fca742f1952e6
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MaxWebAppDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * DTO for POST /api/auth/max/webapp `initData` body field — CLAUDE.md
+ * правило №6 (новый эндпоинт = DTO с class-validator, не inline @Body()).
+ */
+class MaxWebAppDto {
+    initData;
+}
+exports.MaxWebAppDto = MaxWebAppDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(8192),
+    __metadata("design:type", String)
+], MaxWebAppDto.prototype, "initData", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXV0aC9kdG8vbWF4LXdlYmFwcC5kdG8udHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7O0FBQUEscURBQWtFO0FBRWxFOzs7R0FHRztBQUNILE1BQWEsWUFBWTtJQUl2QixRQUFRLENBQVU7Q0FDbkI7QUFMRCxvQ0FLQztBQURDO0lBSEMsSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwyQkFBUyxFQUFDLElBQUksQ0FBQzs7OENBQ0UiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXV0aC9kdG8vbWF4LXdlYmFwcC5kdG8udHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgSXNOb3RFbXB0eSwgSXNTdHJpbmcsIE1heExlbmd0aCB9IGZyb20gJ2NsYXNzLXZhbGlkYXRvcic7XG5cbi8qKlxuICogRFRPIGZvciBQT1NUIC9hcGkvYXV0aC9tYXgvd2ViYXBwIGBpbml0RGF0YWAgYm9keSBmaWVsZCDigJQgQ0xBVURFLm1kXG4gKiDQv9GA0LDQstC40LvQviDihJY2ICjQvdC+0LLRi9C5INGN0L3QtNC/0L7QuNC90YIgPSBEVE8g0YEgY2xhc3MtdmFsaWRhdG9yLCDQvdC1IGlubGluZSBAQm9keSgpKS5cbiAqL1xuZXhwb3J0IGNsYXNzIE1heFdlYkFwcER0byB7XG4gIEBJc1N0cmluZygpXG4gIEBJc05vdEVtcHR5KClcbiAgQE1heExlbmd0aCg4MTkyKVxuICBpbml0RGF0YSE6IHN0cmluZztcbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

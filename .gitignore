@@ -123,3 +123,8 @@ prisma.config.js.map
 # и scripts/mutation-baseline.json (счёт по золотым зонам).
 .stryker-tmp/
 reports/
+
+# Playwright (браузерный smoke, TEST_TRUST_PLAN.md п.4): трейсы/скриншоты
+# упавших прогонов — артефакт запуска, в CI уезжает отдельным upload-artifact.
+test-results/
+playwright-report/

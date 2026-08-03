@@ -1,0 +1,257 @@
+2def2daf7eb679c52ba90b2b765ccef2
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TherapyConnectionController = void 0;
+const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
+const request_utils_1 = require("../api/request-utils");
+const therapist_request_dto_1 = require("./therapist-request.dto");
+const telegram_auth_guard_1 = require("../api/telegram-auth.guard");
+const therapy_relations_service_1 = require("./therapy-relations.service");
+const therapy_client_data_service_1 = require("./therapy-client-data.service");
+const therapist_request_service_1 = require("./therapist-request.service");
+const account_service_1 = require("../bot/account.service");
+const connection_dto_1 = require("./dto/connection.dto");
+const client_data_dto_1 = require("./dto/client-data.dto");
+// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
+// allowNegative: виртуальные (офлайн) клиенты терапевта кодируются
+// отрицательным id = -TherapyRelation.id — только в therapy-эндпоинтах.
+const parseId = (raw) => (0, request_utils_1.parseId)(raw, { allowNegative: true });
+// Подключение клиент↔терапевт: инвайт-коды, join/disconnect, список
+// клиентов (add/virtual/rename/remove) и заявка на роль терапевта.
+let TherapyConnectionController = class TherapyConnectionController {
+    relationsService;
+    clientDataService;
+    accountService;
+    therapistRequestService;
+    constructor(relationsService, clientDataService, accountService, therapistRequestService) {
+        this.relationsService = relationsService;
+        this.clientDataService = clientDataService;
+        this.accountService = accountService;
+        this.therapistRequestService = therapistRequestService;
+    }
+    // ─── Connection ─────────────────────────────────────────────────────────────
+    async createInvite(req) {
+        const role = await this.accountService.getUserRole((0, request_utils_1.uid)(req));
+        if (role !== 'THERAPIST')
+            throw new common_1.ForbiddenException('Therapist only');
+        return this.relationsService.createInvite((0, request_utils_1.uid)(req));
+    }
+    async getRelation(req) {
+        return this.relationsService.getRelation((0, request_utils_1.uid)(req));
+    }
+    async join(req, body) {
+        if (!body.code)
+            throw new common_1.BadRequestException('code required');
+        const ok = await this.relationsService.joinAsClient((0, request_utils_1.uid)(req), body.code);
+        if (!ok)
+            throw new common_1.BadRequestException('Invalid or expired code');
+        return { ok: true };
+    }
+    async disconnect(req) {
+        await this.relationsService.disconnect((0, request_utils_1.uid)(req));
+        return { ok: true };
+    }
+    async getClients(req) {
+        const role = await this.accountService.getUserRole((0, request_utils_1.uid)(req));
+        if (role !== 'THERAPIST')
+            throw new common_1.ForbiddenException('Therapist only');
+        return this.relationsService.getClients((0, request_utils_1.uid)(req));
+    }
+    async removeClient(req, clientId) {
+        const role = await this.accountService.getUserRole((0, request_utils_1.uid)(req));
+        if (role !== 'THERAPIST')
+            throw new common_1.ForbiddenException('Therapist only');
+        await this.clientDataService.removeClient((0, request_utils_1.uid)(req), parseId(clientId));
+        return { ok: true };
+    }
+    async addVirtualClient(req, body) {
+        const role = await this.accountService.getUserRole((0, request_utils_1.uid)(req));
+        if (role !== 'THERAPIST')
+            throw new common_1.ForbiddenException('Therapist only');
+        if (!body.name?.trim())
+            throw new common_1.BadRequestException('name required');
+        return this.relationsService.addVirtualClient((0, request_utils_1.uid)(req), body.name);
+    }
+    addClientManually(req, body) {
+        // SECURITY: silently attaching a therapist to a real user's account (and
+        // gaining read access to their schema/mode notes, ratings, etc) without
+        // the client's consent is unacceptable for a therapy app. Manual add is
+        // now restricted to VIRTUAL clients (offline patients, those without
+        // Telegram). Real clients must use the invite-code flow (`joinAsClient`).
+        throw new common_1.ForbiddenException('Manual add of real Telegram users is disabled. Use the invite code flow: ' +
+            'generate a code via /api/therapy/invite, share it with the client, ' +
+            'they POST /api/therapy/join.');
+        // Defensive: silence "unused" lint by referencing args.
+        void req;
+        void body;
+    }
+    async renameClient(req, clientId, body) {
+        const role = await this.accountService.getUserRole((0, request_utils_1.uid)(req));
+        if (role !== 'THERAPIST')
+            throw new common_1.ForbiddenException('Therapist only');
+        await this.relationsService.renameClient((0, request_utils_1.uid)(req), parseId(clientId), body.alias);
+        return { ok: true };
+    }
+    // DEPRECATED. Replaced by /api/therapy/request → admin approval flow.
+    // Kept returning 410 Gone so any clients still using the old endpoint get
+    // a clear error rather than silent failure.
+    becomeTherapist() {
+        throw new common_1.HttpException('Этот способ отключён. Используй /api/therapy/request — заявку рассмотрит администратор.', 410);
+    }
+    // ─── Therapist role request (admin-approved) ────────────────────────────
+    async submitRequest(req, body) {
+        return this.therapistRequestService.submit((0, request_utils_1.uid)(req), body);
+    }
+    async getMyRequest(req) {
+        const row = await this.therapistRequestService.getMine((0, request_utils_1.uid)(req));
+        return row ?? null;
+    }
+    // ─── Therapist view preference / resignation ────────────────────────────
+    // Запоминает предпочтение старта (кабинет vs клиент). Только для THERAPIST —
+    // иначе клиент поднял бы себе UI терапевта (privilege escalation).
+    async setTherapistView(req, body) {
+        const role = await this.accountService.getUserRole((0, request_utils_1.uid)(req));
+        if (role !== 'THERAPIST')
+            throw new common_1.ForbiddenException('Therapist only');
+        await this.accountService.setTherapistMode((0, request_utils_1.uid)(req), body.on);
+        return { ok: true };
+    }
+    // Отказ от роли терапевта — возврат в CLIENT (см. AccountService.resignTherapist).
+    async resignTherapist(req) {
+        const role = await this.accountService.getUserRole((0, request_utils_1.uid)(req));
+        if (role !== 'THERAPIST')
+            throw new common_1.ForbiddenException('Therapist only');
+        await this.accountService.resignTherapist((0, request_utils_1.uid)(req));
+        return { ok: true };
+    }
+};
+exports.TherapyConnectionController = TherapyConnectionController;
+__decorate([
+    (0, common_1.Post)('invite'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "createInvite", null);
+__decorate([
+    (0, common_1.Get)('relation'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "getRelation", null);
+__decorate([
+    (0, common_1.Post)('join'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_e = typeof connection_dto_1.JoinTherapyDto !== "undefined" && connection_dto_1.JoinTherapyDto) === "function" ? _e : Object]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "join", null);
+__decorate([
+    (0, common_1.Delete)('relation'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "disconnect", null);
+__decorate([
+    (0, common_1.Get)('clients'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "getClients", null);
+__decorate([
+    (0, common_1.Delete)('clients/:clientId'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('clientId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "removeClient", null);
+__decorate([
+    (0, common_1.Post)('clients/virtual'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_f = typeof connection_dto_1.VirtualClientDto !== "undefined" && connection_dto_1.VirtualClientDto) === "function" ? _f : Object]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "addVirtualClient", null);
+__decorate([
+    (0, common_1.Post)('clients/add'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_g = typeof connection_dto_1.AddClientDto !== "undefined" && connection_dto_1.AddClientDto) === "function" ? _g : Object]),
+    __metadata("design:returntype", void 0)
+], TherapyConnectionController.prototype, "addClientManually", null);
+__decorate([
+    (0, common_1.Post)('rename-client/:clientId'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('clientId')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, typeof (_h = typeof client_data_dto_1.RenameClientDto !== "undefined" && client_data_dto_1.RenameClientDto) === "function" ? _h : Object]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "renameClient", null);
+__decorate([
+    (0, common_1.Post)('become-therapist'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], TherapyConnectionController.prototype, "becomeTherapist", null);
+__decorate([
+    (0, common_1.Post)('request'),
+    (0, throttler_1.Throttle)({
+        short: { limit: 2, ttl: 60_000 },
+        long: { limit: 5, ttl: 24 * 3_600_000 },
+    }),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_j = typeof therapist_request_dto_1.SubmitTherapistRequestDto !== "undefined" && therapist_request_dto_1.SubmitTherapistRequestDto) === "function" ? _j : Object]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "submitRequest", null);
+__decorate([
+    (0, common_1.Get)('request'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "getMyRequest", null);
+__decorate([
+    (0, common_1.Post)('therapist-view'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, typeof (_k = typeof connection_dto_1.TherapistViewDto !== "undefined" && connection_dto_1.TherapistViewDto) === "function" ? _k : Object]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "setTherapistView", null);
+__decorate([
+    (0, common_1.Delete)('therapist-role'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], TherapyConnectionController.prototype, "resignTherapist", null);
+exports.TherapyConnectionController = TherapyConnectionController = __decorate([
+    (0, common_1.Controller)('api/therapy'),
+    (0, common_1.UseGuards)(telegram_auth_guard_1.TelegramAuthGuard),
+    __metadata("design:paramtypes", [typeof (_a = typeof therapy_relations_service_1.TherapyRelationsService !== "undefined" && therapy_relations_service_1.TherapyRelationsService) === "function" ? _a : Object, typeof (_b = typeof therapy_client_data_service_1.TherapyClientDataService !== "undefined" && therapy_client_data_service_1.TherapyClientDataService) === "function" ? _b : Object, typeof (_c = typeof account_service_1.AccountService !== "undefined" && account_service_1.AccountService) === "function" ? _c : Object, typeof (_d = typeof therapist_request_service_1.TherapistRequestService !== "undefined" && therapist_request_service_1.TherapistRequestService) === "function" ? _d : Object])
+], TherapyConnectionController);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGhlcmFweS90aGVyYXB5LWNvbm5lY3Rpb24uY29udHJvbGxlci50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsMkNBWXdCO0FBQ3hCLGlEQUE2QztBQUU3Qyx3REFBcUU7QUFDckUsbUVBQW9FO0FBQ3BFLG9FQUErRDtBQUMvRCwyRUFBc0U7QUFDdEUsK0VBQXlFO0FBQ3pFLDJFQUFzRTtBQUN0RSw0REFBd0Q7QUFDeEQseURBSzhCO0FBQzlCLDJEQUF3RDtBQVF4RCx5RUFBeUU7QUFDekUsbUVBQW1FO0FBQ25FLHdFQUF3RTtBQUN4RSxNQUFNLE9BQU8sR0FBRyxDQUFDLEdBQVcsRUFBVSxFQUFFLENBQ3RDLElBQUEsdUJBQWEsRUFBQyxHQUFHLEVBQUUsRUFBRSxhQUFhLEVBQUUsSUFBSSxFQUFFLENBQUMsQ0FBQztBQUU5QyxvRUFBb0U7QUFDcEUsbUVBQW1FO0FBRzVELElBQU0sMkJBQTJCLEdBQWpDLE1BQU0sMkJBQTJCO0lBRW5CO0lBQ0E7SUFDQTtJQUNBO0lBSm5CLFlBQ21CLGdCQUF5QyxFQUN6QyxpQkFBMkMsRUFDM0MsY0FBOEIsRUFDOUIsdUJBQWdEO1FBSGhELHFCQUFnQixHQUFoQixnQkFBZ0IsQ0FBeUI7UUFDekMsc0JBQWlCLEdBQWpCLGlCQUFpQixDQUEwQjtRQUMzQyxtQkFBYyxHQUFkLGNBQWMsQ0FBZ0I7UUFDOUIsNEJBQXVCLEdBQXZCLHVCQUF1QixDQUF5QjtJQUNoRSxDQUFDO0lBRUosK0VBQStFO0lBR3pFLEFBQU4sS0FBSyxDQUFDLFlBQVksQ0FBUSxHQUFnQjtRQUN4QyxNQUFNLElBQUksR0FBRyxNQUFNLElBQUksQ0FBQyxjQUFjLENBQUMsV0FBVyxDQUFDLElBQUEsbUJBQUcsRUFBQyxHQUFHLENBQUMsQ0FBQyxDQUFDO1FBQzdELElBQUksSUFBSSxLQUFLLFdBQVc7WUFBRSxNQUFNLElBQUksMkJBQWtCLENBQUMsZ0JBQWdCLENBQUMsQ0FBQztRQUN6RSxP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QUFjLG9EQUNMLG1EQUF1QixvQkFBdkIsbURBQXVCO0dBTHhELDJCQUEyQixDQXdKdkMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGhlcmFweS90aGVyYXB5LWNvbm5lY3Rpb24uY29udHJvbGxlci50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQge1xuICBCYWRSZXF1ZXN0RXhjZXB0aW9uLFxuICBCb2R5LFxuICBDb250cm9sbGVyLFxuICBEZWxldGUsXG4gIEZvcmJpZGRlbkV4Y2VwdGlvbixcbiAgR2V0LFxuICBIdHRwRXhjZXB0aW9uLFxuICBQYXJhbSxcbiAgUG9zdCxcbiAgUmVxLFxuICBVc2VHdWFyZHMsXG59IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFRocm90dGxlIH0gZnJvbSAnQG5lc3Rqcy90aHJvdHRsZXInO1xuaW1wb3J0IHsgUmVxdWVzdCB9IGZyb20gJ2V4cHJlc3MnO1xuaW1wb3J0IHsgdWlkLCBwYXJzZUlkIGFzIHBhcnNlSWRTaGFyZWQgfSBmcm9tICcuLi9hcGkvcmVxdWVzdC11dGlscyc7XG5pbXBvcnQgeyBTdWJtaXRUaGVyYXBpc3RSZXF1ZXN0RHRvIH0gZnJvbSAnLi90aGVyYXBpc3QtcmVxdWVzdC5kdG8nO1xuaW1wb3J0IHsgVGVsZWdyYW1BdXRoR3VhcmQgfSBmcm9tICcuLi9hcGkvdGVsZWdyYW0tYXV0aC5ndWFyZCc7XG5pbXBvcnQgeyBUaGVyYXB5UmVsYXRpb25zU2VydmljZSB9IGZyb20gJy4vdGhlcmFweS1yZWxhdGlvbnMuc2VydmljZSc7XG5pbXBvcnQgeyBUaGVyYXB5Q2xpZW50RGF0YVNlcnZpY2UgfSBmcm9tICcuL3RoZXJhcHktY2xpZW50LWRhdGEuc2VydmljZSc7XG5pbXBvcnQgeyBUaGVyYXBpc3RSZXF1ZXN0U2VydmljZSB9IGZyb20gJy4vdGhlcmFwaXN0LXJlcXVlc3Quc2VydmljZSc7XG5pbXBvcnQgeyBBY2NvdW50U2VydmljZSB9IGZyb20gJy4uL2JvdC9hY2NvdW50LnNlcnZpY2UnO1xuaW1wb3J0IHtcbiAgSm9pblRoZXJhcHlEdG8sXG4gIFZpcnR1YWxDbGllbnREdG8sXG4gIEFkZENsaWVudER0byxcbiAgVGhlcmFwaXN0Vmlld0R0byxcbn0gZnJvbSAnLi9kdG8vY29ubmVjdGlvbi5kdG8nO1xuaW1wb3J0IHsgUmVuYW1lQ2xpZW50RHRvIH0gZnJvbSAnLi9kdG8vY2xpZW50LWRhdGEuZHRvJztcblxuaW50ZXJmYWNlIEF1dGhSZXF1ZXN0IGV4dGVuZHMgUmVxdWVzdCB7XG4gIHRlbGVncmFtVXNlcklkOiBudW1iZXI7XG4gIHVzZXJSb2xlPzogc3RyaW5nO1xuICB3ZWJVc2VyOiB7IHVzZXJJZDogYmlnaW50IH07XG59XG5cbi8vIHVpZCgpL3BhcnNlSWQoKSDigJQg0LXQtNC40L3Ri9C5INC40YHRgtC+0YfQvdC40Log0LIgcmVxdWVzdC11dGlscyAo0LDRg9C00LjRgiAyMDI2LTA3LCAy0LIpLlxuLy8gYWxsb3dOZWdhdGl2ZTog0LLQuNGA0YLRg9Cw0LvRjNC90YvQtSAo0L7RhNC70LDQudC9KSDQutC70LjQtdC90YLRiyDRgtC10YDQsNC/0LXQstGC0LAg0LrQvtC00LjRgNGD0Y7RgtGB0Y9cbi8vINC+0YLRgNC40YbQsNGC0LXQu9GM0L3Ri9C8IGlkID0gLVRoZXJhcHlSZWxhdGlvbi5pZCDigJQg0YLQvtC70YzQutC+INCyIHRoZXJhcHkt0Y3QvdC00L/QvtC40L3RgtCw0YUuXG5jb25zdCBwYXJzZUlkID0gKHJhdzogc3RyaW5nKTogbnVtYmVyID0+XG4gIHBhcnNlSWRTaGFyZWQocmF3LCB7IGFsbG93TmVnYXRpdmU6IHRydWUgfSk7XG5cbi8vINCf0L7QtNC60LvRjtGH0LXQvdC40LUg0LrQu9C40LXQvdGC4oaU0YLQtdGA0LDQv9C10LLRgjog0LjQvdCy0LDQudGCLdC60L7QtNGLLCBqb2luL2Rpc2Nvbm5lY3QsINGB0L/QuNGB0L7QulxuLy8g0LrQu9C40LXQvdGC0L7QsiAoYWRkL3ZpcnR1YWwvcmVuYW1lL3JlbW92ZSkg0Lgg0LfQsNGP0LLQutCwINC90LAg0YDQvtC70Ywg0YLQtdGA0LDQv9C10LLRgtCwLlxuQENvbnRyb2xsZXIoJ2FwaS90aGVyYXB5JylcbkBVc2VHdWFyZHMoVGVsZWdyYW1BdXRoR3VhcmQpXG5leHBvcnQgY2xhc3MgVGhlcmFweUNvbm5lY3Rpb25Db250cm9sbGVyIHtcbiAgY29uc3RydWN0b3IoXG4gICAgcHJpdmF0ZSByZWFkb25seSByZWxhdGlvbnNTZXJ2aWNlOiBUaGVyYXB5UmVsYXRpb25zU2VydmljZSxcbiAgICBwcml2YXRlIHJlYWRvbmx5IGNsaWVudERhdGFTZXJ2aWNlOiBUaGVyYXB5Q2xpZW50RGF0YVNlcnZpY2UsXG4gICAgcHJpdmF0ZSByZWFkb25seSBhY2NvdW50U2VydmljZTogQWNjb3VudFNlcnZpY2UsXG4gICAgcHJpdmF0ZSByZWFkb25seSB0aGVyYXBpc3RSZXF1ZXN0U2VydmljZTogVGhlcmFwaXN0UmVxdWVzdFNlcnZpY2UsXG4gICkge31cblxuICAvLyDilIDilIDilIAgQ29ubmVjdGlvbiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcblxuICBAUG9zdCgnaW52aXRlJylcbiAgYXN5bmMgY3JlYXRlSW52aXRlKEBSZXEoKSByZXE6IEF1dGhSZXF1ZXN0KSB7XG4gICAgY29uc3Qgcm9sZSA9IGF3YWl0IHRoaXMuYWNjb3VudFNlcnZpY2UuZ2V0VXNlclJvbGUodWlkKHJlcSkpO1xuICAgIGlmIChyb2xlICE9PSAnVEhFUkFQSVNUJykgdGhyb3cgbmV3IEZvcmJpZGRlbkV4Y2VwdGlvbignVGhlcmFwaXN0IG9ubHknKTtcbiAgICByZXR1cm4gdGhpcy5yZWxhdGlvbnNTZXJ2aWNlLmNyZWF0ZUludml0ZSh1aWQocmVxKSk7XG4gIH1cblxuICBAR2V0KCdyZWxhdGlvbicpXG4gIGFzeW5jIGdldFJlbGF0aW9uKEBSZXEoKSByZXE6IEF1dGhSZXF1ZXN0KSB7XG4gICAgcmV0dXJuIHRoaXMucmVsYXRpb25zU2VydmljZS5nZXRSZWxhdGlvbih1aWQocmVxKSk7XG4gIH1cblxuICBAUG9zdCgnam9pbicpXG4gIGFzeW5jIGpvaW4oQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QsIEBCb2R5KCkgYm9keTogSm9pblRoZXJhcHlEdG8pIHtcbiAgICBpZiAoIWJvZHkuY29kZSkgdGhyb3cgbmV3IEJhZFJlcXVlc3RFeGNlcHRpb24oJ2NvZGUgcmVxdWlyZWQnKTtcbiAgICBjb25zdCBvayA9IGF3YWl0IHRoaXMucmVsYXRpb25zU2VydmljZS5qb2luQXNDbGllbnQodWlkKHJlcSksIGJvZHkuY29kZSk7XG4gICAgaWYgKCFvaykgdGhyb3cgbmV3IEJhZFJlcXVlc3RFeGNlcHRpb24oJ0ludmFsaWQgb3IgZXhwaXJlZCBjb2RlJyk7XG4gICAgcmV0dXJuIHsgb2s6IHRydWUgfTtcbiAgfVxuXG4gIEBEZWxldGUoJ3JlbGF0aW9uJylcbiAgYXN5bmMgZGlzY29ubmVjdChAUmVxKCkgcmVxOiBBdXRoUmVxdWVzdCkge1xuICAgIGF3YWl0IHRoaXMucmVsYXRpb25zU2VydmljZS5kaXNjb25uZWN0KHVpZChyZXEpKTtcbiAgICByZXR1cm4geyBvazogdHJ1ZSB9O1xuICB9XG5cbiAgQEdldCgnY2xpZW50cycpXG4gIGFzeW5jIGdldENsaWVudHMoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QpIHtcbiAgICBjb25zdCByb2xlID0gYXdhaXQgdGhpcy5hY2NvdW50U2VydmljZS5nZXRVc2VyUm9sZSh1aWQocmVxKSk7XG4gICAgaWYgKHJvbGUgIT09ICdUSEVSQVBJU1QnKSB0aHJvdyBuZXcgRm9yYmlkZGVuRXhjZXB0aW9uKCdUaGVyYXBpc3Qgb25seScpO1xuICAgIHJldHVybiB0aGlzLnJlbGF0aW9uc1NlcnZpY2UuZ2V0Q2xpZW50cyh1aWQocmVxKSk7XG4gIH1cblxuICBARGVsZXRlKCdjbGllbnRzLzpjbGllbnRJZCcpXG4gIGFzeW5jIHJlbW92ZUNsaWVudChcbiAgICBAUmVxKCkgcmVxOiBBdXRoUmVxdWVzdCxcbiAgICBAUGFyYW0oJ2NsaWVudElkJykgY2xpZW50SWQ6IHN0cmluZyxcbiAgKSB7XG4gICAgY29uc3Qgcm9sZSA9IGF3YWl0IHRoaXMuYWNjb3VudFNlcnZpY2UuZ2V0VXNlclJvbGUodWlkKHJlcSkpO1xuICAgIGlmIChyb2xlICE9PSAnVEhFUkFQSVNUJykgdGhyb3cgbmV3IEZvcmJpZGRlbkV4Y2VwdGlvbignVGhlcmFwaXN0IG9ubHknKTtcbiAgICBhd2FpdCB0aGlzLmNsaWVudERhdGFTZXJ2aWNlLnJlbW92ZUNsaWVudCh1aWQocmVxKSwgcGFyc2VJZChjbGllbnRJZCkpO1xuICAgIHJldHVybiB7IG9rOiB0cnVlIH07XG4gIH1cblxuICBAUG9zdCgnY2xpZW50cy92aXJ0dWFsJylcbiAgYXN5bmMgYWRkVmlydHVhbENsaWVudChcbiAgICBAUmVxKCkgcmVxOiBBdXRoUmVxdWVzdCxcbiAgICBAQm9keSgpIGJvZHk6IFZpcnR1YWxDbGllbnREdG8sXG4gICkge1xuICAgIGNvbnN0IHJvbGUgPSBhd2FpdCB0aGlzLmFjY291bnRTZXJ2aWNlLmdldFVzZXJSb2xlKHVpZChyZXEpKTtcbiAgICBpZiAocm9sZSAhPT0gJ1RIRVJBUElTVCcpIHRocm93IG5ldyBGb3JiaWRkZW5FeGNlcHRpb24oJ1RoZXJhcGlzdCBvbmx5Jyk7XG4gICAgaWYgKCFib2R5Lm5hbWU/LnRyaW0oKSkgdGhyb3cgbmV3IEJhZFJlcXVlc3RFeGNlcHRpb24oJ25hbWUgcmVxdWlyZWQnKTtcbiAgICByZXR1cm4gdGhpcy5yZWxhdGlvbnNTZXJ2aWNlLmFkZFZpcnR1YWxDbGllbnQodWlkKHJlcSksIGJvZHkubmFtZSk7XG4gIH1cblxuICBAUG9zdCgnY2xpZW50cy9hZGQnKVxuICBhZGRDbGllbnRNYW51YWxseShAUmVxKCkgcmVxOiBBdXRoUmVxdWVzdCwgQEJvZHkoKSBib2R5OiBBZGRDbGllbnREdG8pIHtcbiAgICAvLyBTRUNVUklUWTogc2lsZW50bHkgYXR0YWNoaW5nIGEgdGhlcmFwaXN0IHRvIGEgcmVhbCB1c2VyJ3MgYWNjb3VudCAoYW5kXG4gICAgLy8gZ2FpbmluZyByZWFkIGFjY2VzcyB0byB0aGVpciBzY2hlbWEvbW9kZSBub3RlcywgcmF0aW5ncywgZXRjKSB3aXRob3V0XG4gICAgLy8gdGhlIGNsaWVudCdzIGNvbnNlbnQgaXMgdW5hY2NlcHRhYmxlIGZvciBhIHRoZXJhcHkgYXBwLiBNYW51YWwgYWRkIGlzXG4gICAgLy8gbm93IHJlc3RyaWN0ZWQgdG8gVklSVFVBTCBjbGllbnRzIChvZmZsaW5lIHBhdGllbnRzLCB0aG9zZSB3aXRob3V0XG4gICAgLy8gVGVsZWdyYW0pLiBSZWFsIGNsaWVudHMgbXVzdCB1c2UgdGhlIGludml0ZS1jb2RlIGZsb3cgKGBqb2luQXNDbGllbnRgKS5cbiAgICB0aHJvdyBuZXcgRm9yYmlkZGVuRXhjZXB0aW9uKFxuICAgICAgJ01hbnVhbCBhZGQgb2YgcmVhbCBUZWxlZ3JhbSB1c2VycyBpcyBkaXNhYmxlZC4gVXNlIHRoZSBpbnZpdGUgY29kZSBmbG93OiAnICtcbiAgICAgICAgJ2dlbmVyYXRlIGEgY29kZSB2aWEgL2FwaS90aGVyYXB5L2ludml0ZSwgc2hhcmUgaXQgd2l0aCB0aGUgY2xpZW50LCAnICtcbiAgICAgICAgJ3RoZXkgUE9TVCAvYXBpL3RoZXJhcHkvam9pbi4nLFxuICAgICk7XG4gICAgLy8gRGVmZW5zaXZlOiBzaWxlbmNlIFwidW51c2VkXCIgbGludCBieSByZWZlcmVuY2luZyBhcmdzLlxuICAgIHZvaWQgcmVxO1xuICAgIHZvaWQgYm9keTtcbiAgfVxuXG4gIEBQb3N0KCdyZW5hbWUtY2xpZW50LzpjbGllbnRJZCcpXG4gIGFzeW5jIHJlbmFtZUNsaWVudChcbiAgICBAUmVxKCkgcmVxOiBBdXRoUmVxdWVzdCxcbiAgICBAUGFyYW0oJ2NsaWVudElkJykgY2xpZW50SWQ6IHN0cmluZyxcbiAgICBAQm9keSgpIGJvZHk6IFJlbmFtZUNsaWVudER0byxcbiAgKSB7XG4gICAgY29uc3Qgcm9sZSA9IGF3YWl0IHRoaXMuYWNjb3VudFNlcnZpY2UuZ2V0VXNlclJvbGUodWlkKHJlcSkpO1xuICAgIGlmIChyb2xlICE9PSAnVEhFUkFQSVNUJykgdGhyb3cgbmV3IEZvcmJpZGRlbkV4Y2VwdGlvbignVGhlcmFwaXN0IG9ubHknKTtcbiAgICBhd2FpdCB0aGlzLnJlbGF0aW9uc1NlcnZpY2UucmVuYW1lQ2xpZW50KFxuICAgICAgdWlkKHJlcSksXG4gICAgICBwYXJzZUlkKGNsaWVudElkKSxcbiAgICAgIGJvZHkuYWxpYXMsXG4gICAgKTtcbiAgICByZXR1cm4geyBvazogdHJ1ZSB9O1xuICB9XG5cbiAgLy8gREVQUkVDQVRFRC4gUmVwbGFjZWQgYnkgL2FwaS90aGVyYXB5L3JlcXVlc3Qg4oaSIGFkbWluIGFwcHJvdmFsIGZsb3cuXG4gIC8vIEtlcHQgcmV0dXJuaW5nIDQxMCBHb25lIHNvIGFueSBjbGllbnRzIHN0aWxsIHVzaW5nIHRoZSBvbGQgZW5kcG9pbnQgZ2V0XG4gIC8vIGEgY2xlYXIgZXJyb3IgcmF0aGVyIHRoYW4gc2lsZW50IGZhaWx1cmUuXG4gIEBQb3N0KCdiZWNvbWUtdGhlcmFwaXN0JylcbiAgYmVjb21lVGhlcmFwaXN0KCkge1xuICAgIHRocm93IG5ldyBIdHRwRXhjZXB0aW9uKFxuICAgICAgJ9Ct0YLQvtGCINGB0L/QvtGB0L7QsSDQvtGC0LrQu9GO0YfRkdC9LiDQmNGB0L/QvtC70YzQt9GD0LkgL2FwaS90aGVyYXB5L3JlcXVlc3Qg4oCUINC30LDRj9Cy0LrRgyDRgNCw0YHRgdC80L7RgtGA0LjRgiDQsNC00LzQuNC90LjRgdGC0YDQsNGC0L7RgC4nLFxuICAgICAgNDEwLFxuICAgICk7XG4gIH1cblxuICAvLyDilIDilIDilIAgVGhlcmFwaXN0IHJvbGUgcmVxdWVzdCAoYWRtaW4tYXBwcm92ZWQpIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuXG4gIEBQb3N0KCdyZXF1ZXN0JylcbiAgQFRocm90dGxlKHtcbiAgICBzaG9ydDogeyBsaW1pdDogMiwgdHRsOiA2MF8wMDAgfSxcbiAgICBsb25nOiB7IGxpbWl0OiA1LCB0dGw6IDI0ICogM182MDBfMDAwIH0sXG4gIH0pXG4gIGFzeW5jIHN1Ym1pdFJlcXVlc3QoXG4gICAgQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QsXG4gICAgQEJvZHkoKSBib2R5OiBTdWJtaXRUaGVyYXBpc3RSZXF1ZXN0RHRvLFxuICApIHtcbiAgICByZXR1cm4gdGhpcy50aGVyYXBpc3RSZXF1ZXN0U2VydmljZS5zdWJtaXQodWlkKHJlcSksIGJvZHkpO1xuICB9XG5cbiAgQEdldCgncmVxdWVzdCcpXG4gIGFzeW5jIGdldE15UmVxdWVzdChAUmVxKCkgcmVxOiBBdXRoUmVxdWVzdCkge1xuICAgIGNvbnN0IHJvdyA9IGF3YWl0IHRoaXMudGhlcmFwaXN0UmVxdWVzdFNlcnZpY2UuZ2V0TWluZSh1aWQocmVxKSk7XG4gICAgcmV0dXJuIHJvdyA/PyBudWxsO1xuICB9XG5cbiAgLy8g4pSA4pSA4pSAIFRoZXJhcGlzdCB2aWV3IHByZWZlcmVuY2UgLyByZXNpZ25hdGlvbiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcblxuICAvLyDQl9Cw0L/QvtC80LjQvdCw0LXRgiDQv9GA0LXQtNC/0L7Rh9GC0LXQvdC40LUg0YHRgtCw0YDRgtCwICjQutCw0LHQuNC90LXRgiB2cyDQutC70LjQtdC90YIpLiDQotC+0LvRjNC60L4g0LTQu9GPIFRIRVJBUElTVCDigJRcbiAgLy8g0LjQvdCw0YfQtSDQutC70LjQtdC90YIg0L/QvtC00L3Rj9C7INCx0Ysg0YHQtdCx0LUgVUkg0YLQtdGA0LDQv9C10LLRgtCwIChwcml2aWxlZ2UgZXNjYWxhdGlvbikuXG4gIEBQb3N0KCd0aGVyYXBpc3QtdmlldycpXG4gIGFzeW5jIHNldFRoZXJhcGlzdFZpZXcoXG4gICAgQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QsXG4gICAgQEJvZHkoKSBib2R5OiBUaGVyYXBpc3RWaWV3RHRvLFxuICApIHtcbiAgICBjb25zdCByb2xlID0gYXdhaXQgdGhpcy5hY2NvdW50U2VydmljZS5nZXRVc2VyUm9sZSh1aWQocmVxKSk7XG4gICAgaWYgKHJvbGUgIT09ICdUSEVSQVBJU1QnKSB0aHJvdyBuZXcgRm9yYmlkZGVuRXhjZXB0aW9uKCdUaGVyYXBpc3Qgb25seScpO1xuICAgIGF3YWl0IHRoaXMuYWNjb3VudFNlcnZpY2Uuc2V0VGhlcmFwaXN0TW9kZSh1aWQocmVxKSwgYm9keS5vbik7XG4gICAgcmV0dXJuIHsgb2s6IHRydWUgfTtcbiAgfVxuXG4gIC8vINCe0YLQutCw0Lcg0L7RgiDRgNC+0LvQuCDRgtC10YDQsNC/0LXQstGC0LAg4oCUINCy0L7Qt9Cy0YDQsNGCINCyIENMSUVOVCAo0YHQvC4gQWNjb3VudFNlcnZpY2UucmVzaWduVGhlcmFwaXN0KS5cbiAgQERlbGV0ZSgndGhlcmFwaXN0LXJvbGUnKVxuICBhc3luYyByZXNpZ25UaGVyYXBpc3QoQFJlcSgpIHJlcTogQXV0aFJlcXVlc3QpIHtcbiAgICBjb25zdCByb2xlID0gYXdhaXQgdGhpcy5hY2NvdW50U2VydmljZS5nZXRVc2VyUm9sZSh1aWQocmVxKSk7XG4gICAgaWYgKHJvbGUgIT09ICdUSEVSQVBJU1QnKSB0aHJvdyBuZXcgRm9yYmlkZGVuRXhjZXB0aW9uKCdUaGVyYXBpc3Qgb25seScpO1xuICAgIGF3YWl0IHRoaXMuYWNjb3VudFNlcnZpY2UucmVzaWduVGhlcmFwaXN0KHVpZChyZXEpKTtcbiAgICByZXR1cm4geyBvazogdHJ1ZSB9O1xuICB9XG59XG4iXSwidmVyc2lvbiI6M30=

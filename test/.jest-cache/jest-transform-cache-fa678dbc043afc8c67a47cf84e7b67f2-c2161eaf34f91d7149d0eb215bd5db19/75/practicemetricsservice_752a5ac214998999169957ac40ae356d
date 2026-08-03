@@ -1,0 +1,59 @@
+cdf02befc9140bc6d6c553b9502b682d
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PracticeMetricsService = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma/prisma.service");
+// Счётчики быстрых практик «Здесь и сейчас» для /stats: «запускали»
+// (события breath_start/stop_start из AnalyticsEvent — нажал кнопку) и
+// «прошли до конца» (таблица PracticeSession — реально дошёл до финала).
+// У заземления нет события старта — только «прошли до конца». Запросы
+// отдельно от ProductMetricsService — свой домен, свой файл (правило №10,
+// образец — quiz-metrics.service.ts).
+let PracticeMetricsService = class PracticeMetricsService {
+    prisma;
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    async getMetrics() {
+        const since30 = new Date(Date.now() - 30 * 86_400_000);
+        const ev = (name) => this.prisma.analyticsEvent.count({
+            where: { name, createdAt: { gte: since30 } },
+        });
+        const [breathStarted, stopStarted, sessionRows, usersRaw] = await Promise.all([
+            ev('breath_start'),
+            ev('stop_start'),
+            this.prisma.practiceSession.groupBy({
+                by: ['tool'],
+                where: { createdAt: { gte: since30 } },
+                _count: { _all: true },
+            }),
+            this.prisma.$queryRaw `
+          SELECT count(DISTINCT "userId")::bigint AS c FROM "PracticeSession"
+          WHERE "createdAt" >= ${since30}`,
+        ]);
+        const completed = (tool) => sessionRows.find((r) => r.tool === tool)?._count._all ?? 0;
+        return {
+            breathing: { started: breathStarted, completed: completed('breathing') },
+            grounding: { completed: completed('grounding') },
+            stop: { started: stopStarted, completed: completed('stop') },
+            distinctUsers: Number(usersRaw[0]?.c ?? 0n),
+        };
+    }
+};
+exports.PracticeMetricsService = PracticeMetricsService;
+exports.PracticeMetricsService = PracticeMetricsService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof prisma_service_1.PrismaService !== "undefined" && prisma_service_1.PrismaService) === "function" ? _a : Object])
+], PracticeMetricsService);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm90L3ByYWN0aWNlLW1ldHJpY3Muc2VydmljZS50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7Ozs7O0FBQUEsMkNBQTRDO0FBQzVDLDZEQUF5RDtBQUd6RCxvRUFBb0U7QUFDcEUsdUVBQXVFO0FBQ3ZFLHlFQUF5RTtBQUN6RSxzRUFBc0U7QUFDdEUsMEVBQTBFO0FBQzFFLHNDQUFzQztBQUUvQixJQUFNLHNCQUFzQixHQUE1QixNQUFNLHNCQUFzQjtJQUNKO0lBQTdCLFlBQTZCLE1BQXFCO1FBQXJCLFdBQU0sR0FBTixNQUFNLENBQWU7SUFBRyxDQUFDO0lBRXRELEtBQUssQ0FBQyxVQUFVO1FBQ2QsTUFBTSxPQUFPLEdBQUcsSUFBSSxJQUFJLENBQUMsSUFBSSxDQUFDLEdBQUcsRUFBRSxHQUFHLEVBQUUsR0FBRyxVQUFVLENBQUMsQ0FBQztRQUN2RCxNQUFNLEVBQUUsR0FBRyxDQUFDLElBQVksRUFBRSxFQUFFLENBQzFCLElBQUksQ0FBQyxNQUFNLENBQUMsY0FBYyxDQUFDLEtBQUssQ0FBQztZQUMvQixLQUFLLEVBQUUsRUFBRSxJQUFJLEVBQUUsU0FBUyxFQUFFLEVBQUUsR0FBRyxFQUFFLE9BQU8sRUFBRSxFQUFFO1NBQzdDLENBQUMsQ0FBQztRQUVMLE1BQU0sQ0FBQyxhQUFhLEVBQUUsV0FBVyxFQUFFLFdBQVcsRUFBRSxRQUFRLENBQUMsR0FDdkQsTUFBTSxPQUFPLENBQUMsR0FBRyxDQUFDO1lBQ2hCLEVBQUUsQ0FBQyxjQUFjLENBQUM7WUFDbEIsRUFBRSxDQUFDLFlBQVksQ0FBQztZQUNoQixJQUFJLENBQUMsTUFBTSxDQUFDLGVBQWUsQ0FBQyxPQUFPLENBQUM7Z0JBQ2xDLEVBQUUsRUFBRSxDQUFDLE1BQU0sQ0FBQztnQkFDWixLQUFLLEVBQUUsRUFBRSxTQUFTLEVBQUUsRUFBRSxHQUFHLEVBQUUsT0FBTyxFQUFFLEVBQUU7Z0JBQ3RDLE1BQU0sRUFBRSxFQUFFLElBQUksRUFBRSxJQUFJLEVBQUU7YUFDdkIsQ0FBQztZQUNGLElBQUksQ0FBQyxNQUFNLENBQUMsU0FBUyxDQUFzQjs7aUNBRWxCLE9BQU8sRUFBRTtTQUNuQyxDQUFDLENBQUM7UUFFTCxNQUFNLFNBQVMsR0FBRyxDQUFDLElBQVksRUFBVSxFQUFFLENBQ3pDLFdBQVcsQ0FBQyxJQUFJLENBQUMsQ0FBQyxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUMsQ0FBQyxJQUFJLEtBQUssSUFBSSxDQUFDLEVBQUUsTUFBTSxDQUFDLElBQUksSUFBSSxDQUFDLENBQUM7UUFFN0QsT0FBTztZQUNMLFNBQVMsRUFBRSxFQUFFLE9BQU8sRUFBRSxhQUFhLEVBQUUsU0FBUyxFQUFFLFNBQVMsQ0FBQyxXQUFXLENBQUMsRUFBRTtZQUN4RSxTQUFTLEVBQUUsRUFBRSxTQUFTLEVBQUUsU0FBUyxDQUFDLFdBQVcsQ0FBQyxFQUFFO1lBQ2hELElBQUksRUFBRSxFQUFFLE9BQU8sRUFBRSxXQUFXLEVBQUUsU0FBUyxFQUFFLFNBQVMsQ0FBQyxNQUFNLENBQUMsRUFBRTtZQUM1RCxhQUFhLEVBQUUsTUFBTSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUMsRUFBRSxDQUFDLElBQUksRUFBRSxDQUFDO1NBQzVDLENBQUM7SUFDSixDQUFDO0NBQ0YsQ0FBQTtBQWxDWSx3REFBc0I7aUNBQXRCLHNCQUFzQjtJQURsQyxJQUFBLG1CQUFVLEdBQUU7eURBRTBCLDhCQUFhLG9CQUFiLDhCQUFhO0dBRHZDLHNCQUFzQixDQWtDbEMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm90L3ByYWN0aWNlLW1ldHJpY3Muc2VydmljZS50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJbmplY3RhYmxlIH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgUHJpc21hU2VydmljZSB9IGZyb20gJy4uL3ByaXNtYS9wcmlzbWEuc2VydmljZSc7XG5pbXBvcnQgeyBQcmFjdGljZU1ldHJpY3MgfSBmcm9tICcuL3ByYWN0aWNlLW1ldHJpY3MuZm9ybWF0JztcblxuLy8g0KHRh9GR0YLRh9C40LrQuCDQsdGL0YHRgtGA0YvRhSDQv9GA0LDQutGC0LjQuiDCq9CX0LTQtdGB0Ywg0Lgg0YHQtdC50YfQsNGBwrsg0LTQu9GPIC9zdGF0czogwqvQt9Cw0L/Rg9GB0LrQsNC70LjCu1xuLy8gKNGB0L7QsdGL0YLQuNGPIGJyZWF0aF9zdGFydC9zdG9wX3N0YXJ0INC40LcgQW5hbHl0aWNzRXZlbnQg4oCUINC90LDQttCw0Lsg0LrQvdC+0L/QutGDKSDQuFxuLy8gwqvQv9GA0L7RiNC70Lgg0LTQviDQutC+0L3RhtCwwrsgKNGC0LDQsdC70LjRhtCwIFByYWN0aWNlU2Vzc2lvbiDigJQg0YDQtdCw0LvRjNC90L4g0LTQvtGI0ZHQuyDQtNC+INGE0LjQvdCw0LvQsCkuXG4vLyDQoyDQt9Cw0LfQtdC80LvQtdC90LjRjyDQvdC10YIg0YHQvtCx0YvRgtC40Y8g0YHRgtCw0YDRgtCwIOKAlCDRgtC+0LvRjNC60L4gwqvQv9GA0L7RiNC70Lgg0LTQviDQutC+0L3RhtCwwrsuINCX0LDQv9GA0L7RgdGLXG4vLyDQvtGC0LTQtdC70YzQvdC+INC+0YIgUHJvZHVjdE1ldHJpY3NTZXJ2aWNlIOKAlCDRgdCy0L7QuSDQtNC+0LzQtdC9LCDRgdCy0L7QuSDRhNCw0LnQuyAo0L/RgNCw0LLQuNC70L4g4oSWMTAsXG4vLyDQvtCx0YDQsNC30LXRhiDigJQgcXVpei1tZXRyaWNzLnNlcnZpY2UudHMpLlxuQEluamVjdGFibGUoKVxuZXhwb3J0IGNsYXNzIFByYWN0aWNlTWV0cmljc1NlcnZpY2Uge1xuICBjb25zdHJ1Y3Rvcihwcml2YXRlIHJlYWRvbmx5IHByaXNtYTogUHJpc21hU2VydmljZSkge31cblxuICBhc3luYyBnZXRNZXRyaWNzKCk6IFByb21pc2U8UHJhY3RpY2VNZXRyaWNzPiB7XG4gICAgY29uc3Qgc2luY2UzMCA9IG5ldyBEYXRlKERhdGUubm93KCkgLSAzMCAqIDg2XzQwMF8wMDApO1xuICAgIGNvbnN0IGV2ID0gKG5hbWU6IHN0cmluZykgPT5cbiAgICAgIHRoaXMucHJpc21hLmFuYWx5dGljc0V2ZW50LmNvdW50KHtcbiAgICAgICAgd2hlcmU6IHsgbmFtZSwgY3JlYXRlZEF0OiB7IGd0ZTogc2luY2UzMCB9IH0sXG4gICAgICB9KTtcblxuICAgIGNvbnN0IFticmVhdGhTdGFydGVkLCBzdG9wU3RhcnRlZCwgc2Vzc2lvblJvd3MsIHVzZXJzUmF3XSA9XG4gICAgICBhd2FpdCBQcm9taXNlLmFsbChbXG4gICAgICAgIGV2KCdicmVhdGhfc3RhcnQnKSxcbiAgICAgICAgZXYoJ3N0b3Bfc3RhcnQnKSxcbiAgICAgICAgdGhpcy5wcmlzbWEucHJhY3RpY2VTZXNzaW9uLmdyb3VwQnkoe1xuICAgICAgICAgIGJ5OiBbJ3Rvb2wnXSxcbiAgICAgICAgICB3aGVyZTogeyBjcmVhdGVkQXQ6IHsgZ3RlOiBzaW5jZTMwIH0gfSxcbiAgICAgICAgICBfY291bnQ6IHsgX2FsbDogdHJ1ZSB9LFxuICAgICAgICB9KSxcbiAgICAgICAgdGhpcy5wcmlzbWEuJHF1ZXJ5UmF3PEFycmF5PHsgYzogYmlnaW50IH0+PmBcbiAgICAgICAgICBTRUxFQ1QgY291bnQoRElTVElOQ1QgXCJ1c2VySWRcIik6OmJpZ2ludCBBUyBjIEZST00gXCJQcmFjdGljZVNlc3Npb25cIlxuICAgICAgICAgIFdIRVJFIFwiY3JlYXRlZEF0XCIgPj0gJHtzaW5jZTMwfWAsXG4gICAgICBdKTtcblxuICAgIGNvbnN0IGNvbXBsZXRlZCA9ICh0b29sOiBzdHJpbmcpOiBudW1iZXIgPT5cbiAgICAgIHNlc3Npb25Sb3dzLmZpbmQoKHIpID0+IHIudG9vbCA9PT0gdG9vbCk/Ll9jb3VudC5fYWxsID8/IDA7XG5cbiAgICByZXR1cm4ge1xuICAgICAgYnJlYXRoaW5nOiB7IHN0YXJ0ZWQ6IGJyZWF0aFN0YXJ0ZWQsIGNvbXBsZXRlZDogY29tcGxldGVkKCdicmVhdGhpbmcnKSB9LFxuICAgICAgZ3JvdW5kaW5nOiB7IGNvbXBsZXRlZDogY29tcGxldGVkKCdncm91bmRpbmcnKSB9LFxuICAgICAgc3RvcDogeyBzdGFydGVkOiBzdG9wU3RhcnRlZCwgY29tcGxldGVkOiBjb21wbGV0ZWQoJ3N0b3AnKSB9LFxuICAgICAgZGlzdGluY3RVc2VyczogTnVtYmVyKHVzZXJzUmF3WzBdPy5jID8/IDBuKSxcbiAgICB9O1xuICB9XG59XG4iXSwidmVyc2lvbiI6M30=

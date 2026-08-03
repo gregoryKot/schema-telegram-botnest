@@ -1,0 +1,69 @@
+c9ae818dd57bbc54a4a0d9331eb77b3c
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SessionInfoDto = exports.CreateSessionNoteDto = exports.RenameClientDto = void 0;
+const class_validator_1 = require("class-validator");
+/**
+ * DTO для работы терапевта с клиентскими данными (аудит 2026-07, 2г /
+ * правило №6 CLAUDE.md). Формат `date` (YYYY-MM-DD) проверяется вручную
+ * в контроллере — regex не дублируем.
+ */
+class RenameClientDto {
+    alias;
+}
+exports.RenameClientDto = RenameClientDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(100),
+    __metadata("design:type", String)
+], RenameClientDto.prototype, "alias", void 0);
+class CreateSessionNoteDto {
+    date;
+    text;
+}
+exports.CreateSessionNoteDto = CreateSessionNoteDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateSessionNoteDto.prototype, "date", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(10000),
+    __metadata("design:type", String)
+], CreateSessionNoteDto.prototype, "text", void 0);
+// therapyStartDate/nextSession принимают строку, null (сброс) или undefined
+// (не менять) — ValidateIf пропускает проверку типа для null.
+class SessionInfoDto {
+    therapyStartDate;
+    nextSession;
+    meetingDays;
+}
+exports.SessionInfoDto = SessionInfoDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateIf)((_, v) => v !== null),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", Object)
+], SessionInfoDto.prototype, "therapyStartDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateIf)((_, v) => v !== null),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", Object)
+], SessionInfoDto.prototype, "nextSession", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsInt)({ each: true }),
+    __metadata("design:type", Array)
+], SessionInfoDto.prototype, "meetingDays", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGhlcmFweS9kdG8vY2xpZW50LWRhdGEuZHRvLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7OztBQUFBLHFEQU95QjtBQUV6Qjs7OztHQUlHO0FBQ0gsTUFBYSxlQUFlO0lBRzFCLEtBQUssQ0FBVTtDQUNoQjtBQUpELDBDQUlDO0FBREM7SUFGQyxJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsR0FBRyxDQUFDOzs4Q0FDQTtBQUdqQixNQUFhLG9CQUFvQjtJQUUvQixJQUFJLENBQVU7SUFJZCxJQUFJLENBQVU7Q0FDZjtBQVBELG9EQU9DO0FBTEM7SUFEQyxJQUFBLDBCQUFRLEdBQUU7O2tEQUNHO0FBSWQ7SUFGQyxJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsS0FBSyxDQUFDOztrREFDSDtBQUdoQiw0RUFBNEU7QUFDNUUsOERBQThEO0FBQzlELE1BQWEsY0FBYztJQUl6QixnQkFBZ0IsQ0FBaUI7SUFLakMsV0FBVyxDQUFpQjtJQUs1QixXQUFXLENBQVk7Q0FDeEI7QUFmRCx3Q0FlQztBQVhDO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSw0QkFBVSxFQUFDLENBQUMsQ0FBQyxFQUFFLENBQUMsRUFBRSxFQUFFLENBQUMsQ0FBQyxLQUFLLElBQUksQ0FBQztJQUNoQyxJQUFBLDBCQUFRLEdBQUU7O3dEQUNzQjtBQUtqQztJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsNEJBQVUsRUFBQyxDQUFDLENBQUMsRUFBRSxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUMsS0FBSyxJQUFJLENBQUM7SUFDaEMsSUFBQSwwQkFBUSxHQUFFOzttREFDaUI7QUFLNUI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLHlCQUFPLEdBQUU7SUFDVCxJQUFBLHVCQUFLLEVBQUMsRUFBRSxJQUFJLEVBQUUsSUFBSSxFQUFFLENBQUM7O21EQUNDIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL3RoZXJhcHkvZHRvL2NsaWVudC1kYXRhLmR0by50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQge1xuICBJc0FycmF5LFxuICBJc0ludCxcbiAgSXNPcHRpb25hbCxcbiAgSXNTdHJpbmcsXG4gIE1heExlbmd0aCxcbiAgVmFsaWRhdGVJZixcbn0gZnJvbSAnY2xhc3MtdmFsaWRhdG9yJztcblxuLyoqXG4gKiBEVE8g0LTQu9GPINGA0LDQsdC+0YLRiyDRgtC10YDQsNC/0LXQstGC0LAg0YEg0LrQu9C40LXQvdGC0YHQutC40LzQuCDQtNCw0L3QvdGL0LzQuCAo0LDRg9C00LjRgiAyMDI2LTA3LCAy0LMgL1xuICog0L/RgNCw0LLQuNC70L4g4oSWNiBDTEFVREUubWQpLiDQpNC+0YDQvNCw0YIgYGRhdGVgIChZWVlZLU1NLUREKSDQv9GA0L7QstC10YDRj9C10YLRgdGPINCy0YDRg9GH0L3Rg9GOXG4gKiDQsiDQutC+0L3RgtGA0L7Qu9C70LXRgNC1IOKAlCByZWdleCDQvdC1INC00YPQsdC70LjRgNGD0LXQvC5cbiAqL1xuZXhwb3J0IGNsYXNzIFJlbmFtZUNsaWVudER0byB7XG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoMTAwKVxuICBhbGlhcyE6IHN0cmluZztcbn1cblxuZXhwb3J0IGNsYXNzIENyZWF0ZVNlc3Npb25Ob3RlRHRvIHtcbiAgQElzU3RyaW5nKClcbiAgZGF0ZSE6IHN0cmluZztcblxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKDEwMDAwKVxuICB0ZXh0ITogc3RyaW5nO1xufVxuXG4vLyB0aGVyYXB5U3RhcnREYXRlL25leHRTZXNzaW9uINC/0YDQuNC90LjQvNCw0Y7RgiDRgdGC0YDQvtC60YMsIG51bGwgKNGB0LHRgNC+0YEpINC40LvQuCB1bmRlZmluZWRcbi8vICjQvdC1INC80LXQvdGP0YLRjCkg4oCUIFZhbGlkYXRlSWYg0L/RgNC+0L/Rg9GB0LrQsNC10YIg0L/RgNC+0LLQtdGA0LrRgyDRgtC40L/QsCDQtNC70Y8gbnVsbC5cbmV4cG9ydCBjbGFzcyBTZXNzaW9uSW5mb0R0byB7XG4gIEBJc09wdGlvbmFsKClcbiAgQFZhbGlkYXRlSWYoKF8sIHYpID0+IHYgIT09IG51bGwpXG4gIEBJc1N0cmluZygpXG4gIHRoZXJhcHlTdGFydERhdGU/OiBzdHJpbmcgfCBudWxsO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQFZhbGlkYXRlSWYoKF8sIHYpID0+IHYgIT09IG51bGwpXG4gIEBJc1N0cmluZygpXG4gIG5leHRTZXNzaW9uPzogc3RyaW5nIHwgbnVsbDtcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0FycmF5KClcbiAgQElzSW50KHsgZWFjaDogdHJ1ZSB9KVxuICBtZWV0aW5nRGF5cz86IG51bWJlcltdO1xufVxuIl0sInZlcnNpb24iOjN9

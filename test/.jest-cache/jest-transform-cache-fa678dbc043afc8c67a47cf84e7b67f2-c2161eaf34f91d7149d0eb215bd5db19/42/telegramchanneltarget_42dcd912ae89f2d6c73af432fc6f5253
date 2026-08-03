@@ -1,0 +1,64 @@
+407f9e0a061ddacbd91a673779e9dd8b
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TelegramChannelTarget = void 0;
+const common_1 = require("@nestjs/common");
+const telegram_constants_1 = require("./telegram.constants");
+const telegram_error_1 = require("./telegram-error");
+/** Env с каналом: @username или -100…id. Без него площадка выключена. */
+const ENV_KEY = 'HEALTHY_ADULT_CHANNEL';
+/**
+ * Telegram как площадка канала «Здоровый Взрослый» — первый адаптер
+ * ChannelTarget. Всё телеграм-специфичное живёт здесь: клиент, формат адреса
+ * канала и разбор ошибок API.
+ *
+ * Безопасный дефолт: без env постинг выключен, чтобы тестовый прогон не ушёл
+ * в основной канал.
+ */
+let TelegramChannelTarget = class TelegramChannelTarget {
+    bot;
+    platform = 'telegram';
+    title = 'Telegram';
+    envKey = ENV_KEY;
+    constructor(bot) {
+        this.bot = bot;
+    }
+    destination() {
+        const raw = process.env[ENV_KEY]?.trim();
+        return raw ? raw : null;
+    }
+    async send(post, destination) {
+        if (!this.bot)
+            throw new Error('бот не инициализирован (нет BOT_TOKEN?)');
+        await this.bot.telegram.sendMessage(destination, post.text);
+    }
+    /**
+     * Причина — общим разборщиком: ответ API («400: chat not found») или код
+     * транспорта («ETIMEDOUT»), иначе алерт обрывался на «reason:». Подсказка
+     * рядом: чаще всего канал молчит из-за прав бота, а не из-за сети.
+     */
+    explain(err) {
+        return `${(0, telegram_error_1.describeTelegramError)(err)}\nПроверь, что бот — администратор канала с правом публикации.`;
+    }
+};
+exports.TelegramChannelTarget = TelegramChannelTarget;
+exports.TelegramChannelTarget = TelegramChannelTarget = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, common_1.Inject)(telegram_constants_1.TELEGRAF_BOT)),
+    __param(0, (0, common_1.Optional)()),
+    __metadata("design:paramtypes", [Object])
+], TelegramChannelTarget);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGVsZWdyYW0vdGVsZWdyYW0tY2hhbm5lbC50YXJnZXQudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7OztBQUFBLDJDQUE4RDtBQUU5RCw2REFBb0Q7QUFDcEQscURBQXlEO0FBR3pELHlFQUF5RTtBQUN6RSxNQUFNLE9BQU8sR0FBRyx1QkFBdUIsQ0FBQztBQUV4Qzs7Ozs7OztHQU9HO0FBRUksSUFBTSxxQkFBcUIsR0FBM0IsTUFBTSxxQkFBcUI7SUFRYjtJQVBWLFFBQVEsR0FBRyxVQUFVLENBQUM7SUFDdEIsS0FBSyxHQUFHLFVBQVUsQ0FBQztJQUNuQixNQUFNLEdBQUcsT0FBTyxDQUFDO0lBRTFCLFlBR21CLEdBQTZCO1FBQTdCLFFBQUcsR0FBSCxHQUFHLENBQTBCO0lBQzdDLENBQUM7SUFFSixXQUFXO1FBQ1QsTUFBTSxHQUFHLEdBQUcsT0FBTyxDQUFDLEdBQUcsQ0FBQyxPQUFPLENBQUMsRUFBRSxJQUFJLEVBQUUsQ0FBQztRQUN6QyxPQUFPLEdBQUcsQ0FBQyxDQUFDLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQyxJQUFJLENBQUM7SUFDMUIsQ0FBQztJQUVELEtBQUssQ0FBQyxJQUFJLENBQUMsSUFBaUIsRUFBRSxXQUFtQjtRQUMvQyxJQUFJLENBQUMsSUFBSSxDQUFDLEdBQUc7WUFBRSxNQUFNLElBQUksS0FBSyxDQUFDLHlDQUF5QyxDQUFDLENBQUM7UUFDMUUsTUFBTSxJQUFJLENBQUMsR0FBRyxDQUFDLFFBQVEsQ0FBQyxXQUFXLENBQUMsV0FBVyxFQUFFLElBQUksQ0FBQyxJQUFJLENBQUMsQ0FBQztJQUM5RCxDQUFDO0lBRUQ7Ozs7T0FJRztJQUNILE9BQU8sQ0FBQyxHQUFZO1FBQ2xCLE9BQU8sR0FBRyxJQUFBLHNDQUFxQixFQUFDLEdBQUcsQ0FBQyxnRUFBZ0UsQ0FBQztJQUN2RyxDQUFDO0NBQ0YsQ0FBQTtBQTdCWSxzREFBcUI7Z0NBQXJCLHFCQUFxQjtJQURqQyxJQUFBLG1CQUFVLEdBQUU7SUFPUixXQUFBLElBQUEsZUFBTSxFQUFDLGlDQUFZLENBQUMsQ0FBQTtJQUNwQixXQUFBLElBQUEsaUJBQVEsR0FBRSxDQUFBOztHQVBGLHFCQUFxQixDQTZCakMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGVsZWdyYW0vdGVsZWdyYW0tY2hhbm5lbC50YXJnZXQudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgSW5qZWN0LCBJbmplY3RhYmxlLCBPcHRpb25hbCB9IGZyb20gJ0BuZXN0anMvY29tbW9uJztcbmltcG9ydCB7IFRlbGVncmFmLCBDb250ZXh0IH0gZnJvbSAndGVsZWdyYWYnO1xuaW1wb3J0IHsgVEVMRUdSQUZfQk9UIH0gZnJvbSAnLi90ZWxlZ3JhbS5jb25zdGFudHMnO1xuaW1wb3J0IHsgZGVzY3JpYmVUZWxlZ3JhbUVycm9yIH0gZnJvbSAnLi90ZWxlZ3JhbS1lcnJvcic7XG5pbXBvcnQgdHlwZSB7IENoYW5uZWxQb3N0LCBDaGFubmVsVGFyZ2V0IH0gZnJvbSAnLi4vY2hhbm5lbC9jaGFubmVsLXRhcmdldCc7XG5cbi8qKiBFbnYg0YEg0LrQsNC90LDQu9C+0Lw6IEB1c2VybmFtZSDQuNC70LggLTEwMOKApmlkLiDQkdC10Lcg0L3QtdCz0L4g0L/Qu9C+0YnQsNC00LrQsCDQstGL0LrQu9GO0YfQtdC90LAuICovXG5jb25zdCBFTlZfS0VZID0gJ0hFQUxUSFlfQURVTFRfQ0hBTk5FTCc7XG5cbi8qKlxuICogVGVsZWdyYW0g0LrQsNC6INC/0LvQvtGJ0LDQtNC60LAg0LrQsNC90LDQu9CwIMKr0JfQtNC+0YDQvtCy0YvQuSDQktC30YDQvtGB0LvRi9C5wrsg4oCUINC/0LXRgNCy0YvQuSDQsNC00LDQv9GC0LXRgFxuICogQ2hhbm5lbFRhcmdldC4g0JLRgdGRINGC0LXQu9C10LPRgNCw0Lwt0YHQv9C10YbQuNGE0LjRh9C90L7QtSDQttC40LLRkdGCINC30LTQtdGB0Yw6INC60LvQuNC10L3Rgiwg0YTQvtGA0LzQsNGCINCw0LTRgNC10YHQsFxuICog0LrQsNC90LDQu9CwINC4INGA0LDQt9Cx0L7RgCDQvtGI0LjQsdC+0LogQVBJLlxuICpcbiAqINCR0LXQt9C+0L/QsNGB0L3Ri9C5INC00LXRhNC+0LvRgjog0LHQtdC3IGVudiDQv9C+0YHRgtC40L3QsyDQstGL0LrQu9GO0YfQtdC9LCDRh9GC0L7QsdGLINGC0LXRgdGC0L7QstGL0Lkg0L/RgNC+0LPQvtC9INC90LUg0YPRiNGR0LtcbiAqINCyINC+0YHQvdC+0LLQvdC+0Lkg0LrQsNC90LDQuy5cbiAqL1xuQEluamVjdGFibGUoKVxuZXhwb3J0IGNsYXNzIFRlbGVncmFtQ2hhbm5lbFRhcmdldCBpbXBsZW1lbnRzIENoYW5uZWxUYXJnZXQge1xuICByZWFkb25seSBwbGF0Zm9ybSA9ICd0ZWxlZ3JhbSc7XG4gIHJlYWRvbmx5IHRpdGxlID0gJ1RlbGVncmFtJztcbiAgcmVhZG9ubHkgZW52S2V5ID0gRU5WX0tFWTtcblxuICBjb25zdHJ1Y3RvcihcbiAgICBASW5qZWN0KFRFTEVHUkFGX0JPVClcbiAgICBAT3B0aW9uYWwoKVxuICAgIHByaXZhdGUgcmVhZG9ubHkgYm90OiBUZWxlZ3JhZjxDb250ZXh0PiB8IG51bGwsXG4gICkge31cblxuICBkZXN0aW5hdGlvbigpOiBzdHJpbmcgfCBudWxsIHtcbiAgICBjb25zdCByYXcgPSBwcm9jZXNzLmVudltFTlZfS0VZXT8udHJpbSgpO1xuICAgIHJldHVybiByYXcgPyByYXcgOiBudWxsO1xuICB9XG5cbiAgYXN5bmMgc2VuZChwb3N0OiBDaGFubmVsUG9zdCwgZGVzdGluYXRpb246IHN0cmluZyk6IFByb21pc2U8dm9pZD4ge1xuICAgIGlmICghdGhpcy5ib3QpIHRocm93IG5ldyBFcnJvcign0LHQvtGCINC90LUg0LjQvdC40YbQuNCw0LvQuNC30LjRgNC+0LLQsNC9ICjQvdC10YIgQk9UX1RPS0VOPyknKTtcbiAgICBhd2FpdCB0aGlzLmJvdC50ZWxlZ3JhbS5zZW5kTWVzc2FnZShkZXN0aW5hdGlvbiwgcG9zdC50ZXh0KTtcbiAgfVxuXG4gIC8qKlxuICAgKiDQn9GA0LjRh9C40L3QsCDigJQg0L7QsdGJ0LjQvCDRgNCw0LfQsdC+0YDRidC40LrQvtC8OiDQvtGC0LLQtdGCIEFQSSAowqs0MDA6IGNoYXQgbm90IGZvdW5kwrspINC40LvQuCDQutC+0LRcbiAgICog0YLRgNCw0L3RgdC/0L7RgNGC0LAgKMKrRVRJTUVET1VUwrspLCDQuNC90LDRh9C1INCw0LvQtdGA0YIg0L7QsdGA0YvQstCw0LvRgdGPINC90LAgwqtyZWFzb246wrsuINCf0L7QtNGB0LrQsNC30LrQsFxuICAgKiDRgNGP0LTQvtC8OiDRh9Cw0YnQtSDQstGB0LXQs9C+INC60LDQvdCw0Lsg0LzQvtC70YfQuNGCINC40Lct0LfQsCDQv9GA0LDQsiDQsdC+0YLQsCwg0LAg0L3QtSDQuNC3LdC30LAg0YHQtdGC0LguXG4gICAqL1xuICBleHBsYWluKGVycjogdW5rbm93bik6IHN0cmluZyB7XG4gICAgcmV0dXJuIGAke2Rlc2NyaWJlVGVsZWdyYW1FcnJvcihlcnIpfVxcbtCf0YDQvtCy0LXRgNGMLCDRh9GC0L4g0LHQvtGCIOKAlCDQsNC00LzQuNC90LjRgdGC0YDQsNGC0L7RgCDQutCw0L3QsNC70LAg0YEg0L/RgNCw0LLQvtC8INC/0YPQsdC70LjQutCw0YbQuNC4LmA7XG4gIH1cbn1cbiJdLCJ2ZXJzaW9uIjozfQ==

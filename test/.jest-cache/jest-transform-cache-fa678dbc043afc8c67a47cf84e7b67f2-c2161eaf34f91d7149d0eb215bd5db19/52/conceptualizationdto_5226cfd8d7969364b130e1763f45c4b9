@@ -1,0 +1,105 @@
+da9e1379a0d1e3dceea3b4b37aa769ed
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ConceptualizationDto = void 0;
+const class_validator_1 = require("class-validator");
+const TEXT_MAX = 5000;
+/**
+ * DTO для карты концептуализации терапевта (аудит 2026-07, 2г / правило
+ * №6 CLAUDE.md). Лимиты (5000 символов текста, 64 символа на id, 200/500
+ * узлов/рёбер карты режимов) уже проверялись вручную — продублированы.
+ * `modeMapNodes`/`modeMapEdges` — произвольная структура графа, форма
+ * элементов не валидировалась и раньше — оставляем как есть.
+ */
+class ConceptualizationDto {
+    schemaIds;
+    modeIds;
+    earlyExperience;
+    unmetNeeds;
+    triggers;
+    copingStyles;
+    goals;
+    currentProblems;
+    modeTransitions;
+    modeMapNodes;
+    modeMapEdges;
+}
+exports.ConceptualizationDto = ConceptualizationDto;
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    (0, class_validator_1.MaxLength)(64, { each: true }),
+    __metadata("design:type", Array)
+], ConceptualizationDto.prototype, "schemaIds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    (0, class_validator_1.MaxLength)(64, { each: true }),
+    __metadata("design:type", Array)
+], ConceptualizationDto.prototype, "modeIds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(TEXT_MAX),
+    __metadata("design:type", String)
+], ConceptualizationDto.prototype, "earlyExperience", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(TEXT_MAX),
+    __metadata("design:type", String)
+], ConceptualizationDto.prototype, "unmetNeeds", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(TEXT_MAX),
+    __metadata("design:type", String)
+], ConceptualizationDto.prototype, "triggers", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(TEXT_MAX),
+    __metadata("design:type", String)
+], ConceptualizationDto.prototype, "copingStyles", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(TEXT_MAX),
+    __metadata("design:type", String)
+], ConceptualizationDto.prototype, "goals", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(TEXT_MAX),
+    __metadata("design:type", String)
+], ConceptualizationDto.prototype, "currentProblems", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(TEXT_MAX),
+    __metadata("design:type", String)
+], ConceptualizationDto.prototype, "modeTransitions", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMaxSize)(200),
+    __metadata("design:type", Array)
+], ConceptualizationDto.prototype, "modeMapNodes", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMaxSize)(500),
+    __metadata("design:type", Array)
+], ConceptualizationDto.prototype, "modeMapEdges", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvdGhlcmFweS9kdG8vY29uY2VwdHVhbGl6YXRpb24uZHRvLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7OztBQUFBLHFEQU15QjtBQUV6QixNQUFNLFFBQVEsR0FBRyxJQUFJLENBQUM7QUFFdEI7Ozs7OztHQU1HO0FBQ0gsTUFBYSxvQkFBb0I7SUFLL0IsU0FBUyxDQUFZO0lBTXJCLE9BQU8sQ0FBWTtJQUtuQixlQUFlLENBQVU7SUFLekIsVUFBVSxDQUFVO0lBS3BCLFFBQVEsQ0FBVTtJQUtsQixZQUFZLENBQVU7SUFLdEIsS0FBSyxDQUFVO0lBS2YsZUFBZSxDQUFVO0lBS3pCLGVBQWUsQ0FBVTtJQUt6QixZQUFZLENBQWE7SUFLekIsWUFBWSxDQUFhO0NBQzFCO0FBekRELG9EQXlEQztBQXBEQztJQUpDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEseUJBQU8sR0FBRTtJQUNULElBQUEsMEJBQVEsRUFBQyxFQUFFLElBQUksRUFBRSxJQUFJLEVBQUUsQ0FBQztJQUN4QixJQUFBLDJCQUFTLEVBQUMsRUFBRSxFQUFFLEVBQUUsSUFBSSxFQUFFLElBQUksRUFBRSxDQUFDOzt1REFDVDtBQU1yQjtJQUpDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEseUJBQU8sR0FBRTtJQUNULElBQUEsMEJBQVEsRUFBQyxFQUFFLElBQUksRUFBRSxJQUFJLEVBQUUsQ0FBQztJQUN4QixJQUFBLDJCQUFTLEVBQUMsRUFBRSxFQUFFLEVBQUUsSUFBSSxFQUFFLElBQUksRUFBRSxDQUFDOztxREFDWDtBQUtuQjtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxRQUFRLENBQUM7OzZEQUNLO0FBS3pCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLFFBQVEsQ0FBQzs7d0RBQ0E7QUFLcEI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLDBCQUFRLEdBQUU7SUFDVixJQUFBLDJCQUFTLEVBQUMsUUFBUSxDQUFDOztzREFDRjtBQUtsQjtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxRQUFRLENBQUM7OzBEQUNFO0FBS3RCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLFFBQVEsQ0FBQzs7bURBQ0w7QUFLZjtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTtJQUNWLElBQUEsMkJBQVMsRUFBQyxRQUFRLENBQUM7OzZEQUNLO0FBS3pCO0lBSEMsSUFBQSw0QkFBVSxHQUFFO0lBQ1osSUFBQSwwQkFBUSxHQUFFO0lBQ1YsSUFBQSwyQkFBUyxFQUFDLFFBQVEsQ0FBQzs7NkRBQ0s7QUFLekI7SUFIQyxJQUFBLDRCQUFVLEdBQUU7SUFDWixJQUFBLHlCQUFPLEdBQUU7SUFDVCxJQUFBLDhCQUFZLEVBQUMsR0FBRyxDQUFDOzswREFDTztBQUt6QjtJQUhDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEseUJBQU8sR0FBRTtJQUNULElBQUEsOEJBQVksRUFBQyxHQUFHLENBQUM7OzBEQUNPIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL3RoZXJhcHkvZHRvL2NvbmNlcHR1YWxpemF0aW9uLmR0by50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQge1xuICBBcnJheU1heFNpemUsXG4gIElzQXJyYXksXG4gIElzT3B0aW9uYWwsXG4gIElzU3RyaW5nLFxuICBNYXhMZW5ndGgsXG59IGZyb20gJ2NsYXNzLXZhbGlkYXRvcic7XG5cbmNvbnN0IFRFWFRfTUFYID0gNTAwMDtcblxuLyoqXG4gKiBEVE8g0LTQu9GPINC60LDRgNGC0Ysg0LrQvtC90YbQtdC/0YLRg9Cw0LvQuNC30LDRhtC40Lgg0YLQtdGA0LDQv9C10LLRgtCwICjQsNGD0LTQuNGCIDIwMjYtMDcsIDLQsyAvINC/0YDQsNCy0LjQu9C+XG4gKiDihJY2IENMQVVERS5tZCkuINCb0LjQvNC40YLRiyAoNTAwMCDRgdC40LzQstC+0LvQvtCyINGC0LXQutGB0YLQsCwgNjQg0YHQuNC80LLQvtC70LAg0L3QsCBpZCwgMjAwLzUwMFxuICog0YPQt9C70L7Qsi/RgNGR0LHQtdGAINC60LDRgNGC0Ysg0YDQtdC20LjQvNC+0LIpINGD0LbQtSDQv9GA0L7QstC10YDRj9C70LjRgdGMINCy0YDRg9GH0L3Rg9GOIOKAlCDQv9GA0L7QtNGD0LHQu9C40YDQvtCy0LDQvdGLLlxuICogYG1vZGVNYXBOb2Rlc2AvYG1vZGVNYXBFZGdlc2Ag4oCUINC/0YDQvtC40LfQstC+0LvRjNC90LDRjyDRgdGC0YDRg9C60YLRg9GA0LAg0LPRgNCw0YTQsCwg0YTQvtGA0LzQsFxuICog0Y3Qu9C10LzQtdC90YLQvtCyINC90LUg0LLQsNC70LjQtNC40YDQvtCy0LDQu9Cw0YHRjCDQuCDRgNCw0L3RjNGI0LUg4oCUINC+0YHRgtCw0LLQu9GP0LXQvCDQutCw0Log0LXRgdGC0YwuXG4gKi9cbmV4cG9ydCBjbGFzcyBDb25jZXB0dWFsaXphdGlvbkR0byB7XG4gIEBJc09wdGlvbmFsKClcbiAgQElzQXJyYXkoKVxuICBASXNTdHJpbmcoeyBlYWNoOiB0cnVlIH0pXG4gIEBNYXhMZW5ndGgoNjQsIHsgZWFjaDogdHJ1ZSB9KVxuICBzY2hlbWFJZHM/OiBzdHJpbmdbXTtcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc0FycmF5KClcbiAgQElzU3RyaW5nKHsgZWFjaDogdHJ1ZSB9KVxuICBATWF4TGVuZ3RoKDY0LCB7IGVhY2g6IHRydWUgfSlcbiAgbW9kZUlkcz86IHN0cmluZ1tdO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChURVhUX01BWClcbiAgZWFybHlFeHBlcmllbmNlPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChURVhUX01BWClcbiAgdW5tZXROZWVkcz86IHN0cmluZztcblxuICBASXNPcHRpb25hbCgpXG4gIEBJc1N0cmluZygpXG4gIEBNYXhMZW5ndGgoVEVYVF9NQVgpXG4gIHRyaWdnZXJzPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChURVhUX01BWClcbiAgY29waW5nU3R5bGVzPzogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzU3RyaW5nKClcbiAgQE1heExlbmd0aChURVhUX01BWClcbiAgZ29hbHM/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKFRFWFRfTUFYKVxuICBjdXJyZW50UHJvYmxlbXM/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNTdHJpbmcoKVxuICBATWF4TGVuZ3RoKFRFWFRfTUFYKVxuICBtb2RlVHJhbnNpdGlvbnM/OiBzdHJpbmc7XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNBcnJheSgpXG4gIEBBcnJheU1heFNpemUoMjAwKVxuICBtb2RlTWFwTm9kZXM/OiB1bmtub3duW107XG5cbiAgQElzT3B0aW9uYWwoKVxuICBASXNBcnJheSgpXG4gIEBBcnJheU1heFNpemUoNTAwKVxuICBtb2RlTWFwRWRnZXM/OiB1bmtub3duW107XG59XG4iXSwidmVyc2lvbiI6M30=

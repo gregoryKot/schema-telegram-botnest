@@ -1,0 +1,61 @@
+9ecad5043afe40214e80a4163b7c3b6e
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var AnalyticsService_1;
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AnalyticsService = void 0;
+const common_1 = require("@nestjs/common");
+const client_1 = require("@prisma/client");
+const prisma_service_1 = require("../prisma/prisma.service");
+const analytics_constants_1 = require("./analytics.constants");
+// Продуктовая аналитика (правило №8 CLAUDE.md): пишет факты «юзер сделал X»
+// для проверки гипотез метриками (D1/D7/D30, доля поделившихся и т.п.).
+//
+// Инвариант: запись события НИКОГДА не должна ломать пользовательское
+// действие. track() глотает любые ошибки БД (логирует) и не бросает —
+// вызывающий эндпоинт всегда отвечает быстро и успешно.
+//
+// meta — маленький структурный non-PII объект (валидируется DTO). Свободный
+// текст пользователя сюда не попадает (не шифруется).
+let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
+    prisma;
+    logger = new common_1.Logger(AnalyticsService_1.name);
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    /** userId = null — анонимное событие публичного сайта (мини-тесты). */
+    async track(userId, name, meta) {
+        // Defence in depth: DTO уже проверил name, но сервис — нижний слой,
+        // к которому могут прийти и из других мест (бот, крон). Неизвестное
+        // имя молча игнорируем, а не засоряем таблицу.
+        if (!analytics_constants_1.ANALYTICS_EVENTS.includes(name))
+            return;
+        try {
+            await this.prisma.analyticsEvent.create({
+                data: {
+                    userId,
+                    name,
+                    meta: meta ?? client_1.Prisma.JsonNull,
+                },
+            });
+        }
+        catch (err) {
+            this.logger.error(`track(${name}) failed`, err);
+        }
+    }
+};
+exports.AnalyticsService = AnalyticsService;
+exports.AnalyticsService = AnalyticsService = AnalyticsService_1 = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof prisma_service_1.PrismaService !== "undefined" && prisma_service_1.PrismaService) === "function" ? _a : Object])
+], AnalyticsService);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYW5hbHl0aWNzL2FuYWx5dGljcy5zZXJ2aWNlLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7O0FBQUEsMkNBQW9EO0FBQ3BELDJDQUF3QztBQUN4Qyw2REFBeUQ7QUFDekQsK0RBRytCO0FBRS9CLDRFQUE0RTtBQUM1RSx3RUFBd0U7QUFDeEUsRUFBRTtBQUNGLHNFQUFzRTtBQUN0RSxzRUFBc0U7QUFDdEUsd0RBQXdEO0FBQ3hELEVBQUU7QUFDRiw0RUFBNEU7QUFDNUUsc0RBQXNEO0FBRS9DLElBQU0sZ0JBQWdCLHdCQUF0QixNQUFNLGdCQUFnQjtJQUdFO0lBRlosTUFBTSxHQUFHLElBQUksZUFBTSxDQUFDLGtCQUFnQixDQUFDLElBQUksQ0FBQyxDQUFDO0lBRTVELFlBQTZCLE1BQXFCO1FBQXJCLFdBQU0sR0FBTixNQUFNLENBQWU7SUFBRyxDQUFDO0lBRXRELHVFQUF1RTtJQUN2RSxLQUFLLENBQUMsS0FBSyxDQUNULE1BQXFCLEVBQ3JCLElBQXdCLEVBQ3hCLElBQThCO1FBRTlCLG9FQUFvRTtRQUNwRSxvRUFBb0U7UUFDcEUsK0NBQStDO1FBQy9DLElBQUksQ0FBQyxzQ0FBZ0IsQ0FBQyxRQUFRLENBQUMsSUFBSSxDQUFDO1lBQUUsT0FBTztRQUM3QyxJQUFJLENBQUM7WUFDSCxNQUFNLElBQUksQ0FBQyxNQUFNLENBQUMsY0FBYyxDQUFDLE1BQU0sQ0FBQztnQkFDdEMsSUFBSSxFQUFFO29CQUNKLE1BQU07b0JBQ04sSUFBSTtvQkFDSixJQUFJLEVBQUcsSUFBOEIsSUFBSSxlQUFNLENBQUMsUUFBUTtpQkFDekQ7YUFDRixDQUFDLENBQUM7UUFDTCxDQUFDO1FBQUMsT0FBTyxHQUFHLEVBQUUsQ0FBQztZQUNiLElBQUksQ0FBQyxNQUFNLENBQUMsS0FBSyxDQUFDLFNBQVMsSUFBSSxVQUFVLEVBQUUsR0FBWSxDQUFDLENBQUM7UUFDM0QsQ0FBQztJQUNILENBQUM7Q0FDRixDQUFBO0FBM0JZLDRDQUFnQjsyQkFBaEIsZ0JBQWdCO0lBRDVCLElBQUEsbUJBQVUsR0FBRTt5REFJMEIsOEJBQWEsb0JBQWIsOEJBQWE7R0FIdkMsZ0JBQWdCLENBMkI1QiIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hbmFseXRpY3MvYW5hbHl0aWNzLnNlcnZpY2UudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgSW5qZWN0YWJsZSwgTG9nZ2VyIH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgUHJpc21hIH0gZnJvbSAnQHByaXNtYS9jbGllbnQnO1xuaW1wb3J0IHsgUHJpc21hU2VydmljZSB9IGZyb20gJy4uL3ByaXNtYS9wcmlzbWEuc2VydmljZSc7XG5pbXBvcnQge1xuICBBTkFMWVRJQ1NfRVZFTlRTLFxuICB0eXBlIEFuYWx5dGljc0V2ZW50TmFtZSxcbn0gZnJvbSAnLi9hbmFseXRpY3MuY29uc3RhbnRzJztcblxuLy8g0J/RgNC+0LTRg9C60YLQvtCy0LDRjyDQsNC90LDQu9C40YLQuNC60LAgKNC/0YDQsNCy0LjQu9C+IOKEljggQ0xBVURFLm1kKTog0L/QuNGI0LXRgiDRhNCw0LrRgtGLIMKr0Y7Qt9C10YAg0YHQtNC10LvQsNC7IFjCu1xuLy8g0LTQu9GPINC/0YDQvtCy0LXRgNC60Lgg0LPQuNC/0L7RgtC10Lcg0LzQtdGC0YDQuNC60LDQvNC4IChEMS9ENy9EMzAsINC00L7Qu9GPINC/0L7QtNC10LvQuNCy0YjQuNGF0YHRjyDQuCDRgi7Qvy4pLlxuLy9cbi8vINCY0L3QstCw0YDQuNCw0L3Rgjog0LfQsNC/0LjRgdGMINGB0L7QsdGL0YLQuNGPINCd0JjQmtCe0JPQlNCQINC90LUg0LTQvtC70LbQvdCwINC70L7QvNCw0YLRjCDQv9C+0LvRjNC30L7QstCw0YLQtdC70YzRgdC60L7QtVxuLy8g0LTQtdC50YHRgtCy0LjQtS4gdHJhY2soKSDQs9C70L7RgtCw0LXRgiDQu9GO0LHRi9C1INC+0YjQuNCx0LrQuCDQkdCUICjQu9C+0LPQuNGA0YPQtdGCKSDQuCDQvdC1INCx0YDQvtGB0LDQtdGCIOKAlFxuLy8g0LLRi9C30YvQstCw0Y7RidC40Lkg0Y3QvdC00L/QvtC40L3RgiDQstGB0LXQs9C00LAg0L7RgtCy0LXRh9Cw0LXRgiDQsdGL0YHRgtGA0L4g0Lgg0YPRgdC/0LXRiNC90L4uXG4vL1xuLy8gbWV0YSDigJQg0LzQsNC70LXQvdGM0LrQuNC5INGB0YLRgNGD0LrRgtGD0YDQvdGL0Lkgbm9uLVBJSSDQvtCx0YrQtdC60YIgKNCy0LDQu9C40LTQuNGA0YPQtdGC0YHRjyBEVE8pLiDQodCy0L7QsdC+0LTQvdGL0Llcbi8vINGC0LXQutGB0YIg0L/QvtC70YzQt9C+0LLQsNGC0LXQu9GPINGB0Y7QtNCwINC90LUg0L/QvtC/0LDQtNCw0LXRgiAo0L3QtSDRiNC40YTRgNGD0LXRgtGB0Y8pLlxuQEluamVjdGFibGUoKVxuZXhwb3J0IGNsYXNzIEFuYWx5dGljc1NlcnZpY2Uge1xuICBwcml2YXRlIHJlYWRvbmx5IGxvZ2dlciA9IG5ldyBMb2dnZXIoQW5hbHl0aWNzU2VydmljZS5uYW1lKTtcblxuICBjb25zdHJ1Y3Rvcihwcml2YXRlIHJlYWRvbmx5IHByaXNtYTogUHJpc21hU2VydmljZSkge31cblxuICAvKiogdXNlcklkID0gbnVsbCDigJQg0LDQvdC+0L3QuNC80L3QvtC1INGB0L7QsdGL0YLQuNC1INC/0YPQsdC70LjRh9C90L7Qs9C+INGB0LDQudGC0LAgKNC80LjQvdC4LdGC0LXRgdGC0YspLiAqL1xuICBhc3luYyB0cmFjayhcbiAgICB1c2VySWQ6IGJpZ2ludCB8IG51bGwsXG4gICAgbmFtZTogQW5hbHl0aWNzRXZlbnROYW1lLFxuICAgIG1ldGE/OiBSZWNvcmQ8c3RyaW5nLCB1bmtub3duPixcbiAgKTogUHJvbWlzZTx2b2lkPiB7XG4gICAgLy8gRGVmZW5jZSBpbiBkZXB0aDogRFRPINGD0LbQtSDQv9GA0L7QstC10YDQuNC7IG5hbWUsINC90L4g0YHQtdGA0LLQuNGBIOKAlCDQvdC40LbQvdC40Lkg0YHQu9C+0LksXG4gICAgLy8g0Log0LrQvtGC0L7RgNC+0LzRgyDQvNC+0LPRg9GCINC/0YDQuNC50YLQuCDQuCDQuNC3INC00YDRg9Cz0LjRhSDQvNC10YHRgiAo0LHQvtGCLCDQutGA0L7QvSkuINCd0LXQuNC30LLQtdGB0YLQvdC+0LVcbiAgICAvLyDQuNC80Y8g0LzQvtC70YfQsCDQuNCz0L3QvtGA0LjRgNGD0LXQvCwg0LAg0L3QtSDQt9Cw0YHQvtGA0Y/QtdC8INGC0LDQsdC70LjRhtGDLlxuICAgIGlmICghQU5BTFlUSUNTX0VWRU5UUy5pbmNsdWRlcyhuYW1lKSkgcmV0dXJuO1xuICAgIHRyeSB7XG4gICAgICBhd2FpdCB0aGlzLnByaXNtYS5hbmFseXRpY3NFdmVudC5jcmVhdGUoe1xuICAgICAgICBkYXRhOiB7XG4gICAgICAgICAgdXNlcklkLFxuICAgICAgICAgIG5hbWUsXG4gICAgICAgICAgbWV0YTogKG1ldGEgYXMgUHJpc21hLklucHV0SnNvblZhbHVlKSA/PyBQcmlzbWEuSnNvbk51bGwsXG4gICAgICAgIH0sXG4gICAgICB9KTtcbiAgICB9IGNhdGNoIChlcnIpIHtcbiAgICAgIHRoaXMubG9nZ2VyLmVycm9yKGB0cmFjaygke25hbWV9KSBmYWlsZWRgLCBlcnIgYXMgRXJyb3IpO1xuICAgIH1cbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

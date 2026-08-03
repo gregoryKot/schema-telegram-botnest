@@ -1,0 +1,53 @@
+c559ad64323e8a778834a7bc95ade58b
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PracticeSessionsService = exports.QUICK_PRACTICE_IDS = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma/prisma.service");
+// Быстрые практики «Здесь и сейчас»: дыхание, заземление 5-4-3-2-1, техника
+// «Стоп». Раньше не оставляли следа — пользователь не видел, что и сколько
+// раз прошёл. Тут только факт прохождения (id/userId/tool/createdAt), без
+// свободного текста — шифровать нечего (см. src/utils/encryption-coverage.spec.ts).
+exports.QUICK_PRACTICE_IDS = ['breathing', 'grounding', 'stop'];
+let PracticeSessionsService = class PracticeSessionsService {
+    prisma;
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    // Read-after-write: клиент сразу показывает «прошли N раз» из ответа
+    // записи, не дожидаясь отдельного запроса counts().
+    async record(userId, tool) {
+        await this.prisma.practiceSession.create({ data: { userId, tool } });
+        const count = await this.prisma.practiceSession.count({
+            where: { userId, tool },
+        });
+        return { count };
+    }
+    // Все три практики честно — отсутствующие в БД считаются нулём, а не
+    // undefined/NaN (пустой аккаунт тоже должен показать 0/0/0).
+    async counts(userId) {
+        const rows = await this.prisma.practiceSession.groupBy({
+            by: ['tool'],
+            where: { userId },
+            _count: { _all: true },
+        });
+        const byTool = new Map(rows.map((r) => [r.tool, r._count._all]));
+        return Object.fromEntries(exports.QUICK_PRACTICE_IDS.map((id) => [id, byTool.get(id) ?? 0]));
+    }
+};
+exports.PracticeSessionsService = PracticeSessionsService;
+exports.PracticeSessionsService = PracticeSessionsService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [typeof (_a = typeof prisma_service_1.PrismaService !== "undefined" && prisma_service_1.PrismaService) === "function" ? _a : Object])
+], PracticeSessionsService);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYm90L3ByYWN0aWNlLXNlc3Npb25zLnNlcnZpY2UudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7OztBQUFBLDJDQUE0QztBQUM1Qyw2REFBeUQ7QUFFekQsNEVBQTRFO0FBQzVFLDJFQUEyRTtBQUMzRSwwRUFBMEU7QUFDMUUsb0ZBQW9GO0FBQ3ZFLFFBQUEsa0JBQWtCLEdBQUcsQ0FBQyxXQUFXLEVBQUUsV0FBVyxFQUFFLE1BQU0sQ0FBVSxDQUFDO0FBSXZFLElBQU0sdUJBQXVCLEdBQTdCLE1BQU0sdUJBQXVCO0lBQ0w7SUFBN0IsWUFBNkIsTUFBcUI7UUFBckIsV0FBTSxHQUFOLE1BQU0sQ0FBZTtJQUFHLENBQUM7SUFFdEQscUVBQXFFO0lBQ3JFLG9EQUFvRDtJQUNwRCxLQUFLLENBQUMsTUFBTSxDQUNWLE1BQWMsRUFDZCxJQUFxQjtRQUVyQixNQUFNLElBQUksQ0FBQyxNQUFNLENBQUMsZUFBZSxDQUFDLE1BQU0sQ0FBQyxFQUFFLElBQUksRUFBRSxFQUFFLE1BQU0sRUFBRSxJQUFJLEVBQUUsRUFBRSxDQUFDLENBQUM7UUFDckUsTUFBTSxLQUFLLEdBQUcsTUFBTSxJQUFJLENBQUMsTUFBTSxDQUFDLGVBQWUsQ0FBQyxLQUFLLENBQUM7WUFDcEQsS0FBSyxFQUFFLEVBQUUsTUFBTSxFQUFFLElBQUksRUFBRTtTQUN4QixDQUFDLENBQUM7UUFDSCxPQUFPLEVBQUUsS0FBSyxFQUFFLENBQUM7SUFDbkIsQ0FBQztJQUVELHFFQUFxRTtJQUNyRSw2REFBNkQ7SUFDN0QsS0FBSyxDQUFDLE1BQU0sQ0FBQyxNQUFjO1FBQ3pCLE1BQU0sSUFBSSxHQUFHLE1BQU0sSUFBSSxDQUFDLE1BQU0sQ0FBQyxlQUFlLENBQUMsT0FBTyxDQUFDO1lBQ3JELEVBQUUsRUFBRSxDQUFDLE1BQU0sQ0FBQztZQUNaLEtBQUssRUFBRSxFQUFFLE1BQU0sRUFBRTtZQUNqQixNQUFNLEVBQUUsRUFBRSxJQUFJLEVBQUUsSUFBSSxFQUFFO1NBQ3ZCLENBQUMsQ0FBQztRQUNILE1BQU0sTUFBTSxHQUFHLElBQUksR0FBRyxDQUFDLElBQUksQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksRUFBRSxDQUFDLENBQUMsTUFBTSxDQUFDLElBQUksQ0FBQyxDQUFDLENBQUMsQ0FBQztRQUNqRSxPQUFPLE1BQU0sQ0FBQyxXQUFXLENBQ3ZCLDBCQUFrQixDQUFDLEdBQUcsQ0FBQyxDQUFDLEVBQUUsRUFBRSxFQUFFLENBQUMsQ0FBQyxFQUFFLEVBQUUsTUFBTSxDQUFDLEdBQUcsQ0FBQyxFQUFFLENBQUMsSUFBSSxDQUFDLENBQUMsQ0FBQyxDQUN2QixDQUFDO0lBQ3ZDLENBQUM7Q0FDRixDQUFBO0FBN0JZLDBEQUF1QjtrQ0FBdkIsdUJBQXVCO0lBRG5DLElBQUEsbUJBQVUsR0FBRTt5REFFMEIsOEJBQWEsb0JBQWIsOEJBQWE7R0FEdkMsdUJBQXVCLENBNkJuQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9ib3QvcHJhY3RpY2Utc2Vzc2lvbnMuc2VydmljZS50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJbmplY3RhYmxlIH0gZnJvbSAnQG5lc3Rqcy9jb21tb24nO1xuaW1wb3J0IHsgUHJpc21hU2VydmljZSB9IGZyb20gJy4uL3ByaXNtYS9wcmlzbWEuc2VydmljZSc7XG5cbi8vINCR0YvRgdGC0YDRi9C1INC/0YDQsNC60YLQuNC60LggwqvQl9C00LXRgdGMINC4INGB0LXQudGH0LDRgcK7OiDQtNGL0YXQsNC90LjQtSwg0LfQsNC30LXQvNC70LXQvdC40LUgNS00LTMtMi0xLCDRgtC10YXQvdC40LrQsFxuLy8gwqvQodGC0L7Qv8K7LiDQoNCw0L3RjNGI0LUg0L3QtSDQvtGB0YLQsNCy0LvRj9C70Lgg0YHQu9C10LTQsCDigJQg0L/QvtC70YzQt9C+0LLQsNGC0LXQu9GMINC90LUg0LLQuNC00LXQuywg0YfRgtC+INC4INGB0LrQvtC70YzQutC+XG4vLyDRgNCw0Lcg0L/RgNC+0YjRkdC7LiDQotGD0YIg0YLQvtC70YzQutC+INGE0LDQutGCINC/0YDQvtGF0L7QttC00LXQvdC40Y8gKGlkL3VzZXJJZC90b29sL2NyZWF0ZWRBdCksINCx0LXQt1xuLy8g0YHQstC+0LHQvtC00L3QvtCz0L4g0YLQtdC60YHRgtCwIOKAlCDRiNC40YTRgNC+0LLQsNGC0Ywg0L3QtdGH0LXQs9C+ICjRgdC8LiBzcmMvdXRpbHMvZW5jcnlwdGlvbi1jb3ZlcmFnZS5zcGVjLnRzKS5cbmV4cG9ydCBjb25zdCBRVUlDS19QUkFDVElDRV9JRFMgPSBbJ2JyZWF0aGluZycsICdncm91bmRpbmcnLCAnc3RvcCddIGFzIGNvbnN0O1xuZXhwb3J0IHR5cGUgUXVpY2tQcmFjdGljZUlkID0gKHR5cGVvZiBRVUlDS19QUkFDVElDRV9JRFMpW251bWJlcl07XG5cbkBJbmplY3RhYmxlKClcbmV4cG9ydCBjbGFzcyBQcmFjdGljZVNlc3Npb25zU2VydmljZSB7XG4gIGNvbnN0cnVjdG9yKHByaXZhdGUgcmVhZG9ubHkgcHJpc21hOiBQcmlzbWFTZXJ2aWNlKSB7fVxuXG4gIC8vIFJlYWQtYWZ0ZXItd3JpdGU6INC60LvQuNC10L3RgiDRgdGA0LDQt9GDINC/0L7QutCw0LfRi9Cy0LDQtdGCIMKr0L/RgNC+0YjQu9C4IE4g0YDQsNC3wrsg0LjQtyDQvtGC0LLQtdGC0LBcbiAgLy8g0LfQsNC/0LjRgdC4LCDQvdC1INC00L7QttC40LTQsNGP0YHRjCDQvtGC0LTQtdC70YzQvdC+0LPQviDQt9Cw0L/RgNC+0YHQsCBjb3VudHMoKS5cbiAgYXN5bmMgcmVjb3JkKFxuICAgIHVzZXJJZDogYmlnaW50LFxuICAgIHRvb2w6IFF1aWNrUHJhY3RpY2VJZCxcbiAgKTogUHJvbWlzZTx7IGNvdW50OiBudW1iZXIgfT4ge1xuICAgIGF3YWl0IHRoaXMucHJpc21hLnByYWN0aWNlU2Vzc2lvbi5jcmVhdGUoeyBkYXRhOiB7IHVzZXJJZCwgdG9vbCB9IH0pO1xuICAgIGNvbnN0IGNvdW50ID0gYXdhaXQgdGhpcy5wcmlzbWEucHJhY3RpY2VTZXNzaW9uLmNvdW50KHtcbiAgICAgIHdoZXJlOiB7IHVzZXJJZCwgdG9vbCB9LFxuICAgIH0pO1xuICAgIHJldHVybiB7IGNvdW50IH07XG4gIH1cblxuICAvLyDQktGB0LUg0YLRgNC4INC/0YDQsNC60YLQuNC60Lgg0YfQtdGB0YLQvdC+IOKAlCDQvtGC0YHRg9GC0YHRgtCy0YPRjtGJ0LjQtSDQsiDQkdCUINGB0YfQuNGC0LDRjtGC0YHRjyDQvdGD0LvRkdC8LCDQsCDQvdC1XG4gIC8vIHVuZGVmaW5lZC9OYU4gKNC/0YPRgdGC0L7QuSDQsNC60LrQsNGD0L3RgiDRgtC+0LbQtSDQtNC+0LvQttC10L0g0L/QvtC60LDQt9Cw0YLRjCAwLzAvMCkuXG4gIGFzeW5jIGNvdW50cyh1c2VySWQ6IGJpZ2ludCk6IFByb21pc2U8UmVjb3JkPFF1aWNrUHJhY3RpY2VJZCwgbnVtYmVyPj4ge1xuICAgIGNvbnN0IHJvd3MgPSBhd2FpdCB0aGlzLnByaXNtYS5wcmFjdGljZVNlc3Npb24uZ3JvdXBCeSh7XG4gICAgICBieTogWyd0b29sJ10sXG4gICAgICB3aGVyZTogeyB1c2VySWQgfSxcbiAgICAgIF9jb3VudDogeyBfYWxsOiB0cnVlIH0sXG4gICAgfSk7XG4gICAgY29uc3QgYnlUb29sID0gbmV3IE1hcChyb3dzLm1hcCgocikgPT4gW3IudG9vbCwgci5fY291bnQuX2FsbF0pKTtcbiAgICByZXR1cm4gT2JqZWN0LmZyb21FbnRyaWVzKFxuICAgICAgUVVJQ0tfUFJBQ1RJQ0VfSURTLm1hcCgoaWQpID0+IFtpZCwgYnlUb29sLmdldChpZCkgPz8gMF0pLFxuICAgICkgYXMgUmVjb3JkPFF1aWNrUHJhY3RpY2VJZCwgbnVtYmVyPjtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

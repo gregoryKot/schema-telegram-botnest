@@ -30,6 +30,11 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
 
   const [items, setItems] = useState<string[]>(initItems);
   const [saving, setSaving] = useState(false);
+  // Отказ сохранения раньше сообщался ТОЛЬКО вибрацией haptic.error(), а лист
+  // всё равно закрывался: на десктопе вибрации нет вовсе, и человек считал,
+  // что запись сохранена. Текст уцелел бы черновиком, но об этом тоже никто
+  // не сообщал.
+  const [saveError, setSaveError] = useState(false);
   const firstItemRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { firstItemRef.current?.focus(); }, []);
@@ -46,16 +51,18 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
 
   const handleSave = async () => {
     if (!canSave || saving) return;
+    setSaveError(false);
     haptic.success();
     setSaving(true);
     try {
       await onSave(date, filled);
       clearDraft('gratitude');
+      goBack();
     } catch {
       haptic.error();
+      setSaveError(true); // лист НЕ закрываем — иначе отказ неотличим от успеха
     } finally {
       setSaving(false);
-      goBack();
     }
   };
 
@@ -105,6 +112,19 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
         </span>
         <span className="spacer" />
         <SaveEntryButton canSave={canSave} saving={saving} onSave={handleSave} />
+        {saveError && (
+          <div
+            role="status"
+            style={{
+              marginTop: 10,
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: 'var(--accent-red)',
+            }}
+          >
+            Не удалось сохранить. Текст остался черновиком — можно повторить
+          </div>
+        )}
       </div>
     </ExScreen>
   );

@@ -1,0 +1,22 @@
+04f553f74468fa6abe792e6b9de0f171
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ARTICLE_DIAGRAM_KEYS = void 0;
+// Which built-in diagram each seeded article uses. The actual SVG lives on the
+// frontend (webapp/src/pages/articleDiagrams.ts) and is rendered client-side —
+// kept OUT of the editable `content` so the WYSIWYG editor can't strip it when
+// the admin edits an article.
+exports.ARTICLE_DIAGRAM_KEYS = {
+    'schema-terapiya-pri-perfektsionizme': 'standards',
+    'skolko-dlitsya-schema-terapiya': 'duration',
+    'chto-takoe-schema-terapiya': 'cycle',
+    'skhemy-yanga-spisok': 'iceberg',
+    'rezhimy-v-schema-terapii': 'modes',
+    'schema-terapiya-pri-trevoge-i-depressii': 'anx-dep',
+    'schema-terapiya-pri-travme': 'trauma',
+    'podhodit-li-mne-schema-terapiya': 'fork',
+    'pervaya-sessiya-schema-terapii': 'steps',
+    'schema-terapiya-vs-kpt': 'layers',
+    'povtoryayushchiesya-patterny-v-otnosheniyah': 'relations',
+};
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXJ0aWNsZXMvYXJ0aWNsZS1kaWFncmFtcy50cyIsIm1hcHBpbmdzIjoiOzs7QUFBQSwrRUFBK0U7QUFDL0UsK0VBQStFO0FBQy9FLCtFQUErRTtBQUMvRSw4QkFBOEI7QUFDakIsUUFBQSxvQkFBb0IsR0FBMkI7SUFDMUQscUNBQXFDLEVBQUUsV0FBVztJQUNsRCxnQ0FBZ0MsRUFBRSxVQUFVO0lBQzVDLDRCQUE0QixFQUFFLE9BQU87SUFDckMscUJBQXFCLEVBQUUsU0FBUztJQUNoQywwQkFBMEIsRUFBRSxPQUFPO0lBQ25DLHlDQUF5QyxFQUFFLFNBQVM7SUFDcEQsNEJBQTRCLEVBQUUsUUFBUTtJQUN0QyxpQ0FBaUMsRUFBRSxNQUFNO0lBQ3pDLGdDQUFnQyxFQUFFLE9BQU87SUFDekMsd0JBQXdCLEVBQUUsUUFBUTtJQUNsQyw2Q0FBNkMsRUFBRSxXQUFXO0NBQzNELENBQUMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXJ0aWNsZXMvYXJ0aWNsZS1kaWFncmFtcy50cyJdLCJzb3VyY2VzQ29udGVudCI6WyIvLyBXaGljaCBidWlsdC1pbiBkaWFncmFtIGVhY2ggc2VlZGVkIGFydGljbGUgdXNlcy4gVGhlIGFjdHVhbCBTVkcgbGl2ZXMgb24gdGhlXG4vLyBmcm9udGVuZCAod2ViYXBwL3NyYy9wYWdlcy9hcnRpY2xlRGlhZ3JhbXMudHMpIGFuZCBpcyByZW5kZXJlZCBjbGllbnQtc2lkZSDigJRcbi8vIGtlcHQgT1VUIG9mIHRoZSBlZGl0YWJsZSBgY29udGVudGAgc28gdGhlIFdZU0lXWUcgZWRpdG9yIGNhbid0IHN0cmlwIGl0IHdoZW5cbi8vIHRoZSBhZG1pbiBlZGl0cyBhbiBhcnRpY2xlLlxuZXhwb3J0IGNvbnN0IEFSVElDTEVfRElBR1JBTV9LRVlTOiBSZWNvcmQ8c3RyaW5nLCBzdHJpbmc+ID0ge1xuICAnc2NoZW1hLXRlcmFwaXlhLXByaS1wZXJmZWt0c2lvbml6bWUnOiAnc3RhbmRhcmRzJyxcbiAgJ3Nrb2xrby1kbGl0c3lhLXNjaGVtYS10ZXJhcGl5YSc6ICdkdXJhdGlvbicsXG4gICdjaHRvLXRha29lLXNjaGVtYS10ZXJhcGl5YSc6ICdjeWNsZScsXG4gICdza2hlbXkteWFuZ2Etc3Bpc29rJzogJ2ljZWJlcmcnLFxuICAncmV6aGlteS12LXNjaGVtYS10ZXJhcGlpJzogJ21vZGVzJyxcbiAgJ3NjaGVtYS10ZXJhcGl5YS1wcmktdHJldm9nZS1pLWRlcHJlc3NpaSc6ICdhbngtZGVwJyxcbiAgJ3NjaGVtYS10ZXJhcGl5YS1wcmktdHJhdm1lJzogJ3RyYXVtYScsXG4gICdwb2Rob2RpdC1saS1tbmUtc2NoZW1hLXRlcmFwaXlhJzogJ2ZvcmsnLFxuICAncGVydmF5YS1zZXNzaXlhLXNjaGVtYS10ZXJhcGlpJzogJ3N0ZXBzJyxcbiAgJ3NjaGVtYS10ZXJhcGl5YS12cy1rcHQnOiAnbGF5ZXJzJyxcbiAgJ3BvdnRvcnlheXVzaGNoaWVzeWEtcGF0dGVybnktdi1vdG5vc2hlbml5YWgnOiAncmVsYXRpb25zJyxcbn07XG4iXSwidmVyc2lvbiI6M30=

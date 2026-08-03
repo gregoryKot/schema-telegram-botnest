@@ -1,0 +1,36 @@
+dc854ed4e0ab2751f8f0ef89fc5aef1c
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PublicEventDto = void 0;
+const class_validator_1 = require("class-validator");
+const analytics_constants_1 = require("../../analytics/analytics.constants");
+// DTO для POST /api/public-event — АНОНИМНЫЙ приём событий публичного сайта
+// (мини-тесты «без регистрации», клики лендинга). name — только из узкого
+// публичного среза allow-list'а: остальная аналитика по-прежнему требует
+// авторизации (POST /api/event). Поля meta валидируются в контроллере по
+// реестрам (quiz-registry, места клика) — произвольный объект в БД не попадёт.
+class PublicEventDto {
+    name;
+    meta;
+}
+exports.PublicEventDto = PublicEventDto;
+__decorate([
+    (0, class_validator_1.IsIn)(analytics_constants_1.PUBLIC_ANALYTICS_EVENTS),
+    __metadata("design:type", String)
+], PublicEventDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsObject)(),
+    __metadata("design:type", typeof (_a = typeof Record !== "undefined" && Record) === "function" ? _a : Object)
+], PublicEventDto.prototype, "meta", void 0);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBpL2R0by9wdWJsaWMtZXZlbnQuZHRvLnRzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7QUFBQSxxREFBNkQ7QUFDN0QsNkVBQThFO0FBRTlFLDRFQUE0RTtBQUM1RSwwRUFBMEU7QUFDMUUseUVBQXlFO0FBQ3pFLHlFQUF5RTtBQUN6RSwrRUFBK0U7QUFDL0UsTUFBYSxjQUFjO0lBRXpCLElBQUksQ0FBVTtJQUlkLElBQUksQ0FBMkI7Q0FDaEM7QUFQRCx3Q0FPQztBQUxDO0lBREMsSUFBQSxzQkFBSSxFQUFDLDZDQUF1QixDQUFDOzs0Q0FDaEI7QUFJZDtJQUZDLElBQUEsNEJBQVUsR0FBRTtJQUNaLElBQUEsMEJBQVEsR0FBRTtrREFDSixNQUFNLG9CQUFOLE1BQU07NENBQWtCIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIi9ob21lL3VzZXIvc2NoZW1hLXRlbGVncmFtLWJvdG5lc3Qvc3JjL2FwaS9kdG8vcHVibGljLWV2ZW50LmR0by50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBJc0luLCBJc09iamVjdCwgSXNPcHRpb25hbCB9IGZyb20gJ2NsYXNzLXZhbGlkYXRvcic7XG5pbXBvcnQgeyBQVUJMSUNfQU5BTFlUSUNTX0VWRU5UUyB9IGZyb20gJy4uLy4uL2FuYWx5dGljcy9hbmFseXRpY3MuY29uc3RhbnRzJztcblxuLy8gRFRPINC00LvRjyBQT1NUIC9hcGkvcHVibGljLWV2ZW50IOKAlCDQkNCd0J7QndCY0JzQndCr0Jkg0L/RgNC40ZHQvCDRgdC+0LHRi9GC0LjQuSDQv9GD0LHQu9C40YfQvdC+0LPQviDRgdCw0LnRgtCwXG4vLyAo0LzQuNC90Lgt0YLQtdGB0YLRiyDCq9Cx0LXQtyDRgNC10LPQuNGB0YLRgNCw0YbQuNC4wrssINC60LvQuNC60Lgg0LvQtdC90LTQuNC90LPQsCkuIG5hbWUg4oCUINGC0L7Qu9GM0LrQviDQuNC3INGD0LfQutC+0LPQvlxuLy8g0L/Rg9Cx0LvQuNGH0L3QvtCz0L4g0YHRgNC10LfQsCBhbGxvdy1saXN0J9CwOiDQvtGB0YLQsNC70YzQvdCw0Y8g0LDQvdCw0LvQuNGC0LjQutCwINC/0L4t0L/RgNC10LbQvdC10LzRgyDRgtGA0LXQsdGD0LXRglxuLy8g0LDQstGC0L7RgNC40LfQsNGG0LjQuCAoUE9TVCAvYXBpL2V2ZW50KS4g0J/QvtC70Y8gbWV0YSDQstCw0LvQuNC00LjRgNGD0Y7RgtGB0Y8g0LIg0LrQvtC90YLRgNC+0LvQu9C10YDQtSDQv9C+XG4vLyDRgNC10LXRgdGC0YDQsNC8IChxdWl6LXJlZ2lzdHJ5LCDQvNC10YHRgtCwINC60LvQuNC60LApIOKAlCDQv9GA0L7QuNC30LLQvtC70YzQvdGL0Lkg0L7QsdGK0LXQutGCINCyINCR0JQg0L3QtSDQv9C+0L/QsNC00ZHRgi5cbmV4cG9ydCBjbGFzcyBQdWJsaWNFdmVudER0byB7XG4gIEBJc0luKFBVQkxJQ19BTkFMWVRJQ1NfRVZFTlRTKVxuICBuYW1lITogc3RyaW5nO1xuXG4gIEBJc09wdGlvbmFsKClcbiAgQElzT2JqZWN0KClcbiAgbWV0YT86IFJlY29yZDxzdHJpbmcsIHVua25vd24+O1xufVxuIl0sInZlcnNpb24iOjN9

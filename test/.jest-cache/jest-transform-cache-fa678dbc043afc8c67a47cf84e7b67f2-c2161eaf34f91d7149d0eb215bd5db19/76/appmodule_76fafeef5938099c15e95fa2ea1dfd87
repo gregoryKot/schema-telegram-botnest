@@ -1,0 +1,104 @@
+7e4a2f722577c31fd45ac8f371fefb95
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AppModule = void 0;
+const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
+const schedule_1 = require("@nestjs/schedule");
+const throttler_1 = require("@nestjs/throttler");
+const serve_static_1 = require("@nestjs/serve-static");
+const core_1 = require("@nestjs/core");
+const fs_1 = require("fs");
+const path_1 = require("path");
+const throttler_guard_1 = require("./api/throttler.guard");
+const telegram_module_1 = require("./telegram/telegram.module");
+const bot_module_1 = require("./bot/bot.module");
+const prisma_module_1 = require("./prisma/prisma.module");
+const api_module_1 = require("./api/api.module");
+const notification_module_1 = require("./notification/notification.module");
+const therapy_module_1 = require("./therapy/therapy.module");
+const auth_module_1 = require("./auth/auth.module");
+const booking_module_1 = require("./booking/booking.module");
+const articles_module_1 = require("./articles/articles.module");
+const article_seo_middleware_1 = require("./articles/article-seo.middleware");
+const practice_domain_middleware_1 = require("./practice-domain.middleware");
+const site_content_module_1 = require("./site-content/site-content.module");
+// Domains that are aliases of schemehappens.ru and need their own og:url / canonical
+// so Telegram generates a separate link preview card for each domain.
+// kotlarewski.ru здесь не нужен: practiceDomainMiddleware 301-ит его на .gr.
+const ALIAS_DOMAINS = new Set(['kotlarewski.gr']);
+let AppModule = class AppModule {
+    // configure() runs before ServeStaticModule.onModuleInit(), so this
+    // middleware intercepts GET / before serve-static can respond.
+    configure(consumer) {
+        const indexPath = (0, path_1.join)(__dirname, '..', 'webapp', 'dist', 'index.html');
+        const html = (0, fs_1.existsSync)(indexPath) ? (0, fs_1.readFileSync)(indexPath, 'utf8') : null;
+        // Первым: 301 kotlarewski.ru → .gr + домен-зависимые sitemap/robots
+        // практики (см. practice-domain.middleware.ts).
+        consumer
+            .apply(practice_domain_middleware_1.practiceDomainMiddleware)
+            .forRoutes({ path: '{*path}', method: common_1.RequestMethod.GET });
+        consumer
+            .apply((req, res, next) => {
+            if (!html)
+                return next();
+            if (!ALIAS_DOMAINS.has(req.hostname))
+                return next();
+            const domain = req.hostname;
+            const modified = html
+                .replace('href="https://schemehappens.ru/"', `href="https://${domain}/"`)
+                .replace('content="https://schemehappens.ru/"', `content="https://${domain}/"`);
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.send(modified);
+        })
+            .forRoutes({ path: '/', method: common_1.RequestMethod.GET });
+        // Server-side SEO for article pages: inject real title/description/OG +
+        // article text so crawlers (esp. Yandex) index them instead of an empty SPA.
+        consumer
+            .apply(article_seo_middleware_1.ArticleSeoMiddleware)
+            .forRoutes({ path: 'articles/*path', method: common_1.RequestMethod.GET });
+    }
+};
+exports.AppModule = AppModule;
+exports.AppModule = AppModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            config_1.ConfigModule.forRoot({ isGlobal: true }),
+            schedule_1.ScheduleModule.forRoot(),
+            throttler_1.ThrottlerModule.forRoot([
+                { name: 'short', ttl: 1000, limit: 10 },
+                { name: 'long', ttl: 60000, limit: 200 },
+            ]),
+            // Single ServeStatic for everything.
+            // webapp/dist serves the website at /
+            // webapp/dist/app/ contains the Telegram mini app (schema-miniapp build)
+            // renderPath: '/*' makes it SPA-friendly — serves index.html for all
+            // non-file paths so HTML5 history routing (/diary, /schemas, etc.) works.
+            // API routes are excluded so /api/* still hits NestJS handlers.
+            serve_static_1.ServeStaticModule.forRoot({
+                rootPath: (0, path_1.join)(__dirname, '..', 'webapp', 'dist'),
+                // path-to-regexp v6+ syntax: '/*path' (named wildcard), not bare '/*'
+                renderPath: '/*path',
+                exclude: ['/api/{*path}'],
+            }),
+            prisma_module_1.PrismaModule,
+            notification_module_1.NotificationModule,
+            auth_module_1.AuthModule,
+            therapy_module_1.TherapyModule,
+            telegram_module_1.TelegramModule,
+            bot_module_1.BotModule,
+            api_module_1.ApiModule,
+            booking_module_1.BookingModule,
+            articles_module_1.ArticlesModule,
+            site_content_module_1.SiteContentModule,
+        ],
+        providers: [{ provide: core_1.APP_GUARD, useClass: throttler_guard_1.UserThrottlerGuard }],
+    })
+], AppModule);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL2hvbWUvdXNlci9zY2hlbWEtdGVsZWdyYW0tYm90bmVzdC9zcmMvYXBwLm1vZHVsZS50cyIsIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7QUFBQSwyQ0FLd0I7QUFDeEIsMkNBQThDO0FBQzlDLCtDQUFrRDtBQUNsRCxpREFBb0Q7QUFDcEQsdURBQXlEO0FBQ3pELHVDQUF5QztBQUN6QywyQkFBOEM7QUFDOUMsK0JBQTRCO0FBRTVCLDJEQUEyRDtBQUMzRCxnRUFBNEQ7QUFDNUQsaURBQTZDO0FBQzdDLDBEQUFzRDtBQUN0RCxpREFBNkM7QUFDN0MsNEVBQXdFO0FBQ3hFLDZEQUF5RDtBQUN6RCxvREFBZ0Q7QUFDaEQsNkRBQXlEO0FBQ3pELGdFQUE0RDtBQUM1RCw4RUFBeUU7QUFDekUsNkVBQXdFO0FBQ3hFLDRFQUF1RTtBQUV2RSxxRkFBcUY7QUFDckYsc0VBQXNFO0FBQ3RFLDZFQUE2RTtBQUM3RSxNQUFNLGFBQWEsR0FBRyxJQUFJLEdBQUcsQ0FBQyxDQUFDLGdCQUFnQixDQUFDLENBQUMsQ0FBQztBQW1DM0MsSUFBTSxTQUFTLEdBQWYsTUFBTSxTQUFTO0lBQ3BCLG9FQUFvRTtJQUNwRSwrREFBK0Q7SUFDL0QsU0FBUyxDQUFDLFFBQTRCO1FBQ3BDLE1BQU0sU0FBUyxHQUFHLElBQUEsV0FBSSxFQUFDLFNBQVMsRUFBRSxJQUFJLEVBQUUsUUFBUSxFQUFFLE1BQU0sRUFBRSxZQUFZLENBQUMsQ0FBQztRQUN4RSxNQUFNLElBQUksR0FBRyxJQUFBLGVBQVUsRUFBQyxTQUFTLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBQSxpQkFBWSxFQUFDLFNBQVMsRUFBRSxNQUFNLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDO1FBRTVFLG9FQUFvRTtRQUNwRSxnREFBZ0Q7UUFDaEQsUUFBUTthQUNMLEtBQUssQ0FBQyxxREFBd0IsQ0FBQzthQUMvQixTQUFTLENBQUMsRUFBRSxJQUFJLEVBQUUsU0FBUyxFQUFFLE1BQU0sRUFBRSxzQkFBYSxDQUFDLEdBQUcsRUFBRSxDQUFDLENBQUM7UUFFN0QsUUFBUTthQUNMLEtBQUssQ0FBQyxDQUFDLEdBQVksRUFBRSxHQUFhLEVBQUUsSUFBZ0IsRUFBRSxFQUFFO1lBQ3ZELElBQUksQ0FBQyxJQUFJO2dCQUFFLE9BQU8sSUFBSSxFQUFFLENBQUM7WUFDekIsSUFBSSxDQUFDLGFBQWEsQ0FBQyxHQUFHLENBQUMsR0FBRyxDQUFDLFFBQVEsQ0FBQztnQkFBRSxPQUFPLElBQUksRUFBRSxDQUFDO1lBQ3BELE1BQU0sTUFBTSxHQUFHLEdBQUcsQ0FBQyxRQUFRLENBQUM7WUFDNUIsTUFBTSxRQUFRLEdBQUcsSUFBSTtpQkFDbEIsT0FBTyxDQUNOLGtDQUFrQyxFQUNsQyxpQkFBaUIsTUFBTSxJQUFJLENBQzVCO2lCQUNBLE9BQU8sQ0FDTixxQ0FBcUMsRUFDckMsb0JBQW9CLE1BQU0sSUFBSSxDQUMvQixDQUFDO1lBQ0osR0FBRyxDQUFDLFNBQVMsQ0FBQyxjQUFjLEVBQUUsMEJBQTBCLENBQUMsQ0FBQztZQUMxRCxPQUFPLEdBQUcsQ0FBQyxJQUFJLENBQUMsUUFBUSxDQUFDLENBQUM7UUFDNUIsQ0FBQyxDQUFDO2FBQ0QsU0FBUyxDQUFDLEVBQUUsSUFBSSxFQUFFLEdBQUcsRUFBRSxNQUFNLEVBQUUsc0JBQWEsQ0FBQyxHQUFHLEVBQUUsQ0FBQyxDQUFDO1FBRXZELHdFQUF3RTtRQUN4RSw2RUFBNkU7UUFDN0UsUUFBUTthQUNMLEtBQUssQ0FBQyw2Q0FBb0IsQ0FBQzthQUMzQixTQUFTLENBQUMsRUFBRSxJQUFJLEVBQUUsZ0JBQWdCLEVBQUUsTUFBTSxFQUFFLHNCQUFhLENBQUMsR0FBRyxFQUFFLENBQUMsQ0FBQztJQUN0RSxDQUFDO0NBQ0YsQ0FBQTtBQXRDWSw4QkFBUztvQkFBVCxTQUFTO0lBakNyQixJQUFBLGVBQU0sRUFBQztRQUNOLE9BQU8sRUFBRTtZQUNQLHFCQUFZLENBQUMsT0FBTyxDQUFDLEVBQUUsUUFBUSxFQUFFLElBQUksRUFBRSxDQUFDO1lBQ3hDLHlCQUFjLENBQUMsT0FBTyxFQUFFO1lBQ3hCLDJCQUFlLENBQUMsT0FBTyxDQUFDO2dCQUN0QixFQUFFLElBQUksRUFBRSxPQUFPLEVBQUUsR0FBRyxFQUFFLElBQUksRUFBRSxLQUFLLEVBQUUsRUFBRSxFQUFFO2dCQUN2QyxFQUFFLElBQUksRUFBRSxNQUFNLEVBQUUsR0FBRyxFQUFFLEtBQUssRUFBRSxLQUFLLEVBQUUsR0FBRyxFQUFFO2FBQ3pDLENBQUM7WUFDRixxQ0FBcUM7WUFDckMsc0NBQXNDO1lBQ3RDLHlFQUF5RTtZQUN6RSxxRUFBcUU7WUFDckUsMEVBQTBFO1lBQzFFLGdFQUFnRTtZQUNoRSxnQ0FBaUIsQ0FBQyxPQUFPLENBQUM7Z0JBQ3hCLFFBQVEsRUFBRSxJQUFBLFdBQUksRUFBQyxTQUFTLEVBQUUsSUFBSSxFQUFFLFFBQVEsRUFBRSxNQUFNLENBQUM7Z0JBQ2pELHNFQUFzRTtnQkFDdEUsVUFBVSxFQUFFLFFBQVE7Z0JBQ3BCLE9BQU8sRUFBRSxDQUFDLGNBQWMsQ0FBQzthQUMxQixDQUFDO1lBQ0YsNEJBQVk7WUFDWix3Q0FBa0I7WUFDbEIsd0JBQVU7WUFDViw4QkFBYTtZQUNiLGdDQUFjO1lBQ2Qsc0JBQVM7WUFDVCxzQkFBUztZQUNULDhCQUFhO1lBQ2IsZ0NBQWM7WUFDZCx1Q0FBaUI7U0FDbEI7UUFDRCxTQUFTLEVBQUUsQ0FBQyxFQUFFLE9BQU8sRUFBRSxnQkFBUyxFQUFFLFFBQVEsRUFBRSxvQ0FBa0IsRUFBRSxDQUFDO0tBQ2xFLENBQUM7R0FDVyxTQUFTLENBc0NyQiIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvaG9tZS91c2VyL3NjaGVtYS10ZWxlZ3JhbS1ib3RuZXN0L3NyYy9hcHAubW9kdWxlLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7XG4gIE1pZGRsZXdhcmVDb25zdW1lcixcbiAgTW9kdWxlLFxuICBOZXN0TW9kdWxlLFxuICBSZXF1ZXN0TWV0aG9kLFxufSBmcm9tICdAbmVzdGpzL2NvbW1vbic7XG5pbXBvcnQgeyBDb25maWdNb2R1bGUgfSBmcm9tICdAbmVzdGpzL2NvbmZpZyc7XG5pbXBvcnQgeyBTY2hlZHVsZU1vZHVsZSB9IGZyb20gJ0BuZXN0anMvc2NoZWR1bGUnO1xuaW1wb3J0IHsgVGhyb3R0bGVyTW9kdWxlIH0gZnJvbSAnQG5lc3Rqcy90aHJvdHRsZXInO1xuaW1wb3J0IHsgU2VydmVTdGF0aWNNb2R1bGUgfSBmcm9tICdAbmVzdGpzL3NlcnZlLXN0YXRpYyc7XG5pbXBvcnQgeyBBUFBfR1VBUkQgfSBmcm9tICdAbmVzdGpzL2NvcmUnO1xuaW1wb3J0IHsgZXhpc3RzU3luYywgcmVhZEZpbGVTeW5jIH0gZnJvbSAnZnMnO1xuaW1wb3J0IHsgam9pbiB9IGZyb20gJ3BhdGgnO1xuaW1wb3J0IHR5cGUgeyBSZXF1ZXN0LCBSZXNwb25zZSB9IGZyb20gJ2V4cHJlc3MnO1xuaW1wb3J0IHsgVXNlclRocm90dGxlckd1YXJkIH0gZnJvbSAnLi9hcGkvdGhyb3R0bGVyLmd1YXJkJztcbmltcG9ydCB7IFRlbGVncmFtTW9kdWxlIH0gZnJvbSAnLi90ZWxlZ3JhbS90ZWxlZ3JhbS5tb2R1bGUnO1xuaW1wb3J0IHsgQm90TW9kdWxlIH0gZnJvbSAnLi9ib3QvYm90Lm1vZHVsZSc7XG5pbXBvcnQgeyBQcmlzbWFNb2R1bGUgfSBmcm9tICcuL3ByaXNtYS9wcmlzbWEubW9kdWxlJztcbmltcG9ydCB7IEFwaU1vZHVsZSB9IGZyb20gJy4vYXBpL2FwaS5tb2R1bGUnO1xuaW1wb3J0IHsgTm90aWZpY2F0aW9uTW9kdWxlIH0gZnJvbSAnLi9ub3RpZmljYXRpb24vbm90aWZpY2F0aW9uLm1vZHVsZSc7XG5pbXBvcnQgeyBUaGVyYXB5TW9kdWxlIH0gZnJvbSAnLi90aGVyYXB5L3RoZXJhcHkubW9kdWxlJztcbmltcG9ydCB7IEF1dGhNb2R1bGUgfSBmcm9tICcuL2F1dGgvYXV0aC5tb2R1bGUnO1xuaW1wb3J0IHsgQm9va2luZ01vZHVsZSB9IGZyb20gJy4vYm9va2luZy9ib29raW5nLm1vZHVsZSc7XG5pbXBvcnQgeyBBcnRpY2xlc01vZHVsZSB9IGZyb20gJy4vYXJ0aWNsZXMvYXJ0aWNsZXMubW9kdWxlJztcbmltcG9ydCB7IEFydGljbGVTZW9NaWRkbGV3YXJlIH0gZnJvbSAnLi9hcnRpY2xlcy9hcnRpY2xlLXNlby5taWRkbGV3YXJlJztcbmltcG9ydCB7IHByYWN0aWNlRG9tYWluTWlkZGxld2FyZSB9IGZyb20gJy4vcHJhY3RpY2UtZG9tYWluLm1pZGRsZXdhcmUnO1xuaW1wb3J0IHsgU2l0ZUNvbnRlbnRNb2R1bGUgfSBmcm9tICcuL3NpdGUtY29udGVudC9zaXRlLWNvbnRlbnQubW9kdWxlJztcblxuLy8gRG9tYWlucyB0aGF0IGFyZSBhbGlhc2VzIG9mIHNjaGVtZWhhcHBlbnMucnUgYW5kIG5lZWQgdGhlaXIgb3duIG9nOnVybCAvIGNhbm9uaWNhbFxuLy8gc28gVGVsZWdyYW0gZ2VuZXJhdGVzIGEgc2VwYXJhdGUgbGluayBwcmV2aWV3IGNhcmQgZm9yIGVhY2ggZG9tYWluLlxuLy8ga290bGFyZXdza2kucnUg0LfQtNC10YHRjCDQvdC1INC90YPQttC10L06IHByYWN0aWNlRG9tYWluTWlkZGxld2FyZSAzMDEt0LjRgiDQtdCz0L4g0L3QsCAuZ3IuXG5jb25zdCBBTElBU19ET01BSU5TID0gbmV3IFNldChbJ2tvdGxhcmV3c2tpLmdyJ10pO1xuXG5ATW9kdWxlKHtcbiAgaW1wb3J0czogW1xuICAgIENvbmZpZ01vZHVsZS5mb3JSb290KHsgaXNHbG9iYWw6IHRydWUgfSksXG4gICAgU2NoZWR1bGVNb2R1bGUuZm9yUm9vdCgpLFxuICAgIFRocm90dGxlck1vZHVsZS5mb3JSb290KFtcbiAgICAgIHsgbmFtZTogJ3Nob3J0JywgdHRsOiAxMDAwLCBsaW1pdDogMTAgfSxcbiAgICAgIHsgbmFtZTogJ2xvbmcnLCB0dGw6IDYwMDAwLCBsaW1pdDogMjAwIH0sXG4gICAgXSksXG4gICAgLy8gU2luZ2xlIFNlcnZlU3RhdGljIGZvciBldmVyeXRoaW5nLlxuICAgIC8vIHdlYmFwcC9kaXN0IHNlcnZlcyB0aGUgd2Vic2l0ZSBhdCAvXG4gICAgLy8gd2ViYXBwL2Rpc3QvYXBwLyBjb250YWlucyB0aGUgVGVsZWdyYW0gbWluaSBhcHAgKHNjaGVtYS1taW5pYXBwIGJ1aWxkKVxuICAgIC8vIHJlbmRlclBhdGg6ICcvKicgbWFrZXMgaXQgU1BBLWZyaWVuZGx5IOKAlCBzZXJ2ZXMgaW5kZXguaHRtbCBmb3IgYWxsXG4gICAgLy8gbm9uLWZpbGUgcGF0aHMgc28gSFRNTDUgaGlzdG9yeSByb3V0aW5nICgvZGlhcnksIC9zY2hlbWFzLCBldGMuKSB3b3Jrcy5cbiAgICAvLyBBUEkgcm91dGVzIGFyZSBleGNsdWRlZCBzbyAvYXBpLyogc3RpbGwgaGl0cyBOZXN0SlMgaGFuZGxlcnMuXG4gICAgU2VydmVTdGF0aWNNb2R1bGUuZm9yUm9vdCh7XG4gICAgICByb290UGF0aDogam9pbihfX2Rpcm5hbWUsICcuLicsICd3ZWJhcHAnLCAnZGlzdCcpLFxuICAgICAgLy8gcGF0aC10by1yZWdleHAgdjYrIHN5bnRheDogJy8qcGF0aCcgKG5hbWVkIHdpbGRjYXJkKSwgbm90IGJhcmUgJy8qJ1xuICAgICAgcmVuZGVyUGF0aDogJy8qcGF0aCcsXG4gICAgICBleGNsdWRlOiBbJy9hcGkveypwYXRofSddLFxuICAgIH0pLFxuICAgIFByaXNtYU1vZHVsZSxcbiAgICBOb3RpZmljYXRpb25Nb2R1bGUsXG4gICAgQXV0aE1vZHVsZSxcbiAgICBUaGVyYXB5TW9kdWxlLFxuICAgIFRlbGVncmFtTW9kdWxlLFxuICAgIEJvdE1vZHVsZSxcbiAgICBBcGlNb2R1bGUsXG4gICAgQm9va2luZ01vZHVsZSxcbiAgICBBcnRpY2xlc01vZHVsZSxcbiAgICBTaXRlQ29udGVudE1vZHVsZSxcbiAgXSxcbiAgcHJvdmlkZXJzOiBbeyBwcm92aWRlOiBBUFBfR1VBUkQsIHVzZUNsYXNzOiBVc2VyVGhyb3R0bGVyR3VhcmQgfV0sXG59KVxuZXhwb3J0IGNsYXNzIEFwcE1vZHVsZSBpbXBsZW1lbnRzIE5lc3RNb2R1bGUge1xuICAvLyBjb25maWd1cmUoKSBydW5zIGJlZm9yZSBTZXJ2ZVN0YXRpY01vZHVsZS5vbk1vZHVsZUluaXQoKSwgc28gdGhpc1xuICAvLyBtaWRkbGV3YXJlIGludGVyY2VwdHMgR0VUIC8gYmVmb3JlIHNlcnZlLXN0YXRpYyBjYW4gcmVzcG9uZC5cbiAgY29uZmlndXJlKGNvbnN1bWVyOiBNaWRkbGV3YXJlQ29uc3VtZXIpIHtcbiAgICBjb25zdCBpbmRleFBhdGggPSBqb2luKF9fZGlybmFtZSwgJy4uJywgJ3dlYmFwcCcsICdkaXN0JywgJ2luZGV4Lmh0bWwnKTtcbiAgICBjb25zdCBodG1sID0gZXhpc3RzU3luYyhpbmRleFBhdGgpID8gcmVhZEZpbGVTeW5jKGluZGV4UGF0aCwgJ3V0ZjgnKSA6IG51bGw7XG5cbiAgICAvLyDQn9C10YDQstGL0Lw6IDMwMSBrb3RsYXJld3NraS5ydSDihpIgLmdyICsg0LTQvtC80LXQvS3Qt9Cw0LLQuNGB0LjQvNGL0LUgc2l0ZW1hcC9yb2JvdHNcbiAgICAvLyDQv9GA0LDQutGC0LjQutC4ICjRgdC8LiBwcmFjdGljZS1kb21haW4ubWlkZGxld2FyZS50cykuXG4gICAgY29uc3VtZXJcbiAgICAgIC5hcHBseShwcmFjdGljZURvbWFpbk1pZGRsZXdhcmUpXG4gICAgICAuZm9yUm91dGVzKHsgcGF0aDogJ3sqcGF0aH0nLCBtZXRob2Q6IFJlcXVlc3RNZXRob2QuR0VUIH0pO1xuXG4gICAgY29uc3VtZXJcbiAgICAgIC5hcHBseSgocmVxOiBSZXF1ZXN0LCByZXM6IFJlc3BvbnNlLCBuZXh0OiAoKSA9PiB2b2lkKSA9PiB7XG4gICAgICAgIGlmICghaHRtbCkgcmV0dXJuIG5leHQoKTtcbiAgICAgICAgaWYgKCFBTElBU19ET01BSU5TLmhhcyhyZXEuaG9zdG5hbWUpKSByZXR1cm4gbmV4dCgpO1xuICAgICAgICBjb25zdCBkb21haW4gPSByZXEuaG9zdG5hbWU7XG4gICAgICAgIGNvbnN0IG1vZGlmaWVkID0gaHRtbFxuICAgICAgICAgIC5yZXBsYWNlKFxuICAgICAgICAgICAgJ2hyZWY9XCJodHRwczovL3NjaGVtZWhhcHBlbnMucnUvXCInLFxuICAgICAgICAgICAgYGhyZWY9XCJodHRwczovLyR7ZG9tYWlufS9cImAsXG4gICAgICAgICAgKVxuICAgICAgICAgIC5yZXBsYWNlKFxuICAgICAgICAgICAgJ2NvbnRlbnQ9XCJodHRwczovL3NjaGVtZWhhcHBlbnMucnUvXCInLFxuICAgICAgICAgICAgYGNvbnRlbnQ9XCJodHRwczovLyR7ZG9tYWlufS9cImAsXG4gICAgICAgICAgKTtcbiAgICAgICAgcmVzLnNldEhlYWRlcignQ29udGVudC1UeXBlJywgJ3RleHQvaHRtbDsgY2hhcnNldD11dGYtOCcpO1xuICAgICAgICByZXR1cm4gcmVzLnNlbmQobW9kaWZpZWQpO1xuICAgICAgfSlcbiAgICAgIC5mb3JSb3V0ZXMoeyBwYXRoOiAnLycsIG1ldGhvZDogUmVxdWVzdE1ldGhvZC5HRVQgfSk7XG5cbiAgICAvLyBTZXJ2ZXItc2lkZSBTRU8gZm9yIGFydGljbGUgcGFnZXM6IGluamVjdCByZWFsIHRpdGxlL2Rlc2NyaXB0aW9uL09HICtcbiAgICAvLyBhcnRpY2xlIHRleHQgc28gY3Jhd2xlcnMgKGVzcC4gWWFuZGV4KSBpbmRleCB0aGVtIGluc3RlYWQgb2YgYW4gZW1wdHkgU1BBLlxuICAgIGNvbnN1bWVyXG4gICAgICAuYXBwbHkoQXJ0aWNsZVNlb01pZGRsZXdhcmUpXG4gICAgICAuZm9yUm91dGVzKHsgcGF0aDogJ2FydGljbGVzLypwYXRoJywgbWV0aG9kOiBSZXF1ZXN0TWV0aG9kLkdFVCB9KTtcbiAgfVxufVxuIl0sInZlcnNpb24iOjN9

@@ -1,8 +1,8 @@
 {
-  "lines": 81.4,
-  "branches": 70.79,
+  "lines": 81.58,
+  "branches": 70.94,
   "floors": {
-    "src/auth": 89.29,
+    "src/auth": 90.51,
     "src/utils": 96.19,
     "src/therapy": 89.85,
     "src/api": 49.1,
