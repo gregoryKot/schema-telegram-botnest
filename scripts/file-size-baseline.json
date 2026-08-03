@@ -885,6 +885,6 @@
   "webapp/src/utils/telemetryUrl.ts": 2,
   "webapp/src/utils/therapistContact.ts": 2,
   "webapp/src/utils/todayInsight.ts": 2,
-  "webapp/src/utils/crisisMarkers.redos.test.ts": 93,
-  "schema-miniapp/src/utils/crisisMarkers.redos.test.ts": 93
+  "webapp/src/utils/crisisMarkers.redos.test.ts": 95,
+  "schema-miniapp/src/utils/crisisMarkers.redos.test.ts": 95
 }
