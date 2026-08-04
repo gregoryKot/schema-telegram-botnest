@@ -86,6 +86,17 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
   const [completedAt, setCompletedAt] = useState<string | null>(null);
   const [history, setHistory] = useState<YsqHistoryEntry[]>([]);
   const userStartedRef = useRef(false);
+  // Таймер автоперехода к следующему вопросу. Держим ссылку, чтобы отменить
+  // его при размонтировании: иначе человек, ответивший и тут же закрывший
+  // тест, через 160 мс всё равно получал запись прогресса на страницу, до
+  // которой не дошёл, — а на последнем вопросе ещё и отправку результата.
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    },
+    [],
+  );
   const [hasProgress, setHasProgress] = useState(false);
   const [inactiveExpanded, setInactiveExpanded] = useState(false);
   const [retakeConfirm, setRetakeConfirm] = useState(false);
@@ -244,7 +255,9 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
   // вопросе) сабмитит результат.
   const selectAnswer = (qIdx: number, value: number) => {
     handleAnswer(qIdx, value);
-    setTimeout(() => {
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null;
       const newAnswers = answers.map((a, idx) => (idx === qIdx ? value : a));
       if (page < TOTAL_PAGES - 1) {
         const next = page + 1;

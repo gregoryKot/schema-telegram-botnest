@@ -1,4 +1,54 @@
-import { BotService, NEED_IDS } from './bot.service';
+import { BotService, NEED_IDS, Need } from './bot.service';
+
+// Полный ожидаемый список потребностей — Stryker мутирует строковые
+// литералы (эмодзи/заголовки) в приватном поле needs; без этой проверки
+// такие мутанты (не относящиеся к логам) survive молча, хотя это
+// user-facing текст, который реально показывается в боте.
+const EXPECTED_NEEDS: Need[] = [
+  {
+    id: 'attachment',
+    emoji: '🤝',
+    title: '🤝 Привязанность',
+    fullTitle:
+      'Безопасная привязанность\n(безопасность, стабильность, забота, принятие)',
+    chartLabel: 'Привязанность',
+  },
+  {
+    id: 'autonomy',
+    emoji: '🚀',
+    title: '🚀 Автономия',
+    fullTitle: 'Автономия, компетентность и чувство идентичности',
+    chartLabel: 'Автономия',
+  },
+  {
+    id: 'expression',
+    emoji: '💬',
+    title: '💬 Выражение чувств',
+    fullTitle: 'Свобода выражать потребности и эмоции',
+    chartLabel: 'Выражение чувств',
+  },
+  {
+    id: 'play',
+    emoji: '🎉',
+    title: '🎉 Спонтанность',
+    fullTitle: 'Спонтанность и игра',
+    chartLabel: 'Спонтанность',
+  },
+  {
+    id: 'limits',
+    emoji: '⚖️',
+    title: '⚖️ Границы',
+    fullTitle: 'Реалистичные границы и самоконтроль',
+    chartLabel: 'Границы',
+  },
+];
+
+describe('BotService.getNeeds', () => {
+  it('возвращает все 5 потребностей с полным текстовым содержимым, в фиксированном порядке', () => {
+    const svc = new BotService({} as never);
+    expect(svc.getNeeds()).toEqual(EXPECTED_NEEDS);
+  });
+});
 
 // Stateful in-memory fake Prisma — таблицы rating + user (таймзона для
 // вычисления даты по умолчанию). Заметки/настройки/детские оценки —

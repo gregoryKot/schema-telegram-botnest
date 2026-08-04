@@ -21,8 +21,17 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const REPORT = join(ROOT, 'reports', 'mutation', 'mutation.json');
-const BASELINE = join(ROOT, 'scripts', 'mutation-baseline.json');
+// --report=/--baseline= нужны второму, недельному замеру (семейство src/bot
+// гоняется отдельной джобой: ~950 мутантов не помещаются в ночную). У каждого
+// набора файлов свой пол, поэтому и отчёт, и бейслайн задаются парой.
+const argValue = (name) => {
+  const arg = process.argv.find((a) => a.startsWith(`--${name}=`));
+  return arg ? join(ROOT, arg.slice(name.length + 3)) : null;
+};
+const REPORT =
+  argValue('report') ?? join(ROOT, 'reports', 'mutation', 'mutation.json');
+const BASELINE =
+  argValue('baseline') ?? join(ROOT, 'scripts', 'mutation-baseline.json');
 const update = process.argv.includes('--update');
 
 if (!existsSync(REPORT)) {

@@ -16,6 +16,9 @@ vi.mock('../api', () => ({
 import { api } from '../api';
 const mockApi = api as unknown as { getTherapyClients: ReturnType<typeof vi.fn> };
 
+/** Вчера — относительно момента прогона: тесты не должны зависеть от даты. */
+const yesterday = () => new Date(Date.now() - 86400000).toISOString();
+
 function client(overrides: Partial<{
   telegramId: number; name: string | null; clientAlias: string | null;
   streak: number; lastActiveDate: string | null; todayIndex: number | null;
@@ -61,7 +64,10 @@ describe('TherapistTodaySection — реальные данные клиенто
   it('показывает клиентов из api, точку "заполнил" для тех, у кого есть todayIndex сегодня', async () => {
     mockApi.getTherapyClients.mockResolvedValue([
       client({ telegramId: 1, name: 'Иван', todayIndex: 7.2 }),
-      client({ telegramId: 2, name: 'Мария', todayIndex: null, lastActiveDate: '2026-08-01T00:00:00Z' }),
+      // Дата относительная, а не «2026-08-01»: с абсолютной тест жил ровно до
+      // следующих суток, а потом клиентка уезжала в блок «требуют внимания»
+      // (3+ дня без активности) и её имя появлялось на экране дважды.
+      client({ telegramId: 2, name: 'Мария', todayIndex: null, lastActiveDate: yesterday() }),
     ]);
     render(<TherapistTodaySection displayName="Терапевт" onOpenClient={vi.fn()} />);
 

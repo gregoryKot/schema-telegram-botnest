@@ -8,6 +8,8 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { useNeedData } from '../needData';
 import { pressable } from '../utils/a11y';
+import { detectCrisisAny } from '../utils/crisisMarkers';
+import { CrisisCard } from './CrisisCard';
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
@@ -175,6 +177,9 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               {saving ? '...' : '+ Добавить'}
             </button>
           </div>
+          {/* правило №7: свободный текст обязан проходить кризисную детекцию,
+              до сохранения/шифрования — см. LetterEx/GratitudeEntrySheet */}
+          {detectCrisisAny(input) && <CrisisCard surface="practice" />}
         </div>
       </div>
     </div>

@@ -134,7 +134,6 @@ function baseProps(overrides: Partial<Parameters<typeof AppSections>[0]> = {}) {
   return {
     therapistMode: false,
     section: 'today' as const,
-    setSection: vi.fn(),
     needs: [],
     ratings: {},
     yesterdayRatings: {},
