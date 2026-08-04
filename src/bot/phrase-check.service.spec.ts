@@ -94,12 +94,12 @@ describe('PhraseCheckService', () => {
 
     const created = await service.createPhraseCheck(USER, {
       phrase: 'фраза',
-      marks: ['shame', 'shame', 'person'],
+      marks: ['worth', 'worth', 'person'],
     });
 
-    expect(created.marks).toEqual(['shame', 'person']);
+    expect(created.marks).toEqual(['worth', 'person']);
     expect((await service.getPhraseChecks(USER))[0].marks).toEqual([
-      'shame',
+      'worth',
       'person',
     ]);
   });
@@ -136,10 +136,15 @@ describe('PhraseCheckService', () => {
     // правка одной стороны обязана уронить тест другой (бэкенд не может
     // импортировать фронтенд, поэтому сверка через явный список).
     expect([...PHRASE_MARK_IDS]).toEqual([
+      'goal',
+      'notok',
       'person',
+      'label',
       'fear',
+      'never',
+      'mistake',
       'absolute',
-      'shame',
+      'worth',
     ]);
   });
 });

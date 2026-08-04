@@ -93,8 +93,8 @@ export function ToolsList({
       />
       <ToolRow
         emoji="🔎"
-        label="Разобрать фразу"
-        sub="Это критик или забота?"
+        label="Критик или забота?"
+        sub="Проверить фразу внутреннего голоса"
         tint="var(--accent-red)"
         index={4}
         onClick={onOpenPhraseCheck}

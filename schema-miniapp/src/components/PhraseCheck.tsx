@@ -1,7 +1,7 @@
-// Упражнение «Разобрать фразу»: записать реплику внутреннего голоса →
-// проверить её по четырём приметам → увидеть вердикт и переписать в
-// самокоррекцию. Механика разбора — таблица «разрушительная самокритика ↔
-// помогающая самокоррекция», приметы живут в phraseCheck/criteria.ts.
+// Упражнение «Критик или забота?»: записать реплику внутреннего голоса →
+// проверить её по девяти приметам → увидеть вердикт и переписать в
+// самокоррекцию. Приметы — построчно таблица «разрушительная самокритика ↔
+// помогающая самокоррекция» (phraseCheck/criteria.ts).
 //
 // Шаги вынесены в подкомпоненты (правило №10), вердикт — чистая функция
 // (verdict.ts, покрыта тестом). Свободный текст проходит кризисный гейт
@@ -77,27 +77,38 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
   }
 
   const onMarks = markIndex >= 0 && markIndex < PHRASE_CRITERIA.length;
-  const stepIndex = markIndex < 0 ? 0 : Math.min(markIndex + 1, 2);
+  // Шагов ровно столько, сколько экранов: фраза + девять примет + переписать.
+  // Раньше полоса делилась на три сегмента и после первой же приметы
+  // застревала на двух третях — прогресс врал до самого конца.
+  const TOTAL_STEPS = PHRASE_CRITERIA.length + 2;
+  const stepNumber = markIndex < 0 ? 1 : Math.min(markIndex + 2, TOTAL_STEPS);
+  const progress = (stepNumber / TOTAL_STEPS) * 100;
 
   return (
     <BottomSheet onClose={onClose}>
       <div style={{ paddingTop: 4 }}>
-        <div style={{ display: 'flex', gap: 5, marginBottom: 16 }}>
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                height: 3,
-                borderRadius: 2,
-                background:
-                  i <= stepIndex
-                    ? 'var(--accent-green)'
-                    : 'rgba(var(--fg-rgb),0.1)',
-                transition: 'background 0.2s',
-              }}
-            />
-          ))}
+        <div
+          role="progressbar"
+          aria-valuenow={stepNumber}
+          aria-valuemin={1}
+          aria-valuemax={TOTAL_STEPS}
+          style={{
+            height: 3,
+            borderRadius: 2,
+            background: 'rgba(var(--fg-rgb),0.1)',
+            marginBottom: 16,
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              width: `${progress}%`,
+              height: '100%',
+              borderRadius: 2,
+              background: 'var(--accent-green)',
+              transition: 'width 0.2s',
+            }}
+          />
         </div>
 
         <div
@@ -130,12 +141,12 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
             <div
               style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}
             >
-              Разобрать фразу
+              Критик или забота?
             </div>
             <div
               style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 2 }}
             >
-              Это критик или забота о себе?
+              Разбор фразы по девяти приметам
             </div>
           </div>
         </div>
@@ -155,8 +166,8 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
               }}
             >
               {tr(
-                'Запиши, что сказал внутренний голос — дословно, теми же словами. Дальше проверим фразу по четырём приметам из схема-терапии: за минуту станет видно, критик это или самокоррекция, и как сказать то же самое так, чтобы осталось больше сил.',
-                'Запишите, что сказал внутренний голос — дословно, теми же словами. Дальше проверим фразу по четырём приметам из схема-терапии: за минуту станет видно, критик это или самокоррекция, и как сказать то же самое так, чтобы осталось больше сил.',
+                'Запиши, что сказал внутренний голос — дословно, теми же словами. Дальше проверим её по девяти приметам разрушительной самокритики: станет видно, критик это или забота о себе, и как сказать то же самое так, чтобы осталось больше сил.',
+                'Запишите, что сказал внутренний голос — дословно, теми же словами. Дальше проверим её по девяти приметам разрушительной самокритики: станет видно, критик это или забота о себе, и как сказать то же самое так, чтобы осталось больше сил.',
               )}
             </div>
             <textarea
@@ -187,7 +198,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
               className="btn-primary"
               style={{ width: '100%', opacity: phrase.trim() ? 1 : 0.45 }}
             >
-              Разобрать →
+              Проверить →
             </button>
 
             {history.length > 0 && (
@@ -227,6 +238,7 @@ export function PhraseCheck({ onClose, onComplete }: Props) {
         {onMarks && (
           <MarksStep
             index={markIndex}
+            total={PHRASE_CRITERIA.length}
             phrase={phrase.trim()}
             onAnswer={answer}
           />

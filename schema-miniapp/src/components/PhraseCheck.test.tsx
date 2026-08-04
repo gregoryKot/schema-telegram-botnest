@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Упражнение «Разобрать фразу»: путь целиком (фраза → четыре приметы →
+// Упражнение «Критик или забота?»: путь целиком (фраза → девять примет →
 // вердикт → переписать → сохранение), кризисный гейт на свободном тексте
 // (правило №7) и форма обращения «вы» (правило ты/вы).
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
@@ -37,7 +37,7 @@ function renderWithForm(ui: ReactElement, form: AddressForm = 'ty') {
 /** Ввести фразу и дойти до шага разбора. */
 function startWith(phrase: string) {
   fireEvent.change(screen.getByRole('textbox'), { target: { value: phrase } });
-  fireEvent.click(screen.getByText('Разобрать →'));
+  fireEvent.click(screen.getByText('Проверить →'));
 }
 
 beforeEach(() => {
@@ -50,14 +50,16 @@ afterEach(cleanup);
 describe('PhraseCheck', () => {
   it('до первого действия объясняет, что это и зачем (правило онбординга)', async () => {
     renderWithForm(<PhraseCheck onClose={() => {}} />);
-    expect(screen.getByText('Разобрать фразу')).toBeTruthy();
-    expect(screen.getByText(/четырём приметам из схема-терапии/)).toBeTruthy();
+    expect(screen.getByText('Критик или забота?')).toBeTruthy();
+    expect(
+      screen.getByText(/девяти приметам разрушительной самокритики/),
+    ).toBeTruthy();
     await waitFor(() => expect(api.getPhraseChecks).toHaveBeenCalled());
   });
 
   it('пустую фразу разобрать нельзя', () => {
     renderWithForm(<PhraseCheck onClose={() => {}} />);
-    expect(screen.getByText('Разобрать →').closest('button')?.disabled).toBe(
+    expect(screen.getByText('Проверить →').closest('button')?.disabled).toBe(
       true,
     );
   });
@@ -79,7 +81,17 @@ describe('PhraseCheck', () => {
 
     expect(api.createPhraseCheck).toHaveBeenCalledWith({
       phrase: 'ни на что не гожусь',
-      marks: ['person', 'fear', 'absolute', 'shame'],
+      marks: [
+        'goal',
+        'notok',
+        'person',
+        'label',
+        'fear',
+        'never',
+        'mistake',
+        'absolute',
+        'worth',
+      ],
       rewrite: 'отчёт вышел с ошибкой, проверю цифры дважды',
     });
     // Финальный экран показывает «было → стало» — ради этого всё и затевалось.
@@ -100,6 +112,31 @@ describe('PhraseCheck', () => {
       marks: [],
       rewrite: undefined,
     });
+  });
+
+  it('прогресс идёт до конца и считает приметы, а не застревает', () => {
+    // Регрессия: полоса делилась на три сегмента, и после первой же приметы
+    // показывала две трети до самого финала.
+    renderWithForm(<PhraseCheck onClose={() => {}} />);
+    startWith('ни на что не гожусь');
+
+    const bar = () => screen.getByRole('progressbar');
+    const at = () => Number(bar().getAttribute('aria-valuenow'));
+    expect(bar().getAttribute('aria-valuemax')).toBe(
+      String(PHRASE_CRITERIA.length + 2),
+    );
+
+    const seen: number[] = [];
+    for (const [i, c] of PHRASE_CRITERIA.entries()) {
+      expect(
+        screen.getByText(`Примета ${i + 1} из ${PHRASE_CRITERIA.length}`),
+      ).toBeTruthy();
+      seen.push(at());
+      fireEvent.click(screen.getByText(c.critic));
+    }
+    // Каждый шаг двигает полосу ровно на один и доходит до максимума.
+    expect(seen).toEqual(PHRASE_CRITERIA.map((_, i) => i + 2));
+    expect(at()).toBe(PHRASE_CRITERIA.length + 2);
   });
 
   it('кризисный маркер во фразе показывает телефон доверия', () => {

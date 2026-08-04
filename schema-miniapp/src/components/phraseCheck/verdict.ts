@@ -28,15 +28,15 @@ export function buildVerdict(marks: PhraseMarkId[]): PhraseVerdict {
       suggestRewrite: false,
     };
   }
-  if (count === 1) {
+  if (count <= 2) {
     return {
       emoji: '🙂',
       title: 'Почти забота',
-      text: 'Одна примета критика — остальное по делу. Обычно достаточно поправить эту часть, и фраза начинает помогать.',
+      text: 'Одна-две приметы критика, остальное по делу. Обычно достаточно поправить эту часть, и фраза начинает помогать.',
       suggestRewrite: true,
     };
   }
-  if (count <= 3) {
+  if (count <= 6) {
     return {
       emoji: '🎭',
       title: 'Голос смешанный',
@@ -47,7 +47,7 @@ export function buildVerdict(marks: PhraseMarkId[]): PhraseVerdict {
   return {
     emoji: '⚖️',
     title: 'Говорит критик',
-    text: 'Все четыре приметы на месте. Пользы в такой фразе нет — только стыд, и он ничего не чинит.',
+    text: 'Почти вся таблица самокритики целиком. Пользы в такой фразе нет — только стыд, а он ничего не чинит.',
     suggestRewrite: true,
   };
 }

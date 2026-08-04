@@ -14,7 +14,7 @@ const FULL: PhraseCheckMetrics = {
   withRewrite30: 30,
   marks30: [
     { mark: 'person', count: 31 },
-    { mark: 'shame', count: 20 },
+    { mark: 'worth', count: 20 },
     { mark: 'absolute', count: 12 },
   ],
 };
@@ -33,7 +33,7 @@ describe('formatPhraseCheckMetrics', () => {
     expect(text).toContain('Дошли до переписывания: 30 (75%)');
     expect(text).toContain('ругает не поступок, а себя — 31');
     // Язык отчёта — без терминов и внутренних id (правило №8).
-    expect(text).not.toMatch(/person|shame|absolute|rewrite|marks|check/i);
+    expect(text).not.toMatch(/person|worth|absolute|rewrite|marks|check/i);
   });
 
   it('пустая БД: дружелюбная строка, без NaN и процентов', () => {

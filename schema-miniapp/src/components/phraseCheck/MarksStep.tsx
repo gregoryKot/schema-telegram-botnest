@@ -17,10 +17,12 @@ const CHOICE: React.CSSProperties = {
 
 export function MarksStep({
   index,
+  total,
   phrase,
   onAnswer,
 }: {
   index: number;
+  total: number;
   phrase: string;
   /** critic=true — примета засчитана как голос критика */
   onAnswer: (id: PhraseMarkId, critic: boolean) => void;
@@ -41,6 +43,18 @@ export function MarksStep({
         }}
       >
         «{phrase}»
+      </div>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: 'var(--text-faint)',
+          marginBottom: 6,
+        }}
+      >
+        Примета {index + 1} из {total}
       </div>
       <div
         style={{
