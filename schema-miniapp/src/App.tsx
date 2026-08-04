@@ -555,7 +555,6 @@ export default function App() {
       <AppSections
         therapistMode={therapistMode}
         section={section}
-        setSection={setSection}
         needs={needs}
         ratings={ratings}
         yesterdayRatings={yesterdayRatings}

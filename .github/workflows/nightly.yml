@@ -15,11 +15,17 @@ name: Nightly flaky-детекция
 
 on:
   schedule:
+    # Ежедневно — флаки и mutation золотых зон.
     - cron: '0 3 * * *'
+    # По воскресеньям — тяжёлый mutation семейства src/bot (см. mutation-bot).
+    - cron: '0 4 * * 0'
   workflow_dispatch:
 
 jobs:
   backend-flaky:
+    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
+    # ещё и ежедневные джобы вторым заходом незачем.
+    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -46,6 +52,9 @@ jobs:
         run: npx jest --detectOpenHandles --forceExit=false 2>&1 | tail -50
 
   frontend-flaky:
+    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
+    # ещё и ежедневные джобы вторым заходом незачем.
+    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -86,6 +95,9 @@ jobs:
   # «а поймают ли тесты, если сломать шифрование/подпись платежа?» проверяется
   # честно, и просадка счёта роняет ночной ран.
   mutation:
+    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
+    # ещё и ежедневные джобы вторым заходом незачем.
+    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-latest
     # 12 файлов, ~1900 мутантов: каждый — отдельный прогон покрывающих его
     # тестов. 45 минут хватало на 7 файлов волны А, на волну Б уже нет.
@@ -126,6 +138,9 @@ jobs:
   # в консоли нет ошибок рантайма. /api/* замокан — смок про фронт, контракт
   # с бэком держат HTTP-e2e и контрактный тест api-мока.
   browser-smoke:
+    # На воскресном запуске крутится только тяжёлый mutation-bot: гонять
+    # ещё и ежедневные джобы вторым заходом незачем.
+    if: github.event.schedule != '0 4 * * 0'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -151,4 +166,37 @@ jobs:
         with:
           name: playwright-trace
           path: test-results/
+          retention-days: 14
+
+  # Тяжёлый mutation-замер семейства src/bot — ОТДЕЛЬНОЙ джобой и раз в неделю,
+  # а не вместе с золотыми зонами. Причина простая: bot.service с соседями дают
+  # ~950 мутантов, и каждый перегоняет свой срез из 3100 тестов. Замер на
+  # локальной машине шёл со скоростью 2.5 мутанта в минуту — пять часов; в
+  # ночную джобу такое не помещается, а раздутая джоба, падающая по таймауту,
+  # ничем не отличается от выключенной.
+  #
+  # Храповика здесь пока НЕТ намеренно: пола не существует, пока не получен
+  # первый полный прогон. Джоба печатает таблицу и выкладывает отчёт артефактом;
+  # как только появится честное число — заводим scripts/mutation-baseline-bot.json
+  # и добавляем сюда шаг сверки (скрипт умеет --report/--baseline).
+  mutation-bot:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 4 * * 0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Stryker по семейству src/bot
+        run: npx stryker run stryker.bot.config.json
+      - name: отчёт артефактом
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-bot-report
+          path: reports/mutation/
           retention-days: 14

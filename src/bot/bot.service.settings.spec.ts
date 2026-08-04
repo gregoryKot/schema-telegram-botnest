@@ -113,6 +113,19 @@ describe('BotService.getNote / saveNote — read-after-write', () => {
     const note = await svc.getNote(1n, '2026-07-16');
     expect(note.text).toBe('вторая версия');
   });
+
+  // Без явного tags-аргумента tagsPlain = '' (не 'undefined' и не падение на
+  // .join) — мутант, меняющий `tags ? tags.join(',') : ''` на всегда-join,
+  // упал бы на TypeError, а мутант с другим дефолтом дал бы tags=[''] вместо [].
+  it('saveNote без аргумента tags → getNote возвращает пустой массив тегов, а не [""]', async () => {
+    const db = makeDb();
+    const svc = new BotService(db);
+
+    await svc.saveNote(1n, '2026-07-16', 'без тегов');
+    const note = await svc.getNote(1n, '2026-07-16');
+
+    expect(note.tags).toEqual([]);
+  });
 });
 
 describe('BotService.getUserSettings / updateUserSettings — read-after-write денормализованных списков', () => {
@@ -178,6 +191,25 @@ describe('BotService.acceptDisclaimer / hasAcceptedDisclaimer', () => {
     expect(await svc.hasAcceptedDisclaimer(1n)).toBe(false);
     await svc.acceptDisclaimer(1n);
     expect(await svc.hasAcceptedDisclaimer(1n)).toBe(true);
+  });
+
+  // Поле отсутствует (undefined), а не явно false — только этот случай реально
+  // проверяет `?? false`: при disclaimerAccepted=false оператор `??` не
+  // срабатывает вовсе (false не nullish), и мутант `?? true` прошёл бы мимо.
+  it('поле disclaimerAccepted отсутствует у строки → false, а не true', async () => {
+    const db = makeDb();
+    delete db._user.disclaimerAccepted;
+    const svc = new BotService(db);
+
+    expect(await svc.hasAcceptedDisclaimer(1n)).toBe(false);
+  });
+
+  it('юзер не найден в БД → false, а не падение', async () => {
+    const db = makeDb();
+    db.user.findUnique = jest.fn(() => null);
+    const svc = new BotService(db);
+
+    expect(await svc.hasAcceptedDisclaimer(1n)).toBe(false);
   });
 });
 
