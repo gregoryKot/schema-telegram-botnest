@@ -12,7 +12,7 @@
   "webapp/src/components/ModeMapNodeEditor.tsx": 617,
   "webapp/src/sections/ProfileSection.tsx": 574,
   "webapp/src/components/exercises/BeliefCheckEx.tsx": 554,
-  "schema-miniapp/src/sections/TodaySection.tsx": 549,
+  "schema-miniapp/src/sections/TodaySection.tsx": 382,
   "webapp/src/sections/DiarySection.tsx": 544,
   "schema-miniapp/src/components/BeliefCheck.tsx": 532,
   "webapp/src/components/HistoryView.tsx": 525,

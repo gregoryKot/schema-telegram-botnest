@@ -12,17 +12,11 @@
 import { useEffect, useState } from 'react';
 import { getHost } from '../../../shared/src/host';
 import { UserProfile } from '../types';
-import { api, UserTask } from '../api';
+import { api } from '../api';
 import { useSafeTop } from '../utils/safezone';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../utils/storageKeys';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
-import { SchemaIntroSheet } from '../components/SchemaIntroSheet';
-import { ModeIntroSheet } from '../components/ModeIntroSheet';
-import { BottomSheet } from '../components/BottomSheet';
 import { fmtDate, todayStr } from '../utils/format';
-import { TaskRow } from '../components/tasks/TaskRow';
-import { TaskHistoryList } from '../components/tasks/TaskHistoryList';
-import { findLegacyTaskTarget } from '../components/tasks/taskEmoji';
 import { TodayFocusCard } from '../components/TodayFocusCard';
 import { PhraseShareCard } from '../components/PhraseShareCard';
 import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
@@ -49,7 +43,6 @@ export function TodaySection({
   needs,
   ratings,
   yesterdayRatings = {},
-  onNavigate,
   onOpenSchema,
   onOpenAdvanced,
   onOpenTracker,
@@ -60,7 +53,6 @@ export function TodaySection({
   refreshKey,
   userRole,
   onOpenTherapistCabinet,
-  onTasksChanged,
   onNewDiaryEntry,
 }: Props) {
   const tr = useTr();
@@ -73,13 +65,6 @@ export function TodaySection({
   >([]);
   const [diariesLoaded, setDiariesLoaded] = useState(false);
   const [showDiaryTask, setShowDiaryTask] = useState(false);
-  const [tasks, setTasks] = useState<UserTask[]>([]);
-  const [taskHistory, setTaskHistory] = useState<UserTask[]>([]);
-  const [showAllTasks, setShowAllTasks] = useState(false);
-  const [showTaskCreate, setShowTaskCreate] = useState(false);
-  const [introSchemaId, setIntroSchemaId] = useState<string | null>(null);
-  const [introModeId, setIntroModeId] = useState<string | null>(null);
-  const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
   const today = useTodayCustomization();
   const [todayDone, setTodayDone] = useState({
     schema: false,
@@ -172,66 +157,6 @@ export function TodaySection({
       ignore = true;
     };
   }, [refreshKey]);
-
-  useEffect(() => {
-    Promise.all([api.getTasks(), api.getTaskHistory()])
-      .then(([t, h]) => {
-        setTasks(t);
-        setTaskHistory(h);
-      })
-      .catch(() => {});
-  }, [refreshKey]);
-
-  function _openTask(task: UserTask) {
-    if (task.assignedBy !== null && task.type !== 'custom')
-      setActiveTaskId(task.id);
-    switch (task.type) {
-      case 'diary_streak':
-        onOpenDiaries();
-        break;
-      case 'tracker_streak':
-        onOpenTracker();
-        break;
-      case 'schema_intro':
-        if (task.text) setIntroSchemaId(task.text);
-        break;
-      case 'mode_intro':
-        if (task.text) setIntroModeId(task.text);
-        break;
-      default: {
-        const legacy = findLegacyTaskTarget(task.text);
-        if (legacy?.type === 'schema') {
-          setIntroSchemaId(legacy.id);
-          break;
-        }
-        if (legacy?.type === 'mode') {
-          setIntroModeId(legacy.id);
-          break;
-        }
-        // belief_check, letter_to_self etc — navigate to Help
-        onNavigate('help');
-      }
-    }
-  }
-
-  function handleTaskComplete() {
-    if (activeTaskId === null) return;
-    const id = activeTaskId;
-    setActiveTaskId(null);
-    api
-      .completeTask(id, true)
-      .then(() => Promise.all([api.getTasks(), api.getTaskHistory()]))
-      .then(([t, h]) => {
-        setTasks(t);
-        setTaskHistory(h);
-        onTasksChanged?.();
-      })
-      .catch(() => {});
-  }
-
-  const _myTasks = tasks.filter((t) => t.assignedBy === null);
-  const _therapistTasks = tasks.filter((t) => t.assignedBy !== null);
-  const _hasAnyTask = tasks.length > 0;
 
   const streak = profile?.streak ?? 0;
   const ratedCount = needs.filter((n) => ratings[n.id] !== undefined).length;
@@ -451,98 +376,6 @@ export function TodaySection({
           onCreated={() => setShowDiaryTask(false)}
           onClose={() => setShowDiaryTask(false)}
         />
-      )}
-      {showTaskCreate && (
-        <TaskCreateSheet
-          onCreated={() => {
-            setShowTaskCreate(false);
-            Promise.all([api.getTasks(), api.getTaskHistory()])
-              .then(([t, h]) => {
-                setTasks(t);
-                setTaskHistory(h);
-                onTasksChanged?.();
-              })
-              .catch(() => {});
-          }}
-          onClose={() => setShowTaskCreate(false)}
-        />
-      )}
-      {introSchemaId && (
-        <SchemaIntroSheet
-          schemaId={introSchemaId}
-          onClose={() => setIntroSchemaId(null)}
-          onComplete={() => {
-            setIntroSchemaId(null);
-            handleTaskComplete();
-          }}
-        />
-      )}
-      {introModeId && (
-        <ModeIntroSheet
-          modeId={introModeId}
-          onClose={() => setIntroModeId(null)}
-          onComplete={() => {
-            setIntroModeId(null);
-            handleTaskComplete();
-          }}
-        />
-      )}
-
-      {/* All tasks sheet */}
-      {showAllTasks && (
-        <BottomSheet onClose={() => setShowAllTasks(false)} zIndex={200}>
-          <div
-            style={{
-              fontSize: 17,
-              fontWeight: 700,
-              color: 'var(--text)',
-              marginBottom: 20,
-            }}
-          >
-            Все задания
-          </div>
-          {tasks.map((task) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              variant="compact"
-              onComplete={() =>
-                api
-                  .completeTask(task.id, true)
-                  .then(() =>
-                    Promise.all([api.getTasks(), api.getTaskHistory()]).then(
-                      ([t, h]) => {
-                        setTasks(t);
-                        setTaskHistory(h);
-                      },
-                    ),
-                  )
-                  .catch(() => {})
-              }
-            />
-          ))}
-          <TaskHistoryList taskHistory={taskHistory} variant="compact" />
-          <button
-            onClick={() => {
-              setShowAllTasks(false);
-              setShowTaskCreate(true);
-            }}
-            style={{
-              marginTop: 16,
-              width: '100%',
-              padding: '13px 0',
-              borderRadius: 14,
-              border: 'none',
-              background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
-              color: 'var(--accent)',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            + Поставить цель
-          </button>
-        </BottomSheet>
       )}
     </div>
   );
