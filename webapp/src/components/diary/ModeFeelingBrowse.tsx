@@ -42,6 +42,7 @@ export function ModeFeelingBrowse({
 
       {group && (
         <div style={{ marginBottom: 8 }}>
+          <div className="mode-test-group-hint">{group.hint}</div>
           {group.leaves.map((leaf) => {
             const mode = getModeById(leaf.modeId);
             return (
@@ -61,10 +62,11 @@ export function ModeFeelingBrowse({
               >
                 <span className="mode-test-row-emoji">{leaf.emoji}</span>
                 <span className="mode-test-row-text">
-                  <span className="mode-test-row-title">
-                    {mode?.name ?? leaf.label}
+                  <span className="mode-test-row-title">{leaf.label}</span>
+                  <span className="mode-test-row-desc">{leaf.desc}</span>
+                  <span className="mode-test-row-modename">
+                    → {mode?.name ?? leaf.label}
                   </span>
-                  <span className="mode-test-row-hint">{leaf.label}</span>
                 </span>
               </button>
             );
