@@ -207,31 +207,20 @@ describe('HelpSection — задачи от терапевта', () => {
 });
 
 describe('HelpSection — инструменты открывают правильные листы', () => {
-  it('«Проверка убеждений» открывает BeliefCheck', async () => {
+  // Каждая строка инструмента — свой обработчик setShowX(true); таблица
+  // бьёт по всем разом вместо четырёх почти одинаковых it-блоков.
+  it.each([
+    ['Проверка убеждений', 'belief-check'],
+    ['Безопасное место', 'safe-place'],
+    ['Письмо себе', 'letter-to-self'],
+    ['Тёплые слова', 'warm-words'],
+  ])('«%s» открывает свой лист', async (label, testId) => {
     await renderReady();
-    fireEvent.click(screen.getByText('Проверка убеждений'));
-    expect(screen.getByTestId('belief-check')).toBeTruthy();
+    fireEvent.click(screen.getByText(label));
+    expect(screen.getByTestId(testId)).toBeTruthy();
   });
 
-  it('«Безопасное место» открывает SafePlace', async () => {
-    await renderReady();
-    fireEvent.click(screen.getByText('Безопасное место'));
-    expect(screen.getByTestId('safe-place')).toBeTruthy();
-  });
-
-  it('«Письмо себе» открывает LetterToSelf', async () => {
-    await renderReady();
-    fireEvent.click(screen.getByText('Письмо себе'));
-    expect(screen.getByTestId('letter-to-self')).toBeTruthy();
-  });
-
-  it('«Тёплые слова» открывает WarmWords', async () => {
-    await renderReady();
-    fireEvent.click(screen.getByText('Тёплые слова'));
-    expect(screen.getByTestId('warm-words')).toBeTruthy();
-  });
-
-  it('заземление и «Стоп» открывают QuickPracticeSheet с верным id', async () => {
+  it('заземление открывает QuickPracticeSheet с верным id', async () => {
     await renderReady();
     fireEvent.click(screen.getByText('Заземление 5-4-3-2-1'));
     expect(screen.getByTestId('quick-practice').textContent).toBe(
