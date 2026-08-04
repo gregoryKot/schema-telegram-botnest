@@ -4,6 +4,7 @@ import { YsqController } from './ysq.controller';
 import { PairsController } from './pairs.controller';
 import { PlansController } from './plans.controller';
 import { ExercisesController } from './exercises.controller';
+import { PhraseCheckController } from './phrase-check.controller';
 import { NotesController } from './notes.controller';
 import { TrackerController } from './tracker.controller';
 import { SettingsController } from './settings.controller';
@@ -39,6 +40,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     PairsController,
     PlansController,
     ExercisesController,
+    PhraseCheckController,
     NotesController,
     TrackerController,
     SettingsController,

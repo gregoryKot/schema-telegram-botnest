@@ -99,6 +99,7 @@ export class ProductMetricsService {
         SELECT count(DISTINCT uid)::bigint AS c FROM (
           SELECT "userId" AS uid FROM "UserFlashcard"
           UNION SELECT "userId" FROM "UserBeliefCheck"
+          UNION SELECT "userId" FROM "UserPhraseCheck"
           UNION SELECT "userId" FROM "UserLetter"
           UNION SELECT "userId" FROM "UserSafePlace"
         ) t`,

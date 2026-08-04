@@ -3,12 +3,12 @@ import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 import { CapsLabel, DiaryPanel, DiaryRow } from './diaryUi';
 import { ModeGroupList } from './ModeGroupList';
-import { MODE_PICKER_GROUPS } from '../../../../shared/src/mode/modeBodyCues';
+import { MODE_PICKER_GROUPS } from '../../../../shared/src/mode/modeFeelGates';
 import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 
 /**
- * Шаг 1 дневника режимов: состояние обычными словами. Девять семей
- * (MODE_PICKER_GROUPS) строками в одном контейнере — человеку не нужно знать
+ * Шаг 1 дневника режимов: чувство обычными словами. Ворота по базовым
+ * чувствам (FEEL_GATES) строками в одном контейнере — человеку не нужно знать
  * ни одного термина, чтобы начать. Точное название режима — третичный путь
  * за раскрытием «Все режимы по группам», для тех, кто термины уже знает.
  */
@@ -25,7 +25,7 @@ export function ModeStateStep({
   return (
     <div>
       <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
-        {tr('Что с тобой сейчас?', 'Что с вами сейчас?')}
+        {tr('Что ты сейчас чувствуешь?', 'Что вы сейчас чувствуете?')}
       </div>
       <div
         style={{

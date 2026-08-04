@@ -1,20 +1,16 @@
-// Инварианты вторых входов выбора режима живут здесь, в shared (правило №3
-// CLAUDE.md — общий код, тест при нём). Парные тесты во фронтендах
-// (webapp/schema-miniapp — src/components/diary/modeBodyCues.test.ts)
-// сверяют только пофронтендный реестр MODE_GROUPS (schemaTherapyData),
-// которого в shared нет и быть не должно.
+// Правило №4: вход «не знаю, что чувствую» (MODE_UNKNOWN_GROUP) и реестр
+// режимов (MODE_GROUPS) обязаны совпадать. Группа — вторая дверь к режимам,
+// уже покрытым тестом modeTest (ALL_TEST_MODE_IDS), а не новый реестр —
+// этот тест фиксирует и то, и другое, чтобы рассинхрон падал сразу.
 //
-// Инцидент 2026-08-04: modeBodyCues.ts (137 строк) был покрыт тестами
-// только из фронтендов — в собственном прогоне shared давал 0% и уронил
-// coverage-храповик (scripts/check-frontend-coverage-ratchet.mjs, джоба
-// shared в CI).
+// Ворота пикера (MODE_PICKER_GROUPS/FEEL_GATES, 8 ворот «по базовому
+// чувству») и getModeLeafLabel переехали в modeFeelGates.ts, полное покрытие
+// и регрессии кросс-входов — там (modeFeelGates.test.ts). Здесь остаётся
+// сверка сырых данных (MODE_UNKNOWN_GROUP/SECOND_DOORS) плюс контрольная
+// проверка, что модуль ворот действительно собран из них.
 import { describe, it, expect } from 'vitest';
-import {
-  MODE_UNKNOWN_GROUP,
-  SECOND_DOORS,
-  MODE_PICKER_GROUPS,
-  findPickerGroupIdByModeId,
-} from './modeBodyCues';
+import { MODE_UNKNOWN_GROUP, SECOND_DOORS } from './modeBodyCues';
+import { FEEL_GATES, MODE_PICKER_GROUPS } from './modeFeelGates';
 import {
   MODE_TEST_GROUPS,
   ALL_TEST_MODE_IDS,
@@ -22,8 +18,6 @@ import {
 } from './modeTest';
 
 const TEST_GROUP_IDS = MODE_TEST_GROUPS.map((g) => g.id);
-const findGroup = (id: string) => MODE_TEST_GROUPS.find((g) => g.id === id)!;
-const pickerGroup = (id: string) => MODE_PICKER_GROUPS.find((g) => g.id === id);
 
 describe('MODE_UNKNOWN_GROUP', () => {
   it("id 'unknown', не совпадающий ни с одной семьёй теста", () => {
@@ -48,20 +42,17 @@ describe('MODE_UNKNOWN_GROUP', () => {
   });
 });
 
-describe('MODE_PICKER_GROUPS — композиция', () => {
-  it('длина = семьи теста + вход «не знаю» последним', () => {
-    expect(MODE_PICKER_GROUPS.length).toBe(MODE_TEST_GROUPS.length + 1);
-    expect(MODE_PICKER_GROUPS.at(-1)).toBe(MODE_UNKNOWN_GROUP);
+describe('MODE_PICKER_GROUPS (modeFeelGates) — ворота собраны', () => {
+  it('MODE_PICKER_GROUPS === FEEL_GATES', () => {
+    expect(MODE_PICKER_GROUPS).toBe(FEEL_GATES);
   });
 
-  it.each(TEST_GROUP_IDS)('семья %s собрана по правилу SECOND_DOORS', (id) => {
-    const source = findGroup(id);
-    const doors = SECOND_DOORS[id];
-    if (doors) {
-      expect(pickerGroup(id)?.leaves).toEqual([...source.leaves, ...doors]);
-    } else {
-      expect(pickerGroup(id)).toBe(source);
-    }
+  it('8 ворот', () => {
+    expect(FEEL_GATES.length).toBe(8);
+  });
+
+  it("ворота 'unknown' присутствуют", () => {
+    expect(FEEL_GATES.some((g) => g.id === 'unknown')).toBe(true);
   });
 });
 
@@ -77,7 +68,10 @@ describe('SECOND_DOORS', () => {
   it.each(entries)(
     'семья %s: листья валидны и не дублируют домашние',
     (familyId, leaves) => {
-      const homeIds = findGroup(familyId).leaves.map((l) => l.modeId);
+      const homeIds =
+        MODE_TEST_GROUPS.find((g) => g.id === familyId)?.leaves.map(
+          (l) => l.modeId,
+        ) ?? [];
       for (const leaf of leaves) {
         expect(leaf.label.trim().length).toBeGreaterThan(0);
         expect(leaf.desc.trim().length).toBeGreaterThan(0);
@@ -88,76 +82,12 @@ describe('SECOND_DOORS', () => {
     },
   );
 
-  it.each(entries)(
-    'расширенная группа %s: emoji и label уникальны',
-    (familyId) => {
-      const leaves = pickerGroup(familyId)?.leaves ?? [];
-      expect(new Set(leaves.map((l) => l.emoji)).size).toBe(leaves.length);
-      expect(new Set(leaves.map((l) => l.label)).size).toBe(leaves.length);
-    },
-  );
-});
-
-describe('дом режима не сдвинут (modeChain опирается на findTestGroupByModeId)', () => {
-  const HOME_FAMILY: Record<string, string> = {
-    angry_protector: 'avoid',
-    bully_attack: 'grandiose',
-    flagellating_oc: 'control',
-    pollyanna: 'grandiose',
-    attention_seeker: 'grandiose',
-    undisciplined_child: 'anger',
-  };
-
-  it.each(Object.entries(HOME_FAMILY))('%s → %s', (modeId, familyId) => {
-    expect(findTestGroupByModeId(modeId)?.id).toBe(familyId);
-  });
-});
-
-describe('вторые входы достижимы из своих дверей пикера (регрессия 2026-08-03)', () => {
-  const DOOR_TO_MODES: Record<string, string[]> = {
-    anger: ['angry_protector', 'bully_attack'],
-    critic: ['flagellating_oc'],
-    ok: ['pollyanna'],
-    hurt: ['attention_seeker'],
-    avoid: ['undisciplined_child'],
-  };
-
-  it.each(Object.entries(DOOR_TO_MODES))(
-    'дверь %s открывает %j',
-    (doorId, modeIds) => {
-      const ids = pickerGroup(doorId)?.leaves.map((l) => l.modeId) ?? [];
-      for (const modeId of modeIds) {
-        expect(ids).toContain(modeId);
-      }
-    },
-  );
-});
-
-// Обратный поиск семьи по режиму: на нём держится «Назад» с шага записи в
-// дневнике режимов (ModeEntrySheet) и восстановление шага у черновика.
-describe('findPickerGroupIdByModeId', () => {
-  it('возвращает семью, в двери которой режим действительно лежит', () => {
-    expect(findPickerGroupIdByModeId('detached_protector')).toBe('avoid');
-    expect(findPickerGroupIdByModeId('vulnerable_child')).toBe('hurt');
-  });
-
-  it('вторая дверь ведёт в ту семью, где выбор и делается', () => {
-    // angry_protector живёт в копингах, но в пикере открывается из «злюсь»
-    expect(findPickerGroupIdByModeId('angry_protector')).toBe('anger');
-  });
-
-  it('для неизвестного режима отдаёт null, а не первую попавшуюся семью', () => {
-    expect(findPickerGroupIdByModeId('нет_такого_режима')).toBeNull();
-    expect(findPickerGroupIdByModeId('')).toBeNull();
-  });
-
-  it('любой найденный id — реальная семья пикера', () => {
-    const ids = MODE_PICKER_GROUPS.flatMap((g) =>
-      g.leaves.map((l) => l.modeId),
-    );
-    for (const modeId of ids) {
-      const groupId = findPickerGroupIdByModeId(modeId);
-      expect(MODE_PICKER_GROUPS.some((g) => g.id === groupId)).toBe(true);
-    }
+  it('дом не изменился — findTestGroupByModeId/modeChain считают по MODE_TEST_GROUPS', () => {
+    expect(findTestGroupByModeId('angry_protector')?.id).toBe('avoid');
+    expect(findTestGroupByModeId('bully_attack')?.id).toBe('grandiose');
+    expect(findTestGroupByModeId('flagellating_oc')?.id).toBe('control');
+    expect(findTestGroupByModeId('pollyanna')?.id).toBe('grandiose');
+    expect(findTestGroupByModeId('attention_seeker')?.id).toBe('grandiose');
+    expect(findTestGroupByModeId('undisciplined_child')?.id).toBe('anger');
   });
 });

@@ -5,6 +5,7 @@ import { useTr } from '../../utils/addressForm';
 import { getModeById } from '../../schemaTherapyData';
 import { BottomSheet } from '../BottomSheet';
 import { getDoubtsForMode } from '../../../../shared/src/mode/modeDoubts';
+import { getModeLeafLabel } from '../../../../shared/src/mode/modeFeelGates';
 import {
   MODE_DOUBT_OPENED_EVENT,
   MODE_DOUBT_SWITCHED_EVENT,
@@ -16,6 +17,11 @@ import {
  * по путанице (shared/mode/modeDoubts). «Это ближе» переключает выбор на
  * соседний режим и закрывает лист. Пустой список пар (быть не может —
  * покрыто тестом реестра) — кнопка не рендерится, защита обязательна.
+ *
+ * 2026-08-04: свайп больше не единственный выход — сверху текстовая «← Назад».
+ * Заголовки пар теперь берутся из getModeLeafLabel вместо клинического
+ * названия, оно осталось мелкой пометкой ниже. Внизу кнопка-подтверждение
+ * текущего выбора.
  */
 export function ModeDoubtButton({
   modeId,
@@ -47,8 +53,7 @@ export function ModeDoubtButton({
           fontSize: 12.5,
           cursor: 'pointer',
           fontFamily: 'inherit',
-          padding: '4px 2px 18px',
-          minHeight: 48,
+          padding: '8px 2px 4px',
           textAlign: 'left',
         }}
       >
@@ -61,15 +66,49 @@ export function ModeDoubtButton({
       {open && (
         <BottomSheet onClose={() => setOpen(false)}>
           <div style={{ paddingTop: 4 }}>
-            <div
+            <button
+              onClick={() => {
+                haptic.tap();
+                setOpen(false);
+              }}
               style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: 'var(--text)',
-                marginBottom: 4,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-sub)',
+                fontSize: 14,
+                cursor: 'pointer',
+                padding: 0,
+                marginBottom: 14,
+                fontFamily: 'inherit',
               }}
             >
-              С чем путают {mode?.name ?? ''}
+              ← Назад
+            </button>
+
+            <div
+              style={{
+                background: 'rgba(96,165,250,0.1)',
+                border: '1px solid rgba(96,165,250,0.25)',
+                borderRadius: 14,
+                padding: '10px 14px',
+                marginBottom: 14,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: 'var(--text)',
+                }}
+              >
+                {mode?.emoji} {mode?.name ?? ''}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+                сейчас выбран
+              </div>
             </div>
             <div
               style={{
@@ -79,12 +118,13 @@ export function ModeDoubtButton({
                 lineHeight: 1.5,
               }}
             >
-              Режимы легко перепутать — вот соседи, с которыми чаще всего, и
-              быстрые проверки.
+              Вот с чем его чаще всего путают — и как отличить.
             </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {doubts.map((d) => {
                 const other = getModeById(d.otherId);
+                const leafLabel = getModeLeafLabel(d.otherId);
                 return (
                   <div
                     key={d.otherId}
@@ -100,33 +140,50 @@ export function ModeDoubtButton({
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
-                        marginBottom: 6,
-                        fontSize: 14,
+                        fontSize: 14.5,
                         fontWeight: 600,
                         color: 'var(--text)',
                       }}
                     >
-                      {other?.name ?? d.otherId}
+                      <span>{other?.emoji}</span>
+                      {leafLabel ?? other?.name ?? d.otherId}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11.5,
+                        color: 'var(--text-faint)',
+                        marginBottom: 6,
+                      }}
+                    >
+                      → {other?.name ?? d.otherId}
                     </div>
                     <div
                       style={{
                         fontSize: 13,
                         color: 'var(--text-sub)',
                         lineHeight: 1.5,
-                        marginBottom: 6,
+                        marginBottom: 8,
                       }}
                     >
                       {d.gist}
                     </div>
                     <div
                       style={{
-                        fontSize: 12.5,
-                        color: 'var(--text-faint)',
-                        lineHeight: 1.5,
+                        background: 'rgba(96,165,250,0.08)',
+                        borderRadius: 10,
+                        padding: '8px 10px',
                         marginBottom: 10,
                       }}
                     >
-                      Как проверить: {d.check}
+                      <div
+                        style={{
+                          fontSize: 12.5,
+                          color: 'var(--text)',
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        Проверить: {d.check}
+                      </div>
                     </div>
                     <button
                       onClick={() => {
@@ -139,12 +196,13 @@ export function ModeDoubtButton({
                         setOpen(false);
                       }}
                       style={{
+                        width: '100%',
+                        minHeight: 44,
                         background: 'rgba(96,165,250,0.16)',
                         border: '1px solid rgba(96,165,250,0.4)',
-                        borderRadius: 10,
-                        padding: '7px 12px',
+                        borderRadius: 12,
                         color: 'var(--accent-blue)',
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: 600,
                         cursor: 'pointer',
                         fontFamily: 'inherit',
@@ -156,6 +214,30 @@ export function ModeDoubtButton({
                 );
               })}
             </div>
+
+            <button
+              onClick={() => {
+                haptic.tap();
+                setOpen(false);
+              }}
+              style={{
+                width: '100%',
+                marginTop: 18,
+                padding: 14,
+                borderRadius: 14,
+                border: 'none',
+                minHeight: 48,
+                background:
+                  'linear-gradient(135deg, var(--accent), var(--accent-blue))',
+                color: '#fff',
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              Оставляю: {mode?.emoji} {mode?.name ?? ''}
+            </button>
           </div>
         </BottomSheet>
       )}

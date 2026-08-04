@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// ToolsList — 8 строк-переходов раздела «Здесь и сейчас». Проверяем
+// ToolsList — 9 строк-переходов раздела «Здесь и сейчас». Проверяем
 // плюрализацию подписей (0/1/несколько — русские формы «цель/цели/целей»),
 // null-состояние без выдуманных чисел (правило «никаких хардкод-заглушек»:
 // count=null → подписи нет вовсе, а не «0») и что клик по строке зовёт
@@ -18,6 +18,7 @@ function renderList(overrides: Partial<Parameters<typeof ToolsList>[0]> = {}) {
     onOpenPractices: vi.fn(),
     onOpenPlans: vi.fn(),
     onOpenBeliefCheck: vi.fn(),
+    onOpenPhraseCheck: vi.fn(),
     onOpenSafePlace: vi.fn(),
     onOpenLetterToSelf: vi.fn(),
     onOpenFlashcard: vi.fn(),
@@ -83,6 +84,14 @@ describe('ToolsList — клики по строкам зовут свой об�
     fireEvent.click(screen.getByText('Проверка убеждений'));
     expect(handlers.onOpenBeliefCheck).toHaveBeenCalledTimes(1);
     expect(handlers.onOpenSafePlace).not.toHaveBeenCalled();
+  });
+
+  it('клик по «Разобрать фразу» зовёт onOpenPhraseCheck, а не соседний разбор', () => {
+    const handlers = renderList();
+    fireEvent.click(screen.getByText('Разобрать фразу'));
+    expect(handlers.onOpenPhraseCheck).toHaveBeenCalledTimes(1);
+    // Соседняя строка — тоже «проверка», перепутать легко именно её.
+    expect(handlers.onOpenBeliefCheck).not.toHaveBeenCalled();
   });
 
   it('клик по «Колесо детства» зовёт onOpenChildhoodWheel', () => {

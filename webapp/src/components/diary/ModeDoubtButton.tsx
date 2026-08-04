@@ -6,6 +6,7 @@ import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { getModeById } from '../../schemaTherapyData';
 import { getDoubtsForMode } from '../../../../shared/src/mode/modeDoubts';
+import { getModeLeafLabel } from '../../../../shared/src/mode/modeFeelGates';
 import {
   MODE_DOUBT_OPENED_EVENT,
   MODE_DOUBT_SWITCHED_EVENT,
@@ -18,6 +19,12 @@ import {
  * fixed-оверлей, поэтому обязателен useHistorySheet (CLAUDE.md). «Это ближе»
  * переключает выбор через onSwitch и закрывает лист (goBack). Пустой список
  * пар (быть не может — покрыто тестом реестра) — кнопка не рендерится.
+ *
+ * Обновление 2026-08-04: заголовки карточек-пар больше не клинический
+ * термин напрямую — сперва живая формулировка из getModeLeafLabel, а
+ * исходное название остаётся мелким подзаголовком. Наверху добавлена
+ * карточка-якорь текущего выбора, внизу — кнопка подтверждения. Парный файл:
+ * schema-miniapp/ModeDoubtButton (правило №3 CLAUDE.md).
  */
 export function ModeDoubtButton({
   modeId,
@@ -82,28 +89,64 @@ function ModeDoubtSheet({
       </div>
       <div className="page">
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '48px 24px 80px' }}>
-          <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 10 }}>
-            С чем путают {mode?.name ?? ''}
+          <div
+            style={{
+              background: 'rgba(96,165,250,0.1)',
+              border: '1px solid rgba(96,165,250,0.25)',
+              borderRadius: 14,
+              padding: '10px 14px',
+              marginBottom: 14,
+            }}
+          >
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+              {mode?.emoji} {mode?.name ?? ''}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+              сейчас выбран
+            </div>
           </div>
-          <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 28 }}>
-            Режимы легко перепутать — вот соседи, с которыми чаще всего, и
-            быстрые проверки.
+          <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5, marginBottom: 28 }}>
+            Вот с чем его чаще всего путают — и как отличить.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {doubts.map((d) => {
               const other = getModeById(d.otherId);
+              const leafLabel = getModeLeafLabel(d.otherId);
               return (
                 <div key={d.otherId} className="aside-card" style={{ margin: 0 }}>
-                  <div style={{ fontFamily: 'var(--serif)', fontSize: 18, color: 'var(--text)', marginBottom: 8 }}>
-                    {other?.emoji} {other?.name ?? d.otherId}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      fontSize: 14.5,
+                      fontWeight: 600,
+                      color: 'var(--text)',
+                    }}
+                  >
+                    <span>{other?.emoji}</span>
+                    {leafLabel ?? other?.name ?? d.otherId}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-faint)', marginBottom: 6 }}>
+                    → {other?.name ?? d.otherId}
                   </div>
                   <p className="body" style={{ marginBottom: 8 }}>{d.gist}</p>
-                  <p style={{ fontSize: 12.5, color: 'var(--text-faint)', lineHeight: 1.5, marginBottom: 14 }}>
-                    Как проверить: {d.check}
-                  </p>
+                  <div
+                    style={{
+                      background: 'rgba(96,165,250,0.08)',
+                      borderRadius: 10,
+                      padding: '8px 10px',
+                      marginBottom: 10,
+                    }}
+                  >
+                    <div style={{ fontSize: 12.5, color: 'var(--text)', lineHeight: 1.5 }}>
+                      Проверить: {d.check}
+                    </div>
+                  </div>
                   <button
                     type="button"
                     className="ex-btn ex-btn-outline"
+                    style={{ width: '100%', minHeight: 44, justifyContent: 'center' }}
                     onClick={() => {
                       haptic.select();
                       api.trackEvent(MODE_DOUBT_SWITCHED_EVENT, {
@@ -120,6 +163,30 @@ function ModeDoubtSheet({
               );
             })}
           </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              haptic.tap();
+              goBack();
+            }}
+            style={{
+              width: '100%',
+              marginTop: 20,
+              padding: 14,
+              borderRadius: 14,
+              border: 'none',
+              minHeight: 48,
+              background: 'linear-gradient(135deg, var(--accent), var(--accent-blue))',
+              color: '#fff',
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            Оставляю: {mode?.emoji} {mode?.name ?? ''}
+          </button>
         </div>
       </div>
     </div>

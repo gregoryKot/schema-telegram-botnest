@@ -14,6 +14,7 @@ interface Props {
   onOpenPractices: () => void;
   onOpenPlans: () => void;
   onOpenBeliefCheck: () => void;
+  onOpenPhraseCheck: () => void;
   onOpenSafePlace: () => void;
   onOpenLetterToSelf: () => void;
   onOpenFlashcard: () => void;
@@ -30,6 +31,7 @@ export function ToolsList({
   onOpenPractices,
   onOpenPlans,
   onOpenBeliefCheck,
+  onOpenPhraseCheck,
   onOpenSafePlace,
   onOpenLetterToSelf,
   onOpenFlashcard,
@@ -90,11 +92,19 @@ export function ToolsList({
         onClick={onOpenBeliefCheck}
       />
       <ToolRow
+        emoji="🔎"
+        label="Разобрать фразу"
+        sub="Это критик или забота?"
+        tint="var(--accent-red)"
+        index={4}
+        onClick={onOpenPhraseCheck}
+      />
+      <ToolRow
         emoji="🏡"
         label="Безопасное место"
         sub="Ресурс в тревожный момент"
         tint="var(--accent-green)"
-        index={4}
+        index={5}
         onClick={onOpenSafePlace}
       />
       <ToolRow
@@ -102,7 +112,7 @@ export function ToolsList({
         label="Письмо себе"
         sub="Уязвимому Ребёнку"
         tint="var(--accent-pink)"
-        index={5}
+        index={6}
         onClick={onOpenLetterToSelf}
       />
       <ToolRow
@@ -110,7 +120,7 @@ export function ToolsList({
         label="Схема включилась"
         sub="5 шагов чтобы разобраться"
         tint="var(--accent-indigo)"
-        index={6}
+        index={7}
         onClick={onOpenFlashcard}
       />
       <ToolRow
@@ -118,7 +128,7 @@ export function ToolsList({
         label="Колесо детства"
         sub={childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты'}
         tint="var(--accent-green)"
-        index={7}
+        index={8}
         onClick={onOpenChildhoodWheel}
       />
       <ToolRow
@@ -126,7 +136,7 @@ export function ToolsList({
         label="Тёплые слова"
         sub="Слова поддержки себе"
         tint="var(--accent-yellow)"
-        index={8}
+        index={9}
         onClick={onOpenWarmWords}
       />
     </>

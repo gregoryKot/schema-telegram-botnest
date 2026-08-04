@@ -152,7 +152,7 @@ describe('ModeEntrySheet — рестарт цепочки после ModeChainS
 
     // назад на шаг 1 — список состояний обычными словами
     await waitFor(() =>
-      expect(screen.getByText('Что с тобой сейчас?')).toBeTruthy(),
+      expect(screen.getByText('Что ты сейчас чувствуешь?')).toBeTruthy(),
     );
     expect(screen.queryByText('Записано')).toBeNull();
   });

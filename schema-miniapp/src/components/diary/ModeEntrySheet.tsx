@@ -19,7 +19,7 @@ import {
   type ModeEntrySaveData,
 } from '../../../../shared/src/mode/modeDiarySteps';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
-import { findPickerGroupIdByModeId } from '../../../../shared/src/mode/modeBodyCues';
+import { findPickerGroupIdByModeId } from '../../../../shared/src/mode/modeFeelGates';
 import {
   MODE_ENTRY_SAVED_EVENT,
   MODE_CHAIN_FOLLOWUP_EVENT,
@@ -32,13 +32,13 @@ interface Props {
 }
 
 const STEP_LABELS = [
-  'Шаг 1 из 3 · состояние',
+  'Шаг 1 из 3 · чувство',
   'Шаг 2 из 3 · режим',
   'Шаг 3 из 3 · запись',
 ];
 
 /**
- * Дневник режимов в три шага: состояние обычными словами → уточнение режима →
+ * Дневник режимов в три шага: чувство обычными словами → уточнение режима →
  * запись. До этого был один свиток из восьми вопросов и 35 чипов сразу —
  * человек, зашедший записать один момент, упирался в таксономию.
  * Обязательное поле по-прежнему одно (ситуация), форма данных не менялась.
@@ -52,8 +52,8 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
   const d = existing?.data;
 
   const [modeId, setModeId] = useState(d?.modeId ?? '');
-  // Семья состояния: шаг 2 показывает кандидатов именно из неё. У черновика
-  // с уже выбранным режимом семью восстанавливаем по самому режиму — иначе
+  // Ворота чувства: шаг 2 показывает кандидатов именно из них. У черновика
+  // с уже выбранным режимом ворота восстанавливаем по самому режиму — иначе
   // «Назад» с третьего шага уводило бы в пустоту.
   const [groupId, setGroupId] = useState<string | null>(
     d?.modeId ? findPickerGroupIdByModeId(d.modeId) : null,

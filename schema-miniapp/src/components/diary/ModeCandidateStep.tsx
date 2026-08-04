@@ -4,7 +4,7 @@ import { useTr } from '../../utils/addressForm';
 import { getModeById } from '../../schemaTherapyData';
 import { DiaryPanel, DiaryRow } from './diaryUi';
 import { SummaryBlock } from './diaryFlowUi';
-import { MODE_PICKER_GROUPS } from '../../../../shared/src/mode/modeBodyCues';
+import { MODE_PICKER_GROUPS } from '../../../../shared/src/mode/modeFeelGates';
 import { MODE_TEST_COMPLETED_EVENT } from '../../../../shared/src/share/analytics';
 
 /** Первое предложение описания — одна строка под названием, без простыни. */
@@ -14,7 +14,7 @@ function firstSentence(text: string): string {
 }
 
 /**
- * Шаг 2 дневника режимов: из выбранной семьи — 1–5 кандидатов. Заголовок
+ * Шаг 2 дневника режимов: из выбранных ворот — 1–6 кандидатов. Заголовок
  * строки — фраза-переживание, а не термин (термин уходит в мету): человек
  * узнаёт своё состояние по тому, как оно ощущается изнутри.
  *
@@ -48,7 +48,7 @@ export function ModeCandidateStep({
       />
 
       <div className="d-display" style={{ fontSize: 21, marginBottom: 8 }}>
-        Кто из режимов сейчас ближе всего?
+        {group.question}
       </div>
       <div
         style={{
@@ -98,7 +98,7 @@ export function ModeCandidateStep({
         }}
       >
         {isUnknown
-          ? 'Не могу выбрать — вернуться к состояниям'
+          ? 'Не могу выбрать — вернуться к чувствам'
           : 'Не могу выбрать — пусть подскажет тело'}
       </button>
     </div>
