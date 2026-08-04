@@ -77,7 +77,7 @@ export function LetterEx({
         }
       >
         <div className="letter-paper">
-          <div className="letter-salutation">Дорогой маленький я,</div>
+          <div className="letter-salutation">Дорогой мой ребёнок,</div>
           <div
             style={{
               fontFamily: 'var(--serif)',
@@ -170,7 +170,7 @@ export function LetterEx({
       }
     >
       <div className="letter-paper">
-        <div className="letter-salutation">Дорогой маленький я,</div>
+        <div className="letter-salutation">Дорогой мой ребёнок,</div>
         <textarea
           ref={textRef}
           value={text}
