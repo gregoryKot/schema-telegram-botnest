@@ -42,7 +42,7 @@ function startWith(phrase: string) {
 
 beforeEach(() => {
   vi.mocked(api.getPhraseChecks).mockResolvedValue([]);
-  vi.mocked(api.createPhraseCheck).mockResolvedValue(undefined as never);
+  vi.mocked(api.createPhraseCheck).mockResolvedValue(undefined);
 });
 
 afterEach(cleanup);
