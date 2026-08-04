@@ -3,9 +3,22 @@
 // правило №3). Тап по чипу семьи раскрывает листы, тап по листу выбирает
 // modeId. Данные — те же shared/mode/modeTest, синхронность с MODE_GROUPS
 // покрыта webapp modeTest.test.ts.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+// mode_test_completed: событие переехало сюда из удалённого окна-теста
+// (ModeTestScreen) — чипы теперь единственный вход выбора режима.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ModeFeelingBrowse } from './ModeFeelingBrowse';
+import { MODE_TEST_COMPLETED_EVENT } from '../../../../shared/src/share/analytics';
+
+vi.mock('../../api', () => ({
+  api: { trackEvent: vi.fn() },
+}));
+import { api } from '../../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 afterEach(cleanup);
 
@@ -37,5 +50,14 @@ describe('ModeFeelingBrowse (webapp)', () => {
     expect(screen.getByText('Пусто и ровно, как в вате')).toBeTruthy();
     fireEvent.click(screen.getByText('Пусто и ровно, как в вате'));
     expect(onPick).toHaveBeenCalledWith('detached_protector');
+  });
+
+  it('клик по режиму шлёт mode_test_completed с modeId', () => {
+    render(<ModeFeelingBrowse onPick={vi.fn()} />);
+    fireEvent.click(screen.getByText(/Мне больно, страшно, одиноко/));
+    fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
+    expect(mockApi.trackEvent).toHaveBeenCalledWith(MODE_TEST_COMPLETED_EVENT, {
+      modeId: 'vulnerable_child',
+    });
   });
 });

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { getModeById } from '../../schemaTherapyData';
 import { haptic } from '../../haptic';
+import { api } from '../../api';
+import { MODE_TEST_COMPLETED_EVENT } from '../../../../shared/src/share/analytics';
 import { MODE_PICKER_GROUPS } from '../../../../shared/src/mode/modeBodyCues';
 
 /**
@@ -77,6 +79,11 @@ export function ModeFeelingBrowse({
                 key={leaf.modeId}
                 onClick={() => {
                   haptic.select();
+                  // Событие переехало из удалённого окна-теста (ModeTestSheet) —
+                  // чипы теперь единственный вход выбора режима.
+                  api.trackEvent(MODE_TEST_COMPLETED_EVENT, {
+                    modeId: leaf.modeId,
+                  });
                   onChange(leaf.modeId);
                 }}
                 style={{

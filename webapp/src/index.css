@@ -1477,13 +1477,7 @@ html[data-theme="dark"] .cmd-bg { background: rgba(0,0,0,0.52); }
 .mode-check { color: var(--mode-color); font-size: 18px; opacity: 0; }
 .mode-card.is-selected .mode-check { opacity: 1; }
 
-/* Тест «определим по чувству»: главная CTA + строки состояний/листов */
-.mode-test-cta { display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; padding: 20px 22px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--surface); cursor: pointer; font-family: inherit; transition: background .12s, border-color .12s; margin-bottom: 20px; }
-.mode-test-cta:hover { background: var(--surface-2); border-color: var(--c-slate); }
-.mode-test-cta-emoji { font-size: 30px; line-height: 1; flex-shrink: 0; }
-.mode-test-cta-text { display: block; }
-.mode-test-cta-title { display: block; font-family: var(--serif); font-size: 22px; line-height: 1.2; color: var(--text); font-weight: 400; letter-spacing: -0.005em; margin-bottom: 3px; }
-.mode-test-cta-sub { display: block; font-size: 13px; color: var(--text-sub); line-height: 1.4; }
+/* Выбор режима «по ощущению»: строки состояний/листов (ModeFeelingBrowse) */
 .mode-list-toggle { margin-bottom: 8px; }
 
 .mode-test-row { display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; padding: 16px 4px; border: none; border-bottom: 1px solid var(--line); background: none; cursor: pointer; font-family: inherit; transition: background .1s, padding .1s; }

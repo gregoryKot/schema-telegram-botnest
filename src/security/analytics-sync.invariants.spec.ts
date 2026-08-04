@@ -81,7 +81,8 @@ const BACKEND_ONLY: Record<string, string> = {
     'шлётся из ModeEntrySheet.tsx (оба фронта) через api.trackEvent',
   mode_test_completed:
     'константа MODE_TEST_COMPLETED_EVENT (shared/src/share/analytics.ts), ' +
-    'шлётся из ModeTestSheet.tsx (мини-апп) и ModeTestScreen.tsx (сайт)',
+    'шлётся из ModeFeelingBrowse.tsx (оба фронта) — единственный вход выбора ' +
+    'режима после удаления окна-теста (ModeTestSheet/ModeTestScreen)',
   warm_words_open:
     'константа WARM_WORDS_OPEN_EVENT (shared/src/share/analytics.ts), ' +
     'шлётся из WarmWords.tsx (мини-апп) и WarmWordsEx.tsx (сайт) — ' +
