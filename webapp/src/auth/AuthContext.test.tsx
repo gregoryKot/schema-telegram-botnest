@@ -10,8 +10,8 @@
 // Контекст не хранит отдельный "user" — только accessToken/isAuthenticated,
 // поэтому пункт «login stores token+user state» проверяется как токен+флаг.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { act, render, renderHook, waitFor } from '@testing-library/react';
+import { useEffect, type ReactNode } from 'react';
 import { AuthProvider } from './AuthProvider';
 import { useAuth } from './authContext';
 
@@ -301,6 +301,51 @@ describe('logout', () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(result.current.accessToken).toBeNull();
+  });
+});
+
+// ── Регрессия: вход через OAuth не должен ротировать свежую refresh-куку ─────
+// Инцидент 2026-08-04: после входа Google из мини-аппа в браузере админу
+// прилетал алерт refresh_token_reuse, и человек оставался без сессии.
+// Причина — гонка: AuthCallback кладёт токен из редиректа и тут же уводит
+// страницу на /app/ полным переходом, а бутстрап провайдера в этот момент
+// успевал дёрнуть /api/auth/refresh. Сервер куку ротировал, ответ с новой
+// уже никто не принял, мини-апп пришёл со старой — сервер счёл это кражей
+// и отозвал всю семью токенов.
+describe('бутстрап при уже выданном токене (OAuth-редирект)', () => {
+  function TokenSetter() {
+    const { setAccessToken } = useAuth();
+    // Эффекты детей выполняются раньше эффектов родителя — ровно так же ведёт
+    // себя AuthCallback внутри AuthProvider.
+    useEffect(() => { setAccessToken('callback-tok', 900); }, [setAccessToken]);
+    return null;
+  }
+
+  it('токен положен ребёнком до бутстрапа — refresh-кука не трогается', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'rotated', expiresIn: 900 }));
+    let seen: ReturnType<typeof useAuth> | null = null;
+    function Probe() { seen = useAuth(); return null; }
+
+    render(<AuthProvider><TokenSetter /><Probe /></AuthProvider>);
+
+    await waitFor(() => expect(seen!.isLoading).toBe(false));
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(seen!.accessToken).toBe('callback-tok');
+  });
+
+  it('токена нет — бутстрап работает как раньше и поднимает сессию по куке', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'cookie-tok', expiresIn: 900 }));
+    let seen: ReturnType<typeof useAuth> | null = null;
+    function Probe() { seen = useAuth(); return null; }
+
+    render(<AuthProvider><Probe /></AuthProvider>);
+
+    await waitFor(() => expect(seen!.isLoading).toBe(false));
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/auth/refresh'),
+      expect.anything(),
+    );
+    expect(seen!.accessToken).toBe('cookie-tok');
   });
 });
 

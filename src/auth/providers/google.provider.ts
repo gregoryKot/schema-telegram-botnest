@@ -1,11 +1,7 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { verifyGoogleIdToken } from './google-id-token';
 import { AuthProviderHandler, ProviderIdentity } from './types';
-
-// Google's public keys (JWKS). jose caches internally and re-fetches on cache miss.
-// Fetched lazily on first token verification — no outbound request at startup.
-const GOOGLE_JWKS_URI = 'https://www.googleapis.com/oauth2/v3/certs';
 
 // Token endpoint + его легаси-алиасы на других доменах. С хостинга (Amvera)
 // oauth2.googleapis.com может быть недостижим на сетевом уровне («fetch
@@ -23,13 +19,6 @@ export class GoogleProvider implements AuthProviderHandler {
   readonly id = 'google';
   readonly displayName = 'Google';
   private readonly logger = new Logger(GoogleProvider.name);
-
-  // Lazily created so the module initialises even if the fetch would fail.
-  private _jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
-  private get jwks() {
-    if (!this._jwks) this._jwks = createRemoteJWKSet(new URL(GOOGLE_JWKS_URI));
-    return this._jwks;
-  }
 
   constructor(private readonly config: ConfigService) {}
 
@@ -114,18 +103,14 @@ export class GoogleProvider implements AuthProviderHandler {
     throw new UnauthorizedException('Google token exchange failed');
   }
 
-  // Verify id_token signature + claims via Google's JWKS. The token comes
-  // straight from Google's token endpoint over TLS; verifying the signature is
-  // defence-in-depth and also pins issuer/audience.
+  // Проверка id_token (подпись по JWKS + issuer/audience) живёт в
+  // google-id-token.ts — там же ветка на случай недостижимого JWKS.
   private async decodeIdentity(idToken: string): Promise<ProviderIdentity> {
     const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
 
-    let payload: Awaited<ReturnType<typeof jwtVerify>>['payload'];
+    let claims: Awaited<ReturnType<typeof verifyGoogleIdToken>>;
     try {
-      ({ payload } = await jwtVerify(idToken, this.jwks, {
-        issuer: ['https://accounts.google.com', 'accounts.google.com'],
-        audience: clientId,
-      }));
+      claims = await verifyGoogleIdToken(idToken, clientId);
     } catch (e: unknown) {
       const err = e instanceof Error ? e : new Error(String(e));
       this.logger.error(
@@ -134,15 +119,21 @@ export class GoogleProvider implements AuthProviderHandler {
       throw new UnauthorizedException('Google ID token invalid');
     }
 
-    if (payload['email_verified'] !== true) {
+    if (claims.offline) {
+      // Видно в логах: вход прошёл, но ключи Google с хоста не скачались.
+      this.logger.warn(
+        'Google JWKS недостижим — id_token принят по claims (получен от Google по TLS)',
+      );
+    }
+
+    if (!claims.emailVerified) {
       throw new UnauthorizedException('Google email not verified');
     }
 
     return {
-      providerId: payload.sub!,
-      email: payload['email'] as string,
-      displayName:
-        (payload['name'] as string | undefined) ?? (payload['email'] as string),
+      providerId: claims.sub,
+      email: claims.email,
+      displayName: claims.name ?? claims.email,
     };
   }
 }

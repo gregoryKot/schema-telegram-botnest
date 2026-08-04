@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { getHost } from '../../../shared/src/host';
 import { AuthContext } from './authContext';
+import { clearLocalData } from './clearLocalData';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -8,6 +9,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setTokenState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasToken = useRef(false);
 
   const scheduleRefresh = useCallback((expiresIn: number) => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
@@ -30,13 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) {
         // 401 means token is invalid/revoked – clear state to stop retry loop.
-        // During initial load (clearOnFailure=false) we skip the clear so that
-        // a token already set by AuthCallback (flushSync) isn't wiped by a
-        // racing 401 from an expired / missing refresh cookie.
         if (res.status === 401 && clearOnFailure) setTokenState(null);
         return false;
       }
       const { accessToken: token, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
+      hasToken.current = true;
       setTokenState(token);
       scheduleRefresh(expiresIn);
       return true;
@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) return false;
       const { accessToken: token, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
+      hasToken.current = true;
       setTokenState(token);
       scheduleRefresh(expiresIn);
       return true;
@@ -72,9 +73,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // On mount: try Telegram WebApp auth first, then fall back to httpOnly cookie
   useEffect(() => {
     const init = async () => {
+      // Сессия уже выдана этой загрузке страницы: AuthCallback положил токен
+      // из OAuth-редиректа раньше (эффекты детей выполняются до эффектов
+      // родителя). Лишний refresh тут не бесполезен, а вреден — он ротирует
+      // refresh-куку, а страница /auth/callback тут же уходит на /app/ полным
+      // переходом. Ответ с новой кукой не доезжает, у мини-аппа остаётся
+      // старая, сервер видит повторное использование, отзывает всю семью
+      // токенов — и пользователь, только что вошедший, снова без сессии.
+      if (hasToken.current) { setIsLoading(false); return; }
       const tgOk = await doTelegramWebAppAuth();
-      // clearOnFailure=false: don't wipe a token that AuthCallback may have
-      // already set via flushSync() while this refresh was in-flight.
       if (!tgOk) await doRefresh(false);
       setIsLoading(false);
     };
@@ -83,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [doRefresh, doTelegramWebAppAuth]);
 
   const setAccessToken = useCallback((token: string, expiresIn: number) => {
+    hasToken.current = true;
     setTokenState(token);
     scheduleRefresh(expiresIn);
   }, [scheduleRefresh]);
@@ -96,20 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch { /* ignore */ }
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    hasToken.current = false;
     setTokenState(null);
-    // Clinical content (letters, safe place, diary drafts, YSQ answers, schema
-    // labels) is mirrored into localStorage for instant render. On logout –
-    // especially on a shared device – wipe it so the next person can't read it.
-    // Theme is the only non-sensitive key worth keeping. Server stays the
-    // source of truth, so nothing is lost on the next login.
-    try {
-      const theme = localStorage.getItem('app_theme');
-      const cookieConsent = localStorage.getItem('cookie_consent');
-      localStorage.clear();
-      sessionStorage.clear();
-      if (theme) localStorage.setItem('app_theme', theme);
-      if (cookieConsent) localStorage.setItem('cookie_consent', cookieConsent);
-    } catch { /* ignore */ }
+    clearLocalData();
   }, []);
 
   return (
