@@ -7,6 +7,7 @@ import {
   FEEL_GATES,
   MODE_PICKER_GROUPS,
   getModeLeafLabel,
+  findPickerGroupIdByModeId,
 } from './modeFeelGates';
 import {
   MODE_TEST_GROUPS,
@@ -216,5 +217,28 @@ describe('getModeLeafLabel', () => {
 
   it('неизвестный id — undefined', () => {
     expect(getModeLeafLabel('not_a_real_mode')).toBeUndefined();
+  });
+});
+
+// Обратный поиск ворот по режиму: на нём держится «Назад» с шага записи в
+// дневнике режимов (ModeEntrySheet) и восстановление шага у черновика.
+describe('findPickerGroupIdByModeId', () => {
+  it('возвращает ворота, в которых режим действительно показан', () => {
+    expect(findPickerGroupIdByModeId('avoidant_protector')).toBe('fear');
+    expect(findPickerGroupIdByModeId('detached_protector')).toBe('unknown');
+  });
+
+  it('для неизвестного режима отдаёт null, а не первые попавшиеся ворота', () => {
+    expect(findPickerGroupIdByModeId('нет_такого_режима')).toBeNull();
+    expect(findPickerGroupIdByModeId('')).toBeNull();
+  });
+
+  it('любой найденный id — реальные ворота', () => {
+    for (const gate of FEEL_GATES) {
+      for (const leaf of gate.leaves) {
+        const id = findPickerGroupIdByModeId(leaf.modeId);
+        expect(FEEL_GATES.some((g) => g.id === id)).toBe(true);
+      }
+    }
   });
 });

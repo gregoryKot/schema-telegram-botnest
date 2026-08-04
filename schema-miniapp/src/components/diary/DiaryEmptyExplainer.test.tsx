@@ -25,7 +25,7 @@ describe('DiaryEmptyExplainer — «что это и зачем» до перв�
   it('называет источник (схема-терапия) и результат со сроком', () => {
     for (const type of ['schema', 'mode'] as const) {
       const { container, unmount } = renderWithForm(
-        <DiaryEmptyExplainer type={type} color="#000" />,
+        <DiaryEmptyExplainer type={type} />,
         'ty',
       );
       const text = container.textContent ?? '';
@@ -38,7 +38,7 @@ describe('DiaryEmptyExplainer — «что это и зачем» до перв�
   it('форма «вы»: ни одной «ты»-формы ни в одном дневнике', () => {
     for (const type of ['schema', 'mode', 'gratitude'] as const) {
       const { container, unmount } = renderWithForm(
-        <DiaryEmptyExplainer type={type} color="#000" />,
+        <DiaryEmptyExplainer type={type} />,
         'vy',
       );
       expect(hasTyForms(container.textContent ?? '')).toBe(false);
@@ -47,15 +47,11 @@ describe('DiaryEmptyExplainer — «что это и зачем» до перв�
   });
 
   it('вилка ты/вы действительно меняет текст', () => {
-    const ty = renderWithForm(
-      <DiaryEmptyExplainer type="mode" color="#000" />,
-      'ty',
-    ).container.textContent;
+    const ty = renderWithForm(<DiaryEmptyExplainer type="mode" />, 'ty')
+      .container.textContent;
     cleanup();
-    const vy = renderWithForm(
-      <DiaryEmptyExplainer type="mode" color="#000" />,
-      'vy',
-    ).container.textContent;
+    const vy = renderWithForm(<DiaryEmptyExplainer type="mode" />, 'vy')
+      .container.textContent;
     expect(ty).not.toEqual(vy);
   });
 });
@@ -67,10 +63,12 @@ describe('DiaryHubIntro — зачин хаба дневников', () => {
     expect(container.textContent).toContain('3–5 записей');
   });
 
-  it('с записями остаётся короткая подводка без обучения', () => {
+  // Когда дневник уже начат, объяснение уходит совсем: его работу дальше
+  // делают подзаголовок хаба и мета-строки записей, а лишний абзац только
+  // отодвигает главное действие вниз.
+  it('с записями подводки нет вовсе', () => {
     const { container } = renderWithForm(<DiaryHubIntro empty={false} />, 'ty');
-    expect(container.textContent).toContain('Замечай паттерны');
-    expect(container.textContent).not.toContain('схема-терапи');
+    expect(container.textContent).toBe('');
   });
 
   it('форма «вы»: обе ветки без «ты»-форм', () => {

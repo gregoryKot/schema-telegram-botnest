@@ -13,6 +13,7 @@ import { ModeCard } from './diaryCards/ModeCard';
 import { GratitudeCard } from './diaryCards/GratitudeCard';
 import { DraftCard } from './diaryCards/DraftCard';
 import { DiaryEmptyExplainer } from './DiaryEmptyExplainer';
+import { DiaryPanel } from './diaryUi';
 
 interface Props {
   type: DiaryType;
@@ -24,32 +25,31 @@ interface Props {
   onDelete: (type: DiaryType, id: number) => void;
 }
 
+const ACCENT = 'var(--accent)';
+
 const DIARY_META: Record<
   DiaryType,
   {
     title: string;
-    emoji: string;
-    color: string;
+    /** Только для картинки-шеринга: на самом экране эмодзи нет. */
+    shareEmoji: string;
     fabLabel: string;
   }
 > = {
   schema: {
     title: 'Дневник схем',
-    emoji: '📓',
-    color: 'var(--accent-red)',
-    fabLabel: '+ Записать момент',
+    shareEmoji: '📓',
+    fabLabel: 'Записать момент',
   },
   mode: {
     title: 'Дневник режимов',
-    emoji: '🔄',
-    color: 'var(--accent-blue)',
-    fabLabel: '+ Записать режим',
+    shareEmoji: '🔄',
+    fabLabel: 'Записать режим',
   },
   gratitude: {
     title: 'Дневник благодарности',
-    emoji: '🌱',
-    color: 'var(--accent-green)',
-    fabLabel: '+ Записать',
+    shareEmoji: '🌱',
+    fabLabel: 'Записать',
   },
 };
 
@@ -67,19 +67,18 @@ export function DiaryListView({
   const [draftKey, setDraftKey] = useState(0); // force re-render after draft delete
 
   const hasDraftEntry = !!loadDraft(type);
-
-  function handleDeleteDraft() {
-    clearDraft(type);
-    setDraftKey((k) => k + 1);
-  }
+  const entries =
+    type === 'schema'
+      ? schemaEntries
+      : type === 'mode'
+        ? modeEntries
+        : gratitudeEntries;
+  const isEmpty = entries.length === 0 && !hasDraftEntry;
 
   return (
     <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg)',
-        animation: 'slide-in-right 250ms ease',
-      }}
+      className="diary-skin"
+      style={{ minHeight: '100vh', animation: 'slide-in-right 250ms ease' }}
     >
       <div
         style={{
@@ -87,47 +86,38 @@ export function DiaryListView({
           top: 0,
           background: 'var(--bg)',
           zIndex: 10,
-          padding: `${safeTop + 12}px 16px 12px`,
-          borderBottom: '1px solid rgba(var(--fg-rgb),0.06)',
+          padding: `${safeTop + 12}px 16px 14px`,
+          borderBottom: '1px solid var(--line)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button
             onClick={onBack}
+            aria-label="Назад"
             style={{
-              background: 'rgba(var(--fg-rgb),0.08)',
+              background: 'none',
               border: 'none',
-              borderRadius: 10,
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 48,
               cursor: 'pointer',
-              color: 'var(--text)',
-              fontSize: 20,
+              color: 'var(--muted)',
+              fontSize: 26,
+              lineHeight: 1,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
             }}
           >
             ‹
           </button>
-          <span style={{ fontSize: 22 }}>{meta.emoji}</span>
-          <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
+          <span className="d-display" style={{ fontSize: 20, flex: 1 }}>
             {meta.title}
           </span>
-          <div style={{ marginLeft: 'auto' }}>
-            <DiaryShareButton
-              emoji={meta.emoji}
-              title={meta.title}
-              color={meta.color}
-              entries={
-                type === 'schema'
-                  ? schemaEntries
-                  : type === 'mode'
-                    ? modeEntries
-                    : gratitudeEntries
-              }
-            />
-          </div>
+          <DiaryShareButton
+            emoji={meta.shareEmoji}
+            title={meta.title}
+            color={ACCENT}
+            entries={entries}
+          />
         </div>
       </div>
 
@@ -136,51 +126,48 @@ export function DiaryListView({
           <DraftCard
             key={draftKey}
             type={type}
-            color={meta.color}
+            color={ACCENT}
             onContinue={onNewEntry}
-            onDelete={handleDeleteDraft}
+            onDelete={() => {
+              clearDraft(type);
+              setDraftKey((k) => k + 1);
+            }}
           />
         )}
 
-        {type === 'schema' &&
-          (schemaEntries.length === 0 && !hasDraftEntry ? (
-            <DiaryEmptyExplainer type={type} color={meta.color} />
-          ) : (
-            schemaEntries.map((e) => (
-              <SchemaCard
-                key={e.id}
-                entry={e}
-                color={meta.color}
-                onDelete={() => onDelete('schema', e.id)}
-              />
-            ))
-          ))}
-        {type === 'mode' &&
-          (modeEntries.length === 0 && !hasDraftEntry ? (
-            <DiaryEmptyExplainer type={type} color={meta.color} />
-          ) : (
-            modeEntries.map((e) => (
-              <ModeCard
-                key={e.id}
-                entry={e}
-                color={meta.color}
-                onDelete={() => onDelete('mode', e.id)}
-              />
-            ))
-          ))}
-        {type === 'gratitude' &&
-          (gratitudeEntries.length === 0 && !hasDraftEntry ? (
-            <DiaryEmptyExplainer type={type} color={meta.color} />
-          ) : (
-            gratitudeEntries.map((e) => (
-              <GratitudeCard
-                key={e.id}
-                entry={e}
-                color={meta.color}
-                onDelete={() => onDelete('gratitude', e.id)}
-              />
-            ))
-          ))}
+        {isEmpty ? (
+          <DiaryEmptyExplainer type={type} />
+        ) : (
+          <DiaryPanel>
+            {type === 'schema' &&
+              schemaEntries.map((e) => (
+                <SchemaCard
+                  key={e.id}
+                  entry={e}
+                  color={ACCENT}
+                  onDelete={() => onDelete('schema', e.id)}
+                />
+              ))}
+            {type === 'mode' &&
+              modeEntries.map((e) => (
+                <ModeCard
+                  key={e.id}
+                  entry={e}
+                  color={ACCENT}
+                  onDelete={() => onDelete('mode', e.id)}
+                />
+              ))}
+            {type === 'gratitude' &&
+              gratitudeEntries.map((e) => (
+                <GratitudeCard
+                  key={e.id}
+                  entry={e}
+                  color={ACCENT}
+                  onDelete={() => onDelete('gratitude', e.id)}
+                />
+              ))}
+          </DiaryPanel>
+        )}
       </div>
 
       <button
@@ -189,15 +176,17 @@ export function DiaryListView({
           position: 'fixed',
           bottom: 'calc(80px + var(--safe-bottom))',
           right: 20,
-          background: meta.color,
+          background: 'var(--accent)',
           border: 'none',
-          borderRadius: 20,
+          borderRadius: 16,
+          minHeight: 48,
           padding: '14px 20px',
           color: '#fff',
           fontSize: 15,
-          fontWeight: 700,
+          fontWeight: 600,
+          fontFamily: 'inherit',
           cursor: 'pointer',
-          boxShadow: `0 4px 24px ${meta.color}66`,
+          boxShadow: '0 1px 2px rgba(34,30,27,0.04)',
         }}
       >
         {meta.fabLabel}

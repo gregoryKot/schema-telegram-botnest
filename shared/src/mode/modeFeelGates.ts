@@ -201,3 +201,18 @@ export function getModeLeafLabel(modeId: string): string | undefined {
     for (const l of g.leaves) if (l.modeId === modeId) return l.label;
   return undefined;
 }
+
+/**
+ * Ворота, в которых лежит режим, — по ним шаг «уточнить режим» знает, куда
+ * вернуть человека с шага записи (дневник режимов, ModeEntrySheet). Ищем
+ * среди ворот, а не домашних семей теста: режим бывает виден из двух
+ * состояний, и вернуться надо туда, где выбор реально был сделан. Режим, до
+ * которого добрались списком по группам, в воротах может не встретиться —
+ * тогда null, и поток честно откатывается к списку чувств.
+ */
+export function findPickerGroupIdByModeId(modeId: string): string | null {
+  const gate = FEEL_GATES.find((g) =>
+    g.leaves.some((l) => l.modeId === modeId),
+  );
+  return gate?.id ?? null;
+}

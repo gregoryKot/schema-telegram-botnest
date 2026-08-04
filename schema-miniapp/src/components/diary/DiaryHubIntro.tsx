@@ -8,31 +8,36 @@ import { DIARY_HUB_INTRO } from '../../../../shared/src/diary/diaryExplainers';
 export function DiaryHubIntro({ empty }: { empty: boolean }) {
   const tr = useTr();
 
+  // Пока записей нет — объяснение «что это и зачем» прямо на пути, а не в
+  // спрятанном разделе. Как только дневник начат, подводка уходит: её работу
+  // дальше делают подзаголовок хаба и мета-строки записей.
+  if (!empty) return null;
+
   return (
-    <div style={{ marginBottom: 24 }}>
-      <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.5 }}>
-        {empty
-          ? DIARY_HUB_INTRO
-          : tr(
-              'Замечай паттерны, фиксируй моменты. Веди один или все три — как тебе удобно.',
-              'Замечайте паттерны, фиксируйте моменты. Ведите один или все три — как вам удобно.',
-            )}
+    <div
+      style={{
+        background: 'var(--surface-2)',
+        borderRadius: 18,
+        padding: '16px 18px',
+        marginBottom: 26,
+      }}
+    >
+      <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.55 }}>
+        {DIARY_HUB_INTRO}
       </div>
-      {empty && (
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--text-faint)',
-            lineHeight: 1.5,
-            marginTop: 8,
-          }}
-        >
-          {tr(
-            'Не знаешь, с чего начать, — открой любой: внутри всё объяснено.',
-            'Не знаете, с чего начать, — откройте любой: внутри всё объяснено.',
-          )}
-        </div>
-      )}
+      <div
+        style={{
+          fontSize: 13,
+          color: 'var(--muted)',
+          lineHeight: 1.5,
+          marginTop: 10,
+        }}
+      >
+        {tr(
+          'Не знаешь, с чего начать, — открой любой: внутри всё объяснено.',
+          'Не знаете, с чего начать, — откройте любой: внутри всё объяснено.',
+        )}
+      </div>
     </div>
   );
 }

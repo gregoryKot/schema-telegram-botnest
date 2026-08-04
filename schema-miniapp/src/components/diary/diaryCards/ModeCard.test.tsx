@@ -97,7 +97,8 @@ describe('ModeCard', () => {
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
-  it('длинная ситуация обрезается свёрнутой и раскрывается полностью', () => {
+  // См. комментарий в SchemaCard.test.tsx: обрезает CSS, не JS.
+  it('длинная ситуация показана одной строкой, пока запись свёрнута', () => {
     const longSituation = 'B'.repeat(100);
     render(
       <ModeCard
@@ -106,8 +107,9 @@ describe('ModeCard', () => {
         onDelete={() => {}}
       />,
     );
-    expect(screen.getByText(longSituation.slice(0, 80) + '…')).toBeTruthy();
-    fireEvent.click(screen.getByText(longSituation.slice(0, 80) + '…'));
-    expect(screen.getByText(longSituation)).toBeTruthy();
+    const line = screen.getByText(longSituation);
+    expect(line.className).toContain('d-clamp');
+    fireEvent.click(line);
+    expect(screen.getByText(longSituation).className).not.toContain('d-clamp');
   });
 });

@@ -32,16 +32,20 @@ export function EmotionPicker({
               onClick={() => onToggle(em.id)}
               className="sel-btn"
               style={{
-                background: sel ? '#f8717133' : 'rgba(var(--fg-rgb),0.06)',
-                border: sel ? '1px solid #f87171' : '1px solid transparent',
-                borderRadius: 20,
-                padding: '6px 12px',
-                color: sel ? 'var(--chip-sel-text)' : 'rgba(var(--fg-rgb),0.6)',
+                background: sel ? 'var(--accent-bg)' : 'var(--surface)',
+                border: sel
+                  ? '1px solid var(--accent)'
+                  : '1px solid rgba(34,30,27,0.1)',
+                borderRadius: 999,
+                padding: '10px 14px',
+                minHeight: 44,
+                color: sel ? 'var(--accent)' : 'var(--ink-2)',
                 fontSize: 13,
+                fontWeight: sel ? 600 : 400,
                 cursor: 'pointer',
               }}
             >
-              {em.emoji} {em.label}
+              {em.label}
             </button>
           );
         })}
@@ -52,22 +56,23 @@ export function EmotionPicker({
           <div
             key={em.id}
             style={{
-              marginBottom: 8,
-              background: 'rgba(var(--fg-rgb),0.04)',
-              borderRadius: 12,
-              padding: '10px 12px',
+              marginBottom: 10,
+              background: 'var(--surface-2)',
+              borderRadius: 14,
+              padding: '12px 14px',
             }}
           >
             <div
               style={{
-                fontSize: 13,
-                color: 'var(--text-sub)',
-                marginBottom: 7,
+                fontSize: 14,
+                fontWeight: 600,
+                color: 'var(--text)',
+                marginBottom: 10,
               }}
             >
-              {meta.emoji} {meta.label}
+              {meta.label}
             </div>
-            <div style={{ display: 'flex', gap: 5 }}>
+            <div style={{ display: 'flex', gap: 6 }}>
               {INTENSITY_LABELS.map((lbl, i) => (
                 <button
                   key={i}
@@ -76,17 +81,13 @@ export function EmotionPicker({
                   style={{
                     flex: 1,
                     background:
-                      em.intensity === i + 1
-                        ? color
-                        : 'rgba(var(--fg-rgb),0.08)',
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '5px 2px',
-                    color:
-                      em.intensity === i + 1
-                        ? '#fff'
-                        : 'rgba(var(--fg-rgb),0.4)',
-                    fontSize: 10,
+                      em.intensity === i + 1 ? color : 'var(--surface)',
+                    border: '1px solid rgba(34,30,27,0.1)',
+                    borderRadius: 10,
+                    padding: '10px 2px',
+                    minHeight: 44,
+                    color: em.intensity === i + 1 ? '#fff' : 'var(--muted)',
+                    fontSize: 11,
                     cursor: 'pointer',
                   }}
                 >

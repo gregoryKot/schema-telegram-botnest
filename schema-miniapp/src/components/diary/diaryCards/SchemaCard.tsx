@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { pressable } from '../../../utils/a11y';
 import { SchemaDiaryEntry } from '../../../types';
 import { EMOTIONS, getSchemaById } from '../../../schemaTherapyData';
-import { cm, formatDt, Field, DeleteBtn } from './shared';
+import { formatDt, Field, DeleteBtn } from './shared';
 
 // Карточка записи дневника схем. Вынесено из DiaryListView.tsx (правило №10).
 export function SchemaCard({
@@ -23,10 +23,7 @@ export function SchemaCard({
     .filter(Boolean);
 
   return (
-    <div
-      className="card"
-      style={{ borderRadius: 16, padding: '14px 16px', marginBottom: 10 }}
-    >
+    <div className="d-entry">
       <div
         {...pressable(() => setOpen((v) => !v))}
         style={{ cursor: 'pointer' }}
@@ -38,53 +35,40 @@ export function SchemaCard({
             marginBottom: 6,
           }}
         >
-          <span style={{ fontSize: 11, color: 'var(--text-sub)' }}>
+          <span style={{ fontSize: 12, color: 'var(--faint)' }}>
             {formatDt(entry.createdAt)}
           </span>
-          <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>
+          <span style={{ fontSize: 13, color: 'var(--chevron)' }}>
             {open ? '▲' : '▼'}
           </span>
         </div>
+        {schemas.length > 0 && (
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 600,
+              color: 'var(--text)',
+              marginBottom: 4,
+            }}
+          >
+            {schemas
+              .slice(0, 2)
+              .map((s) => s?.name)
+              .join(' · ')}
+          </div>
+        )}
         <div
-          style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--text)',
-            marginBottom: 6,
-            lineHeight: 1.4,
-          }}
+          className={open ? undefined : 'd-clamp'}
+          style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}
         >
-          {entry.trigger.length > 80 && !open
-            ? entry.trigger.slice(0, 80) + '…'
-            : entry.trigger}
+          {entry.trigger}
         </div>
-        {!open && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {emotionMetas.slice(0, 3).map((e) => (
-              <span
-                key={e.id}
-                style={{ fontSize: 12, color: 'var(--text-sub)' }}
-              >
-                {e.emoji}
-              </span>
-            ))}
-            {schemas.slice(0, 2).map(
-              (s) =>
-                s && (
-                  <span
-                    key={s.id}
-                    style={{
-                      fontSize: 11,
-                      padding: '2px 7px',
-                      borderRadius: 8,
-                      background: cm(color, 13),
-                      color,
-                    }}
-                  >
-                    {s.name}
-                  </span>
-                ),
-            )}
+        {!open && emotionMetas.length > 0 && (
+          <div style={{ fontSize: 12, color: 'var(--faint)', marginTop: 5 }}>
+            {emotionMetas
+              .slice(0, 3)
+              .map((e) => e.label)
+              .join(', ')}
           </div>
         )}
       </div>
@@ -93,7 +77,7 @@ export function SchemaCard({
           {emotionMetas.length > 0 && (
             <Field
               label="Чувства"
-              text={emotionMetas.map((e) => `${e.emoji} ${e.label}`).join(', ')}
+              text={emotionMetas.map((e) => e.label).join(', ')}
             />
           )}
           {entry.thoughts && <Field label="Мысли" text={entry.thoughts} />}

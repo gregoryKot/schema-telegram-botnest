@@ -1,7 +1,13 @@
+import { useState } from 'react';
+import { haptic } from '../../haptic';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
 // Выбор схем в дневнике (по доменам) + переключатель «только мои/все».
 // Вынесено из SchemaEntrySheet.tsx (правило №10).
+//
+// Домены свёрнуты: двадцать схем разом — стена терминов, в которой новичку
+// не за что зацепиться. Открытым остаётся то, что человек открыл сам, плюс
+// домен с уже отмеченной схемой (иначе выбор пропадал бы из виду).
 export function SchemaPicker({
   schemaIds,
   onToggle,
@@ -19,6 +25,8 @@ export function SchemaPicker({
   showAllSchemas: boolean;
   onToggleShowAll: () => void;
 }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+
   return (
     <>
       {SCHEMA_DOMAINS.map((domain) => {
@@ -28,49 +36,77 @@ export function SchemaPicker({
             )
           : domain.schemas;
         if (schemas.length === 0) return null;
+        const picked = schemas.filter((s) => schemaIds.includes(s.id));
+        const open = openId === domain.id || picked.length > 0;
         return (
-          <div key={domain.id} style={{ marginBottom: 10 }}>
-            <div
+          <div key={domain.id} style={{ marginBottom: 6 }}>
+            <button
+              onClick={() => {
+                haptic.tap();
+                setOpenId(open && openId === domain.id ? null : domain.id);
+              }}
               style={{
-                fontSize: 11,
-                color: domain.color,
-                fontWeight: 600,
-                marginBottom: 6,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                width: '100%',
+                minHeight: 48,
+                padding: '12px 2px',
+                background: 'none',
+                border: 'none',
+                borderBottom: '1px solid var(--line)',
+                cursor: 'pointer',
+                textAlign: 'left',
               }}
             >
-              {domain.domain}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {schemas.map((s) => {
-                const sel = schemaIds.includes(s.id);
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => onToggle(s.id)}
-                    className="sel-btn"
-                    style={{
-                      background: sel
-                        ? `${domain.color}33`
-                        : 'rgba(var(--fg-rgb),0.06)',
-                      border: sel
-                        ? `1px solid ${domain.color}`
-                        : '1px solid transparent',
-                      borderRadius: 16,
-                      padding: '5px 10px',
-                      color: sel
-                        ? 'var(--chip-sel-text)'
-                        : 'rgba(var(--fg-rgb),0.6)',
-                      fontSize: 12,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {s.name}
-                  </button>
-                );
-              })}
-            </div>
+              <span className="d-caps" style={{ flex: 1 }}>
+                {domain.domain}
+              </span>
+              {picked.length > 0 && (
+                <span style={{ fontSize: 12, color: 'var(--accent)' }}>
+                  {picked.length}
+                </span>
+              )}
+              <span style={{ fontSize: 12, color: 'var(--chevron)' }}>
+                {open ? '▲' : '▼'}
+              </span>
+            </button>
+            {open && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  padding: '12px 0 6px',
+                }}
+              >
+                {schemas.map((s) => {
+                  const sel = schemaIds.includes(s.id);
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => onToggle(s.id)}
+                      className="sel-btn"
+                      style={{
+                        background: sel ? 'var(--accent-bg)' : 'var(--surface)',
+                        border: sel
+                          ? '1px solid var(--accent)'
+                          : '1px solid rgba(34,30,27,0.1)',
+                        borderRadius: 999,
+                        padding: '10px 14px',
+                        minHeight: 44,
+                        color: sel ? 'var(--accent)' : 'var(--ink-2)',
+                        fontSize: 13,
+                        fontWeight: sel ? 600 : 400,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {s.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })}
@@ -80,11 +116,12 @@ export function SchemaPicker({
           style={{
             background: 'none',
             border: 'none',
-            color: 'var(--text-sub)',
-            fontSize: 12,
+            color: 'var(--accent)',
+            fontSize: 14,
+            fontWeight: 600,
             cursor: 'pointer',
-            padding: '4px 0',
-            marginBottom: 8,
+            padding: '14px 2px',
+            minHeight: 48,
           }}
         >
           {showAllSchemas ? '↑ Только мои' : '↓ Показать все'}
