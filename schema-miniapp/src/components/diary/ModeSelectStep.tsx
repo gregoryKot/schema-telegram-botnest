@@ -89,8 +89,8 @@ export function ModeSelectStep({
           style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 8 }}
         >
           {tr(
-            'Что с тобой сейчас? Выбери самое близкое — потом уточним:',
-            'Что с вами сейчас? Выберите самое близкое — потом уточним:',
+            'Что сейчас чувствуешь? Выбери самое близкое:',
+            'Что сейчас чувствуете? Выберите самое близкое:',
           )}
         </div>
         <ModeFeelingBrowse onChange={onChange} />

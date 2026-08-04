@@ -6,7 +6,7 @@ import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { getModeById } from '../../schemaTherapyData';
 import { getDoubtsForMode } from '../../../../shared/src/mode/modeDoubts';
-import { getModeLeafLabel } from '../../../../shared/src/mode/modeBodyCues';
+import { getModeLeafLabel } from '../../../../shared/src/mode/modeFeelGates';
 import {
   MODE_DOUBT_OPENED_EVENT,
   MODE_DOUBT_SWITCHED_EVENT,

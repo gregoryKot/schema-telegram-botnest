@@ -16,14 +16,14 @@ vi.mock('../../api', () => ({
 afterEach(cleanup);
 
 describe('ModeSelectScreen', () => {
-  it('подпись «Что с тобой сейчас?» и чипы ModeFeelingBrowse видны сразу (главное действие)', () => {
+  it('подпись «Что сейчас чувствуешь?» и чипы ModeFeelingBrowse видны сразу (главное действие)', () => {
     render(<ModeSelectScreen modeId="" onPick={vi.fn()} onBack={vi.fn()} />);
     expect(
       screen.getByText(
-        'Что с тобой сейчас? Выбери самое близкое — потом уточним:',
+        'Что сейчас чувствуешь? Выбери самое близкое:',
       ),
     ).toBeTruthy();
-    expect(screen.getByText(/Мне больно, страшно, одиноко/)).toBeTruthy();
+    expect(screen.getByText(/Страшно, тревожно/)).toBeTruthy();
   });
 
   it('«Знаю режим – выбрать из списка» открывает ModeGroupList и меняет подпись кнопки, повторный клик прячет', () => {
@@ -42,7 +42,7 @@ describe('ModeSelectScreen', () => {
   it('клик по чипу семьи и режиму (ModeFeelingBrowse) вызывает onPick с верным modeId', () => {
     const onPick = vi.fn();
     render(<ModeSelectScreen modeId="" onPick={onPick} onBack={vi.fn()} />);
-    fireEvent.click(screen.getByText(/Мне больно, страшно, одиноко/));
+    fireEvent.click(screen.getByText(/Страшно, тревожно/));
     fireEvent.click(screen.getByText('Одиноко, страшно, грустно'));
     expect(onPick).toHaveBeenCalledWith('vulnerable_child');
   });

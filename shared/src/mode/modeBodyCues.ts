@@ -1,5 +1,4 @@
 import type { ModeTestGroup, ModeTestLeaf } from './modeTest';
-import { MODE_TEST_GROUPS } from './modeTest';
 
 /**
  * Вторые входы выбора режима: вход «не знаю, что чувствую» + SECOND_DOORS —
@@ -123,24 +122,10 @@ export const SECOND_DOORS: Record<string, ModeTestLeaf[]> = {
   ],
 };
 
-/**
- * Все семьи выбора режима: 8 «по чувству» (некоторые семьи расширены
- * вторыми входами через SECOND_DOORS — только в пикере, домашняя семья
- * не меняется) + вход «не знаю» последним.
- */
-export const MODE_PICKER_GROUPS: ModeTestGroup[] = [
-  ...MODE_TEST_GROUPS.map((g) => {
-    const doors = SECOND_DOORS[g.id];
-    return doors ? { ...g, leaves: [...g.leaves, ...doors] } : g;
-  }),
-  MODE_UNKNOWN_GROUP,
-];
-
-/** Человеческая фраза режима из листьев пикера (label первого вхождения) —
- *  для мест, где режим упоминается вне своего списка (лист сомнений):
- *  сначала фраза, термин — справкой (правило «глазами новичка»). */
-export function getModeLeafLabel(modeId: string): string | undefined {
-  for (const g of MODE_PICKER_GROUPS)
-    for (const l of g.leaves) if (l.modeId === modeId) return l.label;
-  return undefined;
-}
+// Витрина ворот пикера (MODE_PICKER_GROUPS/FEEL_GATES) и getModeLeafLabel
+// переехали в modeFeelGates.ts — этот файл остаётся источником сырых данных
+// (MODE_UNKNOWN_GROUP, SECOND_DOORS), которые modeFeelGates читает. Обратный
+// импорт отсюда в modeFeelGates не заводим: modeFeelGates уже импортирует
+// SECOND_DOORS/MODE_UNKNOWN_GROUP из этого файла, а цикл (этот файл →
+// modeFeelGates → этот файл) ломает порядок инициализации модулей — тот, кто
+// первым прочитает эти константы, получит их до присвоения значения.
