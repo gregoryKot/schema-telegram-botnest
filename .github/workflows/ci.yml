@@ -132,6 +132,11 @@ jobs:
       # Найдено этим гейтом: вторая копия prisma-exception.filter (правки в неё
       # не доезжали до прода) и два неподключённых компонента мини-аппа.
       - run: node scripts/check-dead-files.mjs
+      # merge-драйверы (.gitattributes ↔ scripts/setup-merge-drivers.mjs):
+      # атрибут без драйвера молча деградирует до текстового слияния, то есть
+      # защита от конфликтов между параллельными агентами есть на бумаге и нет
+      # на деле. Сверка ловит рассинхрон.
+      - run: node scripts/setup-merge-drivers.mjs --check
 
   # Миграции гоняются на РЕАЛЬНОМ Postgres (инцидент 2026-07-16: битый сид
   # healthy_adult_phrases — updatedAt NOT NULL без значения — уронил прод
