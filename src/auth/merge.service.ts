@@ -1,39 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-
-// Tables where a userId column points to User.id (BigInt).
-// Discovered via grep on schema.prisma; if a new user-owned model is added,
-// register its table name here. Order matters for FK dependencies on delete.
-export const USER_OWNED_TABLES = [
-  'Rating',
-  'YsqProgress',
-  'YsqResult',
-  'YsqResultHistory',
-  'Note',
-  'UserSchemaNote',
-  'UserModeNote',
-  'UserBeliefCheck',
-  'UserLetter',
-  'UserSafePlace',
-  'UserFlashcard',
-  'UserPractice',
-  'PracticePlan',
-  'PracticeSession',
-  'ChildhoodRating',
-  'ScheduledNotification',
-  'SchemaDiaryEntry',
-  'ModeDiaryEntry',
-  'GratitudeDiaryEntry',
-  'AppActivity',
-  'UserTask',
-  'DiaryDraft',
-  'AnalyticsEvent',
-  'TherapistRequest',
-  'AuthProvider',
-] as const;
-// Note: Pair / TherapyRelation / TherapistNote / ClientConceptualization
-// handled separately below — multi-column refs (therapistId/clientId/userId1/userId2).
+// Реестр переносимых таблиц живёт отдельным файлом; ре-экспорт — чтобы
+// импорты спек и соседей из merge.service продолжали работать.
+export { USER_OWNED_TABLES } from './user-owned-tables';
+import { USER_OWNED_TABLES } from './user-owned-tables';
 
 // Tables we DELETE rather than move during merge — moving them would carry
 // over security-sensitive state (refresh tokens of the old account become

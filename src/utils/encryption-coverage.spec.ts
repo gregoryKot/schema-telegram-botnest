@@ -207,6 +207,11 @@ const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     evidenceAgainst: e(`${BOT}/exercises.service.ts`),
     reframe: e(`${BOT}/exercises.service.ts`),
   },
+  UserPhraseCheck: {
+    phrase: e(`${BOT}/phrase-check.service.ts`),
+    marks: p('перечисление id примет (PHRASE_MARK_IDS), свободного текста нет'),
+    rewrite: e(`${BOT}/phrase-check.service.ts`),
+  },
   UserLetter: { text: e(`${BOT}/exercises.service.ts`) },
   UserSafePlace: { description: e(`${BOT}/exercises.service.ts`) },
   UserFlashcard: {
