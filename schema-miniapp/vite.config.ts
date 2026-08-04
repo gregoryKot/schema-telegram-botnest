@@ -47,11 +47,30 @@ export default defineConfig({
         // строится из билд-ассетов (self.__WB_MANIFEST), путей API тут нет
         // и быть не может — этот glob их физически не видит.
         globPatterns: ['**/*.{js,css,html}'],
+        // Имена ассетов без контент-хеша (см. build ниже), поэтому дефолт
+        // здесь опасен: workbox писал бы в прекэш `revision: null` и считал
+        // бандл неизменяемым — PWA навсегда осталась бы на первой версии.
+        // Паттерн ни с чем не совпадает ⇒ revision считается по содержимому.
+        dontCacheBustURLsMatching: /(?!)/,
       },
       devOptions: { enabled: false },
     }),
   ],
   base: '/app/',
+  // Имена ассетов БЕЗ контент-хеша: бастить нечего (ServeStaticModule отдаёт
+  // статику с max-age=0 и ETag), а платили за хеш конфликтами — dist в git,
+  // поэтому у каждой пары параллельных PR имя расходилось и git ловил
+  // rename/rename, который merge-драйвер не чинит. Инварианты под тестом:
+  // src/test-support/gates/miniapp-dist.spec.ts.
+  build: {
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name].js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name].[ext]',
+      },
+    },
+  },
   // shared/ импортирует react: без dedupe он резолвится в КОРНЕВОЙ
   // node_modules → два инстанса React (hooks dispatcher = null).
   resolve: { dedupe: ['react', 'react-dom'] },
