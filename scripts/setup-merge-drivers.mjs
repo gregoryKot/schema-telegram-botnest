@@ -16,8 +16,14 @@
 // скрипт. Без сверки легко добавить атрибут и забыть драйвер: слияние тогда
 // пойдёт текстовым, ошибки не будет, и узнаем мы об этом по битому бейслайну.
 import { spawnSync } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'fs';
+import { dirname, join } from 'path';
 
 const ROOT = join(import.meta.dirname, '..');
 const CHECK = process.argv.includes('--check');
@@ -35,7 +41,7 @@ const DRIVERS = {
     args: 'max %O %A %B %P',
   },
   'miniapp-dist': {
-    name: 'schema-miniapp/dist: не мержить, а пересобрать',
+    name: 'schema-miniapp/dist: гасит конфликт, dist пересоберёт post-merge',
     script: 'scripts/merge-miniapp-dist.mjs',
     args: '%A %P',
   },
@@ -77,9 +83,11 @@ if (CHECK) {
 
 // Установка. Любая проблема — предупреждение, а не падение: `prepare` не имеет
 // права ронять `npm install` (в CI и в Docker git-конфига может не быть вовсе).
-const isRepo =
-  spawnSync('git', ['rev-parse', '--git-dir'], { cwd: ROOT }).status === 0;
-if (!isRepo) {
+const gitDir = spawnSync('git', ['rev-parse', '--absolute-git-dir'], {
+  cwd: ROOT,
+  encoding: 'utf8',
+});
+if (gitDir.status !== 0) {
   console.log('merge-драйверы: не git-репозиторий, пропускаю.');
   process.exit(0);
 }
@@ -100,4 +108,39 @@ for (const [driver, { name, script, args }] of Object.entries(DRIVERS)) {
   }
   installed += 1;
 }
-console.log(`merge-драйверы: настроено ${installed}.`);
+
+// Хук post-merge: драйвер miniapp-dist только гасит конфликт, а верный dist
+// можно собрать лишь когда слитый исходник уже лежит в рабочем дереве — то
+// есть после слияния. Хук и делает это сам, чтобы шаг не держался на памяти
+// агента (подстраховка — CI-джоба `miniapp`).
+const HOOK_MARK = 'schema-telegram-botnest: merge-драйверы';
+const HOOK_BODY = [
+  '#!/bin/sh',
+  `# ${HOOK_MARK} (поставлен scripts/setup-merge-drivers.mjs).`,
+  '# Пересобирает мини-апп после слияния, если оно его трогало.',
+  'exec node scripts/merge-miniapp-dist.mjs --after-merge',
+  '',
+].join('\n');
+
+const hookPath = join(gitDir.stdout.trim(), 'hooks', 'post-merge');
+try {
+  // Чужой хук не затираем — он может делать что-то своё.
+  if (existsSync(hookPath) && !readFileSync(hookPath, 'utf8').includes(HOOK_MARK)) {
+    console.warn(
+      `merge-драйверы: в ${hookPath} уже лежит чужой post-merge — не трогаю.\n` +
+        '  Добавь в него строку сам:\n' +
+        '  node scripts/merge-miniapp-dist.mjs --after-merge',
+    );
+  } else {
+    mkdirSync(dirname(hookPath), { recursive: true });
+    writeFileSync(hookPath, HOOK_BODY);
+    chmodSync(hookPath, 0o755);
+  }
+} catch (e) {
+  console.warn(
+    `merge-драйверы: не удалось поставить post-merge (${e.message}) — ` +
+      'после слияния пересобирай мини-апп руками.',
+  );
+}
+
+console.log(`merge-драйверы: настроено ${installed}, хук post-merge на месте.`);

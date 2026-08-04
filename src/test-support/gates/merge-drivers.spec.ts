@@ -18,7 +18,7 @@ import {
   writeFileSync,
 } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { spawnSync } from 'child_process';
 import { runGate } from './gate-sandbox';
 
@@ -275,33 +275,93 @@ describe('setup-merge-drivers --check: атрибут без драйвера н
   });
 });
 
-describe('merge-miniapp-dist: не собирает то, что собирать нельзя', () => {
+describe('merge-miniapp-dist: драйвер гасит конфликт, собирает post-merge', () => {
   const DIST_DRIVER = 'merge-miniapp-dist.mjs';
 
-  it('маркеры конфликта в исходнике — конфликт остаётся человеку', () => {
-    const res = runGate(
-      DIST_DRIVER,
-      {
-        'schema-miniapp/src/App.tsx':
-          '<<<<<<< HEAD\nconst a = 1;\n=======\nconst a = 2;\n>>>>>>> other\n',
-        'out.tmp': 'конфликтная версия',
-      },
-      { args: ['out.tmp', 'schema-miniapp/dist/index.html'] },
-    );
-    expect(res.status).toBe(1);
-    expect(res.stderr).toContain('маркеры конфликта');
-  });
-
-  it('без установленных зависимостей мини-аппа — понятная причина, не падение сборки', () => {
+  // Драйвер намеренно НЕ собирает: git зовёт его, пока слитый исходник ещё не
+  // дописан в рабочее дерево, и сборка взяла бы чужую половину. Проверено
+  // вживую — в прекэше sw.js оказывалась revision бандла одной стороны при
+  // самом бандле от другой. Его работа — не оставить маркеры внутри бандла.
+  it('оставляет «нашу» версию нетронутой и не роняет слияние', () => {
     const res = runGate(
       DIST_DRIVER,
       {
         'schema-miniapp/src/App.tsx': 'export const App = () => null;\n',
-        'out.tmp': 'конфликтная версия',
+        'out.tmp': 'наша версия бандла',
+        'keep/out.tmp': 'наша версия бандла',
       },
-      { args: ['out.tmp', 'schema-miniapp/dist/index.html'] },
+      { args: ['out.tmp', 'schema-miniapp/dist/sw.js'], keepTmp: true },
     );
-    expect(res.status).toBe(1);
+    try {
+      expect(res.status).toBe(0);
+      expect(readFileSync(join(res.tmp, 'out.tmp'), 'utf8')).toBe(
+        'наша версия бандла',
+      );
+      expect(res.stderr).toContain('не сводится построчно');
+    } finally {
+      rmSync(res.tmp, { recursive: true, force: true });
+    }
+  });
+
+  /** Репозиторий, где только что прошло слияние: `--after-merge` смотрит на
+   *  `HEAD@{1}`, поэтому голого `git init` мало — нужна настоящая история. */
+  function repoAfterMerge(touchMiniapp: boolean): {
+    status: number | null;
+    stderr: string;
+  } {
+    const tmp = mkdtempSync(join(tmpdir(), 'aftermerge-'));
+    try {
+      const git = (...args: string[]) =>
+        spawnSync('git', args, { cwd: tmp, encoding: 'utf8' });
+      git('init', '-q', '.');
+      git('config', 'user.email', 'test@example.com');
+      git('config', 'user.name', 'test');
+      mkdirSync(join(tmp, 'scripts'), { recursive: true });
+      copyFileSync(
+        join(REAL_SCRIPTS, DIST_DRIVER),
+        join(tmp, 'scripts', DIST_DRIVER),
+      );
+      writeFileSync(join(tmp, 'readme.md'), 'база\n');
+      git('add', '-A');
+      git('commit', '-qm', 'base');
+      const base = git('rev-parse', '--abbrev-ref', 'HEAD').stdout.trim();
+
+      git('checkout', '-qb', 'other');
+      const side = touchMiniapp ? 'schema-miniapp/src/App.tsx' : 'readme.md';
+      mkdirSync(dirname(join(tmp, side)), { recursive: true });
+      writeFileSync(join(tmp, side), 'правка второй стороны\n');
+      git('add', '-A');
+      git('commit', '-qm', 'вторая сторона');
+
+      git('checkout', '-q', base);
+      writeFileSync(join(tmp, 'other.md'), 'наша правка\n');
+      git('add', '-A');
+      git('commit', '-qm', 'наша сторона');
+      git('merge', 'other', '-m', 'merge');
+
+      const res = spawnSync(
+        'node',
+        [join(tmp, 'scripts', DIST_DRIVER), '--after-merge'],
+        { cwd: tmp, encoding: 'utf8' },
+      );
+      return { status: res.status, stderr: res.stderr ?? '' };
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+
+  // Хук зовётся после КАЖДОГО слияния. Если он полезет собирать мини-апп на
+  // слиянии, которое его не трогало, каждый merge подорожает на минуту — такой
+  // хук отключат через неделю.
+  it('слияние не трогало мини-апп — молчит и не собирает', () => {
+    const res = repoAfterMerge(false);
+    expect(res.status).toBe(0);
+    expect(res.stderr).toBe('');
+  });
+
+  it('трогало, но зависимостей нет — предупреждает и НЕ роняет слияние', () => {
+    const res = repoAfterMerge(true);
+    expect(res.status).toBe(0);
     expect(res.stderr).toContain('зависимости мини-аппа');
   });
 });
