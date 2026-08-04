@@ -6,6 +6,8 @@ import { COLORS } from '../types';
 import { useNeedData } from '../needData';
 import { useTr } from '../utils/addressForm';
 import { pressable } from '../utils/a11y';
+import { detectCrisisAny } from '../utils/crisisMarkers';
+import { CrisisCard } from './CrisisCard';
 
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 const NEED_NAMES: Record<string, string> = {
@@ -411,6 +413,9 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             +
           </button>
         </div>
+        {/* правило №7: свободный текст обязан проходить кризисную детекцию,
+            до сохранения/шифрования — см. TaskCreateSheet/GratitudeEntrySheet */}
+        {detectCrisisAny(input) && <CrisisCard surface="practice" />}
       </div>
     </div>
   );
