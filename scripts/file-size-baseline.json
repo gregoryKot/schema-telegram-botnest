@@ -284,7 +284,7 @@
   "schema-miniapp/src/components/Skeleton.tsx": 149,
   "schema-miniapp/src/components/WarmWords.tsx": 149,
   "schema-miniapp/src/components/schemaInfoSheet/SchemasTab.tsx": 149,
-  "scripts/check-mutation-ratchet.mjs": 149,
+  "scripts/check-mutation-ratchet.mjs": 158,
   "src/articles/article-seo.middleware.ts": 149,
   "webapp/src/components/BottomNav.tsx": 149,
   "webapp/src/components/ModeMapFloatingEdge.tsx": 149,
@@ -906,5 +906,6 @@
   "webapp/src/utils/storageKeys.ts": 2,
   "webapp/src/utils/telemetryUrl.ts": 2,
   "webapp/src/utils/therapistContact.ts": 2,
-  "webapp/src/utils/todayInsight.ts": 2
+  "webapp/src/utils/todayInsight.ts": 2,
+  "src/test-support/gates/mutation-ratchet.spec.ts": 192
 }

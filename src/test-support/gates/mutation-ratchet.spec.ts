@@ -159,4 +159,34 @@ describe('check-mutation-ratchet.mjs', () => {
       cleanupTmp(res.tmp);
     }
   });
+
+  it('--report/--baseline берут другую пару файлов — для второго набора замера', () => {
+    // Семейство src/bot гоняется отдельной недельной джобой: ~950 мутантов не
+    // помещаются в ночную. У второго набора свой отчёт и свой пол, и гейт
+    // обязан уметь сверять именно их, а не подставлять пути по умолчанию —
+    // иначе недельный прогон будет молча сравниваться с чужим бейслайном.
+    const res = runGate(
+      'check-mutation-ratchet.mjs',
+      {
+        'scripts/mutation-baseline-bot.json': JSON.stringify({
+          total: 90,
+          files: { 'src/bot/bot.service.ts': 90 },
+        }),
+        'reports/mutation/bot.json': report({
+          'src/bot/bot.service.ts': [
+            ...Array(5).fill(mutant('Killed')),
+            ...Array(5).fill(mutant('Survived')),
+          ],
+        }),
+      },
+      {
+        args: [
+          '--report=reports/mutation/bot.json',
+          '--baseline=scripts/mutation-baseline-bot.json',
+        ],
+      },
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('src/bot/bot.service.ts: 90% → 50%');
+  });
 });
