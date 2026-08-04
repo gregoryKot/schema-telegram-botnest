@@ -352,40 +352,25 @@ describe('useYsqTest — selectAnswer: устаревшие замыкания (
     expect(sent[0]).toBe(6);
   });
 
-  it(
-    'НАЙДЕНО (отдельный класс бага, не устаревшее замыкание): двойной тап по одному ответу до срабатывания ' +
-      'ANSWER_ADVANCE_DELAY не отменяет первый таймер — оба колбэка шлют api.saveYsqProgress',
-    async () => {
-      const api = makeApi();
-      const { result } = renderHook(() =>
-        useYsqTest({ api, autoResume: true }),
-      );
+  it('двойной тап до автоперехода шлёт прогресс один раз, а не дважды', async () => {
+    const api = makeApi();
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
 
-      // Быстрый двойной тап на первый вопрос разными ответами, до истечения
-      // ANSWER_ADVANCE_DELAY (160мс) — в отличие от TrackerOverlay/SchemaIntroSheet,
-      // здесь нет clearTimeout предыдущего таймера в selectAnswer, поэтому
-      // планируются ДВА независимых таймера вместо одного дебаунсированного.
-      act(() => {
-        result.current.selectAnswer(0, 3);
-      });
-      act(() => {
-        result.current.selectAnswer(0, 5);
-      });
-      await advance(160);
+    // Быстрый двойной тап по одному вопросу разными ответами, до истечения
+    // ANSWER_ADVANCE_DELAY. Раньше планировались ДВА независимых таймера:
+    // оба дожидались своей очереди и слали api одинаковый по смыслу прогресс.
+    // Теперь второй тап отменяет таймер первого — как в остальных дебаунсах
+    // проекта (TrackerOverlay, SchemaIntroSheet).
+    act(() => {
+      result.current.selectAnswer(0, 3);
+    });
+    act(() => {
+      result.current.selectAnswer(0, 5);
+    });
+    await advance(160);
 
-      // Последний выбранный ответ не теряется (это не баг «устаревшего
-      // замыкания» — value передаётся аргументом и явно патчит нужный индекс)...
-      expect(result.current.answers[0]).toBe(5);
-      // ...страница продвинулась лишь на 1, потому что оба таймера читают
-      // `page` из момента ДО первого тапа (оба замыкания видели page=0,
-      // React ещё не успел закоммитить продвижение между двумя act()).
-      expect(result.current.page).toBe(1);
-      // Но именно поэтому api получает ДВА одинаковых по смыслу вызова вместо
-      // одного — лишняя (хоть и не разрушительная) сетевая нагрузка. Не
-      // фиксится в рамках этой задачи (не то же семейство бага, что
-      // useClientDetail/SchemaIntroSheet/ModeIntroSheet/TrackerOverlay —
-      // там дебаунс явно отменяет предыдущий таймер, здесь его никогда не было).
-      expect(api.saveYsqProgress).toHaveBeenCalledTimes(2);
-    },
-  );
+    expect(result.current.answers[0]).toBe(5);
+    expect(result.current.page).toBe(1);
+    expect(api.saveYsqProgress).toHaveBeenCalledTimes(1);
+  });
 });

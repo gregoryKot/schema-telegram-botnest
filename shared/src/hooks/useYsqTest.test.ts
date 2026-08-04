@@ -250,3 +250,29 @@ describe('buildShareText', () => {
     expect(text).toContain('средний балл 6');
   });
 });
+
+describe('useYsqTest — отложенный переход не переживает закрытие теста', () => {
+  it('человек ответил и сразу закрыл тест — прогресс не уезжает на страницу, до которой он не дошёл', async () => {
+    // Найдено этим же спеком: таймер автоперехода не отменялся при
+    // размонтировании, поэтому через 160 мс после закрытия хук всё равно
+    // писал прогресс со следующей страницей и дёргал api. В тестах это
+    // выглядело как течь в соседний тест, у пользователя — как «я закрыл, а
+    // оно само пролистнуло и сохранило».
+    vi.useFakeTimers();
+    const api = makeApi();
+    const { result, unmount } = renderHook(() => useYsqTest({ api }));
+    act(() => result.current.handleStartFresh());
+    act(() => result.current.selectAnswer(0, 4));
+
+    unmount();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    const saved = JSON.parse(localStorage.getItem(YSQ_PROGRESS_KEY)!) as {
+      page: number;
+    };
+    expect(saved.page).toBe(0);
+    expect(api.saveYsqProgress).not.toHaveBeenCalled();
+  });
+});
