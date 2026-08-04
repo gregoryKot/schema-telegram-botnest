@@ -135,3 +135,12 @@ export const MODE_PICKER_GROUPS: ModeTestGroup[] = [
   }),
   MODE_UNKNOWN_GROUP,
 ];
+
+/** Человеческая фраза режима из листьев пикера (label первого вхождения) —
+ *  для мест, где режим упоминается вне своего списка (лист сомнений):
+ *  сначала фраза, термин — справкой (правило «глазами новичка»). */
+export function getModeLeafLabel(modeId: string): string | undefined {
+  for (const g of MODE_PICKER_GROUPS)
+    for (const l of g.leaves) if (l.modeId === modeId) return l.label;
+  return undefined;
+}

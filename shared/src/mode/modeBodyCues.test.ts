@@ -13,6 +13,7 @@ import {
   MODE_UNKNOWN_GROUP,
   SECOND_DOORS,
   MODE_PICKER_GROUPS,
+  getModeLeafLabel,
 } from './modeBodyCues';
 import {
   MODE_TEST_GROUPS,
@@ -130,4 +131,16 @@ describe('вторые входы достижимы из своих двере�
       }
     },
   );
+});
+
+describe('getModeLeafLabel', () => {
+  it.each(ALL_TEST_MODE_IDS)('%s — непустая человеческая фраза', (modeId) => {
+    const label = getModeLeafLabel(modeId);
+    expect(label).toBeTruthy();
+    expect(label?.trim().length).toBeGreaterThan(0);
+  });
+
+  it('неизвестный id — undefined', () => {
+    expect(getModeLeafLabel('not_a_real_mode')).toBeUndefined();
+  });
 });
