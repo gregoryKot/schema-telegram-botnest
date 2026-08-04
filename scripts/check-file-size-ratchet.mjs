@@ -81,8 +81,11 @@ for (const f of files) {
 }
 
 if (UPDATE) {
+  // Сортировка по ПУТИ, а не по размеру: при сортировке по размеру ужавшийся
+  // файл переезжал через полфайла, и диффы параллельных агентов перекрывались
+  // почти всегда. По пути строка стоит на месте (см. .gitattributes).
   const sorted = Object.fromEntries(
-    Object.entries(sizes).sort((a, b) => b[1] - a[1]),
+    Object.entries(sizes).sort(([a], [b]) => a.localeCompare(b)),
   );
   writeFileSync(BASELINE_PATH, JSON.stringify(sorted, null, 2) + '\n');
   const over = Object.values(sizes).filter((n) => n > NEW_FILE_LIMIT).length;

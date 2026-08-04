@@ -403,7 +403,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
           <textarea id="mm-node-healthy" ref={healthyRef} style={{ ...inputStyle, resize: 'vertical', minHeight: 48,
             borderColor: 'color-mix(in srgb, var(--c-moss) 45%, transparent)' }} rows={2}
             value={node.data.healthyResponse ?? ''} onChange={e => patchData({ healthyResponse: e.target.value || undefined })}
-            placeholder={node.type === 'critic' ? tr('Ответ критику: «Ты не обязан быть идеальным…»', 'Ответ критику: «Вы не обязаны быть идеальным…»')
+            placeholder={node.type === 'critic' ? tr('Ответ критику: «От тебя не требуется безупречность…»', 'Ответ критику: «От вас не требуется безупречность…»')
               : node.type === 'coping' ? 'Зачем защита? «Я могу выдержать эту боль…»'
               : tr('Поддержка ребёнку: «Я с тобой, ты в безопасности…»', 'Поддержка ребёнку: «Я с тобой, ты в безопасности…»')} />
         </>

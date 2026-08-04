@@ -34,7 +34,7 @@ afterEach(() => {
 describe('ModeEntrySheet — кризисная детекция', () => {
   it('кризисная фраза в описании ситуации показывает CrisisCard', () => {
     renderSheetOnFormStep();
-    const textarea = screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я почувствовал, что «выключаюсь».');
+    const textarea = screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я чувствую, что «выключаюсь».');
     fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
     expect(screen.getByRole('status')).toBeTruthy();
     expect(screen.getByText('8-800-2000-122')).toBeTruthy();
@@ -42,7 +42,7 @@ describe('ModeEntrySheet — кризисная детекция', () => {
 
   it('нейтральный текст не показывает CrisisCard', () => {
     renderSheetOnFormStep();
-    const textarea = screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я почувствовал, что «выключаюсь».');
+    const textarea = screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я чувствую, что «выключаюсь».');
     fireEvent.change(textarea, { target: { value: 'Обычный звонок с папой' } });
     expect(screen.queryByRole('status')).toBeNull();
   });

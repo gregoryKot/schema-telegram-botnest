@@ -1,0 +1,33 @@
+# Правила слияния для файлов, которые вынуждены трогать почти все параллельные
+# агенты. Сами драйверы ставятся в .git/config через npm `prepare`
+# (scripts/setup-merge-drivers.mjs) — без установки строки ниже молча
+# деградируют до обычного текстового слияния.
+#
+# ВАЖНО: драйверы работают только при слиянии НА МАШИНЕ. Кнопка «Resolve
+# conflicts» в вебе GitHub их не знает — конфликтующий PR сводится локально
+# (git fetch origin main && git merge origin/main), а не в браузере.
+
+# ── Бейслайны храповиков ─────────────────────────────────────────────────────
+# Сводятся по семантике храповика, а не построчно: прогресс обеих сторон
+# сохраняется, планка не может случайно опуститься. См. merge-json-ratchet.mjs.
+
+# меньше — лучше
+scripts/file-size-baseline.json           merge=ratchet-min
+scripts/robot-phrases-baseline.json       merge=ratchet-min
+scripts/gendered-forms-baseline.json      merge=ratchet-min
+scripts/address-form-baseline.json        merge=ratchet-min
+scripts/eslint-baseline.json              merge=ratchet-min
+scripts/weak-assert-baseline.json         merge=ratchet-min
+scripts/jscpd-baseline.json               merge=ratchet-min
+scripts/dead-files-baseline.json          merge=ratchet-min
+
+# больше — лучше
+scripts/coverage-baseline.json            merge=ratchet-max
+scripts/frontend-coverage-baseline.json   merge=ratchet-max
+scripts/mutation-baseline.json            merge=ratchet-max
+
+# ── Сборка мини-аппа ─────────────────────────────────────────────────────────
+# dist коммитится в git (Dockerfile его только копирует), поэтому конфликтует
+# у каждой пары PR, тронувших исходник. Построчно бандл не сводится — драйвер
+# пересобирает мини-апп и отдаёт результат сборки. См. merge-miniapp-dist.mjs.
+schema-miniapp/dist/**                    merge=miniapp-dist

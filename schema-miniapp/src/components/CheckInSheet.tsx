@@ -48,7 +48,7 @@ export function CheckInSheet({
             lineHeight: 1.3,
           }}
         >
-          {tr('Вчера ты планировал', 'Вчера вы планировали')}
+          {tr('Вчера в планах было', 'Вчера вы планировали')}
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>
           {needEmoji} {needLabel}
@@ -114,7 +114,7 @@ export function CheckInSheet({
             cursor: saving ? 'default' : 'pointer',
           }}
         >
-          {saving ? 'Сохранение...' : 'Да, сделал ✓'}
+          {saving ? 'Сохранение...' : 'Да, получилось ✓'}
         </button>
       </div>
       {error && (
