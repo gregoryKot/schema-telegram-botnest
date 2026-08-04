@@ -18,6 +18,7 @@ export const USER_DATA_TABLES = [
   'userSchemaNote',
   'userModeNote',
   'userBeliefCheck',
+  'userPhraseCheck',
   'userLetter',
   'userSafePlace',
   'userFlashcard',

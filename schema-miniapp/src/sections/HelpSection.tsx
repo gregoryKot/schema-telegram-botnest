@@ -3,6 +3,8 @@ import { useSafeTop } from '../utils/safezone';
 import { SchemaFlashcard } from '../components/SchemaFlashcard';
 import { LetterToSelf } from '../components/LetterToSelf';
 import { BeliefCheck } from '../components/BeliefCheck';
+import { PhraseCheck } from '../components/PhraseCheck';
+import { CrisisSheet } from './helpSection/CrisisSheet';
 import { SafePlace } from '../components/SafePlace';
 import { WarmWords } from '../components/WarmWords';
 import { TherapyNote } from '../components/TherapyNote';
@@ -64,6 +66,7 @@ export function HelpSection({
   const [showCrisis, setShowCrisis] = useState(false);
   const [showSelfHelp, setShowSelfHelp] = useState(false);
   const [showBeliefCheck, setShowBeliefCheck] = useState(false);
+  const [showPhraseCheck, setShowPhraseCheck] = useState(false);
   const [showLetterToSelf, setShowLetterToSelf] = useState(false);
   const [showSafePlace, setShowSafePlace] = useState(false);
   const [showWarmWords, setShowWarmWords] = useState(false);
@@ -343,6 +346,7 @@ export function HelpSection({
           onOpenPractices={onOpenPractices}
           onOpenPlans={onOpenPlans}
           onOpenBeliefCheck={() => setShowBeliefCheck(true)}
+          onOpenPhraseCheck={() => setShowPhraseCheck(true)}
           onOpenSafePlace={() => setShowSafePlace(true)}
           onOpenLetterToSelf={() => setShowLetterToSelf(true)}
           onOpenFlashcard={() => setShowFlashcard(true)}
@@ -365,6 +369,12 @@ export function HelpSection({
       {showBeliefCheck && (
         <BeliefCheck
           onClose={() => setShowBeliefCheck(false)}
+          onComplete={handleTaskComplete}
+        />
+      )}
+      {showPhraseCheck && (
+        <PhraseCheck
+          onClose={() => setShowPhraseCheck(false)}
           onComplete={handleTaskComplete}
         />
       )}
@@ -419,34 +429,7 @@ export function HelpSection({
       {showStop && (
         <QuickPracticeSheet id="stop" onClose={() => setShowStop(false)} />
       )}
-      {showCrisis && (
-        <BottomSheet onClose={() => setShowCrisis(false)} zIndex={200}>
-          <div style={{ paddingTop: 4 }}>
-            <div
-              style={{
-                fontSize: 17,
-                fontWeight: 800,
-                color: 'var(--text)',
-                marginBottom: 4,
-              }}
-            >
-              Помощь рядом
-            </div>
-            <CrisisCard />
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--text-sub)',
-                lineHeight: 1.6,
-                marginTop: 4,
-              }}
-            >
-              Если есть угроза жизни — 112. Разговор с близким человеком тоже
-              считается: иногда одно сообщение «мне плохо» — уже первый шаг.
-            </div>
-          </div>
-        </BottomSheet>
-      )}
+      {showCrisis && <CrisisSheet onClose={() => setShowCrisis(false)} />}
       {showTaskCreate && (
         <TaskCreateSheet
           onCreated={() => {

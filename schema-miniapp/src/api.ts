@@ -13,6 +13,7 @@ export type {
   UserSchemaNote,
   UserModeNote,
 } from '../../shared/src/notes/types';
+import { exercisesApi } from './apiExercises';
 import {
   BASE,
   authedFetch,
@@ -345,54 +346,7 @@ export const api = {
   getModeNotes: () => get<UserModeNote[]>('/api/mode-notes'),
   saveModeNote: (body: SaveModeNoteBody) => post('/api/mode-notes', body),
 
-  // ─── Exercises ───────────────────────────────────────────────────────────────
-  getBeliefChecks: () =>
-    get<
-      Array<{
-        id: number;
-        belief: string;
-        evidenceFor: string[];
-        evidenceAgainst: string[];
-        reframe: string | null;
-        createdAt: string;
-      }>
-    >('/api/belief-checks'),
-  createBeliefCheck: (body: {
-    belief: string;
-    evidenceFor: string[];
-    evidenceAgainst: string[];
-    reframe?: string;
-  }) => post('/api/belief-checks', body),
-  deleteBeliefCheck: (id: number) => del(`/api/belief-checks/${id}`),
-
-  getLetters: () =>
-    get<Array<{ id: number; text: string; createdAt: string }>>('/api/letters'),
-  createLetter: (text: string) => post('/api/letters', { text }),
-  deleteLetter: (id: number) => del(`/api/letters/${id}`),
-
-  getSafePlace: () =>
-    get<{ description: string; updatedAt: string } | null>('/api/safe-place'),
-  saveSafePlace: (description: string) =>
-    post('/api/safe-place', { description }),
-
-  getFlashcards: () =>
-    get<
-      Array<{
-        id: number;
-        modeId: string;
-        needId: string;
-        reflection: string | null;
-        action: string | null;
-        createdAt: string;
-      }>
-    >('/api/flashcards'),
-  createFlashcard: (body: {
-    modeId: string;
-    needId: string;
-    reflection?: string;
-    action?: string;
-  }) => post('/api/flashcards', body),
-  deleteFlashcard: (id: number) => del(`/api/flashcards/${id}`),
+  ...exercisesApi,
 
   // ─── Therapist client notes ──────────────────────────────────────────────────
   getClientSchemaNotes: (clientId: number) =>
