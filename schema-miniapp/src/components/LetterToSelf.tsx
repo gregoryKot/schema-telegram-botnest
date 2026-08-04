@@ -163,7 +163,7 @@ export function LetterToSelf({ onClose, onComplete }: Props) {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Дорогой маленький я..."
+          placeholder="Дорогой мой ребёнок..."
           rows={8}
           style={{
             width: '100%',
