@@ -156,9 +156,13 @@ describe('ModeEntrySheet — рестарт цепочки после ModeChainS
 
     fireEvent.click(screen.getByText('Другой режим'));
 
-    // назад на шаг выбора режима (CTA теста снова виден)
+    // назад на шаг выбора режима (чипы «по ощущению» снова видны)
     await waitFor(() =>
-      expect(screen.getByText('Не знаю, какой режим')).toBeTruthy(),
+      expect(
+        screen.getByText(
+          'Что с тобой сейчас? Выбери самое близкое — потом уточним:',
+        ),
+      ).toBeTruthy(),
     );
     expect(screen.queryByText('Запись сохранена')).toBeNull();
   });
