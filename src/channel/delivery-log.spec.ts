@@ -103,6 +103,20 @@ describe('DeliveryLogService', () => {
     await new DeliveryLogService(prisma).recent(5);
     expect(findMany).toHaveBeenCalledWith({ orderBy: { id: 'desc' }, take: 5 });
   });
+
+  it('slotRows фильтрует по слоту (startsWith) и по времени — досылка видит только свой слот', async () => {
+    // По этим строкам расписание считает долг конкретного слота (catchUp):
+    // фильтр по source нужен, чтобы утренний тик не подхватил вечерний долг, а
+    // фильтр по времени — чтобы не тянуть историю за прошлые дни.
+    const { prisma, findMany } = makePrisma();
+    const since = new Date('2026-07-31T07:00:00Z');
+    await new DeliveryLogService(prisma).slotRows('утро', since);
+    expect(findMany).toHaveBeenCalledWith({
+      where: { createdAt: { gte: since }, source: { startsWith: 'утро' } },
+      orderBy: { id: 'desc' },
+      take: 40,
+    });
+  });
 });
 
 describe('formatBuildLine', () => {

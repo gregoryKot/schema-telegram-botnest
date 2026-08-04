@@ -115,11 +115,14 @@ describe('DiarySection — загрузка и пустое состояние',
 
 describe('DiarySection — сохранение записи благодарности (read-after-write)', () => {
   it('после сохранения новая запись сразу видна в списке дневника', async () => {
+    // Дата берётся из текущего дня, а не литералом: компонент шлёт «сегодня»,
+    // и с захардкоженной датой тест жил ровно до следующих суток.
+    const today = new Date().toISOString().slice(0, 10);
     mockApi.createGratitudeDiary.mockResolvedValue({
       id: 42,
-      date: '2026-08-03',
+      date: today,
       items: ['сегодня было солнечно'],
-      createdAt: '2026-08-03T12:00:00.000Z',
+      createdAt: `${today}T12:00:00.000Z`,
     });
     await renderLoaded();
 
@@ -135,7 +138,7 @@ describe('DiarySection — сохранение записи благодарн�
     fireEvent.click(screen.getByText('Сохранить'));
 
     await waitFor(() =>
-      expect(mockApi.createGratitudeDiary).toHaveBeenCalledWith('2026-08-03', [
+      expect(mockApi.createGratitudeDiary).toHaveBeenCalledWith(today, [
         'сегодня было солнечно',
       ]),
     );

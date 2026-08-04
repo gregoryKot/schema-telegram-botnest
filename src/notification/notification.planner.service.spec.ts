@@ -224,6 +224,52 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
         compactControls: false,
       });
     });
+
+    // Граница daysSince>=7 (строка "if (daysSince >= 7) return") ловится ТОЛЬКО
+    // ровно на 7 — при 8+ мутация >= → > даёт тот же результат (8>7 тоже true).
+    // Чтобы дойти сюда с daysSince=7 (не быть перехваченным dormant_7 выше),
+    // юзер должен САМ выбрать редкую частоту (chosenSparse).
+    it('день 7 (ровно граница) + редкая частота + remindToday → напоминание подавлено', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(7);
+      deps.cadence.evaluate.mockResolvedValue({ remindToday: true });
+      await svc.planDay(makeUser({ notifyFrequency: 2 }), NOW);
+      expect(scheduledTypes(deps)).toEqual([]);
+    });
+
+    // Граница onBreak (daysSince>=3): день 2 не onBreak, день 3 — onBreak.
+    // День 3 при обычной частоте перехватывается lapsing_3, поэтому здесь тоже
+    // нужна редкая частота, чтобы дойти до scheduleReminder именно с daysSince=3.
+    it('день 2 → onBreak=false (граница снизу)', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(2);
+      await svc.planDay(makeUser(), NOW);
+      expect(scheduledTypes(deps)).toEqual(['reminder']);
+      expect(deps.notifications.schedule.mock.calls[0][3]).toMatchObject({
+        onBreak: false,
+      });
+    });
+
+    it('день 3 (ровно граница) + редкая частота → onBreak=true', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(3);
+      deps.cadence.evaluate.mockResolvedValue({ remindToday: true });
+      await svc.planDay(makeUser({ notifyFrequency: 2 }), NOW);
+      expect(scheduledTypes(deps)).toEqual(['reminder']);
+      expect(deps.notifications.schedule.mock.calls[0][3]).toMatchObject({
+        onBreak: true,
+      });
+    });
+
+    it('nudge-уведомление несёт daysSince в payload', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(75);
+      await svc.planDay(makeUser(), NOW);
+      expect(scheduledTypes(deps)).toEqual(['nudge']);
+      expect(deps.notifications.schedule.mock.calls[0][3]).toEqual({
+        daysSince: 75,
+      });
+    });
   });
 
   describe('перерыв-осознающий тон и компактные кнопки', () => {
@@ -291,6 +337,22 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       await svc.planDay(makeUser(), FIRST_OF_MONTH);
       expect(scheduledTypes(deps)).not.toContain('donate_reminder');
     });
+
+    // Граница daysSince>=0 (снизу) для weekly и donate — оба условия начинаются
+    // с ">=0"; мутация на ">0" отсекла бы ровно daysSince=0 и только его.
+    it('воскресенье + daysSince=0 (граница снизу) → weekly шлём', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(0);
+      await svc.planDay(makeUser(), SUNDAY);
+      expect(scheduledTypes(deps)).toEqual(['weekly']);
+    });
+
+    it('1-е число + daysSince=0 (граница снизу) → donate_reminder шлём', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(0);
+      await svc.planDay(makeUser(), FIRST_OF_MONTH);
+      expect(scheduledTypes(deps)).toEqual(['donate_reminder']);
+    });
   });
 
   describe('дни без напоминания', () => {
@@ -312,6 +374,23 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       expect(scheduledTypes(deps)).toEqual(['low_streak_insight']);
       const payload = deps.notifications.schedule.mock.calls[0][3];
       expect(payload.showBooking).toBe(true);
+    });
+
+    // Ветка "только 3-дневная серия" (10-дневная пуста) — раньше в тестах оба
+    // вызова getLowStreakNeeds(uid,5,3) и (uid,5,10) отвечали одним и тем же
+    // моком, поэтому ветка showBooking=false была неотличима от showBooking=true.
+    it('низкая потребность только за 3 дня (10-дневной серии нет) → low_streak_insight БЕЗ booking', async () => {
+      const { svc, deps } = make();
+      deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
+      deps.analytics.getLowStreakNeeds.mockImplementation(
+        (_uid: bigint, _n: number, days: number) =>
+          Promise.resolve(days === 10 ? [] : ['autonomy']),
+      );
+      await svc.planDay(makeUser(), NOW);
+      expect(scheduledTypes(deps)).toEqual(['low_streak_insight']);
+      const payload = deps.notifications.schedule.mock.calls[0][3];
+      expect(payload.showBooking).toBe(false);
+      expect(payload.text).toContain('Автономия');
     });
 
     it('в день напоминания practice_missed уступает reminder (бюджет)', async () => {
@@ -374,6 +453,32 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       const payload = deps.notifications.schedule.mock.calls[0][3];
       expect(payload.gamified).toBe(false);
       expect(payload.approachingStreak).toBeUndefined();
+    });
+  });
+
+  describe('scheduleReminder — арифметика вчерашнего среднего и выбор слабейшей потребности', () => {
+    it('yesterdayAvg считается как среднее оценок за вчера (не за сегодня и не сумма)', async () => {
+      const { svc, deps } = make();
+      // history[0] — сегодня (игнорируется), history[1] — вчера (среднее берём отсюда).
+      deps.analytics.getHistoryRatings.mockResolvedValue([
+        { ratings: { attachment: 9 } },
+        { ratings: { attachment: 2, autonomy: 4 } }, // (2+4)/2 = 3
+      ]);
+      await svc.planDay(makeUser(), NOW); // daysSince=1 по умолчанию → не onBreak
+      const payload = deps.notifications.schedule.mock.calls[0][3];
+      expect(payload.yesterdayAvg).toBe(3);
+    });
+
+    it('lowestNeed выбирает потребность с МИНИМАЛЬНЫМ avg, а не первую/максимальную', async () => {
+      const { svc, deps } = make();
+      deps.analytics.getWeeklyStats.mockResolvedValue([
+        { needId: 'attachment', avg: 8, trend: '→' },
+        { needId: 'autonomy', avg: 3, trend: '→' },
+      ]);
+      await svc.planDay(makeUser(), NOW); // daysSince=1 → не onBreak
+      const payload = deps.notifications.schedule.mock.calls[0][3];
+      expect(payload.lowestNeedId).toBe('autonomy');
+      expect(payload.lowestNeed).toBe('Автономия');
     });
   });
 

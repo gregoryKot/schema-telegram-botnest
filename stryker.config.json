@@ -13,7 +13,12 @@
     "src/utils/tz.ts",
     "src/auth/merge.service.ts",
     "src/therapy/therapy-relations.service.ts",
-    "src/api/telegram-auth.guard.ts"
+    "src/api/telegram-auth.guard.ts",
+    "src/notification/notification.planner.service.ts",
+    "src/booking/booking.service.ts",
+    "src/subscription/subscription.service.ts",
+    "src/booking/slot.service.ts",
+    "src/booking/pricing.service.ts"
   ],
   "reporters": [
     "clear-text",
@@ -26,6 +31,7 @@
   },
   "concurrency": 2,
   "coverageAnalysis": "perTest",
+  "ignoreStatic": true,
   "thresholds": {
     "high": 80,
     "low": 60,

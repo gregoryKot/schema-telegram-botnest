@@ -79,6 +79,23 @@ describe('ChannelCheckService', () => {
     expect(max.send.mock.calls[0][0].text).toBe('фраза из пула');
   });
 
+  it('пустая история И пустой пул — не шлём пустышку, а называем причину', async () => {
+    // Оба источника фразы пусты (свежая база, пул ещё не заполнен) — раньше
+    // это упало бы на send(undefined) вместо понятного ответа.
+    const max = makeTarget('max', 'c1');
+    const { svc } = makePhrases([]);
+    (svc.pickFromPool as jest.Mock).mockResolvedValue(null);
+    const res = await new ChannelCheckService(
+      [max.target],
+      svc,
+      journal(),
+    ).checkOne('max');
+
+    expect(max.send).not.toHaveBeenCalled();
+    expect(res.ok).toBe(false);
+    expect(res.message).toContain('нечего отправить');
+  });
+
   it('не пишет пост в историю — иначе расписание сочтёт слот закрытым', async () => {
     const max = makeTarget('max', 'c1');
     const { svc, recordPost } = makePhrases();

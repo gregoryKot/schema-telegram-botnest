@@ -150,13 +150,23 @@ describe('BotService.getChildhoodRatings / saveChildhoodRatings — read-after-w
     expect(result).toEqual({ attachment: 6, autonomy: 2 });
   });
 
-  it('сохранение батчем идёт одной транзакцией (атомарность)', async () => {
+  it('сохранение батчем идёт одной транзакцией с одной операцией на каждую потребность (атомарность)', async () => {
     const db = makeDb();
     const svc = new BotService(db);
 
     await svc.saveChildhoodRatings(1n, { attachment: 6, autonomy: 2 });
 
+    // Голое toHaveBeenCalledTimes(1) не поймало бы мутанта, вызывающего
+    // upsert по одному вне $transaction (тогда мок тоже был бы вызван 1
+    // раз — просто с пустым/иным массивом). Проверяем реальный аргумент:
+    // массив из ровно двух промисов, по числу переданных потребностей —
+    // если саму запись «размотать» из транзакции, вызов $transaction либо
+    // не произойдёт вовсе, либо придёт с другой формой аргумента.
     expect(db.$transaction).toHaveBeenCalledTimes(1);
+    const opsArg = db.$transaction.mock.calls[0][0];
+    expect(Array.isArray(opsArg)).toBe(true);
+    expect(opsArg).toHaveLength(2);
+    expect(db.childhoodRating.upsert).toHaveBeenCalledTimes(2);
   });
 });
 

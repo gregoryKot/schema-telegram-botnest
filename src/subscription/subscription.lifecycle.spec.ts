@@ -167,6 +167,14 @@ describe('SubscriptionService — pricing', () => {
     expect(await service.getPrice('month')).toBe(1);
   });
 
+  // Граница "n > 0" (не ">=0"): сохранённое значение "0" — мусор, должен
+  // сработать дефолт, а не вернуться 0 как реальная цена.
+  it('getPrice: значение "0" в BookingSetting трактуется как мусор → дефолт', async () => {
+    const { service, prisma } = makeService();
+    prisma.settings.set('sub:month', '0');
+    expect(await service.getPrice('month')).toBe(SUB_DEFAULT_PRICE.month);
+  });
+
   it('getOptions: обе опции с ценами', async () => {
     const { service } = makeService();
     const options = await service.getOptions();
@@ -245,6 +253,26 @@ describe('SubscriptionService.subscribe', () => {
     });
     expect(prisma.subs.get(res.id).period).toBe('month');
   });
+
+  it('email тримится перед сохранением (.trim() реально применяется)', async () => {
+    const { service, prisma } = makeService({ robokassaEnabled: false });
+    const res = await service.subscribe({
+      period: 'month',
+      email: '   a@b.ru   ',
+      acceptedOffer: true,
+    });
+    expect(prisma.subs.get(res.id).email).toBe('a@b.ru');
+  });
+
+  it('email из пробелов превращается в null (не в пустую строку)', async () => {
+    const { service, prisma } = makeService({ robokassaEnabled: false });
+    const res = await service.subscribe({
+      period: 'month',
+      email: '   ',
+      acceptedOffer: true,
+    });
+    expect(prisma.subs.get(res.id).email).toBeNull();
+  });
 });
 
 describe('SubscriptionService.markChargePaidByInvId — расхождение суммы', () => {
@@ -290,6 +318,95 @@ describe('SubscriptionService.markChargePaidByInvId — расхождение �
     );
     expect(res).toEqual({ ok: true });
     expect(calls.alerts.length).toBe(0);
+  });
+
+  it('charge уже paid → тихий no-op, subscription.update не вызывается', async () => {
+    const { service, prisma, calls } = makeService();
+    const sub = await prisma.subscription.create({
+      data: { status: 'active', period: 'month', amount: 300 },
+    });
+    const charge = await prisma.subscriptionCharge.create({
+      data: {
+        subscriptionId: sub.id,
+        amount: 300,
+        isFirst: true,
+        status: 'paid',
+      },
+    });
+    const res = await service.markChargePaidByInvId(
+      SUBSCRIPTION_INVID_BASE + charge.id,
+      300,
+    );
+    expect(res).toEqual({ ok: true });
+    expect(prisma.subscription.update).not.toHaveBeenCalled();
+    expect(calls.alerts.length).toBe(0);
+  });
+});
+
+describe('SubscriptionService.markChargePaidByInvId — расчёт следующего списания и firstInvId', () => {
+  it('period=month: nextChargeAt сдвигается ровно на 1 месяц вперёд (не на 30 дней)', async () => {
+    const { service, prisma } = makeService();
+    const sub = await prisma.subscription.create({
+      data: { status: 'pending', period: 'month', amount: 300 },
+    });
+    const charge = await prisma.subscriptionCharge.create({
+      data: { subscriptionId: sub.id, amount: 300, isFirst: true },
+    });
+    const before = Date.now();
+    await service.markChargePaidByInvId(SUBSCRIPTION_INVID_BASE + charge.id);
+    const row = prisma.subs.get(sub.id);
+    const expected = new Date(before);
+    expected.setUTCMonth(expected.getUTCMonth() + 1);
+    // Сверяем месяц/год, а не миллисекунды — тест не гоняется на границе суток.
+    expect(row.nextChargeAt.getUTCMonth()).toBe(expected.getUTCMonth());
+    expect(row.nextChargeAt.getUTCFullYear()).toBe(expected.getUTCFullYear());
+  });
+
+  it('period=year: nextChargeAt сдвигается ровно на 1 год (не на 12 месяцев неверно вычисленных)', async () => {
+    const { service, prisma } = makeService();
+    const sub = await prisma.subscription.create({
+      data: { status: 'pending', period: 'year', amount: 3000 },
+    });
+    const charge = await prisma.subscriptionCharge.create({
+      data: { subscriptionId: sub.id, amount: 3000, isFirst: true },
+    });
+    const before = new Date();
+    await service.markChargePaidByInvId(SUBSCRIPTION_INVID_BASE + charge.id);
+    const row = prisma.subs.get(sub.id);
+    expect(row.nextChargeAt.getUTCFullYear()).toBe(before.getUTCFullYear() + 1);
+  });
+
+  it('продление (isFirst=false) НЕ перезаписывает firstInvId уже активной подписки', async () => {
+    const { service, prisma, calls } = makeService();
+    const sub = await prisma.subscription.create({
+      data: {
+        status: 'active',
+        period: 'month',
+        amount: 300,
+        firstInvId: 900001,
+      },
+    });
+    const charge = await prisma.subscriptionCharge.create({
+      data: { subscriptionId: sub.id, amount: 300, isFirst: false },
+    });
+    await service.markChargePaidByInvId(SUBSCRIPTION_INVID_BASE + charge.id);
+    expect(prisma.subs.get(sub.id).firstInvId).toBe(900001);
+    expect(calls.alerts.some((m) => m.includes('Продление'))).toBe(true);
+    expect(calls.alerts.some((m) => m.includes('Новая подписка'))).toBe(false);
+  });
+
+  it('первая оплата (isFirst=true) записывает firstInvId и шлёт алерт "Новая подписка"', async () => {
+    const { service, prisma, calls } = makeService();
+    const sub = await prisma.subscription.create({
+      data: { status: 'pending', period: 'month', amount: 300 },
+    });
+    const charge = await prisma.subscriptionCharge.create({
+      data: { subscriptionId: sub.id, amount: 300, isFirst: true },
+    });
+    const invId = SUBSCRIPTION_INVID_BASE + charge.id;
+    await service.markChargePaidByInvId(invId);
+    expect(prisma.subs.get(sub.id).firstInvId).toBe(invId);
+    expect(calls.alerts.some((m) => m.includes('Новая подписка'))).toBe(true);
   });
 });
 
@@ -485,5 +602,57 @@ describe('SubscriptionService.chargeDue — неудачное списание 
     await service.chargeDue();
     const charges = [...prisma.charges.values()];
     expect(charges.some((c) => c.status === 'failed')).toBe(true);
+  });
+});
+
+describe('SubscriptionService.chargeDue — успешное списание', () => {
+  it('res.ok=true → nextChargeAt сдвигается на период вперёд, failedAttempts не трогается, статус active', async () => {
+    const { service, prisma, robokassa } = makeService();
+    const sub = await prisma.subscription.create({
+      data: {
+        status: 'active',
+        period: 'month',
+        amount: 300,
+        telegramId: null,
+        firstInvId: 900001,
+        failedAttempts: 1, // не должен обнулиться здесь — сброс идёт в markChargePaid по вебхуку
+        nextChargeAt: new Date(Date.now() - 1000),
+      },
+    });
+    const before = Date.now();
+    await service.chargeDue();
+    expect(robokassa.chargeRecurring).toHaveBeenCalledWith(
+      expect.objectContaining({
+        previousInvId: 900001,
+        amount: 300,
+      }),
+    );
+    const row = prisma.subs.get(sub.id);
+    expect(row.status).toBe('active');
+    expect(row.failedAttempts).toBe(1);
+    const expectedMonth = new Date(before);
+    expectedMonth.setUTCMonth(expectedMonth.getUTCMonth() + 1);
+    expect(row.nextChargeAt.getUTCMonth()).toBe(expectedMonth.getUTCMonth());
+    // Списание успешно отправлено, но НЕ подтверждено — charge остаётся pending,
+    // подтверждает его только webhook (markChargePaid).
+    const charges = [...prisma.charges.values()];
+    expect(charges.some((c) => c.status === 'pending')).toBe(true);
+  });
+
+  it('подписка без firstInvId (ещё не активирована первым платежом) НЕ попадает в выборку due и не списывается', async () => {
+    const { service, prisma, robokassa } = makeService();
+    const sub = await prisma.subscription.create({
+      data: {
+        status: 'active',
+        period: 'month',
+        amount: 300,
+        firstInvId: null,
+        nextChargeAt: new Date(Date.now() - 1000),
+      },
+    });
+    await service.chargeDue();
+    expect(robokassa.chargeRecurring).not.toHaveBeenCalled();
+    // Подписка не тронута этим тиком (не сдвинулась дальше pending-состояния).
+    expect(prisma.subs.get(sub.id).nextChargeAt).toEqual(sub.nextChargeAt);
   });
 });

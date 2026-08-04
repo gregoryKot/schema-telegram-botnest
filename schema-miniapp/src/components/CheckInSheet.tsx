@@ -126,7 +126,10 @@ export function CheckInSheet({
             textAlign: 'center',
           }}
         >
-          Не удалось сохранить — попробуй ещё раз
+          {tr(
+            'Не удалось сохранить — попробуй ещё раз',
+            'Не удалось сохранить — попробуйте ещё раз',
+          )}
         </div>
       )}
       <div style={{ textAlign: 'center', marginTop: 14 }}>

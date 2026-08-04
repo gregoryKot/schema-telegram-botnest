@@ -1,6 +1,6 @@
 // Точка входа: приложение спрашивает `getHost()` и работает с любым хостом
 // одинаково. Определение делаем один раз за жизнь вкладки — хост не меняется.
-import { createTelegramHost, telegramWebApp } from './telegram';
+import { createTelegramHost, isTelegramContext } from './telegram';
 import { createMaxHost, hasMaxLaunchParams, maxWebApp } from './max';
 import { createWebHost } from './web';
 import type { HostBridge, HostId } from './types';
@@ -11,12 +11,17 @@ export { createMaxHost } from './max';
 export { createWebHost } from './web';
 
 export function detectHostId(): HostId {
-  if (telegramWebApp()) return 'telegram';
+  // MAX проверяется ПЕРВЫМ. Его признаки специфичны (свой мост, свои стартовые
+  // параметры в адресе) и подделать их телеграмный SDK не может, а вот
+  // наоборот — запросто: telegram-web-app.js создаёт window.Telegram.WebApp
+  // всегда, и при обратном порядке мини-апп внутри MAX считал себя
+  // телеграмным (см. isTelegramContext).
   // Мост ИЛИ стартовые параметры в адресе. Второе важнее, чем кажется: их
   // скрипт грузится со стороннего CDN, и если он не доедет, приложение
   // посчитало бы себя открытым в браузере и показало экран входа вместо
   // автоматического — при том что подпись лежит прямо в адресе.
   if (maxWebApp() || hasMaxLaunchParams()) return 'max';
+  if (isTelegramContext()) return 'telegram';
   return 'web';
 }
 

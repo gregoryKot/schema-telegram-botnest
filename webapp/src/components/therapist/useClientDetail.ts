@@ -212,7 +212,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
       setConceptError('');
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch { setSaveStatus('idle'); }
+    } catch { setSaveStatus('idle'); setConceptError('Не удалось сохранить изменения. Попробуйте ещё раз.'); } // БАГ (найден тестом): раньше не сообщал об ошибке
   }
 
   function toggleSchemaId(id: string) {

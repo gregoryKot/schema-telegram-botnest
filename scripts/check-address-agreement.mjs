@@ -44,6 +44,10 @@ function walk(p, acc = []) {
   let st;
   try { st = statSync(join(ROOT, p)); } catch { return acc; }
   if (st.isFile()) {
+    // Тесты пропускаем: «вы благодарен» внутри спека — это фикстура, на
+    // которой проверяют сам гейт, а не текст, который увидит пользователь.
+    // Без этого исключения тест на гейт роняет гейт (что и случилось).
+    if (/\.(spec|test)\.(ts|tsx)$/.test(p)) return acc;
     if (/\.(ts|tsx)$/.test(p)) acc.push(p);
     return acc;
   }

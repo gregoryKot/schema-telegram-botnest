@@ -18,11 +18,19 @@ const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'eslint-baseline.json');
 const UPDATE = process.argv.includes('--update');
 
-const res = spawnSync(
-  'npx',
-  ['eslint', '.', '--format', 'json', '--ignore-pattern', 'game/**'],
-  { cwd: ROOT, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024 },
-);
+// Шов для теста гейта (src/test-support/gates/): eslint по всему дереву в
+// песочницу не поднять — ему нужен tsconfig, node_modules и сам бинарь. А
+// сломаться молча может как раз вторая половина скрипта: разбор отчёта и
+// сверка с бейслайном. RATCHET_REPORT_FILE подсовывает готовый отчёт вместо
+// запуска — логика сравнения дальше та же самая, что и в CI.
+const reportFile = process.env.RATCHET_REPORT_FILE;
+const res = reportFile
+  ? { stdout: readFileSync(reportFile, 'utf8'), stderr: '' }
+  : spawnSync(
+      'npx',
+      ['eslint', '.', '--format', 'json', '--ignore-pattern', 'game/**'],
+      { cwd: ROOT, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024 },
+    );
 // eslint выходит с 1 при наличии ошибок — это норма; фатальны только сбои
 // самого запуска (нет бинаря, кривой конфиг → пустой/невалидный stdout).
 let report;
@@ -111,7 +119,7 @@ if (total > baseline.total) {
         console.error(`      ${f.filePath}: ${hits.length}`);
         for (const m of hits.slice(0, 5))
           console.error(
-            `         стр. ${m.line}: ${JSON.stringify(m.message).slice(0, 160)}`,
+            `         стр. ${m.line}: ${JSON.stringify(m.message ?? '').slice(0, 160)}`,
           );
       }
     }

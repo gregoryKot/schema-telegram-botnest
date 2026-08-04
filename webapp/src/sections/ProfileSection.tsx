@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { DeleteAccountDialog } from './profile/DeleteAccountDialog';
 import { api } from '../api';
 import type { Achievement, TherapyRelationInfo } from '../api';
 import { TherapyNote } from '../components/TherapyNote';
@@ -74,7 +75,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
   // Delete account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   // Reset to the loading state when a refresh is requested. Adjusting state
   // during render (not in an effect) keeps this off set-state-in-effect; on
@@ -566,42 +566,8 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
       {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
 
-      {/* Delete account confirm */}
       {showDeleteConfirm && (
-        <div
-          role="presentation"
-          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-          onClick={() => !deleting && setShowDeleteConfirm(false)}
-        >
-          <div role="presentation" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg)', borderRadius: 12, padding: '28px 28px 32px', width: '100%', maxWidth: 420, border: '1px solid rgba(var(--fg-rgb),0.08)' }}>
-            <div style={{ fontSize: 22, marginBottom: 12 }}>⚠️</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Удалить аккаунт?</div>
-            <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 24 }}>
-              Все данные будут удалены безвозвратно: дневники, записи, прогресс, настройки. Восстановить невозможно.
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={deleting}
-                style={{ flex: 1, padding: '13px', borderRadius: 14, border: '1px solid var(--line)', background: 'transparent', color: 'var(--text)', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-              >
-                Отмена
-              </button>
-              <button
-                onClick={() => {
-                  setDeleting(true);
-                  api.deleteAllUserData()
-                    .then(() => { window.location.reload(); })
-                    .catch(() => { setDeleting(false); });
-                }}
-                disabled={deleting}
-                style={{ flex: 1, padding: '13px', borderRadius: 14, border: 'none', background: 'var(--c-rose)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit', opacity: deleting ? 0.6 : 1 }}
-              >
-                {deleting ? 'Удаляем...' : 'Удалить'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteAccountDialog onClose={() => setShowDeleteConfirm(false)} />
       )}
     </div>
   );

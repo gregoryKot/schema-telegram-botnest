@@ -18,10 +18,12 @@ jest.mock('undici', () => ({
 }));
 
 jest.mock('../../utils/crypto', () => ({
-  encrypt: (t: string | null) => (t ? `enc(${t})` : null),
+  encrypt: jest.fn((t: string | null) => (t ? `enc(${t})` : null)),
   decrypt: (v: string | null) =>
     v?.startsWith('enc(') ? v.slice(4, -1) : (v ?? null),
 }));
+import { encrypt } from '../../utils/crypto';
+const encryptMock = encrypt as jest.Mock;
 
 const KEY = 'channel:threads_token';
 
@@ -149,6 +151,45 @@ describe('ThreadsTokenService', () => {
     expect(upsert).not.toHaveBeenCalled();
     expect(String(warn.mock.calls[0][0])).toContain('400: invalid token');
     expect(error).not.toHaveBeenCalled();
+  });
+
+  it('ответ 200 без access_token тоже считается сбоем — не сохраняем пустоту', async () => {
+    // Meta может ответить 200 с телом без access_token (например при смене
+    // формата ответа) — раньше это тихо перезаписало бы токен пустой строкой,
+    // и канал замолчал бы без единого warn.
+    const { prisma, upsert } = makePrisma({
+      value: 'enc(old-token)',
+      updatedAt: daysAgo(45),
+    });
+    undiciFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '{"expires_in":5184000}',
+    });
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+
+    await new ThreadsTokenService(prisma).refreshIfStale();
+
+    expect(upsert).not.toHaveBeenCalled();
+    expect(String(warn.mock.calls[0][0])).toContain(
+      'в ответе нет access_token',
+    );
+  });
+
+  it('пустой шифртекст (encrypt вернул null) не пишет пустышку в БД', async () => {
+    // save() — общий путь и для сида стартового токена, и для обновления;
+    // если encrypt() не смог зашифровать (например, ENCRYPTION_KEY снят), в
+    // БД не должно уйти undefined/null вместо реального секрета.
+    process.env.HEALTHY_ADULT_THREADS_TOKEN = 'seed-token';
+    encryptMock.mockReturnValueOnce(null);
+    const { prisma, upsert } = makePrisma(null);
+
+    await new ThreadsTokenService(prisma).refreshIfStale();
+
+    expect(encryptMock).toHaveBeenCalledWith('seed-token');
+    expect(upsert).not.toHaveBeenCalled();
   });
 
   it('через ретранслятор обновление идёт туда же, куда публикация', async () => {
