@@ -17,8 +17,13 @@ ENV npm_config_audit=false \
     npm_config_fund=false \
     npm_config_update_notifier=false
 
-# Backend dependencies
+# Backend dependencies.
+# setup-merge-drivers.mjs копируется ДО npm ci: корневой npm-хук `prepare`
+# запускает его на каждом install, и без файла `npm ci` падает с ENOENT —
+# ровно так деплой молча стоял с #256 по #258 (инцидент 2026-08-04). Внутри
+# образа скрипт сам выходит нулём («не git-репозиторий, пропускаю»).
 COPY package*.json ./
+COPY scripts/setup-merge-drivers.mjs scripts/
 RUN npm ci
 
 # Webapp dependencies
