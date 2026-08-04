@@ -86,7 +86,7 @@ export function TwoFactorSection({
           {recoveryCodes.map(c => <div key={c}>{c}</div>)}
         </div>
         <button onClick={() => setRecoveryCodes(null)} className="btn btn-secondary" style={{ marginTop: 14 }}>
-          Готово, я сохранил
+          Готово, коды сохранены
         </button>
       </div>
     );

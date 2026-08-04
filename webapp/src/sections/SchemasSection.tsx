@@ -1,4 +1,8 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
+import {
+  MODE_DESC,
+  POPULAR_MODE_IDS,
+} from '../../../shared/src/mode/modePickerDesc';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api } from '../api';
 import { fmtDate } from '../utils/format';
@@ -519,46 +523,6 @@ function MyModeMapSheet({ onClose }: { onClose: () => void }) {
 }
 
 // ── Mode picker sheet ──────────────────────────────────────────────────────────
-
-const POPULAR_MODE_IDS = ['vulnerable_child', 'detached_protector', 'demanding_critic', 'abandoned_child', 'compliant_surrenderer'];
-
-const MODE_DESC: Record<string, string> = {
-  vulnerable_child:      'Беспомощность, грусть, страх – нуждается в защите',
-  lonely_child:          'Одиночество и непонятость даже среди людей',
-  abandoned_child:       'Страх быть брошенным, тревога при угрозе отношениям',
-  humiliated_child:      'Стыд и ощущение дефективности, страх осуждения',
-  dependent_child:       'Нужна постоянная поддержка, боится самостоятельных решений',
-  angry_child:           'Злость из-за неудовлетворённых потребностей',
-  stubborn_child:        'Упрямое сопротивление требованиям и контролю',
-  enraged_child:         'Неконтролируемая ярость при угрозе или несправедливости',
-  impulsive_child:       'Действует не думая, следует желаниям без учёта последствий',
-  undisciplined_child:   'Избегает скучного, быстро теряет интерес и бросает',
-  compliant_surrenderer: 'Соглашается со всем, чтобы избежать конфликта',
-  helpless_surrenderer:  'Ощущает себя беспомощным, ждёт что другие всё решат',
-  detached_protector:    'Отключается эмоционально, уходит в себя чтобы не чувствовать',
-  detached_self_soother: 'Успокаивает себя через еду, экраны, привычки',
-  avoidant_protector:    'Избегает ситуаций и людей, которые могут причинить боль',
-  angry_protector:       'Отталкивает других злостью, защищаясь от уязвимости',
-  self_aggrandiser:      'Ощущение особости и превосходства над другими',
-  overcontroller:        'Стремится всё контролировать, тревожится от неопределённости',
-  perfectionistic_oc:    'Недостижимые стандарты, страх малейшей ошибки',
-  suspicious_oc:         'Постоянная настороженность, ищет скрытые угрозы',
-  invincible_oc:         'Отрицает слабость – должен быть сильным всегда',
-  flagellating_oc:       'Наказывает себя за ошибки строже чем нужно',
-  compulsive_oc:         'Навязчивые ритуалы и действия для снижения тревоги',
-  worrying_oc:           'Хроническое беспокойство о будущих катастрофах',
-  bully_attack:          'Добивается своего через запугивание и агрессию',
-  manipulative:          'Влияет на людей косвенно, скрывая истинные намерения',
-  predator:              'Использует других в своих интересах без сочувствия',
-  attention_seeker:      'Постоянно ищет признания и похвалы от окружающих',
-  pollyanna:             'Отрицает проблемы, видит всё в розовом цвете',
-  demanding_critic:      'Внутренний голос завышенных требований и критики',
-  punitive_critic:       'Жёсткое внутреннее осуждение и приговоры себе',
-  guilt_critic:          'Постоянное чувство вины и самообвинения',
-  happy_child:           'Спонтанность, радость и игривость без тревоги',
-  healthy_adult:         'Взвешенные решения, забота о себе и других',
-  good_parent:           'Внутренний поддерживающий голос, ободряет и успокаивает',
-};
 
 function ModePickerSheet({ selected, onSave, onClose }: { selected: string[]; onSave: (ids: string[]) => void; onClose: () => void }) {
   const tr = useTr();

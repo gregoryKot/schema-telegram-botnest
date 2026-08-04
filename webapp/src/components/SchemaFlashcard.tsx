@@ -40,15 +40,15 @@ const buildModes = (tr: (ty: string, vy: string) => string) => [
     emoji: '🔇',
     label: 'Отстранённый Защитник',
     desc: 'Пусто, онемело, всё равно, хочется исчезнуть',
-    response: tr('Ты отключился, чтобы не было больно – это понятно. Но ты в безопасности прямо сейчас. Можно чуть-чуть вернуться.', 'Вы отключились, чтобы не было больно – это понятно. Но вы в безопасности прямо сейчас. Можно чуть-чуть вернуться.'),
+    response: tr('Это отключение — чтобы не было больно, и это понятно. Но ты в безопасности прямо сейчас. Можно чуть-чуть вернуться.', 'Вы отключились, чтобы не было больно – это понятно. Но вы в безопасности прямо сейчас. Можно чуть-чуть вернуться.'),
     color: '#94a3b8',
   },
   {
     id: 'critic',
     emoji: '🪓',
     label: 'Внутренний Критик',
-    desc: 'Стыд, «я облажался», «я недостаточно хорош»',
-    response: tr('Критик думает, что защищает тебя, но причиняет боль. Здоровый Взрослый говорит: ты достаточно хорош – прямо сейчас.', 'Критик думает, что защищает вас, но причиняет боль. Здоровый Взрослый говорит: вы достаточно хороши – прямо сейчас.'),
+    desc: 'Стыд, «опять провал», «этого мало»',
+    response: tr('Критик думает, что защищает тебя, но причиняет боль. Здоровый Взрослый говорит: тебя достаточно — прямо сейчас.', 'Критик думает, что защищает вас, но причиняет боль. Здоровый Взрослый говорит: вы достаточно хороши – прямо сейчас.'),
     color: '#fb923c',
   },
 ];
@@ -217,7 +217,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
           <div style={{ fontSize: 64, marginBottom: 20 }}>🌿</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>Сохранено</h1>
           <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.65, marginBottom: 40 }}>
-            {tr('Ты сделал шаг навстречу себе. Это уже немало.', 'Вы сделали шаг навстречу себе. Это уже немало.')}
+            {tr('Это шаг навстречу себе. Уже немало.', 'Вы сделали шаг навстречу себе. Это уже немало.')}
           </p>
           <div style={{ background: 'transparent', border: '1px solid var(--line)', borderRadius: 20, padding: '24px', marginBottom: 32, textAlign: 'left' }}>
             {[
@@ -257,7 +257,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '60px 24px 80px', textAlign: 'center', overflowY: 'auto' }}>
           <div style={{ fontSize: 64, marginBottom: 20 }}>💙</div>
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', marginBottom: 12 }}>
-            {tr('Ты сделал правильно', 'Вы сделали правильно')}
+            {tr('Всё правильно', 'Вы сделали правильно')}
           </h1>
           <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, marginBottom: 36 }}>
             {tr('То, что ты чувствуешь сейчас – это нормально.', 'То, что вы чувствуете сейчас – это нормально.')}<br/>Это пройдёт.

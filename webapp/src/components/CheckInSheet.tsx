@@ -40,7 +40,7 @@ export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Prop
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
           <div style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, color: 'var(--text)', lineHeight: 1.3 }}>
-            {tr('Вчера ты планировал', 'Вчера вы планировали')}
+            {tr('Вчера в планах было', 'Вчера вы планировали')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6 }}>
             {needEmoji} {needLabel}
@@ -84,7 +84,7 @@ export function CheckInSheet({ plan, needEmoji, needLabel, color, onDone }: Prop
               color: saving ? 'var(--text-sub)' : '#fff', fontSize: 15, fontWeight: 600, cursor: saving ? 'default' : 'pointer',
             }}
           >
-            {saving ? 'Сохранение...' : 'Да, сделал ✓'}
+            {saving ? 'Сохранение...' : 'Да, получилось ✓'}
           </button>
         </div>
         {error && (

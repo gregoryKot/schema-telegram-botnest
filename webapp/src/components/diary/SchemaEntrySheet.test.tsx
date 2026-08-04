@@ -75,10 +75,10 @@ describe('SchemaEntrySheet — визард (шаги, обязательнос�
     expect(screen.getByPlaceholderText(/так папа в детстве оценивал/)).toBeTruthy();
   });
 
-  // Регрессия: excessiveReactions («Где я раздул/а») был в черновике, но
+  // Регрессия: excessiveReactions («Где я преувеличиваю») был в черновике, но
   // потерял UI (useState без сеттера) — расхождение с миниаппом (правило
   // №3). Визард обязан вернуть шаг в обоих фронтендах.
-  it('шаг «Где я раздул/а» (excessiveReactions) снова доступен и сохраняется', async () => {
+  it('шаг «Где я преувеличиваю» (excessiveReactions) снова доступен и сохраняется', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(
       <MemoryRouter>
@@ -88,7 +88,7 @@ describe('SchemaEntrySheet — визард (шаги, обязательнос�
     const trigger = screen.getByPlaceholderText('Например: на созвоне А. сказал что мой ппт «слабо проработан»…');
     fireEvent.change(trigger, { target: { value: 'Созвон с командой' } });
     fireEvent.click(ticks()[8]); // индекс 8 в SCHEMA_DIARY_STEP_ORDER — excessiveReactions
-    expect(screen.getByText('Где я раздул/а')).toBeTruthy();
+    expect(screen.getByText('Где я преувеличиваю')).toBeTruthy();
     const area = screen.getByPlaceholderText(/реакция оказалась больше/);
     fireEvent.change(area, { target: { value: 'Слишком остро отреагировал на пустяк' } });
     fireEvent.click(screen.getByText('Сохранить'));
