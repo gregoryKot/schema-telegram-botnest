@@ -229,6 +229,62 @@ describe('sanitizeMeta', () => {
     ).toEqual({ from: 'vulnerable_child', to: 'punitive_parent' });
   });
 
+  it('mode_doubt_opened: валидный modeId → {modeId}', () => {
+    expect(
+      sanitizeMeta('mode_doubt_opened', { modeId: 'detached_protector' }),
+    ).toEqual({ modeId: 'detached_protector' });
+  });
+
+  it('mode_doubt_opened: невалидный modeId (цифры/пробелы/длина) → undefined', () => {
+    expect(
+      sanitizeMeta('mode_doubt_opened', { modeId: 'evil id 123' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('mode_doubt_opened', { modeId: 'a'.repeat(65) }),
+    ).toBeUndefined();
+  });
+
+  it('mode_doubt_opened: лишнее поле отброшено', () => {
+    expect(
+      sanitizeMeta('mode_doubt_opened', {
+        modeId: 'vulnerable_child',
+        note: 'посторонний текст',
+      }),
+    ).toEqual({ modeId: 'vulnerable_child' });
+  });
+
+  it('mode_doubt_switched: from + to из allow-list формата проходят', () => {
+    expect(
+      sanitizeMeta('mode_doubt_switched', {
+        from: 'vulnerable_child',
+        to: 'helpless_surrenderer',
+      }),
+    ).toEqual({ from: 'vulnerable_child', to: 'helpless_surrenderer' });
+  });
+
+  it('mode_doubt_switched: невалидный/отсутствующий from или to → отброшено целиком', () => {
+    expect(
+      sanitizeMeta('mode_doubt_switched', {
+        from: 'evil id!',
+        to: 'helpless_surrenderer',
+      }),
+    ).toBeUndefined();
+    expect(
+      sanitizeMeta('mode_doubt_switched', { from: 'vulnerable_child' }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('mode_doubt_switched', {})).toBeUndefined();
+  });
+
+  it('mode_doubt_switched: лишние поля срезаются', () => {
+    expect(
+      sanitizeMeta('mode_doubt_switched', {
+        from: 'vulnerable_child',
+        to: 'helpless_surrenderer',
+        note: 'секретный текст',
+      }),
+    ).toEqual({ from: 'vulnerable_child', to: 'helpless_surrenderer' });
+  });
+
   it('без meta — undefined для любого события', () => {
     expect(sanitizeMeta('share_card', undefined)).toBeUndefined();
   });

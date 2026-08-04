@@ -91,6 +91,13 @@ const BACKEND_ONLY: Record<string, string> = {
     'константа MODE_CHAIN_FOLLOWUP_EVENT (shared/src/share/analytics.ts), ' +
     'шлётся из ModeEntrySheet.tsx (оба фронта) при принятой подсказке ' +
     '«разобрать связанный режим»',
+  mode_doubt_opened:
+    'константа MODE_DOUBT_OPENED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeDoubtButton.tsx (оба фронта) при открытии листа ' +
+    '«С чем путают режим»',
+  mode_doubt_switched:
+    'константа MODE_DOUBT_SWITCHED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeDoubtButton.tsx (оба фронта) при нажатии «Это ближе»',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -116,10 +123,11 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
 
   it('BACKEND_ONLY не разросся сверх известного (может только сокращаться)', () => {
     // Потолок поднят с 11 до 13 (mode_entry_saved/mode_test_completed, 2026-07),
-    // затем до 15 (warm_words_open/mode_chain_followup, 2026-08) осознанно:
-    // те же кросс-фронтовые события через именованные константы — тот же
+    // затем до 15 (warm_words_open/mode_chain_followup, 2026-08), затем до 17
+    // (mode_doubt_opened/mode_doubt_switched, 2026-08) осознанно: те же
+    // кросс-фронтовые события через именованные константы — тот же
     // легитимный паттерн, что и share_card/onboarding_step/mode_card_saved,
     // не обход правила.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(15);
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(17);
   });
 });

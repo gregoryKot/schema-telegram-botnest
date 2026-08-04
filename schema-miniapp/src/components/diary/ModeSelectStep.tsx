@@ -4,6 +4,7 @@ import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 import { ModeFeelingBrowse } from './ModeFeelingBrowse';
 import { ModeGroupList } from './ModeGroupList';
+import { ModeDoubtButton } from './ModeDoubtButton';
 
 /**
  * Шаг 1 дневника режимов: выбор режима.
@@ -31,47 +32,52 @@ export function ModeSelectStep({
 
   if (selectedMode) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          background: `${selectedMode.color}14`,
-          border: `1px solid ${selectedMode.color}55`,
-          borderRadius: 16,
-          padding: '12px 14px',
-        }}
-      >
-        <span style={{ fontSize: 26, flexShrink: 0 }}>
-          {selectedMode.emoji}
-        </span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-            {selectedMode.name}
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-            {selectedMode.short}
-          </div>
-        </div>
-        <button
-          onClick={() => {
-            haptic.tap();
-            onChange('');
-            setShowList(false);
-          }}
+      <div>
+        <div
           style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--accent-blue)',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            background: `${selectedMode.color}14`,
+            border: `1px solid ${selectedMode.color}55`,
+            borderRadius: 16,
+            padding: '12px 14px',
           }}
         >
-          Сменить
-        </button>
+          <span style={{ fontSize: 26, flexShrink: 0 }}>
+            {selectedMode.emoji}
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}
+            >
+              {selectedMode.name}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+              {selectedMode.short}
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              haptic.tap();
+              onChange('');
+              setShowList(false);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--accent-blue)',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              flexShrink: 0,
+            }}
+          >
+            Сменить
+          </button>
+        </div>
+        <ModeDoubtButton modeId={modeId} onSwitch={onChange} />
       </div>
     );
   }
